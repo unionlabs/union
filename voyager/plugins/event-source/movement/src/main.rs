@@ -17,8 +17,7 @@ use ibc_union_spec::{
         PacketSend, UpdateClient, WriteAck,
     },
     path::{ChannelPath, ConnectionPath},
-    types::{Connection, ConnectionState},
-    IbcUnion,
+    ChannelId, ClientId, Connection, ConnectionState, IbcUnion, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -32,10 +31,11 @@ use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
     call::{Call, WaitForHeight},
-    core::{ChainId, ClientInfo, ClientType, IbcSpec},
     data::{ChainEvent, Data},
+    filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
+    primitives::{ChainId, ClientInfo, ClientType, IbcSpec},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
@@ -97,10 +97,10 @@ impl Plugin for Module {
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
             name: plugin_name(&config.chain_id),
-            interest_filter: format!(
+            interest_filter: simple_take_filter(format!(
                 r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
                 config.chain_id
-            ),
+            )),
         }
     }
 
@@ -165,7 +165,7 @@ impl Module {
     async fn make_packet_metadata(
         &self,
         event_height: Height,
-        self_channel_id: u32,
+        self_channel_id: ChannelId,
         voyager_client: &VoyagerClient,
     ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
         let self_channel = voyager_client
@@ -193,8 +193,8 @@ impl Module {
             .client_info::<IbcUnion>(self.chain_id.clone(), self_connection.client_id)
             .await?;
 
-        let client_meta = voyager_client
-            .client_meta::<IbcUnion>(
+        let client_state_meta = voyager_client
+            .client_state_meta::<IbcUnion>(
                 self.chain_id.clone(),
                 event_height.into(),
                 self_connection.client_id,
@@ -202,16 +202,16 @@ impl Module {
             .await?;
 
         let counterparty_latest_height = voyager_client
-            .query_latest_height(client_meta.counterparty_chain_id.clone(), false)
+            .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
             .await?;
 
         let other_channel_id = self_channel.counterparty_channel_id;
         let other_channel = voyager_client
             .query_ibc_state(
-                client_meta.counterparty_chain_id.clone(),
+                client_state_meta.counterparty_chain_id.clone(),
                 counterparty_latest_height,
                 ChannelPath {
-                    channel_id: other_channel_id,
+                    channel_id: other_channel_id.unwrap(),
                 },
             )
             .await?;
@@ -225,16 +225,16 @@ impl Module {
             },
         };
         let destination_channel = ChannelMetadata {
-            channel_id: other_channel_id,
+            channel_id: other_channel_id.unwrap(),
             version: other_channel.version,
             connection: ConnectionMetadata {
                 client_id: self_connection.counterparty_client_id,
-                connection_id: self_connection.counterparty_connection_id,
+                connection_id: self_connection.counterparty_connection_id.unwrap(),
             },
         };
 
         Ok((
-            client_meta.counterparty_chain_id,
+            client_state_meta.counterparty_chain_id,
             client_info,
             source_channel,
             destination_channel,
@@ -316,6 +316,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }
                         _ => None,
                     })
+                    .filter(|(typ, _, _)| typ.name.0.as_str() != "CreateLensClient")
                     .map(|(typ, data, hash)| {
                         let event = match dbg!(typ).name.0.as_str() {
                             "CreateClient" => from_raw_event::<ibc::CreateClient>(data),
@@ -402,62 +403,83 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 tx_hash,
                 height,
             }) => {
-                let (full_event, client_id): (FullEvent, u32) = match event {
+                let (full_event, client_id): (FullEvent, ClientId) = match event {
                     events::IbcEvent::CreateClient(event) => (
                         CreateClient {
-                            client_id: event.client_id,
+                            client_id: event.client_id.try_into().unwrap(),
                             client_type: ClientType::new(event.client_type),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::UpdateClient(event) => (
                         UpdateClient {
-                            client_id: event.client_id,
+                            client_id: event.client_id.try_into().unwrap(),
                             client_type: ClientType::new(event.client_type),
                             height: event.counterparty_height,
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ConnectionOpenInit(event) => (
                         ConnectionOpenInit {
-                            client_id: event.client_id,
-                            connection_id: event.connection_id,
-                            counterparty_client_id: event.counterparty_client_id,
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ConnectionOpenTry(event) => (
                         ConnectionOpenTry {
-                            client_id: event.client_id,
-                            connection_id: event.connection_id,
-                            counterparty_client_id: event.counterparty_client_id,
-                            counterparty_connection_id: event.counterparty_connection_id,
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ConnectionOpenAck(event) => (
                         ConnectionOpenAck {
-                            client_id: event.client_id,
-                            connection_id: event.connection_id,
-                            counterparty_client_id: event.counterparty_client_id,
-                            counterparty_connection_id: event.counterparty_connection_id,
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ConnectionOpenConfirm(event) => (
                         ConnectionOpenConfirm {
-                            client_id: event.client_id,
-                            connection_id: event.connection_id,
-                            counterparty_client_id: event.counterparty_client_id,
-                            counterparty_connection_id: event.counterparty_connection_id,
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
-                        event.client_id,
+                        event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ChannelOpenInit(event) => {
                         let ledger_version = self.ledger_version_of_height(height).await;
@@ -478,7 +500,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenInit {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id,
+                                channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 connection,
                                 version: event.version,
@@ -507,9 +529,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenTry {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id,
+                                channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id,
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
                                 version: event.version,
                             }
@@ -547,9 +572,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenAck {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id,
+                                channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id,
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
                                 version: channel.version,
                             }
@@ -587,9 +615,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (
                             ChannelOpenConfirm {
                                 port_id: event.port_id.parse().unwrap(),
-                                channel_id: event.channel_id,
+                                channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id,
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
                                 version: channel.version,
                             }
@@ -606,7 +637,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_channel_id,
+                                event.packet.destination_channel_id.try_into().unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -621,7 +652,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                             }
                             .into(),
@@ -637,7 +670,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.destination_channel_id,
+                                event.packet.destination_channel_id.try_into().unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -651,7 +684,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                                 maker_msg: Default::default(),
                             }
@@ -668,7 +703,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.source_channel_id,
+                                event.source_channel_id.try_into().unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -682,7 +717,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.timeout_height,
-                                    timeout_timestamp: event.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.timeout_timestamp,
+                                    ),
                                 },
                             }
                             .into(),
@@ -698,7 +735,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         ) = self
                             .make_packet_metadata(
                                 self.make_height(height),
-                                event.packet.source_channel_id,
+                                event.packet.source_channel_id.try_into().unwrap(),
                                 e.try_get()?,
                             )
                             .await?;
@@ -712,7 +749,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     source_channel,
                                     destination_channel,
                                     timeout_height: event.packet.timeout_height,
-                                    timeout_timestamp: event.packet.timeout_timestamp,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        event.packet.timeout_timestamp,
+                                    ),
                                 },
                                 acknowledgement: event.acknowledgement.into(),
                             }
@@ -723,14 +762,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     events::IbcEvent::TimeoutPacket(_) => todo!(),
                 };
 
+                ibc_union_spec::log_event(&full_event, &self.chain_id);
+
                 let voyager_client = e.try_get::<VoyagerClient>()?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
                     .await?;
 
-                let client_meta = voyager_client
-                    .client_meta::<IbcUnion>(
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
                         self.make_height(height).into(),
                         client_id,
@@ -740,7 +781,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 Ok(data(ChainEvent {
                     chain_id: self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_meta.counterparty_chain_id,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     // TODO: Review this, does it need to be +1?
                     provable_height: self.make_height(height),
@@ -764,9 +805,9 @@ fn convert_connection(connection: ConnectionEnd) -> Connection {
             3 => ConnectionState::Open,
             _ => panic!("connection state must be 1..=3"),
         },
-        client_id: connection.client_id,
-        counterparty_client_id: connection.counterparty_client_id,
-        counterparty_connection_id: connection.counterparty_connection_id,
+        client_id: connection.client_id.try_into().unwrap(),
+        counterparty_client_id: connection.counterparty_client_id.try_into().unwrap(),
+        counterparty_connection_id: connection.counterparty_connection_id.try_into().ok(),
     }
 }
 

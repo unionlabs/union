@@ -12,24 +12,28 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-anyhow                        = "1.0.95"
-bip32                         = { workspace = true }
-clap                          = { workspace = true, features = ["derive", "error-context", "help"] }
-cometbft-rpc                  = { workspace = true }
-cosmos-client                 = { workspace = true }
-cosmwasm-std                  = { workspace = true, features = ["std"] }
-hex-literal                   = { workspace = true }
-ibc-union-light-client        = { workspace = true }
-ibc-union-msg                 = { workspace = true }
-num-rational                  = "0.4.2"
-protos                        = { workspace = true }
-serde                         = { workspace = true, features = ["derive"] }
-serde_json                    = { workspace = true }
-sha2                          = { workspace = true }
-tokio                         = { workspace = true, features = ["full"] }
-tracing                       = { workspace = true }
-tracing-subscriber            = { workspace = true, features = ["env-filter", "fmt", "ansi"] }
-ucs03-zkgm                    = { workspace = true, features = ["library"] }
-ucs03-zkgm-token-minter-api   = { workspace = true }
-unionlabs                     = { workspace = true }
-unionlabs-cosmwasm-upgradable = { workspace = true }
+anyhow                      = { version = "1.0.95", features = ["std"] }
+bip32                       = { workspace = true }
+clap                        = { workspace = true, features = ["derive", "error-context", "help", "env"] }
+cometbft-rpc                = { workspace = true }
+cosmos-client               = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["std"] }
+embed-commit                = { workspace = true }
+frissitheto                 = { workspace = true }
+futures                     = { workspace = true }
+hex-literal                 = { workspace = true }
+ibc-union-light-client      = { workspace = true }
+ibc-union-msg               = { workspace = true }
+num-rational                = "0.4.2"
+protos                      = { workspace = true }
+rand                        = "0.6"
+rand_chacha                 = "0.3.1"
+serde                       = { workspace = true, features = ["derive"] }
+serde_json                  = { workspace = true }
+sha2                        = { workspace = true }
+tokio                       = { workspace = true, features = ["full"] }
+tracing                     = { workspace = true }
+tracing-subscriber          = { workspace = true, features = ["env-filter", "fmt", "ansi"] }
+ucs03-zkgm                  = { workspace = true, features = ["library"] }
+ucs03-zkgm-token-minter-api = { workspace = true }
+unionlabs                   = { workspace = true, features = ["proto"] }

@@ -2,12 +2,12 @@ _: {
   perSystem =
     {
       pkgs,
-      jsPkgs,
+      pkgsUnstable,
       ensureAtRepositoryRoot,
       ...
     }:
     let
-      deps = with jsPkgs; [
+      deps = with pkgsUnstable; [
         vips
         pkg-config
         nodePackages_latest.nodejs
@@ -27,7 +27,7 @@ _: {
               nix run .#fmt-site
 
               echo "Applying biome fmt"
-              ${jsPkgs.biome}/bin/biome check . --write --unsafe \
+              ${pkgsUnstable.biome}/bin/biome check . --write --unsafe \
                 --log-level="info" \
                 --log-kind="pretty" \
                 --diagnostic-level="info"

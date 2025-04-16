@@ -17,7 +17,6 @@ extern crate alloc;
 use core::{
     fmt::{self, Debug, Display},
     iter,
-    ptr::addr_of,
     str::FromStr,
 };
 
@@ -25,6 +24,7 @@ use serde::{Deserialize, Serialize};
 pub use typenum;
 
 use crate::{
+    encoding::{Decode, Encode},
     errors::{ExpectedLength, InvalidLength},
     validated::Validated,
 };
@@ -45,23 +45,19 @@ pub mod ibc;
 /// Defines types that wrap the cosmos specification, matching the proto module structure.
 pub mod cosmos;
 
+/// Defines types that wrap the cosmwasm specification, matching the proto module structure.
+pub mod cosmwasm;
+
 /// Various ethereum types. Types that have an IBC counterpart are defined in [`ibc`].
 pub mod ethereum;
 
 /// Types specific to the union protocol.
 pub mod union;
 
-/// Types specific to the scroll protocol.
-pub mod scroll;
-
 /// Types specific to the berachain protocol.
 pub mod berachain;
 
-/// Types specific to aptos.
 pub mod aptos;
-
-/// Wrapper types around [`milagro_bls`] types, providing more conversions and a simpler signing interface.
-pub mod bls;
 
 pub mod bounded;
 
@@ -107,6 +103,10 @@ pub enum TryFromProtoBytesError<E> {
 
 pub trait TypeUrl {
     fn type_url() -> String;
+}
+
+pub trait Msg: Clone + Encode<encoding::Proto> + TypeUrl {
+    type Response: Decode<encoding::Proto, Error: core::error::Error> + TypeUrl;
 }
 
 #[cfg(feature = "ethabi")]
@@ -300,45 +300,6 @@ impl core::iter::DoubleEndedIterator for BytesBitIterator<'_> {
     fn next_back(&mut self) -> Option<Self::Item> {
         self.pos.next_back().map(|x| self.get_bit(x))
     }
-}
-
-pub trait ByteArrayExt<const N: usize> {
-    /// Slice into an array at `FROM..(FROM + LEN)`, returning an array of length `LEN`. This will fail to compile if the equivalent slicing would panic at runtime.
-    ///
-    /// ```compile_fail
-    /// # use unionlabs::ByteArrayExt;
-    /// let arr = [1, 2, 3, 4, 5];
-    ///
-    /// // attempt to read `arr[4..(4 + 2)]`
-    /// arr.array_slice::<4, 2>();
-    /// ```
-    ///
-    /// ```rust
-    /// # use unionlabs::ByteArrayExt;
-    /// # let arr = [1, 2, 3, 4, 5];
-    /// // checked at compile time!
-    /// assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
-    /// ```
-    fn array_slice<const OFFSET: usize, const LEN: usize>(&self) -> [u8; LEN];
-}
-
-impl<const N: usize> ByteArrayExt<N> for [u8; N] {
-    fn array_slice<const OFFSET: usize, const LEN: usize>(&self) -> [u8; LEN] {
-        const { assert!(OFFSET + LEN <= N) };
-
-        unsafe { *addr_of!(self[OFFSET..(OFFSET + LEN)]).cast::<[u8; LEN]>() }
-    }
-}
-
-#[test]
-fn array_slice() {
-    let arr = [1, 2, 3, 4, 5];
-
-    assert_eq!(arr.array_slice::<0, 2>(), [1, 2]);
-    assert_eq!(arr.array_slice::<1, 1>(), [2]);
-    assert_eq!(arr.array_slice::<4, 1>(), [5]);
-    assert_eq!(arr.array_slice::<0, 0>(), [0; 0]);
-    assert_eq!(arr.array_slice::<5, 0>(), [0; 0]);
 }
 
 #[cfg(test)]

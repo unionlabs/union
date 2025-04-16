@@ -18,22 +18,22 @@ test-include = []
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-beacon-api-types      = { workspace = true, features = ["ssz"] }
-cosmwasm-std          = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
-ethereum-light-client = { workspace = true, features = ["library"] }
-serde                 = { workspace = true, features = ["derive"] }
-thiserror             = { workspace = true }
-
-berachain-light-client-types  = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-ethereum-light-client-types   = { workspace = true, features = ["serde", "ethabi"] }
-evm-storage-verifier          = { workspace = true }
-ibc-union-light-client        = { workspace = true }
-ibc-union-msg                 = { workspace = true }
-ics23                         = { workspace = true }
-tendermint-light-client       = { workspace = true, features = ["library"] }
-tendermint-verifier           = { workspace = true }
-unionlabs                     = { workspace = true }
-unionlabs-cosmwasm-upgradable = { workspace = true }
+beacon-api-types             = { workspace = true, features = ["ssz"] }
+berachain-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+cosmwasm-std                 = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
+embed-commit                 = { workspace = true }
+ethereum-light-client        = { workspace = true, features = ["library"] }
+ethereum-light-client-types  = { workspace = true, features = ["serde", "ethabi"] }
+evm-storage-verifier         = { workspace = true }
+frissitheto                  = { workspace = true }
+ibc-union-light-client       = { workspace = true }
+ibc-union-msg                = { workspace = true }
+ics23                        = { workspace = true }
+serde                        = { workspace = true, features = ["derive"] }
+tendermint-light-client      = { workspace = true, features = ["library"] }
+tendermint-verifier          = { workspace = true }
+thiserror                    = { workspace = true }
+unionlabs                    = { workspace = true }
 
 [dev-dependencies]
 base64                = { workspace = true }

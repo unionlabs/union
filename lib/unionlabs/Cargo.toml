@@ -24,7 +24,6 @@ hex                      = { workspace = true }
 hex-literal              = { workspace = true }
 k256                     = { version = "0.13.1", default-features = false, features = ["schnorr", "alloc"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
 macros                   = { workspace = true }
-milagro_bls              = { workspace = true }
 paste                    = { version = "1.0" }
 primitive-types          = { workspace = true, features = ["serde_no_std", "impl-rlp"] }
 prost                    = { workspace = true, features = ["std"] }
@@ -35,7 +34,7 @@ serde                    = { workspace = true, features = ["derive"] }
 serde-utils              = { workspace = true }
 serde_json               = { workspace = true }
 sha2                     = { workspace = true }
-sha3                     = { workspace = true }
+sha3.workspace           = true
 ssz                      = { workspace = true }
 static_assertions        = { workspace = true }
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
@@ -43,21 +42,23 @@ thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 wasmparser               = { version = "0.113" }
 
-alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
-base64               = { workspace = true }
-bcs                  = { workspace = true }
-bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
-borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
-bs58                 = "0.4"
-near-primitives-core = { version = "0.21", optional = true }
-near-sdk             = { workspace = true, optional = true }
-schemars             = { workspace = true, features = ["derive"], optional = true }
-serde_bytes          = "0.11.6"
-unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
+alloy                   = { workspace = true, optional = true, features = ["std", "sol-types"] }
+base64                  = { workspace = true }
+bcs                     = { workspace = true }
+bincode                 = { workspace = true, features = ["alloc", "derive"], optional = true }
+borsh                   = { workspace = true, features = ["borsh-derive"], optional = true }
+bs58                    = "0.4"
+near-primitives-core    = { version = "0.21", optional = true }
+near-sdk                = { workspace = true, optional = true }
+schemars                = { workspace = true, features = ["derive"], optional = true }
+serde_bytes             = "0.11.6"
+solidity-slot.workspace = true
+unionlabs-primitives    = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
 
 [dev-dependencies]
-rand       = "0.8.5"
-serde_json = { workspace = true }
+hex-literal.workspace = true
+rand                  = "0.8.5"
+serde_json            = { workspace = true }
 
 [features]
 default = ["ethabi", "std", "stargate", "proto"]

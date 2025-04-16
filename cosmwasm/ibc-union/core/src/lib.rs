@@ -9,10 +9,11 @@ pub mod state;
 mod tests;
 
 use cosmwasm_std::{Addr, StdError};
-use ibc_union_spec::types::{ChannelState, ConnectionState};
+use frissitheto::UpgradeError;
+use ibc_union_msg::lightclient::Status;
+use ibc_union_spec::{ChannelId, ChannelState, ClientId, ConnectionState, Timestamp};
 use thiserror::Error;
 use unionlabs::primitives::Bytes;
-use unionlabs_cosmwasm_upgradable::UpgradeError;
 
 #[derive(Error, Debug, PartialEq, strum::EnumDiscriminants)]
 #[strum_discriminants(
@@ -21,7 +22,7 @@ use unionlabs_cosmwasm_upgradable::UpgradeError;
     strum(prefix = "IBC_UNION_ERR_", serialize_all = "SCREAMING_SNAKE_CASE")
 )]
 pub enum ContractError {
-    #[error("{} std error: {0}", ContractErrorKind::from(self))]
+    #[error("{kind} std error: {0}", kind = ContractErrorKind::from(self))]
     Std(#[from] StdError),
     #[error("{} migration error", ContractErrorKind::from(self))]
     Migrate(#[from] UpgradeError),
@@ -32,7 +33,16 @@ pub enum ContractError {
     ClientTypeAlreadyExists,
     #[error("{} an arithmetic overflow occurred", ContractErrorKind::from(self))]
     ArithmeticOverflow,
-
+    #[error(
+        "{} counterparty channel id cannot be None",
+        ContractErrorKind::from(self)
+    )]
+    CounterpartyChannelIdInvalid,
+    #[error(
+        "{} counterparty connection id cannot be None",
+        ContractErrorKind::from(self)
+    )]
+    CounterpartyConnectionIdInvalid,
     #[error(
         "{} connection state is invalid: expected {expected:?}, got {got:?}",
         ContractErrorKind::from(self)
@@ -50,8 +60,8 @@ pub enum ContractError {
         expected: ChannelState,
     },
     #[error(
-        "{} received a timed-out packet: (timeout_height ({timeout_height}) \
-        <= current_height({current_height})",
+        "{} received a timed-out packet: timeout_height {timeout_height} \
+        <= current_height {current_height}",
         ContractErrorKind::from(self)
     )]
     ReceivedTimedOutPacketHeight {
@@ -59,20 +69,20 @@ pub enum ContractError {
         current_height: u64,
     },
     #[error(
-        "{} received a timed-out packet: (timeout timestamp ({timeout_timestamp}) \
-        <= current timestamp({current_timestamp})",
+        "{} received a timed-out packet: timeout timestamp {timeout_timestamp} \
+        <= current timestamp {current_timestamp}",
         ContractErrorKind::from(self)
     )]
     ReceivedTimedOutPacketTimestamp {
-        timeout_timestamp: u64,
-        current_timestamp: u64,
+        timeout_timestamp: Timestamp,
+        current_timestamp: Timestamp,
     },
     #[error(
         "{} caller ({caller}) is not the owner ({owner}) of the channel ({channel_id})",
         ContractErrorKind::from(self)
     )]
     Unauthorized {
-        channel_id: u32,
+        channel_id: ChannelId,
         owner: Addr,
         caller: Addr,
     },
@@ -80,14 +90,24 @@ pub enum ContractError {
     PacketNotReceived,
     #[error("{} packet is already acknowledged", ContractErrorKind::from(self))]
     AlreadyAcknowledged,
+    #[error(
+        "{} height timeout is not supported anymore",
+        ContractErrorKind::from(self)
+    )]
+    TimeoutHeightUnsupported,
     #[error("{} timeout must be set", ContractErrorKind::from(self))]
     TimeoutMustBeSet,
     #[error("{} timestamp timeout not yet reached", ContractErrorKind::from(self))]
     TimeoutTimestampNotReached,
     #[error("{} height timeout not yet reached", ContractErrorKind::from(self))]
     TimeoutHeightNotReached,
-    #[error("{} channel ({0}) does not exist", ContractErrorKind::from(self))]
+    #[error("{kind} channel ({0}) does not exist", kind = ContractErrorKind::from(self))]
     ChannelNotExist(u32),
+    #[error(
+        "{} packet has been already acknowledged",
+        ContractErrorKind::from(self)
+    )]
+    PacketAlreadyAcknowledged,
     #[error("{} packet commitment not found", ContractErrorKind::from(self))]
     PacketCommitmentNotFound,
     #[error(
@@ -104,13 +124,13 @@ pub enum ContractError {
         ContractErrorKind::from(self)
     )]
     AcknowledgementMismatch { found: Bytes, expected: Bytes },
-    #[error("{} the packet already exist", ContractErrorKind::from(self))]
+    #[error("{} the packet already exists", ContractErrorKind::from(self))]
     PacketCommitmentAlreadyExist,
     #[error(
         "{} caller {caller} don't have permission to migrate the client {client} with id {client_id}", ContractErrorKind::from(self)
     )]
     UnauthorizedMigration {
-        client_id: u32,
+        client_id: ClientId,
         caller: Addr,
         client: Addr,
     },
@@ -118,17 +138,38 @@ pub enum ContractError {
         "{} cannot migrate the client {client_id} when there's no client state",
         ContractErrorKind::from(self)
     )]
-    CannotMigrateWithNoClientState { client_id: u32 },
+    CannotMigrateWithNoClientState { client_id: ClientId },
     #[error(
         "{} cannot migrate the client {client_id} when there's no consensus state at height {height}", ContractErrorKind::from(self)
     )]
-    CannotMigrateWithNoConsensusState { client_id: u32, height: u64 },
+    CannotMigrateWithNoConsensusState { client_id: ClientId, height: u64 },
+    #[error(
+        "{} cannot query light client {client_impl} with {query:?}: {error}",
+        ContractErrorKind::from(self)
+    )]
+    CannotQueryLightClient {
+        client_impl: Addr,
+        query: Box<ibc_union_msg::lightclient::QueryMsg>,
+        error: StdError,
+    },
+    #[error(
+        "{} client {client_id} is not active (status {status:?})",
+        ContractErrorKind::from(self)
+    )]
+    ClientNotActive { client_id: ClientId, status: Status },
+    #[error(
+        "{} a batch of packets can contains packets from the same channel only",
+        ContractErrorKind::from(self)
+    )]
+    BatchSameChannelOnly,
+    #[error("sender is not a whitelisted relayer")]
+    OnlyWhitelistedRelayer,
+    #[error("sender is not the relayer admin")]
+    OnlyRelayerAdmin,
 }
 
 impl ContractErrorKind {
-    pub fn parse_from_error_message(s: &str) -> Option<Self> {
-        let (err, _) = s.split_once(' ')?;
-
-        err.strip_prefix("IBC_UNION_ERR_")?.parse().ok()
+    pub fn parse(s: &str) -> Option<Self> {
+        s.strip_prefix("IBC_UNION_ERR_")?.parse().ok()
     }
 }

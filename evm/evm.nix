@@ -8,9 +8,26 @@ _: {
       ensureAtRepositoryRoot,
       system,
       mkCi,
+      gitRev,
+      dbg,
       ...
     }:
     let
+      gitRevToUse = gitRev;
+      # use this to override the git rev. useful if verifying a contract off of a commit and the worktree is dirty for unrelated reasons (for example, changing an rpc)
+      # gitRevToUse = "";
+
+      getDeployment =
+        let
+          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
+        in
+        chainId:
+        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
+          (throw "deployment for ${chainId} not found")
+          (throw "many deployments for ${chainId} found")
+          json
+        ).deployments;
+
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
         repo = "solidity-stringutils";
@@ -26,38 +43,38 @@ _: {
       solady = pkgs.fetchFromGitHub {
         owner = "vectorized";
         repo = "solady";
-        rev = "v0.0.292";
-        hash = "sha256-74No9at4wi0K0bgfjRUYMfvtg2NmWA7yY2MnM1jFAY0=";
+        rev = "v0.1.12";
+        hash = "sha256-XsIXs3lj5gddBzswNFY1DhnlhUQx+ITf6lvBPSkMY7c=";
       };
       forge-std = pkgs.fetchFromGitHub {
         owner = "foundry-rs";
         repo = "forge-std";
-        rev = "v1.9.3";
-        hash = "sha256-v9aFV4TQqbYPNBSRt4QLZMD85fIXTtBQ8rGYPRw2qmE=";
+        rev = "v1.9.6";
+        hash = "sha256-4y1Hf0Te2oJxwKBOgVBEHZeKYt7hs+wTgdIO+rItj0E=";
         fetchSubmodules = true;
       };
       openzeppelin = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts";
-        rev = "v5.0.2";
-        hash = "sha256-Ln721yNPzbtn36/meSmaszF6iCsJUP7iG35Je5x8x1Q=";
+        rev = "v5.3.0-rc.0";
+        hash = "sha256-rCuoPQpHgJ7MjoJ9tNmL/YpW2d6EB+QM3nv6E8X3GV0=";
       };
       openzeppelin-upgradeable = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-contracts-upgradeable";
-        rev = "v5.0.2";
-        hash = "sha256-/TCv1EF3HPldTsXKThuc3L2DmlyodiduSMwYymR5idM=";
+        rev = "v5.2.0";
+        hash = "sha256-AKPTlbGkIPK7yYQJH9cEdvHSF5ZM5hFWmaxtEkMhoxQ=";
       };
       openzeppelin-foundry-upgrades = pkgs.fetchFromGitHub {
         owner = "OpenZeppelin";
         repo = "openzeppelin-foundry-upgrades";
-        rev = "v0.2.1";
-        hash = "sha256-tQ6J5X/kpsGqHfapkDkaS2apbjL+I63vgQEk1vQI/c0=";
+        rev = "v0.4.0";
+        hash = "sha256-e9hnHibo0HXr+shOS6tNEOTu65DyCpwP0DjPRznqMxU=";
       };
       libraries = pkgs.linkFarm "evm-libraries" [
         {
           name = "solidity-stringutils";
-          path = "${solidity-stringutils}/src";
+          path = "${solidity-stringutils}";
         }
         {
           name = "solidity-bytes-utils";
@@ -73,18 +90,18 @@ _: {
         }
         {
           name = "@openzeppelin";
-          path = "${openzeppelin}/contracts";
+          path = "${openzeppelin}";
         }
         {
           name = "@openzeppelin-upgradeable";
-          path = "${openzeppelin-upgradeable}/contracts";
+          path = "${openzeppelin-upgradeable}";
         }
         {
           name = "@openzeppelin-foundry-upgradeable";
           path = "${openzeppelin-foundry-upgrades}/src";
         }
       ];
-      evmLibs = pkgs.stdenv.mkDerivation {
+      evm-libs = pkgs.stdenv.mkDerivation {
         name = "evm-libs-src";
         phases = [
           "installPhase"
@@ -95,23 +112,6 @@ _: {
           mkdir -p $out
           cp -rL $src/* $out
         '';
-        fixupPhase = ''
-          substituteInPlace $out/@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/Upgrades.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/Utils.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
-            --replace 'openzeppelin/contracts' 'openzeppelin'
-          substituteInPlace $out/@openzeppelin-foundry-upgradeable/internal/DefenderDeploy.sol \
-            --replace 'solidity-stringutils/src' 'solidity-stringutils'
-        '';
       };
       evmSources = pkgs.stdenv.mkDerivation {
         name = "evm-union-src";
@@ -119,7 +119,7 @@ _: {
           "installPhase"
           "fixupPhase"
         ];
-        src = evmLibs;
+        src = evm-libs;
         installPhase = ''
           mkdir -p $out/libs
           cp -rL $src/* $out/libs
@@ -131,25 +131,30 @@ _: {
                 "contracts"
                 "tests"
               ];
+              exclude = [
+                "evm.nix"
+              ];
             }
           }/* $out/
+        '';
+        fixupPhase = ''
+          substitute $out/contracts/internal/Versioned.sol $out/contracts/internal/Versioned.sol \
+              --replace-fail 'dirty' '${gitRevToUse}'
         '';
       };
       # Foundry FS permissions must be explicitly set in the config file
       foundryConfig = pkgs.writeTextDir "/foundry.toml" ''
-        [profile.default.optimizer_details]
-        cse = true
-        constantOptimizer = true
-        yul = true
-
         [profile.default]
         fs_permissions = [{ access = "read", path = "./" }, { access = "write", path = "contracts.json" }]
         libs = ["libs"]
         gas_reports = ["*"]
         via_ir = true
+        bytecode_hash = "none"
         ast = true
         optimizer = true
-        optimizer_runs = 1_000
+        optimizer_runs = 10_000
+        cbor_metadata = false
+        sparse_mode = false
 
         [profile.script]
         src = "scripts"
@@ -186,89 +191,370 @@ _: {
             --set FOUNDRY_CONFIG "${foundryConfig}/foundry.toml"
         '';
       };
+
+      mkTenderlyVerifierUrl =
+        chain-id:
+        "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/${chain-id}/public";
+
+      # name              : plaintext name of network
+      # chain-id          : chain id of the network
+      # rpc-url           : rpc url for this network, should support full eth_getLogs (for fetching the
+      #                     deployment heights)
+      # private-key       : bash expression that evaluates to the private key to use for deployments
+      # weth              : address of the WETH equivalent on this chain, to use for ucs03-zkgm
+      #
+      # verify            : whether this chain supports verification. defaults to true, if true then the
+      #                     following args are also read:
+      # verifier          : forge --verifier to use
+      # verification-key  : bash expression that evaluates to the verification key, this will be available
+      #                     in the $VERIFICATION_KEY env var
+      # verifier-url      : contract verification endpoint for this chain
       networks = [
+        # devnets
         {
-          network = "devnet";
+          chain-id = "32382";
+
+          name = "devnet";
           rpc-url = "http://localhost:8545";
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
-          extra-args = pkgs.lib.optionalString pkgs.stdenv.isx86_64 "--verify --verifier blockscout --verifier-url http://localhost/api";
+          weth = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+
+          verify = pkgs.stdenv.isx86_64;
+          verifier = "blockscout";
+          verification-key = ''""'';
+          verifier-url = "http://localhost/api";
         }
-        {
-          # for use with the local berachain devnet from berachain/beacon-kit
-          network = "berachain-devnet";
-          rpc-url = "http://localhost:8545";
-          private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
-        }
-        {
-          # for use with the local arbitrum devnet from offchainlabs/nitro-testnode
-          network = "arbitrum-devnet";
-          rpc-url = "http://localhost:8547";
-          private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
-        }
-        {
-          network = "sepolia";
-          rpc-url = "https://rpc-sepolia.rockx.com";
-          private-key = ''"$1"'';
-          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+        # {
+        #   # for use with the local berachain devnet from berachain/beacon-kit
+        #   name = "berachain-devnet";
+        #   rpc-url = "http://localhost:8545";
+        #   private-key = "0xfffdbb37105441e14b0ee6330d855d8504ff39e705c3afa8f859ac9865f99306";
+
+        #   verify = false;
+        # }
+        # {
+        #   # for use with the local arbitrum devnet from offchainlabs/nitro-testnode
+        #   name = "arbitrum-devnet";
+        #   rpc-url = "http://localhost:8547";
+        #   private-key = "0xb6b15c8cb491557369f3c7d2c287b053eb229daa9c22138887752191c9520659";
+
+        #   verify = false;
+        # }
+
+        # testnets
+        rec {
+          chain-id = "11155111";
+
+          name = "sepolia";
+          rpc-url = "https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-        {
-          network = "holesky";
-          rpc-url = "https://1rpc.io/holesky";
-          private-key = ''"$1"'';
-          extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+        rec {
+          chain-id = "17000";
+
+          name = "holesky";
+          rpc-url = "https://holesky.gateway.tenderly.co";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-        {
-          network = "0g-testnet";
-          rpc-url = "https://evmrpc-testnet.0g.ai";
-          private-key = ''"$1"'';
-          extra-args = " --legacy --batch-size=1";
-          # extra-args = ''--verify --verifier etherscan --etherscan-api-key "$2"'';
+        rec {
+          chain-id = "21000001";
+
+          name = "corn-testnet";
+          rpc-url = "https://testnet.corn-rpc.com";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-        {
-          network = "scroll-testnet";
-          rpc-url = "https://sepolia-rpc.scroll.io";
-          private-key = ''"$1"'';
-          extra-args = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
+        rec {
+          chain-id = "808813";
+
+          name = "bob-sepolia";
+          rpc-url = "https://bob-sepolia.rpc.gobob.xyz";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x4200000000000000000000000000000000000006";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-        {
-          network = "arbitrum-testnet";
-          rpc-url = "https://sepolia-rollup.arbitrum.io/rpc";
-          private-key = ''"$1"'';
+        rec {
+          chain-id = "80069";
+
+          name = "bepolia";
+          rpc-url = "https://bepolia.rpc.berachain.com/";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x6969696969696969696969696969696969696969";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
-        {
-          network = "berachain-testnet";
-          rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
-          private-key = ''"$1"'';
+        # {
+        #   network = "0g-testnet";
+        #   rpc-url = "https://evmrpc-testnet.0g.ai";
+        #   private-key = ''"$1"'';
+
+        #   verify = false;
+        # }
+
+        # mainnets
+        rec {
+          chain-id = "1";
+
+          name = "ethereum";
+          rpc-url = "https://eth-mainnet.g.alchemy.com/v2/MS7UF39itji9IWEiJBISExWgEGtEGbs7";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
         }
+        rec {
+          chain-id = "60808";
+
+          name = "bob";
+          rpc-url = "https://rpc.gobob.xyz";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x4200000000000000000000000000000000000006";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
+        rec {
+          chain-id = "21000000";
+
+          name = "corn";
+          rpc-url = "https://mainnet.corn-rpc.com";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
+
+        # NOTE: These haven't been tested since testnet 8 (or earlier), and as such are unlikely to work properly
+        # {
+        #   network = "scroll-testnet";
+        #   rpc-url = "https://sepolia-rpc.scroll.io";
+        #   private-key = ''"$1"'';
+
+        #   verifier = ''--verify --verifier etherscan --verifier-url https://api-sepolia.scrollscan.com/api --etherscan-api-key "$2"'';
+        # }
+        # {
+        #   network = "arbitrum-testnet";
+        #   rpc-url = "https://sepolia-rollup.arbitrum.io/rpc";
+        #   private-key = ''"$1"'';
+        #   weth = "0x980b62da83eff3d4576c647993b0c1d7faf17c73";
+        # }
+        # {
+        #   network = "berachain-testnet";
+        #   rpc-url = "https://fabled-serene-mountain.bera-bartio.quiknode.pro/6ab3f499dcce3d52591ce97a5f07a13fae75deb1/";
+        #   private-key = ''"$1"'';
+        # }
       ];
 
-      eth-deploy =
+      # use in a script that can do contract verification. this allows for overwriting the verification args via the FOUNDRY_ETHERSCAN env var when calling said script via nix run.
+      #
+      # this also allows for overwriting the verifier via the $VERIFIER env var when calling said script via nix run.
+      #
+      # the verification key is expected to be available at $VERIFICATION_KEY
+      #
+      # the args to pass to the forge invocation are available in an array at "${VERIFICATION_ARGS[@]}"
+      #
+      # example:
+      #
+      # FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000001", url = "https://api.routescan.io/v2/network/testnet/evm/21000001/etherscan" } }' nix run .#evm-scripts.verify-corn-testnet -L -- 0xa76897C61d710C07De4D541C77c209578d64CEB9 0x95Fb5cb304508d74d855514D7bC9bDA75c304cE2
+      setupFoundryVerifcationVars =
+        verify:
         {
+          chain-id,
+          verifier,
+          verifier-url,
+          with-verify-flag ? true,
+        }:
+        let
+          expr =
+            if verify then
+              ''{ chain = { key = \"\''${VERIFICATION_KEY}\", chain = \"${chain-id}\", url = \"${verifier-url}\" } }''
+            else
+              "{}";
+        in
+        ''
+          # shellcheck disable=SC2016
+          DEFAULT_FOUNDRY_ETHERSCAN="${expr}"
+          FOUNDRY_ETHERSCAN="''${FOUNDRY_ETHERSCAN:-$DEFAULT_FOUNDRY_ETHERSCAN}"
+
+          echo "$FOUNDRY_ETHERSCAN"
+
+          VERIFICATION_ARGS=()
+          # shellcheck disable=2050
+          # idk how else to compare against a bool from nix -> bash
+          if [ ${if verify then "1" else "0"} -eq 1 ] || [ -z "''${VERIFIER:-}" ]; then
+            # either default verifier, or specified verifier
+            if [ ${if with-verify-flag then "1" else "0"} -eq 1 ]; then
+              VERIFICATION_ARGS+=("--verify")
+            fi
+            VERIFICATION_ARGS+=("--verifier")
+            VERIFICATION_ARGS+=("''${VERIFIER:-${verifier}}")
+          fi
+        '';
+
+      update-deployments-json =
+        { rpc-url, name, ... }:
+        pkgs.writeShellApplication {
+          name = "update-deployments-json-${name}";
+          runtimeInputs = [
+            self'.packages.forge
+            pkgs.moreutils
+          ];
+          runtimeEnv = {
+            ETH_RPC_URL = rpc-url;
+          };
+          text = ''
+            ${ensureAtRepositoryRoot}
+
+            DEPLOYMENTS_FILE="deployments/deployments.json"
+            export DEPLOYMENTS_FILE
+
+            CHAIN_ID="$(cast chain-id)"
+            export CHAIN_ID
+
+            echo "chain id: $CHAIN_ID"
+
+            for key in core multicall ; do
+              jq \
+                '. |= map(if .chain_id == $chain_id then .deployments[$key].height = ($height | tonumber) | .deployments[$key].commit = $commit else . end)' \
+                "$DEPLOYMENTS_FILE" \
+                --arg chain_id "$CHAIN_ID" \
+                --arg key "$key" \
+                --arg height "$(( "$(
+                  cast logs 'Initialized(uint64)' \
+                    --address "$(
+                          jq -r \
+                            '.[] | select(.chain_id == $chain_id) | .deployments[$key].address' \
+                            "$DEPLOYMENTS_FILE" \
+                            --arg chain_id "$CHAIN_ID" \
+                            --arg key "$key"
+                        )" \
+                    --json \
+                  | jq -r '.[0].blockNumber'
+                )" ))" \
+                --arg commit "$(
+                  cast call "$(
+                    jq -r \
+                      '.[] | select(.chain_id == $chain_id) | .deployments[$key].address' \
+                      "$DEPLOYMENTS_FILE" \
+                      --arg chain_id "$CHAIN_ID" \
+                      --arg key "$key"
+                  )" "gitRev()(string)" \
+                  | jq -r || echo unknown
+                )" \
+              | sponge "$DEPLOYMENTS_FILE"
+            done
+
+            for key in lightclient app ; do
+              echo "key: $key"
+              jq -r \
+                '.[] | select(.chain_id == $chain_id) | .deployments[$key] | keys[]' \
+                "$DEPLOYMENTS_FILE" \
+                --arg chain_id "$CHAIN_ID" \
+                --arg key "$key" \
+                | while read -r subkey ; do
+                  echo "$key: $subkey"
+                  jq \
+                    '. |= map(if .chain_id == $chain_id then .deployments[$key][$subkey].height = ($height | tonumber) | .deployments[$key][$subkey].commit = $commit else . end)' \
+                    "$DEPLOYMENTS_FILE" \
+                    --arg chain_id "$CHAIN_ID" \
+                    --arg subkey "$subkey" \
+                    --arg key "$key" \
+                    --arg height "$(( "$(
+                      cast logs 'Initialized(uint64)' \
+                        --address "$(
+                              jq -r \
+                                '.[] | select(.chain_id == $chain_id) | .deployments[$key][$subkey].address' \
+                                "$DEPLOYMENTS_FILE" \
+                                --arg chain_id "$CHAIN_ID" \
+                                --arg subkey "$subkey" \
+                                --arg key "$key"
+                            )" \
+                        --json \
+                      | jq -r '.[0].blockNumber'
+                    )" ))" \
+                    --arg commit "$(
+                      cast call "$(
+                        jq -r \
+                          '.[] | select(.chain_id == $chain_id) | .deployments[$key][$subkey].address' \
+                          "$DEPLOYMENTS_FILE" \
+                          --arg chain_id "$CHAIN_ID" \
+                          --arg subkey "$subkey" \
+                          --arg key "$key"
+                      )" "gitRev()(string)" \
+                      | jq -r || echo unknown
+                    )" \
+                  | sponge "$DEPLOYMENTS_FILE"
+                done
+            done
+          '';
+        };
+
+      deploy =
+        {
+          name,
+
+          chain-id,
           rpc-url,
           private-key,
-          extra-args ? "",
+          weth,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
           pkgs.writeShellApplication {
-            name = "eth-deploy-full";
+            name = "eth-deploy-${name}";
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+              }}
+
               OUT="$(mktemp -d)"
               pushd "$OUT"
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+              VERIFICATION_KEY=${verification-key} \
+              WETH_ADDRESS=${weth} \
               PRIVATE_KEY=${private-key} \
-              DEPLOYER="$3" \
+              DEPLOYER="''${1:?deployer must be set to deploy with this script (first arg to this script)}" \
+              FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployIBC \
                 -vvvv \
                 --rpc-url ${rpc-url} \
-                --broadcast ${extra-args}
+                --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -276,30 +562,78 @@ _: {
           }
         );
 
-      eth-deploy-full =
+      whitelist-relayers =
         {
+          name,
+
+          chain-id,
           rpc-url,
           private-key,
-          extra-args ? "",
+
           ...
         }:
         mkCi false (
           pkgs.writeShellApplication {
-            name = "eth-deploy-full";
+            name = "whitelist-relayers-${name}";
+            runtimeInputs = [ pkgs.foundry-bin ];
+            text = ''
+              echo "whitelisting $# relayers"
+              for relayer in "$@"
+              do
+                cast \
+                  send \
+                  ${(getDeployment chain-id).manager} \
+                  "function grantRole(uint64,address,uint32)" \
+                  1 "$relayer" 0 \
+                  --private-key ${private-key} \
+                  --rpc-url ${rpc-url}
+
+                echo "whitelisted relayer $relayer"
+              done
+            '';
+          }
+        );
+
+      deploy-deployer-and-ibc =
+        {
+          chain-id,
+          name,
+          rpc-url,
+          private-key,
+          weth,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-deploy-deployer-and-ibc-${name}";
             runtimeInputs = [ self'.packages.forge ];
             text = ''
               ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+              }}
+
               OUT="$(mktemp -d)"
               pushd "$OUT"
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+              VERIFICATION_KEY=${verification-key} \
+              WETH_ADDRESS=${weth} \
               PRIVATE_KEY=${private-key} \
+              FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:DeployDeployerAndIBC \
                 -vvvv \
                 --rpc-url ${rpc-url} \
-                --broadcast ${extra-args}
+                --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -307,11 +641,17 @@ _: {
           }
         );
 
-      eth-verify =
+      verify-erc20 =
         {
+          chain-id,
           rpc-url,
           private-key,
-          extra-args ? "",
+          weth,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -320,7 +660,59 @@ _: {
             runtimeInputs = [ wrappedForgeOnline ];
             text = ''
               ${ensureAtRepositoryRoot}
-              nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+                with-verify-flag = false;
+              }}
+
+              OUT="$(mktemp -d)"
+              pushd "$OUT"
+              cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
+              cp --no-preserve=mode -r ${evmSources}/* .
+
+              # shellcheck disable=SC2005
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+              VERIFICATION_KEY=${verification-key} \
+              FOUNDRY_LIBS='["libs"]' \
+                forge verify-contract \
+                  --force \
+                  --watch "$1" "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy" \
+                  --constructor-args "0x00" \
+                  --rpc-url ${rpc-url} "''${VERIFICATION_ARGS[@]}"
+
+              popd
+              rm -rf "$OUT"
+            '';
+          }
+        );
+
+      verify-all-contracts =
+        {
+          chain-id,
+          rpc-url,
+          private-key,
+          weth,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
+          ...
+        }:
+        mkCi false (
+          pkgs.writeShellApplication {
+            name = "eth-verify";
+            runtimeInputs = [ wrappedForgeOnline ];
+            text = ''
+              ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+                with-verify-flag = false;
+              }}
+
+              WETH_ADDRESS=${weth} nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
 
               PROJECT_ROOT=$(pwd)
               OUT="$(mktemp -d)"
@@ -328,12 +720,29 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+
               jq -r 'to_entries | map([.key, .value.args, .value.contract]) | .[] | @tsv' "$PROJECT_ROOT"/contracts.json | \
                 while IFS=$'\t' read -r address args contract; do
-                  PRIVATE_KEY=${private-key} \
-                  FOUNDRY_PROFILE="script" \
-                    forge verify-contract --force --watch "$address" "$contract" --constructor-args "$args" --api-key "$3" \
-                      --rpc-url ${rpc-url}
+                  if [ "$address" != "0x0000000000000000000000000000000000000000" ]
+                  then
+                    echo
+                    echo "======================================================"
+                    echo " Verifying $address "
+                    echo "======================================================"
+                    echo
+                    # shellcheck disable=SC2005
+                    FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+                    VERIFICATION_KEY=${verification-key} \
+                    WETH_ADDRESS=${weth} \
+                    PRIVATE_KEY=${private-key} \
+                    FOUNDRY_LIBS='["libs"]' \
+                    FOUNDRY_PROFILE="script" \
+                      forge verify-contract \
+                        --force \
+                        --watch "$address" "$contract" \
+                        --constructor-args "$args" \
+                        --rpc-url ${rpc-url} "''${VERIFICATION_ARGS[@]}" || true
+                  fi
                 done
 
               popd
@@ -342,11 +751,19 @@ _: {
           }
         );
 
-      eth-deploy-single =
+      deploy-single =
         {
-          rpc-url,
           kind,
-          extra-args ? "",
+
+          chain-id,
+          private-key,
+          rpc-url,
+          weth,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -360,11 +777,6 @@ _: {
                 help = "The deployer contract address.";
               }
               {
-                arg = "private_key";
-                required = true;
-                help = "The contract owner private key.";
-              }
-              {
                 arg = "sender_pk";
                 required = true;
                 help = "The sender address that created the contract through the deployer.";
@@ -372,19 +784,28 @@ _: {
             ];
             text = ''
               ${ensureAtRepositoryRoot}
+
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+              }}
+
               OUT="$(mktemp -d)"
               pushd "$OUT"
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+              VERIFICATION_KEY=${verification-key} \
+              WETH_ADDRESS=${weth} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
-              PRIVATE_KEY="$argc_private_key" \
+              PRIVATE_KEY=${private-key} \
+              FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:Deploy${kind} \
                 -vvvv \
                 --rpc-url "${rpc-url}" \
-                --broadcast ${extra-args}
+                --broadcast "''${VERIFICATION_ARGS[@]}"
 
               popd
               rm -rf "$OUT"
@@ -392,12 +813,21 @@ _: {
           }
         );
 
-      eth-upgrade =
+      # TODO: Read the deployments.json to get the deployer and sender (can't upgrade without a deployment anyways)
+      upgrade =
         {
           dry ? false,
-          rpc-url,
           protocol,
-          weth ? "",
+
+          chain-id,
+          private-key,
+          rpc-url,
+          weth,
+
+          verify ? true,
+          verifier ? if verify then throw "verifier must be set in order to verify" else "",
+          verification-key ? if verify then throw "verification-key must be set in order to verify" else "",
+          verifier-url ? if verify then throw "verifier-url must be set in order to verify" else "",
           ...
         }:
         mkCi false (
@@ -420,11 +850,6 @@ _: {
                   help = "The sender address that created the contract through the deployer.";
                 }
               ]
-              ++ pkgs.lib.optional (!dry) {
-                arg = "private_key";
-                required = true;
-                help = "The contract owner private key.";
-              }
               ++ pkgs.lib.optional dry {
                 arg = "owner_pk";
                 required = true;
@@ -436,14 +861,23 @@ _: {
               cp --no-preserve=mode -r ${self'.packages.evm-contracts}/* .
               cp --no-preserve=mode -r ${evmSources}/* .
 
-              WETH=${weth} \
+              ${setupFoundryVerifcationVars verify {
+                inherit chain-id verifier verifier-url;
+                with-verify-flag = false;
+              }}
+
+              WETH_ADDRESS=${weth} \
+              FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
+              VERIFICATION_KEY=${verification-key} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               OWNER="${pkgs.lib.optionalString dry "$argc_owner_pk"}" \
-              PRIVATE_KEY="${pkgs.lib.optionalString (!dry) "$argc_private_key"}" \
-              FOUNDRY_PROFILE="script" forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
-                --rpc-url ${rpc-url} \
-                --broadcast
+              PRIVATE_KEY=${private-key} \
+              FOUNDRY_LIBS='["libs"]' \
+              FOUNDRY_PROFILE="script" \
+                forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
+                  --rpc-url ${rpc-url} \
+                  --broadcast "''${VERIFICATION_ARGS[@]}"
 
               rm -rf "$OUT"
               popd
@@ -453,74 +887,7 @@ _: {
     in
     {
       packages = {
-        # Beware, the generate solidity code is broken and require manual patch. Do not update unless you know that aliens exists.
-        generate-sol-proto = mkCi false (
-          pkgs.writeShellApplication {
-            name = "generate-sol-proto";
-            runtimeInputs = [ pkgs.protobuf ];
-            text =
-              let
-                solidity-protobuf = pkgs.stdenv.mkDerivation {
-                  name = "solidity-protobuf";
-                  version = "0.0.1";
-                  src = pkgs.fetchFromGitHub {
-                    owner = "CyrusVorwald";
-                    repo = "solidity-protobuf";
-                    rev = "1c323bed92d373d6c4d6c728c8dd9f76cf4b5a0c";
-                    hash = "sha256-1obEhMjaLToaSk920CiJwfhkw+LDgY5Y/b7SpkeuqDE=";
-                  };
-                  buildInputs = [
-                    (pkgs.python3.withPackages (
-                      ps: with ps; [
-                        protobuf
-                        wrapt
-                      ]
-                    ))
-                  ];
-                  buildPhase = "true";
-                  installPhase = ''
-                    mkdir $out
-                    cp -r $src/* $out
-                  '';
-                };
-                protoIncludes = ''-I"${proto.cometbls}/proto" -I"${proto.cosmossdk}/proto" -I"${proto.ibc-go}/proto" -I"${proto.cosmosproto}/proto" -I"${proto.ics23}/proto" -I"${proto.googleapis}" -I"${proto.gogoproto}" -I"${proto.uniond}"'';
-              in
-              ''
-                plugindir="${solidity-protobuf}/protobuf-solidity/src/protoc"
-                # find ${proto.ibc-go}/proto -name "$1" |\
-                # while read -r file; do
-                #   echo "Generating $file"
-                #   protoc \
-                #     ${protoIncludes} \
-                #    -I"$plugindir/include" \
-                #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-                #     "$file"
-                # done
-                # find ${proto.cometbls}/proto -type f -regex ".*canonical.proto" |\
-                # while read -r file; do
-                #   echo "Generating $file"
-                #   protoc \
-                #     ${protoIncludes} \
-                #    -I"$plugindir/include" \
-                #    --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                #    --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-                #     "$file"
-                # done
-
-                find ${proto.uniond} -type f -regex ".*ibc.*cometbls.*proto" |\
-                while read -r file; do
-                  echo "Generating $file"
-                  protoc \
-                    ${protoIncludes} \
-                   -I"$plugindir/include" \
-                   --plugin="protoc-gen-sol=$plugindir/plugin/gen_sol.py" \
-                   --sol_out=gen_runtime="ProtoBufRuntime.sol&solc_version=0.8.21:$2" \
-                    "$file"
-                done
-              '';
-          }
-        );
+        inherit evm-libs;
 
         evm-contracts = mkCi (system == "x86_64-linux") (
           pkgs.stdenv.mkDerivation {
@@ -546,38 +913,6 @@ _: {
           }
         );
 
-        # Stack too deep :), again
-        #
-        # solidity-coverage =
-        #   pkgs.runCommand "solidity-coverage"
-        #     {
-        #       buildInputs = [
-        #         self'.packages.forge
-        #         pkgs.lcov
-        #       ];
-        #     }
-        #     ''
-        #         cp --no-preserve=mode -r ${evmSources}/* .
-        #         FOUNDRY_PROFILE="test" forge coverage --ir-minimum --report lcov
-        #         lcov --remove ./lcov.info -o ./lcov.info.pruned \
-        #           'contracts/Multicall.sol' \
-        #           'contracts/apps/ucs/00-pingpong/*' \
-        #           'contracts/lib/*' \
-        #           'contracts/core/OwnableIBCHandler.sol' \
-        #           'contracts/core/24-host/IBCCommitment.sol' \
-        #           'contracts/core/25-handler/IBCHandler.sol' \
-        #           'tests/*'
-        #         genhtml lcov.info.pruned -o $out --branch-coverage
-        #       mv lcov.info.pruned $out/lcov.info
-        #     '';
-        # show-solidity-coverage = pkgs.writeShellApplication {
-        #   name = "show-solidity-coverage";
-        #   runtimeInputs = [ ];
-        #   text = ''
-        #     xdg-open ${self'.packages.solidity-coverage}/index.html
-        #   '';
-        # };
-
         hubble-abis =
           let
             contracts = self'.packages.evm-contracts;
@@ -592,21 +927,10 @@ _: {
                 cd $out
 
                 jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/OwnableIBCHandler.sol/OwnableIBCHandler.json > core.json
+                  ${contracts}/out/IBCHandler.sol/IBCHandler.json > core.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/Relay.sol/IRelay.json \
-                  ${contracts}/out/Relay.sol/UCS01Relay.json \
-                  ${contracts}/out/Relay.sol/RelayLib.json \
-                  ${contracts}/out/Relay.sol/RelayPacketLib.json > app.ucs01.json
-
-                jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/NFT.sol/NFTLib.json \
-                  ${contracts}/out/NFT.sol/NFTPacketLib.json \
-                  ${contracts}/out/NFT.sol/UCS02NFT.json > app.ucs02.json
-
-                jq --compact-output --slurp 'map(.abi) | add' \
-                  ${contracts}/out/Zkgm.sol/ZkgmLib.json \
+                  ${contracts}/out/Zkgm.sol/AbiExport.json \
                   ${contracts}/out/Zkgm.sol/UCS03Zkgm.json > app.ucs03.json
 
                 jq --compact-output --slurp 'map(.abi) | add' \
@@ -627,15 +951,7 @@ _: {
               ''
           );
 
-        solidity-build-tests = pkgs.writeShellApplication {
-          name = "run-solidity-build-tests";
-          runtimeInputs = [ self'.packages.forge ];
-          text = ''
-            ${ensureAtRepositoryRoot}
-            FOUNDRY_LIBS=["${evmLibs}"] FOUNDRY_PROFILE="test" FOUNDRY_TEST="evm/tests/src" forge test -vvv --gas-report "$@"
-          '';
-        };
-
+        # USAGE: evm-contracts-addresses deployer sender rpc-url
         evm-contracts-addresses = mkCi false (
           pkgs.writeShellApplication {
             name = "evm-contracts-addresses";
@@ -651,10 +967,10 @@ _: {
               cp --no-preserve=mode -r ${evmSources}/* .
 
               DEPLOYER="$1" \
-                SENDER="$2" \
-                OUTPUT="contracts.json" \
-                FOUNDRY_PROFILE="script" \
-                forge script scripts/Deploy.s.sol:GetDeployed -vvvv --fork-url "$3"
+              SENDER="$2" \
+              OUTPUT="contracts.json" \
+              FOUNDRY_PROFILE="script" \
+                  forge script scripts/Deploy.s.sol:GetDeployed -vvvv --fork-url "$3"
 
               popd
               cp "$OUT"/contracts.json contracts.json
@@ -698,184 +1014,104 @@ _: {
               };
             }
           );
-        eth-scripts =
-          (derivation {
-            name = "eth-scripts-empty-derivation-to-make-top-level-packages-happy";
-          })
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-verify-${args.network}";
-              value = eth-verify args;
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-deploy-${args.network}-full";
-              value = eth-deploy-full args;
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-deploy-${args.network}";
-              value = eth-deploy args;
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-deploy-${args.network}-state-lens-ics23-mpt-client";
-              value = eth-deploy-single ({ kind = "StateLensIcs23MptClient"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-deploy-${args.network}-state-lens-ics23-ics23-client";
-              value = eth-deploy-single ({ kind = "StateLensIcs23Ics23Client"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-deploy-${args.network}-state-lens-ics23-smt-client";
-              value = eth-deploy-single ({ kind = "StateLensIcs23SmtClient"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-deploy-${args.network}-ucs03";
-              value = eth-deploy-single ({ kind = "UCS03"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-deploy-${args.network}-multicall";
-              value = eth-deploy-single ({ kind = "Multicall"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-dryupgrade-${args.network}-ucs01";
-              value = eth-upgrade (
+
+        evm-scripts = pkgs.mkRootDrv "evm-scripts" (
+          {
+            update-deployments-json = pkgs.writeShellApplication {
+              name = "update-deployments-json";
+              text =
+                let
+                  deployments = builtins.filter (deployment: deployment.ibc_interface == "ibc-solidity") (
+                    builtins.fromJSON (builtins.readFile ../deployments/deployments.json)
+                  );
+                  getNetwork =
+                    chainId:
+                    pkgs.lib.lists.findSingle (network: network.chain-id == chainId)
+                      (throw "no network found with chain id ${chainId}")
+                      (throw "many networks with chain id ${chainId} found")
+                      networks;
+                in
+                pkgs.lib.concatMapStringsSep "\n\n" (deployment: ''
+                  echo "updating ${deployment.universal_chain_id}"
+                  ${pkgs.lib.getExe
+                    self'.packages.evm-scripts.${(getNetwork deployment.chain_id).name}.update-deployments-json
+                  }
+                '') deployments;
+            };
+          }
+          // (builtins.listToAttrs (
+            map (chain: {
+              inherit (chain) name;
+              value = pkgs.mkRootDrv chain.name (
                 {
-                  dry = true;
-                  protocol = "UCS01";
+                  verify-all-contracts = verify-all-contracts chain;
+                  verify-erc20 = verify-erc20 chain;
+                  deploy = deploy chain;
+                  deploy-deployer-and-ibc = deploy-deployer-and-ibc chain;
+                  update-deployments-json = update-deployments-json chain;
+                  whitelist-relayers = whitelist-relayers chain;
+                  # finalize-deployment = finalize-deployment chain;
+                  # get-git-rev = get-git-rev chain;
                 }
-                // args
+                # individual deployments
+                // (pkgs.lib.mapAttrs'
+                  (name: kind: {
+                    name = "deploy-${name}";
+                    value = deploy-single (chain // { inherit kind; });
+                  })
+                  {
+                    ucs03 = "UCS03";
+                    cometbls-client = "CometblsClient";
+                    state-lens-ics23-mpt-client = "StateLensIcs23MptClient";
+                    state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
+                    state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
+                    multicall = "Multicall";
+                    erc20 = "ZkgmERC20";
+                  }
+                )
+                # other various deployment scripts
+                // (pkgs.lib.mapAttrs'
+                  (name: kind: {
+                    name = "script-${name}";
+                    value = deploy-single (chain // { inherit kind; });
+                  })
+                  {
+                    roles = "Roles";
+                  }
+                )
+                # upgrades, all with a -dry version
+                // (builtins.foldl' (a: b: a // b) { } (
+                  pkgs.lib.flatten (
+                    pkgs.lib.mapAttrsToList
+                      (
+                        name: protocol:
+                        (map
+                          (dry: {
+                            ${"upgrade-${name}" + (pkgs.lib.optionalString dry "-dry")} = upgrade (
+                              chain // { inherit dry protocol; }
+                            );
+                          })
+                          [
+                            true
+                            false
+                          ]
+                        )
+                      )
+                      {
+                        ucs00 = "UCS00";
+                        ucs03 = "UCS03";
+                        cometbls-client = "CometblsClient";
+                        state-lens-ics23-mpt-client = "StateLensIcs23MptClient";
+                        state-lens-ics23-ics23-client = "StateLensIcs23Ics23Client";
+                        state-lens-ics23-smt-client = "StateLensIcs23SmtClient";
+                        core = "IBCHandler";
+                      }
+                  )
+                ))
               );
             }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-dryupgrade-${args.network}-ucs03";
-              value = eth-upgrade (
-                {
-                  dry = true;
-                  protocol = "UCS03";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-dryupgrade-${args.network}-cometbls-client";
-              value = eth-upgrade (
-                {
-                  dry = true;
-                  protocol = "CometblsClient";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ucs03";
-              value = eth-upgrade (
-                {
-                  dry = false;
-                  protocol = "UCS03";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-state-lens-ics23-mpt-client";
-              value = eth-upgrade (
-                {
-                  dry = false;
-                  protocol = "StateLensIcs23MptClient";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-state-lens-ics23-ics23-client";
-              value = eth-upgrade (
-                {
-                  dry = false;
-                  protocol = "StateLensIcs23Ics23Client";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-state-lens-ics23-smt-client";
-              value = eth-upgrade (
-                {
-                  dry = false;
-                  protocol = "StateLensIcs23SmtClient";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-dryupgrade-${args.network}-ibc";
-              value = eth-upgrade (
-                {
-                  dry = true;
-                  protocol = "IBCHandler";
-                }
-                // args
-              );
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ucs00";
-              value = eth-upgrade ({ protocol = "UCS00"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ucs01";
-              value = eth-upgrade ({ protocol = "UCS01"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ucs00";
-              value = eth-upgrade ({ protocol = "UCS00"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-cometbls-client";
-              value = eth-upgrade ({ protocol = "CometblsClient"; } // args);
-            }) networks
-          )
-          // builtins.listToAttrs (
-            builtins.map (args: {
-              name = "eth-upgrade-${args.network}-ibc";
-              value = eth-upgrade ({ protocol = "IBCHandler"; } // args);
-            }) networks
-          );
+          ))
+        );
       };
     };
 }

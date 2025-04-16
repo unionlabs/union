@@ -6,11 +6,8 @@ use aptos_types::{
     account_address::AccountAddress,
     transaction::{EntryFunction, RawTransaction},
 };
-use chain_utils::{
-    keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry},
-    BoxDynError,
-};
-use ibc_union_spec::{datagram::Datagram, IbcUnion};
+use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
+use ibc_union_spec::{datagram::Datagram, ChannelId, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     Extensions,
@@ -24,13 +21,14 @@ use sha3::Digest;
 use tracing::instrument;
 use unionlabs::primitives::H256;
 use voyager_message::{
-    core::ChainId,
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
+    primitives::ChainId,
+    vm::{call, noop, pass::PassResult, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{call, noop, pass::PassResult, Op, Visit};
+use voyager_vm::BoxDynError;
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
 
@@ -86,7 +84,6 @@ impl Plugin for Module {
                     .into();
 
                     KeyringEntry {
-                        name: config.name(),
                         address,
                         signer: Arc::new(pk),
                     }
@@ -317,14 +314,14 @@ async fn process_msgs<
                 msg,
                 client.update_client(
                     ibc_handler_address,
-                    (data.client_id, data.client_message.into_vec()),
+                    (data.client_id.raw(), data.client_message.into_vec()),
                 ),
             ),
             Datagram::ConnectionOpenInit(data) => (
                 msg,
                 client.connection_open_init(
                     ibc_handler_address,
-                    (data.client_id, data.counterparty_client_id),
+                    (data.client_id.raw(), data.counterparty_client_id.raw()),
                 ),
             ),
 
@@ -333,9 +330,9 @@ async fn process_msgs<
                 client.connection_open_try(
                     ibc_handler_address,
                     (
-                        data.counterparty_client_id,
-                        data.counterparty_connection_id,
-                        data.client_id,
+                        data.counterparty_client_id.raw(),
+                        data.counterparty_connection_id.raw(),
+                        data.client_id.raw(),
                         data.proof_init.into_vec(),
                         data.proof_height,
                     ),
@@ -346,8 +343,8 @@ async fn process_msgs<
                 client.connection_open_ack(
                     ibc_handler_address,
                     (
-                        data.connection_id,
-                        data.counterparty_connection_id,
+                        data.connection_id.raw(),
+                        data.counterparty_connection_id.raw(),
                         data.proof_try.into_vec(),
                         data.proof_height,
                     ),
@@ -358,7 +355,7 @@ async fn process_msgs<
                 client.connection_open_confirm(
                     ibc_handler_address,
                     (
-                        data.connection_id,
+                        data.connection_id.raw(),
                         data.proof_ack.into_vec(),
                         data.proof_height,
                     ),
@@ -371,7 +368,7 @@ async fn process_msgs<
                     (
                         AccountAddress::try_from(data.port_id.as_ref()).unwrap(),
                         data.counterparty_port_id.into_vec(),
-                        data.connection_id,
+                        data.connection_id.raw(),
                         data.version,
                     ),
                     (ibc_app_witness(data.port_id.as_ref().try_into().unwrap()),),
@@ -383,8 +380,8 @@ async fn process_msgs<
                     ibc_handler_address,
                     (
                         AccountAddress::try_from(data.port_id.as_ref()).unwrap(),
-                        data.channel.connection_id,
-                        data.channel.counterparty_channel_id,
+                        data.channel.connection_id.raw(),
+                        data.channel.counterparty_channel_id.unwrap().raw(),
                         data.channel.counterparty_port_id.to_vec(),
                         data.channel.version,
                         data.counterparty_version,
@@ -396,7 +393,7 @@ async fn process_msgs<
             ),
             Datagram::ChannelOpenAck(data) => {
                 let port_id = client
-                    .get_module(ibc_handler_address, None, (data.channel_id,))
+                    .get_module(ibc_handler_address, None, (data.channel_id.raw(),))
                     .await
                     .unwrap();
                 (
@@ -405,9 +402,9 @@ async fn process_msgs<
                         ibc_handler_address,
                         (
                             port_id.into(),
-                            data.channel_id,
+                            data.channel_id.raw(),
                             data.counterparty_version,
-                            data.counterparty_channel_id,
+                            data.counterparty_channel_id.raw(),
                             data.proof_try.into_vec(),
                             data.proof_height,
                         ),
@@ -417,7 +414,7 @@ async fn process_msgs<
             }
             Datagram::ChannelOpenConfirm(data) => {
                 let port_id = client
-                    .get_module(ibc_handler_address, None, (data.channel_id,))
+                    .get_module(ibc_handler_address, None, (data.channel_id.raw(),))
                     .await
                     .unwrap();
                 (
@@ -426,7 +423,7 @@ async fn process_msgs<
                         ibc_handler_address,
                         (
                             port_id.into(),
-                            data.channel_id,
+                            data.channel_id.raw(),
                             data.proof_ack.into_vec(),
                             data.proof_height,
                         ),
@@ -446,14 +443,17 @@ async fn process_msgs<
                             p.source_channel_id,
                             (
                                 p.destination_channel_id,
-                                (p.data.to_vec(), (p.timeout_height, p.timeout_timestamp)),
+                                (
+                                    p.data.to_vec(),
+                                    (p.timeout_height, p.timeout_timestamp.as_nanos()),
+                                ),
                             ),
                         )
                     })
                     .unzip();
 
                 let port_id = client
-                    .get_module(ibc_handler_address, None, (destination_channels[0],))
+                    .get_module(ibc_handler_address, None, (destination_channels[0].raw(),))
                     .await
                     .unwrap();
 
@@ -463,8 +463,8 @@ async fn process_msgs<
                         ibc_handler_address,
                         (
                             port_id.into(),
-                            source_channels,
-                            destination_channels,
+                            source_channels.iter().map(ChannelId::raw).collect(),
+                            destination_channels.iter().map(ChannelId::raw).collect(),
                             packet_data,
                             timeout_heights,
                             timeout_timestamps,
@@ -489,7 +489,10 @@ async fn process_msgs<
                             p.source_channel_id,
                             (
                                 p.destination_channel_id,
-                                (p.data.to_vec(), (p.timeout_height, p.timeout_timestamp)),
+                                (
+                                    p.data.to_vec(),
+                                    (p.timeout_height, p.timeout_timestamp.as_nanos()),
+                                ),
                             ),
                         )
                     })
@@ -502,7 +505,7 @@ async fn process_msgs<
                     .collect::<Vec<_>>();
 
                 let port_id = client
-                    .get_module(ibc_handler_address, None, (source_channels[0],))
+                    .get_module(ibc_handler_address, None, (source_channels[0].raw(),))
                     .await
                     .unwrap();
 
@@ -512,8 +515,8 @@ async fn process_msgs<
                         ibc_handler_address,
                         (
                             port_id.into(),
-                            source_channels,
-                            destination_channels,
+                            source_channels.iter().map(ChannelId::raw).collect(),
+                            destination_channels.iter().map(ChannelId::raw).collect(),
                             packet_data,
                             timeout_heights,
                             timeout_timestamps,

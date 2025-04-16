@@ -3,19 +3,17 @@ _: {
     {
       pkgs,
       self',
-      crane,
       system,
-      ensureAtRepositoryRoot,
       nix-filter,
       gitRev,
       uniondBundleVersions,
-      goPkgs,
       mkCi,
+      dbg,
       ...
     }:
     let
-      libwasmvm = self'.packages.libwasmvm-2_1_3;
-      CGO_LDFLAGS = "-z noexecstack -static -L${goPkgs.musl}/lib -L${libwasmvm}/lib -s -w";
+      libwasmvm = self'.packages.libwasmvm-2_2_1;
+      CGO_LDFLAGS = "-z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm}/lib -s -w";
 
       mkUniondImage =
         uniond:
@@ -41,52 +39,59 @@ _: {
     {
       packages = {
         # Statically link on Linux using `pkgsStatic`, dynamically link on Darwin using normal `pkgs`.
-        uniond =
-          (if pkgs.stdenv.isLinux then goPkgs.pkgsStatic.buildGo123Module else goPkgs.buildGo123Module)
-            (
+        uniond = (if pkgs.stdenv.isLinux then pkgs.pkgsStatic.buildGo123Module else pkgs.buildGo123Module) (
+          {
+            name = "uniond";
+            src = nix-filter {
+              name = "uniond-source";
+              root = ./.;
+              exclude = [
+                (nix-filter.matchExt "nix")
+                (nix-filter.matchExt "md")
+              ];
+            };
+            vendorHash = "sha256-KcH/oRaV83ehsKVLGoDdc8NTkmGsqAybuIdib+cFCJo=";
+            doCheck = true;
+            meta.mainProgram = "uniond";
+          }
+          // (
+            if pkgs.stdenv.isLinux then
               {
-                name = "uniond";
-                src = nix-filter {
-                  name = "uniond-source";
-                  root = ./.;
-                  exclude = [
-                    (nix-filter.matchExt "nix")
-                    (nix-filter.matchExt "md")
-                  ];
-                };
-                vendorHash = "sha256-NcTCWXTmjMYkv3cEgcIyhEy18ynELvceEdofBFQVlgM=";
-                doCheck = true;
-                meta.mainProgram = "uniond";
+                inherit CGO_LDFLAGS;
+                nativeBuildInputs = [
+                  pkgs.musl
+                ];
+                tags = [
+                  "netgo"
+                  "muslc"
+                ];
+                ldflags = [
+                  "-linkmode external"
+                  "-extldflags \"-Wl,-z,muldefs -static\""
+                  "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
+                  "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
+                  "-X github.com/cosmos/cosmos-sdk/version.BuildTags=netgo"
+                ];
               }
-              // (
-                if pkgs.stdenv.isLinux then
-                  {
-                    inherit CGO_LDFLAGS;
-                    nativeBuildInputs = [ goPkgs.musl ];
-                    ldflags = [
-                      "-linkmode external"
-                      "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
-                      "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
-                    ];
-                  }
-                else if pkgs.stdenv.isDarwin then
-                  {
-                    # Dynamically link if we're on darwin by wrapping the program
-                    # such that the DYLD_LIBRARY_PATH includes libwasmvm
-                    buildInputs = [ pkgs.makeWrapper ];
-                    postFixup = ''
-                      wrapProgram $out/ bin/uniond \
-                      --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ libwasmvm ])};
-                    '';
-                    ldflags = [
-                      "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
-                      "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
-                    ];
-                  }
-                else
-                  { }
-              )
-            );
+            else if pkgs.stdenv.isDarwin then
+              {
+                # Dynamically link if we're on darwin by wrapping the program
+                # such that the DYLD_LIBRARY_PATH includes libwasmvm
+                buildInputs = [ pkgs.makeWrapper ];
+                postFixup = ''
+                  wrapProgram $out/ bin/uniond \
+                  --set DYLD_LIBRARY_PATH ${(pkgs.lib.makeLibraryPath [ libwasmvm ])};
+                '';
+                ldflags = [
+                  "-X github.com/cosmos/cosmos-sdk/version.Name=uniond"
+                  "-X github.com/cosmos/cosmos-sdk/version.AppName=uniond"
+                ];
+              }
+            else
+              { }
+          )
+
+        );
 
         uniond-release = mkCi false (
           self'.packages.uniond.overrideAttrs (old: {

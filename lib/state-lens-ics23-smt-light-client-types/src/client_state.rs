@@ -1,17 +1,19 @@
-use unionlabs::tuple::AsTuple;
+use unionlabs::{
+    primitives::{encoding::HexUnprefixed, H256},
+    tuple::AsTuple,
+};
 
 pub type ClientState = state_lens_light_client_types::ClientState<Extra>;
 
 #[derive(Debug, Clone, PartialEq, AsTuple)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Extra {
-    /// the offset at which we extract the u64 timestamp from the l2 consensus state
-    /// timestamp = consensus_state[timestamp_offset:timestamp_offset+8]
-    pub timestamp_offset: u16,
-    /// the offset at which we extract the bytes32 storage root (of the ibc contract on the l2) from the l2 consensus state
-    /// state_root = consensus_state[state_root_offset:state_root_offset+32]
-    pub state_root_offset: u16,
+    pub table_handle: H256<HexUnprefixed>,
 }
 
 #[cfg(feature = "ethabi")]
@@ -38,14 +40,11 @@ mod ethabi {
             true
         }
 
-        fn detokenize((timestamp_offset, state_root_offset): Self::Token<'_>) -> Self::RustType {
+        fn detokenize((table_handle,): Self::Token<'_>) -> Self::RustType {
+            let table_handle =
+                <<H256<HexUnprefixed> as SolValue>::SolType as SolType>::detokenize(table_handle);
             Self {
-                timestamp_offset: <<u16 as SolValue>::SolType as SolType>::detokenize(
-                    timestamp_offset,
-                ),
-                state_root_offset: <<u16 as SolValue>::SolType as SolType>::detokenize(
-                    state_root_offset,
-                ),
+                table_handle: table_handle.into_encoding(),
             }
         }
     }
@@ -57,8 +56,9 @@ mod ethabi {
     impl SolTypeValue<Self> for Extra {
         fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
             (
-                <<u16 as SolValue>::SolType as SolType>::tokenize(&self.timestamp_offset),
-                <<u16 as SolValue>::SolType as SolType>::tokenize(&self.state_root_offset),
+                <<H256<HexUnprefixed> as SolValue>::SolType as SolType>::tokenize(
+                    &self.table_handle,
+                ),
             )
         }
 

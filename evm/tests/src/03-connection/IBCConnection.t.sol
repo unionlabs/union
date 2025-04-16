@@ -2,18 +2,22 @@ pragma solidity ^0.8.27;
 
 import "forge-std/Test.sol";
 
+import "../core/UnionTests.sol";
 import "../core/IBCHandler.sol";
 import "../core/LightClient.sol";
 
-contract IBCConnectionTests is Test {
+import "../../../contracts/Manager.sol";
+
+contract IBCConnectionTests is UnionTests {
     string public constant CLIENT_TYPE = "zkgm";
 
+    Manager manager;
     TestIBCHandler handler;
     TestLightClient lightClient;
     uint32 clientId;
 
     function setUp() public {
-        handler = new TestIBCHandler();
+        (manager, handler) = setupHandler();
         lightClient = new TestLightClient();
         handler.registerClient(CLIENT_TYPE, lightClient);
         clientId = handler.createClient(
@@ -32,7 +36,7 @@ contract IBCConnectionTests is Test {
         vm.pauseGasMetering();
         vm.expectEmit();
         emit IBCConnectionLib.ConnectionOpenInit(
-            0, msg_.clientId, msg_.counterpartyClientId
+            1, msg_.clientId, msg_.counterpartyClientId
         );
         vm.resumeGasMetering();
         handler.connectionOpenInit(msg_);
@@ -67,7 +71,7 @@ contract IBCConnectionTests is Test {
         lightClient.pushValidMembership();
         vm.expectEmit();
         emit IBCConnectionLib.ConnectionOpenTry(
-            0,
+            1,
             msg_.clientId,
             msg_.counterpartyClientId,
             msg_.counterpartyConnectionId

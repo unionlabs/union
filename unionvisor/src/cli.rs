@@ -213,7 +213,7 @@ pub enum InitError {
     NewBundle(#[from] NewBundleError),
     #[error("cannot make fallback link")]
     MakeFallbackLink(#[from] MakeFallbackLinkError),
-    #[error("home {0} already exists, refusing to override")]
+    #[error("home {0:?} already exists, refusing to override")]
     HomeExistsAndDirtyIsNotAllowed(PathBuf),
     #[error("set genesis error")]
     SetGenesisError(#[from] io::Error),

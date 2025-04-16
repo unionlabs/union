@@ -4,15 +4,15 @@ use clap::{Parser, Subcommand};
 use unionlabs::primitives::{H160, H256};
 
 #[derive(Parser)]
-#[clap(arg_required_else_help = true)]
+#[command(arg_required_else_help = true)]
 struct App {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     command: Cmd,
 }
 
 #[derive(Subcommand)]
 enum Cmd {
-    #[clap(subcommand)]
+    #[command(subcommand)]
     Keygen(KeygenCmd),
     #[command(subcommand)]
     Compute(ComputeCmd),

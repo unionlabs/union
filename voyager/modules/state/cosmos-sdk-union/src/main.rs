@@ -3,15 +3,15 @@
 use std::{
     error::Error,
     fmt::{Debug, Display},
-    num::ParseIntError,
-    sync::Arc,
+    num::{NonZeroU32, NonZeroU8, ParseIntError},
 };
 
-use dashmap::DashMap;
+use cometbft_rpc::rpc_types::Order;
+use cosmos_sdk_event::CosmosSdkEvent;
 use ibc_union_spec::{
     path::StorePath,
-    types::{Channel, Connection},
-    IbcUnion,
+    query::{PacketByHash, Query},
+    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -21,17 +21,18 @@ use jsonrpsee::{
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{debug, error, instrument, trace};
+use tracing::{error, instrument, trace};
 use unionlabs::{
     bech32::Bech32,
     ibc::core::client::height::Height,
-    primitives::{encoding::Base64, Bytes, H256},
-    ErrorReporter, WasmClientType,
+    option_unwrap,
+    primitives::{Bytes, H256},
+    ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientInfo, ClientType, IbcInterface},
     into_value,
     module::{StateModuleInfo, StateModuleServer},
+    primitives::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
     StateModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
@@ -53,18 +54,14 @@ pub struct Module {
     pub chain_revision: u64,
 
     pub cometbft_client: cometbft_rpc::Client,
-    pub grpc_url: String,
 
     pub ibc_host_contract_address: Bech32<H256>,
-
-    pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub grpc_url: String,
     pub ibc_host_contract_address: Bech32<H256>,
 }
 
@@ -72,15 +69,16 @@ impl StateModule<IbcUnion> for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
-        let chain_id = tm_client.status().await?.node_info.network;
+        let chain_id = cometbft_client.status().await?.node_info.network;
 
         info.ensure_chain_id(&chain_id)?;
+        info.ensure_ibc_spec_id(IbcUnion::ID.as_str())?;
 
         let chain_revision = chain_id
             .split('-')
-            .last()
+            .next_back()
             .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,
@@ -92,12 +90,10 @@ impl StateModule<IbcUnion> for Module {
             })?;
 
         Ok(Self {
-            cometbft_client: tm_client,
+            cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
             ibc_host_contract_address: config.ibc_host_contract_address,
-            checksum_cache: Arc::new(DashMap::default()),
         })
     }
 }
@@ -114,15 +110,14 @@ impl Module {
         query: &Q,
         height: Option<Height>,
     ) -> RpcResult<Option<R>> {
-        let path = "/cosmwasm.wasm.v1.Query/SmartContractState";
-
+        let query_data = serde_json::to_string(query).expect("serialization is infallible; qed;");
         let response = self
             .cometbft_client
             .grpc_abci_query::<_, QuerySmartContractStateResponse>(
-                path,
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
                 &QuerySmartContractStateRequest {
                     address: self.ibc_host_contract_address.to_string(),
-                    query_data: serde_json::to_vec(query).unwrap(),
+                    query_data: query_data.clone().into_bytes(),
                 },
                 height.map(|height| {
                     i64::try_from(height.height())
@@ -135,36 +130,61 @@ impl Module {
             .await
             .map_err(rpc_error(
                 "error fetching abci query",
-                Some(json!({ "height": height, "path": path })),
+                Some(json!({
+                    "height": height,
+                    "query_data": query_data
+                })),
             ))?;
 
         // https://github.com/cosmos/cosmos-sdk/blob/e2027bf62893bb5f82e8f7a8ea59d1a43eb6b78f/baseapp/abci.go#L1272-L1278
-        if response.code == 26 {
+        if response
+            .code
+            .is_err_code(option_unwrap!(NonZeroU32::new(26)))
+        {
             Err(ErrorObject::owned(
                 -1,
                 "attempted to query state at a nonexistent height, \
                 potentially due to load balanced rpc endpoints",
                 Some(json!({
                     "height": height,
-                    "path": path
+                    "query_data": query_data
                 })),
             ))
         } else {
-            trace!(?response);
-
-            let value = response.value.map(|value| {
-                debug!("raw response: {}", String::from_utf8_lossy(&value.data));
-                serde_json::from_slice(&value.data).unwrap()
-            });
-
-            Ok(value)
+            response
+                .value
+                .map(|value| {
+                    trace!("raw response: {}", String::from_utf8_lossy(&value.data));
+                    serde_json::from_slice(&value.data).map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(e).with_message(&format!(
+                                "unable to deserialize response ({})",
+                                std::any::type_name::<R>()
+                            )),
+                            None::<()>,
+                        )
+                    })
+                })
+                .transpose()
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
-    async fn query_client_state(&self, height: Height, client_id: u32) -> RpcResult<Option<Bytes>> {
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %client_id,
+        )
+    )]
+    async fn query_client_state(
+        &self,
+        height: Height,
+        client_id: ClientId,
+    ) -> RpcResult<Option<Bytes>> {
         let client_state = self
-            .query_smart::<_, Bytes<Base64>>(
+            .query_smart::<_, Bytes>(
                 &ibc_union_msg::query::QueryMsg::GetClientState { client_id },
                 Some(height),
             )
@@ -173,15 +193,23 @@ impl Module {
         Ok(client_state.map(Bytes::into_encoding))
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id, %trusted_height))]
+    #[instrument(
+        skip_all,
+            fields(
+            chain_id = %self.chain_id,
+            %height,
+            %client_id,
+            %trusted_height
+        )
+    )]
     async fn query_consensus_state(
         &self,
         height: Height,
-        client_id: u32,
+        client_id: ClientId,
         trusted_height: u64,
     ) -> RpcResult<Option<Bytes>> {
         let client_state = self
-            .query_smart::<_, Bytes<Base64>>(
+            .query_smart::<_, Bytes>(
                 &ibc_union_msg::query::QueryMsg::GetConsensusState {
                     client_id,
                     height: trusted_height,
@@ -193,11 +221,18 @@ impl Module {
         Ok(client_state.map(Bytes::into_encoding))
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %connection_id))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %connection_id
+        )
+    )]
     async fn query_connection(
         &self,
         height: Height,
-        connection_id: u32,
+        connection_id: ConnectionId,
     ) -> RpcResult<Option<Connection>> {
         let client_state = self
             .query_smart::<_, Connection>(
@@ -209,8 +244,19 @@ impl Module {
         Ok(client_state)
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id))]
-    async fn query_channel(&self, height: Height, channel_id: u32) -> RpcResult<Option<Channel>> {
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %channel_id
+        )
+    )]
+    async fn query_channel(
+        &self,
+        height: Height,
+        channel_id: ChannelId,
+    ) -> RpcResult<Option<Channel>> {
         let channel = self
             .query_smart::<_, Channel>(
                 &ibc_union_msg::query::QueryMsg::GetChannel { channel_id },
@@ -221,19 +267,22 @@ impl Module {
         Ok(channel)
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %batch_hash))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %batch_hash
+        )
+    )]
     async fn query_batch_packets(
         &self,
         height: Height,
-        channel_id: u32,
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
-                &ibc_union_msg::query::QueryMsg::GetBatchPackets {
-                    channel_id,
-                    batch_hash,
-                },
+                &ibc_union_msg::query::QueryMsg::GetBatchPackets { batch_hash },
                 Some(height),
             )
             .await?;
@@ -241,19 +290,22 @@ impl Module {
         Ok(commitment.flatten())
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %channel_id, %batch_hash))]
+    #[instrument(
+        skip_all,
+        fields(
+            chain_id = %self.chain_id,
+            %height,
+            %batch_hash
+        )
+    )]
     async fn query_batch_receipts(
         &self,
         height: Height,
-        channel_id: u32,
         batch_hash: H256,
     ) -> RpcResult<Option<H256>> {
         let commitment = self
             .query_smart::<_, Option<H256>>(
-                &ibc_union_msg::query::QueryMsg::GetBatchReceipts {
-                    channel_id,
-                    batch_hash,
-                },
+                &ibc_union_msg::query::QueryMsg::GetBatchReceipts { batch_hash },
                 Some(height),
             )
             .await?;
@@ -273,7 +325,71 @@ pub struct ChainIdParseError {
 #[async_trait]
 impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    async fn client_info(&self, _: &Extensions, client_id: u32) -> RpcResult<ClientInfo> {
+    async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
+        match query {
+            Query::PacketByHash(PacketByHash {
+                channel_id,
+                packet_hash,
+            }) => {
+                let query = format!("wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}");
+
+                let mut res = self
+                    .cometbft_client
+                    .tx_search(
+                        query,
+                        false,
+                        option_unwrap!(NonZeroU32::new(1)),
+                        option_unwrap!(NonZeroU8::new(1)),
+                        Order::Asc,
+                    )
+                    .await
+                    .map_err(rpc_error("error querying packet by packet hash", None))?;
+
+                if res.total_count != 1 {
+                    return Err(ErrorObject::owned(
+                        -1,
+                        format!(
+                            "error querying for packet {packet_hash}, \
+                            expected 1 event but found {}",
+                            res.total_count,
+                        ),
+                        None::<()>,
+                    ));
+                }
+
+                let res = res.txs.pop().unwrap();
+
+                let Some(IbcEvent::WasmPacketSend {
+                    packet_source_channel_id,
+                    packet_destination_channel_id,
+                    packet_data,
+                    packet_timeout_height,
+                    packet_timeout_timestamp,
+                    channel_id: _,
+                    packet_hash: _,
+                }) = res.tx_result.events.into_iter().find_map(|event| {
+                    CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
+                        (e.contract_address.unwrap() == self.ibc_host_contract_address)
+                            .then_some(e.event)
+                    })
+                })
+                else {
+                    panic!()
+                };
+
+                Ok(into_value(Packet {
+                    source_channel_id: packet_source_channel_id,
+                    destination_channel_id: packet_destination_channel_id,
+                    data: packet_data,
+                    timeout_height: packet_timeout_height,
+                    timeout_timestamp: packet_timeout_timestamp,
+                }))
+            }
+        }
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn client_info(&self, _: &Extensions, client_id: ClientId) -> RpcResult<ClientInfo> {
         let client_type = self
             .query_smart::<_, String>(
                 &ibc_union_msg::query::QueryMsg::GetClientType { client_id },
@@ -318,11 +434,11 @@ impl StateModuleServer<IbcUnion> for Module {
                 .await
                 .map(into_value),
             StorePath::BatchPackets(path) => self
-                .query_batch_packets(at, path.channel_id, path.batch_hash)
+                .query_batch_packets(at, path.batch_hash)
                 .await
                 .map(into_value),
             StorePath::BatchReceipts(path) => self
-                .query_batch_receipts(at, path.channel_id, path.batch_hash)
+                .query_batch_receipts(at, path.batch_hash)
                 .await
                 .map(into_value),
         }
@@ -340,4 +456,24 @@ fn rpc_error<E: Error>(
         error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
         ErrorObject::owned(-1, message, data)
     }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
+pub enum IbcEvent {
+    #[serde(rename = "wasm-packet_send")]
+    WasmPacketSend {
+        #[serde(with = "serde_utils::string")]
+        packet_source_channel_id: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_destination_channel_id: ChannelId,
+        packet_data: Bytes,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_height: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: Timestamp,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+    },
 }

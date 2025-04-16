@@ -19,18 +19,20 @@ cw-orch-interface = ["dep:cw-orch", "ibc-union-msg/cw-orch-interface"]
 library           = []
 
 [dependencies]
-alloy                         = { workspace = true, features = ["sol-types"] }
-cosmwasm-schema               = { workspace = true }
-cosmwasm-std                  = { workspace = true, features = ["abort"] }
-cw-orch                       = { workspace = true, optional = true }
-cw-storage-plus               = { workspace = true }
-ethabi                        = { workspace = true }
-hex                           = { workspace = true }
-ibc-union-msg                 = { workspace = true }
-ibc-union-spec                = { workspace = true, features = ["ethabi", "serde"] }
-serde                         = { workspace = true, features = ["derive"] }
-serde_json                    = { workspace = true }
-strum                         = { version = "0.26.3", features = ["derive"] }
-thiserror                     = { workspace = true }
-unionlabs                     = { workspace = true, features = ["ethabi"] }
-unionlabs-cosmwasm-upgradable = { workspace = true }
+alloy           = { workspace = true, features = ["sol-types"] }
+bincode         = { workspace = true, features = ["alloc", "derive"] }
+cosmwasm-schema = { workspace = true }
+cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }
+cw-orch         = { workspace = true, optional = true }
+depolama        = { workspace = true }
+embed-commit    = { workspace = true }
+ethabi          = { workspace = true }
+frissitheto     = { workspace = true }
+hex             = { workspace = true }
+ibc-union-msg   = { workspace = true }
+ibc-union-spec  = { workspace = true, features = ["ethabi", "serde", "bincode"] }
+serde           = { workspace = true, features = ["derive"] }
+serde-json-wasm = "1.0"
+strum           = { version = "0.26.3", features = ["derive"] }
+thiserror       = { workspace = true }
+unionlabs       = { workspace = true, features = ["ethabi", "bincode"] }

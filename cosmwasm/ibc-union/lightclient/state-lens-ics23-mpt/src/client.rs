@@ -1,16 +1,18 @@
 use cometbls_light_client::client::CometblsLightClient;
-use cosmwasm_std::Empty;
+use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client_types::StorageProof;
-use ibc_union_light_client::{IbcClient, IbcClientError};
+use ibc_union_light_client::{
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
 use ibc_union_spec::path::ConsensusStatePath;
-use state_lens_ics23_mpt_light_client_types::{ClientState, ConsensusState};
+use state_lens_ics23_mpt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use unionlabs::{
     encoding::{Bincode, DecodeAs},
     ethereum::{ibc_commitment_key, keccak256},
     ibc::core::commitment::merkle_proof::MerkleProof,
-    primitives::{H256, U256},
+    primitives::{Bytes, H256, U256},
 };
 
 use crate::errors::Error;
@@ -35,12 +37,12 @@ impl IbcClient for StateLensIcs23MptLightClient {
     type Encoding = Bincode;
 
     fn verify_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
         verify_membership(key, consensus_state.storage_root, storage_proof, value)?;
@@ -49,11 +51,11 @@ impl IbcClient for StateLensIcs23MptLightClient {
     }
 
     fn verify_non_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         height: u64,
         key: Vec<u8>,
         storage_proof: Self::StorageProof,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
         verify_non_membership(key, consensus_state.storage_root, storage_proof)?;
@@ -73,7 +75,10 @@ impl IbcClient for StateLensIcs23MptLightClient {
         client_state.l2_chain_id.clone()
     }
 
-    fn status(_client_state: &Self::ClientState) -> Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
+        let _ = ctx;
+        let _ = client_state;
+
         // FIXME: expose the ctx to this call to allow threading this call to L1
         // client. generally, we want to thread if a client is an L2 so always
         // provide the ctx?
@@ -98,27 +103,26 @@ impl IbcClient for StateLensIcs23MptLightClient {
     }
 
     fn verify_creation(
+        _caller: Addr,
         client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<
-        Option<Vec<VerifyCreationResponseEvent>>,
-        IbcClientError<StateLensIcs23MptLightClient>,
-    > {
-        Ok(Some(vec![VerifyCreationResponseEvent::CreateLensClient {
-            l1_client_id: client_state.l1_client_id,
-            l2_client_id: client_state.l2_client_id,
-            l2_chain_id: client_state.l2_chain_id.clone(),
-        }]))
+        _relayer: Addr,
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<StateLensIcs23MptLightClient>> {
+        Ok(
+            ClientCreationResult::new().add_event(VerifyCreationResponseEvent::CreateLensClient {
+                l1_client_id: client_state.l1_client_id,
+                l2_client_id: client_state.l2_client_id,
+                l2_chain_id: client_state.l2_chain_id.clone(),
+            }),
+        )
     }
 
     fn verify_header(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+        _relayer: Addr,
+    ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
         let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
@@ -138,44 +142,57 @@ impl IbcClient for StateLensIcs23MptLightClient {
         )
         .map_err(Error::L1Error)?;
 
-        let l2_timestamp = extract_uint64(
-            &header.l2_consensus_state,
-            client_state.extra.timestamp_offset as usize,
-        );
+        let consensus_state =
+            extract_consensus_state(&header.l2_consensus_state, &client_state.extra);
 
-        let l2_state_root = extract_bytes32(
-            &header.l2_consensus_state,
-            client_state.extra.state_root_offset as usize,
-        );
-
-        let l2_storage_root = extract_bytes32(
-            &header.l2_consensus_state,
-            client_state.extra.storage_root_offset as usize,
-        );
+        let mut state_update = StateUpdate::new(header.l2_height.height(), consensus_state);
 
         if client_state.l2_latest_height < header.l2_height.height() {
             client_state.l2_latest_height = header.l2_height.height();
+            state_update = state_update.overwrite_client_state(client_state)
         }
 
-        let consensus_state = ConsensusState {
-            timestamp: l2_timestamp,
-            state_root: l2_state_root,
-            storage_root: l2_storage_root,
-        };
-
-        Ok((header.l2_height.height(), client_state, consensus_state))
+        Ok(state_update)
     }
 
     fn misbehaviour(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+        _relayer: Addr,
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
         unimplemented!()
     }
 }
 
+pub fn extract_consensus_state(
+    l2_consensus_state: &Bytes,
+    client_state_extra: &Extra,
+) -> ConsensusState {
+    let l2_timestamp = extract_uint64(
+        l2_consensus_state,
+        client_state_extra.timestamp_offset as usize,
+    );
+
+    let l2_state_root = extract_bytes32(
+        l2_consensus_state,
+        client_state_extra.state_root_offset as usize,
+    );
+
+    let l2_storage_root = extract_bytes32(
+        l2_consensus_state,
+        client_state_extra.storage_root_offset as usize,
+    );
+
+    ConsensusState {
+        timestamp: l2_timestamp,
+        state_root: l2_state_root,
+        storage_root: l2_storage_root,
+    }
+}
+
 fn extract_uint64(data: &[u8], offset: usize) -> u64 {
-    u64::from_le_bytes(
+    u64::from_be_bytes(
         data[offset..offset + 8]
             .try_into()
             .expect("impossible; qed"),

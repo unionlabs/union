@@ -110,7 +110,6 @@ impl<const BYTES: usize, E: Encoding> FixedBytes<BYTES, E> {
     }
 
     #[must_use]
-    // TODO: Make this return `Bytes`
     pub fn into_bytes(self) -> Bytes<E> {
         self.get().to_vec().into()
     }
@@ -139,7 +138,7 @@ impl<const BYTES: usize, E: Encoding> FixedBytes<BYTES, E> {
 
 impl<const BYTES: usize, E: Encoding> fmt::Debug for FixedBytes<BYTES, E> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.write_fmt(format_args!("Hash<{BYTES}>({self})"))
+        f.write_fmt(format_args!("FixedBytes<{BYTES}>({self})"))
     }
 }
 
@@ -248,14 +247,6 @@ impl<const BYTES: usize, E: Encoding> FromStr for FixedBytes<BYTES, E> {
         Ok(Self::new(out))
     }
 }
-
-// #[derive(DebugNoBound, thiserror::Error)]
-// pub enum HashDecodeError<E: Encoding> {
-//     #[error("invalid encoding")]
-//     InvalidEncoding(#[source] E::Error),
-//     #[error("invalid length")]
-//     FixedBytesError(#[from] FixedBytesError),
-// }
 
 impl<E: Encoding, const BYTES: usize> Default for FixedBytes<BYTES, E> {
     fn default() -> Self {
@@ -386,7 +377,9 @@ impl<Enc: Encoding, const BYTES: usize> bincode::Encode for FixedBytes<BYTES, En
 }
 
 #[cfg(feature = "bincode")]
-impl<Enc: Encoding, const BYTES: usize> bincode::Decode for FixedBytes<BYTES, Enc> {
+impl<Context, Enc: Encoding, const BYTES: usize> bincode::Decode<Context>
+    for FixedBytes<BYTES, Enc>
+{
     fn decode<D: bincode::de::Decoder>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
@@ -395,7 +388,9 @@ impl<Enc: Encoding, const BYTES: usize> bincode::Decode for FixedBytes<BYTES, En
 }
 
 #[cfg(feature = "bincode")]
-impl<'de, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de> for FixedBytes<BYTES, Enc> {
+impl<'de, Context, Enc: Encoding, const BYTES: usize> bincode::BorrowDecode<'de, Context>
+    for FixedBytes<BYTES, Enc>
+{
     fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {

@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 alloy                         = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+embed-commit                  = { workspace = true }
 enumorph                      = { workspace = true }
 ibc-union-spec                = { workspace = true }
 ics23                         = { workspace = true }

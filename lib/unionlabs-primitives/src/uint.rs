@@ -3,7 +3,8 @@
 use core::{
     fmt::{self, Display},
     iter::Sum,
-    ops::{Add, AddAssign, Div, Rem},
+    num::NonZeroU32,
+    ops::{Add, AddAssign, BitAnd, Div, Mul, Rem},
     str::FromStr,
 };
 
@@ -75,8 +76,8 @@ pub mod u256_big_endian_hex {
 }
 
 #[cfg(feature = "bincode")]
-impl bincode::Decode for U256 {
-    fn decode<D: bincode::de::Decoder>(
+impl<Context> bincode::Decode<Context> for U256 {
+    fn decode<D: bincode::de::Decoder<Context = Context>>(
         decoder: &mut D,
     ) -> Result<Self, bincode::error::DecodeError> {
         use bincode::{
@@ -144,7 +145,7 @@ impl fmt::LowerHex for U256 {
 impl U256 {
     pub const MAX: Self = Self::from_limbs([u64::MAX; 4]);
     pub const ZERO: Self = Self::from_limbs([0; 4]);
-    pub const ONE: Self = Self::from_limbs([0, 0, 0, 1]);
+    pub const ONE: Self = Self::from_limbs([1, 0, 0, 0]);
 
     // one day...
     // pub const fn from_const_str<const STR: &'static str>() -> Self {}
@@ -156,9 +157,27 @@ impl From<u32> for U256 {
     }
 }
 
+impl From<NonZeroU32> for U256 {
+    fn from(value: NonZeroU32) -> Self {
+        Self(primitive_types::U256::from(value.get()))
+    }
+}
+
 impl From<u64> for U256 {
     fn from(value: u64) -> Self {
         Self(primitive_types::U256::from(value))
+    }
+}
+
+impl TryFrom<U256> for u32 {
+    type Error = ();
+
+    fn try_from(value: U256) -> Result<Self, Self::Error> {
+        if value > U256::from(u32::MAX) {
+            Err(())
+        } else {
+            Ok(value.0.as_u32())
+        }
     }
 }
 
@@ -360,6 +379,14 @@ impl Add for U256 {
     }
 }
 
+impl Mul for U256 {
+    type Output = Self;
+
+    fn mul(self, rhs: Self) -> Self::Output {
+        Self(self.0 * rhs.0)
+    }
+}
+
 impl AddAssign for U256 {
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0;
@@ -377,6 +404,14 @@ impl Div for U256 {
 
     fn div(self, rhs: Self) -> Self::Output {
         Self(self.0 / rhs.0)
+    }
+}
+
+impl BitAnd for U256 {
+    type Output = Self;
+
+    fn bitand(self, rhs: Self) -> Self::Output {
+        Self(self.0 & rhs.0)
     }
 }
 
@@ -442,5 +477,10 @@ mod u256_tests {
     #[test]
     fn from_limbs() {
         assert_eq!(U256::from_limbs([1, 0, 0, 0]), U256::from(1_u64));
+    }
+
+    #[test]
+    fn one() {
+        assert_eq!(U256::ONE, U256::from(1_u64));
     }
 }

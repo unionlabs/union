@@ -4,7 +4,7 @@ use macros::model;
 
 use crate::{
     cosmos::{
-        crypto::{AnyPubKey, TryFromAnyPubKeyError},
+        crypto::{proto::TryFromAnyPubKeyError, AnyPubKey},
         staking::{
             bond_status::BondStatus,
             commission::{Commission, TryFromCommissionError},

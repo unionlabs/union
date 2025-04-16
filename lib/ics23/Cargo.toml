@@ -20,10 +20,11 @@ thiserror   = { workspace = true }
 unionlabs   = { workspace = true }
 
 [dev-dependencies]
-anyhow      = "1.0.79"
-hex         = { workspace = true, features = ["serde"] }
-hex-literal = { workspace = true }
-protos      = { workspace = true, features = ["cosmos+ics23+v1", "serde"] }
-serde       = { workspace = true, features = ["derive"] }
-serde_json  = { workspace = true }
-unionlabs   = { workspace = true, features = ["bincode"] }
+anyhow         = "1.0.79"
+cometbft-types = { workspace = true, features = ["proto"] }
+hex            = { workspace = true, features = ["serde"] }
+hex-literal    = { workspace = true }
+protos         = { workspace = true, features = ["cosmos+ics23+v1", "serde"] }
+serde          = { workspace = true, features = ["derive"] }
+serde_json     = { workspace = true }
+unionlabs      = { workspace = true, features = ["bincode"] }

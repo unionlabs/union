@@ -1,10 +1,8 @@
 //! Beacon API client, implemented as per <https://ethereum.github.io/beacon-APIs/releases/v2.4.1/beacon-node-oapi.json>
 
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 
-use beacon_api_types::{
-    GenesisData, LightClientBootstrap, LightClientFinalityUpdate, SignedBeaconBlock, Slot,
-};
+use beacon_api_types::custom_types::Slot;
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tracing::{debug, info, trace};
@@ -12,7 +10,12 @@ use unionlabs::primitives::H256;
 
 use crate::{
     errors::{Error, InternalServerError, NotFoundError},
-    types::{BeaconHeaderData, LightClientUpdatesResponse, Spec},
+    routes::{
+        block::BeaconBlockResponse, genesis::GenesisResponse, header::BeaconBlockHeaderResponse,
+        light_client_bootstrap::LightClientBootstrapResponseTypes,
+        light_client_finality_update::LightClientFinalityUpdateResponseTypes,
+        light_client_updates::LightClientUpdateResponseTypes, spec::SpecResponse,
+    },
 };
 
 pub type Result<T> = core::result::Result<T, Error>;
@@ -32,52 +35,40 @@ pub enum NewError {
 }
 
 impl BeaconApiClient {
-    pub async fn new(base_url: String) -> core::result::Result<Self, NewError> {
+    pub async fn new(base_url: impl Into<String>) -> core::result::Result<Self, NewError> {
         let this = Self {
             client: reqwest::Client::new(),
-            base_url,
+            base_url: base_url.into(),
         };
-
-        // TODO: Do checks against a spec?
-        let _spec = this.spec().await?;
-
-        // if spec.data.seconds_per_slot != C::SECONDS_PER_SLOT::U64 {
-        //     return Err(NewError::IncorrectChainSpec);
-        // }
-
-        // if spec.data.slots_per_epoch != C::SLOTS_PER_EPOCH::U64 {
-        //     return Err(NewError::IncorrectChainSpec);
-        // }
 
         Ok(this)
     }
 
-    pub async fn spec(&self) -> Result<Response<Spec>> {
+    pub async fn spec(&self) -> Result<SpecResponse> {
         self.get_json("/eth/v1/config/spec").await
     }
 
-    pub async fn finality_update(&self) -> Result<Response<LightClientFinalityUpdate, Version>> {
+    pub async fn finality_update(
+        &self,
+    ) -> Result<VersionedResponse<LightClientFinalityUpdateResponseTypes>> {
         self.get_json("/eth/v1/beacon/light_client/finality_update")
             .await
     }
 
-    pub async fn header(
-        &self,
-        block_id: BlockId,
-    ) -> Result<Response<BeaconHeaderData, BeaconHeaderExtra>> {
+    pub async fn header(&self, block_id: BlockId) -> Result<BeaconBlockHeaderResponse> {
         self.get_json(format!("/eth/v1/beacon/headers/{block_id}"))
             .await
     }
 
-    pub async fn block(
-        &self,
-        block_id: BlockId,
-    ) -> Result<Response<SignedBeaconBlock, BeaconBlockExtra>> {
+    pub async fn block(&self, block_id: BlockId) -> Result<BeaconBlockResponse> {
         self.get_json(format!("/eth/v2/beacon/blocks/{block_id}"))
             .await
     }
 
-    pub async fn bootstrap(&self, finalized_root: H256) -> Result<Response<LightClientBootstrap>> {
+    pub async fn bootstrap(
+        &self,
+        finalized_root: H256,
+    ) -> Result<VersionedResponse<LightClientBootstrapResponseTypes>> {
         self.get_json(format!(
             "/eth/v1/beacon/light_client/bootstrap/{finalized_root}"
         ))
@@ -86,16 +77,15 @@ impl BeaconApiClient {
 
     // Light Client API
 
-    pub async fn genesis(&self) -> Result<Response<GenesisData>> {
+    pub async fn genesis(&self) -> Result<GenesisResponse> {
         self.get_json("/eth/v1/beacon/genesis").await
     }
 
-    // TODO: Just return the inner type directly (Vec<_>)
     pub async fn light_client_updates(
         &self,
         start_period: u64,
         count: u64,
-    ) -> Result<LightClientUpdatesResponse> {
+    ) -> Result<Vec<VersionedResponse<LightClientUpdateResponseTypes>>> {
         self.get_json(format!(
             "/eth/v1/beacon/light_client/updates?start_period={start_period}&count={count}"
         ))
@@ -104,21 +94,32 @@ impl BeaconApiClient {
 
     /// Convenience method to fetch the execution height of a beacon height.
     pub async fn execution_height(&self, block_id: BlockId) -> Result<u64> {
-        let height = self
-            .block(block_id.clone())
-            .await?
-            .data
-            .message
-            .body
-            .execution_payload
-            .block_number;
+        let height = match self.block(block_id.clone()).await?.response {
+            VersionedResponse::Phase0(_block) => {
+                // block.message.body.execution_payload.block_number
+                todo!("phase0 has no execution_payload")
+            }
+            VersionedResponse::Altair(_block) => {
+                // block.message.body.execution_payload.block_number
+                todo!("altair has no execution_payload")
+            }
+            VersionedResponse::Bellatrix(block) => {
+                block.message.body.execution_payload.block_number
+            }
+            VersionedResponse::Capella(block) => block.message.body.execution_payload.block_number,
+            VersionedResponse::Deneb(block) => block.message.body.execution_payload.block_number,
+            VersionedResponse::Electra(block) => block.message.body.execution_payload.block_number,
+        };
 
         debug!("beacon height {block_id} is execution height {height}");
 
         Ok(height)
     }
 
-    pub async fn bootstrap_for_slot(&self, slot: Slot) -> Result<Response<LightClientBootstrap>> {
+    pub async fn bootstrap_for_slot(
+        &self,
+        slot: Slot,
+    ) -> Result<VersionedResponse<LightClientBootstrapResponseTypes>> {
         // NOTE(benluelo): While this is technically two actions, I consider it to be one
         // action - if the beacon chain doesn't have the header, it won't have the bootstrap
         // either. It would be nice if the beacon chain exposed "fetch bootstrap by slot"
@@ -206,55 +207,92 @@ pub enum Encoding {
     Ssz,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub enum EthConsensusVersion {
-    #[serde(rename = "phase0")]
-    Phase0,
-    #[serde(rename = "altair")]
-    Altair,
-    #[serde(rename = "bellatrix")]
-    Bellatrix,
-    #[serde(rename = "capella")]
-    Capella,
-    #[serde(rename = "deneb")]
-    Deneb,
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    tag = "version",
+    content = "data",
+    rename_all = "snake_case",
+    bound(serialize = "", deserialize = "")
+)]
+pub enum VersionedResponse<T: VersionedResponseTypes> {
+    Phase0(T::Phase0),
+    Altair(T::Altair),
+    Bellatrix(T::Bellatrix),
+    Capella(T::Capella),
+    Deneb(T::Deneb),
+    Electra(T::Electra),
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Response<Data, Extra = Nil> {
-    pub data: Data,
-    #[serde(flatten)]
-    pub extra: Extra,
-}
-
-impl<Data, Extra> Response<Data, Extra> {
-    pub fn map_data<T>(self, f: impl FnOnce(Data) -> T) -> Response<T, Extra> {
-        Response {
-            data: f(self.data),
-            extra: self.extra,
+impl<T: VersionedResponseTypes> VersionedResponse<T>
+where
+    T: VersionedResponseTypes<
+        // fun fact: if these bounds are just T::Phase0, this fails with a circular resolution error
+        Altair = <T as VersionedResponseTypes>::Phase0,
+        Bellatrix = <T as VersionedResponseTypes>::Phase0,
+        Capella = <T as VersionedResponseTypes>::Phase0,
+        Deneb = <T as VersionedResponseTypes>::Phase0,
+        Electra = <T as VersionedResponseTypes>::Phase0,
+    >,
+{
+    /// "Unwrap" the inner type. This is only possible if all of the inner types are all the same.
+    pub fn into_inner(self) -> T::Phase0 {
+        match self {
+            VersionedResponse::Phase0(t) => t,
+            VersionedResponse::Altair(t) => t,
+            VersionedResponse::Bellatrix(t) => t,
+            VersionedResponse::Capella(t) => t,
+            VersionedResponse::Deneb(t) => t,
+            VersionedResponse::Electra(t) => t,
         }
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Nil {}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct Version {
-    pub version: EthConsensusVersion,
+impl<T: VersionedResponseTypes> VersionedResponse<T> {
+    pub fn fold<U>(
+        self,
+        phase0: impl FnOnce(T::Phase0) -> U,
+        altair: impl FnOnce(T::Altair) -> U,
+        bellatrix: impl FnOnce(T::Bellatrix) -> U,
+        capella: impl FnOnce(T::Capella) -> U,
+        deneb: impl FnOnce(T::Deneb) -> U,
+        electra: impl FnOnce(T::Electra) -> U,
+    ) -> U {
+        match self {
+            VersionedResponse::Phase0(t) => {
+                trace!(?t, "phase0");
+                phase0(t)
+            }
+            VersionedResponse::Altair(t) => {
+                trace!(?t, "altair");
+                altair(t)
+            }
+            VersionedResponse::Bellatrix(t) => {
+                trace!(?t, "bellatrix");
+                bellatrix(t)
+            }
+            VersionedResponse::Capella(t) => {
+                trace!(?t, "capella");
+                capella(t)
+            }
+            VersionedResponse::Deneb(t) => {
+                trace!(?t, "deneb");
+                deneb(t)
+            }
+            VersionedResponse::Electra(t) => {
+                trace!(?t, "electra");
+                electra(t)
+            }
+        }
+    }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct BeaconHeaderExtra {
-    pub execution_optimistic: Option<bool>,
-    pub finalized: Option<bool>,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-pub struct BeaconBlockExtra {
-    pub execution_optimistic: Option<bool>,
-    pub finalized: Option<bool>,
-    pub version: EthConsensusVersion,
+pub trait VersionedResponseTypes {
+    type Phase0: Debug + Serialize + DeserializeOwned;
+    type Altair: Debug + Serialize + DeserializeOwned;
+    type Bellatrix: Debug + Serialize + DeserializeOwned;
+    type Capella: Debug + Serialize + DeserializeOwned;
+    type Deneb: Debug + Serialize + DeserializeOwned;
+    type Electra: Debug + Serialize + DeserializeOwned;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]

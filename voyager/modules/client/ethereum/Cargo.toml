@@ -12,13 +12,13 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-beacon-api-types            = { workspace = true, features = ["serde"] }
-ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi"] }
+embed-commit                = { workspace = true }
+ethereum-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
 serde                       = { workspace = true, features = ["derive"] }
 serde_json                  = { workspace = true }
 tokio                       = { workspace = true }
 tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
+unionlabs                   = { workspace = true, features = ["bincode"] }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }

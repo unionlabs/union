@@ -1,0 +1,15 @@
+[package]
+edition = "2021"
+name    = "embed-commit-verifier"
+version = "0.0.0"
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow       = "1.0.97"
+bytemuck     = "1.22.0"
+clap         = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
+elf          = "0.7.4"
+embed-commit = { workspace = true }
+wasmtime     = { git = "https://github.com/bytecodealliance/wasmtime", rev = "b2e585cfa2992142058e691c1a522b801830bc7b" } # https://github.com/bytecodealliance/wasmtime/pull/10352, https://github.com/bytecodealliance/wasmtime/pull/10330

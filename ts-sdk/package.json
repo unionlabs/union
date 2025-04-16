@@ -1,0 +1,90 @@
+{
+  "name": "@unionlabs/sdk",
+  "version": "1.8.1",
+  "type": "module",
+  "license": "MIT",
+  "author": "@unionlabs",
+  "description": "Union TypeScript SDK 2",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unionlabs/union.git",
+    "directory": "ts-sdk"
+  },
+  "files": ["LICENSE", "README.md", "dist", "package.json", "src"],
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./ucs03": {
+      "import": "./dist/ucs03/index.js",
+      "types": "./dist/ucs03/index.d.ts"
+    },
+    "./evm": {
+      "import": "./dist/evm/index.js",
+      "types": "./dist/evm/index.d.ts"
+    },
+    "./cosmos": {
+      "import": "./dist/cosmos/index.js",
+      "types": "./dist/cosmos/index.d.ts"
+    },
+    "./evm/abi": {
+      "import": "./dist/evm/abi/index.js",
+      "types": "./dist/evm/abi/index.d.ts"
+    },
+    "./evm/ucs03": {
+      "import": "./dist/evm/ucs03/index.js",
+      "types": "./dist/evm/ucs03/index.d.ts"
+    },
+    "./evm/erc20": {
+      "import": "./dist/evm/erc20.js",
+      "types": "./dist/evm/erc20.d.ts"
+    },
+    "./utils": {
+      "import": "./dist/utils/index.js",
+      "types": "./dist/utils/index.d.ts"
+    },
+    "./schema": {
+      "import": "./dist/schema/index.js",
+      "types": "./dist/schema/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "pnpm build-esm && pnpm build-annotate",
+    "build-annotate": "babel dist/ --plugins annotate-pure-calls --out-dir dist/ --source-maps",
+    "build-esm": "tsc -b tsconfig.build.json",
+    "check": "tsc -b tsconfig.json",
+    "check:examples": "tsc -p tsconfig.examples.json",
+    "check:circular": "dpdm -T src",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "peerDependencies": {
+    "effect": "^3",
+    "viem": "^2"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.24.8",
+    "@babel/core": "^7.25.2",
+    "@cosmjs/math": "^0.33.1",
+    "@cosmjs/proto-signing": "^0.33.0",
+    "@effect/build-utils": "^0.7.7",
+    "@effect/platform": "^0.77.2",
+    "@effect/vitest": "~0.19.10",
+    "@types/node": "^22.13.1",
+    "babel-plugin-annotate-pure-calls": "^0.5.0",
+    "biome": "^0.3.3",
+    "dpdm": "^3.14.0",
+    "effect": "^3.13.12",
+    "gql.tada": "^1.8.10",
+    "graphql-request": "^7.1.2",
+    "viem": "^2.23.12"
+  },
+  "dependencies": {
+    "@aptos-labs/ts-sdk": "1.34.0",
+    "@cosmjs/cosmwasm-stargate": "^0.33.1",
+    "@cosmjs/stargate": "^0.33.1",
+    "@scure/base": "1.2.4",
+    "crc": "^4.3.2"
+  }
+}

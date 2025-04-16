@@ -33,6 +33,16 @@ impl L2Header {
             .finalize()
             .into()
     }
+
+    #[must_use]
+    pub fn confirm_data_hash(&self) -> H256 {
+        // TODO: Find where this value is calculated as the confirmData and link it
+        Keccak256::new()
+            .chain_update(self.hash())
+            .chain_update(self.extra_data)
+            .finalize()
+            .into()
+    }
 }
 
 #[cfg(test)]

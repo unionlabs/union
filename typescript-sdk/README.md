@@ -1,4 +1,6 @@
-<h1 align="center" style="font-size: 2.75rem; font-weight: 900; color: white;">Union Labs TypeScript SDK</h1>
+# DEPRECATED: Union Labs TypeScript SDK
+
+_See `../ts-sdk` for our sdk rewrite._
 
 ![JSR](https://jsr.io/badges/@union/client) ![NPM Version](https://img.shields.io/npm/v/@unionlabs/client)
 

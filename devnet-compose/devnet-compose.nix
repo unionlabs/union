@@ -7,14 +7,10 @@ _: {
       ...
     }:
     let
-      devnet-compose = crane.buildWorkspaceMember {
-        crateDirFromRoot = "devnet-compose";
-      };
+      devnet-compose = crane.buildWorkspaceMember "devnet-compose" { };
     in
     {
-      packages = {
-        inherit (devnet-compose.packages) devnet-compose;
-
+      packages = devnet-compose // {
         devnet-compose-image = pkgs.dockerTools.buildLayeredImage {
           name = "devnet-compose";
           contents = [

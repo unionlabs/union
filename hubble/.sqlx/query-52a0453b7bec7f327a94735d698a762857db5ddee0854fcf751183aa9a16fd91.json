@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE\n        FROM token.token_source_representations\n        WHERE token_source_id = $1 and address = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Bytea"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "52a0453b7bec7f327a94735d698a762857db5ddee0854fcf751183aa9a16fd91"
+}

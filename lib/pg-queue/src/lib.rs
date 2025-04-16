@@ -1,9 +1,9 @@
+use core::f64;
 use std::{
     borrow::Borrow, cmp::Eq, collections::HashMap, fmt::Write, future::Future, hash::Hash,
     marker::PhantomData, time::Duration,
 };
 
-use frame_support_procedural::{CloneNoBound, DebugNoBound};
 use futures_util::TryStreamExt;
 use itertools::Itertools;
 use schemars::JsonSchema;
@@ -33,10 +33,12 @@ pub mod metrics;
 /// item JSONB
 /// error TEXT
 /// ```
-#[derive(DebugNoBound, CloneNoBound)]
+#[derive(Debug, Clone)]
 pub struct PgQueue<T> {
     client: PgPool,
     optimize_batch_limit: Option<i64>,
+    retryable_error_expo_backoff_max: f64,
+    retryable_error_expo_backoff_multiplier: f64,
     __marker: PhantomData<fn() -> T>,
 }
 
@@ -44,18 +46,43 @@ pub struct PgQueue<T> {
 #[serde(deny_unknown_fields)]
 pub struct PgQueueConfig {
     pub database_url: String,
-    pub max_connections: Option<u32>,
-    pub min_connections: Option<u32>,
+    #[serde(default = "default_max_connections")]
+    pub max_connections: u32,
+    #[serde(default = "default_min_connections")]
+    pub min_connections: u32,
+    #[serde(default)]
     pub idle_timeout: Option<Duration>,
+    #[serde(default)]
     pub max_lifetime: Option<Duration>,
+    #[serde(default)]
     pub optimize_batch_limit: Option<i64>,
+    #[serde(default = "default_retryable_error_expo_backoff_max")]
+    pub retryable_error_expo_backoff_max: f64,
+    #[serde(default = "default_retryable_error_expo_backoff_multiplier")]
+    pub retryable_error_expo_backoff_multiplier: f64,
+}
+
+pub const fn default_max_connections() -> u32 {
+    10
+}
+
+pub const fn default_min_connections() -> u32 {
+    0
+}
+
+pub const fn default_retryable_error_expo_backoff_max() -> f64 {
+    60.0 * 5.0
+}
+
+pub const fn default_retryable_error_expo_backoff_multiplier() -> f64 {
+    2.0
 }
 
 impl PgQueueConfig {
     pub async fn into_pg_pool(self) -> sqlx::Result<PgPool> {
         PgPoolOptions::new()
-            .max_connections(self.max_connections.unwrap_or(10))
-            .min_connections(self.min_connections.unwrap_or(0))
+            .max_connections(self.max_connections)
+            .min_connections(self.min_connections)
             .idle_timeout(self.idle_timeout)
             .max_lifetime(self.max_lifetime)
             .connect(&self.database_url)
@@ -69,11 +96,22 @@ struct Id {
 }
 
 #[derive(Debug, FromRow)]
-struct Record {
+struct QueueRecord {
     id: i64,
     parents: Vec<i64>,
     item: String,
-    created_at: sqlx::types::time::OffsetDateTime,
+    created_at: time::OffsetDateTime,
+    attempt: i64,
+}
+
+#[derive(Debug, FromRow)]
+struct OptimizeRecord {
+    id: i64,
+    #[allow(dead_code)]
+    parents: Vec<i64>,
+    item: String,
+    #[allow(dead_code)]
+    created_at: time::OffsetDateTime,
 }
 
 #[derive(Debug, FromRow, Serialize)]
@@ -177,46 +215,57 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         // });
 
         let optimize_batch_limit = config.optimize_batch_limit;
+        let retryable_error_expo_backoff_multiplier =
+            config.retryable_error_expo_backoff_multiplier;
+        let retryable_error_expo_backoff_max = config.retryable_error_expo_backoff_max;
 
         let pool = config.into_pg_pool().await?;
 
         pool.execute_many(
             r#"
-            CREATE TABLE IF NOT EXISTS queue(
+            CREATE TABLE IF NOT EXISTS
+              queue (
                 id BIGSERIAL PRIMARY KEY,
                 item JSONB NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
-                created_at timestamptz NOT NULL DEFAULT now()
-            );
+                created_at timestamptz NOT NULL DEFAULT now(),
+                handle_at timestamptz NOT NULL DEFAULT now(),
+                attempt INT8 NOT NULL DEFAULT 0
+              );
 
-            CREATE TABLE IF NOT EXISTS optimize(
+            CREATE TABLE IF NOT EXISTS
+              optimize (
                 -- TODO: Figure out how to do this properly
                 id BIGINT PRIMARY KEY DEFAULT nextval('queue_id_seq'::regclass),
                 item JSONB NOT NULL,
                 tag text NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
                 created_at timestamptz NOT NULL DEFAULT now()
-            );
+              );
 
-            CREATE TABLE IF NOT EXISTS done(
+            CREATE TABLE IF NOT EXISTS
+              done (
                 id BIGINT,
                 item JSONB NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
                 created_at timestamptz NOT NULL DEFAULT now(),
                 PRIMARY KEY (id, created_at)
-            );
+              );
 
-            CREATE TABLE IF NOT EXISTS failed(
+            CREATE TABLE IF NOT EXISTS
+              failed (
                 id BIGINT PRIMARY KEY,
                 item JSONB NOT NULL,
                 parents BIGINT[] DEFAULT '{}',
                 message TEXT,
                 created_at timestamptz NOT NULL DEFAULT now()
-            );
+              );
 
-            CREATE INDEX IF NOT EXISTS index_queue_id ON queue(id);
+            CREATE INDEX IF NOT EXISTS index_queue_id ON queue (id);
 
-            CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue(created_at) include (id);
+            CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue (created_at ASC) INCLUDE (id);
+
+            CREATE INDEX IF NOT EXISTS index_queue_handle_at ON queue(handle_at DESC) INCLUDE (id);
             "#,
         )
         .try_for_each(|result| async move {
@@ -229,6 +278,8 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         Ok(Self {
             client: pool,
             optimize_batch_limit,
+            retryable_error_expo_backoff_max,
+            retryable_error_expo_backoff_multiplier,
             __marker: PhantomData,
         })
     }
@@ -244,7 +295,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             op.normalize()
                 .into_iter()
                 .partition_map(|op| match filter.check_interest(&op) {
-                    FilterResult::Interest(tag) => Either::Left((op, tag)),
+                    FilterResult::Interest(interest) => Either::Left((op, interest)),
                     FilterResult::NoInterest => Either::Right(op),
                 });
 
@@ -275,12 +326,16 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         )
         .bind(
             optimize
-                .clone()
-                .into_iter()
-                .map(|x| Json(x.0))
+                .iter()
+                .map(|x| Json(x.0.clone()))
                 .collect::<Vec<_>>(),
         )
-        .bind(optimize.into_iter().map(|x| x.1).collect::<Vec<_>>())
+        .bind(
+            optimize
+                .iter()
+                .flat_map(|x| x.1.tags.clone())
+                .collect::<Vec<_>>(),
+        )
         .try_map(|x| Id::from_row(&x))
         .fetch_all(tx.as_mut())
         .await?;
@@ -328,8 +383,10 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                   id
                 FROM
                   queue
+                WHERE
+                  handle_at < now()
                 ORDER BY
-                  created_at ASC
+                  handle_at ASC
                 FOR UPDATE
                   SKIP LOCKED
                 LIMIT 1)
@@ -337,128 +394,32 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
               id,
               parents,
               item::text,
+              attempt,
               created_at
             "#,
         )
-        .try_map(|x| Record::from_row(&x))
+        .try_map(|x| QueueRecord::from_row(&x))
         .fetch_optional(tx.as_mut())
         .await?;
 
-        match row {
+        let res = match row {
             Some(record) => {
-                let span = info_span!("processing item", item_id = record.id);
-
-                trace!(%record.item);
-
-                // really don't feel like defining a new error type right now
-                let op = de(&record.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
-
-                let timer = ITEM_PROCESSING_DURATION.start_timer();
-                let (r, res) = f(op, ItemId::new(record.id).unwrap())
-                    .instrument(span.clone())
-                    .await;
-                let _ = timer.stop_and_record();
-
-                async move {
-                    match res {
-                        Err(QueueError::Fatal(error)) => {
-                            let error = full_error_string(error);
-                            error!(%error, "fatal error");
-                            insert_error(record, error, tx).await?;
-                        }
-                        Err(QueueError::Unprocessable(error)) => {
-                            let error = full_error_string(error);
-                            info!(%error, "unprocessable message");
-                            insert_error(record, error, tx).await?;
-                        }
-                        Err(QueueError::Retry(error)) => {
-                            warn!(error = %full_error_string(error), "retryable error");
-                            sqlx::query(
-                                "
-                                INSERT INTO
-                                queue  (id, item,      parents)
-                                VALUES ($1, $2::JSONB, $3     )
-                                ",
-                            )
-                            .bind(record.id)
-                            .bind(record.item)
-                            .bind(record.parents)
-                            .execute(tx.as_mut())
-                            .await?;
-                        }
-                        Ok(ops) => {
-                            'block: {
-                                // insert the op we just processed into done
-                                sqlx::query(
-                                    "
-                                    INSERT INTO
-                                    done   (id, parents, item,      created_at)
-                                    VALUES ($1, $2,      $3::JSONB, $4        )
-                                    ",
-                                )
-                                .bind(record.id)
-                                .bind(record.parents)
-                                .bind(record.item)
-                                .bind(record.created_at)
-                                .execute(tx.as_mut())
-                                .await?;
-
-                                if ops.is_empty() {
-                                    break 'block;
-                                }
-
-                                let (optimize, ready): (Vec<_>, Vec<_>) = ops
-                                    .into_iter()
-                                    .flat_map(Op::normalize)
-                                    .partition_map(|op| match filter.check_interest(&op) {
-                                        FilterResult::Interest(tag) => Either::Left((op, tag)),
-                                        FilterResult::NoInterest => Either::Right(op),
-                                    });
-
-                                sqlx::query(
-                                    "
-                                    INSERT INTO queue (item, parents)
-                                    SELECT *, $1 as parents FROM UNNEST($2::JSONB[])
-                                    ",
-                                )
-                                .bind(vec![record.id])
-                                .bind(ready.into_iter().map(Json).collect::<Vec<_>>())
-                                .execute(tx.as_mut())
-                                .await?;
-
-                                sqlx::query(
-                                    "
-                                    INSERT INTO optimize (item, tag, parents)
-                                    SELECT *, $1 as parents FROM UNNEST($2::JSONB[], $3::TEXT[])
-                                    ",
-                                )
-                                .bind(vec![record.id])
-                                .bind(optimize.iter().map(|(op, _)| Json(op)).collect::<Vec<_>>())
-                                .bind(optimize.iter().map(|(_, tag)| *tag).collect::<Vec<_>>())
-                                .execute(tx.as_mut())
-                                .await?;
-                            }
-
-                            tx.commit().await?;
-                        }
-                    }
-
-                    Ok::<_, Self::Error>(())
-                }
-                .instrument(span)
-                .await?;
-
-                Ok(Some(r))
+                process_item(
+                    &mut tx,
+                    record,
+                    f,
+                    filter,
+                    self.retryable_error_expo_backoff_max,
+                    self.retryable_error_expo_backoff_multiplier,
+                )
+                .await?
             }
-            None => {
-                // trace!("queue is empty");
+            None => None,
+        };
 
-                // self.lock.store(true, Ordering::SeqCst);
-                // tokio::time::sleep(std::time::Duration::from_millis(2000)).await;
+        tx.commit().await?;
 
-                Ok(None)
-            }
-        }
+        Ok(res)
     }
 
     async fn optimize<'a, O: Pass<T>>(
@@ -467,11 +428,6 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         optimizer: &'a O,
     ) -> Result<(), Either<Self::Error, O::Error>> {
         trace!(%tag, "optimize");
-
-        // if self.lock.swap(false, Ordering::SeqCst) {
-        //     debug!("queue is locked");
-        //     tokio::time::sleep(std::time::Duration::from_millis(1000)).await;
-        // }
 
         let mut tx = self.client.begin().await.map_err(Either::Left)?;
 
@@ -501,7 +457,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         )
         .bind(tag)
         .bind(self.optimize_batch_limit)
-        .try_map(|x| Record::from_row(&x))
+        .try_map(|x| OptimizeRecord::from_row(&x))
         .fetch_all(tx.as_mut())
         .await
         .map_err(Either::Left)?;
@@ -607,10 +563,152 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     }
 }
 
+#[instrument(
+    skip_all,
+    fields(
+        item_id = record.id,
+        attempt = record.attempt
+    )
+)]
+async fn process_item<'a, T: QueueMessage, F, Fut, R>(
+    tx: &mut Transaction<'static, Postgres>,
+    record: QueueRecord,
+    f: F,
+    filter: &'a T::Filter,
+    retryable_error_expo_backoff_max: f64,
+    retryable_error_expo_backoff_multiplier: f64,
+) -> Result<Option<R>, sqlx::Error>
+where
+    F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
+    Fut: Future<Output = (R, Result<Vec<Op<T>>, QueueError>)> + Send + Captures<'a>,
+    R: Send + Sync + 'static,
+{
+    trace!(%record.item);
+
+    // really don't feel like defining a new error type right now
+    let op = de::<Op<T>>(&record.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
+
+    let timer = ITEM_PROCESSING_DURATION.start_timer();
+    let (r, res) = f(op.clone(), ItemId::new(record.id).unwrap()).await;
+    let _ = timer.stop_and_record();
+
+    match res {
+        Err(QueueError::Fatal(error)) => {
+            let error = full_error_string(error);
+            error!(%error, "fatal error");
+            insert_error(record, error, tx).await?;
+        }
+        Err(QueueError::Unprocessable(error)) => {
+            let error = full_error_string(error);
+            info!(%error, "unprocessable message");
+            insert_error(record, error, tx).await?;
+        }
+        Err(QueueError::Retry(error)) => {
+            warn!(error = %full_error_string(error), "retryable error");
+            sqlx::query(
+                "
+                INSERT INTO
+                queue  (id, item,      parents, attempt, handle_at, created_at)
+                VALUES ($1, $2::JSONB, $3,      $4,      $5,        $6        )
+                ",
+            )
+            .bind(record.id)
+            .bind(record.item)
+            .bind(record.parents)
+            .bind(record.attempt.saturating_add(1))
+            .bind(
+                time::OffsetDateTime::now_utc().saturating_add(
+                    Duration::try_from_secs_f64(
+                        (record.attempt as f64)
+                            .powf(retryable_error_expo_backoff_multiplier)
+                            .clamp(f64::MIN, retryable_error_expo_backoff_max),
+                    )
+                    .unwrap_or(Duration::MAX)
+                    .try_into()
+                    .unwrap_or(time::Duration::MAX),
+                ),
+            )
+            .bind(record.created_at)
+            .execute(tx.as_mut())
+            .await?;
+
+            tokio::time::sleep(Duration::from_millis(500)).await;
+        }
+        Ok(ops) => {
+            'block: {
+                // insert the op we just processed into done
+                sqlx::query(
+                    "
+                    INSERT INTO
+                    done   (id, parents, item,      created_at)
+                    VALUES ($1, $2,      $3::JSONB, $4        )
+                    ",
+                )
+                .bind(record.id)
+                .bind(record.parents)
+                .bind(record.item)
+                .bind(record.created_at)
+                .execute(tx.as_mut())
+                .await?;
+
+                if ops.is_empty() {
+                    break 'block;
+                }
+
+                let (optimize, ready): (Vec<_>, Vec<_>) = ops
+                    .into_iter()
+                    .flat_map(Op::normalize)
+                    .partition_map(|op| match filter.check_interest(&op) {
+                        FilterResult::Interest(tag) => Either::Left((op, tag)),
+                        FilterResult::NoInterest => Either::Right(op),
+                    });
+
+                sqlx::query(
+                    "
+                    INSERT INTO queue (item, parents)
+                    SELECT *, $1 as parents FROM UNNEST($2::JSONB[])
+                    ",
+                )
+                .bind(vec![record.id])
+                .bind(ready.into_iter().map(Json).collect::<Vec<_>>())
+                .execute(tx.as_mut())
+                .await?;
+
+                sqlx::query(
+                    "
+                    INSERT INTO optimize (item, tag, parents)
+                    SELECT *, $1 as parents FROM UNNEST($2::JSONB[], $3::TEXT[])
+                    ",
+                )
+                .bind(vec![record.id])
+                .bind(
+                    optimize
+                        .iter()
+                        .flat_map(|(op, interest)| {
+                            interest.tags.iter().map(|_| Json(op.clone())).clone()
+                        })
+                        .collect::<Vec<_>>(),
+                )
+                .bind(
+                    optimize
+                        .iter()
+                        .flat_map(|(_, interest)| &interest.tags)
+                        .copied()
+                        .collect::<Vec<_>>(),
+                )
+                .execute(tx.as_mut())
+                .await?;
+            }
+        }
+    }
+
+    Ok(Some(r))
+}
+
 async fn insert_error(
-    record: Record,
+    record: QueueRecord,
     error: String,
-    mut tx: Transaction<'static, Postgres>,
+    tx: &mut Transaction<'static, Postgres>,
 ) -> Result<(), sqlx::Error> {
     // insert error message and the op into failed
 
@@ -628,8 +726,6 @@ async fn insert_error(
     .bind(error)
     .execute(tx.as_mut())
     .await?;
-
-    tx.commit().await?;
 
     Ok(())
 }

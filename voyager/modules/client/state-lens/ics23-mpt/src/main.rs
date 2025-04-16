@@ -17,12 +17,12 @@ use unionlabs::{
     primitives::Bytes,
 };
 use voyager_message::{
-    core::{
+    into_value,
+    module::{ClientModuleInfo, ClientModuleServer},
+    primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    into_value,
-    module::{ClientModuleInfo, ClientModuleServer},
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
@@ -166,7 +166,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp_nanos: Timestamp::from_nanos(cs.timestamp),
+            timestamp: Timestamp::from_nanos(cs.timestamp),
         })
     }
 

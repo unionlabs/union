@@ -6,6 +6,7 @@ use std::{
 use cometbls_light_client_types::{ClientState, ConsensusState};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
@@ -16,11 +17,13 @@ use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     primitives::H256,
     traits::Member,
+    ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType},
+    rpc::json_rpc_error_to_error_object,
     ClientBootstrapModule,
 };
 use voyager_vm::BoxDynError;
@@ -36,7 +39,6 @@ pub struct Module {
 
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
-    pub grpc_url: String,
 
     pub ibc_host_contract_address: H256,
 }
@@ -45,7 +47,6 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub grpc_url: String,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
@@ -66,7 +67,7 @@ impl ClientBootstrapModule for Module {
 
         let chain_revision = chain_id
             .split('-')
-            .last()
+            .next_back()
             .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,
@@ -81,7 +82,6 @@ impl ClientBootstrapModule for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            grpc_url: config.grpc_url,
             ibc_host_contract_address: config
                 .ibc_host_contract_address
                 .map(|a| *a.data())
@@ -116,17 +116,29 @@ impl ClientBootstrapModuleServer for Module {
     ) -> RpcResult<Value> {
         ensure_null(config)?;
 
-        let params = protos::cosmos::staking::v1beta1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .unwrap()
-        .params(protos::cosmos::staking::v1beta1::QueryParamsRequest {})
-        .await
-        .unwrap()
-        .into_inner()
-        .params
-        .unwrap();
+        let params = self
+            .cometbft_client
+            .grpc_abci_query::<_, protos::cosmos::staking::v1beta1::QueryParamsResponse>(
+                "/cosmos.staking.v1beta1.Query/Params",
+                &protos::cosmos::staking::v1beta1::QueryParamsRequest {},
+                None,
+                false,
+            )
+            .await
+            .map_err(json_rpc_error_to_error_object)?
+            .into_result()
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching params"),
+                    None::<()>,
+                )
+            })?
+            .ok_or_else(|| {
+                ErrorObject::owned(-1, "error fetching params: empty response", None::<()>)
+            })?
+            .params
+            .unwrap_or_default();
 
         let commit = self
             .cometbft_client
@@ -153,7 +165,7 @@ impl ClientBootstrapModuleServer for Module {
                 self.chain_id
                     .as_str()
                     .split('-')
-                    .last()
+                    .next_back()
                     .unwrap()
                     .parse()
                     .unwrap(),

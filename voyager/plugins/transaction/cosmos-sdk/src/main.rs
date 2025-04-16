@@ -1,51 +1,50 @@
 // #![warn(clippy::unwrap_used)]
+#![feature(if_let_guard)]
 
-use std::{collections::VecDeque, panic::AssertUnwindSafe};
-
-use chain_utils::{
-    cosmos_sdk::{
-        cosmos_sdk_error::{ChannelError, ClientError, CosmosSdkError, IbcWasmError, SdkError},
-        CosmosKeyring, GasConfig,
-    },
-    keyring::{KeyringConfig, KeyringEntry},
-    BoxDynError,
+use std::{
+    collections::{BTreeMap, HashMap, HashSet, VecDeque},
+    num::NonZeroU32,
+    ops::Deref,
+    panic::AssertUnwindSafe,
+    sync::{Arc, LazyLock},
 };
+
+use cometbft_rpc::rpc_types::GrpcAbciQueryError;
+use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
+use cosmos_client::{
+    gas::{FeemarketGasFiller, GasFillerT, StaticGasFiller},
+    rpc::{Rpc, RpcT},
+    wallet::{LocalSigner, WalletT},
+    BroadcastTxCommitError, FetchAccountInfoError, SimulateTxError, TxClient,
+};
+use ibc_union::ContractErrorKind;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    proc_macros::rpc,
     types::ErrorObject,
-    Extensions,
+    Extensions, MethodsError,
 };
 use prost::Message;
 use serde::{Deserialize, Serialize};
-use sha2::Digest;
-use tracing::{debug, error, info, instrument, trace, warn};
+use serde_json::Value;
+use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
     self,
     bech32::Bech32,
-    bounded::BoundedI64,
-    cosmos::{
-        auth::base_account::BaseAccount,
-        base::abci::gas_info::GasInfo,
-        crypto::{secp256k1, AnyPubKey},
-        tx::{
-            auth_info::AuthInfo, mode_info::ModeInfo, sign_doc::SignDoc, signer_info::SignerInfo,
-            signing::sign_info::SignMode, tx::Tx, tx_body::TxBody, tx_raw::TxRaw,
-        },
-    },
-    encoding::{EncodeAs, Proto},
-    google::protobuf::any::{mk_any, Any},
-    primitives::{Bytes, H256},
-    signer::CosmosSigner,
+    cosmos::{base::coin::Coin, tx::fee::Fee},
+    google::protobuf::any::mk_any,
+    option_unwrap,
+    primitives::{Bytes, H160, H256},
     ErrorReporter,
 };
 use voyager_message::{
-    core::ChainId,
     data::Data,
     hook::SubmitTxHook,
     module::{PluginInfo, PluginServer},
+    primitives::ChainId,
+    vm::{call, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
-use voyager_vm::{call, conc, defer, noop, now, pass::PassResult, seq, Op, Visit};
 
 use crate::{
     call::{IbcMessage, ModuleCall},
@@ -62,14 +61,27 @@ async fn main() {
 }
 
 #[derive(Debug, Clone)]
-pub struct Module {
+pub struct Module(Arc<ModuleInner>);
+
+#[derive(Debug)]
+pub struct ModuleInner {
     pub chain_id: ChainId,
     pub ibc_host_contract_address: Bech32<H256>,
-    pub keyring: CosmosKeyring,
-    pub cometbft_client: cometbft_rpc::Client,
-    pub grpc_url: String,
-    pub gas_config: GasConfig,
+    pub keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
+    pub rpc: Rpc,
+    pub gas_config: AnyGasFiller,
     pub bech32_prefix: String,
+    pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
+    pub gas_station_config: Vec<Coin>,
+    pub fee_recipient: Option<Bech32<Bytes>>,
+}
+
+impl Deref for Module {
+    type Target = ModuleInner;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -79,9 +91,69 @@ pub struct Config {
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
     pub rpc_url: String,
-    pub grpc_url: String,
-    pub gas_config: GasConfig,
+    pub gas_config: AnyGasFillerConfig,
+    /// A list of (codespace, code) tuples that are to be considered non-recoverable.
+    #[serde(default)]
+    pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
+    #[serde(default)]
+    pub gas_station_config: Vec<Coin>,
+    #[serde(default)]
+    pub fee_recipient: Option<Bech32<Bytes>>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "config")]
+pub enum AnyGasFillerConfig {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFillerConfig),
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct FeemarketGasFillerConfig {
+    pub max_gas: u64,
+    #[serde(with = "::serde_utils::string_opt")]
+    pub gas_multiplier: Option<f64>,
+    pub fee_denom: Option<String>,
+}
+
+#[derive(Debug)]
+pub enum AnyGasFiller {
+    Static(StaticGasFiller),
+    Feemarket(FeemarketGasFiller),
+}
+
+impl GasFillerT for AnyGasFiller {
+    async fn max_gas(&self) -> u64 {
+        match self {
+            Self::Static(f) => f.max_gas().await,
+            Self::Feemarket(f) => f.max_gas().await,
+        }
+    }
+
+    async fn mk_fee(&self, gas: u64) -> Fee {
+        match self {
+            Self::Static(f) => f.mk_fee(gas).await,
+            Self::Feemarket(f) => f.mk_fee(gas).await,
+        }
+    }
+}
+
+const FATAL_ERRORS: &[(&str, NonZeroU32)] = &[
+    // https://github.com/cosmos/ibc-go/blob/main/modules/light-clients/08-wasm/types/errors.go
+    ("08-wasm", option_unwrap!(NonZeroU32::new(4))),
+    // https://github.com/cosmos/ibc-go/blob/7f89b7dd8796eca1bfe07f8a7833f3ce2d7a8e04/modules/core/02-client/types/errors.go
+    ("client", option_unwrap!(NonZeroU32::new(4))),
+];
+
+static ACCOUNT_SEQUENCE_ERRORS: LazyLock<HashSet<(&str, NonZeroU32)>> = LazyLock::new(|| {
+    [
+        // ("sdk", option_unwrap!(NonZeroU32::new(6))),
+        ("sdk", option_unwrap!(NonZeroU32::new(32))),
+    ]
+    .into_iter()
+    .collect()
+});
 
 impl Plugin for Module {
     type Call = ModuleCall;
@@ -91,45 +163,64 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let rpc = Rpc::new(config.rpc_url.clone()).await?;
 
-        let chain_id = tm_client.status().await?.node_info.network.to_string();
+        let chain_id = rpc.client().status().await?.node_info.network.to_string();
 
-        let bech32_prefix = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(
-            config.grpc_url.clone(),
-        )
-        .await?
-        .bech32_prefix(protos::cosmos::auth::v1beta1::Bech32PrefixRequest {})
-        .await?
-        .into_inner()
-        .bech32_prefix;
+        let bech32_prefix = rpc
+            .client()
+            .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
+                "/cosmos.auth.v1beta1.Query/Bech32Prefix",
+                &protos::cosmos::auth::v1beta1::Bech32PrefixRequest {},
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .unwrap()
+            .bech32_prefix;
 
-        Ok(Self {
+        Ok(Self(Arc::new(ModuleInner {
             ibc_host_contract_address: config.ibc_host_contract_address,
-            keyring: CosmosKeyring::new(
+            keyring: ConcurrentKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|entry| {
-                    let signer = CosmosSigner::new(
-                        bip32::secp256k1::ecdsa::SigningKey::from_bytes(
-                            entry.value().as_slice().into(),
-                        )
-                        .expect("invalid private key"),
-                        bech32_prefix.clone(),
-                    );
+                    let signer =
+                        LocalSigner::new(entry.value().try_into().unwrap(), bech32_prefix.clone());
 
                     KeyringEntry {
-                        name: entry.name(),
-                        address: signer.to_string(),
+                        address: signer.address(),
                         signer,
                     }
                 }),
             ),
-            cometbft_client: tm_client,
+            rpc,
             chain_id: ChainId::new(chain_id),
-            grpc_url: config.grpc_url,
-            gas_config: config.gas_config,
+            gas_config: match config.gas_config {
+                AnyGasFillerConfig::Static(f) => AnyGasFiller::Static(f),
+                AnyGasFillerConfig::Feemarket(f) => AnyGasFiller::Feemarket(
+                    FeemarketGasFiller::new(
+                        config.rpc_url,
+                        f.max_gas,
+                        f.gas_multiplier,
+                        f.fee_denom,
+                    )
+                    .await?,
+                ),
+            },
             bech32_prefix,
-        })
+            fatal_errors: config
+                .fatal_errors
+                .into_iter()
+                .chain(
+                    FATAL_ERRORS
+                        .iter()
+                        .map(|(codespace, code)| (((*codespace).to_owned(), *code), None)),
+                )
+                .collect(),
+            gas_station_config: config.gas_station_config,
+            fee_recipient: config.fee_recipient,
+        })))
     }
 
     fn info(config: Self::Config) -> PluginInfo {
@@ -141,6 +232,70 @@ impl Plugin for Module {
 
     async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
         match cmd {}
+    }
+}
+
+// TODO: Currently duplicated between here and the ethereum tx plugin, deduplicate
+#[rpc(server)]
+trait TransactionPlugin {
+    #[method(name = "signerAddresses")]
+    async fn signer_addresses(&self) -> RpcResult<Vec<Bech32<H160>>>;
+
+    #[method(name = "signerBalances")]
+    async fn signer_balances(&self) -> RpcResult<BTreeMap<Bech32<H160>, String>>;
+}
+
+#[async_trait]
+impl TransactionPluginServer for Module {
+    async fn signer_addresses(&self) -> RpcResult<Vec<Bech32<H160>>> {
+        Ok(self.keyring.keys().cloned().collect())
+    }
+
+    async fn signer_balances(&self) -> RpcResult<BTreeMap<Bech32<H160>, String>> {
+        let mut out = BTreeMap::new();
+
+        for address in self.keyring.keys() {
+            let balance = self
+                .rpc
+                .client()
+                .grpc_abci_query::<_, protos::cosmos::bank::v1beta1::QueryBalanceResponse>(
+                    "/cosmos.bank.v1beta1.Query/Balance",
+                    &protos::cosmos::bank::v1beta1::QueryBalanceRequest {
+                        address: address.to_string(),
+                        denom: self.gas_config.mk_fee(0).await.amount[0].denom.clone(),
+                    },
+                    None,
+                    false,
+                )
+                .await
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        ErrorReporter(e).with_message("error fetching balance"),
+                        None::<()>,
+                    )
+                })?
+                .into_result()
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        ErrorReporter(e).with_message("error fetching balance"),
+                        None::<()>,
+                    )
+                })?
+                .ok_or_else(|| {
+                    ErrorObject::owned(-1, "empty response when fetching balance", None::<()>)
+                })?
+                .balance
+                .ok_or_else(|| {
+                    ErrorObject::owned(-1, "empty balance when fetching balance", None::<()>)
+                })?
+                .amount;
+
+            out.insert(address.clone(), balance);
+        }
+
+        Ok(out)
     }
 }
 
@@ -158,108 +313,59 @@ impl Module {
     pub async fn do_send_transaction(
         &self,
         msgs: Vec<IbcMessage>,
-    ) -> Result<Op<VoyagerMessage>, BroadcastTxCommitError> {
-        let res = self
-            .keyring
+    ) -> Option<Result<(), BroadcastTxCommitError>> {
+        self.keyring
             .with(|signer| {
                 let msgs = msgs.clone();
 
                 trace!(?msgs);
 
+                // TODO: Figure out a way to thread this value through
+                let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
+
+                let ibc_host_contract_address = self.ibc_host_contract_address.clone();
+                let msgs = process_msgs(
+                    msgs,
+                    signer,
+                    ibc_host_contract_address,
+                    self.gas_station_config.clone(),
+                    self.fee_recipient.as_ref(),
+                );
+
+                let msgs = msgs
+                    .into_iter()
+                    .filter_map(|msg| match msg {
+                        Ok(msg) => Some(msg),
+                        Err(err) => {
+                            error!("invalid msg: {}", ErrorReporter(err));
+                            None
+                        }
+                    })
+                    .collect::<Vec<_>>();
+
+                let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
+
+                let batch_size = msgs.len();
+                let msg_names = msgs.iter().map(|x| x.0.name()).collect::<Vec<_>>();
+
                 AssertUnwindSafe(async move {
-                    // TODO: Figure out a way to thread this value through
-                    let memo = format!("Voyager {}", env!("CARGO_PKG_VERSION"));
-
-                    let ibc_host_contract_address = self.ibc_host_contract_address.clone();
-                    let msgs = process_msgs(msgs, signer, ibc_host_contract_address);
-
-                    let msgs = msgs
-                        .into_iter()
-                        .filter_map(|msg| match msg {
-                            Ok(msg) => Some(msg),
-                            Err(err) => {
-                                error!("invalid msg: {}", ErrorReporter(err));
-                                None
-                            },
-                        })
-                        .collect::<Vec<_>>();
-
                     if msgs.is_empty() {
                         info!("no msgs left to submit after filtering out invalid msgs");
                         return Ok(());
                     }
 
-                    // let simulation_results = stream::iter(msgs.clone().into_iter().enumerate())
-                    //     .then(move |(idx, (effect, msg))| async move {
-                    //         let type_url = msg.type_url.clone();
-
-                    //         self.simulate_tx(
-                    //             signer,
-                    //             [msg],
-                    //             format!("Voyager {}", env!("CARGO_PKG_VERSION"))
-                    //         )
-                    //         .map(move |res| (idx, type_url, effect, res))
-                    //         .await
-                    //     })
-                    //     .collect::<Vec<(usize, String, _, Result<_, _>)>>()
-                    //     .await;
-
-                    // // iterate backwards such that when we remove items from msgs, we don't shift the relative indices
-                    // for (idx, type_url, msg, simulation_result) in simulation_results.into_iter().rev() {
-                    //     let _span = info_span!(
-                    //         "simulation result",
-                    //         msg = type_url,
-                    //         idx,
-                    //     )
-                    //     .entered();
-
-                    //     match simulation_result {
-                    //         Ok((_, _, gas_info)) => {
-                    //             info!(
-                    //                 gas_wanted = %gas_info.gas_wanted,
-                    //                 gas_used = %gas_info.gas_used,
-                    //                 "individual message simulation successful",
-                    //             );
-
-                    //             log_msg(&self.chain_id, msg);
-                    //         }
-                    //         Err(error) => {
-                    //             if error.message().contains("account sequence mismatch") {
-                    //                 warn!("account sequence mismatch on individual message simulation, treating this message as successful");
-                    //                 log_msg(&self.chain_id, msg);
-                    //             } else {
-                    //                 error!(
-                    //                     %error,
-                    //                     "individual message simulation failed"
-                    //                 );
-
-                    //                 log_msg(&self.chain_id, msg);
-
-                    //                 msgs.remove(idx);
-                    //             }
-                    //         }
-                    //     }
-                    // }
-
-                    // if msgs.is_empty() {
-                    //     info!(
-                    //         "no messages remaining to submit after filtering out failed transactions"
-                    //     );
-                    //     return Ok(());
-                    // }
-
-                    let batch_size = msgs.len();
-                    let msg_names = msgs.iter().map(|x| x.0.name()).collect::<Vec<_>>();
-
-                    match self.broadcast_tx_commit(
-                        signer,
-                        msgs.iter().map(move |x| x.1.clone()).collect::<Vec<_>>(),
-                        memo
-                    ).await {
-                        Ok((tx_hash, gas_used)) => {
+                    match tx_client
+                        .broadcast_tx_commit(
+                            msgs.iter().map(move |x| x.1.clone()).collect::<Vec<_>>(),
+                            memo,
+                            true,
+                        )
+                        .await
+                    {
+                        Ok((tx_hash, tx_response)) => {
                             info!(
                                 %tx_hash,
-                                %gas_used,
+                                gas_used = %tx_response.tx_result.gas_used,
                                 batch.size = %batch_size,
                                 "submitted cosmos transaction"
                             );
@@ -270,380 +376,58 @@ impl Module {
 
                             Ok(())
                         }
-                        Err(err) => match err {
-                            BroadcastTxCommitError::Tx(CosmosSdkError::ChannelError(
-                                ChannelError::ErrRedundantTx,
-                            )) => {
-                                info!("packet messages are redundant");
-                                Ok(())
-                            }
-                            // BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
-                            //     SdkError::ErrOutOfGas
-                            // )) => {
-                            //     error!("out of gas");
-                            //     Err(BroadcastTxCommitError::OutOfGas)
-                            // }
-                            BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
-                                SdkError::ErrWrongSequence
-                            )) => {
-                                warn!("account sequence mismatch on tx submission, message will be requeued and retried");
-                                Err(BroadcastTxCommitError::AccountSequenceMismatch(None))
-                            }
-                            BroadcastTxCommitError::SimulateTx(err) if err.message().contains("account sequence mismatch") => {
-                                warn!("account sequence mismatch on simulation, message will be requeued and retried");
-                                Err(BroadcastTxCommitError::AccountSequenceMismatch(Some(err)))
-                            }
-                            err => Err(err),
-                        },
+                        Err(err) => {
+                            info!(error = %ErrorReporter(&err), "cosmos tx failed");
+                            Err(err)
+                        }
                     }
                 })
             })
-            .await;
-
-        let rewrap_msg =
-            || PluginMessage::new(self.plugin_name(), ModuleCall::SubmitTransaction(msgs));
-
-        match res {
-            Some(Err(BroadcastTxCommitError::AccountSequenceMismatch(_))) => Ok(call(rewrap_msg())),
-            Some(Err(BroadcastTxCommitError::OutOfGas)) => Ok(call(rewrap_msg())),
-            Some(Err(BroadcastTxCommitError::SimulateTx(err)))
-                if err.code() == tonic::Code::Cancelled || err.code() == tonic::Code::Internal =>
-            {
-                info!("tx simulation failed with network error");
-
-                Ok(call(rewrap_msg()))
-            }
-            Some(Err(BroadcastTxCommitError::SimulateTx(err)))
-                if err.message().contains("spendable balance") =>
-            {
-                warn!("out of gas");
-
-                Ok(call(rewrap_msg()))
-            }
-            Some(Err(BroadcastTxCommitError::QueryLatestHeight(err))) => {
-                error!(error = %ErrorReporter(err), "error querying latest height");
-
-                Ok(call(rewrap_msg()))
-            }
-            Some(res) => res.map(|()| noop()),
-            // None => Ok(seq([defer_relative(1), effect(WithChainId{chain_id: self.chain_id.clone(), message: msg})])),
-            None => Ok(call(rewrap_msg())),
-        }
-    }
-
-    /// - simulate tx
-    /// - submit tx
-    /// - wait for inclusion
-    /// - return (tx_hash, gas_used)
-    pub async fn broadcast_tx_commit(
-        &self,
-        signer: &CosmosSigner,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
-        memo: String,
-    ) -> Result<(H256, BoundedI64<0, { i64::MAX }>), BroadcastTxCommitError> {
-        let account = self.account_info(&signer.to_string()).await.unwrap();
-
-        let (tx_body, mut auth_info, simulation_gas_info) =
-            match self.simulate_tx(signer, messages, memo).await {
-                Ok((tx_body, auth_info, simulation_gas_info)) => {
-                    (tx_body, auth_info, simulation_gas_info)
-                }
-                Err((_tx_body, _auth_info, err)) => {
-                    return Err(BroadcastTxCommitError::SimulateTx(err))
-                }
-            };
-        // .map_err(BroadcastTxCommitError::SimulateTx)?;
-
-        info!(
-            gas_used = %simulation_gas_info.gas_used,
-            gas_wanted = %simulation_gas_info.gas_wanted,
-            "tx simulation successful"
-        );
-
-        auth_info.fee = self.gas_config.mk_fee(simulation_gas_info.gas_used);
-
-        info!(
-            fee = %auth_info.fee.amount[0].amount,
-            gas_multiplier = %self.gas_config.gas_multiplier,
-            "submitting transaction with gas"
-        );
-
-        // re-sign the new auth info with the simulated gas
-        let signature = signer
-            .try_sign(
-                &SignDoc {
-                    body_bytes: tx_body.clone().encode_as::<Proto>(),
-                    auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.chain_id.to_string(),
-                    account_number: account.account_number,
-                }
-                .encode_as::<Proto>(),
-            )
-            .expect("signing failed")
-            .to_bytes()
-            .to_vec();
-
-        let tx_raw_bytes = TxRaw {
-            body_bytes: tx_body.clone().encode_as::<Proto>(),
-            auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-            signatures: [signature].to_vec(),
-        }
-        .encode_as::<Proto>();
-
-        let tx_hash: H256 = sha2::Sha256::new()
-            .chain_update(&tx_raw_bytes)
-            .finalize()
-            .into();
-
-        if let Ok(tx) = self.cometbft_client.tx(tx_hash, false).await {
-            debug!(%tx_hash, "tx already included");
-            return Ok((tx_hash, tx.tx_result.gas_used));
-        }
-
-        let response = self
-            .cometbft_client
-            .broadcast_tx_sync(&tx_raw_bytes)
             .await
-            .map_err(BroadcastTxCommitError::BroadcastTxSync)?;
-
-        assert_eq!(tx_hash, response.hash, "tx hash calculated incorrectly");
-
-        info!(
-            check_tx_code = %response.code,
-            codespace = %response.codespace,
-            check_tx_log = %response.log
-        );
-
-        if response.code > 0 {
-            let error = CosmosSdkError::from_code_and_codespace(&response.codespace, response.code);
-
-            error!(%error, "cosmos tx failed");
-
-            return Err(BroadcastTxCommitError::Tx(error));
-        };
-
-        let mut target_height = self
-            .cometbft_client
-            .block(None)
-            .await
-            .map_err(BroadcastTxCommitError::QueryLatestHeight)?
-            .block
-            .header
-            .height;
-
-        // TODO: Do this in the queue
-        let mut i = 0;
-        loop {
-            let reached_height = 'l: loop {
-                let current_height = self
-                    .cometbft_client
-                    .block(None)
-                    .await
-                    .map_err(BroadcastTxCommitError::QueryLatestHeight)?
-                    .block
-                    .header
-                    .height;
-
-                if current_height >= target_height {
-                    break 'l current_height;
-                }
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-            };
-
-            let tx_inclusion = self.cometbft_client.tx(tx_hash, false).await;
-
-            debug!(?tx_inclusion);
-
-            match tx_inclusion {
-                Ok(tx) => {
-                    if tx.tx_result.code == 0 {
-                        break Ok((tx_hash, tx.tx_result.gas_used));
-                    } else {
-                        let error = CosmosSdkError::from_code_and_codespace(
-                            &tx.tx_result.codespace,
-                            tx.tx_result.code,
-                        );
-                        warn!(
-                            %error,
-                            %tx_hash,
-
-                            %tx.tx_result.code,
-                            ?tx.tx_result.data,
-                            %tx.tx_result.log,
-                            %tx.tx_result.info,
-                            %tx.tx_result.gas_wanted,
-                            %tx.tx_result.gas_used,
-                            ?tx.tx_result.events,
-                            %tx.tx_result.codespace,
-
-                            "cosmos transaction failed"
-                        );
-
-                        if let Some(ibc_union_error) =
-                            tx.tx_result.log.split(": ").find_map(|x| {
-                                ibc_union::ContractErrorKind::parse_from_error_message(x)
-                            })
-                        {
-                            break Err(BroadcastTxCommitError::IbcUnionError(ibc_union_error));
-                        } else {
-                            break Err(BroadcastTxCommitError::Tx(error));
-                        }
-                    }
-                }
-                Err(err) if i > 5 => {
-                    warn!("tx inclusion couldn't be retrieved after {} attempt(s)", i);
-                    break Err(BroadcastTxCommitError::Inclusion(err));
-                }
-                Err(_) => {
-                    target_height = reached_height.add(&1);
-                    i += 1;
-                    continue;
-                }
-            }
-        }
-    }
-
-    pub async fn simulate_tx(
-        &self,
-        signer: &CosmosSigner,
-        messages: impl IntoIterator<Item = protos::google::protobuf::Any> + Clone,
-        memo: String,
-    ) -> Result<(TxBody, AuthInfo, GasInfo), (TxBody, AuthInfo, tonic::Status)> {
-        use protos::cosmos::tx;
-
-        let account = self.account_info(&signer.to_string()).await.unwrap();
-
-        let mut client = tx::v1beta1::service_client::ServiceClient::connect(self.grpc_url.clone())
-            .await
-            .unwrap();
-
-        let tx_body = TxBody {
-            // TODO: Use RawAny here
-            messages: messages.clone().into_iter().map(Into::into).collect(),
-            memo,
-            timeout_height: 0,
-            extension_options: vec![],
-            non_critical_extension_options: vec![],
-            unordered: false,
-            timeout_timestamp: None,
-        };
-
-        let auth_info = AuthInfo {
-            signer_infos: [SignerInfo {
-                public_key: Some(AnyPubKey::Secp256k1(secp256k1::PubKey {
-                    key: signer.public_key().into(),
-                })),
-                mode_info: ModeInfo::Single {
-                    mode: SignMode::Direct,
-                },
-                sequence: account.sequence,
-            }]
-            .to_vec(),
-            fee: self.gas_config.mk_fee(self.gas_config.max_gas).clone(),
-        };
-
-        let simulation_signature = signer
-            .try_sign(
-                &SignDoc {
-                    body_bytes: tx_body.clone().encode_as::<Proto>(),
-                    auth_info_bytes: auth_info.clone().encode_as::<Proto>(),
-                    chain_id: self.chain_id.to_string(),
-                    account_number: account.account_number,
-                }
-                .encode_as::<Proto>(),
-            )
-            .expect("signing failed")
-            .to_bytes()
-            .to_vec();
-
-        let result = client
-            .simulate(tx::v1beta1::SimulateRequest {
-                tx_bytes: Tx {
-                    body: tx_body.clone(),
-                    auth_info: auth_info.clone(),
-                    signatures: [simulation_signature.clone()].to_vec(),
-                }
-                .encode_as::<Proto>(),
-                ..Default::default()
-            })
-            .await;
-
-        match result {
-            Ok(ok) => Ok((
-                tx_body,
-                auth_info,
-                ok.into_inner()
-                    .gas_info
-                    .expect("gas info is present on successful simulation result")
-                    .into(),
-            )),
-            Err(err) => {
-                info!(error = %ErrorReporter(&err), "tx simulation failed");
-                Err((tx_body, auth_info, err))
-            }
-        }
-    }
-
-    async fn account_info(&self, account: &str) -> RpcResult<BaseAccount> {
-        debug!(%account, "fetching account");
-
-        let Any(account) = protos::cosmos::auth::v1beta1::query_client::QueryClient::connect(
-            self.grpc_url.clone(),
-        )
-        .await
-        .unwrap()
-        .account(protos::cosmos::auth::v1beta1::QueryAccountRequest {
-            address: account.to_string(),
-        })
-        .await
-        .map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                format!(
-                    "error fetching account info for {account}: {}",
-                    ErrorReporter(e)
-                ),
-                None::<()>,
-            )
-        })?
-        .into_inner()
-        .account
-        .unwrap()
-        .try_into()
-        .map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                format!(
-                    "unable to decode account info for {account}: {}",
-                    ErrorReporter(e)
-                ),
-                None::<()>,
-            )
-        })?;
-
-        Ok(account)
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum BroadcastTxCommitError {
-    #[error("error querying latest height")]
-    QueryLatestHeight(#[source] cometbft_rpc::JsonRpcError),
-    #[error("error sending broadcast_tx_sync")]
-    BroadcastTxSync(#[source] cometbft_rpc::JsonRpcError),
-    #[error("tx was not included")]
-    Inclusion(#[source] cometbft_rpc::JsonRpcError),
-    #[error("tx failed: {0:?}")]
-    Tx(CosmosSdkError),
-    #[error("tx simulation failed")]
-    SimulateTx(#[source] tonic::Status),
-    #[error("account sequence mismatch")]
-    AccountSequenceMismatch(#[source] Option<tonic::Status>),
-    #[error("union IBC error: {0}")]
-    IbcUnionError(ibc_union::ContractErrorKind),
-    #[error("out of gas")]
-    OutOfGas,
-}
+// {
+//     Ok((tx_hash, gas_used)) => {
+//         info!(
+//             %tx_hash,
+//             %gas_used,
+//             batch.size = %batch_size,
+//             "submitted cosmos transaction"
+//         );
+
+//         for msg in msg_names {
+//             info!(%tx_hash, %msg, "cosmos tx");
+//         }
+
+//         Ok(())
+//     }
+//     Err(err) => match err {
+//         BroadcastTxCommitError::Tx(CosmosSdkError::ChannelError(
+//             ChannelError::ErrRedundantTx,
+//         )) => {
+//             info!("packet messages are redundant");
+//             Ok(())
+//         }
+//         // BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
+//         //     SdkError::ErrOutOfGas
+//         // )) => {
+//         //     error!("out of gas");
+//         //     Err(BroadcastTxCommitError::OutOfGas)
+//         // }
+//         BroadcastTxCommitError::Tx(CosmosSdkError::SdkError(
+//             SdkError::ErrWrongSequence
+//         )) => {
+//             warn!("account sequence mismatch on tx submission, message will be requeued and retried");
+//             Err(BroadcastTxCommitError::AccountSequenceMismatch(None))
+//         }
+//         BroadcastTxCommitError::SimulateTx(err) if err.message().contains("account sequence mismatch") => {
+//             warn!("account sequence mismatch on simulation, message will be requeued and retried");
+//             Err(BroadcastTxCommitError::AccountSequenceMismatch(Some(err)))
+//         }
+//         err => Err(err),
+//     },
+// }
 
 #[async_trait]
 impl PluginServer<ModuleCall, ModuleCallback> for Module {
@@ -689,101 +473,176 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[allow(clippy::collapsible_match)]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::SubmitTransaction(msgs) => {
-                let mut out = vec![];
-
-                let batch_submission_result = self.do_send_transaction(msgs.to_vec()).await;
+            ModuleCall::SubmitTransaction(mut msgs) => {
+                let batch_submission_result = self.do_send_transaction(msgs.clone()).await;
 
                 match batch_submission_result {
-                    Ok(ok) => return Ok(ok),
-                    Err(err) => match err {
-                        BroadcastTxCommitError::QueryLatestHeight(_)
-                        | BroadcastTxCommitError::BroadcastTxSync(_)
-                        | BroadcastTxCommitError::Inclusion(_)
-                        | BroadcastTxCommitError::OutOfGas
-                        | BroadcastTxCommitError::AccountSequenceMismatch(_) => {
-                            info!(error = %ErrorReporter(err), "batch tx submission failed with retryable error, message will be requeued");
-                            return Ok(seq([
-                                defer(now() + 5),
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::from(msgs),
-                                )),
-                            ]));
-                        }
+                    None => return Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
+                    Some(Ok(())) => return Ok(noop()),
+                    Some(Err(err)) => {
+                        // dbg!(&err);
 
-                        BroadcastTxCommitError::SimulateTx(err)
-                            if err.message().contains("spendable balance") =>
-                        {
-                            warn!(error = %ErrorReporter(err), "out of gas");
+                        // let mut split_msgs = false;
 
-                            return Ok(seq([
-                                defer(now() + 5),
-                                call(PluginMessage::new(
-                                    self.plugin_name(),
-                                    ModuleCall::from(msgs),
-                                )),
-                            ]));
-                        }
-
-                        BroadcastTxCommitError::Tx(_)
-                        | BroadcastTxCommitError::SimulateTx(_)
-                        | BroadcastTxCommitError::IbcUnionError(_) => {
-                            warn!(error = %ErrorReporter(err), "batch tx submission failed with non-batchable error, attempting to submit messages individually");
-                        }
-                    },
-                }
-
-                for msgs in msgs.chunks(1) {
-                    let res = self
-                        .do_send_transaction(msgs.to_vec())
-                        .await
-                        .map_err(|err| match &err {
-                            BroadcastTxCommitError::Tx(tx_err) => match tx_err {
-                                CosmosSdkError::CapabilityError(capability_error) => {
-                                    ErrorObject::owned(
-                                        FATAL_JSONRPC_ERROR_CODE,
-                                        ErrorReporter(capability_error).to_string(),
-                                        None::<()>,
-                                    )
-                                }
-                                CosmosSdkError::IbcWasmError(IbcWasmError::ErrInvalidChecksum) => {
-                                    ErrorObject::owned(
-                                        FATAL_JSONRPC_ERROR_CODE,
-                                        ErrorReporter(err).to_string(),
-                                        None::<()>,
-                                    )
-                                }
-                                CosmosSdkError::ClientError(ClientError::ErrClientNotFound) => {
-                                    ErrorObject::owned(
-                                        FATAL_JSONRPC_ERROR_CODE,
-                                        ErrorReporter(err).to_string(),
-                                        None::<()>,
-                                    )
-                                }
-                                _ => ErrorObject::owned(
+                        match err {
+                            _ if let Some(err) = err.as_json_rpc_error() => {
+                                return Err(ErrorObject::owned(
                                     -1,
-                                    ErrorReporter(err).to_string(),
+                                    ErrorReporter(err).with_message("jsonrpc error"),
                                     None::<()>,
-                                ),
-                            },
-                            BroadcastTxCommitError::SimulateTx(err) => ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                format!("tx simulation failed: {}", ErrorReporter(err)),
-                                None::<()>,
-                            ),
-                            BroadcastTxCommitError::IbcUnionError(_) => ErrorObject::owned(
-                                FATAL_JSONRPC_ERROR_CODE,
-                                ErrorReporter(err).to_string(),
-                                None::<()>,
-                            ),
-                            _ => ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>),
-                        })?;
+                                ))
+                            }
 
-                    out.push(res);
+                            BroadcastTxCommitError::FetchAccountInfo(
+                                FetchAccountInfoError::Query(GrpcAbciQueryError {
+                                    error_code,
+                                    codespace,
+                                    log,
+                                }),
+                            )
+                            | BroadcastTxCommitError::SimulateTx(SimulateTxError::Query(
+                                GrpcAbciQueryError {
+                                    error_code,
+                                    codespace,
+                                    log,
+                                },
+                            ))
+                            | BroadcastTxCommitError::TxFailed {
+                                codespace,
+                                error_code,
+                                log,
+                            } if ACCOUNT_SEQUENCE_ERRORS.contains(&(&codespace, error_code))
+                                || log.contains("account sequence mismatch") =>
+                            {
+                                return Err(ErrorObject::owned(
+                                    -1,
+                                    format!("account sequence mismatch ({codespace}, {error_code}): {log}"),
+                                    None::<()>,
+                                ));
+                            }
+
+                            BroadcastTxCommitError::FetchAccountInfo(
+                                FetchAccountInfoError::Query(GrpcAbciQueryError {
+                                    error_code,
+                                    codespace,
+                                    log,
+                                }),
+                            )
+                            | BroadcastTxCommitError::SimulateTx(SimulateTxError::Query(
+                                GrpcAbciQueryError {
+                                    error_code,
+                                    codespace,
+                                    log,
+                                },
+                            ))
+                            | BroadcastTxCommitError::TxFailed {
+                                codespace,
+                                error_code,
+                                log,
+                            } => {
+                                if let Some((msg_idx, log)) = parse_msg_idx_from_log(&log) {
+                                    let _span = info_span!("cosmos msg failed", msg_idx).entered();
+                                    info!(%log);
+
+                                    match self.fatal_errors.get(&(codespace.clone(), error_code)) {
+                                        // no msg
+                                        Some(None) => {
+                                            error!(codespace, error_code, %log, "fatal error");
+                                        }
+                                        // provided msg
+                                        Some(Some(msg)) => {
+                                            error!(codespace, error_code, %log, "fatal error: {msg}");
+                                        }
+                                        // unknown error, retry
+                                        None => match parse_wasm_failure(log) {
+                                            Some(err) => match err {
+                                                ContractErrorKind::ReceivedTimedOutPacketHeight => {
+                                                    info!("packet timed out (height)");
+                                                }
+                                                ContractErrorKind::ReceivedTimedOutPacketTimestamp => {
+                                                    info!("packet timed out (timestamp)");
+                                                }
+                                                // ContractErrorKind::PacketNotReceived => {}
+                                                ContractErrorKind::AlreadyAcknowledged => {
+                                                    info!("packet already acknowledged");
+                                                }
+                                                ContractErrorKind::PacketCommitmentNotFound => {
+                                                    info!("packet commitment not found");
+                                                }
+                                                _ => {
+                                                    warn!("ibc-union error ({err}): {log}");
+                                                    // split_msgs = true;
+                                                }
+                                            },
+                                            None => {
+                                                warn!("error submitting transaction ({codespace}, {error_code}): {log}");
+                                                // split_msgs = true;
+                                            }
+                                        },
+                                    }
+
+                                    // if !split_msgs {
+                                    //     msgs.remove(msg_idx);
+
+                                    //     if msgs.is_empty() {
+                                    //         Ok(noop())
+                                    //     } else {
+                                    //         Ok(call(PluginMessage::new(
+                                    //             self.plugin_name(),
+                                    //             ModuleCall::SubmitTransaction(msgs),
+                                    //         )))
+                                    //     }
+                                    // } else
+                                    if msgs.len() == 1 {
+                                        warn!("cosmos msg failed");
+
+                                        Ok(noop())
+                                    } else {
+                                        // Ok(seq(msgs.into_iter().map(|msg| {
+                                        //     call(PluginMessage::new(
+                                        //         self.plugin_name(),
+                                        //         ModuleCall::SubmitTransaction(vec![msg]),
+                                        //     ))
+                                        // })))
+                                        msgs.remove(msg_idx);
+
+                                        if msgs.is_empty() {
+                                            Ok(noop())
+                                        } else {
+                                            Ok(call(PluginMessage::new(
+                                                self.plugin_name(),
+                                                ModuleCall::SubmitTransaction(msgs),
+                                            )))
+                                        }
+                                    }
+                                } else if log.contains("insufficient funds") {
+                                    warn!("out of gas");
+
+                                    return Err(ErrorObject::owned(-1, "out of gas", None::<()>));
+                                } else {
+                                    warn!("unable to parse message index from tx failure ({codespace}, {error_code}): {log}");
+
+                                    if msgs.len() == 1 {
+                                        warn!("cosmos msg failed");
+                                        Ok(noop())
+                                    } else {
+                                        Ok(seq(msgs.into_iter().map(|msg| {
+                                            call(PluginMessage::new(
+                                                self.plugin_name(),
+                                                ModuleCall::SubmitTransaction(vec![msg]),
+                                            ))
+                                        })))
+                                    }
+                                }
+                            }
+                            _ => Err(ErrorObject::owned(
+                                -1,
+                                ErrorReporter(err).with_message("error submitting tx"),
+                                None::<()>,
+                            )),
+                        }
+                    }
                 }
-
-                Ok(conc(out))
             }
         }
     }
@@ -797,15 +656,39 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
     }
+
+    #[instrument(skip_all, fiellds(chain_id = %self.chain_id))]
+    async fn custom(&self, _: &Extensions, method: String, params: Vec<Value>) -> RpcResult<Value> {
+        TransactionPluginServer::into_rpc(self.clone())
+            .call::<Vec<Value>, Value>(&method, params)
+            .await
+            .map_err(|e| match e {
+                MethodsError::Parse(error) => ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    ErrorReporter(error).with_message("error parsing ergs"),
+                    None::<()>,
+                ),
+                MethodsError::JsonRpc(error_object) => error_object,
+                MethodsError::InvalidSubscriptionId(_) => ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    "subscriptions are not supported",
+                    None::<()>,
+                ),
+            })
+    }
 }
 
 fn process_msgs(
     msgs: Vec<IbcMessage>,
-    signer: &CosmosSigner,
+    signer: &LocalSigner,
     ibc_host_contract_address: Bech32<H256>,
+    gas_station_config: Vec<Coin>,
+    fee_recipient: Option<&Bech32<Bytes>>,
 ) -> Vec<RpcResult<(IbcMessage, protos::google::protobuf::Any)>> {
     msgs.into_iter()
         .map(|msg| {
+            let signer = signer.address().to_string();
+
             let encoded = match msg.clone() {
                 IbcMessage::IbcV1(msg) => match msg {
                     ibc_classic_spec::Datagram::ConnectionOpenInit(message) => {
@@ -813,7 +696,7 @@ fn process_msgs(
                             client_id: message.client_id.to_string(),
                             counterparty: Some(message.counterparty.into()),
                             version: Some(message.version.into()),
-                            signer: signer.to_string(),
+                            signer,
                             delay_period: message.delay_period,
                         })
                     }
@@ -829,7 +712,7 @@ fn process_msgs(
                                 .collect(),
                             proof_height: Some(message.proof_height.into()),
                             proof_init: message.proof_init.into(),
-                            signer: signer.to_string(),
+                            signer,
                             ..Default::default()
                         })
                     }
@@ -844,7 +727,7 @@ fn process_msgs(
                             proof_client: message.proof_client.into(),
                             proof_consensus: message.proof_consensus.into(),
                             consensus_height: Some(message.consensus_height.into()),
-                            signer: signer.to_string(),
+                            signer,
                             host_consensus_state_proof: vec![],
                             connection_id: message.connection_id.to_string(),
                             counterparty_connection_id: message
@@ -859,14 +742,14 @@ fn process_msgs(
                             connection_id: message.connection_id.to_string(),
                             proof_ack: message.proof_ack.into(),
                             proof_height: Some(message.proof_height.into()),
-                            signer: signer.to_string(),
+                            signer,
                         },
                     ),
                     ibc_classic_spec::Datagram::ChannelOpenInit(message) => {
                         mk_any(&protos::ibc::core::channel::v1::MsgChannelOpenInit {
                             port_id: message.port_id.to_string(),
                             channel: Some(message.channel.into()),
-                            signer: signer.to_string(),
+                            signer,
                         })
                     }
                     ibc_classic_spec::Datagram::ChannelOpenTry(message) => {
@@ -876,7 +759,7 @@ fn process_msgs(
                             counterparty_version: message.counterparty_version,
                             proof_init: message.proof_init.into(),
                             proof_height: Some(message.proof_height.into()),
-                            signer: signer.to_string(),
+                            signer,
                             ..Default::default()
                         })
                     }
@@ -888,7 +771,7 @@ fn process_msgs(
                             counterparty_channel_id: message.counterparty_channel_id.to_string(),
                             proof_try: message.proof_try.into(),
                             proof_height: Some(message.proof_height.into()),
-                            signer: signer.to_string(),
+                            signer,
                         })
                     }
                     ibc_classic_spec::Datagram::ChannelOpenConfirm(message) => {
@@ -896,7 +779,7 @@ fn process_msgs(
                             port_id: message.port_id.to_string(),
                             channel_id: message.channel_id.to_string(),
                             proof_height: Some(message.proof_height.into()),
-                            signer: signer.to_string(),
+                            signer,
                             proof_ack: message.proof_ack.into(),
                         })
                     }
@@ -904,7 +787,7 @@ fn process_msgs(
                         mk_any(&protos::ibc::core::channel::v1::MsgRecvPacket {
                             packet: Some(message.packet.into()),
                             proof_height: Some(message.proof_height.into()),
-                            signer: signer.to_string(),
+                            signer,
                             proof_commitment: message.proof_commitment.into(),
                         })
                     }
@@ -914,7 +797,7 @@ fn process_msgs(
                             acknowledgement: message.acknowledgement.into(),
                             proof_acked: message.proof_acked.into(),
                             proof_height: Some(message.proof_height.into()),
-                            signer: signer.to_string(),
+                            signer,
                         })
                     }
                     ibc_classic_spec::Datagram::TimeoutPacket(message) => {
@@ -923,7 +806,7 @@ fn process_msgs(
                             proof_unreceived: message.proof_unreceived,
                             proof_height: Some(message.proof_height.into()),
                             next_sequence_recv: message.next_sequence_recv.get(),
-                            signer: signer.to_string(),
+                            signer,
                         })
                     }
                     ibc_classic_spec::Datagram::CreateClient(message) => {
@@ -938,12 +821,12 @@ fn process_msgs(
                                 )
                                 .expect("value should be encoded as an `Any`"),
                             ),
-                            signer: signer.to_string(),
+                            signer,
                         })
                     }
                     ibc_classic_spec::Datagram::UpdateClient(message) => {
                         mk_any(&protos::ibc::core::client::v1::MsgUpdateClient {
-                            signer: signer.to_string(),
+                            signer,
                             client_id: message.client_id.to_string(),
                             client_message: Some(
                                 protos::google::protobuf::Any::decode(&*message.client_message)
@@ -962,7 +845,8 @@ fn process_msgs(
                                     client_type: msg_create_client.client_type.to_string(),
                                     client_state_bytes: msg_create_client.client_state_bytes,
                                     consensus_state_bytes: msg_create_client.consensus_state_bytes,
-                                    relayer: signer.to_string(),
+                                    relayer: fee_recipient
+                                        .map_or(signer.to_string(), |s| s.to_string()),
                                 },
                             ))
                             .unwrap(),
@@ -977,7 +861,8 @@ fn process_msgs(
                                 ibc_union_msg::msg::MsgUpdateClient {
                                     client_id: msg_update_client.client_id,
                                     client_message: msg_update_client.client_message,
-                                    relayer: signer.to_string(),
+                                    relayer: fee_recipient
+                                        .map_or(signer.to_string(), |s| s.to_string()),
                                 },
                             ))
                             .unwrap(),
@@ -995,7 +880,6 @@ fn process_msgs(
                                     client_id: msg_connection_open_init.client_id,
                                     counterparty_client_id: msg_connection_open_init
                                         .counterparty_client_id,
-                                    relayer: signer.to_string(),
                                 },
                             ),
                         )
@@ -1017,7 +901,6 @@ fn process_msgs(
                                     client_id: msg_connection_open_try.client_id,
                                     proof_init: msg_connection_open_try.proof_init,
                                     proof_height: msg_connection_open_try.proof_height,
-                                    relayer: signer.to_string(),
                                 },
                             ),
                         )
@@ -1037,7 +920,6 @@ fn process_msgs(
                                         .counterparty_connection_id,
                                     proof_try: msg_connection_open_ack.proof_try,
                                     proof_height: msg_connection_open_ack.proof_height,
-                                    relayer: signer.to_string(),
                                 },
                             ),
                         )
@@ -1055,7 +937,6 @@ fn process_msgs(
                                     connection_id: msg_connection_open_confirm.connection_id,
                                     proof_ack: msg_connection_open_confirm.proof_ack,
                                     proof_height: msg_connection_open_confirm.proof_height,
-                                    relayer: signer.to_string(),
                                 },
                             ),
                         )
@@ -1066,7 +947,8 @@ fn process_msgs(
                         let channel_open_init = ibc_union_msg::msg::ExecuteMsg::ChannelOpenInit(
                             ibc_union_msg::msg::MsgChannelOpenInit {
                                 port_id: parse_port_id(msg_channel_open_init.port_id.to_vec())?,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                                 counterparty_port_id: msg_channel_open_init.counterparty_port_id,
                                 connection_id: msg_channel_open_init.connection_id,
                                 version: msg_channel_open_init.version,
@@ -1088,7 +970,8 @@ fn process_msgs(
                                 counterparty_version: msg_channel_open_try.counterparty_version,
                                 proof_init: msg_channel_open_try.proof_init,
                                 proof_height: msg_channel_open_try.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
@@ -1108,7 +991,8 @@ fn process_msgs(
                                     .counterparty_channel_id,
                                 proof_try: msg_channel_open_ack.proof_try,
                                 proof_height: msg_channel_open_ack.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
@@ -1128,7 +1012,8 @@ fn process_msgs(
                                     channel_id: msg_channel_open_confirm.channel_id,
                                     proof_ack: msg_channel_open_confirm.proof_ack,
                                     proof_height: msg_channel_open_confirm.proof_height,
-                                    relayer: signer.to_string(),
+                                    relayer: fee_recipient
+                                        .map_or(signer.to_string(), |s| s.to_string()),
                                 },
                             );
 
@@ -1150,15 +1035,12 @@ fn process_msgs(
                     ibc_union_spec::datagram::Datagram::PacketRecv(msg_packet_recv) => {
                         let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketRecv(
                             ibc_union_msg::msg::MsgPacketRecv {
-                                packets: msg_packet_recv
-                                    .packets
-                                    .into_iter()
-                                    .map(Into::into)
-                                    .collect(),
+                                packets: msg_packet_recv.packets.into_iter().collect(),
                                 relayer_msgs: msg_packet_recv.relayer_msgs,
                                 proof: msg_packet_recv.proof,
                                 proof_height: msg_packet_recv.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
@@ -1166,7 +1048,14 @@ fn process_msgs(
                             sender: signer.to_string(),
                             contract: ibc_host_contract_address.to_string(),
                             msg: serde_json::to_vec(&packet_recv).unwrap(),
-                            funds: vec![],
+                            funds: gas_station_config
+                                .clone()
+                                .into_iter()
+                                .map(|coin| protos::cosmos::base::v1beta1::Coin {
+                                    denom: coin.denom,
+                                    amount: coin.amount.to_string(),
+                                })
+                                .collect(),
                         })
                     }
                     ibc_union_spec::datagram::Datagram::PacketAcknowledgement(
@@ -1174,15 +1063,12 @@ fn process_msgs(
                     ) => {
                         let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketAck(
                             ibc_union_msg::msg::MsgPacketAcknowledgement {
-                                packets: msg_packet_acknowledgement
-                                    .packets
-                                    .into_iter()
-                                    .map(Into::into)
-                                    .collect(),
+                                packets: msg_packet_acknowledgement.packets.into_iter().collect(),
                                 acknowledgements: msg_packet_acknowledgement.acknowledgements,
                                 proof: msg_packet_acknowledgement.proof,
                                 proof_height: msg_packet_acknowledgement.proof_height,
-                                relayer: signer.to_string(),
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
                             },
                         );
 
@@ -1193,8 +1079,23 @@ fn process_msgs(
                             funds: vec![],
                         })
                     }
-                    ibc_union_spec::datagram::Datagram::PacketTimeout(_msg_packet_timeout) => {
-                        todo!()
+                    ibc_union_spec::datagram::Datagram::PacketTimeout(msg_packet_timeout) => {
+                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::PacketTimeout(
+                            ibc_union_msg::msg::MsgPacketTimeout {
+                                packet: msg_packet_timeout.packet,
+                                proof: msg_packet_timeout.proof,
+                                proof_height: msg_packet_timeout.proof_height,
+                                relayer: fee_recipient
+                                    .map_or(signer.to_string(), |s| s.to_string()),
+                            },
+                        );
+
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
+                            msg: serde_json::to_vec(&packet_recv).unwrap(),
+                            funds: vec![],
+                        })
                     }
                     ibc_union_spec::datagram::Datagram::IntentPacketRecv(
                         _msg_intent_packet_recv,
@@ -1217,4 +1118,22 @@ fn parse_port_id(bz: Vec<u8>) -> RpcResult<String> {
             None::<()>,
         )
     })
+}
+
+// rpc error: code = Unknown desc = failed to execute message; message index: 0: IBC_UNION_ERR_PACKET_COMMITMENT_NOT_FOUND packet commitment not found: execute wasm contract failed [CosmWasm/wasmd@v0.53.2/x/wasm/keeper/keeper.go:436] with gas used: '287090'
+fn parse_wasm_failure(log: &str) -> Option<ContractErrorKind> {
+    log.split(' ').find_map(ContractErrorKind::parse)
+}
+
+fn parse_msg_idx_from_log(log: &str) -> Option<(usize, &str)> {
+    let (_, log) = log.split_once("message index: ")?;
+    let (idx, log) = log.split_once(':')?;
+    Some((idx.parse().ok()?, log))
+}
+
+#[test]
+fn test_parse_wasm_failure() {
+    let (idx, log) = parse_msg_idx_from_log("rpc error: code = Unknown desc = failed to execute message; message index: 0: IBC_UNION_ERR_PACKET_COMMITMENT_NOT_FOUND packet commitment not found: execute wasm contract failed [CosmWasm/wasmd@v0.53.2/x/wasm/keeper/keeper.go:436] with gas used: '287090'").unwrap();
+
+    dbg!(idx, parse_wasm_failure(log));
 }

@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -71,6 +71,7 @@ module zkgm::fungible_asset_order {
         base_amount: u256,
         base_token_symbol: String,
         base_token_name: String,
+        base_token_decimals: u8,
         base_token_path: u256,
         quote_token: vector<u8>,
         quote_amount: u256
@@ -83,6 +84,7 @@ module zkgm::fungible_asset_order {
         base_amount: u256,
         base_token_symbol: String,
         base_token_name: String,
+        base_token_decimals: u8,
         base_token_path: u256,
         quote_token: vector<u8>,
         quote_amount: u256
@@ -94,6 +96,7 @@ module zkgm::fungible_asset_order {
             base_amount,
             base_token_symbol,
             base_token_name,
+            base_token_decimals,
             base_token_path,
             quote_token,
             quote_amount
@@ -124,6 +127,10 @@ module zkgm::fungible_asset_order {
         &order.base_token_name
     }
 
+    public fun base_token_decimals(order: &FungibleAssetOrder): u8 {
+        order.base_token_decimals
+    }
+
     public fun base_token_path(order: &FungibleAssetOrder): u256 {
         order.base_token_path
     }
@@ -152,7 +159,7 @@ module zkgm::fungible_asset_order {
         let quote_token = vector::empty();
         zkgm_ethabi::encode_bytes(&mut quote_token, &order.quote_token);
 
-        let dyn_offset = 0x20 * 9;
+        let dyn_offset = 0x20 * 10;
         // sender offset
         zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         dyn_offset = dyn_offset + vector::length(&sender);
@@ -169,6 +176,7 @@ module zkgm::fungible_asset_order {
         // base_token_name offset
         zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
         dyn_offset = dyn_offset + vector::length(&base_token_name);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, order.base_token_decimals);
         zkgm_ethabi::encode_uint<u256>(&mut buf, order.base_token_path);
         // quote_token offset
         zkgm_ethabi::encode_uint<u64>(&mut buf, dyn_offset);
@@ -193,30 +201,34 @@ module zkgm::fungible_asset_order {
             base_amount: zkgm_ethabi::decode_uint(buf, &mut index),
             base_token_symbol: zkgm_ethabi::decode_string_from_offset(buf, &mut index),
             base_token_name: zkgm_ethabi::decode_string_from_offset(buf, &mut index),
+            base_token_decimals: (zkgm_ethabi::decode_uint(buf, &mut index) as u8),
             base_token_path: zkgm_ethabi::decode_uint(buf, &mut index),
             quote_token: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
             quote_amount: zkgm_ethabi::decode_uint(buf, &mut index)
         }
     }
 
-//     #[test]
-//     fun test_encode_fungible_asset_order() {
-//         let encoded =
-//             x"0000000000000000000000000000000000000000000000000000000000000120000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a0000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000026000000000000000000000000000000000000000000000000000000000000000fa000000000000000000000000000000000000000000000000000000000000000441414141000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004424242420000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000044343434300000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000005776f726c6400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000634444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444444440000000000000000000000000000000000000000000000000000000000";
-//         let packet = decode(&encoded);
-//         let expected_packet = FungibleAssetOrder {
-//             sender: b"AAAA",
-//             receiver: b"BBBB",
-//             base_token: b"CCCC",
-//             base_amount: 100,
-//             base_token_symbol: string::utf8(b"hello"),
-//             base_token_name: string::utf8(b"world"),
-//             base_token_path: 0,
-//             quote_token: b"DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD",
-//             quote_amount: 250
-//         };
+    #[test]
+    fun test_encode_fungible_asset_order() {
+        use std::string;
 
-//         assert!(packet == expected_packet, 1);
-//         assert!(encode(&packet) == encoded, 1);
-//     }
+        let encoded =
+            x"000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000001a000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000000c800000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000280000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000000c80000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000204d8a66ece11f6352224942bd1dabc456b4bb5316124f02b9a7b6292ad61f77770000000000000000000000000000000000000000000000000000000000000040756e696f6e31677968347464377639366d7563723465616b7364326d7367306a76306d636e396135796a38357678356c376874793374753970737178736a79320000000000000000000000000000000000000000000000000000000000000004414e414d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000963616e696d616e616d00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020feec3232793d275bfc623cc14f7306904b080746752fefce94e87dfe0bcf4962";
+        let packet = decode(&encoded);
+        let expected_packet = FungibleAssetOrder {
+            sender: x"756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+            receiver: x"4d8a66ece11f6352224942bd1dabc456b4bb5316124f02b9a7b6292ad61f7777",
+            base_token: x"756e696f6e31677968347464377639366d7563723465616b7364326d7367306a76306d636e396135796a38357678356c376874793374753970737178736a7932",
+            base_amount: 200,
+            base_token_symbol: string::utf8(b"ANAM"),
+            base_token_name: string::utf8(b"canimanam"),
+            base_token_path: 0,
+            quote_token: x"feec3232793d275bfc623cc14f7306904b080746752fefce94e87dfe0bcf4962",
+            quote_amount: 200,
+            decimals: 8
+        };
+
+        assert!(packet == expected_packet, 1);
+        assert!(encode(&packet) == encoded, 1);
+    }
 }

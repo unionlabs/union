@@ -4,16 +4,20 @@ import "forge-std/Test.sol";
 
 import "solady/utils/LibString.sol";
 
+import "../core/UnionTests.sol";
 import "../core/IBCHandler.sol";
 import "../core/LightClient.sol";
 import "../core/Module.sol";
 
-contract IBCChannelTests is Test {
+import "../../../contracts/Manager.sol";
+
+contract IBCChannelTests is UnionTests {
     using LibString for *;
 
     string public constant CLIENT_TYPE = "zkgm";
     bytes public constant COUNTERPARTY_PORT_ID = "wasm.abcdef";
 
+    Manager manager;
     TestIBCHandler handler;
     TestLightClient lightClient;
     TestModule module;
@@ -22,7 +26,7 @@ contract IBCChannelTests is Test {
     uint32 connectionId;
 
     function setUp() public {
-        handler = new TestIBCHandler();
+        (manager, handler) = setupHandler();
         lightClient = new TestLightClient();
         module = new TestModule(handler);
         handler.registerClient(CLIENT_TYPE, lightClient);
@@ -40,8 +44,7 @@ contract IBCChannelTests is Test {
             counterpartyClientId: 0xDEADC0DE,
             clientId: clientId,
             proofInit: hex"",
-            proofHeight: 0,
-            relayer: address(this)
+            proofHeight: 0
         });
         lightClient.pushValidMembership();
         connectionId = handler.connectionOpenTry(msgTry_);
@@ -49,8 +52,7 @@ contract IBCChannelTests is Test {
             .MsgConnectionOpenConfirm({
             connectionId: connectionId,
             proofAck: hex"",
-            proofHeight: 0,
-            relayer: address(this)
+            proofHeight: 0
         });
         lightClient.pushValidMembership();
         handler.connectionOpenConfirm(msgConfirm_);
@@ -71,9 +73,10 @@ contract IBCChannelTests is Test {
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenInit(
             msg_.portId,
-            0,
+            1,
             msg_.counterpartyPortId,
             msg_.connectionId,
+            msg_.version,
             msg_.version
         );
         vm.resumeGasMetering();
@@ -145,10 +148,11 @@ contract IBCChannelTests is Test {
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenTry(
             msg_.portId,
-            0,
+            1,
             msg_.channel.counterpartyPortId,
             msg_.channel.counterpartyChannelId,
             msg_.channel.connectionId,
+            msg_.counterpartyVersion,
             msg_.counterpartyVersion
         );
         vm.resumeGasMetering();
@@ -284,7 +288,7 @@ contract IBCChannelTests is Test {
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenAck(
             msgInit_.portId,
-            0,
+            1,
             msgInit_.counterpartyPortId,
             counterpartyChannelId,
             connectionId
@@ -384,7 +388,7 @@ contract IBCChannelTests is Test {
         vm.expectEmit();
         emit IBCChannelLib.ChannelOpenConfirm(
             msgTry_.portId,
-            0,
+            1,
             msgTry_.channel.counterpartyPortId,
             counterpartyChannelId,
             connectionId

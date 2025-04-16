@@ -79,20 +79,21 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         quoteToken,
         receiver,
         sourceChannelId,
-        ucs03address
+        ucs03address,
+        wethQuoteToken
       }: TransferAssetParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
         if (!client.account) return err(new Error("No account found"))
 
         /**
          * @dev
-         * `UCS03` zkgm contract `transfer` function:
+         * `UCS03` zkgm contract `transferV2` function:
          * - https://github.com/unionlabs/union/blob/0fd24893d4a1173e9c6e150c826c162871d63262/evm/contracts/apps/ucs/03-zkgm/Zkgm.sol#L301
          */
         const writeContractParameters = {
           account: client.account,
           abi: ucs03ZkgmAbi,
           chain: client.chain,
-          functionName: "transfer",
+          functionName: "transferV2",
           address: ucs03address,
           /**
               "channelId": "uint32"
@@ -114,8 +115,10 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             quoteAmount,
             0n, // TODO: customize timeoutheight
             "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
-            generateSalt()
-          ]
+            generateSalt(),
+            wethQuoteToken
+          ],
+          value: BigInt(0.0080085 * 10 ** 18)
         } as const
 
         return ResultAsync.fromPromise(client.writeContract(writeContractParameters), error => {

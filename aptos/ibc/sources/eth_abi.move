@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -255,7 +255,7 @@ module ibc::ethabi {
     }
 
     #[test]
-    public fun test_encode_decode_string() {
+    fun test_encode_decode_string() {
         let some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
         let some_str = string::utf8(b"encode string encode string");
 
@@ -267,7 +267,7 @@ module ibc::ethabi {
     }
 
     #[test]
-    public fun test_encode_decode_address() {
+    fun test_encode_decode_address() {
         let some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let addr1 = @0x1111111111111111111111111111111111111111;
@@ -285,7 +285,7 @@ module ibc::ethabi {
     }
 
     #[test]
-    public fun test_encode_decode_uint() {
+    fun test_encode_decode_uint() {
         let some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let data: u8 = 4;
@@ -307,7 +307,7 @@ module ibc::ethabi {
     }
 
     #[test]
-    public fun test_encode_decode_vector() {
+    fun test_encode_decode_vector() {
         let some_variable: vector<u8> = vector[0x31, 0x31, 0x31, 0x31];
 
         let vector_test_variable: vector<u8> = vector[0x41, 0x51, 0x61];

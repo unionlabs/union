@@ -15,6 +15,7 @@ workspace = true
 alloy            = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 beacon-api       = { workspace = true }
 beacon-api-types = { workspace = true, features = ["serde"] }
+embed-commit     = { workspace = true }
 jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
 serde            = { workspace = true, features = ["derive"] }
 tokio            = { workspace = true }

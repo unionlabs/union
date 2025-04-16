@@ -12,17 +12,18 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy-sol-types = { workspace = true, optional = true }
-bincode         = { workspace = true, optional = true, features = ["derive"] }
-enumorph        = { workspace = true }
-ibc-solidity    = { workspace = true, optional = true }
-schemars        = { workspace = true, optional = true, features = ["derive"] }
-serde           = { workspace = true, optional = true, features = ["derive"] }
-sha3            = { workspace = true }
-thiserror       = { workspace = true }
-tracing         = { workspace = true, optional = true }
-unionlabs       = { workspace = true }
-voyager-core    = { workspace = true }
+alloy-sol-types    = { workspace = true, optional = true }
+bincode            = { workspace = true, optional = true, features = ["derive"] }
+enumorph           = { workspace = true }
+ibc-solidity       = { workspace = true, optional = true }
+num-traits         = "0.2.19"
+schemars           = { workspace = true, optional = true, features = ["derive"] }
+serde              = { workspace = true, optional = true, features = ["derive"] }
+sha3               = { workspace = true }
+thiserror          = { workspace = true }
+tracing            = { workspace = true, optional = true }
+unionlabs          = { workspace = true }
+voyager-primitives = { workspace = true }
 
 [dev-dependencies]
 ibc-solidity   = { workspace = true }
@@ -31,9 +32,9 @@ ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde", 
 [features]
 default = []
 
-bincode             = ["dep:bincode", "unionlabs/bincode"]
+bincode             = ["dep:bincode", "voyager-primitives/bincode", "unionlabs/bincode"]
 ethabi              = ["dep:alloy-sol-types", "unionlabs/ethabi"]
 ibc-solidity-compat = ["dep:ibc-solidity"]
-schemars            = ["dep:schemars", "voyager-core/schemars", "unionlabs/schemars"]
-serde               = ["dep:serde", "voyager-core/serde"]
-tracing             = ["dep:tracing"]
+schemars            = ["dep:schemars", "voyager-primitives/schemars", "unionlabs/schemars"]
+serde               = ["dep:serde", "voyager-primitives/serde"]
+tracing             = ["dep:tracing", "ethabi"]                                             # ethabi for the packet hash in logs

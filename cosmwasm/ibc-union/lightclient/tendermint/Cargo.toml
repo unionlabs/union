@@ -18,19 +18,20 @@ test-include = ["cosmwasm/ibc-union/lightclient/tendermint/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-cosmwasm-std = { workspace = true, features = ["abort", "cosmwasm_2_1", "iterator"] }
-sha2         = { workspace = true }
-thiserror    = { workspace = true }
-
 cometbft-types                = { workspace = true, features = ["hash"] }
+cosmwasm-std                  = { workspace = true, features = ["abort", "iterator"] }
+embed-commit                  = { workspace = true }
+frissitheto                   = { workspace = true }
 ibc-union-light-client        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
+ibc-union-spec                = { workspace = true }
 ics23                         = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }
+sha2                          = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde", "bincode"] }
 tendermint-verifier           = { workspace = true }
+thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
-unionlabs-cosmwasm-upgradable = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }
@@ -40,3 +41,5 @@ serde_json  = { workspace = true }
 
 [features]
 library = []
+
+bls = ["cosmwasm-std/cosmwasm_2_1"]

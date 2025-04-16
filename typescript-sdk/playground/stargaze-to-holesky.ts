@@ -1,12 +1,12 @@
 import { fromHex, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { createUnionClient, hexToBytes } from "#mod.ts"
+import { createUnionClient, hexToBytes } from "../src/mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
   getRecommendedChannels
-} from "#query/offchain/ucs03-channels"
+} from "../src/query/offchain/ucs03-channels.ts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 // hack to encode bigints to json

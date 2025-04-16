@@ -1,12 +1,11 @@
 use std::ops::Div;
 
-use alloy::{
-    providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-    rpc::types::BlockTransactionsKind,
-};
+use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
 use beacon_api::client::BeaconApiClient;
-use beacon_api_types::{PresetBaseKind, Slot};
-use ethereum_light_client_types::{ClientState, ConsensusState};
+use beacon_api_types::{altair::SyncCommittee, chain_spec::PresetBaseKind, custom_types::Slot};
+use ethereum_light_client_types::{
+    client_state::InitialSyncCommittee, ClientState, ClientStateV1, ConsensusState,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -21,9 +20,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ClientType},
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    primitives::{ChainId, ClientType},
     ClientBootstrapModule,
 };
 use voyager_vm::BoxDynError;
@@ -71,12 +70,13 @@ impl Module {
 
         let block = self
             .provider
-            .get_block((block_number + 1).into(), BlockTransactionsKind::Hashes)
+            .get_block((block_number + 1).into())
+            .hashes()
             .await
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
+                    format!("error fetching execution block: {}", ErrorReporter(e)),
                     None::<()>,
                 )
             })?
@@ -97,13 +97,19 @@ impl Module {
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error fetching block: {}", ErrorReporter(e)),
+                    format!("error fetching beacon block: {}", ErrorReporter(e)),
                     None::<()>,
                 )
             })?
-            .data
-            .message
-            .slot;
+            .response
+            .fold(
+                |b| b.message.slot,
+                |b| b.message.slot,
+                |b| b.message.slot,
+                |b| b.message.slot,
+                |b| b.message.slot,
+                |b| b.message.slot,
+            );
 
         trace!("beacon slot of exution block {block_number} is {beacon_slot}");
 
@@ -121,7 +127,7 @@ impl ClientBootstrapModule for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .on_builtin(&config.rpc_url)
+                .connect(&config.rpc_url)
                 .await?,
         );
 
@@ -167,7 +173,84 @@ impl ClientBootstrapModuleServer for Module {
 
         let spec = self.beacon_api_client.spec().await.unwrap().data;
 
-        Ok(serde_json::to_value(ClientState {
+        let beacon_slot = self
+            .beacon_slot_of_execution_block_number(height.height())
+            .await?;
+
+        let light_client_update = {
+            let current_period = beacon_slot.get().div(spec.period());
+
+            debug!(%current_period);
+
+            let light_client_updates = self
+                .beacon_api_client
+                .light_client_updates(current_period, 1)
+                .await
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        format!("error fetching light client update: {}", ErrorReporter(e)),
+                        None::<()>,
+                    )
+                })?;
+
+            let [light_client_update] = &*light_client_updates else {
+                return Err(ErrorObject::owned(
+                    -1,
+                    format!(
+                        "received invalid light client updates, expected \
+                        1 but received {light_client_updates:?}"
+                    ),
+                    None::<()>,
+                ));
+            };
+
+            light_client_update
+                .clone()
+                .fold::<ethereum_sync_protocol_types::LightClientUpdate>(
+                    |e| match e {},
+                    |_| todo!("altair not supported"),
+                    |_| todo!("bellatrix not supported"),
+                    |_| todo!("capella not supported"),
+                    |u| u.into(),
+                    |u| u.into(),
+                )
+        };
+
+        let trusted_header = self
+            .beacon_api_client
+            .header(beacon_api::client::BlockId::Slot(beacon_slot))
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon header: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .data;
+
+        let current_sync_committee = self
+            .beacon_api_client
+            .bootstrap(trusted_header.root)
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching beacon bootstrap: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?
+            .fold::<SyncCommittee>(
+                |l| match l {},
+                |_| todo!("altair not supported"),
+                |_| todo!("bellatrix not supported"),
+                |l| l.current_sync_committee,
+                |l| l.current_sync_committee,
+                |l| l.current_sync_committee,
+            );
+
+        Ok(serde_json::to_value(ClientState::V1(ClientStateV1 {
             chain_id: self
                 .chain_id
                 .as_str()
@@ -176,11 +259,14 @@ impl ClientBootstrapModuleServer for Module {
             chain_spec: spec.preset_base,
             genesis_validators_root: genesis.genesis_validators_root,
             genesis_time: genesis.genesis_time,
-            fork_parameters: spec.to_fork_parameters(),
             latest_height: height.height(),
             frozen_height: Height::new(0),
             ibc_contract_address: self.ibc_handler_address,
-        })
+            initial_sync_committee: Some(InitialSyncCommittee {
+                current_sync_committee,
+                next_sync_committee: light_client_update.next_sync_committee.unwrap(),
+            }),
+        }))
         .expect("infallible"))
     }
 
@@ -211,7 +297,7 @@ impl ClientBootstrapModuleServer for Module {
             })?
             .data;
 
-        let bootstrap = self
+        let bootstrap_header = self
             .beacon_api_client
             .bootstrap(trusted_header.root)
             .await
@@ -222,65 +308,33 @@ impl ClientBootstrapModuleServer for Module {
                     None::<()>,
                 )
             })?
-            .data;
+            .fold::<ethereum_sync_protocol_types::LightClientHeader>(
+                |l| match l {},
+                |_| todo!("altair not supported"),
+                |_| todo!("bellatrix not supported"),
+                |_| todo!("capella not supported"),
+                |l| l.header.into(),
+                |l| l.header.into(),
+            );
 
-        let spec = self.beacon_api_client.spec().await.unwrap().data;
-
-        assert_eq!(bootstrap.header.execution.block_number, height.height());
-
-        let light_client_update = {
-            let current_period = beacon_slot.get().div(spec.period());
-
-            debug!(%current_period);
-
-            let light_client_updates = self
-                .beacon_api_client
-                .light_client_updates(current_period, 1)
-                .await
-                .map_err(|e| {
-                    ErrorObject::owned(
-                        -1,
-                        format!("error fetching light client update: {}", ErrorReporter(e)),
-                        None::<()>,
-                    )
-                })?;
-
-            let [light_client_update] = &*light_client_updates.0 else {
-                return Err(ErrorObject::owned(
-                    -1,
-                    format!(
-                        "received invalid light client updates, expected \
-                        1 but received {light_client_updates:?}"
-                    ),
-                    None::<()>,
-                ));
-            };
-
-            light_client_update.data.clone()
-        };
+        assert_eq!(bootstrap_header.execution.block_number, height.height());
 
         // Normalize to nanos in order to be compliant with cosmos
-        let timestamp = bootstrap.header.execution.timestamp * 1_000_000_000;
+        let timestamp = bootstrap_header.execution.timestamp * 1_000_000_000;
 
         Ok(into_value(ConsensusState {
-            slot: bootstrap.header.beacon.slot,
-            state_root: bootstrap.header.execution.state_root,
+            slot: bootstrap_header.beacon.slot,
+            state_root: bootstrap_header.execution.state_root,
             storage_root: self
                 .provider
                 .get_proof(self.ibc_handler_address.into(), vec![])
-                .block_id(bootstrap.header.execution.block_number.into())
+                .block_id(bootstrap_header.execution.block_number.into())
                 .await
                 .unwrap()
                 .storage_hash
                 .0
                 .into(),
             timestamp,
-            current_sync_committee: bootstrap.current_sync_committee.aggregate_pubkey,
-            // TODO(aeryz): can this be None?
-            next_sync_committee: light_client_update
-                .next_sync_committee
-                .unwrap()
-                .aggregate_pubkey,
         }))
     }
 }

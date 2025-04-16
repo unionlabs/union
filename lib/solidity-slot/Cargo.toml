@@ -1,0 +1,19 @@
+[package]
+name    = "solidity-slot"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+sha3                 = { workspace = true }
+unionlabs-primitives = { workspace = true, features = ["generic-array-compat"] }
+
+[dev-dependencies]
+hex-literal = { workspace = true }

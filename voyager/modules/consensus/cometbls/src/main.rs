@@ -5,13 +5,13 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, error, instrument, trace};
+use tracing::{error, instrument, trace};
 use unionlabs::{
     bech32::Bech32, ibc::core::client::height::Height, primitives::H256, traits::Member,
 };
 use voyager_message::{
-    core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    primitives::{ChainId, ConsensusType, Timestamp},
     rpc::json_rpc_error_to_error_object,
     ConsensusModule,
 };
@@ -53,7 +53,7 @@ impl ConsensusModule for Module {
 
         let chain_revision = chain_id
             .split('-')
-            .last()
+            .next_back()
             .ok_or_else(|| ChainIdParseError {
                 found: chain_id.clone(),
                 source: None,
@@ -90,6 +90,7 @@ impl Module {
         Height::new_with_revision(self.chain_revision, height)
     }
 
+    #[instrument(skip_all, fields(%finalized))]
     async fn latest_height(&self, finalized: bool) -> Result<Height, cometbft_rpc::JsonRpcError> {
         let commit_response = self.cometbft_client.commit(None).await?;
 
@@ -109,7 +110,7 @@ impl Module {
             height -= 1;
         }
 
-        debug!(height, "latest height");
+        trace!(height, "latest height");
 
         Ok(self.make_height(height))
     }

@@ -8,11 +8,11 @@ use macros::model;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
-use voyager_core::{IbcSpecId, Timestamp};
+use voyager_primitives::{ConsensusStateMeta, IbcSpecId, Timestamp};
 
 use crate::{
     context::LoadedModulesInfo,
-    core::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
+    primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     RawClientId, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
 };
 
@@ -59,14 +59,32 @@ pub trait VoyagerRpc {
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientInfo>>;
 
-    #[method(name = "clientMeta", with_extensions)]
-    async fn client_meta(
+    #[method(name = "clientStateMeta", with_extensions)]
+    async fn client_state_meta(
         &self,
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
         at: QueryHeight,
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientStateMeta>>;
+
+    #[method(name = "consensusStateMeta", with_extensions)]
+    async fn consensus_state_meta(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        at: QueryHeight,
+        client_id: RawClientId,
+        counterparty_height: Height,
+    ) -> RpcResult<Option<ConsensusStateMeta>>;
+
+    #[method(name = "query", with_extensions)]
+    async fn query(
+        &self,
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        query: Value,
+    ) -> RpcResult<Value>;
 
     #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state(
@@ -155,6 +173,18 @@ pub trait VoyagerRpc {
         ibc_interface: IbcInterface,
         ibc_spec_id: IbcSpecId,
         consensus_state: Bytes,
+    ) -> RpcResult<Value>;
+
+    // ===================
+    // custom plugin calls
+    // ===================
+
+    #[method(name = "pluginCustom", with_extensions)]
+    async fn plugin_custom(
+        &self,
+        plugin: String,
+        method: String,
+        params: Vec<Value>,
     ) -> RpcResult<Value>;
 }
 

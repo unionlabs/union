@@ -1,16 +1,26 @@
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
-use voyager_core::{IbcSpec, IbcSpecId};
+use voyager_primitives::{IbcSpec, IbcSpecId};
 
 pub mod datagram;
 pub mod event;
 pub mod path;
+pub mod query;
 
-pub mod types;
+pub(crate) mod types;
 
+pub use voyager_primitives::Timestamp;
+
+pub use crate::types::{
+    channel::{Channel, ChannelState},
+    connection::{Connection, ConnectionState},
+    packet::Packet,
+    ChannelId, ClientId, ConnectionId,
+};
 use crate::{
     datagram::{Datagram, MsgUpdateClient},
     event::FullEvent,
     path::{ClientStatePath, ConsensusStatePath, StorePath},
+    query::Query,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
@@ -19,9 +29,11 @@ pub enum IbcUnion {}
 impl IbcSpec for IbcUnion {
     const ID: IbcSpecId = IbcSpecId::new_static(IbcSpecId::UNION);
 
-    type ClientId = u32;
+    type ClientId = ClientId;
 
     type StorePath = StorePath;
+
+    type Query = Query;
 
     type Datagram = Datagram;
 
@@ -49,7 +61,7 @@ impl IbcSpec for IbcUnion {
 }
 
 #[cfg(feature = "tracing")]
-pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
+pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
     use tracing::info;
 
     let event = e.name();
@@ -114,7 +126,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.connection.state = ?e.connection.state,
             data.connection.client_id = %e.connection.client_id,
             data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
-            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.connection.counterparty_connection_id = e.connection.counterparty_connection_id.map(|id|id.get()),
             data.version = %e.version,
             "event"
         ),
@@ -128,7 +140,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.connection.state = ?e.connection.state,
             data.connection.client_id = %e.connection.client_id,
             data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
-            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.connection.counterparty_connection_id = e.connection.counterparty_connection_id.map(|id|id.get()),
             data.version = %e.version,
             "event"
         ),
@@ -142,7 +154,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.connection.state = ?e.connection.state,
             data.connection.client_id = %e.connection.client_id,
             data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
-            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.connection.counterparty_connection_id = e.connection.counterparty_connection_id.map(|id|id.get()),
             data.version = %e.version,
             "event"
         ),
@@ -156,7 +168,7 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
             data.connection.state = ?e.connection.state,
             data.connection.client_id = %e.connection.client_id,
             data.connection.counterparty_client_id = %e.connection.counterparty_client_id,
-            data.connection.counterparty_connection_id = %e.connection.counterparty_connection_id,
+            data.connection.counterparty_connection_id = e.connection.counterparty_connection_id.map(|id|id.get()),
             data.version = %e.version,
             "event"
         ),
@@ -165,6 +177,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::PacketSend(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,
@@ -184,6 +199,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::PacketRecv(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
             data.maker_msg = %e.maker_msg,
 
@@ -204,6 +222,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::IntentPacketRecv(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
             data.market_maker_msg = %e.market_maker_msg,
 
@@ -224,6 +245,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::WriteAck(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
             data.acknowledgement = %e.acknowledgement,
 
@@ -244,6 +268,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::PacketAck(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
             data.acknowledgement = %e.acknowledgement,
 
@@ -264,6 +291,9 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_core::ChainId) {
         FullEvent::PacketTimeout(e) => info!(
             event,
             %chain_id,
+
+            data.packet_hash = %e.packet().hash(),
+
             data.packet_data = %e.packet_data,
 
             data.packet.source_channel.channel_id = %e.packet.source_channel.channel_id,

@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -63,8 +63,14 @@ module ibc::engine {
     use ibc::dispatcher;
     use aptos_std::copyable_any;
     use std::vector;
+
+    friend ibc::recv_packet;
+    friend ibc::acknowledge_packet;
+    friend ibc::timeout_packet;
+    friend ibc::channel_handshake;
+
     /// The dispatch call knows both storage and indirectly the callback, thus the separate module.
-    public fun dispatch<T: store>(data: copyable_any::Any) {
+    public(friend) fun dispatch<T: store>(data: copyable_any::Any) {
         let ret_value = vector::empty<u8>();
         let metadata = dispatcher::insert<T>(data, ret_value);
         dispatchable_fungible_asset::derived_balance(metadata);

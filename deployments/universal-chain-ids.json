@@ -1,0 +1,15 @@
+{
+  "aptos": ["1", "2"],
+  "arbitrum": ["421614"],
+  "bob": ["60808", "808813"],
+  "babylon": ["bbn-1", "bbn-test-5"],
+  "berachain": ["80069", "80084", "80094"],
+  "corn": ["21000000", "21000001"],
+  "ethereum": ["11155111", "17000", "1"],
+  "movement": ["250"],
+  "osmosis": ["osmo-test-5"],
+  "scroll": ["534351"],
+  "stargaze": ["elgafar-1"],
+  "stride": ["stride-internal-1"],
+  "union": ["union-testnet-8", "union-testnet-9", "union-testnet-10", "union-1"]
+}

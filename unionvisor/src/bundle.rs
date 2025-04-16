@@ -61,11 +61,11 @@ pub struct ValidVersionPath(pub PathBuf);
 
 #[derive(Debug, Error)]
 pub enum ValidateVersionPathError {
-    #[error("version was not found in bundle: {0}")]
+    #[error("version was not found in bundle: {0:?}")]
     NotInBundle(PathBuf, #[source] io::Error),
     #[error("calling uniond --help for this version failed")]
     HelpCallFailed(#[source] io::Error),
-    #[error("permission denied when executing version in bundle: {0}")]
+    #[error("permission denied when executing version in bundle: {0:?}")]
     PermissionDenied(PathBuf, #[source] io::Error),
     #[error("other IO error")]
     OtherIO(#[source] io::Error),

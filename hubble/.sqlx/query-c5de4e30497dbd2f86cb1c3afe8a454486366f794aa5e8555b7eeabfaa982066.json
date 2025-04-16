@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO token.token_source_representations (token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri)\n        VALUES ($1, $2, $3, $4, $5, $6, $7)\n        ON CONFLICT (token_source_id, internal_chain_id, address) DO \n        UPDATE SET\n            symbol = excluded.symbol,\n            name = excluded.name,\n            decimals = excluded.decimals,\n            logo_uri = excluded.logo_uri\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4",
+        "Bytea",
+        "Text",
+        "Text",
+        "Int4",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c5de4e30497dbd2f86cb1c3afe8a454486366f794aa5e8555b7eeabfaa982066"
+}

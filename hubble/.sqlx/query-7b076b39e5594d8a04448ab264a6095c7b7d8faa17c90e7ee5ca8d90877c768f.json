@@ -1,0 +1,58 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri\n        FROM token.token_source_representations\n        WHERE token_source_id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "token_source_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "internal_chain_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 2,
+        "name": "address",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 3,
+        "name": "symbol",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "name",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 5,
+        "name": "decimals",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "logo_uri",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      true
+    ]
+  },
+  "hash": "7b076b39e5594d8a04448ab264a6095c7b7d8faa17c90e7ee5ca8d90877c768f"
+}

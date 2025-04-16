@@ -42,7 +42,7 @@ pub enum Error {
     TrustedValidatorsMismatch(#[from] TrustedValidatorsMismatch),
 
     #[error(transparent)]
-    ExecutionPayloadHeader(#[from] beacon_api_types::execution_payload_header::ssz::Error),
+    ExecutionPayloadHeader(#[from] beacon_api_types::deneb::execution_payload_header::ssz::Error),
 
     #[error(transparent)]
     MigrateClientStore(#[from] MigrateClientStoreError),

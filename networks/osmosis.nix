@@ -3,7 +3,6 @@
   perSystem =
     {
       pkgs,
-      goPkgs,
       self',
       crane,
       system,
@@ -13,33 +12,36 @@
     }:
     {
       packages = {
-        osmosisd = goPkgs.pkgsStatic.buildGoModule (
+        osmosisd = pkgs.pkgsStatic.buildGo123Module (
           {
             name = "osmosisd";
             src = inputs.osmosis;
-            vendorHash = "sha256-AFWgikNPM2yHsJA113HAcrURcoNrP2IabJV8u424wRM=";
+            vendorHash = "sha256-Sgggqfem3a5KuFP9Z05a8Xtpgl00lNBVc8+encmRHs4=";
             doCheck = false;
             doInstallCheck = false;
             meta.mainProgram = "osmosisd";
             # CGO_ENABLED = 0;
             subPackages = [ "./cmd/osmosisd" ];
-            buildTags = [ "netgo" ];
-            GOWORK = "off";
+            tags = [
+              "netgo"
+              "muslc"
+            ];
+            env.GOWORK = "off";
           }
           // (
             let
-              inherit (self'.packages) libwasmvm-1_5_2;
+              inherit (self'.packages) libwasmvm-2_1_3;
             in
             if pkgs.stdenv.isLinux then
               {
                 # Statically link if we're on linux
                 nativeBuildInputs = [
                   pkgs.musl
-                  libwasmvm-1_5_2
+                  libwasmvm-2_1_3
                 ];
                 ldflags = [
                   "-linkmode external"
-                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm-1_5_2}/lib'"
+                  "-extldflags '-Wl,-z,muldefs -z noexecstack -static -L${pkgs.musl}/lib -L${libwasmvm-2_1_3}/lib'"
                 ];
               }
             # else if pkgs.stdenv.isDarwin then {

@@ -66,6 +66,7 @@ export type TransferAssetParameters<CHAIN_ID extends EvmChainId | CosmosChainId 
   quoteToken: string
   receiver: string
   sourceChannelId: number
+  wethQuoteToken: Hex
 } & (CHAIN_ID extends CosmosChainId
   ? {
       ucs03address: string

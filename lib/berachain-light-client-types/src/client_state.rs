@@ -1,3 +1,4 @@
+use ibc_union_spec::ClientId;
 use unionlabs::primitives::{H160, U256};
 
 #[derive(Debug, Clone, PartialEq)]
@@ -5,7 +6,7 @@ use unionlabs::primitives::{H160, U256};
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ClientState {
     /// consensus client
-    pub l1_client_id: u32,
+    pub l1_client_id: ClientId,
     /// execution chain id
     pub chain_id: U256,
     /// execution height

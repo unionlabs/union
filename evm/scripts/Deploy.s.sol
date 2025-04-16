@@ -7,12 +7,11 @@ import "forge-std/Script.sol";
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibString.sol";
 import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
-import "@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol";
-import "@openzeppelin/proxy/ERC1967/ERC1967Utils.sol";
-import "@openzeppelin/access/Ownable.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
+import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
-import "../contracts/core/OwnableIBCHandler.sol";
 import "../contracts/clients/CometblsClient.sol";
 import {StateLensIcs23Ics23Client} from
     "../contracts/clients/StateLensIcs23Ics23Client.sol";
@@ -21,58 +20,50 @@ import {StateLensIcs23MptClient} from
 import {StateLensIcs23SmtClient} from
     "../contracts/clients/StateLensIcs23SmtClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
-import "../contracts/apps/ucs/01-relay/Relay.sol";
-import "../contracts/apps/ucs/02-nft/NFT.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
-import "../contracts/apps/ucs/03-zkgm/IWETH.sol";
 import "../contracts/lib/Hex.sol";
 
 import "./Deployer.sol";
 
 library LIB {
-    string constant NAMESPACE = "lib";
-    string constant MULTICALL = "multicall";
-
-    function make(
-        string memory lib
-    ) internal pure returns (string memory) {
-        return string(abi.encodePacked(NAMESPACE, "/", lib));
-    }
+    string constant MULTICALL = "lib/multicall-v2";
+    string constant ZKGM_ERC20 = "lib/zkgm-erc20-v2";
 }
 
 library IBC {
     string constant BASED = "ibc-is-based";
+    string constant MANAGER = "manager";
 }
 
 library LightClients {
-    string constant NAMESPACE = "lightclients";
-    string constant COMETBLS = "cometbls";
-    string constant STATE_LENS_ICS23_MPT = "state-lens/ics23/mpt";
-    string constant STATE_LENS_ICS23_ICS23 = "state-lens/ics23/ics23";
-    string constant STATE_LENS_ICS23_SMT = "state-lens/ics23/smt";
-
-    function make(
-        string memory lightClient
-    ) internal pure returns (string memory) {
-        return string(abi.encodePacked(NAMESPACE, "/", lightClient));
-    }
+    string constant COMETBLS = "lightclients/cometbls";
+    string constant STATE_LENS_ICS23_MPT = "lightclients/state-lens/ics23/mpt";
+    string constant STATE_LENS_ICS23_ICS23 =
+        "lightclients/state-lens/ics23/ics23";
+    string constant STATE_LENS_ICS23_SMT = "lightclients/state-lens/ics23/smt";
 }
 
 library Protocols {
-    string constant NAMESPACE = "protocols";
-    string constant UCS00 = "ucs00";
-    string constant UCS01 = "ucs01";
-    string constant UCS02 = "ucs02";
-    string constant UCS03 = "ucs03";
+    string constant UCS00 = "protocols/ucs00";
+    string constant UCS03 = "protocols/ucs03";
+}
 
-    function make(
-        string memory protocol
-    ) internal pure returns (string memory) {
-        return string(abi.encodePacked(NAMESPACE, "/", protocol));
+abstract contract VersionedScript is Script {
+    using LibString for *;
+
+    constructor() {
+        assertGitRevIsPresent();
+    }
+
+    function assertGitRevIsPresent() internal {
+        if (!vm.envExists("BYPASS_GITREV") && VersionedLib.gitRev().eq("dirty"))
+        {
+            revert("git hash must be injected prior to script interactions");
+        }
     }
 }
 
-abstract contract UnionBase is Script {
+abstract contract UnionBase is VersionedScript {
     function deployDeployer() internal returns (Deployer) {
         return new Deployer();
     }
@@ -90,25 +81,53 @@ abstract contract UnionScript is UnionBase {
         );
     }
 
-    function deployMulticall() internal returns (Multicall) {
+    function deployMulticall(
+        Manager manager
+    ) internal returns (Multicall) {
         return Multicall(
+            deploy(
+                LIB.MULTICALL,
+                abi.encode(
+                    address(new Multicall()),
+                    abi.encodeCall(Multicall.initialize, (address(manager)))
+                )
+            )
+        );
+    }
+
+    function deployManager(
+        address owner
+    ) internal returns (Manager) {
+        return Manager(
+            deploy(
+                IBC.MANAGER,
+                abi.encode(
+                    address(new Manager()),
+                    abi.encodeCall(Manager.initialize, (owner))
+                )
+            )
+        );
+    }
+
+    function deployZkgmERC20() internal returns (ZkgmERC20) {
+        return ZkgmERC20(
             getDeployer().deploy(
-                LIB.make(LIB.MULTICALL),
-                abi.encodePacked(type(Multicall).creationCode),
+                LIB.ZKGM_ERC20,
+                abi.encodePacked(type(ZkgmERC20).creationCode),
                 0
             )
         );
     }
 
     function deployIBCHandler(
-        address owner
+        Manager manager
     ) internal returns (IBCHandler) {
         return IBCHandler(
             deploy(
                 IBC.BASED,
                 abi.encode(
-                    address(new OwnableIBCHandler()),
-                    abi.encodeCall(IBCHandler.initialize, (owner))
+                    address(new IBCHandler()),
+                    abi.encodeCall(IBCHandler.initialize, (address(manager)))
                 )
             )
         );
@@ -116,16 +135,15 @@ abstract contract UnionScript is UnionBase {
 
     function deployStateLensIcs23MptClient(
         IBCHandler handler,
-        address owner
+        Manager manager
     ) internal returns (StateLensIcs23MptClient) {
         return StateLensIcs23MptClient(
             deploy(
-                LightClients.make(LightClients.STATE_LENS_ICS23_MPT),
+                LightClients.STATE_LENS_ICS23_MPT,
                 abi.encode(
-                    address(new StateLensIcs23MptClient()),
+                    address(new StateLensIcs23MptClient(address(handler))),
                     abi.encodeCall(
-                        StateLensIcs23MptClient.initialize,
-                        (address(handler), owner)
+                        StateLensIcs23MptClient.initialize, (address(manager))
                     )
                 )
             )
@@ -134,16 +152,15 @@ abstract contract UnionScript is UnionBase {
 
     function deployStateLensIcs23Ics23Client(
         IBCHandler handler,
-        address owner
+        Manager manager
     ) internal returns (StateLensIcs23Ics23Client) {
         return StateLensIcs23Ics23Client(
             deploy(
-                LightClients.make(LightClients.STATE_LENS_ICS23_ICS23),
+                LightClients.STATE_LENS_ICS23_ICS23,
                 abi.encode(
-                    address(new StateLensIcs23Ics23Client()),
+                    address(new StateLensIcs23Ics23Client(address(handler))),
                     abi.encodeCall(
-                        StateLensIcs23Ics23Client.initialize,
-                        (address(handler), owner)
+                        StateLensIcs23Ics23Client.initialize, (address(manager))
                     )
                 )
             )
@@ -152,16 +169,15 @@ abstract contract UnionScript is UnionBase {
 
     function deployStateLensIcs23SmtClient(
         IBCHandler handler,
-        address owner
+        Manager manager
     ) internal returns (StateLensIcs23SmtClient) {
         return StateLensIcs23SmtClient(
             deploy(
-                LightClients.make(LightClients.STATE_LENS_ICS23_SMT),
+                LightClients.STATE_LENS_ICS23_SMT,
                 abi.encode(
-                    address(new StateLensIcs23SmtClient()),
+                    address(new StateLensIcs23SmtClient(address(handler))),
                     abi.encodeCall(
-                        StateLensIcs23SmtClient.initialize,
-                        (address(handler), owner)
+                        StateLensIcs23SmtClient.initialize, (address(manager))
                     )
                 )
             )
@@ -170,15 +186,15 @@ abstract contract UnionScript is UnionBase {
 
     function deployCometbls(
         IBCHandler handler,
-        address owner
+        Manager manager
     ) internal returns (CometblsClient) {
         return CometblsClient(
             deploy(
-                LightClients.make(LightClients.COMETBLS),
+                LightClients.COMETBLS,
                 abi.encode(
-                    address(new CometblsClient()),
+                    address(new CometblsClient(address(handler))),
                     abi.encodeCall(
-                        CometblsClient.initialize, (address(handler), owner)
+                        CometblsClient.initialize, (address(manager))
                     )
                 )
             )
@@ -187,47 +203,18 @@ abstract contract UnionScript is UnionBase {
 
     function deployUCS00(
         IBCHandler handler,
-        address owner,
+        Manager manager,
         uint64 timeout
     ) internal returns (PingPong) {
         return PingPong(
             deploy(
-                Protocols.make(Protocols.UCS00),
+                Protocols.UCS00,
                 abi.encode(
                     address(new PingPong()),
                     abi.encodeCall(
-                        PingPong.initialize, (handler, owner, timeout)
+                        PingPong.initialize,
+                        (handler, address(manager), timeout)
                     )
-                )
-            )
-        );
-    }
-
-    function deployUCS01(
-        IBCHandler handler,
-        address owner
-    ) internal returns (UCS01Relay) {
-        return UCS01Relay(
-            deploy(
-                Protocols.make(Protocols.UCS01),
-                abi.encode(
-                    address(new UCS01Relay()),
-                    abi.encodeCall(UCS01Relay.initialize, (handler, owner))
-                )
-            )
-        );
-    }
-
-    function deployUCS02(
-        IBCHandler handler,
-        address owner
-    ) internal returns (UCS02NFT) {
-        return UCS02NFT(
-            deploy(
-                Protocols.make(Protocols.UCS02),
-                abi.encode(
-                    address(new UCS02NFT()),
-                    abi.encodeCall(UCS02NFT.initialize, (handler, owner))
                 )
             )
         );
@@ -235,24 +222,27 @@ abstract contract UnionScript is UnionBase {
 
     function deployUCS03(
         IBCHandler handler,
-        address owner,
-        address weth
+        Manager manager,
+        IWETH weth,
+        ZkgmERC20 erc20
     ) internal returns (UCS03Zkgm) {
-        return UCS03Zkgm(
-            deploy(
-                Protocols.make(Protocols.UCS03),
-                abi.encode(
-                    address(new UCS03Zkgm()),
-                    abi.encodeCall(
-                        UCS03Zkgm.initialize, (handler, owner, IWETH(weth))
+        UCS03Zkgm zkgm = UCS03Zkgm(
+            payable(
+                deploy(
+                    Protocols.UCS03,
+                    abi.encode(
+                        address(new UCS03Zkgm(handler, weth, erc20)),
+                        abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
                     )
                 )
             )
         );
+        return zkgm;
     }
 
     function deployIBC(
-        address owner
+        address owner,
+        IWETH weth
     )
         internal
         returns (
@@ -262,23 +252,26 @@ abstract contract UnionScript is UnionBase {
             StateLensIcs23Ics23Client,
             StateLensIcs23SmtClient,
             PingPong,
-            UCS01Relay,
-            UCS02NFT,
-            Multicall
+            ZkgmERC20,
+            UCS03Zkgm,
+            Multicall,
+            Manager
         )
     {
-        IBCHandler handler = deployIBCHandler(owner);
-        CometblsClient cometblsClient = deployCometbls(handler, owner);
+        Manager manager = deployManager(owner);
+        IBCHandler handler = deployIBCHandler(manager);
+        CometblsClient cometblsClient = deployCometbls(handler, manager);
         StateLensIcs23MptClient stateLensIcs23MptClient =
-            deployStateLensIcs23MptClient(handler, owner);
+            deployStateLensIcs23MptClient(handler, manager);
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
-            deployStateLensIcs23Ics23Client(handler, owner);
+            deployStateLensIcs23Ics23Client(handler, manager);
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
-            deployStateLensIcs23SmtClient(handler, owner);
-        PingPong pingpong = deployUCS00(handler, owner, 100000000000000);
-        UCS01Relay relay = deployUCS01(handler, owner);
-        UCS02NFT nft = deployUCS02(handler, owner);
-        Multicall multicall = deployMulticall();
+            deployStateLensIcs23SmtClient(handler, manager);
+        PingPong pingpong = deployUCS00(handler, manager, 100000000000000);
+        ZkgmERC20 zkgmERC20 = deployZkgmERC20();
+        UCS03Zkgm ucs03 = deployUCS03(handler, manager, weth, zkgmERC20);
+        Multicall multicall = deployMulticall(manager);
+        setupRoles(owner, manager, handler, cometblsClient, ucs03, multicall);
         return (
             handler,
             cometblsClient,
@@ -286,42 +279,165 @@ abstract contract UnionScript is UnionBase {
             stateLensIcs23Ics23Client,
             stateLensIcs23SmtClient,
             pingpong,
-            relay,
-            nft,
-            multicall
+            zkgmERC20,
+            ucs03,
+            multicall,
+            manager
         );
+    }
+
+    function setupRoles(
+        address owner,
+        Manager manager,
+        IBCHandler handler,
+        CometblsClient cometbls,
+        UCS03Zkgm zkgm,
+        Multicall multicall
+    ) internal {
+        bytes4[] memory relayerSelectors = new bytes4[](10);
+        relayerSelectors[0] = IBCClient.registerClient.selector;
+        relayerSelectors[1] = IBCClient.createClient.selector;
+        relayerSelectors[2] = IBCClient.updateClient.selector;
+        relayerSelectors[3] = IBCClient.misbehaviour.selector;
+        relayerSelectors[4] = IBCPacketImpl.batchSend.selector;
+        relayerSelectors[5] = IBCPacketImpl.batchAcks.selector;
+        relayerSelectors[6] = IBCPacketImpl.recvPacket.selector;
+        relayerSelectors[7] = IBCPacketImpl.recvIntentPacket.selector;
+        relayerSelectors[8] = IBCPacketImpl.acknowledgePacket.selector;
+        relayerSelectors[9] = IBCPacketImpl.timeoutPacket.selector;
+        manager.setTargetFunctionRole(
+            address(handler), relayerSelectors, Roles.RELAYER
+        );
+
+        bytes4[] memory multicallSelectors = new bytes4[](1);
+        multicallSelectors[0] = Multicall.multicall.selector;
+        manager.setTargetFunctionRole(
+            address(multicall), multicallSelectors, Roles.RELAYER
+        );
+
+        manager.labelRole(Roles.RELAYER, "RELAYER");
+
+        // Pause selector is the same accross contracts
+        bytes4[] memory pauserSelectors = new bytes4[](1);
+        pauserSelectors[0] = CometblsClient.pause.selector;
+        manager.setTargetFunctionRole(
+            address(cometbls), pauserSelectors, Roles.PAUSER
+        );
+        manager.setTargetFunctionRole(
+            address(zkgm), pauserSelectors, Roles.PAUSER
+        );
+        manager.labelRole(Roles.PAUSER, "PAUSER");
+
+        // Unpause selector is the same accross contracts
+        bytes4[] memory unpauserSelectors = new bytes4[](1);
+        pauserSelectors[0] = CometblsClient.unpause.selector;
+        manager.setTargetFunctionRole(
+            address(cometbls), unpauserSelectors, Roles.UNPAUSER
+        );
+        manager.setTargetFunctionRole(
+            address(zkgm), unpauserSelectors, Roles.UNPAUSER
+        );
+        manager.labelRole(Roles.UNPAUSER, "UNPAUSER");
+
+        bytes4[] memory rateLimiterSelectors = new bytes4[](1);
+        rateLimiterSelectors[0] = UCS03Zkgm.setBucketConfig.selector;
+        manager.setTargetFunctionRole(
+            address(zkgm), rateLimiterSelectors, Roles.RATE_LIMITER
+        );
+        manager.labelRole(Roles.RATE_LIMITER, "RATE_LIMITER");
+
+        // Owner is granted all roles.
+        manager.grantRole(Roles.RELAYER, owner, 0);
+        manager.grantRole(Roles.PAUSER, owner, 0);
+        manager.grantRole(Roles.UNPAUSER, owner, 0);
+        manager.grantRole(Roles.RATE_LIMITER, owner, 0);
+
+        // Multicall is granted relayer such that relayers can batch through it.
+        manager.grantRole(Roles.RELAYER, address(multicall), 0);
     }
 }
 
 contract DeployDeployer is UnionBase {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
         vm.startBroadcast(privateKey);
-
         deployDeployer();
-
         vm.stopBroadcast();
     }
 }
 
 contract DeployMulticall is UnionScript {
-    Deployer immutable deployer;
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
 
     constructor() {
-        deployer = Deployer(vm.envAddress("DEPLOYER"));
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
     }
 
     function getDeployer() internal view override returns (Deployer) {
-        return deployer;
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
     }
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        Manager manager = Manager(getDeployed(IBC.MANAGER));
+
+        vm.startBroadcast(privateKey);
+        deployMulticall(manager);
+        vm.stopBroadcast();
+    }
+}
+
+contract DeployManager is UnionScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address owner = vm.addr(privateKey);
+
         vm.startBroadcast(privateKey);
 
-        deployMulticall();
+        Manager manager = deployManager(owner);
 
         vm.stopBroadcast();
+
+        console.log("Manager: ", address(manager));
     }
 }
 
@@ -352,20 +468,52 @@ contract DeployStateLensIcs23MptClient is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        address owner = vm.addr(privateKey);
-
-        address handler = getDeployed(IBC.BASED);
+        Manager manager = Manager(getDeployed(IBC.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
 
         vm.startBroadcast(privateKey);
-
         StateLensIcs23MptClient stateLensIcs23MptClient =
-            deployStateLensIcs23MptClient(IBCHandler(handler), owner);
-
+            deployStateLensIcs23MptClient(handler, manager);
         vm.stopBroadcast();
 
         console.log(
             "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
         );
+    }
+}
+
+contract DeployZkgmERC20 is UnionScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        vm.startBroadcast(privateKey);
+        ZkgmERC20 zkgmERC20 = deployZkgmERC20();
+        vm.stopBroadcast();
+
+        console.log("ZkgmERC20: ", address(zkgmERC20));
     }
 }
 
@@ -395,16 +543,14 @@ contract DeployUCS03 is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        address wethAddress = vm.envAddress("WETH_ADDRESS");
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
 
-        address owner = vm.addr(privateKey);
-
-        address handler = getDeployed(IBC.BASED);
+        Manager manager = Manager(getDeployed(IBC.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
 
         vm.startBroadcast(privateKey);
-
-        UCS03Zkgm zkgm = deployUCS03(IBCHandler(handler), owner, wethAddress);
-
+        UCS03Zkgm zkgm = deployUCS03(handler, manager, weth, zkgmERC20);
         vm.stopBroadcast();
 
         console.log("UCS03: ", address(zkgm));
@@ -438,15 +584,12 @@ contract DeployStateLensIcs23Ics23Client is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        address owner = vm.addr(privateKey);
-
-        address handler = getDeployed(IBC.BASED);
+        Manager manager = Manager(getDeployed(IBC.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
 
         vm.startBroadcast(privateKey);
-
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
-            deployStateLensIcs23Ics23Client(IBCHandler(handler), owner);
-
+            deployStateLensIcs23Ics23Client(handler, manager);
         vm.stopBroadcast();
 
         console.log(
@@ -482,15 +625,12 @@ contract DeployStateLensIcs23SmtClient is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        address owner = vm.addr(privateKey);
-
-        address handler = getDeployed(IBC.BASED);
+        Manager manager = Manager(getDeployed(IBC.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
 
         vm.startBroadcast(privateKey);
-
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
-            deployStateLensIcs23SmtClient(IBCHandler(handler), owner);
-
+            deployStateLensIcs23SmtClient(handler, manager);
         vm.stopBroadcast();
 
         console.log(
@@ -512,8 +652,10 @@ contract DeployIBC is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
 
+        address owner = vm.addr(privateKey);
+        vm.startBroadcast(privateKey);
         (
             IBCHandler handler,
             CometblsClient cometblsClient,
@@ -521,10 +663,11 @@ contract DeployIBC is UnionScript {
             StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
             StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
-            UCS01Relay relay,
-            UCS02NFT nft,
-            Multicall multicall
-        ) = deployIBC(vm.addr(privateKey));
+            ZkgmERC20 zkgmERC20,
+            UCS03Zkgm ucs03,
+            Multicall multicall,
+            Manager manager
+        ) = deployIBC(vm.addr(privateKey), weth);
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
@@ -535,9 +678,9 @@ contract DeployIBC is UnionScript {
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_SMT, stateLensIcs23SmtClient
         );
-
         vm.stopBroadcast();
 
+        console.log("Manager: ", address(manager));
         console.log("Deployer: ", address(deployer));
         console.log("Sender: ", vm.addr(privateKey));
         console.log("IBCHandler: ", address(handler));
@@ -552,8 +695,8 @@ contract DeployIBC is UnionScript {
             "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
         console.log("UCS00: ", address(pingpong));
-        console.log("UCS01: ", address(relay));
-        console.log("UCS02: ", address(nft));
+        console.log("UCS03: ", address(ucs03));
+        console.log("ZkgmERC20: ", address(zkgmERC20));
         console.log("Multicall: ", address(multicall));
     }
 }
@@ -567,11 +710,10 @@ contract DeployDeployerAndIBC is UnionScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
 
         vm.startBroadcast(privateKey);
-
         deployer = deployDeployer();
-
         (
             IBCHandler handler,
             CometblsClient cometblsClient,
@@ -579,10 +721,11 @@ contract DeployDeployerAndIBC is UnionScript {
             StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
             StateLensIcs23SmtClient stateLensIcs23SmtClient,
             PingPong pingpong,
-            UCS01Relay relay,
-            UCS02NFT nft,
-            Multicall multicall
-        ) = deployIBC(vm.addr(privateKey));
+            ZkgmERC20 zkgmERC20,
+            UCS03Zkgm ucs03,
+            Multicall multicall,
+            Manager manager
+        ) = deployIBC(vm.addr(privateKey), weth);
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
@@ -593,9 +736,9 @@ contract DeployDeployerAndIBC is UnionScript {
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_SMT, stateLensIcs23SmtClient
         );
-
         vm.stopBroadcast();
 
+        console.log("Manager: ", address(manager));
         console.log("Deployer: ", address(deployer));
         console.log("Sender: ", vm.addr(privateKey));
         console.log("IBCHandler: ", address(handler));
@@ -610,22 +753,24 @@ contract DeployDeployerAndIBC is UnionScript {
             "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
         console.log("UCS00: ", address(pingpong));
-        console.log("UCS01: ", address(relay));
-        console.log("UCS02: ", address(nft));
+        console.log("UCS03: ", address(ucs03));
+        console.log("ZkgmERC20: ", address(zkgmERC20));
         console.log("Multicall: ", address(multicall));
     }
 }
 
-contract GetDeployed is Script {
+contract GetDeployed is VersionedScript {
     using LibString for *;
     using stdJson for string;
 
     address immutable deployer;
     address immutable sender;
+    address immutable weth;
 
     constructor() {
         deployer = vm.envAddress("DEPLOYER");
         sender = vm.envAddress("SENDER");
+        weth = vm.envAddress("WETH_ADDRESS");
     }
 
     function getDeployed(
@@ -645,21 +790,26 @@ contract GetDeployed is Script {
     }
 
     function run() public {
-        address multicall = getDeployed(LIB.make(LIB.MULTICALL));
-        address handler = getDeployed(IBC.BASED);
-        address cometblsClient =
-            getDeployed(LightClients.make(LightClients.COMETBLS));
-        address stateLensIcs23MptClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT));
-        address stateLensIcs23Ics23Client =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23));
-        address stateLensIcs23SmtClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_SMT));
-        address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
-        address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
-        address ucs02 = getDeployed(Protocols.make(Protocols.UCS02));
-        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
+        address multicall = getDeployed(LIB.MULTICALL);
+        address zkgmERC20 = getDeployed(LIB.ZKGM_ERC20);
 
+        address manager = getDeployed(IBC.MANAGER);
+        address handler = getDeployed(IBC.BASED);
+
+        address cometblsClient = getDeployed(LightClients.COMETBLS);
+        address stateLensIcs23MptClient =
+            getDeployed(LightClients.STATE_LENS_ICS23_MPT);
+        address stateLensIcs23Ics23Client =
+            getDeployed(LightClients.STATE_LENS_ICS23_ICS23);
+        address stateLensIcs23SmtClient =
+            getDeployed(LightClients.STATE_LENS_ICS23_SMT);
+
+        address ucs00 = getDeployed(Protocols.UCS00);
+        address ucs03 = getDeployed(Protocols.UCS03);
+
+        console.log(
+            string(abi.encodePacked("Manager: ", manager.toHexString()))
+        );
         console.log(
             string(abi.encodePacked("Multicall: ", multicall.toHexString()))
         );
@@ -698,23 +848,51 @@ contract GetDeployed is Script {
             )
         );
         console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
-        console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
-        console.log(string(abi.encodePacked("UCS02: ", ucs02.toHexString())));
         console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
 
         string memory impls = "base";
+
+        string memory proxyManager = "proxyManager";
+        proxyManager.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
+        );
+        proxyManager = proxyManager.serialize(
+            "args",
+            abi.encode(
+                implOf(manager), abi.encodeCall(Manager.initialize, sender)
+            )
+        );
+        impls.serialize(manager.toHexString(), proxyManager);
+
+        string memory proxyMulticall = "proxyMulticall";
+        proxyMulticall.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
+        );
+        proxyMulticall = proxyMulticall.serialize(
+            "args",
+            abi.encode(
+                implOf(multicall), abi.encodeCall(Multicall.initialize, manager)
+            )
+        );
+        impls.serialize(multicall.toHexString(), proxyMulticall);
 
         string memory proxyHandler = "proxyHandler";
         proxyHandler.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyHandler = proxyHandler.serialize(
             "args",
             abi.encode(
-                implOf(handler), abi.encodeCall(IBCHandler.initialize, sender)
+                implOf(handler), abi.encodeCall(IBCHandler.initialize, manager)
             )
         );
         impls.serialize(handler.toHexString(), proxyHandler);
@@ -723,14 +901,14 @@ contract GetDeployed is Script {
         proxyComet.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyComet = proxyComet.serialize(
             "args",
             abi.encode(
                 implOf(cometblsClient),
-                abi.encodeCall(CometblsClient.initialize, (handler, sender))
+                abi.encodeCall(CometblsClient.initialize, (manager))
             )
         );
         impls.serialize(cometblsClient.toHexString(), proxyComet);
@@ -740,16 +918,14 @@ contract GetDeployed is Script {
         proxyStateLensIcs23MptClient.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyStateLensIcs23MptClient = proxyStateLensIcs23MptClient.serialize(
             "args",
             abi.encode(
                 implOf(stateLensIcs23MptClient),
-                abi.encodeCall(
-                    StateLensIcs23MptClient.initialize, (handler, sender)
-                )
+                abi.encodeCall(StateLensIcs23MptClient.initialize, (manager))
             )
         );
         impls.serialize(
@@ -760,7 +936,7 @@ contract GetDeployed is Script {
         proxyUCS00.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyUCS00 = proxyUCS00.serialize(
@@ -769,63 +945,23 @@ contract GetDeployed is Script {
                 implOf(ucs00),
                 abi.encodeCall(
                     PingPong.initialize,
-                    (IIBCPacket(handler), sender, 100000000000000)
+                    (IIBCPacket(handler), manager, 100000000000000)
                 )
             )
         );
         impls.serialize(ucs00.toHexString(), proxyUCS00);
 
-        string memory proxyUCS01 = "proxyUCS01";
-        proxyUCS01.serialize(
-            "contract",
-            string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
-            )
-        );
-        proxyUCS01 = proxyUCS01.serialize(
-            "args",
-            abi.encode(
-                implOf(ucs01),
-                abi.encodeCall(
-                    UCS01Relay.initialize, (IIBCPacket(handler), sender)
-                )
-            )
-        );
-        impls.serialize(ucs01.toHexString(), proxyUCS01);
-
-        string memory proxyUCS02 = "proxyUCS02";
-        proxyUCS02.serialize(
-            "contract",
-            string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
-            )
-        );
-        proxyUCS02 = proxyUCS02.serialize(
-            "args",
-            abi.encode(
-                implOf(ucs02),
-                abi.encodeCall(
-                    UCS02NFT.initialize, (IIBCPacket(handler), sender)
-                )
-            )
-        );
-        impls.serialize(ucs02.toHexString(), proxyUCS02);
-
         string memory proxyUCS03 = "proxyUCS03";
         proxyUCS03.serialize(
             "contract",
             string(
-                "libs/@openzeppelin/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
             )
         );
         proxyUCS03 = proxyUCS03.serialize(
             "args",
             abi.encode(
-                implOf(ucs03),
-                abi.encodeCall(
-                    UCS03Zkgm.initialize,
-                    (IIBCPacket(handler), sender, UCS03Zkgm(ucs03).weth())
-                )
+                implOf(ucs03), abi.encodeCall(UCS03Zkgm.initialize, (manager))
             )
         );
         impls.serialize(ucs03.toHexString(), proxyUCS03);
@@ -835,12 +971,27 @@ contract GetDeployed is Script {
             "contract", string("contracts/Multicall.sol:Multicall")
         );
         implMulticall = implMulticall.serialize("args", bytes(hex""));
-        impls.serialize(multicall.toHexString(), implMulticall);
+        impls.serialize(implOf(multicall).toHexString(), implMulticall);
+
+        string memory implZkgmERC20 = "implZkgmERC20";
+        implZkgmERC20.serialize(
+            "contract",
+            string("contracts/apps/ucs/03-zkgm/ZkgmERC20.sol:ZkgmERC20")
+        );
+        implZkgmERC20 = implZkgmERC20.serialize("args", bytes(hex""));
+        impls.serialize(zkgmERC20.toHexString(), implZkgmERC20);
+
+        string memory implManager = "implManager";
+        implManager.serialize(
+            "contract", string("contracts/Manager.sol:Manager")
+        );
+        implManager = implManager.serialize("args", bytes(hex""));
+        impls.serialize(implOf(manager).toHexString(), implManager);
 
         string memory implHandler = "implHandler";
         implHandler.serialize(
             "contract",
-            string("contracts/core/OwnableIBCHandler.sol:OwnableIBCHandler")
+            string("contracts/core/25-handler/IBCHandler.sol:IBCHandler")
         );
         implHandler = implHandler.serialize("args", bytes(hex""));
         impls.serialize(implOf(handler).toHexString(), implHandler);
@@ -850,7 +1001,7 @@ contract GetDeployed is Script {
             "contract",
             string("contracts/clients/CometblsClient.sol:CometblsClient")
         );
-        implComet = implComet.serialize("args", bytes(hex""));
+        implComet = implComet.serialize("args", abi.encode(handler));
         impls.serialize(implOf(cometblsClient).toHexString(), implComet);
 
         string memory implStateLensIcs23MptClient =
@@ -862,7 +1013,7 @@ contract GetDeployed is Script {
             )
         );
         implStateLensIcs23MptClient =
-            implStateLensIcs23MptClient.serialize("args", bytes(hex""));
+            implStateLensIcs23MptClient.serialize("args", abi.encode(handler));
         impls.serialize(
             implOf(stateLensIcs23MptClient).toHexString(),
             implStateLensIcs23MptClient
@@ -877,7 +1028,7 @@ contract GetDeployed is Script {
             )
         );
         implStateLensIcs23Ics23Client =
-            implStateLensIcs23Ics23Client.serialize("args", bytes(hex""));
+            implStateLensIcs23Ics23Client.serialize("args", abi.encode(handler));
         impls.serialize(
             implOf(stateLensIcs23Ics23Client).toHexString(),
             implStateLensIcs23Ics23Client
@@ -892,7 +1043,7 @@ contract GetDeployed is Script {
             )
         );
         implStateLensIcs23SmtClient =
-            implStateLensIcs23SmtClient.serialize("args", bytes(hex""));
+            implStateLensIcs23SmtClient.serialize("args", abi.encode(handler));
         impls.serialize(
             implOf(stateLensIcs23SmtClient).toHexString(),
             implStateLensIcs23SmtClient
@@ -906,33 +1057,19 @@ contract GetDeployed is Script {
         implUCS00 = implUCS00.serialize("args", bytes(hex""));
         impls.serialize(implOf(ucs00).toHexString(), implUCS00);
 
-        string memory implUCS01 = "implUCS01";
-        implUCS01.serialize(
-            "contract",
-            string("contracts/apps/ucs/01-relay/Relay.sol:UCS01Relay")
-        );
-        implUCS01 = implUCS01.serialize("args", bytes(hex""));
-        impls.serialize(implOf(ucs01).toHexString(), implUCS01);
-
-        string memory implUCS02 = "implUCS02";
-        implUCS02.serialize(
-            "contract", string("contracts/apps/ucs/02-nft/NFT.sol:UCS02NFT")
-        );
-        implUCS02 = implUCS02.serialize("args", bytes(hex""));
-        impls.serialize(implOf(ucs02).toHexString(), implUCS02);
-
         string memory implUCS03 = "implUCS03";
         implUCS03.serialize(
             "contract", string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03Zkgm")
         );
-        implUCS03 = implUCS03.serialize("args", bytes(hex""));
+        implUCS03 =
+            implUCS03.serialize("args", abi.encode(handler, weth, zkgmERC20));
         impls = impls.serialize(implOf(ucs03).toHexString(), implUCS03);
 
         impls.write(vm.envString("OUTPUT"));
     }
 }
 
-contract DryUpgradeUCS03 is Script {
+contract DryUpgradeUCS03 is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -955,21 +1092,23 @@ contract DryUpgradeUCS03 is Script {
     }
 
     function run() public {
-        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
-        console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
-
-        IWETH weth = IWETH(vm.envAddress("WETH"));
-
-        address newImplementation = address(new UCS03Zkgm());
-        vm.prank(owner);
-        UCS03Zkgm(ucs03).upgradeToAndCall(
-            newImplementation, abi.encodeCall(UCS03Zkgm.setWeth, (weth))
+        console.log(
+            string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
         );
+
+        address newImplementation =
+            address(new UCS03Zkgm(handler, weth, zkgmERC20));
+        vm.prank(owner);
+        ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
 }
 
-contract UpgradeUCS03 is Script {
+contract UpgradeUCS03 is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -992,22 +1131,24 @@ contract UpgradeUCS03 is Script {
     }
 
     function run() public {
-        address ucs03 = getDeployed(Protocols.make(Protocols.UCS03));
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
-        console.log(string(abi.encodePacked("UCS03: ", ucs03.toHexString())));
-
-        IWETH weth = IWETH(vm.envAddress("WETH"));
+        console.log(
+            string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
+        );
 
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new UCS03Zkgm());
-        UCS03Zkgm(ucs03).upgradeToAndCall(
-            newImplementation, abi.encodeCall(UCS03Zkgm.setWeth, (weth))
-        );
+        address newImplementation =
+            address(new UCS03Zkgm(handler, weth, zkgmERC20));
+        ucs03.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
 }
 
-contract UpgradeUCS00 is Script {
+contract UpgradeUCS00 is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1030,7 +1171,7 @@ contract UpgradeUCS00 is Script {
     }
 
     function run() public {
-        address ucs00 = getDeployed(Protocols.make(Protocols.UCS00));
+        address ucs00 = getDeployed(Protocols.UCS00);
 
         console.log(string(abi.encodePacked("UCS00: ", ucs00.toHexString())));
 
@@ -1041,72 +1182,7 @@ contract UpgradeUCS00 is Script {
     }
 }
 
-contract DryUpgradeUCS01 is Script {
-    using LibString for *;
-
-    address immutable deployer;
-    address immutable sender;
-    address immutable owner;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        owner = vm.envAddress("OWNER");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
-        console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
-        address newImplementation = address(new UCS01Relay());
-        vm.prank(owner);
-        UCS01Relay(ucs01).upgradeToAndCall(newImplementation, new bytes(0));
-    }
-}
-
-contract UpgradeUCS01 is Script {
-    using LibString for *;
-
-    address immutable deployer;
-    address immutable sender;
-    uint256 immutable privateKey;
-
-    constructor() {
-        deployer = vm.envAddress("DEPLOYER");
-        sender = vm.envAddress("SENDER");
-        privateKey = vm.envUint("PRIVATE_KEY");
-    }
-
-    function getDeployed(
-        string memory salt
-    ) internal view returns (address) {
-        return CREATE3.predictDeterministicAddress(
-            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
-            deployer
-        );
-    }
-
-    function run() public {
-        address ucs01 = getDeployed(Protocols.make(Protocols.UCS01));
-
-        console.log(string(abi.encodePacked("UCS01: ", ucs01.toHexString())));
-
-        vm.startBroadcast(privateKey);
-        address newImplementation = address(new UCS01Relay());
-        UCS01Relay(ucs01).upgradeToAndCall(newImplementation, new bytes(0));
-        vm.stopBroadcast();
-    }
-}
-
-contract DryUpgradeIBCHandler is Script {
+contract DryUpgradeIBCHandler is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1133,13 +1209,13 @@ contract DryUpgradeIBCHandler is Script {
         console.log(
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
         );
-        address newImplementation = address(new OwnableIBCHandler());
+        address newImplementation = address(new IBCHandler());
         vm.prank(owner);
         IBCHandler(handler).upgradeToAndCall(newImplementation, new bytes(0));
     }
 }
 
-contract UpgradeIBCHandler is Script {
+contract UpgradeIBCHandler is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1167,13 +1243,13 @@ contract UpgradeIBCHandler is Script {
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new OwnableIBCHandler());
+        address newImplementation = address(new IBCHandler());
         IBCHandler(handler).upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
 }
 
-contract DryUpgradeCometblsClient is Script {
+contract DryUpgradeCometblsClient is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1196,24 +1272,23 @@ contract DryUpgradeCometblsClient is Script {
     }
 
     function run() public {
-        address cometblsClient =
-            getDeployed(LightClients.make(LightClients.COMETBLS));
+        address handler = getDeployed(IBC.BASED);
+        CometblsClient cometblsClient =
+            CometblsClient(getDeployed(LightClients.COMETBLS));
         console.log(
             string(
                 abi.encodePacked(
-                    "CometblsClient: ", cometblsClient.toHexString()
+                    "CometblsClient: ", address(cometblsClient).toHexString()
                 )
             )
         );
-        address newImplementation = address(new CometblsClient());
+        address newImplementation = address(new CometblsClient(handler));
         vm.prank(owner);
-        CometblsClient(cometblsClient).upgradeToAndCall(
-            newImplementation, new bytes(0)
-        );
+        cometblsClient.upgradeToAndCall(newImplementation, new bytes(0));
     }
 }
 
-contract UpgradeCometblsClient is Script {
+contract UpgradeCometblsClient is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1236,25 +1311,24 @@ contract UpgradeCometblsClient is Script {
     }
 
     function run() public {
-        address cometblsClient =
-            getDeployed(LightClients.make(LightClients.COMETBLS));
+        address handler = getDeployed(IBC.BASED);
+        CometblsClient cometblsClient =
+            CometblsClient(getDeployed(LightClients.COMETBLS));
         console.log(
             string(
                 abi.encodePacked(
-                    "CometblsClient: ", cometblsClient.toHexString()
+                    "CometblsClient: ", address(cometblsClient).toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new CometblsClient());
-        CometblsClient(cometblsClient).upgradeToAndCall(
-            newImplementation, new bytes(0)
-        );
+        address newImplementation = address(new CometblsClient(handler));
+        cometblsClient.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
 }
 
-contract UpgradeStateLensIcs23MptClient is Script {
+contract UpgradeStateLensIcs23MptClient is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1277,26 +1351,28 @@ contract UpgradeStateLensIcs23MptClient is Script {
     }
 
     function run() public {
-        address stateLensIcs23MptClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_MPT));
+        address handler = getDeployed(IBC.BASED);
+        StateLensIcs23MptClient stateLensIcs23MptClient =
+        StateLensIcs23MptClient(getDeployed(LightClients.STATE_LENS_ICS23_MPT));
         console.log(
             string(
                 abi.encodePacked(
                     "StateLensIcs23MptClient: ",
-                    stateLensIcs23MptClient.toHexString()
+                    address(stateLensIcs23MptClient).toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new StateLensIcs23MptClient());
-        CometblsClient(stateLensIcs23MptClient).upgradeToAndCall(
+        address newImplementation =
+            address(new StateLensIcs23MptClient(handler));
+        stateLensIcs23MptClient.upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();
     }
 }
 
-contract UpgradeStateLensIcs23Ics23Client is Script {
+contract UpgradeStateLensIcs23Ics23Client is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1319,26 +1395,30 @@ contract UpgradeStateLensIcs23Ics23Client is Script {
     }
 
     function run() public {
-        address stateLensIcs23Ics23Client =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_ICS23));
+        address handler = getDeployed(IBC.BASED);
+        StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
+        StateLensIcs23Ics23Client(
+            getDeployed(LightClients.STATE_LENS_ICS23_ICS23)
+        );
         console.log(
             string(
                 abi.encodePacked(
                     "StateLensIcs23Ics23Client: ",
-                    stateLensIcs23Ics23Client.toHexString()
+                    address(stateLensIcs23Ics23Client).toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new StateLensIcs23Ics23Client());
-        StateLensIcs23Ics23Client(stateLensIcs23Ics23Client).upgradeToAndCall(
+        address newImplementation =
+            address(new StateLensIcs23Ics23Client(handler));
+        stateLensIcs23Ics23Client.upgradeToAndCall(
             newImplementation, new bytes(0)
         );
         vm.stopBroadcast();
     }
 }
 
-contract UpgradeStateLensIcs23SmtClient is Script {
+contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -1361,21 +1441,65 @@ contract UpgradeStateLensIcs23SmtClient is Script {
     }
 
     function run() public {
-        address stateLensIcs23SmtClient =
-            getDeployed(LightClients.make(LightClients.STATE_LENS_ICS23_SMT));
+        address handler = getDeployed(IBC.BASED);
+        StateLensIcs23SmtClient stateLensIcs23SmtClient =
+        StateLensIcs23SmtClient(getDeployed(LightClients.STATE_LENS_ICS23_SMT));
         console.log(
             string(
                 abi.encodePacked(
                     "StateLensIcs23SmtClient: ",
-                    stateLensIcs23SmtClient.toHexString()
+                    address(stateLensIcs23SmtClient).toHexString()
                 )
             )
         );
         vm.startBroadcast(privateKey);
-        address newImplementation = address(new StateLensIcs23SmtClient());
-        StateLensIcs23SmtClient(stateLensIcs23SmtClient).upgradeToAndCall(
+        address newImplementation =
+            address(new StateLensIcs23SmtClient(handler));
+        stateLensIcs23SmtClient.upgradeToAndCall(
             newImplementation, new bytes(0)
         );
+        vm.stopBroadcast();
+    }
+}
+
+contract DeployRoles is UnionScript {
+    using LibString for *;
+
+    Deployer immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = Deployer(vm.envAddress("DEPLOYER"));
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return deployer;
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            address(deployer)
+        );
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        address owner = vm.addr(privateKey);
+
+        Manager manager = Manager(getDeployed(IBC.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        CometblsClient cometbls =
+            CometblsClient(getDeployed(LightClients.COMETBLS));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+        Multicall multicall = Multicall(getDeployed(LIB.MULTICALL));
+
+        vm.startBroadcast(privateKey);
+        setupRoles(owner, manager, handler, cometbls, ucs03, multicall);
         vm.stopBroadcast();
     }
 }

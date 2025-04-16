@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -268,7 +268,7 @@ module ibc::ibc {
     struct PacketAck has drop, store {
         packet: Packet,
         acknowledgement: vector<u8>,
-        maker: address,
+        maker: address
     }
 
     #[event]
@@ -355,12 +355,14 @@ module ibc::ibc {
 
         if (option::is_some(&lens_client_event)) {
             let event = option::extract(&mut lens_client_event);
-            event::emit(CreateLensClient {        
-                client_id: create_lens_client_event::client_id(&event),
-                l2_chain_id: create_lens_client_event::l2_chain_id(&event),
-                l1_client_id: create_lens_client_event::l1_client_id(&event),
-                l2_client_id: create_lens_client_event::l2_client_id(&event)
-            });
+            event::emit(
+                CreateLensClient {
+                    client_id: create_lens_client_event::client_id(&event),
+                    l2_chain_id: create_lens_client_event::l2_chain_id(&event),
+                    l1_client_id: create_lens_client_event::l1_client_id(&event),
+                    l2_client_id: create_lens_client_event::l2_client_id(&event)
+                }
+            );
         };
 
         smart_table::upsert(&mut store.client_id_to_type, client_id, client_type);
@@ -384,7 +386,11 @@ module ibc::ibc {
         );
 
         event::emit(
-            CreateClient { client_id, client_type, counterparty_chain_id: counterparty_chain_id }
+            CreateClient {
+                client_id,
+                client_type,
+                counterparty_chain_id: counterparty_chain_id
+            }
         );
     }
 
@@ -501,6 +507,14 @@ module ibc::ibc {
         proof_try: vector<u8>,
         proof_height: u64
     ) acquires IBCStore {
+        assert!(
+            smart_table::contains(
+                &borrow_global<IBCStore>(get_vault_addr()).connections,
+                connection_id
+            ),
+            E_CONNECTION_DOES_NOT_EXIST
+        );
+
         let client_type =
             client_id_to_type(
                 connection_end::client_id(
@@ -511,11 +525,6 @@ module ibc::ibc {
                 )
             );
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
-
-        assert!(
-            smart_table::contains(&store.connections, connection_id),
-            E_CONNECTION_DOES_NOT_EXIST
-        );
 
         let connection = smart_table::borrow_mut(&mut store.connections, connection_id);
         assert!(
@@ -684,7 +693,9 @@ module ibc::ibc {
                 hash::sha2_256(*vector::borrow(&consensus_states, i))
             );
 
-            event::emit(UpdateClient { client_id, client_type, counterparty_height: height });
+            event::emit(
+                UpdateClient { client_id, client_type, counterparty_height: height }
+            );
 
             i = i + 1;
         };
@@ -859,7 +870,7 @@ module ibc::ibc {
 
         let channel =
             channel::new(
-                CHAN_STATE_INIT,
+                CHAN_STATE_TRYOPEN,
                 connection_id,
                 counterparty_channel_id,
                 counterparty_port_id,
@@ -1452,7 +1463,7 @@ module ibc::ibc {
         )
     }
 
-    public fun verify_commitment(
+    public(friend) fun verify_commitment(
         client_id: u32,
         height: u64,
         proof: vector<u8>,
@@ -1470,7 +1481,7 @@ module ibc::ibc {
         )
     }
 
-    public fun generate_connection_identifier(): u32 acquires IBCStore {
+    fun generate_connection_identifier(): u32 acquires IBCStore {
         let store = borrow_global_mut<IBCStore>(get_vault_addr());
         let next_sequence_bytes =
             table::borrow_with_default(
@@ -1533,6 +1544,10 @@ module ibc::ibc {
 
     public(friend) fun ensure_connection_state(connection_id: u32): u32 acquires IBCStore {
         let store = borrow_global<IBCStore>(get_vault_addr());
+        assert!(
+            smart_table::contains(&store.connections, connection_id),
+            E_CONNECTION_DOES_NOT_EXIST
+        );
         let connection = smart_table::borrow(&store.connections, connection_id);
         assert!(
             connection_end::state(connection) == CONN_STATE_OPEN,
@@ -1607,11 +1622,15 @@ module ibc::ibc {
         string_utils::to_string(&bcs::to_bytes(&addr))
     }
 
-    public(friend) fun emit_recv_packet(packet: Packet, maker: address, maker_msg: vector<u8>) {
+    public(friend) fun emit_recv_packet(
+        packet: Packet, maker: address, maker_msg: vector<u8>
+    ) {
         event::emit(PacketRecv { packet, maker, maker_msg })
     }
 
-    public(friend) fun emit_recv_intent_packet(packet: Packet, maker: address, maker_msg: vector<u8>) {
+    public(friend) fun emit_recv_intent_packet(
+        packet: Packet, maker: address, maker_msg: vector<u8>
+    ) {
         event::emit(RecvIntentPacket { packet, maker, maker_msg })
     }
 
@@ -1620,40 +1639,6 @@ module ibc::ibc {
     ) {
         event::emit(PacketAck { packet, acknowledgement, maker });
     }
-
-    // #[test(ibc_signer = @ibc)]
-    // fun test_get_ibc_signer(ibc_signer: &signer) acquires SignerRef {
-    //     init_module(ibc_signer);
-
-    //     std::debug::print(&get_ibc_signer())
-    // }
-
-    // #[test]
-    // public fun test_address_to_string() {
-    //     let addr = @0x0000000e8cb0f6fe55f8b91c16e970a1863552af09b60e6fe1d99808254b0be9;
-    //     let str =
-    //         utf8(b"0x0000000e8cb0f6fe55f8b91c16e970a1863552af09b60e6fe1d99808254b0be9");
-
-    //     assert!(address_to_string(addr) == str, 1);
-    // }
-
-    // #[test]
-    // public fun test_to_string() {
-    //     let order_unordered: u8 = 1;
-    //     let order_ordered: u8 = 2;
-    //     let order_invalid: u8 = 3;
-    //     // Test case for ORDER_UNORDERED
-    //     let order_unordered = ordering_to_string(order_unordered);
-    //     assert!(order_unordered == string::utf8(b"ORDER_UNORDERED"), 2001);
-
-    //     // Test case for ORDER_ORDERED
-    //     let order_ordered = ordering_to_string(order_ordered);
-    //     assert!(order_ordered == string::utf8(b"ORDER_ORDERED"), 2002);
-
-    //     // Test case for invalid order
-    //     let order_invalid = ordering_to_string(order_invalid);
-    //     assert!(order_invalid == string::utf8(b"ORDER_INVALID"), 2003);
-    // }
 
     #[test(alice = @ibc)]
     fun test_create_client(alice: &signer) acquires IBCStore, SignerRef {

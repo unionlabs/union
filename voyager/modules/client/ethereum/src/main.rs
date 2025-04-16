@@ -1,4 +1,3 @@
-use beacon_api_types::PresetBaseKind;
 use ethereum_light_client_types::{ClientState, ConsensusState, Header, StorageProof};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -16,11 +15,11 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{
+    module::{ClientModuleInfo, ClientModuleServer},
+    primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    module::{ClientModuleInfo, ClientModuleServer},
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
@@ -31,36 +30,27 @@ async fn main() {
 }
 
 #[derive(Debug, Clone)]
-pub struct Module {
-    pub chain_spec: PresetBaseKind,
-}
+pub struct Module {}
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct Config {
-    pub chain_spec: PresetBaseKind,
-}
+pub struct Config {}
 
 impl ClientModule for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::ETHEREUM)?;
         info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
 
-        Ok(Self {
-            chain_spec: config.chain_spec,
-        })
+        Ok(Self {})
     }
 }
 
-type SelfConsensusState = ConsensusState;
-type SelfClientState = ClientState;
-
 impl Module {
-    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<SelfConsensusState> {
-        SelfConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
+    pub fn decode_consensus_state(consensus_state: &[u8]) -> RpcResult<ConsensusState> {
+        ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode consensus state: {}", ErrorReporter(err)),
@@ -69,8 +59,8 @@ impl Module {
         })
     }
 
-    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<SelfClientState> {
-        <SelfClientState>::decode_as::<Bincode>(client_state).map_err(|err| {
+    pub fn decode_client_state(client_state: &[u8]) -> RpcResult<ClientState> {
+        ClientState::decode_as::<Bincode>(client_state).map_err(|err| {
             ErrorObject::owned(
                 FATAL_JSONRPC_ERROR_CODE,
                 format!("unable to decode client state: {err}"),
@@ -92,12 +82,12 @@ impl ClientModuleServer for Module {
         _: &Extensions,
         client_state: Bytes,
     ) -> RpcResult<ClientStateMeta> {
-        let cs = Module::decode_client_state(&client_state)?;
-
-        Ok(ClientStateMeta {
-            counterparty_chain_id: ChainId::new(cs.chain_id.to_string()),
-            counterparty_height: Module::make_height(cs.latest_height),
-        })
+        match Module::decode_client_state(&client_state)? {
+            ClientState::V1(v1) => Ok(ClientStateMeta {
+                counterparty_chain_id: ChainId::new(v1.chain_id.to_string()),
+                counterparty_height: Module::make_height(v1.latest_height),
+            }),
+        }
     }
 
     #[instrument]
@@ -109,7 +99,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp_nanos: Timestamp::from_nanos(cs.timestamp),
+            timestamp: Timestamp::from_nanos(cs.timestamp),
         })
     }
 

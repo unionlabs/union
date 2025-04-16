@@ -7,16 +7,21 @@ import "../24-host/IBCCommitment.sol";
 import "../02-client/IIBCClient.sol";
 
 library IBCClientLib {
-    event RegisterClient(string clientType, address clientAddress);
-    event CreateClient(
-        string clientType, uint32 clientId, string counterpartyChainId
+    event RegisterClient(
+        string indexed clientTypeIndex, string clientType, address clientAddress
     );
-    event UpdateClient(uint32 clientId, uint64 height);
-    event Misbehaviour(uint32 clientId);
+    event CreateClient(
+        string indexed clientTypeIndex,
+        string clientType,
+        uint32 indexed clientId,
+        string counterpartyChainId
+    );
+    event UpdateClient(uint32 indexed clientId, uint64 height);
+    event Misbehaviour(uint32 indexed clientId);
 }
 
 /**
- * @dev IBCClient is a contract that implements [ICS-2](https://github.com/cosmos/ibc/tree/main/spec/core/ics-002-client-semantics).
+ * @dev IBCClient is a router contract that forward calls to clients implementing [ICS-2](https://github.com/cosmos/ibc/tree/main/spec/core/ics-002-client-semantics).
  */
 abstract contract IBCClient is IBCStore, IIBCClient {
     /**
@@ -25,12 +30,14 @@ abstract contract IBCClient is IBCStore, IIBCClient {
     function registerClient(
         string calldata clientType,
         ILightClient client
-    ) external override {
+    ) external override restricted {
         if (address(clientRegistry[clientType]) != address(0)) {
             revert IBCErrors.ErrClientTypeAlreadyExists();
         }
         clientRegistry[clientType] = address(client);
-        emit IBCClientLib.RegisterClient(clientType, address(client));
+        emit IBCClientLib.RegisterClient(
+            clientType, clientType, address(client)
+        );
     }
 
     /**
@@ -38,7 +45,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
      */
     function createClient(
         IBCMsgs.MsgCreateClient calldata msg_
-    ) external override returns (uint32) {
+    ) external override restricted returns (uint32) {
         address clientImpl = clientRegistry[msg_.clientType];
         if (clientImpl == address(0)) {
             revert IBCErrors.ErrClientTypeNotFound();
@@ -48,7 +55,11 @@ abstract contract IBCClient is IBCStore, IIBCClient {
         clientImpls[clientId] = clientImpl;
         (ConsensusStateUpdate memory update, string memory counterpartyChainId)
         = ILightClient(clientImpl).createClient(
-            clientId, msg_.clientStateBytes, msg_.consensusStateBytes
+            msg.sender,
+            clientId,
+            msg_.clientStateBytes,
+            msg_.consensusStateBytes,
+            msg_.relayer
         );
         commitments[IBCCommitment.clientStateCommitmentKey(clientId)] =
             update.clientStateCommitment;
@@ -56,7 +67,7 @@ abstract contract IBCClient is IBCStore, IIBCClient {
             clientId, update.height
         )] = update.consensusStateCommitment;
         emit IBCClientLib.CreateClient(
-            msg_.clientType, clientId, counterpartyChainId
+            msg_.clientType, msg_.clientType, clientId, counterpartyChainId
         );
         return clientId;
     }
@@ -66,9 +77,11 @@ abstract contract IBCClient is IBCStore, IIBCClient {
      */
     function updateClient(
         IBCMsgs.MsgUpdateClient calldata msg_
-    ) external override {
+    ) external override restricted {
         ConsensusStateUpdate memory update = getClientInternal(msg_.clientId)
-            .updateClient(msg_.clientId, msg_.clientMessage);
+            .updateClient(
+            msg.sender, msg_.clientId, msg_.clientMessage, msg_.relayer
+        );
         commitments[IBCCommitment.clientStateCommitmentKey(msg_.clientId)] =
             update.clientStateCommitment;
         commitments[IBCCommitment.consensusStateCommitmentKey(
@@ -82,9 +95,9 @@ abstract contract IBCClient is IBCStore, IIBCClient {
      */
     function misbehaviour(
         IBCMsgs.MsgMisbehaviour calldata msg_
-    ) external override {
+    ) external override restricted {
         getClientInternal(msg_.clientId).misbehaviour(
-            msg_.clientId, msg_.clientMessage
+            msg.sender, msg_.clientId, msg_.clientMessage, msg_.relayer
         );
         emit IBCClientLib.Misbehaviour(msg_.clientId);
     }

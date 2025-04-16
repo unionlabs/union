@@ -6,6 +6,7 @@ use crate::types::{ChannelId, ConnectionId};
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, AsTuple)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -14,13 +15,15 @@ use crate::types::{ChannelId, ConnectionId};
 pub struct Channel {
     pub state: ChannelState,
     pub connection_id: ConnectionId,
-    pub counterparty_channel_id: ChannelId,
+    // can be None when the channel is in the init state
+    pub counterparty_channel_id: Option<ChannelId>,
     pub counterparty_port_id: Bytes,
     pub version: String,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -82,8 +85,11 @@ pub mod ethabi {
                     ChannelState::Open => ibc_solidity::ChannelState::Open,
                     ChannelState::Closed => ibc_solidity::ChannelState::Closed,
                 },
-                connection_id: value.connection_id,
-                counterparty_channel_id: value.counterparty_channel_id,
+                connection_id: value.connection_id.raw(),
+                counterparty_channel_id: value
+                    .counterparty_channel_id
+                    .map(|counterparty_channel_id| counterparty_channel_id.raw())
+                    .unwrap_or_default(),
                 counterparty_port_id: value.counterparty_port_id.into(),
                 version: value.version,
             }
@@ -106,18 +112,22 @@ pub mod ethabi {
                         return Err(Error::InvalidChannelState)
                     }
                 },
-                connection_id: value.connection_id,
-                counterparty_channel_id: value.counterparty_channel_id,
+                connection_id: ConnectionId::from_raw(value.connection_id)
+                    .ok_or(Error::InvalidConnectionId)?,
+                counterparty_channel_id: ChannelId::from_raw(value.counterparty_channel_id),
                 counterparty_port_id: value.counterparty_port_id.into(),
                 version: value.version,
             })
         }
     }
 
+    #[cfg(feature = "ibc-solidity-compat")]
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid channel state")]
         InvalidChannelState,
+        #[error("invalid connection id")]
+        InvalidConnectionId,
     }
 
     type SolTuple = (Uint<8>, Uint<32>, Uint<32>, SolBytes, SolString);
@@ -139,7 +149,7 @@ pub mod ethabi {
 
         fn valid_token(
             (state,
-            _connection_id,
+            connection_id,
             _counterparty_channel_id,
             _counterparty_port_id,
             _version,
@@ -147,8 +157,10 @@ pub mod ethabi {
                 '_,
             >,
         ) -> bool {
-            <Uint<8>>::valid_token(state)
-                && ChannelState::try_from(<Uint<8>>::detokenize(*state)).is_ok()
+            (<Uint<8>>::valid_token(state)
+                && ChannelState::try_from(<Uint<8>>::detokenize(*state)).is_ok())
+                && (<Uint<32>>::valid_token(connection_id)
+                    && <Uint<32>>::detokenize(*connection_id) > 0)
         }
 
         fn detokenize(
@@ -161,8 +173,11 @@ pub mod ethabi {
         ) -> Self::RustType {
             Self {
                 state: ChannelState::try_from(<Uint<8>>::detokenize(state)).expect("???"),
-                connection_id: <Uint<32>>::detokenize(connection_id),
-                counterparty_channel_id: <Uint<32>>::detokenize(counterparty_channel_id),
+                connection_id: ConnectionId::from_raw(<Uint<32>>::detokenize(connection_id))
+                    .expect("???"),
+                counterparty_channel_id: ChannelId::from_raw(<Uint<32>>::detokenize(
+                    counterparty_channel_id,
+                )),
                 counterparty_port_id: <SolBytes>::detokenize(counterparty_port_id).into(),
                 version: SolString::detokenize(version),
             }
@@ -173,16 +188,33 @@ pub mod ethabi {
         fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
             (
                 <Uint<8> as SolType>::tokenize(&(self.state as u8)),
-                <Uint<32> as SolType>::tokenize(&self.connection_id),
-                <Uint<32> as SolType>::tokenize(&self.counterparty_channel_id),
+                <Uint<32> as SolType>::tokenize(&self.connection_id.raw()),
+                <Uint<32> as SolType>::tokenize(
+                    &self
+                        .counterparty_channel_id
+                        .map(|counterparty_channel_id| counterparty_channel_id.raw())
+                        .unwrap_or_default(),
+                ),
                 <SolBytes as SolType>::tokenize(&self.counterparty_port_id),
                 <SolString as SolType>::tokenize(&self.version),
             )
         }
 
         fn stv_abi_encode_packed_to(&self, out: &mut Vec<u8>) {
-            let tuple = self.as_tuple();
-            <SolTuple as SolType>::abi_encode_packed_to(&tuple, out)
+            let (state, connection_id, counterpartry_channel_id, counterparty_port_id, version) =
+                self.as_tuple();
+            <SolTuple as SolType>::abi_encode_packed_to(
+                &(
+                    state,
+                    connection_id.raw(),
+                    counterpartry_channel_id
+                        .map(|counterpartry_channel_id| counterpartry_channel_id.raw())
+                        .unwrap_or_default(),
+                    counterparty_port_id,
+                    version,
+                ),
+                out,
+            )
         }
 
         fn stv_eip712_data_word(&self) -> alloy_sol_types::Word {
@@ -208,8 +240,14 @@ pub mod ethabi {
         fn eip712_encode_data(&self) -> Vec<u8> {
             [
                 <Uint<8> as SolType>::eip712_data_word(&self.state).0,
-                <Uint<32> as SolType>::eip712_data_word(&self.connection_id).0,
-                <Uint<32> as SolType>::eip712_data_word(&self.counterparty_channel_id).0,
+                <Uint<32> as SolType>::eip712_data_word(&self.connection_id.raw()).0,
+                <Uint<32> as SolType>::eip712_data_word(
+                    &self
+                        .counterparty_channel_id
+                        .map(|counterparty_channel_id| counterparty_channel_id.raw())
+                        .unwrap_or_default(),
+                )
+                .0,
                 <SolBytes as SolType>::eip712_data_word(&self.counterparty_port_id).0,
                 <SolString as SolType>::eip712_data_word(&self.version).0,
             ]
@@ -253,8 +291,8 @@ mod tests {
 
         let connection = Channel {
             state: ChannelState::Init,
-            connection_id: 1,
-            counterparty_channel_id: 1,
+            connection_id: ConnectionId::from_raw(1).unwrap(),
+            counterparty_channel_id: Some(ChannelId::from_raw(1).unwrap()),
             counterparty_port_id: b"port".into(),
             version: "version".into(),
         };
@@ -280,8 +318,8 @@ mod tests {
 
         let connection = Channel {
             state: ChannelState::Init,
-            connection_id: 1,
-            counterparty_channel_id: 1,
+            connection_id: ConnectionId::from_raw(1).unwrap(),
+            counterparty_channel_id: Some(ChannelId::from_raw(1).unwrap()),
             counterparty_port_id: b"port".into(),
             version: "version".into(),
         };

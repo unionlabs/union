@@ -105,12 +105,6 @@ pub struct RpcCommandOptions {
     /// skip specifies whether to skip this rpc method when generating commands.
     #[prost(bool, tag = "12")]
     pub skip: bool,
-    /// gov_proposal specifies whether autocli should generate a gov proposal transaction for this rpc method.
-    /// Normally autocli generates a transaction containing the message and broadcast it.
-    /// However, when true, autocli generates a proposal transaction containing the message and broadcast it.
-    /// This option is ineffective for query commands.
-    #[prost(bool, tag = "13")]
-    pub gov_proposal: bool,
 }
 impl ::prost::Name for RpcCommandOptions {
     const NAME: &'static str = "RpcCommandOptions";
@@ -165,7 +159,7 @@ pub struct PositionalArgDescriptor {
     pub proto_field: ::prost::alloc::string::String,
     /// varargs makes a positional parameter a varargs parameter. This can only be
     /// applied to last positional parameter and the proto_field must a repeated
-    /// field. Note: It is mutually exclusive with optional.
+    /// field.
     #[prost(bool, tag = "2")]
     pub varargs: bool,
     /// optional makes the last positional parameter optional.

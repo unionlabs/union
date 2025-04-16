@@ -1,4 +1,223 @@
 // @generated
+/// ConsensusParams contains consensus critical parameters that determine the
+/// validity of blocks.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ConsensusParams {
+    #[prost(message, optional, tag = "1")]
+    pub block: ::core::option::Option<BlockParams>,
+    #[prost(message, optional, tag = "2")]
+    pub evidence: ::core::option::Option<EvidenceParams>,
+    #[prost(message, optional, tag = "3")]
+    pub validator: ::core::option::Option<ValidatorParams>,
+    #[prost(message, optional, tag = "4")]
+    pub version: ::core::option::Option<VersionParams>,
+    /// Use FeatureParams.vote_extensions_enable_height instead
+    #[deprecated]
+    #[prost(message, optional, tag = "5")]
+    pub abci: ::core::option::Option<AbciParams>,
+    #[prost(message, optional, tag = "6")]
+    pub synchrony: ::core::option::Option<SynchronyParams>,
+    #[prost(message, optional, tag = "7")]
+    pub feature: ::core::option::Option<FeatureParams>,
+}
+impl ::prost::Name for ConsensusParams {
+    const NAME: &'static str = "ConsensusParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
+/// BlockParams define limits on the block size and gas.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BlockParams {
+    /// Maximum size of a block, in bytes.
+    ///
+    /// Must be greater or equal to -1 and cannot be greater than the hard-coded
+    /// maximum block size, which is 100MB.
+    ///
+    /// If set to -1, the limit is the hard-coded maximum block size.
+    #[prost(int64, tag = "1")]
+    pub max_bytes: i64,
+    /// Maximum gas wanted by transactions included in a block.
+    ///
+    /// Must be greater or equal to -1. If set to -1, no limit is enforced.
+    #[prost(int64, tag = "2")]
+    pub max_gas: i64,
+}
+impl ::prost::Name for BlockParams {
+    const NAME: &'static str = "BlockParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
+/// EvidenceParams determine the validity of evidences of Byzantine behavior.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EvidenceParams {
+    /// Maximum age of evidence, in blocks.
+    ///
+    /// The recommended formula for calculating it is max_age_duration / {average
+    /// block time}.
+    #[prost(int64, tag = "1")]
+    pub max_age_num_blocks: i64,
+    /// Maximum age of evidence, in time.
+    ///
+    /// The recommended value of is should correspond to the application's
+    /// "unbonding period" or other similar mechanism for handling
+    /// Nothing-At-Stake attacks.
+    /// See: <https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed.>
+    #[prost(message, optional, tag = "2")]
+    pub max_age_duration: ::core::option::Option<::pbjson_types::Duration>,
+    /// Maximum size in bytes of evidence allowed to be included in a block.
+    ///
+    /// It should fall comfortably under the maximum size of a block.
+    #[prost(int64, tag = "3")]
+    pub max_bytes: i64,
+}
+impl ::prost::Name for EvidenceParams {
+    const NAME: &'static str = "EvidenceParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
+/// ValidatorParams restrict the public key types validators can use.
+///
+/// NOTE: uses ABCI public keys naming, not Amino names.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct ValidatorParams {
+    #[prost(string, repeated, tag = "1")]
+    pub pub_key_types: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+}
+impl ::prost::Name for ValidatorParams {
+    const NAME: &'static str = "ValidatorParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
+/// VersionParams contain the version of specific components of CometBFT.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct VersionParams {
+    /// The ABCI application version.
+    ///
+    /// It was named app_version in CometBFT 0.34.
+    #[prost(uint64, tag = "1")]
+    pub app: u64,
+}
+impl ::prost::Name for VersionParams {
+    const NAME: &'static str = "VersionParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
+/// HashedParams is a subset of ConsensusParams.
+///
+/// It is hashed into the Header.ConsensusHash.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct HashedParams {
+    #[prost(int64, tag = "1")]
+    pub block_max_bytes: i64,
+    #[prost(int64, tag = "2")]
+    pub block_max_gas: i64,
+}
+impl ::prost::Name for HashedParams {
+    const NAME: &'static str = "HashedParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
+/// SynchronyParams determine the validity of block timestamps.
+///
+/// These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
+/// For more information on the relationship of the synchrony parameters to
+/// block timestamps validity, refer to the PBTS specification:
+/// <https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md>
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct SynchronyParams {
+    /// Bound for how skewed a proposer's clock may be from any validator on the
+    /// network while still producing valid proposals.
+    #[prost(message, optional, tag = "1")]
+    pub precision: ::core::option::Option<::pbjson_types::Duration>,
+    /// Bound for how long a proposal message may take to reach all validators on
+    /// a network and still be considered valid.
+    #[prost(message, optional, tag = "2")]
+    pub message_delay: ::core::option::Option<::pbjson_types::Duration>,
+}
+impl ::prost::Name for SynchronyParams {
+    const NAME: &'static str = "SynchronyParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
+/// FeatureParams configure the height from which features of CometBFT are enabled.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct FeatureParams {
+    /// Height during which vote extensions will be enabled.
+    ///
+    /// A value of 0 means vote extensions are disabled. A value > 0 denotes
+    /// the height at which vote extensions will be (or have been) enabled.
+    ///
+    /// During the specified height, and for all subsequent heights, precommit
+    /// messages that do not contain valid extension data will be considered
+    /// invalid. Prior to this height, or when this height is set to 0, vote
+    /// extensions will not be used or accepted by validators on the network.
+    ///
+    /// Once enabled, vote extensions will be created by the application in
+    /// ExtendVote, validated by the application in VerifyVoteExtension, and
+    /// used by the application in PrepareProposal, when proposing the next block.
+    ///
+    /// Cannot be set to heights lower or equal to the current blockchain height.
+    #[prost(message, optional, tag = "1")]
+    pub vote_extensions_enable_height: ::core::option::Option<::pbjson_types::Int64Value>,
+    /// Height at which Proposer-Based Timestamps (PBTS) will be enabled.
+    ///
+    /// A value of 0 means PBTS is disabled. A value > 0 denotes the height at
+    /// which PBTS will be (or has been) enabled.
+    ///
+    /// From the specified height, and for all subsequent heights, the PBTS
+    /// algorithm will be used to produce and validate block timestamps. Prior to
+    /// this height, or when this height is set to 0, the legacy BFT Time
+    /// algorithm is used to produce and validate timestamps.
+    ///
+    /// Cannot be set to heights lower or equal to the current blockchain height.
+    #[prost(message, optional, tag = "2")]
+    pub pbts_enable_height: ::core::option::Option<::pbjson_types::Int64Value>,
+}
+impl ::prost::Name for FeatureParams {
+    const NAME: &'static str = "FeatureParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
+/// ABCIParams is deprecated and its contents moved to FeatureParams
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct AbciParams {
+    /// vote_extensions_enable_height has been deprecated.
+    /// Instead, use FeatureParams.vote_extensions_enable_height.
+    #[prost(int64, tag = "1")]
+    pub vote_extensions_enable_height: i64,
+}
+impl ::prost::Name for AbciParams {
+    const NAME: &'static str = "ABCIParams";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
 /// ValidatorSet defines a set of validators.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -653,6 +872,24 @@ impl ::prost::Name for Block {
         ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
     }
 }
+/// EventDataRoundState is emitted with each new round step.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct EventDataRoundState {
+    #[prost(int64, tag = "1")]
+    pub height: i64,
+    #[prost(int32, tag = "2")]
+    pub round: i32,
+    #[prost(string, tag = "3")]
+    pub step: ::prost::alloc::string::String,
+}
+impl ::prost::Name for EventDataRoundState {
+    const NAME: &'static str = "EventDataRoundState";
+    const PACKAGE: &'static str = "cometbft.types.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
+    }
+}
 /// CanonicalBlockID is a canonical representation of a BlockID, which gets
 /// serialized and signed.
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -759,243 +996,6 @@ pub struct CanonicalVoteExtension {
 }
 impl ::prost::Name for CanonicalVoteExtension {
     const NAME: &'static str = "CanonicalVoteExtension";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// ConsensusParams contains consensus critical parameters that determine the
-/// validity of blocks.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsensusParams {
-    #[prost(message, optional, tag = "1")]
-    pub block: ::core::option::Option<BlockParams>,
-    #[prost(message, optional, tag = "2")]
-    pub evidence: ::core::option::Option<EvidenceParams>,
-    #[prost(message, optional, tag = "3")]
-    pub validator: ::core::option::Option<ValidatorParams>,
-    #[prost(message, optional, tag = "4")]
-    pub version: ::core::option::Option<VersionParams>,
-    /// Use FeatureParams.vote_extensions_enable_height instead
-    #[deprecated]
-    #[prost(message, optional, tag = "5")]
-    pub abci: ::core::option::Option<AbciParams>,
-    #[prost(message, optional, tag = "6")]
-    pub synchrony: ::core::option::Option<SynchronyParams>,
-    #[prost(message, optional, tag = "7")]
-    pub feature: ::core::option::Option<FeatureParams>,
-}
-impl ::prost::Name for ConsensusParams {
-    const NAME: &'static str = "ConsensusParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// BlockParams define limits on the block size and gas.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct BlockParams {
-    /// Maximum size of a block, in bytes.
-    ///
-    /// Must be greater or equal to -1 and cannot be greater than the hard-coded
-    /// maximum block size, which is 100MB.
-    ///
-    /// If set to -1, the limit is the hard-coded maximum block size.
-    #[prost(int64, tag = "1")]
-    pub max_bytes: i64,
-    /// Maximum gas wanted by transactions included in a block.
-    ///
-    /// Must be greater or equal to -1. If set to -1, no limit is enforced.
-    #[prost(int64, tag = "2")]
-    pub max_gas: i64,
-}
-impl ::prost::Name for BlockParams {
-    const NAME: &'static str = "BlockParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// EvidenceParams determine the validity of evidences of Byzantine behavior.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EvidenceParams {
-    /// Maximum age of evidence, in blocks.
-    ///
-    /// The recommended formula for calculating it is max_age_duration / {average
-    /// block time}.
-    #[prost(int64, tag = "1")]
-    pub max_age_num_blocks: i64,
-    /// Maximum age of evidence, in time.
-    ///
-    /// The recommended value of is should correspond to the application's
-    /// "unbonding period" or other similar mechanism for handling
-    /// Nothing-At-Stake attacks.
-    /// See: <https://github.com/ethereum/wiki/wiki/Proof-of-Stake-FAQ#what-is-the-nothing-at-stake-problem-and-how-can-it-be-fixed.>
-    #[prost(message, optional, tag = "2")]
-    pub max_age_duration: ::core::option::Option<::pbjson_types::Duration>,
-    /// Maximum size in bytes of evidence allowed to be included in a block.
-    ///
-    /// It should fall comfortably under the maximum size of a block.
-    #[prost(int64, tag = "3")]
-    pub max_bytes: i64,
-}
-impl ::prost::Name for EvidenceParams {
-    const NAME: &'static str = "EvidenceParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// ValidatorParams restrict the public key types validators can use.
-///
-/// NOTE: uses ABCI public keys naming, not Amino names.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ValidatorParams {
-    #[prost(string, repeated, tag = "1")]
-    pub pub_key_types: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-}
-impl ::prost::Name for ValidatorParams {
-    const NAME: &'static str = "ValidatorParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// VersionParams contain the version of specific components of CometBFT.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct VersionParams {
-    /// The ABCI application version.
-    ///
-    /// It was named app_version in CometBFT 0.34.
-    #[prost(uint64, tag = "1")]
-    pub app: u64,
-}
-impl ::prost::Name for VersionParams {
-    const NAME: &'static str = "VersionParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// HashedParams is a subset of ConsensusParams.
-///
-/// It is hashed into the Header.ConsensusHash.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct HashedParams {
-    #[prost(int64, tag = "1")]
-    pub block_max_bytes: i64,
-    #[prost(int64, tag = "2")]
-    pub block_max_gas: i64,
-}
-impl ::prost::Name for HashedParams {
-    const NAME: &'static str = "HashedParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// SynchronyParams determine the validity of block timestamps.
-///
-/// These parameters are part of the Proposer-Based Timestamps (PBTS) algorithm.
-/// For more information on the relationship of the synchrony parameters to
-/// block timestamps validity, refer to the PBTS specification:
-/// <https://github.com/tendermint/spec/blob/master/spec/consensus/proposer-based-timestamp/README.md>
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SynchronyParams {
-    /// Bound for how skewed a proposer's clock may be from any validator on the
-    /// network while still producing valid proposals.
-    #[prost(message, optional, tag = "1")]
-    pub precision: ::core::option::Option<::pbjson_types::Duration>,
-    /// Bound for how long a proposal message may take to reach all validators on
-    /// a network and still be considered valid.
-    #[prost(message, optional, tag = "2")]
-    pub message_delay: ::core::option::Option<::pbjson_types::Duration>,
-}
-impl ::prost::Name for SynchronyParams {
-    const NAME: &'static str = "SynchronyParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// FeatureParams configure the height from which features of CometBFT are enabled.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct FeatureParams {
-    /// Height during which vote extensions will be enabled.
-    ///
-    /// A value of 0 means vote extensions are disabled. A value > 0 denotes
-    /// the height at which vote extensions will be (or have been) enabled.
-    ///
-    /// During the specified height, and for all subsequent heights, precommit
-    /// messages that do not contain valid extension data will be considered
-    /// invalid. Prior to this height, or when this height is set to 0, vote
-    /// extensions will not be used or accepted by validators on the network.
-    ///
-    /// Once enabled, vote extensions will be created by the application in
-    /// ExtendVote, validated by the application in VerifyVoteExtension, and
-    /// used by the application in PrepareProposal, when proposing the next block.
-    ///
-    /// Cannot be set to heights lower or equal to the current blockchain height.
-    #[prost(message, optional, tag = "1")]
-    pub vote_extensions_enable_height: ::core::option::Option<::pbjson_types::Int64Value>,
-    /// Height at which Proposer-Based Timestamps (PBTS) will be enabled.
-    ///
-    /// A value of 0 means PBTS is disabled. A value > 0 denotes the height at
-    /// which PBTS will be (or has been) enabled.
-    ///
-    /// From the specified height, and for all subsequent heights, the PBTS
-    /// algorithm will be used to produce and validate block timestamps. Prior to
-    /// this height, or when this height is set to 0, the legacy BFT Time
-    /// algorithm is used to produce and validate timestamps.
-    ///
-    /// Cannot be set to heights lower or equal to the current blockchain height.
-    #[prost(message, optional, tag = "2")]
-    pub pbts_enable_height: ::core::option::Option<::pbjson_types::Int64Value>,
-}
-impl ::prost::Name for FeatureParams {
-    const NAME: &'static str = "FeatureParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// ABCIParams is deprecated and its contents moved to FeatureParams
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AbciParams {
-    /// vote_extensions_enable_height has been deprecated.
-    /// Instead, use FeatureParams.vote_extensions_enable_height.
-    #[prost(int64, tag = "1")]
-    pub vote_extensions_enable_height: i64,
-}
-impl ::prost::Name for AbciParams {
-    const NAME: &'static str = "ABCIParams";
-    const PACKAGE: &'static str = "cometbft.types.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)
-    }
-}
-/// EventDataRoundState is emitted with each new round step.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct EventDataRoundState {
-    #[prost(int64, tag = "1")]
-    pub height: i64,
-    #[prost(int32, tag = "2")]
-    pub round: i32,
-    #[prost(string, tag = "3")]
-    pub step: ::prost::alloc::string::String,
-}
-impl ::prost::Name for EventDataRoundState {
-    const NAME: &'static str = "EventDataRoundState";
     const PACKAGE: &'static str = "cometbft.types.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cometbft.types.v1.{}", Self::NAME)

@@ -5,14 +5,9 @@
       url = "github:hellwolf/solc.nix";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    nixpkgs.url = "github:NixOS/nixpkgs?rev=75a5ebf473cd60148ba9aec0d219f72e5cf52519";
-    # Track a separate nixpkgs for latest solc
-    nixpkgs-solc.url = "github:NixOS/nixpkgs/nixos-unstable";
-    nixpkgs-go.url = "github:NixOS/nixpkgs/nixos-unstable";
-    # Track a separate nixpkgs for unstable nixos
-    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:NixOS/nixpkgs/release-24.11";
     # Track a separate nixpkgs for JS/TS toolchains
-    nixpkgs-js.url = "github:NixOS/nixpkgs/nixos-unstable";
+    nixpkgs-unstable.url = "github:NixOS/nixpkgs/nixos-unstable";
     # Remove when lnav is updated on upstream nixpkgs
     nixpkgs-lnav.url = "github:cor/nixpkgs/lnav-v0.12.2-beta";
     process-compose.url = "github:F1bonacc1/process-compose";
@@ -20,29 +15,18 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
-    arion = {
-      url = "github:hercules-ci/arion?rev=6a1f03329c400327b3b2e0ed5e1efff11037ba67";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    treefmt-nix = {
-      url = "github:numtide/treefmt-nix";
-    };
+    arion.url = "github:hercules-ci/arion/v0.2.2.0";
+    treefmt-nix.url = "github:numtide/treefmt-nix";
     foundry = {
       url = "github:shazow/foundry.nix/main";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-    rust-overlay = {
-      url = "github:oxalica/rust-overlay";
-      inputs.nixpkgs.follows = "nixpkgs";
-    };
-    crane = {
-      url = "github:ipetkov/crane";
-    };
+    rust-overlay.url = "github:oxalica/rust-overlay";
+    crane.url = "github:ipetkov/crane";
     env-utils = {
       url = "github:oceanlewis/env-utils";
       inputs.nixpkgs.follows = "nixpkgs";
     };
-
     ibc-go = {
       url = "github:unionlabs/ibc-go-union?rev=bfabb646cf7384bd33ee672f51a0e1325f545c10";
       flake = false;
@@ -79,15 +63,19 @@
     nix-filter.url = "github:numtide/nix-filter?rev=3449dc925982ad46246cfc36469baf66e1b64f17";
     get-flake.url = "github:ursi/get-flake";
     stargaze = {
-      url = "git+https://github.com/public-awesome/stargaze?ref=main&submodules=1";
+      url = "git+https://github.com/public-awesome/stargaze?ref=refs/tags/v15.2.0&submodules=1";
       flake = false;
     };
     osmosis = {
-      url = "github:osmosis-labs/osmosis/v24.0.0-rc0";
+      url = "github:osmosis-labs/osmosis/v28.0.5";
       flake = false;
     };
     babylon = {
-      url = "github:babylonlabs-io/babylon/v1.0.0-rc.3";
+      url = "github:babylonlabs-io/babylon/v1.0.0-rc.7";
+      flake = false;
+    };
+    stride = {
+      url = "github:Stride-Labs/stride/v26.0.3";
       flake = false;
     };
 
@@ -109,14 +97,14 @@
       type = "github";
       owner = "unionlabs";
       repo = "cometbft";
-      rev = "40cbc598984d75fc4c8af1f100674dc459cda25d";
+      ref = "v1.0.1-cometbls";
       flake = false;
     };
     cosmossdk = {
       type = "github";
       owner = "unionlabs";
       repo = "cosmos-sdk";
-      rev = "2b819f25de4d2f408fe3e7628bcb3e059244fd1c";
+      ref = "v0.50.11-cometblsv1";
       flake = false;
     };
 
@@ -126,12 +114,8 @@
     };
 
     # uniond versions
-    v0_25_0 = {
-      url = "github:unionlabs/union/release/uniond/v0.25.0";
-      flake = false;
-    };
-    v0_26_0 = {
-      url = "github:unionlabs/union/release/uniond/v0.26.0";
+    v1_0_0 = {
+      url = "github:unionlabs/union/release/uniond/v1.0.0";
       flake = false;
     };
   };
@@ -139,8 +123,6 @@
     inputs@{
       self,
       nixpkgs,
-      nixpkgs-solc,
-      nixpkgs-go,
       flake-parts,
       nix-filter,
       foundry,
@@ -160,12 +142,12 @@
         site = {
           x86_64-linux = {
             inherit (self.packages.x86_64-linux) site;
-            inherit (self.packages.x86_64-linux) app;
+            inherit (self.packages.x86_64-linux) app2;
             inherit (self.packages.x86_64-linux) ceremony;
           };
           aarch64-linux = {
             inherit (self.packages.aarch64-linux) site;
-            inherit (self.packages.aarch64-linux) app;
+            inherit (self.packages.aarch64-linux) app2;
             inherit (self.packages.aarch64-linux) ceremony;
           };
         };
@@ -183,24 +165,16 @@
         ./unionvisor/unionvisor.nix
         ./voyager/voyager.nix
         ./mpc/mpc.nix
-        ./lib/ics23/ics23.nix
-        ./lib/ssz/ssz.nix
-        ./lib/unionlabs/unionlabs.nix
         ./hubble/hubble.nix
         ./lib/aptos.nix
-        ./lib/tendermint-verifier/tendermint-verifier.nix
-        ./lib/scroll-verifier/scroll-verifier.nix
         ./uniond/proto.nix
-        ./app/app.nix
         ./docs/docs.nix
         ./docs/openapi.nix
         ./ceremony/ceremony.nix
         ./site/site.nix
-        # ./lib/near/near.nix
+        ./app2/app2.nix
+        ./ts-sdk/ts-sdk.nix
         ./typescript-sdk/typescript-sdk.nix
-        ./lib/cometbls-groth16-verifier/default.nix
-        ./lib/linea-verifier/default.nix
-        ./lib/linea-zktrie/default.nix
         ./cosmwasm/cosmwasm.nix
         ./evm/evm.nix
         ./tools/rust-proto.nix
@@ -222,12 +196,14 @@
         ./networks/stargaze.nix
         ./networks/osmosis.nix
         ./networks/babylon.nix
+        ./networks/stride.nix
         ./e2e/all-tests.nix
         ./e2e/e2e.nix
         ./devnet-compose/devnet-compose.nix
         ./drip/drip.nix
         ./zkgm-dev/zkgm-dev.nix
         ./sentinel/sentinel.nix
+        ./lib/embed-commit
         treefmt-nix.flakeModule
       ];
 
@@ -255,30 +231,27 @@
           versions = builtins.fromJSON (builtins.readFile ./versions/versions.json);
 
           uniondBundleVersions = rec {
-            complete = versions.union-testnet-9.versions;
+            complete = versions.union-1.versions;
             first = pkgs.lib.lists.head complete;
             last = pkgs.lib.lists.last complete;
           };
 
-          goPkgs = import inputs.nixpkgs-go { inherit system; };
-          jsPkgs = import inputs.nixpkgs-js { inherit system; };
-          unstablePkgs = import inputs.nixpkgs-unstable { inherit system; };
+          pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
+
+          gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
         in
         {
           _module = {
             args = {
               inherit
+                gitRev
                 nixpkgs
                 dbg
                 get-flake
                 uniondBundleVersions
-                goPkgs
-                jsPkgs
-                unstablePkgs
+                pkgsUnstable
                 mkCi
                 ;
-
-              gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
 
               pkgs = nixpkgs.legacyPackages.${system}.appendOverlays (
                 with inputs;
@@ -288,42 +261,87 @@
                   foundry.overlay
                   (_: super: {
                     inherit (self'.packages) devnet-utils;
+                    mkRootDrv =
+                      name: subAttrs:
+                      subAttrs
+                      // (builtins.removeAttrs
+                        (pkgs.writeShellApplication {
+                          inherit name;
+                          text = ''
+                            echo "this object (${name}) only has the following subattributes:"
 
-                    go-ethereum = super.go-ethereum.override {
-                      buildGoModule =
-                        args:
-                        super.buildGoModule (
-                          args
-                          // rec {
-                            version = "1.13.12";
-                            src = pkgs.fetchFromGitHub {
-                              owner = "ethereum";
-                              repo = "go-ethereum";
-                              rev = "v${version}";
-                              sha256 = "sha256-2olJV7Z01kuXlUGyI0v4YNW07/RfYiDUhBncCIS4s0A=";
-                            };
-                            vendorHash = "sha256-gcLVQTBpOE0DHz7/p7PENhwghftJKUDm88/4jaQ1VYw=";
-                            subPackages = [
-                              "cmd/abidump"
-                              "cmd/abigen"
-                              "cmd/bootnode"
-                              "cmd/clef"
-                              "cmd/devp2p"
-                              "cmd/era"
-                              "cmd/ethkey"
-                              "cmd/evm"
-                              "cmd/geth"
-                              "cmd/p2psim"
-                              "cmd/rlpdump"
-                              "cmd/utils"
-                            ];
-                          }
-                        );
-                    };
+                            ${pkgs.lib.concatMapStringsSep "\n" (a: "echo ${a}") (builtins.attrNames subAttrs)}
+
+                            exit 1
+                          '';
+                        })
+                        # cleanup the tab completion a bit
+                        [
+                          "checkPhase"
+                          "doCheck"
+                          "doInstallCheck"
+                          "passthru"
+                          "outputs"
+                          "preferLocalBuild"
+                          "propagatedBuildInputs"
+                          "propagatedNativeBuildInputs"
+                          "depsBuildBuild"
+                          "depsBuildBuildPropagated"
+                          "depsBuildTarget"
+                          "depsBuildTargetPropagated"
+                          "depsHostHost"
+                          "depsHostHostPropagated"
+                          "depsTargetTarget"
+                          "depsTargetTargetPropagated"
+                          "buildInputs"
+                          "nativeBuildInputs"
+                          "enableParallelBuilding"
+                          "enableParallelChecking"
+                          "enableParallelInstalling"
+                          "cmakeFlags"
+                          "configureFlags"
+                          "__ignoreNulls"
+                          "__structuredAttrs"
+                          "allowSubstitutes"
+                          "overrideAttrs"
+                          "drvAttrs"
+                          "meta"
+                          "mesonFlags"
+                          "passAsFile"
+                          "patches"
+                          "strictDeps"
+                          "inputDerivation"
+                          "executable"
+                          "userHook"
+                          "stdenv"
+                          "all"
+                          "out"
+                          "buildCommand"
+                          "args"
+                          "builder"
+                        ]
+                      );
 
                     writeShellApplicationWithArgs = import ./tools/writeShellApplicationWithArgs.nix {
                       pkgs = super;
                     };
+
+                    foundry-bin = super.foundry-bin.overrideAttrs (old: {
+                      installPhase =
+                        old.installPhase
+                        + ''
+                          # LD_LIBRARY_PATH must be set in the outer environment that cast is called in since it shells out to an auto-downloaded solc that it then attempts to patch for nixos, which, to everyone's surprise, does not work
+                          mv $out/bin/cast $out/bin/cast-cursed
+
+                          cat <<EOF >> $out/bin/cast
+                          export LD_LIBRARY_PATH=${lib.makeLibraryPath [ super.stdenv.cc.cc.lib ]}
+                          $out/bin/cast-cursed "\$@"
+                          unset LD_LIBRARY_PATH
+                          EOF
+
+                          chmod +x $out/bin/cast
+                        '';
+                    });
 
                     solc =
                       if system == "aarch64-linux" then
@@ -349,6 +367,7 @@
                           meta = {
                             description = "Static binary of compiler for Ethereum smart contract language Solidity";
                             homepage = "https://github.com/ethereum/solidity";
+                            mainProgram = "solc";
                             license = super.lib.licenses.gpl3;
                           };
                         }
@@ -411,6 +430,14 @@
           packages = {
             default = mkCi false self'.packages.uniond;
             inherit (pkgs) solc;
+            # sourceInfo = builtins.toFile "gitRev" (
+            #   builtins.toJSON (
+            #     builtins.removeAttrs self.sourceInfo [
+            #       "narHash"
+            #       "outPath"
+            #     ]
+            #   )
+            # );
           };
 
           checks = {
@@ -418,7 +445,7 @@
               name = "spellcheck";
               dontUnpack = true;
               src = ./.;
-              buildInputs = [ jsPkgs.typos ];
+              buildInputs = [ pkgsUnstable.typos ];
               doCheck = true;
               checkPhase = ''
                 cd $src/.
@@ -466,8 +493,9 @@
                 self'.packages.tdc
                 yq
               ])
-              ++ (with jsPkgs; [
+              ++ (with pkgsUnstable; [
                 bun
+                pnpm_10
                 deno
                 nixd
                 procs
@@ -480,7 +508,7 @@
                 nodePackages_latest.typescript-language-server
                 nodePackages_latest.vscode-langservers-extracted
               ])
-              ++ (with unstablePkgs; [
+              ++ (with pkgs; [
                 wasm-tools
                 postgresql
                 go_1_23
@@ -493,8 +521,9 @@
                   [
                     pkgs.solc
                     pkgs.foundry-bin
-                    goPkgs.sqlx-cli
+                    pkgs.sqlx-cli
                     self'.packages.hasura-cli
+                    self'.packages.ignite-cli
                   ]
                 else
                   [ ]
@@ -519,13 +548,15 @@
             LIBCLANG_PATH = "${pkgs.llvmPackages_14.libclang.lib}/lib";
             # RUST_MIN_STACK = 16777216; # ICE fix: maybe related to https://github.com/rust-lang/rust/issues/131419
             PROTOC = "${pkgs.protobuf}/bin/protoc";
+            FOUNDRY_LIBS = ''["${self'.packages.evm-libs}"]'';
+            FOUNDRY_DISABLE_NIGHTLY_WARNING = "1";
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = import ./treefmt.nix {
-            # inherit (self'.packages) movefmt;
+            inherit (self'.packages) movefmt;
             inherit
               pkgs
-              jsPkgs
+              pkgsUnstable
               rust
               ;
           };

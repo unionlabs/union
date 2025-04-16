@@ -1,15 +1,17 @@
 pragma solidity ^0.8.27;
 
-import "@openzeppelin-upgradeable/proxy/utils/Initializable.sol";
-import "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "@openzeppelin-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
+import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
+import "@openzeppelin-upgradeable/contracts/utils/PausableUpgradeable.sol";
 import "solidity-bytes-utils/BytesLib.sol";
 
 import "../core/02-client/ILightClient.sol";
 import "../core/24-host/IBCStore.sol";
 import "../core/24-host/IBCCommitment.sol";
 import "../lib/ICS23.sol";
+import "../internal/Versioned.sol";
 
 struct Header {
     uint64 l1Height;
@@ -33,12 +35,6 @@ struct ConsensusState {
 }
 
 library StateLensIcs23SmtLib {
-    uint256 public constant EVM_IBC_COMMITMENT_SLOT = 0;
-
-    event CreateLensClient(
-        uint32 clientId, uint32 l1ClientId, uint32 l2ClientId, string l2ChainId
-    );
-
     error ErrNotIBC();
     error ErrTrustedConsensusStateNotFound();
     error ErrClientFrozen();
@@ -48,13 +44,13 @@ library StateLensIcs23SmtLib {
 
     function encode(
         ConsensusState memory consensusState
-    ) public pure returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return abi.encode(consensusState.timestamp, consensusState.stateRoot);
     }
 
     function encode(
         ClientState memory clientState
-    ) public pure returns (bytes memory) {
+    ) internal pure returns (bytes memory) {
         return abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
@@ -102,36 +98,43 @@ contract StateLensIcs23SmtClient is
     ILightClient,
     Initializable,
     UUPSUpgradeable,
-    OwnableUpgradeable,
-    PausableUpgradeable
+    AccessManagedUpgradeable,
+    PausableUpgradeable,
+    Versioned
 {
     using StateLensIcs23SmtLib for *;
 
-    address private ibcHandler;
+    address public immutable IBC_HANDLER;
 
     mapping(uint32 => ClientState) private clientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
 
-    constructor() {
+    constructor(
+        address _ibcHandler
+    ) {
         _disableInitializers();
+        IBC_HANDLER = _ibcHandler;
     }
 
     function initialize(
-        address _ibcHandler,
-        address admin
+        address authority
     ) public initializer {
-        __Ownable_init(admin);
-        ibcHandler = _ibcHandler;
+        __AccessManaged_init(authority);
+        __UUPSUpgradeable_init();
+        __Pausable_init();
     }
 
     function createClient(
+        address,
         uint32 clientId,
         bytes calldata clientStateBytes,
-        bytes calldata consensusStateBytes
+        bytes calldata consensusStateBytes,
+        address
     )
         external
         override
         onlyIBC
+        whenNotPaused
         returns (
             ConsensusStateUpdate memory update,
             string memory counterpartyChainId
@@ -152,7 +155,7 @@ contract StateLensIcs23SmtClient is
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
 
-        emit StateLensIcs23SmtLib.CreateLensClient(
+        emit CreateLensClient(
             clientId,
             clientState.l1ClientId,
             clientState.l2ClientId,
@@ -174,8 +177,10 @@ contract StateLensIcs23SmtClient is
      * Given an L₂ and L₁ heights (H₂, H₁), we prove that L₂[H₂] ∈ L₁[H₁].
      */
     function updateClient(
+        address,
         uint32 clientId,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address
     ) external override onlyIBC returns (ConsensusStateUpdate memory) {
         Header calldata header;
         assembly {
@@ -184,7 +189,7 @@ contract StateLensIcs23SmtClient is
 
         ClientState storage clientState = clientStates[clientId];
         ILightClient l1Client =
-            IBCStore(ibcHandler).getClient(clientState.l1ClientId);
+            IBCStore(IBC_HANDLER).getClient(clientState.l1ClientId);
         // L₂[H₂] ∈ L₁[H₁]
         if (
             !l1Client.verifyMembership(
@@ -234,8 +239,10 @@ contract StateLensIcs23SmtClient is
     }
 
     function misbehaviour(
+        address,
         uint32 clientId,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address
     ) external override onlyIBC {
         revert StateLensIcs23SmtLib.ErrUnsupported();
     }
@@ -297,15 +304,23 @@ contract StateLensIcs23SmtClient is
         uint32 clientId
     ) internal view returns (bool) {
         uint32 l1ClientId = clientStates[clientId].l1ClientId;
-        return IBCStore(ibcHandler).getClient(l1ClientId).isFrozen(l1ClientId);
+        return IBCStore(IBC_HANDLER).getClient(l1ClientId).isFrozen(l1ClientId);
     }
 
     function _authorizeUpgrade(
         address newImplementation
-    ) internal override onlyOwner {}
+    ) internal override restricted {}
+
+    function pause() public restricted {
+        _pause();
+    }
+
+    function unpause() public restricted {
+        _unpause();
+    }
 
     function _onlyIBC() internal view {
-        if (msg.sender != ibcHandler) {
+        if (msg.sender != IBC_HANDLER) {
             revert StateLensIcs23SmtLib.ErrNotIBC();
         }
     }

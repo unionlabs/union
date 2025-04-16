@@ -21,21 +21,28 @@ const fetcher = createGraphiQLFetcher({
 })
 
 let query = dedent(/* GraphQL */ `
-  query UserTransfers {
-    v1_transfers(
-      limit: 3,
-      where: {
-        sender: { 
-          _eq: "union17ttpfu2xsmfxu6shl756mmxyqu33l5ljs5j6md"
-        }
+query GetLatest10UserTransfers @cached(ttl: 1) {
+  v2_transfers(args: {
+    p_limit: 10,
+    p_addresses_canonical: [
+      "0x3c5daaa3c96ab8fe4cfc2fb6d76193fe959a9f82"
+    ]
+  }) {
+    sender_canonical
+    receiver_canonical
+    base_amount
+    base_token_meta {
+      denom
+      representations {
+        name
+        symbol
+        decimals
       }
-    ) {
-      sender
-      receiver
-      source_transaction_hash
-      destination_transaction_hash
     }
+    source_universal_chain_id
+    destination_universal_chain_id
   }
+}
 `)
 
 const graphiqlProps = {

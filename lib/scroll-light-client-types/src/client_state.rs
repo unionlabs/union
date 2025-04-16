@@ -6,7 +6,7 @@ use unionlabs::{
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ClientState {
-    pub chain_id: U256,
+    pub chain_id: u64,
     pub frozen_height: Height,
     pub ibc_contract_address: H160,
     // TODO: This should be ClientId

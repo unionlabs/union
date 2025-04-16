@@ -1,5 +1,5 @@
 import { consola } from "scripts/logger"
-import { getCosmosAccountTransactions } from "#query/on-chain.ts"
+import { getCosmosAccountTransactions } from "../src/query/on-chain.ts"
 
 const [, , address] = process.argv
 

@@ -8,22 +8,18 @@
       ...
     }:
     let
-      hubble = crane.buildWorkspaceMember {
-        crateDirFromRoot = "hubble";
-        cargoTestExtraAttrs = {
-          partitions = 1;
-          partitionType = "count";
-        };
+      hubble = crane.buildWorkspaceMember "hubble" {
+        # cargoTestExtraAttrs = {
+        #   partitions = 1;
+        #   partitionType = "count";
+        # };
         extraEnv = {
           SQLX_OFFLINE = "1";
         };
       };
     in
     {
-      inherit (hubble) checks;
-      packages = {
-        inherit (hubble.packages) hubble;
-
+      packages = hubble // {
         hubble-image = pkgs.dockerTools.buildLayeredImage {
           name = "hubble";
           contents = [
@@ -100,6 +96,11 @@
                 type = types.int;
                 example = 1;
                 default = 200;
+              };
+              options.testnet = mkOption {
+                type = types.nullOr types.bool;
+                default = null;
+                description = "Testnet (default false)";
               };
               options.tx_search_max_page_size = mkOption {
                 type = types.int;

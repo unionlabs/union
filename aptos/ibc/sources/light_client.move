@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory                      
+// Licensed Work:        All files under https://github.com/unionlabs/union's aptos subdirectory
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-// 
+//
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -67,12 +67,14 @@ module ibc::light_client {
     use std::string::{Self, String};
     use std::option::Option;
 
+    friend ibc::ibc;
+
     const E_UNKNOWN_CLIENT_TYPE: u64 = 1;
     const CLIENT_TYPE_STATE_LENS_ICS23_MPT: vector<u8> = b"state-lens/ics23/mpt";
     const CLIENT_TYPE_STATE_LENS_ICS23_ICS23: vector<u8> = b"state-lens/ics23/ics23";
     const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
 
-    public fun create_client(
+    public(friend) fun create_client(
         client_type: String,
         ibc_signer: &signer,
         client_id: u32,
@@ -105,7 +107,7 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun status(client_type: String, client_id: u32): u64 {
+    public(friend) fun status(client_type: String, client_id: u32): u64 {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::status(client_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
@@ -117,7 +119,7 @@ module ibc::light_client {
 
     }
 
-    public fun latest_height(client_type: String, client_id: u32): u64 {
+    public(friend) fun latest_height(client_type: String, client_id: u32): u64 {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::latest_height(client_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
@@ -128,7 +130,7 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun check_for_misbehaviour(
+    public(friend) fun check_for_misbehaviour(
         client_type: String, client_id: u32, header: vector<u8>
     ): bool {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
@@ -141,7 +143,7 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun update_client(
+    public(friend) fun update_client(
         client_type: String, client_id: u32, client_msg: vector<u8>
     ): (vector<u8>, vector<vector<u8>>, vector<u64>) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
@@ -154,7 +156,7 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun report_misbehaviour(
+    public(friend) fun report_misbehaviour(
         client_type: String, client_id: u32, misbehaviour: vector<u8>
     ) {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
@@ -167,7 +169,7 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun get_timestamp_at_height(
+    public(friend) fun get_timestamp_at_height(
         client_type: String, client_id: u32, height: u64
     ): u64 {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
@@ -180,7 +182,9 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun get_client_state(client_type: String, client_id: u32): vector<u8> {
+    public(friend) fun get_client_state(
+        client_type: String, client_id: u32
+    ): vector<u8> {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::get_client_state(client_id)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
@@ -191,7 +195,7 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun get_consensus_state(
+    public(friend) fun get_consensus_state(
         client_type: String, client_id: u32, height: u64
     ): vector<u8> {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
@@ -204,7 +208,7 @@ module ibc::light_client {
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun verify_membership(
+    public(friend) fun verify_membership(
         client_type: String,
         client_id: u32,
         height: u64,
@@ -215,14 +219,18 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::verify_membership(client_id, height, proof, key, value)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return state_lens_ics23_mpt_lc::verify_membership(client_id, height, proof, key, value)
+            return state_lens_ics23_mpt_lc::verify_membership(
+                client_id, height, proof, key, value
+            )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            return state_lens_ics23_ics23_lc::verify_membership(client_id, height, proof, key, value)
+            return state_lens_ics23_ics23_lc::verify_membership(
+                client_id, height, proof, key, value
+            )
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }
 
-    public fun verify_non_membership(
+    public(friend) fun verify_non_membership(
         client_type: String,
         client_id: u32,
         height: u64,
@@ -232,9 +240,13 @@ module ibc::light_client {
         if (string::bytes(&client_type) == &CLIENT_TYPE_COMETBLS) {
             return cometbls_lc::verify_non_membership(client_id, height, proof, path)
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_MPT) {
-            return state_lens_ics23_mpt_lc::verify_non_membership(client_id, height, proof, path)
+            return state_lens_ics23_mpt_lc::verify_non_membership(
+                client_id, height, proof, path
+            )
         } else if (string::bytes(&client_type) == &CLIENT_TYPE_STATE_LENS_ICS23_ICS23) {
-            return state_lens_ics23_ics23_lc::verify_non_membership(client_id, height, proof, path)
+            return state_lens_ics23_ics23_lc::verify_non_membership(
+                client_id, height, proof, path
+            )
         };
         abort E_UNKNOWN_CLIENT_TYPE
     }

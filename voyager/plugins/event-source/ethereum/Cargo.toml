@@ -13,9 +13,10 @@ workspace = true
 
 [dependencies]
 alloy           = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+embed-commit    = { workspace = true }
 enumorph        = { workspace = true }
 ibc-solidity    = { workspace = true, features = ["serde", "rpc"] }
-ibc-union-spec  = { workspace = true, features = ["tracing"] }
+ibc-union-spec  = { workspace = true, features = ["tracing", "serde", "ibc-solidity-compat"] }
 jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
 macros          = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }

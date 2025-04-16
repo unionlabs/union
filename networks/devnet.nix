@@ -50,8 +50,14 @@
         denom = "muno";
         keyType = "bn254";
         validatorCount = 4;
-        sdkVersion = 52;
+        sdkVersion = 50;
         genesisOverwrites = {
+          consensus.params = {
+            block = {
+              max_bytes = "10485760";
+              max_gas = "200000000";
+            };
+          };
           app_state = {
             gov.params = {
               max_deposit_period = "12s";
@@ -184,7 +190,7 @@
       };
 
       devnet-union-minimal = mkCosmosDevnet {
-        node = (get-flake inputs.v0_25_0).packages.${system}.uniond;
+        node = (get-flake inputs.v1_0_0).packages.${system}.uniond;
         chainId = "union-minimal-devnet-1";
         chainName = "union-minimal";
         denom = "muno";
@@ -210,13 +216,13 @@
         };
         extraPackages = [
           self'.packages.unionvisor
-          self'.packages.bundle-testnet-next
+          self'.packages.bundle-union-1-next
         ];
         startCommandOverwrite = ''
           mkdir .unionvisor
 
           export UNIONVISOR_ROOT=$(pwd)/.unionvisor
-          export UNIONVISOR_BUNDLE=${self'.packages.bundle-testnet-next}
+          export UNIONVISOR_BUNDLE=${self'.packages.bundle-union-1-next}
 
           ${pkgs.lib.getExe self'.packages.unionvisor} init \
             --moniker union-devnet-minimal \
@@ -270,7 +276,7 @@
           }
           # For some reason, blockscout backend segfault on non-x86 arch
           // (
-            if pkgs.stdenv.isx86_64 then
+            if pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == null) then
               {
                 blockscout-backend = import ./services/blockscout/backend.nix {
                   inherit lib pkgs;

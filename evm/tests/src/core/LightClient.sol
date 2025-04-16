@@ -53,9 +53,11 @@ contract TestLightClient is ILightClient {
     }
 
     function createClient(
+        address,
         uint32,
         bytes calldata clientStateBytes,
-        bytes calldata consensusStateBytes
+        bytes calldata consensusStateBytes,
+        address
     )
         external
         returns (
@@ -91,8 +93,10 @@ contract TestLightClient is ILightClient {
     }
 
     function updateClient(
+        address,
         uint32,
-        bytes calldata clientMessageBytes
+        bytes calldata clientMessageBytes,
+        address
     ) external returns (ConsensusStateUpdate memory) {
         if (revertUpdate) {
             revert();
@@ -105,10 +109,7 @@ contract TestLightClient is ILightClient {
         });
     }
 
-    function misbehaviour(
-        uint32 clientId,
-        bytes calldata clientMessageBytes
-    ) external {
+    function misbehaviour(address, uint32, bytes calldata, address) external {
         revert();
     }
 

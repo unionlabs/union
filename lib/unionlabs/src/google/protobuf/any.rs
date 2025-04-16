@@ -1,13 +1,9 @@
-use core::{fmt::Debug, marker::PhantomData};
+use core::fmt::Debug;
 
 use frame_support_procedural::DebugNoBound;
 use macros::model;
 use prost::Message;
-use serde::{
-    de::{self, Visitor},
-    ser::SerializeStruct,
-    Deserialize, Serialize,
-};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     encoding::{Decode, DecodeErrorOf, Encode, Proto},
@@ -15,7 +11,16 @@ use crate::{
 };
 
 /// Wrapper type to indicate that a type is to be serialized as an Any.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(
+    try_from = "AnySerde<T>",
+    into = "AnySerde<T>",
+    bound(
+        // TODO: Figure out why this needs clone
+        serialize = "T: Serialize + Clone + TypeUrl",
+        deserialize = "T: Deserialize<'de> + TypeUrl",
+    )
+)]
 pub struct Any<T>(pub T);
 
 /// Provides a way to convert a type `T` into an [`Any`], even if `T` is itself an [`Any`].
@@ -75,82 +80,37 @@ impl From<RawAny> for protos::google::protobuf::Any {
     }
 }
 
-/// TODO(unionlabs/union#876): Properly implement google.protobuf.Any json serde
-impl<'de, T> Deserialize<'de> for Any<T>
-where
-    T: Deserialize<'de> + TypeUrl,
-{
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        struct AnyVisitor<T>(PhantomData<T>);
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+struct AnySerde<T> {
+    #[serde(rename = "@type")]
+    type_url: String,
+    #[serde(flatten)]
+    data: T,
+}
 
-        impl<'de, T> Visitor<'de> for AnyVisitor<T>
-        where
-            T: Deserialize<'de> + TypeUrl,
-        {
-            type Value = Any<T>;
-
-            fn expecting(&self, formatter: &mut core::fmt::Formatter) -> core::fmt::Result {
-                write!(
-                    formatter,
-                    "a google.protobuf.Any containing {}",
-                    T::type_url()
-                )
-            }
-
-            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
-            where
-                A: serde::de::MapAccess<'de>,
-            {
-                const EXPECTED_MSG: &str = "Object with fields type_url and data";
-
-                let mut type_url: Option<&str> = None;
-                let mut data: Option<T> = None;
-
-                for _ in 0..2 {
-                    match map
-                        .next_key::<&str>()?
-                        .ok_or(de::Error::invalid_length(0, &EXPECTED_MSG))?
-                    {
-                        "type_url" => {
-                            let _ = type_url.insert(map.next_value()?);
-                        }
-                        "data" => {
-                            let _ = data.insert(map.next_value()?);
-                        }
-                        unknown => {
-                            return Err(de::Error::unknown_field(unknown, &["type_url", "data"]))
-                        }
-                    }
-                }
-
-                match (type_url, data) {
-                    (None, None) => Err(de::Error::invalid_length(0, &EXPECTED_MSG)),
-                    (None, Some(_)) => Err(de::Error::missing_field("type_url")),
-                    (Some(_), None) => Err(de::Error::missing_field("data")),
-                    (Some(_), Some(data)) => Ok(Any(data)),
-                }
-            }
+impl<T: TypeUrl> From<Any<T>> for AnySerde<T> {
+    fn from(Any(value): Any<T>) -> Self {
+        Self {
+            type_url: T::type_url(),
+            data: value,
         }
-
-        deserializer.deserialize_struct("Any", &["type_url", "data"], AnyVisitor::<T>(PhantomData))
     }
 }
 
-impl<T> Serialize for Any<T>
-where
-    T: Serialize + TypeUrl,
-{
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        let mut s = serializer.serialize_struct("Any", 2)?;
-        s.serialize_field("type_url", &T::type_url())?;
-        s.serialize_field("data", &self.0)?;
-        s.end()
+impl<T: TypeUrl> TryFrom<AnySerde<T>> for Any<T> {
+    type Error = String;
+
+    fn try_from(value: AnySerde<T>) -> Result<Self, Self::Error> {
+        if value.type_url == T::type_url() {
+            Ok(Self(value.data))
+        } else {
+            Err(format!(
+                "incorrect type url, expected `{expected}` but found `{found}`",
+                expected = T::type_url(),
+                found = value.type_url
+            ))
+        }
     }
 }
 
@@ -169,6 +129,34 @@ impl<T: Encode<Proto> + TypeUrl> Encode<Proto> for Any<T> {
     }
 }
 
+impl<T: Encode<Proto> + TypeUrl> From<Any<T>> for RawAny {
+    fn from(val: Any<T>) -> Self {
+        RawAny {
+            type_url: T::type_url().to_string(),
+            value: val.0.encode(),
+        }
+    }
+}
+
+impl<T> TryFrom<RawAny> for Any<T>
+where
+    T: Decode<Proto, Error: core::error::Error> + TypeUrl,
+{
+    type Error = TryFromAnyError<T>;
+
+    fn try_from(value: RawAny) -> Result<Self, Self::Error> {
+        if value.type_url == T::type_url() {
+            T::decode(&value.value)
+                .map_err(TryFromAnyError::Decode)
+                .map(Any)
+        } else {
+            Err(TryFromAnyError::IncorrectTypeUrl {
+                found: value.type_url,
+            })
+        }
+    }
+}
+
 // NOTE: In order for IntoAny to work, Any cannot implement TypeUrl. If nested Anys are required, you're crazy and I'm not helping you
 // impl TypeUrl for protos::google::protobuf::Any {
 //     const TYPE_URL: &'static str = "/google.protobuf.Any";
@@ -176,6 +164,7 @@ impl<T: Encode<Proto> + TypeUrl> Encode<Proto> for Any<T> {
 
 #[derive(DebugNoBound, thiserror::Error)]
 pub enum TryFromAnyError<T: Decode<Proto, Error: core::error::Error> + TypeUrl> {
+    // TODO: Extract this out into a struct such that it can be reused
     #[error(
         "incorrect type url, expected `{expected}` but found `{found}`",
         expected = T::type_url()
@@ -260,9 +249,13 @@ pub fn mk_any<T: prost::Name + prost::Message>(t: &T) -> protos::google::protobu
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::{
+        bech32::Bech32, cosmwasm::wasm::msg_instantiate_contract2::MsgInstantiateContract2,
+        test_utils::assert_codec_iso,
+    };
 
     #[test]
-    fn test_flatten() {
+    fn test_into_any() {
         use crate::google::protobuf::{duration::Duration, timestamp::Timestamp};
 
         trait Foo {
@@ -294,5 +287,25 @@ mod tests {
         });
 
         let _: Any<Duration> = wrap_any_one_level::<B>(Any(Duration::new(3, 4).unwrap()));
+    }
+
+    #[test]
+    fn serde() {
+        let msg = MsgInstantiateContract2 {
+            sender: Bech32::new("union".to_owned(), b"abc".into()),
+            admin: Bech32::new("union".to_owned(), b"abc".into()),
+            code_id: 1_u64.try_into().unwrap(),
+            label: "label".to_owned(),
+            msg: b"{}".into(),
+            funds: vec![],
+            salt: b"salt".into(),
+            fix_msg: false,
+        };
+
+        let json = serde_json::to_string_pretty(&Any(msg.clone())).unwrap();
+
+        println!("{json}");
+
+        assert_codec_iso::<_, crate::encoding::Json>(&Any(msg));
     }
 }

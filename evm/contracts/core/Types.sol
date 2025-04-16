@@ -47,15 +47,18 @@ library IBCErrors {
     error ErrUnauthorized();
     error ErrLatestTimestampNotFound();
     error ErrTimeoutMustBeSet();
+    error ErrTimeoutHeightUnsupported();
     error ErrHeightTimeout();
     error ErrTimestampTimeout();
     error ErrAcknowledgementIsEmpty();
     error ErrPacketNotReceived();
     error ErrAcknowledgementAlreadyExists();
     error ErrPacketCommitmentNotFound();
+    error ErrPacketAlreadyAcknowledged();
     error ErrTimeoutHeightNotReached();
     error ErrTimeoutTimestampNotReached();
     error ErrNotEnoughPackets();
+    error ErrBatchSameChannelOnly();
     error ErrCommittedAckNotPresent();
     error ErrClientNotFound();
     error ErrModuleNotFound();

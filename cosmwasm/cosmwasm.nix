@@ -1,14 +1,52 @@
-{ inputs, ... }:
-{
+_: {
   perSystem =
     {
       self',
       crane,
       pkgs,
       dbg,
+      system,
+      ensureAtRepositoryRoot,
       ...
     }:
     let
+      getDeployment =
+        let
+          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
+        in
+        chainId:
+        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
+          (throw "deployment for ${chainId} not found")
+          (throw "many deployments for ${chainId} found")
+          json
+        ).deployments;
+
+      # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
+      cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
+        syntax = "proto3";
+        package cosmwasm;
+
+        message QueryContractInfoRequest {
+          string address = 1;
+        }
+
+        message QueryContractInfoResponse {
+          ContractInfo contract_info = 2;
+        }
+
+        message ContractInfo {
+          uint64 code_id = 1;
+        }
+
+        message QueryCodeRequest {
+          uint64 code_id = 1;
+        }
+
+        message QueryCodeResponse {
+          bytes data = 2;
+        }
+      '';
+
       bytecode-base = pkgs.stdenv.mkDerivation {
         name = "base-bytecode";
         dontUnpack = true;
@@ -19,289 +57,116 @@
         '';
       };
 
-      cosmwasm-deployer = crane.buildWorkspaceMember {
-        crateDirFromRoot = "cosmwasm/deployer";
-      };
+      inherit (crane.buildWorkspaceMember "cosmwasm/deployer" { }) cosmwasm-deployer;
 
-      deploy-full =
-        args@{
-          name,
-          rpc_url,
-          gas_config,
-          private_key,
-          ...
-        }:
-        pkgs.writeShellApplication {
-          name = "${name}-deploy-full";
-          runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
-          text = ''
-            RUST_LOG=info \
-              cosmwasm-deployer \
-              deploy-full \
-              --private-key ${private_key} \
-              --gas-price ${toString gas_config.gas_price} \
-              --gas-denom ${toString gas_config.gas_denom} \
-              --gas-multiplier ${toString gas_config.gas_multiplier} \
-              --max-gas ${toString gas_config.max_gas} \
-              --contracts ${chain-deployments-json args} \
-              --rpc-url ${rpc_url}
-          '';
-        };
-
-      # directory => {}
-      all-lightclients = {
-        arbitrum = {
-          client-type = "arbitrum";
-        };
-        berachain = {
-          client-type = "berachain";
-        };
-        cometbls = {
-          client-type = "cometbls";
-        };
-        ethereum = {
-          client-type = "ethereum";
-        };
-        ethermint = {
-          client-type = "ethermint";
-        };
-        tendermint = {
-          client-type = "tendermint";
-          # remove the cosmwasm 2.1 export such that the tendermint light client can work on chains that don't need bls verification (which is the only reason the export exists on this client)
-          # in order to not mess with any potential offsets in the blob, overwrite the export with a string of the same length
-          hook =
-            drv:
-            drv.overrideAttrs (old: {
-              installPhase =
-                (old.installPhase or "")
-                + ''
-                  ${pkgs.lib.getExe pkgs.bbe} \
-                    -e 's/requires_cosmwasm_2_1/AAAAAAAAAAAAAAAAAAAAA/' \
-                    -e 's/requires_cosmwasm_2_0/BBBBBBBBBBBBBBBBBBBBB/' \
-                    $out \
-                    -o replaced.wasm
-
-                  # can't write directly to $out for some reason
-                  mv replaced.wasm $out
-                '';
-            });
-        };
-        movement = {
-          client-type = "movement";
-        };
-        state-lens-ics23-mpt = {
-          client-type = "state-lens/ics23/mpt";
-        };
-      };
-
-      ucs03-configs = {
-        cw20 = {
-          path = "${self'.packages.ucs03-zkgm}";
-          token_minter_path = "${self'.packages.cw20-token-minter}";
-          token_minter_config = {
-            cw20 = {
-              cw20_base = "${cw20-base}";
-            };
-          };
-        };
-        native = {
-          path = "${self'.packages.ucs03-zkgm}";
-          token_minter_path = "${self'.packages.token-factory-minter}";
-          token_minter_config = {
-            native = { };
-          };
-        };
-      };
-
-      # client type => package name
-      all-apps = {
-        # ucs00-pingpong = {
-        #   name = "ucs00";
-        # };
-        ucs03-zkgm = {
-          name = "ucs03";
-        };
-      };
-
-      chain-deployments-json =
-        { lightclients, apps, ... }:
-        pkgs.writeText "contracts.json" (
-          builtins.toJSON {
-            core = ibc-union;
-            lightclient = pkgs.lib.mapAttrs' (n: v: {
-              name = v.client-type;
-              value = mk-lightclient n;
-            }) (pkgs.lib.filterAttrs (n: _: builtins.elem n lightclients) all-lightclients);
-            app = apps;
-          }
-        );
-
-      chain-migration-scripts =
-        args@{
-          name,
-          lightclients,
-          apps,
-          private_key,
-          rpc_url,
-          bech32_prefix,
-          gas_config,
-          ...
-        }:
-        (builtins.listToAttrs (
-          map (
-            lc:
-            let
-              name = "${args.name}-migrate-lightclient-${lc}";
-            in
+      mk-gas-args =
+        config@{ type, ... }:
+        {
+          static =
             {
-              inherit name;
-              value = pkgs.writeShellApplication {
-                inherit name;
-                runtimeInputs = [
-                  ibc-union-contract-addresses
-                  cosmwasm-deployer.packages.cosmwasm-deployer
-                ];
-                text = ''
-                  DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
-                  echo "deployer address: $DEPLOYER"
-                  ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
-
-                  RUST_LOG=info \
-                    cosmwasm-deployer \
-                    migrate \
-                    --rpc-url ${rpc_url} \
-                    --address "$(echo "$ADDRESSES" | jq '.lightclient."${all-lightclients.${lc}.client-type}"' -r)" \
-                    --new-bytecode ${mk-lightclient lc} \
-                    --private-key ${private_key} \
-                    --gas-price ${toString gas_config.gas_price} \
-                    --gas-denom ${toString gas_config.gas_denom} \
-                    --gas-multiplier ${toString gas_config.gas_multiplier} \
-                    --max-gas ${toString gas_config.max_gas} \
-                '';
-              };
-            }
-          ) lightclients
-        ))
-        // (builtins.listToAttrs (
-          map (
-            app:
-            let
-              name = "${args.name}-migrate-app-${app}";
-            in
+              gas_denom,
+              gas_multiplier,
+              gas_price,
+              max_gas,
+            }:
+            " --gas static --gas-price ${toString gas_price} --gas-denom ${toString gas_denom} --gas-multiplier ${toString gas_multiplier} --max-gas ${toString max_gas} ";
+          feemarket =
             {
-              inherit name;
-              value = pkgs.writeShellApplication {
-                inherit name;
-                runtimeInputs = [
-                  ibc-union-contract-addresses
-                  cosmwasm-deployer.packages.cosmwasm-deployer
-                ];
-                text = ''
-                  DEPLOYER=$(cosmwasm-deployer address-of-private-key --private-key ${private_key} --bech32-prefix ${bech32_prefix})
-                  echo "deployer address: $DEPLOYER"
-                  ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
-
-                  RUST_LOG=info \
-                    cosmwasm-deployer \
-                    migrate \
-                    --rpc-url ${rpc_url} \
-                    --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
-                    --new-bytecode ${
-                      mk-app
-                        (pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
-                          pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
-                        )).name
-                    } \
-                    --private-key ${private_key} \
-                    --gas-price ${toString gas_config.gas_price} \
-                    --gas-denom ${toString gas_config.gas_denom} \
-                    --gas-multiplier ${toString gas_config.gas_multiplier} \
-                    --max-gas ${toString gas_config.max_gas} \
-                '';
-              };
-            }
-          ) (builtins.attrNames apps)
-        ))
-      # // (map (
-      #   _a:
-      #   pkgs.writeShellApplication {
-      #     name = "${name}-migrate-app-{a}";
-      #     runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
-      #     text = ''
-      #       cosmwasm-deployer \
-      #         addresses \
-      #         ${
-      #           pkgs.lib.strings.concatStrings (
-      #             map (l: " --lightclient ${all-lightclients.${l}.client-type}") (builtins.attrNames all-lightclients)
-      #           )
-      #         } \
-      #         ${
-      #           pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
-      #         } \
-      #         --deployer "$1" ''${2+--output $2}
-      #     '';
-      #   }
-      # ) apps)
-      ;
-
-      ibc-union-contract-addresses = pkgs.writeShellApplication {
-        name = "ibc-union-contract-addresses";
-        runtimeInputs = [ cosmwasm-deployer.packages.cosmwasm-deployer ];
-        text = ''
-          cosmwasm-deployer \
-            addresses \
-            ${
-              pkgs.lib.strings.concatStrings (
-                map (l: " --lightclient ${all-lightclients.${l}.client-type}") (builtins.attrNames all-lightclients)
-              )
-            } \
-            ${
-              pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
-            } \
-            --deployer "$1" ''${2+--output $2} 
-        '';
-      };
+              max_gas ? null,
+              gas_multiplier ? null,
+            }:
+            " --gas feemarket "
+            + (pkgs.lib.optionalString (max_gas != null) " --max-gas ${toString max_gas} ")
+            + (pkgs.lib.optionalString (
+              gas_multiplier != null
+            ) " --gas-multiplier ${toString gas_multiplier} ");
+        }
+        .${type}
+          (builtins.removeAttrs config [ "type" ]);
 
       networks = [
         {
+          chain-id = "union-devnet-1";
           name = "union-devnet";
           rpc_url = "http://localhost:26657";
           # alice from the devnet keyring
           private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
           gas_config = {
-            gas_denom = "muno";
-            gas_multiplier = "1.1";
-            gas_price = "1.0";
+            type = "feemarket";
             max_gas = 10000000;
+            gas_multiplier = 1.4;
           };
           ucs03_type = "cw20";
           bech32_prefix = "union";
           apps = {
             ucs03 = ucs03-configs.cw20;
           };
-          lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
+          # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
+          lightclients = [
+            "ethereum"
+            "trusted-mpt"
+            "bob"
+          ];
         }
         {
-          name = "union-testnet";
-          rpc_url = "https://rpc.testnet-9.union.build";
-          private_key = ''"$1"'';
+          chain-id = "union-testnet-10";
+          name = "union-testnet-10";
+          rpc_url = "https://rpc.rpc-node.union-testnet-10.union.build";
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
-            gas_denom = "muno";
-            gas_multiplier = "1.1";
-            gas_price = "1.0";
-            max_gas = 10000000;
+            type = "feemarket";
           };
           apps = {
             ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "union";
-          lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
+          lightclients = [
+            "arbitrum"
+            "bob"
+            "berachain"
+            "ethereum"
+            "trusted-mpt"
+            "ethermint"
+            "tendermint-bls"
+            "movement"
+            "state-lens-ics23-mpt"
+            "state-lens-ics23-smt"
+          ];
         }
         {
+          chain-id = "union-1";
+          name = "union";
+          rpc_url = "https://rpc.rpc-node.union-1.union.build";
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          gas_config = {
+            type = "feemarket";
+            max_gas = 10000000;
+            gas_multiplier = 1.4;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "union";
+          lightclients = [
+            "arbitrum"
+            "bob"
+            "berachain"
+            "ethereum"
+            "trusted-mpt"
+            "ethermint"
+            "tendermint-bls"
+            "movement"
+            "state-lens-ics23-mpt"
+            "state-lens-ics23-smt"
+          ];
+        }
+        {
+          chain-id = "elgafar-1";
           name = "stargaze-testnet";
           rpc_url = "https://rpc.elgafar-1.stargaze.chain.kitchen";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "1.0";
             gas_denom = "ustars";
             gas_multiplier = "1.1";
@@ -318,10 +183,12 @@
           ];
         }
         {
+          chain-id = "osmo-test-5";
           name = "osmosis-testnet";
           rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "0.05";
             gas_denom = "uosmo";
             gas_multiplier = "1.1";
@@ -338,10 +205,12 @@
           ];
         }
         {
+          chain-id = "bbn-test-5";
           name = "babylon-testnet";
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
-          private_key = ''"$1"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
+            type = "static";
             gas_price = "0.003";
             gas_denom = "ubbn";
             gas_multiplier = "1.1";
@@ -354,14 +223,40 @@
           lightclients = [
             "cometbls"
             "tendermint"
+            "trusted-mpt"
             "state-lens-ics23-mpt"
           ];
         }
         {
+          chain-id = "bbn-1";
+          name = "babylon";
+          rpc_url = "https://babylon-rpc.polkachu.com";
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          gas_config = {
+            type = "static";
+            gas_price = "0.003";
+            gas_denom = "ubbn";
+            gas_multiplier = "1.1";
+            max_gas = 10000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "bbn";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "trusted-mpt"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
+          chain-id = "stride-internal-1";
           name = "stride-testnet";
           rpc_url = "https://stride-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "0.1";
             gas_denom = "ustrd";
             gas_multiplier = "1.1";
@@ -370,18 +265,22 @@
           apps = {
             ucs03 = ucs03-configs.cw20;
           };
+          permissioned = true;
           bech32_prefix = "stride";
           lightclients = [
             "cometbls"
-            # "tendermint"
+            "tendermint"
             "state-lens-ics23-mpt"
+            "state-lens-ics23-smt"
           ];
         }
         {
+          chain-id = "xion-testnet-2";
           name = "xion-testnet";
           rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
           private_key = ''"$1"'';
           gas_config = {
+            type = "static";
             gas_price = "0.002";
             gas_denom = "uxion";
             gas_multiplier = "1.5";
@@ -397,72 +296,513 @@
             "state-lens-ics23-mpt"
           ];
         }
+        {
+          chain-id = "mantra-dukong-1";
+          name = "mantra-testnet";
+          rpc_url = "https://rpc.dukong.mantrachain.io/";
+          private_key = ''"$1"'';
+          gas_config = {
+            type = "static";
+            gas_price = "0.015";
+            gas_denom = "uom";
+            gas_multiplier = "1.4";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.cw20;
+          };
+          bech32_prefix = "mantra";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
       ];
 
-      mk-lightclient =
-        dir:
-        (all-lightclients.${dir}.hook or (d: d)) (
-          crane.buildWasmContract {
-            crateDirFromRoot = "cosmwasm/ibc-union/lightclient/${dir}";
+      # directory => {}
+      all-lightclients = [
+        {
+          name = "bob";
+          dir = "bob";
+          client-type = "bob";
+        }
+        {
+          name = "arbitrum";
+          dir = "arbitrum";
+          client-type = "arbitrum";
+        }
+        {
+          name = "berachain";
+          dir = "berachain";
+          client-type = "berachain";
+        }
+        {
+          name = "cometbls";
+          dir = "cometbls";
+          client-type = "cometbls";
+        }
+        {
+          name = "ethereum";
+          dir = "ethereum";
+          client-type = "ethereum";
+        }
+        {
+          name = "trusted-mpt";
+          dir = "trusted-mpt";
+          client-type = "trusted/evm/mpt";
+        }
+        {
+          name = "ethermint";
+          dir = "ethermint";
+          client-type = "ethermint";
+        }
+        {
+          name = "tendermint";
+          dir = "tendermint";
+          client-type = "tendermint";
+        }
+        {
+          name = "tendermint-bls";
+          dir = "tendermint";
+          client-type = "tendermint";
+          features = [ "bls" ];
+        }
+        {
+          name = "movement";
+          dir = "movement";
+          client-type = "movement";
+        }
+        {
+          name = "state-lens-ics23-mpt";
+          dir = "state-lens-ics23-mpt";
+          client-type = "state-lens/ics23/mpt";
+        }
+        {
+          name = "state-lens-ics23-smt";
+          dir = "state-lens-ics23-smt";
+          client-type = "state-lens/ics23/smt";
+        }
+      ];
+
+      # client type => package name
+      all-apps = {
+        # ucs00-pingpong = {
+        #   name = "ucs00";
+        # };
+        ucs03-zkgm = {
+          name = "ucs03";
+        };
+      };
+
+      ucs03-configs = {
+        cw20 = {
+          path = "${ucs03-zkgm.release}";
+          token_minter_path = "${cw20-token-minter.release}";
+          token_minter_config = {
+            cw20 = {
+              cw20_base = "${cw20-base.release}";
+            };
+          };
+        };
+        native = {
+          path = "${ucs03-zkgm.release}";
+          # token_minter_path = "${token-factory-minter.release}";
+          token_minter_config = {
+            native = { };
+          };
+        };
+      };
+
+      get-git-rev =
+        {
+          rpc_url,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "get-git-rev";
+          runtimeInputs = [
+            self'.packages.embed-commit-verifier
+            pkgs.buf
+            pkgs.xxd
+            pkgs.curl
+          ];
+          text = ''
+            embed-commit-verifier extract <(curl \
+              --silent \
+              '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/Code"&data=0x'"$(
+                buf \
+                  convert \
+                  ${cosmwasmProtoDefs}/cosmwasm.proto \
+                  --type=cosmwasm.QueryCodeRequest \
+                  --from=<(
+                    echo "{\"code_id\":$(
+                      curl \
+                        --silent \
+                        '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/ContractInfo"&data=0x'"$(
+                          buf \
+                            convert \
+                            ${cosmwasmProtoDefs}/cosmwasm.proto \
+                            --type=cosmwasm.QueryContractInfoRequest \
+                            --from=<(echo "{\"address\":\"$1\"}")#format=json \
+                            | xxd -c 0 -ps
+                        )" \
+                        | jq .result.response.value -r \
+                        | base64 -d \
+                        | buf \
+                          convert \
+                          ${cosmwasmProtoDefs}/cosmwasm.proto \
+                          --type=cosmwasm.QueryContractInfoResponse \
+                          --from=-#format=binpb \
+                        | jq '.contractInfo.codeId | tonumber'
+                    )}"
+                  )#format=json \
+                  | xxd -c 0 -ps
+                )" \
+                | jq .result.response.value -r \
+                | base64 -d \
+                | buf \
+                  convert \
+                  ${cosmwasmProtoDefs}/cosmwasm.proto \
+                  --type=cosmwasm.QueryCodeResponse \
+                  --from=-#format=binpb \
+                | jq .data -r \
+                | base64 -d)
+          '';
+        };
+
+      deploy =
+        args@{
+          name,
+          rpc_url,
+          gas_config,
+          private_key,
+          permissioned ? false,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-deploy-full";
+          runtimeInputs = [ cosmwasm-deployer ];
+          text = ''
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              deploy-full \
+              --contracts ${chain-deployments-json args} \
+              ${if permissioned then "--permissioned " else ""} \
+              --rpc-url ${rpc_url} \
+              ${mk-gas-args gas_config}
+          '';
+        };
+
+      whitelist-relayers =
+        {
+          name,
+          chain-id,
+          rpc_url,
+          gas_config,
+          private_key,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-whitelist-relayers";
+          runtimeInputs = [ cosmwasm-deployer ];
+          text = ''
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              tx \
+              whitelist-relayers \
+              --rpc-url ${rpc_url} \
+              --contract ${(getDeployment chain-id).core.address} \
+              ${mk-gas-args gas_config} "$@"
+          '';
+        };
+
+      # migrate the admin to the multisig address
+      finalize-deployment =
+        {
+          name,
+          rpc_url,
+          gas_config,
+          private_key,
+          multisig_address,
+          bech32_prefix,
+          ...
+        }:
+        pkgs.writeShellApplication {
+          name = "${name}-deploy-full";
+          runtimeInputs = [
+            ibc-union-contract-addresses
+            cosmwasm-deployer
+          ];
+          text = ''
+            DEPLOYER=$(
+              PRIVATE_KEY=${private_key} \
+                cosmwasm-deployer \
+                address-of-private-key \
+                --bech32-prefix ${bech32_prefix}
+            )
+            ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
+
+            echo "$DEPLOYER"
+            echo "$ADDRESSES"
+
+            PRIVATE_KEY=${private_key} \
+            RUST_LOG=info \
+              cosmwasm-deployer \
+              migrate-admin \
+              --new-admin ${multisig_address} \
+              --addresses <(echo "$ADDRESSES") \
+              --rpc-url ${rpc_url} \
+              ${mk-gas-args gas_config}
+          '';
+        };
+
+      chain-deployments-json =
+        { lightclients, apps, ... }:
+        pkgs.writeText "contracts.json" (
+          builtins.toJSON {
+            core = ibc-union.release;
+            lightclient = builtins.listToAttrs (
+              map (
+                { name, client-type, ... }:
+                {
+                  name = client-type;
+                  value = (mk-lightclient name).release;
+                }
+              ) (builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients)
+            );
+            app = apps;
           }
         );
 
-      mk-app =
-        dir:
-        (crane.buildWasmContract {
-          crateDirFromRoot = "cosmwasm/ibc-union/app/${dir}";
-        });
+      chain-migration-scripts =
+        args@{
+          lightclients,
+          apps,
+          private_key,
+          rpc_url,
+          bech32_prefix,
+          gas_config,
+          ...
+        }:
+        (builtins.listToAttrs (
+          map (
+            lc:
+            let
+              name = "migrate-lightclient-${lc}";
+            in
+            {
+              inherit name;
+              value = pkgs.writeShellApplication {
+                name = "${args.name}-${name}";
+                runtimeInputs = [
+                  ibc-union-contract-addresses
+                  cosmwasm-deployer
+                ];
+                text = ''
+                  DEPLOYER=$(
+                    PRIVATE_KEY=${private_key} \
+                      cosmwasm-deployer \
+                      address-of-private-key \
+                      --bech32-prefix ${bech32_prefix}
+                  )
+                  echo "deployer address: $DEPLOYER"
+                  ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
+
+                  PRIVATE_KEY=${private_key} \
+                  RUST_LOG=info \
+                    cosmwasm-deployer \
+                    migrate \
+                    --rpc-url ${rpc_url} \
+                    --address "$(echo "$ADDRESSES" | jq '.lightclient."${
+                      (get-lightclient (l: l.name == lc)).client-type
+                    }"' -r)" \
+                    --new-bytecode ${(mk-lightclient lc).release} \
+                    ${mk-gas-args gas_config}
+                '';
+              };
+            }
+          ) lightclients
+        ))
+        // (builtins.listToAttrs (
+          map (
+            app:
+            let
+              name = "migrate-app-${app}";
+              full-app = pkgs.lib.lists.findFirst (a: a.value.name == app) (throw "???") (
+                pkgs.lib.attrsets.mapAttrsToList pkgs.lib.attrsets.nameValuePair all-apps
+              );
+            in
+            {
+              inherit name;
+              value = pkgs.writeShellApplication {
+                name = "${args.name}-${name}";
+                runtimeInputs = [
+                  ibc-union-contract-addresses
+                  cosmwasm-deployer
+                  pkgs.jq
+                ];
+                text = ''
+                  PRIVATE_KEY=${private_key} \
+                  RUST_LOG=info \
+                    cosmwasm-deployer \
+                    store-code \
+                    --rpc-url ${rpc_url} \
+                    --bytecode ${apps.ucs03.token_minter_path} \
+                    --output token-minter-code-id.txt \
+                    ${mk-gas-args gas_config}
+
+                  echo "token minter code id: $(cat token-minter-code-id.txt)"
+
+                  DEPLOYER=$(
+                    PRIVATE_KEY=${private_key} \
+                      cosmwasm-deployer \
+                      address-of-private-key \
+                      --bech32-prefix ${bech32_prefix}
+                  )
+
+                  echo "deployer address: $DEPLOYER"
+
+                  ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
+
+                  PRIVATE_KEY=${private_key} \
+                  RUST_LOG=info \
+                    cosmwasm-deployer \
+                    migrate \
+                    --rpc-url ${rpc_url} \
+                    --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
+                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo '{}' | base64)\"}}" \
+                    --force \
+                    --new-bytecode ${(mk-app full-app.name).release} \
+                    ${mk-gas-args gas_config}
+
+                  rm token-minter-code-id.txt
+                '';
+              };
+            }
+          ) (builtins.attrNames apps)
+        ))
+        // (
+          let
+            name = "migrate-core";
+          in
+          {
+            ${name} = pkgs.writeShellApplication {
+              name = "${args.name}-${name}";
+              runtimeInputs = [
+                ibc-union-contract-addresses
+                cosmwasm-deployer
+              ];
+              text = ''
+                DEPLOYER=$(
+                  PRIVATE_KEY=${private_key} \
+                    cosmwasm-deployer \
+                    address-of-private-key \
+                    --bech32-prefix ${bech32_prefix}
+                )
+                echo "deployer address: $DEPLOYER"
+                ADDRESSES=$(ibc-union-contract-addresses "$DEPLOYER")
+
+                PRIVATE_KEY=${private_key} \
+                RUST_LOG=info \
+                  cosmwasm-deployer \
+                  migrate \
+                  --rpc-url ${rpc_url} \
+                  --address "$(echo "$ADDRESSES" | jq '.core' -r)" \
+                  --new-bytecode ${ibc-union.release} \
+                  ${mk-gas-args gas_config}
+              '';
+            };
+          }
+        );
+
+      ibc-union-contract-addresses = pkgs.writeShellApplication {
+        name = "ibc-union-contract-addresses";
+        runtimeInputs = [ cosmwasm-deployer ];
+        text = ''
+          cosmwasm-deployer \
+            addresses \
+            ${
+              pkgs.lib.strings.concatStrings (map (lc: " --lightclient ${lc.client-type}") all-lightclients)
+            } \
+            ${
+              pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
+            } \
+            --deployer "$1" ''${2+--output $2} 
+        '';
+      };
+
+      get-lightclient =
+        f:
+        pkgs.lib.lists.findSingle f (throw "lightclient not found")
+          (throw "many matching lightclients found")
+          all-lightclients;
+
+      mk-lightclient =
+        name:
+        let
+          lc = get-lightclient (lc: lc.name == name);
+        in
+        (lc.hook or (d: d)) (
+          crane.buildWasmContract "cosmwasm/ibc-union/lightclient/${lc.dir}" {
+            features = lc.features or null;
+          }
+        );
+
+      mk-app = dir: crane.buildWasmContract "cosmwasm/ibc-union/app/${dir}" { };
 
       # ucs00-pingpong = crane.buildWasmContract {
       #   crateDirFromRoot = "cosmwasm/ucs00-pingpong";
       # };
 
-      cw721-base = crane.buildRemoteWasmContract {
-        src = inputs.cosmwasm-nfts;
-        version = inputs.cosmwasm-nfts.rev;
-        package = "cw721-base@0.18.0";
-        contractFileNameWithoutExt = "cw721_base";
-      };
+      ucs03-zkgm = crane.buildWasmContract "cosmwasm/ibc-union/app/ucs03-zkgm" { };
 
-      ucs03-zkgm = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/ibc-union/app/ucs03-zkgm";
-      };
+      cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
-      cw20-base = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/cw20-base";
-      };
+      ibc-union = crane.buildWasmContract "cosmwasm/ibc-union/core" { };
 
-      ibc-union = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/ibc-union/core";
-      };
-
-      multicall = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/multicall";
-      };
+      multicall = crane.buildWasmContract "cosmwasm/multicall" { };
 
       # native-token-minter = crane.buildWasmContract {
       #   crateDirFromRoot = "cosmwasm/native-token-minter";
       # };
 
-      cw20-token-minter = crane.buildWasmContract {
-        crateDirFromRoot = "cosmwasm/cw20-token-minter";
-      };
+      cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
 
-      deployments-json-entry =
+      # update-deployments-json deployer
+      update-deployments-json =
         { name, rpc_url, ... }:
         pkgs.writeShellApplication {
-          name = "${name}-deployments-json-entry";
+          name = "${name}-update-deployments-json";
           runtimeInputs = [
-            cosmwasm-deployer.packages.cosmwasm-deployer
-            pkgs.jq
+            cosmwasm-deployer
             ibc-union-contract-addresses
+            (get-git-rev { inherit rpc_url; })
+            pkgs.jq
+            pkgs.curl
+            pkgs.moreutils
           ];
           text = ''
+            ${ensureAtRepositoryRoot}
+
+            DEPLOYMENTS_FILE="deployments/deployments.json"
+            export DEPLOYMENTS_FILE
+
             ADDRESSES=$(ibc-union-contract-addresses "$1")
+            echo "addresses: $ADDRESSES"
+
             HEIGHTS=$(cosmwasm-deployer init-heights --rpc-url "${rpc_url}" --addresses <(echo "$ADDRESSES"))
-            echo "$ADDRESSES" | jq \
+            echo "heights: $HEIGHTS"
+
+            echo "updating heights..."
+
+            DEPLOYMENTS=$(echo "$ADDRESSES" | jq \
+              --arg deployer "$1" \
               --argjson heights "$HEIGHTS" \
               '. as $in | {
+                deployer: $deployer,
                 core: {
                   address: .core,
                   height: $heights[.core]
@@ -501,7 +841,56 @@
                     end
                   )
                 ),
-              }'
+              }')
+
+            echo "deployments: $DEPLOYMENTS"
+
+            echo "updating commits..."
+
+            DEPLOYMENTS=$(
+              echo "$DEPLOYMENTS" \
+                | jq '.core.commit = $commit' \
+                  --arg commit "$(get-git-rev "$(echo "$ADDRESSES" | jq .core -r)")"
+            )
+
+            for key in lightclient app ; do
+              echo "key: $key"
+                while read -r subkey ; do
+                  echo "$key: $subkey"
+                  DEPLOYMENTS=$(
+                    echo "$DEPLOYMENTS" \
+                      | jq '.[$key][$subkey].commit = $commit' \
+                        --arg subkey "$subkey" \
+                        --arg key "$key" \
+                        --arg commit "$(
+                          get-git-rev "$(
+                            echo "$ADDRESSES" \
+                              | jq -r '.[$key][$subkey]' \
+                                --arg subkey "$subkey" \
+                                --arg key "$key"
+                          )"
+                        )"
+                  )
+
+                  # echo "deployments: $DEPLOYMENTS"
+                done <<< "$(echo "$DEPLOYMENTS" \
+                  | jq -r '.[$key] | keys[]' \
+                    --arg key "$key")"
+            done
+
+            echo "deployments: $DEPLOYMENTS"
+
+            CHAIN_ID="$(curl --silent ${rpc_url}/status | jq .result.node_info.network -r)"
+            export CHAIN_ID
+
+            echo "chain id: $CHAIN_ID"
+
+            jq \
+              '. |= map(if .chain_id == $chain_id then .deployments = $deployments else . end)' \
+              "$DEPLOYMENTS_FILE" \
+              --arg chain_id "$CHAIN_ID" \
+              --argjson deployments "$DEPLOYMENTS" \
+            | sponge "$DEPLOYMENTS_FILE"
           '';
         };
     in
@@ -510,8 +899,8 @@
         {
           inherit
             bytecode-base
-            cw721-base
             ucs03-zkgm
+            cosmwasm-deployer
             # native-token-minter
             cw20-token-minter
             ibc-union
@@ -520,39 +909,63 @@
           cosmwasm-scripts =
             {
               inherit ibc-union-contract-addresses;
+              update-deployments-json = pkgs.writeShellApplication {
+                name = "update-deployments-json";
+                text =
+                  # TODO: Merge this script with the one in evm.nix
+                  let
+                    deployments = builtins.filter (deployment: deployment.ibc_interface == "ibc-cosmwasm") (
+                      builtins.fromJSON (builtins.readFile ../deployments/deployments.json)
+                    );
+                    getNetwork =
+                      chainId:
+                      pkgs.lib.lists.findSingle (network: network.chain-id == chainId)
+                        (throw "no network found with chain id ${chainId}")
+                        (throw "many networks with chain id ${chainId} found")
+                        networks;
+                  in
+                  pkgs.lib.concatMapStringsSep "\n\n" (entry: ''
+                    echo "updating ${entry.universal_chain_id}"
+                    ${
+                      pkgs.lib.getExe
+                        self'.packages.cosmwasm-scripts.${(getNetwork entry.chain_id).name}.update-deployments-json
+                    } ${entry.deployments.deployer}
+                  '') deployments;
+              };
             }
-            // (
-              (builtins.listToAttrs (
-                map (args: {
-                  name = "chain-deployments-json-${args.name}";
-                  value = chain-deployments-json args;
+            // (pkgs.mkRootDrv "cosmwasm-scripts" (
+              builtins.listToAttrs (
+                map (chain: {
+                  inherit (chain) name;
+                  value = pkgs.mkRootDrv chain.name (
+                    {
+                      chain-deployments-json = chain-deployments-json chain;
+                      deploy = deploy chain;
+                      update-deployments-json = update-deployments-json chain;
+                      finalize-deployment = finalize-deployment chain;
+                      get-git-rev = get-git-rev chain;
+                      whitelist-relayers = whitelist-relayers chain;
+                    }
+                    // (chain-migration-scripts chain)
+                  );
                 }) networks
-              ))
-              // (builtins.listToAttrs (
-                map (args: {
-                  name = "deploy-full-${args.name}";
-                  value = deploy-full args;
-                }) networks
-              ))
-              // (builtins.listToAttrs (
-                map (args: {
-                  name = "deployments-json-entry-${args.name}";
-                  value = deployments-json-entry args;
-                }) networks
-              ))
-            )
-            // (builtins.foldl' (a: b: a // b) { } (map chain-migration-scripts networks))
-            # // (dbg (chain-migration-scripts (builtins.elemAt networks 0)))
-            # // (dbg (chain-migration-scripts (builtins.elemAt networks 1)))
-            // derivation { name = "cosmwasm-scripts"; };
+              )
+            ));
         }
-        // cosmwasm-deployer.packages
         //
           # all light clients
-          (pkgs.lib.mapAttrs' (n: _v: rec {
-            name = value.passthru.packageName;
-            value = mk-lightclient n;
-          }) all-lightclients)
+          (builtins.listToAttrs (
+            map (
+              { name, ... }:
+              let
+                lc = mk-lightclient name;
+              in
+              {
+                name = lc.passthru.packageName;
+                value = lc;
+              }
+            ) all-lightclients
+          ))
         //
           # all apps
           (pkgs.lib.mapAttrs' (n: _v: rec {

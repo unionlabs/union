@@ -1,16 +1,18 @@
-// use cometbls_light_client::client::CometblsLightClient;
-use cosmwasm_std::Empty;
-use ibc_union_light_client::IbcClient;
+use cometbls_light_client::client::CometblsLightClient;
+use cosmwasm_std::{Addr, Empty};
+use ibc_union_light_client::{
+    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+};
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
-// use ibc_union_spec::path::ConsensusStatePath;
+use ibc_union_spec::path::ConsensusStatePath;
 use movement_light_client_types::ConsensusState as L2ConsensusState;
 use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use unionlabs::{
     aptos::{account::AccountAddress, storage_proof::StorageProof},
     encoding::{Bincode, DecodeAs, EthAbi},
-    ethereum::{ibc_commitment_key /*keccak256*/},
-    // ibc::core::commitment::merkle_proof::MerkleProof,
+    ethereum::{ibc_commitment_key, keccak256},
+    ibc::core::commitment::merkle_proof::MerkleProof,
     primitives::{H256, U256},
 };
 
@@ -36,31 +38,30 @@ impl IbcClient for StateLensIcs23SmtLightClient {
     type Encoding = Bincode;
 
     fn verify_membership(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        _height: u64,
-        _key: Vec<u8>,
-        _storage_proof: Self::StorageProof,
-        _value: Vec<u8>,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        // let client_state = ctx.read_self_client_state()?;
-        // let consensus_state = ctx.read_self_consensus_state(height)?;
-        // verify_membership(
-        //     &key,
-        //     consensus_state.state_root,
-        //     client_state.table_handle,
-        //     storage_proof,
-        //     &value,
-        // )
-        // .map_err(Into::into)
-        Ok(())
+        ctx: IbcClientCtx<Self>,
+        height: u64,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+        value: Vec<u8>,
+    ) -> Result<(), IbcClientError<Self>> {
+        let client_state = ctx.read_self_client_state()?;
+        let consensus_state = ctx.read_self_consensus_state(height)?;
+        verify_membership(
+            &key,
+            consensus_state.state_root,
+            AccountAddress(client_state.extra.table_handle),
+            storage_proof,
+            &value,
+        )
+        .map_err(Into::into)
     }
 
     fn verify_non_membership(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _ctx: IbcClientCtx<Self>,
         _height: u64,
         _key: Vec<u8>,
         _storage_proof: Self::StorageProof,
-    ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+    ) -> Result<(), IbcClientError<Self>> {
         unimplemented!()
     }
 
@@ -76,7 +77,10 @@ impl IbcClient for StateLensIcs23SmtLightClient {
         client_state.l2_chain_id.clone()
     }
 
-    fn status(_client_state: &Self::ClientState) -> Status {
+    fn status(ctx: IbcClientCtx<Self>, client_state: &Self::ClientState) -> Status {
+        let _ = ctx;
+        let _ = client_state;
+
         // FIXME: expose the ctx to this call to allow threading this call to L1
         // client. generally, we want to thread if a client is an L2 so always
         // provide the ctx?
@@ -101,65 +105,70 @@ impl IbcClient for StateLensIcs23SmtLightClient {
     }
 
     fn verify_creation(
+        _caller: Addr,
         client_state: &Self::ClientState,
         _consensus_state: &Self::ConsensusState,
-    ) -> Result<
-        Option<Vec<VerifyCreationResponseEvent>>,
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
-        Ok(Some(vec![VerifyCreationResponseEvent::CreateLensClient {
-            l1_client_id: client_state.l1_client_id,
-            l2_client_id: client_state.l2_client_id,
-            l2_chain_id: client_state.l2_chain_id.clone(),
-        }]))
+        _relayer: Addr,
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
+        Ok(
+            ClientCreationResult::new().add_event(VerifyCreationResponseEvent::CreateLensClient {
+                l1_client_id: client_state.l1_client_id,
+                l2_client_id: client_state.l2_client_id,
+                l2_chain_id: client_state.l2_chain_id.clone(),
+            }),
+        )
     }
 
     fn verify_header(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         header: Self::Header,
-        _caller: cosmwasm_std::Addr,
-    ) -> Result<
-        (u64, Self::ClientState, Self::ConsensusState),
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
+        _relayer: Addr,
+    ) -> Result<StateUpdate<Self>, ibc_union_light_client::IbcClientError<Self>> {
         let mut client_state = ctx.read_self_client_state()?;
 
-        // let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
-        //     .map_err(|_| Error::ProofDecode(header.l2_consensus_state_proof))?;
+        let storage_proof = MerkleProof::decode_as::<Bincode>(&header.l2_consensus_state_proof)
+            .map_err(Error::ProofDecode)?;
 
-        // ctx.verify_membership::<CometblsLightClient>(
-        //     client_state.l1_client_id,
-        //     header.l1_height.height(),
-        //     ConsensusStatePath {
-        //         client_id: client_state.l2_client_id,
-        //         height: header.l2_height.height(),
-        //     }
-        //     .key()
-        //     .into_bytes(),
-        //     storage_proof,
-        //     keccak256(&header.l2_consensus_state).into(),
-        // )
-        // .map_err(Error::L1Error)?;
+        ctx.verify_membership::<CometblsLightClient>(
+            client_state.l1_client_id,
+            header.l1_height.height(),
+            ConsensusStatePath {
+                client_id: client_state.l2_client_id,
+                height: header.l2_height.height(),
+            }
+            .key()
+            .into_bytes(),
+            storage_proof,
+            keccak256(&header.l2_consensus_state).into(),
+        )
+        .map_err(Error::L1Error)?;
 
         let l2_consensus_state = L2ConsensusState::decode_as::<EthAbi>(&header.l2_consensus_state)
             .map_err(|_| Error::L2ConsensusStateDecode(header.l2_consensus_state))?;
 
+        let mut state_update = StateUpdate::new(
+            header.l2_height.height(),
+            ConsensusState {
+                timestamp: l2_consensus_state.timestamp,
+                state_root: l2_consensus_state.state_root,
+            },
+        );
+
         if client_state.l2_latest_height < header.l2_height.height() {
             client_state.l2_latest_height = header.l2_height.height();
-        }
-
-        let consensus_state = ConsensusState {
-            timestamp: l2_consensus_state.timestamp,
-            state_root: l2_consensus_state.state_root,
+            state_update = state_update.overwrite_client_state(client_state);
         };
 
-        Ok((header.l2_height.height(), client_state, consensus_state))
+        Ok(state_update)
     }
 
     fn misbehaviour(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _ctx: IbcClientCtx<Self>,
+        _caller: Addr,
         _misbehaviour: Self::Misbehaviour,
-    ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
+        _relayer: Addr,
+    ) -> Result<Self::ClientState, IbcClientError<Self>> {
         unimplemented!()
     }
 }

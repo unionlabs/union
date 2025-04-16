@@ -2,7 +2,11 @@ use cometbft_types::types::{signed_header::SignedHeader, validator_set::Validato
 use unionlabs::ibc::core::client::height::Height;
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Header {
     pub signed_header: SignedHeader,

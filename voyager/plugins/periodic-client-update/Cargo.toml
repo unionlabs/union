@@ -12,7 +12,8 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-clap            = { workspace = true, features = ["derive"] }
+clap            = { workspace = true, features = ["derive", "error-context", "help", "env"] }
+embed-commit    = { workspace = true }
 jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
 macros          = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }

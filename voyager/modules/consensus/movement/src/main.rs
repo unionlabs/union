@@ -5,7 +5,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::debug;
+use tracing::{debug, trace};
 use unionlabs::{
     aptos::{
         account::AccountAddress, state_proof::StateProof,
@@ -16,8 +16,9 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    core::{ChainId, ConsensusType, Timestamp},
     module::{ConsensusModuleInfo, ConsensusModuleServer},
+    primitives::{ChainId, ConsensusType, Timestamp},
+    vm::BoxDynError,
     ConsensusModule,
 };
 
@@ -53,10 +54,7 @@ pub struct Module {
 impl ConsensusModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ConsensusModuleInfo,
-    ) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;
@@ -132,7 +130,7 @@ impl ConsensusModuleServer for Module {
             Ok(ledger_info) => {
                 let height = ledger_info.inner().block_height.0;
 
-                debug!(height, "latest height");
+                trace!(height, "latest height");
 
                 Ok(Height::new(height))
             }

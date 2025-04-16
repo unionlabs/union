@@ -15,6 +15,7 @@ workspace = true
 clap                       = { workspace = true, features = ["derive"] }
 cometbft-rpc               = { workspace = true }
 dashmap                    = { workspace = true }
+embed-commit               = { workspace = true }
 ibc-classic-spec.workspace = true
 jsonrpsee                  = { workspace = true, features = ["macros", "server", "tracing"] }
 prost                      = { workspace = true }

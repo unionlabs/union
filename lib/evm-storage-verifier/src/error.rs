@@ -1,16 +1,12 @@
 use trie_db::TrieError;
-use unionlabs::primitives::H256;
+use unionlabs::primitives::{Bytes, H256};
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 pub enum Error {
-    #[error(
-        "proof is invalid due to value mismatch, expected: {expected}, actual: {actual}",
-        expected = serde_utils::to_hex(expected),
-        actual = serde_utils::to_hex(actual)
-    )]
-    ValueMismatch { expected: Vec<u8>, actual: Vec<u8> },
-    #[error("proof is invalid due to missing value: {v}", v = serde_utils::to_hex(value))]
-    ValueMissing { value: Vec<u8> },
+    #[error("proof is invalid due to value mismatch, expected: {expected}, actual: {actual}")]
+    ValueMismatch { expected: Bytes, actual: Bytes },
+    #[error("proof is invalid due to missing value: {value}")]
+    ValueMissing { value: Bytes },
     #[error("trie error ({0:?})")]
     Trie(Box<TrieError<H256, rlp::DecoderError>>),
     #[error("rlp decoding failed: {0:?}")]

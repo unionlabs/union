@@ -3,6 +3,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{wasm_execute, DepsMut, Env, MessageInfo, Response, StdError};
 use ibc_union_msg::{module::IbcUnionMsg, msg::MsgWriteAcknowledgement};
+use ibc_union_spec::Timestamp;
 
 use crate::{
     msg::{ExecuteMsg, InitMsg, UCS00PingPong},
@@ -33,7 +34,11 @@ pub fn execute(
     match msg {
         ExecuteMsg::Initiate { channel_id, packet } => {
             let config = CONFIG.load(deps.storage)?;
-            let msg = packet.reverse(&config, env.block.time.nanos(), channel_id);
+            let msg = packet.reverse(
+                &config,
+                Timestamp::from_nanos(env.block.time.nanos()),
+                channel_id,
+            );
 
             Ok(Response::default().add_message(wasm_execute(config.ibc_host, &msg, vec![])?))
         }
@@ -54,7 +59,7 @@ pub fn execute(
             let config = CONFIG.load(deps.storage)?;
             let msg = ping_packet.reverse(
                 &config,
-                env.block.time.nanos(),
+                Timestamp::from_nanos(env.block.time.nanos()),
                 packet.destination_channel_id,
             );
 
@@ -63,7 +68,6 @@ pub fn execute(
                     &config.ibc_host,
                     &ibc_union_msg::msg::ExecuteMsg::WriteAcknowledgement(
                         MsgWriteAcknowledgement {
-                            channel_id: packet.destination_channel_id,
                             packet,
                             acknowledgement: ack_success().into(),
                         },

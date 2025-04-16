@@ -2,16 +2,16 @@ use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env},
     to_json_binary, Addr, Event,
 };
+use depolama::StorageExt;
 use ibc_union_msg::{
-    lightclient::{
-        QueryMsg as LightClientQueryMsg, VerifyClientMessageUpdate, VerifyCreationResponse,
-    },
+    lightclient::{QueryMsg as LightClientQueryMsg, UpdateStateResponse, VerifyCreationResponse},
     msg::{ExecuteMsg, InitMsg, MsgUpdateClient},
 };
 
 use super::*;
 use crate::{
     contract::{events, execute, init},
+    state::{ClientConsensusStates, ClientImpls, ClientRegistry, ClientStates, ClientTypes},
     ContractError,
 };
 
@@ -29,6 +29,14 @@ fn new_client_registered_event(client_type: &str, client_address: &Addr) -> Even
 #[test]
 fn register_client_ok() {
     let mut deps = mock_dependencies();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     let res = register_client(deps.as_mut()).unwrap();
 
     assert!(res
@@ -37,17 +45,24 @@ fn register_client_ok() {
         .any(|e| e == new_client_registered_event(CLIENT_TYPE, &mock_addr(CLIENT_ADDRESS))));
 
     assert_eq!(
-        crate::state::CLIENT_REGISTRY
-            .load(&deps.storage, CLIENT_TYPE)
-            .unwrap()
-            .as_str(),
-        mock_addr(CLIENT_ADDRESS).to_string()
+        deps.storage
+            .read::<ClientRegistry>(&CLIENT_TYPE.to_string())
+            .unwrap(),
+        mock_addr(CLIENT_ADDRESS)
     );
 }
 
 #[test]
 fn register_client_fails_when_duplicate() {
     let mut deps = mock_dependencies();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     register_client(deps.as_mut()).unwrap();
     assert_eq!(
         register_client(deps.as_mut()),
@@ -59,14 +74,23 @@ fn register_client_fails_when_duplicate() {
 fn create_client_ok() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
@@ -78,20 +102,29 @@ fn create_client_ok() {
 fn create_client_commitments_saved() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
     register_client(deps.as_mut()).expect("register client ok");
     let res = create_client(deps.as_mut()).expect("create client ok");
-    let client_id: u32 = res
+    let client_id = res
         .events
         .iter()
         .find(|event| event.ty.eq(events::client::CREATE))
@@ -101,31 +134,24 @@ fn create_client_commitments_saved() {
         .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
         .expect("client type attribute exists")
         .value
-        .parse()
+        .parse::<ClientId>()
         .expect("client type string is u32");
 
     assert_eq!(
-        crate::state::CLIENT_TYPES
-            .load(&deps.storage, client_id)
-            .unwrap(),
+        deps.storage.read::<ClientTypes>(&client_id).unwrap(),
         CLIENT_TYPE
     );
     assert_eq!(
-        crate::state::CLIENT_IMPLS
-            .load(&deps.storage, client_id)
-            .unwrap()
-            .as_str(),
-        mock_addr(CLIENT_ADDRESS).to_string()
+        deps.storage.read::<ClientImpls>(&client_id).unwrap(),
+        mock_addr(CLIENT_ADDRESS)
     );
     assert_eq!(
-        crate::state::CLIENT_STATES
-            .load(&deps.storage, client_id)
-            .unwrap(),
+        deps.storage.read::<ClientStates>(&client_id).unwrap(),
         vec![1, 2, 3]
     );
     assert_eq!(
-        crate::state::CLIENT_CONSENSUS_STATES
-            .load(&deps.storage, (client_id, 1))
+        deps.storage
+            .read::<ClientConsensusStates>(&(client_id, 1))
             .unwrap(),
         vec![1, 2, 3]
     );
@@ -135,27 +161,36 @@ fn create_client_commitments_saved() {
 fn update_client_ok() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
-            LightClientQueryMsg::VerifyClientMessage { .. } => {
-                to_json_binary(&VerifyClientMessageUpdate {
-                    height: 2,
-                    consensus_state: vec![3, 2, 1].into(),
-                    client_state: vec![3, 2, 1].into(),
-                })
-            }
+            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&UpdateStateResponse {
+                height: 2,
+                consensus_state_bytes: vec![3, 2, 1].into(),
+                client_state_bytes: Some(vec![3, 2, 1].into()),
+                storage_writes: Default::default(),
+            }),
+            LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
     register_client(deps.as_mut()).expect("register client ok");
     let res = create_client(deps.as_mut()).expect("create client ok");
-    let client_id: u32 = res
+    let client_id = res
         .events
         .iter()
         .find(|event| event.ty.eq(events::client::CREATE))
@@ -165,7 +200,7 @@ fn update_client_ok() {
         .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
         .expect("client type attribute exists")
         .value
-        .parse()
+        .parse::<ClientId>()
         .expect("client type string is u32");
 
     let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
@@ -186,21 +221,31 @@ fn update_client_ok() {
 fn update_client_ko() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
-            LightClientQueryMsg::VerifyClientMessage { .. } => to_json_binary(&0),
+            LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
+            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&0),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
     register_client(deps.as_mut()).expect("register client ok");
     let res = create_client(deps.as_mut()).expect("create client ok");
-    let client_id: u32 = res
+    let client_id = res
         .events
         .iter()
         .find(|event| event.ty.eq(events::client::CREATE))
@@ -210,7 +255,7 @@ fn update_client_ko() {
         .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
         .expect("client type attribute exists")
         .value
-        .parse()
+        .parse::<ClientId>()
         .expect("client type string is u32");
 
     let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
@@ -231,27 +276,36 @@ fn update_client_ko() {
 fn update_client_commitments_saved() {
     let mut deps = mock_dependencies();
 
-    init(deps.as_mut(), InitMsg {}).unwrap();
+    init(
+        deps.as_mut(),
+        InitMsg {
+            relayers_admin: None,
+            relayers: vec![mock_addr(SENDER).to_string()],
+        },
+    )
+    .unwrap();
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                latest_height: 1,
                 counterparty_chain_id: "testchain".to_owned(),
-                events: None,
+                events: vec![],
+                storage_writes: Default::default(),
+                client_state_bytes: None,
             }),
-            LightClientQueryMsg::VerifyClientMessage { .. } => {
-                to_json_binary(&VerifyClientMessageUpdate {
-                    height: 2,
-                    consensus_state: vec![3, 2, 1].into(),
-                    client_state: vec![3, 2, 1].into(),
-                })
-            }
+            LightClientQueryMsg::UpdateState { .. } => to_json_binary(&UpdateStateResponse {
+                height: 2,
+                consensus_state_bytes: vec![3, 2, 1].into(),
+                client_state_bytes: Some(vec![3, 2, 1].into()),
+                storage_writes: Default::default(),
+            }),
+            LightClientQueryMsg::GetStatus { .. } => to_json_binary(&Status::Active),
+            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
 
     register_client(deps.as_mut()).expect("register client ok");
     let res = create_client(deps.as_mut()).expect("create client ok");
-    let client_id: u32 = res
+    let client_id = res
         .events
         .iter()
         .find(|event| event.ty.eq(events::client::CREATE))
@@ -261,7 +315,7 @@ fn update_client_commitments_saved() {
         .find(|attribute| attribute.key.eq(events::attribute::CLIENT_ID))
         .expect("client type attribute exists")
         .value
-        .parse()
+        .parse::<ClientId>()
         .expect("client type string is u32");
 
     let msg = ExecuteMsg::UpdateClient(MsgUpdateClient {
@@ -278,14 +332,12 @@ fn update_client_commitments_saved() {
     .expect("update client ok");
 
     assert_eq!(
-        crate::state::CLIENT_STATES
-            .load(&deps.storage, client_id)
-            .unwrap(),
+        deps.storage.read::<ClientStates>(&client_id).unwrap(),
         vec![3, 2, 1]
     );
     assert_eq!(
-        crate::state::CLIENT_CONSENSUS_STATES
-            .load(&deps.storage, (client_id, 2))
+        deps.storage
+            .read::<ClientConsensusStates>(&(client_id, 2))
             .unwrap(),
         vec![3, 2, 1]
     );

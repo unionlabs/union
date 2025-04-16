@@ -63,7 +63,6 @@ impl FileReader {
                     }
                     i += 1;
                     std::thread::sleep(Duration::from_millis(300));
-                    continue;
                 }
             }
         };

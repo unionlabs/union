@@ -1,7 +1,6 @@
-use beacon_api_types::{
-    light_client_update::{FinalityBranch, NextSyncCommitteeBranch},
-    LightClientHeader, Slot, SyncAggregate, SyncCommittee,
-};
+use beacon_api_types::{altair::SyncAggregate, custom_types::Slot};
+use ethereum_sync_protocol_types::LightClientHeader;
+use unionlabs::primitives::H256;
 
 /// Common data required for all light client updates.
 #[derive(Debug, Clone, PartialEq)]
@@ -12,27 +11,9 @@ pub struct LightClientUpdateData {
     pub attested_header: LightClientHeader,
     /// Finalized header corresponding to `attested_header.state_root`
     pub finalized_header: LightClientHeader,
-    pub finality_branch: FinalityBranch,
+    pub finality_branch: Vec<H256>,
     /// Sync committee aggregate signature
     pub sync_aggregate: SyncAggregate,
     /// Slot at which the aggregate signature was created (untrusted)
     pub signature_slot: Slot,
-}
-
-impl LightClientUpdateData {
-    pub fn into_beacon_light_client_update(
-        self,
-        next_sync_committee: Option<SyncCommittee>,
-        next_sync_committee_branch: Option<NextSyncCommitteeBranch>,
-    ) -> beacon_api_types::LightClientUpdate {
-        beacon_api_types::LightClientUpdate {
-            attested_header: self.attested_header,
-            next_sync_committee,
-            next_sync_committee_branch,
-            finalized_header: self.finalized_header,
-            finality_branch: self.finality_branch,
-            sync_aggregate: self.sync_aggregate,
-            signature_slot: self.signature_slot,
-        }
-    }
 }

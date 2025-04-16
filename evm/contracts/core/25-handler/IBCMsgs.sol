@@ -22,7 +22,6 @@ library IBCMsgs {
     struct MsgConnectionOpenInit {
         uint32 clientId;
         uint32 counterpartyClientId;
-        address relayer;
     }
 
     struct MsgConnectionOpenTry {
@@ -31,7 +30,6 @@ library IBCMsgs {
         uint32 clientId;
         bytes proofInit;
         uint64 proofHeight;
-        address relayer;
     }
 
     struct MsgConnectionOpenAck {
@@ -39,14 +37,12 @@ library IBCMsgs {
         uint32 counterpartyConnectionId;
         bytes proofTry;
         uint64 proofHeight;
-        address relayer;
     }
 
     struct MsgConnectionOpenConfirm {
         uint32 connectionId;
         bytes proofAck;
         uint64 proofHeight;
-        address relayer;
     }
 
     struct MsgChannelOpenInit {
@@ -125,12 +121,10 @@ library IBCMsgs {
     }
 
     struct MsgBatchSend {
-        uint32 sourceChannelId;
         IBCPacket[] packets;
     }
 
     struct MsgBatchAcks {
-        uint32 sourceChannelId;
         IBCPacket[] packets;
         bytes[] acks;
     }
@@ -138,5 +132,6 @@ library IBCMsgs {
     struct MsgMisbehaviour {
         uint32 clientId;
         bytes clientMessage;
+        address relayer;
     }
 }

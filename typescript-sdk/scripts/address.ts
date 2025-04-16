@@ -1,4 +1,4 @@
-import { hexToBytes, bytesToHex } from "#mod.ts"
+import { hexToBytes, bytesToHex } from "../src/mod.ts"
 import { privateKeyToAccount } from "viem/accounts"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { Account as AptosAccount, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"

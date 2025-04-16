@@ -1,12 +1,11 @@
 use std::{io::Write, num::NonZeroU64};
 
-use ibc_union_spec::types::Packet;
+use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use unionlabs::{
     bech32::Bech32,
     ibc::core::{channel::order::Order, client::height::Height},
-    id::{ChannelId, ClientId, ConnectionId, PortId},
     primitives::{encoding::HexUnprefixed, Bytes, H256},
     ErrorReporter,
 };
@@ -18,7 +17,7 @@ pub enum IbcEvent {
     // https://github.com/cosmos/ibc-go/blob/5c7f28634ecf9b6f275bfd5712778fedcf06d80d/docs/ibc/events.md
     #[serde(rename = "create_client")]
     CreateClient {
-        client_id: ClientId,
+        client_id: unionlabs::id::ClientId,
         // TODO: Figure out if there's a better type we can use than string
         client_type: String,
         consensus_height: Height,
@@ -26,7 +25,7 @@ pub enum IbcEvent {
 
     #[serde(rename = "update_client")]
     UpdateClient {
-        client_id: ClientId,
+        client_id: unionlabs::id::ClientId,
         client_type: String,
         #[serde(with = "height_list_comma_separated")]
         consensus_heights: Vec<Height>,
@@ -34,77 +33,77 @@ pub enum IbcEvent {
 
     #[serde(rename = "client_misbehaviour")]
     ClientMisbehaviour {
-        client_id: ClientId,
+        client_id: unionlabs::id::ClientId,
         client_type: String,
         consensus_height: Height,
     },
 
     #[serde(rename = "connection_open_init")]
     ConnectionOpenInit {
-        connection_id: ConnectionId,
-        client_id: ClientId,
-        counterparty_client_id: ClientId,
+        connection_id: unionlabs::id::ConnectionId,
+        client_id: unionlabs::id::ClientId,
+        counterparty_client_id: unionlabs::id::ClientId,
     },
 
     #[serde(rename = "connection_open_try")]
     ConnectionOpenTry {
-        connection_id: ConnectionId,
-        client_id: ClientId,
-        counterparty_client_id: ClientId,
-        counterparty_connection_id: ConnectionId,
+        connection_id: unionlabs::id::ConnectionId,
+        client_id: unionlabs::id::ClientId,
+        counterparty_client_id: unionlabs::id::ClientId,
+        counterparty_connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "connection_open_ack")]
     ConnectionOpenAck {
-        connection_id: ConnectionId,
-        client_id: ClientId,
-        counterparty_client_id: ClientId,
-        counterparty_connection_id: ConnectionId,
+        connection_id: unionlabs::id::ConnectionId,
+        client_id: unionlabs::id::ClientId,
+        counterparty_client_id: unionlabs::id::ClientId,
+        counterparty_connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "connection_open_confirm")]
     ConnectionOpenConfirm {
-        connection_id: ConnectionId,
-        client_id: ClientId,
-        counterparty_client_id: ClientId,
-        counterparty_connection_id: ConnectionId,
+        connection_id: unionlabs::id::ConnectionId,
+        client_id: unionlabs::id::ClientId,
+        counterparty_client_id: unionlabs::id::ClientId,
+        counterparty_connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "channel_open_init")]
     ChannelOpenInit {
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_port_id: PortId,
-        connection_id: ConnectionId,
+        port_id: unionlabs::id::PortId,
+        channel_id: unionlabs::id::ChannelId,
+        counterparty_port_id: unionlabs::id::PortId,
+        connection_id: unionlabs::id::ConnectionId,
         version: String,
     },
 
     #[serde(rename = "channel_open_try")]
     ChannelOpenTry {
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_port_id: PortId,
-        counterparty_channel_id: ChannelId,
-        connection_id: ConnectionId,
+        port_id: unionlabs::id::PortId,
+        channel_id: unionlabs::id::ChannelId,
+        counterparty_port_id: unionlabs::id::PortId,
+        counterparty_channel_id: unionlabs::id::ChannelId,
+        connection_id: unionlabs::id::ConnectionId,
         version: String,
     },
 
     #[serde(rename = "channel_open_ack")]
     ChannelOpenAck {
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_port_id: PortId,
-        counterparty_channel_id: ChannelId,
-        connection_id: ConnectionId,
+        port_id: unionlabs::id::PortId,
+        channel_id: unionlabs::id::ChannelId,
+        counterparty_port_id: unionlabs::id::PortId,
+        counterparty_channel_id: unionlabs::id::ChannelId,
+        connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "channel_open_confirm")]
     ChannelOpenConfirm {
-        port_id: PortId,
-        channel_id: ChannelId,
-        counterparty_port_id: PortId,
-        counterparty_channel_id: ChannelId,
-        connection_id: ConnectionId,
+        port_id: unionlabs::id::PortId,
+        channel_id: unionlabs::id::ChannelId,
+        counterparty_port_id: unionlabs::id::PortId,
+        counterparty_channel_id: unionlabs::id::ChannelId,
+        connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "write_acknowledgement")]
@@ -112,15 +111,15 @@ pub enum IbcEvent {
         packet_data_hex: Bytes<HexUnprefixed>,
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
-        packet_src_port: PortId,
-        packet_src_channel: ChannelId,
-        packet_dst_port: PortId,
-        packet_dst_channel: ChannelId,
+        packet_src_port: unionlabs::id::PortId,
+        packet_src_channel: unionlabs::id::ChannelId,
+        packet_dst_port: unionlabs::id::PortId,
+        packet_dst_channel: unionlabs::id::ChannelId,
         packet_ack_hex: Bytes<HexUnprefixed>,
-        connection_id: ConnectionId,
+        connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "recv_packet")]
@@ -128,16 +127,16 @@ pub enum IbcEvent {
         packet_data_hex: Bytes<HexUnprefixed>,
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
-        packet_src_port: PortId,
-        packet_src_channel: ChannelId,
-        packet_dst_port: PortId,
-        packet_dst_channel: ChannelId,
+        packet_src_port: unionlabs::id::PortId,
+        packet_src_channel: unionlabs::id::ChannelId,
+        packet_dst_port: unionlabs::id::PortId,
+        packet_dst_channel: unionlabs::id::ChannelId,
         #[serde(with = "serde_utils::string")]
         packet_channel_ordering: Order,
-        connection_id: ConnectionId,
+        connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "send_packet")]
@@ -145,55 +144,55 @@ pub enum IbcEvent {
         packet_data_hex: Bytes<HexUnprefixed>,
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
-        packet_src_port: PortId,
-        packet_src_channel: ChannelId,
-        packet_dst_port: PortId,
-        packet_dst_channel: ChannelId,
+        packet_src_port: unionlabs::id::PortId,
+        packet_src_channel: unionlabs::id::ChannelId,
+        packet_dst_port: unionlabs::id::PortId,
+        packet_dst_channel: unionlabs::id::ChannelId,
         #[serde(with = "serde_utils::string")]
         packet_channel_ordering: Order,
-        connection_id: ConnectionId,
+        connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "acknowledge_packet")]
     AcknowledgePacket {
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
-        packet_src_port: PortId,
-        packet_src_channel: ChannelId,
-        packet_dst_port: PortId,
-        packet_dst_channel: ChannelId,
+        packet_src_port: unionlabs::id::PortId,
+        packet_src_channel: unionlabs::id::ChannelId,
+        packet_dst_port: unionlabs::id::PortId,
+        packet_dst_channel: unionlabs::id::ChannelId,
         #[serde(with = "serde_utils::string")]
         packet_channel_ordering: Order,
-        connection_id: ConnectionId,
+        connection_id: unionlabs::id::ConnectionId,
     },
 
     #[serde(rename = "timeout_packet")]
     TimeoutPacket {
         packet_timeout_height: Height,
         #[serde(with = "serde_utils::string")]
-        packet_timeout_timestamp: u64,
+        packet_timeout_timestamp: Timestamp,
         #[serde(with = "serde_utils::string")]
         packet_sequence: NonZeroU64,
-        packet_src_port: PortId,
-        packet_src_channel: ChannelId,
-        packet_dst_port: PortId,
-        packet_dst_channel: ChannelId,
+        packet_src_port: unionlabs::id::PortId,
+        packet_src_channel: unionlabs::id::ChannelId,
+        packet_dst_port: unionlabs::id::PortId,
+        packet_dst_channel: unionlabs::id::ChannelId,
         #[serde(with = "serde_utils::string")]
         packet_channel_ordering: Order,
-        connection_id: ConnectionId,
+        connection_id: unionlabs::id::ConnectionId,
     },
 
     // events for the union IBC specification, emitted by the cosmwasm contract implementation.
     #[serde(rename = "wasm-create_client")]
     WasmCreateClient {
         #[serde(with = "serde_utils::string")]
-        client_id: u32,
+        client_id: ClientId,
         // TODO: Figure out if there's a better type we can use than string
         client_type: String,
         // #[serde(with = "serde_utils::string")]
@@ -203,7 +202,7 @@ pub enum IbcEvent {
     #[serde(rename = "wasm-update_client")]
     WasmUpdateClient {
         #[serde(with = "serde_utils::string")]
-        client_id: u32,
+        client_id: ClientId,
         #[serde(with = "serde_utils::string")]
         counterparty_height: u64,
     },
@@ -211,57 +210,57 @@ pub enum IbcEvent {
     #[serde(rename = "wasm-connection_open_init")]
     WasmConnectionOpenInit {
         #[serde(with = "serde_utils::string")]
-        connection_id: u32,
+        connection_id: ConnectionId,
         #[serde(with = "serde_utils::string")]
-        client_id: u32,
+        client_id: ClientId,
         #[serde(with = "serde_utils::string")]
-        counterparty_client_id: u32,
+        counterparty_client_id: ClientId,
     },
 
     #[serde(rename = "wasm-connection_open_try")]
     WasmConnectionOpenTry {
         #[serde(with = "serde_utils::string")]
-        connection_id: u32,
+        connection_id: ConnectionId,
         #[serde(with = "serde_utils::string")]
-        client_id: u32,
+        client_id: ClientId,
         #[serde(with = "serde_utils::string")]
-        counterparty_client_id: u32,
+        counterparty_client_id: ClientId,
         #[serde(with = "serde_utils::string")]
-        counterparty_connection_id: u32,
+        counterparty_connection_id: ConnectionId,
     },
 
     #[serde(rename = "wasm-connection_open_ack")]
     WasmConnectionOpenAck {
         #[serde(with = "serde_utils::string")]
-        connection_id: u32,
+        connection_id: ConnectionId,
         #[serde(with = "serde_utils::string")]
-        client_id: u32,
+        client_id: ClientId,
         #[serde(with = "serde_utils::string")]
-        counterparty_client_id: u32,
+        counterparty_client_id: ClientId,
         #[serde(with = "serde_utils::string")]
-        counterparty_connection_id: u32,
+        counterparty_connection_id: ConnectionId,
     },
 
     #[serde(rename = "wasm-connection_open_confirm")]
     WasmConnectionOpenConfirm {
         #[serde(with = "serde_utils::string")]
-        connection_id: u32,
+        connection_id: ConnectionId,
         #[serde(with = "serde_utils::string")]
-        client_id: u32,
+        client_id: ClientId,
         #[serde(with = "serde_utils::string")]
-        counterparty_client_id: u32,
+        counterparty_client_id: ClientId,
         #[serde(with = "serde_utils::string")]
-        counterparty_connection_id: u32,
+        counterparty_connection_id: ConnectionId,
     },
 
     #[serde(rename = "wasm-channel_open_init")]
     WasmChannelOpenInit {
         port_id: Bech32<H256>,
         #[serde(with = "serde_utils::string")]
-        channel_id: u32,
+        channel_id: ChannelId,
         counterparty_port_id: Bytes<HexUnprefixed>,
         #[serde(with = "serde_utils::string")]
-        connection_id: u32,
+        connection_id: ConnectionId,
         version: String,
     },
 
@@ -269,12 +268,12 @@ pub enum IbcEvent {
     WasmChannelOpenTry {
         port_id: Bech32<H256>,
         #[serde(with = "serde_utils::string")]
-        channel_id: u32,
+        channel_id: ChannelId,
         counterparty_port_id: Bytes<HexUnprefixed>,
         #[serde(with = "serde_utils::string")]
-        counterparty_channel_id: u32,
+        counterparty_channel_id: ChannelId,
         #[serde(with = "serde_utils::string")]
-        connection_id: u32,
+        connection_id: ConnectionId,
         counterparty_version: String,
     },
 
@@ -282,82 +281,66 @@ pub enum IbcEvent {
     WasmChannelOpenAck {
         port_id: Bech32<H256>,
         #[serde(with = "serde_utils::string")]
-        channel_id: u32,
+        channel_id: ChannelId,
         counterparty_port_id: Bytes<HexUnprefixed>,
         #[serde(with = "serde_utils::string")]
-        counterparty_channel_id: u32,
+        counterparty_channel_id: ChannelId,
         #[serde(with = "serde_utils::string")]
-        connection_id: u32,
+        connection_id: ConnectionId,
     },
 
     #[serde(rename = "wasm-channel_open_confirm")]
     WasmChannelOpenConfirm {
         port_id: Bech32<H256>,
         #[serde(with = "serde_utils::string")]
-        channel_id: u32,
+        channel_id: ChannelId,
         counterparty_port_id: Bytes<HexUnprefixed>,
         #[serde(with = "serde_utils::string")]
-        counterparty_channel_id: u32,
+        counterparty_channel_id: ChannelId,
         #[serde(with = "serde_utils::string")]
-        connection_id: u32,
+        connection_id: ConnectionId,
     },
 
     #[serde(rename = "wasm-packet_send")]
     WasmPacketSend {
-        #[serde(with = "stringified_json")]
-        packet: Packet,
+        #[serde(with = "serde_utils::string")]
+        packet_source_channel_id: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_destination_channel_id: ChannelId,
+        packet_data: Bytes,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_height: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: Timestamp,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
     },
 
     #[serde(rename = "wasm-packet_recv")]
     WasmPacketRecv {
-        #[serde(with = "stringified_json")]
-        packet: Packet,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
         maker: Bech32<Bytes>,
         maker_msg: Bytes<HexUnprefixed>,
     },
 
     #[serde(rename = "wasm-packet_ack")]
     WasmPacketAck {
-        #[serde(with = "stringified_json")]
-        packet: Packet,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
         acknowledgement: Bytes<HexUnprefixed>,
     },
 
     #[serde(rename = "wasm-write_ack")]
     WasmWriteAck {
-        #[serde(with = "stringified_json")]
-        packet: Packet,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
         acknowledgement: Bytes<HexUnprefixed>,
     },
-}
-
-// TODO: Check if human readable
-pub mod stringified_json {
-    use std::string::String;
-
-    use serde::{
-        de::{Deserialize, DeserializeOwned},
-        Deserializer, Serialize, Serializer,
-    };
-
-    pub fn serialize<S, T>(data: T, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-        T: Serialize,
-    {
-        serde_json::to_string(&data)
-            .expect("serialization is infallible; qed;")
-            .serialize(serializer)
-    }
-
-    pub fn deserialize<'de, D, T>(deserializer: D) -> Result<T, D::Error>
-    where
-        D: Deserializer<'de>,
-        T: DeserializeOwned,
-    {
-        String::deserialize(deserializer)
-            .and_then(|s| serde_json::from_str(&s).map_err(serde::de::Error::custom))
-    }
 }
 
 // TODO: Check if human readable

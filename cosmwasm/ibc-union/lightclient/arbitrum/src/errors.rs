@@ -1,6 +1,9 @@
 use ethereum_light_client::client::EthereumLightClient;
 use ibc_union_light_client::IbcClientError;
-use unionlabs::{ibc::core::client::height::Height, primitives::H256};
+use unionlabs::{
+    ibc::core::client::height::Height,
+    primitives::{H256, U256},
+};
 
 use crate::client::ArbitrumLightClient;
 
@@ -12,6 +15,9 @@ pub enum Error {
     // REVIEW: Move this variant to IbcClientError?
     #[error("consensus state not found at height {0}")]
     ConsensusStateNotFound(Height),
+
+    #[error("the l2 height {0} is too large (> u64::MAX)")]
+    L2HeightTooLarge(U256),
 
     #[error("IBC path is empty")]
     EmptyIbcPath,

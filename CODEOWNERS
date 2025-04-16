@@ -1,7 +1,8 @@
-/deployments/deployments.json @benluelo
+/deployments/ @benluelo
+/deployments/channels.jsonc @qlp
 /networks/genesis/ @aeryz @benluelo @cor @hussein-aitlahcen @KaiserKarel @PoisonPhang
 /.github/ @PoisonPhang
 /voyager/ @benluelo
 /galoisd/ @hussein-aitlahcen
-/app/ @cor @benluelo
+/app/ @cor @benluelo @swepool
 /site/ @cor

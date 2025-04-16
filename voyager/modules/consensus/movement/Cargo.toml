@@ -14,7 +14,7 @@ workspace = true
 [dependencies]
 aptos-move-ibc    = { workspace = true }
 aptos-rest-client = { workspace = true }
-chain-utils       = { workspace = true }
+embed-commit      = { workspace = true }
 jsonrpsee         = { workspace = true, features = ["macros", "server", "tracing"] }
 serde             = { workspace = true, features = ["derive"] }
 thiserror         = { workspace = true }

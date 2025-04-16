@@ -17,6 +17,7 @@ bip39           = "2.0.0"
 clap            = { workspace = true, features = ["derive", "error-context", "help"] }
 cosmwasm-std    = "2.0.3"
 ed25519-compact = { version = "2.1.1", default-features = false, features = ["ed25519"] }
+embed-commit    = { workspace = true }
 hex             = { workspace = true, features = ["std"] }
 strum           = { version = "0.26.1", features = ["derive"] }
 tiny-hderive    = "0.3.0"

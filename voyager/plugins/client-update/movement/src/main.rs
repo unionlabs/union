@@ -19,13 +19,13 @@ use unionlabs::{
 };
 use voyager_message::{
     call::Call,
-    core::{ChainId, ClientType},
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
     hook::UpdateHook,
     module::{PluginInfo, PluginServer, UnexpectedChainIdError},
+    primitives::{ChainId, ClientType},
+    vm::{data, pass::PassResult, BoxDynError, Op, Visit},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
-use voyager_vm::{data, pass::PassResult, Op, Visit};
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
 
@@ -69,7 +69,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, chain_utils::BoxDynError> {
+    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id.to_string();
