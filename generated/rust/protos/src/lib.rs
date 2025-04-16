@@ -1078,6 +1078,234 @@ pub mod interchain_security {
         }
     }
 }
+pub mod osmosis {
+    pub mod accum {
+        #[cfg(feature = "osmosis+accum+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.accum.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.accum.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.accum.v1beta1)
+        }
+    }
+    #[cfg(feature = "osmosis+concentratedliquidity")]
+    // @@protoc_insertion_point(attribute:osmosis.concentratedliquidity)
+    pub mod concentratedliquidity {
+        include!("osmosis.concentratedliquidity.rs");
+        // @@protoc_insertion_point(osmosis.concentratedliquidity)
+        pub mod poolmodel {
+            pub mod concentrated {
+                #[cfg(feature = "osmosis+concentratedliquidity+poolmodel+concentrated+v1beta1")]
+                // @@protoc_insertion_point(attribute:osmosis.concentratedliquidity.poolmodel.concentrated.v1beta1)
+                pub mod v1beta1 {
+                    include!("osmosis.concentratedliquidity.poolmodel.concentrated.v1beta1.rs");
+                    // @@protoc_insertion_point(osmosis.concentratedliquidity.poolmodel.concentrated.v1beta1)
+                }
+            }
+        }
+        #[cfg(feature = "osmosis+concentratedliquidity+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.concentratedliquidity.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.concentratedliquidity.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.concentratedliquidity.v1beta1)
+        }
+    }
+    pub mod cosmwasmpool {
+        #[cfg(feature = "osmosis+cosmwasmpool+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.cosmwasmpool.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.cosmwasmpool.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.cosmwasmpool.v1beta1)
+            pub mod model {
+                #[cfg(feature = "osmosis+cosmwasmpool+v1beta1+model+v3")]
+                // @@protoc_insertion_point(attribute:osmosis.cosmwasmpool.v1beta1.model.v3)
+                pub mod v3 {
+                    include!("osmosis.cosmwasmpool.v1beta1.model.v3.rs");
+                    // @@protoc_insertion_point(osmosis.cosmwasmpool.v1beta1.model.v3)
+                }
+            }
+        }
+    }
+    pub mod downtimedetector {
+        #[cfg(feature = "osmosis+downtimedetector+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.downtimedetector.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.downtimedetector.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.downtimedetector.v1beta1)
+        }
+    }
+    pub mod epochs {
+        #[cfg(feature = "osmosis+epochs+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.epochs.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.epochs.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.epochs.v1beta1)
+        }
+    }
+    pub mod gamm {
+        pub mod poolmodels {
+            pub mod balancer {
+                #[cfg(feature = "osmosis+gamm+poolmodels+balancer+v1beta1")]
+                // @@protoc_insertion_point(attribute:osmosis.gamm.poolmodels.balancer.v1beta1)
+                pub mod v1beta1 {
+                    include!("osmosis.gamm.poolmodels.balancer.v1beta1.rs");
+                    // @@protoc_insertion_point(osmosis.gamm.poolmodels.balancer.v1beta1)
+                }
+            }
+            pub mod stableswap {
+                #[cfg(feature = "osmosis+gamm+poolmodels+stableswap+v1beta1")]
+                // @@protoc_insertion_point(attribute:osmosis.gamm.poolmodels.stableswap.v1beta1)
+                pub mod v1beta1 {
+                    include!("osmosis.gamm.poolmodels.stableswap.v1beta1.rs");
+                    // @@protoc_insertion_point(osmosis.gamm.poolmodels.stableswap.v1beta1)
+                }
+            }
+        }
+        #[cfg(feature = "osmosis+gamm+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.gamm.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.gamm.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.gamm.v1beta1)
+        }
+        #[cfg(feature = "osmosis+gamm+v2")]
+        // @@protoc_insertion_point(attribute:osmosis.gamm.v2)
+        pub mod v2 {
+            include!("osmosis.gamm.v2.rs");
+            // @@protoc_insertion_point(osmosis.gamm.v2)
+        }
+    }
+    #[cfg(feature = "osmosis+ibchooks")]
+    // @@protoc_insertion_point(attribute:osmosis.ibchooks)
+    pub mod ibchooks {
+        include!("osmosis.ibchooks.rs");
+        // @@protoc_insertion_point(osmosis.ibchooks)
+    }
+    pub mod ibcratelimit {
+        #[cfg(feature = "osmosis+ibcratelimit+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.ibcratelimit.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.ibcratelimit.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.ibcratelimit.v1beta1)
+        }
+    }
+    #[cfg(feature = "osmosis+incentives")]
+    // @@protoc_insertion_point(attribute:osmosis.incentives)
+    pub mod incentives {
+        include!("osmosis.incentives.rs");
+        // @@protoc_insertion_point(osmosis.incentives)
+    }
+    pub mod ingest {
+        #[cfg(feature = "osmosis+ingest+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.ingest.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.ingest.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.ingest.v1beta1)
+        }
+    }
+    #[cfg(feature = "osmosis+lockup")]
+    // @@protoc_insertion_point(attribute:osmosis.lockup)
+    pub mod lockup {
+        include!("osmosis.lockup.rs");
+        // @@protoc_insertion_point(osmosis.lockup)
+    }
+    pub mod mint {
+        #[cfg(feature = "osmosis+mint+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.mint.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.mint.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.mint.v1beta1)
+        }
+    }
+    pub mod poolincentives {
+        #[cfg(feature = "osmosis+poolincentives+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.poolincentives.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.poolincentives.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.poolincentives.v1beta1)
+        }
+    }
+    pub mod poolmanager {
+        #[cfg(feature = "osmosis+poolmanager+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.poolmanager.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.poolmanager.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.poolmanager.v1beta1)
+        }
+        #[cfg(feature = "osmosis+poolmanager+v2")]
+        // @@protoc_insertion_point(attribute:osmosis.poolmanager.v2)
+        pub mod v2 {
+            include!("osmosis.poolmanager.v2.rs");
+            // @@protoc_insertion_point(osmosis.poolmanager.v2)
+        }
+    }
+    pub mod protorev {
+        #[cfg(feature = "osmosis+protorev+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.protorev.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.protorev.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.protorev.v1beta1)
+        }
+    }
+    pub mod smartaccount {
+        #[cfg(feature = "osmosis+smartaccount+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.smartaccount.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.smartaccount.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.smartaccount.v1beta1)
+        }
+    }
+    pub mod store {
+        #[cfg(feature = "osmosis+store+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.store.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.store.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.store.v1beta1)
+        }
+    }
+    #[cfg(feature = "osmosis+superfluid")]
+    // @@protoc_insertion_point(attribute:osmosis.superfluid)
+    pub mod superfluid {
+        include!("osmosis.superfluid.rs");
+        // @@protoc_insertion_point(osmosis.superfluid)
+        #[cfg(feature = "osmosis+superfluid+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.superfluid.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.superfluid.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.superfluid.v1beta1)
+        }
+    }
+    pub mod tokenfactory {
+        #[cfg(feature = "osmosis+tokenfactory+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.tokenfactory.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.tokenfactory.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.tokenfactory.v1beta1)
+        }
+    }
+    pub mod twap {
+        #[cfg(feature = "osmosis+twap+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.twap.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.twap.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.twap.v1beta1)
+        }
+    }
+    pub mod txfees {
+        #[cfg(feature = "osmosis+txfees+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.txfees.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.txfees.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.txfees.v1beta1)
+        }
+    }
+    pub mod valsetpref {
+        #[cfg(feature = "osmosis+valsetpref+v1beta1")]
+        // @@protoc_insertion_point(attribute:osmosis.valsetpref.v1beta1)
+        pub mod v1beta1 {
+            include!("osmosis.valsetpref.v1beta1.rs");
+            // @@protoc_insertion_point(osmosis.valsetpref.v1beta1)
+        }
+    }
+}
 pub mod tendermint {
     #[cfg(feature = "tendermint+abci")]
     // @@protoc_insertion_point(attribute:tendermint.abci)

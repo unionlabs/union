@@ -118,6 +118,16 @@
             # google.src
           ];
         };
+        osmosis = rec {
+          src = "${inputs.osmosis}/proto";
+          proto-deps = [
+            "${proto.gogoproto}/protobuf"
+            src
+            # "${proto.cosmosproto}/proto"
+            # cosmos-sdk.src
+            # google.src
+          ];
+        };
         wasmd = rec {
           src = "${proto.wasmd}/proto";
           proto-deps = [
@@ -169,8 +179,8 @@
           src = "${proto.uniond}";
           proto-deps = [
             src
-            "${proto.cosmossdk}/x/bank/proto"
-            "${proto.cosmossdk}/x/staking/proto"
+            # "${proto.cosmossdk}/x/bank/proto"
+            # "${proto.cosmossdk}/x/staking/proto"
           ];
         };
         galoisd = rec {
