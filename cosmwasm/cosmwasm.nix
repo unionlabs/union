@@ -62,14 +62,14 @@ _: {
       mk-gas-args =
         config@{ type, ... }:
         {
-          static =
+          fixed =
             {
               gas_denom,
               gas_multiplier,
               gas_price,
               max_gas,
             }:
-            " --gas static --gas-price ${toString gas_price} --gas-denom ${toString gas_denom} --gas-multiplier ${toString gas_multiplier} --max-gas ${toString max_gas} ";
+            " --gas fixed --gas-price ${toString gas_price} --gas-denom ${toString gas_denom} --gas-multiplier ${toString gas_multiplier} --max-gas ${toString max_gas} ";
           feemarket =
             {
               max_gas ? null,
@@ -166,7 +166,7 @@ _: {
           rpc_url = "https://rpc.elgafar-1.stargaze.chain.kitchen";
           private_key = ''"$1"'';
           gas_config = {
-            type = "static";
+            type = "fixed";
             gas_price = "1.0";
             gas_denom = "ustars";
             gas_multiplier = "1.1";
@@ -188,7 +188,7 @@ _: {
           rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
           gas_config = {
-            type = "static";
+            type = "fixed";
             gas_price = "0.05";
             gas_denom = "uosmo";
             gas_multiplier = "1.1";
@@ -210,7 +210,7 @@ _: {
           rpc_url = "https://babylon-testnet-rpc.polkachu.com";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
-            type = "static";
+            type = "fixed";
             gas_price = "0.003";
             gas_denom = "ubbn";
             gas_multiplier = "1.1";
@@ -233,7 +233,7 @@ _: {
           rpc_url = "https://babylon-rpc.polkachu.com";
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
-            type = "static";
+            type = "fixed";
             gas_price = "0.003";
             gas_denom = "ubbn";
             gas_multiplier = "1.1";
@@ -256,7 +256,7 @@ _: {
           rpc_url = "https://stride-testnet-rpc.polkachu.com";
           private_key = ''"$1"'';
           gas_config = {
-            type = "static";
+            type = "fixed";
             gas_price = "0.1";
             gas_denom = "ustrd";
             gas_multiplier = "1.1";
@@ -280,7 +280,7 @@ _: {
           rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
           private_key = ''"$1"'';
           gas_config = {
-            type = "static";
+            type = "fixed";
             gas_price = "0.002";
             gas_denom = "uxion";
             gas_multiplier = "1.5";
@@ -302,7 +302,7 @@ _: {
           rpc_url = "https://rpc.dukong.mantrachain.io/";
           private_key = ''"$1"'';
           gas_config = {
-            type = "static";
+            type = "fixed";
             gas_price = "0.015";
             gas_denom = "uom";
             gas_multiplier = "1.4";

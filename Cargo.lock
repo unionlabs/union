@@ -3873,6 +3873,7 @@ dependencies = [
  "num-traits",
  "protos",
  "serde",
+ "serde-utils",
  "serde_json",
  "sha2 0.10.8",
  "thiserror 2.0.12",

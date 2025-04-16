@@ -71,9 +71,11 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
     pub async fn tx<M: Msg>(
         &self,
         msg: M,
+        // TODO: Extract these out into an Options struct?
         memo: impl AsRef<str>,
+        simulate: bool,
     ) -> Result<(H256, M::Response), TxError<M::Response>> {
-        let (tx_hash, result) = self.broadcast_tx_commit([Any(msg)], memo, false).await?;
+        let (tx_hash, result) = self.broadcast_tx_commit([Any(msg)], memo, simulate).await?;
 
         let mut response = <abci::v1beta1::TxMsgData as Message>::decode(
             &*result.tx_result.data.unwrap_or_default(),

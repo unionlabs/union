@@ -5,7 +5,7 @@ use bip32::secp256k1::ecdsa::SigningKey;
 use clap::Parser;
 use cometbft_rpc::rpc_types::GrpcAbciQueryError;
 use cosmos_client::{
-    gas::{FeemarketGasFiller, GasFillerT, StaticGasFiller},
+    gas::any::GasFiller as AnyGasFiller,
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
     TxClient,
@@ -26,7 +26,7 @@ use tracing_subscriber::EnvFilter;
 use ucs03_zkgm::msg::TokenMinterInitMsg;
 use unionlabs::{
     bech32::Bech32,
-    cosmos::{bank::msg_send::MsgSend, base::coin::Coin, tx::fee::Fee},
+    cosmos::{bank::msg_send::MsgSend, base::coin::Coin},
     cosmwasm::wasm::{
         access_config::AccessConfig, msg_execute_contract::MsgExecuteContract,
         msg_instantiate_contract2::MsgInstantiateContract2,
@@ -200,8 +200,12 @@ enum TxCmd {
 
 #[derive(Debug, Clone, PartialEq, Default, clap::Args)]
 pub struct GasFillerArgs {
-    #[arg(long, value_enum, default_value_t = GasFillerType::Static)]
+    #[arg(long, value_enum, default_value_t = GasFillerType::Fixed)]
     pub gas: GasFillerType,
+
+    // Whether or not to simulate the transactions first.
+    #[arg(long, default_value_t = false)]
+    pub simulate: bool,
 
     #[arg(long, help_heading = "Gas filler args", default_value_t = 100_000_000)]
     pub max_gas: u64,
@@ -210,22 +214,22 @@ pub struct GasFillerArgs {
     #[arg(
         long,
         help_heading = "Gas filler args",
-        required_if_eq("gas", "static"),
+        required_if_eq("gas", "fixed"),
         default_value_t = 1.0
     )]
     pub gas_multiplier: f64,
 
     #[arg(
         long,
-        help_heading = "--gas static",
-        required_if_eq("gas", "static"),
+        help_heading = "--gas fixed",
+        required_if_eq("gas", "fixed"),
         default_value_t
     )]
     pub gas_price: f64,
     #[arg(
         long,
-        help_heading = "--gas static",
-        required_if_eq("gas", "static"),
+        help_heading = "--gas fixed",
+        required_if_eq("gas", "fixed"),
         default_value_t
     )]
     pub gas_denom: String,
@@ -239,13 +243,57 @@ pub struct GasFillerArgs {
         // required_if_eq("gas", "feemarket"),
     )]
     pub fee_denom: Option<String>,
+
+    /// The multiplier to use for the EIP-1559 fee calculation.
+    ///
+    /// This will be multiplied by the base fee as queried from the chain.
+    #[arg(
+        long,
+        help_heading = "--gas osmosis-eip1559-feemarket",
+        required_if_eq("gas", "osmosis_eip1559_feemarket")
+    )]
+    pub base_fee_multiplier: Option<f64>,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, clap::ValueEnum)]
 pub enum GasFillerType {
     #[default]
-    Static,
+    Fixed,
     Feemarket,
+    OsmosisEip1559Feemarket,
+}
+
+async fn any_gas_filler_from_args(args: GasFillerArgs, rpc_url: String) -> Result<AnyGasFiller> {
+    Ok(match args.gas {
+        GasFillerType::Fixed => AnyGasFiller::Fixed(cosmos_client::gas::fixed::GasFiller {
+            gas_price: args.gas_price,
+            gas_denom: args.gas_denom.clone(),
+            gas_multiplier: args.gas_multiplier,
+            max_gas: args.max_gas,
+            min_gas: args.min_gas,
+        }),
+        GasFillerType::Feemarket => AnyGasFiller::Feemarket(
+            cosmos_client::gas::feemarket::GasFiller::new(cosmos_client::gas::feemarket::Config {
+                rpc_url,
+                max_gas: args.max_gas,
+                gas_multiplier: Some(args.gas_multiplier),
+                denom: args.fee_denom,
+            })
+            .await?,
+        ),
+        GasFillerType::OsmosisEip1559Feemarket => AnyGasFiller::OsmosisEip1559Feemarket(
+            cosmos_client::gas::osmosis_eip1559_feemarket::GasFiller::new(
+                cosmos_client::gas::osmosis_eip1559_feemarket::Config {
+                    rpc_url,
+                    max_gas: args.max_gas,
+                    gas_multiplier: Some(args.gas_multiplier),
+                    base_fee_multiplier: args.base_fee_multiplier,
+                    denom: args.fee_denom,
+                },
+            )
+            .await?,
+        ),
+    })
 }
 
 #[tokio::main]
@@ -356,7 +404,7 @@ async fn do_main() -> Result<()> {
                 &std::fs::read(contracts).context("reading contracts path")?,
             )?;
 
-            let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
+            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
             let bytecode_base_address = ctx
                 .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), BYTECODE_BASE)
@@ -381,6 +429,7 @@ async fn do_main() -> Result<()> {
                                 instantiate_permission: Some(AccessConfig::Everybody),
                             },
                             "",
+                            gas_config.simulate,
                         )
                         .await
                         .context("store code")?;
@@ -400,6 +449,7 @@ async fn do_main() -> Result<()> {
                                 fix_msg: false,
                             },
                             "",
+                            gas_config.simulate,
                         )
                         .await
                         .context("instantiate2")?;
@@ -489,6 +539,7 @@ async fn do_main() -> Result<()> {
                             funds: vec![],
                         },
                         "",
+                        gas_config.simulate,
                     )
                     .await?;
 
@@ -524,6 +575,7 @@ async fn do_main() -> Result<()> {
                                 instantiate_permission: None,
                             },
                             "",
+                            gas_config.simulate,
                         )
                         .await
                         .context("store minter code")?;
@@ -548,6 +600,7 @@ async fn do_main() -> Result<()> {
                                     ),
                                 },
                                 "",
+                                gas_config.simulate,
                             )
                             .await
                             .context("update instantiate perms of cw20-base")?;
@@ -579,6 +632,7 @@ async fn do_main() -> Result<()> {
                                         instantiate_permission: None,
                                     },
                                     "",
+                                    gas_config.simulate,
                                 )
                                 .await
                                 .context("store cw20-base code")?;
@@ -604,6 +658,7 @@ async fn do_main() -> Result<()> {
                                             ),
                                         },
                                         "",
+                                        gas_config.simulate,
                                     )
                                     .await
                                     .context("update instantiate perms of cw20-base")?;
@@ -665,7 +720,7 @@ async fn do_main() -> Result<()> {
             let ctx = Deployer::new(
                 rpc_url,
                 hex!("9a95f0bb285a5d81415a0571cebbb63dbef2c7a0c90f9b60a40572552da3eac3").into(),
-                GasFillerArgs::default(),
+                &GasFillerArgs::default(),
             )
             .await?;
 
@@ -745,7 +800,7 @@ async fn do_main() -> Result<()> {
 
             info!("migrating address {address}");
 
-            let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
+            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
             let contract_info = ctx
                 .contract_info(&address)
@@ -773,6 +828,7 @@ async fn do_main() -> Result<()> {
                         instantiate_permission: None,
                     },
                     "",
+                    gas_config.simulate,
                 )
                 .await
                 .context("store code")?;
@@ -796,6 +852,7 @@ async fn do_main() -> Result<()> {
                         msg: message.to_string().into_bytes().into(),
                     },
                     "",
+                    gas_config.simulate,
                 )
                 .await
                 .context("migrate")?;
@@ -820,7 +877,7 @@ async fn do_main() -> Result<()> {
                 &std::fs::read(addresses).context("reading addresses path")?,
             )?;
 
-            let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
+            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
             let check_contract = async |salt, address| {
                 let Some(core_info) = ctx.contract_info(&address).await? else {
@@ -893,7 +950,7 @@ async fn do_main() -> Result<()> {
         } => {
             let bytecode = std::fs::read(bytecode).context("reading bytecode path")?;
 
-            let deployer = Deployer::new(rpc_url.clone(), private_key, gas_config.clone()).await?;
+            let deployer = Deployer::new(rpc_url.clone(), private_key, &gas_config).await?;
 
             let (tx_hash, response) = deployer
                 .tx(
@@ -904,6 +961,7 @@ async fn do_main() -> Result<()> {
                         instantiate_permission: None,
                     },
                     "",
+                    gas_config.simulate,
                 )
                 .await
                 .context("store code")?;
@@ -922,7 +980,7 @@ async fn do_main() -> Result<()> {
                 relayer,
                 gas_config,
             } => {
-                let ctx = Deployer::new(rpc_url, private_key, gas_config).await?;
+                let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
 
                 info!("whitelisting {} relayers", relayer.len());
 
@@ -942,6 +1000,7 @@ async fn do_main() -> Result<()> {
                                 funds: vec![],
                             },
                             "",
+                            gas_config.simulate,
                         )
                         .await?;
 
@@ -994,7 +1053,7 @@ async fn do_main() -> Result<()> {
                 gas_config,
             } => {
                 let funder =
-                    Deployer::new(rpc_url.clone(), funder_private_key, gas_config.clone()).await?;
+                    Deployer::new(rpc_url.clone(), funder_private_key, &gas_config).await?;
 
                 let bech32_prefix = funder
                     .rpc()
@@ -1033,17 +1092,15 @@ async fn do_main() -> Result<()> {
                                     }],
                                 },
                                 "",
+                                gas_config.simulate,
                             )
                             .await?;
 
                         info!("funded signer {signer}");
 
-                        let signer = Deployer::new(
-                            rpc_url.clone(),
-                            signer.private_key(),
-                            gas_config.clone(),
-                        )
-                        .await?;
+                        let signer =
+                            Deployer::new(rpc_url.clone(), signer.private_key(), &gas_config)
+                                .await?;
 
                         signer
                             .tx(
@@ -1056,6 +1113,7 @@ async fn do_main() -> Result<()> {
                                     }],
                                 },
                                 "",
+                                gas_config.simulate,
                             )
                             .await?;
 
@@ -1131,57 +1189,16 @@ fn write_output(path: Option<PathBuf>, data: impl Serialize) -> Result<()> {
     Ok(())
 }
 
-enum AnyGasFiller {
-    Static(StaticGasFiller),
-    Feemarket(Box<FeemarketGasFiller>),
+struct Deployer {
+    client: TxClient<LocalSigner, Rpc, AnyGasFiller>,
+    simulate: bool,
 }
-
-impl AnyGasFiller {
-    async fn from_args(args: GasFillerArgs, rpc_url: String) -> Result<Self> {
-        Ok(match args.gas {
-            GasFillerType::Static => Self::Static(StaticGasFiller {
-                gas_price: args.gas_price,
-                gas_denom: args.gas_denom.clone(),
-                gas_multiplier: args.gas_multiplier,
-                max_gas: args.max_gas,
-                min_gas: args.min_gas,
-            }),
-            GasFillerType::Feemarket => Self::Feemarket(Box::new(
-                FeemarketGasFiller::new(
-                    rpc_url,
-                    args.max_gas,
-                    Some(args.gas_multiplier),
-                    args.fee_denom,
-                )
-                .await?,
-            )),
-        })
-    }
-}
-
-impl GasFillerT for AnyGasFiller {
-    async fn max_gas(&self) -> u64 {
-        match self {
-            Self::Static(f) => f.max_gas().await,
-            Self::Feemarket(f) => f.max_gas().await,
-        }
-    }
-
-    async fn mk_fee(&self, gas: u64) -> Fee {
-        match self {
-            Self::Static(f) => f.mk_fee(gas).await,
-            Self::Feemarket(f) => f.mk_fee(gas).await,
-        }
-    }
-}
-
-struct Deployer(TxClient<LocalSigner, Rpc, AnyGasFiller>);
 
 impl Deref for Deployer {
     type Target = TxClient<LocalSigner, Rpc, AnyGasFiller>;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.client
     }
 }
 
@@ -1189,7 +1206,7 @@ impl Deployer {
     async fn new(
         rpc_url: String,
         private_key: H256,
-        gas_config: GasFillerArgs,
+        gas_config: &GasFillerArgs,
     ) -> Result<Deployer> {
         let rpc = Rpc::new(rpc_url.clone()).await?;
 
@@ -1210,10 +1227,13 @@ impl Deployer {
         let ctx = TxClient::new(
             LocalSigner::new(private_key, bech32_prefix),
             rpc,
-            AnyGasFiller::from_args(gas_config, rpc_url).await?,
+            any_gas_filler_from_args(gas_config.clone(), rpc_url).await?,
         );
 
-        let ctx = Deployer(ctx);
+        let ctx = Deployer {
+            simulate: gas_config.simulate,
+            client: ctx,
+        };
 
         Ok(ctx)
     }
@@ -1372,6 +1392,7 @@ impl Deployer {
                             fix_msg: false,
                         },
                         "",
+                        self.simulate,
                     )
                     .await
                     .context("instantiate2")?;
@@ -1391,6 +1412,7 @@ impl Deployer {
                     instantiate_permission: None,
                 },
                 "",
+                self.simulate,
             )
             .await
             .context("store code")?;
@@ -1409,6 +1431,7 @@ impl Deployer {
                     msg: json!({ "init": msg }).to_string().into_bytes().into(),
                 },
                 "",
+                self.simulate,
             )
             .await
             .context("init")?;
@@ -1497,6 +1520,7 @@ impl Deployer {
                         }),
                     },
                     "",
+                    self.simulate,
                 )
                 .await
                 .context("update bytecode-base instantiate permissions")?;

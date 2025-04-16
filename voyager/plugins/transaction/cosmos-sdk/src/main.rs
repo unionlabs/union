@@ -12,7 +12,7 @@ use std::{
 use cometbft_rpc::rpc_types::GrpcAbciQueryError;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
-    gas::{FeemarketGasFiller, GasFillerT, StaticGasFiller},
+    gas::{any, feemarket, fixed, osmosis_eip1559_feemarket, GasFillerT},
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
     BroadcastTxCommitError, FetchAccountInfoError, SimulateTxError, TxClient,
@@ -31,7 +31,7 @@ use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
     self,
     bech32::Bech32,
-    cosmos::{base::coin::Coin, tx::fee::Fee},
+    cosmos::base::coin::Coin,
     google::protobuf::any::mk_any,
     option_unwrap,
     primitives::{Bytes, H160, H256},
@@ -69,7 +69,7 @@ pub struct ModuleInner {
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: ConcurrentKeyring<Bech32<H160>, LocalSigner>,
     pub rpc: Rpc,
-    pub gas_config: AnyGasFiller,
+    pub gas_config: any::GasFiller,
     pub bech32_prefix: String,
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
     pub gas_station_config: Vec<Coin>,
@@ -91,7 +91,7 @@ pub struct Config {
     pub ibc_host_contract_address: Bech32<H256>,
     pub keyring: KeyringConfig,
     pub rpc_url: String,
-    pub gas_config: AnyGasFillerConfig,
+    pub gas_config: GasFillerConfig,
     /// A list of (codespace, code) tuples that are to be considered non-recoverable.
     #[serde(default)]
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
@@ -103,39 +103,56 @@ pub struct Config {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type", content = "config")]
-pub enum AnyGasFillerConfig {
-    Static(StaticGasFiller),
-    Feemarket(FeemarketGasFillerConfig),
+pub enum GasFillerConfig {
+    // fixed gas filler is it's own config
+    Fixed(fixed::GasFiller),
+    Feemarket(FeemarketConfig),
+    OsmosisEip1559Feemarket(OsmosisEip1559FeemarketConfig),
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
-pub struct FeemarketGasFillerConfig {
+pub struct FeemarketConfig {
     pub max_gas: u64,
-    #[serde(with = "::serde_utils::string_opt")]
     pub gas_multiplier: Option<f64>,
-    pub fee_denom: Option<String>,
+    pub denom: Option<String>,
 }
 
-#[derive(Debug)]
-pub enum AnyGasFiller {
-    Static(StaticGasFiller),
-    Feemarket(FeemarketGasFiller),
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub struct OsmosisEip1559FeemarketConfig {
+    pub max_gas: u64,
+    pub gas_multiplier: Option<f64>,
+    pub base_fee_multiplier: Option<f64>,
+    pub denom: Option<String>,
 }
 
-impl GasFillerT for AnyGasFiller {
-    async fn max_gas(&self) -> u64 {
-        match self {
-            Self::Static(f) => f.max_gas().await,
-            Self::Feemarket(f) => f.max_gas().await,
-        }
-    }
-
-    async fn mk_fee(&self, gas: u64) -> Fee {
-        match self {
-            Self::Static(f) => f.mk_fee(gas).await,
-            Self::Feemarket(f) => f.mk_fee(gas).await,
-        }
+impl GasFillerConfig {
+    async fn into_gas_filler(self, rpc_url: String) -> Result<any::GasFiller, BoxDynError> {
+        Ok(match self {
+            GasFillerConfig::Fixed(config) => any::GasFiller::Fixed(config),
+            GasFillerConfig::Feemarket(config) => any::GasFiller::Feemarket(
+                feemarket::GasFiller::new(feemarket::Config {
+                    rpc_url,
+                    max_gas: config.max_gas,
+                    gas_multiplier: config.gas_multiplier,
+                    denom: config.denom,
+                })
+                .await?,
+            ),
+            GasFillerConfig::OsmosisEip1559Feemarket(config) => {
+                any::GasFiller::OsmosisEip1559Feemarket(
+                    osmosis_eip1559_feemarket::GasFiller::new(osmosis_eip1559_feemarket::Config {
+                        rpc_url,
+                        max_gas: config.max_gas,
+                        gas_multiplier: config.gas_multiplier,
+                        base_fee_multiplier: config.base_fee_multiplier,
+                        denom: config.denom,
+                    })
+                    .await?,
+                )
+            }
+        })
     }
 }
 
@@ -196,18 +213,10 @@ impl Plugin for Module {
             ),
             rpc,
             chain_id: ChainId::new(chain_id),
-            gas_config: match config.gas_config {
-                AnyGasFillerConfig::Static(f) => AnyGasFiller::Static(f),
-                AnyGasFillerConfig::Feemarket(f) => AnyGasFiller::Feemarket(
-                    FeemarketGasFiller::new(
-                        config.rpc_url,
-                        f.max_gas,
-                        f.gas_multiplier,
-                        f.fee_denom,
-                    )
-                    .await?,
-                ),
-            },
+            gas_config: config
+                .gas_config
+                .into_gas_filler(config.rpc_url.clone())
+                .await?,
             bech32_prefix,
             fatal_errors: config
                 .fatal_errors
