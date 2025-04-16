@@ -284,6 +284,67 @@ workspace = true
   "ibc+lightclients+tendermint+v1",
   "tendermint+abci",
 ]
+"osmosis+accum+v1beta1" = ["cosmos+base+v1beta1"]
+"osmosis+concentratedliquidity" = ["google+protobuf"]
+"osmosis+concentratedliquidity+poolmodel+concentrated+v1beta1" = ["osmosis+concentratedliquidity"]
+"osmosis+concentratedliquidity+v1beta1" = [
+  "cosmos+base+query+v1beta1",
+  "cosmos+base+v1beta1",
+  "google+protobuf",
+  "osmosis+accum+v1beta1",
+  "osmosis+concentratedliquidity",
+  "osmosis+lockup",
+]
+"osmosis+cosmwasmpool+v1beta1" = [
+  "cosmos+base+query+v1beta1",
+  "cosmos+base+v1beta1",
+  "google+protobuf",
+]
+"osmosis+cosmwasmpool+v1beta1+model+v3" = ["cosmos+base+v1beta1", "osmosis+cosmwasmpool+v1beta1"]
+"osmosis+downtimedetector+v1beta1" = ["google+protobuf"]
+"osmosis+epochs+v1beta1" = ["google+protobuf"]
+"osmosis+gamm+poolmodels+balancer+v1beta1" = ["osmosis+gamm+v1beta1"]
+"osmosis+gamm+poolmodels+stableswap+v1beta1" = ["cosmos+base+v1beta1"]
+"osmosis+gamm+v1beta1" = [
+  "cosmos+base+query+v1beta1",
+  "cosmos+base+v1beta1",
+  "google+protobuf",
+  "osmosis+poolmanager+v1beta1",
+]
+"osmosis+gamm+v2" = []
+"osmosis+ibchooks" = []
+"osmosis+ibcratelimit+v1beta1" = []
+"osmosis+incentives" = [
+  "cosmos+base+query+v1beta1",
+  "cosmos+base+v1beta1",
+  "google+protobuf",
+  "osmosis+lockup",
+]
+"osmosis+ingest+v1beta1" = []
+"osmosis+lockup" = ["cosmos+base+v1beta1", "google+protobuf"]
+"osmosis+mint+v1beta1" = []
+"osmosis+poolincentives+v1beta1" = ["google+protobuf", "osmosis+incentives"]
+"osmosis+poolmanager+v1beta1" = ["cosmos+base+v1beta1", "google+protobuf"]
+"osmosis+poolmanager+v2" = []
+"osmosis+protorev+v1beta1" = [
+  "cosmos+base+v1beta1",
+  "osmosis+poolmanager+v1beta1",
+  "osmosis+txfees+v1beta1",
+]
+"osmosis+smartaccount+v1beta1" = []
+"osmosis+store+v1beta1" = []
+"osmosis+superfluid" = [
+  "cosmos+base+query+v1beta1",
+  "cosmos+base+v1beta1",
+  "cosmos+staking+v1beta1",
+  "google+protobuf",
+  "osmosis+lockup",
+]
+"osmosis+superfluid+v1beta1" = ["osmosis+superfluid"]
+"osmosis+tokenfactory+v1beta1" = ["cosmos+bank+v1beta1", "cosmos+base+v1beta1"]
+"osmosis+twap+v1beta1" = ["google+protobuf"]
+"osmosis+txfees+v1beta1" = ["cosmos+base+v1beta1"]
+"osmosis+valsetpref+v1beta1" = ["cosmos+base+v1beta1"]
 proto_full = [
   "amino",
   "babylon+btccheckpoint+v1",
@@ -423,6 +484,36 @@ proto_full = [
   "interchain_security+ccv+consumer+v1",
   "interchain_security+ccv+provider+v1",
   "interchain_security+ccv+v1",
+  "osmosis+accum+v1beta1",
+  "osmosis+concentratedliquidity",
+  "osmosis+concentratedliquidity+poolmodel+concentrated+v1beta1",
+  "osmosis+concentratedliquidity+v1beta1",
+  "osmosis+cosmwasmpool+v1beta1",
+  "osmosis+cosmwasmpool+v1beta1+model+v3",
+  "osmosis+downtimedetector+v1beta1",
+  "osmosis+epochs+v1beta1",
+  "osmosis+gamm+poolmodels+balancer+v1beta1",
+  "osmosis+gamm+poolmodels+stableswap+v1beta1",
+  "osmosis+gamm+v1beta1",
+  "osmosis+gamm+v2",
+  "osmosis+ibchooks",
+  "osmosis+ibcratelimit+v1beta1",
+  "osmosis+incentives",
+  "osmosis+ingest+v1beta1",
+  "osmosis+lockup",
+  "osmosis+mint+v1beta1",
+  "osmosis+poolincentives+v1beta1",
+  "osmosis+poolmanager+v1beta1",
+  "osmosis+poolmanager+v2",
+  "osmosis+protorev+v1beta1",
+  "osmosis+smartaccount+v1beta1",
+  "osmosis+store+v1beta1",
+  "osmosis+superfluid",
+  "osmosis+superfluid+v1beta1",
+  "osmosis+tokenfactory+v1beta1",
+  "osmosis+twap+v1beta1",
+  "osmosis+txfees+v1beta1",
+  "osmosis+valsetpref+v1beta1",
   "tendermint+abci",
   "tendermint+blocksync",
   "tendermint+consensus",
