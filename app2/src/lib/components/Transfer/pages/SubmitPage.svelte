@@ -47,11 +47,7 @@ const { stepIndex, onSubmit, onCancel, actionButtonText }: Props = $props()
 const lts = lockedTransferStore.get()
 let showError = $state(false)
 const step = $derived(
-  lts.pipe(
-    Option.map(Struct.get("steps")),
-    Option.flatMap(Arr.get(stepIndex)),
-    Option.filter(is("SubmitInstruction"))
-  )
+  lts.pipe(Option.map(Struct.get("steps")), Option.flatMap(Arr.findFirst(is("SubmitInstruction"))))
 )
 
 const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))

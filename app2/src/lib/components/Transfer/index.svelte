@@ -257,15 +257,15 @@ $effect(() => {
 const flyLeft = (node: Element) =>
   fly(node, {
     x: -300,
-    duration: 1000,
-    delay: 100
+    duration: 300,
+    delay: 0
   })
 
 const flyRight = (node: Element) =>
   fly(node, {
     x: 300,
-    duration: 1000,
-    delay: 100
+    duration: 300,
+    delay: 0
   })
 </script>
 
@@ -298,9 +298,9 @@ const flyRight = (node: Element) =>
     />
   </div>
 
-  <div class="relative flex w-full grow">
+  <div class="grid w-full grow">
     {#if currentStepTag === "Filling"}
-      <div class="flex w-full grow" in:flyRight out:flyLeft>
+      <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyRight out:flyLeft>
         <FillingPage
           onContinue={handleActionButtonClick}
           {statusMessage}
@@ -313,7 +313,7 @@ const flyRight = (node: Element) =>
       </div>
     {/if}
     {#if currentStepTag === "CheckReceiver"}
-      <div class="flex w-full grow" in:flyLeft out:flyLeft>
+      <div class="flex w-full grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
         <CheckReceiverPage
           stepIndex={currentPage + 1}
           onBack={goToPreviousPage}
@@ -322,7 +322,7 @@ const flyRight = (node: Element) =>
       </div>
     {/if}
     {#if currentStepTag === "ApprovalRequired"}
-      <div class="flex w-full grow" in:flyRight out:flyLeft>
+      <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyRight out:flyLeft>
         <ApprovalPage
           stepIndex={currentPage + 1}
           onBack={goToPreviousPage}
@@ -332,7 +332,7 @@ const flyRight = (node: Element) =>
       </div>
     {/if}
     {#if currentStepTag === "SubmitInstruction"}
-      <div class="flex w-full grow" in:flyLeft out:flyLeft>
+      <div class="flex w-full grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
         <SubmitPage
           stepIndex={currentPage + 1}
           onCancel={newTransfer}
@@ -342,7 +342,11 @@ const flyRight = (node: Element) =>
       </div>
     {/if}
     {#if currentStepTag === "WaitForIndex"}
-      <IndexPage {newTransfer} />
+      <div class="flex w-full grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
+        <IndexPage
+          {newTransfer}
+        />
+      </div>
     {/if}
   </div>
 </Card>
