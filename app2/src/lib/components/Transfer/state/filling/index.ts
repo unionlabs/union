@@ -41,6 +41,9 @@ export type CreateTransferState = Data.TaggedEnum<{
   CreateOrders: {
     intents: TransferIntents
   }
+  CheckReciever: {
+    intents: TransferIntents
+  }
   CreateSteps: {
     intents: TransferIntents
   }
@@ -54,6 +57,7 @@ const {
   CheckBalance,
   CheckAllowance,
   CreateOrders,
+  CheckReciever,
   CreateSteps
 } = CreateTransferState
 
@@ -117,7 +121,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
 
       const intents = intentsOpt.value
 
-      return Effect.succeed(ok(CheckBalance({ intents }), "Checking balance..."))
+      return Effect.succeed(ok(CheckBalance({ intents }), "Checking receiver..."))
     },
 
     CheckBalance: ({ intents }) =>
@@ -169,14 +173,22 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
 
           const updatedIntents = intents.map(intent => ({
             ...intent,
-            instructions: Option.some(batch)
+            instructions: Option.some(batch),
           }))
 
           return Effect.succeed(
-            ok(CreateSteps({ intents: updatedIntents }), "Building final steps...")
+            ok(CheckReciever({ intents: updatedIntents }), "Checking receiver...")
           )
         }),
         Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
+      ),
+
+    //Move check reciever in here
+    CheckReciever: ({ intents }) =>
+      Effect.sleep(1000).pipe(
+        Effect.flatMap(() =>
+          Effect.succeed(ok(CreateSteps({ intents }), "Final steps..."))
+        )
       ),
 
     CreateSteps: ({ intents }) => {

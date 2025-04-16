@@ -11,20 +11,22 @@ import type {
 } from "@unionlabs/sdk/schema"
 import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
 
+export type TransferContext = {
+  sender: AddressCanonicalBytes
+  receiver: AddressCanonicalBytes
+  baseToken: string
+  baseAmount: TokenRawAmount
+  quoteAmount: TokenRawAmount
+  sourceChain: Chain
+  sourceChainId: UniversalChainId
+  sourceChannelId: ChannelId
+  destinationChain: Chain
+  channel: Channel
+  ucs03address: string
+}
+
 export type TransferIntent = {
-  context: {
-    sender: AddressCanonicalBytes
-    receiver: AddressCanonicalBytes
-    baseToken: string
-    baseAmount: TokenRawAmount
-    quoteAmount: TokenRawAmount
-    sourceChain: Chain
-    sourceChainId: UniversalChainId
-    sourceChannelId: ChannelId
-    destinationChain: Chain
-    channel: Channel
-    ucs03address: string
-  }
+  context: TransferContext
   allowances: Option.Option<{
     token: string
     requiredAmount: bigint

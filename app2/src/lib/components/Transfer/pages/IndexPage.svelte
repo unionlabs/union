@@ -1,36 +1,36 @@
 <script lang="ts">
-import { Option, Struct } from "effect"
-import Button from "$lib/components/ui/Button.svelte"
-import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { goto } from "$app/navigation"
-import { fly } from "svelte/transition"
-import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
-import { lockedTransferStore } from "../locked-transfer.svelte"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
+  import { Option } from "effect"
+  import Button from "$lib/components/ui/Button.svelte"
+  import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+  import { goto } from "$app/navigation"
+  import { fly } from "svelte/transition"
+  import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
+  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+  import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
+  import type { WaitForIndex } from "../transfer-step.ts"
 
-type Props = {
-  newTransfer: () => void
-}
-
-const { newTransfer }: Props = $props()
-
-$effect(() => {
-  if (Option.isSome(transferHashStore.data)) {
-    transferHashStore.stopPolling()
+  type Props = {
+    newTransfer: () => void
+    step: WaitForIndex
   }
-})
 
-const lts = lockedTransferStore.get()
-const sourceChain = $derived(lts.pipe(Option.map(Struct.get("sourceChain"))))
+  const { newTransfer, step }: Props = $props()
 
-const handleRedirect = () => {
-  if (Option.isSome(transferHashStore.data)) {
-    const packet = transferHashStore.data.value
-    goto(`/explorer/transfers/${packet}`)
-    transferHashStore.reset()
+  const sourceChain = step.context.sourceChain
+
+  $effect(() => {
+    if (Option.isSome(transferHashStore.data)) {
+      transferHashStore.stopPolling()
+    }
+  })
+
+  const handleRedirect = () => {
+    if (Option.isSome(transferHashStore.data)) {
+      const packet = transferHashStore.data.value
+      goto(`/explorer/transfers/${packet}`)
+      transferHashStore.reset()
+    }
   }
-}
 </script>
 
 <div class="min-w-full p-6 flex flex-col justify-between h-full">
@@ -82,7 +82,7 @@ const handleRedirect = () => {
       <div class="absolute bottom-0 right-0 left-0">
         <ErrorComponent
           onClose={() => {
-            transferHashStore.error = Option.none();
+            transferHashStore.error = Option.none()
           }}
           {error}
         />
@@ -94,16 +94,14 @@ const handleRedirect = () => {
         out:fly={{ x: -20, duration: 300, opacity: 0 }}
       >
         <div class="flex flex-col items-center justify-center h-full py-8">
-          <SpinnerIcon class="h-12 w-12"/>
+          <SpinnerIcon class="h-12 w-12" />
           <p class="text-lg font-medium text-zinc-400 mb-2">
             Waiting for indexer...
           </p>
-          {#if Option.isSome(sourceChain)}
-            <TransactionHashComponent
-              hash={transferHashStore.hash}
-              chain={sourceChain.value}
-            />
-          {/if}
+          <TransactionHashComponent
+            hash={transferHashStore.hash}
+            chain={sourceChain}
+          />
         </div>
       </div>
     {/if}

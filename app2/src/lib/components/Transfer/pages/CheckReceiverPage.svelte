@@ -1,95 +1,77 @@
 <script lang="ts">
-import Button from "$lib/components/ui/Button.svelte"
-import { Array as Arr, Option, Struct } from "effect"
-import { lockedTransferStore } from "../locked-transfer.svelte.ts"
-import { is } from "../transfer-step.ts"
-import { onDestroy, onMount } from "svelte"
-import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
-import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+  import Button from "$lib/components/ui/Button.svelte"
+  import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
+  import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+  import type {CheckReceiver} from "../transfer-step.ts"
+  import { Option } from "effect"
+  import { onDestroy, onMount } from "svelte"
 
-type Props = {
-  stepIndex: number
-  onBack: () => void
-  onSubmit: () => void
-}
-
-const { stepIndex, onBack, onSubmit }: Props = $props()
-
-const lts = lockedTransferStore.get()
-
-const step = $derived(
-  lts.pipe(Option.map(Struct.get("steps")), Option.flatMap(Arr.findFirst(is("CheckReceiver"))))
-)
-
-const receiver = $derived(Option.map(step, x => x.receiver))
-const chain = $derived(Option.map(step, x => x.destinationChain))
-
-let targetTime = $state(0)
-let secondsLeft = $state(0)
-let intervalId = $state(0)
-
-const updateTimer = () => {
-  const now = Date.now()
-  const distance = targetTime - now
-  if (distance <= 0) {
-    secondsLeft = 0
-    clearInterval(intervalId)
-    return
+  type Props = {
+    stepIndex: number
+    onBack: () => void
+    onSubmit: () => void
+    step: CheckReceiver
   }
-  secondsLeft = Math.floor(distance / 1000)
-}
 
-const handleIntersect = () => {
-  targetTime = Date.now() + 5_500
-  updateTimer()
-  intervalId = window.setInterval(updateTimer, 1000)
-}
+  const { step, onBack, onSubmit }: Props = $props()
 
-onMount(() => {
-  handleIntersect()
-})
+  const receiver = $derived(Option.isSome(step.receiver) ? step.receiver.value : undefined)
+  const chain = $derived(Option.isSome(step.destinationChain) ? step.destinationChain.value : undefined)
 
-onDestroy(() => {
-  window.clearInterval(intervalId)
-})
+  let targetTime = $state(0)
+  let secondsLeft = $state(0)
+  let intervalId = $state(0)
 
-const isButtonEnabled = $derived(secondsLeft === 0)
-
-const buttonText = $derived.by(() => {
-  if (secondsLeft > 0) {
-    return `Proceed in ${secondsLeft}…`
+  const updateTimer = () => {
+    const now = Date.now()
+    const distance = targetTime - now
+    if (distance <= 0) {
+      secondsLeft = 0
+      clearInterval(intervalId)
+      return
+    }
+    secondsLeft = Math.floor(distance / 1000)
   }
-  return "Proceed"
-})
 
-$effect(() => {
-  console.log({ chain, receiver })
-})
+  const handleIntersect = () => {
+    targetTime = Date.now() + 5_500
+    updateTimer()
+    intervalId = window.setInterval(updateTimer, 1000)
+  }
+
+  onMount(() => {
+    handleIntersect()
+  })
+
+  onDestroy(() => {
+    window.clearInterval(intervalId)
+  })
+
+  const isButtonEnabled = $derived(secondsLeft === 0)
+
+  const buttonText = $derived.by(() => {
+    if (secondsLeft > 0) {
+      return `Proceed in ${secondsLeft}…`
+    }
+    return "Proceed"
+  })
 </script>
 
 <div class="relative min-w-full p-4 flex flex-col justify-between h-full">
-  {#if Option.isSome(chain) && Option.isSome(receiver)}
+  {#if receiver && chain}
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">Confirm Receiver</h3>
-      <SharpWarningIcon
-        class="text-yellow-500 self-center"
-        height="3rem"
-        width="3rem"
-      />
+      <SharpWarningIcon class="text-yellow-500 self-center" height="3rem" width="3rem" />
       <section>
         <p class="text-sm text-zinc-400">
           <span class="font-bold">
-            You are sending to an address that is not your currently connected
-            wallet.
+            You are sending to an address that is not your currently connected wallet.
           </span>
           Do you wish to proceed?
         </p>
       </section>
       <section>
-        <AddressComponent
-          address={receiver.value.value}
-          chain={chain.value.value}
-        />
+        <AddressComponent address={receiver} chain={chain} />
       </section>
     </div>
 

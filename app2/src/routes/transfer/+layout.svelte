@@ -42,42 +42,9 @@ $effect(() => {
   }
 })
 
-let showDetails = $state(false)
 </script>
 
 {@render children()}
-
-<!--{#if Object.entries(transfer.validation.fieldErrors).length > 0}-->
-<!--  <div class="w-full p-4">-->
-<!--    <div class="p-4 rounded bg-red-500 overflow-hidden flex flex-col">-->
-<!--      <div class="flex justify-between items-center gap-2">-->
-<!--        <h3 class="text-xl font-bold">Transfer Validation Errors</h3>-->
-
-<!--        <Button variant="secondary" class="self-start mt-2" onclick={() => showDetails = !showDetails}>-->
-<!--          {showDetails ? "Hide Details ↑" : "Show Details ↓"}-->
-<!--        </Button>-->
-
-<!--      </div>-->
-
-<!--      {#if showDetails}-->
-<!--        <div class="mt-4">-->
-<!--          {#each Object.entries(transfer.validation.fieldErrors) as [field, errors]}-->
-<!--            <section class="mb-4">-->
-<!--              <h3 class="text-lg font-bold">{field}</h3>-->
-<!--              <ul class="text-sm">-->
-<!--                {#each errors as errMsg}-->
-<!--                  <li>{errMsg}</li>-->
-<!--                {/each}-->
-<!--              </ul>-->
-<!--            </section>-->
-<!--          {/each}-->
-<!--        </div>-->
-<!--      {/if}-->
-<!--    </div>-->
-<!--  </div>-->
-<!--{/if}-->
-
-
 
 
 
