@@ -207,6 +207,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
     fn optimize<'a, O: Pass<T>>(
         &'a self,
         tag: &'a str,
+        filter: &'a T::Filter,
         optimizer: &'a O,
     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
         async move {
@@ -236,13 +237,40 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
             done.append(&mut tagged_optimizer_queue.clone());
 
             for (parents_idxs, op) in res.ready {
-                ready.insert(
-                    self.idx.fetch_add(1, Ordering::SeqCst),
-                    Item {
-                        parents: parents_idxs.iter().map(|&i| &ids[i]).copied().collect(),
-                        op,
-                    },
-                );
+                let normalized_ops = op.normalize();
+
+                'block: for op in normalized_ops {
+                    match filter.check_interest(&op) {
+                        FilterResult::Interest(Interest { tags, remove }) => {
+                            for tag in tags {
+                                optimizer_queue.entry(tag.to_owned()).or_default().insert(
+                                    self.idx.fetch_add(1, Ordering::SeqCst),
+                                    Item {
+                                        parents: parents_idxs
+                                            .iter()
+                                            .map(|&i| &ids[i])
+                                            .copied()
+                                            .collect(),
+                                        op: op.clone(),
+                                    },
+                                );
+                            }
+
+                            if remove {
+                                break 'block;
+                            }
+                        }
+                        FilterResult::NoInterest => {}
+                    }
+
+                    ready.insert(
+                        self.idx.fetch_add(1, Ordering::SeqCst),
+                        Item {
+                            parents: parents_idxs.iter().map(|&i| &ids[i]).copied().collect(),
+                            op,
+                        },
+                    );
+                }
             }
 
             for (parents_idxs, op, tag) in res.optimize_further {

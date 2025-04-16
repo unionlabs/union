@@ -14,7 +14,7 @@ use sqlx::{
 };
 use tracing::{debug, debug_span, error, info, info_span, instrument, trace, warn, Instrument};
 use voyager_vm::{
-    filter::{FilterResult, InterestFilter},
+    filter::{FilterResult, Interest, InterestFilter},
     pass::{Pass, PassResult},
     BoxDynError, Captures, EnqueueResult, ItemId, Op, QueueError, QueueMessage,
 };
@@ -422,9 +422,11 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         Ok(res)
     }
 
+    #[instrument(skip_all, fields(%tag))]
     async fn optimize<'a, O: Pass<T>>(
         &'a self,
         tag: &'a str,
+        filter: &'a T::Filter,
         optimizer: &'a O,
     ) -> Result<(), Either<Self::Error, O::Error>> {
         trace!(%tag, "optimize");
@@ -535,26 +537,67 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             debug!(id = new_row.id, "inserted new optimizer message");
         }
 
-        for (parent_idxs, new_msg) in ready {
+        let mut ready_insert_into_queue = vec![];
+
+        for (parent_idxs, op) in ready {
+            let normalized_ops = op.normalize();
+
             let parents = get_parent_ids(&parent_idxs);
             trace!(parent_idxs = ?&parent_idxs, parents = ?&parents);
 
-            let new_row = sqlx::query(
+            'block: for op in normalized_ops {
+                match filter.check_interest(&op) {
+                    FilterResult::Interest(Interest { tags, remove }) => {
+                        for tag in tags {
+                            let new_row = sqlx::query(
+                                "
+                                INSERT INTO optimize (item, parents, tag)
+                                VALUES
+                                    ($1::JSONB, $2, $3)
+                                RETURNING id
+                                ",
+                            )
+                            .bind(Json(op.clone()))
+                            .bind(&parents)
+                            .bind(tag)
+                            .try_map(|row| Id::from_row(&row))
+                            .fetch_one(tx.as_mut())
+                            .await
+                            .map_err(Either::Left)?;
+
+                            debug!(id = new_row.id, "inserted new optimizer message");
+                        }
+
+                        if remove {
+                            break 'block;
+                        }
+                    }
+                    FilterResult::NoInterest => {}
+                }
+
+                ready_insert_into_queue.push((parents.clone(), op));
+            }
+        }
+
+        for (parents, op) in ready_insert_into_queue {
+            let ready_ids = sqlx::query(
                 "
                 INSERT INTO queue (item, parents)
                 VALUES
-                    ($1::JSONB, $2)
+                    ($2::JSONB, $1)
                 RETURNING id
                 ",
             )
-            .bind(Json(new_msg))
-            .bind(&parents)
+            .bind(parents)
+            .bind(Json(op))
             .try_map(|x| Id::from_row(&x))
-            .fetch_one(tx.as_mut())
+            .fetch_all(tx.as_mut())
             .await
             .map_err(Either::Left)?;
 
-            debug!(id = new_row.id, "inserted new message");
+            for ready in &ready_ids {
+                debug!(id = ready.id, "enqueued ready item");
+            }
         }
 
         tx.commit().await.map_err(Either::Left)?;

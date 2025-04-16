@@ -128,15 +128,16 @@ impl Queue<VoyagerMessage> for QueueImpl {
     async fn optimize<'a, O: Pass<VoyagerMessage>>(
         &'a self,
         tag: &'a str,
+        filter: &'a JaqInterestFilter,
         optimizer: &'a O,
     ) -> Result<(), sqlx::Either<Self::Error, O::Error>> {
         match self {
             QueueImpl::InMemory(queue) => queue
-                .optimize(tag, optimizer)
+                .optimize(tag, filter, optimizer)
                 .await
                 .map_err(|e| e.map_left(AnyQueueError::InMemory)),
             QueueImpl::PgQueue(queue) => queue
-                .optimize(tag, optimizer)
+                .optimize(tag, filter, optimizer)
                 .await
                 .map_err(|e| e.map_left(AnyQueueError::PgQueue)),
         }
@@ -277,8 +278,11 @@ impl Voyager {
                             loop {
                                 trace!("optimizing");
 
-                                let res =
-                                    self.queue.optimize(&plugin_name, &pass).await.map_err(|e| {
+                                let res = self
+                                    .queue
+                                    .optimize(&plugin_name, &interest_filter, &pass)
+                                    .await
+                                    .map_err(|e| {
                                         e.map_either::<_, _, BoxDynError, BoxDynError>(
                                             |x| Box::new(x),
                                             |x| Box::new(x),
