@@ -112,11 +112,11 @@ const cosmosAddressFromBech32 = (address: string) => {
         label="SENDER"
         value={sender}
         placeholder="0x123"
+        autocorrect="off"
         spellcheck="false"
+        autocomplete="off"
         oninput={(event) => {
-          console.log(Schema.encodeUnknownSync(Bech32FromAddressCanonicalBytesWithPrefix(''))(event.target.value))
-          wallets.addInputAddress(bech32AddressToHex({address: event.target.value}))
-          console.log(wallets.inputAddress)
+          wallets.addInputAddress(Schema.encodeUnknownSync(Bech32FromAddressCanonicalBytesWithPrefix(''))(event.target.value))
         }}
       />
     {/if}
