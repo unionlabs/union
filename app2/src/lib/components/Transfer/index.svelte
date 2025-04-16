@@ -112,6 +112,7 @@ function newTransfer() {
   transfer.raw.reset()
   lockedTransferStore.reset()
   transferHashStore.reset()
+  wallets.clearInputAddress()
 }
 
 $effect(() => {
