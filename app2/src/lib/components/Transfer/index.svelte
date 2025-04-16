@@ -1,11 +1,11 @@
 <script lang="ts">
   import Card from "$lib/components/ui/Card.svelte"
   import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
-  import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
   import FillingPage from "./pages/FillingPage.svelte"
   import ApprovalPage from "./pages/ApprovalPage.svelte"
   import SubmitPage from "./pages/SubmitPage.svelte"
-  import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
+  import {Array as Arr, Effect, Fiber, FiberId, Option} from "effect"
   import * as TransferStep from "./transfer-step.ts"
   import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
   import {
@@ -13,15 +13,15 @@
     createTransferState,
     type StateResult
   } from "$lib/components/Transfer/state/filling/index.ts"
-  import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
-  import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-  import { constVoid, pipe } from "effect/Function"
+  import type {TransferFlowError} from "$lib/components/Transfer/state/errors.ts"
+  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts"
+  import {constVoid, pipe} from "effect/Function"
   import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
-  import { wallets } from "$lib/stores/wallets.svelte.ts"
-  import { beforeNavigate } from "$app/navigation"
-  import { onMount } from "svelte"
-  import { fly } from "svelte/transition"
-  import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+  import {wallets} from "$lib/stores/wallets.svelte.ts"
+  import {beforeNavigate} from "$app/navigation"
+  import {onMount} from "svelte"
+  import {fly} from "svelte/transition"
+  import type {TransferIntents} from "$lib/components/Transfer/state/filling/create-intents.ts"
 
   let currentPage = $state(0)
   let isLoading = $state(false)
@@ -135,7 +135,7 @@
           destinationChain: transfer.destinationChain,
           receiver: transfer.derivedReceiver
         }),
-        Option.flatMap(({ destinationChain, receiver }) => {
+        Option.flatMap(({destinationChain, receiver}) => {
           const walletaddr = wallets.getAddressForChain(destinationChain)
           return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
         }),
@@ -209,15 +209,15 @@
   const flyLeft = (node: Element) =>
     fly(node, {
       x: -300,
-      duration: 1000,
-      delay: 100
+      duration: 300,
+      delay: 0
     })
 
   const flyRight = (node: Element) =>
     fly(node, {
       x: 300,
-      duration: 1000,
-      delay: 100
+      duration: 300,
+      delay: 0
     })
 </script>
 
@@ -240,16 +240,16 @@
     />
   </div>
 
-  <div class="relative flex w-full grow">
+  <div class="grid w-full grow">
     {#if currentPage === 0}
-      <div class="flex w-full grow" in:flyRight out:flyLeft>
+      <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyRight out:flyLeft>
         <FillingPage
           onContinue={handleActionButtonClick}
           {statusMessage}
           {transferErrors}
           onErrorClose={() => {
-            transferErrors = Option.none()
-          }}
+          transferErrors = Option.none()
+        }}
           loading={isLoading}
         />
       </div>
@@ -257,42 +257,45 @@
       {#if Option.isSome(Arr.get(currentPage)(transferSteps.value))}
         {@const step = Arr.get(currentPage)(transferSteps.value).value}
 
-
         {#if TransferStep.is("CheckReceiver")(step)}
-          {#await console.log('render step', {step})}{/await}
-          <CheckReceiverPage
-            stepIndex={currentPage + 1}
-            step={step}
-            onBack={goToPreviousPage}
-            onSubmit={goToNextPage}
-          />
+          <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
+            <CheckReceiverPage
+              stepIndex={currentPage + 1}
+              step={step}
+              onBack={goToPreviousPage}
+              onSubmit={goToNextPage}
+            />
+          </div>
         {:else if TransferStep.is("ApprovalRequired")(step)}
-          {#await console.log('render step', {step})}{/await}
-          <ApprovalPage
-            stepIndex={currentPage + 1}
-            step={step}
-            onBack={goToPreviousPage}
-            onApprove={handleActionButtonClick}
-            {actionButtonText}
-          />
+          <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyRight out:flyLeft>
+            <ApprovalPage
+              stepIndex={currentPage + 1}
+              step={step}
+              onBack={goToPreviousPage}
+              onApprove={handleActionButtonClick}
+              {actionButtonText}
+            />
+          </div>
         {:else if TransferStep.is("SubmitInstruction")(step)}
-          {#await console.log('render step', {step})}{/await}
-          <SubmitPage
-            stepIndex={currentPage + 1}
-            step={step}
-            onCancel={newTransfer}
-            onSubmit={handleActionButtonClick}
-            {actionButtonText}
-          />
+          <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
+            <SubmitPage
+              stepIndex={currentPage + 1}
+              step={step}
+              onCancel={newTransfer}
+              onSubmit={handleActionButtonClick}
+              {actionButtonText}
+            />
+          </div>
         {:else if TransferStep.is("WaitForIndex")(step)}
-          {#await console.log('render step', {step})}{/await}
-          <IndexPage {newTransfer} />
+          <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
+            <IndexPage {newTransfer} step={step} />
+          </div>
         {/if}
       {/if}
     {/if}
   </div>
-</Card>
 
+</Card>
 
 
 {#if showDetails}
@@ -312,3 +315,4 @@
       <pre>{JSON.stringify(transferSteps.value, null, 2)}</pre>
     </div>
   {/if}
+{/if}
