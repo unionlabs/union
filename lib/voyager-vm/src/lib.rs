@@ -68,6 +68,7 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
     fn optimize<'a, O: Pass<T>>(
         &'a self,
         tag: &'a str,
+        filter: &'a T::Filter,
         optimizer: &'a O,
     ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a;
 }
