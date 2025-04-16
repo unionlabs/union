@@ -2,8 +2,8 @@
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import {transfer} from "$lib/components/Transfer/transfer.svelte.ts";
-import {wallets} from "$lib/stores/wallets.svelte.ts";
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   currentStep: number
