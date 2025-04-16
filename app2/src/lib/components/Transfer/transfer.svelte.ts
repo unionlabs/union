@@ -1,6 +1,6 @@
 import { Match, Option } from "effect"
 import { RawTransferSvelte } from "./raw-transfer.svelte.ts"
-import {type Channel, type Token} from "@unionlabs/sdk/schema"
+import type { Channel, Token } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { type Address, fromHex, type Hex } from "viem"
@@ -80,8 +80,6 @@ export class Transfer {
 
     return wallets.getAddressForChain(sourceChain)
   })
-
-
 
   // channel = $derived.by<Option.Option<Channel>>(() => {
   //   return Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(

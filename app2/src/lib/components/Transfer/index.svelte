@@ -1,224 +1,223 @@
 <script lang="ts">
-  import Card from "$lib/components/ui/Card.svelte"
-  import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
-  import {transfer} from "$lib/components/Transfer/transfer.svelte.ts"
-  import FillingPage from "./pages/FillingPage.svelte"
-  import ApprovalPage from "./pages/ApprovalPage.svelte"
-  import SubmitPage from "./pages/SubmitPage.svelte"
-  import {Array as Arr, Effect, Fiber, FiberId, Option} from "effect"
-  import * as TransferStep from "./transfer-step.ts"
-  import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
-  import {
-    CreateTransferState,
-    createTransferState,
-    type StateResult
-  } from "$lib/components/Transfer/state/filling/index.ts"
-  import type {TransferFlowError} from "$lib/components/Transfer/state/errors.ts"
-  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts"
-  import {constVoid, pipe} from "effect/Function"
-  import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
-  import {wallets} from "$lib/stores/wallets.svelte.ts"
-  import {beforeNavigate} from "$app/navigation"
-  import {onMount} from "svelte"
-  import {fly} from "svelte/transition"
-  import type {TransferIntents} from "$lib/components/Transfer/state/filling/create-intents.ts"
+import Card from "$lib/components/ui/Card.svelte"
+import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
+import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import FillingPage from "./pages/FillingPage.svelte"
+import ApprovalPage from "./pages/ApprovalPage.svelte"
+import SubmitPage from "./pages/SubmitPage.svelte"
+import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
+import * as TransferStep from "./transfer-step.ts"
+import IndexPage from "$lib/components/Transfer/pages/IndexPage.svelte"
+import {
+  CreateTransferState,
+  createTransferState,
+  type StateResult
+} from "$lib/components/Transfer/state/filling/index.ts"
+import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { constVoid, pipe } from "effect/Function"
+import CheckReceiverPage from "./pages/CheckReceiverPage.svelte"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { beforeNavigate } from "$app/navigation"
+import { onMount } from "svelte"
+import { fly } from "svelte/transition"
+import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
 
-  let currentPage = $state(0)
-  let isLoading = $state(false)
-  let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(Option.none())
-  let transferErrors = $state<Option.Option<TransferFlowError>>(Option.none())
-  let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
-  let statusMessage = $state("")
-  let showDetails = $state(false)
+let currentPage = $state(0)
+let isLoading = $state(false)
+let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(Option.none())
+let transferErrors = $state<Option.Option<TransferFlowError>>(Option.none())
+let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
+let statusMessage = $state("")
+let showDetails = $state(false)
 
-  function goToNextPage() {
-    if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
-      currentPage++
-    }
+function goToNextPage() {
+  if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
+    currentPage++
   }
+}
 
-  function goToPreviousPage() {
-    if (currentPage > 0) {
-      currentPage--
-    }
+function goToPreviousPage() {
+  if (currentPage > 0) {
+    currentPage--
   }
+}
 
-  let actionButtonText = $derived.by(() => {
-    if (Option.isNone(transferSteps)) return "Submit"
-    const steps = transferSteps.value
-    if (currentPage < 0 || currentPage >= steps.length || !steps[currentPage]) return "Submit"
-    const currentStep = steps[currentPage]
-    if (currentPage === steps.length - 1) return "Complete"
-    return TransferStep.match(currentStep, {
-      Filling: () => "Continue",
-      CheckReceiver: () => "Continue",
-      ApprovalRequired: () => "Approve",
-      SubmitInstruction: () => "Submit",
-      WaitForIndex: () => "Submit"
-    })
+let actionButtonText = $derived.by(() => {
+  if (Option.isNone(transferSteps)) return "Submit"
+  const steps = transferSteps.value
+  if (currentPage < 0 || currentPage >= steps.length || !steps[currentPage]) return "Submit"
+  const currentStep = steps[currentPage]
+  if (currentPage === steps.length - 1) return "Complete"
+  return TransferStep.match(currentStep, {
+    Filling: () => "Continue",
+    CheckReceiver: () => "Continue",
+    ApprovalRequired: () => "Approve",
+    SubmitInstruction: () => "Submit",
+    WaitForIndex: () => "Submit"
   })
+})
 
-  function handleActionButtonClick() {
-    if (Option.isNone(transferSteps)) return
-    const currentStep = transferSteps.value[currentPage]
+function handleActionButtonClick() {
+  if (Option.isNone(transferSteps)) return
+  const currentStep = transferSteps.value[currentPage]
 
-    if (TransferStep.is("Filling")(currentStep)) {
-      goToNextPage()
-      return
-    }
-
-    if (TransferStep.is("CheckReceiver")(currentStep)) goToNextPage()
-    if (TransferStep.is("ApprovalRequired")(currentStep)) goToNextPage()
-    if (TransferStep.is("SubmitInstruction")(currentStep)) goToNextPage()
+  if (TransferStep.is("Filling")(currentStep)) {
+    goToNextPage()
+    return
   }
 
-  function interruptFiber() {
-    Option.match(currentFiber, {
-      onNone: constVoid,
-      onSome: fiber => Fiber.interruptFork(fiber)
-    })
-    currentFiber = Option.none()
-  }
+  if (TransferStep.is("CheckReceiver")(currentStep)) goToNextPage()
+  if (TransferStep.is("ApprovalRequired")(currentStep)) goToNextPage()
+  if (TransferStep.is("SubmitInstruction")(currentStep)) goToNextPage()
+}
 
-  function newTransfer() {
-    interruptFiber()
-    transferSteps = Option.none()
-    transferErrors = Option.none()
-    isLoading = false
-    statusMessage = ""
-    currentPage = 0
-    transfer.raw.reset()
-    transferHashStore.reset()
-    wallets.clearInputAddress()
-  }
+function interruptFiber() {
+  Option.match(currentFiber, {
+    onNone: constVoid,
+    onSome: fiber => Fiber.interruptFork(fiber)
+  })
+  currentFiber = Option.none()
+}
 
-  $effect(() => {
-    if (currentPage !== 0) return
-    interruptFiber()
+function newTransfer() {
+  interruptFiber()
+  transferSteps = Option.none()
+  transferErrors = Option.none()
+  isLoading = false
+  statusMessage = ""
+  currentPage = 0
+  transfer.raw.reset()
+  transferHashStore.reset()
+  wallets.clearInputAddress()
+}
 
-    isLoading = true
-    transferSteps = Option.none()
-    transferErrors = Option.none()
+$effect(() => {
+  if (currentPage !== 0) return
+  interruptFiber()
 
-    const machineEffect = Effect.gen(function* () {
-      let currentState: CreateTransferState = CreateTransferState.Filling()
-      let intents: TransferIntents = []
+  isLoading = true
+  transferSteps = Option.none()
+  transferErrors = Option.none()
 
-      while (true) {
-        const result: StateResult = yield* createTransferState(currentState, transfer)
-        statusMessage = result.message
+  const machineEffect = Effect.gen(function* () {
+    let currentState: CreateTransferState = CreateTransferState.Filling()
+    let intents: TransferIntents = []
 
-        if (Option.isSome(result.error)) {
-          transferErrors = result.error
-          transferSteps = Option.none()
-          isLoading = false
-          currentFiber = Option.none()
-          return
-        }
+    while (true) {
+      const result: StateResult = yield* createTransferState(currentState, transfer)
+      statusMessage = result.message
 
-        if (Option.isSome(result.nextState)) {
-          currentState = result.nextState.value
-          continue
-        }
-
-        if (Option.isSome(result.intents)) {
-          intents = result.intents.value
-        }
-
-        break
+      if (Option.isSome(result.error)) {
+        transferErrors = result.error
+        transferSteps = Option.none()
+        isLoading = false
+        currentFiber = Option.none()
+        return
       }
 
-      const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()]
+      if (Option.isSome(result.nextState)) {
+        currentState = result.nextState.value
+        continue
+      }
 
-      const isReceiverInWallet = pipe(
-        Option.all({
-          destinationChain: transfer.destinationChain,
-          receiver: transfer.derivedReceiver
-        }),
-        Option.flatMap(({destinationChain, receiver}) => {
-          const walletaddr = wallets.getAddressForChain(destinationChain)
-          return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
-        }),
-        Option.getOrElse(() => false)
+      if (Option.isSome(result.intents)) {
+        intents = result.intents.value
+      }
+
+      break
+    }
+
+    const steps: Array<TransferStep.TransferStep> = [TransferStep.Filling()]
+
+    const isReceiverInWallet = pipe(
+      Option.all({
+        destinationChain: transfer.destinationChain,
+        receiver: transfer.derivedReceiver
+      }),
+      Option.flatMap(({ destinationChain, receiver }) => {
+        const walletaddr = wallets.getAddressForChain(destinationChain)
+        return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
+      }),
+      Option.getOrElse(() => false)
+    )
+
+    if (!isReceiverInWallet) {
+      steps.push(
+        TransferStep.CheckReceiver({
+          receiver: transfer.derivedReceiver,
+          destinationChain: transfer.destinationChain
+        })
       )
+    }
 
-      if (!isReceiverInWallet) {
+    for (const intent of intents) {
+      if (Option.isSome(intent.allowances)) {
+        const allowance = intent.allowances.value
+
         steps.push(
-          TransferStep.CheckReceiver({
-            receiver: transfer.derivedReceiver,
-            destinationChain: transfer.destinationChain
+          TransferStep.ApprovalRequired({
+            token: allowance.token,
+            requiredAmount: allowance.requiredAmount,
+            currentAllowance: allowance.currentAllowance,
+            context: intent.context
           })
         )
       }
 
-      for (const intent of intents) {
-        if (Option.isSome(intent.allowances)) {
-          const allowance = intent.allowances.value
-
-          steps.push(
-            TransferStep.ApprovalRequired({
-              token: allowance.token,
-              requiredAmount: allowance.requiredAmount,
-              currentAllowance: allowance.currentAllowance,
-              context: intent.context
-            })
-          )
-        }
-
-        if (Option.isSome(intent.instructions)) {
-          steps.push(
-            TransferStep.SubmitInstruction({
-              instruction: intent.instructions.value,
-              context: intent.context
-            }),
-            TransferStep.WaitForIndex({
-              context: intent.context
-            })
-          )
-        }
-      }
-
-
-      transferSteps = Option.some(steps)
-      isLoading = false
-      currentFiber = Option.none()
-    })
-
-    const fiber = Effect.runFork(machineEffect as Effect.Effect<void, never, never>)
-    currentFiber = Option.some(fiber)
-
-    return () => fiber?.unsafeInterruptAsFork(FiberId.none)
-  })
-
-  beforeNavigate(newTransfer)
-
-  onMount(() => {
-    const handler = (e: KeyboardEvent) => {
-      const metaOrCtrl = e.metaKey || e.ctrlKey
-
-      if (metaOrCtrl && e.altKey && e.shiftKey && e.code === "KeyD") {
-        e.preventDefault()
-        showDetails = !showDetails
+      if (Option.isSome(intent.instructions)) {
+        steps.push(
+          TransferStep.SubmitInstruction({
+            instruction: intent.instructions.value,
+            context: intent.context
+          }),
+          TransferStep.WaitForIndex({
+            context: intent.context
+          })
+        )
       }
     }
 
-    window.addEventListener("keydown", handler)
-    return () => window.removeEventListener("keydown", handler)
+    transferSteps = Option.some(steps)
+    isLoading = false
+    currentFiber = Option.none()
   })
 
-  const flyLeft = (node: Element) =>
-    fly(node, {
-      x: -300,
-      duration: 300,
-      delay: 0
-    })
+  const fiber = Effect.runFork(machineEffect as Effect.Effect<void, never, never>)
+  currentFiber = Option.some(fiber)
 
-  const flyRight = (node: Element) =>
-    fly(node, {
-      x: 300,
-      duration: 300,
-      delay: 0
-    })
+  return () => fiber?.unsafeInterruptAsFork(FiberId.none)
+})
+
+beforeNavigate(newTransfer)
+
+onMount(() => {
+  const handler = (e: KeyboardEvent) => {
+    const metaOrCtrl = e.metaKey || e.ctrlKey
+
+    if (metaOrCtrl && e.altKey && e.shiftKey && e.code === "KeyD") {
+      e.preventDefault()
+      showDetails = !showDetails
+    }
+  }
+
+  window.addEventListener("keydown", handler)
+  return () => window.removeEventListener("keydown", handler)
+})
+
+const flyLeft = (node: Element) =>
+  fly(node, {
+    x: -300,
+    duration: 300,
+    delay: 0
+  })
+
+const flyRight = (node: Element) =>
+  fly(node, {
+    x: 300,
+    duration: 300,
+    delay: 0
+  })
 </script>
 
 <Card

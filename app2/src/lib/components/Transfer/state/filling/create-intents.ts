@@ -27,12 +27,12 @@ export type TransferContext = {
 
 export type TransferIntent = {
   context: TransferContext
-  allowances: Option.Option<{
+  allowance: Option.Option<{
     token: string
     requiredAmount: bigint
     currentAllowance: bigint
   }>
-  instructions: Option.Option<Instruction>
+  instruction: Option.Option<Instruction>
 }
 
 export type TransferIntents = Array<TransferIntent>
@@ -75,8 +75,8 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
             channel: args.channel,
             ucs03address: args.ucs03address
           },
-          allowances: Option.none(),
-          instructions: Option.none()
+          allowance: Option.none(),
+          instruction: Option.none()
         }
       ])
     }),
@@ -104,8 +104,8 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntents
             channel: args.channel,
             ucs03address: args.ucs03address
           },
-          allowances: Option.none(),
-          instructions: Option.none()
+          allowance: Option.none(),
+          instruction: Option.none()
         }
       ])
     }),

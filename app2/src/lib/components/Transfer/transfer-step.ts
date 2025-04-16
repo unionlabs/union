@@ -6,8 +6,8 @@ import type {
   TokenRawDenom
 } from "@unionlabs/sdk/schema"
 import type { ExtractTag } from "effect/Types"
-import type {TransferContext} from "$lib/components/Transfer/state/filling/create-intents.ts";
-import type {Instruction} from "@unionlabs/sdk/ucs03/instruction.ts";
+import type { TransferContext } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
 
 /**
  * Defines the different steps in a transfer process
@@ -31,7 +31,6 @@ export type TransferStep = Data.TaggedEnum<{
   WaitForIndex: {
     context: TransferContext
   }
-
 }>
 
 export type Filling = ExtractTag<TransferStep, "Filling">

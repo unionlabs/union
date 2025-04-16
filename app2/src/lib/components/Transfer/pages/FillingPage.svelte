@@ -10,8 +10,8 @@ import { Match, Option } from "effect"
 import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Input from "$lib/components/ui/Input.svelte"
-import {wallets} from "$lib/stores/wallets.svelte.ts";
-import {getDerivedReceiverSafe} from "$lib/services/shared";
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { getDerivedReceiverSafe } from "$lib/services/shared"
 
 type Props = {
   onContinue: () => void

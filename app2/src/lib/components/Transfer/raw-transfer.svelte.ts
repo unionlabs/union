@@ -82,7 +82,14 @@ export class RawTransferSvelte {
    * @returns Complete state object with all fields
    */
   cleanState = (state: Partial<FormFields>): FormFields => {
-    const { source = "", destination = "", asset = "", receiver = "", sender = "", amount = "" } = state
+    const {
+      source = "",
+      destination = "",
+      asset = "",
+      receiver = "",
+      sender = "",
+      amount = ""
+    } = state
     return { source, destination, asset, receiver, sender, amount }
   }
 

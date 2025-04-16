@@ -1,4 +1,4 @@
-import {Option} from "effect"
+import { Option } from "effect"
 import type {
   AddressAptosCanonical,
   AddressCanonicalBytes,
@@ -30,7 +30,6 @@ class WalletsStore {
     this.inputAddress = Option.none()
   }
 
-
   getCanonicalByteAddressList() {
     const addresses: Array<typeof AddressCanonicalBytes.Type> = []
     if (Option.isSome(this.evmAddress)) addresses.push(this.evmAddress.value)
@@ -54,7 +53,6 @@ class WalletsStore {
         return Option.none()
     }
   }
-
 }
 
 export const wallets = new WalletsStore()

@@ -173,7 +173,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
 
           const updatedIntents = intents.map(intent => ({
             ...intent,
-            instructions: Option.some(batch),
+            instructions: Option.some(batch)
           }))
 
           return Effect.succeed(
@@ -186,9 +186,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
     //Move check reciever in here
     CheckReciever: ({ intents }) =>
       Effect.sleep(1000).pipe(
-        Effect.flatMap(() =>
-          Effect.succeed(ok(CreateSteps({ intents }), "Final steps..."))
-        )
+        Effect.flatMap(() => Effect.succeed(ok(CreateSteps({ intents }), "Final steps...")))
       ),
 
     CreateSteps: ({ intents }) => {

@@ -1,36 +1,36 @@
 <script lang="ts">
-  import { Option } from "effect"
-  import Button from "$lib/components/ui/Button.svelte"
-  import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-  import { goto } from "$app/navigation"
-  import { fly } from "svelte/transition"
-  import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
-  import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-  import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
-  import type { WaitForIndex } from "../transfer-step.ts"
+import { Option } from "effect"
+import Button from "$lib/components/ui/Button.svelte"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { goto } from "$app/navigation"
+import { fly } from "svelte/transition"
+import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
+import type { WaitForIndex } from "../transfer-step.ts"
 
-  type Props = {
-    newTransfer: () => void
-    step: WaitForIndex
+type Props = {
+  newTransfer: () => void
+  step: WaitForIndex
+}
+
+const { newTransfer, step }: Props = $props()
+
+const sourceChain = step.context.sourceChain
+
+$effect(() => {
+  if (Option.isSome(transferHashStore.data)) {
+    transferHashStore.stopPolling()
   }
+})
 
-  const { newTransfer, step }: Props = $props()
-
-  const sourceChain = step.context.sourceChain
-
-  $effect(() => {
-    if (Option.isSome(transferHashStore.data)) {
-      transferHashStore.stopPolling()
-    }
-  })
-
-  const handleRedirect = () => {
-    if (Option.isSome(transferHashStore.data)) {
-      const packet = transferHashStore.data.value
-      goto(`/explorer/transfers/${packet}`)
-      transferHashStore.reset()
-    }
+const handleRedirect = () => {
+  if (Option.isSome(transferHashStore.data)) {
+    const packet = transferHashStore.data.value
+    goto(`/explorer/transfers/${packet}`)
+    transferHashStore.reset()
   }
+}
 </script>
 
 <div class="min-w-full p-6 flex flex-col justify-between h-full">
