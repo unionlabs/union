@@ -15454,7 +15454,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-consensus-module-trusted-mpt"
+name = "voyager-consensus-module-trusted-evm"
 version = "0.0.0"
 dependencies = [
  "alloy",

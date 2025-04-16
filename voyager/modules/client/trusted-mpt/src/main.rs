@@ -7,7 +7,9 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::instrument;
-use trusted_mpt_light_client_types::{ClientState, ConsensusState, Header};
+use trusted_mpt_light_client_types::{
+    signed_data::SignedData, ClientState, ConsensusState, Header,
+};
 use unionlabs::{
     self,
     encoding::{Bincode, DecodeAs, EncodeAs, EthAbi},
@@ -43,7 +45,7 @@ impl ClientModule for Module {
 
     async fn new(_config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::TRUSTED_MPT)?;
-        info.ensure_consensus_type(ConsensusType::ETHEREUM)?;
+        info.ensure_consensus_type(ConsensusType::TRUSTED_EVM)?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
 
         Ok(Self)
@@ -163,7 +165,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn encode_header(&self, _: &Extensions, header: Value) -> RpcResult<Bytes> {
-        serde_json::from_value::<Header>(header)
+        serde_json::from_value::<SignedData<Header>>(header)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,

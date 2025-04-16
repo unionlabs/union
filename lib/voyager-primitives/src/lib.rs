@@ -200,6 +200,15 @@ impl ConsensusType {
     /// [Bob]: https://github.com/ethereum-optimism/optimism/blob/v1.7.2/packages/contracts-bedrock/src/L1/L2OutputOracle.sol
     pub const BOB: &'static str = "bob";
 
+    /// Trusted consensus of an [Ethereum JSON-RPC] compatible chain.
+    ///
+    /// <div class="warning">
+    /// Blocks are considered finalized after a configurable delay period. This is not secure, and should only be used in development or testing environments.
+    /// </div>
+    ///
+    /// [Ethereum JSON-RPC]: https://ethereum.github.io/execution-apis/api-documentation/
+    pub const TRUSTED_EVM: &'static str = "trusted/evm";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 

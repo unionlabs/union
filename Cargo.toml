@@ -163,7 +163,7 @@ members = [
   "voyager/modules/consensus/ethereum",
   "voyager/modules/consensus/movement",
   "voyager/modules/consensus/tendermint",
-  "voyager/modules/consensus/trusted-mpt",
+  "voyager/modules/consensus/trusted-evm",
 
   "voyager/plugins/client-update/bob",
   "voyager/plugins/client-update/arbitrum",
