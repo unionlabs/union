@@ -21,7 +21,7 @@
         },
         "config": {
           "rpc_url": "http://localhost:26657",
-          "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73"
+          "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
         }
       },
       {
@@ -47,7 +47,7 @@
         },
         "config": {
           "rpc_url": "http://localhost:26657",
-          "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73"
+          "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
         }
       },
       {
@@ -77,13 +77,14 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-trusted-mpt",
+        "path": "./target/debug/voyager-consensus-module-trusted-evm",
         "info": {
           "chain_id": "32382",
-          "consensus_type": "ethereum"
+          "consensus_type": "trusted/evm"
         },
         "config": {
-          "rpc_url": "http://localhost:8545"
+          "rpc_url": "http://localhost:8545",
+          "finality_lag": 1
         }
       }
       // {
@@ -115,8 +116,8 @@
         "enabled": true,
         "path": "./target/debug/voyager-client-module-trusted-mpt",
         "info": {
-          "client_type": "trusted-mpt",
-          "consensus_type": "ethereum",
+          "client_type": "trusted/evm/mpt",
+          "consensus_type": "trusted/evm",
           "ibc_interface": "ibc-cosmwasm",
           "ibc_spec_id": "ibc-union"
         }
@@ -155,7 +156,7 @@
     "client_bootstrap": [
       {
         "config": {
-          "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73",
+          "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
           "rpc_url": "http://localhost:26657"
         },
         "enabled": true,
@@ -169,12 +170,12 @@
         "config": {
           "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
           "rpc_url": "http://localhost:8545",
-          "whitelisted_relayers": ["union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"]
+          "private_key": "0x23312AE62C46C1F05DE7A772C1DD74951009BFCD08B47946E497468DEA6D7008"
         },
         "enabled": true,
         "info": {
           "chain_id": "32382",
-          "client_type": "trusted-mpt"
+          "client_type": "trusted/evm/mpt"
         },
         "path": "./target/debug/voyager-client-bootstrap-module-trusted-mpt"
       }
@@ -202,7 +203,7 @@
         "chain_id": "union-devnet-1",
         "rpc_url": "http://localhost:26657",
         "chunk_block_fetch_size": 1000,
-        "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73",
+        "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
         "refetch_delay": 20
       }
     },
@@ -220,7 +221,7 @@
       "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
         "chain_id": "union-devnet-1",
-        "ibc_host_contract_address": "union1hrhlv0sr0dgtqhdteh3tl87u9mhz2yphe05lrx6j0urcdhmd3gkq5nxy73",
+        "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
         "keyring": {
           "name": "union-devnet",
           "keys": [
@@ -235,7 +236,7 @@
           "type": "feemarket",
           "config": {
             "max_gas": 10000000,
-            "gas_multiplier": 1.4
+            "gas_multiplier": "1.4"
           }
         },
         "rpc_url": "http://localhost:26657"
@@ -326,7 +327,8 @@
       "config": {
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-        "rpc_url": "http://localhost:8545"
+        "rpc_url": "http://localhost:8545",
+        "private_key": "0x23312AE62C46C1F05DE7A772C1DD74951009BFCD08B47946E497468DEA6D7008"
       }
     }
     // {
