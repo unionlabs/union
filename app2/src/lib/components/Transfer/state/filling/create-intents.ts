@@ -38,7 +38,7 @@ export type TransferIntent = {
 }
 
 const BABY_DECIMALS = 6n
-const BABY_SUB_AMOUNT = 1n * 10n ** BABY_DECIMALS
+const BABY_SUB_AMOUNT = 19n * 10n ** BABY_DECIMALS
 
 export const createIntents = (args: TransferArgs): Option.Option<TransferIntent> => {
   console.debug("[createIntents] args:", args)

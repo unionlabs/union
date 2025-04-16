@@ -2,6 +2,8 @@
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import {transfer} from "$lib/components/Transfer/transfer.svelte.ts";
+import {wallets} from "$lib/stores/wallets.svelte.ts";
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   currentStep: number
@@ -19,12 +21,13 @@ const {
 }: Props = $props()
 </script>
 
-<div class={cn("flex items-center w-full transition-all duration-500 border-b border-zinc-800 p-4", className)} {...rest}>
-  {#each Array(totalSteps) as _, i (i)}
-    <div class={cn("flex items-center transition-all duration-500", i < totalSteps - 1 ? "flex-1" : "")}>
-      <!-- Step dot with tooltip -->
-      <Tooltip>
-        {#snippet trigger()}
+<div class="flex flex-1 gap-4 items-center px-4 border-b border-zinc-800">
+  <div class={cn("flex items-center w-full transition-all duration-500 py-4", className)} {...rest}>
+    {#each Array(totalSteps) as _, i (i)}
+      <div class={cn("flex items-center transition-all duration-500", i < totalSteps - 1 ? "flex-1" : "")}>
+        <!-- Step dot with tooltip -->
+        <Tooltip>
+          {#snippet trigger()}
           <div
             class={cn(
               "w-3 h-3 rounded-full flex items-center justify-center transition-all duration-300 cursor-help",
@@ -33,27 +36,43 @@ const {
               "bg-zinc-600"
             )}
           ></div>
-        {/snippet}
+          {/snippet}
 
-        {#snippet content()}
+          {#snippet content()}
           <div class="text-sm p-1">
             <div class="font-medium">Step {i + 1}</div>
             <div class="text-zinc-300">
               {stepDescriptions[i] || `Step ${i + 1}`}
             </div>
           </div>
-        {/snippet}
-      </Tooltip>
+          {/snippet}
+        </Tooltip>
 
-      <!-- Connector line (except for last item) -->
-      {#if i < totalSteps - 1}
-        <div
-          class={cn(
+        <!-- Connector line (except for last item) -->
+        {#if i < totalSteps - 1}
+          <div
+            class={cn(
             "h-[1px] flex-1 mx-1 transition-all duration-300",
             i + 1 < currentStep ? "bg-white" : "bg-zinc-600"
           )}
-        ></div>
-      {/if}
-    </div>
-  {/each}
+          ></div>
+        {/if}
+      </div>
+    {/each}
+  </div>
+  {#if currentStep === 1}
+  <button
+    class="border px-2 py-1 text-xs hover:text-babylon-orange transition-all duration-300 cursor-pointer"
+    class:border-babylon-orange={transfer.signingMode === "multi"}
+    class:text-babylon-orange={transfer.signingMode === "multi"}
+    class:text-zinc-800={transfer.signingMode !== "multi"}
+    onclick={() => {
+
+                    transfer.signingMode === "multi" ? wallets.clearInputAddress() : ""
+          transfer.signingMode = transfer.signingMode === "multi" ? "single" : "multi";
+        }}
+  >
+    MULTISIG
+  </button>
+    {/if}
 </div>

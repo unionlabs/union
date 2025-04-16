@@ -67,42 +67,27 @@ const uiStatus = $derived.by(() => {
 })
 
 const isButtonEnabled = $derived.by(() => !loading)
-
 let sender = $state("")
-
-const cosmosAddressFromBech32 = (address: string) => {
-  const hexAddress = bech32AddressToHex({ address })
-  return AddressCosmosCanonical.make(hexAddress)
-}
 </script>
 
 <div class="min-w-full p-4 flex flex-col grow">
-  <div class="relative overflow-hidden">
-    <div
-      class="shrink flex flex-row gap-2 items-center justify-end uppercase text-xs pr-2"
-    >
-      <Button
-        selected={transfer.signingMode === "single"}
-        variant="inline"
-        onclick={() => {
-          transfer.signingMode = "single";
-          wallets.clearInputAddress()
-        }}
-      >
-        SINGLESIG
-      </Button>
-      <div>|</div>
-      <Button
-        selected={transfer.signingMode === "multi"}
-        variant="inline"
-        onclick={() => {
-          transfer.signingMode = "multi";
-        }}
-      >
-        MULTISIG
-      </Button>
-    </div>
-  </div>
+<!--  <div class="relative overflow-hidden">-->
+<!--    <div-->
+<!--      class="shrink flex flex-row justify-end uppercase text-xs pr-2"-->
+<!--    >-->
+<!--      <button-->
+<!--        class="border px-2 py-1"-->
+<!--        class:border-babylon-orange={transfer.signingMode === "multi"}-->
+<!--        class:text-babylon-orange={transfer.signingMode === "multi"}-->
+<!--        class:text-zinc-400={transfer.signingMode !== "multi"}-->
+<!--        onclick={() => {-->
+<!--          transfer.signingMode = transfer.signingMode === "multi" ? "single" : "multi";-->
+<!--        }}-->
+<!--      >-->
+<!--        MULTISIG-->
+<!--      </button>-->
+<!--    </div>-->
+<!--  </div>-->
 
   <div class="flex flex-col gap-4">
     {#if transfer.signingMode === "multi"}
