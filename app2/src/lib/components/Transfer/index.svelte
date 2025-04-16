@@ -21,13 +21,15 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { beforeNavigate } from "$app/navigation"
 import { onMount } from "svelte"
 import { fly } from "svelte/transition"
-import type {TransferIntent} from "$lib/components/Transfer/state/filling/create-intents.ts"
+import type { TransferIntent } from "$lib/components/Transfer/state/filling/create-intents.ts"
 import { generateMultisigTx } from "$lib/utils/multisig.ts"
-import { Previous } from "runed"
+import MultisigMessage from "$lib/components/model/MultisigMessage.svelte"
 
 let currentPage = $state(0)
 let previousPage = $state(0)
 let isLoading = $state(false)
+let multisigMsg = $state()
+let showMultisig = $state(false)
 let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(Option.none())
 let transferErrors = $state<Option.Option<TransferFlowError>>(Option.none())
 let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
@@ -71,9 +73,8 @@ let actionButtonText = $derived.by(() => {
 
 function handleActionButtonClick() {
   if (transfer.signingMode === "multi") {
-    console.log("SIGNING MODE IS MULTISIG")
-    const b = Effect.runSync(generateMultisigTx(localIntent))
-    console.log({ b })
+    multisigMsg = Effect.runSync(generateMultisigTx(localIntent))
+    showMultisig = true
     return
   }
   if (Option.isNone(transferSteps)) return
@@ -330,6 +331,12 @@ const currentStep = $derived(
           </div>
         {/if}
   </div>
+
+  <MultisigMessage
+    message={multisigMsg}
+    open={showMultisig}
+    onClose={() => showMultisig = false}
+  />
 
 </Card>
 

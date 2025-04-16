@@ -27,17 +27,18 @@ export type TransferContext = {
 
 export type TransferIntent = {
   contexts: Array<TransferContext>
-  allowances: Option.Option<Array<{
-    token: string
-    requiredAmount: bigint
-    currentAllowance: bigint
-  }>>
+  allowances: Option.Option<
+    Array<{
+      token: string
+      requiredAmount: bigint
+      currentAllowance: bigint
+    }>
+  >
   instruction: Option.Option<Instruction>
 }
 
-
 const BABY_DECIMALS = 6n
-const BABY_SUB_AMOUNT = 19n * 10n ** BABY_DECIMALS
+const BABY_SUB_AMOUNT = 1n * 10n ** BABY_DECIMALS
 
 export const createIntents = (args: TransferArgs): Option.Option<TransferIntent> => {
   console.debug("[createIntents] args:", args)
@@ -119,4 +120,3 @@ export const createIntents = (args: TransferArgs): Option.Option<TransferIntent>
     })
   )
 }
-

@@ -11,8 +11,11 @@ import type { TransferFlowError } from "$lib/components/Transfer/state/errors.ts
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Input from "$lib/components/ui/Input.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { getDerivedReceiverSafe } from "$lib/services/shared"
-import {AddressCosmosCanonical, Bech32, Bech32FromAddressCanonicalBytesWithPrefix} from "@unionlabs/sdk/schema";
+import {
+  AddressCosmosCanonical,
+  Bech32,
+  Bech32FromAddressCanonicalBytesWithPrefix
+} from "@unionlabs/sdk/schema"
 import { bech32AddressToHex } from "@unionlabs/client"
 
 type Props = {

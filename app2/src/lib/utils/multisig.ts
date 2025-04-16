@@ -1,12 +1,14 @@
-import { Array as A, Record as R, Data, Effect, Option, pipe, Struct, Cause } from "effect"
+import { Record as R, Data, Effect, Option, pipe } from "effect"
 import * as S from "effect/Schema"
 import { Tx } from "@unionlabs/sdk/schema"
-import { encodeAbiParameters, fromHex, toHex } from "viem"
+import { encodeAbiParameters } from "viem"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
 import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 import type { TransferIntent } from "$lib/components/Transfer/state/filling/create-intents.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
+import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
+import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 
 export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigError")<{
   reason: string
@@ -18,9 +20,10 @@ export const generateMultisigTx = (intent: TransferIntent) =>
     console.log("[generateMultisigTx] intent:", JSON.parse(JSON.stringify(intent)))
 
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
-    const sender = yield* intent.contexts[0].sourceChain.getDisplayAddress(intent.contexts[0].sender)
-    const timeoutTimestamp = "0"
-    const isNative = true
+    const sender = yield* intent.contexts[0].sourceChain.getDisplayAddress(
+      intent.contexts[0].sender
+    )
+    const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
     const salt = yield* generateSalt("cosmos")
     console.log("[generateMultisigTx] generated salt:", salt)
 
@@ -32,7 +35,6 @@ export const generateMultisigTx = (intent: TransferIntent) =>
           return intent.contexts.flatMap(context => {
             console.log("[context] sourceChainId:", context.sourceChainId)
             console.log("[context] sender:", context.sender)
-
             const maybeSpender = R.get(cosmosSpenderAddresses, context.sourceChainId)
             if (Option.isNone(maybeSpender)) {
               console.warn("[warning] no spender for chain:", context.sourceChainId)
@@ -70,13 +72,14 @@ export const generateMultisigTx = (intent: TransferIntent) =>
           console.log("[context] ucs03address:", context.ucs03address)
           console.log("[context] baseToken:", context.baseToken)
           console.log("[context] baseAmount:", context.baseAmount)
-
+          const isNative = !isValidBech32ContractAddress(context.baseToken)
           const encodedInstruction = encodeAbiParameters(instructionAbi, [
             instruction.version,
             instruction.opcode,
             encodeAbi(instruction)
           ])
 
+          console.log("[isNative] ", isNative)
           console.log("[instruction] encodedAbi:", encodedInstruction)
 
           return {
@@ -94,11 +97,11 @@ export const generateMultisigTx = (intent: TransferIntent) =>
             },
             funds: isNative
               ? [
-                {
-                  denom: context.baseToken,
-                  amount: context.baseAmount
-                }
-              ]
+                  {
+                    denom: context.baseToken,
+                    amount: context.baseAmount
+                  }
+                ]
               : []
           }
         })

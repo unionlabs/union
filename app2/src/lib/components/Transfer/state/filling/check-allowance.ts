@@ -1,15 +1,8 @@
 import { Data, Effect, Match, Option } from "effect"
 import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
 import { fromHex, http, isHex } from "viem"
-import {
-  createViemPublicClient,
-  readErc20Allowance,
-  ViemPublicClient
-} from "@unionlabs/sdk/evm"
-import {
-  CosmWasmClientSource,
-  createCosmWasmClient
-} from "@unionlabs/sdk/cosmos"
+import { createViemPublicClient, readErc20Allowance, ViemPublicClient } from "@unionlabs/sdk/evm"
+import { CosmWasmClientSource, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 import {
@@ -83,7 +76,6 @@ export function checkAllowances(
     return steps.length > 0 ? Option.some(steps) : Option.none()
   })
 }
-
 
 function handleEvmAllowances(
   tokenAddresses: Array<string>,
@@ -184,9 +176,7 @@ export function handleCosmosAllowances(
             cosmwasmClient.queryContractSmart(bech32Address, {
               allowance: { owner, spender }
             })
-          ).pipe(
-            Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err }))
-          )
+          ).pipe(Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err })))
 
           const allowance = result.allowance ? BigInt(result.allowance) : 0n
           return { token: tokenAddress, allowance }

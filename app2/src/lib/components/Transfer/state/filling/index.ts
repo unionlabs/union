@@ -16,7 +16,10 @@ import {
   type TransferArgs
 } from "$lib/components/Transfer/state/filling/check-filling.ts"
 import { validateTransfer } from "$lib/components/Transfer/validation.ts"
-import {createIntents, type TransferIntent} from "$lib/components/Transfer/state/filling/create-intents.ts"
+import {
+  createIntents,
+  type TransferIntent
+} from "$lib/components/Transfer/state/filling/create-intents.ts"
 import { constVoid } from "effect/Function"
 
 export type StateResult = {
@@ -40,7 +43,7 @@ export type CreateTransferState = Data.TaggedEnum<{
   CreateOrders: {
     intent: TransferIntent
   }
-  CheckReciever: {
+  CheckReceiver: {
     intent: TransferIntent
   }
   CreateSteps: {
@@ -56,7 +59,7 @@ const {
   CheckBalance,
   CheckAllowance,
   CreateOrders,
-  CheckReciever,
+  CheckReceiver,
   CreateSteps
 } = CreateTransferState
 
@@ -120,7 +123,7 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
 
       const intent = intentsOpt.value
 
-      console.log({intent})
+      console.log({ intent })
 
       return Effect.succeed(ok(CheckBalance({ intent }), "Checking receiver1..."))
     },
@@ -149,22 +152,17 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
           const allowances = Option.getOrElse(allowancesOpt, () => [])
 
           const baseTokens = intent.contexts.map(c => c.baseToken)
-          const relevantAllowances = allowances.filter(a =>
-            baseTokens.includes(a.token)
-          )
+          const relevantAllowances = allowances.filter(a => baseTokens.includes(a.token))
 
           const updatedIntent = {
             ...intent,
-            allowances: relevantAllowances.length > 0
-              ? Option.some(relevantAllowances)
-              : Option.none()
+            allowances:
+              relevantAllowances.length > 0 ? Option.some(relevantAllowances) : Option.none()
           }
 
           return ok(CreateOrders({ intent: updatedIntent }), "Creating orders...")
         }),
-        Effect.catchAll(error =>
-          Effect.succeed(fail("Allowance check failed", error))
-        )
+        Effect.catchAll(error => Effect.succeed(fail("Allowance check failed", error)))
       )
     },
 
@@ -188,17 +186,15 @@ export const createTransferState = (cts: CreateTransferState, transfer: Transfer
           }
 
           return Effect.succeed(
-            ok(CheckReciever({ intent: updatedIntent }), "Checking receiver...")
+            ok(CheckReceiver({ intent: updatedIntent }), "Checking receiver...")
           )
         }),
 
-        Effect.catchAll(error =>
-          Effect.succeed(fail("Order creation failed", error))
-        )
+        Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error)))
       ),
 
-    //Move check reciever in here
-    CheckReciever: ({ intent }) =>
+    //Move check receiver in here
+    CheckReceiver: ({ intent }) =>
       Effect.sleep(1000).pipe(
         Effect.flatMap(() => Effect.succeed(ok(CreateSteps({ intent }), "Final steps...")))
       ),

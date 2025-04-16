@@ -28,25 +28,28 @@ export const checkBalanceForIntent = (
         source_universal_chain_id: context.sourceChain.universal_chain_id
       }
     })
-    .reduce((acc, ctx) => {
-      const key = `${ctx.sender}_${ctx.baseToken}`
+    .reduce(
+      (acc, ctx) => {
+        const key = `${ctx.sender}_${ctx.baseToken}`
 
-      if (acc[key]) {
-        acc[key].required += ctx.required
-      } else {
-        acc[key] = ctx
-      }
+        if (acc[key]) {
+          acc[key].required += ctx.required
+        } else {
+          acc[key] = ctx
+        }
 
-      return acc
-    }, {} as Record<
-      string,
-      {
-        sender: string
-        baseToken: string
-        required: bigint
-        source_universal_chain_id: string
-      }
-    >)
+        return acc
+      },
+      {} as Record<
+        string,
+        {
+          sender: string
+          baseToken: string
+          required: bigint
+          source_universal_chain_id: string
+        }
+      >
+    )
 
   const groupedValues = Object.values(grouped)
 
@@ -86,9 +89,7 @@ export const checkBalanceForIntent = (
     )
   ).pipe(
     Effect.map(results =>
-      results.every(identity)
-        ? { _tag: "HasEnough" }
-        : { _tag: "InsufficientFunds" }
+      results.every(identity) ? { _tag: "HasEnough" } : { _tag: "InsufficientFunds" }
     )
   )
 }

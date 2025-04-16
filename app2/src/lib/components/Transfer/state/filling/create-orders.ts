@@ -1,11 +1,4 @@
-import {
-  Effect,
-  Match,
-  Option,
-  pipe,
-  Schema,
-  Array as Arr
-} from "effect"
+import { Effect, Match, Option, pipe, Schema, Array as Arr } from "effect"
 import { fromHex, http } from "viem"
 import {
   createViemPublicClient,
