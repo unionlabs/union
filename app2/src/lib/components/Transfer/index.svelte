@@ -23,8 +23,10 @@ import { onMount } from "svelte"
 import { fly } from "svelte/transition"
 import type {TransferIntent} from "$lib/components/Transfer/state/filling/create-intents.ts"
 import { generateMultisigTx } from "$lib/utils/multisig.ts"
+import { Previous } from "runed"
 
 let currentPage = $state(0)
+let previousPage = $state(0)
 let isLoading = $state(false)
 let transferSteps = $state<Option.Option<Array<TransferStep.TransferStep>>>(Option.none())
 let transferErrors = $state<Option.Option<TransferFlowError>>(Option.none())
@@ -32,14 +34,22 @@ let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
 let statusMessage = $state("")
 let showDetails = $state(false)
 
+let direction = $derived(currentPage > previousPage ? 1 : -1)
+
+$effect(() => {
+  console.log(direction)
+})
+
 function goToNextPage() {
   if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
+    previousPage = currentPage
     currentPage++
   }
 }
 
 function goToPreviousPage() {
   if (currentPage > 0) {
+    previousPage = currentPage
     currentPage--
   }
 }
@@ -220,19 +230,13 @@ onMount(() => {
   return () => window.removeEventListener("keydown", handler)
 })
 
-const flyLeft = (node: Element) =>
-  fly(node, {
-    x: -300,
-    duration: 300,
-    delay: 0
-  })
-
-const flyRight = (node: Element) =>
-  fly(node, {
-    x: 300,
-    duration: 300,
-    delay: 0
-  })
+const currentStep = $derived(
+  pipe(
+    transferSteps, //[currentPage]
+    Option.flatMap(Arr.get(currentPage)),
+    Option.getOrElse(() => TransferStep.Filling())
+  )
+)
 </script>
 
 <Card
@@ -254,9 +258,13 @@ const flyRight = (node: Element) =>
     />
   </div>
 
-  <div class="grid w-full grow">
+  <div class="grid w-full grow overflow-hidden">
     {#if currentPage === 0}
-      <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyRight out:flyLeft>
+      <div
+        class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
+        out:fly={{ x: direction * -382, duration:300 }}
+        in:fly ={{ x: direction * 382, duration:300 }}
+      >
         <FillingPage
           onContinue={handleActionButtonClick}
           {statusMessage}
@@ -267,46 +275,60 @@ const flyRight = (node: Element) =>
           loading={isLoading}
         />
       </div>
-    {:else if Option.isSome(transferSteps)}
-      {#if Option.isSome(Arr.get(currentPage)(transferSteps.value))}
-        {@const step = Arr.get(currentPage)(transferSteps.value).value}
-
-        {#if TransferStep.is("CheckReceiver")(step)}
-          <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
+      {/if}
+        {#if TransferStep.is("CheckReceiver")(currentStep)}
+          <div
+            class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
+            out:fly={{ x: direction * -382, duration:300 }}
+            in:fly ={{ x: direction * 382, duration:300 }}
+          >
             <CheckReceiverPage
               stepIndex={currentPage + 1}
-              step={step}
+              step={currentStep}
               onBack={goToPreviousPage}
               onSubmit={goToNextPage}
             />
           </div>
-        {:else if TransferStep.is("ApprovalRequired")(step)}
-          <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyRight out:flyLeft>
+        {/if}
+        {#if TransferStep.is("ApprovalRequired")(currentStep)}
+          <div
+            class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
+            out:fly={{ x: direction * -382, duration:300 }}
+            in:fly ={{ x: direction * 382, duration:300 }}
+          >
             <ApprovalPage
               stepIndex={currentPage + 1}
-              step={step}
+              step={currentStep}
               onBack={goToPreviousPage}
               onApprove={handleActionButtonClick}
               {actionButtonText}
             />
           </div>
-        {:else if TransferStep.is("SubmitInstruction")(step)}
-          <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
+        {/if}
+        {#if TransferStep.is("SubmitInstruction")(currentStep)}
+          <div
+            class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
+            out:fly={{ x: direction * -382, duration:300 }}
+            in:fly ={{ x: direction * 382, duration:300 }}
+          >
             <SubmitPage
               stepIndex={currentPage + 1}
-              step={step}
+              step={currentStep}
               onCancel={newTransfer}
               onSubmit={handleActionButtonClick}
               {actionButtonText}
             />
           </div>
-        {:else if TransferStep.is("WaitForIndex")(step)}
-          <div class="flex grow col-start-1 col-end-2 row-start-1 row-end-2" in:flyLeft out:flyLeft>
-            <IndexPage {newTransfer} step={step} />
+        {/if}
+        {#if TransferStep.is("WaitForIndex")(currentStep)}
+          <div
+            class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
+            out:fly={{ x: direction * -382, duration:300 }}
+            in:fly ={{ x: direction * 382, duration:300 }}
+          >
+            <IndexPage {newTransfer} step={currentStep} />
           </div>
         {/if}
-      {/if}
-    {/if}
   </div>
 
 </Card>
