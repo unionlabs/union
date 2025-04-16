@@ -6,6 +6,7 @@ import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
 import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import { generateSalt } from "@unionlabs/sdk/utils"
 
 export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigError")<{
   reason: string
@@ -17,6 +18,8 @@ export const generateMultisigTx = (intents: TransferIntents) =>
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
     const timeoutTimestamp = "0" // TODO
     const isNative = true //TODO
+
+    const salt = yield* generateSalt("cosmos")
 
     const intentMessages = pipe(
       intents,

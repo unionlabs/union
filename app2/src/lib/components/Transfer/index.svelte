@@ -22,6 +22,7 @@ import { beforeNavigate } from "$app/navigation"
 import { onMount } from "svelte"
 import { fly } from "svelte/transition"
 import type { TransferIntents } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import { generateMultisigTx } from "$lib/utils/multisig.ts"
 
 let currentPage = $state(0)
 let isLoading = $state(false)
@@ -59,6 +60,12 @@ let actionButtonText = $derived.by(() => {
 })
 
 function handleActionButtonClick() {
+  if (transfer.signingMode === "multi") {
+    console.log("SIGNING MODE IS MULTISIG")
+    const b = Effect.runSync(generateMultisigTx(localIntents))
+    console.log({ b })
+    return
+  }
   if (Option.isNone(transferSteps)) return
   const currentStep = transferSteps.value[currentPage]
 
@@ -91,6 +98,8 @@ function newTransfer() {
   transferHashStore.reset()
   wallets.clearInputAddress()
 }
+
+let localIntents = $state<TransferIntents>([])
 
 $effect(() => {
   if (currentPage !== 0) return
@@ -164,6 +173,8 @@ $effect(() => {
           })
         )
       }
+
+      localIntents = intents
 
       if (Option.isSome(intent.instructions)) {
         steps.push(

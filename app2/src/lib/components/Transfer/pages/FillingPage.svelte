@@ -63,7 +63,6 @@ const uiStatus = $derived.by(() => {
 
 const isButtonEnabled = $derived.by(() => !loading)
 
-let signingMode = $state<"multi" | "single">("single")
 let sender = $state("")
 </script>
 
@@ -73,10 +72,10 @@ let sender = $state("")
       class="shrink flex flex-row gap-2 items-center justify-end uppercase text-xs pr-2"
     >
       <Button
-        selected={signingMode === "single"}
+        selected={transfer.signingMode === "single"}
         variant="inline"
         onclick={() => {
-          signingMode = "single";
+          transfer.signingMode = "single";
           wallets.clearInputAddress()
         }}
       >
@@ -84,10 +83,10 @@ let sender = $state("")
       </Button>
       <div>|</div>
       <Button
-        selected={signingMode === "multi"}
+        selected={transfer.signingMode === "multi"}
         variant="inline"
         onclick={() => {
-          signingMode = "multi";
+          transfer.signingMode = "multi";
         }}
       >
         MULTISIG
@@ -96,7 +95,7 @@ let sender = $state("")
   </div>
 
   <div class="flex flex-col gap-4">
-    {#if signingMode === "multi"}
+    {#if transfer.signingMode === "multi"}
       <Input
         id="manualSender"
         class="h-14 text-center text-lg"
@@ -104,7 +103,6 @@ let sender = $state("")
         value={sender}
         placeholder="0x123"
         spellcheck="false"
-
         oninput={(event) => {
           getDerivedReceiverSafe(event.target.value).pipe(
             Option.match({

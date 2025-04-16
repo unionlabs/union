@@ -12,6 +12,7 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 
 export class Transfer {
   raw = new RawTransferSvelte()
+  signingMode = $state<"single" | "multi">("single")
 
   sourceChain = $derived(
     chains.data.pipe(
