@@ -72,11 +72,11 @@ impl IbcClient for BerachainLightClient {
         consensus_state.timestamp
     }
 
-    fn get_latest_height(client_state: &Self::ClientState) -> u64 {
+    fn get_latest_height(ClientState::V1(client_state): &Self::ClientState) -> u64 {
         client_state.latest_height
     }
 
-    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+    fn get_counterparty_chain_id(ClientState::V1(client_state): &Self::ClientState) -> String {
         client_state.chain_id.to_string()
     }
 
@@ -98,14 +98,13 @@ impl IbcClient for BerachainLightClient {
         Ok(ClientCreationResult::new())
     }
 
-    // TODO: rearrange to avoid the clones
     fn verify_header(
         ctx: IbcClientCtx<Self>,
         _caller: Addr,
         header: Self::Header,
         _relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
-        let mut client_state = ctx.read_self_client_state()?;
+        let ClientState::V1(mut client_state) = ctx.read_self_client_state()?;
 
         // 1. extract L1 state
         let l1_client_state = ctx
@@ -155,7 +154,7 @@ impl IbcClient for BerachainLightClient {
 
         if client_state.latest_height < update_height {
             client_state.latest_height = update_height;
-            Ok(state_update.overwrite_client_state(client_state))
+            Ok(state_update.overwrite_client_state(ClientState::V1(client_state)))
         } else {
             Ok(state_update)
         }

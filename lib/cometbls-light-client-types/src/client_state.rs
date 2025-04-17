@@ -74,8 +74,8 @@ pub mod proto {
         ) -> Result<Self, Self::Error> {
             Ok(Self {
                 chain_id: ChainId::from_string(value.chain_id)?,
-                trusting_period: Duration::from_nanos(value.trusting_period),
-                max_clock_drift: Duration::from_nanos(value.max_clock_drift),
+                trusting_period: Duration::from_secs(value.trusting_period),
+                max_clock_drift: Duration::from_secs(value.max_clock_drift),
                 frozen_height: required!(value.frozen_height)?.into(),
                 latest_height: required!(value.latest_height)?.into(),
                 // NOTE: the contract_address is not used for cometbls clients encoded using protobuf. if this field is required, use a different encoding (i.e. bincode or ethabi).

@@ -1,0 +1,25 @@
+[package]
+name    = "voyager-client-module-berachain"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+embed-commit                  = { workspace = true }
+jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                        = { workspace = true }
+serde                         = { workspace = true, features = ["derive"] }
+serde_json                    = { workspace = true }
+berachain-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+tokio                         = { workspace = true }
+tracing                       = { workspace = true }
+unionlabs                     = { workspace = true, features = ["bincode"] }
+voyager-message               = { workspace = true }
+voyager-vm                    = { workspace = true }

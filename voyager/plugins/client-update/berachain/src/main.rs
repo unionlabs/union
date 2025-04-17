@@ -2,8 +2,9 @@ use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api_types::{chain_spec::Mainnet, deneb};
-use berachain_light_client_types::Header;
+use berachain_light_client_types::{ClientState, Header};
 use ethereum_light_client_types::AccountProof;
+use ibc_union_spec::{IbcUnion, path::ClientStatePath};
 use jsonrpsee::{
     Extensions,
     core::{RpcResult, async_trait},
@@ -47,9 +48,7 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub l1_client_id: u32,
-    pub l1_chain_id: ChainId,
-    pub l2_chain_id: ChainId,
+    pub chain_id: ChainId,
     pub ibc_handler_address: H160,
     pub eth_provider: DynProvider,
     pub cometbft_client: cometbft_rpc::Client,
@@ -58,9 +57,7 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub l1_client_id: u32,
-    pub l1_chain_id: ChainId,
-    pub l2_chain_id: ChainId,
+    pub chain_id: ChainId,
     pub ibc_handler_address: H160,
     pub comet_rpc_url: String,
     pub eth_rpc_url: String,
@@ -79,20 +76,18 @@ impl Plugin for Module {
 
         let chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 
-        if chain_id != config.l2_chain_id {
-            bail!(
+        if chain_id != config.chain_id {
+            return Err(format!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.l2_chain_id,
-                chain_id
-            );
+                config.chain_id, chain_id
+            )
+            .into());
         }
 
         let tm_client = cometbft_rpc::Client::new(config.comet_rpc_url).await?;
 
         Ok(Self {
-            l1_client_id: config.l1_client_id,
-            l2_chain_id: config.l2_chain_id,
-            l1_chain_id: config.l1_chain_id,
+            chain_id: config.chain_id,
             ibc_handler_address: config.ibc_handler_address,
             eth_provider,
             cometbft_client: tm_client,
@@ -101,9 +96,9 @@ impl Plugin for Module {
 
     fn info(config: Self::Config) -> PluginInfo {
         PluginInfo {
-            name: plugin_name(&config.l2_chain_id),
+            name: plugin_name(&config.chain_id),
             interest_filter: UpdateHook::filter(
-                &config.l2_chain_id,
+                &config.chain_id,
                 &ClientType::new(ClientType::BEACON_KIT),
             ),
         }
@@ -122,7 +117,7 @@ fn plugin_name(chain_id: &ChainId) -> String {
 
 impl Module {
     fn plugin_name(&self) -> String {
-        plugin_name(&self.l2_chain_id)
+        plugin_name(&self.chain_id)
     }
 
     // TODO: deduplicate with eth client update module?
@@ -161,7 +156,7 @@ pub struct ChainIdParseError {
 
 #[async_trait]
 impl PluginServer<ModuleCall, Never> for Module {
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
         _: &Extensions,
@@ -173,7 +168,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 .into_iter()
                 .map(|mut op| {
                     UpdateHook::new(
-                        &self.l2_chain_id,
+                        &self.chain_id,
                         &ClientType::new(ClientType::BEACON_KIT),
                         |fetch| {
                             Call::Plugin(PluginMessage::new(
@@ -182,6 +177,11 @@ impl PluginServer<ModuleCall, Never> for Module {
                                     counterparty_chain_id: fetch.counterparty_chain_id.clone(),
                                     update_from: fetch.update_from,
                                     update_to: fetch.update_to,
+                                    client_id: fetch
+                                        .client_id
+                                        .clone()
+                                        .decode_spec::<IbcUnion>()
+                                        .expect("bad client id?"),
                                 }),
                             ))
                         },
@@ -196,17 +196,50 @@ impl PluginServer<ModuleCall, Never> for Module {
         })
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
-    async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate {
                 counterparty_chain_id,
                 update_from,
                 update_to,
+                client_id,
             }) => {
-                // NOTE: the implementation is simple because the
-                // cometbft/beacon/execution heights are guaranteed to be the
-                // same
+                let voyager_client = e.try_get::<VoyagerClient>()?;
+
+                let counterparty_latest_height = voyager_client
+                    .query_latest_height(counterparty_chain_id.clone(), false)
+                    .await?;
+
+                let beacon_kit_client_state_raw = voyager_client
+                    .query_ibc_state(
+                        counterparty_chain_id.clone(),
+                        counterparty_latest_height,
+                        ClientStatePath { client_id },
+                    )
+                    .await?;
+
+                let beacon_kit_client_info = voyager_client
+                    .client_info::<IbcUnion>(counterparty_chain_id.clone(), client_id)
+                    .await?;
+
+                let ClientState::V1(beacon_kit_client_state) = voyager_client
+                    .decode_client_state::<IbcUnion, ClientState>(
+                        beacon_kit_client_info.client_type,
+                        beacon_kit_client_info.ibc_interface,
+                        beacon_kit_client_state_raw,
+                    )
+                    .await?;
+
+                let l1_client_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        beacon_kit_client_state.l1_client_id,
+                    )
+                    .await?;
+
+                // NOTE: The implementation is simple because the cometbft/beacon/execution heights are guaranteed to be the same (i.e. we don't need to find the consensus height to match the execution height)
                 let query_result = self
                     .cometbft_client
                     .abci_query(
@@ -251,21 +284,26 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                 // Recursively dispatch a L1 update before dispatching the L2 update.
                 Ok(conc([
-                    call(FetchUpdateHeaders {
-                        client_type: ClientType::new(ClientType::BEACON_KIT),
-                        counterparty_chain_id: counterparty_chain_id.clone(),
-                        chain_id: self.l1_chain_id.clone(),
-                        client_id: RawClientId::new(self.l1_client_id),
-                        update_from,
-                        update_to,
-                    }),
+                    promise(
+                        [call(FetchUpdateHeaders {
+                            client_type: ClientType::new(ClientType::TENDERMINT),
+                            counterparty_chain_id: counterparty_chain_id.clone(),
+                            chain_id: l1_client_meta.counterparty_chain_id.clone(),
+                            client_id: RawClientId::new(beacon_kit_client_state.l1_client_id),
+                            update_from,
+                            update_to,
+                        })],
+                        [],
+                        AggregateSubmitTxFromOrderedHeaders {
+                            ibc_spec_id: IbcUnion::ID,
+                            chain_id: l1_client_meta.counterparty_chain_id.clone(),
+                            client_id: RawClientId::new(beacon_kit_client_state.l1_client_id),
+                        },
+                    ),
                     seq([call(WaitForTrustedHeight {
                         chain_id: counterparty_chain_id,
-                        ibc_spec_id: IbcSpecId::new(IbcSpecId::UNION),
-                        // TODO: abstract away the L1 client id and read it from
-                        // the L2 client state (l2_client_id) on the
-                        // `counterparty_chain_id`
-                        client_id: RawClientId::new(self.l1_client_id),
+                        ibc_spec_id: IbcUnion::ID,
+                        client_id: RawClientId::new(beacon_kit_client_state.l1_client_id),
                         height: update_to,
                         finalized: true,
                     })]),
@@ -280,7 +318,7 @@ impl PluginServer<ModuleCall, Never> for Module {
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn callback(
         &self,
         _: &Extensions,

@@ -10,6 +10,7 @@ use unionlabs::{
 
 use crate::types::block_id_flag::BlockIdFlag;
 
+/// Specialized CommitSig structure for CometBFT
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "CommitSigRaw", into = "CommitSigRaw")]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
@@ -27,7 +28,9 @@ pub enum CommitSig {
     },
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+/// Raw CommitSig struct, able to represent all possible CometBFT-compatible commit sigs.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CommitSigRaw {
     pub block_id_flag: i32,
     pub validator_address: Bytes<HexUnprefixed>,
@@ -72,32 +75,6 @@ impl From<CommitSig> for CommitSigRaw {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum Error {
-    #[error("invalid validator_address")]
-    ValidatorAddress(#[from] FixedBytesError),
-    #[error("invalid block_id_flag")]
-    BlockIdFlag(#[from] UnknownEnumVariant<i32>),
-    #[error("invalid timestamp")]
-    Timestamp(#[from] TryFromTimestampError),
-    #[error("block id flag was `Unknown`")]
-    UnknownBlockIdFlag,
-    #[error("an absent commit sig had an address")]
-    AbsentWithValidatorAddress,
-    #[error("an absent commit sig had a timestamp")]
-    AbsentWithTimestamp,
-    #[error("an absent commit sig had a signature")]
-    AbsentWithSignature,
-    #[error("a commit commit sig requires timestamp to be set")]
-    CommitMissingTimestamp,
-    #[error("a commit commit sig requires signature to be set")]
-    CommitMissingSignature,
-    #[error("a nil commit sig requires timestamp to be set")]
-    NilMissingTimestamp,
-    #[error("a nil commit sig requires signature to be set")]
-    NilMissingSignature,
-}
-
 impl TryFrom<CommitSigRaw> for CommitSig {
     type Error = Error;
 
@@ -137,45 +114,55 @@ impl TryFrom<CommitSigRaw> for CommitSig {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+pub enum Error {
+    #[error("invalid validator_address")]
+    ValidatorAddress(#[from] FixedBytesError),
+    #[error("invalid block_id_flag")]
+    BlockIdFlag(#[from] UnknownEnumVariant<i32>),
+    #[error("invalid timestamp")]
+    Timestamp(#[from] TryFromTimestampError),
+    #[error("block id flag was `Unknown`")]
+    UnknownBlockIdFlag,
+    #[error("an absent commit sig had an address")]
+    AbsentWithValidatorAddress,
+    #[error("an absent/agg absent commit sig had a timestamp")]
+    AbsentWithTimestamp,
+    #[error("an absent/agg absent/agg nill absent  commit sig had a signature")]
+    AbsentWithSignature,
+    #[error("a commit commit sig requires timestamp to be set")]
+    CommitMissingTimestamp,
+    #[error("a commit commit sig requires signature to be set")]
+    CommitMissingSignature,
+    #[error("a nil commit sig requires timestamp to be set")]
+    NilMissingTimestamp,
+    #[error("an agg nil/agg nil absent commit had a timestamp")]
+    AggNilWithTimestamp,
+    #[error("a nil commit sig requires signature to be set")]
+    NilMissingSignature,
+}
+
+/// NOTE: We provide conversions to/from both the cometbft protos and the tendermint protos. If we ever remove support for the old tendermint protos, it can be removed here as well.
 #[cfg(feature = "proto")]
 pub mod proto {
-    use crate::types::{
-        block_id_flag::BlockIdFlag,
-        commit_sig::{CommitSig, CommitSigRaw},
-    };
+    use crate::types::commit_sig::{CommitSig, CommitSigRaw};
 
     // COMETBFT <-> CANONICAL
 
+    impl From<CommitSigRaw> for protos::cometbft::types::v1::CommitSig {
+        fn from(value: CommitSigRaw) -> Self {
+            Self {
+                block_id_flag: value.block_id_flag,
+                validator_address: value.validator_address.into(),
+                timestamp: value.timestamp.map(Into::into),
+                signature: value.signature.unwrap_or_default().into(),
+            }
+        }
+    }
+
     impl From<CommitSig> for protos::cometbft::types::v1::CommitSig {
         fn from(value: CommitSig) -> Self {
-            match value {
-                CommitSig::Absent => Self {
-                    block_id_flag: BlockIdFlag::Absent.into(),
-                    validator_address: vec![],
-                    timestamp: None,
-                    signature: vec![],
-                },
-                CommitSig::Commit {
-                    validator_address,
-                    timestamp,
-                    signature,
-                } => Self {
-                    block_id_flag: BlockIdFlag::Commit.into(),
-                    validator_address: validator_address.into(),
-                    timestamp: Some(timestamp.into()),
-                    signature: signature.into(),
-                },
-                CommitSig::Nil {
-                    validator_address,
-                    timestamp,
-                    signature,
-                } => Self {
-                    block_id_flag: BlockIdFlag::Nil.into(),
-                    validator_address: validator_address.into(),
-                    timestamp: Some(timestamp.into()),
-                    signature: signature.into(),
-                },
-            }
+            CommitSigRaw::from(value).into()
         }
     }
 
@@ -195,36 +182,20 @@ pub mod proto {
 
     // TENDERMINT <-> CANONICAL
 
+    impl From<CommitSigRaw> for protos::tendermint::types::CommitSig {
+        fn from(value: CommitSigRaw) -> Self {
+            Self {
+                block_id_flag: value.block_id_flag,
+                validator_address: value.validator_address.into(),
+                timestamp: value.timestamp.map(Into::into),
+                signature: value.signature.unwrap_or_default().into(),
+            }
+        }
+    }
+
     impl From<CommitSig> for protos::tendermint::types::CommitSig {
         fn from(value: CommitSig) -> Self {
-            match value {
-                CommitSig::Absent => Self {
-                    block_id_flag: BlockIdFlag::Absent.into(),
-                    validator_address: vec![],
-                    timestamp: None,
-                    signature: vec![],
-                },
-                CommitSig::Commit {
-                    validator_address,
-                    timestamp,
-                    signature,
-                } => Self {
-                    block_id_flag: BlockIdFlag::Commit.into(),
-                    validator_address: validator_address.into(),
-                    timestamp: Some(timestamp.into()),
-                    signature: signature.into(),
-                },
-                CommitSig::Nil {
-                    validator_address,
-                    timestamp,
-                    signature,
-                } => Self {
-                    block_id_flag: BlockIdFlag::Nil.into(),
-                    validator_address: validator_address.into(),
-                    timestamp: Some(timestamp.into()),
-                    signature: signature.into(),
-                },
-            }
+            CommitSigRaw::from(value).into()
         }
     }
 
@@ -245,6 +216,9 @@ pub mod proto {
 
 #[cfg(test)]
 mod tests {
+    use hex_literal::hex;
+    use unionlabs::primitives::{encoding::Base64, Bytes};
+
     use crate::types::commit_sig::CommitSig;
 
     // #[test]
@@ -283,10 +257,10 @@ mod tests {
     fn json_commit() {
         let json = r#"
             {
-              "block_id_flag": 2,
-              "validator_address": "3F9FEED6073BAF751CDCC6F9FE355435FC14B0F0",
-              "timestamp": "2024-11-19T15:24:34.213395758Z",
-              "signature": "7qr+0z46EhPK+6jYyL4JJpVrGRkxX+JS1kSqYdGkw4onyiqclriLkLDA7DQcdlT4v6Ky+2iG2VKRg2lO9cXKUg=="
+                "block_id_flag": 2,
+                "validator_address": "3F9FEED6073BAF751CDCC6F9FE355435FC14B0F0",
+                "timestamp": "2024-11-19T15:24:34.213395758Z",
+                "signature": "7qr+0z46EhPK+6jYyL4JJpVrGRkxX+JS1kSqYdGkw4onyiqclriLkLDA7DQcdlT4v6Ky+2iG2VKRg2lO9cXKUg=="
             }
         "#;
 

@@ -1,12 +1,16 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::{bounded::BoundedI64, google::protobuf::timestamp::Timestamp};
 
-use crate::types::{light_block::LightBlock, validator::Validator};
+use crate::types::{
+    commit_sig::{CommitSig, CommitSigRaw},
+    light_block::LightBlock,
+    validator::Validator,
+};
 
 // TODO: Figure out serde for this type, I'm pretty sure this isn't quite correct
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LightClientAttackEvidence {
-    pub conflicting_block: LightBlock,
+    pub conflicting_block: LightBlock<CommitSigRaw>,
     pub common_height: BoundedI64<1, { i64::MAX }>,
     pub byzantine_validators: Vec<Validator>,
     pub total_voting_power: i64,

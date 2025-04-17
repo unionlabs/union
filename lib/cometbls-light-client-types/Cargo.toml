@@ -12,23 +12,23 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                = { workspace = true, features = ["sol-types"], optional = true }
-bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
-consensus-primitives = { workspace = true }
-protos               = { workspace = true, features = ["union+ibc+lightclients+cometbls+v1"], optional = true }
-serde                = { workspace = true, features = ["derive"], optional = true }
-serde-utils          = { workspace = true }
-thiserror            = { workspace = true }
-unionlabs            = { workspace = true }
+alloy       = { workspace = true, features = ["sol-types"], optional = true }
+bincode     = { workspace = true, features = ["alloc", "derive"], optional = true }
+consensus-primitives.workspace = true
+protos      = { workspace = true, features = ["union+ibc+lightclients+cometbls+v1"], optional = true }
+serde       = { workspace = true, features = ["derive"], optional = true }
+serde-utils = { workspace = true }
+thiserror   = { workspace = true }
+unionlabs   = { workspace = true }
 
 
 [features]
 default = []
 
-bincode = ["dep:bincode", "unionlabs/bincode", "consensus-primitives/bincode"]
+bincode = ["dep:bincode", "unionlabs/bincode"]
 ethabi  = ["dep:alloy", "unionlabs/ethabi"]
 proto   = ["dep:protos", "unionlabs/proto"]
-serde   = ["dep:serde", "consensus-primitives/serde"]
+serde   = ["dep:serde"]
 
 [dev-dependencies]
 bcs                         = { workspace = true }

@@ -108,8 +108,8 @@ _: {
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
-            "trusted-mpt"
-            # "sui"
+            "tendermint-bls"
+            "berachain"
           ];
         }
         {
@@ -120,6 +120,7 @@ _: {
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "feemarket";
+            gas_multiplier = 1.4;
           };
           apps = {
             ucs03 = (ucs03-configs.cw20 cw20-base) // {

@@ -18,9 +18,10 @@ use unionlabs::{
 use crate::{
     error::Error,
     types::{HostFns, SignatureVerifier},
-    utils::{canonical_vote, get_validator_by_address, header_expired, validators_hash},
+    utils::{canonical_vote_bytes, get_validator_by_address, header_expired, validators_hash},
 };
 
+/// Reference implementation: <https://github.com/cometbft/cometbft/blob/e820315631a81c230e4abe9bcede8e29382e8af5/light/verifier.go#L130>
 #[allow(clippy::too_many_arguments)]
 pub fn verify<V: HostFns>(
     trusted_header: &SignedHeader,
@@ -33,7 +34,7 @@ pub fn verify<V: HostFns>(
     trust_level: &Fraction,
     signature_verifier: &SignatureVerifier<V>,
 ) -> Result<(), Error> {
-    // check adjacency in terms of block(header) height
+    // check adjacency in terms of block (header) height
     if untrusted_header.header.height.inner()
         != trusted_header
             .header
@@ -78,6 +79,8 @@ pub fn verify<V: HostFns>(
 ///
 /// maxClockDrift defines how much untrustedHeader.Time can drift into the
 /// future.
+///
+/// Reference implementation: <https://github.com/cometbft/cometbft/blob/e820315631a81c230e4abe9bcede8e29382e8af5/light/verifier.go#L30>
 #[allow(clippy::too_many_arguments)]
 pub fn verify_non_adjacent<V: HostFns>(
     trusted_header: &SignedHeader,
@@ -137,6 +140,7 @@ pub fn verify_non_adjacent<V: HostFns>(
     Ok(())
 }
 
+/// Reference implementation: <https://github.com/cometbft/cometbft/blob/e820315631a81c230e4abe9bcede8e29382e8af5/light/verifier.go#L92>
 pub fn verify_adjacent<V: HostFns>(
     trusted_header: &SignedHeader,
     untrusted_header: &SignedHeader, // height=Y
@@ -191,6 +195,9 @@ pub fn verify_adjacent<V: HostFns>(
     Ok(())
 }
 
+/// Reference implementation: <https://github.com/cometbft/cometbft/blob/e820315631a81c230e4abe9bcede8e29382e8af5/types/validation.go#L82>
+///
+/// Note that this does not include the caching logic.
 pub fn verify_commit_light<V: HostFns>(
     vals: &ValidatorSet,
     chain_id: &str,
@@ -210,6 +217,7 @@ pub fn verify_commit_light<V: HostFns>(
     let filter_commit =
         |commit_sig: &CommitSig| -> Result<Option<(H160, Timestamp, Vec<u8>)>, Error> {
             match commit_sig {
+                // only commits have a canonical vote, this filtering is required by `canonical_vote_bytes`
                 CommitSig::Commit {
                     validator_address,
                     timestamp,
@@ -276,6 +284,9 @@ fn verify_basic_vals_and_commit(
     Ok(())
 }
 
+/// Reference implementation: <https://github.com/cometbft/cometbft/blob/e820315631a81c230e4abe9bcede8e29382e8af5/types/validation.go#L172>
+///
+/// Note that this does not include the caching logic.
 pub fn verify_commit_light_trusting<V: HostFns>(
     chain_id: &str,
     vals: &ValidatorSet,
@@ -439,7 +450,7 @@ fn verify_commit<F: FnMut(&PublicKey, Vec<u8>, Vec<u8>) -> Result<(), Error>>(
             val
         };
 
-        let vote_sign_bytes = canonical_vote(commit, commit_sig, &timestamp, chain_id)?;
+        let vote_sign_bytes = canonical_vote_bytes(commit, commit_sig, &timestamp, chain_id)?;
 
         signature_handle(&val.pub_key, vote_sign_bytes, signature)?;
 
@@ -458,6 +469,7 @@ fn verify_commit<F: FnMut(&PublicKey, Vec<u8>, Vec<u8>) -> Result<(), Error>>(
     })
 }
 
+/// Reference implementation: <https://github.com/cometbft/cometbft/blob/e820315631a81c230e4abe9bcede8e29382e8af5/light/verifier.go#L148>
 fn verify_new_headers_and_vals(
     untrusted_header: &SignedHeader, // height=Y
     untrusted_vals: &ValidatorSet,   // height=Y

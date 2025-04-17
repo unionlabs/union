@@ -14,12 +14,18 @@ use unionlabs::{
 
 use crate::{error::Error, merkle::calculate_merkle_root};
 
-pub(crate) fn canonical_vote(
+/// Calculate the [`CanonicalVote`] bytes for the provided CommitSig.
+///
+/// # Errors
+///
+/// This function assumes that `commit_sig` is [`CommitSig::Commit`], and will fail otherwise.
+pub fn canonical_vote_bytes(
     commit: &Commit,
     commit_sig: &CommitSig,
     timestamp: &Timestamp,
     chain_id: &str,
 ) -> Result<Vec<u8>, Error> {
+    // TODO: Instead of erroring below with `Error::MissingBlockIdHash`, we should instead return an error *here* that says only `CommitSig::Commit` will have a valid canonical vote.
     let block_id = match commit_sig {
         CommitSig::Absent => BlockId::default(),
         CommitSig::Commit { .. } => commit.block_id.clone(),
@@ -27,7 +33,7 @@ pub(crate) fn canonical_vote(
     };
 
     Ok(
-        Into::<protos::tendermint::types::CanonicalVote>::into(CanonicalVote {
+        protos::tendermint::types::CanonicalVote::from(CanonicalVote {
             ty: SignedMsgType::Precommit,
             height: commit.height,
             // roundabout way to go from i32 >= 0 to i64 >= 0
@@ -52,7 +58,7 @@ pub(crate) fn canonical_vote(
 }
 
 #[must_use]
-pub(crate) fn get_validator_by_address<'a>(
+pub fn get_validator_by_address<'a>(
     vals: &'a ValidatorSet,
     address: &H160,
 ) -> Option<(usize, &'a Validator)> {
@@ -80,13 +86,10 @@ pub fn validators_hash(validator_set: &ValidatorSet) -> H256 {
 }
 
 #[must_use]
-pub fn header_expired(_h: &SignedHeader, _trusting_period: Duration, _now: Timestamp) -> bool {
-    // TODO: Re-enable
-    // let Some(expiration_time) = h.header.time.checked_add(trusting_period) else {
-    //     return false;
-    // };
+pub fn header_expired(h: &SignedHeader, trusting_period: Duration, now: Timestamp) -> bool {
+    let Some(expiration_time) = h.header.time.checked_add(trusting_period) else {
+        return false;
+    };
 
-    // expiration_time <= now
-
-    false
+    expiration_time <= now
 }

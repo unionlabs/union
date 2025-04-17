@@ -9,8 +9,8 @@ use cometbft_types::{
     crypto::{proof_ops::ProofOps, public_key::PublicKey},
     p2p::default_node_info::DefaultNodeInfo,
     types::{
-        block::Block, block_id::BlockId, header::Header, signed_header::SignedHeader,
-        tx_proof::TxProof, validator::Validator,
+        block::Block, block_id::BlockId, commit_sig::CommitSig, header::Header,
+        signed_header::SignedHeader, tx_proof::TxProof, validator::Validator,
     },
 };
 use serde::{Deserialize, Serialize};

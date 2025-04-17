@@ -7,7 +7,6 @@ use unionlabs_primitives::Bytes;
 
 use crate::encoding::{Decode, DecodeAs, Encode, EncodeAs, Encoding, Proto};
 
-#[track_caller]
 pub fn assert_proto_roundtrip<T>(t: &T)
 where
     T: Encode<Proto> + Decode<Proto> + Debug + Clone + PartialEq,
@@ -17,7 +16,6 @@ where
     assert_eq!(t, &try_from_proto, "proto roundtrip failed");
 }
 
-#[track_caller]
 pub fn assert_json_roundtrip<T>(t: &T)
 where
     T: serde::Serialize + for<'a> serde::Deserialize<'a> + Debug + PartialEq,
@@ -27,7 +25,6 @@ where
     assert_eq!(t, &from_json, "json roundtrip failed");
 }
 
-#[track_caller]
 pub fn assert_string_roundtrip<T>(t: &T)
 where
     T: Display + FromStr<Err: Debug> + Debug + PartialEq,
@@ -37,7 +34,6 @@ where
     assert_eq!(t, &from_str, "string roundtrip failed");
 }
 
-#[track_caller]
 pub fn assert_codec_iso<T, E: Encoding>(t: &T)
 where
     T: Encode<E> + Decode<E> + Clone + Debug + PartialEq,
