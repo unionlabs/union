@@ -209,6 +209,9 @@ impl ConsensusType {
     /// [Ethereum JSON-RPC]: https://ethereum.github.io/execution-apis/api-documentation/
     pub const TRUSTED_EVM: &'static str = "trusted/evm";
 
+    // TODO(aeryz): docs
+    pub const SUI: &'static str = "sui";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 
