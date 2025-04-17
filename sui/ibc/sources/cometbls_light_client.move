@@ -105,14 +105,16 @@ module ibc::light_client {
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
-    ): Client {
+    ): (Client, vector<u8>, vector<u8>) {
         let mut consensus_states = table::new(ctx);
         consensus_states.add(0, consensus_state_bytes);
-        Client {
+        (Client {
             id: object::new(ctx),
             client_state: client_state_bytes,
             consensus_states: consensus_states
-        }
+        },
+        client_state_bytes,
+        consensus_state_bytes)
     }
 
     public(package) fun status(
@@ -212,9 +214,8 @@ module ibc::light_client {
         };
 
         (encode_client_state(&client_state),
-            vector[encode_consensus_state(&consensus_state)],
-            vector[0])
-        // (vector::empty(), vector::empty(), vector::empty())
+            encode_consensus_state(&consensus_state),
+            0)
     }
 
     public(package) fun latest_height(

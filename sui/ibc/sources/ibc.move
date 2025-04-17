@@ -295,8 +295,290 @@ module ibc::ibc {
             channels: table::new(ctx),
             clients: table::new(ctx),
         });
-
     }
+
+    /// Create a client with an initial client and consensus state
+    public entry fun create_client(
+        ibc_store: &mut IBCStore,
+        client_type: String, 
+        client_state_bytes: vector<u8>, 
+        consensus_state_bytes: vector<u8>,
+        ctx: &mut TxContext,
+    ) {
+        assert!(client_type.bytes() == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
+
+        let client_id = ibc_store.generate_client_identifier();
+        
+        let (client, client_state_bytes, consensus_state_bytes) = light_client::create_client(
+            client_id,
+            client_state_bytes,
+            consensus_state_bytes,
+            ctx,
+        );
+
+        assert!(client.status() == 0, E_CLIENT_NOT_ACTIVE);
+
+        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, commitment::client_state_commitment_key(client_id), client_state_bytes);
+
+        let latest_height = client.latest_height();
+
+        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, commitment::consensus_state_commitment_key(client_id, latest_height), consensus_state_bytes);
+        ibc_store.clients.add(client_id, client);
+
+        event::emit(
+            ClientCreatedEvent {
+                client_id,
+                client_type,
+                consensus_height: latest_height,
+            },
+        )
+    }
+
+    public entry fun update_client(
+        ibc_store: &mut IBCStore,
+        client_id: u32,
+        client_message: vector<u8>
+    ) {
+        // Check if the client exists in the commitments table
+        assert!(
+            ibc_store.commitments.contains(commitment::client_state_commitment_key(client_id)),
+            E_CLIENT_NOT_FOUND
+        );
+
+        // Update the client and consensus states using the client message
+        let (client_state, consensus_state, height) =
+            light_client.update_client(client_message);
+
+        // Update the client state commitment
+        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
+            commitment::client_state_commitment_key(client_id),
+            client_state
+        );
+
+        // Update the consensus state commitment
+        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
+            commitment::consensus_state_commitment_key(client_id, height),
+            hash::keccak256(&consensus_state)
+        );
+
+        // Emit a ClientUpdated event for each updated height
+        event::emit(
+            ClientUpdated {
+                client_id: client_id,
+                client_type: utf8(CLIENT_TYPE_COMETBLS),
+                height: height
+            }
+        );
+    }
+
+    public entry fun submit_misbehaviour(
+        ibc_store: &mut IBCStore,
+        client_id: u32,
+        misbehaviour: vector<u8>
+    ) {
+        // Check if the client exists in the commitments table
+        assert!(
+            ibc_store.commitments.contains(commitment::client_state_commitment_key(client_id)),
+            E_CLIENT_NOT_FOUND
+        );
+
+        // Report the misbehavior
+        let light_client = ibc_store.clients.borrow(client_id);
+        light_client.report_misbehaviour(misbehaviour);
+
+        // Emit a misbehavior event
+        event::emit(
+            SubmitMisbehaviour {
+                client_id: client_id,
+                client_type: utf8(CLIENT_TYPE_COMETBLS)
+            }
+        );
+    }    
+
+    public entry fun connection_open_init(
+        ibc_store: &mut IBCStore,
+        client_id: u32,
+        counterparty_client_id: u32
+    ) {
+        assert!(ibc_store.clients.borrow(client_id).status() == 0, E_CLIENT_NOT_ACTIVE);
+
+        let connection_id = ibc_store.generate_connection_identifier();
+
+        let connection =
+            connection_end::new(
+                CONN_STATE_INIT,
+                client_id,
+                counterparty_client_id,
+                0
+            );
+
+        add_or_update_table<u32, ConnectionEnd>(&mut ibc_store.connections, connection_id, connection);
+
+        ibc_store.commit_connection(connection_id, connection);
+
+        event::emit(
+            ConnectionOpenInit {
+                connection_id,
+                client_id,
+                counterparty_client_id,
+            }
+        )
+    }
+
+    public entry fun connection_open_try(
+        ibc_store: &mut IBCStore,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32,
+        client_id: u32,
+        proof_init: vector<u8>,
+        proof_height: u64
+    ) {
+        let connection_id = ibc_store.generate_connection_identifier();
+
+        let mut connection = &connection_end::new(
+            CONN_STATE_TRYOPEN,
+            client_id,
+            counterparty_client_id,
+            counterparty_connection_id
+        );
+
+        // Construct the expected connection state to verify against the proof
+        let expected_connection = connection_end::new(
+            CONN_STATE_INIT,
+            counterparty_client_id,
+            client_id,
+            0 // counterparty_connection_id
+        );
+
+        let client = ibc_store.clients.borrow(client_id);
+        // Verify the connection state using the provided proof and expected state
+        let res =
+            verify_connection_state(
+                client,
+                proof_height,
+                proof_init,
+                counterparty_connection_id,
+                expected_connection
+        );
+
+        assert!(res == 0, res);
+
+        // Emit an event for the connection try event
+        event::emit(
+            ConnectionOpenTry {
+                connection_id,
+                client_id,
+                counterparty_client_id,
+                counterparty_connection_id,
+            }
+        );
+
+        // Commit the updated connection to storage
+        ibc_store.commit_connection(connection_id, *connection);
+    }
+
+    public entry fun connection_open_ack(
+        ibc_store: &mut IBCStore,
+        connection_id: u32,
+        counterparty_connection_id: u32,
+        proof_try: vector<u8>,
+        proof_height: u64
+    ) {
+        // Borrow the connection from the table
+        let mut connection = ibc_store.connections.borrow_mut(connection_id);
+        assert!(
+            connection_end::state(connection) == CONN_STATE_INIT,
+            E_INVALID_CONNECTION_STATE
+        );
+
+        // Create the expected connection state to verify against the proof
+        let expected_connection = connection_end::new(
+            CONN_STATE_TRYOPEN,
+            connection_end::counterparty_client_id(connection),
+            connection_end::client_id(connection),
+            connection_id
+        );
+
+        // Verify the connection state using the provided proof and expected state
+        let client = ibc_store.clients.borrow(connection_end::client_id(connection));
+
+        let res = verify_connection_state(
+            client,
+            proof_height,
+            proof_try,
+            counterparty_connection_id,
+            expected_connection
+        );
+        assert!(res == 0, res);
+
+        // Update the connection state to TRYOPEN and set the counterparty connection ID
+        connection_end::set_state(connection, CONN_STATE_OPEN);
+        connection_end::set_counterparty_connection_id(connection, counterparty_connection_id);
+
+        // Emit an event for connection acknowledgment
+        event::emit(
+            ConnectionOpenAck {
+                connection_id,
+                client_id: connection_end::client_id(connection),
+                counterparty_client_id: connection_end::counterparty_client_id(connection),
+                counterparty_connection_id: connection_end::counterparty_connection_id(connection)
+            }
+        );
+
+        // Commit the updated connection to storage
+        ibc_store.commit_connection(connection_id, *connection);
+    }
+
+    public entry fun connection_open_confirm(
+        ibc_store: &mut IBCStore,
+        connection_id: u32,
+        proof_ack: vector<u8>,
+        proof_height: u64
+    ) {
+        let connection = ibc_store.connections.borrow_mut(connection_id);
+        assert!(
+            connection_end::state(connection) == CONN_STATE_TRYOPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+
+        // Create the expected connection state in the `OPEN` state to verify against the proof
+        let expected_connection = connection_end::new(
+            CONN_STATE_OPEN,
+            connection_end::counterparty_client_id(connection),
+            connection_end::client_id(connection),
+            connection_id
+        );
+
+        let counterparty_connection_id = connection_end::counterparty_connection_id(connection);
+
+        // Verify the connection state using the provided proof and expected state
+        let client = ibc_store.clients.borrow(connection_end::client_id(connection));
+        let res = verify_connection_state(
+            client,
+            proof_height,
+            proof_ack,
+            counterparty_connection_id,
+            expected_connection
+        );
+        assert!(res == 0, res);
+
+        // Update the connection state to OPEN
+        connection_end::set_state(connection, CONN_STATE_OPEN);
+
+        // Emit an event for connection confirmation
+        event::emit(
+            ConnectionOpenConfirm {
+                connection_id,
+                client_id: connection_end::client_id(connection),
+                counterparty_client_id: connection_end::counterparty_client_id(connection),
+                counterparty_connection_id
+            }
+        );
+
+        // Commit the final state of the connection to storage
+        ibc_store.commit_connection(connection_id, *connection);
+    }
+
 
     // Function to generate a client identifier
     fun generate_client_identifier(ibc_store: &mut IBCStore): u32 {
@@ -434,335 +716,6 @@ module ibc::ibc {
         )
     }
 
-
-    /// Create a client with an initial client and consensus state
-    public entry fun create_client(
-        ibc_store: &mut IBCStore,
-        client_type: String, 
-        client_state: vector<u8>, 
-        consensus_state: vector<u8>,
-        ctx: &mut TxContext,
-    ) {
-        assert!(client_type.bytes() == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
-
-        let client_id = ibc_store.generate_client_identifier();
-        
-        let client = light_client::create_client(
-            client_id,
-            client_state,
-            consensus_state,
-            ctx,
-        );
-
-        assert!(client.status() == 0, E_CLIENT_NOT_ACTIVE);
-
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, commitment::client_state_commitment_key(client_id), client_state);
-
-        let latest_height = client.latest_height();
-
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, commitment::consensus_state_commitment_key(client_id, latest_height), consensus_state);
-        ibc_store.clients.add(client_id, client);
-
-        event::emit(
-            ClientCreatedEvent {
-                client_id,
-                client_type,
-                consensus_height: latest_height,
-            },
-        )
-    }
-
-    public entry fun connection_open_init(
-        ibc_store: &mut IBCStore,
-        client_id: u32,
-        counterparty_client_id: u32
-    ) {
-        assert!(ibc_store.clients.borrow(client_id).status() == 0, E_CLIENT_NOT_ACTIVE);
-
-        let connection_id = ibc_store.generate_connection_identifier();
-
-        let connection =
-            connection_end::new(
-                CONN_STATE_INIT,
-                client_id,
-                counterparty_client_id,
-                0
-            );
-
-        add_or_update_table<u32, ConnectionEnd>(&mut ibc_store.connections, connection_id, connection);
-
-        ibc_store.commit_connection(connection_id, connection);
-
-        event::emit(
-            ConnectionOpenInit {
-                connection_id: connection_id,
-                client_id: client_id,
-                counterparty_client_id: counterparty_client_id
-            }
-        )
-    }
-
-    public entry fun connection_open_try(
-        ibc_store: &mut IBCStore,
-        counterparty_client_id: u32,
-        counterparty_connection_id: u32,
-        client_id: u32,
-        proof_init: vector<u8>,
-        proof_height: u64
-    ) {
-        let connection_id = ibc_store.generate_connection_identifier();
-
-
-        let mut connection = &connection_end::new(
-            CONN_STATE_TRYOPEN,
-            client_id,
-            counterparty_client_id,
-            counterparty_connection_id
-        );
-        if (ibc_store.connections.contains(connection_id)) {
-            connection = ibc_store.connections.borrow(connection_id);
-        };
-
-
-        // Construct the expected connection state to verify against the proof
-        let expected_connection = connection_end::new(
-            CONN_STATE_INIT,
-            counterparty_client_id,
-            client_id,
-            0 // counterparty_connection_id
-        );
-
-        let client = ibc_store.clients.borrow(client_id);
-        // Verify the connection state using the provided proof and expected state
-        let verification_result =
-            verify_connection_state(
-                client,
-                proof_height,
-                proof_init,
-                counterparty_connection_id,
-                expected_connection
-        );
-
-        // Ensure verification succeeded
-        assert!(verification_result == 0, verification_result);
-
-        // Emit an event for the connection try event
-        event::emit(
-            ConnectionOpenTry {
-                connection_id: connection_id,
-                client_id: client_id,
-                counterparty_client_id: counterparty_client_id,
-                counterparty_connection_id: counterparty_connection_id
-            }
-        );
-
-        // Commit the updated connection to storage
-        ibc_store.commit_connection(connection_id, *connection);
-    }
-
-    public entry fun connection_open_ack(
-        ibc_store: &mut IBCStore,
-        connection_id: u32,
-        counterparty_connection_id: u32,
-        proof_try: vector<u8>,
-        proof_height: u64
-    ) {
-        // Check if the connection exists
-        assert!(
-            ibc_store.connections.contains(connection_id),
-            E_CONNECTION_DOES_NOT_EXIST
-        );
-
-        // Borrow the connection from the table
-        let mut connection = ibc_store.connections.borrow_mut(connection_id);
-        assert!(
-            connection_end::state(connection) == CONN_STATE_INIT,
-            E_INVALID_CONNECTION_STATE
-        );
-
-        // Create the expected connection state to verify against the proof
-        let expected_connection = connection_end::new(
-            CONN_STATE_TRYOPEN,
-            connection_end::counterparty_client_id(connection),
-            connection_end::client_id(connection),
-            connection_id
-        );
-
-        // Verify the connection state using the provided proof and expected state
-        let client = ibc_store.clients.borrow(connection_end::client_id(connection));
-
-        let verification_result = verify_connection_state(
-            client,
-            proof_height,
-            proof_try,
-            counterparty_connection_id,
-            expected_connection
-        );
-        assert!(verification_result == 0, verification_result);
-
-        // Update the connection state to TRYOPEN and set the counterparty connection ID
-        connection_end::set_state(connection, CONN_STATE_TRYOPEN);
-        connection_end::set_counterparty_connection_id(connection, counterparty_connection_id);
-
-        // Emit an event for connection acknowledgment
-        event::emit(
-            ConnectionOpenAck {
-                connection_id: connection_id,
-                client_id: connection_end::client_id(connection),
-                counterparty_client_id: connection_end::counterparty_client_id(connection),
-                counterparty_connection_id: connection_end::counterparty_connection_id(connection)
-            }
-        );
-
-        // Commit the updated connection to storage
-        ibc_store.commit_connection(connection_id, *connection);
-    }
-
-    public entry fun connection_open_confirm(
-        ibc_store: &mut IBCStore,
-        connection_id: u32,
-        proof_ack: vector<u8>,
-        proof_height: u64
-    ) {
-        // Check if the connection exists
-        assert!(
-            ibc_store.connections.contains(connection_id),
-            E_CONNECTION_DOES_NOT_EXIST
-        );
-
-        // Borrow the connection from the table
-        let connection = ibc_store.connections.borrow_mut(connection_id);
-        assert!(
-            connection_end::state(connection) == CONN_STATE_TRYOPEN,
-            E_INVALID_CONNECTION_STATE
-        );
-
-        // Create the expected connection state in the `OPEN` state to verify against the proof
-        let expected_connection = connection_end::new(
-            CONN_STATE_OPEN,
-            connection_end::counterparty_client_id(connection),
-            connection_end::client_id(connection),
-            connection_id
-        );
-
-        let counterparty_connection_id = connection_end::counterparty_connection_id(connection);
-
-        // Verify the connection state using the provided proof and expected state
-        let client = ibc_store.clients.borrow(connection_end::client_id(connection));
-        let verification_result = verify_connection_state(
-            client,
-            proof_height,
-            proof_ack,
-            counterparty_connection_id,
-            expected_connection
-        );
-        assert!(verification_result == 0, verification_result);
-
-        // Update the connection state to OPEN
-        connection_end::set_state(connection, CONN_STATE_OPEN);
-
-        // Emit an event for connection confirmation
-        event::emit(
-            ConnectionOpenConfirm {
-                connection_id: connection_id,
-                client_id: connection_end::client_id(connection),
-                counterparty_client_id: connection_end::counterparty_client_id(connection),
-                counterparty_connection_id: counterparty_connection_id
-            }
-        );
-
-        // Commit the final state of the connection to storage
-        ibc_store.commit_connection(connection_id, *connection);
-    }
-
-    public entry fun update_client(
-        ibc_store: &mut IBCStore,
-        client_id: u32,
-        client_message: vector<u8>
-    ) {
-        // Check if the client exists in the commitments table
-        assert!(
-            ibc_store.commitments.contains(commitment::client_state_commitment_key(client_id)),
-            E_CLIENT_NOT_FOUND
-        );
-
-        // Check for misbehavior in the client message
-        let light_client = ibc_store.clients.borrow(client_id);
-        if (light_client.check_for_misbehaviour(client_message)) {
-            // Emit a misbehavior event if detected
-            event::emit(
-                SubmitMisbehaviour {
-                    client_id: client_id,
-                    client_type: utf8(CLIENT_TYPE_COMETBLS)
-                }
-            );
-            return;
-        };
-
-        // Update the client and consensus states using the client message
-        let (client_state, consensus_states, heights) =
-            light_client.update_client(client_message);
-
-        // Ensure consistency in the number of consensus states and heights
-        let heights_len = vector::length(&heights);
-        assert!(
-            !vector::is_empty(&consensus_states) && heights_len == vector::length(&consensus_states),
-            E_INVALID_UPDATE
-        );
-
-        // Update the client state commitment
-
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
-            commitment::client_state_commitment_key(client_id),
-            client_state
-        );
-
-        // Update the consensus state commitments for each height
-        let mut i = 0;
-        while (i < heights_len) {
-            let height = heights[i];
-
-            add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
-                commitment::consensus_state_commitment_key(client_id, height),
-                hash::keccak256(&consensus_states[i])
-            );
-
-            // Emit a ClientUpdated event for each updated height
-            event::emit(
-                ClientUpdated {
-                    client_id: client_id,
-                    client_type: utf8(CLIENT_TYPE_COMETBLS),
-                    height: height
-                }
-            );
-
-            i = i + 1;
-        };
-    }
-    
-    public entry fun submit_misbehaviour(
-    ibc_store: &mut IBCStore,
-        client_id: u32,
-        misbehaviour: vector<u8>
-    ) {
-        // Check if the client exists in the commitments table
-        assert!(
-            ibc_store.commitments.contains(commitment::client_state_commitment_key(client_id)),
-            E_CLIENT_NOT_FOUND
-        );
-
-        // Report the misbehavior
-        let light_client = ibc_store.clients.borrow(client_id);
-        light_client.report_misbehaviour(misbehaviour);
-
-        // Emit a misbehavior event
-        event::emit(
-            SubmitMisbehaviour {
-                client_id: client_id,
-                client_type: utf8(CLIENT_TYPE_COMETBLS)
-            }
-        );
-    }
 
     public fun channel_open_init(
         ibc_store: &mut IBCStore,

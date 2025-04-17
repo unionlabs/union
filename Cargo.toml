@@ -171,6 +171,7 @@ members = [
   "voyager/modules/finality/movement",
   "voyager/modules/finality/tendermint",
   "voyager/modules/finality/trusted-evm",
+  "voyager/modules/consensus/sui",
 
   "voyager/plugins/client-update/bob",
   "voyager/plugins/client-update/arbitrum",
@@ -188,6 +189,7 @@ members = [
   "voyager/plugins/event-source/cosmos-sdk",
   "voyager/plugins/event-source/ethereum",
   "voyager/plugins/event-source/movement",
+  "voyager/plugins/event-source/sui",
 
   "voyager/plugins/transaction/cosmos-sdk",
   "voyager/plugins/transaction/ethereum",
