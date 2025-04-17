@@ -1,133 +1,137 @@
 <script lang="ts">
-  import {Array as Arr, Effect, Fiber, FiberId, Option} from "effect";
-  import {createContextState, CreateContextState, type StateResult} from "$lib/transfer/multisig/services/filling";
-  import type {TransferContext} from "$lib/transfer/shared/services/filling/create-context.ts";
-  import {transferData} from "$lib/transfer/shared/data/transfer-data.svelte.ts";
-  import {constVoid, pipe} from "effect/Function";
-  import { FillingStep, MessageStep, Steps} from "$lib/transfer/multisig/steps";
-  import Card from "$lib/components/ui/Card.svelte";
-  import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte";
-  import type {ContextFlowError} from "$lib/transfer/shared/errors";
-  import { fly } from "svelte/transition"
-  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts";
-  import {wallets} from "$lib/stores/wallets.svelte.ts";
-  import { beforeNavigate } from "$app/navigation"
-  let currentPage = $state(0)
-  let previousPage = $state(0)
-  let isLoading = $state(true)
-  let steps = $state<Option.Option<Array<Steps.Steps>>>(Option.none())
-  let errors = $state<Option.Option<ContextFlowError>>(Option.none())
-  let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
-  let statusMessage = $state("")
+import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
+import {
+  createContextState,
+  CreateContextState,
+  type StateResult
+} from "$lib/transfer/multisig/services/filling"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { constVoid, pipe } from "effect/Function"
+import { FillingStep, MessageStep, Steps } from "$lib/transfer/multisig/steps"
+import Card from "$lib/components/ui/Card.svelte"
+import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
+import type { ContextFlowError } from "$lib/transfer/shared/errors"
+import { fly } from "svelte/transition"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { beforeNavigate } from "$app/navigation"
+let currentPage = $state(0)
+let previousPage = $state(0)
+let isLoading = $state(true)
+let steps = $state<Option.Option<Array<Steps.Steps>>>(Option.none())
+let errors = $state<Option.Option<ContextFlowError>>(Option.none())
+let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
+let statusMessage = $state("")
 
-  let direction = $derived(currentPage > previousPage ? 1 : -1)
+let direction = $derived(currentPage > previousPage ? 1 : -1)
 
-  const currentStep = $derived(
-    pipe(
-      steps, //[currentPage]
-      Option.flatMap(Arr.get(currentPage)),
-      Option.getOrElse(() => Steps.Filling())
-    )
+const currentStep = $derived(
+  pipe(
+    steps, //[currentPage]
+    Option.flatMap(Arr.get(currentPage)),
+    Option.getOrElse(() => Steps.Filling())
   )
+)
 
-  function goToNextPage() {
-    if (Option.isSome(steps) && currentPage < steps.value.length - 1) {
-      previousPage = currentPage
-      currentPage++
-    }
+function goToNextPage() {
+  if (Option.isSome(steps) && currentPage < steps.value.length - 1) {
+    previousPage = currentPage
+    currentPage++
+  }
+}
+
+function goToPreviousPage() {
+  if (currentPage > 0) {
+    previousPage = currentPage
+    currentPage--
+  }
+}
+
+function handleActionButtonClick() {
+  if (Option.isNone(steps)) return
+  const currentStep = steps.value[currentPage]
+
+  if (Steps.is("Filling")(currentStep)) {
+    goToNextPage()
+    return
   }
 
-  function goToPreviousPage() {
-    if (currentPage > 0) {
-      previousPage = currentPage
-      currentPage--
-    }
-  }
+  if (Steps.is("CheckMessage")(currentStep)) goToNextPage()
+}
 
-  function handleActionButtonClick() {
-    if (Option.isNone(steps)) return
-    const currentStep = steps.value[currentPage]
+$effect(() => {
+  if (currentPage !== 0) return
+  interruptFiber()
 
-    if (Steps.is("Filling")(currentStep)) {
-      goToNextPage()
-      return
-    }
+  isLoading = true
+  steps = Option.none()
+  errors = Option.none()
 
-    if (Steps.is("CheckMessage")(currentStep)) goToNextPage()
-  }
+  const machineEffect = Effect.gen(function* () {
+    let currentState: CreateContextState = CreateContextState.Filling()
+    let context: TransferContext
 
-  $effect(() => {
-    if (currentPage !== 0) return
-    interruptFiber()
+    while (true) {
+      const result: StateResult = yield* createContextState(currentState, transferData)
+      statusMessage = result.message
 
-    isLoading = true
-    steps = Option.none()
-    errors = Option.none()
-
-    const machineEffect = Effect.gen(function* () {
-      let currentState: CreateContextState = CreateContextState.Filling()
-      let context: TransferContext
-
-      while (true) {
-        const result: StateResult = yield* createContextState(currentState, transferData)
-        statusMessage = result.message
-
-        if (Option.isSome(result.error)) {
-          errors = result.error
-          steps = Option.none()
-          isLoading = false
-          currentFiber = Option.none()
-          return
-        }
-
-        if (Option.isSome(result.nextState)) {
-          currentState = result.nextState.value
-          continue
-        }
-
-        if (Option.isSome(result.context)) {
-          context = result.context.value
-        }
-
-        break
+      if (Option.isSome(result.error)) {
+        errors = result.error
+        steps = Option.none()
+        isLoading = false
+        currentFiber = Option.none()
+        return
       }
 
-      steps = Option.some([Steps.Filling(),
-        Steps.CheckMessage({
-          context
-        })
-      ])
-      isLoading = false
-      currentFiber = Option.none()
-    })
+      if (Option.isSome(result.nextState)) {
+        currentState = result.nextState.value
+        continue
+      }
 
-    const fiber = Effect.runFork(machineEffect as Effect.Effect<void, never, never>)
-    currentFiber = Option.some(fiber)
+      if (Option.isSome(result.context)) {
+        context = result.context.value
+      }
 
-    return () => fiber?.unsafeInterruptAsFork(FiberId.none)
+      break
+    }
+
+    steps = Option.some([
+      Steps.Filling(),
+      Steps.CheckMessage({
+        context
+      })
+    ])
+    isLoading = false
+    currentFiber = Option.none()
   })
 
-  function interruptFiber() {
-    Option.match(currentFiber, {
-      onNone: constVoid,
-      onSome: fiber => Fiber.interruptFork(fiber)
-    })
-    currentFiber = Option.none()
-  }
+  const fiber = Effect.runFork(machineEffect as Effect.Effect<void, never, never>)
+  currentFiber = Option.some(fiber)
 
-  function newTransfer() {
-    interruptFiber()
-    steps = Option.some([Steps.Filling()])
-    errors = Option.none()
-    isLoading = true
-    currentPage = 0
-    transferData.raw.reset()
-    transferHashStore.reset()
-    wallets.clearInputAddress()
-  }
+  return () => fiber?.unsafeInterruptAsFork(FiberId.none)
+})
 
-  beforeNavigate(newTransfer)
+function interruptFiber() {
+  Option.match(currentFiber, {
+    onNone: constVoid,
+    onSome: fiber => Fiber.interruptFork(fiber)
+  })
+  currentFiber = Option.none()
+}
 
+function newTransfer() {
+  interruptFiber()
+  steps = Option.some([Steps.Filling()])
+  errors = Option.none()
+  isLoading = true
+  currentPage = 0
+  transferData.raw.reset()
+  transferHashStore.reset()
+  wallets.clearInputAddress()
+}
+
+beforeNavigate(newTransfer)
 </script>
 
 <Card

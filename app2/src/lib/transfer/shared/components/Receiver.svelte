@@ -23,13 +23,10 @@ type Props = {
   close: () => void
 }
 
-let {
-  open,
-  close
-}: Props = $props()
+let { open, close }: Props = $props()
 
 $effect(() => {
-  if(open) {
+  if (open) {
     isModalOpen = true
     currentView = "main"
     previousView = "main"
@@ -64,7 +61,9 @@ function goBack() {
 }
 
 let destinationChain = $derived(
-  Option.isSome(transferData.destinationChain) ? Option.getOrNull(transferData.destinationChain) : null
+  Option.isSome(transferData.destinationChain)
+    ? Option.getOrNull(transferData.destinationChain)
+    : null
 )
 let destinationChainId = $derived(destinationChain ? destinationChain.universal_chain_id : null)
 let hasWalletAddress = $derived(

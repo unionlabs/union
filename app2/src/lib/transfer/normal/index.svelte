@@ -9,7 +9,7 @@ import {
   IndexStep,
   CheckReceiverStep,
   Steps
-} from '$lib/transfer/normal/steps';
+} from "$lib/transfer/normal/steps"
 import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
 import {
   CreateContextState,

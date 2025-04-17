@@ -6,7 +6,7 @@ import Label from "$lib/components/ui/Label.svelte"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
 import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
-import AddressComponent from "$lib/components/model/AddressComponent.svelte";
+import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 
 type Props = {
   type: "source" | "destination"

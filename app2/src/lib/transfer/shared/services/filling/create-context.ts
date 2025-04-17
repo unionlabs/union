@@ -59,7 +59,6 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
 
   return Match.value(args.sourceChain.rpc_type).pipe(
     Match.when("evm", () => {
-
       const intent: Intent = {
         sender: args.sender,
         receiver: args.receiver,
@@ -75,10 +74,10 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
       }
 
       return Option.some({
-          intents: [intent],
-          allowances: Option.none(),
-          instruction: Option.none()
-        })
+        intents: [intent],
+        allowances: Option.none(),
+        instruction: Option.none()
+      })
     }),
 
     Match.when("cosmos", () => {

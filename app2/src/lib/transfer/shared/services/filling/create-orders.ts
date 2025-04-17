@@ -20,8 +20,8 @@ import {
 } from "@unionlabs/sdk/ucs03"
 import { Batch, type Instruction } from "@unionlabs/sdk/ucs03/instruction"
 import { FungibleIntent } from "@unionlabs/sdk/schema"
-import type {TransferContext} from "$lib/transfer/shared/services/filling/create-context.ts";
-import type {OrderCreationError} from "$lib/transfer/shared/errors";
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type { OrderCreationError } from "$lib/transfer/shared/errors"
 
 export function createOrdersBatch(
   context: TransferContext

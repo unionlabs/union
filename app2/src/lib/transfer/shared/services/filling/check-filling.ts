@@ -2,7 +2,7 @@ import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelt
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { Data, Option } from "effect"
 import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
-import {signingMode} from "$lib/transfer/signingMode.svelte.ts";
+import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -42,7 +42,6 @@ export const getFillingState = (transferData: TransferData): FillingState => {
   }
 
   if (Option.isNone(transferData.derivedSender) && signingMode.mode === "multi") {
-
     return FillingState.NoWallet()
   }
 
@@ -71,7 +70,10 @@ export const getFillingState = (transferData: TransferData): FillingState => {
         return FillingState.InvalidAmount()
       }
 
-      if (Option.isSome(transferData.destinationChain) && Option.isNone(transferData.derivedReceiver)) {
+      if (
+        Option.isSome(transferData.destinationChain) &&
+        Option.isNone(transferData.derivedReceiver)
+      ) {
         return FillingState.ReceiverMissing()
       }
 

@@ -1,41 +1,41 @@
 <script lang="ts">
-  import type {CheckMessage} from "$lib/transfer/multisig/steps/steps.ts";
-  import Button from "$lib/components/ui/Button.svelte";
-  import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte";
-  import SharpDownloadIcon from "$lib/components/icons/SharpDownloadIcon.svelte";
-  import {Option} from "effect"
+import type { CheckMessage } from "$lib/transfer/multisig/steps/steps.ts"
+import Button from "$lib/components/ui/Button.svelte"
+import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte"
+import SharpDownloadIcon from "$lib/components/icons/SharpDownloadIcon.svelte"
+import { Option } from "effect"
 
-  type Props = {
-    stepIndex: number
-    onBack: () => void
-    onSubmit: () => void
-    step: CheckMessage
+type Props = {
+  stepIndex: number
+  onBack: () => void
+  onSubmit: () => void
+  step: CheckMessage
+}
+
+$effect(() => {
+  console.log("rr", step)
+})
+
+const { step, onBack, onSubmit }: Props = $props()
+
+const writeToClipboard = () => {
+  if (step.context.message && Option.isSome(step.context.message)) {
+    navigator.clipboard.writeText(step.context.message.value)
   }
+}
 
-  $effect(() => {
-    console.log('rr', step)
-  })
-
-  const {step, onBack, onSubmit}: Props = $props()
-
-  const writeToClipboard = () => {
-    if (step.context.message && Option.isSome(step.context.message)) {
-      navigator.clipboard.writeText(step.context.message.value)
-    }
-  }
-
-  const exportData = () => {
-    if (!step.context.message) return
-    const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "")
-    const data = JSON.stringify(step.context.message, null, 2)
-    const blob = new Blob([data], {type: "application/json"})
-    const url = window.URL.createObjectURL(blob)
-    const anchor = document.createElement("a")
-    anchor.href = url
-    anchor.download = `union-mulitsig-${datetime}.json`
-    anchor.click()
-    window.URL.revokeObjectURL(anchor.href)
-  }
+const exportData = () => {
+  if (!step.context.message) return
+  const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "")
+  const data = JSON.stringify(step.context.message, null, 2)
+  const blob = new Blob([data], { type: "application/json" })
+  const url = window.URL.createObjectURL(blob)
+  const anchor = document.createElement("a")
+  anchor.href = url
+  anchor.download = `union-mulitsig-${datetime}.json`
+  anchor.click()
+  window.URL.revokeObjectURL(anchor.href)
+}
 </script>
 
 <div class="flex flex-col">

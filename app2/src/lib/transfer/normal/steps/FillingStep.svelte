@@ -1,64 +1,64 @@
 <script lang="ts">
-  import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
-  import Amount from "$lib/transfer/shared/components/Amount.svelte"
-  import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
-  import Button from "$lib/components/ui/Button.svelte"
-  import {transferData} from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-  import {Match, Option} from "effect"
-  import type {ContextFlowError} from "$lib/transfer/shared/errors"
-  import InsetError from "$lib/components/model/InsetError.svelte"
-  import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte";
+import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
+import Amount from "$lib/transfer/shared/components/Amount.svelte"
+import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { Match, Option } from "effect"
+import type { ContextFlowError } from "$lib/transfer/shared/errors"
+import InsetError from "$lib/components/model/InsetError.svelte"
+import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 
-  type Props = {
-    onContinue: () => void
-    loading: boolean
-    onErrorClose?: () => void
-    statusMessage?: string
-    transferErrors?: Option.Option<ContextFlowError>
-  }
+type Props = {
+  onContinue: () => void
+  loading: boolean
+  onErrorClose?: () => void
+  statusMessage?: string
+  transferErrors?: Option.Option<ContextFlowError>
+}
 
-  const {
-    onContinue,
-    loading,
-    statusMessage,
-    transferErrors = Option.none<ContextFlowError>()
-  }: Props = $props()
+const {
+  onContinue,
+  loading,
+  statusMessage,
+  transferErrors = Option.none<ContextFlowError>()
+}: Props = $props()
 
-  let isErrorModalOpen = $state(false)
-  let isReceiverOpen = $state(false)
+let isErrorModalOpen = $state(false)
+let isReceiverOpen = $state(false)
 
-  const uiStatus = $derived.by(() => {
-    return Option.match(transferErrors, {
-      onSome: error => {
-        const match = Match.type<ContextFlowError>().pipe(
-          Match.tag("BalanceLookupError", () => ({
-            text: "Failed checking balance",
-            error
-          })),
-          Match.tag("AllowanceCheckError", () => ({
-            text: "Failed checking allowance",
-            error
-          })),
-          Match.tag("OrderCreationError", () => ({
-            text: "Could not create orders",
-            error
-          })),
-          Match.orElse(() => ({
-            text: statusMessage ?? "Continue",
-            error
-          }))
-        )
-        return match(error)
-      },
+const uiStatus = $derived.by(() => {
+  return Option.match(transferErrors, {
+    onSome: error => {
+      const match = Match.type<ContextFlowError>().pipe(
+        Match.tag("BalanceLookupError", () => ({
+          text: "Failed checking balance",
+          error
+        })),
+        Match.tag("AllowanceCheckError", () => ({
+          text: "Failed checking allowance",
+          error
+        })),
+        Match.tag("OrderCreationError", () => ({
+          text: "Could not create orders",
+          error
+        })),
+        Match.orElse(() => ({
+          text: statusMessage ?? "Continue",
+          error
+        }))
+      )
+      return match(error)
+    },
 
-      onNone: () => ({
-        text: statusMessage ?? "Continue",
-        error: null
-      })
+    onNone: () => ({
+      text: statusMessage ?? "Continue",
+      error: null
     })
   })
+})
 
-  const isButtonEnabled = $derived.by(() => !loading)
+const isButtonEnabled = $derived.by(() => !loading)
 </script>
 
 <div class="min-w-full flex flex-col grow">

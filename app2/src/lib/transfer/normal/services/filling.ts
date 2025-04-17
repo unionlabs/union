@@ -1,13 +1,12 @@
 import { Data, Effect, Match, Option } from "effect"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { type BalanceCheckResult, checkBalanceForIntent
+import {
+  type BalanceCheckResult,
+  checkBalanceForIntent
 } from "$lib/transfer/shared/services/filling/check-balance.ts"
 import { createOrdersBatch } from "$lib/transfer/shared/services/filling/create-orders.ts"
 import { checkAllowances } from "$lib/transfer/shared/services/filling/check-allowance.ts"
-import {
-  OrderCreationError,
-  type ContextFlowError
-} from "$lib/transfer/shared/errors"
+import { OrderCreationError, type ContextFlowError } from "$lib/transfer/shared/errors"
 import {
   FillingState,
   getFillingState,

@@ -32,7 +32,7 @@ export const navigation: Array<NavSection> = [
         subroutes: [
           {
             path: "/multisig",
-            title: "Multisig",
+            title: "Multisig"
           },
           {
             path: "/transfers",
