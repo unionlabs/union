@@ -14,6 +14,11 @@
       "counterparty": "ethereum.11155111",
       "client_type": "trusted/evm/mpt",
       "refresh_rate": "500"
+    },
+    "5": {
+      "counterparty": "ethereum.17000",
+      "client_type": "trusted/evm/mpt",
+      "refresh_rate": "500"
     }
   },
   "babylon.bbn-test-5": {
@@ -24,12 +29,12 @@
     },
     "2": {
       "counterparty": "ethereum.11155111",
-      "client_type": "state-lens/ics23/evm",
+      "client_type": "state-lens/ics23/mpt",
       "refresh_rate": "500"
     },
     "3": {
       "counterparty": "ethereum.17000",
-      "client_type": "state-lens/ics23/evm",
+      "client_type": "state-lens/ics23/mpt",
       "refresh_rate": "500"
     }
   },
@@ -38,12 +43,32 @@
       "counterparty": "union.union-testnet-10",
       "client_type": "cometbls",
       "refresh_rate": "500"
+    },
+    "2": {
+      "counterparty": "union.17000",
+      "client_type": "state-lens/ics23/mpt",
+      "metadata": {
+        "l1_client_id": 1,
+        "l2_client_id": 4,
+        "l1_chain_id": "union-testnet-10"
+      },
+      "refresh_rate": "500"
     }
   },
   "ethereum.17000": {
     "1": {
       "counterparty": "union.union-testnet-10",
       "client_type": "cometbls",
+      "refresh_rate": "500"
+    },
+    "2": {
+      "counterparty": "ethereum.11155111",
+      "client_type": "state-lens/ics23/mpt",
+      "metadata": {
+        "l1_client_id": 1,
+        "l2_client_id": 5,
+        "l1_chain_id": "union-testnet-10"
+      },
       "refresh_rate": "500"
     }
   },
@@ -77,17 +102,17 @@
     },
     "2": {
       "counterparty": "bob.60808",
-      "client_type": "state-lens/ics23/evm",
+      "client_type": "state-lens/ics23/mpt",
       "refresh_rate": "500"
     },
     "4": {
       "counterparty": "corn.21000000",
-      "client_type": "state-lens/ics23/evm",
+      "client_type": "state-lens/ics23/mpt",
       "refresh_rate": "500"
     },
     "5": {
       "counterparty": "ethereum.1",
-      "client_type": "state-lens/ics23/evm",
+      "client_type": "state-lens/ics23/mpt",
       "refresh_rate": "500"
     }
   },

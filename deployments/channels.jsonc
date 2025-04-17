@@ -30,6 +30,12 @@
       "tags": [
         "development"
       ]
+    },
+    "6": {
+      "comments": "trusted connection to ethereum.17000 channel 1 intended for development and testing only",
+      "tags": [
+        "development"
+      ]
     }
   },
   "bob.60808": {
