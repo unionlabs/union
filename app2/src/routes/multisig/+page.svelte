@@ -1,10 +1,10 @@
 <script lang="ts">
 import Sections from "$lib/components/ui/Sections.svelte"
 import Transfer from "$lib/transfer/index.svelte"
-import {Option} from "effect";
-import {transferData} from "$lib/transfer/shared/data/transfer-data.svelte.ts";
-import {tokensStore} from "$lib/stores/tokens.svelte.ts";
-import {balancesStore} from "$lib/stores/balances.svelte.ts";
+import { Option } from "effect"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
+import { balancesStore } from "$lib/stores/balances.svelte.ts"
 
 $effect(() => {
   if (Option.isSome(transferData.sourceChain)) {

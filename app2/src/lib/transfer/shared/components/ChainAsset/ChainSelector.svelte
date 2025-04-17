@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Array as Arr, flow, Option } from "effect"
+import { Array as Arr, flow, Match, Option, pipe } from "effect"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { cn } from "$lib/utils"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
@@ -7,6 +7,7 @@ import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import { MODE } from "$lib/constants/config"
+import { signingMode } from "$lib/transfer/signingMode.svelte"
 
 type Props = {
   type: "source" | "destination"
@@ -35,6 +36,17 @@ const testnets = ["ethereum.11155111", "corn.21000001", "bob.808813", "babylon.b
 
 const mainnets = ["bob.60808", "corn.21000000", "babylon.bbn-1", "ethereum.1"]
 
+const filterBySigningMode = (chains: Array<Chain>) =>
+  pipe(
+    Match.value(signingMode.mode).pipe(
+      Match.when("single", () => chains),
+      Match.when("multi", () =>
+        pipe(chains, xs => (type === "source" ? xs.filter(x => x.rpc_type === "cosmos") : xs))
+      ),
+      Match.exhaustive
+    )
+  )
+
 // For btc.union.build, only show bitcoin chains
 const filteredChains = $derived(
   chains.data.pipe(
@@ -43,7 +55,8 @@ const filteredChains = $derived(
         Arr.filter(c => {
           const allowed = MODE === "testnet" ? testnets : mainnets
           return allowed.includes(c.universal_chain_id)
-        })
+        }),
+        filterBySigningMode
       )
     )
   )
