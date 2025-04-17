@@ -14,6 +14,8 @@ import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
 import type { Address } from "viem"
 import { request, gql } from "graphql-request"
+import { fromHex } from "viem"
+
 type Hex = `0x${string}`
 
 
@@ -41,6 +43,20 @@ interface TransferConfig {
   cosmosAccountType: string
 }
 
+interface WrappedToken {
+  chain: { universal_chain_id: string }
+  denom: Hex,
+  wrapping: Array<{
+    unwrapped_chain: { universal_chain_id: string }
+    destination_channel_id: number
+    unwrapped_denom: string
+  }>
+}
+
+interface ChannelInfo {
+  source_channel_id: number
+}
+
 interface Packet {
   packet_send_timestamp: string | null
   packet_recv_timestamp: string | null
@@ -60,12 +76,17 @@ interface HasuraResponse {
   v1_ibc_union_packets: Packet[]
 }
 
+interface ZkgmAddresses {
+ [key: string]: string 
+}
+
 // Combined configuration shape
 interface ConfigFile {
   interactions: Array<ChainPair>
   cycleIntervalMs: number
   transfers?: Array<TransferConfig>
-  hasuraEndpoint: string
+  hasuraEndpoint: string,
+  zkgmAddresses: ZkgmAddresses
 }
 
 // A module-level set to keep track of already reported packet send transaction hashes.
@@ -93,6 +114,69 @@ export class Config extends Context.Tag("Config")<Config, { readonly config: Con
 const doTransferRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
   Schedule.intersect(Schedule.recurs(2)) // Limit retries to 2
 )
+
+const fetchWrappedTokens = (
+  hasuraEndpoint: string
+) => 
+  Effect.gen(function* () {
+  const query = gql`
+    query WrappedTokens {
+      v2_tokens(where: { wrapping: { unwrapped_denom: { _is_null: false } } }) {
+        chain { universal_chain_id }
+        denom
+        wrapping {
+          unwrapped_chain { universal_chain_id }
+          destination_channel_id
+          unwrapped_denom
+        }
+      }
+    }
+  `
+
+  const response: any = yield* Effect.tryPromise({
+    try: () =>
+      request(hasuraEndpoint, query),
+      catch: error => {
+        console.error("fetchWrappedTokens failed:", error)
+        throw error
+      }
+  })
+
+  const tokens: WrappedToken[] = response?.v2_tokens || []
+  return tokens
+})
+
+const fetchSourceChannelId = (
+  hasuraEndpoint: string,
+  srcChain: string,
+  dstChain: string,
+  dstChannelId: number
+) => 
+  Effect.gen(function* () {
+  const query = gql`
+    query ChannelInfo($src: String!, $dst: String!, $dchan: Int!) {
+      v2_channels(args: {
+        p_source_universal_chain_id: $src,
+        p_destination_universal_chain_id: $dst,
+        p_destination_channel_id: $dchan
+      }) {
+        source_channel_id
+      }
+    }
+  `
+
+  const response: any = yield* Effect.tryPromise({
+    try: () =>
+      request(hasuraEndpoint, query, { src: srcChain, dst: dstChain, dchan: dstChannelId }),
+      catch: error => {
+        console.error("fetchSourceChannelId failed:", error)
+        throw error
+      }
+  })
+
+  const channels: ChannelInfo[] = response?.v2_channels || []
+  return channels[0]?.source_channel_id
+})
 
 function loadConfig(configPath: string) {
   return Effect.tryPromise({
@@ -352,6 +436,52 @@ const transferLoop = Effect.repeat(
   }),
   Schedule.spaced("3 seconds")
 )
+
+
+const escrowSupplyControlLoop = Effect.repeat(
+  Effect.gen(function* (_) {
+    let config = (yield* Config).config
+
+    const tokens = yield* fetchWrappedTokens(config.hasuraEndpoint)
+    for (const token of tokens) {
+      const srcChain   = token.wrapping[0]?.unwrapped_chain.universal_chain_id
+      const dstChain   = token.chain.universal_chain_id
+      const dstChannel = token.wrapping[0]?.destination_channel_id
+      if (!srcChain || !dstChain || !dstChannel) {
+        yield* Effect.log("Invalid token data. Skipping...")
+        continue
+      }
+
+      const sourceChannelId = yield* fetchSourceChannelId(
+        config.hasuraEndpoint,
+        srcChain,
+        dstChain,
+        dstChannel
+      )
+      if (token.wrapping[0]?.unwrapped_denom == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2") {
+
+        const decoded_denom = fromHex(token.denom, "string")
+        const zkgm_addr = config.zkgmAddresses[
+          srcChain
+        ]
+        console.info("token:", token)
+        console.info("sourceChannelId:", sourceChannelId)
+        console.info("decoded_denom:", decoded_denom)
+        console.info("zkgm_addr:", zkgm_addr)
+        
+      }
+    }
+    // const tokens = yield* fetchWrappedTokens(hasuraEndpoint)
+
+    // log them outside of the “yield*” so we don’t make them the return
+    const test =  "0x62626e31333030736530767775653737686e36733877706836346579366435357a616634386a72766567397761667371756e636e33653473637373677664"
+    const decoded = fromHex(test, "string") 
+    yield* Effect.log(`Decoded UCS03 address: ${decoded}`)
+    console.info("Escrow supply control loop started")
+  }),
+  Schedule.spaced("3 seconds")
+)
+
 
 /**
  * fetchPacketsUntilCutoff
@@ -674,7 +804,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
-  yield* Effect.all([/*transferLoop, */ runIbcChecksForever], { concurrency: "unbounded" }).pipe(
+  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop], { concurrency: "unbounded" }).pipe(
     Effect.provideService(Config, { config })
   )
 })
