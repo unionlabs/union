@@ -8,7 +8,7 @@ import {
   createCosmWasmClient,
   CosmosChannelDestination
 } from "@unionlabs/sdk/cosmos"
-import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
+// import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
@@ -199,223 +199,223 @@ function loadConfig(configPath: string) {
   })
 }
 
-const createBatchFromTransfers = (
-  transfers: readonly {
-    sender: Hex
-    receiver: Address
-    baseToken: Hex
-    baseAmount: bigint
-    quoteAmount: bigint
-  }[]
-) =>
-  Effect.gen(function* () {
-    const transferInstructions = []
-    for (const transfer of transfers) {
-      yield* Effect.log(`creating transfer for ${transfer.baseToken}`)
-      const transferInstruction = yield* createEvmToCosmosFungibleAssetOrder(transfer)
-      transferInstructions.push(transferInstruction)
-    }
-    return Batch(transferInstructions)
-  }).pipe(Effect.withLogSpan("batch creation"))
+// const createBatchFromTransfers = (
+//   transfers: readonly {
+//     sender: Hex
+//     receiver: Address
+//     baseToken: Hex
+//     baseAmount: bigint
+//     quoteAmount: bigint
+//   }[]
+// ) =>
+//   Effect.gen(function* () {
+//     const transferInstructions = []
+//     for (const transfer of transfers) {
+//       yield* Effect.log(`creating transfer for ${transfer.baseToken}`)
+//       const transferInstruction = yield* createEvmToCosmosFungibleAssetOrder(transfer)
+//       transferInstructions.push(transferInstruction)
+//     }
+//     return Batch(transferInstructions)
+//   }).pipe(Effect.withLogSpan("batch creation"))
 
-const doTransfer = (task: TransferConfig) =>
-  Effect.gen(function* (_) {
-    let chainType: "Cosmos" | "EVM" | "Aptos"
-    let sourceChainId: string
+// const doTransfer = (task: TransferConfig) =>
+//   Effect.gen(function* (_) {
+//     let chainType: "Cosmos" | "EVM" | "Aptos"
+//     let sourceChainId: string
 
-    if (task.sourceChainIdCosmos) {
-      chainType = "Cosmos"
-      sourceChainId = task.sourceChainIdCosmos
-    } else if (task.sourceChainIdAptos) {
-      chainType = "Aptos"
-      sourceChainId = task.sourceChainIdAptos
-    } else {
-      chainType = "EVM"
-      sourceChainId = task.sourceChainIdEVM
-    }
+//     if (task.sourceChainIdCosmos) {
+//       chainType = "Cosmos"
+//       sourceChainId = task.sourceChainIdCosmos
+//     } else if (task.sourceChainIdAptos) {
+//       chainType = "Aptos"
+//       sourceChainId = task.sourceChainIdAptos
+//     } else {
+//       chainType = "EVM"
+//       sourceChainId = task.sourceChainIdEVM
+//     }
 
-    const arb = Arbitrary.make(Schema.Int.pipe(Schema.between(1, 80)))
-    const random_amount = BigInt(FastCheck.sample(arb, 1)[0]!)
+//     const arb = Arbitrary.make(Schema.Int.pipe(Schema.between(1, 80)))
+//     const random_amount = BigInt(FastCheck.sample(arb, 1)[0]!)
 
-    yield* Effect.log(
-      `\n[${chainType}] Starting transfer for chainId=${sourceChainId} to chain=${task.destinationChainId}`
-    )
+//     yield* Effect.log(
+//       `\n[${chainType}] Starting transfer for chainId=${sourceChainId} to chain=${task.destinationChainId}`
+//     )
 
-    const account = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
-    const tokenAddress = task.denomAddress
-    const receiver = task.receiverAddress
+//     const account = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
+//     const tokenAddress = task.denomAddress
+//     const receiver = task.receiverAddress
 
-    const publicSourceClient = yield* createViemPublicClient({
-      chain: sepolia,
-      transport: http()
-    })
+//     const publicSourceClient = yield* createViemPublicClient({
+//       chain: sepolia,
+//       transport: http()
+//     })
 
-    // const walletClient = createWalletClient({
-    //   account,
-    //   chain: sepolia,
-    //   transport: http()
-    // })
+//     // const walletClient = createWalletClient({
+//     //   account,
+//     //   chain: sepolia,
+//     //   transport: http()
+//     // })
 
-    // const tx_hash = yield* writeContract(walletClient, {
-    //   account,
-    //   chain: sepolia,
-    //   address: tokenAddress,
-    //   abi: erc20Abi,
-    //   functionName: "transfer",
-    //   args: [task.receiverAddress, random_amount]
-    // }).pipe(
-    //   Effect.provideService(ViemWalletClient, { client: walletClient }),
-    //   Effect.mapError(e => e.cause.message)
-    // )
+//     // const tx_hash = yield* writeContract(walletClient, {
+//     //   account,
+//     //   chain: sepolia,
+//     //   address: tokenAddress,
+//     //   abi: erc20Abi,
+//     //   functionName: "transfer",
+//     //   args: [task.receiverAddress, random_amount]
+//     // }).pipe(
+//     //   Effect.provideService(ViemWalletClient, { client: walletClient }),
+//     //   Effect.mapError(e => e.cause.message)
+//     // )
 
-    // yield* Effect.log("Transfer tx hash:", tx_hash)
+//     // yield* Effect.log("Transfer tx hash:", tx_hash)
 
-    // Define hardcoded UCS03 addresses and channel ids for now
-    const UCS03_ADDRESS = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // UCS03 contract on Sepolia
-    const CHANNEL_ID = 1 // Hardcoded channel ID
+//     // Define hardcoded UCS03 addresses and channel ids for now
+//     const UCS03_ADDRESS = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // UCS03 contract on Sepolia
+//     const CHANNEL_ID = 1 // Hardcoded channel ID
 
-    const TRANSFERS = [
-      {
-        sender: account.address,
-        receiver: receiver,
-        baseToken: tokenAddress, // Token to transfer
-        baseAmount: random_amount,
-        quoteAmount: 0n // Quote amount is not used in this case
-      }
-    ] as const
+//     const TRANSFERS = [
+//       {
+//         sender: account.address,
+//         receiver: receiver,
+//         baseToken: tokenAddress, // Token to transfer
+//         baseAmount: random_amount,
+//         quoteAmount: 0n // Quote amount is not used in this case
+//       }
+//     ] as const
 
-    yield* Effect.log("Attempting to create CosmWasm client...")
-    const cosmWasmClientDestination = yield* createCosmWasmClient(
-      "https://rpc.rpc-node.union-testnet-10.union.build"
-    ).pipe(
-      Effect.catchTag("CosmWasmClientError", error =>
-        Effect.gen(function* () {
-          yield* Effect.logError("CosmWasm client creation failed:", error)
-          return yield* Effect.fail(new DoTransferError({ cause: error }))
-        })
-      )
-    )
+//     yield* Effect.log("Attempting to create CosmWasm client...")
+//     const cosmWasmClientDestination = yield* createCosmWasmClient(
+//       "https://rpc.rpc-node.union-testnet-10.union.build"
+//     ).pipe(
+//       Effect.catchTag("CosmWasmClientError", error =>
+//         Effect.gen(function* () {
+//           yield* Effect.logError("CosmWasm client creation failed:", error)
+//           return yield* Effect.fail(new DoTransferError({ cause: error }))
+//         })
+//       )
+//     )
 
-    yield* Effect.log("CosmWasm client created successfully")
+//     yield* Effect.log("CosmWasm client created successfully")
 
-    yield* Effect.log("Transfers to be made:", TRANSFERS)
+//     yield* Effect.log("Transfers to be made:", TRANSFERS)
 
-    yield* Effect.gen(function* () {
-      const batch = yield* createBatchFromTransfers(TRANSFERS)
-      yield* Effect.log("Batch created:", batch)
-    }).pipe(
-      Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
-      Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
-      Effect.provideService(CosmosChannelDestination, {
-        ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
-        channelId: 1
-      })
-      // Effect.provideService(EvmChannelSource, {
-      //   ucs03address: UCS03_ADDRESS,
-      //   channelId: 1
-      // }),
-      // Effect.provideService(ViemWalletClient, {
-      //   client: walletClient,
-      //   account: account,
-      //   chain: sepolia
-      // })
-    )
-    // const createBatch = Effect.gen(function* () {
-    //   const transferInstructions = []
+//     yield* Effect.gen(function* () {
+//       const batch = yield* createBatchFromTransfers(TRANSFERS)
+//       yield* Effect.log("Batch created:", batch)
+//     }).pipe(
+//       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
+//       Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
+//       Effect.provideService(CosmosChannelDestination, {
+//         ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
+//         channelId: 1
+//       })
+//       // Effect.provideService(EvmChannelSource, {
+//       //   ucs03address: UCS03_ADDRESS,
+//       //   channelId: 1
+//       // }),
+//       // Effect.provideService(ViemWalletClient, {
+//       //   client: walletClient,
+//       //   account: account,
+//       //   chain: sepolia
+//       // })
+//     )
+//     // const createBatch = Effect.gen(function* () {
+//     //   const transferInstructions = []
 
-    //   for (const transfer of TRANSFERS) {
-    //     yield* Effect.log(`creating transfer for ${transfer.baseToken}`)
-    //     const transferInstruction = yield* createEvmToCosmosFungibleAssetOrder(transfer)
-    //     transferInstructions.push(transferInstruction)
-    //   }
+//     //   for (const transfer of TRANSFERS) {
+//     //     yield* Effect.log(`creating transfer for ${transfer.baseToken}`)
+//     //     const transferInstruction = yield* createEvmToCosmosFungibleAssetOrder(transfer)
+//     //     transferInstructions.push(transferInstruction)
+//     //   }
 
-    //   return Batch(transferInstructions)
-    // }).pipe(Effect.withLogSpan("batch creation"))
+//     //   return Batch(transferInstructions)
+//     // }).pipe(Effect.withLogSpan("batch creation"))
 
-    // yield* Effect.log("Creating batch...")
-    // const batch = yield* createBatch
-    // yield* Effect.log("Batch created:", batch)
+//     // yield* Effect.log("Creating batch...")
+//     // const batch = yield* createBatch
+//     // yield* Effect.log("Batch created:", batch)
 
-    // const checkAndIncreaseAllowances = Effect.gen(function* () {
-    //   yield* Effect.log("Checking token allowances...")
+//     // const checkAndIncreaseAllowances = Effect.gen(function* () {
+//     //   yield* Effect.log("Checking token allowances...")
 
-    //   for (const transfer of TRANSFERS) {
-    //     yield* Effect.log(`checking ${transfer.baseToken} allowance...`)
+//     //   for (const transfer of TRANSFERS) {
+//     //     yield* Effect.log(`checking ${transfer.baseToken} allowance...`)
 
-    //     // Check current allowance
-    //     const currentAllowance = yield* readErc20Allowance(
-    //       transfer.baseToken,
-    //       transfer.sender,
-    //       UCS03_ADDRESS
-    //     )
+//     //     // Check current allowance
+//     //     const currentAllowance = yield* readErc20Allowance(
+//     //       transfer.baseToken,
+//     //       transfer.sender,
+//     //       UCS03_ADDRESS
+//     //     )
 
-    //     yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
+//     //     yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
 
-    //     // If allowance is insufficient, increase it
-    //     if (currentAllowance < transfer.baseAmount) {
-    //       yield* Effect.log(`increasing ${transfer.baseToken} allowance...`)
+//     //     // If allowance is insufficient, increase it
+//     //     if (currentAllowance < transfer.baseAmount) {
+//     //       yield* Effect.log(`increasing ${transfer.baseToken} allowance...`)
 
-    //       // Approve exact amount needed
-    //       const txHash = yield* increaseErc20Allowance(
-    //         transfer.baseToken,
-    //         UCS03_ADDRESS,
-    //         transfer.baseAmount
-    //       )
+//     //       // Approve exact amount needed
+//     //       const txHash = yield* increaseErc20Allowance(
+//     //         transfer.baseToken,
+//     //         UCS03_ADDRESS,
+//     //         transfer.baseAmount
+//     //       )
 
-    //       yield* Effect.log(`approval transaction sent: ${txHash}`)
+//     //       yield* Effect.log(`approval transaction sent: ${txHash}`)
 
-    //       // Wait for transaction receipt
-    //       // const receipt = yield* waitForTransactionReceipt(txHash)
+//     //       // Wait for transaction receipt
+//     //       // const receipt = yield* waitForTransactionReceipt(txHash)
 
-    //       // yield* Effect.log(`approval confirmed in block: ${receipt.blockNumber}`)
+//     //       // yield* Effect.log(`approval confirmed in block: ${receipt.blockNumber}`)
 
-    //       // Verify new allowance
-    //       const newAllowance = yield* readErc20Allowance(
-    //         transfer.baseToken,
-    //         transfer.sender,
-    //         UCS03_ADDRESS
-    //       )
+//     //       // Verify new allowance
+//     //       const newAllowance = yield* readErc20Allowance(
+//     //         transfer.baseToken,
+//     //         transfer.sender,
+//     //         UCS03_ADDRESS
+//     //       )
 
-    //       yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
-    //     } else {
-    //       yield* Effect.log(`${transfer.baseToken} allowance is sufficient`)
-    //     }
-    //   }
+//     //       yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
+//     //     } else {
+//     //       yield* Effect.log(`${transfer.baseToken} allowance is sufficient`)
+//     //     }
+//     //   }
 
-    //   yield* Effect.log("All allowances checked and increased if needed")
-    // }).pipe(Effect.withLogSpan("allowance check and increase"))
+//     //   yield* Effect.log("All allowances checked and increased if needed")
+//     // }).pipe(Effect.withLogSpan("allowance check and increase"))
 
-    // yield* Effect.gen(function* () {
-    //   yield* Effect.log("creating batch")
-    //   const batch = yield* createBatch
-    //   yield* Effect.log("batch created", JSON.stringify(batch))
+//     // yield* Effect.gen(function* () {
+//     //   yield* Effect.log("creating batch")
+//     //   const batch = yield* createBatch
+//     //   yield* Effect.log("batch created", JSON.stringify(batch))
 
-    //   // Check and increase allowances before sending the batch
-    //   yield* Effect.log("checking and increasing allowances if needed")
-    //   yield* checkAndIncreaseAllowances
-    //   yield* Effect.log("allowances verified")
+//     //   // Check and increase allowances before sending the batch
+//     //   yield* Effect.log("checking and increasing allowances if needed")
+//     //   yield* checkAndIncreaseAllowances
+//     //   yield* Effect.log("allowances verified")
 
-    //   yield* Effect.log("sending batch")
-    //   return yield* sendInstructionEvm(batch)
-    // }).pipe(
-    //   Effect.provideService(ViemWalletClient, { client: walletClient }),
-    //   Effect.provideService(ViemWalletClient, { client: walletClient }),
-    //   Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
-    //   Effect.provideService(CosmosChannelDestination, {
-    //     ucs03address: UCS03_ADDRESS,
-    //     channelId: CHANNEL_ID
-    //   }),
-    //   Effect.provideService(EvmChannelSource, {
-    //     ucs03address: UCS03_ADDRESS,
-    //     channelId: CHANNEL_ID
-    //   }),
-    //   Effect.provideService(ViemWalletClient, {
-    //     client: walletClient,
-    //     account: account,
-    //     chain: sepolia
-    //   })
-    // )
-  })
+//     //   yield* Effect.log("sending batch")
+//     //   return yield* sendInstructionEvm(batch)
+//     // }).pipe(
+//     //   Effect.provideService(ViemWalletClient, { client: walletClient }),
+//     //   Effect.provideService(ViemWalletClient, { client: walletClient }),
+//     //   Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
+//     //   Effect.provideService(CosmosChannelDestination, {
+//     //     ucs03address: UCS03_ADDRESS,
+//     //     channelId: CHANNEL_ID
+//     //   }),
+//     //   Effect.provideService(EvmChannelSource, {
+//     //     ucs03address: UCS03_ADDRESS,
+//     //     channelId: CHANNEL_ID
+//     //   }),
+//     //   Effect.provideService(ViemWalletClient, {
+//     //     client: walletClient,
+//     //     account: account,
+//     //     chain: sepolia
+//     //   })
+//     // )
+//   })
 
 const transferLoop = Effect.repeat(
   Effect.gen(function* (_) {
@@ -426,7 +426,7 @@ const transferLoop = Effect.repeat(
       yield* Effect.log("\n========== Starting transfers tasks ==========")
       for (const task of transfers) {
         if (task.enabled) {
-          yield* Effect.retry(doTransfer(task), doTransferRetrySchedule) // Retry logic for transfer
+          // yield* Effect.retry(doTransfer(task), doTransferRetrySchedule) // Retry logic for transfer
         }
       }
     } else {
