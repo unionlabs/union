@@ -2,7 +2,7 @@
 
 # Unionvisor
 
-Unionvisor is a utility for managing [`uniond`](../uniond) deployments. It manages upgrade lifecycles and integrates well with NixOS.
+Unionvisor is a utility for managing [`uniond`](/uniond/README.md) deployments. It manages upgrade lifecycles and integrates well with NixOS.
 
 ## NixOS Configuration
 
