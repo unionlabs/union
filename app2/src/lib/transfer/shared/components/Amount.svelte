@@ -90,7 +90,7 @@ function setMaxAmount() {
         {/if}
       </div>
       <button
-        class="cursor-pointer text-xs text-babylon-orange hover:opacity-80"
+        class="cursor-pointer text-xs text-zinc-700 hover:opacity-80"
         onclick={setMaxAmount}
       >
         MAX

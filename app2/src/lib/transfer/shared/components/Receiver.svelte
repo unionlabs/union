@@ -67,7 +67,7 @@ let destinationChain = $derived(
 )
 let destinationChainId = $derived(destinationChain ? destinationChain.universal_chain_id : null)
 let hasWalletAddress = $derived(
-  destinationChain && Option.isSome(wallets.getAddressForChainWithOutInput(destinationChain))
+  destinationChain && Option.isSome(wallets.getAddressForChain(destinationChain))
 )
 
 $effect(() => {

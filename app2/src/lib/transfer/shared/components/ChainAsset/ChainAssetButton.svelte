@@ -37,14 +37,16 @@ const isChainLoading = $derived.by(() => {
       {#if type === "source" && Option.isSome(transferData.sourceChain) && Option.isSome(transferData.derivedSender)}
         <AddressComponent
           truncate
-          truncateChars={5}
+          class="text-babylon-orange"
+          truncateChars={10}
           address={transferData.derivedSender.value}
           chain={transferData.sourceChain.value}
         />
       {:else if type === "destination" && Option.isSome(transferData.destinationChain) && Option.isSome(transferData.derivedReceiver)}
         <AddressComponent
           truncate
-          truncateChars={5}
+          class="text-babylon-orange"
+          truncateChars={10}
           address={transferData.derivedReceiver.value}
           chain={transferData.destinationChain.value}
         />
