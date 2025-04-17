@@ -1,13 +1,4 @@
-import { Effect, Schedule, Data, Context, Schema, Arbitrary, FastCheck, Logger } from "effect"
-import { http } from "viem"
-import { privateKeyToAccount } from "viem/accounts"
-import { sepolia } from "viem/chains"
-import { ViemPublicClientSource, createViemPublicClient } from "@unionlabs/sdk/evm"
-import {
-  CosmWasmClientDestination,
-  createCosmWasmClient,
-  CosmosChannelDestination
-} from "@unionlabs/sdk/cosmos"
+import { Effect, Schedule, Data, Context, Logger } from "effect"
 // import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
@@ -17,7 +8,6 @@ import { request, gql } from "graphql-request"
 import { fromHex } from "viem"
 
 type Hex = `0x${string}`
-
 
 // Chain pair configuration
 interface ChainPair {
@@ -45,7 +35,7 @@ interface TransferConfig {
 
 interface WrappedToken {
   chain: { universal_chain_id: string }
-  denom: Hex,
+  denom: Hex
   wrapping: Array<{
     unwrapped_chain: { universal_chain_id: string }
     destination_channel_id: number
@@ -77,7 +67,7 @@ interface HasuraResponse {
 }
 
 interface ZkgmAddresses {
- [key: string]: string 
+  [key: string]: string
 }
 
 // Combined configuration shape
@@ -85,7 +75,7 @@ interface ConfigFile {
   interactions: Array<ChainPair>
   cycleIntervalMs: number
   transfers?: Array<TransferConfig>
-  hasuraEndpoint: string,
+  hasuraEndpoint: string
   zkgmAddresses: ZkgmAddresses
 }
 
@@ -115,11 +105,9 @@ const doTransferRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
   Schedule.intersect(Schedule.recurs(2)) // Limit retries to 2
 )
 
-const fetchWrappedTokens = (
-  hasuraEndpoint: string
-) => 
+const fetchWrappedTokens = (hasuraEndpoint: string) =>
   Effect.gen(function* () {
-  const query = gql`
+    const query = gql`
     query WrappedTokens {
       v2_tokens(where: { wrapping: { unwrapped_denom: { _is_null: false } } }) {
         chain { universal_chain_id }
@@ -133,27 +121,26 @@ const fetchWrappedTokens = (
     }
   `
 
-  const response: any = yield* Effect.tryPromise({
-    try: () =>
-      request(hasuraEndpoint, query),
+    const response: any = yield* Effect.tryPromise({
+      try: () => request(hasuraEndpoint, query),
       catch: error => {
         console.error("fetchWrappedTokens failed:", error)
         throw error
       }
-  })
+    })
 
-  const tokens: WrappedToken[] = response?.v2_tokens || []
-  return tokens
-})
+    const tokens: WrappedToken[] = response?.v2_tokens || []
+    return tokens
+  })
 
 const fetchSourceChannelId = (
   hasuraEndpoint: string,
   srcChain: string,
   dstChain: string,
   dstChannelId: number
-) => 
+) =>
   Effect.gen(function* () {
-  const query = gql`
+    const query = gql`
     query ChannelInfo($src: String!, $dst: String!, $dchan: Int!) {
       v2_channels(args: {
         p_source_universal_chain_id: $src,
@@ -165,18 +152,18 @@ const fetchSourceChannelId = (
     }
   `
 
-  const response: any = yield* Effect.tryPromise({
-    try: () =>
-      request(hasuraEndpoint, query, { src: srcChain, dst: dstChain, dchan: dstChannelId }),
+    const response: any = yield* Effect.tryPromise({
+      try: () =>
+        request(hasuraEndpoint, query, { src: srcChain, dst: dstChain, dchan: dstChannelId }),
       catch: error => {
         console.error("fetchSourceChannelId failed:", error)
         throw error
       }
-  })
+    })
 
-  const channels: ChannelInfo[] = response?.v2_channels || []
-  return channels[0]?.source_channel_id
-})
+    const channels: ChannelInfo[] = response?.v2_channels || []
+    return channels[0]?.source_channel_id
+  })
 
 function loadConfig(configPath: string) {
   return Effect.tryPromise({
@@ -437,15 +424,14 @@ const transferLoop = Effect.repeat(
   Schedule.spaced("3 seconds")
 )
 
-
 const escrowSupplyControlLoop = Effect.repeat(
   Effect.gen(function* (_) {
     let config = (yield* Config).config
 
     const tokens = yield* fetchWrappedTokens(config.hasuraEndpoint)
     for (const token of tokens) {
-      const srcChain   = token.wrapping[0]?.unwrapped_chain.universal_chain_id
-      const dstChain   = token.chain.universal_chain_id
+      const srcChain = token.wrapping[0]?.unwrapped_chain.universal_chain_id
+      const dstChain = token.chain.universal_chain_id
       const dstChannel = token.wrapping[0]?.destination_channel_id
       if (!srcChain || !dstChain || !dstChannel) {
         yield* Effect.log("Invalid token data. Skipping...")
@@ -459,29 +445,25 @@ const escrowSupplyControlLoop = Effect.repeat(
         dstChannel
       )
       if (token.wrapping[0]?.unwrapped_denom == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2") {
-
         const decoded_denom = fromHex(token.denom, "string")
-        const zkgm_addr = config.zkgmAddresses[
-          srcChain
-        ]
+        const zkgm_addr = config.zkgmAddresses[srcChain]
         console.info("token:", token)
         console.info("sourceChannelId:", sourceChannelId)
         console.info("decoded_denom:", decoded_denom)
         console.info("zkgm_addr:", zkgm_addr)
-        
       }
     }
     // const tokens = yield* fetchWrappedTokens(hasuraEndpoint)
 
     // log them outside of the “yield*” so we don’t make them the return
-    const test =  "0x62626e31333030736530767775653737686e36733877706836346579366435357a616634386a72766567397761667371756e636e33653473637373677664"
-    const decoded = fromHex(test, "string") 
+    const test =
+      "0x62626e31333030736530767775653737686e36733877706836346579366435357a616634386a72766567397761667371756e636e33653473637373677664"
+    const decoded = fromHex(test, "string")
     yield* Effect.log(`Decoded UCS03 address: ${decoded}`)
     console.info("Escrow supply control loop started")
   }),
   Schedule.spaced("3 seconds")
 )
-
 
 /**
  * fetchPacketsUntilCutoff
@@ -572,7 +554,7 @@ const fetchPacketsUntilCutoff = (
           }
         })
       }
-    
+
       const currentPage: Packet[] = response?.v2_packets || []
       if (currentPage.length === 0) break
 
@@ -643,7 +625,9 @@ export const checkPackets = (
     //   hasuraEndpoint
     // )
     // const packets = [...first_packets, ...second_packets]
-    yield* Effect.log(`Fetched ${packets.length} packets from Hasura from ${sourceChain} to ${destinationChain}`)
+    yield* Effect.log(
+      `Fetched ${packets.length} packets from Hasura from ${sourceChain} to ${destinationChain}`
+    )
     // Process each packet.
     for (const p of packets) {
       if (!p.packet_send_timestamp) continue
@@ -651,8 +635,8 @@ export const checkPackets = (
       // Only process packets that are older than the allowed timeframe.
       if (now - sendTimeMs < timeframeMs) continue
 
-      if (now*1000000 > BigInt(p.timeout_timestamp)) {
-        continue;
+      if (now * 1000000 > BigInt(p.timeout_timestamp)) {
+        continue
       }
       const sendTxHash = p.packet_send_transaction_hash ?? "?"
       if (reportedSendTxHashes.has(sendTxHash)) continue
@@ -674,7 +658,7 @@ export const checkPackets = (
           sourceChain: `${sourceChain}`,
           destinationChain: `${destinationChain}`,
           explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          minutesPassed: `${timeframeMs/60/1000}`,
+          minutesPassed: `${timeframeMs / 60 / 1000}`,
           packetSendBlockHash: p.packet_send_block_hash,
           packetHash: p.packet_hash,
           timeoutTimestamp: p.timeout_timestamp
@@ -704,14 +688,13 @@ export const checkPackets = (
           sourceChain: `${sourceChain}`,
           destinationChain: `${destinationChain}`,
           explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          minutesPassed: `${timeframeMs/60/1000}`,
+          minutesPassed: `${timeframeMs / 60 / 1000}`,
           packetSendBlockHash: p.packet_send_block_hash,
           packetHash: p.packet_hash,
           timeoutTimestamp: p.timeout_timestamp
         })(Effect.logError(`TRANSFER_ERROR`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-
 
         reportedSendTxHashes.add(sendTxHash)
         continue
@@ -733,14 +716,14 @@ export const checkPackets = (
           sourceChain: `${sourceChain}`,
           destinationChain: `${destinationChain}`,
           explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          minutesPassed: `${timeframeMs/60/1000}`,
+          minutesPassed: `${timeframeMs / 60 / 1000}`,
           packetSendBlockHash: p.packet_send_block_hash,
           packetHash: p.packet_hash,
           timeoutTimestamp: p.timeout_timestamp
         })(Effect.logError(`TRANSFER_ERROR`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-        
+
         reportedSendTxHashes.add(sendTxHash)
         continue
       }
@@ -804,9 +787,9 @@ const mainEffect = Effect.gen(function* (_) {
 
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
-  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop], { concurrency: "unbounded" }).pipe(
-    Effect.provideService(Config, { config })
-  )
+  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop], {
+    concurrency: "unbounded"
+  }).pipe(Effect.provideService(Config, { config }))
 })
 
 Effect.runPromise(mainEffect).catch(err => Effect.logError("Error in mainEffect", err))
