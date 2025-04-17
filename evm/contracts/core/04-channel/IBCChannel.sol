@@ -7,7 +7,6 @@ import "../25-handler/IBCMsgs.sol";
 import "../24-host/IBCCommitment.sol";
 import "../04-channel/IIBCChannel.sol";
 import "../05-port/IIBCModule.sol";
-import "../../lib/Hex.sol";
 
 library IBCChannelLib {
     event ChannelOpenInit(
