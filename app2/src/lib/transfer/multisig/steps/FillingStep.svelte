@@ -1,90 +1,71 @@
 <script lang="ts">
-  import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
-  import Amount from "$lib/transfer/shared/components/Amount.svelte"
-  import Button from "$lib/components/ui/Button.svelte"
-  import {transferData} from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-  import {Match, Option, Schema} from "effect"
-  import type {ContextFlowError} from "$lib/transfer/shared/errors"
-  import InsetError from "$lib/components/model/InsetError.svelte"
-  import Input from "$lib/components/ui/Input.svelte";
-  import {wallets} from "$lib/stores/wallets.svelte.ts";
-  import {Bech32FromAddressCanonicalBytesWithPrefix} from "@unionlabs/sdk/schema";
-  import AddressComponent from "$lib/components/model/AddressComponent.svelte";
+import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
+import Amount from "$lib/transfer/shared/components/Amount.svelte"
+import Button from "$lib/components/ui/Button.svelte"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { Match, Option, Schema } from "effect"
+import type { ContextFlowError } from "$lib/transfer/shared/errors"
+import InsetError from "$lib/components/model/InsetError.svelte"
+import Input from "$lib/components/ui/Input.svelte"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import { Bech32FromAddressCanonicalBytesWithPrefix } from "@unionlabs/sdk/schema"
+import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+import SenderInput from "../components/SenderInput.svelte"
 
-  type Props = {
-    onContinue: () => void
-    loading: boolean
-    onErrorClose?: () => void
-    statusMessage?: string
-    errors?: Option.Option<ContextFlowError>
-  }
+type Props = {
+  onContinue: () => void
+  loading: boolean
+  onErrorClose?: () => void
+  statusMessage?: string
+  errors?: Option.Option<ContextFlowError>
+}
 
-  const {
-    onContinue,
-    loading,
-    statusMessage,
-    errors = Option.none<ContextFlowError>()
-  }: Props = $props()
+const {
+  onContinue,
+  loading,
+  statusMessage,
+  errors = Option.none<ContextFlowError>()
+}: Props = $props()
 
-  let isModalOpen = $state(false)
+let isModalOpen = $state(false)
 
-  const uiStatus = $derived.by(() => {
-    return Option.match(errors, {
-      onSome: error => {
-        const match = Match.type<ContextFlowError>().pipe(
-          Match.tag("BalanceLookupError", () => ({
-            text: "Failed checking balance",
-            error
-          })),
-          Match.tag("AllowanceCheckError", () => ({
-            text: "Failed checking allowance",
-            error
-          })),
-          Match.tag("OrderCreationError", () => ({
-            text: "Could not create orders",
-            error
-          })),
-          Match.orElse(() => ({
-            text: statusMessage ?? "Continue",
-            error
-          }))
-        )
-        return match(error)
-      },
+const uiStatus = $derived.by(() => {
+  return Option.match(errors, {
+    onSome: error => {
+      const match = Match.type<ContextFlowError>().pipe(
+        Match.tag("BalanceLookupError", () => ({
+          text: "Failed checking balance",
+          error
+        })),
+        Match.tag("AllowanceCheckError", () => ({
+          text: "Failed checking allowance",
+          error
+        })),
+        Match.tag("OrderCreationError", () => ({
+          text: "Could not create orders",
+          error
+        })),
+        Match.orElse(() => ({
+          text: statusMessage ?? "Continue",
+          error
+        }))
+      )
+      return match(error)
+    },
 
-      onNone: () => ({
-        text: statusMessage ?? "Continue",
-        error: null
-      })
+    onNone: () => ({
+      text: statusMessage ?? "Continue",
+      error: null
     })
   })
+})
 
-  const isButtonEnabled = $derived.by(() => !loading)
+const isButtonEnabled = $derived.by(() => !loading)
 </script>
 
 <div class="min-w-full flex flex-col grow">
   <div class="flex flex-col gap-4 p-4">
-    <Input
-      label="sender"
-      id="sender"
-      type="text"
-      required
-      autocorrect="off"
-      placeholder="bbn1"
-      spellcheck="false"
-      autocomplete="off"
-      inputmode="text"
-      autocapitalize="none"
-      value={transferData.raw.sender}
-      oninput={(event) => {
-        const validAddress = Schema.encodeUnknownSync(Bech32FromAddressCanonicalBytesWithPrefix(''))(event.target.value)
-        if(validAddress) {
-         transferData.raw.updateField('sender', validAddress)
-         wallets.addInputAddress(validAddress)
-        }
-    }}
-      class="h-14 text-center text-lg"
-    />
+    <SenderInput />
     <ChainAsset type="source"/>
     <ChainAsset type="destination"/>
     <Input
