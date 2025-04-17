@@ -79,6 +79,7 @@ pub enum ExecuteMsg {
         packet: Packet,
         relayer: Addr,
         relayer_msg: Bytes,
+        intent: bool,
     },
     /// Write an acknowledgement for an Zkgm packet.
     /// Can only be called by the contract itself after packet execution.
@@ -94,11 +95,24 @@ pub enum ExecuteMsg {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum ZkgmMsg {
     OnZkgm {
+        caller: Addr,
         path: Uint256,
         source_channel_id: ChannelId,
         destination_channel_id: ChannelId,
         sender: Bytes,
         message: Bytes,
+        relayer: Addr,
+        relayer_msg: Bytes,
+    },
+    OnIntentZkgm {
+        caller: Addr,
+        path: Uint256,
+        source_channel_id: ChannelId,
+        destination_channel_id: ChannelId,
+        sender: Bytes,
+        message: Bytes,
+        market_maker: Addr,
+        market_maker_msg: Bytes,
     },
 }
 

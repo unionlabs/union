@@ -127,28 +127,31 @@ pub fn execute(
                     packet,
                     relayer,
                     relayer_msg,
-                } => {
-                    let caller = deps.api.addr_validate(&caller)?;
-                    let relayer = deps.api.addr_validate(&relayer)?;
-                    if EXECUTING_PACKET.exists(deps.storage) {
-                        Err(ContractError::AlreadyExecuting)
-                    } else {
-                        EXECUTING_PACKET.save(deps.storage, &packet)?;
-                        Ok(Response::default().add_submessage(SubMsg::reply_always(
-                            wasm_execute(
-                                env.contract.address,
-                                &ExecuteMsg::InternalExecutePacket {
-                                    caller,
-                                    packet,
-                                    relayer,
-                                    relayer_msg,
-                                },
-                                info.funds,
-                            )?,
-                            EXECUTE_REPLY_ID,
-                        )))
-                    }
-                }
+                } => dispatch_execute_packet(
+                    deps,
+                    env,
+                    info,
+                    caller,
+                    packet,
+                    relayer,
+                    relayer_msg,
+                    false,
+                ),
+                IbcUnionMsg::OnIntentRecvPacket {
+                    caller,
+                    packet,
+                    market_maker,
+                    market_maker_msg,
+                } => dispatch_execute_packet(
+                    deps,
+                    env,
+                    info,
+                    caller,
+                    packet,
+                    market_maker,
+                    market_maker_msg,
+                    true,
+                ),
                 IbcUnionMsg::OnAcknowledgementPacket {
                     caller,
                     packet,
@@ -172,9 +175,6 @@ pub fn execute(
                 | IbcUnionMsg::OnChannelCloseConfirm { .. } => {
                     Err(StdError::generic_err("the show must go on").into())
                 }
-                x => Err(
-                    StdError::generic_err(format!("not handled: {}", to_json_string(&x)?)).into(),
-                ),
             }
         }
         ExecuteMsg::InternalBatch { messages } => {
@@ -189,11 +189,21 @@ pub fn execute(
             packet,
             relayer,
             relayer_msg,
+            intent,
         } => {
             if info.sender != env.contract.address {
                 Err(ContractError::OnlySelf)
             } else {
-                execute_packet(deps, env, info, caller, packet, relayer, relayer_msg)
+                execute_packet(
+                    deps,
+                    env,
+                    info,
+                    caller,
+                    packet,
+                    relayer,
+                    relayer_msg,
+                    intent,
+                )
             }
         }
         ExecuteMsg::InternalWriteAck { ack } => {
@@ -280,6 +290,40 @@ pub fn execute(
                     .add_attribute("refill_rate", token_bucket.refill_rate),
             ))
         }
+    }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn dispatch_execute_packet(
+    deps: DepsMut,
+    env: Env,
+    info: MessageInfo,
+    caller: String,
+    packet: Packet,
+    relayer: String,
+    relayer_msg: Bytes,
+    intent: bool,
+) -> Result<Response, ContractError> {
+    let caller = deps.api.addr_validate(&caller)?;
+    let relayer = deps.api.addr_validate(&relayer)?;
+    if EXECUTING_PACKET.exists(deps.storage) {
+        Err(ContractError::AlreadyExecuting)
+    } else {
+        EXECUTING_PACKET.save(deps.storage, &packet)?;
+        Ok(Response::default().add_submessage(SubMsg::reply_always(
+            wasm_execute(
+                env.contract.address,
+                &ExecuteMsg::InternalExecutePacket {
+                    caller,
+                    packet,
+                    relayer,
+                    relayer_msg,
+                    intent,
+                },
+                info.funds,
+            )?,
+            EXECUTE_REPLY_ID,
+        )))
     }
 }
 
@@ -788,6 +832,7 @@ fn acknowledge_multiplex(
 /// Executes an IBC packet by decoding and processing its contents.
 /// This is the main entry point for packet execution that routes to specific execute functions
 /// based on the instruction type.
+#[allow(clippy::too_many_arguments)]
 fn execute_packet(
     mut deps: DepsMut,
     env: Env,
@@ -796,6 +841,7 @@ fn execute_packet(
     packet: Packet,
     relayer: Addr,
     relayer_msg: Bytes,
+    intent: bool,
 ) -> Result<Response, ContractError> {
     let mut funds = Coins::try_from(info.funds.clone()).expect("impossible");
     let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
@@ -811,6 +857,7 @@ fn execute_packet(
         zkgm_packet.salt.into(),
         zkgm_packet.path,
         zkgm_packet.instruction,
+        intent,
     )
 }
 
@@ -833,6 +880,7 @@ fn execute_internal(
     salt: H256,
     path: U256,
     instruction: Instruction,
+    intent: bool,
 ) -> Result<Response, ContractError> {
     match instruction.opcode {
         OP_FUNGIBLE_ASSET_ORDER => {
@@ -854,6 +902,7 @@ fn execute_internal(
                 salt,
                 path,
                 order,
+                intent,
             )
         }
         OP_BATCH => {
@@ -875,6 +924,7 @@ fn execute_internal(
                 salt,
                 path,
                 batch,
+                intent,
             )
         }
         OP_MULTIPLEX => {
@@ -893,6 +943,7 @@ fn execute_internal(
                 relayer_msg,
                 path,
                 multiplex,
+                intent,
             )
         }
         OP_FORWARD => {
@@ -912,6 +963,7 @@ fn execute_internal(
                 salt,
                 path,
                 forward,
+                intent,
             )
         }
         _ => Err(ContractError::UnknownOpcode {
@@ -958,7 +1010,18 @@ fn execute_forward(
     salt: H256,
     path: U256,
     forward: Forward,
+    intent: bool,
 ) -> Result<Response, ContractError> {
+    // We cannot allow market makers to fill packets containing forward
+    // instruction. This would allow them to submit of a proof and fill via the
+    // protocol on destination for a fake forward.
+
+    // Instead, they must first fill on destination the orders, awaits finality
+    // to settle the forward, then cascade acknowledge.
+    if intent {
+        return Err(ContractError::InvalidMarketMakerOperation);
+    }
+
     let (tail_path, Some(previous_destination_channel_id)) =
         dequeue_channel_from_path(forward.path)
     else {
@@ -1046,6 +1109,7 @@ fn execute_multiplex(
     relayer_msg: Bytes,
     path: U256,
     multiplex: Multiplex,
+    intent: bool,
 ) -> Result<Response, ContractError> {
     let contract_address = deps
         .api
@@ -1067,33 +1131,52 @@ fn execute_multiplex(
         };
 
         // Call the target contract with a reply to capture the acknowledgement
+        let msg = if intent {
+            IbcUnionMsg::OnIntentRecvPacket {
+                caller: caller.into(),
+                packet: multiplex_packet,
+                market_maker: relayer.into(),
+                market_maker_msg: relayer_msg,
+            }
+        } else {
+            IbcUnionMsg::OnRecvPacket {
+                caller: caller.into(),
+                packet: multiplex_packet,
+                relayer: relayer.into(),
+                relayer_msg,
+            }
+        };
         Ok(Response::new().add_submessage(SubMsg::reply_on_success(
-            wasm_execute(
-                contract_address,
-                &IbcUnionMsg::OnRecvPacket {
-                    caller: caller.into(),
-                    packet: multiplex_packet,
-                    relayer: relayer.into(),
-                    relayer_msg,
-                },
-                vec![],
-            )?,
+            wasm_execute(contract_address, &msg, vec![])?,
             MULTIPLEX_REPLY_ID,
         )))
     } else {
         // Standard mode - fire and forget
+        let msg = if intent {
+            ZkgmMsg::OnIntentZkgm {
+                caller,
+                path: Uint256::from_be_bytes(path.to_be_bytes()),
+                source_channel_id: packet.source_channel_id,
+                destination_channel_id: packet.destination_channel_id,
+                sender: multiplex.sender.to_vec().into(),
+                message: multiplex.contract_calldata.to_vec().into(),
+                market_maker: relayer,
+                market_maker_msg: relayer_msg,
+            }
+        } else {
+            ZkgmMsg::OnZkgm {
+                caller,
+                path: Uint256::from_be_bytes(path.to_be_bytes()),
+                source_channel_id: packet.source_channel_id,
+                destination_channel_id: packet.destination_channel_id,
+                sender: multiplex.sender.to_vec().into(),
+                message: multiplex.contract_calldata.to_vec().into(),
+                relayer,
+                relayer_msg,
+            }
+        };
         Ok(Response::new()
-            .add_message(wasm_execute(
-                contract_address,
-                &ZkgmMsg::OnZkgm {
-                    path: Uint256::from_be_bytes(path.to_be_bytes()),
-                    source_channel_id: packet.source_channel_id,
-                    destination_channel_id: packet.destination_channel_id,
-                    sender: multiplex.sender.to_vec().into(),
-                    message: multiplex.contract_calldata.to_vec().into(),
-                },
-                vec![],
-            )?)
+            .add_message(wasm_execute(contract_address, &msg, vec![])?)
             .add_message(wasm_execute(
                 env.contract.address,
                 &ExecuteMsg::InternalWriteAck {
@@ -1117,6 +1200,7 @@ fn execute_batch(
     salt: H256,
     path: U256,
     batch: Batch,
+    intent: bool,
 ) -> Result<Response, ContractError> {
     EXECUTING_PACKET_IS_BATCH.save(deps.storage, &batch.instructions.len())?;
     let mut response = Response::new();
@@ -1133,6 +1217,7 @@ fn execute_batch(
             derive_batch_salt(i.try_into().unwrap(), salt),
             path,
             instruction,
+            intent,
         )?;
         response = response
             .add_attributes(sub_response.attributes)
@@ -1140,6 +1225,68 @@ fn execute_batch(
             .add_submessages(sub_response.messages);
     }
     Ok(response)
+}
+
+#[allow(clippy::too_many_arguments)]
+fn market_maker_fill(
+    deps: DepsMut,
+    env: Env,
+    funds: &mut Coins,
+    caller: Addr,
+    relayer_msg: Bytes,
+    quote_amount: u128,
+    quote_token_str: String,
+    minter: Addr,
+    receiver: Addr,
+) -> Result<Response, ContractError> {
+    /* Gas Station
+
+     Determine the native denom that we transfer to the minter contract.
+     The MM may fill multiple order within the packet, we need to
+     provide each token individually, subtracting from the total funds.
+    */
+    let mut funds_to_escrow = vec![];
+    if !funds.amount_of(&quote_token_str).is_zero() {
+        let native_denom = Coin {
+            denom: quote_token_str.clone(),
+            amount: quote_amount.into(),
+        };
+        funds.sub(native_denom.clone())?;
+        funds_to_escrow.push(native_denom);
+    }
+    MARKET_MAKER.save(deps.storage, &relayer_msg)?;
+    let mut messages = Vec::with_capacity(2);
+    if quote_amount > 0 {
+        // Make sure the market maker provide the funds
+        messages.push(make_wasm_msg(
+            LocalTokenMsg::Escrow {
+                from: caller.to_string(),
+                denom: quote_token_str.clone(),
+                recipient: minter.to_string(),
+                amount: quote_amount.into(),
+            },
+            &minter,
+            funds_to_escrow,
+        )?);
+        // Release the funds to the user
+        messages.push(make_wasm_msg(
+            LocalTokenMsg::Unescrow {
+                denom: quote_token_str,
+                recipient: receiver.to_string(),
+                amount: quote_amount.into(),
+            },
+            minter,
+            vec![],
+        )?);
+    }
+    Ok(Response::new().add_submessage(SubMsg::reply_always(
+        wasm_execute(
+            &env.contract.address,
+            &ExecuteMsg::InternalBatch { messages },
+            vec![],
+        )?,
+        MM_FILL_REPLY_ID,
+    )))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1155,18 +1302,10 @@ fn execute_fungible_asset_order(
     _salt: H256,
     path: U256,
     order: FungibleAssetOrder,
+    intent: bool,
 ) -> Result<Response, ContractError> {
     // Get the token minter contract
     let minter = TOKEN_MINTER.load(deps.storage)?;
-
-    // Predict the wrapped token denom based on path, destination channel, and base token
-    let (wrapped_denom, _) = predict_wrapped_token(
-        deps.as_ref(),
-        &minter,
-        path,
-        packet.destination_channel_id,
-        Vec::from(order.base_token.clone()).into(),
-    )?;
 
     // Convert quote token to string for comparison
     let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
@@ -1185,8 +1324,32 @@ fn execute_fungible_asset_order(
         u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
     let quote_amount =
         u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
+
+    if intent {
+        return market_maker_fill(
+            deps,
+            env.clone(),
+            funds,
+            caller,
+            relayer_msg,
+            quote_amount,
+            quote_token_str,
+            minter,
+            receiver,
+        );
+    }
+
     let base_covers_quote = base_amount >= quote_amount;
     let fee_amount = base_amount.saturating_sub(quote_amount);
+
+    // Predict the wrapped token denom based on path, destination channel, and base token
+    let (wrapped_denom, _) = predict_wrapped_token(
+        deps.as_ref(),
+        &minter,
+        path,
+        packet.destination_channel_id,
+        Vec::from(order.base_token.clone()).into(),
+    )?;
 
     let mut messages = Vec::new();
 
@@ -1309,57 +1472,17 @@ fn execute_fungible_asset_order(
     }
     // Market Maker Fill - Any party can fill the order by providing the quote token
     else {
-        if quote_amount > 0 {
-            /* Gas Station
-
-             Determine the native denom that we transfer to the minter contract.
-             The MM may fill multiple order within the packet, we need to
-             provide each token individually, subtracting from the total funds.
-            */
-            let mut funds_to_escrow = vec![];
-            if !funds.amount_of(&quote_token_str).is_zero() {
-                let native_denom = Coin {
-                    denom: quote_token_str.clone(),
-                    amount: quote_amount.into(),
-                };
-                funds.sub(native_denom.clone())?;
-                funds_to_escrow.push(native_denom);
-            }
-            MARKET_MAKER.save(deps.storage, &relayer_msg)?;
-            messages.push(SubMsg::reply_always(
-                wasm_execute(
-                    &env.contract.address,
-                    &ExecuteMsg::InternalBatch {
-                        messages: vec![
-                            // Make sure the market maker provide the funds
-                            make_wasm_msg(
-                                LocalTokenMsg::Escrow {
-                                    from: caller.to_string(),
-                                    denom: quote_token_str.clone(),
-                                    recipient: minter.to_string(),
-                                    amount: quote_amount.into(),
-                                },
-                                &minter,
-                                funds_to_escrow,
-                            )?,
-                            // Release the funds to the user
-                            make_wasm_msg(
-                                LocalTokenMsg::Unescrow {
-                                    denom: quote_token_str,
-                                    recipient: receiver.to_string(),
-                                    amount: quote_amount.into(),
-                                },
-                                minter,
-                                vec![],
-                            )?,
-                        ],
-                    },
-                    vec![],
-                )?,
-                MM_FILL_REPLY_ID,
-            ));
-        }
-        return Ok(Response::new().add_submessages(messages));
+        return market_maker_fill(
+            deps,
+            env.clone(),
+            funds,
+            caller,
+            relayer_msg,
+            quote_amount,
+            quote_token_str,
+            minter,
+            receiver,
+        );
     }
 
     // Return success acknowledgement with protocol fill type

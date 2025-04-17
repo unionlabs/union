@@ -620,6 +620,7 @@ fn test_execute_internal_execute_only_self() {
             },
             relayer: Addr::unchecked(""),
             relayer_msg: Default::default(),
+            intent: false,
         },
     );
     assert_eq!(result, Err(ContractError::OnlySelf));
