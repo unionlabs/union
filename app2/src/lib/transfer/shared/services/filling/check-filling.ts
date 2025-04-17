@@ -2,6 +2,7 @@ import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelt
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { Data, Option } from "effect"
 import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
+import {signingMode} from "$lib/transfer/signingMode.svelte.ts";
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -20,6 +21,7 @@ export interface TransferArgs {
 
 export type FillingState = Data.TaggedEnum<{
   Empty: {}
+  NoWallet: {}
   SourceChainMissing: {}
   SourceWalletMissing: {}
   BaseTokenMissing: {}
@@ -35,7 +37,12 @@ export type FillingState = Data.TaggedEnum<{
 export const FillingState = Data.taggedEnum<FillingState>()
 
 export const getFillingState = (transferData: TransferData): FillingState => {
-  if (!wallets.hasAnyWallet()) {
+  if (!wallets.hasAnyWallet() && signingMode.mode === "single") {
+    return FillingState.NoWallet()
+  }
+
+  if (Option.isNone(transferData.derivedSender) && signingMode.mode === "multi") {
+
     return FillingState.NoWallet()
   }
 

@@ -96,6 +96,7 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
 
       return FillingState.$match(state, {
         Empty: constVoid,
+        NoWallet: () => Effect.succeed(ok(Empty(), "Enter sender address")),
         SourceChainMissing: () => Effect.succeed(ok(Empty(), "Select from chain")),
         SourceWalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),
         BaseTokenMissing: () => Effect.succeed(ok(Empty(), "Select asset")),
@@ -158,7 +159,7 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
               relevantAllowances.length > 0 ? Option.some(relevantAllowances) : Option.none()
           }
 
-          return ok(CheckReceiver({context: updatedContext}), "Creating orders...")
+          return ok(CheckReceiver({context: updatedContext}), "Checking receiver...")
         }),
         Effect.catchAll(error => Effect.succeed(fail("Allowance check failed", error)))
       )
@@ -166,7 +167,7 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
 
     CheckReceiver: ({context}) =>
       Effect.sleep(1000).pipe(
-        Effect.flatMap(() => Effect.succeed(ok(CreateOrders({context}), "Final steps...")))
+        Effect.flatMap(() => Effect.succeed(ok(CreateOrders({context}), "Creating orders...")))
       ),
 
     CreateOrders: ({context}) =>
@@ -212,7 +213,7 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
       ),
 
     CreateSteps: ({context}) => {
-      return Effect.succeed(complete("Transfer ready", context))
+      return Effect.succeed(complete("Export transfer", context))
     }
   })
 }

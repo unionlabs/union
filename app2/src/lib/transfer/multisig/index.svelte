@@ -9,10 +9,12 @@
   import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte";
   import type {ContextFlowError} from "$lib/transfer/shared/errors";
   import { fly } from "svelte/transition"
-
+  import {transferHashStore} from "$lib/stores/transfer-hash.svelte.ts";
+  import {wallets} from "$lib/stores/wallets.svelte.ts";
+  import { beforeNavigate } from "$app/navigation"
   let currentPage = $state(0)
   let previousPage = $state(0)
-  let isLoading = $state(false)
+  let isLoading = $state(true)
   let steps = $state<Option.Option<Array<Steps.Steps>>>(Option.none())
   let errors = $state<Option.Option<ContextFlowError>>(Option.none())
   let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
@@ -113,6 +115,18 @@
     currentFiber = Option.none()
   }
 
+  function newTransfer() {
+    interruptFiber()
+    steps = Option.some([Steps.Filling()])
+    errors = Option.none()
+    isLoading = true
+    currentPage = 0
+    transferData.raw.reset()
+    transferHashStore.reset()
+    wallets.clearInputAddress()
+  }
+
+  beforeNavigate(newTransfer)
 
 </script>
 

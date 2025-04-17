@@ -20,8 +20,8 @@ import {
 } from "@unionlabs/sdk/ucs03"
 import { Batch, type Instruction } from "@unionlabs/sdk/ucs03/instruction"
 import { FungibleIntent } from "@unionlabs/sdk/schema"
-import { OrderCreationError } from "$lib/transfer/shared/errors"
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type {TransferContext} from "$lib/transfer/shared/services/filling/create-context.ts";
+import type {OrderCreationError} from "$lib/transfer/shared/errors";
 
 export function createOrdersBatch(
   context: TransferContext
@@ -33,8 +33,8 @@ export function createOrdersBatch(
 
     const grouped = Arr.groupBy(
       context.intents,
-      intents =>
-        `${intents.sourceChainId}-${intents.destinationChain.universal_chain_id}-${intents.channel.destination_channel_id}-${intents.ucs03address}`
+      intent =>
+        `${intent.sourceChainId}-${intent.destinationChain.universal_chain_id}-${intent.channel.destination_channel_id}-${intent.ucs03address}`
     )
 
     // We only support one group per batch

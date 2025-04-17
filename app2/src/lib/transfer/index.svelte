@@ -1,7 +1,6 @@
 <script lang="ts">
 import Normal from "./normal/index.svelte"
 import Multisig from "./multisig/index.svelte"
-import Tabbed from "./tabbed/index.svelte"
 import { onMount } from "svelte"
 import { signingMode, type SigningMode } from "./signingMode.svelte.js"
 import { Match, pipe } from "effect"

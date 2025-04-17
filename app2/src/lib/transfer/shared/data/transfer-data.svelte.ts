@@ -79,6 +79,7 @@ export class TransferData {
     }
     return wallets.getAddressForChain(sourceChain)
   })
+
   channel = $derived<Option.Option<Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
       Option.flatMap(([channelsData, sourceChain, destinationChain]) =>

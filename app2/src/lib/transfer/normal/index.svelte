@@ -96,7 +96,6 @@ function newTransfer() {
   currentPage = 0
   transferData.raw.reset()
   transferHashStore.reset()
-  wallets.clearInputAddress()
 }
 
 $effect(() => {

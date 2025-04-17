@@ -7,9 +7,6 @@ import { Match, Option, Schema } from "effect"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Input from "$lib/components/ui/Input.svelte"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { Bech32FromAddressCanonicalBytesWithPrefix } from "@unionlabs/sdk/schema"
-import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import SenderInput from "../components/SenderInput.svelte"
 
 type Props = {

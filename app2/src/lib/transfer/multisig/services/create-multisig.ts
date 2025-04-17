@@ -1,4 +1,4 @@
-import { Record as R, Data, Effect, Option, pipe } from "effect"
+import { Record as R, Effect, Option, pipe } from "effect"
 import * as S from "effect/Schema"
 import { Tx } from "@unionlabs/sdk/schema"
 import { encodeAbiParameters } from "viem"
@@ -9,6 +9,7 @@ import type { TransferContext } from "$lib/transfer/shared/services/filling/crea
 import { generateSalt } from "@unionlabs/sdk/utils"
 import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
+import {GenerateMultisigError} from "$lib/transfer/shared/errors";
 
 export const createMultisigMessage = (context: TransferContext) =>
   Effect.gen(function* () {

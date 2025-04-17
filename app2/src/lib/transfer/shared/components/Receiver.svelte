@@ -18,6 +18,51 @@ import { getDerivedReceiverSafe } from "$lib/services/shared"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { clickOutside } from "$lib/utils/actions.ts"
 
+type Props = {
+  open: boolean
+  close: () => void
+}
+
+let {
+  open,
+  close
+}: Props = $props()
+
+$effect(() => {
+  if(open) {
+    isModalOpen = true
+    currentView = "main"
+    previousView = "main"
+    bookmarkOnAdd = false
+  }
+})
+function openModal() {
+  isModalOpen = true
+  currentView = "main"
+  previousView = "main"
+  bookmarkOnAdd = false
+}
+
+function closeModal() {
+  isModalOpen = false
+  manualAddress = ""
+  currentView = "main"
+  previousView = "main"
+  showClearConfirm = false
+  bookmarkOnAdd = false
+  close()
+}
+
+function goBack() {
+  if (currentView === "main") {
+    closeModal()
+  } else {
+    previousView = currentView
+    currentView = "main"
+    showClearConfirm = false
+  }
+}
+
 let destinationChain = $derived(
   Option.isSome(transferData.destinationChain) ? Option.getOrNull(transferData.destinationChain) : null
 )
@@ -233,32 +278,6 @@ function toggleBookmarkOnAdd() {
   bookmarkOnAdd = !bookmarkOnAdd
 }
 
-function openModal() {
-  isModalOpen = true
-  currentView = "main"
-  previousView = "main"
-  bookmarkOnAdd = false
-}
-
-function closeModal() {
-  isModalOpen = false
-  manualAddress = ""
-  currentView = "main"
-  previousView = "main"
-  showClearConfirm = false
-  bookmarkOnAdd = false
-}
-
-function goBack() {
-  if (currentView === "main") {
-    closeModal()
-  } else {
-    previousView = currentView
-    currentView = "main"
-    showClearConfirm = false
-  }
-}
-
 function showRecent() {
   previousView = currentView
   currentView = "recent"
@@ -282,12 +301,8 @@ function hasBookmarks() {
 }
 </script>
 
-<Button class="w-fit" onclick={openModal} disabled={!destinationChainId}>
-  <SharpWalletIcon class="size-5"/>
-</Button>
-
 <!-- Modal -->
-{#if isModalOpen}
+{#if open}
   <div class="absolute bg-zinc-925 inset-0 z-40"
        transition:fade={{ duration: 300 }}
        use:clickOutside
