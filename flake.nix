@@ -203,6 +203,7 @@
         ./drip/drip.nix
         ./zkgm-dev/zkgm-dev.nix
         ./sentinel/sentinel.nix
+        ./sentinel2/sentinel.nix
         ./lib/embed-commit
         treefmt-nix.flakeModule
       ];
