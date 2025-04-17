@@ -2,6 +2,7 @@ import * as S from "effect/Schema"
 import { Hex, HexChecksum, HexFromString } from "./hex.js"
 import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "./bech32.js"
 import { pipe } from "effect"
+import { checksumAddress, isAddress } from "viem"
 
 // For Reference, see: https://docs.union.build/ucs/05
 // We always store bytes arrays as hex-encoded strings
@@ -44,3 +45,14 @@ export type AddressEvmZkgm = typeof AddressEvmZkgm.Type
 export const AddressAptosCanonical = AddressCanonicalBytes.pipe(S.brand("AddressAptosCanonical"))
 export const AddressAptosDisplay = AddressAptosCanonical
 export const AddressAptosZkgm = AddressAptosCanonical
+
+export const ERC55 = S.NonEmptyString.pipe(
+  S.filter(a => isAddress(a, { strict: true }), {
+    description: "a string matching ERC-55 in checksum format"
+  })
+)
+export type ERC55 = typeof ERC55.Type
+
+// TODO: rename me
+export const ValidAddress = S.Union(ERC55, Bech32)
+export type ValidAddress = typeof ValidAddress.Type

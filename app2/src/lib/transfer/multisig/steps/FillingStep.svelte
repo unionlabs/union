@@ -8,6 +8,7 @@ import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Input from "$lib/components/ui/Input.svelte"
 import SenderInput from "../components/SenderInput.svelte"
+import ReceiverInput from "../components/ReceiverInput.svelte"
 
 type Props = {
   onContinue: () => void
@@ -65,23 +66,7 @@ const isButtonEnabled = $derived.by(() => !loading)
     <SenderInput />
     <ChainAsset type="source"/>
     <ChainAsset type="destination"/>
-    <Input
-      label="receiver"
-      id="receiver"
-      type="text"
-      required
-      autocorrect="off"
-      placeholder="0x00"
-      spellcheck="false"
-      autocomplete="off"
-      inputmode="text"
-      autocapitalize="none"
-      value={transferData.raw.receiver}
-      class="h-14 text-center text-lg"
-      oninput={(event) => {
-        transferData.raw.updateField('receiver', event)
-    }}
-    />
+    <ReceiverInput />
     <Amount type="source"/>
   </div>
 
