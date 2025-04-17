@@ -9,6 +9,13 @@ interface IIBCModuleRecv {
         address relayer,
         bytes calldata relayerMsg
     ) external returns (bytes memory);
+
+    function onRecvIntentPacket(
+        address caller,
+        IBCPacket calldata packet,
+        address marketMaker,
+        bytes calldata marketMakerMsg
+    ) external returns (bytes memory);
 }
 
 // IIBCModule defines an interface that implements all the callbacks
@@ -58,13 +65,6 @@ interface IIBCModule is IIBCModuleRecv {
         uint32 channelId,
         address relayer
     ) external;
-
-    function onRecvIntentPacket(
-        address caller,
-        IBCPacket calldata packet,
-        address marketMaker,
-        bytes calldata marketMakerMsg
-    ) external returns (bytes memory);
 
     function onAcknowledgementPacket(
         address caller,

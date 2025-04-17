@@ -236,4 +236,22 @@ contract PingPong is
             path, sourceChannelId, destinationChannelId, sender, message
         );
     }
+
+    function onIntentZkgm(
+        address caller,
+        uint256 path,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        bytes calldata sender,
+        bytes calldata message,
+        address relayer,
+        bytes calldata relayerMsg
+    ) public {
+        if (msg.sender != zkgmProtocol) {
+            revert PingPongLib.ErrOnlyZKGM();
+        }
+        emit PingPongLib.Zkgoblim(
+            path, sourceChannelId, destinationChannelId, sender, message
+        );
+    }
 }
