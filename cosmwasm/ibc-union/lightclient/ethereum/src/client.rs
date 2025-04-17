@@ -19,7 +19,7 @@ use evm_storage_verifier::{
     verify_account_storage_root, verify_storage_absence, verify_storage_proof,
 };
 use ibc_union_light_client::{
-    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
 use unionlabs::{
@@ -83,7 +83,7 @@ impl IbcClient for EthereumLightClient {
         )?)
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
         consensus_state.timestamp
     }
 
@@ -351,7 +351,7 @@ fn update_state<C: ChainSpec>(
         consensus_state.storage_root = header.ibc_account_proof.storage_root;
 
         consensus_state.timestamp =
-            consensus_update.finalized_header.execution.timestamp * 1_000_000_000;
+            Timestamp::from_secs(consensus_update.finalized_header.execution.timestamp);
 
         if client_state.latest_height < consensus_update.finalized_header.execution.block_number {
             client_state.latest_height = consensus_update.finalized_header.execution.block_number;
@@ -525,7 +525,7 @@ mod tests {
     use beacon_api_types::{altair::SyncCommittee, electra};
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
-        Addr, Timestamp,
+        Addr,
     };
     use ethereum_light_client_types::{
         client_state::InitialSyncCommittee, AccountProof, LightClientUpdateData,
@@ -597,10 +597,10 @@ mod tests {
             slot: INITIAL_HEADER.slot,
             state_root: INITIAL_HEADER.state_root,
             storage_root: INITIAL_STORAGE_HASH,
-            timestamp: compute_timestamp_at_slot::<Mainnet>(
+            timestamp: Timestamp::from_secs(compute_timestamp_at_slot::<Mainnet>(
                 SEPOLIA_GENESIS_TIME,
                 INITIAL_HEADER.slot,
-            ),
+            )),
         };
 
         let res = EthereumLightClient::verify_creation(
@@ -647,10 +647,10 @@ mod tests {
             slot: INITIAL_HEADER.slot,
             state_root: INITIAL_HEADER.state_root,
             storage_root: INITIAL_STORAGE_HASH,
-            timestamp: compute_timestamp_at_slot::<Mainnet>(
+            timestamp: Timestamp::from_secs(compute_timestamp_at_slot::<Mainnet>(
                 SEPOLIA_GENESIS_TIME,
                 INITIAL_HEADER.slot,
-            ),
+            )),
         };
 
         let ClientState::V1(mut client_state) =
@@ -658,8 +658,9 @@ mod tests {
 
         let deps = mock_dependencies();
         let mut env = mock_env();
-        env.block.time =
-            Timestamp::from_seconds(FINALITY_UPDATE.attested_header.execution.timestamp + 24);
+        env.block.time = cosmwasm_std::Timestamp::from_seconds(
+            FINALITY_UPDATE.attested_header.execution.timestamp + 24,
+        );
         let state_update = verify_header::<Mainnet>(
             &IbcClientCtx {
                 client_id: 1.try_into().unwrap(),
@@ -689,7 +690,7 @@ mod tests {
             slot: FINALITY_UPDATE.finalized_header.beacon.slot,
             state_root: FINALITY_UPDATE.finalized_header.execution.state_root,
             storage_root: FINALITY_UPDATE_ACCOUNT_STORAGE_ROOT,
-            timestamp: FINALITY_UPDATE.finalized_header.execution.timestamp * 1_000_000_000,
+            timestamp: Timestamp::from_secs(FINALITY_UPDATE.finalized_header.execution.timestamp),
         };
 
         client_state.latest_height = FINALITY_UPDATE.finalized_header.execution.block_number;
@@ -732,10 +733,10 @@ mod tests {
             slot: FINALITY_UPDATE.finalized_header.beacon.slot,
             state_root: FINALITY_UPDATE.finalized_header.beacon.state_root,
             storage_root: FINALITY_UPDATE_ACCOUNT_STORAGE_ROOT,
-            timestamp: compute_timestamp_at_slot::<Mainnet>(
+            timestamp: Timestamp::from_secs(compute_timestamp_at_slot::<Mainnet>(
                 SEPOLIA_GENESIS_TIME,
                 FINALITY_UPDATE.finalized_header.beacon.slot,
-            ),
+            )),
         };
 
         let ClientState::V1(mut client_state) =
@@ -743,7 +744,7 @@ mod tests {
 
         let deps = mock_dependencies();
         let mut env = mock_env();
-        env.block.time = Timestamp::from_seconds(
+        env.block.time = cosmwasm_std::Timestamp::from_seconds(
             PERIOD_CHANGING_UPDATE.attested_header.execution.timestamp + 24,
         );
         let state_update = verify_header::<Mainnet>(
@@ -781,7 +782,9 @@ mod tests {
             slot: PERIOD_CHANGING_UPDATE.finalized_header.beacon.slot,
             state_root: PERIOD_CHANGING_UPDATE.finalized_header.execution.state_root,
             storage_root: PERIOD_CHANGING_UPDATE_ACCOUNT_STORAGE_ROOT,
-            timestamp: PERIOD_CHANGING_UPDATE.finalized_header.execution.timestamp * 1_000_000_000,
+            timestamp: Timestamp::from_secs(
+                PERIOD_CHANGING_UPDATE.finalized_header.execution.timestamp,
+            ),
         };
 
         client_state.latest_height = PERIOD_CHANGING_UPDATE

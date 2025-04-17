@@ -3,7 +3,7 @@ use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client::client::EthereumLightClient;
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
-    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
 use unionlabs::encoding::Bincode;
@@ -86,7 +86,7 @@ impl IbcClient for ArbitrumLightClient {
             state_root: header.l2_header.state_root,
             ibc_storage_root: header.l2_ibc_account_proof.storage_root,
             // must be nanos
-            timestamp: 1_000_000_000 * header.l2_header.timestamp,
+            timestamp: Timestamp::from_secs(header.l2_header.timestamp),
         };
 
         let new_latest_height = header
@@ -136,7 +136,7 @@ impl IbcClient for ArbitrumLightClient {
         Ok(ClientCreationResult::new())
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
         consensus_state.timestamp
     }
 

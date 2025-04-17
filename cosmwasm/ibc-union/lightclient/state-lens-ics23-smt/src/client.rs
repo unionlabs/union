@@ -4,7 +4,7 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
-use ibc_union_spec::path::ConsensusStatePath;
+use ibc_union_spec::{path::ConsensusStatePath, Timestamp};
 use movement_light_client_types::ConsensusState as L2ConsensusState;
 use state_lens_ics23_smt_light_client_types::{ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
@@ -65,7 +65,7 @@ impl IbcClient for StateLensIcs23SmtLightClient {
         unimplemented!()
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
         consensus_state.timestamp
     }
 

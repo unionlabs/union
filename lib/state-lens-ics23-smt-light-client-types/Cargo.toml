@@ -14,6 +14,7 @@ workspace = true
 [dependencies]
 alloy                         = { workspace = true, optional = true, features = ["sol-types"] }
 bincode                       = { workspace = true, optional = true, features = ["alloc", "derive"] }
+consensus-primitives.workspace = true
 protos                        = { workspace = true, optional = true, features = ["proto_full", "serde"] }
 serde                         = { workspace = true, optional = true, features = ["derive"] }
 state-lens-light-client-types = { workspace = true }

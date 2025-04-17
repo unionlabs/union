@@ -1,3 +1,4 @@
+use consensus_primitives::Timestamp;
 use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -9,7 +10,7 @@ use unionlabs::primitives::H256;
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ConsensusState {
     /// Timestamp of the execution layer.
-    pub timestamp: u64,
+    pub timestamp: Timestamp,
     /// State root of the execution layer.
     pub state_root: H256,
 }
@@ -33,7 +34,7 @@ pub mod ethabi {
     impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
             Self {
-                timestamp: value.timestamp,
+                timestamp: value.timestamp.as_nanos(),
                 stateRoot: value.state_root.get().into(),
             }
         }
@@ -42,7 +43,7 @@ pub mod ethabi {
     impl From<SolConsensusState> for ConsensusState {
         fn from(value: SolConsensusState) -> Self {
             Self {
-                timestamp: value.timestamp,
+                timestamp: Timestamp::from_nanos(value.timestamp),
                 state_root: H256::new(value.stateRoot.0),
             }
         }

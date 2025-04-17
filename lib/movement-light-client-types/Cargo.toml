@@ -14,6 +14,7 @@ workspace = true
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"], optional = true }
 bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
+consensus-primitives.workspace = true
 ethereum-light-client-types = { workspace = true }
 serde                       = { workspace = true, optional = true, features = ["derive"] }
 unionlabs                   = { workspace = true }

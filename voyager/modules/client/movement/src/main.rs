@@ -19,7 +19,6 @@ use voyager_message::{
     module::{ClientModuleInfo, ClientModuleServer},
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
-        Timestamp,
     },
     vm::BoxDynError,
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
@@ -78,9 +77,6 @@ impl Module {
     }
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum ModuleInitError {}
-
 #[async_trait]
 impl ClientModuleServer for Module {
     #[instrument]
@@ -106,7 +102,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp: Timestamp::from_nanos(cs.timestamp),
+            timestamp: cs.timestamp,
         })
     }
 

@@ -1,3 +1,5 @@
+// TODO: Move this into ibc_union_msg, and then reexport
+
 use cosmwasm_std::Addr;
 
 #[derive(

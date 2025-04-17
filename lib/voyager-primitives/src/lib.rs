@@ -4,7 +4,7 @@
 use core::{fmt, str::FromStr};
 use std::fmt::{Debug, Display};
 
-pub use consensus_primitives::Timestamp;
+pub use consensus_primitives::{Duration, Timestamp};
 use macros::apply;
 use serde_json::Value;
 use unionlabs::{

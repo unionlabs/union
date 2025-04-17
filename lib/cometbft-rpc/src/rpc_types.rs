@@ -6,8 +6,8 @@ use cometbft_types::{
     crypto::{proof_ops::ProofOps, public_key::PublicKey},
     p2p::default_node_info::DefaultNodeInfo,
     types::{
-        block::Block, block_id::BlockId, header::Header, signed_header::SignedHeader,
-        tx_proof::TxProof, validator::Validator,
+        block::Block, block_id::BlockId, commit_sig::CommitSig, header::Header,
+        signed_header::SignedHeader, tx_proof::TxProof, validator::Validator,
     },
 };
 use serde::{Deserialize, Serialize};
@@ -163,9 +163,8 @@ pub struct GrpcAbciQueryError {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
-pub struct CommitResponse {
-    // #[serde(deserialize_with = "serde_as::<_, protos::cometbft::types::v1::SignedHeader, _>")]
-    pub signed_header: SignedHeader,
+pub struct CommitResponse<Cs = CommitSig> {
+    pub signed_header: SignedHeader<Cs>,
     pub canonical: bool,
 }
 
@@ -177,13 +176,9 @@ pub struct TxResponse {
     #[serde(with = "::serde_utils::string_opt")]
     pub height: Option<NonZeroU64>,
     pub index: u32,
-    // #[serde(deserialize_with = "serde_as::<_, protos::cometbft::abci::v1::ExecTxResult, _>")]
     pub tx_result: ExecTxResult,
     pub tx: Bytes<Base64>,
-    #[serde(
-        default,
-        // deserialize_with = "serde_as_opt::<_, protos::cometbft::types::v1::TxProof, _>"
-    )]
+    #[serde(default)]
     pub proof: Option<TxProof>,
 }
 

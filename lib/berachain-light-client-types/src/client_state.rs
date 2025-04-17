@@ -2,9 +2,24 @@ use ibc_union_spec::ClientId;
 use unionlabs::primitives::{H160, U256};
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-pub struct ClientState {
+pub enum ClientState {
+    V1(ClientStateV1),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct ClientStateV1 {
     /// consensus client
     pub l1_client_id: ClientId,
     /// execution chain id

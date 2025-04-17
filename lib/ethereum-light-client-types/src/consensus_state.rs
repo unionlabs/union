@@ -1,4 +1,5 @@
 use beacon_api_types::custom_types::Slot;
+use consensus_primitives::Timestamp;
 use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -9,7 +10,7 @@ pub struct ConsensusState {
     pub state_root: H256,
     pub storage_root: H256,
     /// Timestamp of the block, *normalized to nanoseconds* in order to be compatible with ibc-go.
-    pub timestamp: u64,
+    pub timestamp: Timestamp,
 }
 
 #[cfg(feature = "ethabi")]
@@ -36,7 +37,7 @@ pub mod ethabi {
                 slot: value.slot.get(),
                 state_root: value.state_root.get().into(),
                 storage_root: value.storage_root.get().into(),
-                timestamp: value.timestamp,
+                timestamp: value.timestamp.as_nanos(),
             }
         }
     }
@@ -57,7 +58,7 @@ pub mod ethabi {
                 slot: Slot::new(value.slot),
                 state_root: H256::new(value.state_root.0),
                 storage_root: H256::new(value.storage_root.0),
-                timestamp: value.timestamp,
+                timestamp: Timestamp::from_nanos(value.timestamp),
             })
         }
     }
@@ -78,7 +79,7 @@ mod tests {
             slot: Slot::new(42),
             state_root: H256::new([0xAA; 32]),
             storage_root: H256::new([0xAA; 32]),
-            timestamp: 123_456_789,
+            timestamp: Timestamp::from_nanos(123_456_789),
         }
     }
 

@@ -16,12 +16,18 @@ pub enum Error {
     HeadersMustBeNonAdjacent,
     #[error("headers must be adjacent")]
     HeadersMustBeAdjacent,
-    #[error("header with the timestamp ({header_timestamp}) is expired (trusting period {trusting_period})")]
+    #[error(
+        "header with the timestamp ({header_timestamp}) is \
+        expired (trusting period {trusting_period})"
+    )]
     HeaderExpired {
         trusting_period: Duration,
         header_timestamp: Timestamp,
     },
-    #[error("untrusted ({untrusted_header_chain_id}) and trusted header ({trusted_header_chain_id}) chain id mismatch")]
+    #[error(
+        "untrusted ({untrusted_header_chain_id}) and trusted \
+        header ({trusted_header_chain_id}) chain id mismatch"
+    )]
     ChainIdMismatch {
         untrusted_header_chain_id: String,
         trusted_header_chain_id: String,
@@ -33,12 +39,18 @@ pub enum Error {
         sh_hash: H256<HexUnprefixed>,
         commit_hash: H256<HexUnprefixed>,
     },
-    #[error("trusted header height ({untrusted_header_height}) cannot be greater than or equal to the untrusted height ({untrusted_header_height})")]
+    #[error(
+        "trusted header height ({untrusted_header_height}) cannot be greater \
+        than or equal to the untrusted height ({untrusted_header_height})"
+    )]
     UntrustedHeaderHeightIsLE {
         untrusted_header_height: i64,
         trusted_header_height: i64,
     },
-    #[error("trusted header timestamp ({untrusted_header_timestamp}) cannot be greater than or equal to the untrusted timestamp ({untrusted_header_timestamp})")]
+    #[error(
+        "trusted header timestamp ({untrusted_header_timestamp}) cannot be greater \
+        than or equal to the untrusted timestamp ({untrusted_header_timestamp})"
+    )]
     UntrustedHeaderTimestampIsLE {
         untrusted_header_timestamp: Timestamp,
         trusted_header_timestamp: Timestamp,
@@ -61,7 +73,10 @@ pub enum Error {
         max_clock_drift: Duration,
         timestamp: Timestamp,
     },
-    #[error("next validators hash ({next_validators_hash}) of the trusted header does not match the adjacent header's validators hash ({validators_hash})", next_validators_hash = serde_utils::to_hex(next_validators_hash), validators_hash = serde_utils::to_hex(validators_hash))]
+    #[error(
+        "next validators hash ({next_validators_hash}) of the trusted \
+        header does not match the adjacent header's validators hash ({validators_hash})"
+    )]
     NextValidatorsHashMismatch {
         next_validators_hash: H256<HexUnprefixed>,
         validators_hash: H256<HexUnprefixed>,
@@ -71,7 +86,8 @@ pub enum Error {
     #[error("commit height ({commit_height}) does not match the expected height ({height})")]
     InvalidCommitHeight { commit_height: i64, height: i64 },
     #[error(
-        "commit block_id ({commit_block_id:?}) does not match the expected block id ({block_id:?})"
+        "commit block_id ({commit_block_id:?}) does not \
+        match the expected block id ({block_id:?})"
     )]
     InvalidCommitBlockId {
         commit_block_id: Box<BlockId>,

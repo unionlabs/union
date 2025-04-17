@@ -2494,6 +2494,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "beacon-kit-types"
+version = "0.0.0"
+dependencies = [
+ "beacon-kit-types",
+ "bincode 2.0.1",
+ "cometbft-types",
+ "hex-literal",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "unionlabs",
+]
+
+[[package]]
 name = "bech32"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3598,6 +3614,7 @@ dependencies = [
  "bcs 0.1.6",
  "bincode 2.0.1",
  "cometbls-light-client-types",
+ "consensus-primitives",
  "hex",
  "hex-literal",
  "protos",
@@ -3631,9 +3648,7 @@ name = "concurrent-keyring"
 version = "0.0.0"
 dependencies = [
  "beacon-api",
- "berachain-light-client-types",
  "bip32",
- "cometbft-rpc",
  "crossbeam-queue",
  "dashmap 5.5.3",
  "enumorph",
@@ -3652,7 +3667,6 @@ dependencies = [
  "serde",
  "serde-utils",
  "sha2 0.10.8",
- "tendermint-light-client-types",
  "thiserror 2.0.12",
  "tokio",
  "tonic 0.10.2",
@@ -5517,6 +5531,7 @@ dependencies = [
  "alloy",
  "beacon-api-types",
  "bincode 2.0.1",
+ "consensus-primitives",
  "ethereum-light-client-types",
  "ethereum-sync-protocol-types",
  "hex-literal",
@@ -8904,6 +8919,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
+ "consensus-primitives",
  "ethereum-light-client-types",
  "hex-literal",
  "serde",
@@ -12755,6 +12771,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
+ "consensus-primitives",
  "hex-literal",
  "protos",
  "serde",
@@ -12796,6 +12813,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
+ "consensus-primitives",
  "hex-literal",
  "protos",
  "serde",
@@ -13201,6 +13219,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "embed-commit",
  "frissitheto",
+ "hex-literal",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ibc-union-spec",
@@ -14047,6 +14066,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
+ "consensus-primitives",
  "ethereum-light-client-types",
  "hex-literal",
  "serde",
@@ -14655,6 +14675,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-berachain"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "berachain-light-client-types",
+ "embed-commit",
+ "ibc-union-spec",
+ "ics23",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-bob"
 version = "0.0.0"
 dependencies = [
@@ -14866,6 +14906,23 @@ dependencies = [
  "embed-commit",
  "ethereum-light-client-types",
  "jsonrpsee",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-module-berachain"
+version = "0.0.0"
+dependencies = [
+ "berachain-light-client-types",
+ "embed-commit",
+ "jsonrpsee",
+ "macros",
  "serde",
  "serde_json",
  "tokio",
@@ -15115,6 +15172,7 @@ dependencies = [
  "enumorph",
  "ethereum-light-client-types",
  "futures",
+ "ibc-union-spec",
  "ics23",
  "jsonrpsee",
  "macros",

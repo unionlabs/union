@@ -1,7 +1,7 @@
 use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
-    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
 use trusted_mpt_light_client_types::{
@@ -132,7 +132,7 @@ impl IbcClient for MptTrustedLightClient {
         Ok(ClientCreationResult::new())
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
         consensus_state.timestamp
     }
 

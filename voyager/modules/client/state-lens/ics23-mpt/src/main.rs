@@ -21,7 +21,6 @@ use voyager_message::{
     module::{ClientModuleInfo, ClientModuleServer},
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
-        Timestamp,
     },
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -166,7 +165,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp: Timestamp::from_nanos(cs.timestamp),
+            timestamp: cs.timestamp,
         })
     }
 

@@ -17,9 +17,7 @@ protos      = { workspace = true, features = ["default", "client"] }
 serde-utils = { workspace = true }
 unionlabs   = { workspace = true, features = ["default"] }
 
-berachain-light-client-types.workspace  = true
 bip32                                   = { workspace = true, features = ["secp256k1"] }
-cometbft-rpc                            = { workspace = true }
 crossbeam-queue                         = { workspace = true, features = ["std"] }
 dashmap                                 = { workspace = true }
 enumorph                                = { workspace = true }
@@ -35,7 +33,6 @@ scroll-api                              = { workspace = true }
 scroll-rpc                              = { workspace = true }
 serde                                   = { workspace = true, features = ["derive"] }
 sha2                                    = { workspace = true }
-tendermint-light-client-types.workspace = true
 thiserror                               = { workspace = true }
 tokio                                   = { workspace = true }
 tonic                                   = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }

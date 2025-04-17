@@ -9,7 +9,7 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
-use ibc_union_spec::path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX;
+use ibc_union_spec::{path::IBC_UNION_COSMWASM_COMMITMENT_PREFIX, Duration, Timestamp};
 use ics23::ibc_api::SDK_SPECS;
 use unionlabs::{
     encoding::Bincode,
@@ -98,7 +98,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
         .map_err(Into::<Error>::into)?)
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
         consensus_state.timestamp
     }
 
@@ -123,7 +123,7 @@ impl<T: ZkpVerifier> IbcClient for CometblsLightClient<T> {
             if is_client_expired(
                 consensus_state.timestamp,
                 client_state.trusting_period,
-                ctx.env.block.time.nanos(),
+                Timestamp::from_nanos(ctx.env.block.time.nanos()),
             ) {
                 return Status::Expired;
             }
@@ -203,7 +203,7 @@ fn verify_header<T: ZkpVerifier>(
 
     let trusted_timestamp = consensus_state.timestamp;
     // Normalized to nanoseconds to follow tendermint convention
-    let untrusted_timestamp = header.signed_header.time.as_unix_nanos();
+    let untrusted_timestamp = Timestamp::from_nanos(header.signed_header.time.as_unix_nanos());
 
     if untrusted_timestamp <= trusted_timestamp {
         return Err(InvalidHeaderError::SignedHeaderTimestampMustBeMoreRecent {
@@ -216,23 +216,19 @@ fn verify_header<T: ZkpVerifier>(
     if is_client_expired(
         trusted_timestamp,
         client_state.trusting_period,
-        ctx.env.block.time.nanos(),
+        Timestamp::from_nanos(ctx.env.block.time.nanos()),
     ) {
         return Err(InvalidHeaderError::HeaderExpired(consensus_state.timestamp).into());
     }
 
-    let max_clock_drift = ctx
-        .env
-        .block
-        .time
-        .nanos()
-        .checked_add(client_state.max_clock_drift)
+    let max_clock_drift_timestamp = Timestamp::from_nanos(ctx.env.block.time.nanos())
+        .plus_duration(client_state.max_clock_drift)
         .ok_or(Error::MathOverflow)?;
 
-    if untrusted_timestamp >= max_clock_drift {
+    if untrusted_timestamp >= max_clock_drift_timestamp {
         return Err(InvalidHeaderError::SignedHeaderCannotExceedMaxClockDrift {
             signed_timestamp: untrusted_timestamp,
-            max_clock_drift,
+            max_clock_drift_timestamp,
         }
         .into());
     }
@@ -301,7 +297,7 @@ fn update_state<T: ZkpVerifier>(
 
     consensus_state.next_validators_hash = header.signed_header.next_validators_hash;
     // Normalized to nanoseconds to follow tendermint convention
-    consensus_state.timestamp = header.signed_header.time.as_unix_nanos();
+    consensus_state.timestamp = Timestamp::from_nanos(header.signed_header.time.as_unix_nanos());
 
     let state_update = StateUpdate::new(untrusted_height.height(), consensus_state);
 
@@ -314,11 +310,11 @@ fn update_state<T: ZkpVerifier>(
 }
 
 fn is_client_expired(
-    consensus_state_timestamp: u64,
-    trusting_period: u64,
-    current_block_time: u64,
+    consensus_state_timestamp: Timestamp,
+    trusting_period: Duration,
+    current_block_time: Timestamp,
 ) -> bool {
-    if let Some(sum) = consensus_state_timestamp.checked_add(trusting_period) {
+    if let Some(sum) = consensus_state_timestamp.plus_duration(trusting_period) {
         sum < current_block_time
     } else {
         true
