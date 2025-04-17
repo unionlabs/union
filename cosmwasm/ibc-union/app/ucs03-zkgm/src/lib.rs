@@ -123,4 +123,6 @@ pub enum ContractError {
     OnlyRateLimitAdmin,
     #[error("invalid operation, sender must be a rate limit operator")]
     OnlyRateLimitOperator,
+    #[error("the instruction cannot be executed by a market maker")]
+    InvalidMarketMakerOperation,
 }

@@ -279,14 +279,35 @@ contract UCS03Zkgm is
         }
     }
 
+    function onRecvIntentPacket(
+        address caller,
+        IBCPacket calldata packet,
+        address relayer,
+        bytes calldata relayerMsg
+    ) external virtual override onlyIBC whenNotPaused returns (bytes memory) {
+        return _processReceive(caller, packet, relayer, relayerMsg, true);
+    }
+
     function onRecvPacket(
         address caller,
         IBCPacket calldata packet,
         address relayer,
         bytes calldata relayerMsg
     ) external virtual override onlyIBC whenNotPaused returns (bytes memory) {
+        return _processReceive(caller, packet, relayer, relayerMsg, false);
+    }
+
+    function _processReceive(
+        address caller,
+        IBCPacket calldata packet,
+        address relayer,
+        bytes calldata relayerMsg,
+        bool intent
+    ) internal returns (bytes memory) {
         (bool success, bytes memory returnData) = address(this).call(
-            abi.encodeCall(this.execute, (caller, packet, relayer, relayerMsg))
+            abi.encodeCall(
+                this.execute, (caller, packet, relayer, relayerMsg, intent)
+            )
         );
         // Avoid gas-starvation trick. Enforce a minimum for griefing relayers.
         // See: https://github.com/OpenZeppelin/openzeppelin-contracts/blob/bd325d56b4c62c9c5c1aff048c37c6bb18ac0290/contracts/metatx/MinimalForwarder.sol#L58-L68
@@ -325,7 +346,8 @@ contract UCS03Zkgm is
         address caller,
         IBCPacket calldata ibcPacket,
         address relayer,
-        bytes calldata relayerMsg
+        bytes calldata relayerMsg,
+        bool intent
     ) public returns (bytes memory) {
         // Only callable through the onRecvPacket endpoint.
         if (msg.sender != address(this)) {
@@ -339,7 +361,8 @@ contract UCS03Zkgm is
             relayerMsg,
             zkgmPacket.salt,
             zkgmPacket.path,
-            zkgmPacket.instruction
+            zkgmPacket.instruction,
+            intent
         );
     }
 
@@ -350,7 +373,8 @@ contract UCS03Zkgm is
         bytes calldata relayerMsg,
         bytes32 salt,
         uint256 path,
-        Instruction calldata instruction
+        Instruction calldata instruction,
+        bool intent
     ) internal returns (bytes memory) {
         if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
             if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
@@ -359,7 +383,7 @@ contract UCS03Zkgm is
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
             return _executeFungibleAssetOrder(
-                caller, ibcPacket, relayer, relayerMsg, path, order
+                caller, ibcPacket, relayer, relayerMsg, path, order, intent
             );
         } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
@@ -372,7 +396,8 @@ contract UCS03Zkgm is
                 relayerMsg,
                 salt,
                 path,
-                ZkgmLib.decodeBatch(instruction.operand)
+                ZkgmLib.decodeBatch(instruction.operand),
+                intent
             );
         } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
@@ -385,7 +410,8 @@ contract UCS03Zkgm is
                 salt,
                 path,
                 instruction.version,
-                ZkgmLib.decodeForward(instruction.operand)
+                ZkgmLib.decodeForward(instruction.operand),
+                intent
             );
         } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
             if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
@@ -398,7 +424,8 @@ contract UCS03Zkgm is
                 relayerMsg,
                 path,
                 salt,
-                ZkgmLib.decodeMultiplex(instruction.operand)
+                ZkgmLib.decodeMultiplex(instruction.operand),
+                intent
             );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
@@ -412,7 +439,8 @@ contract UCS03Zkgm is
         bytes calldata relayerMsg,
         bytes32 salt,
         uint256 path,
-        Batch calldata batch
+        Batch calldata batch,
+        bool intent
     ) internal returns (bytes memory) {
         uint256 l = batch.instructions.length;
         bytes[] memory acks = new bytes[](l);
@@ -425,7 +453,8 @@ contract UCS03Zkgm is
                 relayerMsg,
                 ZkgmLib.deriveBatchSalt(i, salt),
                 path,
-                instruction
+                instruction,
+                intent
             );
             // We should have the guarantee that the acks are non empty because
             // the only instructions allowed in a batch are multiplex and
@@ -448,8 +477,19 @@ contract UCS03Zkgm is
         bytes32 salt,
         uint256 path,
         uint8 version,
-        Forward calldata forward
+        Forward calldata forward,
+        bool intent
     ) internal returns (bytes memory) {
+        // We cannot allow market makers to fill packets containing forward
+        // instruction. This would allow them to submit of a proof and fill via the
+        // protocol on destination for a fake forward.
+
+        // Instead, they must first fill on destination the orders, awaits finality
+        // to settle the forward, then cascade acknowledge.
+        if (intent) {
+            revert ZkgmLib.ErrInvalidMarketMakerOperation();
+        }
+
         (uint256 tailPath, uint32 previousDestinationChannelId) =
             ZkgmLib.dequeueChannelFromPath(forward.path);
         (uint256 continuationPath, uint32 nextSourceChannelId) =
@@ -508,20 +548,34 @@ contract UCS03Zkgm is
         bytes calldata relayerMsg,
         uint256 path,
         bytes32 salt,
-        Multiplex calldata multiplex
+        Multiplex calldata multiplex,
+        bool intent
     ) internal returns (bytes memory) {
         address contractAddress = address(bytes20(multiplex.contractAddress));
         if (!multiplex.eureka) {
-            IZkgmable(contractAddress).onZkgm(
-                caller,
-                path,
-                ibcPacket.sourceChannelId,
-                ibcPacket.destinationChannelId,
-                multiplex.sender,
-                multiplex.contractCalldata,
-                relayer,
-                relayerMsg
-            );
+            if (intent) {
+                IZkgmable(contractAddress).onIntentZkgm(
+                    caller,
+                    path,
+                    ibcPacket.sourceChannelId,
+                    ibcPacket.destinationChannelId,
+                    multiplex.sender,
+                    multiplex.contractCalldata,
+                    relayer,
+                    relayerMsg
+                );
+            } else {
+                IZkgmable(contractAddress).onZkgm(
+                    caller,
+                    path,
+                    ibcPacket.sourceChannelId,
+                    ibcPacket.destinationChannelId,
+                    multiplex.sender,
+                    multiplex.contractCalldata,
+                    relayer,
+                    relayerMsg
+                );
+            }
             return abi.encode(ZkgmLib.ACK_SUCCESS);
         } else {
             IBCPacket memory multiplexIbcPacket = IBCPacket({
@@ -533,8 +587,17 @@ contract UCS03Zkgm is
                 timeoutHeight: ibcPacket.timeoutHeight,
                 timeoutTimestamp: ibcPacket.timeoutTimestamp
             });
-            bytes memory acknowledgement = IIBCModuleRecv(contractAddress)
-                .onRecvPacket(caller, multiplexIbcPacket, relayer, relayerMsg);
+            bytes memory acknowledgement;
+            if (intent) {
+                acknowledgement = IIBCModuleRecv(contractAddress)
+                    .onRecvIntentPacket(
+                    caller, multiplexIbcPacket, relayer, relayerMsg
+                );
+            } else {
+                acknowledgement = IIBCModuleRecv(contractAddress).onRecvPacket(
+                    caller, multiplexIbcPacket, relayer, relayerMsg
+                );
+            }
             if (acknowledgement.length == 0) {
                 revert ZkgmLib.ErrAsyncMultiplexUnsupported();
             }
@@ -695,13 +758,26 @@ contract UCS03Zkgm is
         address relayer,
         bytes calldata relayerMsg,
         uint256 path,
-        FungibleAssetOrder calldata order
+        FungibleAssetOrder calldata order,
+        bool intent
     ) internal returns (bytes memory) {
+        address quoteToken = address(bytes20(order.quoteToken));
+        address payable receiver = payable(address(bytes20(order.receiver)));
+
+        // For intent packets, the protocol is not allowed to provide any fund
+        // as the packet has not been checked for membership poof. Instead, we
+        // know the market maker will be repaid on the source chain, if and only
+        // if the currently executing packet hash had been registered as sent on
+        // the source. In other words, the market maker is unable to lie.
+        if (intent) {
+            return _marketMakerFill(
+                caller, relayerMsg, quoteToken, receiver, order.quoteAmount
+            );
+        }
+
         (address wrappedToken, bytes32 wrappedTokenSalt) = _predictWrappedToken(
             path, ibcPacket.destinationChannelId, order.baseToken
         );
-        address quoteToken = address(bytes20(order.quoteToken));
-        address payable receiver = payable(address(bytes20(order.receiver)));
         bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
         if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
             _rateLimit(quoteToken, order.quoteAmount);
@@ -739,6 +815,9 @@ contract UCS03Zkgm is
                 false
             );
         } else {
+            // We also allow market makers to fill orders after finality. This
+            // allow orders that combines protocol and mm filling (wrapped vs
+            // non wrapped assets).
             return _marketMakerFill(
                 caller, relayerMsg, quoteToken, receiver, order.quoteAmount
             );
