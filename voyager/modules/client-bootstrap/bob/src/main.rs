@@ -4,7 +4,7 @@ use alloy::{
 };
 use bob_light_client_types::{ClientState, ClientStateV1, ConsensusState};
 use bob_types::L2_OUTPUTS_SLOT;
-use ibc_union_spec::ClientId;
+use ibc_union_spec::{ClientId, Timestamp};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -160,7 +160,7 @@ impl ClientBootstrapModuleServer for Module {
                 .storage_hash
                 .0
                 .into(),
-            timestamp: 1_000_000_000 * l2_block.header.timestamp,
+            timestamp: Timestamp::from_secs(l2_block.header.timestamp),
         }))
     }
 }

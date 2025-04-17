@@ -1,3 +1,4 @@
+use ibc_union_spec::Timestamp;
 use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq)]
@@ -6,7 +7,7 @@ pub struct ConsensusState {
     pub state_root: H256,
     pub ibc_storage_root: H256,
     /// Timestamp of the block, *normalized to nanoseconds* in order to be compatible with ibc-go.
-    pub timestamp: u64,
+    pub timestamp: Timestamp,
 }
 
 #[cfg(feature = "ethabi")]
@@ -31,7 +32,7 @@ pub mod ethabi {
             Self {
                 state_root: value.state_root.get().into(),
                 ibc_storage_root: value.ibc_storage_root.get().into(),
-                timestamp: value.timestamp,
+                timestamp: value.timestamp.as_nanos(),
             }
         }
     }
@@ -41,7 +42,7 @@ pub mod ethabi {
             Self {
                 state_root: H256::new(value.state_root.0),
                 ibc_storage_root: H256::new(value.ibc_storage_root.0),
-                timestamp: value.timestamp,
+                timestamp: Timestamp::from_nanos(value.timestamp),
             }
         }
     }

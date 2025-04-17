@@ -25,7 +25,7 @@ use voyager_message::{
     hook::UpdateHook,
     into_value,
     module::{PluginInfo, PluginServer},
-    primitives::{ChainId, ClientType},
+    primitives::{ChainId, ClientType, Timestamp},
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
 use voyager_vm::{pass::PassResult, BoxDynError, Op, Visit};
@@ -282,7 +282,7 @@ impl Module {
                 state_root: header.state_root.0.into(),
                 ibc_account_proof,
                 height: update_to_block_number.height(),
-                timestamp: header.timestamp,
+                timestamp: Timestamp::from_secs(header.timestamp),
             },
             |msg| {
                 let mut private_key = self.private_key.clone();

@@ -22,7 +22,7 @@ use unionlabs::{
 use voyager_message::{
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
-    primitives::{ChainId, ClientType},
+    primitives::{ChainId, ClientType, Timestamp},
     ClientBootstrapModule,
 };
 use voyager_vm::BoxDynError;
@@ -319,9 +319,6 @@ impl ClientBootstrapModuleServer for Module {
 
         assert_eq!(bootstrap_header.execution.block_number, height.height());
 
-        // Normalize to nanos in order to be compliant with cosmos
-        let timestamp = bootstrap_header.execution.timestamp * 1_000_000_000;
-
         Ok(into_value(ConsensusState {
             slot: bootstrap_header.beacon.slot,
             state_root: bootstrap_header.execution.state_root,
@@ -334,7 +331,7 @@ impl ClientBootstrapModuleServer for Module {
                 .storage_hash
                 .0
                 .into(),
-            timestamp,
+            timestamp: Timestamp::from_secs(bootstrap_header.execution.timestamp),
         }))
     }
 }

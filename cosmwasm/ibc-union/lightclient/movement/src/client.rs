@@ -1,6 +1,6 @@
 use cosmwasm_std::{Addr, Empty};
 use ibc_union_light_client::{
-    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
 use movement_light_client_types::{
@@ -71,7 +71,7 @@ impl IbcClient for MovementLightClient {
         unimplemented!()
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
         consensus_state.timestamp
     }
 
@@ -193,11 +193,14 @@ fn update_state(
 
     let consensus_state = ConsensusState {
         state_root: H256::new(*tx_info.state_checkpoint_hash.unwrap().get()), // TODO(aeryz): we always need this, no need to make this not an option
-        timestamp: header
-            .state_proof
-            .latest_ledger_info()
-            .commit_info
-            .timestamp_usecs,
+        timestamp: Timestamp::from_nanos(
+            header
+                .state_proof
+                .latest_ledger_info()
+                .commit_info
+                .timestamp_usecs
+                * 1_000,
+        ),
         state_proof_hash: H256::default(), // TODO(aeryz): im not sure if we need this
     };
 

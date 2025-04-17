@@ -5,7 +5,7 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::{Status, VerifyCreationResponseEvent};
-use ibc_union_spec::path::ConsensusStatePath;
+use ibc_union_spec::{path::ConsensusStatePath, Timestamp};
 use state_lens_ics23_mpt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use state_lens_light_client_types::Header;
 use unionlabs::{
@@ -63,7 +63,7 @@ impl IbcClient for StateLensIcs23MptLightClient {
         Ok(())
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
         consensus_state.timestamp
     }
 
@@ -169,10 +169,11 @@ pub fn extract_consensus_state(
     l2_consensus_state: &Bytes,
     client_state_extra: &Extra,
 ) -> ConsensusState {
-    let l2_timestamp = extract_uint64(
+    // NOTE: The timestamp stored by the counterparty is expected to be in nanos.
+    let l2_timestamp = Timestamp::from_nanos(extract_uint64(
         l2_consensus_state,
         client_state_extra.timestamp_offset as usize,
-    );
+    ));
 
     let l2_state_root = extract_bytes32(
         l2_consensus_state,

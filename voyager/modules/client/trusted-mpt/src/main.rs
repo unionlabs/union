@@ -22,7 +22,6 @@ use voyager_message::{
     module::{ClientModuleInfo, ClientModuleServer},
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
-        Timestamp,
     },
     ClientModule, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -43,7 +42,7 @@ pub struct Config {}
 impl ClientModule for Module {
     type Config = Config;
 
-    async fn new(_config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
         info.ensure_client_type(ClientType::TRUSTED_MPT)?;
         info.ensure_consensus_type(ConsensusType::TRUSTED_EVM)?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
@@ -103,7 +102,7 @@ impl ClientModuleServer for Module {
         let cs = Module::decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp: Timestamp::from_nanos(cs.timestamp),
+            timestamp: cs.timestamp,
         })
     }
 

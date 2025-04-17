@@ -2,7 +2,7 @@ use cometbft_types::crypto::public_key::PublicKey;
 use cosmwasm_std::{Addr, Empty};
 use ethermint_light_client_types::ClientState;
 use ibc_union_light_client::{
-    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
 use ics23::ibc_api::SDK_SPECS;
@@ -176,8 +176,8 @@ impl IbcClient for EthermintLightClient {
         }
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
-        consensus_state.timestamp.as_unix_nanos()
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
+        Timestamp::from_nanos(consensus_state.timestamp.as_unix_nanos())
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {

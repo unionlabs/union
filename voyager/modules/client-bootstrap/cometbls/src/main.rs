@@ -22,7 +22,7 @@ use unionlabs::{
 use voyager_message::{
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
-    primitives::{ChainId, ClientType},
+    primitives::{ChainId, ClientType, Duration, Timestamp},
     rpc::json_rpc_error_to_error_object,
     ClientBootstrapModule,
 };
@@ -150,16 +150,16 @@ impl ClientBootstrapModuleServer for Module {
 
         // Expected to be nanos
         let unbonding_period =
-            u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap() * 1_000_000_000;
+            u64::try_from(params.unbonding_time.clone().unwrap().seconds).unwrap();
 
         // Avoid low unbonding period preventing relayer from submitting slightly old headers
-        let unbonding_period = unbonding_period.max(3 * 24 * 3600 * 1_000_000_000);
+        let unbonding_period = unbonding_period.max(3 * 24 * 3600);
 
         Ok(serde_json::to_value(ClientState {
             chain_id: cometbls_light_client_types::ChainId::from_string(self.chain_id.to_string())
                 .unwrap(),
-            trusting_period: unbonding_period * 85 / 100,
-            max_clock_drift: (60 * 20) * 1_000_000_000,
+            trusting_period: Duration::from_secs(unbonding_period * 85 / 100),
+            max_clock_drift: Duration::from_secs(60 * 20),
             frozen_height: Height::new(0),
             latest_height: Height::new_with_revision(
                 self.chain_id
@@ -193,7 +193,7 @@ impl ClientBootstrapModuleServer for Module {
             .unwrap();
 
         Ok(serde_json::to_value(ConsensusState {
-            timestamp: commit.signed_header.header.time.as_unix_nanos(),
+            timestamp: Timestamp::from_nanos(commit.signed_header.header.time.as_unix_nanos()),
             app_hash: MerkleRoot {
                 hash: commit.signed_header.header.app_hash.into_encoding(),
             },

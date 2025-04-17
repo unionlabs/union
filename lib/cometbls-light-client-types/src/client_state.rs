@@ -1,14 +1,19 @@
+use consensus_primitives::Duration;
 use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 
 use crate::chain_id::ChainId;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields, rename_all = "snake_case")
+)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ClientState {
     pub chain_id: ChainId,
-    pub trusting_period: u64,
-    pub max_clock_drift: u64,
+    pub trusting_period: Duration,
+    pub max_clock_drift: Duration,
     /// This field only ever has one of two values:
     ///
     /// - 0: client is not frozen
@@ -29,6 +34,7 @@ pub struct ClientState {
 
 #[cfg(feature = "proto")]
 pub mod proto {
+    use consensus_primitives::Duration;
     use unionlabs::{
         errors::{InvalidLength, MissingField},
         impl_proto_via_try_from_into,
@@ -44,8 +50,8 @@ pub mod proto {
         fn from(value: ClientState) -> Self {
             Self {
                 chain_id: value.chain_id.to_string(),
-                trusting_period: value.trusting_period,
-                max_clock_drift: value.max_clock_drift,
+                trusting_period: value.trusting_period.as_nanos(),
+                max_clock_drift: value.max_clock_drift.as_nanos(),
                 frozen_height: Some(value.frozen_height.into()),
                 latest_height: Some(value.latest_height.into()),
             }
@@ -68,10 +74,11 @@ pub mod proto {
         ) -> Result<Self, Self::Error> {
             Ok(Self {
                 chain_id: ChainId::from_string(value.chain_id)?,
-                trusting_period: value.trusting_period,
-                max_clock_drift: value.max_clock_drift,
+                trusting_period: Duration::from_nanos(value.trusting_period),
+                max_clock_drift: Duration::from_nanos(value.max_clock_drift),
                 frozen_height: required!(value.frozen_height)?.into(),
                 latest_height: required!(value.latest_height)?.into(),
+                // NOTE: the contract_address is not used for cometbls clients encoded using protobuf. if this field is required, use a different encoding (i.e. bincode or ethabi).
                 contract_address: H256::default(),
             })
         }
@@ -83,6 +90,7 @@ pub mod ethabi {
     use std::string::FromUtf8Error;
 
     use alloy::sol_types::SolValue;
+    use consensus_primitives::Duration;
     use unionlabs::{
         encoding::{Decode, Encode, EthAbi},
         ibc::core::client::height::Height,
@@ -106,8 +114,9 @@ pub mod ethabi {
         fn encode(self) -> Vec<u8> {
             SolClientState {
                 chainId: self.chain_id.into_fixed_bytes(),
-                trustingPeriod: self.trusting_period,
-                maxClockDrift: self.max_clock_drift,
+                trustingPeriod: self.trusting_period.as_nanos(),
+                maxClockDrift: self.max_clock_drift.as_nanos(),
+                // NOTE: The revision height is not used for cometbls clients encoded using ethabi. If this value is required, use a different encoding (i.e. proto or bincode).
                 frozenHeight: self.frozen_height.height(),
                 latestHeight: self.latest_height.height(),
                 contractAddress: self.contract_address.into(),
@@ -125,8 +134,8 @@ pub mod ethabi {
             Ok(Self {
                 chain_id: ChainId::try_from_fixed_bytes(client_state.chainId)
                     .map_err(|err| TryFromEthAbiBytesErrorAlloy::Convert(Error::ChainId(err)))?,
-                trusting_period: client_state.trustingPeriod,
-                max_clock_drift: client_state.maxClockDrift,
+                trusting_period: Duration::from_nanos(client_state.trustingPeriod),
+                max_clock_drift: Duration::from_nanos(client_state.maxClockDrift),
                 frozen_height: Height::new(client_state.frozenHeight),
                 latest_height: Height::new(client_state.latestHeight),
                 contract_address: client_state.contractAddress.into(),
@@ -153,8 +162,8 @@ mod tests {
     fn mk_client_state() -> ClientState {
         ClientState {
             chain_id: ChainId::from_string("oogabooga").unwrap(),
-            trusting_period: 12345,
-            max_clock_drift: 67890,
+            trusting_period: Duration::from_nanos(12345),
+            max_clock_drift: Duration::from_nanos(67890),
             frozen_height: Height::default(),
             latest_height: Height::new(1337),
             contract_address: <H256>::from([0xAA; 32]),
