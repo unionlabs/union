@@ -4,5 +4,5 @@ import Transfer from "$lib/transfer/index.svelte"
 </script>
 
 <Sections>
-  <Transfer mode="normal" />
+  <Transfer mode="multisig"/>
 </Sections>

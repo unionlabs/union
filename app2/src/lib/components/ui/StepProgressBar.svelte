@@ -2,8 +2,6 @@
 import type { HTMLAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   currentStep: number
@@ -60,19 +58,4 @@ const {
       </div>
     {/each}
   </div>
-  {#if currentStep === 1}
-  <button
-    class="border px-2 py-1 text-xs hover:text-babylon-orange transition-all duration-300 cursor-pointer"
-    class:border-babylon-orange={transfer.signingMode === "multi"}
-    class:text-babylon-orange={transfer.signingMode === "multi"}
-    class:text-zinc-800={transfer.signingMode !== "multi"}
-    onclick={() => {
-
-                    transfer.signingMode === "multi" ? wallets.clearInputAddress() : ""
-          transfer.signingMode = transfer.signingMode === "multi" ? "single" : "multi";
-        }}
-  >
-    MULTISIG
-  </button>
-    {/if}
 </div>

@@ -38,10 +38,24 @@ class WalletsStore {
     return addresses
   }
 
+  getAddressForChainWithOutInput(chain: Chain): Option.Option<AddressCanonicalBytes> {
+    switch (chain.rpc_type) {
+      case "cosmos":
+        return this.cosmosAddress
+      case "evm":
+        return this.evmAddress
+      case "aptos":
+        return this.aptosAddress
+      default:
+        return Option.none()
+    }
+  }
+
   getAddressForChain(chain: Chain): Option.Option<AddressCanonicalBytes> {
     if (Option.isSome(this.inputAddress)) {
       return this.inputAddress
     }
+
     switch (chain.rpc_type) {
       case "cosmos":
         return this.cosmosAddress

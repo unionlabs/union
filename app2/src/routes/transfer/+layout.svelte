@@ -1,5 +1,5 @@
 <script lang="ts">
-import { transfer } from "$lib/components/Transfer/transfer.svelte.ts"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { Option } from "effect"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
@@ -7,8 +7,8 @@ import { balancesStore } from "$lib/stores/balances.svelte.ts"
 let { children } = $props()
 
 $effect(() => {
-  if (Option.isSome(transfer.sourceChain)) {
-    tokensStore.fetchTokens(transfer.sourceChain.value.universal_chain_id)
+  if (Option.isSome(transferData.sourceChain)) {
+    tokensStore.fetchTokens(transferData.sourceChain.value.universal_chain_id)
   }
 })
 
@@ -18,11 +18,11 @@ let lastFetchKey = $state("")
 //0xe2f184241cddd9f2235d861eff25c37b7529746e
 
 $effect(() => {
-  if (Option.isNone(transfer.sourceChain)) return
+  if (Option.isNone(transferData.sourceChain)) return
 
-  const sourceChain = transfer.sourceChain.value
+  const sourceChain = transferData.sourceChain.value
 
-  const addressOption = transfer.derivedSender
+  const addressOption = transferData.derivedSender
   if (Option.isNone(addressOption)) return
 
   const address = addressOption.value

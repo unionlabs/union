@@ -5,7 +5,7 @@ import { encodeAbiParameters } from "viem"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
 import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
-import type { TransferIntent } from "$lib/components/Transfer/state/filling/create-intents.ts"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
 import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
@@ -15,29 +15,29 @@ export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigErr
   cause?: unknown
 }> {}
 
-export const generateMultisigTx = (intent: TransferIntent) =>
+export const generateMultisigTx = (context: TransferContext) =>
   Effect.gen(function* () {
-    console.log("[generateMultisigTx] intent:", JSON.parse(JSON.stringify(intent)))
+    console.log("[generateMultisigTx] intent:", JSON.parse(JSON.stringify(context)))
 
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
-    const sender = yield* intent.contexts[0].sourceChain.getDisplayAddress(
-      intent.contexts[0].sender
+    const sender = yield* context.intents[0].sourceChain.getDisplayAddress(
+      context.intents[0].sender
     )
     const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
     const salt = yield* generateSalt("cosmos")
     console.log("[generateMultisigTx] generated salt:", salt)
 
     const allowanceMsgs = pipe(
-      intent.allowances,
+      context.allowances,
       Option.map(allowances =>
         allowances.flatMap(allowance => {
           console.log("[allowance] token:", allowance.token)
-          return intent.contexts.flatMap(context => {
-            console.log("[context] sourceChainId:", context.sourceChainId)
-            console.log("[context] sender:", context.sender)
-            const maybeSpender = R.get(cosmosSpenderAddresses, context.sourceChainId)
+          return context.intents.flatMap(intent => {
+            console.log("[context] sourceChainId:", intent.sourceChainId)
+            console.log("[context] sender:", intent.sender)
+            const maybeSpender = R.get(cosmosSpenderAddresses, intent.sourceChainId)
             if (Option.isNone(maybeSpender)) {
-              console.warn("[warning] no spender for chain:", context.sourceChainId)
+              console.warn("[warning] no spender for chain:", intent.sourceChainId)
               return []
             }
 
@@ -65,14 +65,14 @@ export const generateMultisigTx = (intent: TransferIntent) =>
     )
 
     const instructionMsgs = pipe(
-      intent.instruction,
+      context.instruction,
       Option.map(instruction => {
         console.log("[instruction] opcode:", instruction.opcode)
-        return intent.contexts.map(context => {
-          console.log("[context] ucs03address:", context.ucs03address)
-          console.log("[context] baseToken:", context.baseToken)
-          console.log("[context] baseAmount:", context.baseAmount)
-          const isNative = !isValidBech32ContractAddress(context.baseToken)
+        return context.intents.map(intent => {
+          console.log("[context] ucs03address:", intent.ucs03address)
+          console.log("[context] baseToken:", intent.baseToken)
+          console.log("[context] baseAmount:", intent.baseAmount)
+          const isNative = !isValidBech32ContractAddress(intent.baseToken)
           const encodedInstruction = encodeAbiParameters(instructionAbi, [
             instruction.version,
             instruction.opcode,
@@ -85,10 +85,10 @@ export const generateMultisigTx = (intent: TransferIntent) =>
           return {
             "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
             sender,
-            contract: context.ucs03address,
+            contract: intent.ucs03address,
             msg: {
               send: {
-                channel_id: context.sourceChannelId,
+                channel_id: intent.sourceChannelId,
                 timeout_height: "0",
                 timeout_timestamp: timeoutTimestamp,
                 salt,
@@ -98,8 +98,8 @@ export const generateMultisigTx = (intent: TransferIntent) =>
             funds: isNative
               ? [
                   {
-                    denom: context.baseToken,
-                    amount: context.baseAmount
+                    denom: intent.baseToken,
+                    amount: intent.baseAmount
                   }
                 ]
               : []
