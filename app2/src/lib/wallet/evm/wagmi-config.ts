@@ -7,7 +7,7 @@ import {
   serialize,
   unstable_connector
 } from "@wagmi/core"
-import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connectors"
+import {coinbaseWallet, injected, metaMask, safe, walletConnect} from "@wagmi/connectors"
 import {
   arbitrumSepolia,
   berachainTestnetbArtio,
@@ -165,6 +165,9 @@ export const wagmiConfig = createConfig({
       appName: TESTNET_APP_INFO.name,
       appLogoUrl: TESTNET_APP_INFO.iconUrl,
       enableMobileWalletLink: true
+    }),
+    safe({
+      debug: true
     }),
     metaMask({
       injectProvider: true,
