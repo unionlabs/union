@@ -59,7 +59,7 @@ onMount(() => {
   class="h-14 text-center text-lg"
 />
 
-{#if messages.length > 0}
+{#if A.isNonEmptyReadonlyArray(messages)}
   <ul>
     {#each messages as message}
       <li class="text-red-500 text-xs uppercase">
