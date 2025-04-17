@@ -167,6 +167,7 @@ export const wagmiConfig = createConfig({
       enableMobileWalletLink: true
     }),
     safe({
+      allowedDomains: [/union.build$/, /btc.union.build$/, /staging.btc.union.build$/],
       debug: true
     }),
     metaMask({
