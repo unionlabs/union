@@ -1,5 +1,4 @@
-import { Match, Option } from "effect"
-import { RawTransferDataSvelte } from "./raw-transfer-data.svelte.ts"
+
 import type { Channel, Token } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
@@ -9,6 +8,7 @@ import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
+import {signingMode} from "$lib/transfer/signingMode.svelte.ts";
 
 export class TransferData {
   raw = new RawTransferDataSvelte()
@@ -76,9 +76,14 @@ export class TransferData {
 
     if (Option.isSome(wallets.inputAddress)) {
       return wallets.inputAddress
+    } else if (signingMode.mode === "single") {
+      return wallets.getAddressForChain(sourceChain)
     }
-    return wallets.getAddressForChain(sourceChain)
+
+    return Option.none()
   })
+
+
 
   channel = $derived<Option.Option<Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(

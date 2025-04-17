@@ -209,7 +209,7 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
       ),
 
     CreateSteps: ({ context }) => {
-      return Effect.succeed(complete("Export transfer", context))
+      return Effect.succeed(complete("Export message", context))
     }
   })
 }

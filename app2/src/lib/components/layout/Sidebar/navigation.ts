@@ -31,7 +31,7 @@ export const navigation: Array<NavSection> = [
         icon: OutlineControlPointDuplicate,
         subroutes: [
           {
-            path: "/multisig",
+            path: "/transfer/multisig",
             title: "Multisig"
           },
           {

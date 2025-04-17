@@ -11,7 +11,7 @@ class WalletsStore {
   evmAddress: Option.Option<typeof AddressEvmCanonical.Type> = $state(Option.none())
   cosmosAddress: Option.Option<typeof AddressCosmosCanonical.Type> = $state(Option.none())
   aptosAddress: Option.Option<typeof AddressAptosCanonical.Type> = $state(Option.none())
-  inputAddress: Option.Option<typeof AddressCosmosCanonical.Type> = $state(Option.none())
+  inputAddress: Option.Option<typeof AddressCanonicalBytes.Type> = $state(Option.none())
 
   hasAnyWallet() {
     return (
@@ -38,24 +38,7 @@ class WalletsStore {
     return addresses
   }
 
-  getAddressForChainWithOutInput(chain: Chain): Option.Option<AddressCanonicalBytes> {
-    switch (chain.rpc_type) {
-      case "cosmos":
-        return this.cosmosAddress
-      case "evm":
-        return this.evmAddress
-      case "aptos":
-        return this.aptosAddress
-      default:
-        return Option.none()
-    }
-  }
-
   getAddressForChain(chain: Chain): Option.Option<AddressCanonicalBytes> {
-    if (Option.isSome(this.inputAddress)) {
-      return this.inputAddress
-    }
-
     switch (chain.rpc_type) {
       case "cosmos":
         return this.cosmosAddress
