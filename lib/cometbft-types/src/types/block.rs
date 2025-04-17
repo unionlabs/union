@@ -1,13 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{commit::Commit, data::Data, evidence_list::EvidenceList, header::Header};
+use crate::types::{
+    commit::Commit, commit_sig::CommitSig, data::Data, evidence_list::EvidenceList, header::Header,
+};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct Block {
+pub struct Block<Cs = CommitSig> {
     pub header: Header,
     pub data: Data,
-    pub evidence: EvidenceList,
-    pub last_commit: Commit,
+    pub evidence: EvidenceList<Cs>,
+    pub last_commit: Commit<Cs>,
 }
 
 #[cfg(feature = "proto")]

@@ -207,7 +207,7 @@ impl ClientBootstrapModuleServer for Module {
 
         Ok(serde_json::to_value(ConsensusState {
             state_root: Default::default(),
-            // TODO: Fix this - this is currently effectively broken.
+            // TODO: ???
             timestamp: Timestamp::from_secs(1000),
             state_proof_hash: Default::default(),
         })

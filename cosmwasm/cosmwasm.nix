@@ -103,9 +103,11 @@ _: {
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
-            "ethereum"
-            "trusted-mpt"
-            "bob"
+            "tendermint-bls"
+            "beacon-kit"
+            # "ethereum"
+            # "trusted-mpt"
+            # "bob"
           ];
         }
         {
@@ -115,6 +117,7 @@ _: {
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "feemarket";
+            gas_multiplier = 1.4;
           };
           apps = {
             ucs03 = ucs03-configs.cw20;
@@ -123,7 +126,7 @@ _: {
           lightclients = [
             "arbitrum"
             "bob"
-            "berachain"
+            "beacon-kit"
             "ethereum"
             "trusted-mpt"
             "ethermint"
@@ -150,7 +153,7 @@ _: {
           lightclients = [
             "arbitrum"
             "bob"
-            "berachain"
+            "beacon-kit"
             "ethereum"
             "trusted-mpt"
             "ethermint"
@@ -333,9 +336,9 @@ _: {
           client-type = "arbitrum";
         }
         {
-          name = "berachain";
-          dir = "berachain";
-          client-type = "berachain";
+          name = "beacon-kit";
+          dir = "beacon-kit";
+          client-type = "beacon-kit";
         }
         {
           name = "cometbls";

@@ -14,21 +14,16 @@ workspace = true
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"], optional = true }
 bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
-consensus-primitives        = { workspace = true }
+consensus-primitives.workspace = true
 ethereum-light-client-types = { workspace = true }
 serde                       = { workspace = true, optional = true, features = ["derive"] }
 thiserror                   = { workspace = true }
 unionlabs                   = { workspace = true, features = ["rlp"] }
 
 [features]
-bincode = [
-  "dep:bincode",
-  "unionlabs/bincode",
-  "ethereum-light-client-types/bincode",
-  "consensus-primitives/bincode",
-]
-ethabi = ["dep:alloy", "ethereum-light-client-types/ethabi"]
-serde = ["dep:serde", "ethereum-light-client-types/serde", "consensus-primitives/serde"]
+bincode = ["dep:bincode", "unionlabs/bincode", "ethereum-light-client-types/bincode"]
+ethabi  = ["dep:alloy", "ethereum-light-client-types/ethabi"]
+serde   = ["dep:serde", "ethereum-light-client-types/serde"]
 
 [dev-dependencies]
 hex-literal = { workspace = true }

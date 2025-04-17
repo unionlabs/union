@@ -121,7 +121,7 @@ impl IbcClient for BobLightClient {
         let update_height = header.l2_header.number.try_into().expect("impossible");
 
         let consensus_state = ConsensusState {
-            timestamp: Timestamp::from_secs(header.l2_header.timestamp),
+            timestamp: Timestamp::from_nanos(header.l2_header.timestamp),
             state_root: header.l2_header.state_root,
             ibc_storage_root: header.l2_ibc_account_proof.storage_root,
         };

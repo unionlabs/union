@@ -1,18 +1,18 @@
 use serde::{Deserialize, Serialize};
 
 use crate::types::{
-    duplicate_vote_evidence::DuplicateVoteEvidence,
+    commit_sig::CommitSig, duplicate_vote_evidence::DuplicateVoteEvidence,
     light_client_attack_evidence::LightClientAttackEvidence,
 };
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[allow(clippy::large_enum_variant)]
 #[serde(tag = "type", content = "value", rename_all = "snake_case")]
-pub enum Evidence {
+pub enum Evidence<Cs = CommitSig> {
     #[serde(rename = "tendermint/DuplicateVoteEvidence")]
     DuplicateVote(DuplicateVoteEvidence),
     #[serde(rename = "tendermint/LightClientAttackEvidence")]
-    LightClientAttack(LightClientAttackEvidence),
+    LightClientAttack(LightClientAttackEvidence<Cs>),
 }
 
 #[cfg(feature = "proto")]

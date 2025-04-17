@@ -193,13 +193,13 @@ fn update_state(
 
     let consensus_state = ConsensusState {
         state_root: H256::new(*tx_info.state_checkpoint_hash.unwrap().get()), // TODO(aeryz): we always need this, no need to make this not an option
+        // TODO: Figure out what unit timestamp_usecs is in
         timestamp: Timestamp::from_nanos(
             header
                 .state_proof
                 .latest_ledger_info()
                 .commit_info
-                .timestamp_usecs
-                * 1_000,
+                .timestamp_usecs,
         ),
         state_proof_hash: H256::default(), // TODO(aeryz): im not sure if we need this
     };

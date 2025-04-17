@@ -1,5 +1,5 @@
 [package]
-name    = "berachain-light-client-types"
+name    = "beacon-kit-light-client-types"
 version = "0.0.0"
 
 authors      = { workspace = true }

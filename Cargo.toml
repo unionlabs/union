@@ -2,70 +2,91 @@
 resolver = "2"
 # NOTE: All paths must be listed out (i.e. no globs) since ifd is still broken in nix (still can't import the output of `cargo metadata` :( ). See crane.nix for where this is used.
 members = [
-  "cosmwasm/token-factory-api",
-  "cosmwasm/ucs00-pingpong",
-  "cosmwasm/ibc-union/app/ucs00-pingpong",
-  "cosmwasm/ibc-union/app/ucs03-zkgm",
-  "cosmwasm/multicall",
-
-  "cosmwasm/ibc-union/core",
-  "cosmwasm/ibc-union/core/msg",
-  "cosmwasm/ibc-union/core/light-client-interface",
-
-  "devnet-compose",
-
-  "e2e/ensure-blocks",
-
-  "generated/rust/protos",
-  "generated/rust/aptos-move-ibc",
-
+  # bins
   "hubble",
+  "unionvisor",
+  "drip",
 
-  "lib/beacon-api",
-  "lib/cometbft-rpc",
-  "lib/cosmos-client",
-  "lib/cometbft-types",
+  # =========
+  # libraries
+  # =========
 
   "lib/concurrent-keyring",
+  "lib/consensus-primitives",
+  "lib/cosmos-client",
+  "lib/cosmos-sdk-event",
+  "lib/create3",
+  "lib/depolama",
+  "lib/fork-schedules",
+  "lib/frissitheto",
+  "lib/galois-rpc",
   "lib/gnark-key-parser",
   "lib/gnark-mimc",
-  # "lib/ibc-vm-rs",
-  "cosmwasm/ics08-light-clients/interface",
+  "lib/ibc-classic-spec",
+  "lib/ibc-union-spec",
   "lib/ics23",
-  "lib/linea-verifier",
-  "lib/linea-zktrie",
   "lib/macros",
+  "lib/move-bindgen-derive",
   "lib/pg-queue",
   "lib/poseidon-rs",
-  "lib/voyager-vm",
+  "lib/reconnecting-jsonrpc-ws-client",
+  "lib/serde-utils",
+  "lib/solidity-slot",
+  "lib/ssz",
+  "lib/ssz-derive",
+  "lib/ssz/tests-generator",
+  "lib/subset-of",
   "lib/subset-of-derive",
+  "lib/ucs04",
+  "lib/ibc-solidity",
+  "lib/unionlabs",
+  "lib/unionlabs-primitives",
+  "lib/voyager-message",
+  "lib/voyager-primitives",
+  "lib/voyager-vm",
+  "lib/zktrie-rs",
+
+  # ========================
+  # ecosystem/chain specific
+  # ========================
+
+  # beacon (ethereum)
+  "lib/beacon-api",
+  "lib/beacon-api-types",
+
+  # beacon-kit
+  "lib/beacon-kit-types",
+
+  # bob
+  "lib/bob-client",
+  "lib/bob-types",
+
+  # cometbft
+  "lib/cometbft-rpc",
+  "lib/cometbft-types",
+
+  # arbitrum
+  "lib/arbitrum-client",
+  "lib/arbitrum-types",
+
+  # scroll
   "lib/scroll-api",
   "lib/scroll-codec",
   "lib/scroll-rpc",
-  "lib/arbitrum-types",
-  "lib/arbitrum-client",
-  "lib/bob-types",
-  "lib/bob-client",
-  "lib/serde-utils",
-  "lib/ssz",
-  "lib/ssz/tests-generator",
-  "lib/ssz-derive",
-  "lib/unionlabs",
-  "lib/unionlabs-primitives",
-  "lib/zktrie-rs",
-  "lib/voyager-message",
-  "lib/voyager-primitives",
-  "lib/galois-rpc",
-  "lib/cosmos-sdk-event",
-  "lib/frissitheto",
+  "lib/scroll-types",
+
+  # linea
+  "lib/linea-types",
+  "lib/linea-verifier",
+  "lib/linea-zktrie",
 
   # "lib/near/near-ibc",
   # "lib/near/near-light-client",
   # "lib/near/dummy-ibc-app",
   # "lib/near/near-ibc-tests",
 
-  "lib/ibc-solidity",
-
+  # verifiers
+  "lib/aptos-verifier",
   "lib/bob-verifier",
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
@@ -75,24 +96,36 @@ members = [
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
-  "lib/bob-light-client-types",
+  # lightclient types
   "lib/arbitrum-light-client-types",
   "lib/berachain-light-client-types",
+  "lib/bob-light-client-types",
   "lib/cometbls-light-client-types",
-  "lib/tendermint-light-client-types",
   "lib/ethereum-light-client-types",
   "lib/ethermint-light-client-types",
-  "lib/movement-light-client-types",
-  "lib/trusted-mpt-light-client-types",
   "lib/linea-light-client-types",
+  "lib/movement-light-client-types",
   "lib/scroll-light-client-types",
-  "lib/state-lens-ics23-mpt-light-client-types",
-  "lib/state-lens-ics23-mpt-light-client-types",
+  "lib/state-lens-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
+  "lib/state-lens-ics23-mpt-light-client-types",
+  "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-smt-light-client-types",
+  "lib/state-lens-light-client-types",
+  "lib/tendermint-light-client-types",
+  "lib/trusted-mpt-light-client-types",
 
-  "cosmwasm/deployer",
+  # =========
+  # ibc-union
+  # =========
 
+  "cosmwasm/multicall",
+
+  "cosmwasm/ibc-union/core",
+  "cosmwasm/ibc-union/core/msg",
+  "cosmwasm/ibc-union/core/light-client-interface",
+
+  # ibc-union lightclients
   "cosmwasm/ibc-union/lightclient/arbitrum",
   "cosmwasm/ibc-union/lightclient/berachain",
   "cosmwasm/ibc-union/lightclient/bob",
@@ -104,128 +137,129 @@ members = [
   "cosmwasm/ibc-union/lightclient/trusted-mpt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
-
-  # these will all be re enabled and updated once ethereum-light-client is updated
   # "cosmwasm/ibc-union/lightclient/scroll",
   # "cosmwasm/ibc-union/lightclient/linea",
 
-  "tools/devnet-utils",
-  "tools/build-evm-deployer-tx",
-  "tools/parse-wasm-client-type",
-  "tools/tidy",
-  "tools/move-bindgen",
+  # ibc-union protocols
+  # "cosmwasm/native-token-minter",
+  "cosmwasm/cw20-base",
+  "cosmwasm/cw20-token-minter",
+  "cosmwasm/ucs03-zkgm-token-minter-api",
+  "cosmwasm/token-factory-api",
+  "cosmwasm/ucs00-pingpong",
+  "cosmwasm/ibc-union/app/ucs00-pingpong",
+  "cosmwasm/ibc-union/app/ucs03-zkgm",
 
-  "lib/move-bindgen-derive",
+  # mpc
+  "mpc/shared",
+  "mpc/client",
+  "mpc/coordinator",
 
-  "unionvisor",
+  # embed-commit
+  "lib/embed-commit",
+  "lib/embed-commit/verifier",
+
+  # =======
+  # voyager
+  # =======
 
   "voyager",
 
+  # state modules
   "voyager/modules/state/cosmos-sdk",
   "voyager/modules/state/cosmos-sdk-union",
   "voyager/modules/state/ethereum",
   "voyager/modules/state/movement",
 
+  # proof modules
   "voyager/modules/proof/cosmos-sdk",
   "voyager/modules/proof/cosmos-sdk-union",
   "voyager/modules/proof/ethermint",
   "voyager/modules/proof/ethereum",
   "voyager/modules/proof/movement",
 
-  "voyager/modules/client/bob",
+  # client modules
   "voyager/modules/client/arbitrum",
+  "voyager/modules/client/berachain",
+  "voyager/modules/client/bob",
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
+  "voyager/modules/client/ethermint",
   "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
-  "voyager/modules/client/ethermint",
-  "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-ics23",
+  "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-smt",
   "voyager/modules/client/trusted-mpt",
 
-  "voyager/modules/client-bootstrap/bob",
+  # client bootstrap modules
   "voyager/modules/client-bootstrap/arbitrum",
+  "voyager/modules/client-bootstrap/berachain",
+  "voyager/modules/client-bootstrap/bob",
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
+  "voyager/modules/client-bootstrap/ethermint",
   "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
-  "voyager/modules/client-bootstrap/ethermint",
-  "voyager/modules/client-bootstrap/trusted-mpt",
+  "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
   "voyager/modules/client-bootstrap/state-lens/ics23-mpt",
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
-  "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
+  "voyager/modules/client-bootstrap/trusted-mpt",
 
-  "voyager/modules/consensus/bob",
+  # consensus modules
   "voyager/modules/consensus/arbitrum",
   "voyager/modules/consensus/berachain",
+  "voyager/modules/consensus/bob",
   "voyager/modules/consensus/cometbls",
   "voyager/modules/consensus/ethereum",
   "voyager/modules/consensus/movement",
   "voyager/modules/consensus/tendermint",
   "voyager/modules/consensus/trusted-evm",
 
-  "voyager/plugins/client-update/bob",
+  # client update plugins
   "voyager/plugins/client-update/arbitrum",
   "voyager/plugins/client-update/berachain",
+  "voyager/plugins/client-update/bob",
   "voyager/plugins/client-update/cometbls",
   "voyager/plugins/client-update/ethereum",
-  "voyager/plugins/client-update/movement",
-  "voyager/plugins/client-update/tendermint",
   "voyager/plugins/client-update/ethermint",
+  "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/state-lens",
+  "voyager/plugins/client-update/tendermint",
   "voyager/plugins/client-update/trusted-mpt",
 
-  "voyager/plugins/periodic-client-update",
-
+  # event source plugins
   "voyager/plugins/event-source/cosmos-sdk",
   "voyager/plugins/event-source/ethereum",
   "voyager/plugins/event-source/movement",
 
+  # transaction submission plugins
+  "voyager/plugins/transaction/aptos",
   "voyager/plugins/transaction/cosmos-sdk",
   "voyager/plugins/transaction/ethereum",
-  "voyager/plugins/transaction/aptos",
 
+  # misc plugins
   "voyager/plugins/packet-filter",
-  "voyager/plugins/transaction-batch",
   "voyager/plugins/packet-timeout",
+  "voyager/plugins/periodic-client-update",
+  "voyager/plugins/transaction-batch",
   "voyager/plugins/zkgm-filter",
 
-  "drip",
+  # ========
 
-  "lib/aptos-verifier",
+  # misc/internal
+  "devnet-compose",
+  "e2e/ensure-blocks",
+  "generated/rust/protos",
+  "generated/rust/aptos-move-ibc",
+  "cosmwasm/ics08-light-clients/interface",
 
-  "lib/reconnecting-jsonrpc-ws-client",
-  "lib/voyager-primitives",
-  "lib/subset-of",
-  "lib/cometbft-types",
-  "lib/galois-rpc",
-  "lib/beacon-api-types",
-
-  "mpc/shared",
-  "mpc/client",
-  "mpc/coordinator",
-
-  "lib/ibc-union-spec",
-  "lib/ibc-classic-spec",
-  "lib/state-lens-light-client-types",
-  "lib/create3",
-  "lib/linea-types",
-  # "cosmwasm/native-token-minter",
-  "cosmwasm/cw20-token-minter",
-  "cosmwasm/ucs03-zkgm-token-minter-api",
-  "cosmwasm/cw20-base",
-  "lib/scroll-types",
-  "lib/fork-schedules",
-  "lib/depolama",
-
-  "lib/embed-commit",
-  "lib/embed-commit/verifier",
-
-  "lib/ucs04",
-
-  "lib/consensus-primitives",
-  "lib/solidity-slot",
+  "cosmwasm/deployer",
+  "tools/devnet-utils",
+  "tools/build-evm-deployer-tx",
+  "tools/parse-wasm-client-type",
+  "tools/tidy",
+  "tools/move-bindgen",
 ]
 
 [workspace.package]
@@ -289,16 +323,19 @@ ethereum-sync-protocol-types = { path = "lib/ethereum-sync-protocol-types", defa
 evm-storage-verifier         = { path = "lib/evm-storage-verifier", default-features = false }
 
 berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
-scroll-api                   = { path = "lib/scroll-api", default-features = false }
-scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
-scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
-scroll-types                 = { path = "lib/scroll-types", default-features = false }
+beacon-kit-types              = { path = "lib/beacon-kit-types", default-features = false }
+
+scroll-api   = { path = "lib/scroll-api", default-features = false }
+scroll-codec = { path = "lib/scroll-codec", default-features = false }
+scroll-rpc   = { path = "lib/scroll-rpc", default-features = false }
+scroll-types = { path = "lib/scroll-types", default-features = false }
 
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }
 state-lens-ics23-mpt-light-client-types   = { path = "lib/state-lens-ics23-mpt-light-client-types", default-features = false }
 state-lens-ics23-smt-light-client-types   = { path = "lib/state-lens-ics23-smt-light-client-types", default-features = false }
 
-ethermint-light-client-types  = { path = "lib/ethermint-light-client-types", default-features = false }
+ethermint-light-client-types = { path = "lib/ethermint-light-client-types", default-features = false }
+
 tendermint-light-client       = { path = "cosmwasm/ibc-union/lightclient/tendermint", default-features = false }
 tendermint-light-client-types = { path = "lib/tendermint-light-client-types", default-features = false }
 tendermint-verifier           = { path = "lib/tendermint-verifier", default-features = false }

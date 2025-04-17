@@ -30,6 +30,13 @@
         sha256 = "sha256-MDrwJhzDKcPXbExViwYgoKeVhNB2CXkqj+iq8kUb2i8=";
       };
 
+      berachain-cometbft-repo = pkgs.fetchFromGitHub {
+        owner = "berachain";
+        repo = "cometbft";
+        rev = "bera-v1.x";
+        sha256 = "sha256-awuwJAuILE6/zgrundB/JlKpYV9A1OkXIKrMRdZfXzQ=";
+      };
+
       cargo_toml =
         { name }:
         let
@@ -140,7 +147,11 @@
           ];
         };
         cometbls = rec {
-          src = "${proto.cometbls}/proto";
+          src = pkgs.runCommand "build-cometbft-src" { } ''
+            cp --no-preserve=mode "${proto.cometbls}/proto" -r $out
+            # berachain has custom BlockIDFlags for aggregated signatures
+            cp --no-preserve=mode "${berachain-cometbft-repo}/proto/cometbft/types/v1/validator.proto" $out/cometbft/types/v1/validator.proto
+          '';
           proto-deps = [
             src
             google.src
@@ -163,8 +174,6 @@
             sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
             sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
             sed -i 's/Bls12381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12381")\]Bls12381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-
-
 
             # required until https://github.com/tokio-rs/prost/issues/507 is fixed
             sed -i 's/pub sum: ::core::option::Option<evidence::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<evidence::Sum>,/' "./src/cometbft.types.v1.rs"
