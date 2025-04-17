@@ -15,13 +15,15 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [features]
-library = []
+cw-orch-interface = ["dep:cw-orch", "ibc-union-msg/cw-orch-interface"]
+library           = []
 
 [dependencies]
 alloy           = { workspace = true, features = ["sol-types"] }
 bincode         = { workspace = true, features = ["alloc", "derive"] }
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }
+cw-orch         = { workspace = true, optional = true }
 depolama        = { workspace = true }
 embed-commit    = { workspace = true }
 ethabi          = { workspace = true }

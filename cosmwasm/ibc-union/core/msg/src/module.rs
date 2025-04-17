@@ -4,6 +4,7 @@ use unionlabs_primitives::Bytes;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
 pub enum IbcUnionMsg {
     OnChannelOpenInit {
         caller: String,

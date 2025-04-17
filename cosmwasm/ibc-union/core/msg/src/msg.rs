@@ -2,7 +2,7 @@ use ibc_union_spec::{Channel, ChannelId, ClientId, ConnectionId, Packet, Timesta
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::Bytes;
 
-#[derive(Default, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct InitMsg {
     pub relayers_admin: Option<String>,
@@ -18,6 +18,7 @@ pub struct MsgRegisterClient {
 
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
     AddRelayer(String),
     RemoveRelayer(String),
