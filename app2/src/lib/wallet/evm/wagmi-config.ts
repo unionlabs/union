@@ -7,7 +7,7 @@ import {
   serialize,
   unstable_connector
 } from "@wagmi/core"
-import {coinbaseWallet, injected, metaMask, walletConnect} from "@wagmi/connectors"
+import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connectors"
 import {
   arbitrumSepolia,
   berachainTestnetbArtio,
