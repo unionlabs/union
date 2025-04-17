@@ -50,9 +50,9 @@ const validateAddress = (address: string) =>
               A.map(x => x.message)
             )
           },
-          onRight: x => {
+          onRight: () => {
             messages = A.empty()
-            transferData.raw.updateField("receiver", x)
+            transferData.raw.updateField("receiver", address)
           }
         })
       )

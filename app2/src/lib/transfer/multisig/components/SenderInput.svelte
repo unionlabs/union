@@ -24,10 +24,10 @@ const validateAddress = (address: string) => {
           A.map(x => x.message)
         )
       },
-      onRight: x => {
+      onRight: encoded => {
         messages = A.empty()
-        transferData.raw.updateField("sender", x)
-        wallets.addInputAddress(x)
+        transferData.raw.updateField("sender", address)
+        wallets.addInputAddress(encoded)
       }
     })
   )
