@@ -21,7 +21,6 @@ import {StateLensIcs23SmtClient} from
     "../contracts/clients/StateLensIcs23SmtClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
-import "../contracts/lib/Hex.sol";
 
 import "./Deployer.sol";
 
