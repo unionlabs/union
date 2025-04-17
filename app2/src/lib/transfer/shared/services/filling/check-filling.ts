@@ -20,7 +20,6 @@ export interface TransferArgs {
 
 export type FillingState = Data.TaggedEnum<{
   Empty: {}
-  NoWallet: {}
   SourceChainMissing: {}
   SourceWalletMissing: {}
   BaseTokenMissing: {}

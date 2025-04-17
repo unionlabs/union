@@ -1,10 +1,7 @@
 <script lang="ts">
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
-import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
-import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import {Match, Option, pipe} from "effect"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
@@ -65,6 +62,21 @@ const isButtonEnabled = $derived.by(() => !loading)
 <div class="min-w-full p-4 flex flex-col grow">
   <div class="flex flex-col gap-4">
     <Input
+      label="sender"
+      id="amount"
+      type="text"
+      required
+      autocorrect="off"
+      placeholder="union1"
+      spellcheck="false"
+      autocomplete="off"
+      inputmode="text"
+      autocapitalize="none"
+      value={transferData.raw.sender}
+      class="h-14 text-center text-lg"
+    />
+    <Input
+      label="receiver"
       id="amount"
       type="text"
       required

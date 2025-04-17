@@ -39,6 +39,11 @@ export const navigation: Array<NavSection> = [
           //   title: "Faucet"
           // }
         ]
+      },
+      {
+        path: "/multisig",
+        title: "Multisig",
+        icon: OutlineControlPointDuplicate,
       }
     ]
   },

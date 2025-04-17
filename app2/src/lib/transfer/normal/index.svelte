@@ -15,7 +15,7 @@ import {
   CreateContextState,
   createContextState,
   type StateResult
-} from "$lib/transfer/shared/services/filling/index.ts"
+} from "$lib/transfer/normal/services/filling.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { constVoid, pipe } from "effect/Function"

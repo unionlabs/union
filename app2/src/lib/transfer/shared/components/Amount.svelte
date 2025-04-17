@@ -100,6 +100,7 @@ function setMaxAmount() {
     {/if}
   {/if}
   <Input
+    label="amount"
     id="amount"
     type="text"
     required
