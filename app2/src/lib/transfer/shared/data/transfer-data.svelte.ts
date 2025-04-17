@@ -9,6 +9,8 @@ import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/share
 import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import {signingMode} from "$lib/transfer/signingMode.svelte.ts";
+import {RawTransferDataSvelte} from "$lib/transfer/shared/data/raw-transfer-data.svelte.ts";
+import {Option, Match} from "effect";
 
 export class TransferData {
   raw = new RawTransferDataSvelte()

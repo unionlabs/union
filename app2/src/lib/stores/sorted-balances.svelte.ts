@@ -99,7 +99,11 @@ class SortedBalancesStore {
 
           return {
             chain,
-            tokens: Option.flatMap(Option.isSome(wallets.inputAddress) ? wallets.inputAddress : wallets.getAddressForChain(chain), addr =>
+            tokens: Option.flatMap(
+              Option.isSome(wallets.inputAddress) ?
+                wallets.inputAddress :
+                wallets.getAddressForChain(chain),
+                addr =>
               tokensStore
                 .getData(chain.universal_chain_id)
                 .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr)))
