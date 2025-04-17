@@ -9,7 +9,9 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
+mod abi_fetcher;
 mod cli;
+mod github_client;
 mod github_fetcher;
 mod healthz;
 mod indexer;
@@ -88,6 +90,19 @@ async fn main() -> color_eyre::eyre::Result<()> {
     };
 
     set.spawn(github_fetcher);
+
+    let abi_fetcher_db = db.clone();
+    let abi_fetcher = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(60));
+        interval.tick().await;
+        loop {
+            info!("updating abis");
+            abi_fetcher::fetch_abis(&abi_fetcher_db).await?;
+            interval.tick().await;
+        }
+    };
+
+    set.spawn(abi_fetcher);
 
     while let Some(res) = set.join_next().await {
         match res {

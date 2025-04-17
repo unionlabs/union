@@ -5,8 +5,6 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::{error, trace};
 
-use crate::github_fetcher::Subscription;
-
 static CLIENT: LazyLock<Client> = LazyLock::new(|| {
     Client::builder()
         .user_agent("reqwest")
@@ -15,38 +13,29 @@ static CLIENT: LazyLock<Client> = LazyLock::new(|| {
 });
 
 #[derive(Debug, thiserror::Error)]
-pub enum FileDownloadError {
+pub enum CommitDetailsError {
     #[error("error requesting commit details from {0}: {1}")]
-    CommitDetailsRequest(String, #[source] reqwest::Error),
+    SendRequest(String, #[source] reqwest::Error),
 
     #[error("error response fetching commit details from {0}: {1}")]
-    CommitDetailsErrorResponse(String, #[source] reqwest::Error),
+    ErrorResponse(String, #[source] reqwest::Error),
 
     #[error("error downloading commit details from {0}: {1}")]
-    CommitDetailsDownload(String, #[source] reqwest::Error),
+    Download(String, #[source] reqwest::Error),
 
     #[error("error parsing json commit details from {0}: {1}")]
-    CommitDetailsDecode(String, #[source] serde_json::Error),
+    Decode(String, #[source] serde_json::Error),
 
     #[error("no commit for {0}")]
-    CommitDetailsNoCommit(String),
-
-    #[error("error requesting file contents from {0}: {1}")]
-    FileContentsRequest(String, #[source] reqwest::Error),
-
-    #[error("error response fetching file contents from {0}: {1}")]
-    FileContentsErrorResponse(String, #[source] reqwest::Error),
-
-    #[error("error downloading file content from {0}: {1}")]
-    FileContentsDownload(String, #[source] reqwest::Error),
+    NoCommit(String),
 }
 
 #[derive(Debug, Serialize)]
 pub struct CommitDetails {
     #[serde(serialize_with = "as_hex")]
-    commit_hash: Vec<u8>,
+    pub commit_hash: Vec<u8>,
     #[serde(serialize_with = "serialize_iso8601")]
-    commit_timestamp: OffsetDateTime,
+    pub commit_timestamp: OffsetDateTime,
 }
 
 impl Display for CommitDetails {
@@ -58,9 +47,6 @@ impl Display for CommitDetails {
         ))
     }
 }
-
-#[derive(Clone, Debug, Serialize)]
-pub struct FileContents(pub Vec<u8>);
 
 // Define structs for deserializing the JSON response
 #[derive(Debug, Deserialize)]
@@ -81,69 +67,49 @@ struct GitCommit {
     commit: CommitInfo,
 }
 
-pub async fn fetch_commit_details(
-    subscription: &Subscription,
-) -> Result<CommitDetails, FileDownloadError> {
-    trace!("fetch_commit_details: {subscription}");
+pub async fn fetch_commit_details_by_branch(
+    repo: &str,
+    path: &str,
+    branch: &str,
+) -> Result<CommitDetails, CommitDetailsError> {
+    trace!("fetch_commit_details (branch): {repo}/{path}/{branch}");
 
     let commits_url = format!(
-        "https://api.github.com/repos/{}/commits?path={}&sha={}&per_page=1",
-        subscription.repo, subscription.path, subscription.branch
+        "https://api.github.com/repos/{}/commits?path={}&branch={}&per_page=1",
+        repo, path, branch
     );
 
+    fetch_commit_details_by_url(&commits_url).await
+}
+
+async fn fetch_commit_details_by_url(url: &str) -> Result<CommitDetails, CommitDetailsError> {
+    trace!("fetch_commit_details (url): {url}");
+
     let commits_response = CLIENT
-        .get(&commits_url)
+        .get(url)
         .send()
         .await
-        .map_err(|e| FileDownloadError::CommitDetailsRequest(commits_url.clone(), e))?
+        .map_err(|e| CommitDetailsError::SendRequest(url.into(), e))?
         .error_for_status()
-        .map_err(|e| FileDownloadError::CommitDetailsErrorResponse(commits_url.clone(), e))?
+        .map_err(|e| CommitDetailsError::ErrorResponse(url.into(), e))?
         .text()
         .await
-        .map_err(|e| FileDownloadError::CommitDetailsDownload(commits_url.clone(), e))?;
+        .map_err(|e| CommitDetailsError::Download(url.into(), e))?;
 
     let commits: Vec<GitCommit> = serde_json::from_str(&commits_response)
-        .map_err(|e| FileDownloadError::CommitDetailsDecode(commits_url.clone(), e))?;
+        .map_err(|e| CommitDetailsError::Decode(url.into(), e))?;
 
     let commit = commits
         .first()
-        .ok_or_else(|| FileDownloadError::CommitDetailsNoCommit(commits_url.clone()))?;
+        .ok_or_else(|| CommitDetailsError::NoCommit(url.into()))?;
 
-    trace!("commit_details of {subscription}: {commit:?}");
+    trace!("commit_details of {url} => {commit:?}");
 
     // Flatten into commit details
     Ok(CommitDetails {
         commit_hash: commit.sha.clone(),
         commit_timestamp: commit.commit.author.date,
     })
-}
-
-pub async fn fetch_file_contents(
-    subscription: &Subscription,
-    commit_details: &CommitDetails,
-) -> Result<FileContents, FileDownloadError> {
-    trace!("fetch_file_contents: {subscription}");
-
-    let raw_url = format!(
-        "https://raw.githubusercontent.com/{}/{}/{}",
-        subscription.repo,
-        hex::encode(&commit_details.commit_hash),
-        subscription.path
-    );
-
-    let result = CLIENT
-        .get(&raw_url)
-        .send()
-        .await
-        .map_err(|e| FileDownloadError::FileContentsRequest(raw_url.clone(), e))?
-        .error_for_status()
-        .map_err(|e| FileDownloadError::FileContentsErrorResponse(raw_url.clone(), e))?
-        .bytes()
-        .await
-        .map(|b| b.to_vec())
-        .map_err(|e| FileDownloadError::FileContentsDownload(raw_url.clone(), e))?;
-
-    Ok(FileContents(result))
 }
 
 // Custom deserializer for SHA hex string to Vec<u8>

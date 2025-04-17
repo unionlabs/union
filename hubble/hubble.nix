@@ -216,11 +216,13 @@
               ExecStart = pkgs.lib.getExe hubble-systemd-script;
               Restart = mkForce "always";
               RestartSec = mkForce 3;
+              PrivateTmp = true; # workspace for generating abis
             };
             environment = {
               RUST_LOG = "${cfg.log-level}";
               RUST_BACKTRACE = "${cfg.backtrace}";
               NO_COLOR = "${cfg.no-color}";
+              NIX_BIN = "${pkgs.nix}/bin/nix";
             };
           };
       };
