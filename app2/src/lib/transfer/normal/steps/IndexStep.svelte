@@ -7,7 +7,7 @@ import { fly } from "svelte/transition"
 import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
-import type { WaitForIndex } from "../steps.ts"
+import type {WaitForIndex} from "$lib/transfer/normal/steps/steps.ts";
 
 type Props = {
   newTransfer: () => void
@@ -16,7 +16,7 @@ type Props = {
 
 const { newTransfer, step }: Props = $props()
 
-const sourceChain = step.context.sourceChain
+const sourceChain = step.intent.sourceChain
 
 $effect(() => {
   if (Option.isSome(transferHashStore.data)) {

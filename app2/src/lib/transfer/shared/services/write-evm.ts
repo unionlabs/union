@@ -55,7 +55,10 @@ export const nextStateEvm = async <
   params: WriteContractParameters<TAbi, TFunctionName, TArgs>
 ): Promise<TransactionSubmissionEvm> =>
   TransactionSubmissionEvm.$match(ts, {
-    Filling: () => SwitchChainInProgress(),
+    Filling: () => {
+      console.log(params)
+      return SwitchChainInProgress()
+    },
     SwitchChainInProgress: async () =>
       SwitchChainComplete({
         exit: await Effect.runPromiseExit(switchChain(chain))

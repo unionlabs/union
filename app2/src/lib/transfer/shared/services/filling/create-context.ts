@@ -1,5 +1,5 @@
 import { Match, Option } from "effect"
-import { fromHex, isHex } from "viem"
+import {fromHex, isHex, toHex} from "viem"
 import type { TransferArgs } from "./check-filling.ts"
 import type {
   AddressCanonicalBytes,
@@ -81,17 +81,17 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
     }),
 
     Match.when("cosmos", () => {
-      const tokenName = isHex(args.baseToken) ? fromHex(args.baseToken, "string") : args.baseToken
 
+      const baseToken = isHex(args.baseToken) ? fromHex(args.baseToken, "string") : args.baseToken
       const baseAmountWithFee =
-        args.sourceChain.universal_chain_id === "babylon.bbn-1" && tokenName === "ubbn"
+        args.sourceChain.universal_chain_id === "babylon.bbn-1" && args.baseToken === toHex("ubbn")
           ? ((baseAmount + BABY_SUB_AMOUNT) as TokenRawAmount)
           : baseAmount
 
       const intent: Intent = {
         sender: args.sender,
         receiver: args.receiver.toLowerCase(),
-        baseToken: tokenName,
+        baseToken: baseToken,
         baseAmount: baseAmountWithFee,
         quoteAmount: baseAmount,
         sourceChain: args.sourceChain,

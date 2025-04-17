@@ -34,7 +34,10 @@ export const nextStateCosmos = async (
   funds?: ReadonlyArray<{ denom: string; amount: string }>
 ): Promise<TransactionSubmissionCosmos> =>
   TransactionSubmissionCosmos.$match(ts, {
-    Filling: () => SwitchChainInProgress(),
+    Filling: () => {
+      console.log('write-cosmos:', {senderAddress, contractAddress, msg, funds})
+      return SwitchChainInProgress()
+    },
     SwitchChainInProgress: async () => {
       const switchResult = await Effect.runPromiseExit(switchChain(chain))
       return SwitchChainComplete({
