@@ -11,7 +11,7 @@ use ibc_union_msg::lightclient::{
     MisbehaviourResponse, QueryMsg, Status, StorageWrites, UpdateStateResponse,
     VerifyCreationResponse, VerifyCreationResponseEvent,
 };
-use ibc_union_spec::ClientId;
+use ibc_union_spec::{ClientId, Timestamp};
 use unionlabs::{
     encoding::{Decode, DecodeAs, DecodeErrorOf, Encode, EncodeAs, Encoding, EthAbi},
     primitives::Bytes,
@@ -23,7 +23,8 @@ use crate::{msg::InitMsg, state::IbcHost};
 pub mod msg;
 pub mod state;
 
-// TODO: Add #[source] to all variants
+pub use ibc_union_spec as spec;
+
 #[derive(macros::Debug, thiserror::Error)]
 #[debug(bound())]
 pub enum DecodeError<T: IbcClient> {
@@ -275,7 +276,7 @@ pub trait IbcClient: Sized + 'static {
     ) -> Result<(), IbcClientError<Self>>;
 
     /// Get the timestamp
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64;
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp;
 
     /// Get the height
     fn get_latest_height(client_state: &Self::ClientState) -> u64;

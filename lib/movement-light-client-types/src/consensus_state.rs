@@ -1,10 +1,11 @@
+use consensus_primitives::Timestamp;
 use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     pub state_root: H256,
-    pub timestamp: u64,
+    pub timestamp: Timestamp,
     /// This is the hash of the `StateProof` which is committed to l1
     pub state_proof_hash: H256,
 }
@@ -31,7 +32,7 @@ pub mod ethabi {
         fn from(value: ConsensusState) -> Self {
             Self {
                 state_root: value.state_root.get().into(),
-                timestamp: value.timestamp,
+                timestamp: value.timestamp.as_nanos(),
                 state_proof_hash: value.state_proof_hash.get().into(),
             }
         }
@@ -41,7 +42,7 @@ pub mod ethabi {
         fn from(value: SolConsensusState) -> Self {
             Self {
                 state_root: H256::new(value.state_root.0),
-                timestamp: value.timestamp,
+                timestamp: Timestamp::from_nanos(value.timestamp),
                 state_proof_hash: H256::new(value.state_proof_hash.0),
             }
         }

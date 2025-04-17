@@ -1,5 +1,6 @@
 use cosmwasm_std::StdError;
 use ibc_union_light_client::IbcClientError;
+use ibc_union_spec::Timestamp;
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{encoding::HexUnprefixed, H256},
@@ -9,24 +10,36 @@ use crate::{client::CometblsLightClient, zkp_verifier::ZkpVerifier};
 
 #[derive(thiserror::Error, Debug, Clone, PartialEq)]
 pub enum InvalidHeaderError {
-    #[error("signed header's height ({signed_height}) must be greater than trusted height ({trusted_height})")]
+    #[error(
+        "signed header's height ({signed_height}) must be \
+        greater than trusted height ({trusted_height})"
+    )]
     SignedHeaderHeightMustBeMoreRecent {
         signed_height: u64,
         trusted_height: u64,
     },
-    #[error("signed header's timestamp ({signed_timestamp}) must be greater than trusted timestamp ({trusted_timestamp})")]
+    #[error(
+        "signed header's timestamp ({signed_timestamp}) must be \
+        greater than trusted timestamp ({trusted_timestamp})"
+    )]
     SignedHeaderTimestampMustBeMoreRecent {
-        signed_timestamp: u64,
-        trusted_timestamp: u64,
+        signed_timestamp: Timestamp,
+        trusted_timestamp: Timestamp,
     },
     #[error("header with timestamp ({0}) is expired")]
-    HeaderExpired(u64),
-    #[error("signed header timestamp ({signed_timestamp}) cannot exceed the max clock drift ({max_clock_drift})")]
+    HeaderExpired(Timestamp),
+    #[error(
+        "signed header timestamp ({signed_timestamp}) cannot \
+        exceed the max clock drift ({max_clock_drift_timestamp})"
+    )]
     SignedHeaderCannotExceedMaxClockDrift {
-        signed_timestamp: u64,
-        max_clock_drift: u64,
+        signed_timestamp: Timestamp,
+        max_clock_drift_timestamp: Timestamp,
     },
-    #[error("the validators hash ({actual}) doesn't match the trusted validators hash ({expected}) for an adjacent block")]
+    #[error(
+        "the validators hash ({actual}) doesn't match the trusted \
+        validators hash ({expected}) for an adjacent block"
+    )]
     InvalidValidatorsHash {
         expected: H256<HexUnprefixed>,
         actual: H256<HexUnprefixed>,

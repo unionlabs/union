@@ -1,7 +1,7 @@
 use cosmwasm_schema::cw_serde;
 use ethabi::{ParamType, Token};
 use ibc_union_msg::msg::MsgSendPacket;
-use ibc_union_spec::{ChannelId, Timestamp};
+use ibc_union_spec::{ChannelId, Duration, Timestamp};
 
 use crate::{state::Config, ContractError};
 
@@ -48,7 +48,8 @@ impl UCS00PingPong {
             source_channel_id: source_channel,
             timeout_height: 0,
             timeout_timestamp: current_timestamp
-                + Timestamp::from_secs(config.seconds_before_timeout),
+                .plus_duration(Duration::from_secs(config.seconds_before_timeout))
+                .expect("timeout overflow"),
             data: counterparty_packet.encode().into(),
         })
     }

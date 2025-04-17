@@ -19,7 +19,7 @@ use unionlabs::{
 use voyager_message::{
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
-    primitives::{ChainId, ClientType},
+    primitives::{ChainId, ClientType, Timestamp},
     vm::BoxDynError,
     ClientBootstrapModule,
 };
@@ -207,7 +207,8 @@ impl ClientBootstrapModuleServer for Module {
 
         Ok(serde_json::to_value(ConsensusState {
             state_root: Default::default(),
-            timestamp: 1000,
+            // TODO: Fix this - this is currently effectively broken.
+            timestamp: Timestamp::from_secs(1000),
             state_proof_hash: Default::default(),
         })
         .expect("infallible"))

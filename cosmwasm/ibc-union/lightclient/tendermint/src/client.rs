@@ -148,8 +148,8 @@ impl IbcClient for TendermintLightClient {
         }
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
-        consensus_state.timestamp.as_unix_nanos()
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> ibc_union_spec::Timestamp {
+        ibc_union_spec::Timestamp::from_nanos(consensus_state.timestamp.as_unix_nanos())
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {

@@ -3,7 +3,7 @@ use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{
-    ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
+    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
 use tendermint_light_client::client::TendermintLightClient;
@@ -68,7 +68,7 @@ impl IbcClient for BerachainLightClient {
         Ok(())
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
         consensus_state.timestamp
     }
 
@@ -146,7 +146,7 @@ impl IbcClient for BerachainLightClient {
         let update_height = header.execution_header.block_number;
 
         let consensus_state = ConsensusState {
-            timestamp: header.execution_header.timestamp,
+            timestamp: Timestamp::from_secs(header.execution_header.timestamp),
             state_root: header.execution_header.state_root,
             storage_root: header.account_proof.storage_root,
         };

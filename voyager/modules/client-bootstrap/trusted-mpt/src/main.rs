@@ -15,7 +15,7 @@ use unionlabs::{
 use voyager_message::{
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
-    primitives::{ChainId, ClientType},
+    primitives::{ChainId, ClientType, Timestamp},
     ClientBootstrapModule,
 };
 use voyager_vm::BoxDynError;
@@ -135,7 +135,7 @@ impl ClientBootstrapModuleServer for Module {
                 .storage_hash
                 .0
                 .into(),
-            timestamp: header.timestamp,
+            timestamp: Timestamp::from_secs(header.timestamp),
         }))
     }
 }

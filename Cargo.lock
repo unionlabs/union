@@ -3598,6 +3598,7 @@ dependencies = [
  "bcs 0.1.6",
  "bincode 2.0.1",
  "cometbls-light-client-types",
+ "consensus-primitives",
  "hex",
  "hex-literal",
  "protos",
@@ -5517,6 +5518,7 @@ dependencies = [
  "alloy",
  "beacon-api-types",
  "bincode 2.0.1",
+ "consensus-primitives",
  "ethereum-light-client-types",
  "ethereum-sync-protocol-types",
  "hex-literal",
@@ -6823,7 +6825,6 @@ dependencies = [
  "clap 4.5.35",
  "color-eyre",
  "cometbft-rpc",
- "cometbls-light-client-types",
  "embed-commit",
  "futures",
  "hex",
@@ -6838,7 +6839,6 @@ dependencies = [
  "serde",
  "serde_json",
  "sqlx",
- "tendermint-light-client-types",
  "thiserror 2.0.12",
  "tikv-jemallocator",
  "time",
@@ -8904,6 +8904,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
+ "consensus-primitives",
  "ethereum-light-client-types",
  "hex-literal",
  "serde",
@@ -12755,6 +12756,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
+ "consensus-primitives",
  "hex-literal",
  "protos",
  "serde",
@@ -12796,6 +12798,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
+ "consensus-primitives",
  "hex-literal",
  "protos",
  "serde",
@@ -14047,6 +14050,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "bincode 2.0.1",
+ "consensus-primitives",
  "ethereum-light-client-types",
  "hex-literal",
  "serde",

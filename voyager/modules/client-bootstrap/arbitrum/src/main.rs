@@ -3,7 +3,7 @@ use alloy::{
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
 };
 use arbitrum_light_client_types::{ClientState, ClientStateV1, ConsensusState};
-use ibc_union_spec::{ClientId, IbcUnion};
+use ibc_union_spec::{ClientId, IbcUnion, Timestamp};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -215,7 +215,7 @@ impl ClientBootstrapModuleServer for Module {
                 .storage_hash
                 .0
                 .into(),
-            timestamp: 1_000_000_000 * l2_block.header.timestamp,
+            timestamp: Timestamp::from_secs(l2_block.header.timestamp),
         }))
     }
 }

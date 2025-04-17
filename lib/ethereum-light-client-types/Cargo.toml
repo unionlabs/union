@@ -12,13 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                        = { workspace = true, features = ["sol-types"], optional = true }
-beacon-api-types             = { workspace = true }
-bincode                      = { workspace = true, features = ["alloc", "derive"], optional = true }
-ethereum-sync-protocol-types = { workspace = true }
-serde                        = { workspace = true, optional = true, features = ["derive"] }
-thiserror                    = { workspace = true }
-unionlabs                    = { workspace = true }
+alloy                          = { workspace = true, features = ["sol-types"], optional = true }
+beacon-api-types               = { workspace = true }
+bincode                        = { workspace = true, features = ["alloc", "derive"], optional = true }
+consensus-primitives.workspace = true
+ethereum-sync-protocol-types   = { workspace = true }
+serde                          = { workspace = true, optional = true, features = ["derive"] }
+thiserror                      = { workspace = true }
+unionlabs                      = { workspace = true }
 
 [features]
 default = []
