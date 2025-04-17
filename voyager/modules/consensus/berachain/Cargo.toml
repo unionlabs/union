@@ -14,7 +14,7 @@ workspace = true
 [dependencies]
 alloy                         = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 beacon-api-types              = { workspace = true, features = ["serde", "ssz"] }
-beacon-kit-light-client-types  = { workspace = true, features = ["serde"] }
+berachain-light-client-types  = { workspace = true, features = ["serde"] }
 cometbft-rpc                  = { workspace = true }
 dashmap                       = { workspace = true }
 embed-commit                  = { workspace = true }

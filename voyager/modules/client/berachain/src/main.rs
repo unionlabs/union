@@ -1,4 +1,4 @@
-use beacon_kit_light_client_types::{ClientState, ConsensusState, Header};
+use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,

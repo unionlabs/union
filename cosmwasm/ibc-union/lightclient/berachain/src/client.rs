@@ -1,5 +1,5 @@
 use beacon_api_types::{chain_spec::Mainnet, deneb};
-use beacon_kit_light_client_types::{ClientState, ConsensusState, Header};
+use berachain_light_client_types::{ClientState, ConsensusState, Header};
 use cosmwasm_std::{Addr, Empty};
 use ethereum_light_client_types::StorageProof;
 use ibc_union_light_client::{

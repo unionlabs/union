@@ -1,7 +1,7 @@
 use std::{fmt::Debug, num::ParseIntError};
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
-use beacon_kit_light_client_types::{client_state::ClientStateV1, ClientState, ConsensusState};
+use berachain_light_client_types::{client_state::ClientStateV1, ClientState, ConsensusState};
 use ibc_union_spec::ClientId;
 use jsonrpsee::{
     core::{async_trait, RpcResult},

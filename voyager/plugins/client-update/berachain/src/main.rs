@@ -2,7 +2,7 @@ use std::{collections::VecDeque, fmt::Debug, num::ParseIntError};
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use beacon_api_types::{chain_spec::Mainnet, deneb};
-use beacon_kit_light_client_types::{ClientState, Header};
+use berachain_light_client_types::{ClientState, Header};
 use ethereum_light_client_types::AccountProof;
 use ibc_union_spec::{path::ClientStatePath, IbcUnion};
 use jsonrpsee::{

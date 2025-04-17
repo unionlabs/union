@@ -104,7 +104,7 @@ _: {
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
             "tendermint-bls"
-            "beacon-kit"
+            "berachain"
             # "ethereum"
             # "trusted-mpt"
             # "bob"
@@ -126,7 +126,7 @@ _: {
           lightclients = [
             "arbitrum"
             "bob"
-            "beacon-kit"
+            "berachain"
             "ethereum"
             "trusted-mpt"
             "ethermint"
@@ -153,7 +153,7 @@ _: {
           lightclients = [
             "arbitrum"
             "bob"
-            "beacon-kit"
+            "berachain"
             "ethereum"
             "trusted-mpt"
             "ethermint"
@@ -336,9 +336,9 @@ _: {
           client-type = "arbitrum";
         }
         {
-          name = "beacon-kit";
-          dir = "beacon-kit";
-          client-type = "beacon-kit";
+          name = "berachain";
+          dir = "berachain";
+          client-type = "berachain";
         }
         {
           name = "cometbls";

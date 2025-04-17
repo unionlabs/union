@@ -2494,44 +2494,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "beacon-kit-light-client"
-version = "0.0.0"
-dependencies = [
- "base64 0.21.7",
- "beacon-api-types",
- "beacon-kit-light-client-types",
- "cosmwasm-std 2.2.2",
- "embed-commit",
- "ethereum-light-client",
- "ethereum-light-client-types",
- "evm-storage-verifier",
- "frissitheto",
- "ibc-union-light-client",
- "ibc-union-msg",
- "ics23",
- "lazy_static",
- "serde",
- "serde_json",
- "tendermint-light-client",
- "tendermint-verifier",
- "thiserror 2.0.12",
- "unionlabs",
-]
-
-[[package]]
-name = "beacon-kit-light-client-types"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "beacon-api-types",
- "bincode 2.0.1",
- "ethereum-light-client-types",
- "ibc-union-spec",
- "serde",
- "unionlabs",
-]
-
-[[package]]
 name = "beacon-kit-types"
 version = "0.0.0"
 dependencies = [
@@ -2581,6 +2543,44 @@ dependencies = [
  "ff",
  "serde",
  "thiserror 1.0.69",
+]
+
+[[package]]
+name = "berachain-light-client"
+version = "0.0.0"
+dependencies = [
+ "base64 0.21.7",
+ "beacon-api-types",
+ "berachain-light-client-types",
+ "cosmwasm-std 2.2.2",
+ "embed-commit",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "frissitheto",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ics23",
+ "lazy_static",
+ "serde",
+ "serde_json",
+ "tendermint-light-client",
+ "tendermint-verifier",
+ "thiserror 2.0.12",
+ "unionlabs",
+]
+
+[[package]]
+name = "berachain-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "beacon-api-types",
+ "bincode 2.0.1",
+ "ethereum-light-client-types",
+ "ibc-union-spec",
+ "serde",
+ "unionlabs",
 ]
 
 [[package]]
@@ -14675,11 +14675,11 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-bootstrap-module-beacon-kit"
+name = "voyager-client-bootstrap-module-berachain"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "beacon-kit-light-client-types",
+ "berachain-light-client-types",
  "embed-commit",
  "ibc-union-spec",
  "ics23",
@@ -14916,10 +14916,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-module-beacon-kit"
+name = "voyager-client-module-berachain"
 version = "0.0.0"
 dependencies = [
- "beacon-kit-light-client-types",
+ "berachain-light-client-types",
  "embed-commit",
  "jsonrpsee",
  "macros",
@@ -15159,12 +15159,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-update-plugin-beacon-kit"
+name = "voyager-client-update-plugin-berachain"
 version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
- "beacon-kit-light-client-types",
+ "berachain-light-client-types",
  "cometbft-rpc",
  "cometbft-types",
  "dashmap 5.5.3",
@@ -15398,12 +15398,12 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-consensus-module-beacon-kit"
+name = "voyager-consensus-module-berachain"
 version = "0.0.0"
 dependencies = [
  "alloy",
  "beacon-api-types",
- "beacon-kit-light-client-types",
+ "berachain-light-client-types",
  "cometbft-rpc",
  "dashmap 5.5.3",
  "embed-commit",

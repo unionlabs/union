@@ -1,5 +1,5 @@
 [package]
-name    = "beacon-kit-light-client"
+name    = "berachain-light-client"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -19,7 +19,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 beacon-api-types             = { workspace = true, features = ["ssz"] }
-beacon-kit-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+berachain-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 cosmwasm-std                 = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 embed-commit                 = { workspace = true }
 ethereum-light-client        = { workspace = true, features = ["library"] }
