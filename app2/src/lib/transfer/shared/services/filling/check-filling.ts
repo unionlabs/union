@@ -34,47 +34,47 @@ export type FillingState = Data.TaggedEnum<{
 
 export const FillingState = Data.taggedEnum<FillingState>()
 
-export const getFillingState = (transfer: TransferData): FillingState => {
+export const getFillingState = (transferData: TransferData): FillingState => {
   if (!wallets.hasAnyWallet()) {
     return FillingState.NoWallet()
   }
 
-  return Option.match(transfer.sourceChain, {
+  return Option.match(transferData.sourceChain, {
     onNone: () => FillingState.SourceChainMissing(),
     onSome: sourceChain => {
-      const sourceWallet = transfer.derivedSender
+      const sourceWallet = transferData.derivedSender
       if (Option.isNone(sourceWallet)) return FillingState.SourceWalletMissing()
-      if (Option.isNone(transfer.baseToken)) return FillingState.BaseTokenMissing()
-      if (Option.isNone(transfer.destinationChain)) return FillingState.DestinationMissing()
+      if (Option.isNone(transferData.baseToken)) return FillingState.BaseTokenMissing()
+      if (Option.isNone(transferData.destinationChain)) return FillingState.DestinationMissing()
 
-      if (Option.isNone(transfer.channel)) {
+      if (Option.isNone(transferData.channel)) {
         return FillingState.NoRoute()
       }
 
-      if (Option.isNone(transfer.ucs03address)) {
+      if (Option.isNone(transferData.ucs03address)) {
         return FillingState.NoContract()
       }
 
-      if (!transfer.raw.amount) {
+      if (!transferData.raw.amount) {
         return FillingState.EmptyAmount()
       }
 
-      const parsedAmount = Number.parseFloat(transfer.raw.amount)
-      if (!transfer.raw.amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
+      const parsedAmount = Number.parseFloat(transferData.raw.amount)
+      if (!transferData.raw.amount || Number.isNaN(parsedAmount) || parsedAmount <= 0) {
         return FillingState.InvalidAmount()
       }
 
-      if (Option.isSome(transfer.destinationChain) && Option.isNone(transfer.derivedReceiver)) {
+      if (Option.isSome(transferData.destinationChain) && Option.isNone(transferData.derivedReceiver)) {
         return FillingState.ReceiverMissing()
       }
 
       const unwrapped = Option.all({
-        destinationChain: transfer.destinationChain,
-        channel: transfer.channel,
-        receiver: transfer.derivedReceiver,
-        parsedAmount: transfer.parsedAmount,
-        baseToken: transfer.baseToken,
-        ucs03address: transfer.ucs03address
+        destinationChain: transferData.destinationChain,
+        channel: transferData.channel,
+        receiver: transferData.derivedReceiver,
+        parsedAmount: transferData.parsedAmount,
+        baseToken: transferData.baseToken,
+        ucs03address: transferData.ucs03address
       })
 
       return Option.match(unwrapped, {

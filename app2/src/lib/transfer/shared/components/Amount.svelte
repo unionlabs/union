@@ -1,106 +1,104 @@
 <script lang="ts">
-import Input from "$lib/components/ui/Input.svelte"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { Option, pipe } from "effect"
-import { formatUnits, toHex } from "viem"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import Label from "$lib/components/ui/Label.svelte"
+  import Input from "$lib/components/ui/Input.svelte"
+  import {transferData} from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+  import {Option, pipe} from "effect"
+  import {formatUnits, toHex} from "viem"
+  import {wallets} from "$lib/stores/wallets.svelte.ts"
+  import Skeleton from "$lib/components/ui/Skeleton.svelte"
+  import Label from "$lib/components/ui/Label.svelte"
 
-type Props = {
-  type: "source" | "destination"
-  disabled?: boolean
-}
-let { type, disabled = false }: Props = $props()
-
-let chainWallet = $derived.by(() => {
-  if (Option.isSome(transferData.sourceChain)) {
-    return wallets.getAddressForChain(transferData.sourceChain.value)
+  type Props = {
+    type: "source" | "destination"
+    disabled?: boolean
   }
-  return Option.none()
-})
+  let {type, disabled = false}: Props = $props()
 
-function allDataReadyForBalance() {
-  return (
-    Option.isSome(transferData.sourceChain) &&
-    Option.isSome(transferData.baseToken) &&
-    Option.isSome(transferData.baseTokenBalance) &&
-    Option.isSome(transferData.baseTokenBalance.value.balance)
-  )
-}
+  let chainWallet = $derived.by(() => {
+    if (Option.isSome(transferData.sourceChain)) {
+      return wallets.getAddressForChain(transferData.sourceChain.value)
+    }
+    return Option.none()
+  })
 
-let displayBalance = $derived.by(() => {
-  if (
-    Option.isSome(transferData.sourceChain) &&
-    Option.isSome(transferData.baseToken) &&
-    Option.isSome(transferData.baseTokenBalance)
-  ) {
-    const bal = transferData.baseTokenBalance.value.balance
-    if (Option.isSome(bal)) {
-      const baseToken = transferData.baseToken.value
-      const decimals = baseToken.representations[0]?.decimals ?? 0
-      const raw = bal.value
-      return formatUnits(BigInt(raw), decimals)
+  function allDataReadyForBalance() {
+    return (
+      Option.isSome(transferData.sourceChain) &&
+      Option.isSome(transferData.baseToken) &&
+      Option.isSome(transferData.baseTokenBalance) &&
+      Option.isSome(transferData.baseTokenBalance.value.balance)
+    )
+  }
+
+  let displayBalance = $derived.by(() => {
+    if (
+      Option.isSome(transferData.sourceChain) &&
+      Option.isSome(transferData.baseToken) &&
+      Option.isSome(transferData.baseTokenBalance)
+    ) {
+      const bal = transferData.baseTokenBalance.value.balance
+      if (Option.isSome(bal)) {
+        const baseToken = transferData.baseToken.value
+        const decimals = baseToken.representations[0]?.decimals ?? 0
+        const raw = bal.value
+        return formatUnits(BigInt(raw), decimals)
+      }
+    }
+    return "" // Not loaded yet
+  })
+
+  function setMaxAmount() {
+    if (Option.isNone(transferData.baseToken)) return
+    if (Option.isNone(transferData.baseTokenBalance)) return
+    if (Option.isNone(transferData.baseTokenBalance.value.balance)) return
+    if (Option.isNone(transferData.sourceChain)) return
+
+    const baseToken = transferData.baseToken.value
+    const rawBalance = BigInt(transferData.baseTokenBalance.value.balance.value)
+    const decimals = baseToken.representations[0]?.decimals ?? 0
+    const isUbbn =
+      transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1" &&
+      baseToken.denom === toHex("ubbn")
+
+    const BABY_SUB_AMOUNT = 20n * 10n ** BigInt(decimals)
+
+    const maxUsable =
+      isUbbn && rawBalance > BABY_SUB_AMOUNT ? rawBalance - BABY_SUB_AMOUNT : rawBalance
+
+    const formattedAmount = formatUnits(maxUsable, decimals)
+
+    transferData.raw.updateField('amount', formattedAmount)
+
+    const inputElement = document.getElementById("amount") as HTMLInputElement
+    if (inputElement) {
+      inputElement.value = formattedAmount
+      inputElement.dispatchEvent(new Event("input", {bubbles: true}))
     }
   }
-  return "" // Not loaded yet
-})
-
-function setMaxAmount() {
-  if (Option.isNone(transferData.baseToken)) return
-  if (Option.isNone(transferData.baseTokenBalance)) return
-  if (Option.isNone(transferData.baseTokenBalance.value.balance)) return
-  if (Option.isNone(transferData.sourceChain)) return
-
-  const baseToken = transferData.baseToken.value
-  const rawBalance = BigInt(transferData.baseTokenBalance.value.balance.value)
-  const decimals = baseToken.representations[0]?.decimals ?? 0
-  const isUbbn =
-    transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1" &&
-    baseToken.denom === toHex("ubbn")
-
-  const BABY_SUB_AMOUNT = 20n * 10n ** BigInt(decimals)
-
-  const maxUsable =
-    isUbbn && rawBalance > BABY_SUB_AMOUNT ? rawBalance - BABY_SUB_AMOUNT : rawBalance
-
-  const formattedAmount = formatUnits(maxUsable, decimals)
-
-  transferData.raw.amount = formattedAmount
-
-  const inputElement = document.getElementById("amount") as HTMLInputElement
-  if (inputElement) {
-    inputElement.value = formattedAmount
-    inputElement.dispatchEvent(new Event("input", { bubbles: true }))
-  }
-}
 </script>
 
 <div class="w-full">
-  {#if Option.isSome(chainWallet)}
-    {#if type === "source"}
-      <div class="flex w-full justify-between items-center text-xs gap-1 pb-1">
-        <div class="flex gap-1">
-          <Label>BALANCE:</Label>
-          {#if !transferData.raw.source || !transferData.raw.asset}
-            0
-          {:else if !allDataReadyForBalance()}
-            <Skeleton class="h-3 w-16 inline-block" />
-          {:else}
-            {displayBalance}
-          {/if}
-        </div>
-        <button
-          class="cursor-pointer text-xs text-babylon-orange hover:opacity-80"
-          onclick={setMaxAmount}
-        >
-          MAX
-        </button>
+  {#if type === "source"}
+    <div class="flex w-full justify-between items-center text-xs gap-1 pb-1">
+      <div class="flex gap-1">
+        <Label>BALANCE:</Label>
+        {#if !transferData.raw.source || !transferData.raw.asset}
+          0
+        {:else if !allDataReadyForBalance()}
+          <Skeleton class="h-3 w-16 inline-block"/>
+        {:else}
+          {displayBalance}
+        {/if}
       </div>
-    {/if}
+      <button
+        class="cursor-pointer text-xs text-babylon-orange hover:opacity-80"
+        onclick={setMaxAmount}
+      >
+        MAX
+      </button>
+    </div>
+
   {/if}
   <Input
-    label="amount"
     id="amount"
     type="text"
     required
@@ -151,8 +149,8 @@ function setMaxAmount() {
 </div>
 {#if Option.isSome(transferData.sourceChain) && Option.isSome(transferData.baseToken)}
   {#if transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1" && (transferData.baseToken.value.denom === "ubbn" || transferData.baseToken.value.denom === "0x" + Array.from(new TextEncoder().encode("ubbn"))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join(""))}
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join(""))}
     <div class="text-xs text-zinc-400 text-end">Relayer Fee: 20 BABY</div>
   {/if}
 {/if}

@@ -14,9 +14,6 @@ $effect(() => {
 
 let lastFetchKey = $state("")
 
-//0x50A22f95bcB21E7bFb63c7A8544AC0683dCeA302
-//0xe2f184241cddd9f2235d861eff25c37b7529746e
-
 $effect(() => {
   if (Option.isNone(transferData.sourceChain)) return
 

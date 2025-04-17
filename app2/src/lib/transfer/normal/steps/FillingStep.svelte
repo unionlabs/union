@@ -61,8 +61,8 @@ const uiStatus = $derived.by(() => {
 const isButtonEnabled = $derived.by(() => !loading)
 </script>
 
-<div class="min-w-full p-4 flex flex-col grow">
-  <div class="flex flex-col gap-4">
+<div class="min-w-full flex flex-col grow">
+  <div class="flex flex-col gap-4 p-4">
     <ChainAsset type="source" />
     <ChainAsset type="destination" />
     <Amount type="source" />
@@ -70,22 +70,8 @@ const isButtonEnabled = $derived.by(() => !loading)
 
   <div class="grow"></div>
 
-  <div class="flex flex-col items-end mt-2">
-    <div class="flex items-center mr-5 text-zinc-400">
-      {#if Option.isSome(transferData.derivedReceiver) && Option.isSome(transferData.destinationChain)}
-        <p class="text-xs mb-2">
-          <AddressComponent
-            truncate
-            address={transferData.derivedReceiver.value}
-            chain={transferData.destinationChain.value}
-          />
-        </p>
-      {:else}
-        <p class="text-xs mb-2">No receiver</p>
-      {/if}
-      <AngleArrowIcon class="rotate-270" />
-    </div>
-
+  <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
+  <div class="flex w-full flex-col items-end">
     <div class="w-full items-end flex gap-2">
       {#if Option.isSome(transferErrors)}
         <Button
@@ -109,6 +95,7 @@ const isButtonEnabled = $derived.by(() => !loading)
       <Receiver />
     </div>
   </div>
+</div>
 </div>
 
 <InsetError

@@ -1,5 +1,6 @@
 import { Data } from "effect"
 import type { ExtractTag } from "effect/Types"
+import type {TransferContext} from "$lib/transfer/shared/services/filling/create-context.ts";
 
 /**
  * Defines the different steps in a transfer process
@@ -7,12 +8,12 @@ import type { ExtractTag } from "effect/Types"
 export type Steps = Data.TaggedEnum<{
   Filling: {}
   CheckMessage: {
-    message: any
+    context: TransferContext
   }
 }>
 
 export type Filling = ExtractTag<Steps, "Filling">
-export type CheckReceiver = ExtractTag<Steps, "CheckMessage">
+export type CheckMessage = ExtractTag<Steps, "CheckMessage">
 
 // Create constructors for the steps
 export const {

@@ -9,6 +9,7 @@
   import Input from "$lib/components/ui/Input.svelte";
   import {wallets} from "$lib/stores/wallets.svelte.ts";
   import {Bech32FromAddressCanonicalBytesWithPrefix} from "@unionlabs/sdk/schema";
+  import AddressComponent from "$lib/components/model/AddressComponent.svelte";
 
   type Props = {
     onContinue: () => void
@@ -61,33 +62,38 @@
   const isButtonEnabled = $derived.by(() => !loading)
 </script>
 
-<div class="min-w-full p-4 flex flex-col grow">
-  <div class="flex flex-col gap-4">
+<div class="min-w-full flex flex-col grow">
+  <div class="flex flex-col gap-4 p-4">
     <Input
       label="sender"
-      id="amount"
+      id="sender"
       type="text"
       required
       autocorrect="off"
-      placeholder="union1"
+      placeholder="bbn1"
       spellcheck="false"
       autocomplete="off"
       inputmode="text"
       autocapitalize="none"
       value={transferData.raw.sender}
       oninput={(event) => {
-        console.log(Schema.encodeUnknownSync(Bech32FromAddressCanonicalBytesWithPrefix(''))(event.target.value))
-        wallets.addInputAddress(Schema.encodeUnknownSync(Bech32FromAddressCanonicalBytesWithPrefix(''))(event.target.value))
+        const validAddress = Schema.encodeUnknownSync(Bech32FromAddressCanonicalBytesWithPrefix(''))(event.target.value)
+        if(validAddress) {
+         transferData.raw.updateField('sender', validAddress)
+         wallets.addInputAddress(validAddress)
+        }
     }}
       class="h-14 text-center text-lg"
     />
+    <ChainAsset type="source"/>
+    <ChainAsset type="destination"/>
     <Input
       label="receiver"
-      id="amount"
+      id="receiver"
       type="text"
       required
       autocorrect="off"
-      placeholder="union1"
+      placeholder="0x00"
       spellcheck="false"
       autocomplete="off"
       inputmode="text"
@@ -98,14 +104,12 @@
         transferData.raw.updateField('receiver', event)
     }}
     />
-    <ChainAsset type="source"/>
-    <ChainAsset type="destination"/>
     <Amount type="source"/>
   </div>
 
   <div class="grow"></div>
 
-  <div class="flex flex-col items-end mt-2">
+  <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
     <div class="w-full items-end flex gap-2">
       {#if Option.isSome(errors)}
         <Button
@@ -127,6 +131,7 @@
         </Button>
       {/if}
     </div>
+
   </div>
 </div>
 

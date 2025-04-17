@@ -10,12 +10,7 @@ import { generateSalt } from "@unionlabs/sdk/utils"
 import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 
-export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigError")<{
-  reason: string
-  cause?: unknown
-}> {}
-
-export const generateMultisigTx = (context: TransferContext) =>
+export const createMultisigMessage = (context: TransferContext) =>
   Effect.gen(function* () {
     console.log("[generateMultisigTx] intent:", JSON.parse(JSON.stringify(context)))
 

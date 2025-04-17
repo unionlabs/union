@@ -28,6 +28,11 @@ export class CosmosQueryError extends Data.TaggedError("CosmosQueryError")<{
   cause: unknown
 }> {}
 
+export class GenerateMultisigError extends Data.TaggedError("GenerateMultisigError")<{
+  reason: string
+  cause?: unknown
+}> {}
+
 export type ContextFlowError =
   | MissingTransferFieldsError
   | InsufficientFundsError
@@ -35,3 +40,4 @@ export type ContextFlowError =
   | BalanceLookupError
   | CosmosQueryError
   | AllowanceCheckError
+  | GenerateMultisigError

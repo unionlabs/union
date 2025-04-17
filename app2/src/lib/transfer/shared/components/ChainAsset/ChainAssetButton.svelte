@@ -6,6 +6,7 @@ import Label from "$lib/components/ui/Label.svelte"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
 import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
+import AddressComponent from "$lib/components/model/AddressComponent.svelte";
 
 type Props = {
   type: "source" | "destination"
@@ -30,7 +31,27 @@ const isChainLoading = $derived.by(() => {
 </script>
 
 <div class="w-full">
-  <Label class="pb-1">{type === "source" ? "From" : "To"}</Label>
+  <div class="flex items-center justify-between">
+    <Label class="pb-1">{type}</Label>
+    <Label>
+      {#if type === "source" && Option.isSome(transferData.sourceChain) && Option.isSome(transferData.derivedSender)}
+        <AddressComponent
+          truncate
+          truncateChars={5}
+          address={transferData.derivedSender.value}
+          chain={transferData.sourceChain.value}
+        />
+      {:else if type === "destination" && Option.isSome(transferData.destinationChain) && Option.isSome(transferData.derivedReceiver)}
+        <AddressComponent
+          truncate
+          truncateChars={5}
+          address={transferData.derivedReceiver.value}
+          chain={transferData.destinationChain.value}
+        />
+      {/if}
+    </Label>
+  </div>
+
   <button
           onclick={onClick}
           class={cn(

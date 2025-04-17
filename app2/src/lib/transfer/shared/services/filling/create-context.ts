@@ -35,6 +35,7 @@ export type TransferContext = {
   intents: Array<Intent>
   allowances: Option.Option<Array<Allowance>>
   instruction: Option.Option<Instruction>
+  message?: Option.Option<string>
 }
 
 const BABY_DECIMALS = 6n
