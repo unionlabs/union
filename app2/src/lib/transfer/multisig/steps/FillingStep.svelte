@@ -6,29 +6,30 @@ import Button from "$lib/components/ui/Button.svelte"
 import AngleArrowIcon from "$lib/components/icons/AngleArrowIcon.svelte"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { Match, Option } from "effect"
+import {Match, Option, pipe} from "effect"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import InsetError from "$lib/components/model/InsetError.svelte"
+import Input from "$lib/components/ui/Input.svelte";
 
 type Props = {
   onContinue: () => void
   loading: boolean
   onErrorClose?: () => void
   statusMessage?: string
-  transferErrors?: Option.Option<ContextFlowError>
+  errors?: Option.Option<ContextFlowError>
 }
 
 const {
   onContinue,
   loading,
   statusMessage,
-  transferErrors = Option.none<ContextFlowError>()
+  errors = Option.none<ContextFlowError>()
 }: Props = $props()
 
 let isModalOpen = $state(false)
 
 const uiStatus = $derived.by(() => {
-  return Option.match(transferErrors, {
+  return Option.match(errors, {
     onSome: error => {
       const match = Match.type<ContextFlowError>().pipe(
         Match.tag("BalanceLookupError", () => ({
@@ -62,25 +63,20 @@ const isButtonEnabled = $derived.by(() => !loading)
 </script>
 
 <div class="min-w-full p-4 flex flex-col grow">
-<!--  <div class="relative overflow-hidden">-->
-<!--    <div-->
-<!--      class="shrink flex flex-row justify-end uppercase text-xs pr-2"-->
-<!--    >-->
-<!--      <button-->
-<!--        class="border px-2 py-1"-->
-<!--        class:border-babylon-orange={transfer.signingMode === "multi"}-->
-<!--        class:text-babylon-orange={transfer.signingMode === "multi"}-->
-<!--        class:text-zinc-400={transfer.signingMode !== "multi"}-->
-<!--        onclick={() => {-->
-<!--          transfer.signingMode = transfer.signingMode === "multi" ? "single" : "multi";-->
-<!--        }}-->
-<!--      >-->
-<!--        MULTISIG-->
-<!--      </button>-->
-<!--    </div>-->
-<!--  </div>-->
-
   <div class="flex flex-col gap-4">
+    <Input
+      id="amount"
+      type="text"
+      required
+      autocorrect="off"
+      placeholder="union1"
+      spellcheck="false"
+      autocomplete="off"
+      inputmode="text"
+      autocapitalize="none"
+      value={transferData.raw.receiver}
+      class="h-14 text-center text-lg"
+    />
     <ChainAsset type="source" />
     <ChainAsset type="destination" />
     <Amount type="source" />
@@ -89,23 +85,8 @@ const isButtonEnabled = $derived.by(() => !loading)
   <div class="grow"></div>
 
   <div class="flex flex-col items-end mt-2">
-    <div class="flex items-center mr-5 text-zinc-400">
-      {#if Option.isSome(transferData.derivedReceiver) && Option.isSome(transferData.destinationChain)}
-        <p class="text-xs mb-2">
-          <AddressComponent
-            truncate
-            address={transferData.derivedReceiver.value}
-            chain={transferData.destinationChain.value}
-          />
-        </p>
-      {:else}
-        <p class="text-xs mb-2">No receiver</p>
-      {/if}
-      <AngleArrowIcon class="rotate-270" />
-    </div>
-
     <div class="w-full items-end flex gap-2">
-      {#if Option.isSome(transferErrors)}
+      {#if Option.isSome(errors)}
         <Button
           class="flex-1"
           variant="danger"
@@ -124,7 +105,6 @@ const isButtonEnabled = $derived.by(() => !loading)
           {uiStatus.text}
         </Button>
       {/if}
-      <Receiver />
     </div>
   </div>
 </div>

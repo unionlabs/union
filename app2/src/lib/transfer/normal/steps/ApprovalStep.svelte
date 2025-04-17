@@ -23,11 +23,11 @@ import { cosmosStore } from "$lib/wallet/cosmos"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 import { erc20Abi, http, isHex, toHex } from "viem"
-import type { TransferStep } from "$lib/transfer/normal/steps"
+import type { Steps } from "$lib/transfer/normal/steps"
 
 type Props = {
   stepIndex: number
-  step: TransferStep.ApprovalRequired
+  step: Steps.ApprovalRequired
   onBack: () => void
   onApprove: () => void
   actionButtonText: string

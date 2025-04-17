@@ -1,4 +1,4 @@
-import type { TransferDetails } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { Data, Option } from "effect"
 import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
@@ -35,7 +35,7 @@ export type FillingState = Data.TaggedEnum<{
 
 export const FillingState = Data.taggedEnum<FillingState>()
 
-export const getFillingState = (transfer: TransferDetails): FillingState => {
+export const getFillingState = (transfer: TransferData): FillingState => {
   if (!wallets.hasAnyWallet()) {
     return FillingState.NoWallet()
   }

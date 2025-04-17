@@ -1,5 +1,5 @@
 import { Data, Effect, Match, Option } from "effect"
-import type { TransferDetails } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { type BalanceCheckResult, checkBalanceForIntent
 } from "$lib/transfer/shared/services/filling/check-balance.ts"
 import { createOrdersBatch } from "$lib/transfer/shared/services/filling/create-orders.ts"
@@ -82,7 +82,7 @@ const complete = (msg: string, context: TransferContext): StateResult => ({
   error: Option.none()
 })
 
-export const createContextState = (cts: CreateContextState, transfer: TransferDetails) => {
+export const createContextState = (cts: CreateContextState, transfer: TransferData) => {
   return CreateContextState.$match(cts, {
     Empty: constVoid,
     Filling: () => {

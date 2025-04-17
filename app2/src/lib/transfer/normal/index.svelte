@@ -8,7 +8,7 @@ import {
   SubmitStep,
   IndexStep,
   CheckReceiverStep,
-  TransferStep
+  Steps
 } from '$lib/transfer/normal/steps';
 import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
 import {
@@ -28,17 +28,13 @@ import type { TransferContext } from "$lib/transfer/shared/services/filling/crea
 let currentPage = $state(0)
 let previousPage = $state(0)
 let isLoading = $state(false)
-let transferSteps = $state<Option.Option<Array<TransferStep.Steps>>>(Option.none())
+let transferSteps = $state<Option.Option<Array<Steps.Steps>>>(Option.none())
 let transferErrors = $state<Option.Option<ContextFlowError>>(Option.none())
 let currentFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
 let statusMessage = $state("")
 let showDetails = $state(false)
 
 let direction = $derived(currentPage > previousPage ? 1 : -1)
-
-$effect(() => {
-  console.log(direction)
-})
 
 function goToNextPage() {
   if (Option.isSome(transferSteps) && currentPage < transferSteps.value.length - 1) {
@@ -60,7 +56,7 @@ let actionButtonText = $derived.by(() => {
   if (currentPage < 0 || currentPage >= steps.length || !steps[currentPage]) return "Submit"
   const currentStep = steps[currentPage]
   if (currentPage === steps.length - 1) return "Complete"
-  return TransferStep.match(currentStep, {
+  return Steps.match(currentStep, {
     Filling: () => "Continue",
     CheckReceiver: () => "Continue",
     ApprovalRequired: () => "Approve",
@@ -73,14 +69,14 @@ function handleActionButtonClick() {
   if (Option.isNone(transferSteps)) return
   const currentStep = transferSteps.value[currentPage]
 
-  if (TransferStep.is("Filling")(currentStep)) {
+  if (Steps.is("Filling")(currentStep)) {
     goToNextPage()
     return
   }
 
-  if (TransferStep.is("CheckReceiver")(currentStep)) goToNextPage()
-  if (TransferStep.is("ApprovalRequired")(currentStep)) goToNextPage()
-  if (TransferStep.is("SubmitInstruction")(currentStep)) goToNextPage()
+  if (Steps.is("CheckReceiver")(currentStep)) goToNextPage()
+  if (Steps.is("ApprovalRequired")(currentStep)) goToNextPage()
+  if (Steps.is("SubmitInstruction")(currentStep)) goToNextPage()
 }
 
 function interruptFiber() {
@@ -139,7 +135,7 @@ $effect(() => {
       break
     }
 
-    const steps: Array<TransferStep.Steps> = [TransferStep.Filling()]
+    const steps: Array<Steps.Steps> = [Steps.Filling()]
 
     const isReceiverInWallet = pipe(
       Option.all({
@@ -155,7 +151,7 @@ $effect(() => {
 
     if (!isReceiverInWallet) {
       steps.push(
-        TransferStep.CheckReceiver({
+        Steps.CheckReceiver({
           receiver: transferData.derivedReceiver,
           destinationChain: transferData.destinationChain
         })
@@ -171,7 +167,7 @@ $effect(() => {
           const intent = context.intents[i]
 
           steps.push(
-            TransferStep.ApprovalRequired({
+            Steps.ApprovalRequired({
               token: allowance.token,
               requiredAmount: allowance.requiredAmount,
               currentAllowance: allowance.currentAllowance,
@@ -186,8 +182,8 @@ $effect(() => {
 
         for (const intent of context.intents) {
           steps.push(
-            TransferStep.SubmitInstruction({ instruction, intent }),
-            TransferStep.WaitForIndex({ intent })
+            Steps.SubmitInstruction({ instruction, intent }),
+            Steps.WaitForIndex({ intent })
           )
         }
       }
@@ -224,7 +220,7 @@ const currentStep = $derived(
   pipe(
     transferSteps, //[currentPage]
     Option.flatMap(Arr.get(currentPage)),
-    Option.getOrElse(() => TransferStep.Filling())
+    Option.getOrElse(() => Steps.Filling())
   )
 )
 </script>
@@ -242,7 +238,7 @@ const currentStep = $derived(
         Option.getOrElse(() => 1)
       )}
       stepDescriptions={transferSteps.pipe(
-        Option.map(ts => ts.map(TransferStep.description)),
+        Option.map(ts => ts.map(Steps.description)),
         Option.getOrElse(() => ["Configure your transfer"])
       )}
     />
@@ -266,7 +262,7 @@ const currentStep = $derived(
         />
       </div>
       {/if}
-        {#if TransferStep.is("CheckReceiver")(currentStep)}
+        {#if Steps.is("CheckReceiver")(currentStep)}
           <div
             class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
             out:fly={{ x: direction * -382, duration:300 }}
@@ -280,7 +276,7 @@ const currentStep = $derived(
             />
           </div>
         {/if}
-        {#if TransferStep.is("ApprovalRequired")(currentStep)}
+        {#if Steps.is("ApprovalRequired")(currentStep)}
           <div
             class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
             out:fly={{ x: direction * -382, duration:300 }}
@@ -295,7 +291,7 @@ const currentStep = $derived(
             />
           </div>
         {/if}
-        {#if TransferStep.is("SubmitInstruction")(currentStep)}
+        {#if Steps.is("SubmitInstruction")(currentStep)}
           <div
             class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
             out:fly={{ x: direction * -382, duration:300 }}
@@ -310,7 +306,7 @@ const currentStep = $derived(
             />
           </div>
         {/if}
-        {#if TransferStep.is("WaitForIndex")(currentStep)}
+        {#if Steps.is("WaitForIndex")(currentStep)}
           <div
             class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
             out:fly={{ x: direction * -382, duration:300 }}
