@@ -22,7 +22,7 @@
     "vitest": "^3.0.8"
   },
   "dependencies": {
-    "@unionlabs/sdk": "^1.9.0",
+    "@unionlabs/sdk": "^1.9.1",
     "graphql-request": "^7.1.2",
     "consola": "^3.4.0",
     "effect": "^3.13.2",
