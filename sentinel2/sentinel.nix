@@ -64,7 +64,7 @@ let
                     inherit (cfg) interactions;
                     inherit (cfg) transfers;
                     inherit (cfg) signer_account_mnemonic;
-                    inherit (cfg) chainConfig;  
+                    inherit (cfg) chainConfig;
                     inherit (cfg) hasuraEndpoint;
                   }
                 )
