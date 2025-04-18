@@ -40,5 +40,5 @@ $effect(() => {
 </script>
 
 <Sections>
-  <Transfer mode="normal" />
+  <Transfer mode="multisig"/>
 </Sections>

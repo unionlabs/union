@@ -1,5 +1,5 @@
 <script lang="ts">
-import type { HTMLAttributes, HTMLInputAttributes } from "svelte/elements"
+import type { HTMLInputAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
 import Label from "./Label.svelte"
 

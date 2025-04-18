@@ -9,3 +9,11 @@ export class Uint64 extends S.BigIntFromSelf.pipe(
     arbitrary: () => fc => fc.bigInt(0n, MAX_UINT64)
   })
 ) {}
+
+export class Uint64FromString extends S.BigInt.pipe(
+  S.betweenBigInt(0n, MAX_UINT64, {
+    identifier: "Uint64FromString",
+    description: "a 64-bit unsigned integer, in a string",
+    arbitrary: () => fc => fc.bigInt(0n, MAX_UINT64)
+  })
+) {}

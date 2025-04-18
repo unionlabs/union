@@ -11,6 +11,6 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 const { children, class: className = "", ...rest }: Props = $props()
 </script>
 
-<div class={cn("text-sm font-mono break-all", className)} {...rest}>
+<div class={cn("text-xs font-mono break-all", className)} {...rest}>
   {@render children()}
 </div>

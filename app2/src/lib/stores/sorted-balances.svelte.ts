@@ -95,14 +95,16 @@ class SortedBalancesStore {
     chains.data.pipe(
       Option.map(d =>
         d.map(chain => {
-          const address = wallets.getAddressForChain(chain)
-
           return {
             chain,
-            tokens: Option.flatMap(address, addr =>
-              tokensStore
-                .getData(chain.universal_chain_id)
-                .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr)))
+            tokens: Option.flatMap(
+              Option.isSome(wallets.inputAddress)
+                ? wallets.inputAddress
+                : wallets.getAddressForChain(chain),
+              addr =>
+                tokensStore
+                  .getData(chain.universal_chain_id)
+                  .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr)))
             )
           }
         })
