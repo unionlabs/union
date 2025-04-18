@@ -21,7 +21,7 @@ export type ConnectorType = "injected" | "walletConnect"
 
 const LAST_CONNECTED_WALLET_KEY = "last-connected-wallet"
 
-function getLastConnectedWalletId(): string | undefined {
+export function getLastConnectedWalletId(): string | undefined {
   if (typeof window !== "undefined") {
     return window.localStorage.getItem(LAST_CONNECTED_WALLET_KEY) || undefined
   }
