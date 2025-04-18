@@ -74,6 +74,14 @@ interface WrappedToken {
   }>
 }
 
+interface FundableAccounts {
+  receiver_display: string
+  traces: Array<{
+    type: string
+    transaction_hash: string
+  }>
+}
+
 interface V2Channels {
   source_channel_id: string 
 }
@@ -173,6 +181,43 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
 
     const tokens: WrappedToken[] = response?.v2_tokens || []
     return tokens
+  })
+
+
+  const fetchFundableAccounts = (hasuraEndpoint: string) =>
+    Effect.gen(function* () {
+      const query = gql`
+      query {
+        v2_transfers(args: { p_destination_universal_chain_id: "babylon.bbn-1" }) {
+          receiver_display
+          traces {
+            type
+            transaction_hash
+          }
+        }
+      }
+    `
+  
+      const response: any = yield* Effect.tryPromise({
+        try: () => request(hasuraEndpoint, query),
+        catch: error => {
+          console.error("fetchFundableAccounts failed:", error)
+          throw error
+        }
+      })
+  
+      const tokens: FundableAccounts[] = response?.v2_transfers || []
+      const filtered: FundableAccounts[] = tokens
+      .map(({ receiver_display, traces }) => ({
+        receiver_display,
+        traces: traces
+          .filter(trace => trace.type === "WRITE_ACK" && trace.transaction_hash != null)
+          .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! }))
+      }))
+      // remove any where we ended up with zero traces
+      .filter(acc => acc.traces.length > 0)
+
+    return filtered
   })
 
   const fetchChannelsViaChainId = (hasuraEndpoint: string, chainId: string) =>
@@ -699,6 +744,19 @@ const escrowSupplyControlLoop = Effect.repeat(
   Schedule.spaced("15 minutes")
 )
 
+
+const fundBabylonAccounts = Effect.repeat(
+  Effect.gen(function* (_) {
+    yield* Effect.log("Funding babylon accounts loop started")
+    let config = (yield* Config).config
+    const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
+    for(const acc of accs) {
+      const receiver = acc.receiver_display
+      
+    }
+  }),
+  Schedule.spaced("1 minutes")
+)
 /**
  * fetchPacketsUntilCutoff
  *
@@ -964,44 +1022,46 @@ export const checkPackets = (
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
 
-const runIbcChecksForever = Effect.gen(function* (_) {
-  const { config } = yield* Config
-
-  const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
-
-  const effectToRepeat = Effect.gen(function* (_) {
-    const chainPairs: Array<ChainPair> = config.interactions
-
-    yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
-    for (const pair of chainPairs) {
-      if (!pair.enabled) {
-        yield* Effect.log("Checking task is disabled. Skipping.")
-        continue
+  const runIbcChecksForever = Effect.gen(function* (_) {
+    const { config } = yield* Config
+  
+    const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
+  
+    const effectToRepeat = Effect.gen(function* (_) {
+      const chainPairs: Array<ChainPair> = config.interactions
+  
+      yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
+      for (const pair of chainPairs) {
+        if (!pair.enabled) {
+          yield* Effect.log("Checking task is disabled. Skipping.")
+          continue
+        }
+        yield* Effect.log(
+          `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+        )
+  
+        yield* checkPackets(
+          pair.sourceChain,
+          pair.destinationChain,
+          pair.timeframeMs,
+          config.hasuraEndpoint
+        )
       }
+  
       yield* Effect.log(
-        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+        `IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`
       )
-
-      yield* checkPackets(
-        pair.sourceChain,
-        pair.destinationChain,
-        pair.timeframeMs,
-        config.hasuraEndpoint
-      )
-    }
-
-    yield* Effect.log(
-      `IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`
-    )
-    sleepCycleCount++
-    if (sleepCycleCount % 10 === 0) {
-      reportedSendTxHashes.clear()
-      yield* Effect.log("Cleared reported block hashes.")
-    }
+      sleepCycleCount++
+      if (sleepCycleCount % 10 === 0) {
+        reportedSendTxHashes.clear()
+        yield* Effect.log("Cleared reported block hashes.")
+      }
+    })
+  
+    return yield* Effect.repeat(effectToRepeat, schedule)
   })
 
-  return yield* Effect.repeat(effectToRepeat, schedule)
-})
+
 
 const mainEffect = Effect.gen(function* (_) {
   const argv = yield* Effect.sync(() =>
@@ -1021,7 +1081,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
-  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop], {
+  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts], {
     concurrency: "unbounded"
   }).pipe(Effect.provideService(Config, { config }))
 })
