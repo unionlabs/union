@@ -1,5 +1,23 @@
 import { Effect, Schedule, Data, Context, Logger } from "effect"
-// import { createEvmToCosmosFungibleAssetOrder, Batch } from "@unionlabs/sdk/ucs03"
+import { createPublicClient, http } from "viem"
+
+import {
+  channelBalance as EthereumChannelBalance,
+  readErc20TotalSupply,
+  ViemPublicClient as ViemPublicClientContext,
+  ViemPublicClientDestination,
+  EvmChannelDestination
+} from "@unionlabs/sdk/evm"
+
+import {
+  channelBalance as CosmosChannelBalance,
+  readCw20TotalSupply,
+  createCosmWasmClient,
+  CosmWasmClientContext,
+  CosmWasmClientDestination,
+  CosmosChannelDestination
+} from "@unionlabs/sdk/cosmos"
+
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
@@ -7,7 +25,19 @@ import type { Address } from "viem"
 import { request, gql } from "graphql-request"
 import { fromHex } from "viem"
 
+// @ts-ignore
+BigInt["prototype"].toJSON = function () {
+  return this.toString()
+}
+
 type Hex = `0x${string}`
+
+function hexToUtf8(hex: string): string {
+  // strip optional 0x
+  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+  // build a Buffer from hex, then decode as UTF‑8
+  return Buffer.from(clean, "hex").toString("utf8");
+}
 
 // Chain pair configuration
 interface ChainPair {
@@ -43,6 +73,10 @@ interface WrappedToken {
   }>
 }
 
+interface V2Channels {
+  source_channel_id: string 
+}
+
 interface ChannelInfo {
   source_channel_id: number
 }
@@ -66,9 +100,15 @@ interface HasuraResponse {
   v1_ibc_union_packets: Packet[]
 }
 
-interface ZkgmAddresses {
-  [key: string]: string
+type ChainType = "evm" | "cosmos"
+
+interface ChainConfigEntry {
+  zkgmAddress: string
+  rpc: string
+  chainType: ChainType
 }
+
+type ChainConfig = Record<string, ChainConfigEntry>
 
 // Combined configuration shape
 interface ConfigFile {
@@ -76,7 +116,7 @@ interface ConfigFile {
   cycleIntervalMs: number
   transfers?: Array<TransferConfig>
   hasuraEndpoint: string
-  zkgmAddresses: ZkgmAddresses
+  chainConfig: ChainConfig
 }
 
 // A module-level set to keep track of already reported packet send transaction hashes.
@@ -132,6 +172,30 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
     const tokens: WrappedToken[] = response?.v2_tokens || []
     return tokens
   })
+
+  const fetchChannelsViaChainId = (hasuraEndpoint: string, chainId: string) =>
+    Effect.gen(function* () {
+      const query = gql`
+      query GetChannels($sourceUniversalChainId: String!) {
+        v2_channels(
+          where: { source_universal_chain_id: { _eq: $sourceUniversalChainId } }
+        ) {
+          source_channel_id
+        }
+      }
+    `
+  
+      const response: any = yield* Effect.tryPromise({
+        try: () => request(hasuraEndpoint, query, { sourceUniversalChainId: chainId }),
+        catch: error => {
+          console.error("fetchWrappedTokens failed:", error)
+          throw error
+        }
+      })
+  
+      const channels: V2Channels[] = response?.v2_channels || []
+      return channels
+    })
 
 const fetchSourceChannelId = (
   hasuraEndpoint: string,
@@ -426,43 +490,116 @@ const transferLoop = Effect.repeat(
 
 const escrowSupplyControlLoop = Effect.repeat(
   Effect.gen(function* (_) {
+    yield* Effect.log("Escrow supply control loop started")
     let config = (yield* Config).config
 
     const tokens = yield* fetchWrappedTokens(config.hasuraEndpoint)
     for (const token of tokens) {
       const srcChain = token.wrapping[0]?.unwrapped_chain.universal_chain_id
       const dstChain = token.chain.universal_chain_id
+
+
       const dstChannel = token.wrapping[0]?.destination_channel_id
       if (!srcChain || !dstChain || !dstChannel) {
         yield* Effect.log("Invalid token data. Skipping...")
         continue
       }
-
       const sourceChannelId = yield* fetchSourceChannelId(
         config.hasuraEndpoint,
         srcChain,
         dstChain,
         dstChannel
       )
-      if (token.wrapping[0]?.unwrapped_denom == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2") {
-        const decoded_denom = fromHex(token.denom, "string")
-        const zkgm_addr = config.zkgmAddresses[srcChain]
-        console.info("token:", token)
-        console.info("sourceChannelId:", sourceChannelId)
-        console.info("decoded_denom:", decoded_denom)
-        console.info("zkgm_addr:", zkgm_addr)
+      if (token.wrapping[0]?.unwrapped_denom == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2" || true) {
+        const srcCfg = config.chainConfig[srcChain]
+        const dstCfg = config.chainConfig[dstChain]
+
+        if(!srcCfg || !dstCfg) {
+          yield* Effect.log("Invalid source or destination chain configuration. Skipping...")
+          continue
+        }
+
+        if(!token.wrapping || token.wrapping.length === 0 || !token.wrapping[0]?.unwrapped_denom) {
+          yield* Effect.log("No wrapping information available. Skipping...")
+          continue
+        }
+  
+        let srcChannelBal: bigint
+        const path = 0n;
+
+        const channels = yield* fetchChannelsViaChainId(config.hasuraEndpoint, srcChain)
+        console.info("channels", channels)
+
+        if (srcCfg.chainType === "evm") {
+          const client = createPublicClient({ transport: http(srcCfg.rpc) })
+          srcChannelBal = yield* EthereumChannelBalance(path, token.wrapping[0]?.unwrapped_denom as Hex).pipe(
+            Effect.provideService(ViemPublicClientDestination, { client }),
+            Effect.provideService(EvmChannelDestination, {
+              ucs03address: srcCfg.zkgmAddress as Hex,
+              channelId: sourceChannelId!
+            })
+          )
+        } else {
+          const client = yield* createCosmWasmClient(srcCfg.rpc)
+          
+          const srcChannelBalUnknown = yield* CosmosChannelBalance(path, hexToUtf8(token.wrapping[0]?.unwrapped_denom as Hex)).pipe(
+            Effect.provideService(CosmWasmClientDestination, { client }),
+            Effect.provideService(CosmosChannelDestination, {
+              ucs03address: srcCfg.zkgmAddress,
+              channelId: sourceChannelId!
+            }),
+            Effect.tapError(e =>
+              Effect.logError("Error fetching channel balance:", e))
+          )
+          srcChannelBal = srcChannelBalUnknown as bigint
+        }
+        
+        let totalSupply: bigint = 0n
+        if (dstCfg.chainType === "evm") {
+          const client = createPublicClient({ transport: http(dstCfg.rpc) })
+          totalSupply = yield* readErc20TotalSupply(token.denom).pipe(
+            Effect.provideService(ViemPublicClientContext, { client })
+          )
+        } else {
+          const client = yield* createCosmWasmClient(dstCfg.rpc)
+          totalSupply = BigInt(yield* readCw20TotalSupply(hexToUtf8(token.denom)).pipe(
+            Effect.provideService(CosmWasmClientContext, { client })
+          ))
+        }
+
+
+        if(srcChannelBal < totalSupply) {
+          const logEffect = Effect.annotateLogs({
+            issueType: "TOTAL SUPPLY IS HIGHER THAN SOURCE CHANNEL BALANCE",
+            sourceChain: `${srcChain}`,
+            destinationChain: `${dstChain}`,
+            denom: `${token.denom}`,
+            unwrappedDenom: `${token.wrapping[0]?.unwrapped_denom}`,
+            sourceChannelId: `${sourceChannelId}`,
+            sourceChannelBal: `${srcChannelBal}`,
+            totalSupply: `${totalSupply}`,
+            destinationChannelId: `${dstChannel}`,
+          })(Effect.logError(`SUPPLY ERROR`))
+  
+          Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+        } else {
+          const logEffect = Effect.annotateLogs({
+            sourceChain: `${srcChain}`,
+            destinationChain: `${dstChain}`,
+            denom: `${token.denom}`,
+            unwrappedDenom: `${token.wrapping[0]?.unwrapped_denom}`,
+            sourceChannelId: `${sourceChannelId}`,
+            sourceChannelBal: `${srcChannelBal}`,
+            totalSupply: `${totalSupply}`,
+            destinationChannelId: `${dstChannel}`,
+          })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
+  
+          Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+        }
       }
     }
-    // const tokens = yield* fetchWrappedTokens(hasuraEndpoint)
-
-    // log them outside of the “yield*” so we don’t make them the return
-    const test =
-      "0x62626e31333030736530767775653737686e36733877706836346579366435357a616634386a72766567397761667371756e636e33653473637373677664"
-    const decoded = fromHex(test, "string")
-    yield* Effect.log(`Decoded UCS03 address: ${decoded}`)
-    console.info("Escrow supply control loop started")
   }),
-  Schedule.spaced("3 seconds")
+  Schedule.spaced("15 minutes")
 )
 
 /**
@@ -519,7 +656,7 @@ const fetchPacketsUntilCutoff = (
         response = yield* Effect.tryPromise({
           try: () => request(hasuraEndpoint, queryNext, { sortOrder: cursor, srcChain, dstChain }),
           catch: error => {
-            console.info("Error in second query:", error)
+            console.error("Error in second query:", error)
             throw error
           }
         })
