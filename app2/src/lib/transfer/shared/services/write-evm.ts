@@ -12,6 +12,7 @@ import type {
   WriteContractParameters
 } from "viem"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
+import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash.ts"
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
   ? Exit.Exit<A, E>
@@ -23,7 +24,8 @@ export type TransactionSubmissionEvm = Data.TaggedEnum<{
   SwitchChainComplete: { exit: EffectToExit<ReturnType<typeof switchChain>> }
   WriteContractInProgress: {}
   WriteContractComplete: { exit: EffectToExit<ReturnType<typeof writeContract>> }
-  TransactionReceiptInProgress: { readonly hash: Hash }
+  WaitForSafeWalletHash: { readonly hash: Hash } // the safeTxHash
+  TransactionReceiptInProgress: { readonly hash: Hash } // on chain hash
   TransactionReceiptComplete: { exit: EffectToExit<ReturnType<typeof waitForTransactionReceipt>> }
 }>
 
@@ -33,6 +35,7 @@ const {
   SwitchChainComplete,
   WriteContractInProgress,
   WriteContractComplete,
+  WaitForSafeWalletHash,
   TransactionReceiptInProgress,
   TransactionReceiptComplete
 } = TransactionSubmissionEvm
@@ -56,29 +59,46 @@ export const nextStateEvm = async <
   params: WriteContractParameters<TAbi, TFunctionName, TArgs>
 ): Promise<TransactionSubmissionEvm> =>
   TransactionSubmissionEvm.$match(ts, {
-    Filling: () => {
-      console.log(params)
-      return SwitchChainInProgress()
-    },
+    Filling: () => SwitchChainInProgress(),
+
     SwitchChainInProgress: async () => {
-      const wallet = getLastConnectedWalletId()
-      if (wallet === "safe") {
-        return WriteContractInProgress()
-      }
-      return SwitchChainComplete({
-        exit: await Effect.runPromiseExit(switchChain(chain))
-      })
+      const isSafeWallet = getLastConnectedWalletId() === "safe" // safe wagmi connector does not support wagmiSwitchChain
+      return isSafeWallet
+        ? WriteContractInProgress()
+        : SwitchChainComplete({
+            exit: await Effect.runPromiseExit(switchChain(chain))
+          })
     },
+
     SwitchChainComplete: ({ exit }) =>
       exit._tag === "Failure" ? SwitchChainInProgress() : WriteContractInProgress(),
+
     WriteContractInProgress: async () =>
       WriteContractComplete({
         exit: await Effect.runPromiseExit(writeContract(walletClient, params))
       }),
-    WriteContractComplete: ({ exit }) =>
-      exit._tag === "Failure"
-        ? WriteContractInProgress()
-        : TransactionReceiptInProgress({ hash: exit.value }),
+
+    WriteContractComplete: async ({ exit }) => {
+      if (exit._tag === "Failure") {
+        return WriteContractInProgress()
+      }
+
+      const wallet = getLastConnectedWalletId()
+      const hash = exit.value
+
+      return wallet === "safe" // needed due to safe wagmi connector returns safeTx hash and not the onchain one
+        ? WaitForSafeWalletHash({ hash })
+        : TransactionReceiptInProgress({ hash })
+    },
+
+    WaitForSafeWalletHash: async ({ hash }) => {
+      const resolvedExit = await Effect.runPromiseExit(resolveSafeTx(chain, hash)) // TODO
+
+      return resolvedExit._tag === "Failure"
+        ? WaitForSafeWalletHash({ hash })
+        : TransactionReceiptInProgress({ hash: resolvedExit.value })
+    },
+
     TransactionReceiptInProgress: async ({ hash }) =>
       TransactionReceiptComplete({
         exit: await Effect.runPromiseExit(
@@ -87,6 +107,7 @@ export const nextStateEvm = async <
           )
         )
       }),
+
     TransactionReceiptComplete: () => ts
   })
 
