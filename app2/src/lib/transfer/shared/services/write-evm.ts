@@ -11,6 +11,7 @@ import type {
   WalletClient,
   WriteContractParameters
 } from "viem"
+import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
   ? Exit.Exit<A, E>
@@ -59,10 +60,15 @@ export const nextStateEvm = async <
       console.log(params)
       return SwitchChainInProgress()
     },
-    SwitchChainInProgress: async () =>
-      SwitchChainComplete({
+    SwitchChainInProgress: async () => {
+      const wallet = getLastConnectedWalletId()
+      if (wallet === "safe") {
+        return WriteContractInProgress()
+      }
+      return SwitchChainComplete({
         exit: await Effect.runPromiseExit(switchChain(chain))
-      }),
+      })
+    },
     SwitchChainComplete: ({ exit }) =>
       exit._tag === "Failure" ? SwitchChainInProgress() : WriteContractInProgress(),
     WriteContractInProgress: async () =>
