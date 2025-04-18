@@ -5,6 +5,7 @@ use std::{
 
 use alloy::{
     consensus::Transaction,
+    hex,
     providers::{DynProvider, Provider, ProviderBuilder},
     sol_types::{SolCall, SolValue},
 };
@@ -27,7 +28,7 @@ use unionlabs::{
     cosmos::tx::{tx_body::TxBody, tx_raw::TxRaw},
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     encoding::{DecodeAs, Proto},
-    google::protobuf::any::Any,
+    google::protobuf::any::RawAny,
     never::Never,
     primitives::{ByteArrayExt, H32},
     traits::Member,
@@ -468,18 +469,53 @@ impl Module {
     }
 }
 
+/// NOTE: Assumes the tx contains only one MsgExecuteContract.
 fn valid_checksum_cosmos(tx_bytes: &[u8]) -> bool {
     let tx_raw = TxRaw::decode_as::<Proto>(tx_bytes).expect("invalid transaction?");
-    let mut tx_body = <TxBody<Any<MsgExecuteContract>>>::decode_as::<Proto>(&tx_raw.body_bytes)
-        .expect("invalid auth info?");
 
-    let msg = tx_body
+    let tx_body = match <TxBody<RawAny>>::decode_as::<Proto>(&tx_raw.body_bytes) {
+        Ok(ok) => ok,
+        Err(err) => {
+            warn!(
+                err = %ErrorReporter(err),
+                tx_input = %hex::encode(&tx_raw.body_bytes),
+                "unable to decode transaction, crc will not be checked"
+            );
+
+            return true;
+        }
+    };
+
+    let msg = match tx_body
         .messages
-        .pop()
-        .expect("must contain at least one message");
+        .first()
+        .expect("must contain at least one message")
+        .decode::<MsgExecuteContract>()
+    {
+        Ok(ok) => ok,
+        Err(err) => {
+            warn!(
+                err = %ErrorReporter(err),
+                messages = ?tx_body.messages,
+                "unable to decode MsgExecuteContract from transaction, crc will not be checked"
+            );
 
-    let execute_msg = serde_json::from_slice::<ucs03_zkgm::msg::ExecuteMsg>(&msg.0.msg)
-        .expect("invalid execute wasm contract message?");
+            return true;
+        }
+    };
+
+    let execute_msg = match serde_json::from_slice::<ucs03_zkgm::msg::ExecuteMsg>(&msg.msg) {
+        Ok(ok) => ok,
+        Err(err) => {
+            warn!(
+                err = %ErrorReporter(err),
+                msg = %msg.msg,
+                "unable to decode ExecuteMsg, crc will not be checked"
+            );
+
+            return true;
+        }
+    };
 
     match execute_msg {
         ucs03_zkgm::msg::ExecuteMsg::Send { salt, .. } => valid_checksum(salt),
@@ -506,7 +542,18 @@ fn valid_checksum(salt: unionlabs::primitives::FixedBytes<32>) -> bool {
 }
 
 fn valid_checksum_eth(tx_input: &[u8]) -> bool {
-    let send_call = sendCall::abi_decode(tx_input, true).expect("invalid transaction?");
+    let send_call = match sendCall::abi_decode(tx_input, true) {
+        Ok(ok) => ok,
+        Err(err) => {
+            warn!(
+                err = %ErrorReporter(err),
+                tx_input = %hex::encode(tx_input),
+                "unable to decode calldata, crc will not be checked"
+            );
+
+            return true;
+        }
+    };
 
     valid_checksum(send_call.salt.into())
 }

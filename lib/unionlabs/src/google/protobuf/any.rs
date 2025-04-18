@@ -62,6 +62,20 @@ pub struct RawAny {
     pub value: Vec<u8>,
 }
 
+impl RawAny {
+    pub fn decode<T: TypeUrl + Decode<Proto, Error: core::error::Error>>(
+        &self,
+    ) -> Result<T, TryFromAnyError<T>> {
+        if self.type_url == T::type_url() {
+            T::decode(&self.value).map_err(TryFromAnyError::Decode)
+        } else {
+            Err(TryFromAnyError::IncorrectTypeUrl {
+                found: self.type_url.clone(),
+            })
+        }
+    }
+}
+
 impl From<protos::google::protobuf::Any> for RawAny {
     fn from(value: protos::google::protobuf::Any) -> Self {
         Self {
