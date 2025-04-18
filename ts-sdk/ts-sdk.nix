@@ -28,7 +28,7 @@ _: {
           packageJsonPath = ./package.json;
           extraSrcs = [ ../ts-sdk ];
           pnpmWorkspaces = [ "@unionlabs/sdk" ];
-          hash = "sha256-HsKTRFjDOsdQhevsOxDSjgz5wdXuc1ZqatoiAWgjw+0=";
+          hash = "sha256-e4ValNb7fhJAeS2RhISqjzDhuSOaABuvHC4s60q9uIU=";
           doCheck = true;
           buildPhase = ''
             runHook preBuild
