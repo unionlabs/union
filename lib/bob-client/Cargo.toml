@@ -1,20 +1,21 @@
 [package]
-authors.workspace    = true
-edition.workspace    = true
-license-file         = "LICENSE"
-name                 = "bob-client"
-publish.workspace    = true
-repository.workspace = true
-version              = "0.0.0"
+name    = "bob-client"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = "LICENSE"
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
 
 [dependencies]
 alloy     = { workspace = true, features = ["sol-types", "contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 bob-types = { workspace = true }
 tracing   = { workspace = true, features = ["attributes"] }
 unionlabs = { workspace = true, features = ["ethabi"] }
-
-[lints]
-workspace = true
 
 [dev-dependencies]
 hex-literal        = { workspace = true }

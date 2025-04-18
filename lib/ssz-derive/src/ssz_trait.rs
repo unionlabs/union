@@ -11,7 +11,7 @@ pub fn do_ssz(derive_input: DeriveInput) -> Result<TokenStream, syn::Error> {
     let meta = derive_input
         .attrs
         .iter()
-        .filter(|a| a.path.is_ident("ssz"))
+        .filter(|a| a.path().is_ident("ssz"))
         .map(SszMeta::try_from_attribute)
         .try_fold(None, |acc, curr| {
             let curr = curr?;

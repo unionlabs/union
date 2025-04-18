@@ -12,29 +12,21 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-either                   = { workspace = true }
-frame-support-procedural = { workspace = true }
-futures                  = { workspace = true, features = ["alloc", "std"] }
-itertools                = { version = "0.12.1", default-features = false }
-macros                   = { workspace = true }
-serde                    = { workspace = true, features = ["derive"] }
-serde_json               = { workspace = true }
-subset-of                = { workspace = true }
-thiserror.workspace      = true
-tokio                    = { workspace = true, features = ["time", "rt"] }
-tracing                  = { workspace = true }
-unionlabs                = { workspace = true }
+either     = { workspace = true }
+futures    = { workspace = true, features = ["alloc", "std"] }
+itertools  = { workspace = true }
+macros     = { workspace = true }
+serde      = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+subset-of  = { workspace = true }
+thiserror  = { workspace = true }
+tokio      = { workspace = true, features = ["time", "rt"] }
+tracing    = { workspace = true }
+unionlabs  = { workspace = true }
 
 [dev-dependencies]
-criterion                 = { version = "0.5.1", features = ["html_reports"] }
-enumorph                  = "0.1.2"
-tokio                     = { workspace = true, features = ["time", "rt", "macros"] }
-tracing-subscriber        = { workspace = true, features = ["env-filter"] }
-voyager-message.workspace = true
+enumorph = "0.1.2"
+tokio    = { workspace = true, features = ["time", "rt", "macros"] }
 
 [features]
 default = []
-
-[[bench]]
-harness = false
-name    = "normalize"

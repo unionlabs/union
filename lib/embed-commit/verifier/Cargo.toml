@@ -7,7 +7,7 @@ version = "0.0.0"
 workspace = true
 
 [dependencies]
-anyhow       = "1.0.97"
+anyhow       = { workspace = true }
 bytemuck     = "1.22.0"
 clap         = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 elf          = "0.7.4"

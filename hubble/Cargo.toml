@@ -29,13 +29,10 @@ cometbft-rpc       = { workspace = true }
 embed-commit       = { workspace = true }
 futures            = { workspace = true, features = ["async-await"] }
 hex                = { workspace = true }
-itertools          = "0.13.0"
+itertools          = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lazy_static        = { workspace = true }
 prometheus         = { version = "0.13.3", features = ["process"] }
-prost              = { workspace = true }
-protos             = { workspace = true, features = ["client"] }
-regex              = "1.10.5"
 reqwest            = { workspace = true, features = ["json", "blocking"] }
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }

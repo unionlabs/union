@@ -37,7 +37,7 @@ default = ["serde", "base64"]
 
 base64   = ["dep:base64"]
 bincode  = ["dep:bincode"]
-rlp      = ["dep:rlp"]
+rlp      = ["dep:rlp", "primitive-types/rlp"]
 schemars = ["dep:schemars"]
 serde    = ["dep:serde", "dep:serde_bytes"]
 

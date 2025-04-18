@@ -19,6 +19,7 @@ use tendermint_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
     ibc::core::client::height::Height,
+    never::Never,
     primitives::{encoding::HexUnprefixed, H160},
     ErrorReporter,
 };
@@ -33,13 +34,9 @@ use voyager_message::{
 };
 use voyager_vm::{data, pass::PassResult, BoxDynError, Op, Visit};
 
-use crate::{
-    call::{FetchUpdate, ModuleCall},
-    callback::ModuleCallback,
-};
+use crate::call::{FetchUpdate, ModuleCall};
 
 pub mod call;
-pub mod callback;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -64,7 +61,7 @@ pub struct Config {
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = DefaultCmd;
@@ -138,7 +135,7 @@ pub struct ChainIdParseError {
 }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
@@ -238,7 +235,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        callback: ModuleCallback,
+        callback: Never,
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match callback {}

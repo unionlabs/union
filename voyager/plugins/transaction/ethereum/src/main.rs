@@ -32,6 +32,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
+    never::Never,
     primitives::{H160, H256, U256},
     ErrorReporter,
 };
@@ -47,13 +48,10 @@ use voyager_message::{
 
 use crate::{
     call::ModuleCall,
-    callback::ModuleCallback,
     multicall::{Call3, Multicall, MulticallResult},
 };
 
 pub mod call;
-pub mod callback;
-pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -134,7 +132,7 @@ pub enum Cmd {
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = Cmd;
@@ -288,7 +286,7 @@ pub enum TxSubmitError {
 }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     async fn run_pass(
         &self,
         _: &Extensions,
@@ -389,7 +387,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        cb: ModuleCallback,
+        cb: Never,
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}
