@@ -72,10 +72,6 @@
               serde-utils = {
                 workspace = true;
               };
-              chrono = {
-                workspace = true;
-                features = [ "alloc" ];
-              };
               # https://github.com/influxdata/pbjson/pull/118
               pbjson-types = {
                 git = "https://github.com/recoord/pbjson";

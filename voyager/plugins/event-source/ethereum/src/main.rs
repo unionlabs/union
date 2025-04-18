@@ -28,6 +28,7 @@ use serde::{Deserialize, Serialize};
 use tracing::{debug, info, info_span, instrument, trace, warn};
 use unionlabs::{
     ibc::core::client::height::Height,
+    never::Never,
     primitives::{H160, H256},
     ErrorReporter,
 };
@@ -42,14 +43,9 @@ use voyager_message::{
 };
 use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
 
-use crate::{
-    call::{FetchBlocks, FetchGetLogs, IbcEvents, MakeFullEvent, ModuleCall},
-    callback::ModuleCallback,
-};
+use crate::call::{FetchBlocks, FetchGetLogs, IbcEvents, MakeFullEvent, ModuleCall};
 
 pub mod call;
-pub mod callback;
-pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -92,7 +88,7 @@ fn default_chunk_block_fetch_size() -> u64 {
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = DefaultCmd;
@@ -228,7 +224,7 @@ impl Module {
 }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
@@ -260,7 +256,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        cb: ModuleCallback,
+        cb: Never,
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}

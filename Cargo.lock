@@ -782,12 +782,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "anes"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
-
-[[package]]
 name = "ansi_term"
 version = "0.12.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1005,7 +999,7 @@ dependencies = [
  "bcs 0.1.4",
  "blst",
  "blstrs",
- "criterion 0.3.6",
+ "criterion",
  "ff",
  "group",
  "hex",
@@ -1528,12 +1522,6 @@ dependencies = [
  "cpufeatures",
  "password-hash",
 ]
-
-[[package]]
-name = "arith"
-version = "0.2.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "556cabf32c649f5d6ccfbcc5bdf9f5a7cc4aa1eb5043cdabedff3fd49dd2cab9"
 
 [[package]]
 name = "ark-bls12-377"
@@ -3631,32 +3619,13 @@ dependencies = [
 name = "concurrent-keyring"
 version = "0.0.0"
 dependencies = [
- "beacon-api",
- "berachain-light-client-types",
  "bip32",
- "cometbft-rpc",
  "crossbeam-queue",
- "dashmap 5.5.3",
- "enumorph",
- "frame-support-procedural",
  "futures",
- "hex",
  "hex-literal",
- "ics23",
- "num-rational 0.4.2",
- "num_enum",
- "prost 0.12.6",
- "protos",
  "rand 0.8.5",
- "scroll-api",
- "scroll-rpc",
  "serde",
  "serde-utils",
- "sha2 0.10.8",
- "tendermint-light-client-types",
- "thiserror 2.0.12",
- "tokio",
- "tonic 0.10.2",
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
@@ -3678,7 +3647,6 @@ dependencies = [
  "bincode 2.0.1",
  "schemars",
  "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -4273,7 +4241,7 @@ dependencies = [
  "atty",
  "cast",
  "clap 2.34.0",
- "criterion-plot 0.4.5",
+ "criterion-plot",
  "csv",
  "itertools 0.10.5",
  "lazy_static",
@@ -4291,46 +4259,10 @@ dependencies = [
 ]
 
 [[package]]
-name = "criterion"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2b12d017a929603d80db1831cd3a24082f8137ce19c69e6447f54f5fc8d692f"
-dependencies = [
- "anes",
- "cast",
- "ciborium",
- "clap 4.5.35",
- "criterion-plot 0.5.0",
- "is-terminal",
- "itertools 0.10.5",
- "num-traits",
- "once_cell",
- "oorandom",
- "plotters",
- "rayon",
- "regex",
- "serde",
- "serde_derive",
- "serde_json",
- "tinytemplate",
- "walkdir",
-]
-
-[[package]]
 name = "criterion-plot"
 version = "0.4.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2673cc8207403546f45f5fd319a974b1e6983ad1a3ee7e6041650013be041876"
-dependencies = [
- "cast",
- "itertools 0.10.5",
-]
-
-[[package]]
-name = "criterion-plot"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
 dependencies = [
  "cast",
  "itertools 0.10.5",
@@ -4920,7 +4852,7 @@ dependencies = [
  "cliclack",
  "console",
  "embed-commit",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "serde",
  "serde_json",
  "serde_with",
@@ -6377,7 +6309,6 @@ dependencies = [
 name = "gnark-key-parser"
 version = "0.0.0"
 dependencies = [
- "arith",
  "ark-bn254",
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
@@ -6824,7 +6755,6 @@ dependencies = [
  "clap 4.5.35",
  "color-eyre",
  "cometbft-rpc",
- "cometbls-light-client-types",
  "embed-commit",
  "futures",
  "hex",
@@ -6832,15 +6762,11 @@ dependencies = [
  "jsonrpsee",
  "lazy_static",
  "prometheus",
- "prost 0.12.6",
- "protos",
- "regex",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
  "sqlx",
  "tempfile",
- "tendermint-light-client-types",
  "thiserror 2.0.12",
  "tikv-jemallocator",
  "time",
@@ -7375,15 +7301,6 @@ name = "impl-serde"
 version = "0.3.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4551f042f3438e64dbd6226b20527fc84a6e1fe65688b58746a2f53623f25f5c"
-dependencies = [
- "serde",
-]
-
-[[package]]
-name = "impl-serde"
-version = "0.4.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ebc88fc67028ae3db0c853baa36269d398d5f45b6982f95549ff5def78c935cd"
 dependencies = [
  "serde",
 ]
@@ -9952,7 +9869,6 @@ dependencies = [
 name = "pg-queue"
 version = "0.0.0"
 dependencies = [
- "frame-support-procedural",
  "futures-util",
  "itertools 0.13.0",
  "prometheus",
@@ -10255,7 +10171,7 @@ dependencies = [
 name = "poseidon-rs"
 version = "0.0.0"
 dependencies = [
- "criterion 0.3.6",
+ "criterion",
  "ethereum-types",
  "ff_ce",
  "primitive-types 0.12.2",
@@ -10327,7 +10243,7 @@ checksum = "05e4722c697a58a99d5d06a08c30821d7c082a4632198de1eaa5a6c22ef42373"
 dependencies = [
  "fixed-hash 0.7.0",
  "impl-codec 0.5.1",
- "impl-serde 0.3.2",
+ "impl-serde",
  "uint",
 ]
 
@@ -10340,7 +10256,6 @@ dependencies = [
  "fixed-hash 0.8.0",
  "impl-codec 0.6.0",
  "impl-rlp",
- "impl-serde 0.4.0",
  "uint",
 ]
 
@@ -10587,7 +10502,6 @@ checksum = "106dd99e98437432fed6519dedecfade6a06a73bb7b2a1e019fdd2bee5778d94"
 name = "protos"
 version = "0.0.0"
 dependencies = [
- "chrono",
  "pbjson-types",
  "prost 0.12.6",
  "schemars",
@@ -11193,8 +11107,8 @@ dependencies = [
 
 [[package]]
 name = "reth-ipc"
-version = "1.2.0"
-source = "git+https://github.com/benluelo/reth?branch=client-request-timeout#3249c8b8355c4003f310e3dd8b9de6eb3cb728da"
+version = "1.3.12"
+source = "git+https://github.com/paradigmxyz/reth#5f8d21dc96bde65ec3308767b308e8f1278a1e6c"
 dependencies = [
  "async-trait",
  "bytes",
@@ -11947,7 +11861,6 @@ dependencies = [
  "bitvec 1.0.1",
  "chrono",
  "hex",
- "primitive-types 0.12.2",
  "serde",
 ]
 
@@ -12659,7 +12572,7 @@ version = "0.0.0"
 dependencies = [
  "derivative",
  "hex-literal",
- "itertools 0.10.5",
+ "itertools 0.13.0",
  "lazy_static",
  "serde",
  "serde-utils",
@@ -12682,7 +12595,7 @@ dependencies = [
  "proc-macro2",
  "quote",
  "ssz",
- "syn 1.0.109",
+ "syn 2.0.100",
 ]
 
 [[package]]
@@ -14366,18 +14279,15 @@ name = "unionlabs"
 version = "0.0.0"
 dependencies = [
  "alloy",
- "base64 0.21.7",
  "bcs 0.1.6",
  "bincode 2.0.1",
  "bip32",
  "borsh",
- "bs58 0.4.0",
  "chrono",
  "cosmwasm-std 2.2.2",
  "derive_more 0.99.19",
  "either",
  "frame-support-procedural",
- "generic-array 0.14.7",
  "hex",
  "hex-literal",
  "k256",
@@ -14385,7 +14295,6 @@ dependencies = [
  "near-primitives-core",
  "near-sdk",
  "paste",
- "primitive-types 0.12.2",
  "prost 0.12.6",
  "protos",
  "rand 0.8.5",
@@ -14647,7 +14556,6 @@ dependencies = [
  "alloy",
  "arbitrum-client",
  "arbitrum-light-client-types",
- "arbitrum-types",
  "embed-commit",
  "ibc-union-spec",
  "jsonrpsee",
@@ -15091,11 +14999,9 @@ dependencies = [
  "arbitrum-client",
  "arbitrum-light-client-types",
  "arbitrum-types",
- "arbitrum-verifier",
  "embed-commit",
  "enumorph",
  "ethereum-light-client-types",
- "futures",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
@@ -15558,7 +15464,6 @@ dependencies = [
  "clap 4.5.35",
  "enumorph",
  "futures",
- "hex-literal",
  "indexmap 2.9.0",
  "itertools 0.13.0",
  "jaq-core",
@@ -15625,19 +15530,13 @@ dependencies = [
 name = "voyager-plugin-packet-timeout"
 version = "0.0.0"
 dependencies = [
- "either",
  "embed-commit",
  "enumorph",
- "futures",
- "ibc-classic-spec",
- "ibc-solidity",
  "ibc-union-spec",
- "itertools 0.13.0",
  "jsonrpsee",
  "macros",
  "serde",
  "serde_json",
- "subset-of",
  "tokio",
  "tracing",
  "unionlabs",
@@ -15699,7 +15598,6 @@ name = "voyager-primitives"
 version = "0.0.0"
 dependencies = [
  "consensus-primitives",
- "hex-literal",
  "macros",
  "schemars",
  "serde",
@@ -15820,7 +15718,6 @@ dependencies = [
  "embed-commit",
  "ibc-classic-spec",
  "jsonrpsee",
- "prost 0.12.6",
  "protos",
  "serde",
  "serde-utils",
@@ -15841,11 +15738,9 @@ dependencies = [
  "cometbft-rpc",
  "cosmos-sdk-event",
  "embed-commit",
- "ibc-solidity",
  "ibc-union-msg",
  "ibc-union-spec",
  "jsonrpsee",
- "prost 0.12.6",
  "protos",
  "serde",
  "serde-utils",
@@ -15985,12 +15880,10 @@ dependencies = [
 name = "voyager-vm"
 version = "0.0.0"
 dependencies = [
- "criterion 0.5.1",
  "either",
  "enumorph",
- "frame-support-procedural",
  "futures",
- "itertools 0.12.1",
+ "itertools 0.13.0",
  "macros",
  "serde",
  "serde_json",
@@ -15998,9 +15891,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tracing",
- "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-message",
 ]
 
 [[package]]

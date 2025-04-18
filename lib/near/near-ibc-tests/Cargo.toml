@@ -5,7 +5,7 @@ name    = "near-ibc-tests"
 version = "0.1.0"
 
 [dependencies]
-anyhow                  = "1.0"
+anyhow                  = { workspace = true }
 borsh                   = { workspace = true, features = ["borsh-derive"] }
 ibc-vm-rs               = { workspace = true }
 near-contract-standards = { workspace = true }

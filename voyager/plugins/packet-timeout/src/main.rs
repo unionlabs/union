@@ -14,7 +14,9 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
-use unionlabs::{self, ibc::core::client::height::Height, traits::Member, ErrorReporter};
+use unionlabs::{
+    self, ibc::core::client::height::Height, never::Never, traits::Member, ErrorReporter,
+};
 use voyager_message::{
     call::{SubmitTx, WaitForTrustedHeight, WaitForTrustedTimestamp},
     data::{Data, IbcDatagram},
@@ -26,14 +28,9 @@ use voyager_message::{
 };
 use voyager_vm::{call, conc, noop, pass::PassResult, seq, BoxDynError, Op};
 
-use crate::{
-    call::{MakeMsgTimeout, ModuleCall, WaitForTimeoutOrReceipt},
-    callback::ModuleCallback,
-};
+use crate::call::{MakeMsgTimeout, ModuleCall, WaitForTimeoutOrReceipt};
 
 pub mod call;
-pub mod callback;
-pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -47,7 +44,7 @@ pub struct Config {}
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = DefaultCmd;
@@ -97,7 +94,7 @@ impl Module {
 }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all, fields())]
     async fn run_pass(
         &self,
@@ -238,7 +235,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        cb: ModuleCallback,
+        cb: Never,
         _datas: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}

@@ -12,12 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-anyhow                         = "1.0.93"
+anyhow                         = { workspace = true }
 clap                           = { workspace = true, features = ["derive"] }
 enumorph                       = { workspace = true }
 futures                        = { workspace = true }
 indexmap                       = "2.9.0"
-itertools                      = "0.13.0"
+itertools                      = { workspace = true }
 jaq-core                       = "1.5.1"
 jaq-interpret                  = "1.5.0"
 jaq-std                        = "1.6.0"
@@ -29,7 +29,7 @@ opentelemetry                  = "0.28.0"
 opentelemetry-otlp             = { version = "0.28.0", features = ["http-json", "metrics"] }
 opentelemetry_sdk              = "0.28.0"
 reconnecting-jsonrpc-ws-client = { workspace = true }
-reth-ipc                       = { git = "https://github.com/benluelo/reth", branch = "client-request-timeout" }
+reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
 schemars                       = { workspace = true }
 serde                          = { workspace = true, features = ["derive"] }
 serde_json                     = { workspace = true }
@@ -42,9 +42,6 @@ tracing-subscriber             = { workspace = true, features = ["json", "env-fi
 unionlabs                      = { workspace = true, features = ["ethabi"] }
 voyager-primitives             = { workspace = true, features = ["schemars", "serde"] }
 voyager-vm                     = { workspace = true }
-
-[dev-dependencies]
-hex-literal = { workspace = true }
 
 [features]
 default = []
