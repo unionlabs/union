@@ -16,7 +16,7 @@ const validErc55s = [
   "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb"
 ]
 
-const vaildBech32s = [
+const validBech32s = [
   "A12UEL5L",
   "a12uel5l",
   "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs",
@@ -32,7 +32,7 @@ describe("Address", () => {
   })
 
   describe("union", () => {
-    it.effect.each([...validErc55s, ...vaildBech32s])("passes for %s", x =>
+    it.effect.each([...validErc55s, ...validBech32s])("passes for %s", x =>
       S.decode(Address.MyUnion)(x)
     )
   })

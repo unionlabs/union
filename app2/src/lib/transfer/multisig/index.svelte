@@ -16,7 +16,7 @@ import { fly } from "svelte/transition"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { beforeNavigate } from "$app/navigation"
-import transfer from "$lib/transfer/index.svelte";
+import transfer from "$lib/transfer/index.svelte"
 let currentPage = $state(0)
 let previousPage = $state(0)
 let isLoading = $state(true)
@@ -136,7 +136,7 @@ function newTransfer() {
 beforeNavigate(newTransfer)
 
 $effect(() => {
-  console.log('here', wallets.inputAddress)
+  console.log("here", wallets.inputAddress)
 })
 </script>
 

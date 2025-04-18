@@ -1,4 +1,4 @@
-import {Option, pipe} from "effect"
+import { Option } from "effect"
 import type {
   AddressCanonicalBytes,
   Chain,
@@ -95,18 +95,16 @@ class SortedBalancesStore {
     chains.data.pipe(
       Option.map(d =>
         d.map(chain => {
-
-
           return {
             chain,
             tokens: Option.flatMap(
-              Option.isSome(wallets.inputAddress) ?
-                wallets.inputAddress :
-                wallets.getAddressForChain(chain),
-                addr =>
-              tokensStore
-                .getData(chain.universal_chain_id)
-                .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr)))
+              Option.isSome(wallets.inputAddress)
+                ? wallets.inputAddress
+                : wallets.getAddressForChain(chain),
+              addr =>
+                tokensStore
+                  .getData(chain.universal_chain_id)
+                  .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr)))
             )
           }
         })

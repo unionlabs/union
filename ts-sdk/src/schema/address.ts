@@ -2,7 +2,7 @@ import * as S from "effect/Schema"
 import { Hex, HexChecksum, HexFromString } from "./hex.js"
 import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "./bech32.js"
 import { pipe } from "effect"
-import { checksumAddress, isAddress } from "viem"
+import { isAddress } from "viem"
 
 // For Reference, see: https://docs.union.build/ucs/05
 // We always store bytes arrays as hex-encoded strings

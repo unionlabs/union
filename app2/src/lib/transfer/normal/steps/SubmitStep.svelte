@@ -16,7 +16,7 @@ import {
 import { generateSalt } from "@unionlabs/sdk/utils"
 import { getConnectorClient, http, type GetConnectorClientErrorType } from "@wagmi/core"
 import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
-import {custom, encodeAbiParameters, fromHex, toHex} from "viem"
+import { custom, encodeAbiParameters, fromHex, toHex } from "viem"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
@@ -31,7 +31,7 @@ import { isValidBech32ContractAddress } from "$lib/utils"
 import Label from "$lib/components/ui/Label.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
-import type {SubmitInstruction} from "$lib/transfer/normal/steps/steps.ts";
+import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
 
 type Props = {
   stepIndex: number
@@ -173,13 +173,13 @@ export const submit = Effect.gen(function* () {
             cosmosStore.connectedWallet
           )
 
-          console.log('here stop',step.intent.baseToken )
-          const sender = yield* step.intent.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
-          const isNative = !isValidBech32ContractAddress(
-            step.intent.baseToken
+          console.log("here stop", step.intent.baseToken)
+          const sender = yield* step.intent.sourceChain.getDisplayAddress(
+            wallets.cosmosAddress.value
           )
+          const isNative = !isValidBech32ContractAddress(step.intent.baseToken)
 
-          console.log({isNative})
+          console.log({ isNative })
 
           do {
             const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
@@ -206,11 +206,11 @@ export const submit = Effect.gen(function* () {
                 },
                 isNative
                   ? [
-                    {
-                      denom: step.intent.baseToken,
-                      amount: step.intent.baseAmount.toString()
-                    }
-                  ]
+                      {
+                        denom: step.intent.baseToken,
+                        amount: step.intent.baseAmount.toString()
+                      }
+                    ]
                   : undefined
               )
             )
