@@ -1,9 +1,9 @@
-import SafeAppsSDK from '@safe-global/safe-apps-sdk';
+import SafeAppsSDK from "@safe-global/safe-apps-sdk"
 
 type Opts = {
-  allowedDomains?: RegExp[];
-  debug?: boolean;
-};
+  allowedDomains?: Array<RegExp>
+  debug?: boolean
+}
 
 const opts: Opts = {
   allowedDomains: [
@@ -12,7 +12,7 @@ const opts: Opts = {
     /staging.btc.union.build$/,
     /btc.union.build$/
   ],
-  debug: false,
-};
+  debug: false
+}
 
-export const safeWallet = new SafeAppsSDK(opts);
+export const safeWallet = new SafeAppsSDK(opts)
