@@ -768,35 +768,50 @@ const fundBabylonAccounts = Effect.repeat(
       wallet,
       options
     )
+    let keepContinue = true;
+    if (!senderAccount || !senderAccount.address) {
+      yield* Effect.logError("Sender account couldnt found!")
+      return
+    };
+    client.getBalance(senderAccount.address, "ubbn").then(balance => {
+      if(parseInt(balance.amount) < 1000000) {
+        const errLog = Effect.annotateLogs({
+          issueType: "SPENDER_BALANCE_LOW",
+          balance: balance.amount,
+          chainId: "babylon.bbn-1",
+          tokenAddr: "ubbn",
+          account: senderAccount.address,
+        })(Effect.logError("SPENDER_BALANCE_LOW"));
+    
+        Effect.runFork(errLog.pipe(Effect.provide(Logger.json)));
+        keepContinue = false;
+      }
+    })
     const fee = {
       amount: coins(500, "ubbn"), // for instance 500bbn as the fee
       gas: "200000"              // fixed gas limit
     }
 
-    if (!senderAccount || !senderAccount.address) {
-      yield* Effect.logError("Sender account couldnt found!")
-      return
-    }
-    yield* Effect.log("Sender account:", senderAccount.address)
+    if (keepContinue) {
+      const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
+      for(const acc of accs) {
+        const receiver = acc.receiver_display
+        const result = yield* Effect.tryPromise({
+          try: () =>
+            client.sendTokens(
+              senderAccount.address,
+              receiver,
+              coins(10000, "ubbn"), // send 0.01 bbn
+              fee
+            ),
+            catch: err => {
+              console.error("raw sendTokens error:", err);
+              throw err;
+            }
+        })
+        yield* Effect.log("Sent 0.01 Baby to receiver:", receiver, "on tx:", result.transactionHash)
 
-    const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
-    for(const acc of accs) {
-      const receiver = acc.receiver_display
-      const result = yield* Effect.tryPromise({
-        try: () =>
-          client.sendTokens(
-            senderAccount.address,
-            receiver,
-            coins(10000, "ubbn"), // send 0.01 bbn
-            fee
-          ),
-          catch: err => {
-            console.error("raw sendTokens error:", err);
-            throw err;
-          }
-      })
-      yield* Effect.log("Sent 0.01 Baby to receiver:", receiver, "on tx:", result.transactionHash)
-
+      }
     }
   }),
   Schedule.spaced("1 minutes")
