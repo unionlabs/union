@@ -76,7 +76,7 @@ export class TransferData {
 
     const sourceChain = this.sourceChain.value
 
-    if (Option.isSome(wallets.inputAddress)) {
+    if (Option.isSome(wallets.inputAddress) && signingMode.mode === "multi") {
       return wallets.inputAddress
     } else if (signingMode.mode === "single") {
       return wallets.getAddressForChain(sourceChain)

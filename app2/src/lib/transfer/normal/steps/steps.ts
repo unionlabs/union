@@ -15,8 +15,8 @@ import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
 export type Steps = Data.TaggedEnum<{
   Filling: {}
   CheckReceiver: {
-    receiver: AddressCanonicalBytes
-    destinationChain: Chain
+    readonly receiver: AddressCanonicalBytes
+    readonly destinationChain: Chain
   }
   ApprovalRequired: {
     readonly token: TokenRawDenom
@@ -29,7 +29,7 @@ export type Steps = Data.TaggedEnum<{
     readonly intent: Intent
   }
   WaitForIndex: {
-    intent: Intent
+    readonly intent: Intent
   }
 }>
 
