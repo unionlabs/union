@@ -13,6 +13,7 @@ import type {
 } from "viem"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
 import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash.ts"
+import {safeWallet} from "$lib/transfer/shared/services/handlers/safe.ts";
 
 export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
   ? Exit.Exit<A, E>
@@ -92,7 +93,7 @@ export const nextStateEvm = async <
     },
 
     WaitForSafeWalletHash: async ({ hash }) => {
-      const resolvedExit = await Effect.runPromiseExit(resolveSafeTx(chain, hash)) // TODO
+      const resolvedExit = await Effect.runPromiseExit(resolveSafeTx(hash)) // TODO
 
       return resolvedExit._tag === "Failure"
         ? WaitForSafeWalletHash({ hash })
