@@ -1,5 +1,9 @@
 import { Effect, Schedule, Data, Context, Logger } from "effect"
 import { createPublicClient, http } from "viem"
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
+import { GasPrice } from "@cosmjs/stargate"
+import { coins } from "@cosmjs/proto-signing"
 
 import {
   channelBalance as EthereumChannelBalance,
@@ -16,7 +20,8 @@ import {
   createCosmWasmClient,
   CosmWasmClientContext,
   CosmWasmClientDestination,
-  CosmosChannelDestination
+  CosmosChannelDestination,
+  createSigningCosmWasmClient
 } from "@unionlabs/sdk/cosmos"
 
 import yargs from "yargs"
@@ -127,6 +132,7 @@ interface ConfigFile {
   transfers?: Array<TransferConfig>
   hasuraEndpoint: string
   chainConfig: ChainConfig
+  signer_account_mnemonic: string
 }
 
 // A module-level set to keep track of already reported packet send transaction hashes.
@@ -197,7 +203,7 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
         }
       }
     `
-  
+
       const response: any = yield* Effect.tryPromise({
         try: () => request(hasuraEndpoint, query),
         catch: error => {
@@ -744,15 +750,53 @@ const escrowSupplyControlLoop = Effect.repeat(
   Schedule.spaced("15 minutes")
 )
 
-
 const fundBabylonAccounts = Effect.repeat(
   Effect.gen(function* (_) {
     yield* Effect.log("Funding babylon accounts loop started")
     let config = (yield* Config).config
+
+    const wallet = yield* Effect.tryPromise(() =>
+      DirectSecp256k1HdWallet.fromMnemonic(config.signer_account_mnemonic, { prefix: "bbn" })
+    )
+    const options: SigningCosmWasmClientOptions = {
+      gasPrice: GasPrice.fromString("0.025bbn")
+    }
+    const [senderAccount] = yield* Effect.tryPromise(() => wallet.getAccounts())
+
+    const client = yield* createSigningCosmWasmClient(
+      "https://rpc.bbn-1.babylon.chain.kitchen",
+      wallet,
+      options
+    )
+    const fee = {
+      amount: coins(500, "ubbn"), // for instance 500bbn as the fee
+      gas: "200000"              // fixed gas limit
+    }
+
+    if (!senderAccount || !senderAccount.address) {
+      yield* Effect.logError("Sender account couldnt found!")
+      return
+    }
+    yield* Effect.log("Sender account:", senderAccount.address)
+
     const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
     for(const acc of accs) {
       const receiver = acc.receiver_display
-      
+      const result = yield* Effect.tryPromise({
+        try: () =>
+          client.sendTokens(
+            senderAccount.address,
+            receiver,
+            coins(10000, "ubbn"), // send 0.01 bbn
+            fee
+          ),
+          catch: err => {
+            console.error("raw sendTokens error:", err);
+            throw err;
+          }
+      })
+      yield* Effect.log("Sent 0.01 Baby to receiver:", receiver, "on tx:", result.transactionHash)
+
     }
   }),
   Schedule.spaced("1 minutes")
@@ -1081,7 +1125,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
-  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts], {
+  yield* Effect.all([/*transferLoop,  runIbcChecksForever, escrowSupplyControlLoop,*/ fundBabylonAccounts], {
     concurrency: "unbounded"
   }).pipe(Effect.provideService(Config, { config }))
 })

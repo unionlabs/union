@@ -30,6 +30,10 @@ let
           type = types.listOf types.attrs;
           description = "Array for cross-chain transfers.";
         };
+        signer_account_mnemonic = mkOption {
+          type = types.str;
+          description = "mnemonic to send tokens to babylon users";
+        };
         chainConfig = mkOption {
           type = types.attrs;
           description = "chainConfig for escrow-totalsupply control.";
@@ -59,7 +63,8 @@ let
                     inherit (cfg) cycleIntervalMs;
                     inherit (cfg) interactions;
                     inherit (cfg) transfers;
-                    inherit (cfg) chainConfig; 
+                    inherit (cfg) signer_account_mnemonic;
+                    inherit (cfg) chainConfig;  
                     inherit (cfg) hasuraEndpoint;
                   }
                 )
