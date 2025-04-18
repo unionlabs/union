@@ -176,7 +176,12 @@ export const wagmiConfig = createConfig({
       useDeeplink: true
     }),
     safe({
-      allowedDomains: [/staging.btc.union.build$/, /btc.union.build$/]
+      allowedDomains: [
+        /gnosis-safe.io$/,
+        /app.safe.global$/,
+        /staging.btc.union.build$/,
+        /btc.union.build$/
+      ]
     }),
     walletConnect({
       projectId: WALLETCONNECT_PROJECT_ID,
