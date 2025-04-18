@@ -809,7 +809,15 @@ const fundBabylonAccounts = Effect.repeat(
               throw err;
             }
         })
-        yield* Effect.log("Sent 0.01 Baby to receiver:", receiver, "on tx:", result.transactionHash)
+        const okLog = Effect.annotateLogs({
+          sentAmount: "0.01",
+          chainId: "babylon.bbn-1",
+          tokenAddr: "ubbn",
+          account: senderAccount.address,
+          receiver,
+          transactionHash: result.transactionHash,
+        })(Effect.logInfo("SENT_OK"));
+        Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
 
       }
     }
