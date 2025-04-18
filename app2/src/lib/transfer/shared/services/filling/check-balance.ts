@@ -4,7 +4,7 @@ import { isHex, toHex } from "viem"
 import { BalanceLookupError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 
-const BABY_SUB_AMOUNT = 20n * 10n ** 6n
+const BABY_SUB_AMOUNT = 1n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"
 const UBBN_DENOM = "ubbn"
 
