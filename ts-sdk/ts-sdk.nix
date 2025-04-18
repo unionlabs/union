@@ -51,7 +51,7 @@ _: {
             name = "publish-ts-sdk";
             text = ''
               cd ${self'.packages.ts-sdk}/
-              ${pnpm} publish --access='public'
+              ${pnpm}/bin/pnpm publish --access='public'
             '';
           };
         };

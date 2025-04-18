@@ -40,6 +40,20 @@ export const readCw20TokenInfo = (contractAddress: string) =>
   })
 
 /**
+ * Read CW20 token total_supply
+ * @param contractAddress The address of the CW20 token contract
+ * @returns An Effect that resolves to the token total supply
+ */
+export const readCw20TotalSupply = (contractAddress: string) =>
+  Effect.gen(function* () {
+    const client = (yield* CosmWasmClientContext).client
+    const token_info = yield* queryContract<Cw20TokenInfo>(client, contractAddress, {
+      token_info: {}
+    })
+    return token_info.total_supply
+  })
+
+/**
  * Read the balance of a CW20 token for a specific address
  * @param contractAddress The address of the CW20 token contract
  * @param address The address to check the balance for
