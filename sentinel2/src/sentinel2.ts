@@ -960,7 +960,7 @@ export const checkPackets = (
 ) =>
   Effect.gen(function* () {
     const now = Date.now()
-    const searchRangeMs = timeframeMs * 5
+    const searchRangeMs = timeframeMs * 20
     const sinceDate = new Date(now - searchRangeMs).toISOString()
 
     yield* Effect.log(
@@ -1139,7 +1139,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
-  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts], {
+  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop], {
     concurrency: "unbounded"
   }).pipe(Effect.provideService(Config, { config }))
 })
