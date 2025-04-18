@@ -3,6 +3,7 @@
   "description": "Union Build - Bitcoin",
   "short_name": "Union BTC",
   "iconPath": "/web-app-manifest-192x192.png",
+  "start_url": "/transfer",
   "icons": [
     {
       "src": "/web-app-manifest-192x192.png",
