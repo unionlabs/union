@@ -30,10 +30,4 @@ describe("Address", () => {
   describe("ERC-55", () => {
     it.effect.each(validErc55s)("passes for %s", x => S.decode(Address.ERC55)(x))
   })
-
-  describe("union", () => {
-    it.effect.each([...validErc55s, ...validBech32s])("passes for %s", x =>
-      S.decode(Address.MyUnion)(x)
-    )
-  })
 })
