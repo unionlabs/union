@@ -10,7 +10,7 @@ import { sortedBalancesStore } from "$lib/stores/sorted-balances.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import {signingMode} from "$lib/transfer/signingMode.svelte.ts";
 import {RawTransferDataSvelte} from "$lib/transfer/shared/data/raw-transfer-data.svelte.ts";
-import {Option, Match} from "effect";
+import {Array as A, Option, Match, Effect, Either, pipe} from "effect";
 
 export class TransferData {
   raw = new RawTransferDataSvelte()
@@ -85,7 +85,28 @@ export class TransferData {
     return Option.none()
   })
 
-
+  /**
+   * Based on source or destination fulfilled, return channels open or closed.
+   */
+  destinationChains = $derived(
+    pipe(
+      Option.all({
+        channels: channels.data,
+        chains: chains.data,
+        source: this.sourceChain,
+      }),
+      Option.map(({ channels, chains, source, }) => pipe(
+        channels,
+        A.filter(x => x.source_universal_chain_id === source.universal_chain_id),
+        A.map(x => x.destination_universal_chain_id),
+        A.dedupe,
+        xs => pipe(
+          chains,
+          A.filter(chain => A.contains(xs, chain.universal_chain_id))
+        )
+      ))
+    )
+  )
 
   channel = $derived<Option.Option<Channel>>(
     Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
