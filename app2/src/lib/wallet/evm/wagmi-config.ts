@@ -7,7 +7,7 @@ import {
   serialize,
   unstable_connector
 } from "@wagmi/core"
-import { coinbaseWallet, injected, metaMask, walletConnect } from "@wagmi/connectors"
+import { coinbaseWallet, injected, metaMask, walletConnect, safe } from "@wagmi/connectors"
 import {
   arbitrumSepolia,
   berachainTestnetbArtio,
@@ -174,6 +174,9 @@ export const wagmiConfig = createConfig({
         iconUrl: TESTNET_APP_INFO.iconUrl
       },
       useDeeplink: true
+    }),
+    safe({
+      allowedDomains: [/staging.btc.union.build$/, /btc.union.build$/]
     }),
     walletConnect({
       projectId: WALLETCONNECT_PROJECT_ID,
