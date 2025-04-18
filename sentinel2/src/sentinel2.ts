@@ -136,7 +136,6 @@ interface ConfigFile {
 }
 
 // A module-level set to keep track of already reported packet send transaction hashes.
-const reportedSendTxHashes = new Set<string>()
 // Variable to track sleep cycles
 let sleepCycleCount = 0
 
@@ -998,7 +997,6 @@ export const checkPackets = (
         continue
       }
       const sendTxHash = p.packet_send_transaction_hash ?? "?"
-      if (reportedSendTxHashes.has(sendTxHash)) continue
       const sort_order_tx = p.sort_order.split("-")[1]
 
       // 1) RECV check.
@@ -1025,7 +1023,6 @@ export const checkPackets = (
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
-        reportedSendTxHashes.add(sendTxHash)
         continue
       }
 
@@ -1055,7 +1052,6 @@ export const checkPackets = (
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
-        reportedSendTxHashes.add(sendTxHash)
         continue
       }
 
@@ -1083,7 +1079,6 @@ export const checkPackets = (
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
-        reportedSendTxHashes.add(sendTxHash)
         continue
       }
     }
@@ -1118,11 +1113,7 @@ export const checkPackets = (
       yield* Effect.log(
         `IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`
       )
-      sleepCycleCount++
-      if (sleepCycleCount % 10 === 0) {
-        reportedSendTxHashes.clear()
-        yield* Effect.log("Cleared reported block hashes.")
-      }
+      
     })
   
     return yield* Effect.repeat(effectToRepeat, schedule)
