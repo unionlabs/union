@@ -6,6 +6,9 @@ use std::num::NonZeroU32;
 use cosmwasm_std::{DepsMut, Response, StdError};
 use serde::{Deserialize, Serialize};
 
+/// The storage prefix that the current state version is stored under.
+pub const STATE_VERSION: &[u8] = b"state_version";
+
 /// The migrate message to be used for contracts using `frissitheto`.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
@@ -33,7 +36,7 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
     /// modified, however if a new version is returned it MUST be > the current version. An error
     /// will be returned if this is not the case.
     ///
-    /// State is stored under `b"state_version"` at the contract root. Consumers of this library
+    /// State is stored under [`STATE_VERSION`] at the contract root. Consumers of this library
     /// MUST ensure to not overwrite this key.
     ///
     /// # Errors
@@ -54,7 +57,7 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
             NonZeroU32,
         ) -> Result<(Response, Option<NonZeroU32>), E>,
     ) -> Result<Response, E> {
-        let state_version = deps.storage.get(b"state_version");
+        let state_version = deps.storage.get(STATE_VERSION);
         match state_version {
             Some(state_version) => match self {
                 UpgradeMsg::Init(_) => Err(UpgradeError::AlreadyInitiated.into()),
@@ -77,7 +80,7 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
                     }
 
                     deps.storage.set(
-                        b"state_version",
+                        STATE_VERSION,
                         &(new_version.unwrap_or(current_state_version))
                             .get()
                             .to_be_bytes(),
@@ -90,7 +93,7 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
                     let (res, version) = init_f(deps.branch(), init)?;
 
                     deps.storage.set(
-                        b"state_version",
+                        STATE_VERSION,
                         &version.map_or(1, NonZeroU32::get).to_be_bytes(),
                     );
 
@@ -104,7 +107,7 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
 
 /// Possible errors that can occur while executing [`UpgradeMsg::run()`].
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[allow(missing_docs, reason = "#[error] attributes provide documentation")]
+#[expect(missing_docs, reason = "#[error] attributes provide documentation")]
 pub enum UpgradeError {
     #[error("attempted to initiate a contract that was already initiated")]
     AlreadyInitiated,
@@ -117,4 +120,227 @@ pub enum UpgradeError {
         current: NonZeroU32,
         new: NonZeroU32,
     },
+}
+
+/// Initiate the state version in a contract that was not previously using `frissitheto`.
+///
+/// # Errors
+///
+/// This function will return an error if the state version has already been set.
+pub fn init_state_version(
+    deps: &mut DepsMut<'_>,
+    version: NonZeroU32,
+) -> Result<(), InitStateVersionError> {
+    let state_version = deps.storage.get(STATE_VERSION);
+
+    if state_version.is_some() {
+        Err(InitStateVersionError::AlreadyInitiated)
+    } else {
+        deps.storage
+            .set(STATE_VERSION, &version.get().to_be_bytes());
+
+        Ok(())
+    }
+}
+
+/// Possible errors that can occur while executing [`init_state_version()`].
+#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[expect(missing_docs, reason = "#[error] attributes provide documentation")]
+pub enum InitStateVersionError {
+    #[error("attempted to init the state version in a contract that was already initiated")]
+    AlreadyInitiated,
+}
+
+// TODO: Add tests for version changes as well
+#[cfg(test)]
+mod tests {
+    use std::collections::BTreeMap;
+
+    use cosmwasm_std::{testing::mock_dependencies, MemoryStorage, Storage};
+
+    use super::*;
+
+    #[track_caller]
+    fn assert_storage_eq(
+        storage: &MemoryStorage,
+        expected: impl IntoIterator<Item = (Vec<u8>, Vec<u8>)>,
+    ) {
+        let found = storage
+            .range(None, None, cosmwasm_std::Order::Ascending)
+            .collect::<BTreeMap<_, _>>();
+
+        let expected = expected.into_iter().collect::<BTreeMap<_, _>>();
+
+        assert_eq!(expected, found);
+    }
+
+    #[derive(Debug, PartialEq, thiserror::Error)]
+    enum Error {
+        #[error(transparent)]
+        Std(#[from] StdError),
+        #[error(transparent)]
+        Upgrade(#[from] UpgradeError),
+    }
+
+    #[test]
+    fn init_state_version_unset() {
+        let mut deps = mock_dependencies();
+
+        init_state_version(&mut deps.as_mut(), 1.try_into().unwrap()).unwrap();
+
+        assert_storage_eq(
+            &deps.storage,
+            [(STATE_VERSION.to_vec(), [0, 0, 0, 1].to_vec())],
+        );
+    }
+
+    #[test]
+    fn init_state_version_set() {
+        let mut deps = mock_dependencies();
+
+        init_state_version(&mut deps.as_mut(), 1.try_into().unwrap()).unwrap();
+
+        let err = init_state_version(&mut deps.as_mut(), 1.try_into().unwrap()).unwrap_err();
+
+        assert_eq!(err, InitStateVersionError::AlreadyInitiated);
+    }
+
+    #[test]
+    fn init_state_version_after_init() {
+        let mut deps = mock_dependencies();
+
+        UpgradeMsg::<(), ()>::Init(())
+            .run(
+                deps.as_mut(),
+                |deps, ()| {
+                    deps.storage.set(&[], &[1]);
+
+                    Ok::<_, Error>((Response::new(), None))
+                },
+                |_, (), _| unreachable!(),
+            )
+            .unwrap();
+
+        let err = init_state_version(&mut deps.as_mut(), 1.try_into().unwrap()).unwrap_err();
+
+        assert_eq!(err, InitStateVersionError::AlreadyInitiated);
+    }
+
+    #[test]
+    fn run_init() {
+        let mut deps = mock_dependencies();
+
+        let res = UpgradeMsg::<(), ()>::Init(())
+            .run(
+                deps.as_mut(),
+                |deps, ()| {
+                    deps.storage.set(&[], &[1]);
+
+                    Ok::<_, Error>((Response::new(), None))
+                },
+                |_, (), _| unreachable!(),
+            )
+            .unwrap();
+
+        assert_eq!(res, Response::new());
+
+        assert_storage_eq(
+            &deps.storage,
+            [
+                // ensure state version is set
+                (STATE_VERSION.to_vec(), [0, 0, 0, 1].to_vec()),
+                // ensure init was called
+                ([].to_vec(), [1].to_vec()),
+            ],
+        );
+    }
+
+    #[test]
+    fn run_migrate() {
+        let mut deps = mock_dependencies();
+
+        UpgradeMsg::<(), ()>::Init(())
+            .run(
+                deps.as_mut(),
+                |deps, ()| {
+                    deps.storage.set(&[], &[1]);
+
+                    Ok::<_, Error>((Response::new(), None))
+                },
+                |_, (), _| unreachable!(),
+            )
+            .unwrap();
+
+        let res = UpgradeMsg::<(), ()>::Migrate(())
+            .run(
+                deps.as_mut(),
+                |_, ()| unreachable!(),
+                |deps, (), _version| {
+                    deps.storage.set(&[1], &[1]);
+
+                    Ok::<_, Error>((Response::new(), None))
+                },
+            )
+            .unwrap();
+
+        assert_eq!(res, Response::new());
+
+        assert_storage_eq(
+            &deps.storage,
+            [
+                // ensure state version is set
+                (STATE_VERSION.to_vec(), [0, 0, 0, 1].to_vec()),
+                // ensure init was called
+                ([].to_vec(), [1].to_vec()),
+                // ensure migrate was called
+                ([1].to_vec(), [1].to_vec()),
+            ],
+        );
+    }
+
+    #[test]
+    fn run_init_already_initiated() {
+        let mut deps = mock_dependencies();
+
+        UpgradeMsg::<(), ()>::Init(())
+            .run(
+                deps.as_mut(),
+                |deps, ()| {
+                    deps.storage.set(&[], &[1]);
+
+                    Ok::<_, Error>((Response::new(), None))
+                },
+                |_, (), _| unreachable!(),
+            )
+            .unwrap();
+
+        let err = UpgradeMsg::<(), ()>::Init(())
+            .run::<Error>(
+                deps.as_mut(),
+                |_, ()| unreachable!(),
+                |_, (), _| unreachable!(),
+            )
+            .unwrap_err();
+
+        assert_eq!(err, Error::Upgrade(UpgradeError::AlreadyInitiated));
+    }
+
+    #[test]
+    fn run_migrate_not_initiated() {
+        let mut deps = mock_dependencies();
+
+        let err = UpgradeMsg::<(), ()>::Migrate(())
+            .run(
+                deps.as_mut(),
+                |_, ()| unreachable!(),
+                |deps, (), _version| {
+                    deps.storage.set(&[1], &[1]);
+
+                    Ok::<_, Error>((Response::new(), None))
+                },
+            )
+            .unwrap_err();
+
+        assert_eq!(err, Error::Upgrade(UpgradeError::NotInitiated));
+    }
 }

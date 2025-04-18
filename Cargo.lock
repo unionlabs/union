@@ -6009,7 +6009,6 @@ name = "frissitheto"
 version = "0.0.0"
 dependencies = [
  "cosmwasm-std 2.2.2",
- "depolama",
  "serde",
  "thiserror 2.0.12",
 ]
