@@ -1125,7 +1125,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
-  yield* Effect.all([/*transferLoop,  runIbcChecksForever, escrowSupplyControlLoop,*/ fundBabylonAccounts], {
+  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts], {
     concurrency: "unbounded"
   }).pipe(Effect.provideService(Config, { config }))
 })
