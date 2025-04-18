@@ -14,7 +14,7 @@ import { Effect, Option } from "effect"
 import type { Hex } from "viem"
 
 import { type ConfiguredChainId, wagmiConfig } from "./wagmi-config.ts"
-import { sepolia } from "@wagmi/core/chains"
+import { mainnet } from "@wagmi/core/chains"
 
 export type Wallet = GetAccountReturnType
 export type ConnectorType = "injected" | "walletConnect"
@@ -83,7 +83,7 @@ class SepoliaStore {
         this.unwatchAccount()
       }
 
-      const result = await evmConnect(walletId, sepolia.id)
+      const result = await evmConnect(walletId, mainnet.id)
       const account = getAccount(wagmiConfig)
       setLastConnectedWalletId(account.connector?.id)
 
@@ -126,6 +126,7 @@ class SepoliaStore {
     } catch (error) {
       console.error("Disconnect failed:", error)
     }
+
     Effect.sleep(2_000)
   }
 
@@ -213,7 +214,7 @@ export type EvmWalletId = (typeof evmWalletsInformation)[number]["id"]
 
 export async function evmConnect(
   evmWalletId: EvmWalletId,
-  chainId: ConfiguredChainId = sepolia.id
+  chainId: ConfiguredChainId = mainnet.id
 ) {
   const connector = wagmiConfig.connectors.find(connector => connector.id === evmWalletId)
   if (connector) {
