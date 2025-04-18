@@ -6,7 +6,8 @@ import {
   readErc20TotalSupply,
   ViemPublicClient as ViemPublicClientContext,
   ViemPublicClientDestination,
-  EvmChannelDestination
+  EvmChannelDestination,
+  readErc20Balance
 } from "@unionlabs/sdk/evm"
 
 import {
@@ -106,6 +107,7 @@ interface ChainConfigEntry {
   zkgmAddress: string
   rpc: string
   chainType: ChainType
+  minter: string
 }
 
 type ChainConfig = Record<string, ChainConfigEntry>
@@ -495,8 +497,14 @@ const escrowSupplyControlLoop = Effect.repeat(
 
     const tokens = yield* fetchWrappedTokens(config.hasuraEndpoint)
   
-    const evmChannelBalances = new Map<string, bigint>();
-    const cosmosChannelBalances = new Map<string, bigint>();
+    const evmChannelBalances = new Map<
+      string,           // chainId
+      Map<string, bigint>  // denom → balance
+    >();
+    const cosmosChannelBalances = new Map<
+      string,
+      Map<string, bigint>
+    >();
 
     for (const token of tokens) {
       const srcChain = token.wrapping[0]?.unwrapped_chain.universal_chain_id
@@ -514,7 +522,7 @@ const escrowSupplyControlLoop = Effect.repeat(
         dstChain,
         dstChannel
       )
-      if (token.wrapping[0]?.unwrapped_denom == "0x6962632f36354430424543364441443936433746353034334431453534453534423642423544354233414543334646364345424237354239453035394633353830454133") {
+      if (token.wrapping[0]?.unwrapped_denom == "0x6962632f36354430424543364441443936433746353034334431453534453534423642423544354233414543334646364345424237354239453035394633353830454133" || true) {
         const srcCfg = config.chainConfig[srcChain]
         const dstCfg = config.chainConfig[dstChain]
 
@@ -532,25 +540,25 @@ const escrowSupplyControlLoop = Effect.repeat(
         const key = token.wrapping[0]!.unwrapped_denom!;  
         const path = 0n;
 
-        const channels = yield* fetchChannelsViaChainId(config.hasuraEndpoint, srcChain)
-        console.info("channels", channels)
-
         if (srcCfg.chainType === "evm") {
           const client = createPublicClient({ transport: http(srcCfg.rpc) })
-          srcChannelBal = yield* EthereumChannelBalance(path, token.wrapping[0]?.unwrapped_denom as Hex).pipe(
+          srcChannelBal = yield* EthereumChannelBalance(path, key as Hex).pipe(
             Effect.provideService(ViemPublicClientDestination, { client }),
             Effect.provideService(EvmChannelDestination, {
               ucs03address: srcCfg.zkgmAddress as Hex,
               channelId: sourceChannelId!
             })
           )
-          const prev = evmChannelBalances.get(key) ?? 0n;
-          evmChannelBalances.set(key, prev + srcChannelBal);
+          const chainMap = evmChannelBalances.get(srcChain) ?? new Map()
+          const prev = chainMap.get(key) ?? 0n
+          chainMap.set(key, prev + srcChannelBal)
+          evmChannelBalances.set(srcChain, chainMap)
+
 
         } else {
           const client = yield* createCosmWasmClient(srcCfg.rpc)
           
-          const srcChannelBalUnknown = yield* CosmosChannelBalance(path, hexToUtf8(token.wrapping[0]?.unwrapped_denom as Hex)).pipe(
+          const srcChannelBalUnknown = yield* CosmosChannelBalance(path, hexToUtf8(key as Hex)).pipe(
             Effect.provideService(CosmWasmClientDestination, { client }),
             Effect.provideService(CosmosChannelDestination, {
               ucs03address: srcCfg.zkgmAddress,
@@ -559,9 +567,13 @@ const escrowSupplyControlLoop = Effect.repeat(
             Effect.tapError(e =>
               Effect.logError("Error fetching channel balance:", e))
           )
-          srcChannelBal = srcChannelBalUnknown as bigint
-          const prev = cosmosChannelBalances.get(key) ?? 0n;
-          cosmosChannelBalances.set(key, prev + srcChannelBal);
+          srcChannelBal = BigInt(srcChannelBalUnknown as bigint)
+          
+          const chainMap = cosmosChannelBalances.get(srcChain) ?? new Map()
+          const prev = chainMap.get(hexToUtf8(key as Hex)) ?? 0n
+          chainMap.set(hexToUtf8(key as Hex), prev + srcChannelBal)
+          cosmosChannelBalances.set(srcChain, chainMap)
+        
         }
         
         let totalSupply: bigint = 0n
@@ -576,7 +588,6 @@ const escrowSupplyControlLoop = Effect.repeat(
             Effect.provideService(CosmWasmClientContext, { client })
           ))
         }
-
 
         if(srcChannelBal < totalSupply) {
           const logEffect = Effect.annotateLogs({
@@ -608,6 +619,83 @@ const escrowSupplyControlLoop = Effect.repeat(
         }
       }
     }
+
+    yield* Effect.log("Comparing aggregated channel balances to on‑chain holdings")
+
+    for (const [chainId, { rpc, chainType, minter }] of Object.entries(config.chainConfig)) {
+      if (chainType === "evm") {
+        // — EVM: use your evmChannelBalances map —
+        const client = createPublicClient({
+          transport: http(rpc),
+        });
+
+        for (const [tokenAddr, channelSum] of evmChannelBalances.get(chainId) ?? []) {
+          const onChain = yield* readErc20Balance(tokenAddr as Hex, minter as Hex).pipe(
+            Effect.provideService(ViemPublicClientContext, { client }),
+            Effect.tapError(e =>
+              Effect.logError("Error querying balanceOf:", e))
+          );
+          
+          if (BigInt(onChain) < channelSum) {
+            const errLog = Effect.annotateLogs({
+              issueType: "AGGREGATE_GT_ONCHAIN",
+              chainId,
+              tokenAddr,
+              minter,
+              aggregated: channelSum.toString(),
+              onChain: onChain.toString(),
+            })(Effect.logError("AGGREGATE_MISMATCH"));
+        
+            Effect.runFork(errLog.pipe(Effect.provide(Logger.json)));
+          } else {
+            const okLog = Effect.annotateLogs({
+              chainId,
+              tokenAddr,
+              minter,
+              aggregated: channelSum.toString(),
+              onChain: onChain.toString(),
+            })(Effect.logInfo("AGGREGATE_OK"));
+        
+            Effect.runFork(okLog.pipe(Effect.provide(Logger.json)));
+          }
+        }
+      } else {
+        // — Cosmos: use your cosmosChannelBalances map —
+        const cosmosClient = yield* createCosmWasmClient(rpc);
+
+        for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
+          const { amount } = yield* Effect.tryPromise({
+            try: () => cosmosClient.getBalance(minter, denom),
+            catch: e => new Error(`bank query failed: ${e}`)
+          });
+
+          if (BigInt(amount) < channelSum) {
+            const errLog = Effect.annotateLogs({
+              issueType: "AGGREGATE_GT_ONCHAIN",
+              chainId,
+              denom,
+              minter,
+              aggregated: channelSum.toString(),
+              onChain: amount,
+            })(Effect.logError("AGGREGATE_MISMATCH"));
+        
+            Effect.runFork(errLog.pipe(Effect.provide(Logger.json)));
+          } else {
+            const okLog = Effect.annotateLogs({
+              chainId,
+              denom,
+              minter,
+              aggregated: channelSum.toString(),
+              onChain: amount,
+            })(Effect.logInfo("AGGREGATE_OK"));
+        
+            Effect.runFork(okLog.pipe(Effect.provide(Logger.json)));
+          }
+        }
+      }
+    }
+
+
   }),
   Schedule.spaced("15 minutes")
 )
