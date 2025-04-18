@@ -30,6 +30,10 @@ let
           type = types.listOf types.attrs;
           description = "Array for cross-chain transfers.";
         };
+        chainConfig = mkOption {
+          type = types.attrs;
+          description = "chainConfig for escrow-totalsupply control.";
+        };
         interactions = mkOption {
           type = types.listOf types.attrs;
           description = "Interactions for cross-chain communication.";
@@ -55,6 +59,7 @@ let
                     inherit (cfg) cycleIntervalMs;
                     inherit (cfg) interactions;
                     inherit (cfg) transfers;
+                    inherit (cfg) chainConfig; 
                     inherit (cfg) hasuraEndpoint;
                   }
                 )

@@ -522,102 +522,101 @@ const escrowSupplyControlLoop = Effect.repeat(
         dstChain,
         dstChannel
       )
-      if (token.wrapping[0]?.unwrapped_denom == "0x6962632f36354430424543364441443936433746353034334431453534453534423642423544354233414543334646364345424237354239453035394633353830454133" || true) {
-        const srcCfg = config.chainConfig[srcChain]
-        const dstCfg = config.chainConfig[dstChain]
+      const srcCfg = config.chainConfig[srcChain]
+      const dstCfg = config.chainConfig[dstChain]
 
-        if(!srcCfg || !dstCfg) {
-          yield* Effect.log("Invalid source or destination chain configuration. Skipping...")
-          continue
-        }
-
-        if(!token.wrapping || token.wrapping.length === 0 || !token.wrapping[0]?.unwrapped_denom) {
-          yield* Effect.log("No wrapping information available. Skipping...")
-          continue
-        }
-  
-        let srcChannelBal: bigint
-        const key = token.wrapping[0]!.unwrapped_denom!;  
-        const path = 0n;
-
-        if (srcCfg.chainType === "evm") {
-          const client = createPublicClient({ transport: http(srcCfg.rpc) })
-          srcChannelBal = yield* EthereumChannelBalance(path, key as Hex).pipe(
-            Effect.provideService(ViemPublicClientDestination, { client }),
-            Effect.provideService(EvmChannelDestination, {
-              ucs03address: srcCfg.zkgmAddress as Hex,
-              channelId: sourceChannelId!
-            })
-          )
-          const chainMap = evmChannelBalances.get(srcChain) ?? new Map()
-          const prev = chainMap.get(key) ?? 0n
-          chainMap.set(key, prev + srcChannelBal)
-          evmChannelBalances.set(srcChain, chainMap)
-
-
-        } else {
-          const client = yield* createCosmWasmClient(srcCfg.rpc)
-          
-          const srcChannelBalUnknown = yield* CosmosChannelBalance(path, hexToUtf8(key as Hex)).pipe(
-            Effect.provideService(CosmWasmClientDestination, { client }),
-            Effect.provideService(CosmosChannelDestination, {
-              ucs03address: srcCfg.zkgmAddress,
-              channelId: sourceChannelId!
-            }),
-            Effect.tapError(e =>
-              Effect.logError("Error fetching channel balance:", e))
-          )
-          srcChannelBal = BigInt(srcChannelBalUnknown as bigint)
-          
-          const chainMap = cosmosChannelBalances.get(srcChain) ?? new Map()
-          const prev = chainMap.get(hexToUtf8(key as Hex)) ?? 0n
-          chainMap.set(hexToUtf8(key as Hex), prev + srcChannelBal)
-          cosmosChannelBalances.set(srcChain, chainMap)
-        
-        }
-        
-        let totalSupply: bigint = 0n
-        if (dstCfg.chainType === "evm") {
-          const client = createPublicClient({ transport: http(dstCfg.rpc) })
-          totalSupply = yield* readErc20TotalSupply(token.denom).pipe(
-            Effect.provideService(ViemPublicClientContext, { client })
-          )
-        } else {
-          const client = yield* createCosmWasmClient(dstCfg.rpc)
-          totalSupply = BigInt(yield* readCw20TotalSupply(hexToUtf8(token.denom)).pipe(
-            Effect.provideService(CosmWasmClientContext, { client })
-          ))
-        }
-
-        if(srcChannelBal < totalSupply) {
-          const logEffect = Effect.annotateLogs({
-            issueType: "TOTAL SUPPLY IS HIGHER THAN SOURCE CHANNEL BALANCE",
-            sourceChain: `${srcChain}`,
-            destinationChain: `${dstChain}`,
-            denom: `${token.denom}`,
-            unwrappedDenom: `${token.wrapping[0]?.unwrapped_denom}`,
-            sourceChannelId: `${sourceChannelId}`,
-            sourceChannelBal: `${srcChannelBal}`,
-            totalSupply: `${totalSupply}`,
-            destinationChannelId: `${dstChannel}`,
-          })(Effect.logError(`SUPPLY ERROR`))
-  
-          Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-        } else {
-          const logEffect = Effect.annotateLogs({
-            sourceChain: `${srcChain}`,
-            destinationChain: `${dstChain}`,
-            denom: `${token.denom}`,
-            unwrappedDenom: `${token.wrapping[0]?.unwrapped_denom}`,
-            sourceChannelId: `${sourceChannelId}`,
-            sourceChannelBal: `${srcChannelBal}`,
-            totalSupply: `${totalSupply}`,
-            destinationChannelId: `${dstChannel}`,
-          })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
-  
-          Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-        }
+      if(!srcCfg || !dstCfg) {
+        yield* Effect.log("Invalid source or destination chain configuration. Skipping...")
+        continue
       }
+
+      if(!token.wrapping || token.wrapping.length === 0 || !token.wrapping[0]?.unwrapped_denom) {
+        yield* Effect.log("No wrapping information available. Skipping...")
+        continue
+      }
+
+      let srcChannelBal: bigint
+      const key = token.wrapping[0]!.unwrapped_denom!;  
+      const path = 0n;
+
+      if (srcCfg.chainType === "evm") {
+        const client = createPublicClient({ transport: http(srcCfg.rpc) })
+        srcChannelBal = yield* EthereumChannelBalance(path, key as Hex).pipe(
+          Effect.provideService(ViemPublicClientDestination, { client }),
+          Effect.provideService(EvmChannelDestination, {
+            ucs03address: srcCfg.zkgmAddress as Hex,
+            channelId: sourceChannelId!
+          })
+        )
+        const chainMap = evmChannelBalances.get(srcChain) ?? new Map()
+        const prev = chainMap.get(key) ?? 0n
+        chainMap.set(key, prev + srcChannelBal)
+        evmChannelBalances.set(srcChain, chainMap)
+
+
+      } else {
+        const client = yield* createCosmWasmClient(srcCfg.rpc)
+        
+        const srcChannelBalUnknown = yield* CosmosChannelBalance(path, hexToUtf8(key as Hex)).pipe(
+          Effect.provideService(CosmWasmClientDestination, { client }),
+          Effect.provideService(CosmosChannelDestination, {
+            ucs03address: srcCfg.zkgmAddress,
+            channelId: sourceChannelId!
+          }),
+          Effect.tapError(e =>
+            Effect.logError("Error fetching channel balance:", e))
+        )
+        srcChannelBal = BigInt(srcChannelBalUnknown as bigint)
+        
+        const chainMap = cosmosChannelBalances.get(srcChain) ?? new Map()
+        const prev = chainMap.get(hexToUtf8(key as Hex)) ?? 0n
+        chainMap.set(hexToUtf8(key as Hex), prev + srcChannelBal)
+        cosmosChannelBalances.set(srcChain, chainMap)
+      
+      }
+      
+      let totalSupply: bigint = 0n
+      if (dstCfg.chainType === "evm") {
+        const client = createPublicClient({ transport: http(dstCfg.rpc) })
+        totalSupply = yield* readErc20TotalSupply(token.denom).pipe(
+          Effect.provideService(ViemPublicClientContext, { client })
+        )
+      } else {
+        const client = yield* createCosmWasmClient(dstCfg.rpc)
+        totalSupply = BigInt(yield* readCw20TotalSupply(hexToUtf8(token.denom)).pipe(
+          Effect.provideService(CosmWasmClientContext, { client })
+        ))
+      }
+
+      if(srcChannelBal < totalSupply) {
+        const logEffect = Effect.annotateLogs({
+          issueType: "TOTAL SUPPLY IS HIGHER THAN SOURCE CHANNEL BALANCE",
+          sourceChain: `${srcChain}`,
+          destinationChain: `${dstChain}`,
+          denom: `${token.denom}`,
+          unwrappedDenom: `${token.wrapping[0]?.unwrapped_denom}`,
+          sourceChannelId: `${sourceChannelId}`,
+          sourceChannelBal: `${srcChannelBal}`,
+          totalSupply: `${totalSupply}`,
+          destinationChannelId: `${dstChannel}`,
+        })(Effect.logError(`SUPPLY ERROR`))
+
+        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+      } else {
+        const logEffect = Effect.annotateLogs({
+          sourceChain: `${srcChain}`,
+          destinationChain: `${dstChain}`,
+          denom: `${token.denom}`,
+          unwrappedDenom: `${token.wrapping[0]?.unwrapped_denom}`,
+          sourceChannelId: `${sourceChannelId}`,
+          sourceChannelBal: `${srcChannelBal}`,
+          totalSupply: `${totalSupply}`,
+          destinationChannelId: `${dstChannel}`,
+        })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
+
+        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+      }
+      
     }
 
     yield* Effect.log("Comparing aggregated channel balances to on‑chain holdings")
