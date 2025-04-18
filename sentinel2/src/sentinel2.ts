@@ -29,8 +29,6 @@ import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
 import type { Address } from "viem"
 import { request, gql } from "graphql-request"
-import { fromHex } from "viem"
-import { toNumber } from "effect/BigInt"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -41,9 +39,9 @@ type Hex = `0x${string}`
 
 function hexToUtf8(hex: string): string {
   // strip optional 0x
-  const clean = hex.startsWith("0x") ? hex.slice(2) : hex;
+  const clean = hex.startsWith("0x") ? hex.slice(2) : hex
   // build a Buffer from hex, then decode as UTF‑8
-  return Buffer.from(clean, "hex").toString("utf8");
+  return Buffer.from(clean, "hex").toString("utf8")
 }
 
 // Chain pair configuration
@@ -89,7 +87,7 @@ interface FundableAccounts {
 }
 
 interface V2Channels {
-  source_channel_id: string 
+  source_channel_id: string
 }
 
 interface ChannelInfo {
@@ -189,10 +187,9 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
     return tokens
   })
 
-
-  const fetchFundableAccounts = (hasuraEndpoint: string) =>
-    Effect.gen(function* () {
-      const query = gql`
+const fetchFundableAccounts = (hasuraEndpoint: string) =>
+  Effect.gen(function* () {
+    const query = gql`
       query {
         v2_transfers(args: { p_destination_universal_chain_id: "babylon.bbn-1" }) {
           receiver_display
@@ -204,16 +201,16 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
       }
     `
 
-      const response: any = yield* Effect.tryPromise({
-        try: () => request(hasuraEndpoint, query),
-        catch: error => {
-          console.error("fetchFundableAccounts failed:", error)
-          throw error
-        }
-      })
-  
-      const tokens: FundableAccounts[] = response?.v2_transfers || []
-      const filtered: FundableAccounts[] = tokens
+    const response: any = yield* Effect.tryPromise({
+      try: () => request(hasuraEndpoint, query),
+      catch: error => {
+        console.error("fetchFundableAccounts failed:", error)
+        throw error
+      }
+    })
+
+    const tokens: FundableAccounts[] = response?.v2_transfers || []
+    const filtered: FundableAccounts[] = tokens
       .map(({ receiver_display, traces }) => ({
         receiver_display,
         traces: traces
@@ -226,9 +223,9 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
     return filtered
   })
 
-  const fetchChannelsViaChainId = (hasuraEndpoint: string, chainId: string) =>
-    Effect.gen(function* () {
-      const query = gql`
+const fetchChannelsViaChainId = (hasuraEndpoint: string, chainId: string) =>
+  Effect.gen(function* () {
+    const query = gql`
       query GetChannels($sourceUniversalChainId: String!) {
         v2_channels(
           where: { source_universal_chain_id: { _eq: $sourceUniversalChainId } }
@@ -237,18 +234,18 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
         }
       }
     `
-  
-      const response: any = yield* Effect.tryPromise({
-        try: () => request(hasuraEndpoint, query, { sourceUniversalChainId: chainId }),
-        catch: error => {
-          console.error("fetchWrappedTokens failed:", error)
-          throw error
-        }
-      })
-  
-      const channels: V2Channels[] = response?.v2_channels || []
-      return channels
+
+    const response: any = yield* Effect.tryPromise({
+      try: () => request(hasuraEndpoint, query, { sourceUniversalChainId: chainId }),
+      catch: error => {
+        console.error("fetchWrappedTokens failed:", error)
+        throw error
+      }
     })
+
+    const channels: V2Channels[] = response?.v2_channels || []
+    return channels
+  })
 
 const fetchSourceChannelId = (
   hasuraEndpoint: string,
@@ -547,20 +544,16 @@ const escrowSupplyControlLoop = Effect.repeat(
     let config = (yield* Config).config
 
     const tokens = yield* fetchWrappedTokens(config.hasuraEndpoint)
-  
+
     const evmChannelBalances = new Map<
-      string,           // chainId
-      Map<string, bigint>  // denom → balance
-    >();
-    const cosmosChannelBalances = new Map<
-      string,
-      Map<string, bigint>
-    >();
+      string, // chainId
+      Map<string, bigint> // denom → balance
+    >()
+    const cosmosChannelBalances = new Map<string, Map<string, bigint>>()
 
     for (const token of tokens) {
       const srcChain = token.wrapping[0]?.unwrapped_chain.universal_chain_id
       const dstChain = token.chain.universal_chain_id
-
 
       const dstChannel = token.wrapping[0]?.destination_channel_id
       if (!srcChain || !dstChain || !dstChannel) {
@@ -576,19 +569,19 @@ const escrowSupplyControlLoop = Effect.repeat(
       const srcCfg = config.chainConfig[srcChain]
       const dstCfg = config.chainConfig[dstChain]
 
-      if(!srcCfg || !dstCfg) {
+      if (!srcCfg || !dstCfg) {
         yield* Effect.log("Invalid source or destination chain configuration. Skipping...")
         continue
       }
 
-      if(!token.wrapping || token.wrapping.length === 0 || !token.wrapping[0]?.unwrapped_denom) {
+      if (!token.wrapping || token.wrapping.length === 0 || !token.wrapping[0]?.unwrapped_denom) {
         yield* Effect.log("No wrapping information available. Skipping...")
         continue
       }
 
       let srcChannelBal: bigint
-      const key = token.wrapping[0]!.unwrapped_denom!;  
-      const path = 0n;
+      const key = token.wrapping[0]!.unwrapped_denom!
+      const path = 0n
 
       if (srcCfg.chainType === "evm") {
         const client = createPublicClient({ transport: http(srcCfg.rpc) })
@@ -603,30 +596,26 @@ const escrowSupplyControlLoop = Effect.repeat(
         const prev = chainMap.get(key) ?? 0n
         chainMap.set(key, prev + srcChannelBal)
         evmChannelBalances.set(srcChain, chainMap)
-
-
       } else {
         const client = yield* createCosmWasmClient(srcCfg.rpc)
-        
+
         const srcChannelBalUnknown = yield* CosmosChannelBalance(path, hexToUtf8(key as Hex)).pipe(
           Effect.provideService(CosmWasmClientDestination, { client }),
           Effect.provideService(CosmosChannelDestination, {
             ucs03address: srcCfg.zkgmAddress,
             channelId: sourceChannelId!
           }),
-          Effect.tapError(e =>
-            Effect.logError("Error fetching channel balance:", e))
+          Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
         )
         srcChannelBal = BigInt(srcChannelBalUnknown as bigint)
-        
+
         const chainMap = cosmosChannelBalances.get(srcChain) ?? new Map()
         const prev = chainMap.get(hexToUtf8(key as Hex)) ?? 0n
         chainMap.set(hexToUtf8(key as Hex), prev + srcChannelBal)
         cosmosChannelBalances.set(srcChain, chainMap)
-      
       }
-      
-      let totalSupply: bigint = 0n
+
+      let totalSupply = 0n
       if (dstCfg.chainType === "evm") {
         const client = createPublicClient({ transport: http(dstCfg.rpc) })
         totalSupply = yield* readErc20TotalSupply(token.denom).pipe(
@@ -634,12 +623,14 @@ const escrowSupplyControlLoop = Effect.repeat(
         )
       } else {
         const client = yield* createCosmWasmClient(dstCfg.rpc)
-        totalSupply = BigInt(yield* readCw20TotalSupply(hexToUtf8(token.denom)).pipe(
-          Effect.provideService(CosmWasmClientContext, { client })
-        ))
+        totalSupply = BigInt(
+          yield* readCw20TotalSupply(hexToUtf8(token.denom)).pipe(
+            Effect.provideService(CosmWasmClientContext, { client })
+          )
+        )
       }
 
-      if(srcChannelBal < totalSupply) {
+      if (srcChannelBal < totalSupply) {
         const logEffect = Effect.annotateLogs({
           issueType: "TOTAL SUPPLY IS HIGHER THAN SOURCE CHANNEL BALANCE",
           sourceChain: `${srcChain}`,
@@ -649,7 +640,7 @@ const escrowSupplyControlLoop = Effect.repeat(
           sourceChannelId: `${sourceChannelId}`,
           sourceChannelBal: `${srcChannelBal}`,
           totalSupply: `${totalSupply}`,
-          destinationChannelId: `${dstChannel}`,
+          destinationChannelId: `${dstChannel}`
         })(Effect.logError(`SUPPLY ERROR`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
@@ -662,12 +653,11 @@ const escrowSupplyControlLoop = Effect.repeat(
           sourceChannelId: `${sourceChannelId}`,
           sourceChannelBal: `${srcChannelBal}`,
           totalSupply: `${totalSupply}`,
-          destinationChannelId: `${dstChannel}`,
+          destinationChannelId: `${dstChannel}`
         })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
       }
-      
     }
 
     yield* Effect.log("Comparing aggregated channel balances to on‑chain holdings")
@@ -676,16 +666,15 @@ const escrowSupplyControlLoop = Effect.repeat(
       if (chainType === "evm") {
         // — EVM: use your evmChannelBalances map —
         const client = createPublicClient({
-          transport: http(rpc),
-        });
+          transport: http(rpc)
+        })
 
         for (const [tokenAddr, channelSum] of evmChannelBalances.get(chainId) ?? []) {
           const onChain = yield* readErc20Balance(tokenAddr as Hex, minter as Hex).pipe(
             Effect.provideService(ViemPublicClientContext, { client }),
-            Effect.tapError(e =>
-              Effect.logError("Error querying balanceOf:", e))
-          );
-          
+            Effect.tapError(e => Effect.logError("Error querying balanceOf:", e))
+          )
+
           if (BigInt(onChain) < channelSum) {
             const errLog = Effect.annotateLogs({
               issueType: "AGGREGATE_GT_ONCHAIN",
@@ -693,31 +682,31 @@ const escrowSupplyControlLoop = Effect.repeat(
               tokenAddr,
               minter,
               aggregated: channelSum.toString(),
-              onChain: onChain.toString(),
-            })(Effect.logError("AGGREGATE_MISMATCH"));
-        
-            Effect.runFork(errLog.pipe(Effect.provide(Logger.json)));
+              onChain: onChain.toString()
+            })(Effect.logError("AGGREGATE_MISMATCH"))
+
+            Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
           } else {
             const okLog = Effect.annotateLogs({
               chainId,
               tokenAddr,
               minter,
               aggregated: channelSum.toString(),
-              onChain: onChain.toString(),
-            })(Effect.logInfo("AGGREGATE_OK"));
-        
-            Effect.runFork(okLog.pipe(Effect.provide(Logger.json)));
+              onChain: onChain.toString()
+            })(Effect.logInfo("AGGREGATE_OK"))
+
+            Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
           }
         }
       } else {
         // — Cosmos: use your cosmosChannelBalances map —
-        const cosmosClient = yield* createCosmWasmClient(rpc);
+        const cosmosClient = yield* createCosmWasmClient(rpc)
 
         for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
           const { amount } = yield* Effect.tryPromise({
             try: () => cosmosClient.getBalance(minter, denom),
             catch: e => new Error(`bank query failed: ${e}`)
-          });
+          })
 
           if (BigInt(amount) < channelSum) {
             const errLog = Effect.annotateLogs({
@@ -726,26 +715,24 @@ const escrowSupplyControlLoop = Effect.repeat(
               denom,
               minter,
               aggregated: channelSum.toString(),
-              onChain: amount,
-            })(Effect.logError("AGGREGATE_MISMATCH"));
-        
-            Effect.runFork(errLog.pipe(Effect.provide(Logger.json)));
+              onChain: amount
+            })(Effect.logError("AGGREGATE_MISMATCH"))
+
+            Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
           } else {
             const okLog = Effect.annotateLogs({
               chainId,
               denom,
               minter,
               aggregated: channelSum.toString(),
-              onChain: amount,
-            })(Effect.logInfo("AGGREGATE_OK"));
-        
-            Effect.runFork(okLog.pipe(Effect.provide(Logger.json)));
+              onChain: amount
+            })(Effect.logInfo("AGGREGATE_OK"))
+
+            Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
           }
         }
       }
     }
-
-
   }),
   Schedule.spaced("15 minutes")
 )
@@ -768,33 +755,33 @@ const fundBabylonAccounts = Effect.repeat(
       wallet,
       options
     )
-    let keepContinue = true;
+    let keepContinue = true
     if (!senderAccount || !senderAccount.address) {
       yield* Effect.logError("Sender account couldnt found!")
       return
-    };
+    }
     client.getBalance(senderAccount.address, "ubbn").then(balance => {
-      if(parseInt(balance.amount) < 1000000) {
+      if (Number.parseInt(balance.amount) < 1000000) {
         const errLog = Effect.annotateLogs({
           issueType: "SPENDER_BALANCE_LOW",
           balance: balance.amount,
           chainId: "babylon.bbn-1",
           tokenAddr: "ubbn",
-          account: senderAccount.address,
-        })(Effect.logError("SPENDER_BALANCE_LOW"));
-    
-        Effect.runFork(errLog.pipe(Effect.provide(Logger.json)));
-        keepContinue = false;
+          account: senderAccount.address
+        })(Effect.logError("SPENDER_BALANCE_LOW"))
+
+        Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
+        keepContinue = false
       }
     })
     const fee = {
       amount: coins(500, "ubbn"), // for instance 500bbn as the fee
-      gas: "200000"              // fixed gas limit
+      gas: "200000" // fixed gas limit
     }
 
     if (keepContinue) {
       const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
-      for(const acc of accs) {
+      for (const acc of accs) {
         const receiver = acc.receiver_display
         const result = yield* Effect.tryPromise({
           try: () =>
@@ -804,10 +791,10 @@ const fundBabylonAccounts = Effect.repeat(
               coins(10000, "ubbn"), // send 0.01 bbn
               fee
             ),
-            catch: err => {
-              console.error("raw sendTokens error:", err);
-              throw err;
-            }
+          catch: err => {
+            console.error("raw sendTokens error:", err)
+            throw err
+          }
         })
         const okLog = Effect.annotateLogs({
           sentAmount: "0.01",
@@ -815,56 +802,52 @@ const fundBabylonAccounts = Effect.repeat(
           tokenAddr: "ubbn",
           account: senderAccount.address,
           receiver,
-          transactionHash: result.transactionHash,
-        })(Effect.logInfo("SENT_OK"));
+          transactionHash: result.transactionHash
+        })(Effect.logInfo("SENT_OK"))
         Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
-
       }
     }
   }),
   Schedule.spaced("1 minutes")
 )
 
-const fetchOnlyUniBTC = (
-  hasuraEndpoint: string
-) =>
+const fetchOnlyUniBTC = (hasuraEndpoint: string) =>
   Effect.gen(function* () {
-
     let response: any
 
-      // Next query: use the last sort_order as a cursor.
-      const queryNext = gql`
+    // Next query: use the last sort_order as a cursor.
+    const queryNext = gql`
         query MyQuery {
           v2_packets {
             decoded
           }
         }
       `
-      response = yield* Effect.tryPromise({
-        try: () => request(hasuraEndpoint, queryNext),
-        catch: error => {
-          console.error("Error in second query:", error)
-          throw error
-        }
-      })
+    response = yield* Effect.tryPromise({
+      try: () => request(hasuraEndpoint, queryNext),
+      catch: error => {
+        console.error("Error in second query:", error)
+        throw error
+      }
+    })
 
-      for (const packet of response.v2_packets) {
-        if (packet.decoded.instruction.operand) {
-          const operand = packet.decoded.instruction.operand
-          if(operand.baseTokenName == "uniBTC" && operand.baseAmount) { //5000000
-            const baseAmount = BigInt(operand.baseAmount)
-            if(baseAmount >= 6000000n) {
-              console.info("THIS IS MY ALERT", baseAmount)
-              const logEffect = Effect.annotateLogs({
-                packet: packet
-              })(Effect.logError(`BIG_UNI_BTC`))
-              Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-            }
-          } 
+    for (const packet of response.v2_packets) {
+      if (packet.decoded.instruction.operand) {
+        const operand = packet.decoded.instruction.operand
+        if (operand.baseTokenName == "uniBTC" && operand.baseAmount) {
+          //5000000
+          const baseAmount = BigInt(operand.baseAmount)
+          if (baseAmount >= 4000000n) {
+            console.info("THIS IS MY ALERT", baseAmount)
+            const logEffect = Effect.annotateLogs({
+              packet: packet
+            })(Effect.logError(`BIG_UNI_BTC`))
+            Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+          }
         }
       }
-      
-      })
+    }
+  })
 /**
  * fetchPacketsUntilCutoff
  *
@@ -1011,10 +994,8 @@ export const checkPackets = (
 
     const now_as_date = new Date(now).toISOString()
     yield* Effect.log(`now: ${now_as_date}`)
-    
-    
-      yield* fetchOnlyUniBTC(hasuraEndpoint)
-    
+
+    yield* fetchOnlyUniBTC(hasuraEndpoint)
 
     const packets: Packet[] = yield* fetchPacketsUntilCutoff(
       sourceChain,
@@ -1130,42 +1111,39 @@ export const checkPackets = (
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
 
-  const runIbcChecksForever = Effect.gen(function* (_) {
-    const { config } = yield* Config
-  
-    const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
-  
-    const effectToRepeat = Effect.gen(function* (_) {
-      const chainPairs: Array<ChainPair> = config.interactions
-  
-      yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
-      for (const pair of chainPairs) {
-        if (!pair.enabled) {
-          yield* Effect.log("Checking task is disabled. Skipping.")
-          continue
-        }
-        yield* Effect.log(
-          `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
-        )
-  
-        yield* checkPackets(
-          pair.sourceChain,
-          pair.destinationChain,
-          pair.timeframeMs,
-          config.hasuraEndpoint
-        )
+const runIbcChecksForever = Effect.gen(function* (_) {
+  const { config } = yield* Config
+
+  const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
+
+  const effectToRepeat = Effect.gen(function* (_) {
+    const chainPairs: Array<ChainPair> = config.interactions
+
+    yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
+    for (const pair of chainPairs) {
+      if (!pair.enabled) {
+        yield* Effect.log("Checking task is disabled. Skipping.")
+        continue
       }
-  
       yield* Effect.log(
-        `IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`
+        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
       )
-      
-    })
-  
-    return yield* Effect.repeat(effectToRepeat, schedule)
+
+      yield* checkPackets(
+        pair.sourceChain,
+        pair.destinationChain,
+        pair.timeframeMs,
+        config.hasuraEndpoint
+      )
+    }
+
+    yield* Effect.log(
+      `IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`
+    )
   })
 
-
+  return yield* Effect.repeat(effectToRepeat, schedule)
+})
 
 const mainEffect = Effect.gen(function* (_) {
   const argv = yield* Effect.sync(() =>
@@ -1185,9 +1163,12 @@ const mainEffect = Effect.gen(function* (_) {
 
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
-  yield* Effect.all([/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts], {
-    concurrency: "unbounded"
-  }).pipe(Effect.provideService(Config, { config }))
+  yield* Effect.all(
+    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop],
+    {
+      concurrency: "unbounded"
+    }
+  ).pipe(Effect.provideService(Config, { config }))
 })
 
 Effect.runPromise(mainEffect).catch(err => Effect.logError("Error in mainEffect", err))
