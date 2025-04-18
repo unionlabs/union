@@ -102,7 +102,7 @@ in
     {
       packages = {
         sentinel2 = pkgsUnstable.buildNpmPackage {
-          npmDepsHash = "sha256-WRLQGzzkEwpnuxxgDaU/HoAV7o5obs0FAaOgFBKosIk=";
+          npmDepsHash = "sha256-dBCQ1hChemjQktksFjqPXRyXdG9mMtwwgupxaixKRIQ=";
           src = ./.;
           sourceRoot = "sentinel2";
           npmFlags = [
