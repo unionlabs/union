@@ -494,6 +494,10 @@ const escrowSupplyControlLoop = Effect.repeat(
     let config = (yield* Config).config
 
     const tokens = yield* fetchWrappedTokens(config.hasuraEndpoint)
+  
+    const evmChannelBalances = new Map<string, bigint>();
+    const cosmosChannelBalances = new Map<string, bigint>();
+
     for (const token of tokens) {
       const srcChain = token.wrapping[0]?.unwrapped_chain.universal_chain_id
       const dstChain = token.chain.universal_chain_id
@@ -510,7 +514,7 @@ const escrowSupplyControlLoop = Effect.repeat(
         dstChain,
         dstChannel
       )
-      if (token.wrapping[0]?.unwrapped_denom == "0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2" || true) {
+      if (token.wrapping[0]?.unwrapped_denom == "0x6962632f36354430424543364441443936433746353034334431453534453534423642423544354233414543334646364345424237354239453035394633353830454133") {
         const srcCfg = config.chainConfig[srcChain]
         const dstCfg = config.chainConfig[dstChain]
 
@@ -525,6 +529,7 @@ const escrowSupplyControlLoop = Effect.repeat(
         }
   
         let srcChannelBal: bigint
+        const key = token.wrapping[0]!.unwrapped_denom!;  
         const path = 0n;
 
         const channels = yield* fetchChannelsViaChainId(config.hasuraEndpoint, srcChain)
@@ -539,6 +544,9 @@ const escrowSupplyControlLoop = Effect.repeat(
               channelId: sourceChannelId!
             })
           )
+          const prev = evmChannelBalances.get(key) ?? 0n;
+          evmChannelBalances.set(key, prev + srcChannelBal);
+
         } else {
           const client = yield* createCosmWasmClient(srcCfg.rpc)
           
@@ -552,6 +560,8 @@ const escrowSupplyControlLoop = Effect.repeat(
               Effect.logError("Error fetching channel balance:", e))
           )
           srcChannelBal = srcChannelBalUnknown as bigint
+          const prev = cosmosChannelBalances.get(key) ?? 0n;
+          cosmosChannelBalances.set(key, prev + srcChannelBal);
         }
         
         let totalSupply: bigint = 0n
