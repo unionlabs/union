@@ -149,8 +149,6 @@ pub fn execute(
                                         cap: None,
                                     }),
                                     marketing: None,
-                                    // This admin is not the contract admin but the one who can update token info
-                                    admin: Some(cw20_admin.clone()),
                                 },
                             ))?,
                         },
