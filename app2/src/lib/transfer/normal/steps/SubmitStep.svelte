@@ -173,10 +173,13 @@ export const submit = Effect.gen(function* () {
             cosmosStore.connectedWallet
           )
 
+          console.log('here stop',step.intent.baseToken )
           const sender = yield* step.intent.sourceChain.getDisplayAddress(wallets.cosmosAddress.value)
           const isNative = !isValidBech32ContractAddress(
-            fromHex(step.intent.baseToken, "string")
+            step.intent.baseToken
           )
+
+          console.log({isNative})
 
           do {
             const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
@@ -204,7 +207,7 @@ export const submit = Effect.gen(function* () {
                 isNative
                   ? [
                     {
-                      denom: fromHex(step.intent.baseToken, "string"),
+                      denom: step.intent.baseToken,
                       amount: step.intent.baseAmount.toString()
                     }
                   ]
