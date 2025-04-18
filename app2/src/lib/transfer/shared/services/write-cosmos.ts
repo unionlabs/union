@@ -35,7 +35,6 @@ export const nextStateCosmos = async (
 ): Promise<TransactionSubmissionCosmos> =>
   TransactionSubmissionCosmos.$match(ts, {
     Filling: () => {
-      console.log("write-cosmos:", { senderAddress, contractAddress, msg, funds })
       return SwitchChainInProgress()
     },
     SwitchChainInProgress: async () => {
