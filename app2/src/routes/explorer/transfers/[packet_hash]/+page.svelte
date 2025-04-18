@@ -13,10 +13,11 @@ import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
-import { getChain } from "@unionlabs/sdk/schema"
+import { getChain, TokenRawDenom } from "@unionlabs/sdk/schema"
 import PacketComponent from "$lib/components/model/PacketComponent.svelte"
 import { packetDetailsQuery } from "$lib/queries/packet-details.svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
+import { cosmosStore } from "$lib/wallet/cosmos"
 
 // Store for the transfer details
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
@@ -26,6 +27,8 @@ import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
 import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times.ts"
 import A from "$lib/components/ui/A.svelte"
 import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
+import { fromHex } from "viem"
+import Button from "$lib/components/ui/Button.svelte"
 
 // State for packet details visibility
 let showPacketDetails = $state(false)
@@ -56,6 +59,23 @@ const inProgress = $derived(
     Option.getOrElse(() => true)
   )
 )
+
+const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
+  console.log("suggest token", chain_id, denom)
+  const denomCosmwasm = fromHex(denom, "string")
+
+  if (window.keplr) {
+    console.log("adding to keplr")
+    const x = await window.keplr.suggestToken(chain_id, denomCosmwasm)
+    console.log(x)
+  }
+
+  if (window.leap) {
+    console.log("adding to leap")
+    const x = await window.leap.suggestCW20Token(chain_id, denomCosmwasm)
+    console.log(x)
+  }
+}
 </script>
 
 <Sections>
@@ -81,13 +101,11 @@ const inProgress = $derived(
           <div class="flex flex-col gap-6">
             <div class="flex flex-1 items-center justify-between pt-6 px-4">
               <div class="text-2xl">
-                {#if !settingsStore.showQuoteTokens}
-                  <TokenComponent
-                          chain={destChain.value}
-                          denom={transfer.quote_token}
-                          amount={transfer.quote_amount}
-                  />
-                {/if}
+                <TokenComponent
+                  chain={destChain.value}
+                  denom={transfer.quote_token}
+                  amount={transfer.quote_amount}
+                />
               </div>
               {#if !inProgress}
                 <div class="flex items-center gap-2">
@@ -179,6 +197,23 @@ const inProgress = $derived(
                 />
               {/if}
             </section>
+
+            {#if Option.isSome(destChain) && destChain.value.rpc_type === "cosmos"}
+              <section class="px-4">
+                <Label>
+                  Add to wallet
+                </Label>
+                <p class="text-sm">
+                  First time transferring this asset? Make sure you have <b>Keplr</b> connected and
+                  <Button variant="inline" onclick={() => suggestTokenToWallet(destChain.value.chain_id, transfer.quote_token)}>
+                    add it to your Keplr wallet.
+                  </Button>
+                </p>
+                <p class="text-xs mt-4 text-zinc-300 italic">
+                  If you do not see a popup, you have either not connected Keplr or already added it to your wallet. In Keplr scroll down to "Manage Asset List" and re-enable the token. Leap does not currently support this feature, but we are working with them to add support soon.
+                </p>
+              </section>
+            {/if}            
             {#if Option.isSome(sourceChain)}
               {@const settlement = settlementDelays[sourceChain.value.universal_chain_id]}
               {#if settlement}
@@ -205,6 +240,7 @@ const inProgress = $derived(
                 </section>
               {/if}
             {/if}
+            
           </div>
 
           <PacketTracesComponent packetTraces={transfer.traces} showAcks={false} mode="transfer"/>

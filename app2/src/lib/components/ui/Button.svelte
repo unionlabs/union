@@ -42,9 +42,7 @@ const classes = cn(
     "focus-visible:ring-red-500"
   ],
   variant === "inline" && [
-    "hover:text-babylon-orange underline decoration-dotted",
-    "focus-visible:text-babylon-orange",
-    selected ? "text-babylon-orange" : "text-zinc-500"
+    "underline text-babylon-orange hover:text-orange-300 transition-colors inline-flex items-center gap-1"
   ],
 
   // Height and padding
