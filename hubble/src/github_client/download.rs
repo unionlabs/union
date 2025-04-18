@@ -4,6 +4,8 @@ use reqwest::Client;
 use serde::Serialize;
 use tracing::{error, trace};
 
+use crate::github_client::GitCommitHash;
+
 static CLIENT: LazyLock<Client> = LazyLock::new(|| {
     Client::builder()
         .user_agent("reqwest")
@@ -28,15 +30,14 @@ pub struct FileContents(pub Vec<u8>);
 
 pub async fn download(
     repo: &str,
-    commit_hash: &Vec<u8>,
+    commit_hash: &GitCommitHash,
     path: &str,
 ) -> Result<FileContents, FileDownloadError> {
-    let commit_hash_hex = hex::encode(commit_hash);
-    trace!("fetch_file_contents: {repo}/{path}/{commit_hash_hex}");
+    trace!("fetch_file_contents: {repo}/{path}/{commit_hash}");
 
     let raw_url = format!(
         "https://raw.githubusercontent.com/{}/{}/{}",
-        repo, commit_hash_hex, path
+        repo, commit_hash, path
     );
 
     let result = CLIENT

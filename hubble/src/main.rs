@@ -71,7 +71,10 @@ async fn main() -> color_eyre::eyre::Result<()> {
         interval.tick().await;
         loop {
             info!("updating tokens");
-            token_fetcher::update_tokens(&token_fetcher_db).await?;
+            match token_fetcher::update_tokens(&token_fetcher_db).await {
+                Ok(()) => info!("updated tokens"),
+                Err(err) => error!("failed to update tokens: {:?}", err),
+            };
             interval.tick().await;
         }
     };
@@ -84,7 +87,10 @@ async fn main() -> color_eyre::eyre::Result<()> {
         interval.tick().await;
         loop {
             info!("updating subscriptions");
-            github_fetcher::update_subscriptions(&github_fetcher_db).await?;
+            match github_fetcher::update_subscriptions(&github_fetcher_db).await {
+                Ok(()) => info!("updated subscriptions"),
+                Err(err) => error!("failed to update subscriptions: {:?}", err),
+            };
             interval.tick().await;
         }
     };
@@ -97,7 +103,10 @@ async fn main() -> color_eyre::eyre::Result<()> {
         interval.tick().await;
         loop {
             info!("updating abis");
-            abi_fetcher::fetch_abis(&abi_fetcher_db).await?;
+            match abi_fetcher::fetch_abis(&abi_fetcher_db).await {
+                Ok(()) => info!("updated abis"),
+                Err(err) => error!("failed to update abis: {:?}", err),
+            };
             interval.tick().await;
         }
     };

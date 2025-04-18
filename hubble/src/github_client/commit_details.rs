@@ -5,6 +5,8 @@ use serde::{Deserialize, Serialize};
 use time::OffsetDateTime;
 use tracing::{error, trace};
 
+use crate::github_client::GitCommitHash;
+
 static CLIENT: LazyLock<Client> = LazyLock::new(|| {
     Client::builder()
         .user_agent("reqwest")
@@ -32,8 +34,7 @@ pub enum CommitDetailsError {
 
 #[derive(Debug, Serialize)]
 pub struct CommitDetails {
-    #[serde(serialize_with = "as_hex")]
-    pub commit_hash: Vec<u8>,
+    pub commit_hash: GitCommitHash,
     #[serde(serialize_with = "serialize_iso8601")]
     pub commit_timestamp: OffsetDateTime,
 }
@@ -42,8 +43,7 @@ impl Display for CommitDetails {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "commit_hash: {}, commit_timestamp: {}",
-            hex::encode(&self.commit_hash),
-            self.commit_timestamp
+            self.commit_hash, self.commit_timestamp,
         ))
     }
 }
@@ -62,8 +62,7 @@ struct CommitInfo {
 
 #[derive(Debug, Deserialize)]
 struct GitCommit {
-    #[serde(deserialize_with = "deserialize_sha")]
-    sha: Vec<u8>,
+    sha: GitCommitHash,
     commit: CommitInfo,
 }
 
@@ -110,26 +109,6 @@ async fn fetch_commit_details_by_url(url: &str) -> Result<CommitDetails, CommitD
         commit_hash: commit.sha.clone(),
         commit_timestamp: commit.commit.author.date,
     })
-}
-
-// Custom deserializer for SHA hex string to Vec<u8>
-fn deserialize_sha<'de, D>(deserializer: D) -> Result<Vec<u8>, D::Error>
-where
-    D: serde::Deserializer<'de>,
-{
-    use serde::de::Error;
-    let hex_string = String::deserialize(deserializer)?;
-
-    // Use the hex crate to decode the SHA
-    hex::decode(&hex_string).map_err(D::Error::custom)
-}
-
-fn as_hex<S>(bytes: &Vec<u8>, serializer: S) -> Result<S::Ok, S::Error>
-where
-    S: serde::Serializer,
-{
-    let hex_string = format!("0x{}", hex::encode(bytes));
-    serializer.serialize_str(&hex_string)
 }
 
 fn serialize_iso8601<S>(dt: &OffsetDateTime, serializer: S) -> Result<S::Ok, S::Error>

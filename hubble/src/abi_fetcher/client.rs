@@ -9,11 +9,10 @@ use tempfile::tempdir;
 use thiserror::Error;
 use tracing::{debug, info, trace};
 
+use crate::github_client::GitCommitHash;
+
 #[derive(Debug, Error)]
 pub enum BuildError {
-    #[error("Empty git hash provided")]
-    EmptyGitHash,
-
     #[error("Failed to fetch commit data: {0}")]
     FetchError(#[from] reqwest::Error),
 
@@ -21,10 +20,10 @@ pub enum BuildError {
     CommandError(#[from] std::io::Error),
 
     #[error("Nix build failed: {0}")]
-    NixBuildFailed(String),
+    NixBuildFailed(String, String),
 
     #[error("Result directory not found")]
-    ResultDirNotFound(String),
+    ResultDirNotFound(String, String),
 
     #[error("Failed to read directory: {0}")]
     DirReadError(String),
@@ -45,24 +44,21 @@ pub type Result<T> = std::result::Result<T, BuildError>;
 pub struct AbiResult {
     pub command: String,
     pub data: Value,
-    pub log: String,
+    pub stdout: String,
+    pub stderr: String,
 }
 
 impl AbiResult {
     pub fn meta(&self) -> Value {
         json!({
             "command": self.command,
-            "logs": self.log,
+            "stdout": self.stdout,
+            "stderr": self.stderr,
         })
     }
 }
 
-pub async fn build_abis_with_commit_hash(commit_hash: &Vec<u8>) -> Result<AbiResult> {
-    // Validate git_hash
-    if commit_hash.is_empty() {
-        return Err(BuildError::EmptyGitHash);
-    }
-
+pub async fn build_abis_with_commit_hash(commit_hash: &GitCommitHash) -> Result<AbiResult> {
     // Declare repository details
     let repo_owner = "unionlabs";
     let repo_name = "union";
@@ -76,9 +72,7 @@ pub async fn build_abis_with_commit_hash(commit_hash: &Vec<u8>) -> Result<AbiRes
 
     let nix_build_argument = format!(
         "github:{}/{}/{}#packages.x86_64-linux.hubble-abis",
-        repo_owner,
-        repo_name,
-        hex::encode(commit_hash)
+        repo_owner, repo_name, commit_hash,
     );
     trace!("nix build argument: {nix_build_argument}");
 
@@ -97,20 +91,18 @@ pub async fn build_abis_with_commit_hash(commit_hash: &Vec<u8>) -> Result<AbiRes
 
     info!("abi build: {} => {}", nix_command, output.status);
 
-    let mut log = String::new();
-    log.push_str(&String::from_utf8_lossy(&output.stdout));
-    log.push_str(&String::from_utf8_lossy(&output.stderr));
-
-    debug!("abi build log: \n-----------\n{}\n-----------", log);
+    let stdout = String::from_utf8_lossy(&output.stdout).into_owned();
+    let stderr = String::from_utf8_lossy(&output.stderr).into_owned();
+    debug!(%stdout, %stderr, "abi build log");
 
     if !output.status.success() {
-        return Err(BuildError::NixBuildFailed(log));
+        return Err(BuildError::NixBuildFailed(stdout, stderr));
     }
 
     // Ensure result directory exists
     let result_dir = work_dir.path().join("result");
     if !result_dir.exists() || !result_dir.is_dir() {
-        return Err(BuildError::ResultDirNotFound(log));
+        return Err(BuildError::ResultDirNotFound(stdout, stderr));
     }
 
     // Merge all JSON files in the result directory
@@ -156,7 +148,8 @@ pub async fn build_abis_with_commit_hash(commit_hash: &Vec<u8>) -> Result<AbiRes
     Ok(AbiResult {
         command: nix_command,
         data: merged_json,
-        log,
+        stdout,
+        stderr,
     })
 }
 

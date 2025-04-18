@@ -1,11 +1,14 @@
 use sqlx::Postgres;
 
-use crate::abi_fetcher::{AbiDependency, Attempt, Download};
+use crate::{
+    abi_fetcher::{AbiDependency, Attempt, Download},
+    github_client::GitCommitHash,
+};
 
 pub async fn get_missing_abi_dependencies(
     tx: &mut sqlx::Transaction<'_, Postgres>,
 ) -> sqlx::Result<Vec<AbiDependency>> {
-    Ok(sqlx::query!(
+    sqlx::query!(
         r#"
             SELECT d.commit
             FROM abi.dependency d
@@ -20,10 +23,13 @@ pub async fn get_missing_abi_dependencies(
     .fetch_all(tx.as_mut())
     .await?
     .into_iter()
-    .map(|record| AbiDependency {
-        commit: record.commit,
+    .map(|record| -> sqlx::Result<_> {
+        Ok(AbiDependency {
+            commit: GitCommitHash::from_slice(record.commit.as_slice())
+                .map_err(|e| sqlx::Error::Decode(e.into()))?,
+        })
     })
-    .collect())
+    .collect()
 }
 
 pub async fn insert_attempt(
@@ -35,7 +41,7 @@ pub async fn insert_attempt(
         INSERT INTO abi.attempt(commit, success, details)
         VALUES ($1, $2, $3)
         ",
-        attempt.commit,
+        attempt.commit.as_bytes(),
         attempt.success,
         attempt.details,
     )
@@ -54,7 +60,7 @@ pub async fn insert_download(
         INSERT INTO abi.download(commit, data, meta)
         VALUES ($1, $2, $3)
         ",
-        download.commit,
+        download.commit.as_bytes(),
         download.data,
         download.meta,
     )

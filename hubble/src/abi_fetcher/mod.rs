@@ -2,24 +2,26 @@ use std::fmt::Display;
 
 use serde_json::Value;
 
+use crate::github_client::GitCommitHash;
+
 mod client;
 mod fetcher;
 mod postgres;
 
 #[derive(Clone, Debug)]
 pub struct AbiDependency {
-    commit: Vec<u8>,
+    commit: GitCommitHash,
 }
 
 impl Display for AbiDependency {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}", hex::encode(&self.commit)))
+        f.write_fmt(format_args!("{}", self.commit))
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct Attempt {
-    commit: Vec<u8>,
+    commit: GitCommitHash,
     success: bool,
     details: serde_json::Value,
 }
@@ -28,16 +30,14 @@ impl Display for Attempt {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "{} => success: {} ({})",
-            hex::encode(&self.commit),
-            self.success,
-            self.details
+            self.commit, self.success, self.details
         ))
     }
 }
 
 #[derive(Clone, Debug)]
 pub struct Download<'a> {
-    commit: &'a Vec<u8>,
+    commit: &'a GitCommitHash,
     data: Value,
     meta: serde_json::Value,
 }
@@ -46,9 +46,7 @@ impl Display for Download<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
             "{} => {} ({})",
-            hex::encode(self.commit),
-            self.data,
-            self.meta
+            self.commit, self.data, self.meta
         ))
     }
 }
