@@ -1,5 +1,5 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Addr, StdError, Uint128};
+use cosmwasm_std::{StdError, Uint128};
 use cw20::{Cw20Coin, Cw20ExecuteMsg, Logo, MinterResponse};
 
 use crate::ContractError;
@@ -32,7 +32,6 @@ pub struct InstantiateMsg {
     pub initial_balances: Vec<Cw20Coin>,
     pub mint: Option<MinterResponse>,
     pub marketing: Option<InstantiateMarketingInfo>,
-    pub admin: Option<Addr>,
 }
 
 pub fn validate_name(name: &str) -> Result<(), ContractError> {

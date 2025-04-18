@@ -2,7 +2,8 @@ use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
+    to_json_binary, Binary, ContractInfoResponse, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, Uint128, WasmQuery,
 };
 use cw2::set_contract_version;
 use cw20::{
@@ -21,7 +22,7 @@ use crate::{
     msg::{
         validate_decimals, validate_name, validate_symbol, ExecuteMsg, InstantiateMsg, QueryMsg,
     },
-    state::{MinterData, TokenInfo, ADMIN, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO},
+    state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO},
 };
 
 // version info for migration info
@@ -153,10 +154,6 @@ pub fn instantiate(
         MARKETING_INFO.save(deps.storage, &data)?;
     }
 
-    if let Some(admin) = msg.admin {
-        ADMIN.save(deps.storage, &admin)?;
-    }
-
     Ok(Response::default())
 }
 
@@ -250,8 +247,14 @@ pub fn execute(
             symbol,
             decimals,
         } => {
-            let admin = ADMIN.load(deps.storage)?;
-            if info.sender != admin {
+            let res: ContractInfoResponse = deps.querier.query(
+                &WasmQuery::ContractInfo {
+                    contract_addr: env.contract.address.to_string(),
+                }
+                .into(),
+            )?;
+
+            if info.sender != res.admin.ok_or(ContractError::Unauthorized {})? {
                 return Err(ContractError::Unauthorized {});
             }
             update_metadata(deps, name, symbol, decimals)
@@ -663,11 +666,28 @@ pub fn migrate(
 #[cfg(test)]
 mod tests {
     use cosmwasm_std::{
-        testing::{message_info, mock_dependencies, mock_env},
-        Addr,
+        testing::{message_info, mock_env, MockApi, MockStorage},
+        Addr, ContractResult, OwnedDeps, Querier, QuerierResult,
     };
 
     use super::*;
+
+    struct CustomQuerier;
+
+    impl Querier for CustomQuerier {
+        fn raw_query(&self, _: &[u8]) -> cosmwasm_std::QuerierResult {
+            QuerierResult::Ok(ContractResult::Ok(
+                to_json_binary(&ContractInfoResponse::new(
+                    1,
+                    Addr::unchecked("helo"),
+                    Some(Addr::unchecked("some_admin")),
+                    false,
+                    None,
+                ))
+                .unwrap(),
+            ))
+        }
+    }
 
     #[test]
     fn upgrade_token_info() {
@@ -675,7 +695,12 @@ mod tests {
         let token_symbol = "UNO";
         let decimals = 6;
 
-        let mut deps = mock_dependencies();
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: CustomQuerier,
+            custom_query_type: std::marker::PhantomData,
+        };
         instantiate(
             deps.as_mut(),
             mock_env(),
@@ -687,7 +712,6 @@ mod tests {
                 initial_balances: vec![],
                 mint: None,
                 marketing: None,
-                admin: Some(Addr::unchecked("some_admin")),
             },
         )
         .unwrap();
