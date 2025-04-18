@@ -18,6 +18,8 @@ workspace = true
 
 [dependencies]
 cosmwasm-std = { workspace = true }
-depolama     = { workspace = true }
 serde        = { workspace = true, features = ["derive"] }
 thiserror    = { workspace = true }
+
+[dev-dependencies]
+cosmwasm-std = { workspace = true, features = ["iterator"] }
