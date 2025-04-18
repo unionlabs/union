@@ -30,6 +30,7 @@ import fs from "node:fs"
 import type { Address } from "viem"
 import { request, gql } from "graphql-request"
 import { fromHex } from "viem"
+import { toNumber } from "effect/BigInt"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -823,6 +824,47 @@ const fundBabylonAccounts = Effect.repeat(
   }),
   Schedule.spaced("1 minutes")
 )
+
+const fetchOnlyUniBTC = (
+  hasuraEndpoint: string
+) =>
+  Effect.gen(function* () {
+
+    let response: any
+
+      // Next query: use the last sort_order as a cursor.
+      const queryNext = gql`
+        query MyQuery {
+          v2_packets {
+            decoded
+          }
+        }
+      `
+      response = yield* Effect.tryPromise({
+        try: () => request(hasuraEndpoint, queryNext),
+        catch: error => {
+          console.error("Error in second query:", error)
+          throw error
+        }
+      })
+
+      for (const packet of response.v2_packets) {
+        if (packet.decoded.instruction.operand) {
+          const operand = packet.decoded.instruction.operand
+          if(operand.baseTokenName == "uniBTC" && operand.baseAmount) { //5000000
+            const baseAmount = BigInt(operand.baseAmount)
+            if(baseAmount >= 6000000n) {
+              console.info("THIS IS MY ALERT", baseAmount)
+              const logEffect = Effect.annotateLogs({
+                packet: packet
+              })(Effect.logError(`BIG_UNI_BTC`))
+              Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+            }
+          } 
+        }
+      }
+      
+      })
 /**
  * fetchPacketsUntilCutoff
  *
@@ -969,6 +1011,10 @@ export const checkPackets = (
 
     const now_as_date = new Date(now).toISOString()
     yield* Effect.log(`now: ${now_as_date}`)
+    
+    
+      yield* fetchOnlyUniBTC(hasuraEndpoint)
+    
 
     const packets: Packet[] = yield* fetchPacketsUntilCutoff(
       sourceChain,
