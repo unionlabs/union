@@ -78,7 +78,7 @@ export const nextStateEvm = async <
         exit: await Effect.runPromiseExit(writeContract(walletClient, params))
       }),
 
-    WriteContractComplete: async ({ exit }) => {
+    WriteContractComplete: ({ exit }) => {
       if (exit._tag === "Failure") {
         return WriteContractInProgress()
       }
