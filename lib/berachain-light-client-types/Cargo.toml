@@ -12,13 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"], optional = true }
-beacon-api-types            = { workspace = true }
-bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
-ethereum-light-client-types = { workspace = true }
-ibc-union-spec              = { workspace = true }
-serde                       = { workspace = true, optional = true, features = ["derive"] }
-unionlabs                   = { workspace = true }
+alloy                         = { workspace = true, features = ["sol-types"], optional = true }
+beacon-api-types              = { workspace = true }
+bincode                       = { workspace = true, features = ["alloc", "derive"], optional = true }
+ethereum-light-client-types   = { workspace = true }
+ibc-union-spec                = { workspace = true }
+serde                         = { workspace = true, optional = true, features = ["derive"] }
+tendermint-light-client-types = { workspace = true }
+unionlabs                     = { workspace = true }
 
 [features]
 default = []
@@ -27,6 +28,7 @@ bincode = [
   "dep:bincode",
   "unionlabs/bincode",
   "ethereum-light-client-types/bincode",
+  "tendermint-light-client-types/bincode",
   "ibc-union-spec/bincode",
   "beacon-api-types/bincode",
 ]
@@ -35,5 +37,6 @@ serde = [
   "dep:serde",
   "beacon-api-types/serde",
   "ethereum-light-client-types/serde",
+  "tendermint-light-client-types/serde",
   "ibc-union-spec/serde",
 ]

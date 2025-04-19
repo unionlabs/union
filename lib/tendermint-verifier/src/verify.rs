@@ -34,7 +34,7 @@ pub fn verify<V: HostFns>(
     trust_level: &Fraction,
     signature_verifier: &SignatureVerifier<V>,
 ) -> Result<(), Error> {
-    // check adjacency in terms of block(header) height
+    // check adjacency in terms of block (header) height
     if untrusted_header.header.height.inner()
         != trusted_header
             .header

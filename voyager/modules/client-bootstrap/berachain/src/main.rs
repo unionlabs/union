@@ -82,11 +82,6 @@ impl Module {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct ClientStateConfig {
-    pub l1_client_id: ClientId,
-}
-
 #[async_trait]
 impl ClientBootstrapModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
@@ -96,13 +91,7 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let config = serde_json::from_value::<ClientStateConfig>(config).map_err(|err| {
-            ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                ErrorReporter(err).with_message("unable to deserialize client state config"),
-                None::<()>,
-            )
-        })?;
+        ensure_null(config)?;
 
         Ok(into_value(ClientState::V1(ClientStateV1 {
             l1_client_id: config.l1_client_id,

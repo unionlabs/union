@@ -74,9 +74,10 @@ impl ConsensusModuleServer for Module {
     /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.eth_chain_id))]
     async fn query_latest_height(&self, ext: &Extensions, finalized: bool) -> RpcResult<Height> {
-        let voy_client = ext.try_get::<VoyagerClient>()?;
         if finalized {
-            let l1_height = voy_client
+            let voyager_client = ext.try_get::<VoyagerClient>()?;
+
+            let l1_height = voyager_client
                 .query_latest_height(self.comet_chain_id.clone(), finalized)
                 .await?;
 
