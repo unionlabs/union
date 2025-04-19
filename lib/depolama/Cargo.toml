@@ -14,6 +14,7 @@ workspace = true
 [dependencies]
 cosmwasm-std         = { workspace = true, features = ["std"] }
 num-traits           = "0.2.19"
+unionlabs-encoding   = { workspace = true }
 unionlabs-primitives = { workspace = true }
 
 [features]

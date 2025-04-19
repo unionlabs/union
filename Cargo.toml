@@ -52,6 +52,7 @@ members = [
   "lib/ssz-derive",
   "lib/unionlabs",
   "lib/unionlabs-primitives",
+  "lib/unionlabs-encoding",
   "lib/zktrie-rs",
   "lib/voyager-message",
   "lib/voyager-primitives",
@@ -353,6 +354,7 @@ subset-of-derive = { path = "lib/subset-of-derive", default-features = false }
 
 token-factory-api    = { path = "cosmwasm/token-factory-api", default-features = false }
 unionlabs            = { path = "lib/unionlabs", default-features = false, features = ["proto"] } # TODO: Properly feature gate proto in unionlabs
+unionlabs-encoding   = { path = "lib/unionlabs-encoding", default-features = false }
 unionlabs-primitives = { path = "lib/unionlabs-primitives", default-features = false }
 zktrie               = { path = "lib/zktrie-rs", default-features = false }
 

@@ -39,16 +39,19 @@ thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 wasmparser               = { version = "0.113" }
 
-alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
-bcs                  = { workspace = true }
-bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
-borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
-near-primitives-core = { version = "0.21", optional = true }
-near-sdk             = { workspace = true, optional = true }
-schemars             = { workspace = true, features = ["derive"], optional = true }
-serde_bytes          = "0.11.6"
-solidity-slot        = { workspace = true }
-unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
+alloy                   = { workspace = true, optional = true, features = ["std", "sol-types"] }
+base64                  = { workspace = true }
+bcs                     = { workspace = true }
+bincode                 = { workspace = true, features = ["alloc", "derive"], optional = true }
+borsh                   = { workspace = true, features = ["borsh-derive"], optional = true }
+bs58                    = "0.4"
+near-primitives-core    = { version = "0.21", optional = true }
+near-sdk                = { workspace = true, optional = true }
+schemars                = { workspace = true, features = ["derive"], optional = true }
+serde_bytes             = "0.11.6"
+solidity-slot.workspace = true
+unionlabs-encoding      = { workspace = true, features = ["proto", "json"] }
+unionlabs-primitives    = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
@@ -63,16 +66,19 @@ ethabi = [
   "alloy",
   "unionlabs-primitives/alloy-primitives-compat",
   "unionlabs-primitives/alloy-sol-types-compat",
+  "unionlabs-encoding/ethabi",
 ]
 grpc = ["protos/client"]
 near = ["borsh", "near-sdk", "near-primitives-core"]
-std = ["subtle-encoding/std", "sha2/std"]
+std = ["subtle-encoding/std", "sha2/std", "unionlabs-encoding/std"]
 
 fuzzing    = []
 test-utils = []
 
-bincode  = ["dep:bincode", "unionlabs-primitives/bincode"]
-proto    = []
+bcs      = ["unionlabs-encoding/bcs"]
+bincode  = ["dep:bincode", "unionlabs-primitives/bincode", "unionlabs-encoding/bincode"]
+proto    = ["unionlabs-encoding/proto"]
 rlp      = ["dep:rlp", "unionlabs-primitives/rlp"]
 schemars = ["dep:schemars", "unionlabs-primitives/schemars"]
+ssz      = ["unionlabs-encoding/ssz"]
 stargate = ["cosmwasm", "cosmwasm-std/stargate"]

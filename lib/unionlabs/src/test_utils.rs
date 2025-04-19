@@ -44,3 +44,13 @@ where
 
     assert_eq!(t, &iso, "roundtrip failed");
 }
+
+#[track_caller]
+pub fn assert_codec_iso_bytes<T, E: Encoding>(t: &T, bz: &[u8])
+where
+    T: Encode<E> + Decode<E> + Clone + Debug + PartialEq,
+{
+    assert_eq!(T::decode_as::<E>(bz).unwrap(), t.clone());
+
+    assert_eq!(t.clone().encode_as::<E>(), bz);
+}
