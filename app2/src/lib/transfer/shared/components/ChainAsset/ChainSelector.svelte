@@ -68,13 +68,17 @@ const filteredChains = $derived(
     {@const chainss = filteredChains.value}
     <div class="grid grid-cols-3 gap-2">
       {#each chainss as chain}
+        {@const destinationOpen = type === "destination" && pipe(
+          transferData.destinationChains,
+          Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
+          Option.getOrElse(() => false)
+        )}
         {@const isSelected =
           (type === "source" && transferData.raw.source === chain.chain_id) ||
           (type === "destination" &&
             transferData.raw.destination === chain.chain_id)}
-        {@const isDisabled =
-          type === "destination" && transferData.raw.source === chain.chain_id}
-
+        {@const isFromChain = (type === "destination" && transferData.raw.source === chain.chain_id)}
+        {@const isDisabled = isFromChain || !destinationOpen}
         <button
           class={cn(
             "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors",
@@ -102,7 +106,7 @@ const filteredChains = $derived(
             >{chain.display_name}</span
           >
 
-          {#if isDisabled}
+          {#if isFromChain}
             <span class="text-xs text-sky-400 -mt-2">From Chain</span>
           {/if}
         </button>

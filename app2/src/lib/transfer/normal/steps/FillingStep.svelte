@@ -59,6 +59,10 @@ const uiStatus = $derived.by(() => {
 })
 
 const isButtonEnabled = $derived.by(() => !loading)
+
+$effect(() => {
+  console.log("destinationChains", transferData.destinationChains)
+})
 </script>
 
 <div class="min-w-full flex flex-col grow">
