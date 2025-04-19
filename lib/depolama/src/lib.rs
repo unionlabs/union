@@ -68,6 +68,16 @@ use num_traits::{CheckedAdd, One};
 #[doc(no_inline)]
 pub use unionlabs_primitives::Bytes;
 
+pub use crate::{
+    key::{raw_key, KeyCodec},
+    value::ValueCodec,
+};
+
+/// Storage keys.
+pub mod key;
+/// Storage values.
+pub mod value;
+
 #[cfg(test)]
 mod tests;
 
@@ -76,7 +86,7 @@ mod tests;
 /// This is a very simple interface, designed to provide more low-level control over the storage of
 /// a cosmwasm contract. Additionally, the key and value codecs are defined directly on this
 /// interface, as opposed to on the key/ value types themselves, allowing storage implementors to
-/// more easily use external types without relying on direct integration with this crate.
+/// more easily use external types without relying on direct integration from this crate.
 pub trait Store: KeyCodec<Self::Key> + ValueCodec<Self::Value> {
     /// The prefix for this store. See [`Prefix`] for more information.
     const PREFIX: Prefix;
@@ -86,67 +96,6 @@ pub trait Store: KeyCodec<Self::Key> + ValueCodec<Self::Value> {
 
     /// The value stored in this store.
     type Value;
-}
-
-/// The key encoding and decoding for a [`Store`].
-///
-/// This trait is implemented for all stores with `type Key = ()`, enabling "item store"
-/// functionality on [`StorageExt`].
-pub trait KeyCodec<Key> {
-    /// Encode the given key for writing to storage.
-    ///
-    /// # Implementor's Note
-    ///
-    /// This function is expected to be isomorphic with [`KeyCodec::decode_key`].
-    fn encode_key(key: &Key) -> Bytes;
-
-    /// Decode the key for this store.
-    ///
-    /// # Errors
-    ///
-    /// This function is expected to error iff the key cannot be decoded.
-    ///
-    /// # Implementor's Note
-    ///
-    /// This function is expected to be isomorphic with [`KeyCodec::encode_key`].
-    fn decode_key(raw: &Bytes) -> StdResult<Key>;
-}
-
-impl<T: Store<Key = ()>> KeyCodec<()> for T {
-    fn encode_key((): &()) -> Bytes {
-        [].into()
-    }
-
-    fn decode_key(raw: &Bytes) -> StdResult<()> {
-        if raw.is_empty() {
-            Ok(())
-        } else {
-            Err(StdError::generic_err(format!(
-                "key must be empty, found {raw}"
-            )))
-        }
-    }
-}
-
-/// The value encoding and decoding for a [`Store`].
-pub trait ValueCodec<Value> {
-    /// Encode the given value for writing to storage.
-    ///
-    /// # Implementor's Note
-    ///
-    /// This function is expected to be isomorphic with [`ValueCodec::decode_value`].
-    fn encode_value(value: &Value) -> Bytes;
-
-    /// Decode the value for this store.
-    ///
-    /// # Errors
-    ///
-    /// This function is expected to error iff the key cannot be decoded.
-    ///
-    /// # Implementor's Note
-    ///
-    /// This function is expected to be isomorphic with [`ValueCodec::encode_value`].
-    fn decode_value(raw: &Bytes) -> StdResult<Value>;
 }
 
 /// A storage prefix for a [`Store`] implementation.
@@ -263,15 +212,6 @@ impl Prefix {
             PrefixInner::Prefix(prefix) => prefix.iter().chain(&[Self::SEPARATOR]),
         }
     }
-}
-
-/// The raw store prefix for the store.
-pub fn raw_key<S: Store>(key: &S::Key) -> Bytes {
-    S::PREFIX
-        .iter_with_separator()
-        .copied()
-        .chain(S::encode_key(key))
-        .collect()
 }
 
 /// Extension trait for [`cosmwasm_std::Storage`] implementations to work with [`Store`]s.

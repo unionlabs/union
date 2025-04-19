@@ -548,4 +548,14 @@ mod tests {
 
         assert_eq!(<FixedBytes<3, HexPrefixed>>::new_ref(arr).get(), arr);
     }
+
+    #[test]
+    fn bincode() {
+        let bz: FixedBytes<3> = [1, 2, 3].into();
+
+        let bincode_bz = bincode::encode_to_vec(bz, bincode::config::legacy()).unwrap();
+
+        // not length prefixed (Bytes is)
+        assert_eq!(bz.get(), &*bincode_bz);
+    }
 }

@@ -31,6 +31,11 @@ use crate::{
 
 pub const DELAY_PERIOD: u64 = 0;
 
+pub use unionlabs_encoding as encoding;
+#[cfg(feature = "ethabi")]
+pub use unionlabs_encoding::impl_ethabi_via_try_from_into;
+#[cfg(feature = "proto")]
+pub use unionlabs_encoding::impl_proto_via_try_from_into;
 pub use unionlabs_primitives as primitives;
 
 /// Wrapper types around protos defined in <https://github.com/cosmos/gogoproto/tree/main/protobuf/google/protobuf>, matching the proto module structure.
@@ -66,8 +71,6 @@ pub mod constants;
 // TODO: Remove (only used in ucs01-relay-api currently)
 pub mod validated;
 
-pub mod encoding;
-
 /// Stable replacement for [`!`].
 pub mod never;
 
@@ -93,30 +96,13 @@ pub use ::prost;
 #[allow(clippy::missing_panics_doc)]
 pub mod test_utils;
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum TryFromProtoBytesError<E> {
-    #[error("unable to convert from the raw prost type")]
-    TryFromProto(#[source] E),
-    #[error("unable to decode from raw proto bytes")]
-    Decode(#[source] prost::DecodeError),
-}
-
-pub trait TypeUrl {
-    fn type_url() -> String;
-}
+#[cfg(feature = "ethabi")]
+pub use unionlabs_encoding::TryFromEthAbiBytesError;
+#[cfg(feature = "proto")]
+pub use unionlabs_encoding::{TryFromProtoBytesError, TypeUrl};
 
 pub trait Msg: Clone + Encode<encoding::Proto> + TypeUrl {
     type Response: Decode<encoding::Proto, Error: core::error::Error> + TypeUrl;
-}
-
-#[cfg(feature = "ethabi")]
-#[derive(Debug, thiserror::Error)]
-// TODO: Rename this once we fully remove ethers
-pub enum TryFromEthAbiBytesErrorAlloy<E> {
-    #[error(transparent)]
-    Convert(E),
-    #[error("unable to decode from raw ethabi bytes")]
-    Decode(#[from] alloy::core::sol_types::Error),
 }
 
 /// An empty string. Will only parse/serialize to/from `""`.

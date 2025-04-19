@@ -92,18 +92,7 @@ fn no_overlap() {
         type Value = Bytes;
     }
 
-    enum B {}
-    impl Store for B {
-        const PREFIX: Prefix = Prefix::new(&[1, 1]);
-        type Key = Bytes;
-        type Value = Bytes;
-    }
-
-    trait BytesStore {}
-    impl BytesStore for A {}
-    impl BytesStore for B {}
-
-    impl<T: BytesStore> KeyCodec<Bytes> for T {
+    impl KeyCodec<Bytes> for A {
         fn encode_key(key: &Bytes) -> Bytes {
             key.clone()
         }
@@ -113,7 +102,34 @@ fn no_overlap() {
         }
     }
 
-    impl<T: BytesStore> ValueCodec<Bytes> for T {
+    impl ValueCodec<Bytes> for A {
+        fn encode_value(value: &Bytes) -> Bytes {
+            value.clone()
+        }
+
+        fn decode_value(raw: &Bytes) -> StdResult<Bytes> {
+            Ok(raw.clone())
+        }
+    }
+
+    enum B {}
+    impl Store for B {
+        const PREFIX: Prefix = Prefix::new(&[1, 1]);
+        type Key = Bytes;
+        type Value = Bytes;
+    }
+
+    impl KeyCodec<Bytes> for B {
+        fn encode_key(key: &Bytes) -> Bytes {
+            key.clone()
+        }
+
+        fn decode_key(raw: &Bytes) -> StdResult<Bytes> {
+            Ok(raw.clone())
+        }
+    }
+
+    impl ValueCodec<Bytes> for B {
         fn encode_value(value: &Bytes) -> Bytes {
             value.clone()
         }

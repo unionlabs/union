@@ -1,10 +1,10 @@
 use std::{collections::BTreeSet, marker::PhantomData};
 
 use cosmwasm_std::{Addr, StdError, StdResult};
-use depolama::{KeyCodec, Prefix, Store, ValueCodec};
+use depolama::{value::ValueCodecViaEncoding, KeyCodec, Prefix, Store, ValueCodec};
 use ibc_union_spec::{Channel, ChannelId, ClientId, Connection, ConnectionId};
 use unionlabs::{
-    encoding::{Bincode, DecodeAs, EncodeAs},
+    encoding::Bincode,
     primitives::{ByteArrayExt, Bytes, H256},
 };
 
@@ -56,22 +56,6 @@ macro_rules! bytes_value {
     };
 }
 
-macro_rules! bincode_value {
-    ($ty:ty) => {
-        impl ValueCodec<<$ty as Store>::Value> for $ty {
-            fn encode_value(value: &<$ty as Store>::Value) -> Bytes {
-                value.encode_as::<Bincode>().into()
-            }
-
-            fn decode_value(raw: &Bytes) -> StdResult<<$ty as Store>::Value> {
-                <<$ty as Store>::Value>::decode_as::<Bincode>(raw).map_err(|e| {
-                    StdError::generic_err(format!("unable to decode {}: {e}", stringify!($ty)))
-                })
-            }
-        }
-    };
-}
-
 macro_rules! addr_value {
     ($ty:ty) => {
         impl ValueCodec<Addr> for $ty {
@@ -115,7 +99,9 @@ impl Store for Channels {
     type Value = Channel;
 }
 id_key!(Channels);
-bincode_value!(Channels);
+impl ValueCodecViaEncoding for Channels {
+    type Encoding = Bincode;
+}
 
 pub enum ContractChannels {}
 impl Store for ContractChannels {
@@ -174,7 +160,9 @@ impl Store for Connections {
     type Value = Connection;
 }
 id_key!(Connections);
-bincode_value!(Connections);
+impl ValueCodecViaEncoding for Connections {
+    type Encoding = Bincode;
+}
 
 pub enum ClientStates {}
 impl Store for ClientStates {
@@ -280,8 +268,7 @@ impl<S: Store> Store for ClientStore<S> {
 impl<S: Store> KeyCodec<(ClientId, S::Key)> for ClientStore<S> {
     fn encode_key((client_id, key): &(ClientId, S::Key)) -> Bytes {
         client_id
-            .get()
-            .get()
+            .raw()
             .to_be_bytes()
             .into_iter()
             .chain(S::PREFIX.iter_with_separator().copied())
@@ -371,19 +358,6 @@ impl ValueCodec<H256> for Commitments {
     }
 }
 
-fn read_fixed_bytes<const N: usize>(raw: &Bytes) -> StdResult<[u8; N]> {
-    raw.try_into().map_err(|_| {
-        StdError::generic_err(format!(
-            "invalid key: expected {N} bytes, found {}: {raw}",
-            raw.len()
-        ))
-    })
-}
-
-fn invalid_id() -> StdError {
-    StdError::generic_err("invalid id, must be > 0")
-}
-
 pub enum WhitelistedRelayersAdmin {}
 impl Store for WhitelistedRelayersAdmin {
     const PREFIX: Prefix = Prefix::new(b"whitelisted_relayers_admin");
@@ -420,5 +394,100 @@ impl ValueCodec<()> for WhitelistedRelayers {
 
     fn decode_value(_: &Bytes) -> StdResult<()> {
         Ok(())
+    }
+}
+
+fn read_fixed_bytes<const N: usize>(raw: &Bytes) -> StdResult<[u8; N]> {
+    raw.try_into().map_err(|_| {
+        StdError::generic_err(format!(
+            "invalid key: expected {N} bytes, found {}: {raw}",
+            raw.len()
+        ))
+    })
+}
+
+fn invalid_id() -> StdError {
+    StdError::generic_err("invalid id, must be > 0")
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{testing::mock_dependencies, Storage};
+    use depolama::StorageExt;
+    use hex_literal::hex;
+    use ibc_union_spec::{ChannelState, ConnectionState};
+
+    use super::*;
+
+    // nix run .# -- query wasm contract-state raw union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf --hex 6368616E6E656C730000000001 --node https://rpc.rpc-node.union-testnet-10.union.build --height 495206
+    #[test]
+    fn channel() {
+        let mut deps = mock_dependencies();
+
+        deps.storage.set(
+            &hex!("6368616E6E656C730000000001"),
+            &hex!("0200000001000000010100000014000000000000005fbe74a283f7954f10aa04c2edf55578811aeb030c0000000000000075637330332d7a6b676d2d30"),
+        );
+
+        let channel = deps.storage.read::<Channels>(&ChannelId!(1)).unwrap();
+
+        assert_eq!(
+            channel,
+            Channel {
+                state: ChannelState::Open,
+                connection_id: ConnectionId!(1),
+                counterparty_channel_id: Some(ChannelId!(1)),
+                counterparty_port_id: hex!("5fbe74a283f7954f10aa04c2edf55578811aeb03").into(),
+                version: "ucs03-zkgm-0".to_owned()
+            }
+        );
+    }
+
+    // nix run .# -- query wasm contract-state raw union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf --hex 636F6E6E656374696F6E730000000001 --node https://rpc.rpc-node.union-testnet-10.union.build --height 495206
+    #[test]
+    fn connection() {
+        let mut deps = mock_dependencies();
+
+        deps.storage.set(
+            &hex!("636F6E6E656374696F6E730000000001"),
+            &hex!("0200000001000000010000000101000000"),
+        );
+
+        let connection = deps.storage.read::<Connections>(&ConnectionId!(1)).unwrap();
+
+        assert_eq!(
+            connection,
+            Connection {
+                state: ConnectionState::Open,
+                client_id: ClientId!(1),
+                counterparty_client_id: ClientId!(1),
+                counterparty_connection_id: Some(ConnectionId!(1)),
+            }
+        );
+    }
+
+    // nix run .# -- query wasm contract-state raw union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf --hex 636F6E74726163745F6368616E6E656C7300756E696F6E313333366A6A386572746C3868377264766E7A3464683572716168643039637930783433677568737878367879727A747832393271706536346668 --node https://rpc.rpc-node.union-testnet-10.union.build --height 495206
+    #[test]
+    fn contract_channels() {
+        let mut deps = mock_dependencies();
+
+        deps.storage.set(
+            &hex!("636F6E74726163745F6368616E6E656C7300756E696F6E313333366A6A386572746C3868377264766E7A3464683572716168643039637930783433677568737878367879727A747832393271706536346668"),
+            &hex!("000000010000000200000003"),
+        );
+
+        let contract_channels = deps
+            .storage
+            .read::<ContractChannels>(&Addr::unchecked(
+                "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
+            ))
+            .unwrap();
+
+        assert_eq!(
+            contract_channels,
+            [ChannelId!(1), ChannelId!(2), ChannelId!(3)]
+                .into_iter()
+                .collect::<BTreeSet<_>>()
+        );
     }
 }

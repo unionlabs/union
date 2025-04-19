@@ -54,12 +54,11 @@ pub mod proto {
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
-    use alloy::sol_types::SolValue;
     use unionlabs::{
         bounded::{BoundedI32, BoundedI64, BoundedIntError},
         google::protobuf::timestamp::Timestamp,
         ibc::core::client::height::Height,
-        impl_ethabi_via_try_from_into, TryFromEthAbiBytesErrorAlloy,
+        impl_ethabi_via_try_from_into, TryFromEthAbiBytesError,
     };
 
     use crate::{Header, LightHeader};
@@ -120,21 +119,21 @@ pub mod ethabi {
     }
 
     impl TryFrom<SolHeader> for Header {
-        type Error = TryFromEthAbiBytesErrorAlloy<Error>;
+        type Error = TryFromEthAbiBytesError<Error>;
 
         fn try_from(value: SolHeader) -> Result<Self, Self::Error> {
             Ok(Self {
                 signed_header: LightHeader {
                     height: BoundedI64::new(value.signedHeader.height)
                         .map_err(Error::Height)
-                        .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
+                        .map_err(TryFromEthAbiBytesError::Convert)?,
                     time: Timestamp {
                         seconds: BoundedI64::new(value.signedHeader.secs)
                             .map_err(Error::Secs)
-                            .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
+                            .map_err(TryFromEthAbiBytesError::Convert)?,
                         nanos: BoundedI32::new(value.signedHeader.nanos)
                             .map_err(Error::Nanos)
-                            .map_err(TryFromEthAbiBytesErrorAlloy::Convert)?,
+                            .map_err(TryFromEthAbiBytesError::Convert)?,
                     },
                     validators_hash: value.signedHeader.validatorsHash.into(),
                     next_validators_hash: value.signedHeader.nextValidatorsHash.into(),
