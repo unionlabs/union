@@ -25,10 +25,11 @@ let transactionHash = $state("")
       <section>
         <Input id="transaction-hash" value="" oninput={(e) => {
             // used for conditionally displaying result
-            transactionHash = e.currentTarget.value
+
+            transactionHash = e.currentTarget.value.startsWith('0x') ? e.currentTarget.value : `0x${e.currentTarget.value}`
 
             // actually make the query
-            transferHashStore.startPolling(e.currentTarget.value)
+            transferHashStore.startPolling(transactionHash)
           }} label="Transaction Hash"/>
       </section>
       {#if transactionHash}
