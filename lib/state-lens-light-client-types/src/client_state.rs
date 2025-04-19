@@ -101,10 +101,10 @@ use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 ///
 /// ## Bcs
 ///
-/// Bcs encoding is implemented via serde and [`bcs`]. Since [`bcs`] leverages serde, it is
-/// incompatible with the generated serde implementation due to `#[serde(flatten)]`. To work around
+/// Bcs encoding is implemented via serde and [`bcs`]. Since `bcs` leverages serde, it is
+/// incompatible with the derived serde implementation due to `#[serde(flatten)]`. To work around
 /// this, [`AsTuple`] is implemented for `ClientState`. To encode bcs, convert to tuple form with
-/// [`AsTuple::as_tuple`] first and then encode that structure. To decode bcs, decode into
+/// [`AsTuple::as_tuple`] first and then encode that structure. To decode `bcs`, decode into
 /// `<ClientState<Extra> as AsTuple>::Tuple` and then convert from that value with
 /// [`AsTuple::from_tuple`].
 ///

@@ -89,13 +89,8 @@ pub mod proto {
 pub mod ethabi {
     use std::string::FromUtf8Error;
 
-    use alloy::sol_types::SolValue;
     use consensus_primitives::Duration;
-    use unionlabs::{
-        encoding::{Decode, Encode, EthAbi},
-        ibc::core::client::height::Height,
-        TryFromEthAbiBytesErrorAlloy,
-    };
+    use unionlabs::{ibc::core::client::height::Height, impl_ethabi_via_try_from_into};
 
     use crate::{ChainId, ClientState};
 
@@ -110,35 +105,33 @@ pub mod ethabi {
         }
     }
 
-    impl Encode<EthAbi> for ClientState {
-        fn encode(self) -> Vec<u8> {
+    impl_ethabi_via_try_from_into!(ClientState => SolClientState);
+
+    impl From<ClientState> for SolClientState {
+        fn from(value: ClientState) -> Self {
             SolClientState {
-                chainId: self.chain_id.into_fixed_bytes(),
-                trustingPeriod: self.trusting_period.as_nanos(),
-                maxClockDrift: self.max_clock_drift.as_nanos(),
+                chainId: value.chain_id.into_fixed_bytes(),
+                trustingPeriod: value.trusting_period.as_nanos(),
+                maxClockDrift: value.max_clock_drift.as_nanos(),
                 // NOTE: The revision height is not used for cometbls clients encoded using ethabi. If this value is required, use a different encoding (i.e. proto or bincode).
-                frozenHeight: self.frozen_height.height(),
-                latestHeight: self.latest_height.height(),
-                contractAddress: self.contract_address.into(),
+                frozenHeight: value.frozen_height.height(),
+                latestHeight: value.latest_height.height(),
+                contractAddress: value.contract_address.into(),
             }
-            .abi_encode_params()
         }
     }
 
-    impl Decode<EthAbi> for ClientState {
-        type Error = TryFromEthAbiBytesErrorAlloy<Error>;
+    impl TryFrom<SolClientState> for ClientState {
+        type Error = Error;
 
-        fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-            let client_state = SolClientState::abi_decode(bytes, true)?;
-
+        fn try_from(value: SolClientState) -> Result<Self, Self::Error> {
             Ok(Self {
-                chain_id: ChainId::try_from_fixed_bytes(client_state.chainId)
-                    .map_err(|err| TryFromEthAbiBytesErrorAlloy::Convert(Error::ChainId(err)))?,
-                trusting_period: Duration::from_nanos(client_state.trustingPeriod),
-                max_clock_drift: Duration::from_nanos(client_state.maxClockDrift),
-                frozen_height: Height::new(client_state.frozenHeight),
-                latest_height: Height::new(client_state.latestHeight),
-                contract_address: client_state.contractAddress.into(),
+                chain_id: ChainId::try_from_fixed_bytes(value.chainId)?,
+                trusting_period: Duration::from_nanos(value.trustingPeriod),
+                max_clock_drift: Duration::from_nanos(value.maxClockDrift),
+                frozen_height: Height::new(value.frozenHeight),
+                latest_height: Height::new(value.latestHeight),
+                contract_address: value.contractAddress.into(),
             })
         }
     }
@@ -152,9 +145,10 @@ pub mod ethabi {
 
 #[cfg(test)]
 mod tests {
+    use hex_literal::hex;
     use unionlabs::{
         encoding::{Bincode, EthAbi, Json, Proto},
-        test_utils::assert_codec_iso,
+        test_utils::{assert_codec_iso, assert_codec_iso_bytes},
     };
 
     use super::*;
@@ -189,9 +183,45 @@ mod tests {
     fn proto_iso() {
         let mut client_state = mk_client_state();
 
-        // this field is currently lost when encoding to proto since it is not supported in the native ibc-go implementation
+        // this field is lost when encoding to proto since it is not supported in the native ibc-go implementation
         client_state.contract_address = <H256>::from([0x00; 32]);
 
         assert_codec_iso::<_, Proto>(&client_state);
+    }
+
+    #[test]
+    fn ethabi_bytes() {
+        assert_codec_iso_bytes::<_, EthAbi>(
+            &ClientState {
+                chain_id: ChainId::from_string("union-1").unwrap(),
+                frozen_height: Height::new(0),
+                latest_height: Height::new(578192),
+                max_clock_drift: Duration::from_nanos(1200000000000),
+                trusting_period: Duration::from_nanos(1982880000000000),
+                contract_address: hex!(
+                    "bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"
+                )
+                .into(),
+            },
+            &hex!("000000000000000000000000000000000000000000000000756e696f6e2d310000000000000000000000000000000000000000000000000000070b6b3a084000000000000000000000000000000000000000000000000000000001176592e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000008d290bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"),
+        );
+    }
+
+    #[test]
+    fn bincode_bytes() {
+        assert_codec_iso_bytes::<_, Bincode>(
+            &ClientState {
+                chain_id: ChainId::from_string("union-1").unwrap(),
+                frozen_height: Height::new(0),
+                latest_height: Height::new_with_revision(1, 578227),
+                max_clock_drift: Duration::from_nanos(1200000000000),
+                trusting_period: Duration::from_nanos(1982880000000000),
+                contract_address: hex!(
+                    "bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"
+                )
+                .into(),
+            },
+            &hex!("0700000000000000756e696f6e2d310040083a6b0b070000e0926517010000000000000000000000010100000000000000b3d2080000000000bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"),
+        );
     }
 }

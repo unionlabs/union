@@ -440,4 +440,23 @@ mod tests {
         let bz_base64 = bz.as_encoding::<Base64>();
         assert_eq!(bz_base64, &bz);
     }
+
+    #[test]
+    fn bincode() {
+        let bz: Bytes = [1, 2, 3].into();
+
+        let bincode_bz = bincode::encode_to_vec(bz, bincode::config::legacy()).unwrap();
+
+        // length prefixed (FixedBytes is not)
+        #[rustfmt::skip]
+        assert_eq!(
+            &[
+                // length (8 bytes)
+                3, 0, 0, 0, 0, 0, 0, 0,
+                // data (3 bytes)
+                1, 2, 3
+            ],
+            &*bincode_bz
+        );
+    }
 }

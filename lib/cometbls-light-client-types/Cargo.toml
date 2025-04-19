@@ -35,4 +35,4 @@ bcs                         = { workspace = true }
 cometbls-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde", "proto"] }
 hex                         = { workspace = true }
 hex-literal                 = { workspace = true }
-unionlabs                   = { workspace = true, features = ["test-utils"] }
+unionlabs                   = { workspace = true, features = ["test-utils", "bcs"] }

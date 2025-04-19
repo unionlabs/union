@@ -90,14 +90,14 @@ where
 macro_rules! impl_ethabi_via_try_from_into {
     ($T:path => $EthAbi:path) => {
         impl $crate::encoding::Decode<$crate::encoding::EthAbi> for $T {
-            type Error = $crate::TryFromEthAbiBytesErrorAlloy<<$T as TryFrom<$EthAbi>>::Error>;
+            type Error = $crate::TryFromEthAbiBytesError<<$T as TryFrom<$EthAbi>>::Error>;
 
             fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
                 <$EthAbi>::abi_decode_params(bytes, false)
-                    .map_err($crate::TryFromEthAbiBytesErrorAlloy::Decode)
+                    .map_err($crate::TryFromEthAbiBytesError::Decode)
                     .and_then(|abi| {
                         abi.try_into()
-                            .map_err($crate::TryFromEthAbiBytesErrorAlloy::Convert)
+                            .map_err($crate::TryFromEthAbiBytesError::Convert)
                     })
             }
         }

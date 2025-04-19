@@ -63,7 +63,7 @@ pub struct FetchBlockRange {
 /// picked up by a plugin. If it is not handled by a plugin, this will
 /// return with a fatal error.
 ///
-/// # Implementor's Note
+/// # Implementation Note
 ///
 /// This message is intended to act as a "seed" to an infinite stream of
 /// unfolding messages. For example, if this is queued with height 10,
@@ -84,7 +84,7 @@ pub struct FetchBlocks {
 /// by a plugin. If it is not handled by a plugin, this will return with
 /// a fatal error.
 ///
-/// # Implementor's Note
+/// # Implementation Note
 ///
 /// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data.
 /// This is the entrypoint called when a client update is requested, and
@@ -114,7 +114,7 @@ pub struct FetchUpdateHeaders {
 /// This represents a request for transaction submission and must be picked up by a plugin. If it is
 /// not handled by a plugin, this will return with a fatal error.
 ///
-/// # Implementor's Note
+/// # Implementation Note
 ///
 /// The returned [`Op`] ***MUST*** resolve to a [`Op::Noop`].
 #[model]

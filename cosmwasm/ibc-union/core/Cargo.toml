@@ -34,3 +34,6 @@ serde-json-wasm = "1.0"
 strum           = { version = "0.26.3", features = ["derive"] }
 thiserror       = { workspace = true }
 unionlabs       = { workspace = true, features = ["ethabi", "bincode"] }
+
+[dev-dependencies]
+hex-literal.workspace = true
