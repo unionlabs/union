@@ -300,7 +300,6 @@ export default defineConfig({
                 }
               ]
             },
-
             {
               label: "Joining the Testnet",
               collapsed: true,
@@ -311,6 +310,16 @@ export default defineConfig({
             {
               label: "Ceremony",
               link: "/ceremony"
+            },
+            {
+              label: "FAQ",
+              collapsed: true,
+              items: [
+                {
+                  label: "How to add BTC Union assets to my wallet?",
+                  link: "/faq/add-tokens-to-wallet"
+                }
+              ]
             }
           ]
         },
