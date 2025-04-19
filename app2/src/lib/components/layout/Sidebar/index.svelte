@@ -77,10 +77,10 @@ onMount(() => {
 
 
 <div class="min-h-full flex flex-col overflow-y-auto">
-  <div class="px-6 flex items-center gap-2 border-b-1 h-16 border-zinc-900">
+  <a class="px-6 flex items-center gap-2 border-b-1 h-16 border-zinc-900" href="/">
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
     <div class="bg-babylon-orange px-2 py rounded text-sm font-mono font-bold">BTC</div>
-  </div>
+  </a>
   <div class="flex flex-col flex-1">
   {#each navigation as section, i}
     {#if section.title !== "Developer" || uiStore.showDeveloperPages}
