@@ -40,9 +40,14 @@ const filterBySigningMode = (chains: Array<Chain>) =>
   pipe(
     Match.value(signingMode.mode).pipe(
       Match.when("single", () => chains),
-      Match.when("multi", () =>
-        pipe(chains, xs => (type === "source" ? xs.filter(x => x.rpc_type === "cosmos") : xs))
-      ),
+      Match.when("multi", () => {
+        // In multi mode, only show cosmos chains for source
+        if (type === "source") {
+          return chains.filter(chain => chain.rpc_type === "cosmos")
+        }
+        // For destination, show all chains (they will be filtered by selected source chain)
+        return chains
+      }),
       Match.exhaustive
     )
   )
@@ -78,7 +83,7 @@ const filteredChains = $derived(
           (type === "destination" &&
             transferData.raw.destination === chain.chain_id)}
         {@const isFromChain = (type === "destination" && transferData.raw.source === chain.chain_id)}
-        {@const isDisabled = isFromChain || !destinationOpen}
+        {@const isDisabled = type === "destination" ? (isFromChain || !destinationOpen) : false}
         <button
           class={cn(
             "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors",
