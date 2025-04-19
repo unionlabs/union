@@ -9,7 +9,9 @@ use sqlx::postgres::PgPoolOptions;
 use tokio::task::JoinSet;
 use tracing::{error, info, warn};
 
+mod abi_fetcher;
 mod cli;
+mod github_client;
 mod github_fetcher;
 mod healthz;
 mod indexer;
@@ -69,7 +71,10 @@ async fn main() -> color_eyre::eyre::Result<()> {
         interval.tick().await;
         loop {
             info!("updating tokens");
-            token_fetcher::update_tokens(&token_fetcher_db).await?;
+            match token_fetcher::update_tokens(&token_fetcher_db).await {
+                Ok(()) => info!("updated tokens"),
+                Err(err) => error!("failed to update tokens: {:?}", err),
+            };
             interval.tick().await;
         }
     };
@@ -82,12 +87,31 @@ async fn main() -> color_eyre::eyre::Result<()> {
         interval.tick().await;
         loop {
             info!("updating subscriptions");
-            github_fetcher::update_subscriptions(&github_fetcher_db).await?;
+            match github_fetcher::update_subscriptions(&github_fetcher_db).await {
+                Ok(()) => info!("updated subscriptions"),
+                Err(err) => error!("failed to update subscriptions: {:?}", err),
+            };
             interval.tick().await;
         }
     };
 
     set.spawn(github_fetcher);
+
+    let abi_fetcher_db = db.clone();
+    let abi_fetcher = async move {
+        let mut interval = tokio::time::interval(Duration::from_secs(60));
+        interval.tick().await;
+        loop {
+            info!("updating abis");
+            match abi_fetcher::fetch_abis(&abi_fetcher_db).await {
+                Ok(()) => info!("updated abis"),
+                Err(err) => error!("failed to update abis: {:?}", err),
+            };
+            interval.tick().await;
+        }
+    };
+
+    set.spawn(abi_fetcher);
 
     while let Some(res) = set.join_next().await {
         match res {

@@ -1,8 +1,7 @@
 use std::fmt::Display;
 
-use crate::github_fetcher::client::FileContents;
+use crate::github_client::download::FileContents;
 
-mod client;
 mod fetcher;
 mod postgres;
 

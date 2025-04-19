@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT d.commit\n            FROM abi.dependency d\n            WHERE NOT EXISTS (\n                SELECT 1\n                FROM abi.download d2\n                WHERE d2.commit = d.commit\n            )\n            ORDER BY created_at ASC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "commit",
+        "type_info": "Bytea"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "89774f486bec717a897c9240a3dcd1326d9580845c04673a9f4bebeada21e5d3"
+}

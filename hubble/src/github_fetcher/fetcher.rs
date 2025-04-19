@@ -4,26 +4,30 @@ use serde::Serialize;
 use sqlx::{Acquire, Postgres};
 use tracing::{debug, error, info, warn};
 
-use crate::github_fetcher::{
-    self,
-    client::{fetch_commit_details, fetch_file_contents, CommitDetails, FileDownloadError},
-    postgres::get_subscriptions,
-    Attempt, Download, Subscription,
+use crate::{
+    github_client::{
+        commit_details::{fetch_commit_details_by_branch, CommitDetails, CommitDetailsError},
+        download::{download, FileDownloadError},
+    },
+    github_fetcher::{self, postgres::get_subscriptions, Attempt, Download, Subscription},
 };
 
 #[derive(Debug, thiserror::Error)]
 pub enum UpdateSubscriptionError {
-    #[error("database error creation transaction for subscription {0}: {1}")]
+    #[error("database error creation transaction for subscription {0}")]
     CreateTransaction(Subscription, #[source] sqlx::Error),
 
-    #[error("database error committing transaction for subscription {0}: {1}")]
+    #[error("database error committing transaction for subscription {0}")]
     CommitTransaction(Subscription, #[source] sqlx::Error),
 
-    #[error("database error inserting download {0}: {1}")]
+    #[error("database error inserting download {0}")]
     InsertDownloadError(Subscription, #[source] sqlx::Error),
 
-    #[error("database error inserting attempt {0}: {1}")]
+    #[error("database error inserting attempt {0}")]
     InsertAttemptError(Subscription, #[source] sqlx::Error),
+
+    #[error("commit details error {0}")]
+    CannotFetchCommitDetailsError(#[from] CommitDetailsError),
 
     #[error("file download error {0}")]
     CannotDownloadFileError(#[from] FileDownloadError),
@@ -40,7 +44,7 @@ pub async fn update_subscriptions(db: &sqlx::PgPool) -> color_eyre::Result<()> {
         match update_subscription(db, &subscription).await {
             Ok(_) => debug!("process: {subscription} => success"),
             Err(error) => {
-                warn!("process: {subscription} => error: {error:?} (sleep for 5 minutes to prevent a loop that will trigger a github rate limit");
+                warn!("process: {subscription} => error: {error} (sleep for 5 minutes to prevent a loop that will trigger a github rate limit");
                 sleep(std::time::Duration::from_secs(5 * 60));
             }
         }
@@ -98,8 +102,18 @@ async fn refresh_subscription(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     subscription: &Subscription,
 ) -> Result<(Status, CommitDetails), UpdateSubscriptionError> {
-    let commit_details = fetch_commit_details(subscription).await?;
-    let file_contents = fetch_file_contents(subscription, &commit_details).await?;
+    let commit_details = fetch_commit_details_by_branch(
+        &subscription.repo,
+        &subscription.path,
+        &subscription.branch,
+    )
+    .await?;
+    let file_contents = download(
+        &subscription.repo,
+        &commit_details.commit_hash,
+        &subscription.path,
+    )
+    .await?;
 
     let status = match subscription.data {
         Some(ref data) => match data == &file_contents.0 {
