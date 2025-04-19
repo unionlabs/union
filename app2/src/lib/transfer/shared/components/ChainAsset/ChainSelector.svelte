@@ -40,7 +40,14 @@ const filterBySigningMode = (chains: Array<Chain>) =>
   pipe(
     Match.value(signingMode.mode).pipe(
       Match.when("single", () => chains),
-      Match.when("multi", () => chains.filter(chain => chain.rpc_type === "cosmos")),
+      Match.when("multi", () => {
+        // In multi mode, only show cosmos chains for source
+        if (type === "source") {
+          return chains.filter(chain => chain.rpc_type === "cosmos")
+        }
+        // For destination, show all chains (they will be filtered by selected source chain)
+        return chains
+      }),
       Match.exhaustive
     )
   )
