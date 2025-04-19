@@ -15,16 +15,16 @@ use crate::{
 
 #[derive(Debug, thiserror::Error)]
 pub enum FetchAbiError {
-    #[error("database error creation transaction for dependency {0}: {1}")]
+    #[error("database error creation transaction for dependency {0}")]
     CreateTransaction(AbiDependency, #[source] sqlx::Error),
 
-    #[error("database error committing transaction for dependency {0}: {1}")]
+    #[error("database error committing transaction for dependency {0}")]
     CommitTransaction(AbiDependency, #[source] sqlx::Error),
 
-    #[error("database error inserting abis {0}: {1}")]
+    #[error("database error inserting abis {0}")]
     InsertAbisError(AbiDependency, #[source] sqlx::Error),
 
-    #[error("database error inserting attempt {0}: {1}")]
+    #[error("database error inserting attempt {0}")]
     InsertAttemptError(AbiDependency, #[source] sqlx::Error),
 
     #[error("commit details error {0}")]

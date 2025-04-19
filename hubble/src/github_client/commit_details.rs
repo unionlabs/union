@@ -16,16 +16,16 @@ static CLIENT: LazyLock<Client> = LazyLock::new(|| {
 
 #[derive(Debug, thiserror::Error)]
 pub enum CommitDetailsError {
-    #[error("error requesting commit details from {0}: {1}")]
+    #[error("error requesting commit details from {0}")]
     SendRequest(String, #[source] reqwest::Error),
 
-    #[error("error response fetching commit details from {0}: {1}")]
+    #[error("error response fetching commit details from {0}")]
     ErrorResponse(String, #[source] reqwest::Error),
 
-    #[error("error downloading commit details from {0}: {1}")]
+    #[error("error downloading commit details from {0}")]
     Download(String, #[source] reqwest::Error),
 
-    #[error("error parsing json commit details from {0}: {1}")]
+    #[error("error parsing json commit details from {0}")]
     Decode(String, #[source] serde_json::Error),
 
     #[error("no commit for {0}")]

@@ -15,13 +15,13 @@ static CLIENT: LazyLock<Client> = LazyLock::new(|| {
 
 #[derive(Debug, thiserror::Error)]
 pub enum FileDownloadError {
-    #[error("error requesting file contents from {0}: {1}")]
+    #[error("error requesting file contents from {0}")]
     SendRequest(String, #[source] reqwest::Error),
 
-    #[error("error response fetching file contents from {0}: {1}")]
+    #[error("error response fetching file contents from {0}")]
     ErrorResponse(String, #[source] reqwest::Error),
 
-    #[error("error downloading file content from {0}: {1}")]
+    #[error("error downloading file content from {0}")]
     Download(String, #[source] reqwest::Error),
 }
 
