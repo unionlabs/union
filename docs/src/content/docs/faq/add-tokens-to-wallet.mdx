@@ -1,0 +1,72 @@
+---
+title: "Adding Tokens from Union Transfers to Wallets"
+---
+
+import { Image } from 'astro:assets';
+import btcUnionTokenDenom from "../../../assets/images/faq/btc_union_token_denom.png"
+import btcUnionTokenHover from "../../../assets/images/faq/btc_union_token_hover.png"
+import kelprManageAssets from "../../../assets/images/faq/kelpr_manage_assets.png"
+import leapManageAssets from "../../../assets/images/faq/leap_manage_assets.png"
+
+After transferring your assets to a different network, it's possible your wallet won't already recognize them.
+
+# Getting the Token Denom
+
+To get your assets to show up again after they've been transferred, you will need to locate the token denom. Thankfully, btc.union.build makes this easy.
+
+1. Open up any transfer containing the assets you moved
+
+2. Hover over the asset near the top of the transfer pane
+
+<Image src={btcUnionTokenHover} alt="screenshot highlighting where to hover your mouse" />
+
+
+3. Copy the token denom from the pop-up
+
+<Image src={btcUnionTokenDenom} alt="screenshot highlighting denom info pop-up" />
+
+4. From here you can add the token to your wallet using the denom
+
+# Adding the Token to Your Wallet
+
+This process will be different depending on the wallet you're using. Here we provide instructions for both Keplr and Leap.
+
+## Keplr
+
+1. Open the Keplr extension
+
+2. Scroll down and select "Manage Asset List"
+
+<Image src={kelprManageAssets} width="264" alt="screenshot highlighting where to manage assets in kelpr" />
+
+3. Click the "+" in the top right corner of the extension
+
+4. Select the appropriate chain (for instance "Babylon Genesis")
+
+5. Paste the token denom under the "Contract Address" field
+
+6. (Optional) Keplr may not autopopulate the remainder of the token information. If Keplr does not, you may copy the remainder of the token information from the pop-up on btc.union.build
+
+7. Click "Confirm"
+
+## Leap
+
+1. Open the Leap extension
+
+2. Select the destination chain (for instance "Babylon Genesis")
+
+3. Click the gear icon above the list of your tokens
+
+<Image src={leapManageAssets} width="264" alt="screenshot highlighting where to manage assets in kelpr" />
+
+4. Click the "+" in the top right corner of the extension
+
+5. Paste the denom into the "Coin minimum denom" field
+
+6. (Optional) Keplr may not autopopulate the remainder of the token information. If Keplr does not, you may copy the remainder of the token information from the pop-up on btc.union.build
+
+7. Click "Add Token"
+
+## Finding Sent Packets
+
+If your multisig UI does not already link you to your transfer on btc.union.build, you can find you packet [here](https://btc.union.build/explorer/find-packet) using the transaction hash.
