@@ -1,0 +1,43 @@
+---
+title: Multisig Transfers on Union BTC
+---
+
+import { Image } from 'astro:assets';
+import safe01 from "../../../assets/images/faq/safe-01.png"
+import safe02 from "../../../assets/images/faq/safe-02.png"
+import safe03 from "../../../assets/images/faq/safe-03.png"
+import safe04 from "../../../assets/images/faq/safe-04.png"
+import safe05 from "../../../assets/images/faq/safe-05.png"
+import safe06 from "../../../assets/images/faq/safe-06.png"
+
+# SAFE - Ethereum Multisig to Babylon Multisig
+
+To start a multisig transfer with SAFE, you will first need a multisig account created with https://app.safe.global/.
+
+Once you have a multisig created, you can follow the steps below to conduct your transfer with Union BTC.
+
+## Steps
+
+1. Go to the "My custom apps" tab and click "Add custom Safe App"
+
+<Image src={safe01} alt="safe01" />
+
+2. Then enter the address `https://btc.union.build` into the "Safe App URL" field and check the box agreeing to use this app at your own risk. You can now add the app to Safe by clicking "Add"
+
+<Image src={safe02} alt="safe02" />
+
+3. Once added, you can now open the Union BTC Safe App.
+
+4. Once inside, you will need to connect your Safe wallet to the app. To do so, click "My Wallets" in the bottom left and then select "Safe Wallet".
+
+<Image src={safe03} alt="safe03" />
+<Image src={safe04} alt="safe04" />
+
+5. With your wallet connected, you can now select the asset you would like to send, and it's destination. In this case, we're selected uniBTC on Ethereum as the source asset and uniBTC on Babylon as the destination asset. Then set your amount.
+
+6. Set the receiver. In our case, a Kelpr multisig account. To do this, go to your Kelpr multisig account and copy the address. Then go back to Safe and select the wallet icon. Here, paste in the Kelpr address you copied.
+
+<Image src={safe05} alt="safe05" />
+<Image src={safe06} alt="safe06" />
+
+7. Finally, you can send the transfer which should prompt you to sign and submit the transaction via safe.
