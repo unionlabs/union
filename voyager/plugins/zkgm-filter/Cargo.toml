@@ -20,7 +20,7 @@ enumorph                         = { workspace = true }
 ibc-union-spec                   = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
 jsonrpsee                        = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                           = { workspace = true }
-ripemd.workspace                 = true
+ripemd                           = { workspace = true }
 serde                            = { workspace = true, features = ["derive"] }
 serde_json                       = { workspace = true }
 tokio                            = { workspace = true }

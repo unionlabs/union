@@ -14,4 +14,4 @@ workspace = true
 [dependencies]
 alloy-primitives = { workspace = true }
 alloy-sol-types  = { workspace = true }
-sha3.workspace   = true
+sha3             = { workspace = true }

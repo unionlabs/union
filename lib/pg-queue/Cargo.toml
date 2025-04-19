@@ -12,15 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-frame-support-procedural = { workspace = true }
-futures-util             = "0.3.30"
-itertools                = "0.13.0"
-prometheus               = "0.13.4"
-schemars.workspace       = true
-serde                    = { workspace = true }
-serde_json               = { workspace = true, features = ["unbounded_depth"] }
-sqlx                     = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio", "time"] }
-time                     = { workspace = true }
-tokio                    = { workspace = true, features = ["time"] }
-tracing                  = { workspace = true }
-voyager-vm               = { workspace = true }
+futures-util = "0.3.30"
+itertools    = { workspace = true }
+prometheus   = "0.13.4"
+schemars     = { workspace = true, features = ["derive"] }
+serde        = { workspace = true }
+serde_json   = { workspace = true, features = ["unbounded_depth"] }
+sqlx         = { workspace = true, features = ["postgres", "migrate", "macros", "json", "runtime-tokio", "time"] }
+time         = { workspace = true }
+tokio        = { workspace = true, features = ["time"] }
+tracing      = { workspace = true }
+voyager-vm   = { workspace = true }

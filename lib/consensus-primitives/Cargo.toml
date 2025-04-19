@@ -12,10 +12,9 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-bincode    = { workspace = true, optional = true, features = ["derive"] }
-schemars   = { workspace = true, optional = true, features = ["derive"] }
-serde      = { workspace = true, optional = true, features = ["derive"] }
-serde_json = { workspace = true }
+bincode  = { workspace = true, optional = true, features = ["derive"] }
+schemars = { workspace = true, optional = true, features = ["derive"] }
+serde    = { workspace = true, optional = true, features = ["derive"] }
 
 [features]
 default = []

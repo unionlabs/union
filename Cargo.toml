@@ -235,10 +235,16 @@ license-file = "LICENSE"
 publish      = false
 repository   = "https://github.com/unionlabs/union"
 
+[workspace.metadata.cargo-machete]
+ignored = ["embed-commit"]
+
 [workspace.lints.clippy]
 disallowed_types        = "deny"
 module_inception        = "allow" # it's useful sometimes
 module_name_repetitions = "allow" # dumb lint
+
+# [workspace.lints.rust]
+# unused_crate_dependencies = "warn"
 
 [workspace.lints.rustdoc]
 broken-intra-doc-links = "deny"
@@ -364,17 +370,23 @@ state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/sta
 
 solidity-slot = { path = "lib/solidity-slot", default-features = false }
 
+# =====================
 # external dependencies
+# =====================
+
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
 alloy            = { version = "0.12.6", default-features = false }
 alloy-primitives = { version = "0.8.23", default-features = false }
 alloy-sol-types  = { version = "0.8.23", default-features = true }
 
-# https://github.com/aptos-labs/aptos-core/pull/12636
-aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }
-aptos-rest-client        = { git = "https://github.com/unionlabs/aptos-core" }
-aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }
+anyhow    = { version = "1" }
+itertools = { version = "0.13" }
+syn       = { version = "2", default-features = false }
+
+aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }                       # https://github.com/aptos-labs/aptos-core/pull/12636
+aptos-rest-client        = { git = "https://github.com/unionlabs/aptos-core" }                       # https://github.com/aptos-labs/aptos-core/pull/12636
+aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }                       # https://github.com/aptos-labs/aptos-core/pull/12636
 axum                     = { version = "0.6.20", default-features = false }
 base64                   = { version = "0.21", default-features = false }
 bcs                      = { version = "0.1.6", default-features = false }

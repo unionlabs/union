@@ -15,7 +15,7 @@ serde_json              = { workspace = true }
 unionlabs               = { workspace = true, features = ["near"] }
 
 [dev-dependencies]
-anyhow     = "1.0"
+anyhow     = { workspace = true }
 near-units = "0.2.0"
 tokio      = { version = "1.18.1", features = ["full"] }
 
