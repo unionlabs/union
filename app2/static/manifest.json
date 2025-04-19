@@ -1,6 +1,6 @@
 {
   "name": "Union BTC",
-  "description": "Union Build - Bitcoin",
+  "description": "Bridge app for Babylon and Bitcoin Secured Networks ",
   "short_name": "Union BTC",
   "iconPath": "/web-app-manifest-192x192.png",
   "start_url": "/transfer",

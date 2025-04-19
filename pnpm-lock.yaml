@@ -67,6 +67,9 @@ importers:
       '@number-flow/svelte':
         specifier: ^0.3.7
         version: 0.3.7(svelte@5.27.1)
+      '@safe-global/safe-apps-sdk':
+        specifier: ^9.1.0
+        version: 9.1.0(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.22.4)
       '@scure/base':
         specifier: ^1.2.4
         version: 1.2.4

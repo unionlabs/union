@@ -1,43 +1,20 @@
-import { FetchHttpClient, HttpClient } from "@effect/platform"
-import { Record as R, Option as O, Effect, pipe, Schedule } from "effect"
-import type { Chain } from "viem"
-import type { NoSuchElementException } from "effect/Cause"
+import { Effect, Schedule } from "effect"
+import type { TransactionDetails } from "@safe-global/safe-gateway-typescript-sdk"
+import { safeWallet } from "$lib/transfer/shared/services/handlers/safe.ts"
 
 export const resolveSafeTx = (
-  chain: Chain,
-  hash: `0x${string}`
-): Effect.Effect<string, NoSuchElementException, never> =>
-  Effect.gen(function* () {
-    const client = yield* HttpClient.HttpClient
-
-    const networkName = chain.name
-
-    const endpoint = `https://safe-transaction-mainnet.safe.global`
-    const url = `${endpoint}/api/v1/multisig-transactions/${hash}`
-
-    const response = yield* client.get(url)
-    const json = response.json
-
-    const result = pipe(
-      json,
-      // extract response data
-      // TODO: replace with schema
-      Effect.flatMap(x => R.get(x as Record<string, string>, "transactionHash")),
-      // assume provided hash is already real one (?)
-      Effect.catchIf(
-        e => e._tag === "ResponseError" && e.response.status === 404,
-        () => Effect.succeed(hash)
-      )
-    )
-
-    return yield* result
+  safeTxHash: `0x${string}`
+): Effect.Effect<`0x${string}`, never, never> => {
+  return Effect.tryPromise({
+    try: () => safeWallet.txs.getBySafeTxHash(safeTxHash),
+    catch: e => new Error(`Failed to resolve Safe tx: ${String(e)}`)
   }).pipe(
-    Effect.retryOrElse(
-      Schedule.addDelay(Schedule.recurs(10), () => "500 millis"),
-      () => O.none()
+    Effect.flatMap((details: TransactionDetails) =>
+      details.txHash
+        ? Effect.succeed(details.txHash as `0x${string}`)
+        : Effect.fail(new Error("txHash not yet available"))
     ),
-    Effect.provide(FetchHttpClient.layer),
-    Effect.scoped
+    Effect.retry(Schedule.addDelay(Schedule.forever, () => "500 millis")),
+    Effect.catchAll(() => Effect.die("Unexpected unreachable failure"))
   )
-
-Effect.runPromiseExit(resolveSafeTx(undefined as unknown as Chain, "0xHASH"))
+}

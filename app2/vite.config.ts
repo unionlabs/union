@@ -8,6 +8,9 @@ export default defineConfig({
   build: {
     sourcemap: true
   },
+  server: {
+    allowedHosts: true
+  },
   test: {
     workspace: [
       {
@@ -24,7 +27,6 @@ export default defineConfig({
       },
       {
         extends: "./vite.config.ts",
-
         test: {
           name: "server",
           environment: "node",

@@ -78,7 +78,7 @@ export const nextStateEvm = async <
         exit: await Effect.runPromiseExit(writeContract(walletClient, params))
       }),
 
-    WriteContractComplete: async ({ exit }) => {
+    WriteContractComplete: ({ exit }) => {
       if (exit._tag === "Failure") {
         return WriteContractInProgress()
       }
@@ -92,7 +92,7 @@ export const nextStateEvm = async <
     },
 
     WaitForSafeWalletHash: async ({ hash }) => {
-      const resolvedExit = await Effect.runPromiseExit(resolveSafeTx(chain, hash)) // TODO
+      const resolvedExit = await Effect.runPromiseExit(resolveSafeTx(hash)) // TODO
 
       return resolvedExit._tag === "Failure"
         ? WaitForSafeWalletHash({ hash })
