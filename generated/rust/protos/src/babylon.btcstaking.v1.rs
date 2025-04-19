@@ -1002,7 +1002,7 @@ pub struct Params {
     /// script
     #[prost(uint32, tag = "5")]
     pub min_staking_time_blocks: u32,
-    /// max_staking_time_blocks is the maximum lock time time specified in staking
+    /// max_staking_time_blocks is the maximum lock time specified in staking
     /// output script
     #[prost(uint32, tag = "6")]
     pub max_staking_time_blocks: u32,
