@@ -60,6 +60,10 @@ export const navigation: Array<NavSection> = [
           {
             path: "/explorer/packets",
             title: "Packets"
+          },
+          {
+            path: "/explorer/find-packet",
+            title: "Find Packet"
           }
           // {
           //   path: "/explorer/connections",
