@@ -78,6 +78,7 @@ pub mod call {
 
 pub struct Module {
     drop_protocol_fill_acks: bool,
+    drop_invalid_checksum: bool,
     /// chain id -> provider
     providers: BTreeMap<ChainId, ChainProvider>,
 }
@@ -91,6 +92,7 @@ pub enum ChainProvider {
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct Config {
     drop_protocol_fill_acks: bool,
+    drop_invalid_checksum: bool,
     /// chain id -> rpc url
     ///
     /// salt checks will only be done on configured chains, any unconfigured chain will send all send_packets through
@@ -160,6 +162,7 @@ impl Plugin for Module {
         Ok(Self {
             providers,
             drop_protocol_fill_acks: config.drop_protocol_fill_acks,
+            drop_invalid_checksum: config.drop_invalid_checksum,
         })
     }
 
@@ -436,9 +439,7 @@ impl Module {
             }
         };
 
-        if valid {
-            info!("valid checksum");
-
+        let continuation = || {
             let first_seen_at: u64 = SystemTime::now()
                 .duration_since(UNIX_EPOCH)
                 .unwrap()
@@ -461,10 +462,19 @@ impl Module {
                     events: vec![batchable_event],
                 }),
             )))
+        };
+
+        if valid {
+            info!("valid checksum");
+            continuation()
         } else {
             warn!("invalid checksum");
 
-            Ok(noop())
+            if self.drop_invalid_checksum {
+                Ok(noop())
+            } else {
+                continuation()
+            }
         }
     }
 }
