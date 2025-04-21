@@ -23,7 +23,7 @@ contract TestZkgm is UCS03Zkgm {
     constructor(
         IIBCModulePacket _ibcHandler,
         IWETH _weth
-    ) UCS03Zkgm(_ibcHandler, _weth, new ZkgmERC20()) {}
+    ) UCS03Zkgm(_ibcHandler, _weth, new ZkgmERC20(), true) {}
 
     function doExecuteForward(
         IBCPacket calldata ibcPacket,

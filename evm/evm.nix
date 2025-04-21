@@ -218,6 +218,7 @@ _: {
           rpc-url = "http://localhost:8545";
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
           weth = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
+          rate-limit-enabled = "false";
 
           verify = pkgs.stdenv.isx86_64;
           verifier = "blockscout";
@@ -249,6 +250,7 @@ _: {
           rpc-url = "https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
+          rate-limit-enabled = "false";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -261,6 +263,7 @@ _: {
           rpc-url = "https://holesky.gateway.tenderly.co";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
+          rate-limit-enabled = "false";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -273,6 +276,7 @@ _: {
           rpc-url = "https://testnet.corn-rpc.com";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2";
+          rate-limit-enabled = "false";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -285,6 +289,7 @@ _: {
           rpc-url = "https://bob-sepolia.rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
+          rate-limit-enabled = "false";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -297,6 +302,7 @@ _: {
           rpc-url = "https://bepolia.rpc.berachain.com/";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x6969696969696969696969696969696969696969";
+          rate-limit-enabled = "false";
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -521,6 +527,7 @@ _: {
           rpc-url,
           private-key,
           weth,
+          rate-limit-enabled ? "true",
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -547,6 +554,7 @@ _: {
               FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
+              RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               PRIVATE_KEY=${private-key} \
               DEPLOYER="''${1:?deployer must be set to deploy with this script (first arg to this script)}" \
               FOUNDRY_LIBS='["libs"]' \
@@ -601,6 +609,7 @@ _: {
           rpc-url,
           private-key,
           weth,
+          rate-limit-enabled ? "true",
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -627,6 +636,7 @@ _: {
               FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
+              RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
@@ -693,6 +703,7 @@ _: {
           rpc-url,
           private-key,
           weth,
+          rate-limit-enabled ? "true",
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -712,7 +723,9 @@ _: {
                 with-verify-flag = false;
               }}
 
-              WETH_ADDRESS=${weth} nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
+              WETH_ADDRESS=${weth} \
+              RATE_LIMIT_ENABLED=${rate-limit-enabled} \
+                nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
 
               PROJECT_ROOT=$(pwd)
               OUT="$(mktemp -d)"
@@ -734,6 +747,7 @@ _: {
                     FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
                     VERIFICATION_KEY=${verification-key} \
                     WETH_ADDRESS=${weth} \
+                    RATE_LIMIT_ENABLED=${rate-limit-enabled} \
                     PRIVATE_KEY=${private-key} \
                     FOUNDRY_LIBS='["libs"]' \
                     FOUNDRY_PROFILE="script" \
@@ -759,6 +773,7 @@ _: {
           private-key,
           rpc-url,
           weth,
+          rate-limit-enabled ? "true",
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -797,6 +812,7 @@ _: {
               FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
+              RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               PRIVATE_KEY=${private-key} \
@@ -823,6 +839,7 @@ _: {
           private-key,
           rpc-url,
           weth,
+          rate-limit-enabled ? "true",
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -867,6 +884,7 @@ _: {
               }}
 
               WETH_ADDRESS=${weth} \
+              RATE_LIMIT_ENABLED=${rate-limit-enabled} \
               FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               DEPLOYER="$argc_deployer_pk" \

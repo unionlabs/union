@@ -70,6 +70,7 @@ contract UCS03Zkgm is
     IIBCModulePacket public immutable IBC_HANDLER;
     IWETH public immutable WETH;
     ZkgmERC20 public immutable ERC20_IMPL;
+    bool public immutable RATE_LIMIT_ENABLED;
 
     IIBCModulePacket private _deprecated_ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
@@ -80,12 +81,14 @@ contract UCS03Zkgm is
     constructor(
         IIBCModulePacket _ibcHandler,
         IWETH _weth,
-        ZkgmERC20 _erc20Impl
+        ZkgmERC20 _erc20Impl,
+        bool _rateLimitEnabled
     ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
         WETH = _weth;
         ERC20_IMPL = _erc20Impl;
+        RATE_LIMIT_ENABLED = _rateLimitEnabled;
     }
 
     function initialize(
@@ -752,6 +755,12 @@ contract UCS03Zkgm is
         }
     }
 
+    function _optionalRateLimit(address token, uint256 amount) internal {
+        if (RATE_LIMIT_ENABLED) {
+            _rateLimit(token, amount);
+        }
+    }
+
     function _executeFungibleAssetOrder(
         address caller,
         IBCPacket calldata ibcPacket,
@@ -780,7 +789,7 @@ contract UCS03Zkgm is
         );
         bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
         if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
-            _rateLimit(quoteToken, order.quoteAmount);
+            _optionalRateLimit(quoteToken, order.quoteAmount);
             _deployWrappedToken(
                 ibcPacket.destinationChannelId,
                 path,
@@ -802,7 +811,7 @@ contract UCS03Zkgm is
                 true
             );
         } else if (order.baseTokenPath != 0 && baseAmountCoversQuoteAmount) {
-            _rateLimit(quoteToken, order.quoteAmount);
+            _optionalRateLimit(quoteToken, order.quoteAmount);
             return _protocolFill(
                 ibcPacket.destinationChannelId,
                 path,
