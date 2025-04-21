@@ -54,8 +54,6 @@ let
           wantedBy = [ "multi-user.target" ];
           after = [ "network.target" ];
 
-          ## ← NEW: create and run in a writable directory
-          WorkingDirectory = "/var/lib/sentinel2";
 
           serviceConfig = {
             Type       = "simple";
