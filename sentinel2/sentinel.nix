@@ -25,6 +25,10 @@ let
           type = types.listOf types.attrs;
           description = "Array for cross-chain transfers.";
         };
+        betterstack_api_key = mkOption {
+          type = types.str;
+          description = "API key for BetterStack.";
+        };
         signer_account_mnemonic = mkOption {
           type = types.str;
           description = "mnemonic to send tokens to babylon users";
@@ -51,7 +55,6 @@ let
           after = [ "network.target" ];
 
           ## ← NEW: create and run in a writable directory
-          StateDirectory   = "sentinel2";
           WorkingDirectory = "/var/lib/sentinel2";
 
           serviceConfig = {
@@ -77,6 +80,7 @@ ${builtins.toJSON {
   interactions            = cfg.interactions;
   transfers               = cfg.transfers;
   signer_account_mnemonic = cfg.signer_account_mnemonic;
+  betterstack_api_key = cfg.betterstack_api_key; 
   chainConfig             = cfg.chainConfig;
   hasuraEndpoint          = cfg.hasuraEndpoint;
 }}

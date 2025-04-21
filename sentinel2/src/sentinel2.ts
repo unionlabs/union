@@ -30,6 +30,78 @@ import fs from "node:fs"
 import type { Address } from "viem"
 import { request, gql } from "graphql-request"
 import Database from 'better-sqlite3';
+import fetch from "node-fetch";
+
+/**
+ * Effect to trigger a BetterStack incident via the Uptime API
+ * Make sure you use an *Uptime* API token (not a Logtail/Telemetry token) in UPTIME_API_TOKEN.
+ * Pass in your requester email and, if using a global token, the team name.
+ */
+export const triggerIncident = (
+  summary: string,
+  description: string,
+  apiKey: string,
+  requesterEmail: string,
+  teamName?: string
+) =>
+  Effect.tryPromise({
+    try: () =>
+      fetch("https://uptime.betterstack.com/api/v3/incidents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          summary,
+          description,
+          requester_email: requesterEmail,
+          // include team_name if provided (required for global tokens)
+          ...(teamName ? { team_name: teamName } : {}),
+          call: false,
+          sms: false,
+          email: true
+        }),
+      }).then(async res => {
+        console.info("triggerIncident res:", res.ok, res.status, res.statusText);
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(`Trigger failed (${res.status} ${res.statusText}): ${text}`);
+        }
+        return JSON.parse(text);
+      }),
+    catch: e => new Error(`Incident trigger error: ${e}`),
+  });
+
+/**
+ * Effect to resolve an existing BetterStack incident via the Uptime API
+ */
+export const resolveIncident = (
+  incidentId: string,
+  apiKey: string,
+  resolvedBy: string = "automation@example.com"
+) =>
+  Effect.tryPromise({
+    try: () =>
+      fetch(
+        `https://uptime.betterstack.com/api/v3/incidents/${incidentId}/resolve`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({ resolved_by: resolvedBy }),
+        }
+      ).then(async res => {
+        const text = await res.text();
+        if (!res.ok) {
+          throw new Error(`Resolve failed (${res.status} ${res.statusText}): ${text}`);
+        }
+        return JSON.parse(text);
+      }),
+    catch: e => new Error(`Incident resolve error: ${e}`),
+  });
 
 const db = new Database("funded-txs.db");
 // ensure the table exists
@@ -150,6 +222,7 @@ interface ConfigFile {
   hasuraEndpoint: string
   chainConfig: ChainConfig
   signer_account_mnemonic: string
+  betterstack_api_key: string
 }
 
 // A module-level set to keep track of already reported packet send transaction hashes.
@@ -681,6 +754,8 @@ const escrowSupplyControlLoop = Effect.repeat(
           destinationChannelId: `${dstChannel}`
         })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
 
+        // process.exit(0)
+
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
       }
     }
@@ -1008,7 +1083,8 @@ export const checkPackets = (
   sourceChain: string,
   destinationChain: string,
   timeframeMs: number,
-  hasuraEndpoint: string
+  hasuraEndpoint: string,
+  betterstack_api_key: string,
 ) =>
   Effect.gen(function* () {
     const now = Date.now()
@@ -1074,6 +1150,26 @@ export const checkPackets = (
           packetHash: p.packet_hash,
           timeoutTimestamp: p.timeout_timestamp
         })(Effect.logError(`TRANSFER_ERROR`))
+
+        const whole_description = {
+          issueType: "RECV_MISSING",
+          sendTxHash,
+          sourceChain: `${sourceChain}`,
+          destinationChain: `${destinationChain}`,
+          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+          minutesPassed: `${timeframeMs / 60 / 1000}`,
+          packetSendBlockHash: p.packet_send_block_hash,
+          packetHash: p.packet_hash,
+          timeoutTimestamp: p.timeout_timestamp
+        }
+
+        const val = yield* triggerIncident(
+          "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+          JSON.stringify(whole_description),
+          betterstack_api_key,
+          "caglankaan@gmail.com",
+          "Union"
+        )
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
@@ -1160,7 +1256,8 @@ const runIbcChecksForever = Effect.gen(function* (_) {
         pair.sourceChain,
         pair.destinationChain,
         pair.timeframeMs,
-        config.hasuraEndpoint
+        config.hasuraEndpoint,
+        config.betterstack_api_key
       )
     }
 
