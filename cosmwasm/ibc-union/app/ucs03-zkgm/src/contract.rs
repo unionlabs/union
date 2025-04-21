@@ -2027,10 +2027,13 @@ pub struct TokenMinterMigration {
     msg: Binary,
 }
 
+// The current structure is expected to be backward compatible, only idempotent
+// fields can be currently added.
 #[cosmwasm_schema::cw_serde]
 pub struct MigrateMsg {
     // Provide `token_minter_migration` to also migrate the token minter
     token_minter_migration: Option<TokenMinterMigration>,
+    // Whether to enable or disable rate limiting while migrating.
     rate_limit_disabled: bool,
 }
 
