@@ -106,18 +106,6 @@ pub struct Config {
     pub ibc_handler_address: String,
 }
 
-// impl aptos_move_ibc::ibc::ClientExt for Module {
-//     fn client(&self) -> &aptos_rest_client::Client {
-//         &self.aptos_client
-//     }
-// }
-
-// impl aptos_move_ibc::recv_packet::ClientExt for Module {
-//     fn client(&self) -> &aptos_rest_client::Client {
-//         &self.aptos_client
-//     }
-// }
-
 fn plugin_name(chain_id: &ChainId) -> String {
     pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
 
@@ -178,107 +166,6 @@ impl Module {
         ]))
     }
 }
-
-//     #[must_use]
-//     pub fn make_height(&self, height: u64) -> Height {
-//         Height::new(height)
-//     }
-
-//     pub async fn ledger_version_of_height(&self, height: u64) -> u64 {
-//         let ledger_version = self
-//             .aptos_client
-//             .get_block_by_height(height, false)
-//             .await
-//             // .map_err(rest_error_to_rpc_error)?
-//             .unwrap()
-//             .into_inner()
-//             .last_version
-//             .0;
-
-//         debug!("height {height} is ledger version {ledger_version}");
-
-//         ledger_version
-//     }
-
-//     async fn make_packet_metadata(
-//         &self,
-//         event_height: Height,
-//         self_channel_id: ChannelId,
-//         voyager_client: &VoyagerClient,
-//     ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
-//         let self_channel = voyager_client
-//             .query_ibc_state(
-//                 self.chain_id.clone(),
-//                 event_height,
-//                 ChannelPath {
-//                     channel_id: self_channel_id,
-//                 },
-//             )
-//             .await?;
-
-//         let self_connection_id = self_channel.connection_id;
-//         let self_connection = voyager_client
-//             .query_ibc_state(
-//                 self.chain_id.clone(),
-//                 event_height,
-//                 ConnectionPath {
-//                     connection_id: self_connection_id,
-//                 },
-//             )
-//             .await?;
-
-//         let client_info = voyager_client
-//             .client_info::<IbcUnion>(self.chain_id.clone(), self_connection.client_id)
-//             .await?;
-
-//         let client_state_meta = voyager_client
-//             .client_state_meta::<IbcUnion>(
-//                 self.chain_id.clone(),
-//                 event_height.into(),
-//                 self_connection.client_id,
-//             )
-//             .await?;
-
-//         let counterparty_latest_height = voyager_client
-//             .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
-//             .await?;
-
-//         let other_channel_id = self_channel.counterparty_channel_id;
-//         let other_channel = voyager_client
-//             .query_ibc_state(
-//                 client_state_meta.counterparty_chain_id.clone(),
-//                 counterparty_latest_height,
-//                 ChannelPath {
-//                     channel_id: other_channel_id.unwrap(),
-//                 },
-//             )
-//             .await?;
-
-//         let source_channel = ChannelMetadata {
-//             channel_id: self_channel_id,
-//             version: self_channel.version,
-//             connection: ConnectionMetadata {
-//                 client_id: self_connection.client_id,
-//                 connection_id: self_connection_id,
-//             },
-//         };
-//         let destination_channel = ChannelMetadata {
-//             channel_id: other_channel_id.unwrap(),
-//             version: other_channel.version,
-//             connection: ConnectionMetadata {
-//                 client_id: self_connection.counterparty_client_id,
-//                 connection_id: self_connection.counterparty_connection_id.unwrap(),
-//             },
-//         };
-
-//         Ok((
-//             client_state_meta.counterparty_chain_id,
-//             client_info,
-//             source_channel,
-//             destination_channel,
-//         ))
-//     }
-// }
 
 #[async_trait]
 impl PluginServer<ModuleCall, ModuleCallback> for Module {
@@ -352,17 +239,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map(move |events| (events, tx.digest))
                     })
                     .filter_map(|(e, hash)| {
-                        (e.transaction_module.to_string() == self.ibc_handler_address)
-                            .then_some((e, hash))
+                        (e.package_id.to_string() == self.ibc_handler_address).then_some((e, hash))
                     })
                     .map(|(e, hash)| {
                         let event = match e.type_.name.as_str() {
-                            "CreateClient" => {
+                            "ClientCreatedEvent" => {
                                 let create_client: events::CreateClient =
                                     serde_json::from_value(e.parsed_json).unwrap();
                                 events::IbcEvent::CreateClient(create_client)
                             }
-                            _ => panic!("unknown"),
+                            e => panic!("unknown: {e}"),
                         };
                         call(PluginMessage::new(
                             self.plugin_name(),
