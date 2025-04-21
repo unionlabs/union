@@ -159,6 +159,8 @@ const doTransferRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
   Schedule.intersect(Schedule.recurs(2)) // Limit retries to 2
 )
 
+const fundedTxs = new Set<string>();
+
 const fetchWrappedTokens = (hasuraEndpoint: string) =>
   Effect.gen(function* () {
     const query = gql`
@@ -214,7 +216,12 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
       .map(({ receiver_display, traces }) => ({
         receiver_display,
         traces: traces
-          .filter(trace => trace.type === "WRITE_ACK" && trace.transaction_hash != null)
+          .filter(
+            trace =>
+              trace.type === "WRITE_ACK" &&
+              trace.transaction_hash != null &&
+              !fundedTxs.has(trace.transaction_hash)
+          )
           .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! }))
       }))
       // remove any where we ended up with zero traces
@@ -798,6 +805,8 @@ const fundBabylonAccounts = Effect.repeat(
           throw err
         }
       })
+      fundedTxs.add(result.transactionHash)
+
       const okLog = Effect.annotateLogs({
         sentAmount: "0.01",
         chainId: "babylon.bbn-1",
@@ -1165,7 +1174,7 @@ const mainEffect = Effect.gen(function* (_) {
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
   yield* Effect.all(
-    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop,fundBabylonAccounts],
+    [/*transferLoop,  runIbcChecksForever, escrowSupplyControlLoop,*/fundBabylonAccounts],
     {
       concurrency: "unbounded"
     }
