@@ -60,6 +60,7 @@ const displayAmount = $derived(
   Option.match(Option.all([Option.fromNullable(amount), displayInfo]), {
     onNone: () => Option.none(),
     onSome: ([amt, info]) => {
+      console.info("amt", amt, "info", info)
       if (!amt) return Option.some("0")
       const decimal = BigInt(10) ** BigInt(info.decimals)
       const whole = amt / decimal
@@ -71,6 +72,7 @@ const displayAmount = $derived(
           ? ""
           : `.${fraction.toString().padStart(info.decimals, "0").replace(/0+$/, "")}`
 
+      console.info("fractionStr:", fractionStr)
       return Option.some(`${whole}${fractionStr}`)
     }
   })

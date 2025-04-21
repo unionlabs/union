@@ -34,5 +34,6 @@ class TransferCountStore {
 }
 
 export const transferList = new TransferListStore()
+export const transferListMissingAck = new TransferListStore()
 export const transferListAddress = new TransferListStore()
 export const transferCount = new TransferCountStore()
