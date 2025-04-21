@@ -36,7 +36,7 @@ let
         };
         betterstack_api_key = mkOption {
           type = types.str;
-          description = "Betterstack api eky";
+          description = "Betterstack api key";
         };
         chainConfig = mkOption {
           type = types.attrs;
@@ -59,6 +59,15 @@ let
           wantedBy = [ "multi-user.target" ];
           after = [ "network.target" ];
           serviceConfig = {
+            WorkingDirectory = "/var/lib/sentinel2";
+            ExecStartPre = ''
+              ${pkgs.coreutils}/bin/install -d -m0755 -o sentinel2 -g sentinel2 /var/lib/sentinel2
+              cp -r ${cfg.package}/lib/* /var/lib/sentinel2/
+              cp -r ${cfg.package}/bin /var/lib/sentinel2/
+            '';
+
+            User = "sentinel2";       # create this user in your NixOS config
+            Group = "sentinel2";
             Type = "simple";
             ExecStart = ''
               ${pkgs.lib.getExe cfg.package} --config ${
@@ -99,7 +108,8 @@ in
       deps = with pkgsUnstable; [
         python3
         pkg-config
-        nodePackages_latest.nodejs
+        sqlite
+        # pkgs.nodejs_20
         nodePackages_latest."patch-package"
       ];
       packageJSON = lib.importJSON ./package.json;
@@ -107,6 +117,7 @@ in
     {
       packages = {
         sentinel2 = pkgsUnstable.buildNpmPackage {
+          nodejs = pkgs.nodejs;
           npmDepsHash = "sha256-4Od3bakA4AqPCnw+8mYqQOmf65qlYJ9kLEMgSZ5JVpQ=";
           src = ./.;
           sourceRoot = "sentinel2";
@@ -116,8 +127,19 @@ in
           ];
           pname = packageJSON.name;
           inherit (packageJSON) version;
-          nativeBuildInputs = deps;
-          buildInputs = [ pkgs.bashInteractive ];
+          nativeBuildInputs = with pkgs; [
+            python3
+            pkg-config
+            sqlite
+            nodejs       # ← use the default Node here
+            nodePackages_latest."patch-package"
+          ];
+
+          buildInputs = [ pkgs.bashInteractive pkgs.sqlite ];
+          # After npm install, rebuild the native addon against this Node/V8
+          postBuild = ''
+            npm rebuild better-sqlite3 --build-from-source
+          '';
           installPhase = ''
                         echo "Current directory: $(pwd)"
                         echo "out is $out"
@@ -126,7 +148,8 @@ in
                         mkdir -p $out/lib
                         cp -r dist/* $out/lib
 
-                        # 2) Copy node_modules
+                        # 2) Copy node_modules (with rebuilt better-sqlite3)
+                        rm -rf $out/lib/node_modules
                         cp -r node_modules $out/lib/node_modules
 
                         # 3) Copy package.json
@@ -138,11 +161,12 @@ in
                         # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
                           cat <<EOF > $out/bin/sentinel2
             #!${pkgs.bashInteractive}/bin/bash
+            export PATH=${pkgs.nodejs}/bin:\$PATH
             cd "$out/lib"
             export NODE_PATH="$out/lib/node_modules"
             EOF
 
-                        echo 'exec '"${pkgs.nodePackages_latest.nodejs}/bin/node"' src/sentinel2.js "$@"' >> $out/bin/sentinel2
+                        echo 'exec '"${pkgs.nodejs}/bin/node"' src/sentinel2.js "$@"' >> $out/bin/sentinel2
 
                         chmod +x $out/bin/sentinel2
           '';

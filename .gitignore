@@ -91,4 +91,4 @@ dist/
 
 .gas-snapshot
 
-sentinel2/funded-txs.db
+sentinel2/sentinel.db

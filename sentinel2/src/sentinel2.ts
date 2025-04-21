@@ -29,19 +29,18 @@ import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
 import type { Address } from "viem"
 import { request, gql } from "graphql-request"
-// import Database from 'better-sqlite3';
+import Database from 'better-sqlite3';
 import fetch from "node-fetch";
 
 /**
  * Effect to trigger a BetterStack incident via the Uptime API
- * Make sure you use an *Uptime* API token (not a Logtail/Telemetry token) in UPTIME_API_TOKEN.
- * Pass in your requester email and, if using a global token, the team name.
  */
 export const triggerIncident = (
   summary: string,
   description: string,
   apiKey: string,
   requesterEmail: string,
+  incidentName: string,
   teamName?: string
 ) =>
   Effect.tryPromise({
@@ -60,12 +59,15 @@ export const triggerIncident = (
           ...(teamName ? { team_name: teamName } : {}),
           call: false,
           sms: false,
-          email: true
+          email: false,
+          name: incidentName
         }),
       }).then(async res => {
         console.info("triggerIncident res:", res.ok, res.status, res.statusText);
         const text = await res.text();
         if (!res.ok) {
+          console.info("triggerIncident text:", text);
+          return null;
           throw new Error(`Trigger failed (${res.status} ${res.statusText}): ${text}`);
         }
         return JSON.parse(text);
@@ -79,7 +81,7 @@ export const triggerIncident = (
 export const resolveIncident = (
   incidentId: string,
   apiKey: string,
-  resolvedBy: string = "automation@example.com"
+  resolvedBy: string = "SENTINEL@union.build"
 ) =>
   Effect.tryPromise({
     try: () =>
@@ -103,22 +105,52 @@ export const resolveIncident = (
     catch: e => new Error(`Incident resolve error: ${e}`),
   });
 
-// const db = new Database("funded-txs.db");
-// // ensure the table exists
-// db.prepare(`
-//   CREATE TABLE IF NOT EXISTS funded_txs (
-//     transaction_hash TEXT PRIMARY KEY
-//   )
-// `).run();
+const db = new Database("/var/lib/sentinel2/sentinel.db");
 
-// console.info("db is:", db);
-// // prepared statements for quick lookup and insert
-// const isFundedStmt = db.prepare(
-//   `SELECT 1 FROM funded_txs WHERE transaction_hash = ?`
-// );
-// const insertFundedStmt = db.prepare(
-//   `INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`
-// );
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS funded_txs (
+    transaction_hash TEXT PRIMARY KEY
+  )
+`).run();
+
+db.prepare(`
+  CREATE TABLE IF NOT EXISTS transfer_errors (
+    packet_hash   TEXT PRIMARY KEY,
+    incident_id   TEXT NOT NULL,
+    inserted_at   INTEGER       -- epoch ms, handy for housekeeping/debug
+  )
+`).run();
+
+console.info("db is:", db);
+
+const isFundedStmt = db.prepare(
+  `SELECT 1 FROM funded_txs WHERE transaction_hash = ?`
+);
+const insertFundedStmt = db.prepare(
+  `INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`
+);
+
+const getIncidentStmt   = db.prepare(`SELECT incident_id FROM transfer_errors WHERE packet_hash = ?`);
+const saveIncidentStmt  = db.prepare(`
+  INSERT OR REPLACE INTO transfer_errors (packet_hash, incident_id, inserted_at)
+  VALUES (?, ?, strftime('%s','now')*1000)
+`);
+const deleteIncidentStmt = db.prepare(`DELETE FROM transfer_errors WHERE packet_hash = ?`);
+
+const markTransferError = (packetHash: string, incidentId: string) =>
+  saveIncidentStmt.run(packetHash, incidentId);
+
+const getIncidentId = (packetHash: string): string | undefined => {
+  const row = getIncidentStmt.get(packetHash) as { incident_id: string } | undefined;
+  return row?.incident_id;
+};
+
+const hasErrorOpen = db
+  .prepare(`SELECT 1 FROM transfer_errors WHERE packet_hash = ?`)
+  .pluck();   
+
+const clearTransferError = (packetHash: string) => deleteIncidentStmt.run(packetHash);
+
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -1139,18 +1171,6 @@ export const checkPackets = (
           // reportedSendTxHashes.add(sendTxHash)
         }
       } else {
-        const logEffect = Effect.annotateLogs({
-          issueType: "RECV_MISSING",
-          sendTxHash,
-          sourceChain: `${sourceChain}`,
-          destinationChain: `${destinationChain}`,
-          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          minutesPassed: `${timeframeMs / 60 / 1000}`,
-          packetSendBlockHash: p.packet_send_block_hash,
-          packetHash: p.packet_hash,
-          timeoutTimestamp: p.timeout_timestamp
-        })(Effect.logError(`TRANSFER_ERROR`))
-
         const whole_description = {
           issueType: "RECV_MISSING",
           sendTxHash,
@@ -1161,15 +1181,21 @@ export const checkPackets = (
           packetSendBlockHash: p.packet_send_block_hash,
           packetHash: p.packet_hash,
           timeoutTimestamp: p.timeout_timestamp
-        }
+        }        
+        const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(`TRANSFER_ERROR`))
 
-        const val = yield* triggerIncident(
-          "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          JSON.stringify(whole_description),
-          betterstack_api_key,
-          "caglankaan@gmail.com",
-          "Union"
-        )
+        if(!hasErrorOpen.get(p.packet_hash)) {
+          const val = yield* triggerIncident(
+            "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+            JSON.stringify(whole_description),
+            betterstack_api_key,
+            "SENTINEL@union.build",
+            "TRANSFER_FAILED",
+            "Union"
+          )
+          console.info("Incident triggered:", val)
+          markTransferError(p.packet_hash, val.data.id)
+        }
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
@@ -1188,7 +1214,7 @@ export const checkPackets = (
         //   reportedSendTxHashes.add(sendTxHash)
         // }
       } else {
-        const logEffect = Effect.annotateLogs({
+        const whole_description = {
           issueType: "WRITE_ACK MISSING",
           sendTxHash,
           sourceChain: `${sourceChain}`,
@@ -1198,9 +1224,24 @@ export const checkPackets = (
           packetSendBlockHash: p.packet_send_block_hash,
           packetHash: p.packet_hash,
           timeoutTimestamp: p.timeout_timestamp
-        })(Effect.logError(`TRANSFER_ERROR`))
+        }
+        const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(`TRANSFER_ERROR`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+
+        if(!hasErrorOpen.get(p.packet_hash)) {
+          const val = yield* triggerIncident(
+            "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+            JSON.stringify(whole_description),
+            betterstack_api_key,
+            "SENTINEL@union.build",
+            "TRANSFER_FAILED",
+            "Union"
+          )
+          console.info("Incident triggered:", val)
+          markTransferError(p.packet_hash, val.data.id)
+        }
+
 
         continue
       }
@@ -1215,7 +1256,7 @@ export const checkPackets = (
         //   reportedSendTxHashes.add(sendTxHash)
         // }
       } else {
-        const logEffect = Effect.annotateLogs({
+        const whole_description = {
           issueType: "ACK MISSING",
           sendTxHash,
           sourceChain: `${sourceChain}`,
@@ -1225,11 +1266,32 @@ export const checkPackets = (
           packetSendBlockHash: p.packet_send_block_hash,
           packetHash: p.packet_hash,
           timeoutTimestamp: p.timeout_timestamp
-        })(Effect.logError(`TRANSFER_ERROR`))
+        }
+        const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(`TRANSFER_ERROR`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
+        if(!hasErrorOpen.get(p.packet_hash)) {
+          const val = yield* triggerIncident(
+            "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
+            JSON.stringify(whole_description),
+            betterstack_api_key,
+            "SENTINEL@union.build",
+            "TRANSFER_FAILED",
+            "Union"
+          )
+          console.info("Incident triggered:", val)
+          markTransferError(p.packet_hash, val.data.id)
+        }
+
         continue
+      }
+      
+      const incidentId = getIncidentId(p.packet_hash)
+      if(incidentId) {
+        console.info("Incident ID found:", incidentId)
+        yield* resolveIncident(incidentId, betterstack_api_key, "Sentinel-Automatically resolved."),
+        clearTransferError(p.packet_hash)
       }
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
@@ -1288,7 +1350,7 @@ const mainEffect = Effect.gen(function* (_) {
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
   yield* Effect.all(
-    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop /*,fundBabylonAccounts*/],
+    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop ,fundBabylonAccounts],
     {
       concurrency: "unbounded"
     }
