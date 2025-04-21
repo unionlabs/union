@@ -1,12 +1,7 @@
 { self, ... }:
 let
   sentinel2Module =
-    {
-      lib,
-      pkgs,
-      config,
-      ...
-    }:
+    { lib, pkgs, config, ... }:
     with lib;
     let
       cfg = config.services.sentinel2;
@@ -54,37 +49,46 @@ let
           description = "sentinel2 Service";
           wantedBy = [ "multi-user.target" ];
           after = [ "network.target" ];
+
+          ## ← NEW: create and run in a writable directory
+          StateDirectory   = "sentinel2";
+          WorkingDirectory = "/var/lib/sentinel2";
+
           serviceConfig = {
-            Type = "simple";
-            ExecStart = ''
-              ${pkgs.lib.getExe cfg.package} --config ${
-                pkgs.writeText "config.json" (
-                  builtins.toJSON {
-                    inherit (cfg) cycleIntervalMs;
-                    inherit (cfg) interactions;
-                    inherit (cfg) transfers;
-                    inherit (cfg) signer_account_mnemonic;
-                    inherit (cfg) chainConfig;
-                    inherit (cfg) hasuraEndpoint;
-                  }
-                )
-              }
-            '';
-            Restart = "always";
+            Type       = "simple";
+            Restart    = "always";
             RestartSec = 10;
+
+            ExecStart = ''
+              ${pkgs.lib.getExe cfg.package} --config /var/lib/sentinel2/config.json
+            '';
           };
+
           environment = {
-            NODE_ENV = "production";
+            NODE_ENV  = "production";
             LOG_LEVEL = cfg.logLevel;
           };
+
+          ## ← NEW: dump your JSON config into /var/lib/sentinel2 before start
+          preStart = ''
+            cat > /var/lib/sentinel2/config.json <<EOF
+${builtins.toJSON {
+  cycleIntervalMs         = cfg.cycleIntervalMs;
+  interactions            = cfg.interactions;
+  transfers               = cfg.transfers;
+  signer_account_mnemonic = cfg.signer_account_mnemonic;
+  chainConfig             = cfg.chainConfig;
+  hasuraEndpoint          = cfg.hasuraEndpoint;
+}}
+EOF
+          '';
         };
       };
     };
 in
 {
   perSystem =
-    {
-      pkgs,
+    { pkgs,
       pkgsUnstable,
       ensureAtRepositoryRoot,
       lib,
@@ -95,7 +99,6 @@ in
         python3
         pkg-config
         sqlite
-        pkgs.nodejs_20
         nodePackages_latest."patch-package"
       ];
       packageJSON = lib.importJSON ./package.json;
@@ -103,6 +106,7 @@ in
     {
       packages = {
         sentinel2 = pkgsUnstable.buildNpmPackage {
+          nodejs = pkgs.nodejs;
           npmDepsHash = "sha256-4Od3bakA4AqPCnw+8mYqQOmf65qlYJ9kLEMgSZ5JVpQ=";
           src = ./.;
           sourceRoot = "sentinel2";
@@ -112,40 +116,46 @@ in
           ];
           pname = packageJSON.name;
           inherit (packageJSON) version;
-          nativeBuildInputs = deps;
+          nativeBuildInputs = with pkgs; [
+            python3
+            pkg-config
+            sqlite
+            nodejs
+            nodePackages_latest."patch-package"
+          ];
+
           buildInputs = [ pkgs.bashInteractive pkgs.sqlite ];
-          # After npm install, rebuild the native addon against this Node/V8
           postBuild = ''
             npm rebuild better-sqlite3 --build-from-source
           '';
           installPhase = ''
-                        echo "Current directory: $(pwd)"
-                        echo "out is $out"
+            echo "Current directory: $(pwd)"
+            echo "out is $out"
 
-                        # 1) Copy the compiled ESM .js
-                        mkdir -p $out/lib
-                        cp -r dist/* $out/lib
+            # 1) Copy compiled ESM
+            mkdir -p $out/lib
+            cp -r dist/* $out/lib
 
-                        # 2) Copy node_modules (with rebuilt better-sqlite3)
-                        rm -rf $out/lib/node_modules
-                        cp -r node_modules $out/lib/node_modules
+            # 2) Copy node_modules (with rebuilt better-sqlite3)
+            rm -rf $out/lib/node_modules
+            cp -r node_modules $out/lib/node_modules
 
-                        # 3) Copy package.json
-                        cp package.json $out/lib
+            # 3) Copy package.json
+            cp package.json $out/lib
 
-                        # 4) Create a Bash wrapper in $out/bin
-                        mkdir -p $out/bin
+            # 4) Wrapper that runs in /var/lib/sentinel2
+            mkdir -p $out/bin
+            cat <<EOF > $out/bin/sentinel2
+#!${pkgs.bashInteractive}/bin/bash
+export PATH=${pkgs.nodejs}/bin:\$PATH
+export NODE_PATH="$out/lib/node_modules:$out/lib"
 
-                        # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
-                          cat <<EOF > $out/bin/sentinel2
-            #!${pkgs.bashInteractive}/bin/bash
-            cd "$out/lib"
-            export NODE_PATH="$out/lib/node_modules"
-            EOF
+# ← run from a writable directory so funded‑txs.db can be opened/created
+# cd /var/lib/sentinel2
 
-                        echo 'exec '"${pkgs.nodePackages_latest.nodejs}/bin/node"' src/sentinel2.js "$@"' >> $out/bin/sentinel2
-
-                        chmod +x $out/bin/sentinel2
+exec node $out/lib/src/sentinel2.js "\$@"
+EOF
+            chmod +x $out/bin/sentinel2
           '';
 
           doDist = false;
@@ -160,11 +170,11 @@ in
             name = "sentinel2-dev-server";
             runtimeInputs = deps;
             text = ''
-                ${ensureAtRepositoryRoot}
-                cd sentinel2/
+              ${ensureAtRepositoryRoot}
+              cd sentinel2/
 
-                npm install
-                npm run build
+              npm install
+              npm run build
               node dist/src/sentinel2.js "$@"
             '';
           };
@@ -172,6 +182,6 @@ in
       };
     };
 
-  # Flake-wide NixOS module definition
+  # expose the module
   flake.nixosModules.sentinel2 = sentinel2Module;
 }
