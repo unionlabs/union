@@ -8,12 +8,16 @@
     "test": "vitest run",
     "test-watch": "vitest"
   },
-  "files": ["./src", "./dist"],
+  "files": [
+    "./src",
+    "./dist"
+  ],
   "keywords": [],
   "author": "",
   "license": "MIT",
   "description": "",
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/node-fetch": "3.0.2",
     "@types/yargs": "^17.0.33",
     "biome": "^0.3.3",
@@ -23,9 +27,10 @@
   },
   "dependencies": {
     "@unionlabs/sdk": "^1.9.1",
-    "graphql-request": "^7.1.2",
+    "better-sqlite3": "^11.9.1",
     "consola": "^3.4.0",
     "effect": "^3.13.2",
+    "graphql-request": "^7.1.2",
     "viem": "^2.22.11",
     "yargs": "^17.7.2"
   }
