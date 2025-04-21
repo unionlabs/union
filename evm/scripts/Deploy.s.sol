@@ -21,12 +21,13 @@ import {StateLensIcs23SmtClient} from
     "../contracts/clients/StateLensIcs23SmtClient.sol";
 import "../contracts/apps/ucs/00-pingpong/PingPong.sol";
 import "../contracts/apps/ucs/03-zkgm/Zkgm.sol";
+import "../contracts/apps/ucs/06-funded-dispatch/FundedDispatch.sol";
 
 import "./Deployer.sol";
 
 library LIB {
     string constant MULTICALL = "lib/multicall-v2";
-    string constant ZKGM_ERC20 = "lib/zkgm-erc20-v2";
+    string constant UCS03_ZKGM_ERC20_IMPL = "lib/zkgm-erc20-v2";
 }
 
 library IBC {
@@ -45,6 +46,7 @@ library LightClients {
 library Protocols {
     string constant UCS00 = "protocols/ucs00";
     string constant UCS03 = "protocols/ucs03";
+    string constant UCS06 = "protocols/ucs06";
 }
 
 abstract contract VersionedScript is Script {
@@ -111,7 +113,7 @@ abstract contract UnionScript is UnionBase {
     function deployZkgmERC20() internal returns (ZkgmERC20) {
         return ZkgmERC20(
             getDeployer().deploy(
-                LIB.ZKGM_ERC20,
+                LIB.UCS03_ZKGM_ERC20_IMPL,
                 abi.encodePacked(type(ZkgmERC20).creationCode),
                 0
             )
@@ -244,6 +246,25 @@ abstract contract UnionScript is UnionBase {
         return zkgm;
     }
 
+    function deployUCS06(
+        Manager manager
+    ) internal returns (UCS06FundedDispatch) {
+        UCS06FundedDispatch fundedDispatch = UCS06FundedDispatch(
+            payable(
+                deploy(
+                    Protocols.UCS06,
+                    abi.encode(
+                        address(new UCS06FundedDispatch()),
+                        abi.encodeCall(
+                            UCS06FundedDispatch.initialize, (address(manager))
+                        )
+                    )
+                )
+            )
+        );
+        return fundedDispatch;
+    }
+
     function deployIBC(
         address owner,
         IWETH weth,
@@ -259,6 +280,7 @@ abstract contract UnionScript is UnionBase {
             PingPong,
             ZkgmERC20,
             UCS03Zkgm,
+            UCS06FundedDispatch,
             Multicall,
             Manager
         )
@@ -276,6 +298,7 @@ abstract contract UnionScript is UnionBase {
         ZkgmERC20 zkgmERC20 = deployZkgmERC20();
         UCS03Zkgm ucs03 =
             deployUCS03(handler, manager, weth, zkgmERC20, rateLimitEnabled);
+        UCS06FundedDispatch ucs06 = deployUCS06(manager);
         Multicall multicall = deployMulticall(manager);
         setupRoles(owner, manager, handler, cometblsClient, ucs03, multicall);
         return (
@@ -287,6 +310,7 @@ abstract contract UnionScript is UnionBase {
             pingpong,
             zkgmERC20,
             ucs03,
+            ucs06,
             multicall,
             manager
         );
@@ -554,7 +578,7 @@ contract DeployUCS03 is UnionScript {
 
         Manager manager = Manager(getDeployed(IBC.MANAGER));
         IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
-        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
 
         vm.startBroadcast(privateKey);
         UCS03Zkgm zkgm =
@@ -674,6 +698,7 @@ contract DeployIBC is UnionScript {
             PingPong pingpong,
             ZkgmERC20 zkgmERC20,
             UCS03Zkgm ucs03,
+            UCS06FundedDispatch ucs06,
             Multicall multicall,
             Manager manager
         ) = deployIBC(vm.addr(privateKey), weth, rateLimitEnabled);
@@ -704,8 +729,9 @@ contract DeployIBC is UnionScript {
             "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
         console.log("UCS00: ", address(pingpong));
-        console.log("UCS03: ", address(ucs03));
         console.log("ZkgmERC20: ", address(zkgmERC20));
+        console.log("UCS03: ", address(ucs03));
+        console.log("UCS06: ", address(ucs06));
         console.log("Multicall: ", address(multicall));
     }
 }
@@ -733,6 +759,7 @@ contract DeployDeployerAndIBC is UnionScript {
             PingPong pingpong,
             ZkgmERC20 zkgmERC20,
             UCS03Zkgm ucs03,
+            UCS06FundedDispatch ucs06,
             Multicall multicall,
             Manager manager
         ) = deployIBC(vm.addr(privateKey), weth, rateLimitEnabled);
@@ -763,8 +790,9 @@ contract DeployDeployerAndIBC is UnionScript {
             "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
         );
         console.log("UCS00: ", address(pingpong));
-        console.log("UCS03: ", address(ucs03));
         console.log("ZkgmERC20: ", address(zkgmERC20));
+        console.log("UCS03: ", address(ucs03));
+        console.log("UCS06: ", address(ucs06));
         console.log("Multicall: ", address(multicall));
     }
 }
@@ -801,7 +829,7 @@ contract GetDeployed is VersionedScript {
 
     function run() public {
         address multicall = getDeployed(LIB.MULTICALL);
-        address zkgmERC20 = getDeployed(LIB.ZKGM_ERC20);
+        address zkgmERC20 = getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL);
 
         address manager = getDeployed(IBC.MANAGER);
         address handler = getDeployed(IBC.BASED);
@@ -1105,7 +1133,7 @@ contract DryUpgradeUCS03 is VersionedScript {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
-        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
@@ -1145,7 +1173,7 @@ contract UpgradeUCS03 is VersionedScript {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
-        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
+        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
