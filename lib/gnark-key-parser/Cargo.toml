@@ -12,13 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-arith        = "0.2.3"
-ark-ff       = { version = "0.4.2", default-features = false }
-hex          = { workspace = true, features = ["alloc"] }
 substrate-bn = { version = "0.6", default-features = false }
 thiserror    = { workspace = true }
 
 [dev-dependencies]
 ark-bn254     = { version = "0.4", default-features = false, features = ["curve"] }
+ark-ff        = { version = "0.4.2", default-features = false }
 ark-serialize = "0.4.2"
+hex           = { workspace = true }
 num-bigint    = { workspace = true }

@@ -15,6 +15,7 @@ use unionlabs::{
         transaction_proof::TransactionInfoWithProof,
     },
     ibc::core::client::height::Height,
+    never::Never,
     primitives::H160,
 };
 use voyager_message::{
@@ -27,11 +28,9 @@ use voyager_message::{
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
 };
 
-use crate::{call::ModuleCall, callback::ModuleCallback};
+use crate::call::ModuleCall;
 
 pub mod call;
-pub mod callback;
-pub mod data;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
 struct StateProofResponse {
@@ -64,7 +63,7 @@ pub struct Module {
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = DefaultCmd;
@@ -170,7 +169,7 @@ pub enum ModuleInitError {
 }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
@@ -246,7 +245,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        cb: ModuleCallback,
+        cb: Never,
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}

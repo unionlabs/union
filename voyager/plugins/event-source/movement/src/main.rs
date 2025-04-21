@@ -28,7 +28,7 @@ use move_bindgen::MoveOutputType;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument};
-use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
+use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256, ErrorReporter};
 use voyager_message::{
     call::{Call, WaitForHeight},
     data::{ChainEvent, Data},
@@ -40,14 +40,9 @@ use voyager_message::{
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
-use crate::{
-    call::{FetchBlocks, FetchTransactions, MakeFullEvent, ModuleCall},
-    callback::ModuleCallback,
-};
+use crate::call::{FetchBlocks, FetchTransactions, MakeFullEvent, ModuleCall};
 
 pub mod call;
-pub mod callback;
-pub mod data;
 
 pub mod events;
 
@@ -76,7 +71,7 @@ pub struct Module {
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = DefaultCmd;
@@ -243,7 +238,7 @@ impl Module {
 }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn run_pass(
         &self,
@@ -275,7 +270,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        cb: ModuleCallback,
+        cb: Never,
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}

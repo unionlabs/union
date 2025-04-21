@@ -33,6 +33,7 @@ use unionlabs::{
     bech32::Bech32,
     cosmos::base::coin::Coin,
     google::protobuf::any::mk_any,
+    never::Never,
     option_unwrap,
     primitives::{Bytes, H160, H256},
     ErrorReporter,
@@ -46,14 +47,9 @@ use voyager_message::{
     DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
-use crate::{
-    call::{IbcMessage, ModuleCall},
-    callback::ModuleCallback,
-};
+use crate::call::{IbcMessage, ModuleCall};
 
 pub mod call;
-pub mod callback;
-pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -174,7 +170,7 @@ static ACCOUNT_SEQUENCE_ERRORS: LazyLock<HashSet<(&str, NonZeroU32)>> = LazyLock
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = DefaultCmd;
@@ -439,7 +435,7 @@ impl Module {
 // }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all)]
     async fn run_pass(
         &self,
@@ -660,7 +656,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        cb: ModuleCallback,
+        cb: Never,
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}

@@ -23,6 +23,6 @@ proc-macro2         = "*"
 quote               = "1.0.35"
 serde               = { workspace = true, features = ["derive"] }
 serde_json          = { workspace = true }
-syn                 = { version = "2.0.52", default-features = false, features = ["clone-impls", "parsing", "printing", "proc-macro", "derive", "extra-traits"] }
+syn                 = { workspace = true, features = ["clone-impls", "parsing", "printing", "proc-macro", "derive", "extra-traits"] }
 tokio               = { workspace = true, features = ["full"] }
 tracing             = { workspace = true }

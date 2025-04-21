@@ -19,7 +19,7 @@ use move_core_types::{
 use serde::{Deserialize, Serialize};
 use sha3::Digest;
 use tracing::instrument;
-use unionlabs::primitives::H256;
+use unionlabs::{never::Never, primitives::H256};
 use voyager_message::{
     data::Data,
     hook::SubmitTxHook,
@@ -30,11 +30,9 @@ use voyager_message::{
 };
 use voyager_vm::BoxDynError;
 
-use crate::{call::ModuleCall, callback::ModuleCallback};
+use crate::call::ModuleCall;
 
 pub mod call;
-pub mod callback;
-pub mod data;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -54,7 +52,7 @@ pub struct Module {
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = DefaultCmd;
@@ -151,7 +149,7 @@ impl Module {
 }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     async fn run_pass(
         &self,
         _: &Extensions,
@@ -268,7 +266,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        cb: ModuleCallback,
+        cb: Never,
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {}

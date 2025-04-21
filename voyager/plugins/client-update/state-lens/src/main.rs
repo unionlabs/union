@@ -13,7 +13,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use state_lens_light_client_types::Header;
 use tracing::{debug, info, instrument};
-use unionlabs::ibc::core::client::height::Height;
+use unionlabs::{ibc::core::client::height::Height, never::Never};
 use voyager_message::{
     call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
     callback::AggregateSubmitTxFromOrderedHeaders,
@@ -28,13 +28,9 @@ use voyager_message::{
 };
 use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
 
-use crate::{
-    call::{FetchUpdate, ModuleCall},
-    callback::ModuleCallback,
-};
+use crate::call::{FetchUpdate, ModuleCall};
 
 pub mod call;
-pub mod callback;
 
 pub type StateLensClientState =
     state_lens_light_client_types::ClientState<serde_json::Map<String, serde_json::Value>>;
@@ -58,7 +54,7 @@ pub struct Config {
 
 impl Plugin for Module {
     type Call = ModuleCall;
-    type Callback = ModuleCallback;
+    type Callback = Never;
 
     type Config = Config;
     type Cmd = DefaultCmd;
@@ -256,7 +252,7 @@ impl Module {
 }
 
 #[async_trait]
-impl PluginServer<ModuleCall, ModuleCallback> for Module {
+impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all, fields())]
     async fn run_pass(
         &self,
@@ -521,7 +517,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn callback(
         &self,
         _: &Extensions,
-        callback: ModuleCallback,
+        callback: Never,
         _data: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match callback {}

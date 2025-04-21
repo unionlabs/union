@@ -1,7 +1,4 @@
 [dependencies]
-[dependencies.chrono]
-features  = ["alloc"]
-workspace = true
 [dependencies.pbjson-types]
 git = "https://github.com/recoord/pbjson"
 rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe"

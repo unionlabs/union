@@ -20,7 +20,7 @@ thiserror   = { workspace = true }
 unionlabs   = { workspace = true }
 
 [dev-dependencies]
-anyhow         = "1.0.79"
+anyhow         = { workspace = true }
 cometbft-types = { workspace = true, features = ["proto"] }
 hex            = { workspace = true, features = ["serde"] }
 hex-literal    = { workspace = true }

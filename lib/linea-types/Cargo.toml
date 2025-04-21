@@ -12,5 +12,5 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-serde.workspace = true
-unionlabs       = { workspace = true }
+serde     = { workspace = true }
+unionlabs = { workspace = true }
