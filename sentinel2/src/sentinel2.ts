@@ -760,52 +760,53 @@ const fundBabylonAccounts = Effect.repeat(
       yield* Effect.logError("Sender account couldnt found!")
       return
     }
-    client.getBalance(senderAccount.address, "ubbn").then(balance => {
-      if (Number.parseInt(balance.amount) < 1000000) {
-        const errLog = Effect.annotateLogs({
-          issueType: "SPENDER_BALANCE_LOW",
-          balance: balance.amount,
-          chainId: "babylon.bbn-1",
-          tokenAddr: "ubbn",
-          account: senderAccount.address
-        })(Effect.logError("SPENDER_BALANCE_LOW"))
+    const balance = yield* Effect.tryPromise(() =>
+      client.getBalance(senderAccount.address, "ubbn")
+    )
 
-        Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
-        keepContinue = false
-      }
-    })
-    const fee = {
-      amount: coins(500, "ubbn"), // for instance 500bbn as the fee
-      gas: "200000" // fixed gas limit
+    if (Number.parseInt(balance.amount) < 1_000_000) {
+      const errLog = Effect.annotateLogs({
+        issueType: "SPENDER_BALANCE_LOW",
+        balance: balance.amount,
+        chainId: "babylon.bbn-1",
+        tokenAddr: "ubbn",
+        account: senderAccount.address
+      })(Effect.logError("SPENDER_BALANCE_LOW"))
+
+      Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
+      return
     }
 
-    if (keepContinue) {
-      const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
-      for (const acc of accs) {
-        const receiver = acc.receiver_display
-        const result = yield* Effect.tryPromise({
-          try: () =>
-            client.sendTokens(
-              senderAccount.address,
-              receiver,
-              coins(10000, "ubbn"), // send 0.01 bbn
-              fee
-            ),
-          catch: err => {
-            console.error("raw sendTokens error:", err)
-            throw err
-          }
-        })
-        const okLog = Effect.annotateLogs({
-          sentAmount: "0.01",
-          chainId: "babylon.bbn-1",
-          tokenAddr: "ubbn",
-          account: senderAccount.address,
-          receiver,
-          transactionHash: result.transactionHash
-        })(Effect.logInfo("SENT_OK"))
-        Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
-      }
+    const fee = {
+      amount: coins(500, "ubbn"),
+      gas: "200000" 
+    }
+
+    const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
+    for (const acc of accs) {
+      const receiver = acc.receiver_display
+      const result = yield* Effect.tryPromise({
+        try: () =>
+          client.sendTokens(
+            senderAccount.address,
+            receiver,
+            coins(10000, "ubbn"), // send 0.01 bbn
+            fee
+          ),
+        catch: err => {
+          console.error("raw sendTokens error:", err)
+          throw err
+        }
+      })
+      const okLog = Effect.annotateLogs({
+        sentAmount: "0.01",
+        chainId: "babylon.bbn-1",
+        tokenAddr: "ubbn",
+        account: senderAccount.address,
+        receiver,
+        transactionHash: result.transactionHash
+      })(Effect.logInfo("SENT_OK"))
+      Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
     }
   }),
   Schedule.spaced("1 minutes")
@@ -1164,7 +1165,7 @@ const mainEffect = Effect.gen(function* (_) {
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
   yield* Effect.all(
-    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop],
+    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop,fundBabylonAccounts],
     {
       concurrency: "unbounded"
     }
