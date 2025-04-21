@@ -12,18 +12,18 @@
       //     "rpc_url": "http://localhost:26657"
       //   }
       // },
-      // {
-      //   "enabled": true,
-      //   "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
-      //   "info": {
-      //     "chain_id": "union-devnet-1",
-      //     "ibc_spec_id": "ibc-union"
-      //   },
-      //   "config": {
-      //     "rpc_url": "http://localhost:26657",
-      //     "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
-      //   }
-      // },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
+        "info": {
+          "chain_id": "union-devnet-1",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "http://localhost:26657",
+          "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
+        }
+      }
       // {
       //   "enabled": true,
       //   "path": "./target/debug/voyager-state-module-ethereum",
@@ -38,18 +38,18 @@
       // }
     ],
     "proof": [
-      // {
-      //   "enabled": true,
-      //   "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
-      //   "info": {
-      //     "chain_id": "union-devnet-1",
-      //     "ibc_spec_id": "ibc-union"
-      //   },
-      //   "config": {
-      //     "rpc_url": "http://localhost:26657",
-      //     "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
-      //   }
-      // },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
+        "info": {
+          "chain_id": "union-devnet-1",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "http://localhost:26657",
+          "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
+        }
+      }
       // {
       //   "enabled": true,
       //   "path": "./target/debug/voyager-proof-module-ethereum",
@@ -68,24 +68,24 @@
         "enabled": true,
         "path": "./target/debug/voyager-consensus-module-sui",
         "info": {
-          "chain_id": "35834a8a",
+          "chain_id": "9d7f70f1",
           "consensus_type": "sui"
         },
         "config": {
-          "rpc_url": "https://fullnode.mainnet.sui.io:443"
+          "rpc_url": "http://127.0.0.1:9000"
+        }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-consensus-module-cometbls",
+        "info": {
+          "chain_id": "union-devnet-1",
+          "consensus_type": "cometbls"
+        },
+        "config": {
+          "rpc_url": "http://localhost:26657"
         }
       }
-      // {
-      //   "enabled": true,
-      //   "path": "./target/debug/voyager-consensus-module-cometbls",
-      //   "info": {
-      //     "chain_id": "union-devnet-1",
-      //     "consensus_type": "cometbls"
-      //   },
-      //   "config": {
-      //     "rpc_url": "http://localhost:26657"
-      //   }
-      // },
       // {
       //   "enabled": true,
       //   "path": "./target/debug/voyager-consensus-module-trusted-evm",
@@ -123,6 +123,16 @@
           "ibc_spec_id": "ibc-union"
         }
       },
+      // {
+      //   "enabled": true,
+      //   "path": "./target/debug/voyager-client-module-cometbls",
+      //   "info": {
+      //     "client_type": "cometbls",
+      //     "consensus_type": "cometbls",
+      //     "ibc_interface": "ibc-move/ap",
+      //     "ibc_spec_id": "ibc-union"
+      //   }
+      // },
       {
         "enabled": true,
         "path": "./target/debug/voyager-client-module-trusted-mpt",
@@ -165,18 +175,18 @@
       }
     ],
     "client_bootstrap": [
-      // {
-      //   "config": {
-      //     "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
-      //     "rpc_url": "http://localhost:26657"
-      //   },
-      //   "enabled": true,
-      //   "info": {
-      //     "chain_id": "union-devnet-1",
-      //     "client_type": "cometbls"
-      //   },
-      //   "path": "./target/debug/voyager-client-bootstrap-module-cometbls"
-      // },
+      {
+        "config": {
+          "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
+          "rpc_url": "http://localhost:26657"
+        },
+        "enabled": true,
+        "info": {
+          "chain_id": "union-devnet-1",
+          "client_type": "cometbls"
+        },
+        "path": "./target/debug/voyager-client-bootstrap-module-cometbls"
+      }
       // {
       //   "config": {
       //     "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
@@ -207,17 +217,26 @@
     ]
   },
   "plugins": [
-    // {
-    //   "enabled": true,
-    //   "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
-    //   "config": {
-    //     "chain_id": "union-devnet-1",
-    //     "rpc_url": "http://localhost:26657",
-    //     "chunk_block_fetch_size": 1000,
-    //     "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
-    //     "refetch_delay": 20
-    //   }
-    // },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-cosmos-sdk",
+      "config": {
+        "chain_id": "union-devnet-1",
+        "rpc_url": "http://localhost:26657",
+        "chunk_block_fetch_size": 1000,
+        "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
+        "refetch_delay": 20
+      }
+    },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-event-source-plugin-sui",
+      "config": {
+        "chain_id": "9d7f70f1",
+        "rpc_url": "http://127.0.0.1:9000",
+        "ibc_handler_address": "0x455cc5ae1145401d8f3214c489718d2156bb0c24db06c78f00e842bb9fef58c9"
+      }
+    },
     // {
     //   "enabled": true,
     //   "path": "./target/debug/voyager-event-source-plugin-ethereum",
@@ -247,12 +266,31 @@
     //       "type": "feemarket",
     //       "config": {
     //         "max_gas": 10000000,
-    //         "gas_multiplier": "1.4"
+    //         "gas_multiplier": 1.4
     //       }
     //     },
     //     "rpc_url": "http://localhost:26657"
     //   }
     // },
+    {
+      "enabled": true,
+      "path": "./target/debug/voyager-transaction-plugin-sui",
+      "config": {
+        "chain_id": "9d7f70f1",
+        "ibc_handler_address": "0x455cc5ae1145401d8f3214c489718d2156bb0c24db06c78f00e842bb9fef58c9",
+        "keyring": {
+          "name": "sui",
+          "keys": [
+            {
+              "type": "raw",
+              "name": "alice",
+              "key": "0x737569707269766B657931717A71353571326D637A686874396630366876677A7A72716835676465636A7A6E397579736C6A7A3530736D686E376770796775636D3571713061"
+            }
+          ]
+        },
+        "rpc_url": "http://127.0.0.1:9000"
+      }
+    }
     // {
     //   "enabled": true,
     //   "path": "./target/debug/voyager-transaction-plugin-ethereum",

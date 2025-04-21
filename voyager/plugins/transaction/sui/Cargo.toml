@@ -1,0 +1,35 @@
+[package]
+name    = "voyager-transaction-plugin-sui"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+move-core-types   = { workspace = true }
+
+concurrent-keyring = { workspace = true }
+embed-commit       = { workspace = true }
+enumorph           = { workspace = true }
+ibc-union-spec     = { workspace = true, features = ["serde"] }
+jsonrpsee          = { workspace = true, features = ["macros", "server", "tracing"] }
+macros             = { workspace = true }
+serde              = { workspace = true, features = ["derive"] }
+sha3               = { workspace = true }
+tokio              = { workspace = true }
+tracing            = { workspace = true }
+unionlabs          = { workspace = true }
+voyager-message    = { workspace = true }
+voyager-vm         = { workspace = true }
+bcs = { workspace = true }
+
+sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
+fastcrypto = { git = "https://github.com/MystenLabs/fastcrypto", rev = "69d496c71fb37e3d22fe85e5bbfd4256d61422b9" }
+shared-crypto = { git = "https://github.com/MystenLabs/sui" }
+hex-literal = { workspace = true }

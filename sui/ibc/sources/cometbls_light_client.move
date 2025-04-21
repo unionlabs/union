@@ -197,7 +197,7 @@ module ibc::light_client {
 
     public(package) fun update_client(
         client: &Client, client_msg: vector<u8>
-    ): (vector<u8>, vector<vector<u8>>, vector<u64>) {
+    ): (vector<u8>, vector<u8>, u64) {
 
         let consensus_state = ConsensusState{
             timestamp: 0,

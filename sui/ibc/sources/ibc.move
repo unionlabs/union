@@ -345,9 +345,11 @@ module ibc::ibc {
             E_CLIENT_NOT_FOUND
         );
 
+        let client = ibc_store.clients.borrow(client_id);
+
         // Update the client and consensus states using the client message
         let (client_state, consensus_state, height) =
-            light_client.update_client(client_message);
+            client.update_client(client_message);
 
         // Update the client state commitment
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
@@ -364,9 +366,9 @@ module ibc::ibc {
         // Emit a ClientUpdated event for each updated height
         event::emit(
             ClientUpdated {
-                client_id: client_id,
+                client_id,
                 client_type: utf8(CLIENT_TYPE_COMETBLS),
-                height: height
+                height
             }
         );
     }
