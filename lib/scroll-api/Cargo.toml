@@ -12,10 +12,10 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-reqwest     = { workspace = true }
+reqwest     = { workspace = true, features = ["json"] }
 serde       = { workspace = true, features = ["derive"] }
 serde-utils = { workspace = true }
-tracing     = { workspace = true }
+tracing     = { workspace = true, features = ["attributes"] }
 unionlabs   = { workspace = true }
 
 [dev-dependencies]

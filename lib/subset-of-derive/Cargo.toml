@@ -18,7 +18,7 @@ proc-macro = true
 [dependencies]
 proc-macro2 = "1.0.79"
 quote       = "1.0.35"
-syn         = { workspace = true, features = ["full", "extra-traits", "visit-mut"] }
+syn         = { workspace = true, features = ["full", "extra-traits", "visit-mut", "derive", "parsing", "printing", "proc-macro"] }
 
 [dev-dependencies]
 frame-support-procedural = { workspace = true }

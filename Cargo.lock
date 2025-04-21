@@ -4693,6 +4693,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "num-traits",
  "unionlabs",
+ "unionlabs-encoding",
  "unionlabs-primitives",
 ]
 
@@ -6978,6 +6979,7 @@ dependencies = [
  "ethabi",
  "frissitheto",
  "hex",
+ "hex-literal",
  "ibc-union-msg",
  "ibc-union-spec",
  "serde",
@@ -14279,10 +14281,12 @@ name = "unionlabs"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "base64 0.21.7",
  "bcs 0.1.6",
  "bincode 2.0.1",
  "bip32",
  "borsh",
+ "bs58 0.4.0",
  "chrono",
  "cosmwasm-std 2.2.2",
  "derive_more 0.99.19",
@@ -14313,8 +14317,23 @@ dependencies = [
  "subtle-encoding",
  "thiserror 2.0.12",
  "typenum",
+ "unionlabs-encoding",
  "unionlabs-primitives",
  "wasmparser 0.113.3",
+]
+
+[[package]]
+name = "unionlabs-encoding"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "bcs 0.1.6",
+ "bincode 2.0.1",
+ "prost 0.12.6",
+ "serde",
+ "serde_json",
+ "ssz",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
@@ -14336,6 +14355,7 @@ dependencies = [
  "typenum",
  "uint",
  "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]

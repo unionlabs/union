@@ -37,6 +37,7 @@ serde = [
   # "unionlabs/serde",
   "beacon-api-types/serde",
   "ethereum-sync-protocol-types/serde",
+  "consensus-primitives/serde",
 ]
 
 [dev-dependencies]

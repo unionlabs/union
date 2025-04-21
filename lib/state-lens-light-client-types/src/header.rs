@@ -17,7 +17,6 @@ pub struct Header {
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
-    use alloy::sol_types::SolValue;
     use unionlabs::{ibc::core::client::height::Height, impl_ethabi_via_try_from_into};
 
     use crate::Header;

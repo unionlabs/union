@@ -33,7 +33,7 @@ serde                        = { workspace = true, features = ["derive"] }
 tendermint-light-client      = { workspace = true, features = ["library"] }
 tendermint-verifier          = { workspace = true }
 thiserror                    = { workspace = true }
-unionlabs                    = { workspace = true }
+unionlabs                    = { workspace = true, features = ["ssz"] }
 
 [dev-dependencies]
 base64                = { workspace = true }
