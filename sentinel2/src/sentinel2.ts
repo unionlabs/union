@@ -29,23 +29,21 @@ import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
 import type { Address } from "viem"
 import { request, gql } from "graphql-request"
-import Database from 'better-sqlite3';
+// import Database from "better-sqlite3"
 
-const db = new Database("funded-txs.db");
-// ensure the table exists
-db.prepare(`
-  CREATE TABLE IF NOT EXISTS funded_txs (
-    transaction_hash TEXT PRIMARY KEY
-  )
-`).run();
+// const db = new Database("funded-txs.db")
+// // ensure the table exists
+// db.prepare(`
+//   CREATE TABLE IF NOT EXISTS funded_txs (
+//     transaction_hash TEXT PRIMARY KEY
+//   )
+// `).run()
 
-// prepared statements for quick lookup and insert
-const isFundedStmt = db.prepare(
-  `SELECT 1 FROM funded_txs WHERE transaction_hash = ?`
-);
-const insertFundedStmt = db.prepare(
-  `INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`
-);
+// // prepared statements for quick lookup and insert
+// const isFundedStmt = db.prepare(`SELECT 1 FROM funded_txs WHERE transaction_hash = ?`)
+// const insertFundedStmt = db.prepare(
+//   `INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`
+// )
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -176,7 +174,6 @@ const doTransferRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
   Schedule.intersect(Schedule.recurs(2)) // Limit retries to 2
 )
 
-
 const fetchWrappedTokens = (hasuraEndpoint: string) =>
   Effect.gen(function* () {
     const query = gql`
@@ -232,13 +229,13 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
       .map(({ receiver_display, traces }) => ({
         receiver_display,
         traces: traces
-        .filter(
-          trace =>
-            trace.type === "WRITE_ACK" &&
-            trace.transaction_hash != null &&
-            // only keep if NOT already in SQLite
-            !isFundedStmt.get(trace.transaction_hash)
-        )
+          .filter(
+            trace =>
+              trace.type === "WRITE_ACK" &&
+              trace.transaction_hash != null
+              // only keep if NOT already in SQLite
+              // !isFundedStmt.get(trace.transaction_hash)
+          )
           .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! }))
       }))
       // remove any where we ended up with zero traces
@@ -784,9 +781,7 @@ const fundBabylonAccounts = Effect.repeat(
       yield* Effect.logError("Sender account couldnt found!")
       return
     }
-    const balance = yield* Effect.tryPromise(() =>
-      client.getBalance(senderAccount.address, "ubbn")
-    )
+    const balance = yield* Effect.tryPromise(() => client.getBalance(senderAccount.address, "ubbn"))
 
     if (Number.parseInt(balance.amount) < 1_000_000) {
       const errLog = Effect.annotateLogs({
@@ -803,7 +798,7 @@ const fundBabylonAccounts = Effect.repeat(
 
     const fee = {
       amount: coins(500, "ubbn"),
-      gas: "200000" 
+      gas: "200000"
     }
 
     const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
@@ -824,8 +819,8 @@ const fundBabylonAccounts = Effect.repeat(
       })
 
       // persist to SQLite so restarts won’t re‑fund
-      insertFundedStmt.run(result.transactionHash)
-      
+      // insertFundedStmt.run(result.transactionHash)
+
       const okLog = Effect.annotateLogs({
         sentAmount: "0.01",
         chainId: "babylon.bbn-1",
@@ -861,8 +856,8 @@ const fetchOnlyUniBTC = (hasuraEndpoint: string) =>
     })
 
     for (const packet of response.v2_packets) {
-      const operand = packet.decoded?.instruction?.operand  
-      if (!operand) continue      
+      const operand = packet.decoded?.instruction?.operand
+      if (!operand) continue
       if (operand.baseTokenName == "uniBTC" && operand.baseAmount) {
         const baseAmount = BigInt(operand.baseAmount)
         if (baseAmount >= 4000000n) {
@@ -1190,7 +1185,7 @@ const mainEffect = Effect.gen(function* (_) {
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
   yield* Effect.all(
-    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts],
+    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop/*, fundBabylonAccounts*/],
     {
       concurrency: "unbounded"
     }
