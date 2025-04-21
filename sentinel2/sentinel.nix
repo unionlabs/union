@@ -94,7 +94,8 @@ in
       deps = with pkgsUnstable; [
         python3
         pkg-config
-        nodePackages_latest.nodejs
+        sqlite
+        pkgs.nodejs_20
         nodePackages_latest."patch-package"
       ];
       packageJSON = lib.importJSON ./package.json;
@@ -112,7 +113,11 @@ in
           pname = packageJSON.name;
           inherit (packageJSON) version;
           nativeBuildInputs = deps;
-          buildInputs = [ pkgs.bashInteractive ];
+          buildInputs = [ pkgs.bashInteractive pkgs.sqlite ];
+          # After npm install, rebuild the native addon against this Node/V8
+          postBuild = ''
+            npm rebuild better-sqlite3 --build-from-source
+          '';
           installPhase = ''
                         echo "Current directory: $(pwd)"
                         echo "out is $out"
@@ -121,7 +126,8 @@ in
                         mkdir -p $out/lib
                         cp -r dist/* $out/lib
 
-                        # 2) Copy node_modules
+                        # 2) Copy node_modules (with rebuilt better-sqlite3)
+                        rm -rf $out/lib/node_modules
                         cp -r node_modules $out/lib/node_modules
 
                         # 3) Copy package.json
