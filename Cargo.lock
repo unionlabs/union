@@ -14281,10 +14281,12 @@ name = "unionlabs"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "base64 0.21.7",
  "bcs 0.1.6",
  "bincode 2.0.1",
  "bip32",
  "borsh",
+ "bs58 0.4.0",
  "chrono",
  "cosmwasm-std 2.2.2",
  "derive_more 0.99.19",

@@ -39,19 +39,19 @@ thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 wasmparser               = { version = "0.113" }
 
-alloy                   = { workspace = true, optional = true, features = ["std", "sol-types"] }
-base64                  = { workspace = true }
-bcs                     = { workspace = true }
-bincode                 = { workspace = true, features = ["alloc", "derive"], optional = true }
-borsh                   = { workspace = true, features = ["borsh-derive"], optional = true }
-bs58                    = "0.4"
-near-primitives-core    = { version = "0.21", optional = true }
-near-sdk                = { workspace = true, optional = true }
-schemars                = { workspace = true, features = ["derive"], optional = true }
-serde_bytes             = "0.11.6"
-solidity-slot.workspace = true
-unionlabs-encoding      = { workspace = true, features = ["proto", "json"] }
-unionlabs-primitives    = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
+alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
+base64               = { workspace = true }
+bcs                  = { workspace = true }
+bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
+borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
+bs58                 = "0.4"
+near-primitives-core = { version = "0.21", optional = true }
+near-sdk             = { workspace = true, optional = true }
+schemars             = { workspace = true, features = ["derive"], optional = true }
+serde_bytes          = "0.11.6"
+solidity-slot        = { workspace = true }
+unionlabs-encoding   = { workspace = true, features = ["proto", "json"] }
+unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
