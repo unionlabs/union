@@ -861,18 +861,15 @@ const fetchOnlyUniBTC = (hasuraEndpoint: string) =>
     })
 
     for (const packet of response.v2_packets) {
-      if (packet.decoded.instruction.operand) {
-        const operand = packet.decoded.instruction.operand
-        if (operand.baseTokenName == "uniBTC" && operand.baseAmount) {
-          //5000000
-          const baseAmount = BigInt(operand.baseAmount)
-          if (baseAmount >= 4000000n) {
-            console.info("THIS IS MY ALERT", baseAmount)
-            const logEffect = Effect.annotateLogs({
-              packet: packet
-            })(Effect.logError(`BIG_UNI_BTC`))
-            Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-          }
+      const operand = packet.decoded?.instruction?.operand  
+      if (!operand) continue      
+      if (operand.baseTokenName == "uniBTC" && operand.baseAmount) {
+        const baseAmount = BigInt(operand.baseAmount)
+        if (baseAmount >= 4000000n) {
+          const logEffect = Effect.annotateLogs({
+            packet: packet
+          })(Effect.logError(`BIG_UNI_BTC`))
+          Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
         }
       }
     }
@@ -1193,7 +1190,7 @@ const mainEffect = Effect.gen(function* (_) {
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
   yield* Effect.all(
-    [/*transferLoop,  runIbcChecksForever, escrowSupplyControlLoop,*/fundBabylonAccounts],
+    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts],
     {
       concurrency: "unbounded"
     }
