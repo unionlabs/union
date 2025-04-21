@@ -21,8 +21,11 @@ pub struct Config {
     pub token_minter_code_id: u64,
     /// The address that can update the rate limiters.
     pub rate_limit_admin: Addr,
-    /// Addresses allowed to update token buckets for rate limiting
+    /// Addresses allowed to update token buckets for rate limiting.
     pub rate_limit_operators: Vec<Addr>,
+    /// Enable or disable rate limiting.
+    #[serde(default, skip_serializing_if = "core::ops::Not::not")]
+    pub rate_limit_disabled: bool,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -140,6 +143,7 @@ pub enum QueryMsg {
         path: Uint256,
         denom: String,
     },
+    GetConfig {},
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

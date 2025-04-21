@@ -99,7 +99,9 @@ _: {
           ucs03_type = "cw20";
           bech32_prefix = "union";
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              rate_limit_disabled = true;
+            };
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
@@ -117,7 +119,9 @@ _: {
             type = "feemarket";
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              rate_limit_disabled = true;
+            };
           };
           bech32_prefix = "union";
           lightclients = [
@@ -173,7 +177,9 @@ _: {
             max_gas = 10000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              rate_limit_disabled = true;
+            };
           };
           bech32_prefix = "stars";
           lightclients = [
@@ -195,7 +201,9 @@ _: {
             max_gas = 300000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              rate_limit_disabled = true;
+            };
           };
           bech32_prefix = "osmo";
           lightclients = [
@@ -217,7 +225,9 @@ _: {
             max_gas = 10000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              rate_limit_disabled = true;
+            };
           };
           bech32_prefix = "bbn";
           lightclients = [
@@ -263,7 +273,9 @@ _: {
             max_gas = 60000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              rate_limit_disabled = true;
+            };
           };
           permissioned = true;
           bech32_prefix = "stride";
@@ -287,7 +299,9 @@ _: {
             max_gas = 60000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              rate_limit_disabled = true;
+            };
           };
           bech32_prefix = "xion";
           lightclients = [
@@ -309,7 +323,9 @@ _: {
             max_gas = 60000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              rate_limit_disabled = true;
+            };
           };
           bech32_prefix = "mantra";
           lightclients = [
@@ -404,8 +420,10 @@ _: {
               cw20_base = "${cw20-base.release}";
             };
           };
+          rate_limit_disabled = false;
         };
         native = {
+          rate_limit_disabled = false;
           path = "${ucs03-zkgm.release}";
           # token_minter_path = "${token-factory-minter.release}";
           token_minter_config = {
@@ -673,7 +691,9 @@ _: {
                     migrate \
                     --rpc-url ${rpc_url} \
                     --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
-                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo '{}' | base64)\"}}" \
+                    --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo '{}' | base64)\"}, \"rate_limit_disabled\":${
+                      if apps.ucs03.rate_limit_disabled then "true" else "false"
+                    }}" \
                     --force \
                     --new-bytecode ${(mk-app full-app.name).release} \
                     ${mk-gas-args gas_config}
