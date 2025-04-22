@@ -34,6 +34,10 @@ let
           type = types.str;
           description = "mnemonic to send tokens to babylon users";
         };
+        db_path = mkOption {
+          type = types.str;
+          description = "Path for sqlite db";
+        };
         betterstack_api_key = mkOption {
           type = types.str;
           description = "Betterstack api key";
@@ -62,11 +66,8 @@ let
             WorkingDirectory = "/var/lib/sentinel2";
             ExecStartPre = ''
               ${pkgs.coreutils}/bin/install -d -m0755 -o sentinel2 -g sentinel2 /var/lib/sentinel2
-              cp -r ${cfg.package}/lib/* /var/lib/sentinel2/
-              cp -r ${cfg.package}/bin /var/lib/sentinel2/
             '';
-
-            User = "sentinel2";       # create this user in your NixOS config
+            User = "sentinel2";       
             Group = "sentinel2";
             Type = "simple";
             ExecStart = ''
@@ -78,6 +79,7 @@ let
                     inherit (cfg) transfers;
                     inherit (cfg) signer_account_mnemonic;
                     inherit (cfg) betterstack_api_key;
+                    inherit (cfg) db_path; 
                     inherit (cfg) chainConfig;
                     inherit (cfg) hasuraEndpoint;
                   }
@@ -109,7 +111,6 @@ in
         python3
         pkg-config
         sqlite
-        # pkgs.nodejs_20
         nodePackages_latest."patch-package"
       ];
       packageJSON = lib.importJSON ./package.json;
@@ -131,12 +132,11 @@ in
             python3
             pkg-config
             sqlite
-            nodejs       # ← use the default Node here
+            nodejs      
             nodePackages_latest."patch-package"
           ];
 
           buildInputs = [ pkgs.bashInteractive pkgs.sqlite ];
-          # After npm install, rebuild the native addon against this Node/V8
           postBuild = ''
             npm rebuild better-sqlite3 --build-from-source
           '';
@@ -195,6 +195,5 @@ in
       };
     };
 
-  # Flake-wide NixOS module definition
   flake.nixosModules.sentinel2 = sentinel2Module;
 }
