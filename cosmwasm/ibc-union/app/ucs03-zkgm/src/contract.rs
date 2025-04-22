@@ -2027,10 +2027,14 @@ pub struct TokenMinterMigration {
     msg: Binary,
 }
 
+// The current structure is expected to be backward compatible, only idempotent
+// fields can be currently added.
 #[cosmwasm_schema::cw_serde]
 pub struct MigrateMsg {
     // Provide `token_minter_migration` to also migrate the token minter
     token_minter_migration: Option<TokenMinterMigration>,
+    // Whether to enable or disable rate limiting while migrating.
+    rate_limit_disabled: bool,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -2052,6 +2056,10 @@ pub fn migrate(
             Ok((res, None))
         },
         |deps, migrate_msg, _current_version| {
+            CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
+                config.rate_limit_disabled = migrate_msg.rate_limit_disabled;
+                Ok(config)
+            })?;
             if let Some(token_minter_migration) = migrate_msg.token_minter_migration {
                 let token_minter = TOKEN_MINTER.load(deps.storage)?;
                 Ok((
@@ -2120,6 +2128,10 @@ pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError>
             )?;
             Ok(to_json_binary(&balance)?)
         }
+        QueryMsg::GetConfig {} => {
+            let config = CONFIG.load(deps.storage)?;
+            Ok(to_json_binary(&config)?)
+        }
     }
 }
 
@@ -2129,6 +2141,9 @@ fn rate_limit(
     amount: impl Into<Uint256>,
     now: impl Into<Uint256>,
 ) -> Result<(), ContractError> {
+    if CONFIG.load(storage)?.rate_limit_disabled {
+        return Ok(());
+    }
     TOKEN_BUCKET.update(storage, denom.clone(), |entry| match entry {
         Some(mut token_bucket) => {
             token_bucket.rate_limit(amount.into(), now.into())?;

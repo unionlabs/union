@@ -223,14 +223,19 @@ abstract contract UnionScript is UnionBase {
         IBCHandler handler,
         Manager manager,
         IWETH weth,
-        ZkgmERC20 erc20
+        ZkgmERC20 erc20,
+        bool rateLimitEnabled
     ) internal returns (UCS03Zkgm) {
         UCS03Zkgm zkgm = UCS03Zkgm(
             payable(
                 deploy(
                     Protocols.UCS03,
                     abi.encode(
-                        address(new UCS03Zkgm(handler, weth, erc20)),
+                        address(
+                            new UCS03Zkgm(
+                                handler, weth, erc20, rateLimitEnabled
+                            )
+                        ),
                         abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
                     )
                 )
@@ -241,7 +246,8 @@ abstract contract UnionScript is UnionBase {
 
     function deployIBC(
         address owner,
-        IWETH weth
+        IWETH weth,
+        bool rateLimitEnabled
     )
         internal
         returns (
@@ -268,7 +274,8 @@ abstract contract UnionScript is UnionBase {
             deployStateLensIcs23SmtClient(handler, manager);
         PingPong pingpong = deployUCS00(handler, manager, 100000000000000);
         ZkgmERC20 zkgmERC20 = deployZkgmERC20();
-        UCS03Zkgm ucs03 = deployUCS03(handler, manager, weth, zkgmERC20);
+        UCS03Zkgm ucs03 =
+            deployUCS03(handler, manager, weth, zkgmERC20, rateLimitEnabled);
         Multicall multicall = deployMulticall(manager);
         setupRoles(owner, manager, handler, cometblsClient, ucs03, multicall);
         return (
@@ -543,13 +550,15 @@ contract DeployUCS03 is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
 
         Manager manager = Manager(getDeployed(IBC.MANAGER));
         IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
 
         vm.startBroadcast(privateKey);
-        UCS03Zkgm zkgm = deployUCS03(handler, manager, weth, zkgmERC20);
+        UCS03Zkgm zkgm =
+            deployUCS03(handler, manager, weth, zkgmERC20, rateLimitEnabled);
         vm.stopBroadcast();
 
         console.log("UCS03: ", address(zkgm));
@@ -652,6 +661,7 @@ contract DeployIBC is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
 
         address owner = vm.addr(privateKey);
         vm.startBroadcast(privateKey);
@@ -666,7 +676,7 @@ contract DeployIBC is UnionScript {
             UCS03Zkgm ucs03,
             Multicall multicall,
             Manager manager
-        ) = deployIBC(vm.addr(privateKey), weth);
+        ) = deployIBC(vm.addr(privateKey), weth, rateLimitEnabled);
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
@@ -710,6 +720,7 @@ contract DeployDeployerAndIBC is UnionScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
 
         vm.startBroadcast(privateKey);
         deployer = deployDeployer();
@@ -724,7 +735,7 @@ contract DeployDeployerAndIBC is UnionScript {
             UCS03Zkgm ucs03,
             Multicall multicall,
             Manager manager
-        ) = deployIBC(vm.addr(privateKey), weth);
+        ) = deployIBC(vm.addr(privateKey), weth, rateLimitEnabled);
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
@@ -1092,6 +1103,7 @@ contract DryUpgradeUCS03 is VersionedScript {
 
     function run() public {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
@@ -1101,7 +1113,7 @@ contract DryUpgradeUCS03 is VersionedScript {
         );
 
         address newImplementation =
-            address(new UCS03Zkgm(handler, weth, zkgmERC20));
+            address(new UCS03Zkgm(handler, weth, zkgmERC20, rateLimitEnabled));
         vm.prank(owner);
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
@@ -1131,6 +1143,7 @@ contract UpgradeUCS03 is VersionedScript {
 
     function run() public {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.ZKGM_ERC20));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
@@ -1141,7 +1154,7 @@ contract UpgradeUCS03 is VersionedScript {
 
         vm.startBroadcast(privateKey);
         address newImplementation =
-            address(new UCS03Zkgm(handler, weth, zkgmERC20));
+            address(new UCS03Zkgm(handler, weth, zkgmERC20, rateLimitEnabled));
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }

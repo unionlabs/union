@@ -339,6 +339,7 @@ pub struct Ucs03Config {
     path: PathBuf,
     token_minter_path: PathBuf,
     token_minter_config: TokenMinterConfig,
+    rate_limit_disabled: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -695,6 +696,7 @@ async fn do_main() -> Result<()> {
                                 rate_limit_operators: vec![Addr::unchecked(
                                     ctx.wallet().address().to_string(),
                                 )],
+                                rate_limit_disabled: ucs03_config.rate_limit_disabled,
                             },
                             minter_init_msg,
                         },
