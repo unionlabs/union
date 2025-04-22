@@ -1,5 +1,5 @@
 <script lang="ts">
-import { Array as Arr, flow, Match, Option, pipe, Data } from "effect"
+import { flow, Match, Option, pipe } from "effect"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { cn } from "$lib/utils"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
@@ -9,8 +9,6 @@ import { UniversalChainId } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import { MODE } from "$lib/constants/config"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
-import type { Tokens } from "@unionlabs/sdk/schema"
-import { log } from "effect/Console"
 
 type ChainStatus = {
   isSelected: boolean
@@ -47,12 +45,26 @@ type ChainWithRateLimit = [Chain, boolean]
 function selectChain(chain: Chain) {
   // Prevent selecting the same chain as destination
   if (type === "destination" && chain.chain_id === transferData.raw.source) {
-    return // Don't allow selecting same chain as destination
+    return
   }
 
   transferData.raw.updateField(type, chain.chain_id)
+
   if (type === "source") {
+    // Always fetch tokens for selected source
     tokensStore.fetchTokens(chain.universal_chain_id)
+
+    // Prefetch tokens for potential destinations
+    pipe(
+      transferData.destinationChains,
+      Option.map((chains) => {
+        for (const c of chains) {
+          tokensStore.fetchTokens(c.universal_chain_id)
+        }
+      })
+    )
+
+    // Reset destination if it's the same as selected source
     if (transferData.raw.destination === chain.chain_id) {
       transferData.raw.updateField("destination", "")
     }
@@ -60,6 +72,8 @@ function selectChain(chain: Chain) {
 
   onSelect()
 }
+``
+
 
 /**
  * Filters chains based on the current environment (testnet/mainnet)
@@ -114,7 +128,6 @@ function getChainStatus(chain: Chain, isRateLimited: boolean): ChainStatus {
   return { isSelected, isSourceChain, isDisabled, isRateLimited, hasRoute }
 }
 
-
 /**
  * Checks if destination chains have rate limiting (bucket) for the correct destination token.
  */
@@ -133,29 +146,51 @@ const filterByTokenBucket = (chains: Array<Chain>): Array<ChainWithRateLimit> =>
 
   return chains.map(destinationChain => {
     const tokens = tokensStore.getData(destinationChain.universal_chain_id)
-    if (Option.isNone(tokens)) {
-      return [destinationChain, true]
-    }
+    if (Option.isNone(tokens)) return [destinationChain, true]
 
     const tokenList = tokens.value
 
-    const destToken = tokenList.find(token =>
-      token.wrapping.some(
-        w =>
-          w.unwrapped_denom.toLowerCase() === baseDenom &&
-          w.unwrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
-          w.wrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+    // First: try unwrap path
+    const maybeUnwrapped = baseToken.wrapping.find(
+      w =>
+        w.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+        w.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+    )
+
+    if (maybeUnwrapped) {
+      const destToken = tokenList.find(
+        t => t.denom.toLowerCase() === maybeUnwrapped.unwrapped_denom.toLowerCase()
+      )
+
+      const isRateLimited = destToken?.bucket == null
+      return [destinationChain, isRateLimited]
+    }
+
+    // Fallback: look for a destination token that wraps baseToken
+    const reverseMatch = tokenList.find(t =>
+      t.wrapping.some(w =>
+        w.unwrapped_denom.toLowerCase() === baseDenom &&
+        w.unwrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+        w.wrapped_chain.universal_chain_id === destinationChain.universal_chain_id
       )
     )
 
-    const isRateLimited = destToken?.bucket == null
+    const isRateLimited = reverseMatch?.bucket == null
     return [destinationChain, isRateLimited]
   })
 }
 
+
+
 // Apply all chain filters in sequence
 const filteredChains = $derived(
-  pipe(chains.data, Option.map(flow(filterByEnvironment, filterBySigningMode, filterByTokenBucket)))
+  pipe(
+    chains.data,
+    Option.map((allChains) =>
+      pipe(allChains, filterByEnvironment, filterBySigningMode)
+    ),
+    Option.map(filterByTokenBucket)
+  )
 )
 </script>
 
@@ -190,7 +225,10 @@ const filteredChains = $derived(
           {#if status.isSourceChain}
             <span class="text-xs text-sky-400 -mt-2">Source Chain</span>
           {/if}
-          {#if type === "destination" && (status.isRateLimited || !status.hasRoute) && !status.isSourceChain}
+          {#if type === "destination" && status.isRateLimited && !status.isSourceChain}
+          <span class="text-xs text-red-400 -mt-2">No bucket</span>
+        {/if}
+          {#if type === "destination" && !status.hasRoute && !status.isSourceChain}
             <span class="text-xs text-yellow-400 -mt-2">No route</span>
           {/if}
 
