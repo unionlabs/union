@@ -74,7 +74,7 @@ pub async fn fetch_commit_details_by_branch(
     trace!("fetch_commit_details (branch): {repo}/{path}/{branch}");
 
     let commits_url = format!(
-        "https://api.github.com/repos/{}/commits?path={}&branch={}&per_page=1",
+        "https://api.github.com/repos/{}/commits?path={}&sha={}&per_page=1",
         repo, path, branch
     );
 
