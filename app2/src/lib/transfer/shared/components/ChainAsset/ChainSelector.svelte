@@ -10,7 +10,7 @@ import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import { MODE } from "$lib/constants/config"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
 import type { Tokens } from "@unionlabs/sdk/schema"
-import { log } from "effect/Console";
+import { log } from "effect/Console"
 
 type Props = {
   type: "source" | "destination"
@@ -55,7 +55,7 @@ function selectChain(chain: Chain) {
 /**
  * Filters chains based on the current environment (testnet/mainnet)
  */
- const filterByEnvironment = (chains: ReadonlyArray<Chain>) => {
+const filterByEnvironment = (chains: ReadonlyArray<Chain>) => {
   const allowedChains = MODE === "testnet" ? TESTNET_CHAINS : MAINNET_CHAINS
   return chains.filter(chain => allowedChains.includes(chain.universal_chain_id))
 }
@@ -88,17 +88,21 @@ type ChainStatus = {
 
 function getChainStatus(chain: Chain, isRateLimited: boolean): ChainStatus {
   const isSourceChain = type === "destination" && transferData.raw.source === chain.chain_id
-  const hasRoute = type === "destination" && pipe(
-    transferData.destinationChains,
-    Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
-    Option.getOrElse(() => false)
-  )
-  const isSelected = type === "source" 
-    ? transferData.raw.source === chain.chain_id
-    : transferData.raw.destination === chain.chain_id
-  const isDisabled = type === "destination" 
-    ? (isSourceChain || !hasRoute || isRateLimited) // isRateLimited now means "no bucket"
-    : false
+  const hasRoute =
+    type === "destination" &&
+    pipe(
+      transferData.destinationChains,
+      Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
+      Option.getOrElse(() => false)
+    )
+  const isSelected =
+    type === "source"
+      ? transferData.raw.source === chain.chain_id
+      : transferData.raw.destination === chain.chain_id
+  const isDisabled =
+    type === "destination"
+      ? isSourceChain || !hasRoute || isRateLimited // isRateLimited now means "no bucket"
+      : false
 
   return { isSelected, isSourceChain, isDisabled, isRateLimited, hasRoute }
 }
@@ -118,7 +122,7 @@ const filterByTokenBucket = (chains: Array<Chain>): Array<ChainWithRateLimit> =>
       return [chain, false]
     }
 
-    const token = chainTokens.value.find(t => 
+    const token = chainTokens.value.find(t =>
       t.wrapping.some(w => w.unwrapped_denom === baseToken.denom)
     )
 
@@ -128,18 +132,8 @@ const filterByTokenBucket = (chains: Array<Chain>): Array<ChainWithRateLimit> =>
 
 // Apply all chain filters in sequence
 const filteredChains = $derived(
-  pipe(
-    chains.data,
-    Option.map(
-      flow(
-        filterByEnvironment,
-        filterBySigningMode,
-        filterByTokenBucket
-      )
-    )
-  )
+  pipe(chains.data, Option.map(flow(filterByEnvironment, filterBySigningMode, filterByTokenBucket)))
 )
-
 </script>
 
 <div class="p-4">
