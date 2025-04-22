@@ -1,5 +1,7 @@
-/deployments/ @benluelo
-/deployments/channels.jsonc @qlp
+/deployments/evm-deployer.json @benluelo @hussein-aitlahcen
+/deployments/deployments.json @benluelo @hussein-aitlahcen
+/deployments/clients.json @benluelo @hussein-aitlahcen
+/deployments/channels.json @qlp
 /networks/genesis/ @aeryz @benluelo @cor @hussein-aitlahcen @KaiserKarel @PoisonPhang
 /.github/ @PoisonPhang
 /voyager/ @benluelo
