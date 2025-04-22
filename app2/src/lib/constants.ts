@@ -6,10 +6,12 @@ export const ENV = (): Environment =>
     : window.location.hostname === "staging.btc.union.build" ||
         window.location.hostname === "staging.app.union.build"
       ? "STAGING"
-      : "DEVELOPMENT"
+      : window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1"
+        ? "DEVELOPMENT"
+        : "DEVELOPMENT"
 
 export const URLS = () => {
-  const GRAPHQL_BASE = "graphql.union.build"
+  const GRAPHQL_BASE = ENV() === "DEVELOPMENT" ? "development.graphql.union.build" : "graphql.union.build"
 
   return {
     GRAPHQL: `https://${GRAPHQL_BASE}/v1/graphql`,
