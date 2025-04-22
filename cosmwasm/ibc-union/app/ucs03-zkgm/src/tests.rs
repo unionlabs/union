@@ -659,6 +659,7 @@ fn init() -> (
         token_minter_code_id: 0,
         rate_limit_admin: Addr::unchecked("blabla"),
         rate_limit_operators: vec![],
+        rate_limit_disabled: true,
     };
     CONFIG.save(deps.as_mut().storage, &config).unwrap();
     (deps, env, info, config)
@@ -954,6 +955,7 @@ fn init_test_state(admin: Addr) -> TestState {
                 token_minter_code_id: cw20_minter_code_id,
                 rate_limit_admin: Addr::unchecked("hola"),
                 rate_limit_operators: vec![rate_limiter.clone()],
+                rate_limit_disabled: true,
             },
             minter_init_msg: TokenMinterInitMsg::Cw20 {
                 cw20_base_code_id,
