@@ -12,6 +12,14 @@ import { signingMode } from "$lib/transfer/signingMode.svelte"
 import type { Tokens } from "@unionlabs/sdk/schema"
 import { log } from "effect/Console"
 
+type ChainStatus = {
+  isSelected: boolean
+  isSourceChain: boolean
+  isDisabled: boolean
+  isRateLimited: boolean
+  hasRoute: boolean
+}
+
 type Props = {
   type: "source" | "destination"
   onSelect: () => void
@@ -19,7 +27,7 @@ type Props = {
 
 const { type, onSelect }: Props = $props()
 
-// Chain configuration
+// Chain configuration for testnet and mainnet environments
 const TESTNET_CHAINS: Array<UniversalChainId> = [
   UniversalChainId.make("ethereum.11155111"),
   UniversalChainId.make("corn.21000001"),
@@ -37,6 +45,7 @@ const MAINNET_CHAINS: Array<UniversalChainId> = [
 type ChainWithRateLimit = [Chain, boolean]
 
 function selectChain(chain: Chain) {
+  // Prevent selecting the same chain as destination
   if (type === "destination" && chain.chain_id === transferData.raw.source) {
     return // Don't allow selecting same chain as destination
   }
@@ -78,14 +87,12 @@ const filterBySigningMode = (chains: Array<Chain>) =>
     )
   )
 
-type ChainStatus = {
-  isSelected: boolean
-  isSourceChain: boolean
-  isDisabled: boolean
-  isRateLimited: boolean
-  hasRoute: boolean
-}
-
+/**
+ * Determines the status of a chain for display and interaction
+ * @param chain The chain to check
+ * @param isRateLimited Whether the chain is rate limited (no bucket)
+ * @returns ChainStatus object with various flags
+ */
 function getChainStatus(chain: Chain, isRateLimited: boolean): ChainStatus {
   const isSourceChain = type === "destination" && transferData.raw.source === chain.chain_id
   const hasRoute =
@@ -126,7 +133,7 @@ const filterByTokenBucket = (chains: Array<Chain>): Array<ChainWithRateLimit> =>
       t.wrapping.some(w => w.unwrapped_denom === baseToken.denom)
     )
 
-    return [chain, token?.bucket == null] // No bucket means disabled
+    return [chain, token?.bucket == null]
   })
 }
 
@@ -170,7 +177,7 @@ const filteredChains = $derived(
           {#if status.isRateLimited && !status.isSourceChain}
             <span class="text-xs text-red-400 -mt-2">Rate Limited</span>
           {/if}
-          {#if type === "destination" && !status.hasRoute && !status.isSourceChain}
+          {#if type === "destination" && (status.isRateLimited || !status.hasRoute) && !status.isSourceChain}
             <span class="text-xs text-yellow-400 -mt-2">No route</span>
           {/if}
         </button>
