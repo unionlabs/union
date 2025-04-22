@@ -1,0 +1,35 @@
+[package]
+name    = "ucs06-funded-dispatch"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[features]
+library = []
+
+[dependencies]
+alloy                 = { workspace = true, features = ["sol-types"] }
+cosmwasm-schema       = { workspace = true }
+cosmwasm-std          = { workspace = true, features = ["cosmwasm_1_2"] }
+cw-storage-plus       = { workspace = true }
+cw20                  = "2.0.0"
+embed-commit          = { workspace = true }
+ethabi                = { workspace = true }
+frissitheto           = { workspace = true }
+ibc-union-msg         = { workspace = true }
+ibc-union-spec        = { workspace = true, features = ["serde", "ethabi"] }
+serde                 = { workspace = true, features = ["derive"] }
+serde-json-wasm       = "1.0"
+serde-utils.workspace = true
+thiserror             = { workspace = true }
+unionlabs             = { workspace = true, features = ["ethabi", "schemars"] }
