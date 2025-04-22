@@ -54,11 +54,17 @@ export class TokenWrapping extends Schema.Class<TokenWrapping>("TokenWrapping")(
   unwrapped_denom: TokenRawDenom
 }) {}
 
+export class Bucket extends Schema.Class<Bucket>("Bucket")({
+  capacity: Schema.String,
+  refill_rate: Schema.String
+}) {}
+
 export class Token extends Schema.Class<Token>("Token")({
   rank: Schema.OptionFromNullOr(Schema.Int),
   denom: TokenRawDenom,
   representations: Schema.Array(TokenRepresentation),
-  wrapping: Schema.Array(TokenWrapping)
+  wrapping: Schema.Array(TokenWrapping),
+  bucket: Schema.OptionFromNullOr(Bucket)
 }) {}
 
 export const Tokens = Schema.Array(Token)
