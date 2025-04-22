@@ -114,26 +114,42 @@ function getChainStatus(chain: Chain, isRateLimited: boolean): ChainStatus {
   return { isSelected, isSourceChain, isDisabled, isRateLimited, hasRoute }
 }
 
+
 /**
- * Checks if destination chains have rate limiting (bucket) for the wrapped version of the base token
+ * Checks if destination chains have rate limiting (bucket) for the correct destination token.
  */
 const filterByTokenBucket = (chains: Array<Chain>): Array<ChainWithRateLimit> => {
-  if (type !== "destination" || Option.isNone(transferData.baseToken)) {
-    return chains.map(chain => [chain, false])
+  if (
+    type !== "destination" ||
+    Option.isNone(transferData.baseToken) ||
+    Option.isNone(transferData.sourceChain)
+  ) {
+    return chains.map(chain => [chain, true])
   }
 
   const baseToken = transferData.baseToken.value
-  return chains.map(chain => {
-    const chainTokens = tokensStore.getData(chain.universal_chain_id)
-    if (Option.isNone(chainTokens)) {
-      return [chain, false]
+  const sourceChain = transferData.sourceChain.value
+  const baseDenom = baseToken.denom.toLowerCase()
+
+  return chains.map(destinationChain => {
+    const tokens = tokensStore.getData(destinationChain.universal_chain_id)
+    if (Option.isNone(tokens)) {
+      return [destinationChain, true]
     }
 
-    const token = chainTokens.value.find(t =>
-      t.wrapping.some(w => w.unwrapped_denom === baseToken.denom)
+    const tokenList = tokens.value
+
+    const destToken = tokenList.find(token =>
+      token.wrapping.some(
+        w =>
+          w.unwrapped_denom.toLowerCase() === baseDenom &&
+          w.unwrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+          w.wrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+      )
     )
 
-    return [chain, token?.bucket == null]
+    const isRateLimited = destToken?.bucket == null
+    return [destinationChain, isRateLimited]
   })
 }
 
@@ -165,7 +181,7 @@ const filteredChains = $derived(
         >
           {#if chainLogo?.color}
             <span class="w-10 h-10 flex items-center justify-center overflow-hidden">
-              <img src={chainLogo.color} alt="" />
+              <img src={chainLogo.color} alt=""/>
             </span>
           {/if}
 
@@ -174,12 +190,10 @@ const filteredChains = $derived(
           {#if status.isSourceChain}
             <span class="text-xs text-sky-400 -mt-2">Source Chain</span>
           {/if}
-          {#if status.isRateLimited && !status.isSourceChain}
-            <span class="text-xs text-red-400 -mt-2">Rate Limited</span>
-          {/if}
           {#if type === "destination" && (status.isRateLimited || !status.hasRoute) && !status.isSourceChain}
             <span class="text-xs text-yellow-400 -mt-2">No route</span>
           {/if}
+
         </button>
       {/each}
     </div>
