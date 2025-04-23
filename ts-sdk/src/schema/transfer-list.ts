@@ -31,25 +31,25 @@ const TraceItem = S.Struct({
   timestamp:         S.OptionFromNullOr(S.DateTimeUtc),
 })
 
-export class TransferListItemMissingAck extends S.Class<TransferListItemMissingAck>(
-  "TransferListItemMissingAck"
+export class IncompleteTransferListItem extends S.Class<IncompleteTransferListItem>(
+  "IncompleteTransferListItem"
 )({
   source_chain:             ChainReference,
   destination_chain:        ChainReference,
-  sender_canonical:         S.String, 
-  receiver_canonical:       S.String,
-  transfer_send_timestamp:  S.DateTimeUtc,
-  transfer_recv_timestamp:  S.OptionFromNullOr(S.DateTimeUtc),
-  packet_hash:              S.String,
-  sort_order:               S.String,
-  base_token:               S.String,
-  base_amount:              S.String,
-  quote_token:              S.String,
-  quote_amount:             S.String,
-  traces:                   S.Array(TraceItem),
+  sender_canonical: Hex,
+  receiver_canonical: Hex,
+  transfer_send_timestamp: S.DateTimeUtc,
+  transfer_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
+  packet_hash: PacketHash,
+  sort_order: SortOrder,
+  base_token: TokenRawDenom,
+  base_amount: TokenRawAmount,
+  quote_token: TokenRawDenom,
+  quote_amount: TokenRawAmount,
+  traces: S.Array(TraceItem),
 }) {}
 
-export const TransferListMissingAck = S.Array(TransferListItemMissingAck)
+export const TransferListMissingAck = S.Array(IncompleteTransferListItem)
 export type TransferListMissingAck = typeof TransferListMissingAck.Type
 
 
@@ -57,3 +57,9 @@ export const TransferCount = S.Struct({
   aggregate: AggregateCount
 })
 export type TransferCount = typeof TransferCount.Type
+
+
+export const IncompleteTransferCount = S.Struct({
+  aggregate: AggregateCount
+})
+export type IncompleteTransferCount = typeof IncompleteTransferCount.Type
