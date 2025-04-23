@@ -17,7 +17,7 @@
   },
   "btc": {
     "chains": {
-        "babylon.bbn-1": {
+      "babylon.bbn-1": {
         "environment": "staging"
       },
       "bob.60808": {

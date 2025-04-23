@@ -94,9 +94,10 @@ The structure is as follows:
 The environment determines where the chain is available. Scope increases with each level: `production` includes everything in `staging`, which includes everything in `development`.
 
 Allowed values are:
-  - `development` – Available only in the development environment.
-  - `staging` – Available in both development and staging environments.
-  - `production` – Available in all environments.
+
+- `development` – Available only in the development environment.
+- `staging` – Available in both development and staging environments.
+- `production` – Available in all environments.
 
 ## universal-chain-ids.json
 
@@ -111,14 +112,13 @@ The structure is as follows:
 
 ## token-whitelist.json
 
-This file defines a whitelist of allowed tokens for each chain. Only transfers of tokens listed in this file are permitted within the Union ecosystem. It acts as an access control mechanism, ensuring only explicitly approved assets are recognized and processed.
+This file defines whitelisted tokens for each chain. Only transfers of tokens listed in this file are permitted within the Union ecosystem. It acts as an access control mechanism, ensuring whitelisted assets are recognized and processed.
 
 The structure is as follows:
 
 - `<universal_chain_id>`: A fully qualified chain identifier (see [UCS04]), such as `ethereum.1` or `babylon.bbn-1`.
   - `<token address>`: The **canonical** address of the token on that chain, as defined in [UCS05]. All addresses are hex-encoded.
-    - `comments`: An optional human-readable label or symbol for the token (e.g. `WETH`, `BABY`, `uniBTC`).
-
+    - `comments`: Arbitrary text describing the token. This text is not and should not be parsed; it is meant for human readers only.
 
 [channels docs]: https://docs.union.build/protocol/channels/overview/
 [graphql]: https://docs.union.build/integrations/api/graphql/
