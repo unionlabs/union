@@ -10,8 +10,7 @@ use voyager_message::{
     call::FetchUpdateHeaders,
     data::IbcDatagram,
     primitives::{ChainId, QueryHeight},
-    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
-    MISSING_STATE_ERROR_CODE,
+    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, MISSING_STATE_ERROR_CODE,
 };
 use voyager_vm::{data, now, promise, Op};
 
@@ -168,7 +167,6 @@ impl MakeMsg<IbcUnion> {
 
         match event {
             EventUnion::ConnectionOpenInit(connection_open_init_event) => {
-                let client_id = connection_open_init_event.client_id;
                 let counterparty_client_id = connection_open_init_event.counterparty_client_id;
                 let connection_id = connection_open_init_event.connection_id;
 
@@ -184,38 +182,20 @@ impl MakeMsg<IbcUnion> {
                     %target_client_info.client_type,
                     %target_client_info.ibc_interface,
                     %target_client_info.metadata,
-                );
-
-                // info of the client on the origin chain, this is used to decode the stored
-                // client state
-                let origin_client_info = voyager_client
-                    // client_id from open_init/try is the client on the origin chain
-                    .client_info::<IbcUnion>(origin_chain_id.clone(), client_id)
-                    .await?;
-
-                debug!(
-                    %client_id,
-                    %origin_client_info.client_type,
-                    %origin_client_info.ibc_interface,
-                    %origin_client_info.metadata,
+                    "counterparty client info"
                 );
 
                 // the connection end as stored by the origin chain after open_init/try
                 let connection_state = voyager_client
-                    .maybe_query_ibc_state(
+                    .query_ibc_state(
                         origin_chain_id.clone(),
-                        origin_chain_proof_height.into(),
+                        origin_chain_proof_height,
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
-                    .await?
-                    .state
-                    .ok_or(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        "connection must exist",
-                        None::<()>,
-                    ))?;
+                    .await?;
                 debug!(
                     connection_state = %serde_json::to_string(&connection_state).unwrap(),
+                    "connection"
                 );
 
                 // proof of connection_state, encoded for the client on the target chain
@@ -227,7 +207,7 @@ impl MakeMsg<IbcUnion> {
                     )
                     .await?
                     .proof;
-                debug!(%connection_proof);
+                debug!(%connection_proof, "connection proof");
 
                 let encoded_connection_state_proof = voyager_client
                     .encode_proof::<IbcUnion>(
@@ -236,7 +216,7 @@ impl MakeMsg<IbcUnion> {
                         connection_proof,
                     )
                     .await?;
-                debug!(%encoded_connection_state_proof);
+                debug!(%encoded_connection_state_proof, "encoded connection proof");
 
                 Ok(data(IbcDatagram::new::<IbcUnion>(
                     ibc_union_spec::datagram::Datagram::from(
@@ -252,7 +232,6 @@ impl MakeMsg<IbcUnion> {
             }
 
             EventUnion::ConnectionOpenTry(connection_open_try_event) => {
-                let client_id = connection_open_try_event.client_id;
                 let counterparty_client_id = connection_open_try_event.counterparty_client_id;
                 let connection_id = connection_open_try_event.connection_id;
 
@@ -268,38 +247,20 @@ impl MakeMsg<IbcUnion> {
                     %target_client_info.client_type,
                     %target_client_info.ibc_interface,
                     %target_client_info.metadata,
-                );
-
-                // info of the client on the origin chain, this is used to decode the stored
-                // client state
-                let origin_client_info = voyager_client
-                    // client_id from open_init/try is the client on the origin chain
-                    .client_info::<IbcUnion>(origin_chain_id.clone(), client_id)
-                    .await?;
-
-                debug!(
-                    %client_id,
-                    %origin_client_info.client_type,
-                    %origin_client_info.ibc_interface,
-                    %origin_client_info.metadata,
+                    "counterparty client info"
                 );
 
                 // the connection end as stored by the origin chain after open_init/try
                 let connection_state = voyager_client
-                    .maybe_query_ibc_state(
+                    .query_ibc_state(
                         origin_chain_id.clone(),
-                        origin_chain_proof_height.into(),
+                        origin_chain_proof_height,
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
-                    .await?
-                    .state
-                    .ok_or(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        "connection must exist",
-                        None::<()>,
-                    ))?;
+                    .await?;
                 debug!(
                     connection_state = %serde_json::to_string(&connection_state).unwrap(),
+                    "connection"
                 );
 
                 // proof of connection_state, encoded for the client on the target chain
@@ -311,7 +272,7 @@ impl MakeMsg<IbcUnion> {
                     )
                     .await?
                     .proof;
-                debug!(%connection_proof);
+                debug!(%connection_proof, "connection proof");
 
                 let encoded_connection_state_proof = voyager_client
                     .encode_proof::<IbcUnion>(
@@ -320,7 +281,7 @@ impl MakeMsg<IbcUnion> {
                         connection_proof,
                     )
                     .await?;
-                debug!(%encoded_connection_state_proof);
+                debug!(%encoded_connection_state_proof, "encoded connection proof");
 
                 Ok(data(IbcDatagram::new::<IbcUnion>(
                     ibc_union_spec::datagram::Datagram::from(
@@ -335,7 +296,6 @@ impl MakeMsg<IbcUnion> {
             }
 
             EventUnion::ConnectionOpenAck(connection_open_ack_event) => {
-                let client_id = connection_open_ack_event.client_id;
                 let counterparty_client_id = connection_open_ack_event.counterparty_client_id;
                 let connection_id = connection_open_ack_event.connection_id;
 
@@ -353,36 +313,17 @@ impl MakeMsg<IbcUnion> {
                     %target_client_info.metadata,
                 );
 
-                // info of the client on the origin chain, this is used to decode the stored
-                // client state
-                let origin_client_info = voyager_client
-                    // client_id from open_init/ack is the client on the origin chain
-                    .client_info::<IbcUnion>(origin_chain_id.clone(), client_id)
-                    .await?;
-
-                debug!(
-                    %client_id,
-                    %origin_client_info.client_type,
-                    %origin_client_info.ibc_interface,
-                    %origin_client_info.metadata,
-                );
-
                 // the connection end as stored by the origin chain after open_init/ack
                 let connection_state = voyager_client
-                    .maybe_query_ibc_state(
+                    .query_ibc_state(
                         origin_chain_id.clone(),
-                        origin_chain_proof_height.into(),
+                        origin_chain_proof_height,
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
-                    .await?
-                    .state
-                    .ok_or(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        "connection must exist",
-                        None::<()>,
-                    ))?;
+                    .await?;
                 debug!(
                     connection_state = %serde_json::to_string(&connection_state).unwrap(),
+                    "connection"
                 );
 
                 // proof of connection_state, encoded for the client on the target chain
@@ -394,7 +335,7 @@ impl MakeMsg<IbcUnion> {
                     )
                     .await?
                     .proof;
-                debug!(%connection_proof);
+                debug!(%connection_proof, "connection proof");
 
                 let encoded_connection_state_proof = voyager_client
                     .encode_proof::<IbcUnion>(
@@ -403,7 +344,7 @@ impl MakeMsg<IbcUnion> {
                         connection_proof,
                     )
                     .await?;
-                debug!(%encoded_connection_state_proof);
+                debug!(%encoded_connection_state_proof, "encoded connection proof");
 
                 Ok(data(IbcDatagram::new::<IbcUnion>(
                     ibc_union_spec::datagram::Datagram::from(
@@ -963,20 +904,14 @@ async fn mk_connection_handshake_state_and_proofs(
 
     // the connection end as stored by the origin chain after open_init/try
     let connection_state = voyager_client
-        .maybe_query_ibc_state(
+        .query_ibc_state(
             origin_chain_id.clone(),
-            origin_chain_proof_height.into(),
+            origin_chain_proof_height,
             ibc_classic_spec::ConnectionPath {
                 connection_id: connection_id.clone(),
             },
         )
-        .await?
-        .state
-        .ok_or(ErrorObject::owned(
-            FATAL_JSONRPC_ERROR_CODE,
-            "connection must exist",
-            None::<()>,
-        ))?;
+        .await?;
     debug!(
         connection_state = %serde_json::to_string(&connection_state).unwrap(),
     );
