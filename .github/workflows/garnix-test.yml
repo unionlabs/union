@@ -32,7 +32,7 @@ jobs:
             echo "RAW"
             echo $app2_run
 
-            status=$(echo $app2_run | jq '.status')
+            status=$(echo $app2_run | jq -r '.status')
 
             echo "STATUS"
             echo $status
