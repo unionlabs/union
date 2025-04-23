@@ -1,10 +1,7 @@
 use serde::{Deserialize, Serialize};
 use unionlabs::bounded::{BoundedI32, BoundedI64};
 
-use crate::types::{
-    block_id::BlockId,
-    commit_sig::{CommitSig, CommitSigRaw},
-};
+use crate::types::{block_id::BlockId, commit_sig::CommitSigRaw};
 
 /// Commit of a block for a CometBFT chain.
 ///
@@ -17,6 +14,16 @@ pub struct Commit {
     pub round: BoundedI32<0, { i32::MAX }>,
     pub block_id: BlockId,
     pub signatures: Vec<CommitSigRaw>,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct TmpCommit {
+    #[serde(with = "::serde_utils::string")]
+    pub height: BoundedI64<0, { i64::MAX }>,
+    pub round: BoundedI32<0, { i32::MAX }>,
+    pub block_id: BlockId,
+    pub signatures: Vec<super::commit_sig::CommitSig>,
 }
 
 #[cfg(feature = "proto")]
@@ -63,7 +70,10 @@ pub mod proto {
                 signatures: value
                     .signatures
                     .into_iter()
-                    .map(TryInto::try_into)
+                    .map(|s| {
+                        TryInto::<commit_sig::CommitSig>::try_into(s)
+                            .map(Into::<commit_sig::CommitSigRaw>::into)
+                    })
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(Error::Signatures)?,
             })
@@ -94,7 +104,10 @@ pub mod proto {
                 signatures: value
                     .signatures
                     .into_iter()
-                    .map(TryInto::try_into)
+                    .map(|s| {
+                        TryInto::<commit_sig::CommitSig>::try_into(s)
+                            .map(Into::<commit_sig::CommitSigRaw>::into)
+                    })
                     .collect::<Result<Vec<_>, _>>()
                     .map_err(Error::Signatures)?,
             })

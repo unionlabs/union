@@ -1,12 +1,19 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{commit::Commit, commit_sig::CommitSig, header::Header};
+use crate::types::{commit::Commit, header::Header};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SignedHeader {
     pub header: Header,
-    pub commit: Commit<CommitSigRaw>,
+    pub commit: Commit,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct SignedHeader2 {
+    pub header: Header,
+    pub commit: super::commit::TmpCommit,
 }
 
 #[cfg(feature = "proto")]

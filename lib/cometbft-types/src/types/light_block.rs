@@ -1,8 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{
-    commit_sig::CommitSig, signed_header::SignedHeader, validator_set::ValidatorSet,
-};
+use crate::types::{signed_header::SignedHeader, validator_set::ValidatorSet};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LightBlock {

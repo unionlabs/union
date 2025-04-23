@@ -5,8 +5,10 @@ use unionlabs::{
     primitives::{H160, H256, encoding::HexUnprefixed},
 };
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 pub enum Error {
+    #[error("client specific")]
+    ClientSpecific(#[source] Box<dyn core::error::Error>),
     #[error("integer overflow")]
     IntegerOverflow,
     // TODO: More descriptive message and name

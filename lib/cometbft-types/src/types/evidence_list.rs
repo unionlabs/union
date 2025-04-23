@@ -1,13 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::types::{
-    commit_sig::{CommitSig, CommitSigRaw},
-    evidence::Evidence,
-};
+use crate::types::evidence::Evidence;
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct EvidenceList {
-    pub evidence: Vec<Evidence<CommitSigRaw>>,
+    pub evidence: Vec<Evidence>,
 }
 
 #[cfg(feature = "proto")]

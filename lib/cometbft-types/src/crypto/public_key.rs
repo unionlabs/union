@@ -16,6 +16,17 @@ pub enum PublicKey {
     Bn254(Bytes<Base64>),
 }
 
+impl PublicKey {
+    pub fn inner(&self) -> &[u8] {
+        match self {
+            PublicKey::Ed25519(bytes)
+            | PublicKey::Secp256k1(bytes)
+            | PublicKey::Bls12_381(bytes)
+            | PublicKey::Bn254(bytes) => &bytes,
+        }
+    }
+}
+
 #[cfg(feature = "proto")]
 pub mod proto {
     use unionlabs::{errors::MissingField, impl_proto_via_try_from_into, required};

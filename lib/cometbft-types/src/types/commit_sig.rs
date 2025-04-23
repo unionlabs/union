@@ -33,7 +33,7 @@ pub enum CommitSig {
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CommitSigRaw {
     pub block_id_flag: i32,
-    pub validator_address: Bytes<HexUnprefixed>,
+    pub validator_address: H160,
     #[serde(
         default,
         with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none"
@@ -47,7 +47,7 @@ impl From<CommitSig> for CommitSigRaw {
         match value {
             CommitSig::Absent => Self {
                 block_id_flag: BlockIdFlag::Absent.into(),
-                validator_address: Bytes::new(&[]),
+                validator_address: Default::default(),
                 timestamp: None,
                 signature: None,
             },
@@ -57,7 +57,7 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Commit.into(),
-                validator_address: validator_address.into_bytes().into_encoding(),
+                validator_address,
                 timestamp: Some(timestamp),
                 signature: Some(signature.into_encoding()),
             },
@@ -67,7 +67,7 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Nil.into(),
-                validator_address: validator_address.into_bytes().into_encoding(),
+                validator_address,
                 timestamp: Some(timestamp),
                 signature: Some(signature.into_encoding()),
             },
@@ -84,7 +84,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
         match block_id_flag {
             BlockIdFlag::Unknown => Err(Error::UnknownBlockIdFlag),
             BlockIdFlag::Absent => {
-                if !value.validator_address.is_empty() {
+                if value.validator_address.as_ref() != H160::<HexUnprefixed>::default().as_ref() {
                     Err(Error::AbsentWithValidatorAddress)
                 } else if value.timestamp.is_some_and(|ts| ts != Timestamp::default()) {
                     Err(Error::AbsentWithTimestamp)
@@ -95,7 +95,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                 }
             }
             BlockIdFlag::Commit => Ok(Self::Commit {
-                validator_address: value.validator_address.try_into()?,
+                validator_address: value.validator_address,
                 timestamp: value.timestamp.ok_or(Error::CommitMissingTimestamp)?,
                 signature: value
                     .signature
@@ -103,7 +103,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     .into_encoding(),
             }),
             BlockIdFlag::Nil => Ok(Self::Nil {
-                validator_address: value.validator_address.try_into()?,
+                validator_address: value.validator_address,
                 timestamp: value.timestamp.ok_or(Error::NilMissingTimestamp)?,
                 signature: value
                     .signature
@@ -172,7 +172,7 @@ pub mod proto {
         fn try_from(value: protos::cometbft::types::v1::CommitSig) -> Result<Self, Self::Error> {
             CommitSigRaw {
                 block_id_flag: value.block_id_flag,
-                validator_address: value.validator_address.into(),
+                validator_address: value.validator_address.try_into()?,
                 timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
                 signature: Some(value.signature.into()),
             }
@@ -205,7 +205,7 @@ pub mod proto {
         fn try_from(value: protos::tendermint::types::CommitSig) -> Result<Self, Self::Error> {
             CommitSigRaw {
                 block_id_flag: value.block_id_flag,
-                validator_address: value.validator_address.into(),
+                validator_address: value.validator_address.try_into()?,
                 timestamp: value.timestamp.map(TryInto::try_into).transpose()?,
                 signature: Some(value.signature.into()),
             }

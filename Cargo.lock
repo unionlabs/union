@@ -2271,6 +2271,7 @@ dependencies = [
  "ethereum-light-client-types",
  "ibc-union-spec",
  "serde",
+ "tendermint-light-client-types",
  "unionlabs",
 ]
 
@@ -14210,11 +14211,13 @@ dependencies = [
  "cosmwasm-std",
  "embed-commit",
  "frissitheto",
+ "hex-literal 0.4.1",
  "ibc-union-light-client",
  "ibc-union-msg",
  "ibc-union-spec",
  "ics23",
  "lazy_static",
+ "protos",
  "serde",
  "serde_json",
  "sha2 0.10.9",
@@ -14259,7 +14262,10 @@ dependencies = [
 name = "tendermint-verifier"
 version = "0.0.0"
 dependencies = [
+ "ark-bls12-381 0.5.0",
+ "ark-serialize 0.5.0",
  "cometbft-types",
+ "cosmwasm-std",
  "ed25519-dalek",
  "hex-literal 0.4.1",
  "prost 0.12.6",
@@ -16388,6 +16394,7 @@ dependencies = [
  "enumorph",
  "ethereum-light-client-types",
  "futures",
+ "ibc-union-spec",
  "ics23",
  "jsonrpsee 0.25.1",
  "macros",

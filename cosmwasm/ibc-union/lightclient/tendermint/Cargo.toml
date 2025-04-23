@@ -32,6 +32,7 @@ tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde
 tendermint-verifier           = { workspace = true }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
+protos                        = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }

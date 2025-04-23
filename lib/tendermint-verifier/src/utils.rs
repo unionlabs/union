@@ -1,11 +1,9 @@
 use cometbft_types::types::{
-    block_id::BlockId, canonical_block_id::CanonicalBlockId,
-    canonical_part_set_header::CanonicalPartSetHeader, canonical_vote::CanonicalVote,
-    commit::Commit, commit_sig::CommitSig, signed_header::SignedHeader,
+    canonical_block_id::CanonicalBlockId, canonical_part_set_header::CanonicalPartSetHeader,
+    canonical_vote::CanonicalVote, commit::Commit, signed_header::SignedHeader,
     signed_msg_type::SignedMsgType, simple_validator::SimpleValidator, validator::Validator,
     validator_set::ValidatorSet,
 };
-use prost::Message;
 use unionlabs::{
     encoding::{EncodeAs, Proto},
     google::protobuf::{duration::Duration, timestamp::Timestamp},
@@ -19,42 +17,33 @@ use crate::{error::Error, merkle::calculate_merkle_root};
 /// # Errors
 ///
 /// This function assumes that `commit_sig` is [`CommitSig::Commit`], and will fail otherwise.
-pub fn canonical_vote_bytes(
+pub fn canonical_vote_bytes<CV: From<CanonicalVote> + prost::Message>(
     commit: &Commit,
-    commit_sig: &CommitSig,
     timestamp: &Timestamp,
     chain_id: &str,
 ) -> Result<Vec<u8>, Error> {
-    // TODO: Instead of erroring below with `Error::MissingBlockIdHash`, we should instead return an error *here* that says only `CommitSig::Commit` will have a valid canonical vote.
-    let block_id = match commit_sig {
-        CommitSig::Absent => BlockId::default(),
-        CommitSig::Commit { .. } => commit.block_id.clone(),
-        CommitSig::Nil { .. } => BlockId::default(),
-    };
-
-    Ok(
-        protos::tendermint::types::CanonicalVote::from(CanonicalVote {
-            ty: SignedMsgType::Precommit,
-            height: commit.height,
-            // roundabout way to go from i32 >= 0 to i64 >= 0
-            round: i64::from(commit.round.inner())
-                .try_into()
-                .expect("value is bounded >= 0; qed;"), // SAFE because within the bounds
-            block_id: CanonicalBlockId {
-                hash: block_id.hash.ok_or(Error::MissingBlockIdHash)?,
-                part_set_header: CanonicalPartSetHeader {
-                    total: block_id.part_set_header.total,
-                    hash: block_id
-                        .part_set_header
-                        .hash
-                        .ok_or(Error::MissingBlockIdHash)?,
-                },
+    Ok(CV::from(CanonicalVote {
+        ty: SignedMsgType::Precommit,
+        height: commit.height,
+        // roundabout way to go from i32 >= 0 to i64 >= 0
+        round: i64::from(commit.round.inner())
+            .try_into()
+            .expect("value is bounded >= 0; qed;"), // SAFE because within the bounds
+        block_id: CanonicalBlockId {
+            hash: commit.block_id.hash.ok_or(Error::MissingBlockIdHash)?,
+            part_set_header: CanonicalPartSetHeader {
+                total: commit.block_id.part_set_header.total,
+                hash: commit
+                    .block_id
+                    .part_set_header
+                    .hash
+                    .ok_or(Error::MissingBlockIdHash)?,
             },
-            chain_id: chain_id.to_string(),
-            timestamp: *timestamp,
-        })
-        .encode_length_delimited_to_vec(),
-    )
+        },
+        chain_id: chain_id.to_string(),
+        timestamp: *timestamp,
+    })
+    .encode_length_delimited_to_vec())
 }
 
 #[must_use]

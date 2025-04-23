@@ -28,3 +28,8 @@ unionlabs                     = { workspace = true }
 [dev-dependencies]
 ed25519-dalek = { workspace = true, features = ["default", "batch"] }
 serde_json    = { workspace = true }
+cosmwasm-std = { workspace = true, features = ["cosmwasm_2_1"] }
+ark-serialize = "0.5.0"
+
+ark-bls12-381               = { version = "0.5.0" }
+
