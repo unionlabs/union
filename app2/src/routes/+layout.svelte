@@ -30,9 +30,9 @@ BigInt["prototype"].toJSON = function () {
 $effect(() => {
   const hostname = page.url.hostname
   if (hostname.startsWith('btc.') || hostname.startsWith('staging.btc.')) {
-    uiStore.version = "btc"
+    uiStore.edition = "btc"
   } else if (hostname.startsWith('app.') || hostname.startsWith('staging.app.')) {
-    uiStore.version = "app"
+    uiStore.edition = "app"
   }
 })
 
