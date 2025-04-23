@@ -1,9 +1,7 @@
 <script lang="ts">
 
 import {
-  // transferListPendingAckQuery,
-  // transferListCombinedQuery
-  runInWindow
+  runInWindowAllPairs
 }  from "$lib/queries/missing-transfer-list.svelte"
 import { Effect, Option } from "effect"
 import { onMount } from "svelte"
@@ -20,21 +18,7 @@ import TransferListItemComponentSkeleton from "$lib/components/model/TransferLis
 onMount(() => {
 
 
-  runInWindow(
-    "babylon.bbn-1",
-    "corn.21000000",
-    // "babylon.bbn-1",
-    settingsStore.pageLimit
-  )
-
-  // const initializeQuery = async () => {
-  //   let effect: Effect.Effect<any>
-  //   effect = transferListCombinedQuery(settingsStore.pageLimit)
-    
-  //   await incompleteTransferList.runEffect(effect)
-  // }
-
-  // initializeQuery()
+  runInWindowAllPairs()
 
   return () => {
     incompleteTransferList.interruptFiber()
