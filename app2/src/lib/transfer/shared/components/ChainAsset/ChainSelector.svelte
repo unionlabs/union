@@ -220,13 +220,13 @@ const filteredChains = $derived(
           <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
 
           {#if status.isSourceChain}
-            <span class="text-xs text-sky-400 -mt-2">Source Chain</span>
-          {/if}
-          {#if type === "destination" && !status.hasBucket && !status.isSourceChain}
-            <span class="text-xs text-red-400 -mt-2">No bucket</span>
+            <span class="text-xs text-sky-400 -mt-2">source chain</span>
           {/if}
           {#if type === "destination" && !status.hasRoute && !status.isSourceChain}
-            <span class="text-xs text-yellow-400 -mt-2">No route</span>
+            <span class="text-xs text-yellow-400 -mt-2">no route</span>
+          {/if}
+          {#if type === "destination" && !status.hasBucket && status.hasRoute && !status.isSourceChain}
+            <span class="text-xs text-red-400 -mt-2">not whitelisted</span>
           {/if}
         </button>
       {/each}
