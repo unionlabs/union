@@ -29,9 +29,9 @@ BigInt["prototype"].toJSON = function () {
 
 $effect(() => {
   const hostname = page.url.hostname
-  if (hostname.startsWith('btc.') || hostname.startsWith('staging.btc.')) {
+  if (hostname.startsWith("btc.") || hostname.startsWith("staging.btc.")) {
     uiStore.edition = "btc"
-  } else if (hostname.startsWith('app.') || hostname.startsWith('staging.app.')) {
+  } else if (hostname.startsWith("app.") || hostname.startsWith("staging.app.")) {
     uiStore.edition = "app"
   }
 })
@@ -68,7 +68,10 @@ let videoLoaded = $state(false)
 
 <style>
   :global(:root) {
-    --color-accent: v-bind(uiStore.accentColor);
+    --color-accent: v-bind(uiStore.theme.accent);
+    --color-primary: v-bind(uiStore.theme.primary);
+    --color-background: v-bind(uiStore.theme.background);
+    --color-text: v-bind(uiStore.theme.text);
   }
 </style>
 
@@ -100,7 +103,7 @@ let videoLoaded = $state(false)
       }}
     >
       <source
-        src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/btc-union-background-3.webm"
+        src={uiStore.theme.videoUrl}
         type="video/webm"
       />
     </video>
@@ -108,7 +111,7 @@ let videoLoaded = $state(false)
 {:else}
   <div class="fixed inset-0 w-screen h-screen z-0">
     <img
-      src='/static-video.png'
+      src={uiStore.theme.staticImage}
       alt="Union background"
       class="w-full h-full object-cover"
     />
@@ -118,7 +121,7 @@ let videoLoaded = $state(false)
 <div
   class={cn("relative min-h-[100svh] w-screen z-10")}
   bind:clientWidth={viewportWidth}
-  style="--color-accent: {uiStore.accentColor}"
+  style="--color-accent: {uiStore.theme.accent}"
 >
   <aside
     class={cn(

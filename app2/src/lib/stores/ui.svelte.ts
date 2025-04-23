@@ -1,3 +1,6 @@
+import { themes } from "$lib/themes"
+import type { Edition } from "$lib/themes"
+
 class UiStore {
   // TODO: make Option<"wallet"|"settings"|"errors">
   walletModalOpen: boolean = $state(false)
@@ -5,12 +8,19 @@ class UiStore {
   errorsModalOpen: boolean = $state(false)
   showZeroBalances: boolean = $state(false)
   showDeveloperPages: boolean = $state(false)
-  edition: "btc" | "app" = $state("app")
-  overrideEdition: "btc" | "app" | null = $state(null)
+  edition: Edition = $state("app")
+  overrideEdition: Edition | null = $state(null)
+
+  get activeEdition() {
+    return this.overrideEdition ?? this.edition
+  }
+
+  get theme() {
+    return themes[this.activeEdition]
+  }
 
   get accentColor() {
-    const activeEdition = this.overrideEdition ?? this.edition
-    return activeEdition === "btc" ? 'var(--color-babylon-orange)' : 'var(--color-union)'
+    return this.theme.accent
   }
 
   private closeAllModals() {
