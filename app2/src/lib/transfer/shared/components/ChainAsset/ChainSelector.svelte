@@ -4,13 +4,13 @@ import { chains } from "$lib/stores/chains.svelte.ts"
 import { cn } from "$lib/utils"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import type { Chain, Token } from "@unionlabs/sdk/schema"
+import type { Chain, Token, TokenWrapping } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import { MODE } from "$lib/constants/config"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { MAINNET_CHAINS, TESTNET_CHAINS } from "$lib/constants/chains.ts"
 
-type ChainStatus = {
+type ChainSelectorStatus = {
   isSelected: boolean
   isSourceChain: boolean
   isDisabled: boolean
@@ -23,17 +23,11 @@ type Props = {
   onSelect: () => void
 }
 
-type TokenWrapping = {
-  wrapped_chain: { universal_chain_id: string }
-  unwrapped_chain: { universal_chain_id: string }
-  unwrapped_denom: string
-}
-
 const { type, onSelect }: Props = $props()
 
 type ChainWithAvailability = ReturnType<typeof Tuple.make<[Chain, boolean]>>
 
-function selectChain(chain: Chain) {
+function updateSelectedChain(chain: Chain) {
   if (type === "destination" && chain.chain_id === transferData.raw.source) {
     return
   }
@@ -66,31 +60,55 @@ const filterBySigningMode = (chains: Array<Chain>) =>
     )
   )
 
-const hasRoute = (chain: Chain) =>
-  type === "destination" &&
+const isValidRoute = (chain: Chain) =>
   pipe(
-    transferData.destinationChains,
-    Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
-    Option.getOrElse(() => false)
+    Match.value(type).pipe(
+      Match.when("source", () => true),
+      Match.when("destination", () =>
+        pipe(
+          transferData.destinationChains,
+          Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
+          Option.getOrElse(() => false)
+        )
+      ),
+      Match.exhaustive
+    )
   )
 
-function getChainStatus(chain: Chain, hasBucket: boolean): ChainStatus {
+function getChainStatus(chain: Chain, hasBucket: boolean): ChainSelectorStatus {
   const isSourceChain = type === "destination" && transferData.raw.source === chain.chain_id
-  const isSelected =
-    type === "source"
-      ? transferData.raw.source === chain.chain_id
-      : transferData.raw.destination === chain.chain_id
-  const isDisabled =
-    type === "destination" ? isSourceChain || !hasRoute(chain) || !hasBucket : false
 
-  return {
-    isSelected,
-    isSourceChain,
-    isDisabled,
-    hasBucket,
-    hasRoute: hasRoute(chain)
-  }
+  return pipe(
+    Match.value(type).pipe(
+      Match.when("source", () => ({
+        isSelected: transferData.raw.source === chain.chain_id,
+        isSourceChain: false,
+        isDisabled: false,
+        hasBucket,
+        hasRoute: true
+      })),
+      Match.when("destination", () => ({
+        isSelected: transferData.raw.destination === chain.chain_id,
+        isSourceChain,
+        isDisabled: isSourceChain || !isValidRoute(chain) || !hasBucket,
+        hasBucket,
+        hasRoute: isValidRoute(chain)
+      })),
+      Match.exhaustive
+    )
+  )
 }
+
+const findTokenWithBucket = (
+  tokenList: ReadonlyArray<Token>,
+  predicate: (token: Token) => boolean
+) =>
+  pipe(
+    tokenList.find(predicate),
+    Option.fromNullable,
+    Option.map(token => token.bucket != null),
+    Option.getOrElse(() => false)
+  )
 
 const hasTokenBucket = (
   destinationChain: Chain,
@@ -106,53 +124,63 @@ const hasTokenBucket = (
       w.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id
   )
 
-  if (maybeUnwrapped) {
-    const destToken = tokenList.find(
-      t => t.denom.toLowerCase() === maybeUnwrapped.unwrapped_denom.toLowerCase()
-    )
-    return destToken?.bucket != null
-  }
+  return pipe(
+    Option.fromNullable(maybeUnwrapped),
+    Option.match({
+      onSome: unwrapped =>
+        findTokenWithBucket(
+          tokenList,
+          t => t.denom.toLowerCase() === unwrapped.unwrapped_denom.toLowerCase()
+        ),
+      onNone: () =>
+        findTokenWithBucket(tokenList, t =>
+          t.wrapping.some(
+            (w: TokenWrapping) =>
+              w.unwrapped_denom.toLowerCase() === baseDenom &&
+              w.unwrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+              w.wrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+          )
+        )
+    })
+  )
+}
 
-  const reverseMatch = tokenList.find(t =>
-    t.wrapping.some(
-      (w: TokenWrapping) =>
-        w.unwrapped_denom.toLowerCase() === baseDenom &&
-        w.unwrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
-        w.wrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+const filterChainsByTokenAvailability = (chains: Array<Chain>): Array<ChainWithAvailability> =>
+  pipe(
+    Match.value(type).pipe(
+      Match.when("source", () => chains.map(chain => Tuple.make(chain, false))),
+      Match.when("destination", () =>
+        pipe(
+          Option.all({
+            baseToken: transferData.baseToken,
+            sourceChain: transferData.sourceChain
+          }),
+          Option.match({
+            onNone: () => chains.map(chain => Tuple.make(chain, false)),
+            onSome: ({ baseToken, sourceChain }) =>
+              chains.map(destinationChain => {
+                const tokens = tokensStore.getData(destinationChain.universal_chain_id)
+                return Option.match(tokens, {
+                  onNone: () => Tuple.make(destinationChain, false),
+                  onSome: tokenList =>
+                    Tuple.make(
+                      destinationChain,
+                      hasTokenBucket(destinationChain, tokenList, baseToken, sourceChain)
+                    )
+                })
+              })
+          })
+        )
+      ),
+      Match.exhaustive
     )
   )
-
-  return reverseMatch?.bucket != null
-}
-
-const filterByTokenAvailability = (chains: Array<Chain>): Array<ChainWithAvailability> => {
-  if (
-    type !== "destination" ||
-    Option.isNone(transferData.baseToken) ||
-    Option.isNone(transferData.sourceChain)
-  ) {
-    return chains.map(chain => Tuple.make(chain, false))
-  }
-
-  const baseToken = transferData.baseToken.value
-  const sourceChain = transferData.sourceChain.value
-
-  return chains.map(destinationChain => {
-    const tokens = tokensStore.getData(destinationChain.universal_chain_id)
-    if (Option.isNone(tokens)) return Tuple.make(destinationChain, false)
-
-    return Tuple.make(
-      destinationChain,
-      hasTokenBucket(destinationChain, tokens.value, baseToken, sourceChain)
-    )
-  })
-}
 
 const filteredChains = $derived(
   pipe(
     chains.data,
     Option.map(allChains => pipe(allChains, filterByEnvironment, filterBySigningMode)),
-    Option.map(filterByTokenAvailability)
+    Option.map(filterChainsByTokenAvailability)
   )
 )
 </script>
@@ -175,7 +203,7 @@ const filteredChains = $derived(
                 ? "bg-zinc-900 opacity-50 cursor-not-allowed"
                 : "bg-zinc-900 hover:bg-zinc-800 cursor-pointer"
           )}
-          onclick={() => !status.isDisabled && selectChain(chain)}
+          onclick={() => !status.isDisabled && updateSelectedChain(chain)}
           disabled={status.isDisabled}
         >
           {#if chainLogo?.color}
