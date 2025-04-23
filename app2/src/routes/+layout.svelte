@@ -27,6 +27,15 @@ BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
+$effect(() => {
+  const hostname = page.url.hostname
+  if (hostname.startsWith('btc.') || hostname.startsWith('staging.btc.')) {
+    uiStore.version = "babylon"
+  } else if (hostname.startsWith('app.') || hostname.startsWith('staging.app.')) {
+    uiStore.version = "union"
+  }
+})
+
 onMount(() => {
   runExample()
   const chainsFiber = Effect.runFork(chainsQuery(ENV()))
@@ -55,13 +64,11 @@ const isMobile = $derived(viewportWidth < MAX_MOBILE_SIZE)
 const hideSidebar = $derived(isMobile && !isRootPage)
 const fullPageSidebar = $derived(isRootPage)
 let videoLoaded = $state(false)
-
-const accentColor = $derived(uiStore.isBabylonVersion ? 'var(--color-babylon-orange)' : 'var(--color-union)')
 </script>
 
 <style>
   :global(:root) {
-    --color-accent: v-bind(accentColor);
+    --color-accent: v-bind(uiStore.accentColor);
   }
 </style>
 
@@ -111,7 +118,7 @@ const accentColor = $derived(uiStore.isBabylonVersion ? 'var(--color-babylon-ora
 <div
   class={cn("relative min-h-[100svh] w-screen z-10")}
   bind:clientWidth={viewportWidth}
-  style="--color-accent: {accentColor}"
+  style="--color-accent: {uiStore.accentColor}"
 >
   <aside
     class={cn(
