@@ -11,13 +11,15 @@ const HEALTH_ENDPOINTS = {
   development: "https://development.graphql.union.build/api/rest/health"
 } as const
 
-let healthData: Option.Option<Array<{
-  environment: string
-  status: string
-  lastUpdate: string
-  color: string
-  error?: string
-}>> = Option.none()
+let healthData: Option.Option<
+  Array<{
+    environment: string
+    status: string
+    lastUpdate: string
+    color: string
+    error?: string
+  }>
+> = Option.none()
 
 const fetchHealth = (url: string) =>
   Effect.tryPromise({
