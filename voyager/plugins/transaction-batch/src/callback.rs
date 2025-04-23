@@ -170,31 +170,34 @@ where
     match (head, updates) {
         // both messages and updates: make one batch of messages including the updates, and then queue a separate message that waits for the effect of that update to be included
         (Some(head), Some(updates)) => {
-            Ok(conc([
-                mk_batch_promise(head, Some(updates)),
-                seq([
-                    call(WaitForTrustedHeight {
-                        chain_id: module_server.chain_id.clone(),
-                        ibc_spec_id: IbcUnion::ID,
-                        client_id: RawClientId::new(client_id.clone()),
-                        height: new_trusted_height,
-                        finalized: false,
-                    }),
-                    // wait for 1 extra block to ensure that the transaction containing the update is in state, and these messages will not end up in the same block (and potentially get reordered)
-                    call(WaitForHeightRelative {
-                        chain_id: module_server.chain_id.clone(),
-                        height_diff: 1,
-                        finalized: false,
-                    }),
-                    call(PluginMessage::new(
-                        module_server.plugin_name(),
-                        ModuleCall::from(MakeTransactionBatchesWithUpdate::<V> {
-                            client_id,
-                            batches: tail,
-                        }),
-                    )),
-                ]),
-            ]))
+            Ok(conc(
+                [mk_batch_promise(head, Some(updates))]
+                    .into_iter()
+                    .chain((!tail.is_empty()).then(|| {
+                        seq([
+                            call(WaitForTrustedHeight {
+                                chain_id: module_server.chain_id.clone(),
+                                ibc_spec_id: IbcUnion::ID,
+                                client_id: RawClientId::new(client_id.clone()),
+                                height: new_trusted_height,
+                                finalized: false,
+                            }),
+                            // wait for 1 extra block to ensure that the transaction containing the update is in state, and these messages will not end up in the same block (and potentially get reordered)
+                            call(WaitForHeightRelative {
+                                chain_id: module_server.chain_id.clone(),
+                                height_diff: 1,
+                                finalized: false,
+                            }),
+                            call(PluginMessage::new(
+                                module_server.plugin_name(),
+                                ModuleCall::from(MakeTransactionBatchesWithUpdate::<V> {
+                                    client_id,
+                                    batches: tail,
+                                }),
+                            )),
+                        ])
+                    })),
+            ))
         }
         // no messages, only updates: thread the updates through
         (None, Some(updates)) => Ok(mk_batch_promise(vec![], Some(updates))),
