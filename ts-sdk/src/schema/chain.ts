@@ -1,5 +1,5 @@
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
-import { Data, Effect, Option, Schema as S } from "effect"
+import {Data, Effect, Option, Schema as S} from "effect"
 import type { Chain as ViemChain } from "viem"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 import { bech32, bytes } from "@scure/base"
@@ -47,10 +47,9 @@ export class Explorer extends S.Class<Explorer>("Explorer")({
   tx_url: S.String
 }) {}
 
-export class Edition extends S.Class<Explorer>("Edition")({
+export class Edition extends S.Class<Edition>("Edition")({
   environment: S.String,
   name: S.String,
-  internal_chain_id: S.Number
 }) {}
 
 export class NoRpcError extends Data.TaggedError("NoRpcError")<{
@@ -94,7 +93,7 @@ export class Chain extends S.Class<Chain>("Chain")({
   features: S.Array(ChainFeatures),
   rpcs: S.Array(Rpc),
   explorers: S.Array(Explorer),
-  editions: S.Array(Edition)
+  editions: S.OptionFromNullOr(S.Array(Edition))
 }) {
   toViemChain(): Option.Option<ViemChain> {
     if (this.rpc_type !== "evm") {
