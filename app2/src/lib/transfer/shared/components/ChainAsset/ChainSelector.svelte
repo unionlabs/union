@@ -27,17 +27,22 @@ const { type, onSelect }: Props = $props()
 
 type ChainWithAvailability = ReturnType<typeof Tuple.make<[Chain, boolean]>>
 
-function updateSelectedChain(chain: Chain) {
-  if (type === "destination" && chain.chain_id === transferData.raw.source) {
-    return
-  }
-
-  transferData.raw.updateField(type, chain.chain_id)
-
-  if (type === "source" && transferData.raw.destination === chain.chain_id) {
-    transferData.raw.updateField("destination", "")
-  }
-
+const updateSelectedChain = (chain: Chain) => {
+  pipe(
+    Match.value(type).pipe(
+      Match.when("destination", () => {
+        if (chain.chain_id === transferData.raw.source) return
+        transferData.raw.updateField(type, chain.chain_id)
+      }),
+      Match.when("source", () => {
+        transferData.raw.updateField(type, chain.chain_id)
+        if (transferData.raw.destination === chain.chain_id) {
+          transferData.raw.updateField("destination", "")
+        }
+      }),
+      Match.exhaustive
+    )
+  )
   onSelect()
 }
 
@@ -75,7 +80,7 @@ const isValidRoute = (chain: Chain) =>
     )
   )
 
-function getChainStatus(chain: Chain, hasBucket: boolean): ChainSelectorStatus {
+const getChainStatus = (chain: Chain, hasBucket: boolean): ChainSelectorStatus => {
   const isSourceChain = type === "destination" && transferData.raw.source === chain.chain_id
 
   return pipe(
