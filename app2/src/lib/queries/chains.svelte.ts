@@ -13,6 +13,7 @@ export const chainsQuery = (environment: Environment) =>
             v2_chains {
                 chain_id
                 universal_chain_id
+                minter_address_display
                 display_name
                 addr_prefix
                 rpc_type
