@@ -226,7 +226,7 @@ const filteredChains = $derived(
             <span class="text-xs text-yellow-400 -mt-2">no route</span>
           {/if}
           {#if type === "destination" && !status.hasBucket && status.hasRoute && !status.isSourceChain}
-            <span class="text-xs text-red-400 -mt-2">not whitelisted</span>
+            <span class="text-xs text-yellow-400 -mt-2">not whitelisted</span>
           {/if}
         </button>
       {/each}
