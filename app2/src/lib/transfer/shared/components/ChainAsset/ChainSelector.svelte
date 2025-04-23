@@ -4,19 +4,12 @@ import { chains } from "$lib/stores/chains.svelte.ts"
 import { cn } from "$lib/utils"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import type { Chain, Token, TokenWrapping } from "@unionlabs/sdk/schema"
+import type { Chain, Token, TokenWrapping, Edition } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import { MODE } from "$lib/constants/config"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
-import { MAINNET_CHAINS, TESTNET_CHAINS } from "$lib/constants/chains.ts"
+import { uiStore } from "$lib/stores/ui.svelte.ts"
+import { ENV } from "$lib/constants"
 
-type ChainSelectorStatus = {
-  isSelected: boolean
-  isSourceChain: boolean
-  isDisabled: boolean
-  hasBucket: boolean
-  hasRoute: boolean
-}
 
 type Props = {
   type: "source" | "destination"
@@ -46,9 +39,30 @@ const updateSelectedChain = (chain: Chain) => {
   onSelect()
 }
 
-const filterByEnvironment = (chains: ReadonlyArray<Chain>) => {
-  const allowedChains = MODE === "testnet" ? TESTNET_CHAINS : MAINNET_CHAINS
-  return chains.filter(chain => allowedChains.includes(chain.universal_chain_id))
+
+const getEnvironment = (): "PRODUCTION" | "STAGING" | "DEVELOPMENT" => {
+  const hostname = window.location.hostname
+  return hostname === "btc.union.build" || hostname === "app.union.build"
+    ? "PRODUCTION"
+    : hostname === "staging.btc.union.build" || hostname === "staging.app.union.build"
+      ? "STAGING"
+      : hostname === "localhost" || hostname === "127.0.0.1"
+        ? "DEVELOPMENT"
+        : "DEVELOPMENT"
+}
+
+function filterByEdition(chain: Chain, currentEdition: Edition, environment: string) {
+  if (environment === "DEVELOPMENT") return true
+  
+  return pipe(
+    chain.editions,
+    Option.match({
+      onNone: () => true,
+      onSome: editions => editions.some(edition => 
+        edition.name === currentEdition.name && edition.environment === environment
+      )
+    })
+  )
 }
 
 const filterBySigningMode = (chains: Array<Chain>) =>
@@ -80,7 +94,7 @@ const isValidRoute = (chain: Chain) =>
     )
   )
 
-const getChainStatus = (chain: Chain, hasBucket: boolean): ChainSelectorStatus => {
+const getChainStatus = (chain: Chain, hasBucket: boolean) => {
   const isSourceChain = type === "destination" && transferData.raw.source === chain.chain_id
 
   return pipe(
@@ -184,52 +198,66 @@ const filterChainsByTokenAvailability = (chains: Array<Chain>): Array<ChainWithA
 const filteredChains = $derived(
   pipe(
     chains.data,
-    Option.map(allChains => pipe(allChains, filterByEnvironment, filterBySigningMode)),
+    Option.map(allChains => {
+      console.log('All chains:', allChains)
+      const editionFiltered = allChains.filter(chain => {
+        const result = filterByEdition(chain, uiStore.edition, getEnvironment())
+        console.log('Chain:', chain.display_name, 'Edition filter result:', result)
+        return result
+      })
+      console.log('After edition filter:', editionFiltered)
+      const signingModeFiltered = filterBySigningMode(editionFiltered)
+      console.log('After signing mode filter:', signingModeFiltered)
+      return signingModeFiltered
+    }),
     Option.map(filterChainsByTokenAvailability)
   )
 )
 </script>
 
-<div class="p-4">
+<div>
   {#if Option.isSome(filteredChains)}
     {@const chainss = filteredChains.value}
-    <div class="grid grid-cols-3 gap-2">
-      {#each chainss as chainWithAvailability}
-        {@const [chain, hasBucket] = chainWithAvailability}
-        {@const status = getChainStatus(chain, hasBucket)}
-        {@const chainLogo = chain.universal_chain_id ? chainLogoMap.get(chain.universal_chain_id) : null}
+    <div class="relative">
+      <div class="p-4 grid grid-cols-3 gap-2 max-h-[400px] overflow-y-auto">
+        {#each chainss as chainWithAvailability}
+          {@const [chain, hasBucket] = chainWithAvailability}
+          {@const status = getChainStatus(chain, hasBucket)}
+          {@const chainLogo = chain.universal_chain_id ? chainLogoMap.get(chain.universal_chain_id) : null}
 
-        <button
-          class={cn(
-            "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors",
-            status.isSelected
-              ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-accent"
-              : status.isDisabled
-                ? "bg-zinc-900 opacity-50 cursor-not-allowed"
-                : "bg-zinc-900 hover:bg-zinc-800 cursor-pointer"
-          )}
-          onclick={() => !status.isDisabled && updateSelectedChain(chain)}
-          disabled={status.isDisabled}
-        >
-          {#if chainLogo?.color}
-            <span class="w-10 h-10 flex items-center justify-center overflow-hidden">
-              <img src={chainLogo.color} alt=""/>
-            </span>
-          {/if}
+          <button
+            class={cn(
+              "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors",
+              status.isSelected
+                ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-accent"
+                : status.isDisabled
+                  ? "bg-zinc-900 opacity-50 cursor-not-allowed"
+                  : "bg-zinc-900 hover:bg-zinc-800 cursor-pointer"
+            )}
+            onclick={() => !status.isDisabled && updateSelectedChain(chain)}
+            disabled={status.isDisabled}
+          >
+            {#if chainLogo?.color}
+              <span class="w-10 h-10 flex items-center justify-center overflow-hidden">
+                <img src={chainLogo.color} alt=""/>
+              </span>
+            {/if}
 
-          <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
+            <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
 
-          {#if status.isSourceChain}
-            <span class="text-xs text-sky-400 -mt-2">source chain</span>
-          {/if}
-          {#if type === "destination" && !status.hasRoute && !status.isSourceChain}
-            <span class="text-xs text-yellow-400 -mt-2">no route</span>
-          {/if}
-          {#if type === "destination" && !status.hasBucket && status.hasRoute && !status.isSourceChain}
-            <span class="text-xs text-yellow-400 -mt-2">not whitelisted</span>
-          {/if}
-        </button>
-      {/each}
+            {#if status.isSourceChain}
+              <span class="text-xs text-sky-400 -mt-2">source chain</span>
+            {/if}
+            {#if type === "destination" && !status.hasRoute && !status.isSourceChain}
+              <span class="text-xs text-yellow-400 -mt-2">no route</span>
+            {/if}
+            {#if type === "destination" && !status.hasBucket && status.hasRoute && !status.isSourceChain}
+              <span class="text-xs text-yellow-400 -mt-2">not whitelisted</span>
+            {/if}
+          </button>
+        {/each}
+      </div>
+      <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-925 to-transparent blur-fade-bottom-up pointer-events-none"></div>
     </div>
   {:else}
     <div class="py-2 text-center text-zinc-500">
