@@ -111,7 +111,7 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                 <div class="flex items-center gap-2">
                   {#if Option.isSome(transfer.success)}
                     {#if transfer.success.value}
-                      <SharpCheckIcon class="size-6 text-babylon-orange"/>
+                      <SharpCheckIcon class="size-6 text-accent"/>
                       <p class="text-babylon">Received</p>
                     {:else}
                       <SharpWarningIcon

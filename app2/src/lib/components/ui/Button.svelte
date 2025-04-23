@@ -30,7 +30,7 @@ const classes = cn(
   variant === "primary" && [
     "bg-sky-600 border-sky-600 border text-white hover:bg-sky-700",
     "dark:bg-white dark:border-zinc-100 dark:hover:bg-zinc-100 dark:text-black font-bold",
-    "focus-visible:ring-babylon-orange"
+    "focus-visible:ring-accent"
   ],
   variant === "secondary" && [
     "border border-zinc-200 bg-white hover:bg-zinc-100 hover:text-zinc-900",
@@ -42,7 +42,7 @@ const classes = cn(
     "focus-visible:ring-red-500"
   ],
   variant === "inline" && [
-    "underline text-babylon-orange hover:text-orange-300 transition-colors inline-flex items-center gap-1"
+    "underline text-accent hover:text-orange-300 transition-colors inline-flex items-center gap-1"
   ],
 
   // Height and padding
