@@ -55,7 +55,15 @@ const isMobile = $derived(viewportWidth < MAX_MOBILE_SIZE)
 const hideSidebar = $derived(isMobile && !isRootPage)
 const fullPageSidebar = $derived(isRootPage)
 let videoLoaded = $state(false)
+
+const accentColor = $derived(uiStore.isBabylonVersion ? 'var(--color-babylon-orange)' : 'var(--color-union)')
 </script>
+
+<style>
+  :global(:root) {
+    --color-accent: v-bind(accentColor);
+  }
+</style>
 
 <!-- Background video -->
 {#if !isMobile}
@@ -103,6 +111,7 @@ let videoLoaded = $state(false)
 <div
   class={cn("relative min-h-[100svh] w-screen z-10")}
   bind:clientWidth={viewportWidth}
+  style="--color-accent: {accentColor}"
 >
   <aside
     class={cn(

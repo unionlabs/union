@@ -6,6 +6,14 @@ class UiStore {
   showZeroBalances: boolean = $state(false)
   showDeveloperPages: boolean = $state(false)
 
+  version: "babylon" | "union" = $state("union")
+  overrideVersion: "babylon" | "union" | null = $state(null)
+
+  get accentColor() {
+    const activeVersion = this.overrideVersion ?? this.version
+    return activeVersion === "babylon" ? 'var(--color-babylon-orange)' : 'var(--color-union)'
+  }
+
   private closeAllModals() {
     this.walletModalOpen = false
     this.settingsModalOpen = false
