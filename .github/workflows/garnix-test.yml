@@ -14,11 +14,33 @@ jobs:
           REPO: ${{ github.repository }}
           REF: ${{ github.head_ref || github.sha }}
         run: |
-          sleep 15
+          sleep 16
 
           check_suites=$(gh api \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
             "/repos/$REPO/commits/$REF/check-suites")
 
-          echo $check_suites | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .check_runs_url'
+          url=$(echo $check_suites | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .check_runs_url')
+
+          status=''
+
+          while [[ $status != 'completed' ]]; do
+            sleep 16
+            app2_run=$(curl "$url" | jq '.check_runs | .[] | select(.name == "package app2 [x86_64-linux]")')
+
+            status=$(echo $app2_run | jq '.status')
+          done
+
+          conclusion=$(echo $app2_run | jq '.conclusion')
+          case "$conclusion" in
+            failure | timed_out | action_required | stale | startup_failure)
+              echo "ERROR: Garnix CI concluded with $conclusion"
+              exit 1
+              ;;
+            *)
+              echo "INFO: Garnix CI concluded with $conclusion"
+              ;;
+          esac
+
+          
