@@ -16,6 +16,10 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
           v2_tokens(args: { p_whitelist: true, p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
             rank
             denom
+            bucket {
+                  capacity
+                  refill_rate
+              }
             representations {
               logo_uri
               name

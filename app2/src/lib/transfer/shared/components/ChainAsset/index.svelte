@@ -6,6 +6,9 @@ import ChainSelector from "$lib/transfer/shared/components/ChainAsset/ChainSelec
 import AssetSelector from "$lib/transfer/shared/components/ChainAsset/AssetSelector.svelte"
 import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
 import { clickOutside } from "$lib/utils/actions.ts"
+import { Option } from "effect"
+import { chains } from "$lib/stores/chains.svelte.ts"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 
 type Props = {
   type: "source" | "destination"
@@ -57,6 +60,14 @@ const [send, receive] = crossfade({
   duration: 200,
   fallback(node) {
     return fly(node, { delay: 0, duration: 200, y: 20 })
+  }
+})
+
+$effect(() => {
+  if (Option.isSome(chains.data)) {
+    for (const chain of chains.data.value) {
+      tokensStore.fetchTokens(chain.universal_chain_id)
+    }
   }
 })
 </script>
