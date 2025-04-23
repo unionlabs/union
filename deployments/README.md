@@ -78,8 +78,51 @@ Both the universal chain id and the channel id sub-keys should be sorted (the fo
 jq . channels.json -S | sponge channels.json
 ```
 
+## editions.json
+
+Union supports multiple editions of the app, each tailored to a specific target audience. Each edition maps to a subdomain and defines a set of chains that are active within that edition.
+
+The structure is as follows:
+
+- `<edition>`: name of the edition, corresponding to the subdomain `<edition>.union.build`.
+  - `chains`: mapping of universal chain identifiers to their configuration.
+    - `<universal_chain_id>`: unique chain identifier (see [UCS04]) of the chain that is in scope for this edition.
+      - `environment`: Specifies the visibility of the chain within the given edition (see [environments](#environments) below).
+
+### environments
+
+The environment determines where the chain is available. Scope increases with each level: `production` includes everything in `staging`, which includes everything in `development`.
+
+Allowed values are:
+  - `development` – Available only in the development environment.
+  - `staging` – Available in both development and staging environments.
+  - `production` – Available in all environments.
+
+## universal-chain-ids.json
+
+As described in [UCS04], Union uses a two-part identifier — chain family name and chain ID — to uniquely identify a network. This helps prevent ambiguity across environments, testnets, and mainnets.
+
+This file defines all known universal chain IDs used in the Union ecosystem. It provides the canonical mapping from chain family to their supported chain IDs and serves as a reference for disambiguating chain identifiers across environments.
+
+The structure is as follows:
+
+- `<chain family name>`: The name of the chain family (e.g. `ethereum`, `babylon`).
+  - A list of supported chain IDs for that chain. These IDs are used to form **universal chain IDs** by combining the chain name and ID, e.g. `ethereum.1`, `babylon.bbn-test-5`.
+
+## token-whitelist.json
+
+This file defines a whitelist of allowed tokens for each chain. Only transfers of tokens listed in this file are permitted within the Union ecosystem. It acts as an access control mechanism, ensuring only explicitly approved assets are recognized and processed.
+
+The structure is as follows:
+
+- `<universal_chain_id>`: A fully qualified chain identifier (see [UCS04]), such as `ethereum.1` or `babylon.bbn-1`.
+  - `<token address>`: The **canonical** address of the token on that chain, as defined in [UCS05]. All addresses are hex-encoded.
+    - `comments`: An optional human-readable label or symbol for the token (e.g. `WETH`, `BABY`, `uniBTC`).
+
+
 [channels docs]: https://docs.union.build/protocol/channels/overview/
 [graphql]: https://docs.union.build/integrations/api/graphql/
 [ibc interface]: ../voyager/CONCEPTS.md#ibc-interface
 [ucs03]: https://docs.union.build/ucs/03/
 [ucs04]: https://docs.union.build/ucs/04/
+[ucs05]: https://docs.union.build/ucs/05/
