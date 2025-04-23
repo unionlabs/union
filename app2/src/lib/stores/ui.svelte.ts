@@ -5,13 +5,12 @@ class UiStore {
   errorsModalOpen: boolean = $state(false)
   showZeroBalances: boolean = $state(false)
   showDeveloperPages: boolean = $state(false)
-
-  version: "babylon" | "union" = $state("union")
-  overrideVersion: "babylon" | "union" | null = $state(null)
+  version: "btc" | "app" = $state("app")
+  overrideVersion: "btc" | "app" | null = $state(null)
 
   get accentColor() {
     const activeVersion = this.overrideVersion ?? this.version
-    return activeVersion === "babylon" ? 'var(--color-babylon-orange)' : 'var(--color-union)'
+    return activeVersion === "btc" ? 'var(--color-babylon-orange)' : 'var(--color-union)'
   }
 
   private closeAllModals() {
