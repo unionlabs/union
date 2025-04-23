@@ -4,7 +4,6 @@ import { fromHex, http, isHex } from "viem"
 import { createViemPublicClient, readErc20Allowance, ViemPublicClient } from "@unionlabs/sdk/evm"
 import { CosmWasmClientSource, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
-import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 import {
   AllowanceCheckError,
   CosmosQueryError,
@@ -156,7 +155,7 @@ export function handleCosmosAllowances(
             .toCosmosDisplay(sender)
             .pipe(Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err })))
 
-          const spender = cosmosSpenderAddresses[sourceChain.universal_chain_id]
+          const spender = sourceChain.minter_address_display
           let bech32Address: string | null = null
 
           if (!isHex(tokenAddress) && isValidBech32ContractAddress(tokenAddress)) {

@@ -4,7 +4,6 @@ import { Tx } from "@unionlabs/sdk/schema"
 import { encodeAbiParameters } from "viem"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
-import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
 import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
@@ -35,14 +34,6 @@ export const generateMultisigTx = (context: TransferContext) =>
           return context.intents.flatMap(intent => {
             console.log("[context] sourceChainId:", intent.sourceChainId)
             console.log("[context] sender:", intent.sender)
-            const maybeSpender = R.get(cosmosSpenderAddresses, intent.sourceChainId)
-            if (Option.isNone(maybeSpender)) {
-              console.warn("[warning] no spender for chain:", intent.sourceChainId)
-              return []
-            }
-
-            const spender = maybeSpender.value
-            console.log("[spender] resolved:", spender)
 
             return [
               {
@@ -51,7 +42,7 @@ export const generateMultisigTx = (context: TransferContext) =>
                 contract: allowance.token,
                 msg: {
                   increase_allowance: {
-                    spender,
+                    spender: intent.sourceChain.minter_address_display,
                     amount: allowance.requiredAmount
                   }
                 },
