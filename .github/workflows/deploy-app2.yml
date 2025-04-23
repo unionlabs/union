@@ -21,7 +21,47 @@ env:
   ACTIONS_RUNNER_DEBUG: true
 
 jobs:
+  garnix:
+    name: Wait on Garnix CI
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait on Garnix CI Check Suite
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          REF: ${{ github.head_ref || github.sha }}
+        run: |
+          sleep 16
+
+          check_suites=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/$REPO/commits/$REF/check-suites")
+
+          url=$(echo $check_suites | jq -r '.check_suites | .[] | select(.app.name == "Garnix CI") | .check_runs_url')
+
+          status=''
+
+          while [[ $status != 'completed' ]]; do
+            sleep 16
+            app2_run=$(curl --silent "$url" | jq '.check_runs | .[] | select(.name == "package app2 [x86_64-linux]")')
+
+            status=$(echo $app2_run | jq -r '.status')
+          done
+
+          conclusion=$(echo $app2_run | jq '.conclusion')
+          case "$conclusion" in
+            failure | timed_out | action_required | stale | startup_failure)
+              echo "ERROR: Garnix CI concluded with $conclusion"
+              exit 1
+              ;;
+            *)
+              echo "INFO: Garnix CI concluded with $conclusion"
+              ;;
+          esac
+
   deploy-preview:
+    needs: ['garnix']
     runs-on: ['ubuntu-latest']
     permissions:
       contents: read
@@ -98,6 +138,7 @@ jobs:
         run: npx --yes wrangler@latest pages --project-name="app2" deploy result
 
   deploy-staging:
+    needs: ['garnix']
     runs-on: ['ubuntu-latest']
     env:
       npm_config_yes: true
@@ -126,6 +167,7 @@ jobs:
         run: npx --yes wrangler@latest pages --project-name="app2" --branch="staging" deploy result
 
   deploy-production:
+    needs: ['garnix']
     runs-on: ['ubuntu-latest']
     env:
       npm_config_yes: true
