@@ -47,6 +47,12 @@ export class Explorer extends S.Class<Explorer>("Explorer")({
   tx_url: S.String
 }) {}
 
+export class Edition extends S.Class<Explorer>("Edition")({
+  environment: S.String,
+  name: S.String,
+  internal_chain_id: S.Number
+}) {}
+
 export class NoRpcError extends Data.TaggedError("NoRpcError")<{
   chain: Chain
   type: RpcProtocolType
@@ -87,7 +93,8 @@ export class Chain extends S.Class<Chain>("Chain")({
   testnet: S.Boolean,
   features: S.Array(ChainFeatures),
   rpcs: S.Array(Rpc),
-  explorers: S.Array(Explorer)
+  explorers: S.Array(Explorer),
+  editions: S.Array(Edition)
 }) {
   toViemChain(): Option.Option<ViemChain> {
     if (this.rpc_type !== "evm") {
