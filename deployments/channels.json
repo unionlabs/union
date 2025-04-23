@@ -2,19 +2,31 @@
   "babylon.bbn-1": {
     "3": {
       "comments": "ethereum.1 channel 1",
-      "tags": ["canonical"]
+      "tags": ["canonical"],
+      "sla": {
+        "forward": "PT45M",
+        "reverse": "PT45M"
+      }
     }
   },
   "bob.60808": {
     "1": {
       "comments": "babylon.bbn-1 channel 1",
-      "tags": ["canonical"]
+      "tags": ["canonical"],
+      "sla": {
+        "forward": "PT15H",
+        "reverse": "PT15H"
+      }
     }
   },
   "corn.21000000": {
     "1": {
       "comments": "babylon.bbn-1 channel 2",
-      "tags": ["canonical"]
+      "tags": ["canonical"],
+      "sla": {
+        "forward": "PT17H",
+        "reverse": "PT17H"
+      }
     }
   },
   "ethereum.11155111": {
