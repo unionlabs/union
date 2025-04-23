@@ -203,7 +203,7 @@ const filteredChains = $derived(
           class={cn(
             "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors",
             status.isSelected
-              ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-babylon-orange"
+              ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-accent"
               : status.isDisabled
                 ? "bg-zinc-900 opacity-50 cursor-not-allowed"
                 : "bg-zinc-900 hover:bg-zinc-800 cursor-pointer"
