@@ -1377,6 +1377,67 @@ input timestamptz_comparison_exp {
 }
 
 """
+columns and relationships of "v2.chain_editions"
+"""
+type v2_chain_editions {
+  environment: String
+  name: String
+}
+
+"""
+order by aggregate values of table "v2.chain_editions"
+"""
+input v2_chain_editions_aggregate_order_by {
+  count: order_by
+  max: v2_chain_editions_max_order_by
+  min: v2_chain_editions_min_order_by
+}
+
+"""
+Boolean expression to filter rows from the table "v2.chain_editions". All fields are combined with a logical 'AND'.
+"""
+input v2_chain_editions_bool_exp {
+  _and: [v2_chain_editions_bool_exp!]
+  _not: v2_chain_editions_bool_exp
+  _or: [v2_chain_editions_bool_exp!]
+  environment: String_comparison_exp
+  name: String_comparison_exp
+}
+
+"""
+order by max() on columns of table "v2.chain_editions"
+"""
+input v2_chain_editions_max_order_by {
+  environment: order_by
+  name: order_by
+}
+
+"""
+order by min() on columns of table "v2.chain_editions"
+"""
+input v2_chain_editions_min_order_by {
+  environment: order_by
+  name: order_by
+}
+
+"""Ordering options when selecting data from "v2.chain_editions"."""
+input v2_chain_editions_order_by {
+  environment: order_by
+  name: order_by
+}
+
+"""
+select columns of table "v2.chain_editions"
+"""
+enum v2_chain_editions_select_column {
+  """column name"""
+  environment
+
+  """column name"""
+  name
+}
+
+"""
 columns and relationships of "v2.chain_features"
 """
 type v2_chain_features {
@@ -1615,6 +1676,24 @@ type v2_chain_type {
   display_name: String
 
   """An array relationship"""
+  editions(
+    """distinct select on columns"""
+    distinct_on: [v2_chain_editions_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_chain_editions_order_by!]
+
+    """filter the rows returned"""
+    where: v2_chain_editions_bool_exp
+  ): [v2_chain_editions!]!
+
+  """An array relationship"""
   explorers(
     """distinct select on columns"""
     distinct_on: [v2_explorers_select_column!]
@@ -1703,6 +1782,7 @@ input v2_chain_type_bool_exp {
   addr_prefix: String_comparison_exp
   chain_id: String_comparison_exp
   display_name: String_comparison_exp
+  editions: v2_chain_editions_bool_exp
   explorers: v2_explorers_bool_exp
   features: v2_chain_features_bool_exp
   logo_uri: String_comparison_exp
@@ -1718,6 +1798,7 @@ input v2_chain_type_order_by {
   addr_prefix: order_by
   chain_id: order_by
   display_name: order_by
+  editions_aggregate: v2_chain_editions_aggregate_order_by
   explorers_aggregate: v2_explorers_aggregate_order_by
   features_aggregate: v2_chain_features_aggregate_order_by
   logo_uri: order_by
@@ -3012,6 +3093,9 @@ columns and relationships of "v2.token_meta"
 """
 type v2_token_meta {
   """An object relationship"""
+  bucket: v2_token_meta_bucket
+
+  """An object relationship"""
   chain: v2_chains_view
   denom: String
   rank: Int
@@ -3060,6 +3144,7 @@ input v2_token_meta_bool_exp {
   _and: [v2_token_meta_bool_exp!]
   _not: v2_token_meta_bool_exp
   _or: [v2_token_meta_bool_exp!]
+  bucket: v2_token_meta_bucket_bool_exp
   chain: v2_chains_view_bool_exp
   denom: String_comparison_exp
   rank: Int_comparison_exp
@@ -3067,8 +3152,34 @@ input v2_token_meta_bool_exp {
   wrapping: v2_token_meta_wrapping_bool_exp
 }
 
+"""
+columns and relationships of "v2.token_meta_bucket"
+"""
+type v2_token_meta_bucket {
+  capacity: String
+  refill_rate: String
+}
+
+"""
+Boolean expression to filter rows from the table "v2.token_meta_bucket". All fields are combined with a logical 'AND'.
+"""
+input v2_token_meta_bucket_bool_exp {
+  _and: [v2_token_meta_bucket_bool_exp!]
+  _not: v2_token_meta_bucket_bool_exp
+  _or: [v2_token_meta_bucket_bool_exp!]
+  capacity: String_comparison_exp
+  refill_rate: String_comparison_exp
+}
+
+"""Ordering options when selecting data from "v2.token_meta_bucket"."""
+input v2_token_meta_bucket_order_by {
+  capacity: order_by
+  refill_rate: order_by
+}
+
 """Ordering options when selecting data from "v2.token_meta"."""
 input v2_token_meta_order_by {
+  bucket: v2_token_meta_bucket_order_by
   chain: v2_chains_view_order_by
   denom: order_by
   rank: order_by
@@ -3608,6 +3719,7 @@ input v2_token_meta_wrapping_variance_order_by {
 input v2_tokens_args {
   p_denom: String
   p_universal_chain_id: String
+  p_whitelist: Boolean
 }
 
 """
@@ -3977,6 +4089,7 @@ input v2_transfers_args {
   p_addresses_canonical: jsonb
   p_block_hash: String
   p_comparison: String
+  p_destination_universal_chain_id: String
   p_limit: Int
   p_packet_hash: String
   p_sort_order: String
