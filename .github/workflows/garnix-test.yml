@@ -29,7 +29,13 @@ jobs:
             sleep 16
             app2_run=$(curl "$url" | jq '.check_runs | .[] | select(.name == "package app2 [x86_64-linux]")')
 
+            echo "RAW"
+            echo $app2_run
+
             status=$(echo $app2_run | jq '.status')
+
+            echo "STATUS"
+            echo $status
           done
 
           conclusion=$(echo $app2_run | jq '.conclusion')
