@@ -1,3 +1,5 @@
+use std::num::NonZeroU32;
+
 use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
@@ -640,10 +642,12 @@ pub enum MigrateMsg {}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
-    deps: DepsMut,
+    mut deps: DepsMut,
     env: Env,
     msg: UpgradeMsg<InstantiateMsg, MigrateMsg>,
 ) -> Result<Response, ContractError> {
+    frissitheto::init_state_version(&mut deps, const { NonZeroU32::new(1).unwrap() }).unwrap();
+
     msg.run(
         deps,
         |deps, init_msg| {
