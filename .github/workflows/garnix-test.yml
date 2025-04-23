@@ -16,12 +16,9 @@ jobs:
         run: |
           sleep 15
 
-          status=''
+          check_suites=$(gh api \
+            -H "Accept: application/vnd.github+json" \
+            -H "X-GitHub-Api-Version: 2022-11-28" \
+            "/repos/$REPO/commits/$REF/check-suites")
 
-          while [[ $status != 'completed' ]]; do
-            check_suites=$(gh api \
-              -H "Accept: application/vnd.github+json" \
-              -H "X-GitHub-Api-Version: 2022-11-28" \
-              "/repos/$REPO/commits/$REF/check-suites")
-
-            echo $check_suites | jq .
+          echo $check_suites | jq .
