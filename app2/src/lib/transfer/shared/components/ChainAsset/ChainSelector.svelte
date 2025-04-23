@@ -1,20 +1,20 @@
 <script lang="ts">
-import { flow, Match, Option, pipe } from "effect"
+import { Match, Option, pipe, Tuple } from "effect"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { cn } from "$lib/utils"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import type { Chain } from "@unionlabs/sdk/schema"
-import { UniversalChainId } from "@unionlabs/sdk/schema"
+import type { Chain, Token } from "@unionlabs/sdk/schema"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import { MODE } from "$lib/constants/config"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
+import { MAINNET_CHAINS, TESTNET_CHAINS } from "$lib/constants/chains.ts"
 
 type ChainStatus = {
   isSelected: boolean
   isSourceChain: boolean
   isDisabled: boolean
-  isRateLimited: boolean
+  hasBucket: boolean
   hasRoute: boolean
 }
 
@@ -23,70 +23,35 @@ type Props = {
   onSelect: () => void
 }
 
+type TokenWrapping = {
+  wrapped_chain: { universal_chain_id: string }
+  unwrapped_chain: { universal_chain_id: string }
+  unwrapped_denom: string
+}
+
 const { type, onSelect }: Props = $props()
 
-// Chain configuration for testnet and mainnet environments
-const TESTNET_CHAINS: Array<UniversalChainId> = [
-  UniversalChainId.make("ethereum.11155111"),
-  UniversalChainId.make("corn.21000001"),
-  UniversalChainId.make("bob.808813"),
-  UniversalChainId.make("babylon.bbn-test-5")
-]
-
-const MAINNET_CHAINS: Array<UniversalChainId> = [
-  UniversalChainId.make("bob.60808"),
-  UniversalChainId.make("corn.21000000"),
-  UniversalChainId.make("babylon.bbn-1"),
-  UniversalChainId.make("ethereum.1")
-]
-
-type ChainWithRateLimit = [Chain, boolean]
+type ChainWithAvailability = ReturnType<typeof Tuple.make<[Chain, boolean]>>
 
 function selectChain(chain: Chain) {
-  // Prevent selecting the same chain as destination
   if (type === "destination" && chain.chain_id === transferData.raw.source) {
     return
   }
 
   transferData.raw.updateField(type, chain.chain_id)
 
-  if (type === "source") {
-    // Always fetch tokens for selected source
-    tokensStore.fetchTokens(chain.universal_chain_id)
-
-    // Prefetch tokens for potential destinations
-    pipe(
-      transferData.destinationChains,
-      Option.map((chains) => {
-        for (const c of chains) {
-          tokensStore.fetchTokens(c.universal_chain_id)
-        }
-      })
-    )
-
-    // Reset destination if it's the same as selected source
-    if (transferData.raw.destination === chain.chain_id) {
-      transferData.raw.updateField("destination", "")
-    }
+  if (type === "source" && transferData.raw.destination === chain.chain_id) {
+    transferData.raw.updateField("destination", "")
   }
 
   onSelect()
 }
-``
 
-
-/**
- * Filters chains based on the current environment (testnet/mainnet)
- */
 const filterByEnvironment = (chains: ReadonlyArray<Chain>) => {
   const allowedChains = MODE === "testnet" ? TESTNET_CHAINS : MAINNET_CHAINS
   return chains.filter(chain => allowedChains.includes(chain.universal_chain_id))
 }
 
-/**
- * Filters chains based on the current signing mode
- * In multi mode, only cosmos chains are shown for source selection
- */
 const filterBySigningMode = (chains: Array<Chain>) =>
   pipe(
     Match.value(signingMode.mode).pipe(
@@ -101,95 +66,93 @@ const filterBySigningMode = (chains: Array<Chain>) =>
     )
   )
 
-/**
- * Determines the status of a chain for display and interaction
- * @param chain The chain to check
- * @param isRateLimited Whether the chain is rate limited (no bucket)
- * @returns ChainStatus object with various flags
- */
-function getChainStatus(chain: Chain, isRateLimited: boolean): ChainStatus {
+const hasRoute = (chain: Chain) =>
+  type === "destination" &&
+  pipe(
+    transferData.destinationChains,
+    Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
+    Option.getOrElse(() => false)
+  )
+
+function getChainStatus(chain: Chain, hasBucket: boolean): ChainStatus {
   const isSourceChain = type === "destination" && transferData.raw.source === chain.chain_id
-  const hasRoute =
-    type === "destination" &&
-    pipe(
-      transferData.destinationChains,
-      Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
-      Option.getOrElse(() => false)
-    )
   const isSelected =
     type === "source"
       ? transferData.raw.source === chain.chain_id
       : transferData.raw.destination === chain.chain_id
   const isDisabled =
-    type === "destination"
-      ? isSourceChain || !hasRoute || isRateLimited // isRateLimited now means "no bucket"
-      : false
+    type === "destination" ? isSourceChain || !hasRoute(chain) || !hasBucket : false
 
-  return { isSelected, isSourceChain, isDisabled, isRateLimited, hasRoute }
+  return {
+    isSelected,
+    isSourceChain,
+    isDisabled,
+    hasBucket,
+    hasRoute: hasRoute(chain)
+  }
 }
 
-/**
- * Checks if destination chains have rate limiting (bucket) for the correct destination token.
- */
-const filterByTokenBucket = (chains: Array<Chain>): Array<ChainWithRateLimit> => {
+const hasTokenBucket = (
+  destinationChain: Chain,
+  tokenList: ReadonlyArray<Token>,
+  baseToken: Token,
+  sourceChain: Chain
+) => {
+  const baseDenom = baseToken.denom.toLowerCase()
+
+  const maybeUnwrapped = baseToken.wrapping.find(
+    (w: TokenWrapping) =>
+      w.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+      w.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+  )
+
+  if (maybeUnwrapped) {
+    const destToken = tokenList.find(
+      t => t.denom.toLowerCase() === maybeUnwrapped.unwrapped_denom.toLowerCase()
+    )
+    return destToken?.bucket != null
+  }
+
+  const reverseMatch = tokenList.find(t =>
+    t.wrapping.some(
+      (w: TokenWrapping) =>
+        w.unwrapped_denom.toLowerCase() === baseDenom &&
+        w.unwrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+        w.wrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+    )
+  )
+
+  return reverseMatch?.bucket != null
+}
+
+const filterByTokenAvailability = (chains: Array<Chain>): Array<ChainWithAvailability> => {
   if (
     type !== "destination" ||
     Option.isNone(transferData.baseToken) ||
     Option.isNone(transferData.sourceChain)
   ) {
-    return chains.map(chain => [chain, true])
+    return chains.map(chain => Tuple.make(chain, false))
   }
 
   const baseToken = transferData.baseToken.value
   const sourceChain = transferData.sourceChain.value
-  const baseDenom = baseToken.denom.toLowerCase()
 
   return chains.map(destinationChain => {
     const tokens = tokensStore.getData(destinationChain.universal_chain_id)
-    if (Option.isNone(tokens)) return [destinationChain, true]
+    if (Option.isNone(tokens)) return Tuple.make(destinationChain, false)
 
-    const tokenList = tokens.value
-
-    // First: try unwrap path
-    const maybeUnwrapped = baseToken.wrapping.find(
-      w =>
-        w.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
-        w.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+    return Tuple.make(
+      destinationChain,
+      hasTokenBucket(destinationChain, tokens.value, baseToken, sourceChain)
     )
-
-    if (maybeUnwrapped) {
-      const destToken = tokenList.find(
-        t => t.denom.toLowerCase() === maybeUnwrapped.unwrapped_denom.toLowerCase()
-      )
-
-      const isRateLimited = destToken?.bucket == null
-      return [destinationChain, isRateLimited]
-    }
-
-    // Fallback: look for a destination token that wraps baseToken
-    const reverseMatch = tokenList.find(t =>
-      t.wrapping.some(w =>
-        w.unwrapped_denom.toLowerCase() === baseDenom &&
-        w.unwrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
-        w.wrapped_chain.universal_chain_id === destinationChain.universal_chain_id
-      )
-    )
-
-    const isRateLimited = reverseMatch?.bucket == null
-    return [destinationChain, isRateLimited]
   })
 }
 
-
-
-// Apply all chain filters in sequence
 const filteredChains = $derived(
   pipe(
     chains.data,
-    Option.map((allChains) =>
-      pipe(allChains, filterByEnvironment, filterBySigningMode)
-    ),
-    Option.map(filterByTokenBucket)
+    Option.map(allChains => pipe(allChains, filterByEnvironment, filterBySigningMode)),
+    Option.map(filterByTokenAvailability)
   )
 )
 </script>
@@ -198,8 +161,9 @@ const filteredChains = $derived(
   {#if Option.isSome(filteredChains)}
     {@const chainss = filteredChains.value}
     <div class="grid grid-cols-3 gap-2">
-      {#each chainss as [chain, isRateLimited]}
-        {@const status = getChainStatus(chain, isRateLimited)}
+      {#each chainss as chainWithAvailability}
+        {@const [chain, hasBucket] = chainWithAvailability}
+        {@const status = getChainStatus(chain, hasBucket)}
         {@const chainLogo = chain.universal_chain_id ? chainLogoMap.get(chain.universal_chain_id) : null}
 
         <button
@@ -225,13 +189,12 @@ const filteredChains = $derived(
           {#if status.isSourceChain}
             <span class="text-xs text-sky-400 -mt-2">Source Chain</span>
           {/if}
-          {#if type === "destination" && status.isRateLimited && !status.isSourceChain}
-          <span class="text-xs text-red-400 -mt-2">No bucket</span>
-        {/if}
+          {#if type === "destination" && !status.hasBucket && !status.isSourceChain}
+            <span class="text-xs text-red-400 -mt-2">No bucket</span>
+          {/if}
           {#if type === "destination" && !status.hasRoute && !status.isSourceChain}
             <span class="text-xs text-yellow-400 -mt-2">No route</span>
           {/if}
-
         </button>
       {/each}
     </div>
@@ -241,4 +204,3 @@ const filteredChains = $derived(
     </div>
   {/if}
 </div>
-
