@@ -1,6 +1,6 @@
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { Effect, Fiber, Option } from "effect"
-import type { IncompleteTransferCount, IncompleteTransferListItem  } from "@unionlabs/sdk/schema"
+import type { IncompleteTransferCount, IncompleteTransferListItem } from "@unionlabs/sdk/schema"
 
 class IncompleteTransferListStore {
   data = $state(Option.none<typeof IncompleteTransferListItem.Type>())

@@ -2,9 +2,9 @@ import { createQueryGraphql } from "$lib/utils/queries"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 import { transferList } from "$lib/stores/transfers.svelte"
-import { transferListItemFragment, transferListItemFragmentAckMissing } from "$lib/queries/fragments/transfer-list-item"
+import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
 import type { SortOrder } from "@unionlabs/sdk/schema"
-import { TransferList, TransferListMissingAck } from "@unionlabs/sdk/schema"
+import { TransferList } from "@unionlabs/sdk/schema"
 
 export const LIMIT = 10
 
@@ -32,7 +32,6 @@ export let transferListLatestQuery = (limit = LIMIT) =>
       transferList.error = error
     }
   })
-
 
 export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
   createQueryGraphql({

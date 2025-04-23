@@ -7,5 +7,4 @@ import DateTimeComponent from "./DateTimeComponent.svelte"
 type Props = {
   data: Option.Option<typeof TransferList.Type>
 }
-
 </script>

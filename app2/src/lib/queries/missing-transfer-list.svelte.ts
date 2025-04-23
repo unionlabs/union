@@ -11,16 +11,17 @@ export const LIMIT = 10
 
 // SLA windows in ms for each source|dest pair
 const TIMEFRAMES: Record<string, number> = {
-  "babylon.bbn-1|bob.60808":     54_000_000,
-  "bob.60808|babylon.bbn-1":     54_000_000,
+  "babylon.bbn-1|bob.60808": 54_000_000,
+  "bob.60808|babylon.bbn-1": 54_000_000,
   "corn.21000000|babylon.bbn-1": 61_200_000,
   "babylon.bbn-1|corn.21000000": 61_200_000,
-  "ethereum.1|babylon.bbn-1":    2_700_000,
-  "babylon.bbn-1|ethereum.1":    2_700_000,
+  "ethereum.1|babylon.bbn-1": 2_700_000,
+  "babylon.bbn-1|ethereum.1": 2_700_000
 }
 
 // one doc that brings in the traces
-const missingAckDoc = graphql(`
+const missingAckDoc = graphql(
+  `
   query TransferListMissingAck($limit: Int!, $sortOrder: String, 
     $src: String!
     $dst: String!) {
@@ -33,22 +34,20 @@ const missingAckDoc = graphql(`
       ...TransferListItemMissingAck
     }
   }
-`, [transferListItemFragmentAckMissing])
+`,
+  [transferListItemFragmentAckMissing]
+)
 
 /**
  * Fetch *only* those transfers whose send-timestamp falls in the window
  *   [ now - 2*SLA,  now - SLA )
  * and which still have an ACK‐trace with `transaction_hash == null`.
  */
-export function transferListInWindow(
-  source: string,
-  destination: string,
-  limit = LIMIT
-) {
-  const key        = `${source}|${destination}`
-  const sla        = TIMEFRAMES[key] ?? limit * 1000
-  const windowEnd  = Date.now() - sla
-  const windowStart= windowEnd - sla
+export function transferListInWindow(source: string, destination: string, limit = LIMIT) {
+  const key = `${source}|${destination}`
+  const sla = TIMEFRAMES[key] ?? limit * 1000
+  const windowEnd = Date.now() - sla
+  const windowStart = windowEnd - sla
 
   return Effect.gen(function* () {
     let cursor: string | undefined
@@ -68,15 +67,14 @@ export function transferListInWindow(
       const inWindow = txs.filter(tx => {
         const sent = tx.transfer_send_timestamp.epochMillis
         const hasNullAck = tx.traces.some(
-            ({ type, transaction_hash }) =>
-              type === "PACKET_ACK" && !transaction_hash?.value
-          )
-          
+          ({ type, transaction_hash }) => type === "PACKET_ACK" && !transaction_hash?.value
+        )
+
         return (
-          tx.source_chain.universal_chain_id     === source  &&
-          tx.destination_chain.universal_chain_id=== destination &&
+          tx.source_chain.universal_chain_id === source &&
+          tx.destination_chain.universal_chain_id === destination &&
           sent >= windowStart &&
-          sent <  windowEnd &&
+          sent < windowEnd &&
           hasNullAck
         )
       })
@@ -95,7 +93,6 @@ export function transferListInWindow(
   })
 }
 
-
 export function runInWindowAllPairs() {
   incompleteTransferList.data = Option.none()
   incompleteTransferList.error = Option.none()
@@ -108,7 +105,7 @@ export function runInWindowAllPairs() {
 
   return incompleteTransferList.runEffect(
     Effect.all(allEffects).pipe(
-      Effect.map((lists) => lists.flat()), // flatten all results into one list
+      Effect.map(lists => lists.flat()), // flatten all results into one list
       Effect.tapBoth({
         onSuccess: list =>
           Effect.sync(() => {
@@ -117,7 +114,7 @@ export function runInWindowAllPairs() {
         onFailure: err =>
           Effect.sync(() => {
             incompleteTransferList.error = Option.some(err)
-          }),
+          })
       })
     )
   )

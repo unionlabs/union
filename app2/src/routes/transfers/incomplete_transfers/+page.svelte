@@ -1,8 +1,5 @@
 <script lang="ts">
-
-import {
-  runInWindowAllPairs
-}  from "$lib/queries/missing-transfer-list.svelte"
+import { runInWindowAllPairs } from "$lib/queries/missing-transfer-list.svelte"
 import { Effect, Option } from "effect"
 import { onMount } from "svelte"
 import { incompleteTransferList } from "$lib/stores/incomplete-transfers.svelte"
@@ -16,15 +13,12 @@ import TransferListItemComponent from "$lib/components/model/TransferListItemCom
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 
 onMount(() => {
-
-
   runInWindowAllPairs()
 
   return () => {
     incompleteTransferList.interruptFiber()
   }
 })
-
 </script>
 
 <Sections>
