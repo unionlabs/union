@@ -327,7 +327,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         let voyager_client = e.try_get::<VoyagerClient>()?;
 
         match msg {
-            ModuleCall::MakeTransactionBatchesWithUpdateV1(mk) => mk.call(self, e.try_get()?).await,
+            ModuleCall::MakeTransactionBatchesWithUpdateClassic(mk) => {
+                mk.call(self, e.try_get()?).await
+            }
             ModuleCall::MakeTransactionBatchesWithUpdateUnion(mk) => {
                 mk.call(self, e.try_get()?).await
             }
@@ -344,7 +346,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         datas: VecDeque<Data>,
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {
-            ModuleCallback::MakeIbcMessagesFromUpdateV1(cb) => {
+            ModuleCallback::MakeIbcMessagesFromUpdateClassic(cb) => {
                 cb.call(e.try_get()?, self, datas).await
             }
             ModuleCallback::MakeIbcMessagesFromUpdateUnion(cb) => {

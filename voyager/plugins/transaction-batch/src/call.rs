@@ -24,7 +24,7 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum ModuleCall {
-    MakeTransactionBatchesWithUpdateV1(MakeTransactionBatchesWithUpdate<IbcClassic>),
+    MakeTransactionBatchesWithUpdateClassic(MakeTransactionBatchesWithUpdate<IbcClassic>),
     MakeTransactionBatchesWithUpdateUnion(MakeTransactionBatchesWithUpdate<IbcUnion>),
 
     MakeMsgClassic(MakeMsg<IbcClassic>),
@@ -41,7 +41,7 @@ pub struct MakeTransactionBatchesWithUpdate<V: IbcSpecExt> {
 
 impl<V: IbcSpecExt> MakeTransactionBatchesWithUpdate<V>
 where
-    ModuleCall: From<MakeMsg<V>>,
+    ModuleCall: From<MakeMsg<V>> + From<MakeTransactionBatchesWithUpdate<V>>,
     ModuleCallback: From<MakeBatchTransaction<V>> + From<MakeIbcMessagesFromUpdate<V>>,
 {
     pub async fn call(
