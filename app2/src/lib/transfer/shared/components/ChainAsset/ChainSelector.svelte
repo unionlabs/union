@@ -1,16 +1,16 @@
 <script lang="ts">
-  import {Match, Option, pipe, Tuple} from "effect"
-  import {chains} from "$lib/stores/chains.svelte.ts"
-  import {cn} from "$lib/utils"
-  import {tokensStore} from "$lib/stores/tokens.svelte.ts"
-  import {transferData} from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-  import type {Chain, Token, TokenWrapping} from "@unionlabs/sdk/schema"
-  import type {Edition} from "$lib/themes"
-  import {chainLogoMap} from "$lib/constants/chain-logos.ts"
-  import {signingMode} from "$lib/transfer/signingMode.svelte"
-  import {uiStore} from "$lib/stores/ui.svelte.ts"
+import { Match, Option, pipe, Tuple } from "effect"
+import { chains } from "$lib/stores/chains.svelte.ts"
+import { cn } from "$lib/utils"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import type { Chain, Token, TokenWrapping } from "@unionlabs/sdk/schema"
+import type { Edition } from "$lib/themes"
+import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+import { signingMode } from "$lib/transfer/signingMode.svelte"
+import { uiStore } from "$lib/stores/ui.svelte.ts"
 
-  type Props = {
+type Props = {
   type: "source" | "destination"
   onSelect: () => void
 }
@@ -39,50 +39,40 @@ const updateSelectedChain = (chain: Chain) => {
 }
 
 const getEnvironment = (): "PRODUCTION" | "STAGING" | "DEVELOPMENT" => {
-  const hostname = window.location.hostname
-  return hostname === "btc.union.build" || hostname === "app.union.build"
-    ? "PRODUCTION"
-    : hostname === "staging.btc.union.build" || hostname === "staging.app.union.build"
-      ? "STAGING"
-      : hostname === "localhost" || hostname === "127.0.0.1"
-        ? "DEVELOPMENT"
-        : "DEVELOPMENT"
-}
-
-  function filterByEdition(chain: Chain, editionName: Edition, environment: string): boolean {
-    return chain.editions.some((edition: { name: string; environment: string }) => 
-      edition.name === editionName && edition.environment === environment
-    )
-  }
-
-
-const filterBySigningMode = (chains: Array<Chain>) =>
-  pipe(
-    Match.value(signingMode.mode).pipe(
-      Match.when("single", () => chains),
-      Match.when("multi", () => {
-        if (type === "source") {
-          return chains.filter(chain => chain.rpc_type === "cosmos")
-        }
-        return chains
-      }),
-      Match.exhaustive
+  return pipe(
+    Match.value(window.location.hostname).pipe(
+      Match.when(
+        hostname => hostname === "btc.union.build" || hostname === "app.union.build",
+        () => "PRODUCTION" as const
+      ),
+      Match.when(
+        hostname =>
+          hostname === "staging.btc.union.build" || hostname === "staging.app.union.build",
+        () => "STAGING" as const
+      ),
+      Match.orElse(() => "DEVELOPMENT" as const)
     )
   )
+}
+
+function filterByEdition(chain: Chain, editionName: Edition, environment: string): boolean {
+  return chain.editions.some(
+    (edition: { name: string; environment: string }) =>
+      edition.name === editionName && edition.environment === environment
+  )
+}
+
+const filterBySigningMode = (chains: Array<Chain>) =>
+  signingMode.mode === "multi" && type === "source"
+    ? chains.filter(chain => chain.rpc_type === "cosmos")
+    : chains
 
 const isValidRoute = (chain: Chain) =>
+  type === "source" ||
   pipe(
-    Match.value(type).pipe(
-      Match.when("source", () => true),
-      Match.when("destination", () =>
-        pipe(
-          transferData.destinationChains,
-          Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
-          Option.getOrElse(() => false)
-        )
-      ),
-      Match.exhaustive
-    )
+    transferData.destinationChains,
+    Option.map(goodXs => goodXs.map(x => x.chain_id).includes(chain.chain_id)),
+    Option.getOrElse(() => false)
   )
 
 const getChainStatus = (chain: Chain, hasBucket: boolean) => {
@@ -189,19 +179,15 @@ const filterChainsByTokenAvailability = (chains: Array<Chain>): Array<ChainWithA
 const filteredChains = $derived(
   pipe(
     chains.data,
-    Option.map(allChains => {
-      console.log('All chains:', allChains)
-      const editionFiltered = allChains.filter(chain => {
-        const result = filterByEdition(chain, uiStore.edition, getEnvironment().toLowerCase())
-        console.log('Chain:', chain.display_name, 'Edition filter result:', result)
-        return result
-      })
-      console.log('After edition filter:', editionFiltered)
-      const signingModeFiltered = filterBySigningMode(editionFiltered)
-      console.log('After signing mode filter:', signingModeFiltered)
-      return signingModeFiltered
-    }),
-    Option.map(filterChainsByTokenAvailability)
+    Option.map(allChains =>
+      pipe(
+        allChains.filter(chain =>
+          filterByEdition(chain, uiStore.edition, getEnvironment().toLowerCase())
+        ),
+        filterBySigningMode,
+        filterChainsByTokenAvailability
+      )
+    )
   )
 )
 </script>
@@ -214,7 +200,9 @@ const filteredChains = $derived(
         {#each chainss as chainWithAvailability}
           {@const [chain, hasBucket] = chainWithAvailability}
           {@const status = getChainStatus(chain, hasBucket)}
-          {@const chainLogo = chain.universal_chain_id ? chainLogoMap.get(chain.universal_chain_id) : null}
+          {@const chainLogo = chain.universal_chain_id
+            ? chainLogoMap.get(chain.universal_chain_id)
+            : null}
 
           <button
             class={cn(
@@ -229,12 +217,16 @@ const filteredChains = $derived(
             disabled={status.isDisabled}
           >
             {#if chainLogo?.color}
-              <span class="w-10 h-10 flex items-center justify-center overflow-hidden">
-                <img src={chainLogo.color} alt=""/>
+              <span
+                class="w-10 h-10 flex items-center justify-center overflow-hidden"
+              >
+                <img src={chainLogo.color} alt="" />
               </span>
             {/if}
 
-            <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
+            <span class="text-xs text-center truncate w-fit"
+              >{chain.display_name}</span
+            >
 
             {#if status.isSourceChain}
               <span class="text-xs text-sky-400 -mt-2">source chain</span>
@@ -248,7 +240,9 @@ const filteredChains = $derived(
           </button>
         {/each}
       </div>
-      <div class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-925 to-transparent blur-fade-bottom-up pointer-events-none"></div>
+      <div
+        class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-925 to-transparent blur-fade-bottom-up pointer-events-none"
+      ></div>
     </div>
   {:else}
     <div class="py-2 text-center text-zinc-500">

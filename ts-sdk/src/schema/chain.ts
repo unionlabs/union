@@ -1,5 +1,5 @@
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
-import {Data, Effect, Option, Schema as S} from "effect"
+import { Data, Effect, Option, Schema as S } from "effect"
 import type { Chain as ViemChain } from "viem"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 import { bech32, bytes } from "@scure/base"
@@ -49,7 +49,7 @@ export class Explorer extends S.Class<Explorer>("Explorer")({
 
 export class Edition extends S.Class<Edition>("Edition")({
   environment: S.String,
-  name: S.String,
+  name: S.String
 }) {}
 
 export class NoRpcError extends Data.TaggedError("NoRpcError")<{

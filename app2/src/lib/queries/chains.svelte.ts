@@ -1,9 +1,9 @@
-import { Chains } from "@unionlabs/sdk/schema";
-import { createQueryGraphql } from "$lib/utils/queries";
-import { Option, Schema } from "effect";
-import { graphql } from "gql.tada";
-import { chains } from "$lib/stores/chains.svelte";
-import type { Environment } from "$lib/constants";
+import { Chains } from "@unionlabs/sdk/schema"
+import { createQueryGraphql } from "$lib/utils/queries"
+import { Option, Schema } from "effect"
+import { graphql } from "gql.tada"
+import { chains } from "$lib/stores/chains.svelte"
+import type { Environment } from "$lib/constants"
 
 export const chainsQuery = (environment: Environment) =>
   createQueryGraphql({
@@ -48,10 +48,10 @@ export const chainsQuery = (environment: Environment) =>
     `),
     variables: { environment },
     refetchInterval: "1 hour",
-    writeData: (data) => {
-      chains.data = data.pipe(Option.map((d) => d.v2_chains));
+    writeData: data => {
+      chains.data = data.pipe(Option.map(d => d.v2_chains))
     },
-    writeError: (error) => {
-      chains.error = error;
-    },
-  });
+    writeError: error => {
+      chains.error = error
+    }
+  })

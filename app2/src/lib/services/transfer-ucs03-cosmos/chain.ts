@@ -33,14 +33,12 @@ export const switchChain = (
 
     yield* Effect.tryPromise({
       try: () => wallet.experimentalSuggestChain(chainInfo),
-      catch: err =>
-        new SwitchChainError({ cause: `Failed to switch chain: ${String(err)}` })
+      catch: err => new SwitchChainError({ cause: `Failed to switch chain: ${String(err)}` })
     })
 
     yield* Effect.tryPromise({
       try: () => wallet.enable([chain.chain_id]),
-      catch: err =>
-        new SwitchChainError({ cause: `Failed to enable chain: ${String(err)}` })
+      catch: err => new SwitchChainError({ cause: `Failed to enable chain: ${String(err)}` })
     })
 
     yield* Effect.sleep("1.5 seconds")

@@ -1,4 +1,4 @@
-import { Record as R, Effect, Option, pipe } from "effect"
+import { Effect, Option, pipe } from "effect"
 import * as S from "effect/Schema"
 import { Tx } from "@unionlabs/sdk/schema"
 import { encodeAbiParameters } from "viem"
