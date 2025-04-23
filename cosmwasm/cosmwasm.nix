@@ -920,6 +920,7 @@ _: {
           inherit
             bytecode-base
             ucs03-zkgm
+            cw20-base
             cosmwasm-deployer
             # native-token-minter
             cw20-token-minter
