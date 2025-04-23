@@ -638,7 +638,7 @@ pub fn query_download_logo(deps: Deps) -> StdResult<DownloadLogoResponse> {
 }
 
 #[cw_serde]
-pub enum MigrateMsg {}
+pub struct MigrateMsg {}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(
