@@ -86,7 +86,7 @@ export type HRP = typeof HRP.Type
 export class Chain extends S.Class<Chain>("Chain")({
   chain_id: ChainId,
   universal_chain_id: UniversalChainId,
-  minter_address_display: S.Union(S.String, S.Null),
+  minter_address_display: S.NullishOr(S.String), // string | null
   display_name: ChainDisplayName,
   rpc_type: RpcType,
   addr_prefix: HRP,
@@ -94,7 +94,7 @@ export class Chain extends S.Class<Chain>("Chain")({
   features: S.Array(ChainFeatures),
   rpcs: S.Array(Rpc),
   explorers: S.Array(Explorer),
-  editions: S.Union(S.Array(Edition), S.Null)
+  editions: S.NullishOr(S.Array(Edition))
 }) {
   toViemChain(): Option.Option<ViemChain> {
     if (this.rpc_type !== "evm") {

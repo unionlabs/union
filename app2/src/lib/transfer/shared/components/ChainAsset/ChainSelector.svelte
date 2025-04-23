@@ -1,17 +1,16 @@
 <script lang="ts">
-import { Match, Option, pipe, Tuple } from "effect"
-import { chains } from "$lib/stores/chains.svelte.ts"
-import { cn } from "$lib/utils"
-import { tokensStore } from "$lib/stores/tokens.svelte.ts"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import type { Chain, Token, TokenWrapping, Edition } from "@unionlabs/sdk/schema"
-import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import { signingMode } from "$lib/transfer/signingMode.svelte"
-import { uiStore } from "$lib/stores/ui.svelte.ts"
-import { ENV } from "$lib/constants"
+  import {Match, Option, pipe, Tuple} from "effect"
+  import {chains} from "$lib/stores/chains.svelte.ts"
+  import {cn} from "$lib/utils"
+  import {tokensStore} from "$lib/stores/tokens.svelte.ts"
+  import {transferData} from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+  import type {Chain, Token, TokenWrapping} from "@unionlabs/sdk/schema"
+  import type {Edition} from "$lib/themes"
+  import {chainLogoMap} from "$lib/constants/chain-logos.ts"
+  import {signingMode} from "$lib/transfer/signingMode.svelte"
+  import {uiStore} from "$lib/stores/ui.svelte.ts"
 
-
-type Props = {
+  type Props = {
   type: "source" | "destination"
   onSelect: () => void
 }
@@ -39,7 +38,6 @@ const updateSelectedChain = (chain: Chain) => {
   onSelect()
 }
 
-
 const getEnvironment = (): "PRODUCTION" | "STAGING" | "DEVELOPMENT" => {
   const hostname = window.location.hostname
   return hostname === "btc.union.build" || hostname === "app.union.build"
@@ -51,19 +49,12 @@ const getEnvironment = (): "PRODUCTION" | "STAGING" | "DEVELOPMENT" => {
         : "DEVELOPMENT"
 }
 
-function filterByEdition(chain: Chain, currentEdition: Edition, environment: string) {
-  if (environment === "DEVELOPMENT") return true
-  
-  return pipe(
-    chain.editions,
-    Option.match({
-      onNone: () => true,
-      onSome: editions => editions.some(edition => 
-        edition.name === currentEdition.name && edition.environment === environment
-      )
-    })
-  )
-}
+  function filterByEdition(chain: Chain, editionName: Edition, environment: string): boolean {
+    return chain.editions.some((edition: { name: string; environment: string }) => 
+      edition.name === editionName && edition.environment === environment
+    )
+  }
+
 
 const filterBySigningMode = (chains: Array<Chain>) =>
   pipe(
@@ -201,7 +192,7 @@ const filteredChains = $derived(
     Option.map(allChains => {
       console.log('All chains:', allChains)
       const editionFiltered = allChains.filter(chain => {
-        const result = filterByEdition(chain, uiStore.edition, getEnvironment())
+        const result = filterByEdition(chain, uiStore.edition, getEnvironment().toLowerCase())
         console.log('Chain:', chain.display_name, 'Edition filter result:', result)
         return result
       })
