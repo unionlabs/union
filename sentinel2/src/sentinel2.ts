@@ -27,10 +27,18 @@ import {
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import fs from "node:fs"
-import type { Address } from "viem"
 import { request, gql } from "graphql-request"
-import Database from 'better-sqlite3';
-import fetch from "node-fetch";
+import Database from "better-sqlite3"
+import fetch from "node-fetch"
+import type { Database as BetterSqlite3Database } from "better-sqlite3"
+
+// @ts-ignore
+BigInt["prototype"].toJSON = function () {
+  return this.toString()
+}
+
+type Hex = `0x${string}`
+let db: BetterSqlite3Database
 
 /**
  * Effect to trigger a BetterStack incident via the Uptime API
@@ -46,8 +54,8 @@ export const triggerIncident = (
 ) =>
   isLocal
     ? Effect.sync(() => {
-        console.info("Local mode: skipping triggerIncident");
-        return { data: { id: "" } };
+        console.info("Local mode: skipping triggerIncident")
+        return { data: { id: "" } }
       })
     : Effect.tryPromise({
         try: () =>
@@ -55,7 +63,7 @@ export const triggerIncident = (
             method: "POST",
             headers: {
               "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`,
+              Authorization: `Bearer ${apiKey}`
             },
             body: JSON.stringify({
               summary,
@@ -65,15 +73,15 @@ export const triggerIncident = (
               call: false,
               sms: false,
               email: false,
-              name: incidentName,
-            }),
-          }).then(async (res) => {
-            const text = await res.text();
-            if (!res.ok) throw new Error(`Trigger failed: ${text}`);
-            return JSON.parse(text);
+              name: incidentName
+            })
+          }).then(async res => {
+            const text = await res.text()
+            if (!res.ok) throw new Error(`Trigger failed: ${text}`)
+            return JSON.parse(text)
           }),
-        catch: (e) => new Error(`Incident trigger error: ${e}`),
-      });
+        catch: e => new Error(`Incident trigger error: ${e}`)
+      })
 
 /**
  * Effect to resolve an existing BetterStack incident via the Uptime API
@@ -81,89 +89,67 @@ export const triggerIncident = (
 export const resolveIncident = (
   incidentId: string,
   apiKey: string,
-  resolvedBy: string = "SENTINEL@union.build",
+  resolvedBy = "SENTINEL@union.build",
   isLocal: boolean
 ) =>
   isLocal
     ? Effect.sync(() => {
-        console.info("Local mode: skipping resolveIncident");
-        return { data: { id: incidentId } };
+        console.info("Local mode: skipping resolveIncident")
+        return { data: { id: incidentId } }
       })
     : Effect.tryPromise({
         try: () =>
-          fetch(
-            `https://uptime.betterstack.com/api/v3/incidents/${incidentId}/resolve`,
-            {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`,
-              },
-              body: JSON.stringify({ resolved_by: resolvedBy }),
-            }
-          ).then(async (res) => {
-            const text = await res.text();
-            if (!res.ok) throw new Error(`Resolve failed: ${text}`);
-            return JSON.parse(text);
+          fetch(`https://uptime.betterstack.com/api/v3/incidents/${incidentId}/resolve`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({ resolved_by: resolvedBy })
+          }).then(async res => {
+            const text = await res.text()
+            if (!res.ok) throw new Error(`Resolve failed: ${text}`)
+            return JSON.parse(text)
           }),
-        catch: (e) => new Error(`Incident resolve error: ${e}`),
-      });
-
-
-import type { Database as BetterSqlite3Database } from 'better-sqlite3';
-
-
-let db: BetterSqlite3Database;
+        catch: e => new Error(`Incident resolve error: ${e}`)
+      })
 
 export function isFunded(db: BetterSqlite3Database, txHash: string) {
-  const row = db
-    .prepare(`SELECT 1 FROM funded_txs WHERE transaction_hash = ?`)
-    .get(txHash);
-  return !!row;
+  const row = db.prepare(`SELECT 1 FROM funded_txs WHERE transaction_hash = ?`).get(txHash)
+  return !!row
 }
-
 
 export function addFunded(db: BetterSqlite3Database, txHash: string) {
-  db.prepare(
-    `INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`
-  ).run(txHash);
+  db.prepare(`INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`).run(txHash)
 }
 
-
-export function getIncidentId(
-  db: BetterSqlite3Database,
-  packetHash: string
-): string | undefined {
+export function getIncidentId(db: BetterSqlite3Database, packetHash: string): string | undefined {
   const row = db
     .prepare(`SELECT incident_id FROM transfer_errors WHERE packet_hash = ?`)
-    .get(packetHash) as { incident_id: string } | undefined;
-  return row?.incident_id;
+    .get(packetHash) as { incident_id: string } | undefined
+  return row?.incident_id
 }
-export function markTransferError(db: BetterSqlite3Database, packetHash: string, incidentId: string) {
+
+export function markTransferError(
+  db: BetterSqlite3Database,
+  packetHash: string,
+  incidentId: string
+) {
   db.prepare(`
     INSERT OR REPLACE INTO transfer_errors
       (packet_hash, incident_id, inserted_at)
     VALUES (?, ?, strftime('%s','now')*1000)
-  `).run(packetHash, incidentId);
+  `).run(packetHash, incidentId)
 }
 
 export function clearTransferError(db: BetterSqlite3Database, packetHash: string) {
-  db.prepare(`DELETE FROM transfer_errors WHERE packet_hash = ?`).run(packetHash);
+  db.prepare(`DELETE FROM transfer_errors WHERE packet_hash = ?`).run(packetHash)
 }
 
 export function hasErrorOpen(db: BetterSqlite3Database, packetHash: string) {
-  const row = db
-    .prepare(`SELECT 1 FROM transfer_errors WHERE packet_hash = ?`)
-    .get(packetHash);
-  return !!row;
+  const row = db.prepare(`SELECT 1 FROM transfer_errors WHERE packet_hash = ?`).get(packetHash)
+  return !!row
 }
-
-// @ts-ignore
-BigInt["prototype"].toJSON = function () {
-  return this.toString()
-}
-
-type Hex = `0x${string}`
 
 function hexToUtf8(hex: string): string {
   // strip optional 0x
@@ -178,22 +164,6 @@ interface ChainPair {
   destinationChain: string
   timeframeMs: number
   enabled: boolean
-}
-
-// EVM transfer configuration
-interface TransferConfig {
-  enabled: boolean
-  privateKey: string
-  sourceChainIdEVM: string
-  sourceChainIdCosmos: string // TODO: Change them later
-  destinationChainId: string // TODO: Change them later
-  sourceChainIdAptos: string // TODO: Change them later
-  rpcs: Array<string>
-  gasPriceDenom: string
-  receiverAddress: Address
-  denomAddress: Address
-  amount_range: Array<bigint>
-  cosmosAccountType: string
 }
 
 interface WrappedToken {
@@ -237,10 +207,6 @@ interface Packet {
   timeout_timestamp: string
 }
 
-interface HasuraResponse {
-  v1_ibc_union_packets: Packet[]
-}
-
 type ChainType = "evm" | "cosmos"
 
 interface ChainConfigEntry {
@@ -256,7 +222,6 @@ type ChainConfig = Record<string, ChainConfigEntry>
 interface ConfigFile {
   interactions: Array<ChainPair>
   cycleIntervalMs: number
-  transfers?: Array<TransferConfig>
   hasuraEndpoint: string
   chainConfig: ChainConfig
   signer_account_mnemonic: string
@@ -265,32 +230,12 @@ interface ConfigFile {
   isLocal: boolean
 }
 
-
-// A module-level set to keep track of already reported packet send transaction hashes.
-// Variable to track sleep cycles
-let sleepCycleCount = 0
-
-// export class Transfer extends Schema.Class<Transfer>("Transfer")({
-//   token: Schema.Literal("0x09B8aE6BB8D447bF910068E6c246A270F42b41be", "0x09B8aE6BB8D447bF910068E6c246A270F42b41be"),
-//   amount: Schema.Int.pipe(Schema.between(1, 80)),
-//   hex: Schema.String.pipe(Schema.pattern(/^0x[0-9a-fA-F]+$/))
-// }) {}
-
-class DoTransferError extends Data.TaggedError("DoTransferError")<{
-  cause: unknown
-}> {}
-
 class FilesystemError extends Data.TaggedError("FilesystemError")<{
   message: string
   cause: unknown
 }> {}
 
 export class Config extends Context.Tag("Config")<Config, { readonly config: ConfigFile }>() {}
-
-const doTransferRetrySchedule = Schedule.exponential("2 seconds", 2.0).pipe(
-  Schedule.intersect(Schedule.recurs(2)) // Limit retries to 2
-)
-
 
 const fetchWrappedTokens = (hasuraEndpoint: string) =>
   Effect.gen(function* () {
@@ -347,41 +292,17 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
       .map(({ receiver_display, traces }) => ({
         receiver_display,
         traces: traces
-        .filter(
-          trace =>
-            trace.type === "WRITE_ACK" &&
-            trace.transaction_hash != null &&
-            !isFunded(db, trace.transaction_hash)
-        )
+          .filter(
+            trace =>
+              trace.type === "WRITE_ACK" &&
+              trace.transaction_hash != null &&
+              !isFunded(db, trace.transaction_hash)
+          )
           .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! }))
       }))
       .filter(acc => acc.traces.length > 0)
 
     return filtered
-  })
-
-const fetchChannelsViaChainId = (hasuraEndpoint: string, chainId: string) =>
-  Effect.gen(function* () {
-    const query = gql`
-      query GetChannels($sourceUniversalChainId: String!) {
-        v2_channels(
-          where: { source_universal_chain_id: { _eq: $sourceUniversalChainId } }
-        ) {
-          source_channel_id
-        }
-      }
-    `
-
-    const response: any = yield* Effect.tryPromise({
-      try: () => request(hasuraEndpoint, query, { sourceUniversalChainId: chainId }),
-      catch: error => {
-        console.error("fetchWrappedTokens failed:", error)
-        throw error
-      }
-    })
-
-    const channels: V2Channels[] = response?.v2_channels || []
-    return channels
   })
 
 const fetchSourceChannelId = (
@@ -436,244 +357,6 @@ function loadConfig(configPath: string) {
       })
   })
 }
-
-// const createBatchFromTransfers = (
-//   transfers: readonly {
-//     sender: Hex
-//     receiver: Address
-//     baseToken: Hex
-//     baseAmount: bigint
-//     quoteAmount: bigint
-//   }[]
-// ) =>
-//   Effect.gen(function* () {
-//     const transferInstructions = []
-//     for (const transfer of transfers) {
-//       yield* Effect.log(`creating transfer for ${transfer.baseToken}`)
-//       const transferInstruction = yield* createEvmToCosmosFungibleAssetOrder(transfer)
-//       transferInstructions.push(transferInstruction)
-//     }
-//     return Batch(transferInstructions)
-//   }).pipe(Effect.withLogSpan("batch creation"))
-
-// const doTransfer = (task: TransferConfig) =>
-//   Effect.gen(function* (_) {
-//     let chainType: "Cosmos" | "EVM" | "Aptos"
-//     let sourceChainId: string
-
-//     if (task.sourceChainIdCosmos) {
-//       chainType = "Cosmos"
-//       sourceChainId = task.sourceChainIdCosmos
-//     } else if (task.sourceChainIdAptos) {
-//       chainType = "Aptos"
-//       sourceChainId = task.sourceChainIdAptos
-//     } else {
-//       chainType = "EVM"
-//       sourceChainId = task.sourceChainIdEVM
-//     }
-
-//     const arb = Arbitrary.make(Schema.Int.pipe(Schema.between(1, 80)))
-//     const random_amount = BigInt(FastCheck.sample(arb, 1)[0]!)
-
-//     yield* Effect.log(
-//       `\n[${chainType}] Starting transfer for chainId=${sourceChainId} to chain=${task.destinationChainId}`
-//     )
-
-//     const account = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
-//     const tokenAddress = task.denomAddress
-//     const receiver = task.receiverAddress
-
-//     const publicSourceClient = yield* createViemPublicClient({
-//       chain: sepolia,
-//       transport: http()
-//     })
-
-//     // const walletClient = createWalletClient({
-//     //   account,
-//     //   chain: sepolia,
-//     //   transport: http()
-//     // })
-
-//     // const tx_hash = yield* writeContract(walletClient, {
-//     //   account,
-//     //   chain: sepolia,
-//     //   address: tokenAddress,
-//     //   abi: erc20Abi,
-//     //   functionName: "transfer",
-//     //   args: [task.receiverAddress, random_amount]
-//     // }).pipe(
-//     //   Effect.provideService(ViemWalletClient, { client: walletClient }),
-//     //   Effect.mapError(e => e.cause.message)
-//     // )
-
-//     // yield* Effect.log("Transfer tx hash:", tx_hash)
-
-//     // Define hardcoded UCS03 addresses and channel ids for now
-//     const UCS03_ADDRESS = "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962" // UCS03 contract on Sepolia
-//     const CHANNEL_ID = 1 // Hardcoded channel ID
-
-//     const TRANSFERS = [
-//       {
-//         sender: account.address,
-//         receiver: receiver,
-//         baseToken: tokenAddress, // Token to transfer
-//         baseAmount: random_amount,
-//         quoteAmount: 0n // Quote amount is not used in this case
-//       }
-//     ] as const
-
-//     yield* Effect.log("Attempting to create CosmWasm client...")
-//     const cosmWasmClientDestination = yield* createCosmWasmClient(
-//       "https://rpc.rpc-node.union-testnet-10.union.build"
-//     ).pipe(
-//       Effect.catchTag("CosmWasmClientError", error =>
-//         Effect.gen(function* () {
-//           yield* Effect.logError("CosmWasm client creation failed:", error)
-//           return yield* Effect.fail(new DoTransferError({ cause: error }))
-//         })
-//       )
-//     )
-
-//     yield* Effect.log("CosmWasm client created successfully")
-
-//     yield* Effect.log("Transfers to be made:", TRANSFERS)
-
-//     yield* Effect.gen(function* () {
-//       const batch = yield* createBatchFromTransfers(TRANSFERS)
-//       yield* Effect.log("Batch created:", batch)
-//     }).pipe(
-//       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
-//       Effect.provideService(ViemPublicClientSource, { client: publicSourceClient }),
-//       Effect.provideService(CosmosChannelDestination, {
-//         ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
-//         channelId: 1
-//       })
-//       // Effect.provideService(EvmChannelSource, {
-//       //   ucs03address: UCS03_ADDRESS,
-//       //   channelId: 1
-//       // }),
-//       // Effect.provideService(ViemWalletClient, {
-//       //   client: walletClient,
-//       //   account: account,
-//       //   chain: sepolia
-//       // })
-//     )
-//     // const createBatch = Effect.gen(function* () {
-//     //   const transferInstructions = []
-
-//     //   for (const transfer of TRANSFERS) {
-//     //     yield* Effect.log(`creating transfer for ${transfer.baseToken}`)
-//     //     const transferInstruction = yield* createEvmToCosmosFungibleAssetOrder(transfer)
-//     //     transferInstructions.push(transferInstruction)
-//     //   }
-
-//     //   return Batch(transferInstructions)
-//     // }).pipe(Effect.withLogSpan("batch creation"))
-
-//     // yield* Effect.log("Creating batch...")
-//     // const batch = yield* createBatch
-//     // yield* Effect.log("Batch created:", batch)
-
-//     // const checkAndIncreaseAllowances = Effect.gen(function* () {
-//     //   yield* Effect.log("Checking token allowances...")
-
-//     //   for (const transfer of TRANSFERS) {
-//     //     yield* Effect.log(`checking ${transfer.baseToken} allowance...`)
-
-//     //     // Check current allowance
-//     //     const currentAllowance = yield* readErc20Allowance(
-//     //       transfer.baseToken,
-//     //       transfer.sender,
-//     //       UCS03_ADDRESS
-//     //     )
-
-//     //     yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
-
-//     //     // If allowance is insufficient, increase it
-//     //     if (currentAllowance < transfer.baseAmount) {
-//     //       yield* Effect.log(`increasing ${transfer.baseToken} allowance...`)
-
-//     //       // Approve exact amount needed
-//     //       const txHash = yield* increaseErc20Allowance(
-//     //         transfer.baseToken,
-//     //         UCS03_ADDRESS,
-//     //         transfer.baseAmount
-//     //       )
-
-//     //       yield* Effect.log(`approval transaction sent: ${txHash}`)
-
-//     //       // Wait for transaction receipt
-//     //       // const receipt = yield* waitForTransactionReceipt(txHash)
-
-//     //       // yield* Effect.log(`approval confirmed in block: ${receipt.blockNumber}`)
-
-//     //       // Verify new allowance
-//     //       const newAllowance = yield* readErc20Allowance(
-//     //         transfer.baseToken,
-//     //         transfer.sender,
-//     //         UCS03_ADDRESS
-//     //       )
-
-//     //       yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
-//     //     } else {
-//     //       yield* Effect.log(`${transfer.baseToken} allowance is sufficient`)
-//     //     }
-//     //   }
-
-//     //   yield* Effect.log("All allowances checked and increased if needed")
-//     // }).pipe(Effect.withLogSpan("allowance check and increase"))
-
-//     // yield* Effect.gen(function* () {
-//     //   yield* Effect.log("creating batch")
-//     //   const batch = yield* createBatch
-//     //   yield* Effect.log("batch created", JSON.stringify(batch))
-
-//     //   // Check and increase allowances before sending the batch
-//     //   yield* Effect.log("checking and increasing allowances if needed")
-//     //   yield* checkAndIncreaseAllowances
-//     //   yield* Effect.log("allowances verified")
-
-//     //   yield* Effect.log("sending batch")
-//     //   return yield* sendInstructionEvm(batch)
-//     // }).pipe(
-//     //   Effect.provideService(ViemWalletClient, { client: walletClient }),
-//     //   Effect.provideService(ViemWalletClient, { client: walletClient }),
-//     //   Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
-//     //   Effect.provideService(CosmosChannelDestination, {
-//     //     ucs03address: UCS03_ADDRESS,
-//     //     channelId: CHANNEL_ID
-//     //   }),
-//     //   Effect.provideService(EvmChannelSource, {
-//     //     ucs03address: UCS03_ADDRESS,
-//     //     channelId: CHANNEL_ID
-//     //   }),
-//     //   Effect.provideService(ViemWalletClient, {
-//     //     client: walletClient,
-//     //     account: account,
-//     //     chain: sepolia
-//     //   })
-//     // )
-//   })
-
-const transferLoop = Effect.repeat(
-  Effect.gen(function* (_) {
-    let config = (yield* Config).config
-
-    const transfers: Array<TransferConfig> = config.transfers ?? []
-    if (transfers.length > 0) {
-      yield* Effect.log("\n========== Starting transfers tasks ==========")
-      for (const task of transfers) {
-        if (task.enabled) {
-          // yield* Effect.retry(doTransfer(task), doTransferRetrySchedule) // Retry logic for transfer
-        }
-      }
-    } else {
-      yield* Effect.log("No transfers configured. Skipping transfer step.")
-    }
-    yield* Effect.log("Transfers done (or skipped). Sleeping 10 minutes...")
-  }),
-  Schedule.spaced("3 seconds")
-)
 
 const escrowSupplyControlLoop = Effect.repeat(
   Effect.gen(function* (_) {
@@ -793,8 +476,6 @@ const escrowSupplyControlLoop = Effect.repeat(
           destinationChannelId: `${dstChannel}`
         })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
 
-        // process.exit(0)
-
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
       }
     }
@@ -803,7 +484,6 @@ const escrowSupplyControlLoop = Effect.repeat(
 
     for (const [chainId, { rpc, chainType, minter }] of Object.entries(config.chainConfig)) {
       if (chainType === "evm") {
-        // — EVM: use your evmChannelBalances map —
         const client = createPublicClient({
           transport: http(rpc)
         })
@@ -838,7 +518,6 @@ const escrowSupplyControlLoop = Effect.repeat(
           }
         }
       } else {
-        // — Cosmos: use your cosmosChannelBalances map —
         const cosmosClient = yield* createCosmWasmClient(rpc)
 
         for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
@@ -894,14 +573,12 @@ const fundBabylonAccounts = Effect.repeat(
       wallet,
       options
     )
-    let keepContinue = true
+
     if (!senderAccount || !senderAccount.address) {
       yield* Effect.logError("Sender account couldnt found!")
       return
     }
-    const balance = yield* Effect.tryPromise(() =>
-      client.getBalance(senderAccount.address, "ubbn")
-    )
+    const balance = yield* Effect.tryPromise(() => client.getBalance(senderAccount.address, "ubbn"))
 
     if (Number.parseInt(balance.amount) < 1_000_000) {
       const errLog = Effect.annotateLogs({
@@ -918,7 +595,7 @@ const fundBabylonAccounts = Effect.repeat(
 
     const fee = {
       amount: coins(500, "ubbn"),
-      gas: "200000" 
+      gas: "200000"
     }
 
     const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
@@ -939,7 +616,7 @@ const fundBabylonAccounts = Effect.repeat(
       })
 
       addFunded(db, result.transactionHash)
-      
+
       const okLog = Effect.annotateLogs({
         sentAmount: "0.01",
         chainId: "babylon.bbn-1",
@@ -975,8 +652,8 @@ const fetchOnlyUniBTC = (hasuraEndpoint: string) =>
     })
 
     for (const packet of response.v2_packets) {
-      const operand = packet.decoded?.instruction?.operand  
-      if (!operand) continue      
+      const operand = packet.decoded?.instruction?.operand
+      if (!operand) continue
       if (operand.baseTokenName == "uniBTC" && operand.baseAmount) {
         const baseAmount = BigInt(operand.baseAmount)
         if (baseAmount >= 4000000n) {
@@ -1123,7 +800,7 @@ export const checkPackets = (
   timeframeMs: number,
   hasuraEndpoint: string,
   betterstack_api_key: string,
-  isLocal: boolean,
+  isLocal: boolean
 ) =>
   Effect.gen(function* () {
     const now = Date.now()
@@ -1181,10 +858,10 @@ export const checkPackets = (
           packetSendBlockHash: p.packet_send_block_hash,
           packetHash: p.packet_hash,
           timeoutTimestamp: p.timeout_timestamp
-        }        
+        }
         const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(`TRANSFER_ERROR`))
 
-        if(!hasErrorOpen(db, p.packet_hash)) {
+        if (!hasErrorOpen(db, p.packet_hash)) {
           const val = yield* triggerIncident(
             "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
             JSON.stringify(whole_description),
@@ -1202,8 +879,6 @@ export const checkPackets = (
 
         continue
       }
-
-      // No need to check write_ack & ack for now. Uncomment them later.
 
       // 2) WRITE_ACK check.
       if (p.write_ack_timestamp) {
@@ -1230,7 +905,7 @@ export const checkPackets = (
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
-        if(!hasErrorOpen(db, p.packet_hash)) {
+        if (!hasErrorOpen(db, p.packet_hash)) {
           const val = yield* triggerIncident(
             "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
             JSON.stringify(whole_description),
@@ -1243,7 +918,6 @@ export const checkPackets = (
           console.info("Incident triggered:", val)
           markTransferError(db, p.packet_hash, val.data.id)
         }
-
 
         continue
       }
@@ -1273,7 +947,7 @@ export const checkPackets = (
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
-        if(!hasErrorOpen(db, p.packet_hash)) {
+        if (!hasErrorOpen(db, p.packet_hash)) {
           const val = yield* triggerIncident(
             "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
             JSON.stringify(whole_description),
@@ -1289,12 +963,17 @@ export const checkPackets = (
 
         continue
       }
-      
+
       const incidentId = getIncidentId(db, p.packet_hash)
-      if(incidentId) {
+      if (incidentId) {
         console.info("Incident ID found:", incidentId)
-        yield* resolveIncident(incidentId, betterstack_api_key, "Sentinel-Automatically resolved.", isLocal),
-        clearTransferError(db, p.packet_hash)
+        yield* resolveIncident(
+          incidentId,
+          betterstack_api_key,
+          "Sentinel-Automatically resolved.",
+          isLocal
+        ),
+          clearTransferError(db, p.packet_hash)
       }
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
@@ -1351,14 +1030,13 @@ const mainEffect = Effect.gen(function* (_) {
 
   const config = yield* loadConfig(argv.config)
 
-  // 3) Open the SQLite database at the path from your config
-  db = new Database(config.db_path);
+  db = new Database(config.db_path)
 
   db.prepare(`
     CREATE TABLE IF NOT EXISTS funded_txs (
       transaction_hash TEXT PRIMARY KEY
     )
-  `).run();
+  `).run()
 
   db.prepare(`
     CREATE TABLE IF NOT EXISTS transfer_errors (
@@ -1366,18 +1044,15 @@ const mainEffect = Effect.gen(function* (_) {
       incident_id   TEXT NOT NULL,
       inserted_at   INTEGER
     )
-  `).run();
+  `).run()
 
-  console.info("Database opened at", config.db_path);
+  console.info("Database opened at", config.db_path)
 
   yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
 
-  yield* Effect.all(
-    [/*transferLoop, */ runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts],
-    {
-      concurrency: "unbounded"
-    }
-  ).pipe(Effect.provideService(Config, { config }))
+  yield* Effect.all([runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts], {
+    concurrency: "unbounded"
+  }).pipe(Effect.provideService(Config, { config }))
 })
 
 Effect.runPromise(mainEffect).catch(err => Effect.logError("Error in mainEffect", err))

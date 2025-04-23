@@ -67,7 +67,7 @@ let
             ExecStartPre = ''
               ${pkgs.coreutils}/bin/install -d -m0755 -o sentinel2 -g sentinel2 /var/lib/sentinel2
             '';
-            User = "sentinel2";       
+            User = "sentinel2";
             Group = "sentinel2";
             Type = "simple";
             ExecStart = ''
@@ -79,7 +79,7 @@ let
                     inherit (cfg) transfers;
                     inherit (cfg) signer_account_mnemonic;
                     inherit (cfg) betterstack_api_key;
-                    inherit (cfg) db_path; 
+                    inherit (cfg) db_path;
                     inherit (cfg) chainConfig;
                     inherit (cfg) hasuraEndpoint;
                   }
@@ -118,7 +118,7 @@ in
     {
       packages = {
         sentinel2 = pkgsUnstable.buildNpmPackage {
-          nodejs = pkgs.nodejs;
+          inherit (pkgs) nodejs;
           npmDepsHash = "sha256-4Od3bakA4AqPCnw+8mYqQOmf65qlYJ9kLEMgSZ5JVpQ=";
           src = ./.;
           sourceRoot = "sentinel2";
@@ -132,11 +132,14 @@ in
             python3
             pkg-config
             sqlite
-            nodejs      
+            nodejs
             nodePackages_latest."patch-package"
           ];
 
-          buildInputs = [ pkgs.bashInteractive pkgs.sqlite ];
+          buildInputs = [
+            pkgs.bashInteractive
+            pkgs.sqlite
+          ];
           postBuild = ''
             npm rebuild better-sqlite3 --build-from-source
           '';
