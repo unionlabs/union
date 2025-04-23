@@ -68,6 +68,11 @@ The file maps [UCS04] chain ids to an object containing channels on that chain. 
   Currently supported and well-known tags:
   `canonical`: A canonical channel built over one of the clients in `clients.json`. This channel can safely be used by third party applications, and is exposed through our [GraphQL] API.
 
+- `sla`: Maximum time (in ISO 8601) between a packet-send and a packet-ack.
+
+  - `forward`: Maximum duration when sending _from_ the specified chain (ie. from *init* side).
+  - `reverse`: Maximum duration when sending _to_ the specified chain (ie. from *try* side).
+
 - `comments`: Arbitrary text describing the channel. This text is not parsed, but new entries should follow a consistent prose as existing entries.
 
 Note that to prevent redundancy and reduce the potential for copy-paste errors, only the *init* side of the channel is stored in this file. Reference our [channels docs] for a full overview of all channels with all relevant information.
