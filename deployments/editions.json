@@ -1,0 +1,34 @@
+{
+  "app": {
+    "chains": {
+      "babylon.bbn-1": {
+        "environment": "production"
+      },
+      "bob.60808": {
+        "environment": "production"
+      },
+      "corn.21000000": {
+        "environment": "production"
+      },
+      "ethereum.1": {
+        "environment": "production"
+      }
+    }
+  },
+  "btc": {
+    "chains": {
+      "babylon.bbn-1": {
+        "environment": "staging"
+      },
+      "bob.60808": {
+        "environment": "staging"
+      },
+      "corn.21000000": {
+        "environment": "staging"
+      },
+      "ethereum.1": {
+        "environment": "staging"
+      }
+    }
+  }
+}
