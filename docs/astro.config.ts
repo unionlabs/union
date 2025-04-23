@@ -311,6 +311,24 @@ export default defineConfig({
             {
               label: "Ceremony",
               link: "/ceremony"
+            },
+            {
+              label: "FAQ",
+              collapsed: true,
+              items: [
+                {
+                  label: "How to conduct multisig transfers?",
+                  link: "/faq/multisig-transfers-union-btc"
+                },
+                {
+                  label: "How to add new tokens from Union app?",
+                  link: "/faq/add-tokens-to-wallet"
+                },
+                {
+                  label: "GraphQL",
+                  link: "/integrations/api/graphql"
+                }
+              ]
             }
           ]
         },
