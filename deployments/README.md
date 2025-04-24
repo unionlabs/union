@@ -104,6 +104,12 @@ Allowed values are:
 - `staging` – Available in both development and staging environments.
 - `production` – Available in all environments.
 
+Both the editions as the chain sub-keys should be sorted. This can be achieved by running the following command:
+
+```sh
+jq . editions.json -S | sponge editions.json
+```
+
 ## universal-chain-ids.json
 
 As described in [UCS04], Union uses a two-part identifier — chain family name and chain ID — to uniquely identify a network. This helps prevent ambiguity across environments, testnets, and mainnets.
