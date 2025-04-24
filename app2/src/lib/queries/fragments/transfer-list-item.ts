@@ -21,31 +21,3 @@ export const transferListItemFragment = graphql(`
         sort_order
     }
 `)
-
-export const transferListItemFragmentAckMissing = graphql(`
-    fragment TransferListItemMissingAck on v2_transfer_type {
-        source_chain {
-            universal_chain_id
-        }
-        destination_chain {
-            universal_chain_id
-        }
-        sender_canonical
-        receiver_canonical
-        transfer_send_timestamp
-        transfer_send_transaction_hash
-        transfer_recv_timestamp
-        packet_hash
-        base_token
-        base_amount
-        quote_token
-        quote_amount
-        sort_order
-        traces {
-            type
-            transaction_hash
-            universal_chain_id
-            timestamp
-        }
-    }
-`)

@@ -1,9 +1,9 @@
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { Effect, Fiber, Option } from "effect"
-import type { IncompleteTransferCount, IncompleteTransferListItem } from "@unionlabs/sdk/schema"
+import type { PacketCount, PacketDetails, PacketList } from "@unionlabs/sdk/schema"
 
-class IncompleteTransferListStore {
-  data = $state(Option.none<typeof IncompleteTransferListItem.Type>())
+class IncompletePacketsListStore {
+  data = $state(Option.none<typeof PacketList.Type>())
   error = $state(Option.none<FetchDecodeGraphqlError>())
   fiber = $state(Option.none<Fiber.RuntimeFiber<any, never>>())
 
@@ -29,10 +29,9 @@ class IncompleteTransferListStore {
 }
 
 class IncompleteTransferCountStore {
-  data = $state(Option.none<typeof IncompleteTransferCount.Type>())
+  data = $state(Option.none<typeof PacketCount.Type>())
   error = $state(Option.none<FetchDecodeGraphqlError>())
 }
 
-export const incompleteTransferList = new IncompleteTransferListStore()
-export const incompleteTransferListAddress = new IncompleteTransferListStore()
+export const incompletePacketsList = new IncompletePacketsListStore()
 export const transferCount = new IncompleteTransferCountStore()
