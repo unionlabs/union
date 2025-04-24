@@ -3,19 +3,16 @@ title: Multisig Transfers on btc.union.build
 ---
 
 import { Image } from 'astro:assets';
-import safe01 from "../../../assets/images/faq/safe-01.png"
-import safe02 from "../../../assets/images/faq/safe-02.png"
-import safe03 from "../../../assets/images/faq/safe-03.png"
-import safe04 from "../../../assets/images/faq/safe-04.png"
-import safe05 from "../../../assets/images/faq/safe-05.png"
-import safe06 from "../../../assets/images/faq/safe-06.png"
-import keplr01 from "../../../assets/images/faq/keplr-01.png"
-import keplr02 from "../../../assets/images/faq/keplr-02.png"
-import keplr03 from "../../../assets/images/faq/keplr-03.png"
-import keplr04 from "../../../assets/images/faq/keplr-04.png"
-import keplr05 from "../../../assets/images/faq/keplr-05.png"
+import {  YouTube } from 'astro-embed';
 
 This guide will walk you through sending transfers to and from Safe Wallet and Keplr multisigs. We will use uniBTC as the transfer asset and Ethereum and Babylon as the example networks. The guide requires that you have both a Safe Wallet and Keplr multisig that are funded with the gas tokens and assets you intend to transfer (in this guide ETH, BABY, uniBTC).
+
+## Video Tutorial
+
+If you prefer video tutorials, you can also follow [the video version of this guide](https://youtu.be/ajd3wHlyDYQ):
+
+astro-embed w/ id
+<YouTube id="ajd3wHlyDYQ" />
 
 ## Ethereum Multisig to Babylon Multisig
 
@@ -35,25 +32,25 @@ Only the user creating the transaction needs to use the Union BTC app, other sig
 Union is working with Safe Wallet to have Union BTC listed on their official apps page.
 :::
 
-<Image src={safe01} alt="safe01" />
+<Image src="/faq/safe-01.png" width="3500" height="1400" alt="safe01" />
 
 2. Then enter the address `https://btc.union.build` into the "Safe App URL" field and check the box agreeing to use this app at your own risk. You can now add the app to Safe by clicking "Add"
 
-<Image src={safe02} alt="safe02" />
+<Image src="/faq/safe-02.png" width="3500" height="1400" alt="safe02" />
 
 3. Once added, you can now open the Union BTC Safe App.
 
 4. Once inside, you will need to connect your Safe wallet to the app. To do so, click "My Wallets" in the bottom left and then select "Safe Wallet".
 
-<Image src={safe03} alt="safe03" />
-<Image src={safe04} alt="safe04" />
+<Image src="/faq/safe-03.png" width="3500" height="1400" alt="safe03" />
+<Image src="/faq/safe-04.png" width="3500" height="1400" alt="safe04" />
 
 5. With your wallet connected, you can now select the asset you would like to send, and it's destination. In this case, we're selected uniBTC on Ethereum as the source asset and uniBTC on Babylon as the destination asset. Then set your amount.
 
 6. Set the receiver. In our case, a Keplr multisig account. To do this, go to your Keplr multisig account and copy the address. Then go back to Safe and select the wallet icon. Here, paste in the Keplr address you copied.
 
-<Image src={safe05} alt="safe05" />
-<Image src={safe06} alt="safe06" />
+<Image src="/faq/safe-05.png" width="3500" height="1400" alt="safe05" />
+<Image src="/faq/safe-06.png" width="3500" height="1400" alt="safe06" />
 
 7. Finally, you can send the transfer which should prompt you to sign and submit the transaction via safe.
 
@@ -71,27 +68,27 @@ Once you've created your Keplr Multisig for Babylon, you can follow to steps bel
 
 1. Generate the transaction JSON. Go to https://btc.union.build and select "Keplr Multisig"
 
-<Image src={keplr01} alt="keplr01" />
+<Image src="/faq/keplr-01.png" width="3500" height="1400" alt="keplr01" />
 
 2. Copy your Keplr Multisig address and paste it into the "SENDER" field
 
-<Image src={keplr02} alt="keplr02" />
+<Image src="/faq/keplr-02.png" width="3500" height="1400" alt="keplr02" />
 
 3. Select your source and destination assets. In this case we're sending uniBTC from Babylon to Ethereum as uniBTC.
 
 4. Copy your Safe Wallet multisig address and paste it into the "RECEIVER" field. ***NOTE***: Remove the prefix `eth:` from what the Safe copy button provides.
 
-<Image src={keplr03} alt="keplr03" />
+<Image src="/faq/keplr-03.png" width="3500" height="1400" alt="keplr03" />
 
 5. Specify the amount you would like to send.
 
 6. Finally, click "Export Message"
 
-<Image src={keplr04} alt="keplr04" />
+<Image src="/faq/keplr-04.png" width="3500" height="1400" alt="keplr04" />
 
 7. Now you can select the copy button to get the JSON blob Keplr will need
 
-<Image src={keplr05} alt="keplr05" />
+<Image src="/faq/keplr-05.png" width="3500" height="1400" alt="keplr05" />
 
 7. Now you will need to import the transaction into Keplr's multisig UI at https://multisig.keplr.app/. Here you will want to select "Import Transaction" and then paste the JSON blob.
 
