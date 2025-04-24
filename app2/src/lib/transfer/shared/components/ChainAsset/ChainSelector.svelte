@@ -56,10 +56,16 @@ const getEnvironment = (): "PRODUCTION" | "STAGING" | "DEVELOPMENT" => {
 }
 
 function filterByEdition(chain: Chain, editionName: Edition, environment: string): boolean {
-  return chain.editions.some(
-    (edition: { name: string; environment: string }) =>
-      edition.name === editionName && edition.environment === environment
-  )
+  return chain.editions.some((edition: { name: string; environment: string }) => {
+    if (edition.name !== editionName) return false;
+    
+    return Match.value(edition.environment).pipe(
+      Match.when("development", () => environment === "development"),
+      Match.when("staging", () => environment === "development" || environment === "staging"),
+      Match.when("production", () => true),
+      Match.orElse(() => false)
+    );
+  });
 }
 
 const filterBySigningMode = (chains: Array<Chain>) =>
