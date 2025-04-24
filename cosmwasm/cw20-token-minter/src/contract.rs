@@ -2,31 +2,24 @@ use alloy::{primitives::U256, sol_types::SolValue};
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,
-    CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Env, MessageInfo, QueryRequest,
-    Response, StdResult, Storage, WasmMsg,
+    CodeInfoResponse, Coin, DenomMetadataResponse, Deps, DepsMut, Empty, Env, MessageInfo,
+    QueryRequest, Response, StdResult, Storage, WasmMsg,
 };
 use cw20::{Cw20QueryMsg, TokenInfoResponse};
+use frissitheto::UpgradeMsg;
 use ibc_union_spec::ChannelId;
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
-    WrappedTokenMsg,
+    TokenMinterInitMsg, WrappedTokenMsg,
 };
 use unionlabs::{ethereum::keccak256, primitives::H256};
 
 use crate::{
     error::Error,
-    state::{Config, CONFIG},
+    state::{Config, CONFIG, CW20_ADMIN},
 };
 
 pub const DEFAULT_DECIMALS: u8 = 6;
-
-#[cw_serde]
-pub enum TokenMinterInitMsg {
-    Cw20 {
-        cw20_base_code_id: u64,
-        dummy_code_id: u64,
-    },
-}
 
 #[entry_point]
 pub fn instantiate(
@@ -36,6 +29,7 @@ pub fn instantiate(
     TokenMinterInitMsg::Cw20 {
         cw20_base_code_id,
         dummy_code_id,
+        zkgm_admin,
     }: TokenMinterInitMsg,
 ) -> StdResult<Response> {
     CONFIG.save(
@@ -46,15 +40,50 @@ pub fn instantiate(
             dummy_code_id,
         },
     )?;
+    CW20_ADMIN.save(deps.storage, &zkgm_admin)?;
     Ok(Response::default())
 }
 
 #[cw_serde]
-pub struct MigrateMsg {}
+pub struct MigrateMsg {
+    /// Update admins of these contracts to the `new_admin`
+    pub cw20_contracts: Vec<cosmwasm_std::Addr>,
+
+    /// BE VERY CATIOUS WITH WHO TO BE THE ADMIN
+    pub new_admin: cosmwasm_std::Addr,
+
+    /// New cw20 code id that we are gonna migrate all `cw2_contracts`
+    pub new_cw20_code_id: u64,
+}
 
 #[entry_point]
-pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> StdResult<Response> {
-    Ok(Response::new())
+pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> StdResult<Response> {
+    // Save the admin for the future instantiates
+    CW20_ADMIN.save(deps.storage, &msg.new_admin)?;
+
+    CONFIG.update::<_, cosmwasm_std::StdError>(deps.storage, |mut c| {
+        c.cw20_base_code_id = msg.new_cw20_code_id;
+        Ok(c)
+    })?;
+
+    // let migrate_msg = to_json_binary(&UpgradeMsg::<Empty, _>::Migrate(Empty {}))?;
+
+    // Update all the owned cw20s
+    Ok(
+        Response::new().add_messages(msg.cw20_contracts.into_iter().flat_map(|contract| {
+            [
+                // WasmMsg::Migrate {
+                //     contract_addr: contract.to_string(),
+                //     new_code_id: msg.new_cw20_code_id,
+                //     msg: migrate_msg.clone(),
+                // },
+                WasmMsg::UpdateAdmin {
+                    contract_addr: contract.to_string(),
+                    admin: msg.new_admin.to_string(),
+                },
+            ]
+        })),
+    )
 }
 
 #[entry_point]
@@ -89,6 +118,7 @@ pub fn execute(
                 } else {
                     restrict_symbol(metadata.symbol)
                 };
+                let cw20_admin = CW20_ADMIN.load(deps.storage)?;
                 Response::new()
                     .add_message(
                         // Instantiating the dummy contract first to be able to get the deterministic address
@@ -114,20 +144,28 @@ pub fn execute(
                         WasmMsg::Migrate {
                             contract_addr: denom.clone(),
                             new_code_id: config.cw20_base_code_id,
-                            msg: to_json_binary(&cw20_base::msg::InstantiateMsg {
-                                // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
-                                name: token_name,
-                                symbol: token_symbol,
-                                decimals: metadata.decimals,
-                                initial_balances: vec![],
-                                mint: Some(cw20::MinterResponse {
-                                    minter: env.contract.address.to_string(),
-                                    cap: None,
-                                }),
-                                marketing: None,
-                            })?,
+                            msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
+                                cw20_base::msg::InstantiateMsg {
+                                    // metadata is not guaranteed to always contain a name, however cw20_base::instantiate requires it to be set
+                                    name: token_name,
+                                    symbol: token_symbol,
+                                    decimals: metadata.decimals,
+                                    initial_balances: vec![],
+                                    mint: Some(cw20::MinterResponse {
+                                        minter: env.contract.address.to_string(),
+                                        cap: None,
+                                    }),
+                                    marketing: None,
+                                },
+                            ))?,
                         },
                     )
+                    .add_message(WasmMsg::UpdateAdmin {
+                        // We temporarily set ourselves as admin previously to be able to migrate the contract.
+                        // Updating the admin to the correct admin finally.
+                        contract_addr: denom,
+                        admin: cw20_admin.to_string(),
+                    })
             }
             WrappedTokenMsg::MintTokens {
                 denom,

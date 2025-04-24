@@ -1,13 +1,16 @@
+use cosmwasm_schema::cw_serde;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    to_json_binary, Binary, Deps, DepsMut, Env, MessageInfo, Response, StdError, StdResult, Uint128,
+    to_json_binary, Binary, ContractInfoResponse, Deps, DepsMut, Env, MessageInfo, Response,
+    StdError, StdResult, Uint128, WasmQuery,
 };
 use cw2::set_contract_version;
 use cw20::{
-    BalanceResponse, Cw20Coin, Cw20ReceiveMsg, DownloadLogoResponse, EmbeddedLogo, Logo, LogoInfo,
-    MarketingInfoResponse, MinterResponse, TokenInfoResponse,
+    BalanceResponse, Cw20Coin, Cw20ExecuteMsg, Cw20ReceiveMsg, DownloadLogoResponse, EmbeddedLogo,
+    Logo, LogoInfo, MarketingInfoResponse, MinterResponse, TokenInfoResponse,
 };
+use frissitheto::UpgradeMsg;
 
 use crate::{
     allowances::{
@@ -16,7 +19,9 @@ use crate::{
     },
     enumerable::{query_all_accounts, query_owner_allowances, query_spender_allowances},
     error::ContractError,
-    msg::{ExecuteMsg, InstantiateMsg, QueryMsg},
+    msg::{
+        validate_decimals, validate_name, validate_symbol, ExecuteMsg, InstantiateMsg, QueryMsg,
+    },
     state::{MinterData, TokenInfo, BALANCES, LOGO, MARKETING_INFO, TOKEN_INFO},
 };
 
@@ -188,48 +193,96 @@ pub fn execute(
     msg: ExecuteMsg,
 ) -> Result<Response, ContractError> {
     match msg {
-        ExecuteMsg::Transfer { recipient, amount } => {
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Transfer { recipient, amount }) => {
             execute_transfer(deps, env, info, recipient, amount)
         }
-        ExecuteMsg::Burn { amount } => execute_burn(deps, env, info, amount),
-        ExecuteMsg::Send {
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Burn { amount }) => {
+            execute_burn(deps, env, info, amount)
+        }
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Send {
             contract,
             amount,
             msg,
-        } => execute_send(deps, env, info, contract, amount, msg),
-        ExecuteMsg::Mint { recipient, amount } => execute_mint(deps, env, info, recipient, amount),
-        ExecuteMsg::IncreaseAllowance {
+        }) => execute_send(deps, env, info, contract, amount, msg),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::Mint { recipient, amount }) => {
+            execute_mint(deps, env, info, recipient, amount)
+        }
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::IncreaseAllowance {
             spender,
             amount,
             expires,
-        } => execute_increase_allowance(deps, env, info, spender, amount, expires),
-        ExecuteMsg::DecreaseAllowance {
+        }) => execute_increase_allowance(deps, env, info, spender, amount, expires),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::DecreaseAllowance {
             spender,
             amount,
             expires,
-        } => execute_decrease_allowance(deps, env, info, spender, amount, expires),
-        ExecuteMsg::TransferFrom {
+        }) => execute_decrease_allowance(deps, env, info, spender, amount, expires),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::TransferFrom {
             owner,
             recipient,
             amount,
-        } => execute_transfer_from(deps, env, info, owner, recipient, amount),
-        ExecuteMsg::BurnFrom { owner, amount } => execute_burn_from(deps, env, info, owner, amount),
-        ExecuteMsg::SendFrom {
+        }) => execute_transfer_from(deps, env, info, owner, recipient, amount),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::BurnFrom { owner, amount }) => {
+            execute_burn_from(deps, env, info, owner, amount)
+        }
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::SendFrom {
             owner,
             contract,
             amount,
             msg,
-        } => execute_send_from(deps, env, info, owner, contract, amount, msg),
-        ExecuteMsg::UpdateMarketing {
+        }) => execute_send_from(deps, env, info, owner, contract, amount, msg),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::UpdateMarketing {
             project,
             description,
             marketing,
-        } => execute_update_marketing(deps, env, info, project, description, marketing),
-        ExecuteMsg::UploadLogo(logo) => execute_upload_logo(deps, env, info, logo),
-        ExecuteMsg::UpdateMinter { new_minter } => {
+        }) => execute_update_marketing(deps, env, info, project, description, marketing),
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::UploadLogo(logo)) => {
+            execute_upload_logo(deps, env, info, logo)
+        }
+        ExecuteMsg::Cw20ExecuteMsg(Cw20ExecuteMsg::UpdateMinter { new_minter }) => {
             execute_update_minter(deps, env, info, new_minter)
         }
+        ExecuteMsg::UpdateMetadata {
+            name,
+            symbol,
+            decimals,
+        } => {
+            let res: ContractInfoResponse = deps.querier.query(
+                &WasmQuery::ContractInfo {
+                    contract_addr: env.contract.address.to_string(),
+                }
+                .into(),
+            )?;
+
+            if info.sender != res.admin.ok_or(ContractError::Unauthorized {})? {
+                return Err(ContractError::Unauthorized {});
+            }
+            update_metadata(deps, name, symbol, decimals)
+        }
     }
+}
+
+fn update_metadata(
+    deps: DepsMut,
+    name: String,
+    symbol: String,
+    decimals: u8,
+) -> Result<Response, ContractError> {
+    validate_name(&name)?;
+    validate_symbol(&symbol)?;
+    validate_decimals(decimals)?;
+
+    TOKEN_INFO.update::<_, StdError>(deps.storage, |info| {
+        Ok(TokenInfo {
+            name,
+            symbol,
+            decimals,
+            total_supply: info.total_supply,
+            mint: info.mint,
+        })
+    })?;
+
+    Ok(Response::new())
 }
 
 pub fn execute_transfer(
@@ -582,15 +635,121 @@ pub fn query_download_logo(deps: Deps) -> StdResult<DownloadLogoResponse> {
     }
 }
 
+#[cw_serde]
+pub struct MigrateMsg {}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, env: Env, msg: InstantiateMsg) -> Result<Response, ContractError> {
-    instantiate(
+pub fn migrate(
+    deps: DepsMut,
+    env: Env,
+    msg: UpgradeMsg<InstantiateMsg, MigrateMsg>,
+) -> Result<Response, ContractError> {
+    msg.run(
         deps,
-        env,
-        MessageInfo {
-            sender: cosmwasm_std::Addr::unchecked("sender"),
-            funds: vec![],
+        |deps, init_msg| {
+            let res = instantiate(
+                deps,
+                env,
+                MessageInfo {
+                    sender: cosmwasm_std::Addr::unchecked("sender"),
+                    funds: vec![],
+                },
+                init_msg,
+            )?;
+
+            Ok((res, None))
         },
-        msg,
+        |_, _, _| Ok((Response::default(), None)),
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use cosmwasm_std::{
+        testing::{message_info, mock_env, MockApi, MockStorage},
+        Addr, ContractResult, OwnedDeps, Querier, QuerierResult,
+    };
+
+    use super::*;
+
+    struct CustomQuerier;
+
+    impl Querier for CustomQuerier {
+        fn raw_query(&self, _: &[u8]) -> cosmwasm_std::QuerierResult {
+            QuerierResult::Ok(ContractResult::Ok(
+                to_json_binary(&ContractInfoResponse::new(
+                    1,
+                    Addr::unchecked("helo"),
+                    Some(Addr::unchecked("some_admin")),
+                    false,
+                    None,
+                ))
+                .unwrap(),
+            ))
+        }
+    }
+
+    #[test]
+    fn upgrade_token_info() {
+        let token_name = "Union";
+        let token_symbol = "UNO";
+        let decimals = 6;
+
+        let mut deps = OwnedDeps {
+            storage: MockStorage::default(),
+            api: MockApi::default(),
+            querier: CustomQuerier,
+            custom_query_type: std::marker::PhantomData,
+        };
+        instantiate(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked("sender"), &[]),
+            InstantiateMsg {
+                name: token_name.into(),
+                symbol: token_symbol.into(),
+                decimals,
+                initial_balances: vec![],
+                mint: None,
+                marketing: None,
+            },
+        )
+        .unwrap();
+
+        let token_name = "Union New";
+        let token_symbol = "UNONew";
+        let decimals = 10;
+
+        execute(
+            deps.as_mut(),
+            mock_env(),
+            message_info(&Addr::unchecked("some_admin"), &[]),
+            ExecuteMsg::UpdateMetadata {
+                name: token_name.into(),
+                symbol: token_symbol.into(),
+                decimals,
+            },
+        )
+        .unwrap();
+
+        let token_info = TOKEN_INFO.load(deps.as_ref().storage).unwrap();
+
+        assert_eq!(token_info.name, token_name);
+        assert_eq!(token_info.symbol, token_symbol);
+        assert_eq!(token_info.decimals, decimals);
+
+        assert_eq!(
+            execute(
+                deps.as_mut(),
+                mock_env(),
+                message_info(&Addr::unchecked("invalid_admin"), &[]),
+                ExecuteMsg::UpdateMetadata {
+                    name: token_name.into(),
+                    symbol: token_symbol.into(),
+                    decimals,
+                },
+            ),
+            Err(ContractError::Unauthorized {})
+        );
+    }
 }

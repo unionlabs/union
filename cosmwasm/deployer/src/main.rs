@@ -23,7 +23,7 @@ use serde_json::{json, Value};
 use sha2::Digest;
 use tracing::{info, instrument};
 use tracing_subscriber::EnvFilter;
-use ucs03_zkgm::msg::TokenMinterInitMsg;
+use ucs03_zkgm::msg::TokenMinterInitParams;
 use unionlabs::{
     bech32::Bech32,
     cosmos::{bank::msg_send::MsgSend, base::coin::Coin},
@@ -351,7 +351,6 @@ pub enum TokenMinterConfig {
         /// This MUST be the unionlabs fork of cw20-base, which forces instantiation through the migrate entrypoint, such that it can have a deterministic address.
         cw20_base: PathBuf,
     },
-    Native,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -623,7 +622,7 @@ async fn do_main() -> Result<()> {
                     )
                     .unwrap();
 
-                    let minter_init_msg = match ucs03_config.token_minter_config {
+                    let minter_init_params = match ucs03_config.token_minter_config {
                         TokenMinterConfig::Cw20 { cw20_base } => {
                             let (tx_hash, response) = ctx
                                 .tx(
@@ -674,12 +673,11 @@ async fn do_main() -> Result<()> {
                                 .await?;
                             }
 
-                            TokenMinterInitMsg::Cw20 {
+                            TokenMinterInitParams::Cw20 {
                                 cw20_base_code_id: code_id.get(),
                                 dummy_code_id: bytecode_base_code_id.get(),
                             }
                         }
-                        TokenMinterConfig::Native => TokenMinterInitMsg::Native,
                     };
 
                     ctx.deploy_and_initiate(
@@ -698,7 +696,7 @@ async fn do_main() -> Result<()> {
                                 )],
                                 rate_limit_disabled: ucs03_config.rate_limit_disabled,
                             },
-                            minter_init_msg,
+                            minter_init_params,
                         },
                         salt,
                     )
