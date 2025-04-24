@@ -38,7 +38,7 @@ const isChainLoading = $derived.by(() => {
         <AddressComponent
           truncate
           class="text-accent"
-          truncateChars={10}
+          truncateChars={6}
           address={transferData.derivedSender.value}
           chain={transferData.sourceChain.value}
         />
@@ -46,7 +46,7 @@ const isChainLoading = $derived.by(() => {
         <AddressComponent
           truncate
           class="text-accent"
-          truncateChars={10}
+          truncateChars={6}
           address={transferData.derivedReceiver.value}
           chain={transferData.destinationChain.value}
         />
