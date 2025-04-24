@@ -2,6 +2,40 @@ use cosmwasm_schema::{cw_serde, QueryResponses};
 use cosmwasm_std::{Coin, CustomMsg, CustomQuery, Uint128};
 
 /// Special messages to be supported by any chain that supports token_factory
+
+/*
+
+// CreateDenom creates a new factory denom, of denomination:
+// factory/{creating contract address}/{Subdenom}
+// Subdenom can be of length at most 44 characters, in [0-9a-zA-Z./]
+// The (creating contract address, subdenom) pair must be unique.
+// The created denom's admin is the creating contract address,
+// but this admin can be changed using the ChangeAdmin binding.
+type CreateDenom struct {
+    Subdenom string `json:"subdenom"`
+}
+
+// ChangeAdmin changes the admin for a factory denom.
+// If the NewAdminAddress is empty, the denom has no admin.
+type ChangeAdmin struct {
+    Denom           string `json:"denom"`
+    NewAdminAddress string `json:"new_admin_address"`
+}
+
+type MintTokens struct {
+    Denom         string       `json:"denom"`
+    Amount        osmomath.Int `json:"amount"`
+    MintToAddress string       `json:"mint_to_address"`
+}
+
+type BurnTokens struct {
+    Denom  string       `json:"denom"`
+    Amount osmomath.Int `json:"amount"`
+    // BurnFromAddress must be set to "" for now.
+    BurnFromAddress string `json:"burn_from_address"`
+}
+*/
+
 #[cw_serde]
 pub enum TokenFactoryMsg {
     /// CreateDenom creates a new factory denom, of denomination:
@@ -11,14 +45,7 @@ pub enum TokenFactoryMsg {
     /// The (creating contract address, subdenom) pair must be unique.
     /// The created denom's admin is the creating contract address,
     /// but this admin can be changed using the UpdateAdmin binding.
-    ///
-    /// If you set an initial metadata here, this is equivalent
-    /// to calling SetMetadata directly on the returned denom.
-    CreateDenom {
-        subdenom: String,
-        // TODO: upgrade tokenfactory to handle this
-        metadata: Option<Metadata>,
-    },
+    CreateDenom { subdenom: String },
     /// ChangeAdmin changes the admin for a factory denom.
     /// Can only be called by the current contract admin.
     /// If the NewAdminAddress is empty, the denom will have no admin.
@@ -41,9 +68,6 @@ pub enum TokenFactoryMsg {
         amount: Uint128,
         burn_from_address: String,
     },
-    /// Contracts can set metadata for an existing factory denom that they are
-    /// admin of.
-    SetMetadata { denom: String, metadata: Metadata },
 }
 
 /// This maps to cosmos.bank.v1beta1.Metadata protobuf struct

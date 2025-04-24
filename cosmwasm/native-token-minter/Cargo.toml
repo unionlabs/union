@@ -12,12 +12,17 @@ repository   = { workspace = true }
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+alloy                       = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema             = { workspace = true }
-cosmwasm-std                = { workspace = true }
+cosmwasm-std                = { workspace = true, features = ["stargate"] }
+ibc-union-spec              = { workspace = true }
 cw-storage-plus             = { workspace = true }
 thiserror                   = { workspace = true }
 token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
+unionlabs                   = { workspace = true }
+prost = { workspace = true }
+protos = { workspace = true }
 
 [lints]
 workspace = true
