@@ -79,7 +79,9 @@ onMount(() => {
 <div class="min-h-full flex flex-col overflow-y-auto">
   <a class="px-6 flex items-center gap-2 border-b-1 h-16 border-zinc-900" href="/">
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
-    <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">{uiStore.edition.toUpperCase()}</div>
+    {#key uiStore.edition}
+      <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">{uiStore.activeEdition.toUpperCase()}</div>
+    {/key}
   </a>
   <div class="flex flex-col flex-1">
   {#each navigation as section, i}

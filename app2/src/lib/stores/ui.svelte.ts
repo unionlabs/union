@@ -8,16 +8,14 @@ class UiStore {
   errorsModalOpen: boolean = $state(false)
   showZeroBalances: boolean = $state(false)
   showDeveloperPages: boolean = $state(false)
+
   edition: Edition = $state("app")
   overrideEdition: Edition | null = $state(null)
 
-  get activeEdition() {
-    return this.overrideEdition ?? this.edition
-  }
-
-  get theme() {
-    return themes[this.activeEdition]
-  }
+  // Make activeEdition reactive
+  activeEdition: Edition = $derived(this.overrideEdition ?? this.edition)
+  // Make theme reactive
+  theme = $derived(themes[this.activeEdition])
 
   get accentColor() {
     return this.theme.accent

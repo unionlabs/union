@@ -29,9 +29,15 @@ BigInt["prototype"].toJSON = function () {
 
 $effect(() => {
   const hostname = page.url.hostname
+  // Clear any existing override when hostname changes
+  uiStore.overrideEdition = null
+
   if (hostname.startsWith("btc.") || hostname.startsWith("staging.btc.")) {
     uiStore.edition = "btc"
   } else if (hostname.startsWith("app.") || hostname.startsWith("staging.app.")) {
+    uiStore.edition = "app"
+  } else {
+    // Default to app for local development
     uiStore.edition = "app"
   }
 })
@@ -41,9 +47,22 @@ onMount(() => {
   const chainsFiber = Effect.runFork(chainsQuery(ENV()))
   const channelsFiber = Effect.runFork(channelsQuery())
 
+  const handler = (e: KeyboardEvent) => {
+    const metaOrCtrl = e.metaKey || e.ctrlKey
+    if (metaOrCtrl && e.altKey && e.shiftKey) {
+      if (e.code === "KeyA") {
+        uiStore.overrideEdition = "app"
+      } else if (e.code === "KeyB") {
+        uiStore.overrideEdition = "btc"
+      }
+    }
+  }
+
+  window.addEventListener("keydown", handler)
   return () => {
     Effect.runPromise(Fiber.interrupt(chainsFiber))
     Effect.runPromise(Fiber.interrupt(channelsFiber))
+    window.removeEventListener("keydown", handler)
   }
 })
 
@@ -64,6 +83,17 @@ const isMobile = $derived(viewportWidth < MAX_MOBILE_SIZE)
 const hideSidebar = $derived(isMobile && !isRootPage)
 const fullPageSidebar = $derived(isRootPage)
 let videoLoaded = $state(false)
+let currentVideoUrl = $state(uiStore.theme.videoUrl)
+let videoKey = $state(0)
+
+$effect(() => {
+  const newUrl = uiStore.theme.videoUrl
+  if (newUrl !== currentVideoUrl) {
+    currentVideoUrl = newUrl
+    videoLoaded = false
+    videoKey++
+  }
+})
 </script>
 
 <style>
@@ -82,31 +112,33 @@ let videoLoaded = $state(false)
     class:opacity-0={!videoLoaded}
     class:opacity-100={videoLoaded}
   >
-    <video
-      id="glitch-video"
-      class="w-full h-full object-cover"
-      loop
-      muted
-      autoplay
-      playsinline
-      data-video="glitch"
-      disablePictureInPicture={true}
-      oncanplay={function () {
-        this.autoplay = true;
-      }}
-      onloadeddata={function () {
-        this.autoplay = true;
-        videoLoaded = true;
-      }}
-      onloadedmetadata={function () {
-        this.muted = true;
-      }}
-    >
-      <source
-        src={uiStore.theme.videoUrl}
-        type="video/webm"
-      />
-    </video>
+    {#key videoKey}
+      <video
+        id="glitch-video"
+        class="w-full h-full object-cover"
+        loop
+        muted
+        autoplay
+        playsinline
+        data-video="glitch"
+        disablePictureInPicture={true}
+        oncanplay={function () {
+          this.autoplay = true;
+        }}
+        onloadeddata={function () {
+          this.autoplay = true;
+          videoLoaded = true;
+        }}
+        onloadedmetadata={function () {
+          this.muted = true;
+        }}
+      >
+        <source
+          src={currentVideoUrl}
+          type="video/webm"
+        />
+      </video>
+    {/key}
   </div>
 {:else}
   <div class="fixed inset-0 w-screen h-screen z-0">
