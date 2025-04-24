@@ -77,11 +77,7 @@ The file maps [UCS04] chain ids to an object containing channels on that chain. 
 
 Note that to prevent redundancy and reduce the potential for copy-paste errors, only the *init* side of the channel is stored in this file. Reference our [channels docs] for a full overview of all channels with all relevant information.
 
-Both the universal chain id and the channel id sub-keys should be sorted (the former alphabetically, the latter numerically). This can be achieved by running the following command:
-
-```sh
-jq . channels.json -S | sponge channels.json
-```
+Both the universal chain id and the channel id sub-keys should be sorted (the former alphabetically, the latter numerically). This is handled by running `nix fmt` in the root of the project.
 
 ## editions.json
 
@@ -104,11 +100,7 @@ Allowed values are:
 - `staging` – Available in both development and staging environments.
 - `production` – Available in all environments.
 
-Both the editions as the chain sub-keys should be sorted. This can be achieved by running the following command:
-
-```sh
-jq . editions.json -S | sponge editions.json
-```
+Both the editions and the chain sub-keys should be sorted. This is handled by running `nix fmt` in the root of the project.
 
 ## universal-chain-ids.json
 
