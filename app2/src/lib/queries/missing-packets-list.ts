@@ -28,8 +28,7 @@ const missingAckDoc = graphql(`
         status
     }
   }
-`
-)
+`)
 
 /**
  * Fetch *only* those packets whose send-timestamp falls in the window
@@ -44,7 +43,7 @@ export function missingPackets(exceedingSla: string) {
 
     while (true) {
       // page one batch (descending by sort_order)
-    console.info("Fetching missing packets...")
+      console.info("Fetching missing packets...")
       const page = yield* fetchDecodeGraphql(
         Schema.Struct({ v2_packets: PacketList }),
         missingAckDoc,
