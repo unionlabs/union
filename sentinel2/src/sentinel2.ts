@@ -119,6 +119,19 @@ export function isFunded(db: BetterSqlite3Database, txHash: string) {
   return !!row
 }
 
+export function getOpenErrors(
+  db: BetterSqlite3Database
+): Array<{ packet_hash: string; incident_id: string }> {
+  const stmt = db.prepare(`SELECT packet_hash, incident_id FROM transfer_errors`)
+
+  const rows = stmt.all({}) as Array<{
+    packet_hash: string
+    incident_id: string
+  }>
+
+  return rows
+}
+
 export function addFunded(db: BetterSqlite3Database, txHash: string) {
   db.prepare(`INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`).run(txHash)
 }
@@ -193,18 +206,16 @@ interface ChannelInfo {
 }
 
 interface Packet {
-  packet_send_timestamp: string | null
-  packet_recv_timestamp: string | null
-  write_ack_timestamp: string | null
-  packet_ack_timestamp: string | null
-  packet_send_transaction_hash?: string | null
-  packet_recv_transaction_hash?: string | null
-  write_ack_transaction_hash?: string | null
-  packet_ack_transaction_hash?: string | null
-  sort_order: string
-  packet_send_block_hash: string
+  source_chain: {
+    universal_chain_id: string
+  }
+  destination_chain: {
+    universal_chain_id: string
+  }
+  packet_send_timestamp: string
   packet_hash: string
-  timeout_timestamp: string
+  status: string
+  sort_order: string
 }
 
 type ChainType = "evm" | "cosmos"
@@ -220,13 +231,12 @@ type ChainConfig = Record<string, ChainConfigEntry>
 
 // Combined configuration shape
 interface ConfigFile {
-  interactions: Array<ChainPair>
   cycleIntervalMs: number
   hasuraEndpoint: string
   chainConfig: ChainConfig
   signer_account_mnemonic: string
   betterstack_api_key: string
-  db_path: string
+  dbPath: string
   isLocal: boolean
 }
 
@@ -345,14 +355,12 @@ function loadConfig(configPath: string) {
       }
       const rawData = fs.readFileSync(configPath, "utf-8")
       const config: ConfigFile = JSON.parse(rawData)
-      if (!Array.isArray(config.interactions) || config.interactions.length === 0) {
-        throw new Error("Config file is invalid or interactions array is empty.")
-      }
+
       return config
     },
     catch: error =>
       new FilesystemError({
-        message: "Config file is invalid or interactions array is empty.",
+        message: "Config file is invalid.",
         cause: error
       })
   })
@@ -631,20 +639,20 @@ const fundBabylonAccounts = Effect.repeat(
   Schedule.spaced("1 minutes")
 )
 
-const fetchOnlyUniBTC = (hasuraEndpoint: string) =>
+const fetchOnlyUniBTC = (hasuraEndpoint: string, exceedingSla: string) =>
   Effect.gen(function* () {
     let response: any
 
     // Next query: use the last sort_order as a cursor.
     const queryNext = gql`
-        query MyQuery {
-          v2_packets {
+        query MyQuery($sla: String!) {
+          v2_packets(args: { p_exceeding_sla: $sla }) {
             decoded
           }
         }
       `
     response = yield* Effect.tryPromise({
-      try: () => request(hasuraEndpoint, queryNext),
+      try: () => request(hasuraEndpoint, queryNext, { sla: exceedingSla }),
       catch: error => {
         console.error("Error in second query:", error)
         throw error
@@ -665,25 +673,8 @@ const fetchOnlyUniBTC = (hasuraEndpoint: string) =>
       }
     }
   })
-/**
- * fetchPacketsUntilCutoff
- *
- * This helper function pages through packets—starting from the most recent (the first query)
- * and then using the sort_order cursor (via the Next query) until it encounters a packet whose
- * packet_send_timestamp is earlier than the provided cutoff timestamp.
- *
- * @param srcChain The source chain identifier.
- * @param dstChain The destination chain identifier.
- * @param cutoffTimestamp A string ISO date (e.g. "2025-04-09T06:44:46.971Z") acting as the lower bound.
- *                        Only packets with a send timestamp >= cutoffTimestamp will be saved.
- * @returns An Effect that resolves to an array of Packet.
- */
-const fetchPacketsUntilCutoff = (
-  srcChain: string,
-  dstChain: string,
-  cutoffTimestamp: string,
-  hasuraEndpoint: string
-) =>
+
+const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
   Effect.gen(function* () {
     let allPackets: Packet[] = []
     let cursor: string | undefined
@@ -693,287 +684,127 @@ const fetchPacketsUntilCutoff = (
       let response: any
 
       if (cursor) {
-        // Next query: use the last sort_order as a cursor.
         const queryNext = gql`
-          query Next($sortOrder: String!, $srcChain: String!, $dstChain: String!) {
-            v2_packets(args: {
-              p_source_universal_chain_id: $srcChain,
-              p_destination_universal_chain_id: $dstChain,
-              p_sort_order: $sortOrder
-            }) {
-              packet_send_timestamp
-              packet_recv_timestamp
-              write_ack_timestamp
-              packet_ack_timestamp
-              packet_send_transaction_hash
-              packet_recv_transaction_hash
-              write_ack_transaction_hash
-              packet_ack_transaction_hash
-              sort_order
-              packet_send_block_hash
-              packet_hash
-              timeout_timestamp
+            query MissingPacketsNext($sla: String!, $cursor: String!) {
+              v2_packets(args: {
+                p_exceeding_sla: $sla,
+                p_sort_order: $cursor
+              }) {
+                source_chain { universal_chain_id }
+                destination_chain { universal_chain_id }
+                packet_send_timestamp
+                packet_hash
+                status
+                sort_order
+              }
             }
-          }
-        `
+          `
         response = yield* Effect.tryPromise({
-          try: () => request(hasuraEndpoint, queryNext, { sortOrder: cursor, srcChain, dstChain }),
-          catch: error => {
-            console.error("Error in second query:", error)
-            throw error
+          try: () =>
+            request(hasuraEndpoint, queryNext, {
+              sla: exceedingSla,
+              cursor
+            }),
+          catch: err => {
+            console.error("fetchMissingPackets (next) failed:", err)
+            throw err
           }
         })
       } else {
-        // First query: no cursor (assumes API returns the most recent packets).
         const queryFirst = gql`
-          query First($srcChain: String!, $dstChain: String!) {
-            v2_packets(args: {
-              p_source_universal_chain_id: $srcChain,
-              p_destination_universal_chain_id: $dstChain
-            }) {
-              packet_send_timestamp
-              packet_recv_timestamp
-              write_ack_timestamp
-              packet_ack_timestamp
-              packet_send_transaction_hash
-              packet_recv_transaction_hash
-              write_ack_transaction_hash
-              packet_ack_transaction_hash
-              sort_order
-              packet_send_block_hash
-              packet_hash
-              timeout_timestamp
+            query MissingPackets($sla: String!) {
+              v2_packets(args: { p_exceeding_sla: $sla }) {
+                source_chain { universal_chain_id }
+                destination_chain { universal_chain_id }
+                packet_send_timestamp
+                packet_hash
+                status
+                sort_order
+              }
             }
-          }
-        `
+          `
         response = yield* Effect.tryPromise({
-          try: () => request(hasuraEndpoint, queryFirst, { srcChain, dstChain }),
-          catch: error => {
-            console.info("Error in first query:", error)
-            throw error
+          try: () =>
+            request(hasuraEndpoint, queryFirst, {
+              sla: exceedingSla
+            }),
+          catch: err => {
+            console.error("fetchMissingPackets (first) failed:", err)
+            throw err
           }
         })
       }
 
-      const currentPage: Packet[] = response?.v2_packets || []
-      if (currentPage.length === 0) break
+      const page: Packet[] = response.v2_packets || []
+      if (page.length === 0) break
 
-      for (const packet of currentPage) {
-        // If the packet's send timestamp is missing, include it (or decide otherwise).
-        if (packet.packet_send_timestamp) {
-          const packetTime = new Date(packet.packet_send_timestamp).getTime()
-          const cutoffTime = new Date(cutoffTimestamp).getTime()
-          // Stop paging once we encounter a packet older than the cutoff.
-          if (packetTime < cutoffTime) {
-            continueFetching = false
-            break
-          }
-        }
-        allPackets.push(packet)
-      }
+      allPackets.push(...page)
+      const last = page[page.length - 1]!
 
-      // Set cursor for the next page based on the last packet.
-      if (continueFetching) {
-        cursor = currentPage[currentPage.length - 1]!.sort_order
-      }
+      cursor = last.sort_order
     }
 
     return allPackets
   })
 
-/**
- * checkPackets
- *
- * This effectful function fetches IBC packet data from Hasura and then verifies that:
- *
- *  - Packets older than the provided timeframe have a valid reception, write_ack, and ack.
- *  - If a packet’s timestamp differences exceed the provided SLA timeframe, it logs an error.
- *  - It avoids duplicate logging by tracking already reported packet send transaction hashes.
- *
- * @param sourceChain - The source chain identifier
- * @param destinationChain - The destination chain identifier
- * @param timeframeMs - The maximum allowed timeframe (in milliseconds) for the packet to be confirmed
- */
 export const checkPackets = (
-  sourceChain: string,
-  destinationChain: string,
-  timeframeMs: number,
   hasuraEndpoint: string,
   betterstack_api_key: string,
   isLocal: boolean
 ) =>
   Effect.gen(function* () {
-    const now = Date.now()
-    const searchRangeMs = timeframeMs * 20
-    const sinceDate = new Date(now - searchRangeMs).toISOString()
+    yield* fetchOnlyUniBTC(hasuraEndpoint, "mainnet")
 
-    yield* Effect.log(
-      `Querying Hasura for packets >= ${sinceDate}, chain-pair: ${sourceChain} <-> ${destinationChain}`
+    const missingPacketsMainnet = yield* fetchMissingPackets(
+      hasuraEndpoint,
+      `mainnet` // TODO: Hardcoded for now
     )
+    yield* Effect.log(`Fetched ${missingPacketsMainnet.length} missingPackets from Hasura`)
 
-    const now_as_date = new Date(now).toISOString()
-    yield* Effect.log(`now: ${now_as_date}`)
-
-    yield* fetchOnlyUniBTC(hasuraEndpoint)
-
-    const packets: Packet[] = yield* fetchPacketsUntilCutoff(
-      sourceChain,
-      destinationChain,
-      sinceDate,
-      hasuraEndpoint
-    )
-    yield* Effect.log(
-      `Fetched ${packets.length} packets from Hasura from ${sourceChain} to ${destinationChain}`
-    )
-    // Process each packet.
-    for (const p of packets) {
-      if (!p.packet_send_timestamp) continue
-      const sendTimeMs = new Date(p.packet_send_timestamp).getTime()
-      // Only process packets that are older than the allowed timeframe.
-      if (now - sendTimeMs < timeframeMs) continue
-
-      if (now * 1000000 > BigInt(p.timeout_timestamp)) {
-        continue
+    for (const missingPacket of missingPacketsMainnet) {
+      const whole_description = {
+        issueType: "TRANSFER_FAILED",
+        currentStatus: missingPacket.status,
+        sourceChain: missingPacket.source_chain.universal_chain_id,
+        destinationChain: missingPacket.destination_chain.universal_chain_id,
+        packetSendTimestamp: missingPacket.packet_send_timestamp,
+        packetHash: missingPacket.packet_hash,
+        explorerUrl: `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`
       }
-      const sendTxHash = p.packet_send_transaction_hash ?? "?"
-      const sort_order_tx = p.sort_order.split("-")[1]
+      const logEffect = Effect.annotateLogs(whole_description)(
+        Effect.logError(`MAINNET_TRANSFER_ERROR`)
+      )
 
-      // 1) RECV check.
-      if (p.packet_recv_timestamp) {
-        const recvTimeMs = new Date(p.packet_recv_timestamp).getTime()
-        if (recvTimeMs - sendTimeMs > timeframeMs) {
-          // yield* Effect.log(
-          //   `[RECV TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, recv_time=${p.packet_recv_timestamp}, sendTxHash=${sendTxHash}`
-          // )
-          // reportedSendTxHashes.add(sendTxHash)
-        }
-      } else {
-        const whole_description = {
-          issueType: "RECV_MISSING",
-          sendTxHash,
-          sourceChain: `${sourceChain}`,
-          destinationChain: `${destinationChain}`,
-          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          minutesPassed: `${timeframeMs / 60 / 1000}`,
-          packetSendBlockHash: p.packet_send_block_hash,
-          packetHash: p.packet_hash,
-          timeoutTimestamp: p.timeout_timestamp
-        }
-        const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(`TRANSFER_ERROR`))
-
-        if (!hasErrorOpen(db, p.packet_hash)) {
-          const val = yield* triggerIncident(
-            "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-            JSON.stringify(whole_description),
-            betterstack_api_key,
-            "SENTINEL@union.build",
-            "TRANSFER_FAILED",
-            "Union",
-            isLocal
-          )
-          console.info("Incident triggered:", val)
-          markTransferError(db, p.packet_hash, val.data.id)
-        }
-
-        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-
-        continue
+      if (!hasErrorOpen(db, missingPacket.packet_hash)) {
+        const val = yield* triggerIncident(
+          "MAINNET_TRANSFER_ERROR: " +
+            `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`,
+          JSON.stringify(whole_description),
+          betterstack_api_key,
+          "SENTINEL@union.build",
+          "MAINNET_TRANSFER_ERROR",
+          "Union",
+          isLocal
+        )
+        markTransferError(db, missingPacket.packet_hash, val.data.id)
       }
+      Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+    }
 
-      // 2) WRITE_ACK check.
-      if (p.write_ack_timestamp) {
-        // const writeAckTimeMs = new Date(p.write_ack_timestamp).getTime()
-        // if (writeAckTimeMs - sendTimeMs > timeframeMs) {
-        //   yield* Effect.log(
-        //     `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, write_ack_time=${p.write_ack_timestamp}, sendTxHash=${sendTxHash}`
-        //   )
-        //   reportedSendTxHashes.add(sendTxHash)
-        // }
-      } else {
-        const whole_description = {
-          issueType: "WRITE_ACK MISSING",
-          sendTxHash,
-          sourceChain: `${sourceChain}`,
-          destinationChain: `${destinationChain}`,
-          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          minutesPassed: `${timeframeMs / 60 / 1000}`,
-          packetSendBlockHash: p.packet_send_block_hash,
-          packetHash: p.packet_hash,
-          timeoutTimestamp: p.timeout_timestamp
-        }
-        const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(`TRANSFER_ERROR`))
+    const openErrors = getOpenErrors(db)
 
-        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+    const missingSet = new Set(missingPacketsMainnet.map(p => p.packet_hash))
 
-        if (!hasErrorOpen(db, p.packet_hash)) {
-          const val = yield* triggerIncident(
-            "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-            JSON.stringify(whole_description),
-            betterstack_api_key,
-            "SENTINEL@union.build",
-            "TRANSFER_FAILED",
-            "Union",
-            isLocal
-          )
-          console.info("Incident triggered:", val)
-          markTransferError(db, p.packet_hash, val.data.id)
-        }
-
-        continue
-      }
-
-      // 3) ACK check.
-      if (p.packet_ack_timestamp) {
-        // const ackTimeMs = new Date(p.packet_ack_timestamp).getTime()
-        // if (ackTimeMs - sendTimeMs > timeframeMs) {
-        //   yield* Effect.log(
-        //     `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${p.packet_send_timestamp}, ack_time=${p.packet_ack_timestamp}, sendTxHash=${sendTxHash}`
-        //   )
-        //   reportedSendTxHashes.add(sendTxHash)
-        // }
-      } else {
-        const whole_description = {
-          issueType: "ACK MISSING",
-          sendTxHash,
-          sourceChain: `${sourceChain}`,
-          destinationChain: `${destinationChain}`,
-          explorerUrl: `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-          minutesPassed: `${timeframeMs / 60 / 1000}`,
-          packetSendBlockHash: p.packet_send_block_hash,
-          packetHash: p.packet_hash,
-          timeoutTimestamp: p.timeout_timestamp
-        }
-        const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(`TRANSFER_ERROR`))
-
-        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-
-        if (!hasErrorOpen(db, p.packet_hash)) {
-          const val = yield* triggerIncident(
-            "TRANSFER_ERROR: " + `https://btc.union.build/explorer/transfers/${sort_order_tx}`,
-            JSON.stringify(whole_description),
-            betterstack_api_key,
-            "SENTINEL@union.build",
-            "TRANSFER_FAILED",
-            "Union",
-            isLocal
-          )
-          console.info("Incident triggered:", val)
-          markTransferError(db, p.packet_hash, val.data.id)
-        }
-
-        continue
-      }
-
-      const incidentId = getIncidentId(db, p.packet_hash)
-      if (incidentId) {
-        console.info("Incident ID found:", incidentId)
+    for (const { packet_hash, incident_id } of openErrors) {
+      if (!missingSet.has(packet_hash)) {
+        yield* Effect.log(`Auto-resolving incident for packet ${packet_hash}`)
         yield* resolveIncident(
-          incidentId,
+          incident_id,
           betterstack_api_key,
           "Sentinel-Automatically resolved.",
           isLocal
-        ),
-          clearTransferError(db, p.packet_hash)
+        )
+        clearTransferError(db, packet_hash)
       }
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
@@ -984,31 +815,9 @@ const runIbcChecksForever = Effect.gen(function* (_) {
   const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
 
   const effectToRepeat = Effect.gen(function* (_) {
-    const chainPairs: Array<ChainPair> = config.interactions
-
     yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
-    for (const pair of chainPairs) {
-      if (!pair.enabled) {
-        yield* Effect.log("Checking task is disabled. Skipping.")
-        continue
-      }
-      yield* Effect.log(
-        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
-      )
 
-      yield* checkPackets(
-        pair.sourceChain,
-        pair.destinationChain,
-        pair.timeframeMs,
-        config.hasuraEndpoint,
-        config.betterstack_api_key,
-        config.isLocal
-      )
-    }
-
-    yield* Effect.log(
-      `IBC Checks done (or skipped). Sleeping ${config.cycleIntervalMs / 1000 / 60} minutes...`
-    )
+    yield* checkPackets(config.hasuraEndpoint, config.betterstack_api_key, config.isLocal)
   })
 
   return yield* Effect.repeat(effectToRepeat, schedule)
@@ -1030,7 +839,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   const config = yield* loadConfig(argv.config)
 
-  db = new Database(config.db_path)
+  db = new Database(config.dbPath)
 
   db.prepare(`
     CREATE TABLE IF NOT EXISTS funded_txs (
@@ -1046,9 +855,7 @@ const mainEffect = Effect.gen(function* (_) {
     )
   `).run()
 
-  console.info("Database opened at", config.db_path)
-
-  yield* Effect.log("hasuraEndpoint: ", config.hasuraEndpoint)
+  yield* Effect.log("Database opened at", config.dbPath, "hasuraEndpoint:", config.hasuraEndpoint)
 
   yield* Effect.all([runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts], {
     concurrency: "unbounded"

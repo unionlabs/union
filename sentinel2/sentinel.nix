@@ -26,15 +26,11 @@ let
           type = types.str;
           description = "Hasura endpoint for graphql requests.";
         };
-        transfers = mkOption {
-          type = types.listOf types.attrs;
-          description = "Array for cross-chain transfers.";
-        };
         signer_account_mnemonic = mkOption {
           type = types.str;
           description = "mnemonic to send tokens to babylon users";
         };
-        db_path = mkOption {
+        dbPath = mkOption {
           type = types.str;
           description = "Path for sqlite db";
         };
@@ -45,10 +41,6 @@ let
         chainConfig = mkOption {
           type = types.attrs;
           description = "chainConfig for escrow-totalsupply control.";
-        };
-        interactions = mkOption {
-          type = types.listOf types.attrs;
-          description = "Interactions for cross-chain communication.";
         };
         logLevel = mkOption {
           type = types.str;
@@ -75,11 +67,9 @@ let
                 pkgs.writeText "config.json" (
                   builtins.toJSON {
                     inherit (cfg) cycleIntervalMs;
-                    inherit (cfg) interactions;
-                    inherit (cfg) transfers;
                     inherit (cfg) signer_account_mnemonic;
                     inherit (cfg) betterstack_api_key;
-                    inherit (cfg) db_path;
+                    inherit (cfg) dbPath;
                     inherit (cfg) chainConfig;
                     inherit (cfg) hasuraEndpoint;
                   }
