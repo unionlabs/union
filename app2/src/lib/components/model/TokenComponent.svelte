@@ -88,8 +88,12 @@ const displayDenom = $derived(
 <Tooltip>
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
-      {#if Option.isSome(icon)}
+      {#if Option.isSome(icon) && icon.value.length > 0}
         <img class="size-4" src={icon.value} alt="" loading="lazy"/>
+      {:else}
+        <div class="size-5 flex items-center justify-center bg-zinc-700 rounded-full">
+          <span class="text-xs text-zinc-400">?</span>
+        </div>
       {/if}
       {#if amount !== undefined}
         <span>
@@ -104,7 +108,7 @@ const displayDenom = $derived(
     {#if Option.isSome(chains.data) && Option.isSome(token) && showWrapping}
       <div class="text-xs text-zinc-400 flex gap-1">
         {#each token.value.wrapping as wrap, i}
-          {#if i === 0}<ArrowDownLeft class="size-3 rotate-90" />{/if}
+          {#if i === 0}<ArrowDownLeft class="size-3 ml-1 rotate-90" />{/if}
           {@const wrapChain = getChain(
             chains.data.value,
             wrap.unwrapped_chain.universal_chain_id,
