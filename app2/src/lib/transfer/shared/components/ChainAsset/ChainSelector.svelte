@@ -246,10 +246,10 @@ const filteredChains = $derived(
           </button>
         {/each}
       </div>
-      <div
-        class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-925 to-transparent blur-fade-bottom-up pointer-events-none"
-      ></div>
     </div>
+    <div
+      class="absolute bottom-0 left-0 right-0 h-16 bg-gradient-to-t from-zinc-925 to-transparent blur-fade-bottom-up pointer-events-none"
+    ></div>
   {:else}
     <div class="py-2 text-center text-zinc-500">
       <span class="inline-block animate-pulse">Loading chains...</span>
