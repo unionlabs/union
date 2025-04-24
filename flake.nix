@@ -556,6 +556,7 @@
           treefmt = import ./treefmt.nix {
             inherit (self'.packages) movefmt;
             inherit
+              lib
               pkgs
               pkgsUnstable
               rust
