@@ -124,7 +124,11 @@
         command =
           let
             format-deployments = pkgs.writeShellScriptBin "format-deployments" ''
+              # sort with jq
               ${pkgs.jq}/bin/jq . "$1" -S | ${pkgs.moreutils}/bin/sponge "$1"
+
+              # format using biome
+              ${pkgs.biome}/bin/biome format --config-path ./biome.json --write "$1"
             '';
           in
           "${format-deployments}/bin/format-deployments";

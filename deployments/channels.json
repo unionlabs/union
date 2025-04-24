@@ -32,9 +32,7 @@
   "ethereum.11155111": {
     "1": {
       "comments": "union.union-testnet-10 channel 1",
-      "tags": [
-        "canonical"
-      ]
+      "tags": ["canonical"]
     }
   }
 }
