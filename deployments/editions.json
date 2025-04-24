@@ -17,6 +17,9 @@
   },
   "btc": {
     "chains": {
+      "union.union-1": {
+        "environment": "staging"
+      },
       "babylon.bbn-1": {
         "environment": "staging"
       },
