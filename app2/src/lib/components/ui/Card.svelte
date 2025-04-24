@@ -21,7 +21,7 @@ const {
 
 const classes = cn(
   // Base styles
-  "rounded border shadow-sm",
+  "rounded-lg border shadow-sm",
   "dark:border-zinc-800 bg-zinc-925",
   // Conditional padding and dividers
   divided ? "p-0 divide-y divide-zinc-900" : "p-4",

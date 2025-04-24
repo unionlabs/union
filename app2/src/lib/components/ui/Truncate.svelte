@@ -38,7 +38,7 @@ async function copyToClipboard() {
   {#if showCopy}
     <button
       type="button"
-      class="flex items-center gap-1 p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer transition-colors"
+      class="flex items-center gap-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer transition-colors"
       onclick={(e) => {
         e.stopPropagation();
         copyToClipboard();
