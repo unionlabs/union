@@ -37,7 +37,7 @@ const isChainLoading = $derived.by(() => {
       {#if type === "source" && Option.isSome(transferData.sourceChain) && Option.isSome(transferData.derivedSender)}
         <AddressComponent
           truncate
-          class="text-babylon-orange"
+          class="text-accent"
           truncateChars={10}
           address={transferData.derivedSender.value}
           chain={transferData.sourceChain.value}
@@ -45,7 +45,7 @@ const isChainLoading = $derived.by(() => {
       {:else if type === "destination" && Option.isSome(transferData.destinationChain) && Option.isSome(transferData.derivedReceiver)}
         <AddressComponent
           truncate
-          class="text-babylon-orange"
+          class="text-accent"
           truncateChars={10}
           address={transferData.derivedReceiver.value}
           chain={transferData.destinationChain.value}
@@ -59,7 +59,7 @@ const isChainLoading = $derived.by(() => {
           class={cn(
       "w-full h-14 rounded-md bg-zinc-800/70 text-zinc-200",
       "hover:bg-zinc-800 hover:border-zinc-500",
-      "focus:outline-none focus:ring-1 focus:ring-babylon-orange",
+      "focus:outline-none focus:ring-1 focus:ring-accent",
       "disabled:opacity-50 disabled:cursor-not-allowed",
       "transition-all duration-200 cursor-pointer",
     )}

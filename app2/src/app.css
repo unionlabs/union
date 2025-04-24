@@ -20,8 +20,9 @@
 
 @theme {
   --color-zinc-925: oklch(0.1755 0.0055 285.854);
-  --color-babylon-orange: #cf6533;
-  --color-union: oklch(0.84 0.1281 215.6);
+  --color-babylon-orange: oklch(62.55% 0.149 43.92);
+  --color-union: oklch(0.536 0.098 220.448);
+  --color-accent: var(--color-babylon-orange);
   --font-mono: "Geist Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
     "Liberation Mono", "Courier New", monospace;
 

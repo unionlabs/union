@@ -21,7 +21,6 @@ import {
 } from "$lib/transfer/shared/services/write-cosmos.ts"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { cosmosSpenderAddresses } from "$lib/constants/spender-addresses.ts"
 import { erc20Abi, http, isHex, toHex } from "viem"
 import type { Steps } from "$lib/transfer/normal/steps"
 
@@ -118,13 +117,12 @@ const submit = Effect.gen(function* () {
         Effect.gen(function* () {
           const signingClient = yield* getCosmWasmClient(chain, cosmosStore.connectedWallet)
           const sender = yield* chain.getDisplayAddress(wallets.cosmosAddress.value)
-          const spender = cosmosSpenderAddresses[chain.universal_chain_id]
 
           do {
             cts = yield* Effect.promise(() =>
               nextStateCosmos(cts, chain, signingClient, sender, step.token, {
                 increase_allowance: {
-                  spender,
+                  spender: step.intent.sourceChain.minter_address_display,
                   amount: step.requiredAmount
                 }
               })

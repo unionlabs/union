@@ -5,8 +5,9 @@ import { type AptosWalletId } from "$lib/wallet/aptos"
 import { type EvmWalletId } from "$lib/wallet/evm"
 import { Schema } from "effect"
 import { RpcType } from "@unionlabs/sdk/schema"
-import BaselineCloseIcon from "$lib/components/icons/BaselineCloseIcon.svelte"
 import Truncate from "../../Truncate.svelte"
+import Label from "../../Label.svelte"
+import SharpPowerIcon from "$lib/components/icons/SharpPowerIcon.svelte"
 
 type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]
@@ -43,24 +44,26 @@ let {
 }>()
 
 let connectText = $derived(
-  connectStatus === "connected" && address && address?.length > 0
-    ? chain === "evm"
-      ? address
-      : chain === "aptos"
-        ? address
-        : address
-    : ""
+  connectStatus === "connected" && address && address?.length > 0 ? address : ""
 )
 
 let copyClicked = $state(false)
 const toggleCopy = () => (copyClicked = !copyClicked)
-const onCopyClick = () => [toggleCopy(), setTimeout(() => toggleCopy(), 1_500)]
+const onCopyClick = () => {
+  if (address) {
+    navigator.clipboard.writeText(address)
+    toggleCopy()
+    setTimeout(() => toggleCopy(), 1_500)
+  }
+}
 
 // filter items with duplicate names
 let sanitizeWalletInformation =
   chainWalletsInformation.filter(
-    (predicate, index, array) =>
-      array.findIndex(t => t.name.toLowerCase().startsWith(predicate.name.toLowerCase())) === index
+    (wallet: { name: string }, index: number, array: ChainWalletsInformation) =>
+      array.findIndex((t: { name: string }) =>
+        t.name.toLowerCase().startsWith(wallet.name.toLowerCase())
+      ) === index
   ) ?? chainWalletsInformation
 
 let walletListToRender = $derived(
@@ -69,72 +72,84 @@ let walletListToRender = $derived(
 
 // Find the currently connected wallet to get its icon
 let connectedWallet = $derived(
-  chainWalletsInformation.find(wallet => wallet.id === connectedWalletId)
+  chainWalletsInformation.find((wallet: { id: string }) => wallet.id === connectedWalletId)
 )
 </script>
 
-<h3 class="capitalize font-supermolot font-bold text-xl mb-4">{chain}</h3>
+<div class="flex flex-col mb-8">
+  <div class="flex flex-col gap-2">
 
-{#if connectStatus === "connected" && address?.length > 0}
-  <!-- Wallet Card -->
-  <div class="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-4 mb-4">
-    <div class="flex items-center justify-between">
-      <div class="flex gap-2 flex-col">
-        <div class="flex items-center gap-4">
-          <div>
-            {#if connectedWallet?.icon}
-              <img src={connectedWallet.icon} alt={connectedWallet.name} class="size-7" />
-            {:else}
-              <div class="size-7 bg-zinc-600 rounded-full"></div>
-            {/if}
+    <div class="flex items-center gap-4 mb-2">
+      <div class="flex-1 h-px bg-zinc-200 dark:bg-zinc-800"></div>
+      <Label class="text-zinc-500 dark:text-zinc-400">{chain}</Label>
+      <div class="flex-1 h-px bg-zinc-200 dark:bg-zinc-800"></div>
+    </div>
+
+    {#if connectStatus === "connected" && address?.length > 0}
+      <!-- Wallet Card -->
+      <div class="w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4">
+        <div class="flex items-center justify-between">
+          <div class="flex gap-2 flex-col">
+            <div class="flex items-center gap-3">
+              {#if connectedWallet?.icon}
+                <img src={connectedWallet.icon} alt={connectedWallet.name} class="size-5" />
+              {/if}
+              <h4 class="capitalize font-bold text-base">{connectedWallet.name}</h4>
+            </div>
+            <Truncate class="font-mono text-zinc-400" value={connectText} maxLength={16} showCopy={true}/>
           </div>
-          <div>
-            <h4 class="capitalize font-bold text-lg">{connectedWallet.name}</h4>
+          <div class="flex flex-col gap-1.5">
+            <button
+              class="group p-2 rounded border border-zinc-200 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition-colors cursor-pointer"
+              onclick={() => onDisconnectClick()}
+              aria-label="Disconnect wallet"
+            >
+              <SharpPowerIcon class="size-4 text-zinc-400 group-hover:text-red-500 transition-colors" />
+            </button>
           </div>
         </div>
-        <Truncate class="font-mono text-zinc-400" value={connectText} maxLength={16} showCopy={false}/>
       </div>
-      <button
-              class="text-zinc-400 hover:text-white focus:outline-none"
-              onclick={() => onDisconnectClick()}
-      >
-        <BaselineCloseIcon class="size-8 text-red-500"/>
-      </button>
+    {/if}
+
+    <!-- Wallet List -->
+    <div class="flex flex-col gap-2">
+      {#each walletListToRender as {name, id, icon, download}, index (index)}
+        {@const walletIdentifier = id}
+        {#if !(connectStatus === "connected" && connectedWalletId === id)}
+          <button
+            role="row"
+            tabindex={0}
+            data-index={index}
+            class="w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4
+                  flex items-center justify-between cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800
+                  transition-colors duration-200 ease-in-out focus:outline-none
+                  text-base font-medium capitalize relative h-12"
+            onclick={async () => {
+              if (connectStatus === "disconnected") {
+                console.info("disconnected, calling onConnectClick")
+                return onConnectClick(walletIdentifier)
+              }
+              console.info("connected, calling onDisconnectClick")
+              return onDisconnectClick()
+            }}
+            aria-label={`${connectStatus === "disconnected" ? "Connect" : "Disconnect"} ${name} wallet`}
+          >
+            <div class="flex items-center gap-3">
+              {#if icon}
+                <img 
+                  src={icon} 
+                  alt={name} 
+                  class="size-5 {connectStatus === 'connected' ? 'grayscale opacity-50' : ''}" 
+                />
+              {/if}
+              <span>{name}</span>
+            </div>
+            {#if (connectStatus === "connecting" || connectStatus === "reconnecting") && connectedWalletId === id}
+              <span class="text-zinc-400">⋯</span>
+            {/if}
+          </button>
+        {/if}
+      {/each}
     </div>
   </div>
-{:else}
-  <!-- Wallet List -->
-  <div class="flex flex-col gap-3">
-    {#each walletListToRender as {name, id, icon, download}, index (index)}
-      {@const walletIdentifier = id}
-      {#if !(connectStatus === "connected" && connectedWalletId !== id)}
-        <button
-                role="row"
-                tabindex={0}
-                data-index={index}
-                class="w-full bg-zinc-50 dark:bg-zinc-800 border border-zinc-200 dark:border-zinc-700 rounded-lg p-3
-                      flex items-center justify-between cursor-pointer hover:bg-zinc-100 dark:hover:bg-zinc-700
-                      transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-zinc-300"
-                onclick={async () => {
-            if (connectStatus === "disconnected") {
-              console.info("disconnected, calling onConnectClick")
-              return onConnectClick(walletIdentifier)
-            }
-            console.info("connected, calling onDisconnectClick")
-            return onDisconnectClick()
-          }}
-        >
-          <div class="flex items-center">
-            <span class="text-base font-medium capitalize">{name}</span>
-          </div>
-          <div class="flex items-center">
-            {#if (connectStatus === "connecting" || connectStatus === "reconnecting") && connectedWalletId === id}
-              <p class="ml-2">🕙</p>
-            {/if}
-            <img src={icon} alt={name} class="size-6 dark:text-white"/>
-          </div>
-        </button>
-      {/if}
-    {/each}
-  </div>
-{/if}
+</div>

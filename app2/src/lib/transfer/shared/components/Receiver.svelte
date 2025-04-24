@@ -405,7 +405,7 @@ function hasBookmarks() {
                           placeholder="Enter receiver address"
                           class={cn(
                       "w-full p-2 py-5 rounded-md bg-zinc-800 text-zinc-200 h-full text-center",
-                      "focus:outline-none focus:ring-1 focus:ring-babylon-orange",
+                      "focus:outline-none focus:ring-1 focus:ring-accent",
                     )}
                   />
                   <div class="flex flex-1 gap-2 w-full">

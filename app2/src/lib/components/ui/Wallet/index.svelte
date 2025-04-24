@@ -6,6 +6,14 @@ import { uiStore } from "$lib/stores/ui.svelte"
 import Modal from "../Modal.svelte"
 
 let currentWalletType = $state("all")
+
+let evmConnected = $state(false)
+let cosmosConnected = $state(false)
+
+$effect(() => {
+  evmConnected = sepoliaStore.connectionStatus === "connected"
+  cosmosConnected = cosmosStore.connectionStatus === "connected"
+})
 </script>
 
 <Modal 
@@ -28,14 +36,20 @@ let currentWalletType = $state("all")
             <button onclick={() => currentWalletType = "evm"}
                     class:bg-zinc-200={currentWalletType === "evm"}
                     class:bg-zinc-800={currentWalletType !== "evm"}
-                    class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-700">
-              Evm
+                    class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-700 flex items-center gap-2">
+              <span>Evm</span>
+              {#if evmConnected}
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_2px_1px_rgba(34,197,94,0.6)]"></span>
+              {/if}
             </button>
             <button onclick={() => currentWalletType = "cosmos"}
                     class:bg-zinc-200={currentWalletType === "cosmos"}
                     class:bg-zinc-800={currentWalletType !== "cosmos"}
-                    class="cursor-pointer rounded-md bg-zinc-800 px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-700">
-              Cosmos
+                    class="cursor-pointer rounded-md px-3 py-1 text-sm font-medium text-zinc-500 hover:text-zinc-700 flex items-center gap-2">
+              <span>Cosmos</span>
+              {#if cosmosConnected}
+                <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse shadow-[0_0_2px_1px_rgba(34,197,94,0.6)]"></span>
+              {/if}
             </button>
             <!--
             <button onclick={() => currentWalletType = "aptos"}

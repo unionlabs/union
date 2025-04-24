@@ -35,23 +35,29 @@ async function copyToClipboard() {
 </script>
 
 <div class={cn("group flex items-center gap-1", className)} {...rest}>
-  <span title={shouldTruncate ? value : undefined}>
-    {displayValue}
-  </span>
   {#if showCopy}
     <button
       type="button"
-      class="p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer opacity-0 group-hover:opacity-100 transition-opacity"
+      class="flex items-center gap-1 p-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer transition-colors"
       onclick={(e) => {
         e.stopPropagation();
         copyToClipboard();
       }}
     >
-      {#if showCopied}
-        <SharpCheckIcon class="text-green-500" />
-      {:else}
-        <SharpContentCopyIcon />
-      {/if}
+      <span title={shouldTruncate ? value : undefined} class="transition-colors">
+        {displayValue}
+      </span>
+      <span class="opacity-0 group-hover:opacity-100 transition-opacity">
+        {#if showCopied}
+          <SharpCheckIcon class="text-green-500" />
+        {:else}
+          <SharpContentCopyIcon />
+        {/if}
+      </span>
     </button>
+  {:else}
+    <span title={shouldTruncate ? value : undefined}>
+      {displayValue}
+    </span>
   {/if}
 </div>

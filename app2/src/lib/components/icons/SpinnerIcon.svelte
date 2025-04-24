@@ -7,7 +7,7 @@ const { class: className }: Props = $props()
 
 <div
         class={cn(
-    "animate-spin rounded-full border-y-2 border-babylon-orange",
+    "animate-spin rounded-full border-y-2 border-accent",
     className
   )}
 ></div>

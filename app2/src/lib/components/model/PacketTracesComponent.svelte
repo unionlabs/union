@@ -170,7 +170,7 @@ function getArrowSpan(
           <div
             class="{Option.isSome(trace.transaction_hash) &&
             (trace.type === 'PACKET_RECV' || trace.type === 'PACKET_ACK')
-              ? 'border-babylon-orange border-2'
+              ? 'border-accent border-2'
               : ''} bg-zinc-800 flex flex-row items-center rounded px-2 py-1"
           >
             <div class="flex flex-col">
@@ -188,7 +188,7 @@ function getArrowSpan(
               {/if}
             </div>
             {#if Option.isSome(trace.transaction_hash) && (trace.type === "PACKET_RECV" || trace.type === "PACKET_ACK")}
-              <div class="bg-babylon-orange rounded-full ml-3 -mr-5">
+              <div class="bg-accent rounded-full ml-3 -mr-5">
                 <SharpCheckIcon class="size-6" />
               </div>
             {/if}
@@ -204,16 +204,16 @@ function getArrowSpan(
           >
             <div
               class="flex-1 h-0.5 {Option.isSome(nextTrace?.transaction_hash)
-                ? 'bg-babylon-orange'
+                ? 'bg-accent'
                 : 'bg-zinc-700'}"
             ></div>
             <div
               class="border-[5px] border-transparent {arrowSpan.isLeft
                 ? Option.isSome(nextTrace?.transaction_hash)
-                  ? 'dark:border-r-babylon-orange'
+                  ? 'dark:border-r-accent'
                   : 'dark:border-r-zinc-700'
                 : Option.isSome(nextTrace?.transaction_hash)
-                  ? 'border-l-babylon-orange dark:border-l-babylon-orange'
+                  ? 'border-l-accent dark:border-l-accent'
                   : 'border-l-zinc-400 dark:border-l-zinc-700'}"
             ></div>
           </div>

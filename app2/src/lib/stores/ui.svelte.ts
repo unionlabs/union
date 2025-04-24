@@ -1,3 +1,6 @@
+import { themes } from "$lib/themes"
+import type { Edition } from "$lib/themes"
+
 class UiStore {
   // TODO: make Option<"wallet"|"settings"|"errors">
   walletModalOpen: boolean = $state(false)
@@ -5,6 +8,18 @@ class UiStore {
   errorsModalOpen: boolean = $state(false)
   showZeroBalances: boolean = $state(false)
   showDeveloperPages: boolean = $state(false)
+
+  edition: Edition = $state("app")
+  overrideEdition: Edition | null = $state(null)
+
+  // Make activeEdition reactive
+  activeEdition: Edition = $derived(this.overrideEdition ?? this.edition)
+  // Make theme reactive
+  theme = $derived(themes[this.activeEdition])
+
+  get accentColor() {
+    return this.theme.accent
+  }
 
   private closeAllModals() {
     this.walletModalOpen = false

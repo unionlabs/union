@@ -46,7 +46,7 @@ const handleRedirect = () => {
             <div class="flex justify-center mb-3">
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                class="h-10 w-10 text-babylon-orange"
+                class="h-10 w-10 text-accent"
                 fill="none"
                 viewBox="0 0 24 24"
                 stroke="currentColor"
