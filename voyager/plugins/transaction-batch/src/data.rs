@@ -10,7 +10,7 @@ use crate::IbcSpecExt;
 #[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum ModuleData {
-    BatchEventsV1(EventBatch<IbcClassic>),
+    BatchEventsClassicc(EventBatch<IbcClassic>),
     BatchEventsUnion(EventBatch<IbcUnion>),
 }
 

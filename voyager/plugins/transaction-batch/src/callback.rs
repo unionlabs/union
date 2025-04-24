@@ -10,15 +10,15 @@ use macros::model;
 use tracing::{debug, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
-    call::{SubmitTx, WaitForClientUpdate},
+    call::{SubmitTx, WaitForClientUpdate, WaitForHeightRelative, WaitForTrustedHeight},
     data::{Data, IbcDatagram, OrderedHeaders},
-    primitives::{ChainId, ClientStateMeta, QueryHeight},
+    primitives::{ChainId, ClientStateMeta, IbcSpec, QueryHeight},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, noop, promise, seq, Op};
 
 use crate::{
-    call::{MakeMsg, ModuleCall},
+    call::{MakeMsg, MakeTransactionBatchesWithUpdate, ModuleCall},
     data::BatchableEvent,
     IbcSpecExt, Module,
 };
@@ -26,8 +26,9 @@ use crate::{
 #[model]
 #[derive(Enumorph)]
 pub enum ModuleCallback {
-    MakeIbcMessagesFromUpdateV1(MakeIbcMessagesFromUpdate<IbcClassic>),
+    MakeIbcMessagesFromUpdateClassic(MakeIbcMessagesFromUpdate<IbcClassic>),
     MakeIbcMessagesFromUpdateUnion(MakeIbcMessagesFromUpdate<IbcUnion>),
+
     MakeBatchTransactionV1(MakeBatchTransaction<IbcClassic>),
     MakeBatchTransactionUnion(MakeBatchTransaction<IbcUnion>),
 }
@@ -42,7 +43,7 @@ pub struct MakeIbcMessagesFromUpdate<V: IbcSpecExt> {
 
 impl<V: IbcSpecExt> MakeIbcMessagesFromUpdate<V>
 where
-    ModuleCall: From<MakeMsg<V>>,
+    ModuleCall: From<MakeMsg<V>> + From<MakeTransactionBatchesWithUpdate<V>>,
     ModuleCallback: From<MakeBatchTransaction<V>>,
 {
     pub async fn call(
@@ -107,7 +108,7 @@ pub fn make_msgs<V: IbcSpecExt>(
     module_server: &Module,
 
     client_id: V::ClientId,
-    batches: Vec<Vec<BatchableEvent<V>>>,
+    mut batches: Vec<Vec<BatchableEvent<V>>>,
 
     updates: Option<OrderedHeaders>,
 
@@ -115,15 +116,20 @@ pub fn make_msgs<V: IbcSpecExt>(
     new_trusted_height: Height,
 ) -> RpcResult<Op<VoyagerMessage>>
 where
-    ModuleCall: From<MakeMsg<V>>,
+    ModuleCall: From<MakeMsg<V>> + From<MakeTransactionBatchesWithUpdate<V>>,
     ModuleCallback: From<MakeBatchTransaction<V>>,
 {
-    Ok(conc(batches.into_iter().enumerate().map(|(i, batch)| {
+    let head = batches.pop();
+    let tail = batches;
+
+    let mk_batch_promise = |batch: Vec<BatchableEvent<_>>, updates: Option<OrderedHeaders>| {
         promise(
             batch.into_iter().map(|batchable_event| {
+                // this is an assert and not an error because it indicates a bug in the business logic of this plugin. if a message was manually inserted into the queue and this assert was hit, it means the message is invalid.
                 assert!(
                     batchable_event.provable_height <= new_trusted_height,
-                    "{} <= {}",
+                    "the provable height of the event is less than the trusted height \
+                    of the client ({} <= {}, client {client_id})",
                     batchable_event.provable_height,
                     new_trusted_height
                 );
@@ -155,12 +161,58 @@ where
                 module_server.plugin_name(),
                 ModuleCallback::from(MakeBatchTransaction {
                     client_id: client_id.clone(),
-                    // if updates are provided and this is the first batch using this update height, provide the updates along with the messages
-                    updates: (i == 0).then(|| updates.clone()).flatten(),
+                    updates,
                 }),
             ),
         )
-    })))
+    };
+
+    match (head, updates) {
+        // both messages and updates: make one batch of messages including the updates, and then queue a separate message that waits for the effect of that update to be included
+        (Some(head), Some(updates)) => {
+            Ok(conc(
+                [mk_batch_promise(head, Some(updates))]
+                    .into_iter()
+                    .chain((!tail.is_empty()).then(|| {
+                        seq([
+                            call(WaitForTrustedHeight {
+                                chain_id: module_server.chain_id.clone(),
+                                ibc_spec_id: IbcUnion::ID,
+                                client_id: RawClientId::new(client_id.clone()),
+                                height: new_trusted_height,
+                                finalized: false,
+                            }),
+                            // wait for 1 extra block to ensure that the transaction containing the update is in state, and these messages will not end up in the same block (and potentially get reordered)
+                            call(WaitForHeightRelative {
+                                chain_id: module_server.chain_id.clone(),
+                                height_diff: 1,
+                                finalized: false,
+                            }),
+                            call(PluginMessage::new(
+                                module_server.plugin_name(),
+                                ModuleCall::from(MakeTransactionBatchesWithUpdate::<V> {
+                                    client_id,
+                                    batches: tail,
+                                }),
+                            )),
+                        ])
+                    })),
+            ))
+        }
+        // no messages, only updates: thread the updates through
+        (None, Some(updates)) => Ok(mk_batch_promise(vec![], Some(updates))),
+        // only messages, no updates: the client is assumed to already be updated to this height, so we can safely batch the updates without waiting
+        (Some(head), None) => Ok(conc([
+            mk_batch_promise(head, None),
+            conc(tail.into_iter().map(|batch| mk_batch_promise(batch, None))),
+        ])),
+        // neither updates nor messages?
+        (None, None) => {
+            warn!("neither updates nor messages passed to make_msgs, noop");
+
+            Ok(noop())
+        }
+    }
 }
 
 #[model]
