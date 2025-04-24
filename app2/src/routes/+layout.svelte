@@ -37,7 +37,6 @@ $effect(() => {
   } else if (hostname.startsWith("app.") || hostname.startsWith("staging.app.")) {
     uiStore.edition = "app"
   } else {
-    // Default to app for local development
     uiStore.edition = "app"
   }
 })

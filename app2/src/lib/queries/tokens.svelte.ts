@@ -1,10 +1,27 @@
 import { Effect, Option, Schema } from "effect"
-import type { UniversalChainId } from "@unionlabs/sdk/schema"
+import { UniversalChainId } from "@unionlabs/sdk/schema"
 import { TokenRawDenom, Tokens } from "@unionlabs/sdk/schema"
 import { isTokenBlacklisted } from "$lib/constants/tokens"
 import { createQueryGraphql, fetchDecodeGraphql } from "$lib/utils/queries"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { graphql } from "gql.tada"
+import { uiStore } from "$lib/stores/ui.svelte"
+import type { Edition } from "$lib/themes"
+
+const WHITELIST_CHAINS: Record<Edition, Array<UniversalChainId>> = {
+  btc: [
+    UniversalChainId.make("babylon.bbn-1"),
+    UniversalChainId.make("corn.21000000"),
+    UniversalChainId.make("bob.60808"),
+    UniversalChainId.make("ethereum.1")
+  ],
+  app: [UniversalChainId.make("ethereum.1")]
+}
+
+function getWhitelistArg(universalChainId: UniversalChainId) {
+  const chains = WHITELIST_CHAINS[uiStore.activeEdition]
+  return chains.some(chain => chain === universalChainId) ? "p_whitelist: true" : ""
+}
 
 export const tokensQuery = (universalChainId: UniversalChainId) =>
   Effect.gen(function* () {
@@ -13,7 +30,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
       schema: Schema.Struct({ v2_tokens: Tokens }),
       document: graphql(`
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
-          v2_tokens(args: { p_whitelist: true, p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
+          v2_tokens(args: { ${getWhitelistArg(universalChainId)}, p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
             rank
             denom
             bucket {
