@@ -120,6 +120,20 @@
         options = [ ];
         includes = [ "*.move" ];
       };
+      deployments-json = {
+        command =
+          let
+            format-deployments = pkgs.writeShellScriptBin "format-deployments" ''
+              ${pkgs.jq}/bin/jq . "$1" -S | ${pkgs.moreutils}/bin/sponge "$1"
+            '';
+          in
+          "${format-deployments}/bin/format-deployments";
+        options = [ ];
+        includes = [
+          "deployments/channels.json"
+          "deployments/editions.json"
+        ];
+      };
     };
     global = {
       hidden = true;
