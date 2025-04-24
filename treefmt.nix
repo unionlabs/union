@@ -1,6 +1,6 @@
-# https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
 {
   pkgs,
+  lib,
   rust,
   pkgsUnstable,
   movefmt,
@@ -119,6 +119,22 @@
         command = "${movefmt}/bin/movefmt";
         options = [ ];
         includes = [ "*.move" ];
+      };
+      deployments-json = {
+        command = lib.getExe (
+          pkgs.writeShellScriptBin "format-deployments" ''
+            # sort with jq
+            ${lib.getExe pkgs.jq} . "$1" -S | ${lib.getExe' pkgs.moreutils "sponge"} "$1"
+
+            # format using biome
+            ${lib.getExe pkgs.biome} format --config-path ./biome.json --write "$1"
+          ''
+        );
+        options = [ ];
+        includes = [
+          "deployments/channels.json"
+          "deployments/editions.json"
+        ];
       };
     };
     global = {
