@@ -171,6 +171,9 @@ const filterChainsByTokenAvailability = (chains: Array<Chain>): Array<ChainWithA
             onNone: () => chains.map(chain => Tuple.make(chain, false)),
             onSome: ({ baseToken, sourceChain }) =>
               chains.map(destinationChain => {
+                if (destinationChain.testnet === true) {
+                  return Tuple.make(destinationChain, true)
+                }
                 const tokens = tokensStore.getData(destinationChain.universal_chain_id)
                 return Option.match(tokens, {
                   onNone: () => Tuple.make(destinationChain, false),
