@@ -707,7 +707,8 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
             }),
           catch: err => {
             console.error("fetchMissingPackets (next) failed:", err)
-            throw err
+            return []
+
           }
         })
       } else {
@@ -730,7 +731,7 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
             }),
           catch: err => {
             console.error("fetchMissingPackets (first) failed:", err)
-            throw err
+            return []
           }
         })
       }
@@ -755,58 +756,62 @@ export const checkPackets = (
   Effect.gen(function* () {
     yield* fetchOnlyUniBTC(hasuraEndpoint, "mainnet")
 
-    const missingPacketsMainnet = yield* fetchMissingPackets(
-      hasuraEndpoint,
-      `mainnet` // TODO: Hardcoded for now
-    )
-    yield* Effect.log(`Fetched ${missingPacketsMainnet.length} missingPackets from Hasura`)
-
-    for (const missingPacket of missingPacketsMainnet) {
-      const whole_description = {
-        issueType: "TRANSFER_FAILED",
-        currentStatus: missingPacket.status,
-        sourceChain: missingPacket.source_chain.universal_chain_id,
-        destinationChain: missingPacket.destination_chain.universal_chain_id,
-        packetSendTimestamp: missingPacket.packet_send_timestamp,
-        packetHash: missingPacket.packet_hash,
-        explorerUrl: `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`
-      }
-      const logEffect = Effect.annotateLogs(whole_description)(
-        Effect.logError(`MAINNET_TRANSFER_ERROR`)
+    for(const sla of ["mainnet", "testnet"]) {
+      const transfer_error = sla === "mainnet"
+      ? "MAINNET_TRANSFER_ERROR"
+      : "TESTNET_TRANSFER_ERROR"
+      const missingPacketsMainnet = yield* fetchMissingPackets(
+        hasuraEndpoint,
+        sla
       )
-
-      if (!hasErrorOpen(db, missingPacket.packet_hash)) {
-        const val = yield* triggerIncident(
-          "MAINNET_TRANSFER_ERROR: " +
-            `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`,
-          JSON.stringify(whole_description),
-          betterstack_api_key,
-          "SENTINEL@union.build",
-          "MAINNET_TRANSFER_ERROR",
-          "Union",
-          isLocal
+      yield* Effect.log(`Fetched ${missingPacketsMainnet.length} missingPackets from Hasura`)
+  
+      for (const missingPacket of missingPacketsMainnet) {
+        const whole_description = {
+          issueType: "TRANSFER_FAILED",
+          currentStatus: missingPacket.status,
+          sourceChain: missingPacket.source_chain.universal_chain_id,
+          destinationChain: missingPacket.destination_chain.universal_chain_id,
+          packetSendTimestamp: missingPacket.packet_send_timestamp,
+          packetHash: missingPacket.packet_hash,
+          explorerUrl: `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`
+        }
+        const logEffect = Effect.annotateLogs(whole_description)(
+          Effect.logError(transfer_error)
         )
-        markTransferError(db, missingPacket.packet_hash, val.data.id)
+  
+        if (!hasErrorOpen(db, missingPacket.packet_hash)) {
+          const val = yield* triggerIncident(
+            transfer_error + " : " +
+              `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`,
+            JSON.stringify(whole_description),
+            betterstack_api_key,
+            "SENTINEL@union.build",
+            transfer_error,
+            "Union",
+            isLocal
+          )
+          markTransferError(db, missingPacket.packet_hash, val.data.id)
+        }
+        Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
       }
-      Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-    }
+      const openErrors = getOpenErrors(db)
 
-    const openErrors = getOpenErrors(db)
+      const missingSet = new Set(missingPacketsMainnet.map(p => p.packet_hash))
 
-    const missingSet = new Set(missingPacketsMainnet.map(p => p.packet_hash))
-
-    for (const { packet_hash, incident_id } of openErrors) {
-      if (!missingSet.has(packet_hash)) {
-        yield* Effect.log(`Auto-resolving incident for packet ${packet_hash}`)
-        yield* resolveIncident(
-          incident_id,
-          betterstack_api_key,
-          "Sentinel-Automatically resolved.",
-          isLocal
-        )
-        clearTransferError(db, packet_hash)
+      for (const { packet_hash, incident_id } of openErrors) {
+        if (!missingSet.has(packet_hash)) {
+          yield* Effect.log(`Auto-resolving incident for packet ${packet_hash}`)
+          yield* resolveIncident(
+            incident_id,
+            betterstack_api_key,
+            "Sentinel-Automatically resolved.",
+            isLocal
+          )
+          clearTransferError(db, packet_hash)
+        }
       }
-    }
+  }
   }).pipe(Effect.withLogSpan("checkPackets"))
 
 const runIbcChecksForever = Effect.gen(function* (_) {
