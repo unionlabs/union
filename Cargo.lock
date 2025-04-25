@@ -8957,23 +8957,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "native-token-minter"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "cosmwasm-schema 2.2.2",
- "cosmwasm-std 2.2.2",
- "cw-storage-plus 2.0.0",
- "ibc-union-spec",
- "prost 0.12.6",
- "protos",
- "thiserror 2.0.12",
- "token-factory-api",
- "ucs03-zkgm-token-minter-api",
- "unionlabs",
-]
-
-[[package]]
 name = "near-account-id"
 version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -9507,6 +9490,24 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "68f19d67e5a2795c94e73e0bb1cc1a7edeb2e28efd39e2e1c9b7a40c1108b11c"
 dependencies = [
  "num-traits",
+]
+
+[[package]]
+name = "osmosis-tf-token-minter"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "cw-storage-plus 2.0.0",
+ "embed-commit",
+ "ibc-union-spec",
+ "prost 0.12.6",
+ "protos",
+ "thiserror 2.0.12",
+ "token-factory-api",
+ "ucs03-zkgm-token-minter-api",
+ "unionlabs",
 ]
 
 [[package]]

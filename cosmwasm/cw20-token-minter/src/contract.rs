@@ -26,12 +26,16 @@ pub fn instantiate(
     deps: DepsMut,
     _: Env,
     info: MessageInfo,
-    TokenMinterInitMsg::Cw20 {
+    msg: TokenMinterInitMsg,
+) -> Result<Response, Error> {
+    let TokenMinterInitMsg::Cw20 {
         cw20_base_code_id,
         dummy_code_id,
         zkgm_admin,
-    }: TokenMinterInitMsg,
-) -> StdResult<Response> {
+    } = msg
+    else {
+        return Err(Error::InvalidMinterConfig);
+    };
     CONFIG.save(
         deps.storage,
         &Config {

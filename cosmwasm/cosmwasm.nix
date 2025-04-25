@@ -189,6 +189,30 @@ _: {
           ];
         }
         {
+          chain-id = "osmosis-devnet-1";
+          name = "osmosis-devnet";
+          rpc_url = "http://localhost:26857";
+          private_key = "0xaa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f";
+          gas_config = {
+            type = "fixed";
+            gas_price = "0.05";
+            gas_denom = "uosmo";
+            gas_multiplier = "1.1";
+            max_gas = 300000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.osmosis-tf // {
+              rate_limit_disabled = true;
+            };
+          };
+          bech32_prefix = "osmo";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
           chain-id = "osmo-test-5";
           name = "osmosis-testnet";
           rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
@@ -422,12 +446,12 @@ _: {
           };
           rate_limit_disabled = false;
         };
-        native = {
+        osmosis-tf = {
           rate_limit_disabled = false;
           path = "${ucs03-zkgm.release}";
-          # token_minter_path = "${token-factory-minter.release}";
+          token_minter_path = "${osmosis-tf-token-minter.release}";
           token_minter_config = {
-            native = { };
+            osmosis-tf = { };
           };
         };
       };
@@ -791,6 +815,8 @@ _: {
 
       cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
 
+      osmosis-tf-token-minter = crane.buildWasmContract "cosmwasm/osmosis-tf-token-minter" { };
+
       # update-deployments-json deployer
       update-deployments-json =
         { name, rpc_url, ... }:
@@ -922,8 +948,8 @@ _: {
             ucs03-zkgm
             cw20-base
             cosmwasm-deployer
-            # native-token-minter
             cw20-token-minter
+            osmosis-tf-token-minter
             ibc-union
             multicall
             ;

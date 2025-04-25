@@ -1,8 +1,6 @@
 use cosmwasm_std::Addr;
-use cw_storage_plus::{Item, Map};
+use cw_storage_plus::Item;
 
 pub const ADMIN: Item<Addr> = Item::new("admin");
 
 pub const TOKEN_ADMIN: Item<Addr> = Item::new("token_admin");
-
-pub const WRAPPED_TOKEN_TO_DENOM: Map<String, String> = Map::new("wttd");

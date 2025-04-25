@@ -36,4 +36,7 @@ pub enum Error {
 
     #[error("{0:?}")]
     U256Parse(ParseError),
+
+    #[error("minter config is expected to be cw20")]
+    InvalidMinterConfig,
 }

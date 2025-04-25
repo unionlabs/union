@@ -14,4 +14,10 @@ pub enum Error {
 
     #[error("{0:?}")]
     U256Parse(ParseError),
+
+    #[error("invalid denom {0}")]
+    InvalidDenom(String),
+
+    #[error("minter config is expected to be cw20")]
+    InvalidMinterConfig,
 }

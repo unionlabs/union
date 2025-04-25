@@ -12,7 +12,7 @@ use protos::{
 use token_factory_api::{TokenFactoryMsg, TokenFactoryQuery};
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
-    WrappedTokenMsg,
+    TokenMinterInitMsg, WrappedTokenMsg,
 };
 use unionlabs::{
     ethereum::keccak256,
@@ -24,21 +24,19 @@ pub const DEFAULT_DECIMALS: u8 = 6;
 
 use crate::{
     error::Error,
-    state::{ADMIN, TOKEN_ADMIN, WRAPPED_TOKEN_TO_DENOM},
+    state::{ADMIN, TOKEN_ADMIN},
 };
-
-#[cw_serde]
-pub enum TokenMinterInitMsg {
-    Native { zkgm_admin: Addr },
-}
 
 #[entry_point]
 pub fn instantiate(
     deps: DepsMut,
     _: Env,
     info: MessageInfo,
-    TokenMinterInitMsg::Native { zkgm_admin }: TokenMinterInitMsg,
-) -> StdResult<Response> {
+    msg: TokenMinterInitMsg,
+) -> Result<Response, Error> {
+    let TokenMinterInitMsg::OsmosisTokenFactory { zkgm_admin } = msg else {
+        return Err(Error::InvalidMinterConfig);
+    };
     ADMIN.save(deps.storage, &info.sender)?;
     TOKEN_ADMIN.save(deps.storage, &zkgm_admin)?;
     Ok(Response::default())
@@ -50,6 +48,17 @@ pub struct MigrateMsg {}
 #[entry_point]
 pub fn migrate(_: DepsMut, _: Env, _: MigrateMsg) -> StdResult<Response> {
     Ok(Response::new())
+}
+
+fn deconstruct_factory_denom(env: &Env, denom: &str) -> Result<String, Error> {
+    let denom_parts = denom.split('/').collect::<Vec<&str>>();
+
+    match denom_parts.get(0..3) {
+        Some(&["factory", addr, subdenom]) if addr == env.contract.address.as_str() => {
+            Ok(subdenom.to_string())
+        }
+        _ => Err(Error::InvalidDenom(denom.to_string())),
+    }
 }
 
 #[entry_point]
@@ -69,47 +78,32 @@ pub fn execute(
                 WrappedTokenMsg::CreateDenom {
                     subdenom, metadata, ..
                 } => {
-                    WRAPPED_TOKEN_TO_DENOM.save(
-                        deps.storage,
-                        subdenom.clone(),
-                        &factory_denom(&subdenom, env.contract.address.as_str()),
-                    )?;
-
-                    let factory = factory_denom(&subdenom, env.contract.address.as_str());
+                    let denom = subdenom;
+                    let subdenom = deconstruct_factory_denom(&env, &denom)?;
 
                     vec![
-                        CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
-                            subdenom: subdenom.clone(),
-                            // metadata: Some(token_factory_api::Metadata {
-                            //     description: None,
-                            //     denom_units: vec![token_factory_api::DenomUnit {
-                            //         denom: subdenom.clone(),
-                            //         exponent: 0,
-                            //         aliases: vec![],
-                            //     }],
-                            //     base: None,
-                            //     display: Some(subdenom.clone()),
-                            //     name: Some(metadata.name),
-                            //     symbol: Some(metadata.symbol),
-                            //     uri: None,
-                            //     uri_hash: None,
-                            // }),
-                        }),
+                        CosmosMsg::Custom(TokenFactoryMsg::CreateDenom { subdenom }),
+                        #[allow(deprecated)]
                         CosmosMsg::Stargate {
-                            // type_url: MsgSetDenomMetadata::full_name(),
-                            type_url: "/osmosis.tokenfactory.v1beta1.MsgSetDenomMetadata"
-                                .to_string(),
+                            type_url: MsgSetDenomMetadata::type_url(),
                             value: MsgSetDenomMetadata {
                                 sender: env.contract.address.to_string(),
                                 metadata: Some(protos::cosmos::bank::v1beta1::Metadata {
                                     description: "".to_string(),
-                                    denom_units: vec![DenomUnit {
-                                        denom: factory.clone(),
-                                        exponent: 0,
-                                        aliases: vec![],
-                                    }],
-                                    base: factory.clone(),
-                                    display: factory.clone(),
+                                    denom_units: vec![
+                                        DenomUnit {
+                                            denom: denom.clone(),
+                                            exponent: 0,
+                                            aliases: vec![metadata.symbol.clone()],
+                                        },
+                                        DenomUnit {
+                                            denom: metadata.symbol.clone(),
+                                            exponent: 18,
+                                            aliases: vec![],
+                                        },
+                                    ],
+                                    base: denom.clone(),
+                                    display: metadata.symbol.clone(),
                                     name: metadata.name,
                                     symbol: metadata.symbol,
                                     uri: "".to_string(),
@@ -120,7 +114,7 @@ pub fn execute(
                             .into(),
                         },
                         CosmosMsg::Custom(TokenFactoryMsg::ChangeAdmin {
-                            denom: factory,
+                            denom,
                             new_admin_address: TOKEN_ADMIN.load(deps.storage)?.to_string(),
                         }),
                     ]
@@ -130,7 +124,6 @@ pub fn execute(
                     amount,
                     mint_to_address,
                 } => {
-                    let denom = WRAPPED_TOKEN_TO_DENOM.load(deps.storage, denom)?;
                     vec![CosmosMsg::Custom(TokenFactoryMsg::MintTokens {
                         denom,
                         amount,
@@ -143,7 +136,6 @@ pub fn execute(
                     burn_from_address,
                     ..
                 } => {
-                    let denom = WRAPPED_TOKEN_TO_DENOM.load(deps.storage, denom)?;
                     let contains_base_token = info
                         .funds
                         .iter()
@@ -201,7 +193,7 @@ pub fn query(deps: Deps<TokenFactoryQuery>, env: Env, msg: QueryMsg) -> Result<B
             channel_id,
             token,
         } => {
-            let denom = calculate_salt(
+            let subdenom = calculate_salt(
                 path.parse::<U256>().map_err(Error::U256Parse)?,
                 channel_id,
                 token.to_vec(),
@@ -210,7 +202,7 @@ pub fn query(deps: Deps<TokenFactoryQuery>, env: Env, msg: QueryMsg) -> Result<B
             let denom = format!(
                 "factory/{}/{}",
                 env.contract.address,
-                Bytes::<HexPrefixed>::new(denom)
+                Bytes::<HexPrefixed>::new(subdenom)
             );
 
             Ok(to_json_binary(&PredictWrappedTokenResponse {
@@ -242,8 +234,4 @@ pub fn query(deps: Deps<TokenFactoryQuery>, env: Env, msg: QueryMsg) -> Result<B
             })?)
         }
     }
-}
-
-fn factory_denom(token: &str, contract: &str) -> String {
-    format!("factory/{}/{}", contract, token)
 }
