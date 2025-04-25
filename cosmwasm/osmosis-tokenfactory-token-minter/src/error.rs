@@ -1,7 +1,7 @@
 use alloy::primitives::ruint::ParseError;
 use cosmwasm_std::{StdError, Uint128};
 
-#[derive(Debug, thiserror::Error)]
+#[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
     #[error(transparent)]
     StdError(#[from] StdError),
@@ -12,8 +12,8 @@ pub enum Error {
     #[error("missing funds for denom {denom} with amount {amount}")]
     MissingFunds { denom: String, amount: Uint128 },
 
-    #[error("{0:?}")]
-    U256Parse(ParseError),
+    #[error("invalid path: {0:?}")]
+    InvalidPath(ParseError),
 
     #[error("invalid denom {0}")]
     InvalidDenom(String),
