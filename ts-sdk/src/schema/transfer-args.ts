@@ -16,6 +16,9 @@ const BaseTransferFields = {
   quoteAmount: TokenRawAmount.annotations({
     message: () => "quoteAmount must be a valid bigint string (e.g., '1000000')"
   }),
+  decimals: S.Number.annotations({
+    message: () => "decimals must be a valid number (e.g., 18)"
+  }),
   sourceChannelId: ChannelId.annotations({
     message: () => "sourceChannelId must be a non-negative integer"
   }),

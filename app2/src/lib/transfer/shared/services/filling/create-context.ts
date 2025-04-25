@@ -17,6 +17,7 @@ export type Intent = {
   baseToken: string
   baseAmount: TokenRawAmount
   quoteAmount: TokenRawAmount
+  decimals: number
   sourceChain: Chain
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
@@ -65,6 +66,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
         baseToken: args.baseToken,
         baseAmount,
         quoteAmount: baseAmount,
+        decimals: args.decimals,
         sourceChain: args.sourceChain,
         sourceChainId: args.sourceChain.universal_chain_id,
         sourceChannelId: args.channel.source_channel_id,
@@ -93,6 +95,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
         baseToken: baseToken,
         baseAmount: baseAmountWithFee,
         quoteAmount: baseAmount,
+        decimals: args.decimals,
         sourceChain: args.sourceChain,
         sourceChainId: args.sourceChain.universal_chain_id,
         sourceChannelId: args.channel.source_channel_id,
