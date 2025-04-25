@@ -60,5 +60,6 @@ pkgs.buildNpmPackage (
       ;
     npmConfigHook = pnpm.configHook;
     npmDeps = pnpmDeps;
+    NODE_OPTIONS = "--max-old-space-size=8192"; # Important! prevents out-of-memory errors when building .#app
   }
 )
