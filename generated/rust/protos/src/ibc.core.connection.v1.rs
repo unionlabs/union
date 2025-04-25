@@ -203,6 +203,28 @@ impl State {
         }
     }
 }
+/// GenesisState defines the ibc connection submodule's genesis state.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub connections: ::prost::alloc::vec::Vec<IdentifiedConnection>,
+    #[prost(message, repeated, tag = "2")]
+    pub client_connection_paths: ::prost::alloc::vec::Vec<ConnectionPaths>,
+    /// the sequence for the next generated connection identifier
+    #[prost(uint64, tag = "3")]
+    pub next_connection_sequence: u64,
+    #[prost(message, optional, tag = "4")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
+    const PACKAGE: &'static str = "ibc.core.connection.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
+    }
+}
 /// QueryConnectionRequest is the request type for the Query/Connection RPC
 /// method
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
@@ -397,7 +419,7 @@ impl ::prost::Name for QueryConnectionConsensusStateRequest {
 pub struct QueryConnectionConsensusStateResponse {
     /// consensus state associated with the channel
     #[prost(message, optional, tag = "1")]
-    pub consensus_state: ::core::option::Option<::pbjson_types::Any>,
+    pub consensus_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// client ID associated with the consensus state
     #[prost(string, tag = "2")]
     pub client_id: ::prost::alloc::string::String,
@@ -494,7 +516,7 @@ pub struct MsgConnectionOpenTry {
     pub previous_connection_id: ::prost::alloc::string::String,
     #[deprecated]
     #[prost(message, optional, tag = "3")]
-    pub client_state: ::core::option::Option<::pbjson_types::Any>,
+    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     #[prost(message, optional, tag = "4")]
     pub counterparty: ::core::option::Option<Counterparty>,
     #[prost(uint64, tag = "5")]
@@ -558,7 +580,7 @@ pub struct MsgConnectionOpenAck {
     pub version: ::core::option::Option<Version>,
     #[deprecated]
     #[prost(message, optional, tag = "4")]
-    pub client_state: ::core::option::Option<::pbjson_types::Any>,
+    pub client_state: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     #[prost(message, optional, tag = "5")]
     pub proof_height: ::core::option::Option<super::super::client::v1::Height>,
     /// proof of the initialization the connection on Chain B: `UNITIALIZED ->
@@ -671,27 +693,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
     }
 }
-/// GenesisState defines the ibc connection submodule's genesis state.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub connections: ::prost::alloc::vec::Vec<IdentifiedConnection>,
-    #[prost(message, repeated, tag = "2")]
-    pub client_connection_paths: ::prost::alloc::vec::Vec<ConnectionPaths>,
-    /// the sequence for the next generated connection identifier
-    #[prost(uint64, tag = "3")]
-    pub next_connection_sequence: u64,
-    #[prost(message, optional, tag = "4")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for GenesisState {
-    const NAME: &'static str = "GenesisState";
-    const PACKAGE: &'static str = "ibc.core.connection.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.core.connection.v1.{}", Self::NAME)
-    }
-}
-include!("ibc.core.connection.v1.tonic.rs");
 // @@protoc_insertion_point(module)

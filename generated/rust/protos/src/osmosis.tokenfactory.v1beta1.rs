@@ -438,5 +438,4 @@ impl ::prost::Name for MsgForceTransferResponse {
         ::prost::alloc::format!("osmosis.tokenfactory.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.tokenfactory.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

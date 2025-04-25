@@ -182,5 +182,4 @@ impl ::prost::Name for QueryEpochProvisionsResponse {
         ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.mint.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

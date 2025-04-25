@@ -34,5 +34,4 @@ impl ::prost::Name for SpotPriceResponse {
         ::prost::alloc::format!("osmosis.poolmanager.v2.{}", Self::NAME)
     }
 }
-include!("osmosis.poolmanager.v2.tonic.rs");
 // @@protoc_insertion_point(module)

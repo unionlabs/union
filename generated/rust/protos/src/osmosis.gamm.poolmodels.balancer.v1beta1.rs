@@ -33,5 +33,4 @@ impl ::prost::Name for MsgCreateBalancerPoolResponse {
         ::prost::alloc::format!("osmosis.gamm.poolmodels.balancer.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.gamm.poolmodels.balancer.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

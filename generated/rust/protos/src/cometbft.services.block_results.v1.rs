@@ -38,5 +38,4 @@ impl ::prost::Name for GetBlockResultsResponse {
         ::prost::alloc::format!("cometbft.services.block_results.v1.{}", Self::NAME)
     }
 }
-include!("cometbft.services.block_results.v1.tonic.rs");
 // @@protoc_insertion_point(module)

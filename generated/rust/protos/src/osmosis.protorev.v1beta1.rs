@@ -1078,5 +1078,4 @@ impl ::prost::Name for MsgSetPoolWeights {
         ::prost::alloc::format!("osmosis.protorev.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.protorev.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

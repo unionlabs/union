@@ -36,5 +36,4 @@ impl ::prost::Name for QuerySpotPriceResponse {
         ::prost::alloc::format!("osmosis.gamm.v2.{}", Self::NAME)
     }
 }
-include!("osmosis.gamm.v2.tonic.rs");
 // @@protoc_insertion_point(module)

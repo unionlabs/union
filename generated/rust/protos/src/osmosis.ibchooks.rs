@@ -57,5 +57,4 @@ impl ::prost::Name for MsgEmitIbcAckResponse {
         ::prost::alloc::format!("osmosis.ibchooks.{}", Self::NAME)
     }
 }
-include!("osmosis.ibchooks.tonic.rs");
 // @@protoc_insertion_point(module)

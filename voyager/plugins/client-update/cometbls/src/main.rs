@@ -25,7 +25,6 @@ use jsonrpsee::{
     Extensions,
 };
 use num_bigint::BigUint;
-use protos::union::galois::api::v3::union_prover_api_client;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{bounded::BoundedI64, ibc::core::client::height::Height};

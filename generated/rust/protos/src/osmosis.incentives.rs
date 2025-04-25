@@ -25,7 +25,7 @@ pub struct Gauge {
     pub coins: ::prost::alloc::vec::Vec<super::super::cosmos::base::v1beta1::Coin>,
     /// start_time is the distribution start time
     #[prost(message, optional, tag = "5")]
-    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// num_epochs_paid_over is the number of total epochs distribution will be
     /// completed over
     #[prost(uint64, tag = "6")]
@@ -50,7 +50,7 @@ impl ::prost::Name for Gauge {
 pub struct LockableDurationsInfo {
     /// List of incentivised durations that gauges will pay out to
     #[prost(message, repeated, tag = "1")]
-    pub lockable_durations: ::prost::alloc::vec::Vec<::pbjson_types::Duration>,
+    pub lockable_durations: ::prost::alloc::vec::Vec<super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for LockableDurationsInfo {
     const NAME: &'static str = "LockableDurationsInfo";
@@ -89,7 +89,7 @@ pub struct Params {
     /// the uptime of those incentives as well (i.e. distributions through volume
     /// splitting incentives will use this uptime).
     #[prost(message, optional, tag = "4")]
-    pub internal_uptime: ::core::option::Option<::pbjson_types::Duration>,
+    pub internal_uptime: ::core::option::Option<super::super::google::protobuf::Duration>,
     /// min_value_for_distribution is the minimum amount a token must be worth
     /// in order to be eligible for distribution. If the token is worth
     /// less than this amount (or the route between the two denoms is not
@@ -242,7 +242,7 @@ pub struct GenesisState {
     /// lockable_durations are all lockup durations that gauges can be locked for
     /// in order to receive incentives
     #[prost(message, repeated, tag = "3")]
-    pub lockable_durations: ::prost::alloc::vec::Vec<::pbjson_types::Duration>,
+    pub lockable_durations: ::prost::alloc::vec::Vec<super::super::google::protobuf::Duration>,
     /// last_gauge_id is what the gauge number will increment from when creating
     /// the next gauge after genesis
     #[prost(uint64, tag = "4")]
@@ -550,7 +550,7 @@ impl ::prost::Name for QueryLockableDurationsRequest {
 pub struct QueryLockableDurationsResponse {
     /// Time durations that users can lock coins for in order to receive rewards
     #[prost(message, repeated, tag = "1")]
-    pub lockable_durations: ::prost::alloc::vec::Vec<::pbjson_types::Duration>,
+    pub lockable_durations: ::prost::alloc::vec::Vec<super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for QueryLockableDurationsResponse {
     const NAME: &'static str = "QueryLockableDurationsResponse";
@@ -836,7 +836,7 @@ pub struct MsgCreateGauge {
     pub coins: ::prost::alloc::vec::Vec<super::super::cosmos::base::v1beta1::Coin>,
     /// start_time is the distribution start time
     #[prost(message, optional, tag = "5")]
-    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// num_epochs_paid_over is the number of epochs distribution will be completed
     /// over
     #[prost(uint64, tag = "6")]
@@ -938,5 +938,4 @@ impl ::prost::Name for MsgCreateGroupResponse {
         ::prost::alloc::format!("osmosis.incentives.{}", Self::NAME)
     }
 }
-include!("osmosis.incentives.tonic.rs");
 // @@protoc_insertion_point(module)

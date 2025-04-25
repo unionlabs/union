@@ -120,5 +120,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("cosmos.consensus.v1.{}", Self::NAME)
     }
 }
-include!("cosmos.consensus.v1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -218,5 +218,4 @@ impl ::prost::Name for MsgCreatePeriodicVestingAccountResponse {
         ::prost::alloc::format!("cosmos.vesting.v1beta1.{}", Self::NAME)
     }
 }
-include!("cosmos.vesting.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

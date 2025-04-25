@@ -23,7 +23,7 @@ pub struct TwapRecord {
     /// This field should only exist until we have a global registry in the state
     /// machine, mapping prior block heights within {TIME RANGE} to times.
     #[prost(message, optional, tag = "5")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// We store the last spot prices in the struct, so that we can interpolate
     /// accumulator values for times between when accumulator records are stored.
     #[prost(string, tag = "6")]
@@ -40,7 +40,7 @@ pub struct TwapRecord {
     /// It is used to alert the caller if they are getting a potentially erroneous
     /// TWAP, due to an unforeseen underlying error.
     #[prost(message, optional, tag = "11")]
-    pub last_error_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub last_error_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for TwapRecord {
     const NAME: &'static str = "TwapRecord";
@@ -63,7 +63,7 @@ pub struct PruningState {
     /// This is used to determine all TWAP records that are older than
     /// last_kept_time and should be pruned.
     #[prost(message, optional, tag = "2")]
-    pub last_kept_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub last_kept_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// Deprecated: This field is deprecated.
     #[deprecated]
     #[prost(bytes = "vec", tag = "3")]
@@ -89,7 +89,8 @@ pub struct Params {
     #[prost(string, tag = "1")]
     pub prune_epoch_identifier: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub record_history_keep_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub record_history_keep_period:
+        ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for Params {
     const NAME: &'static str = "Params";
@@ -126,9 +127,9 @@ pub struct ArithmeticTwapRequest {
     #[prost(string, tag = "3")]
     pub quote_asset: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]
-    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(message, optional, tag = "5")]
-    pub end_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub end_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for ArithmeticTwapRequest {
     const NAME: &'static str = "ArithmeticTwapRequest";
@@ -160,7 +161,7 @@ pub struct ArithmeticTwapToNowRequest {
     #[prost(string, tag = "3")]
     pub quote_asset: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]
-    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for ArithmeticTwapToNowRequest {
     const NAME: &'static str = "ArithmeticTwapToNowRequest";
@@ -192,9 +193,9 @@ pub struct GeometricTwapRequest {
     #[prost(string, tag = "3")]
     pub quote_asset: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]
-    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(message, optional, tag = "5")]
-    pub end_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub end_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GeometricTwapRequest {
     const NAME: &'static str = "GeometricTwapRequest";
@@ -226,7 +227,7 @@ pub struct GeometricTwapToNowRequest {
     #[prost(string, tag = "3")]
     pub quote_asset: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]
-    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GeometricTwapToNowRequest {
     const NAME: &'static str = "GeometricTwapToNowRequest";
@@ -271,5 +272,4 @@ impl ::prost::Name for ParamsResponse {
         ::prost::alloc::format!("osmosis.twap.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.twap.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -13,11 +13,11 @@ workspace = true
 
 [dependencies]
 cometbft-types = { workspace = true, features = ["proto"] }
-protos         = { workspace = true, features = ["union+galois+api+v3", "client"] }
+protos         = { workspace = true, features = ["union+galois+api+v3"] }
 serde          = { workspace = true }
 serde-utils    = { workspace = true }
 thiserror      = { workspace = true }
-tonic          = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
+tonic          = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots", "prost"] }
 unionlabs      = { workspace = true }
 
 [dev-dependencies]

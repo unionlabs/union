@@ -992,7 +992,7 @@ pub struct MsgUnlockAndMigrateSharesToFullRangeConcentratedPositionResponse {
     #[prost(string, tag = "3")]
     pub liquidity_created: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "4")]
-    pub join_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub join_time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for MsgUnlockAndMigrateSharesToFullRangeConcentratedPositionResponse {
     const NAME: &'static str = "MsgUnlockAndMigrateSharesToFullRangeConcentratedPositionResponse";
@@ -1089,5 +1089,4 @@ impl ::prost::Name for MsgUnbondConvertAndStakeResponse {
         ::prost::alloc::format!("osmosis.superfluid.{}", Self::NAME)
     }
 }
-include!("osmosis.superfluid.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -276,5 +276,4 @@ impl ::prost::Name for MsgDelegateBondedTokensResponse {
         ::prost::alloc::format!("osmosis.valsetpref.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.valsetpref.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

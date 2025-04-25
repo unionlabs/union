@@ -847,7 +847,7 @@ impl ::prost::Name for PoolRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PoolResponse {
     #[prost(message, optional, tag = "1")]
-    pub pool: ::core::option::Option<::pbjson_types::Any>,
+    pub pool: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for PoolResponse {
     const NAME: &'static str = "PoolResponse";
@@ -871,7 +871,7 @@ impl ::prost::Name for AllPoolsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct AllPoolsResponse {
     #[prost(message, repeated, tag = "1")]
-    pub pools: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub pools: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for AllPoolsResponse {
     const NAME: &'static str = "AllPoolsResponse";
@@ -899,7 +899,7 @@ impl ::prost::Name for ListPoolsByDenomRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ListPoolsByDenomResponse {
     #[prost(message, repeated, tag = "1")]
-    pub pools: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub pools: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for ListPoolsByDenomResponse {
     const NAME: &'static str = "ListPoolsByDenomResponse";
@@ -1296,5 +1296,4 @@ impl ::prost::Name for TrackedVolume {
         ::prost::alloc::format!("osmosis.poolmanager.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.poolmanager.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

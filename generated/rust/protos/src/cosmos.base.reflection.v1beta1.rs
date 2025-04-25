@@ -56,5 +56,4 @@ impl ::prost::Name for ListImplementationsResponse {
         ::prost::alloc::format!("cosmos.base.reflection.v1beta1.{}", Self::NAME)
     }
 }
-include!("cosmos.base.reflection.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

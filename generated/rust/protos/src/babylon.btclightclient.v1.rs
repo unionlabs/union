@@ -432,5 +432,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("babylon.btclightclient.v1.{}", Self::NAME)
     }
 }
-include!("babylon.btclightclient.v1.tonic.rs");
 // @@protoc_insertion_point(module)

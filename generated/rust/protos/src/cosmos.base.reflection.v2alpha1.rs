@@ -429,5 +429,4 @@ impl ::prost::Name for QueryMethodDescriptor {
         ::prost::alloc::format!("cosmos.base.reflection.v2alpha1.{}", Self::NAME)
     }
 }
-include!("cosmos.base.reflection.v2alpha1.tonic.rs");
 // @@protoc_insertion_point(module)

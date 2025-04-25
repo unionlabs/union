@@ -182,5 +182,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("cosmos.mint.v1beta1.{}", Self::NAME)
     }
 }
-include!("cosmos.mint.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -19,12 +19,12 @@ pub struct PeriodLock {
     /// Duration is the time needed for a lock to mature after unlocking has
     /// started.
     #[prost(message, optional, tag = "3")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
     /// EndTime refers to the time at which the lock would mature and get deleted.
     /// This value is first initialized when an unlock has started for the lock,
     /// end time being block time + duration.
     #[prost(message, optional, tag = "4")]
-    pub end_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub end_time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// Coins are the tokens locked within the lock, kept in the module account.
     #[prost(message, repeated, tag = "5")]
     pub coins: ::prost::alloc::vec::Vec<super::super::cosmos::base::v1beta1::Coin>,
@@ -57,12 +57,12 @@ pub struct QueryCondition {
     /// duration. Duration field must not be nil when the lock query type is
     /// `ByLockDuration`.
     #[prost(message, optional, tag = "3")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
     /// Timestamp is used by locks started before the specified duration.
     /// Timestamp field must not be nil when the lock query type is `ByLockTime`.
     /// Querying locks with timestamp is currently not implemented.
     #[prost(message, optional, tag = "4")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for QueryCondition {
     const NAME: &'static str = "QueryCondition";
@@ -89,11 +89,11 @@ pub struct SyntheticLock {
     /// used for unbonding synthetic lockups, for active synthetic lockups, this
     /// value is set to uninitialized value
     #[prost(message, optional, tag = "3")]
-    pub end_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub end_time: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     /// Duration is the duration for a synthetic lock to mature
     /// at the point of unbonding has started.
     #[prost(message, optional, tag = "4")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for SyntheticLock {
     const NAME: &'static str = "SyntheticLock";
@@ -299,7 +299,7 @@ pub struct AccountLockedPastTimeRequest {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for AccountLockedPastTimeRequest {
     const NAME: &'static str = "AccountLockedPastTimeRequest";
@@ -327,7 +327,7 @@ pub struct AccountLockedPastTimeNotUnlockingOnlyRequest {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for AccountLockedPastTimeNotUnlockingOnlyRequest {
     const NAME: &'static str = "AccountLockedPastTimeNotUnlockingOnlyRequest";
@@ -355,7 +355,7 @@ pub struct AccountUnlockedBeforeTimeRequest {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for AccountUnlockedBeforeTimeRequest {
     const NAME: &'static str = "AccountUnlockedBeforeTimeRequest";
@@ -383,7 +383,7 @@ pub struct AccountLockedPastTimeDenomRequest {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub timestamp: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub timestamp: ::core::option::Option<super::super::google::protobuf::Timestamp>,
     #[prost(string, tag = "3")]
     pub denom: ::prost::alloc::string::String,
 }
@@ -413,7 +413,7 @@ pub struct LockedDenomRequest {
     #[prost(string, tag = "1")]
     pub denom: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for LockedDenomRequest {
     const NAME: &'static str = "LockedDenomRequest";
@@ -568,7 +568,7 @@ pub struct AccountLockedLongerDurationRequest {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for AccountLockedLongerDurationRequest {
     const NAME: &'static str = "AccountLockedLongerDurationRequest";
@@ -596,7 +596,7 @@ pub struct AccountLockedDurationRequest {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for AccountLockedDurationRequest {
     const NAME: &'static str = "AccountLockedDurationRequest";
@@ -624,7 +624,7 @@ pub struct AccountLockedLongerDurationNotUnlockingOnlyRequest {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for AccountLockedLongerDurationNotUnlockingOnlyRequest {
     const NAME: &'static str = "AccountLockedLongerDurationNotUnlockingOnlyRequest";
@@ -652,7 +652,7 @@ pub struct AccountLockedLongerDurationDenomRequest {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
     #[prost(string, tag = "3")]
     pub denom: ::prost::alloc::string::String,
 }
@@ -705,7 +705,7 @@ pub struct MsgLockTokens {
     #[prost(string, tag = "1")]
     pub owner: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "2")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
     #[prost(message, repeated, tag = "3")]
     pub coins: ::prost::alloc::vec::Vec<super::super::cosmos::base::v1beta1::Coin>,
 }
@@ -800,7 +800,7 @@ pub struct MsgExtendLockup {
     /// duration to be set. fails if lower than the current duration, or is
     /// unlocking
     #[prost(message, optional, tag = "3")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for MsgExtendLockup {
     const NAME: &'static str = "MsgExtendLockup";
@@ -915,5 +915,4 @@ impl ::prost::Name for MsgUnlockTokens {
         ::prost::alloc::format!("osmosis.lockup.{}", Self::NAME)
     }
 }
-include!("osmosis.lockup.tonic.rs");
 // @@protoc_insertion_point(module)

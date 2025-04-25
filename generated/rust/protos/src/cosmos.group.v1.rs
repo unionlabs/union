@@ -15,7 +15,7 @@ pub struct Member {
     pub metadata: ::prost::alloc::string::String,
     /// added_at is a timestamp specifying when a member was added.
     #[prost(message, optional, tag = "4")]
-    pub added_at: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub added_at: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for Member {
     const NAME: &'static str = "Member";
@@ -102,7 +102,7 @@ pub struct DecisionPolicyWindows {
     /// voting_period is the duration from submission of a proposal to the end of voting period
     /// Within this times votes can be submitted with MsgVote.
     #[prost(message, optional, tag = "1")]
-    pub voting_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub voting_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// min_execution_period is the minimum duration after the proposal submission
     /// where members can start sending MsgExec. This means that the window for
     /// sending a MsgExec transaction is:
@@ -115,7 +115,8 @@ pub struct DecisionPolicyWindows {
     /// is empty, meaning that all proposals created with this decision policy
     /// won't be able to be executed.
     #[prost(message, optional, tag = "2")]
-    pub min_execution_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub min_execution_period:
+        ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for DecisionPolicyWindows {
     const NAME: &'static str = "DecisionPolicyWindows";
@@ -149,7 +150,7 @@ pub struct GroupInfo {
     pub total_weight: ::prost::alloc::string::String,
     /// created_at is a timestamp specifying when a group was created.
     #[prost(message, optional, tag = "6")]
-    pub created_at: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub created_at: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GroupInfo {
     const NAME: &'static str = "GroupInfo";
@@ -200,10 +201,10 @@ pub struct GroupPolicyInfo {
     pub version: u64,
     /// decision_policy specifies the group policy's decision policy.
     #[prost(message, optional, tag = "6")]
-    pub decision_policy: ::core::option::Option<::pbjson_types::Any>,
+    pub decision_policy: ::core::option::Option<super::super::super::google::protobuf::Any>,
     /// created_at is a timestamp specifying when a group policy was created.
     #[prost(message, optional, tag = "7")]
-    pub created_at: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub created_at: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GroupPolicyInfo {
     const NAME: &'static str = "GroupPolicyInfo";
@@ -235,7 +236,7 @@ pub struct Proposal {
     pub proposers: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// submit_time is a timestamp specifying when a proposal was submitted.
     #[prost(message, optional, tag = "5")]
-    pub submit_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub submit_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// group_version tracks the version of the group at proposal submission.
     /// This field is here for informational purposes only.
     #[prost(uint64, tag = "6")]
@@ -261,13 +262,13 @@ pub struct Proposal {
     /// at this point, and the `final_tally_result`and `status` fields will be
     /// accordingly updated.
     #[prost(message, optional, tag = "10")]
-    pub voting_period_end: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub voting_period_end: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// executor_result is the final result of the proposal execution. Initial value is NotRun.
     #[prost(enumeration = "ProposalExecutorResult", tag = "11")]
     pub executor_result: i32,
     /// messages is a list of `sdk.Msg`s that will be executed if the proposal passes.
     #[prost(message, repeated, tag = "12")]
-    pub messages: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub messages: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
     /// title is the title of the proposal
     ///
     /// Since: cosmos-sdk 0.47
@@ -329,7 +330,7 @@ pub struct Vote {
     pub metadata: ::prost::alloc::string::String,
     /// submit_time is the timestamp when the vote was submitted.
     #[prost(message, optional, tag = "5")]
-    pub submit_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub submit_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for Vote {
     const NAME: &'static str = "Vote";
@@ -1296,7 +1297,7 @@ pub struct MsgCreateGroupPolicy {
     pub metadata: ::prost::alloc::string::String,
     /// decision_policy specifies the group policy's decision policy.
     #[prost(message, optional, tag = "4")]
-    pub decision_policy: ::core::option::Option<::pbjson_types::Any>,
+    pub decision_policy: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for MsgCreateGroupPolicy {
     const NAME: &'static str = "MsgCreateGroupPolicy";
@@ -1374,7 +1375,7 @@ pub struct MsgCreateGroupWithPolicy {
     pub group_policy_as_admin: bool,
     /// decision_policy specifies the group policy's decision policy.
     #[prost(message, optional, tag = "6")]
-    pub decision_policy: ::core::option::Option<::pbjson_types::Any>,
+    pub decision_policy: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for MsgCreateGroupWithPolicy {
     const NAME: &'static str = "MsgCreateGroupWithPolicy";
@@ -1413,7 +1414,7 @@ pub struct MsgUpdateGroupPolicyDecisionPolicy {
     pub group_policy_address: ::prost::alloc::string::String,
     /// decision_policy is the updated group policy's decision policy.
     #[prost(message, optional, tag = "3")]
-    pub decision_policy: ::core::option::Option<::pbjson_types::Any>,
+    pub decision_policy: ::core::option::Option<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for MsgUpdateGroupPolicyDecisionPolicy {
     const NAME: &'static str = "MsgUpdateGroupPolicyDecisionPolicy";
@@ -1481,7 +1482,7 @@ pub struct MsgSubmitProposal {
     pub metadata: ::prost::alloc::string::String,
     /// messages is a list of `sdk.Msg`s that will be executed if the proposal passes.
     #[prost(message, repeated, tag = "4")]
-    pub messages: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub messages: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
     /// exec defines the mode of execution of the proposal,
     /// whether it should be executed immediately on creation or not.
     /// If so, proposers signatures are considered as Yes votes.
@@ -1683,5 +1684,4 @@ impl Exec {
         }
     }
 }
-include!("cosmos.group.v1.tonic.rs");
 // @@protoc_insertion_point(module)

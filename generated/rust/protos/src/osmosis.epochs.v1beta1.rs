@@ -11,13 +11,13 @@ pub struct EpochInfo {
     /// If start_time is in the future, the epoch will not begin until the start
     /// time.
     #[prost(message, optional, tag = "2")]
-    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// duration is the time in between epoch ticks.
     /// In order for intended behavior to be met, duration should
     /// be greater than the chains expected block time.
     /// Duration must be non-zero.
     #[prost(message, optional, tag = "3")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// current_epoch is the current epoch number, or in other words,
     /// how many times has the timer 'ticked'.
     /// The first tick (current_epoch=1) is defined as
@@ -42,7 +42,8 @@ pub struct EpochInfo {
     /// * The t=34 block will start the epoch for (30, 35]
     /// * The **t=36** block will start the epoch for (35, 40]
     #[prost(message, optional, tag = "5")]
-    pub current_epoch_start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub current_epoch_start_time:
+        ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// epoch_counting_started is a boolean, that indicates whether this
     /// epoch timer has began yet.
     #[prost(bool, tag = "6")]
@@ -122,5 +123,4 @@ impl ::prost::Name for QueryCurrentEpochResponse {
         ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.epochs.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)
