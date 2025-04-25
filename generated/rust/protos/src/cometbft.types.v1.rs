@@ -1,6 +1,5 @@
 // @generated
 /// ValidatorSet defines a set of validators.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ValidatorSet {
@@ -19,27 +18,21 @@ impl ::prost::Name for ValidatorSet {
     }
 }
 /// Validator represents a node participating in the consensus protocol.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Validator {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub address: ::prost::alloc::vec::Vec<u8>,
     #[deprecated]
     #[prost(message, optional, tag = "2")]
     pub pub_key: ::core::option::Option<super::super::crypto::v1::PublicKey>,
     #[prost(int64, tag = "3")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub voting_power: i64,
     #[prost(int64, tag = "4")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub proposer_priority: i64,
     #[prost(bytes = "vec", tag = "5")]
-    #[cfg_attr(feature = "serde", serde(default))]
     pub pub_key_bytes: ::prost::alloc::vec::Vec<u8>,
     #[prost(string, tag = "6")]
-    #[cfg_attr(feature = "serde", serde(default))]
     pub pub_key_type: ::prost::alloc::string::String,
 }
 impl ::prost::Name for Validator {
@@ -105,14 +98,12 @@ impl BlockIdFlag {
     }
 }
 /// Header of the parts set for a block.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PartSetHeader {
     #[prost(uint32, tag = "1")]
     pub total: u32,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub hash: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for PartSetHeader {
@@ -141,15 +132,12 @@ impl ::prost::Name for Part {
     }
 }
 /// BlockID defines the unique ID of a block as its hash and its `PartSetHeader`.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BlockId {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "2")]
-    #[serde(alias = "parts")]
     pub part_set_header: ::core::option::Option<PartSetHeader>,
 }
 impl ::prost::Name for BlockId {
@@ -160,7 +148,6 @@ impl ::prost::Name for BlockId {
     }
 }
 /// Header defines the structure of a block header.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Header {
@@ -170,7 +157,6 @@ pub struct Header {
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(int64, tag = "3")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(message, optional, tag = "4")]
     pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
@@ -181,43 +167,34 @@ pub struct Header {
     ///
     /// commit from validators from the last block
     #[prost(bytes = "vec", tag = "6")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub last_commit_hash: ::prost::alloc::vec::Vec<u8>,
     /// transactions
     #[prost(bytes = "vec", tag = "7")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub data_hash: ::prost::alloc::vec::Vec<u8>,
     /// hashes from the app output from the prev block
     ///
     /// validators for the current block
     #[prost(bytes = "vec", tag = "8")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// validators for the next block
     #[prost(bytes = "vec", tag = "9")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// consensus params for current block
     #[prost(bytes = "vec", tag = "10")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub consensus_hash: ::prost::alloc::vec::Vec<u8>,
     /// state after txs from the previous block
     #[prost(bytes = "vec", tag = "11")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
     /// root hash of all results from the txs from the previous block
     #[prost(bytes = "vec", tag = "12")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub last_results_hash: ::prost::alloc::vec::Vec<u8>,
     /// consensus info
     ///
     /// evidence included in the block
     #[prost(bytes = "vec", tag = "13")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub evidence_hash: ::prost::alloc::vec::Vec<u8>,
     /// original proposer of the block
     #[prost(bytes = "vec", tag = "14")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub proposer_address: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for Header {
@@ -228,7 +205,6 @@ impl ::prost::Name for Header {
     }
 }
 /// Data contains the set of transactions included in the block
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Data {
@@ -236,7 +212,6 @@ pub struct Data {
     /// NOTE: not all txs here are valid.  We're just agreeing on the order first.
     /// This means that block.AppHash does not include these txs.
     #[prost(bytes = "vec", repeated, tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
 }
 impl ::prost::Name for Data {
@@ -248,14 +223,12 @@ impl ::prost::Name for Data {
 }
 /// Vote represents a prevote or precommit vote from validators for
 /// consensus.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Vote {
     #[prost(enumeration = "SignedMsgType", tag = "1")]
     pub r#type: i32,
     #[prost(int64, tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(int32, tag = "3")]
     pub round: i32,
@@ -265,25 +238,21 @@ pub struct Vote {
     #[prost(message, optional, tag = "5")]
     pub timestamp: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "6")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(int32, tag = "7")]
     pub validator_index: i32,
     /// Vote signature by the validator if they participated in consensus for the
     /// associated block.
     #[prost(bytes = "vec", tag = "8")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub signature: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension provided by the application. Only valid for precommit
     /// messages.
     #[prost(bytes = "vec", tag = "9")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub extension: ::prost::alloc::vec::Vec<u8>,
     /// Vote extension signature by the validator if they participated in
     /// consensus for the associated block.
     /// Only valid for precommit messages.
     #[prost(bytes = "vec", tag = "10")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub extension_signature: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for Vote {
@@ -294,12 +263,10 @@ impl ::prost::Name for Vote {
     }
 }
 /// Commit contains the evidence that a block was committed by a set of validators.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Commit {
     #[prost(int64, tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(int32, tag = "2")]
     pub round: i32,
@@ -316,19 +283,16 @@ impl ::prost::Name for Commit {
     }
 }
 /// CommitSig is a part of the Vote included in a Commit.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct CommitSig {
     #[prost(enumeration = "BlockIdFlag", tag = "1")]
     pub block_id_flag: i32,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub validator_address: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
     pub timestamp: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "4")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub signature: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for CommitSig {
@@ -413,7 +377,6 @@ impl ::prost::Name for Proposal {
     }
 }
 /// SignedHeader contains a Header(H) and Commit(H+1) with signatures of validators who signed it.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct SignedHeader {
@@ -430,7 +393,6 @@ impl ::prost::Name for SignedHeader {
     }
 }
 /// LightBlock is a combination of SignedHeader and ValidatorSet. It is used by light clients.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LightBlock {
@@ -467,15 +429,12 @@ impl ::prost::Name for BlockMeta {
     }
 }
 /// TxProof represents a Merkle proof of the presence of a transaction in the Merkle tree.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TxProof {
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]
     pub root_hash: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
     pub proof: ::core::option::Option<super::super::crypto::v1::Proof>,
@@ -746,7 +705,6 @@ impl ::prost::Name for AbciParams {
     }
 }
 /// Evidence is a generic type for wrapping evidence of misbehavior by a validator.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Evidence {
@@ -758,7 +716,6 @@ pub struct Evidence {
 /// Nested message and enum types in `Evidence`.
 pub mod evidence {
     /// The type of evidence.
-    #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     #[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
@@ -779,7 +736,6 @@ impl ::prost::Name for Evidence {
     }
 }
 /// DuplicateVoteEvidence contains evidence of a validator signed two conflicting votes.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct DuplicateVoteEvidence {
@@ -788,15 +744,10 @@ pub struct DuplicateVoteEvidence {
     #[prost(message, optional, tag = "2")]
     pub vote_b: ::core::option::Option<Vote>,
     #[prost(int64, tag = "3")]
-    #[serde(alias = "TotalVotingPower")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub total_voting_power: i64,
     #[prost(int64, tag = "4")]
-    #[serde(alias = "ValidatorPower")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub validator_power: i64,
     #[prost(message, optional, tag = "5")]
-    #[serde(alias = "Timestamp")]
     pub timestamp: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for DuplicateVoteEvidence {
@@ -807,19 +758,16 @@ impl ::prost::Name for DuplicateVoteEvidence {
     }
 }
 /// LightClientAttackEvidence contains evidence of a set of validators attempting to mislead a light client.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LightClientAttackEvidence {
     #[prost(message, optional, tag = "1")]
     pub conflicting_block: ::core::option::Option<LightBlock>,
     #[prost(int64, tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub common_height: i64,
     #[prost(message, repeated, tag = "3")]
     pub byzantine_validators: ::prost::alloc::vec::Vec<Validator>,
     #[prost(int64, tag = "4")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub total_voting_power: i64,
     #[prost(message, optional, tag = "5")]
     pub timestamp: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
@@ -832,7 +780,6 @@ impl ::prost::Name for LightClientAttackEvidence {
     }
 }
 /// EvidenceList is a list of evidence.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EvidenceList {
@@ -847,7 +794,6 @@ impl ::prost::Name for EvidenceList {
     }
 }
 /// Block defines the structure of a block in the CometBFT blockchain.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Block {

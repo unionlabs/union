@@ -1349,7 +1349,6 @@ impl ::prost::Name for GeneratedCodeInfo {
 ///        "@type": "type.googleapis.com/google.protobuf.Duration",
 ///        "value": "1.212s"
 ///      }
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Any {
@@ -1452,7 +1451,6 @@ impl ::prost::Name for Any {
 /// be expressed in JSON format as "3.000000001s", and 3 seconds and 1
 /// microsecond should be expressed in JSON format as "3.000001s".
 ///
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Duration {
@@ -1569,7 +1567,6 @@ impl ::prost::Name for Duration {
 /// <http://www.joda.org/joda-time/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime%2D%2D>
 /// ) to obtain a formatter capable of generating timestamps in this format.
 ///
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Timestamp {

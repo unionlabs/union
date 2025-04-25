@@ -1,6 +1,5 @@
 // @generated
 /// GenesisState defines 08-wasm's keeper genesis state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
@@ -16,7 +15,6 @@ impl ::prost::Name for GenesisState {
     }
 }
 /// Contract stores contract code
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Contract {
@@ -32,7 +30,6 @@ impl ::prost::Name for Contract {
     }
 }
 /// QueryChecksumsRequest is the request type for the Query/Checksums RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryChecksumsRequest {
@@ -50,7 +47,6 @@ impl ::prost::Name for QueryChecksumsRequest {
     }
 }
 /// QueryChecksumsResponse is the response type for the Query/Checksums RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryChecksumsResponse {
@@ -71,7 +67,6 @@ impl ::prost::Name for QueryChecksumsResponse {
     }
 }
 /// QueryCodeRequest is the request type for the Query/Code RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryCodeRequest {
@@ -87,7 +82,6 @@ impl ::prost::Name for QueryCodeRequest {
     }
 }
 /// QueryCodeResponse is the response type for the Query/Code RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryCodeResponse {
@@ -102,7 +96,6 @@ impl ::prost::Name for QueryCodeResponse {
     }
 }
 /// MsgStoreCode defines the request type for the StoreCode rpc.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgStoreCode {
@@ -121,7 +114,6 @@ impl ::prost::Name for MsgStoreCode {
     }
 }
 /// MsgStoreCodeResponse defines the response type for the StoreCode rpc
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgStoreCodeResponse {
@@ -137,7 +129,6 @@ impl ::prost::Name for MsgStoreCodeResponse {
     }
 }
 /// MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRemoveChecksum {
@@ -156,7 +147,6 @@ impl ::prost::Name for MsgRemoveChecksum {
     }
 }
 /// MsgStoreChecksumResponse defines the response type for the StoreCode rpc
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRemoveChecksumResponse {}
@@ -168,7 +158,6 @@ impl ::prost::Name for MsgRemoveChecksumResponse {
     }
 }
 /// MsgMigrateContract defines the request type for the MigrateContract rpc.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgMigrateContract {
@@ -193,7 +182,6 @@ impl ::prost::Name for MsgMigrateContract {
     }
 }
 /// MsgMigrateContractResponse defines the response type for the MigrateContract rpc
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgMigrateContractResponse {}
@@ -205,17 +193,14 @@ impl ::prost::Name for MsgMigrateContractResponse {
     }
 }
 /// Wasm light client's Client state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
     /// bytes encoding the client state of the underlying light client
     /// implemented as a Wasm contract.
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub checksum: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
     pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
@@ -228,14 +213,12 @@ impl ::prost::Name for ClientState {
     }
 }
 /// Wasm light client's ConsensusState
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
     /// bytes encoding the consensus state of the underlying light client
     /// implemented as a Wasm contract.
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ConsensusState {
@@ -246,7 +229,6 @@ impl ::prost::Name for ConsensusState {
     }
 }
 /// Wasm light client message (either header(s) or misbehaviour)
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientMessage {
@@ -264,7 +246,6 @@ impl ::prost::Name for ClientMessage {
 ///
 /// Deprecated: This message is deprecated in favor of storing the checksums
 /// using a Collections.KeySet.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Checksums {
