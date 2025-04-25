@@ -3,7 +3,7 @@
     "3": {
       "comments": "ethereum.1 channel 1",
       "sla": {
-        "forward": "PT45M",
+        "forward": "PT20M",
         "reverse": "PT45M"
       },
       "tags": ["canonical"]
@@ -24,7 +24,7 @@
       "comments": "babylon.bbn-1 channel 1",
       "sla": {
         "forward": "PT15H",
-        "reverse": "PT15H"
+        "reverse": "PT20M"
       },
       "tags": ["canonical"]
     }
@@ -34,7 +34,7 @@
       "comments": "babylon.bbn-1 channel 2",
       "sla": {
         "forward": "PT17H",
-        "reverse": "PT17H"
+        "reverse": "PT20M"
       },
       "tags": ["canonical"]
     }
