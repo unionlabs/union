@@ -1,4 +1,4 @@
-use alloy::{primitives::U256, sol_types::SolValue};
+use alloy::sol_types::SolValue;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, to_json_binary, BankMsg, Binary, Coin, CosmosMsg, Deps, DepsMut, Env, MessageInfo,
@@ -14,7 +14,11 @@ use ucs03_zkgm_token_minter_api::{
     ExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse, QueryMsg,
     TokenMinterInitMsg, WrappedTokenMsg,
 };
-use unionlabs::{ethereum::keccak256, primitives::H256, prost::Name};
+use unionlabs::{
+    ethereum::keccak256,
+    primitives::{encoding::Base58, H256, U256},
+    prost::Name,
+};
 
 pub const DEFAULT_DECIMALS: u8 = 6;
 
@@ -178,8 +182,19 @@ pub fn execute(
     Ok(resp)
 }
 
-fn calculate_salt(path: U256, channel_id: ChannelId, token: Vec<u8>) -> H256 {
-    keccak256((path, channel_id.raw(), token.to_vec()).abi_encode_params())
+/// NOTE: Salt is base58 to ensure that the length of the subdenom is 44, as required by tokenfactory.
+///
+/// <https://github.com/osmosis-labs/osmosis/blob/e14ace31b7ba46be3d519966fb8563127534b245/x/tokenfactory/types/denoms.go#L15>
+fn calculate_salt(path: U256, channel_id: ChannelId, token: Vec<u8>) -> H256<Base58> {
+    keccak256(
+        (
+            Into::<alloy::primitives::U256>::into(path),
+            channel_id.raw(),
+            token.to_vec(),
+        )
+            .abi_encode_params(),
+    )
+    .into_encoding()
 }
 
 #[entry_point]
@@ -231,6 +246,7 @@ pub fn query(deps: Deps<TokenFactoryQuery>, env: Env, msg: QueryMsg) -> Result<B
 
 #[cfg(test)]
 mod tests {
+    use alloy::hex;
     use cosmwasm_std::{testing::mock_env, Addr};
 
     use super::*;
@@ -277,5 +293,23 @@ mod tests {
             deconstruct_factory_denom(&env, "factory/addr"),
             Err(Error::InvalidDenom("factory/addr".to_owned()))
         );
+    }
+
+    #[test]
+    fn salt_length_is_44() {
+        let salt = calculate_salt(U256::default(), ChannelId!(1), b"muno".into());
+        assert_eq!(dbg!(salt.to_string()).len(), 44);
+
+        // 11111111111111111111111111111111
+        let min_salt = <H256<Base58>>::from(hex!(
+            "0000000000000000000000000000000000000000000000000000000000000000"
+        ));
+        assert_eq!(dbg!(min_salt.to_string()).len(), 32);
+
+        // JEKNVnkbo3jma5nREBBJCDoXFVeKkD56V3xKrvRmWxFG
+        let max_salt = <H256<Base58>>::from(hex!(
+            "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff"
+        ));
+        assert_eq!(dbg!(max_salt.to_string()).len(), 44);
     }
 }

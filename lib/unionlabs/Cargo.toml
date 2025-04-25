@@ -44,14 +44,14 @@ base64               = { workspace = true }
 bcs                  = { workspace = true }
 bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
 borsh                = { workspace = true, features = ["borsh-derive"], optional = true }
-bs58                 = "0.4"
+bs58                 = { workspace = true }
 near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
 serde_bytes          = "0.11.6"
 solidity-slot        = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["proto", "json"] }
-unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64"] }
+unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64", "base58"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

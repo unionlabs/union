@@ -1,5 +1,5 @@
-use alloy::primitives::ruint::ParseError;
 use cosmwasm_std::{StdError, Uint128};
+use unionlabs::primitives::uint::FromDecStrErr;
 
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum Error {
@@ -12,12 +12,12 @@ pub enum Error {
     #[error("missing funds for denom {denom} with amount {amount}")]
     MissingFunds { denom: String, amount: Uint128 },
 
-    #[error("invalid path: {0:?}")]
-    InvalidPath(ParseError),
+    #[error("invalid path: {0}")]
+    InvalidPath(FromDecStrErr),
 
-    #[error("invalid denom {0}")]
+    #[error("invalid denom: {0}")]
     InvalidDenom(String),
 
-    #[error("minter config is expected to be cw20")]
+    #[error("minter config is expected to be osmosis-tokenfactory")]
     InvalidMinterConfig,
 }

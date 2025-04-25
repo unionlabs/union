@@ -399,9 +399,10 @@ impl<E: Encoding> schemars::JsonSchema for Bytes<E> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::encoding::{Base64, HexUnprefixed};
+    use crate::encoding::{Base58, Base64, HexUnprefixed};
 
     const BASE64_STR: &str = "YWJjZA==";
+    const BASE58_STR: &str = "3VNr6P";
     const HEX_PREFIXED_STR: &str = "0x61626364";
     const HEX_UNPREFIXED_STR: &str = "61626364";
 
@@ -430,6 +431,15 @@ mod tests {
         let decoded = <Bytes<Base64>>::from_str(BASE64_STR).unwrap();
 
         assert_eq!(BASE64_STR, decoded.to_string());
+
+        assert_eq!(&*decoded, RAW_VALUE);
+    }
+
+    #[test]
+    fn base58() {
+        let decoded = <Bytes<Base58>>::from_str(BASE58_STR).unwrap();
+
+        assert_eq!(BASE58_STR, decoded.to_string());
 
         assert_eq!(&*decoded, RAW_VALUE);
     }
