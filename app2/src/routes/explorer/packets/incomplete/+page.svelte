@@ -30,7 +30,7 @@ onMount(() => {
       {#each incompletePacketsList.data.value as packet, i (i)}
     <PacketListItemComponent {packet} />
       {:else}
-        <div class="p-4 text-center text-gray-500">No packets found</div>
+        <div class="p-4 text-center text-gray-500">No incomplete packets found</div>
       {/each}
     {:else}
       {#if Option.isSome(incompletePacketsList.error)}
