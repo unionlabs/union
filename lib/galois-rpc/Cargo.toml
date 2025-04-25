@@ -17,6 +17,7 @@ protos         = { workspace = true, features = ["union+galois+api+v3", "client"
 serde          = { workspace = true }
 serde-utils    = { workspace = true }
 thiserror      = { workspace = true }
+tonic          = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 unionlabs      = { workspace = true }
 
 [dev-dependencies]

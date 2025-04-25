@@ -518,17 +518,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 .expect("never going to happen bro")
                     % self.prover_endpoints.len()];
 
-                let response =
-                    union_prover_api_client::UnionProverApiClient::connect(prover_endpoint.clone())
-                        .await
-                        .unwrap()
-                        .poll(protos::union::galois::api::v3::PollRequest::from(
-                            PollRequest {
-                                request: request.clone(),
-                            },
-                        ))
-                        .await
-                        .map(|x| x.into_inner().try_into().unwrap());
+                let response = galois_rpc::Client::connect(prover_endpoint)
+                    .await
+                    .unwrap()
+                    .poll(PollRequest {
+                        request: request.clone(),
+                    })
+                    .await;
 
                 debug!("submitted prove request");
 

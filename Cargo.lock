@@ -6129,6 +6129,7 @@ dependencies = [
  "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
+ "tonic 0.10.2",
  "unionlabs",
 ]
 
