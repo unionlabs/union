@@ -7,6 +7,9 @@
       "ethereum.11155111": {
         "environment": "production"
       },
+      "ethereum.17000": {
+        "environment": "production"
+      },
       "union.union-testnet-10": {
         "environment": "production"
       },
