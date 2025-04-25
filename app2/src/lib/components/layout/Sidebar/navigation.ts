@@ -8,6 +8,7 @@ import type { Component } from "svelte"
 export interface NavSubItem {
   path: string
   title: string
+  editions?: Array<string>
 }
 
 export interface NavItem {
@@ -40,7 +41,8 @@ export const navigation: Array<NavSection> = [
           },
           {
             path: "/faucet",
-            title: "Faucets"
+            title: "Faucets",
+            editions: ["app"]
           }
         ]
       }

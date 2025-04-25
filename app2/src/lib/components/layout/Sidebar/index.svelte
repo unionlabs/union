@@ -79,7 +79,7 @@ onMount(() => {
 <div class="min-h-full flex flex-col overflow-y-auto">
   <a class="px-6 flex items-center gap-2 border-b-1 h-16 border-zinc-900" href="/">
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
-    {#key uiStore.edition}
+    {#key uiStore.activeEdition}
       <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">{uiStore.activeEdition.toUpperCase()}</div>
     {/key}
   </a>
@@ -110,6 +110,7 @@ onMount(() => {
               {#if item.subroutes && item.subroutes.length > 0}
                 <ul class="flex flex-col border-zinc-800 gap-1 pt-2 border-l-1 ml-5 pl-2">
                   {#each item.subroutes as subroute, index}
+                    {#if !subroute.editions || subroute.editions.includes(uiStore.activeEdition)}
                     <li>
                       <a 
                         href={subroute.path} 
@@ -122,6 +123,7 @@ onMount(() => {
                         {subroute.title}
                       </a>
                     </li>
+                    {/if}
                   {/each}
                 </ul>
               {/if}
