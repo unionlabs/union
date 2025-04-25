@@ -56,18 +56,24 @@ const getEnvironment = (): "PRODUCTION" | "STAGING" | "DEVELOPMENT" => {
 }
 
 function filterByEdition(chain: Chain, editionName: Edition, environment: string): boolean {
-  return chain.editions.some((edition: { name: string; environment: string }) => {
-    if (edition.name !== editionName) return false
+  return pipe(
+    Option.fromNullable(chain.editions),
+    Option.match({
+      onNone: () => false,
+      onSome: editions =>
+        editions.some((edition: { name: string; environment: string }) => {
+          if (edition.name !== editionName) return false
 
-    return Match.value(edition.environment).pipe(
-      Match.when("development", () => environment === "development"),
-      Match.when("staging", () => environment === "development" || environment === "staging"),
-      Match.when("production", () => true),
-      Match.orElse(() => false)
-    )
-  })
+          return Match.value(edition.environment).pipe(
+            Match.when("development", () => environment === "development"),
+            Match.when("staging", () => environment === "development" || environment === "staging"),
+            Match.when("production", () => true),
+            Match.orElse(() => false)
+          )
+        })
+    })
+  )
 }
-
 const filterBySigningMode = (chains: Array<Chain>) =>
   signingMode.mode === "multi" && type === "source"
     ? chains.filter(chain => chain.rpc_type === "cosmos")
@@ -188,7 +194,7 @@ const filteredChains = $derived(
     Option.map(allChains =>
       pipe(
         allChains.filter(chain =>
-          filterByEdition(chain, uiStore.edition, getEnvironment().toLowerCase())
+          filterByEdition(chain, uiStore.activeEdition, getEnvironment().toLowerCase())
         ),
         filterBySigningMode,
         filterChainsByTokenAvailability
