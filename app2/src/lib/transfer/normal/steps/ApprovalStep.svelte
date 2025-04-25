@@ -25,7 +25,7 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { erc20Abi, http, isHex, toHex } from "viem"
 import type { Steps } from "$lib/transfer/normal/steps"
 
-//Probably something we can import from somewhere? 
+//Probably something we can import from somewhere?
 const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
 const MAX_UINT128 = BigInt("340282366920938463463374607431768211455")
 
@@ -39,6 +39,9 @@ type Props = {
 
 const { step, onBack, onApprove, actionButtonText }: Props = $props()
 
+let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
+let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
+
 let showError = $state(false)
 let isSubmitting = $state(false)
 let error = $state<Option.Option<unknown>>(Option.none())
@@ -47,35 +50,35 @@ let customAmount = $state("")
 let showCustomInput = $state(false)
 
 // Derive validation state
-const isValidAmount = $derived(
-  showCustomInput ? isValidCustomAmount(customAmount) : true
-)
+const isValidAmount = $derived(showCustomInput ? isValidCustomAmount(customAmount) : true)
 
 // Derive the actual approval amount
 const approvalAmount = $derived(
-  selectedMultiplier === "max" 
+  selectedMultiplier === "max"
     ? getMaxApprovalAmount()
-    : selectedMultiplier === 1 
+    : selectedMultiplier === 1
       ? step.requiredAmount
       : customAmount && isValidCustomAmount(customAmount)
-        ? Effect.runSync(Effect.try({
-            try: () => {
-              const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
-              const cleanWhole = whole === "0" ? "0" : whole.replace(/^0+/, "")
-              const paddedFraction = fraction.padEnd(step.intent.decimals, "0")
-              return BigInt(cleanWhole + paddedFraction)
-            },
-            catch: () => step.requiredAmount
-          }))
+        ? Effect.runSync(
+            Effect.try({
+              try: () => {
+                const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
+                const cleanWhole = whole === "0" ? "0" : whole.replace(/^0+/, "")
+                const paddedFraction = fraction.padEnd(step.intent.decimals, "0")
+                return BigInt(cleanWhole + paddedFraction)
+              },
+              catch: () => step.requiredAmount
+            })
+          )
         : step.requiredAmount
 )
 
 // Derive button state
 const isButtonEnabled = $derived(
   !isSubmitting &&
-  ((ets._tag === "Filling" && cts._tag === "Filling") ||
-    evmHasFailedExit(ets) ||
-    cosmosHasFailedExit(cts))
+    ((ets._tag === "Filling" && cts._tag === "Filling") ||
+      evmHasFailedExit(ets) ||
+      cosmosHasFailedExit(cts))
 )
 
 // Derive submit button text
@@ -95,15 +98,12 @@ const submitButtonText = $derived(
               : actionButtonText
 )
 
-let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
-let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
-
 const submit = Effect.gen(function* () {
   isSubmitting = true
   error = Option.none()
 
   // Validate custom amount if in custom input mode
-  if (showCustomInput && (!customAmount || !isValidCustomAmount(customAmount))) {
+  if (showCustomInput && !(customAmount && isValidCustomAmount(customAmount))) {
     error = Option.some(new Error("Custom amount must be greater than the required amount"))
     isSubmitting = false
     return
@@ -221,21 +221,29 @@ function getMaxApprovalAmount() {
 
 function getApprovalAmount() {
   return Match.value(selectedMultiplier).pipe(
-    Match.when(m => m === "max", () => getMaxApprovalAmount()),
-    Match.when(m => m === 1, () => step.requiredAmount),
+    Match.when(
+      m => m === "max",
+      () => getMaxApprovalAmount()
+    ),
+    Match.when(
+      m => m === 1,
+      () => step.requiredAmount
+    ),
     Match.orElse(() => {
-      if (!customAmount || !isValidCustomAmount(customAmount)) {
+      if (!(customAmount && isValidCustomAmount(customAmount))) {
         return step.requiredAmount
       }
-      return Effect.runSync(Effect.try({
-        try: () => {
-          const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
-          const cleanWhole = whole === "0" ? "0" : whole.replace(/^0+/, "")
-          const paddedFraction = fraction.padEnd(step.intent.decimals, "0")
-          return BigInt(cleanWhole + paddedFraction)
-        },
-        catch: () => step.requiredAmount
-      }))
+      return Effect.runSync(
+        Effect.try({
+          try: () => {
+            const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
+            const cleanWhole = whole === "0" ? "0" : whole.replace(/^0+/, "")
+            const paddedFraction = fraction.padEnd(step.intent.decimals, "0")
+            return BigInt(cleanWhole + paddedFraction)
+          },
+          catch: () => step.requiredAmount
+        })
+      )
     })
   )
 }
@@ -274,7 +282,7 @@ function isValidCustomAmount(amount: string): boolean {
         },
         catch: () => null
       }).pipe(
-        Effect.map(n => n !== null && typeof n === 'bigint' && n >= step.requiredAmount),
+        Effect.map(n => n !== null && typeof n === "bigint" && n >= step.requiredAmount),
         Effect.orElse(() => Effect.succeed(false))
       )
 
