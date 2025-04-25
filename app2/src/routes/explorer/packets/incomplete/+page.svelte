@@ -1,5 +1,5 @@
 <script lang="ts">
-import { runInWindowAllPairs } from "$lib/queries/missing-packets-list"
+import { missingPacketListPage } from "$lib/queries/missing-packets-list"
 import { Effect, Option } from "effect"
 import { onMount } from "svelte"
 import { incompletePacketsList } from "$lib/stores/incomplete-packets.svelte"
@@ -13,7 +13,7 @@ import PacketListItemComponent from "$lib/components/model/PacketListItemCompone
 import PacketListItemComponentSkeleton from "$lib/components/model/PacketListItemComponentSkeleton.svelte"
 
 onMount(() => {
-  runInWindowAllPairs("mainnet")
+  missingPacketListPage("mainnet")
 
   return () => {
     incompletePacketsList.interruptFiber()

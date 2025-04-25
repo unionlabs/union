@@ -42,7 +42,6 @@ export function missingPackets(exceedingSla: string) {
     let found: typeof PacketList.Type = []
 
     while (true) {
-      // page one batch (descending by sort_order)
       console.info("Fetching missing packets...")
       const page = yield* fetchDecodeGraphql(
         Schema.Struct({ v2_packets: PacketList }),
@@ -62,7 +61,7 @@ export function missingPackets(exceedingSla: string) {
   })
 }
 
-export function runInWindowAllPairs(exceedingSla: string) {
+export function missingPacketListPage(exceedingSla: string) {
   incompletePacketsList.data = Option.none()
   incompletePacketsList.error = Option.none()
 
