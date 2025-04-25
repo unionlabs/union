@@ -171,6 +171,7 @@ const filterChainsByTokenAvailability = (chains: Array<Chain>): Array<ChainWithA
             onNone: () => chains.map(chain => Tuple.make(chain, false)),
             onSome: ({ baseToken, sourceChain }) =>
               chains.map(destinationChain => {
+                // For testnet chains, we always mark them as available (hasBucket=true) to allow testing
                 if (destinationChain.testnet === true) {
                   return Tuple.make(destinationChain, true)
                 }
