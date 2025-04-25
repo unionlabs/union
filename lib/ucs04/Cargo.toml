@@ -14,8 +14,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+serde     = { workspace = true, features = ["derive"], optional = true }
 thiserror = { workspace = true }
 
 [build-dependencies]
 heck       = "0.5.0"
 serde_json = { workspace = true }
+
+[features]
+serde = ["dep:serde"]
