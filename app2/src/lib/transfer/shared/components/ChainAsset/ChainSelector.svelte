@@ -60,16 +60,17 @@ function filterByEdition(chain: Chain, editionName: Edition, environment: string
     Option.fromNullable(chain.editions),
     Option.match({
       onNone: () => false,
-      onSome: editions => editions.some((edition: { name: string; environment: string }) => {
-        if (edition.name !== editionName) return false
+      onSome: editions =>
+        editions.some((edition: { name: string; environment: string }) => {
+          if (edition.name !== editionName) return false
 
-        return Match.value(edition.environment).pipe(
-          Match.when("development", () => environment === "development"),
-          Match.when("staging", () => environment === "development" || environment === "staging"),
-          Match.when("production", () => true),
-          Match.orElse(() => false)
-        )
-      })
+          return Match.value(edition.environment).pipe(
+            Match.when("development", () => environment === "development"),
+            Match.when("staging", () => environment === "development" || environment === "staging"),
+            Match.when("production", () => true),
+            Match.orElse(() => false)
+          )
+        })
     })
   )
 }
