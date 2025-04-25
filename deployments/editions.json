@@ -1,16 +1,22 @@
 {
   "app": {
     "chains": {
-      "babylon.bbn-1": {
+      "babylon.bbn-test-5": {
         "environment": "production"
       },
-      "bob.60808": {
+      "ethereum.11155111": {
         "environment": "production"
       },
-      "corn.21000000": {
+      "ethereum.17000": {
         "environment": "production"
       },
-      "ethereum.1": {
+      "union.union-testnet-10": {
+        "environment": "production"
+      },
+      "bob.808813": {
+        "environment": "production"
+      },
+      "corn.21000001": {
         "environment": "production"
       }
     }
@@ -18,16 +24,16 @@
   "btc": {
     "chains": {
       "babylon.bbn-1": {
-        "environment": "staging"
+        "environment": "production"
       },
       "bob.60808": {
-        "environment": "staging"
+        "environment": "production"
       },
       "corn.21000000": {
-        "environment": "staging"
+        "environment": "production"
       },
       "ethereum.1": {
-        "environment": "staging"
+        "environment": "production"
       }
     }
   }
