@@ -26,7 +26,7 @@ The format of the file is as follows:
   - `height`: The height that the contract was first uploaded at.
   - `commit`: The commit of <https://github.com/unionlabs/union> of the latest deployment of this contract.
 
-  Any other fields may also be included as necessary at the root of the deployments object (i.e. alongside `core`, `lightclient`, and `app`).
+  Additional fields may also be included as necessary at both the root of the deployments object (i.e. alongside `core`, `lightclient`, and `app`) and in the leaf objects (i.e. alongside `address`, `height`, and `commit`).
 
 Deployments can be updated by running the following command from the root of the repo:
 
@@ -70,8 +70,8 @@ The file maps [UCS04] chain ids to an object containing channels on that chain. 
 
 - `sla`: Maximum time (in ISO 8601) between a packet-send and a packet-ack.
 
-  - `forward`: Maximum duration when sending _from_ the specified chain (ie. from *init* side).
-  - `reverse`: Maximum duration when sending _to_ the specified chain (ie. from *try* side).
+  - `forward`: Maximum duration when sending _from_ the specified chain (ie. send packet was emitted on this chain).
+  - `reverse`: Maximum duration when sending _to_ the specified chain (ie. send packet was emitted on the counterparty chain).
 
 - `comments`: Arbitrary text describing the channel. This text is not parsed, but new entries should follow a consistent prose as existing entries.
 
@@ -87,7 +87,7 @@ The structure is as follows:
 
 - `<edition>`: name of the edition, corresponding to the subdomain `<edition>.union.build`.
   - `chains`: mapping of universal chain identifiers to their configuration.
-    - `<universal_chain_id>`: unique chain identifier (see [UCS04]) of the chain that is in scope for this edition.
+    - `<universal_chain_id>`: [UCS04] chain id of the chain that is in scope for this edition.
       - `environment`: Specifies the visibility of the chain within the given edition (see [environments](#environments) below).
 
 ### environments

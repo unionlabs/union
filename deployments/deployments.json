@@ -66,7 +66,12 @@
         "ucs03": {
           "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
           "height": 461829,
-          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba",
+          "minter": {
+            "type": "cw20",
+            "address": "union150u2vpdtau48c50lntaqgleu8rqfnnuh2u3pzfg7pfcvw4uzq6tqceagxy",
+            "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+          }
         }
       }
     }
@@ -138,7 +143,12 @@
         "ucs03": {
           "address": "union1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qpe64fh",
           "height": 354920,
-          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba",
+          "minter": {
+            "type": "cw20",
+            "address": "union1t5awl707x54k6yyx7qfkuqp890dss2pqgwxh07cu44x5lrlvt4rs8hqmk0",
+            "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+          }
         }
       }
     }
@@ -180,7 +190,12 @@
         "ucs03": {
           "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
           "height": 714737,
-          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba",
+          "minter": {
+            "type": "cw20",
+            "address": "bbn1sakazthycqgzer50nqgr5ta4vy3gwz8wxla3s8rd8pql4ctmz5qssg39sf",
+            "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+          }
         }
       }
     }
@@ -222,7 +237,12 @@
         "ucs03": {
           "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
           "height": 29000,
-          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba",
+          "minter": {
+            "type": "cw20",
+            "address": "bbn1c723xf74f0r9g4uyn0cv2t7pkgcq7x0gaw5h773j78rk35w0j0usslxen6",
+            "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+          }
         }
       }
     }
