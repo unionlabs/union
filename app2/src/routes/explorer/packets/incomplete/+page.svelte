@@ -5,6 +5,7 @@ import { onMount } from "svelte"
 import { incompletePacketsList } from "$lib/stores/incomplete-packets.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
+import { page } from "$app/state"
 import Sections from "$lib/components/ui/Sections.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 
@@ -13,7 +14,11 @@ import PacketListItemComponent from "$lib/components/model/PacketListItemCompone
 import PacketListItemComponentSkeleton from "$lib/components/model/PacketListItemComponentSkeleton.svelte"
 
 onMount(() => {
-  missingPacketListPage("mainnet")
+  const chainParam = page.url.searchParams.get("exceeding_sla")
+  const chain = ["mainnet", "testnet"].includes(chainParam ?? "")
+    ? (chainParam as "mainnet" | "testnet")
+    : "all"
+  missingPacketListPage(chain)
 
   return () => {
     incompletePacketsList.interruptFiber()
