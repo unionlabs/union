@@ -53,7 +53,7 @@ export function missingPackets(exceedingSla: string) {
 
       found.push(...txs)
 
-      cursor = txs[txs.length - 1].sort_order
+      cursor = txs.at(-1).sort_order
     }
 
     console.info("Missing packets:", found)
