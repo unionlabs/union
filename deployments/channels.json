@@ -9,16 +9,6 @@
       "tags": ["canonical"]
     }
   },
-  "babylon.bbn-test-5": {
-    "1": {
-      "comments": "ethereum.11155111 channel 7",
-      "tags": ["canonical"]
-    },
-    "2": {
-      "comments": "ethereum.17000 channel 3",
-      "tags": ["canonical"]
-    }
-  },
   "bob.60808": {
     "1": {
       "comments": "babylon.bbn-1 channel 1",
@@ -44,8 +34,18 @@
       "comments": "union.union-testnet-10 channel 1",
       "tags": ["canonical"]
     },
-    "8": {
-      "comments": "ethereum.17000 channel 2",
+    "7": {
+      "comments": "babylon.bbn-test-5 channel 1",
+      "tags": ["canonical"]
+    }
+  },
+  "ethereum.17000": {
+    "2": {
+      "comments": "ethereum.11155111 channel 8",
+      "tags": ["canonical"]
+    },
+    "3": {
+      "comments": "babylon.bbn-test-5 channel 2",
       "tags": ["canonical"]
     }
   }
