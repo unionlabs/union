@@ -210,6 +210,7 @@ const handleSubmit = () => {
 }
 
 const sourceChain = step.intent.sourceChain
+const massagedDenom = isHex(step.token) ? step.token : toHex(step.token)
 
 function getMaxApprovalAmount() {
   return Match.value(step.intent.sourceChain.rpc_type).pipe(
@@ -335,109 +336,126 @@ function handleBackClick() {
 </script>
 
 <div class="grow relative min-w-full flex flex-col justify-between h-full">
-  <div class="grow flex flex-col justify-between">
-      <div class="p-4">
-        <h3 class="text-lg font-semibold flex items-center gap-2 mb-2">
-          Approve
-          <TokenComponent chain={sourceChain} denom={step.token} />
-        </h3>
-        <p class="text-sm text-zinc-400">
-          You need to approve Union to send
-          <TokenComponent chain={sourceChain} denom={step.token} />.
-          This is a one-time approval for this token.
-        </p>
+  <div class="grow flex flex-col gap-2 p-4">
+    <h3 class="text-lg font-semibold">
+      Approve
+      <TokenComponent chain={sourceChain} denom={massagedDenom} />
+    </h3>
 
-        <div class="grid grid-cols-2 gap-4 mt-4">
-          <section>
-            <Label class="text-zinc-400">Current Allowance</Label>
-            <TokenComponent
-              chain={sourceChain}
-              denom={step.token}
-              amount={step.currentAllowance}
-              showIcon={false}
-            />
-          </section>
+    <p class="text-sm text-zinc-400">
+      You need to approve Union to send
+      <TokenComponent chain={sourceChain} denom={massagedDenom} />. This is a
+      one-time approval for this token.
+    </p>
 
-          <section>
-            <Label class="text-zinc-400">Required Amount</Label>
-            <TokenComponent
-              chain={sourceChain}
-              denom={step.token}
-              amount={step.requiredAmount}
-              showIcon={false}
-            />
-          </section>
+    <div class="mt-4 grid grid-cols-2 gap-4">
+      <div>
+        <Label class="text-zinc-400 mb-2 block text-sm">Current Approval</Label>
+        <div class="flex items-center gap-2">
+          <TokenComponent
+            chain={sourceChain}
+            denom={massagedDenom}
+            amount={step.currentAllowance}
+            showIcon={false}
+          />
         </div>
       </div>
-
-      <div class="p-4">
-        <section>
-          {#if showCustomInput && !isValidAmount && customAmount}
-            <div class="text-sm text-red-500 mb-3 h-full flex items-center gap-2">
-              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-              </svg>
-              <span>Custom amount must be greater than or equal to the required amount</span>
-            </div>
-          {/if}
-          <Label class="text-zinc-400 mb-3 block">Select Approval Amount</Label>
-          
-          {#if !showCustomInput}
-            <div class="flex justify-between">
-              <button
-                class="flex-1 {selectedMultiplier === 1 ? 'bg-zinc-800' : 'bg-zinc-900'} hover:bg-zinc-800 rounded-l-lg h-10 flex items-center justify-center cursor-pointer"
-                onclick={() => handleMultiplierSelect(1)}
-                disabled={!isButtonEnabled}
-              >
-                <span class={`uppercase text-xs font-semibold ${selectedMultiplier === 1 ? 'text-white' : 'text-zinc-400'}`}>Exact</span>
-              </button>
-
-              <button
-                class="flex-1 {selectedMultiplier === 'max' ? 'bg-zinc-800' : 'bg-zinc-900'} hover:bg-zinc-800 h-10 flex items-center justify-center cursor-pointer"
-                onclick={() => handleMultiplierSelect("max")}
-                disabled={!isButtonEnabled}
-              >
-                <span class={`uppercase text-xs font-semibold ${selectedMultiplier === 'max' ? 'text-white' : 'text-zinc-400'}`}>Max</span>
-              </button>
-
-              <button
-                class="flex-1 {selectedMultiplier === null ? 'bg-zinc-800' : 'bg-zinc-900'} hover:bg-zinc-800 rounded-r-lg h-10 flex items-center justify-center cursor-pointer"
-                onclick={handleCustomClick}
-                disabled={!isButtonEnabled}
-              >
-                <span class={`uppercase text-xs font-semibold ${selectedMultiplier === null ? 'text-white' : 'text-zinc-400'}`}>Custom</span>
-              </button>
-            </div>
-          {:else}
-            <div class="flex justify-between gap-4">
-              <button
-                class="bg-zinc-900 hover:bg-zinc-800 rounded-lg h-10 w-14 flex items-center justify-center cursor-pointer"
-                onclick={handleBackClick}
-                disabled={!isButtonEnabled}
-              >
-                <span class="text-zinc-400">←</span>
-              </button>
-              <div class="flex-1">
-                <Input
-                  type="text"
-                  required
-                  disabled={!isButtonEnabled}
-                  autocorrect="off"
-                  placeholder="Enter custom amount"
-                  spellcheck="false"
-                  autocomplete="off"
-                  inputmode="decimal"
-                  value={customAmount}
-                  oninput={handleCustomInput}
-                  onbeforeinput={handleBeforeInput}
-                  class="h-10 text-center text-sm "
-                  id="custom-amount"
-                />
-              </div>
-            </div>
-          {/if}
-        </section>
+      <div>
+        <Label class="text-zinc-400 mb-2 block text-sm">Required Approval</Label
+        >
+        <div class="flex items-center gap-2">
+          <TokenComponent
+            chain={sourceChain}
+            denom={massagedDenom}
+            amount={step.requiredAmount}
+            showIcon={false}
+          />
+        </div>
       </div>
+    </div>
+  </div>
+
+  <div class="flex flex-col justify-between p-4">
+    {#if showCustomInput && !isValidAmount && customAmount}
+      <div class="text-sm text-red-500 h-full flex items-center gap-2">
+        <span
+          >Custom amount must be greater than or equal to the required amount</span
+        >
+      </div>
+    {/if}
+    <section>
+      <Label class="text-zinc-400 mb-3 block">Select Approval Amount</Label>
+
+      {#if !showCustomInput}
+        <div class="flex justify-between">
+          <button
+            class="flex-1 {selectedMultiplier === 1
+              ? 'bg-zinc-800'
+              : 'bg-zinc-900'} hover:bg-zinc-800 rounded-l-lg h-10 flex items-center justify-center cursor-pointer"
+            onclick={() => handleMultiplierSelect(1)}
+            disabled={!isButtonEnabled}
+          >
+            <span
+              class={`uppercase text-xs font-semibold ${selectedMultiplier === 1 ? "text-white" : "text-zinc-400"}`}
+              >Exact</span
+            >
+          </button>
+
+          <button
+            class="flex-1 {selectedMultiplier === 'max'
+              ? 'bg-zinc-800'
+              : 'bg-zinc-900'} hover:bg-zinc-800 h-10 flex items-center justify-center cursor-pointer"
+            onclick={() => handleMultiplierSelect("max")}
+            disabled={!isButtonEnabled}
+          >
+            <span
+              class={`uppercase text-xs font-semibold ${selectedMultiplier === "max" ? "text-white" : "text-zinc-400"}`}
+              >Max</span
+            >
+          </button>
+
+          <button
+            class="flex-1 {selectedMultiplier === null
+              ? 'bg-zinc-800'
+              : 'bg-zinc-900'} hover:bg-zinc-800 rounded-r-lg h-10 flex items-center justify-center cursor-pointer"
+            onclick={handleCustomClick}
+            disabled={!isButtonEnabled}
+          >
+            <span
+              class={`uppercase text-xs font-semibold ${selectedMultiplier === null ? "text-white" : "text-zinc-400"}`}
+              >Custom</span
+            >
+          </button>
+        </div>
+      {:else}
+        <div class="flex justify-between gap-4">
+          <button
+            class="bg-zinc-900 hover:bg-zinc-800 rounded-lg h-10 w-14 flex items-center justify-center cursor-pointer"
+            onclick={handleBackClick}
+            disabled={!isButtonEnabled}
+          >
+            <span class="text-zinc-400">←</span>
+          </button>
+          <div class="flex-1">
+            <Input
+              type="text"
+              required
+              disabled={!isButtonEnabled}
+              autocorrect="off"
+              placeholder="Enter custom amount"
+              spellcheck="false"
+              autocomplete="off"
+              inputmode="decimal"
+              value={customAmount}
+              oninput={handleCustomInput}
+              onbeforeinput={handleBeforeInput}
+              class="h-10 text-center text-sm"
+              id="custom-amount"
+            />
+          </div>
+        </div>
+      {/if}
+    </section>
   </div>
 
   <div class="border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
@@ -447,19 +465,21 @@ function handleBackClick() {
       </Button>
       {#if Option.isSome(error)}
         <div class="flex justify-end gap-2">
-          <Button variant="danger" onclick={() => (showError = true)}>Error</Button>
-          <Button 
-            variant="primary" 
-            onclick={handleSubmit} 
+          <Button variant="danger" onclick={() => (showError = true)}
+            >Error</Button
+          >
+          <Button
+            variant="primary"
+            onclick={handleSubmit}
             disabled={!isButtonEnabled || (showCustomInput && !isValidAmount)}
           >
             {submitButtonText}
           </Button>
         </div>
       {:else}
-        <Button 
-          variant="primary" 
-          onclick={handleSubmit} 
+        <Button
+          variant="primary"
+          onclick={handleSubmit}
           disabled={!isButtonEnabled || (showCustomInput && !isValidAmount)}
         >
           {submitButtonText}
@@ -472,8 +492,8 @@ function handleBackClick() {
     open={showError}
     error={Option.isSome(error) ? error.value : null}
     onClose={() => {
-      showError = false
-      error = Option.none()
+      showError = false;
+      error = Option.none();
     }}
   />
 </div>
