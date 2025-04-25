@@ -201,7 +201,7 @@ _: {
             max_gas = 300000000;
           };
           apps = {
-            ucs03 = ucs03-configs.osmosis-tf // {
+            ucs03 = ucs03-configs.osmosis-tokenfactory // {
               rate_limit_disabled = true;
             };
           };
@@ -446,12 +446,12 @@ _: {
           };
           rate_limit_disabled = false;
         };
-        osmosis-tf = {
+        osmosis-tokenfactory = {
           rate_limit_disabled = false;
           path = "${ucs03-zkgm.release}";
-          token_minter_path = "${osmosis-tf-token-minter.release}";
+          token_minter_path = "${osmosis-tokenfactory-token-minter.release}";
           token_minter_config = {
-            osmosis-tf = { };
+            osmosis-tokenfactory = { };
           };
         };
       };
@@ -815,7 +815,9 @@ _: {
 
       cw20-token-minter = crane.buildWasmContract "cosmwasm/cw20-token-minter" { };
 
-      osmosis-tf-token-minter = crane.buildWasmContract "cosmwasm/osmosis-tf-token-minter" { };
+      osmosis-tokenfactory-token-minter =
+        crane.buildWasmContract "cosmwasm/osmosis-tokenfactory-token-minter"
+          { };
 
       # update-deployments-json deployer
       update-deployments-json =
@@ -949,7 +951,7 @@ _: {
             cw20-base
             cosmwasm-deployer
             cw20-token-minter
-            osmosis-tf-token-minter
+            osmosis-tokenfactory-token-minter
             ibc-union
             multicall
             ;

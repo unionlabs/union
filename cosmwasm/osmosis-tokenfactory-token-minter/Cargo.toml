@@ -1,5 +1,5 @@
 [package]
-name    = "osmosis-tf-token-minter"
+name    = "osmosis-tokenfactory-token-minter"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -15,15 +15,15 @@ crate-type = ["cdylib", "rlib"]
 alloy                       = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["stargate"] }
-ibc-union-spec              = { workspace = true }
-embed-commit                = { workspace = true }
 cw-storage-plus             = { workspace = true }
+embed-commit                = { workspace = true }
+ibc-union-spec              = { workspace = true }
+prost                       = { workspace = true }
+protos                      = { workspace = true }
 thiserror                   = { workspace = true }
 token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 unionlabs                   = { workspace = true }
-prost = { workspace = true }
-protos = { workspace = true }
 
 [lints]
 workspace = true

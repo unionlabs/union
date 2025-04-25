@@ -9493,7 +9493,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "osmosis-tf-token-minter"
+name = "osmosis-tokenfactory-token-minter"
 version = "0.0.0"
 dependencies = [
  "alloy",
