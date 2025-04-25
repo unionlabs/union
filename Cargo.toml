@@ -6,6 +6,7 @@ members = [
   "cosmwasm/ucs00-pingpong",
   "cosmwasm/ibc-union/app/ucs00-pingpong",
   "cosmwasm/ibc-union/app/ucs03-zkgm",
+  "cosmwasm/ibc-union/app/ucs06-funded-dispatch",
   "cosmwasm/multicall",
 
   "cosmwasm/ibc-union/core",
