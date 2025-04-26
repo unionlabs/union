@@ -11,6 +11,7 @@ export interface TransferArgs {
   baseToken: string
   baseAmount: string
   quoteAmount: string
+  decimals: number
   receiver: AddressCanonicalBytes
   sender: AddressCanonicalBytes
   ucs03address: string
@@ -101,6 +102,7 @@ export const getFillingState = (transferData: TransferData): FillingState => {
             baseToken: baseToken.denom,
             baseAmount: parsedAmount,
             quoteAmount: parsedAmount,
+            decimals: baseToken.representations[0].decimals,
             ucs03address,
             sender: sourceWallet.value,
             sourceRpcType: sourceChain.rpc_type,

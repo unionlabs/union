@@ -19,6 +19,8 @@ interface Props {
   amount?: TokenRawAmount
   showWrapping?: boolean
   icon?: Option.Option<string> | undefined
+  showIcon?: boolean
+  showSymbol?: boolean
 }
 
 const {
@@ -26,7 +28,9 @@ const {
   denom,
   amount = undefined,
   showWrapping = true,
-  icon = Option.none()
+  icon = Option.none(),
+  showIcon = true,
+  showSymbol = true
 }: Props = $props()
 
 // Start the query when the component mounts
@@ -88,12 +92,14 @@ const displayDenom = $derived(
 <Tooltip>
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
-      {#if Option.isSome(icon) && icon.value.length > 0}
-        <img class="size-4" src={icon.value} alt="" loading="lazy"/>
-      {:else}
-        <div class="size-5 flex items-center justify-center bg-zinc-700 rounded-full">
-          <span class="text-xs text-zinc-400">?</span>
-        </div>
+      {#if showIcon}
+        {#if Option.isSome(icon) && icon.value.length > 0}
+          <img class="size-4" src={icon.value} alt="" loading="lazy"/>
+        {:else}
+          <div class="size-5 flex items-center justify-center bg-zinc-700 rounded-full">
+            <span class="text-xs text-zinc-400">?</span>
+          </div>
+        {/if}
       {/if}
       {#if amount !== undefined}
         <span>
@@ -102,7 +108,9 @@ const displayDenom = $derived(
           )}
         </span>
       {/if}
-      <Truncate value={displayDenom} maxLength={10} showCopy={false} />
+      {#if showSymbol}
+        <Truncate value={displayDenom} maxLength={10} showCopy={false} />
+      {/if}
     </div>
 
     {#if Option.isSome(chains.data) && Option.isSome(token) && showWrapping}
