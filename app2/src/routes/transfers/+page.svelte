@@ -97,7 +97,8 @@ const onNextPage = async () => {
   }
 }
 
-const transferCountForAddressesQuery = () => Effect.void
+// TODO: reimplement
+const transferCountForAddressesQuery = (_: unknown) => Effect.void
 </script>
 
 <Sections>
