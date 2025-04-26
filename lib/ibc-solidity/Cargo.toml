@@ -12,9 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy    = { workspace = true, features = ["sol-types"] }
-schemars = { workspace = true, features = ["derive"], optional = true }
-serde    = { workspace = true, features = ["derive"], optional = true }
+alloy          = { workspace = true, features = ["sol-types"] }
+ibc-union-spec = { workspace = true }
+schemars       = { workspace = true, features = ["derive"], optional = true }
+serde          = { workspace = true, features = ["derive"], optional = true }
+thiserror      = { workspace = true }
+
+[dev-dependencies]
+ibc-union-spec = { workspace = true, features = ["ethabi"] }
 
 [features]
 default  = []
