@@ -2,26 +2,28 @@ use serde::{Deserialize, Serialize};
 use unionlabs::{
     bounded::{BoundedI32, BoundedI64},
     google::protobuf::timestamp::Timestamp,
-    primitives::H160,
+    primitives::{
+        encoding::{Base64, HexUnprefixed},
+        Bytes, H160,
+    },
 };
 
 use crate::types::{block_id::BlockId, signed_msg_type::SignedMsgType};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct Vote {
+    #[serde(rename = "type")]
     pub ty: SignedMsgType,
+    #[serde(with = "::serde_utils::string")]
     pub height: BoundedI64<0, { i64::MAX }>,
     pub round: BoundedI32<0, { i32::MAX }>,
     pub block_id: BlockId,
     pub timestamp: Timestamp,
-    pub validator_address: H160,
+    pub validator_address: H160<HexUnprefixed>,
     pub validator_index: i32,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub signature: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub extension: Vec<u8>,
-    #[serde(with = "::serde_utils::hex_string")]
-    pub extension_signature: Vec<u8>,
+    pub signature: Bytes<Base64>,
+    pub extension: Option<Bytes<Base64>>,
+    pub extension_signature: Option<Bytes<Base64>>,
 }
 
 #[cfg(feature = "proto")]
@@ -46,9 +48,9 @@ pub mod proto {
                 timestamp: Some(value.timestamp.into()),
                 validator_address: value.validator_address.into(),
                 validator_index: value.validator_index,
-                signature: value.signature,
-                extension: value.extension,
-                extension_signature: value.extension_signature,
+                signature: value.signature.into(),
+                extension: value.extension.unwrap_or_default().into(),
+                extension_signature: value.extension_signature.unwrap_or_default().into(),
             }
         }
     }
@@ -83,9 +85,17 @@ pub mod proto {
                 timestamp: required!(value.timestamp)?.try_into()?,
                 validator_address: value.validator_address.try_into()?,
                 validator_index: value.validator_index,
-                signature: value.signature,
-                extension: value.extension,
-                extension_signature: value.extension_signature,
+                signature: value.signature.into(),
+                extension: if value.extension.is_empty() {
+                    None
+                } else {
+                    Some(value.extension.into())
+                },
+                extension_signature: if value.extension_signature.is_empty() {
+                    None
+                } else {
+                    Some(value.extension_signature.into())
+                },
             })
         }
     }

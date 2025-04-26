@@ -95,7 +95,6 @@ impl ::prost::Name for ProofOps {
 pub struct PublicKey {
     /// The type of key.
     #[prost(oneof = "public_key::Sum", tags = "1, 2, 3, 99")]
-    #[cfg_attr(feature = "serde", serde(flatten))]
     pub sum: ::core::option::Option<public_key::Sum>,
 }
 /// Nested message and enum types in `PublicKey`.
@@ -103,20 +102,15 @@ pub mod public_key {
     /// The type of key.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
-    #[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
     pub enum Sum {
         #[prost(bytes, tag = "1")]
-        #[serde(rename = "tendermint/PubKeyEd25519")]
-        Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
+        Ed25519(::prost::alloc::vec::Vec<u8>),
         #[prost(bytes, tag = "2")]
-        #[serde(rename = "tendermint/PubKeySecp256k1")]
-        Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
+        Secp256k1(::prost::alloc::vec::Vec<u8>),
         #[prost(bytes, tag = "3")]
-        #[serde(rename = "cometbft/PubKeyBls12381")]
-        Bls12381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
+        Bls12381(::prost::alloc::vec::Vec<u8>),
         #[prost(bytes, tag = "99")]
-        #[serde(rename = "cometbft/PubKeyBn254")]
-        Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>),
+        Bn254(::prost::alloc::vec::Vec<u8>),
     }
 }
 impl ::prost::Name for PublicKey {

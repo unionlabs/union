@@ -119,31 +119,11 @@
             "${proto.gogoproto}"
           ];
           # inject https://github.com/cometbft/cometbft/blob/main/proto/cometbft/crypto/v1/keys.proto#L17
-          # note that this may cause issues if we decode proto bytes from another chain with this key type, since we use field identifier 3 for bn254 signatures.
-          # and yes prost is incredibly cursed. we have to annotate the field that uses the generated oneof `Sum` type with the additional enum tag for some reason? no clue why this information has to be duplicated.
+          # yes prost is incredibly cursed. we have to annotate the field that uses the generated oneof `Sum` type with the additional enum tag for some reason? no clue why this information has to be duplicated.
           # ask me how much time i wasted figuring this out
           fixup-script = ''
-            # sed -i 's/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3")\]/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3, 4")\]/' "./src/cometbft.crypto.v1.rs"
-            # sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>),/Bn254(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "4")\]Bls12381(::prost::alloc::vec::Vec<u8>),/' "./src/cometbft.crypto.rs"
-
-            # required until https://github.com/tokio-rs/prost/issues/507 is fixed
-            sed -i 's/pub sum: ::core::option::Option<public_key::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<public_key::Sum>,/' "./src/cometbft.crypto.v1.rs"
-            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/cometbft.crypto.v1.rs"
-
-            # i can't figure out how to add attributes to the variants directly, possibly related to the issue linked above
-            sed -i 's/Ed25519(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyEd25519")\]Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-            sed -i 's/Bls12381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12381")\]Bls12381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-
-
-
-            # required until https://github.com/tokio-rs/prost/issues/507 is fixed
-            sed -i 's/pub sum: ::core::option::Option<evidence::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<evidence::Sum>,/' "./src/cometbft.types.v1.rs"
-            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/cometbft.types.v1.rs"
-
-            sed -i 's/DuplicateVoteEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]DuplicateVoteEvidence(/' "./src/cometbft.types.v1.rs"
-            sed -i 's/LightClientAttackEvidence(/#\[serde(rename = "tendermint\/LightClientAttackEvidence")\]LightClientAttackEvidence(/' "./src/cometbft.types.v1.rs"
+            sed -i 's/#\[prost(oneof = "public_key::Sum", tags = "1, 2")\]/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3, 99")\]/' "./src/tendermint.crypto.rs"
+            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>),/Secp256k1(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "3")\]Bn254(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "99")\]Bls12381(::prost::alloc::vec::Vec<u8>),/' "./src/tendermint.crypto.rs"
           '';
         };
 

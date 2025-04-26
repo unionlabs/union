@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
+#[serde(try_from = "i32", into = "i32")]
 pub enum SignedMsgType {
     Unknown = 0,
     Prevote = 1,

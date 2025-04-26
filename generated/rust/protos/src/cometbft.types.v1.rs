@@ -710,7 +710,6 @@ impl ::prost::Name for AbciParams {
 pub struct Evidence {
     /// The type of evidence.
     #[prost(oneof = "evidence::Sum", tags = "1, 2")]
-    #[cfg_attr(feature = "serde", serde(flatten))]
     pub sum: ::core::option::Option<evidence::Sum>,
 }
 /// Nested message and enum types in `Evidence`.
@@ -718,13 +717,10 @@ pub mod evidence {
     /// The type of evidence.
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
-    #[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))]
     pub enum Sum {
         #[prost(message, tag = "1")]
-        #[serde(rename = "tendermint/DuplicateVoteEvidence")]
         DuplicateVoteEvidence(super::DuplicateVoteEvidence),
         #[prost(message, tag = "2")]
-        #[serde(rename = "tendermint/LightClientAttackEvidence")]
         LightClientAttackEvidence(super::LightClientAttackEvidence),
     }
 }

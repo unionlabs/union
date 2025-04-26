@@ -30,9 +30,7 @@ pub enum Order {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct BlockResponse {
-    // #[serde(deserialize_with = "serde_as::<_, protos::cometbft::types::v1::BlockId, _>")]
     pub block_id: BlockId,
-    // #[serde(deserialize_with = "serde_as::<_, protos::cometbft::types::v1::Block, _>")]
     pub block: Block,
 }
 
@@ -58,7 +56,6 @@ pub struct BlockMeta {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct StatusResponse {
-    // #[serde(deserialize_with = "serde_as::<_, protos::cometbft::p2p::v1::DefaultNodeInfo, _>")]
     pub node_info: DefaultNodeInfo,
     pub sync_info: SyncInfo,
     pub validator_info: ValidatorInfo,
@@ -97,7 +94,6 @@ pub struct ValidatorInfo {
 pub struct ValidatorsResponse {
     #[serde(with = "::serde_utils::string")]
     pub block_height: NonZeroU64,
-    // #[serde(deserialize_with = "serde_as_list::<_, protos::cometbft::types::v1::Validator, _>")]
     pub validators: Vec<Validator>,
     #[serde(with = "::serde_utils::string")]
     pub count: u64,
@@ -164,7 +160,6 @@ pub struct GrpcAbciQueryError {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct CommitResponse {
-    // #[serde(deserialize_with = "serde_as::<_, protos::cometbft::types::v1::SignedHeader, _>")]
     pub signed_header: SignedHeader,
     pub canonical: bool,
 }
@@ -177,13 +172,9 @@ pub struct TxResponse {
     #[serde(with = "::serde_utils::string_opt")]
     pub height: Option<NonZeroU64>,
     pub index: u32,
-    // #[serde(deserialize_with = "serde_as::<_, protos::cometbft::abci::v1::ExecTxResult, _>")]
     pub tx_result: ExecTxResult,
     pub tx: Bytes<Base64>,
-    #[serde(
-        default,
-        // deserialize_with = "serde_as_opt::<_, protos::cometbft::types::v1::TxProof, _>"
-    )]
+    #[serde(default)]
     pub proof: Option<TxProof>,
 }
 
@@ -207,12 +198,8 @@ pub struct BlockResultsResponse {
 #[serde(deny_unknown_fields)]
 pub struct BroadcastTxSyncResponse {
     pub codespace: String,
-
     pub code: Code,
-
     pub data: Bytes<Base64>,
-
     pub log: String,
-
     pub hash: H256<HexUnprefixed>,
 }
