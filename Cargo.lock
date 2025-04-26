@@ -178,7 +178,6 @@ dependencies = [
  "alloy-contract",
  "alloy-core",
  "alloy-eips",
- "alloy-genesis",
  "alloy-network",
  "alloy-provider",
  "alloy-pubsub",
@@ -272,7 +271,6 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-json-abi",
  "alloy-primitives",
- "alloy-rlp",
  "alloy-sol-types",
 ]
 
@@ -346,19 +344,6 @@ dependencies = [
  "either",
  "serde",
  "sha2 0.10.8",
-]
-
-[[package]]
-name = "alloy-genesis"
-version = "1.0.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b81b2dfd278d58af8bfde8753fa4685407ba8fbad8bc88a2bb0e065eed48478"
-dependencies = [
- "alloy-eips",
- "alloy-primitives",
- "alloy-serde",
- "alloy-trie",
- "serde",
 ]
 
 [[package]]
@@ -9936,7 +9921,7 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.35",
  "embed-commit",
- "unionlabs",
+ "wasm-client-type",
 ]
 
 [[package]]
@@ -14625,7 +14610,6 @@ checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 name = "unionlabs"
 version = "0.0.0"
 dependencies = [
- "alloy",
  "base64 0.21.7",
  "bcs 0.1.6",
  "bincode 2.0.1",
@@ -14643,7 +14627,6 @@ dependencies = [
  "macros",
  "near-primitives-core",
  "near-sdk",
- "paste",
  "prost 0.12.6",
  "protos",
  "rand 0.8.5",
@@ -14664,7 +14647,6 @@ dependencies = [
  "typenum",
  "unionlabs-encoding",
  "unionlabs-primitives",
- "wasmparser 0.113.3",
 ]
 
 [[package]]
@@ -15675,6 +15657,7 @@ dependencies = [
  "tracing",
  "unionlabs",
  "voyager-sdk",
+ "wasm-client-type",
 ]
 
 [[package]]
@@ -16079,7 +16062,6 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.35",
  "cometbft-rpc",
- "dashmap 5.5.3",
  "embed-commit",
  "ibc-classic-spec",
  "jsonrpsee",
@@ -16231,7 +16213,6 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.35",
  "cometbft-rpc",
- "dashmap 5.5.3",
  "embed-commit",
  "ibc-classic-spec",
  "jsonrpsee",
@@ -16546,6 +16527,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "wasm-client-type"
+version = "0.0.0"
+dependencies = [
+ "paste",
+ "serde",
+ "thiserror 2.0.12",
+ "wasmparser 0.113.3",
 ]
 
 [[package]]

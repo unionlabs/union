@@ -729,7 +729,7 @@
 
       # these are incredibly useful for debugging
       packages = {
-        # cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "cosmwasm-deployer" ]);
+        cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "ibc-union" ]);
         # getAllDeps = dbg (getAllDeps [ "cosmwasm/ibc-union/core" ]);
         # getDependency = dbg (
         #   getCargoLockPackageEntry "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)"

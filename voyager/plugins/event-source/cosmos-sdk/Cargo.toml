@@ -35,3 +35,4 @@ tokio            = { workspace = true }
 tracing          = { workspace = true }
 unionlabs        = { workspace = true, features = ["bincode"] }
 voyager-sdk      = { workspace = true }
+wasm-client-type = { workspace = true }

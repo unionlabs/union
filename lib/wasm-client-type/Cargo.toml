@@ -1,5 +1,5 @@
 [package]
-name    = "parse-wasm-client-type"
+name    = "wasm-client-type"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -12,6 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-clap             = { workspace = true, features = ["derive", "help"] }
-embed-commit     = { workspace = true }
-wasm-client-type = { workspace = true }
+paste      = { version = "1.0" }
+serde      = { workspace = true, features = ["derive"] }
+thiserror  = { workspace = true }
+wasmparser = { version = "0.113" }

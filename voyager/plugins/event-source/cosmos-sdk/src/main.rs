@@ -31,7 +31,7 @@ use unionlabs::{
     never::Never,
     option_unwrap,
     primitives::H256,
-    ErrorReporter, WasmClientType,
+    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow,
@@ -48,6 +48,7 @@ use voyager_sdk::{
     vm::{call, conc, data, noop, pass::PassResult, seq, Op},
     ExtensionsExt, VoyagerClient,
 };
+use wasm_client_type::WasmClientType;
 
 use crate::{
     call::{FetchBlock, FetchBlocks, MakeChainEvent, ModuleCall},
