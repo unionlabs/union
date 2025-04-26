@@ -1,8 +1,9 @@
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
-import { Data, Effect, Option, Schema as S } from "effect"
+import { Array as Arr, Data, Effect, Option, Schema as S } from "effect"
 import type { Chain as ViemChain } from "viem"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 import { bech32, bytes } from "@scure/base"
+import { dual } from "effect/Function"
 
 export const ChainId = S.String.pipe(S.brand("ChainId"))
 // e.g. union.union-testnet-9
@@ -157,8 +158,11 @@ export class Chain extends S.Class<Chain>("Chain")({
 export const Chains = S.Array(Chain)
 export type Chains = typeof Chains.Type
 
-export const getChain = (
-  chains: typeof Chains.Type,
-  universalChainId: UniversalChainId
-): Option.Option<Chain> =>
-  Option.fromNullable(chains.find(chain => chain.universal_chain_id === universalChainId))
+export const getChain: {
+  (universalChainId: UniversalChainId): (chains: Chains) => Option.Option<Chain>
+  (chains: Chains, universalChainId: UniversalChainId): Option.Option<Chain>
+} = dual(
+  2,
+  (chains: Chains, universalChainId: UniversalChainId): Option.Option<Chain> =>
+    Arr.findFirst(chains, chain => chain.universal_chain_id === universalChainId)
+)
