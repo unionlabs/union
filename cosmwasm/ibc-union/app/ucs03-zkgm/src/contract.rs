@@ -1,7 +1,7 @@
 use core::str;
 
-use alloy::{primitives::U256, sol_types::SolValue};
-use chrono::DateTime;
+use alloy_primitives::U256;
+use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -495,8 +495,8 @@ fn timeout_multiplex(
             destination_channel_id: packet.destination_channel_id,
             data: encode_multiplex_calldata(
                 path,
-                multiplex.sender,
-                multiplex.contract_calldata.clone(),
+                multiplex.sender.into(),
+                multiplex.contract_calldata.into(),
             )
             .into(),
             timeout_height: packet.timeout_height,
@@ -815,8 +815,12 @@ fn acknowledge_multiplex(
         let multiplex_packet = Packet {
             source_channel_id: packet.source_channel_id,
             destination_channel_id: packet.destination_channel_id,
-            data: encode_multiplex_calldata(path, multiplex.sender, multiplex.contract_calldata)
-                .into(),
+            data: encode_multiplex_calldata(
+                path,
+                multiplex.sender.into(),
+                multiplex.contract_calldata.into(),
+            )
+            .into(),
             timeout_height: packet.timeout_height,
             timeout_timestamp: packet.timeout_timestamp,
         };
@@ -1191,8 +1195,12 @@ fn execute_multiplex(
         let multiplex_packet = Packet {
             source_channel_id: packet.source_channel_id,
             destination_channel_id: packet.destination_channel_id,
-            data: encode_multiplex_calldata(path, multiplex.sender, multiplex.contract_calldata)
-                .into(),
+            data: encode_multiplex_calldata(
+                path,
+                multiplex.sender.into(),
+                multiplex.contract_calldata.into(),
+            )
+            .into(),
             timeout_height: packet.timeout_height,
             timeout_timestamp: packet.timeout_timestamp,
         };
@@ -2665,10 +2673,6 @@ pub fn derive_forward_salt(salt: H256) -> H256 {
     tint_forward_salt(keccak256(salt.abi_encode()))
 }
 
-pub fn encode_multiplex_calldata(
-    path: U256,
-    sender: alloy::primitives::Bytes,
-    contract_calldata: alloy::primitives::Bytes,
-) -> Vec<u8> {
+pub fn encode_multiplex_calldata(path: U256, sender: Bytes, contract_calldata: Bytes) -> Vec<u8> {
     (path, sender, contract_calldata).abi_encode()
 }

@@ -1,6 +1,6 @@
 use core::fmt::Debug;
 
-use alloy::sol_types::SolValue;
+use alloy_sol_types::SolValue;
 use bob_light_client_types::{
     header::{L2Header, OutputRootProof},
     ClientStateV1, Header,

@@ -19,7 +19,8 @@ cw-orch-interface = ["dep:cw-orch", "ibc-union-msg/cw-orch-interface"]
 library           = []
 
 [dependencies]
-alloy           = { workspace = true, features = ["sol-types"] }
+alloy-primitives = { workspace = true }
+alloy-sol-types  = { workspace = true }
 bincode         = { workspace = true, features = ["alloc", "derive"] }
 cosmwasm-schema = { workspace = true }
 cosmwasm-std    = { workspace = true, features = ["abort", "iterator"] }

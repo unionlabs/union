@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy    = { workspace = true, features = ["sol-types"] }               # TODO: Fix the feature gating with `sol!`
+alloy    = { workspace = true, features = ["sol-types"] }
 schemars = { workspace = true, features = ["derive"], optional = true }
 serde    = { workspace = true, features = ["derive"], optional = true }
 

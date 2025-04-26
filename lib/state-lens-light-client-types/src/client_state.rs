@@ -205,6 +205,7 @@ where
     }
 }
 
+// avert your eyes, here be dragons
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use alloy::{
@@ -539,5 +540,18 @@ mod tests {
         };
 
         assert_codec_iso::<_, Bcs>(&cs);
+    }
+
+    #[test]
+    fn test_ethabi_unit() {
+        let cs = ClientState {
+            l2_chain_id: "l2_chain_id".to_owned(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
+            l2_latest_height: 100,
+            extra: (),
+        };
+
+        assert_codec_iso::<_, EthAbi>(&cs);
     }
 }

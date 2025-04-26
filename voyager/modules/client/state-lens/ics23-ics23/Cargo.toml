@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                                     = { workspace = true, features = ["sol-types"] }
+alloy-sol-types                           = { workspace = true }
 embed-commit                              = { workspace = true }
 futures                                   = { workspace = true }
 jsonrpsee                                 = { workspace = true, features = ["macros", "server", "tracing"] }

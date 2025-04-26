@@ -18,7 +18,7 @@ test-include = ["cosmwasm/ibc-union/lightclient/ethereum/src/test"]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"] }
+alloy-sol-types             = { workspace = true }
 ark-bls12-381               = { version = "0.5.0" }
 ark-ec                      = { version = "0.5.0" }
 ark-serialize               = { version = "0.5.0" }

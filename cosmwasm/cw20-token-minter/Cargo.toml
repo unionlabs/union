@@ -11,8 +11,12 @@ repository   = { workspace = true }
 [lib]
 crate-type = ["cdylib", "rlib"]
 
+[lints]
+workspace = true
+
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"] }
+alloy-primitives            = { workspace = true }
+alloy-sol-types             = { workspace = true }
 cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_3"] }
 cw-storage-plus             = { workspace = true }
@@ -29,6 +33,3 @@ unionlabs                   = { workspace = true, features = ["schemars"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
-
-[lints]
-workspace = true

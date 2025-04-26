@@ -9,9 +9,12 @@ publish      = { workspace = true }
 repository   = { workspace = true }
 
 [dependencies]
-alloy                = { workspace = true, features = ["sol-types"] }
+alloy-sol-types      = { workspace = true }
 solidity-slot        = { workspace = true }
 unionlabs-primitives = { workspace = true }
 
 [lints]
 workspace = true
+
+[dev-dependencies]
+hex-literal.workspace = true
