@@ -1,6 +1,7 @@
 use cosmwasm_std::Addr;
-use cw_storage_plus::Item;
+use cw_storage_plus::{Item, Map};
 
-pub const ADMIN: Item<Addr> = Item::new("admin");
+/// Operator of the contract, who is the only one who can do state changing operations
+pub const OPERATOR: Item<Addr> = Item::new("operator");
 
-pub const TOKEN_ADMIN: Item<Addr> = Item::new("token_admin");
+pub const TOKEN_OWNERS: Map<String, Addr> = Map::new("owners");

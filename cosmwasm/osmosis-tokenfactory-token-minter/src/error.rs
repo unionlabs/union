@@ -1,4 +1,4 @@
-use cosmwasm_std::{StdError, Uint128};
+use cosmwasm_std::{Addr, StdError, Uint128};
 use unionlabs::primitives::uint::FromDecStrErr;
 
 #[derive(Debug, PartialEq, thiserror::Error)]
@@ -20,4 +20,10 @@ pub enum Error {
 
     #[error("minter config is expected to be osmosis-tokenfactory")]
     InvalidMinterConfig,
+
+    #[error("the token ownership can only be changed by this contract or the minter operator since this token is owner by this contract")]
+    UnauthorizedWhenSelfOwned,
+
+    #[error("the token is owned by {owner} and, {sender} cannot change the ownership")]
+    UnauthorizedThirdParty { owner: Addr, sender: Addr },
 }

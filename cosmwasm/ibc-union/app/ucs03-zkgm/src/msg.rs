@@ -60,7 +60,7 @@ impl TokenMinterInitParams {
                 zkgm_admin,
             },
             TokenMinterInitParams::OsmosisTokenFactory {} => {
-                TokenMinterInitMsg::OsmosisTokenFactory { zkgm_admin }
+                TokenMinterInitMsg::OsmosisTokenFactory {}
             }
         }
     }

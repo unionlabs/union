@@ -107,7 +107,7 @@ pub fn execute(
         ExecuteMsg::Wrapped(msg) => match msg {
             WrappedTokenMsg::CreateDenom {
                 metadata,
-                subdenom: denom,
+                denom,
                 path,
                 channel_id,
                 token,

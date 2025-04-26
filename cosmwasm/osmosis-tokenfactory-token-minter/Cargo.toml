@@ -14,7 +14,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema             = { workspace = true }
-cosmwasm-std                = { workspace = true, features = ["stargate"] }
+cosmwasm-std                = { workspace = true, features = ["stargate", "cosmwasm_1_3"] }
 cw-storage-plus             = { workspace = true }
 embed-commit                = { workspace = true }
 ibc-union-spec              = { workspace = true }
