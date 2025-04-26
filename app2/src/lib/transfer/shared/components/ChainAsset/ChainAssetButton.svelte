@@ -153,7 +153,7 @@ const isChainLoading: boolean = $derived(
                 {transferData.baseToken.value.representations[0]?.symbol ?? transferData.baseToken.value.denom}
               </p>
               {#if Option.isSome(transferData.sourceChain)}
-                <p class="text-xs text-zinc-400">{ type === "source" ? transferData.sourceChain.value.display_name : transferData.destinationChain.value.display_name }</p>
+                <p class="text-xs text-zinc-400">{ type === "source" ? transferData.sourceChain.value.display_name : Option.getOrUndefined(transferData.destinationChain)?.display_name }</p>
               {/if}
 
             </div>

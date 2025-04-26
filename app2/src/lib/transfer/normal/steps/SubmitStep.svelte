@@ -173,11 +173,10 @@ export const submit = Effect.gen(function* () {
             step.intent.sourceChain,
             cosmosStore.connectedWallet
           )
+          const walletCosmosAddress = yield* wallets.cosmosAddress
 
           console.log("here stop", step.intent.baseToken)
-          const sender = yield* step.intent.sourceChain.getDisplayAddress(
-            wallets.cosmosAddress.value
-          )
+          const sender = yield* step.intent.sourceChain.getDisplayAddress(walletCosmosAddress)
           const isNative = !isValidBech32ContractAddress(step.intent.baseToken)
 
           console.log({ isNative })

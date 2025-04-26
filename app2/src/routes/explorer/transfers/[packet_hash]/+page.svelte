@@ -101,11 +101,13 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
           <div class="flex flex-col gap-6">
             <div class="flex flex-1 items-center justify-between pt-6 px-4">
               <div class="text-2xl">
+                {#if Option.isSome(destChain)}
                 <TokenComponent
                   chain={destChain.value}
                   denom={transfer.quote_token}
                   amount={transfer.quote_amount}
                 />
+                {/if}
               </div>
               {#if !inProgress}
                 <div class="flex items-center gap-2">
