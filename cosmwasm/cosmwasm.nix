@@ -216,7 +216,7 @@ _: {
           chain-id = "osmo-test-5";
           name = "osmosis-testnet";
           rpc_url = "https://osmosis-testnet-rpc.polkachu.com";
-          private_key = ''"$1"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "fixed";
             gas_price = "0.05";
@@ -225,7 +225,7 @@ _: {
             max_gas = 300000000;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20 // {
+            ucs03 = ucs03-configs.osmosis-tokenfactory // {
               rate_limit_disabled = true;
             };
           };
