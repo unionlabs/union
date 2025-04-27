@@ -26,4 +26,7 @@ pub enum Error {
 
     #[error("the token is owned by {owner} and, {sender} cannot change the ownership")]
     UnauthorizedThirdParty { owner: Addr, sender: Addr },
+
+    #[error("empty name or symbol in metadata")]
+    EmptyNameOrSymbol,
 }

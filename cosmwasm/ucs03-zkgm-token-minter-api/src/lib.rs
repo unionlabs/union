@@ -19,7 +19,7 @@ pub enum TokenMinterInitMsg {
     /// Note that, this will result in the wrapped tokens to be created as native tokens.
     ///
     /// [Osmosis Token Factory]: https://github.com/osmosis-labs/osmosis/blob/e14ace31b7ba46be3d519966fb8563127534b245/x/tokenfactory/README.md
-    OsmosisTokenFactory {},
+    OsmosisTokenFactory { zkgm_admin: Addr },
 }
 
 /// Messages for the funds that are local to this chain
@@ -91,7 +91,7 @@ pub enum WrappedTokenMsg {
     MintTokens {
         denom: String,
         amount: Uint128,
-        mint_to_address: String,
+        mint_to_address: Addr,
     },
     /// Burn tokens
     ///
@@ -99,7 +99,7 @@ pub enum WrappedTokenMsg {
     BurnTokens {
         denom: String,
         amount: Uint128,
-        burn_from_address: String,
+        burn_from_address: Addr,
         sender: Addr,
     },
 }

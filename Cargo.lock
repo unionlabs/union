@@ -9501,6 +9501,7 @@ dependencies = [
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
  "embed-commit",
+ "enumorph",
  "ibc-union-spec",
  "prost 0.12.6",
  "protos",
@@ -13490,6 +13491,7 @@ version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
+ "enumorph",
 ]
 
 [[package]]

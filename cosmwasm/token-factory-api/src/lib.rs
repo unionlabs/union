@@ -1,5 +1,6 @@
 use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Coin, CustomMsg, CustomQuery, Uint128};
+use cosmwasm_std::{Addr, Coin, CustomMsg, CustomQuery, Uint128};
+use enumorph::Enumorph;
 
 /// Special messages to be supported by any chain that supports token_factory
 
@@ -36,7 +37,36 @@ type BurnTokens struct {
 }
 */
 
+/// ChangeAdmin changes the admin for a factory denom.
+/// Can only be called by the current contract admin.
+/// If the NewAdminAddress is empty, the denom will have no admin.
 #[cw_serde]
+pub struct ChangeAdminMsg {
+    pub denom: String,
+    pub new_admin_address: Addr,
+}
+
+/// Contracts can mint native tokens for an existing factory denom
+/// that they are the admin of.
+#[cw_serde]
+pub struct MintTokensMsg {
+    pub denom: String,
+    pub amount: Uint128,
+    pub mint_to_address: Addr,
+}
+
+/// Contracts can burn native tokens for an existing factory denom
+/// that they are the admin of.
+/// Currently, the burn from address must be the admin contract.
+#[cw_serde]
+pub struct BurnTokensMsg {
+    pub denom: String,
+    pub amount: Uint128,
+    pub burn_from_address: Addr,
+}
+
+#[cw_serde]
+#[derive(Enumorph)]
 pub enum TokenFactoryMsg {
     /// CreateDenom creates a new factory denom, of denomination:
     /// factory/{creating contract bech32 address}/{Subdenom}
@@ -45,29 +75,16 @@ pub enum TokenFactoryMsg {
     /// The (creating contract address, subdenom) pair must be unique.
     /// The created denom's admin is the creating contract address,
     /// but this admin can be changed using the UpdateAdmin binding.
-    CreateDenom { subdenom: String },
-    /// ChangeAdmin changes the admin for a factory denom.
-    /// Can only be called by the current contract admin.
-    /// If the NewAdminAddress is empty, the denom will have no admin.
-    ChangeAdmin {
-        denom: String,
-        new_admin_address: String,
+    #[enumorph(ignore)]
+    CreateDenom {
+        subdenom: String,
     },
-    /// Contracts can mint native tokens for an existing factory denom
-    /// that they are the admin of.
-    MintTokens {
-        denom: String,
-        amount: Uint128,
-        mint_to_address: String,
-    },
-    /// Contracts can burn native tokens for an existing factory denom
-    /// that they are the admin of.
-    /// Currently, the burn from address must be the admin contract.
-    BurnTokens {
-        denom: String,
-        amount: Uint128,
-        burn_from_address: String,
-    },
+
+    ChangeAdmin(ChangeAdminMsg),
+
+    MintTokens(MintTokensMsg),
+
+    BurnTokens(BurnTokensMsg),
 }
 
 /// This maps to cosmos.bank.v1beta1.Metadata protobuf struct

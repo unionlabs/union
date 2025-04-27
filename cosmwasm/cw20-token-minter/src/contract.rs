@@ -178,7 +178,7 @@ pub fn execute(
             } => Response::new().add_message(wasm_execute(
                 denom,
                 &cw20::Cw20ExecuteMsg::Mint {
-                    recipient: mint_to_address,
+                    recipient: mint_to_address.into_string(),
                     amount,
                 },
                 vec![],

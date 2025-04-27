@@ -17,6 +17,7 @@ cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["stargate", "cosmwasm_1_3"] }
 cw-storage-plus             = { workspace = true }
 embed-commit                = { workspace = true }
+enumorph                    = { workspace = true }
 ibc-union-spec              = { workspace = true }
 prost                       = { workspace = true }
 protos                      = { workspace = true }

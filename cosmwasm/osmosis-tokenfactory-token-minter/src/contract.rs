@@ -1,12 +1,14 @@
 use alloy::sol_types::SolValue;
 use cosmwasm_std::{
     entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps,
-    DepsMut, Empty, Env, MessageInfo, QueryRequest, Response, StdResult,
+    DepsMut, Empty, Env, Event, MessageInfo, QueryRequest, Response, StdResult,
 };
 use ibc_union_spec::ChannelId;
 use prost::Message;
 use protos::osmosis::tokenfactory::v1beta1::MsgSetDenomMetadata;
-use token_factory_api::{TokenFactoryMsg, TokenFactoryQuery};
+use token_factory_api::{
+    BurnTokensMsg, ChangeAdminMsg, MintTokensMsg, TokenFactoryMsg, TokenFactoryQuery,
+};
 use ucs03_zkgm_token_minter_api::{
     ExecuteMsg as ZkgmExecuteMsg, LocalTokenMsg, MetadataResponse, PredictWrappedTokenResponse,
     QueryMsg, TokenMinterInitMsg, WrappedTokenMsg,
@@ -22,7 +24,7 @@ pub const DEFAULT_DECIMALS: u8 = 6;
 use crate::{
     bank_types::{new_proto_metadata, DenomMetadataResponse},
     error::Error,
-    msg::ExecuteMsg,
+    msg::{ExecuteMsg, TokenFactoryAdminOperation},
     state::{OPERATOR, TOKEN_OWNERS},
 };
 
@@ -30,13 +32,13 @@ use crate::{
 pub fn instantiate(
     deps: DepsMut,
     _: Env,
-    info: MessageInfo,
+    _: MessageInfo,
     msg: TokenMinterInitMsg,
 ) -> Result<Response, Error> {
-    let TokenMinterInitMsg::OsmosisTokenFactory {} = msg else {
+    let TokenMinterInitMsg::OsmosisTokenFactory { zkgm_admin } = msg else {
         return Err(Error::InvalidMinterConfig);
     };
-    OPERATOR.save(deps.storage, &info.sender)?;
+    OPERATOR.save(deps.storage, &zkgm_admin)?;
     Ok(Response::default())
 }
 
@@ -52,125 +54,137 @@ pub fn execute(
     }
 
     let resp = match msg {
-        ExecuteMsg::ZkgmExecuteMsg(msg) => {
-            match msg {
-                ZkgmExecuteMsg::Wrapped(msg) => {
-                    match msg {
-                        WrappedTokenMsg::CreateDenom {
-                            denom, metadata, ..
-                        } => {
-                            TOKEN_OWNERS.save(
-                                deps.storage,
-                                denom.clone(),
-                                &env.contract.address,
-                            )?;
+        ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenom {
+            denom,
+            metadata,
+            ..
+        })) => {
+            TOKEN_OWNERS.save(deps.storage, denom.clone(), &env.contract.address)?;
 
-                            let subdenom = deconstruct_factory_denom(&env, &denom)?;
+            let subdenom = deconstruct_factory_denom(&env, &denom)?;
 
-                            Response::new().add_messages(vec![
-                                CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
-                                    subdenom: subdenom.to_owned(),
-                                }),
-                                // We are using stargate for now instead of `Any` to be safe in case we would want to
-                                // deploy on < wasmvm 2 chain that uses Osmosis' Token Factory
-                                #[allow(deprecated)]
-                                CosmosMsg::Stargate {
-                                    type_url: MsgSetDenomMetadata::type_url(),
-                                    value: MsgSetDenomMetadata {
-                                        sender: env.contract.address.to_string(),
-                                        metadata: Some(new_proto_metadata(denom.clone(), metadata)),
-                                    }
-                                    .encode_to_vec()
-                                    .into(),
-                                },
-                            ])
-                        }
-                        WrappedTokenMsg::MintTokens {
-                            denom,
-                            amount,
-                            mint_to_address,
-                        } => delegate_token_operation(
-                            TOKEN_OWNERS.load(deps.storage, denom.clone())?,
-                            env.contract.address,
-                            info.funds,
-                            vec![CosmosMsg::Custom(TokenFactoryMsg::MintTokens {
-                                denom,
-                                amount,
-                                mint_to_address,
-                            })],
-                        )?,
-                        WrappedTokenMsg::BurnTokens { denom, amount, .. } => {
-                            let token_owner = TOKEN_OWNERS.load(deps.storage, denom.clone())?;
-
-                            // Although the `BurnTokens` include `burn_from_address`, this functionality is not
-                            // supported by `TokenFactory` yet and you can only set `burn_from_address` to the token owner.
-                            // So we are ensuring here that the funds are attached to the call so that we can burn from the
-                            // token owner.
-                            let contains_base_token = info
-                                .funds
-                                .iter()
-                                .any(|coin| coin.denom == denom && coin.amount == amount);
-                            if !contains_base_token {
-                                return Err(Error::MissingFunds {
-                                    denom: denom.clone(),
-                                    amount,
-                                });
-                            }
-                            delegate_token_operation(
-                                token_owner.clone(),
-                                env.contract.address,
-                                info.funds,
-                                vec![CosmosMsg::Custom(TokenFactoryMsg::BurnTokens {
-                                    denom,
-                                    amount,
-                                    burn_from_address: token_owner.to_string(),
-                                })],
-                            )?
-                        }
+            Response::new().add_messages(vec![
+                CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
+                    subdenom: subdenom.to_owned(),
+                }),
+                // We are using stargate for now instead of `Any` to be safe in case we would want to
+                // deploy on < wasmvm 2 chain that uses Osmosis' Token Factory
+                #[allow(deprecated)]
+                CosmosMsg::Stargate {
+                    type_url: MsgSetDenomMetadata::type_url(),
+                    value: MsgSetDenomMetadata {
+                        sender: env.contract.address.to_string(),
+                        metadata: Some(new_proto_metadata(denom.clone(), metadata)?),
                     }
-                }
-                ZkgmExecuteMsg::Local(msg) => match msg {
-                    // Just ensure the funds are given with the call which means we already have the tokens
-                    LocalTokenMsg::Escrow { denom, amount, .. } => {
-                        let contains_base_token = info
-                            .funds
-                            .iter()
-                            .any(|coin| coin.denom == denom && coin.amount == amount);
-                        if !contains_base_token {
-                            return Err(Error::MissingFunds { denom, amount });
-                        }
-                        Response::new()
-                    }
-                    LocalTokenMsg::Unescrow {
-                        denom,
-                        recipient,
-                        amount,
-                    } => Response::new().add_message(BankMsg::Send {
-                        to_address: recipient,
-                        amount: vec![Coin { denom, amount }],
-                    }),
+                    .encode_to_vec()
+                    .into(),
                 },
-            }
+            ])
         }
+        ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::MintTokens {
+            denom,
+            amount,
+            mint_to_address,
+        })) => delegate_token_operation(
+            TOKEN_OWNERS.load(deps.storage, denom.clone())?,
+            env.contract.address,
+            info.funds,
+            MintTokensMsg {
+                denom,
+                amount,
+                mint_to_address,
+            },
+        )?,
+        ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::BurnTokens {
+            denom,
+            amount,
+            ..
+        })) => {
+            let token_owner = TOKEN_OWNERS.load(deps.storage, denom.clone())?;
+
+            // Although the `BurnTokens` include `burn_from_address`, this functionality is not
+            // supported by `TokenFactory` yet and you can only set `burn_from_address` to the token owner.
+            // So we are ensuring here that the funds are attached to the call so that we can burn from the
+            // token owner.
+            let contains_base_token = info
+                .funds
+                .iter()
+                .any(|coin| coin.denom == denom && coin.amount == amount);
+            if !contains_base_token {
+                return Err(Error::MissingFunds {
+                    denom: denom.clone(),
+                    amount,
+                });
+            }
+            delegate_token_operation(
+                token_owner.clone(),
+                env.contract.address,
+                info.funds,
+                BurnTokensMsg {
+                    denom,
+                    amount,
+                    burn_from_address: token_owner,
+                },
+            )?
+        }
+
+        ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Local(msg)) => match msg {
+            // Just ensure the funds are given with the call which means we already have the tokens
+            LocalTokenMsg::Escrow { denom, amount, .. } => {
+                let contains_base_token = info
+                    .funds
+                    .iter()
+                    .any(|coin| coin.denom == denom && coin.amount == amount);
+                if !contains_base_token {
+                    return Err(Error::MissingFunds { denom, amount });
+                }
+                Response::new()
+            }
+            LocalTokenMsg::Unescrow {
+                denom,
+                recipient,
+                amount,
+            } => Response::new().add_message(BankMsg::Send {
+                to_address: recipient,
+                amount: vec![Coin { denom, amount }],
+            }),
+        },
         ExecuteMsg::ChangeTokenOwner { denom, new_owner } => {
-            let token_owner = TOKEN_OWNERS.load(&deps.storage, denom.clone())?;
+            let token_owner = TOKEN_OWNERS.load(deps.storage, denom.clone())?;
 
             // The ownership of the self owned tokens can only
-            if token_owner == env.contract.address
-                && (info.sender != OPERATOR.load(deps.storage)?
-                    || info.sender != env.contract.address)
-            {
-                return Err(Error::UnauthorizedWhenSelfOwned);
-            }
-
-            if info.sender != token_owner {
+            if token_owner == env.contract.address {
+                if info.sender != OPERATOR.load(deps.storage)?
+                    && info.sender != env.contract.address
+                {
+                    return Err(Error::UnauthorizedWhenSelfOwned);
+                }
+            } else if token_owner != info.sender {
                 return Err(Error::UnauthorizedThirdParty {
                     owner: token_owner,
                     sender: info.sender,
                 });
+            } else if token_owner == new_owner {
+                return Ok(Response::new());
             }
 
-            Response::new()
+            TOKEN_OWNERS.save(deps.storage, denom.clone(), &new_owner)?;
+
+            delegate_token_operation(
+                token_owner.clone(),
+                env.contract.address,
+                vec![],
+                ChangeAdminMsg {
+                    denom: denom.clone(),
+                    new_admin_address: new_owner.clone(),
+                },
+            )?
+            .add_event(
+                Event::new("token_owner_update")
+                    .add_attribute("denom", denom)
+                    .add_attribute("from", token_owner)
+                    .add_attribute("to", new_owner),
+            )
         }
     };
     Ok(resp)
@@ -235,27 +249,16 @@ pub fn query(deps: Deps<TokenFactoryQuery>, env: Env, msg: QueryMsg) -> Result<B
     }
 }
 
-#[cosmwasm_schema::cw_serde]
-pub enum NativeTokenOperatorMsg {
-    Execute {
-        ops: Vec<CosmosMsg<TokenFactoryMsg>>,
-    },
-}
-
-fn delegate_token_operation(
+fn delegate_token_operation<T: Into<TokenFactoryAdminOperation>>(
     token_owner: Addr,
     self_addr: Addr,
     funds: Vec<Coin>,
-    msgs: Vec<CosmosMsg<TokenFactoryMsg>>,
+    operation: T,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
     if token_owner == self_addr {
-        Ok(Response::new().add_messages(msgs))
+        Ok(Response::new().add_message(operation.into().into_cosmos_msg()))
     } else {
-        Ok(Response::new().add_message(wasm_execute(
-            token_owner,
-            &NativeTokenOperatorMsg::Execute { ops: msgs },
-            funds,
-        )?))
+        Ok(Response::new().add_message(wasm_execute(token_owner, &operation.into(), funds)?))
     }
 }
 
