@@ -49,7 +49,7 @@ const fetchCosmosCw20Balance = ({
   walletAddress: AddressCosmosDisplay
   contractAddress: AddressCosmosDisplay
 }) =>
-  Effect.gen(function* (_) {
+  Effect.gen(function* () {
     const queryJson = { balance: { address: walletAddress } }
 
     const base64Query = yield* toBase64(queryJson)

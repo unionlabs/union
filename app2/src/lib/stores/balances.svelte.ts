@@ -101,7 +101,7 @@ export class BalancesStore {
     }
 
     // Create a queue for processing balance requests
-    const batchProcessor = Effect.gen(function* (_) {
+    const batchProcessor = Effect.gen(function* () {
       // Create a queue for balance requests
       const queue = yield* Queue.unbounded<BalanceFetchRequest>()
 
@@ -111,13 +111,13 @@ export class BalancesStore {
       }
 
       yield* Effect.forever(
-        Effect.gen(function* (_) {
+        Effect.gen(function* () {
           // Take the next request from the queue
           const request = yield* Queue.take(queue)
           const { chain, address, denom } = request
 
           // Process the balance request
-          yield* Effect.gen(function* (_) {
+          yield* Effect.gen(function* () {
             let balance: RawTokenBalance
             if (chain.rpc_type === "evm") {
               balance = yield* fetchEvmBalance({
