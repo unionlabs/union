@@ -198,7 +198,7 @@ _: {
             gas_price = "0.05";
             gas_denom = "uosmo";
             gas_multiplier = "1.1";
-            max_gas = 300000000;
+            max_gas = 60000000;
           };
           apps = {
             ucs03 = ucs03-configs.osmosis_tokenfactory // {
@@ -222,7 +222,7 @@ _: {
             gas_price = "0.05";
             gas_denom = "uosmo";
             gas_multiplier = "1.1";
-            max_gas = 300000000;
+            max_gas = 10000000;
           };
           apps = {
             ucs03 = ucs03-configs.osmosis_tokenfactory // {
