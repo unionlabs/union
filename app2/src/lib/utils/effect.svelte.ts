@@ -24,7 +24,7 @@ const makeDual = <Args extends Array<any>, Return>(
   } as any
 /* eslint-enable @typescript-eslint/no-explicit-any, prefer-rest-params,  */
 
-type RunPromiseExitResult<A, E> = {
+export type RunPromiseExitResult<A, E> = {
   readonly current: Option.Option<Exit.Exit<A, E>>
   readonly either: Option.Option<Either.Either<A, Cause.Cause<E>>>
   readonly interrupt: (reason?: any) => void
@@ -82,7 +82,7 @@ export const runPromiseExitWithRuntime: {
   }
 )
 
-type RunForkResult<A, E> = {
+export type RunForkResult<A, E> = {
   readonly fiber: Fiber.RuntimeFiber<A, E>
   readonly interrupt: () => void
 }
