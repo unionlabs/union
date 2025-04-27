@@ -113,12 +113,12 @@ pub fn execute(
                 token,
             } => {
                 let token_name = if metadata.name.is_empty() {
-                    restrict_name(denom.clone())
+                    restrict_name(subdenom.clone())
                 } else {
                     restrict_name(metadata.name)
                 };
                 let token_symbol = if metadata.symbol.is_empty() {
-                    restrict_symbol(denom.clone())
+                    restrict_symbol(subdenom.clone())
                 } else {
                     restrict_symbol(metadata.symbol)
                 };
@@ -129,7 +129,7 @@ pub fn execute(
                         WasmMsg::Instantiate2 {
                             admin: Some(env.contract.address.to_string()),
                             code_id: config.dummy_code_id,
-                            label: denom.clone(),
+                            label: subdenom.clone(),
                             msg: to_json_binary(&cosmwasm_std::Empty {})?,
                             funds: vec![],
                             salt: Binary::new(calculate_salt(
@@ -146,7 +146,7 @@ pub fn execute(
                         // migrate entrypoint where it expects `InstantiateMsg` and calls the its `instantiate` function
                         // in the `migrate` function
                         WasmMsg::Migrate {
-                            contract_addr: denom.clone(),
+                            contract_addr: subdenom.clone(),
                             new_code_id: config.cw20_base_code_id,
                             msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
                                 cw20_base::msg::InstantiateMsg {
@@ -167,7 +167,7 @@ pub fn execute(
                     .add_message(WasmMsg::UpdateAdmin {
                         // We temporarily set ourselves as admin previously to be able to migrate the contract.
                         // Updating the admin to the correct admin finally.
-                        contract_addr: denom,
+                        contract_addr: subdenom,
                         admin: cw20_admin.to_string(),
                     })
             }

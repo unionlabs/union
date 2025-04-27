@@ -58,7 +58,7 @@ pub fn execute(
             subdenom,
             metadata,
             ..
-        })) => wrapped_create_denom(deps, env, denom, metadata)?,
+        })) => wrapped_create_denom(deps, env, subdenom, metadata)?,
         ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::MintTokens {
             denom,
             amount,
