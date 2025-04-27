@@ -43,7 +43,7 @@ pub enum LocalTokenMsg {
     /// - CW20 & Native: the minter should transfer the funds to the user. ZKGM will take care of the user balances,
     /// so the minter should be blindly transferring the funds. Insufficient balance case will be handled by
     /// ZKGM before this call is being made and if there's enough balance, it is guaranteed that the minter
-    /// already has the funds. This means the transfer is always expected to be successfull.
+    /// already has the funds. This means the transfer is always expected to be successful.
     Unescrow {
         denom: String,
         recipient: String,

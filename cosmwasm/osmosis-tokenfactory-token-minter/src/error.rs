@@ -21,7 +21,7 @@ pub enum Error {
     #[error("minter config is expected to be osmosis-tokenfactory")]
     InvalidMinterConfig,
 
-    #[error("the token ownership can only be changed by this contract or the minter operator since this token is owner by this contract")]
+    #[error("the token ownership can only be changed by this contract or the minter operator since this token is owned by this contract")]
     UnauthorizedWhenSelfOwned,
 
     #[error("the token is owned by {owner} and, {sender} cannot change the ownership")]
