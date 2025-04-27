@@ -1,5 +1,5 @@
 [package]
-name = "osmosis-tokenfactory-token-owner"
+name    = "osmosis-tokenfactory-token-owner"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -13,8 +13,8 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cosmwasm-std                      = { workspace = true }
-token-factory-api                 = { workspace = true }
 osmosis-tokenfactory-token-minter = { workspace = true }
+token-factory-api                 = { workspace = true }
 
 [lints]
 workspace = true

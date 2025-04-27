@@ -215,13 +215,10 @@ fn wrapped_create_denom(
 }
 
 #[cosmwasm_schema::cw_serde]
-pub struct MigrateMsg {
-    zkgm_addr: Addr,
-}
+pub struct MigrateMsg {}
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> StdResult<Response> {
-    ZKGM_ADDR.save(deps.storage, &msg.zkgm_addr)?;
+pub fn migrate(_deps: DepsMut, _: Env, _msg: MigrateMsg) -> StdResult<Response> {
     Ok(Response::new())
 }
 

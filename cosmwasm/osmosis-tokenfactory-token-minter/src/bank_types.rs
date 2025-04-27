@@ -94,3 +94,107 @@ pub fn new_proto_metadata(
         uri_hash: "".into(),
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn new_proto_metadata_zero_decimal() {
+        let metadata = new_proto_metadata(
+            "token".to_owned(),
+            Metadata {
+                name: "token".to_owned(),
+                symbol: "TOKEN".to_owned(),
+                decimals: 0,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            metadata,
+            bank_proto::Metadata {
+                description: "".to_owned(),
+                denom_units: vec![bank_proto::DenomUnit {
+                    denom: "token".to_owned(),
+                    exponent: 0,
+                    aliases: vec!["TOKEN".to_owned()]
+                }],
+                base: "token".to_owned(),
+                display: "token".to_owned(),
+                name: "token".to_owned(),
+                symbol: "TOKEN".to_owned(),
+                uri: "".to_owned(),
+                uri_hash: "".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn new_proto_metadata_non_zero_decimal() {
+        let metadata = new_proto_metadata(
+            "token".to_owned(),
+            Metadata {
+                name: "token".to_owned(),
+                symbol: "TOKEN".to_owned(),
+                decimals: 6,
+            },
+        )
+        .unwrap();
+
+        assert_eq!(
+            metadata,
+            bank_proto::Metadata {
+                description: "".to_owned(),
+                denom_units: vec![
+                    bank_proto::DenomUnit {
+                        denom: "token".to_owned(),
+                        exponent: 0,
+                        aliases: vec!["TOKEN".to_owned()]
+                    },
+                    bank_proto::DenomUnit {
+                        denom: "TOKEN".to_owned(),
+                        exponent: 6,
+                        aliases: vec![]
+                    }
+                ],
+                base: "token".to_owned(),
+                display: "token".to_owned(),
+                name: "token".to_owned(),
+                symbol: "TOKEN".to_owned(),
+                uri: "".to_owned(),
+                uri_hash: "".to_owned()
+            }
+        );
+    }
+
+    #[test]
+    fn new_proto_metadata_invalid_name() {
+        let metadata = new_proto_metadata(
+            "token".to_owned(),
+            Metadata {
+                name: "".to_owned(),
+                symbol: "TOKEN".to_owned(),
+                decimals: 6,
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(metadata, Error::EmptyNameOrSymbol);
+    }
+
+    #[test]
+    fn new_proto_metadata_invalid_symbol() {
+        let metadata = new_proto_metadata(
+            "token".to_owned(),
+            Metadata {
+                name: "token".to_owned(),
+                symbol: "".to_owned(),
+                decimals: 6,
+            },
+        )
+        .unwrap_err();
+
+        assert_eq!(metadata, Error::EmptyNameOrSymbol);
+    }
+}
