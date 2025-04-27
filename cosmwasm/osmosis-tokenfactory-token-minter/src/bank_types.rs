@@ -80,7 +80,7 @@ pub fn new_proto_metadata(
             aliases: vec![metadata.symbol.clone()],
         }]
         .into_iter()
-        .chain((metadata.decimals == 0).then(|| bank_proto::DenomUnit {
+        .chain((metadata.decimals != 0).then(|| bank_proto::DenomUnit {
             denom: metadata.symbol.clone(),
             exponent: metadata.decimals.into(),
             aliases: vec![],
