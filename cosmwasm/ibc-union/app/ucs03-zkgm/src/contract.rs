@@ -1375,7 +1375,7 @@ fn execute_fungible_asset_order(
             // Create the token with metadata
             messages.push(SubMsg::reply_never(make_wasm_msg(
                 WrappedTokenMsg::CreateDenom {
-                    denom: wrapped_denom.clone(),
+                    subdenom: wrapped_denom.clone(),
                     metadata: Metadata {
                         name: order.base_token_name,
                         symbol: order.base_token_symbol,

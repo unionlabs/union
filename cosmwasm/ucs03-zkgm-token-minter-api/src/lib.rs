@@ -73,7 +73,7 @@ pub enum WrappedTokenMsg {
     CreateDenom {
         /// The full denom that is defined by the underlying minter. Note that this will always
         /// be the output of `PredictWrappedToken` query.
-        denom: String,
+        subdenom: String,
         /// Metadata of the token
         metadata: Metadata,
         /// The ZKGM path that is sent by the origin chain

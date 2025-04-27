@@ -55,7 +55,7 @@ pub fn execute(
 
     let resp = match msg {
         ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenom {
-            denom,
+            subdenom,
             metadata,
             ..
         })) => wrapped_create_denom(deps, env, denom, metadata)?,
