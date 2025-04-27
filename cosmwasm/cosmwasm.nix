@@ -201,7 +201,7 @@ _: {
             max_gas = 300000000;
           };
           apps = {
-            ucs03 = ucs03-configs.osmosis-tokenfactory // {
+            ucs03 = ucs03-configs.osmosis_tokenfactory // {
               rate_limit_disabled = true;
             };
           };
@@ -225,7 +225,7 @@ _: {
             max_gas = 300000000;
           };
           apps = {
-            ucs03 = ucs03-configs.osmosis-tokenfactory // {
+            ucs03 = ucs03-configs.osmosis_tokenfactory // {
               rate_limit_disabled = true;
             };
           };
@@ -446,12 +446,12 @@ _: {
           };
           rate_limit_disabled = false;
         };
-        osmosis-tokenfactory = {
+        osmosis_tokenfactory = {
           rate_limit_disabled = false;
           path = "${ucs03-zkgm.release}";
           token_minter_path = "${osmosis-tokenfactory-token-minter.release}";
           token_minter_config = {
-            osmosis-tokenfactory = { };
+            osmosis_tokenfactory = { };
           };
         };
       };
