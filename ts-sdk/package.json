@@ -76,8 +76,7 @@
     "dpdm": "^3.14.0",
     "effect": "3.14.14",
     "gql.tada": "^1.8.10",
-    "graphql-request": "^7.1.2",
-    "viem": "^2.23.12"
+    "graphql-request": "^7.1.2"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "1.34.0",

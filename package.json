@@ -5,6 +5,7 @@
     "@effect/language-service": "~0.5.1",
     "@effect/vitest": "~0.20.14",
     "typescript": "~5.8.2",
+    "viem": "^2.26.2",
     "vite": "~6.3.1",
     "vitest": "~3.1.2"
   },
