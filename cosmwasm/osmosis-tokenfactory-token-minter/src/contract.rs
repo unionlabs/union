@@ -25,20 +25,21 @@ use crate::{
     bank_types::{new_proto_metadata, DenomMetadataResponse},
     error::Error,
     msg::{ExecuteMsg, TokenFactoryAdminOperation},
-    state::{OPERATOR, TOKEN_OWNERS},
+    state::{OPERATOR, TOKEN_OWNERS, ZKGM_ADDR},
 };
 
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _: Env,
-    _: MessageInfo,
+    info: MessageInfo,
     msg: TokenMinterInitMsg,
 ) -> Result<Response, Error> {
     let TokenMinterInitMsg::OsmosisTokenFactory { zkgm_admin } = msg else {
         return Err(Error::InvalidMinterConfig);
     };
     OPERATOR.save(deps.storage, &zkgm_admin)?;
+    ZKGM_ADDR.save(deps.storage, &info.sender)?;
     Ok(Response::default())
 }
 
@@ -49,7 +50,7 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
-    if info.sender != OPERATOR.load(deps.storage)? {
+    if info.sender != ZKGM_ADDR.load(deps.storage)? {
         return Err(Error::OnlyAdmin);
     }
 
@@ -213,8 +214,14 @@ fn wrapped_create_denom(
     ]))
 }
 
+#[cosmwasm_schema::cw_serde]
+pub struct MigrateMsg {
+    zkgm_addr: Addr,
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn migrate(_: DepsMut, _: Env, _: Empty) -> StdResult<Response> {
+pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> StdResult<Response> {
+    ZKGM_ADDR.save(deps.storage, &msg.zkgm_addr)?;
     Ok(Response::new())
 }
 
