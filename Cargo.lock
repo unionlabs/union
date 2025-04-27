@@ -9512,6 +9512,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "osmosis-tokenfactory-token-owner"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "osmosis-tokenfactory-token-minter",
+ "token-factory-api",
+]
+
+[[package]]
 name = "ouroboros"
 version = "0.15.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -28,7 +28,7 @@ use crate::{
     state::{OPERATOR, TOKEN_OWNERS},
 };
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn instantiate(
     deps: DepsMut,
     _: Env,
@@ -42,7 +42,7 @@ pub fn instantiate(
     Ok(Response::default())
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn execute(
     deps: DepsMut,
     env: Env,
@@ -213,12 +213,12 @@ fn wrapped_create_denom(
     ]))
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn migrate(_: DepsMut, _: Env, _: Empty) -> StdResult<Response> {
     Ok(Response::new())
 }
 
-#[entry_point]
+#[cfg_attr(not(feature = "library"), entry_point)]
 pub fn query(deps: Deps<TokenFactoryQuery>, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
     match msg {
         QueryMsg::PredictWrappedToken {

@@ -26,5 +26,8 @@ token-factory-api           = { workspace = true }
 ucs03-zkgm-token-minter-api = { workspace = true }
 unionlabs                   = { workspace = true, features = ["ethabi"] }
 
+[features]
+library = []
+
 [lints]
 workspace = true
