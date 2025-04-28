@@ -29,6 +29,7 @@ sqlx                             = { workspace = true, features = ["macros", "po
 tokio                            = { workspace = true }
 tracing                          = { workspace = true }
 ucs03-zkgm                       = { workspace = true, features = ["library"] }
+ucs03-zkgm-packet                = { workspace = true, features = ["serde"] }
 unionlabs                        = { workspace = true }
 voyager-plugin-transaction-batch = { workspace = true }
 voyager-sdk                      = { workspace = true }

@@ -39,6 +39,7 @@ tokio              = { workspace = true, features = ["macros"] }
 tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 ucs03-zkgm         = { workspace = true }
+ucs03-zkgm-packet  = { workspace = true, features = ["serde"] }
 ucs04              = { workspace = true, features = ["serde"] }
 unionlabs          = { workspace = true, features = ["bcs", "bincode", "ethabi", "proto", "ssz"] }
 voyager-primitives = { workspace = true, features = ["serde"] }

@@ -17106,6 +17106,7 @@ dependencies = [
  "tracing-subscriber",
  "trusted-mpt-light-client-types",
  "ucs03-zkgm",
+ "ucs03-zkgm-packet",
  "ucs04",
  "unionlabs",
  "voyager-primitives",
@@ -17170,6 +17171,19 @@ dependencies = [
  "ucs03-zkgm-token-minter-api",
  "ucs03-zkgmable",
  "unionlabs",
+]
+
+[[package]]
+name = "ucs03-zkgm-packet"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "enumorph",
+ "hex-literal 0.4.1",
+ "serde",
+ "serde_json",
+ "ucs03-zkgm",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -18996,6 +19010,7 @@ dependencies = [
  "tokio",
  "tracing",
  "ucs03-zkgm",
+ "ucs03-zkgm-packet",
  "unionlabs",
  "voyager-plugin-transaction-batch",
  "voyager-sdk",
