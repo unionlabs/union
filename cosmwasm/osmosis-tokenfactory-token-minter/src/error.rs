@@ -12,6 +12,9 @@ pub enum Error {
     #[error("missing funds for denom {denom} with amount {amount}")]
     MissingFunds { denom: String, amount: Uint128 },
 
+    #[error("the protocol needs {needed} amount but given {given}")]
+    MoreFundsThenNeeded { needed: Uint128, given: Uint128 },
+
     #[error("invalid path: {0}")]
     InvalidPath(FromDecStrErr),
 
