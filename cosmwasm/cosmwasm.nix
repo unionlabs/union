@@ -45,6 +45,15 @@ _: {
         message QueryCodeResponse {
           bytes data = 2;
         }
+
+        message QuerySmartContractStateRequest {
+          string address = 1;
+          bytes query_data = 2;
+        }
+
+        message QuerySmartContractStateResponse {
+          bytes data = 1;
+        }
       '';
 
       bytecode-base = pkgs.stdenv.mkDerivation {
@@ -821,7 +830,12 @@ _: {
 
       # update-deployments-json deployer
       update-deployments-json =
-        { name, rpc_url, ... }:
+        {
+          name,
+          rpc_url,
+          apps,
+          ...
+        }:
         pkgs.writeShellApplication {
           name = "${name}-update-deployments-json";
           runtimeInputs = [
@@ -829,6 +843,8 @@ _: {
             ibc-union-contract-addresses
             (get-git-rev { inherit rpc_url; })
             pkgs.jq
+            pkgs.buf
+            pkgs.xxd
             pkgs.curl
             pkgs.moreutils
           ];
@@ -919,12 +935,53 @@ _: {
                           )"
                         )"
                   )
-
-                  # echo "deployments: $DEPLOYMENTS"
                 done <<< "$(echo "$DEPLOYMENTS" \
                   | jq -r '.[$key] | keys[]' \
                     --arg key "$key")"
             done
+
+            # get the ucs03 minter address and info
+            if [ "$(echo "$ADDRESSES" | jq '.app | has("ucs03")')" == "true" ]; then
+              MINTER_ADDRESS="$(
+                curl \
+                  --silent \
+                  '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/SmartContractState"&data=0x'"$(
+                    buf \
+                      convert \
+                      ${cosmwasmProtoDefs}/cosmwasm.proto \
+                      --type=cosmwasm.QuerySmartContractStateRequest \
+                      --from=<(
+                        echo \
+                          "{\"address\":\"$(
+                            echo "$ADDRESSES" | jq -r '.app.ucs03'
+                          )\",\"query_data\":\"$(
+                            echo '{"get_minter":{}}' | base64 -w0
+                          )\"}"
+                      )#format=json \
+                      | xxd -c 0 -ps
+                    )" \
+                    | jq .result.response.value -r \
+                    | base64 -d \
+                    | buf \
+                      convert \
+                      ${cosmwasmProtoDefs}/cosmwasm.proto \
+                      --type=cosmwasm.QuerySmartContractStateResponse \
+                      --from=-#format=binpb \
+                    | jq .data -r \
+                    | base64 -d \
+                    | jq . -r
+                )"
+
+              echo "minter_address: $MINTER_ADDRESS"
+
+              DEPLOYMENTS=$(
+                echo "$DEPLOYMENTS" \
+                  | jq '.app.ucs03.minter = { type: $type, address: $address, commit: $commit }' \
+                    --arg type ${builtins.elemAt (builtins.attrNames apps.ucs03.token_minter_config) 0} \
+                    --arg address "$MINTER_ADDRESS" \
+                    --arg commit "$(get-git-rev "$MINTER_ADDRESS")"
+              )
+            fi
 
             echo "deployments: $DEPLOYMENTS"
 
