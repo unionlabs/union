@@ -25,6 +25,12 @@
     },
     "0xF7De2B7afdb07AA5dD143180Ed758165821E076e": {
       "comments": "satUniBTC"
+    },
+    "0x17140b69FfaDfF9e87BF1D86D99119ee10AD24ff": {
+      "comments": "satSolvBTC"
+    },
+    "0x067e11Ac5471C853aea205B3C1933a5f6367152F": {
+      "comments": "satLBTC"
     }
   }
 }
