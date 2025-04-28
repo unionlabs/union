@@ -323,7 +323,7 @@ _: {
           chain-id = "xion-testnet-2";
           name = "xion-testnet";
           rpc_url = "https://rpc.xion-testnet-2.burnt.com/";
-          private_key = ''"$1"'';
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "fixed";
             gas_price = "0.002";
@@ -783,7 +783,7 @@ _: {
             ${
               pkgs.lib.strings.concatStrings (map (a: " --${all-apps.${a}.name}") (builtins.attrNames all-apps))
             } \
-            --deployer "$1" ''${2+--output $2} 
+            --deployer "''${1:?deployer must be set (first argument to this script))}" ''${2+--output $2} 
         '';
       };
 
