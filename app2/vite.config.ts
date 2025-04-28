@@ -5,12 +5,8 @@ import { defineConfig } from "vite"
 
 export default defineConfig({
   plugins: [sveltekit(), tailwindcss()],
-  build: {
-    sourcemap: true
-  },
-  server: {
-    allowedHosts: true
-  },
+  build: { sourcemap: true },
+  server: { allowedHosts: true },
   test: {
     workspace: [
       {
@@ -18,7 +14,7 @@ export default defineConfig({
         plugins: [svelteTesting()],
         test: {
           name: "client",
-          environment: "jsdom",
+          environment: "happy-dom",
           clearMocks: true,
           include: ["src/**/*.svelte.{test,spec}.{js,ts}"],
           exclude: ["src/lib/server/**"],

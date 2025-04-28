@@ -15,6 +15,7 @@ import { channelsQuery } from "$lib/queries/channels.svelte.ts"
 import { runExample } from "$lib/utils/convert-display.ts"
 import { cn } from "$lib/utils"
 import { page } from "$app/state"
+import { runFork } from "$lib/utils/effect.svelte"
 
 let { children } = $props()
 
@@ -43,8 +44,8 @@ $effect(() => {
 
 onMount(() => {
   runExample()
-  const chainsFiber = Effect.runFork(chainsQuery(ENV()))
-  const channelsFiber = Effect.runFork(channelsQuery())
+  runFork(chainsQuery(ENV()))
+  runFork(channelsQuery())
 
   const handler = (e: KeyboardEvent) => {
     const metaOrCtrl = e.metaKey || e.ctrlKey
@@ -59,8 +60,6 @@ onMount(() => {
 
   window.addEventListener("keydown", handler)
   return () => {
-    Effect.runPromise(Fiber.interrupt(chainsFiber))
-    Effect.runPromise(Fiber.interrupt(channelsFiber))
     window.removeEventListener("keydown", handler)
   }
 })
