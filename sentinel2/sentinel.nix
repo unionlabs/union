@@ -75,7 +75,7 @@ let
                     inherit (cfg) betterstack_api_key;
                     inherit (cfg) dbPath;
                     inherit (cfg) chainConfig;
-                    inherit (cfg) signerBalances; 
+                    inherit (cfg) signerBalances;
                     inherit (cfg) hasuraEndpoint;
                   }
                 )
