@@ -6,4 +6,5 @@ pub const OPERATOR: Item<Addr> = Item::new("operator");
 
 pub const ZKGM_ADDR: Item<Addr> = Item::new("zkgm_addr");
 
+/// Mapping of the wrapped denoms to their owners
 pub const TOKEN_OWNERS: Map<String, Addr> = Map::new("owners");

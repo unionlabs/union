@@ -50,61 +50,60 @@ pub fn execute(
     info: MessageInfo,
     msg: ExecuteMsg,
 ) -> Result<Response<TokenFactoryMsg>, Error> {
-    if info.sender != ZKGM_ADDR.load(deps.storage)? {
-        return Err(Error::OnlyAdmin);
-    }
-
     let resp = match msg {
-        ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenom {
-            subdenom,
-            metadata,
-            ..
-        })) => wrapped_create_denom(deps, env, subdenom, metadata)?,
-        ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::MintTokens {
-            denom,
-            amount,
-            mint_to_address,
-        })) => delegate_token_operation(
-            TOKEN_OWNERS.load(deps.storage, denom.clone())?,
-            env.contract.address,
-            info.funds,
-            MintTokensMsg {
-                denom,
-                amount,
-                mint_to_address,
-            },
-        )?,
-        ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::BurnTokens {
-            denom,
-            amount,
-            ..
-        })) => wrapped_burn_tokens(deps, env, info, denom, amount)?,
-
-        ExecuteMsg::ZkgmExecuteMsg(ZkgmExecuteMsg::Local(msg)) => match msg {
-            // Just ensure the funds are given with the call which means we already have the tokens
-            LocalTokenMsg::Escrow { denom, amount, .. } => {
-                let contains_base_token = info
-                    .funds
-                    .iter()
-                    .any(|coin| coin.denom == denom && coin.amount == amount);
-                if !contains_base_token {
-                    return Err(Error::MissingFunds { denom, amount });
-                }
-                Response::new()
+        ExecuteMsg::ZkgmExecuteMsg(msg) => {
+            if info.sender != ZKGM_ADDR.load(deps.storage)? {
+                return Err(Error::OnlyAdmin);
             }
-            LocalTokenMsg::Unescrow {
-                denom,
-                recipient,
-                amount,
-            } => Response::new().add_message(BankMsg::Send {
-                to_address: recipient,
-                amount: vec![Coin { denom, amount }],
-            }),
-        },
+
+            match msg {
+                ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::CreateDenom {
+                    subdenom,
+                    metadata,
+                    ..
+                }) => wrapped_create_denom(deps, env, subdenom, metadata)?,
+                ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::MintTokens {
+                    denom,
+                    amount,
+                    mint_to_address,
+                }) => delegate_token_operation(
+                    TOKEN_OWNERS.load(deps.storage, denom.clone())?,
+                    env.contract.address,
+                    info.funds,
+                    MintTokensMsg {
+                        denom,
+                        amount,
+                        mint_to_address,
+                    },
+                )?,
+                ZkgmExecuteMsg::Wrapped(WrappedTokenMsg::BurnTokens { denom, amount, .. }) => {
+                    wrapped_burn_tokens(deps, env, info, denom, amount)?
+                }
+                ZkgmExecuteMsg::Local(LocalTokenMsg::Escrow { denom, amount, .. }) => {
+                    let contains_base_token = info
+                        .funds
+                        .iter()
+                        .any(|coin| coin.denom == denom && coin.amount == amount);
+                    if !contains_base_token {
+                        return Err(Error::MissingFunds { denom, amount });
+                    }
+                    Response::new()
+                }
+                ZkgmExecuteMsg::Local(LocalTokenMsg::Unescrow {
+                    denom,
+                    recipient,
+                    amount,
+                }) => Response::new().add_message(BankMsg::Send {
+                    to_address: recipient,
+                    amount: vec![Coin { denom, amount }],
+                }),
+            }
+        }
         ExecuteMsg::ChangeTokenOwner { denom, new_owner } => {
             change_token_owner(deps, env, info, denom, new_owner)?
         }
     };
+
     Ok(resp)
 }
 
