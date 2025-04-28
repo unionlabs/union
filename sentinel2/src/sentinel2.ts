@@ -119,6 +119,35 @@ export function isFunded(db: BetterSqlite3Database, txHash: string) {
   return !!row
 }
 
+export function getSignerIncident(
+  db: BetterSqlite3Database,
+  key: string
+): string | undefined {
+  const row = db
+    .prepare(`SELECT incident_id FROM signer_incidents WHERE key = ?`)
+    .get(key) as { incident_id: string } | undefined
+  return row?.incident_id
+}
+
+export function markSignerIncident(
+  db: BetterSqlite3Database,
+  key: string,
+  incidentId: string
+) {
+  db.prepare(`
+    INSERT OR REPLACE INTO signer_incidents
+      (key, incident_id, inserted_at)
+    VALUES (?, ?, strftime('%s','now')*1000)
+  `).run(key, incidentId)
+}
+
+export function clearSignerIncident(
+  db: BetterSqlite3Database,
+  key: string
+) {
+  db.prepare(`DELETE FROM signer_incidents WHERE key = ?`).run(key)
+}
+
 export function getOpenErrors(
   db: BetterSqlite3Database
 ): Array<{ packet_hash: string; incident_id: string }> {
@@ -229,10 +258,19 @@ interface ChainConfigEntry {
 
 type ChainConfig = Record<string, ChainConfigEntry>
 
+export interface SignerBalanceThresholds {
+  [plugin: string]: bigint
+}
+
+export type PortSignerBalances = Record<string, SignerBalanceThresholds>
+
+export type SignerBalancesConfig = Record<string, PortSignerBalances>
+
 // Combined configuration shape
 interface ConfigFile {
   cycleIntervalMs: number
   hasuraEndpoint: string
+  signerBalances: SignerBalancesConfig
   chainConfig: ChainConfig
   signer_account_mnemonic: string
   betterstack_api_key: string
@@ -567,6 +605,10 @@ const fundBabylonAccounts = Effect.repeat(
   Effect.gen(function* (_) {
     yield* Effect.log("Funding babylon accounts loop started")
     let config = (yield* Config).config
+    if(config.isLocal){
+      yield* Effect.log("Local mode: skipping funding babylon accounts")
+      return
+    }
 
     const wallet = yield* Effect.tryPromise(() =>
       DirectSecp256k1HdWallet.fromMnemonic(config.signer_account_mnemonic, { prefix: "bbn" })
@@ -674,6 +716,155 @@ const fetchOnlyUniBTC = (hasuraEndpoint: string, exceedingSla: string) =>
     }
   })
 
+
+  interface PostRequestInput {
+    url: string
+    port?: number
+    headers: Record<string, string>
+    payload: unknown
+  }
+  
+  interface PostRequestError {
+    readonly _tag: "PostRequestError"
+    readonly message: string
+    readonly status?: number
+  }
+  
+  export const safePostRequest = ({ url, port, headers, payload }: PostRequestInput) => {
+    const fullUrl = port ? `${url}:${port}` : url
+  
+    return Effect.tryPromise({
+      try: () =>
+        fetch(fullUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload)
+        }).then(async response => {
+          if (response.status === 200) {
+            return await response.json()
+          } else {
+            const text = await response.text().catch(() => "")
+            throw {
+              _tag: "PostRequestError",
+              message: `Non-200 status: ${response.status} body: ${text}`,
+              status: response.status
+            }
+          }
+        }),
+      catch: (error) =>
+        ({
+          _tag: "PostRequestError",
+          message: error instanceof Error
+            ? error.message
+            : typeof error === "object"
+            ? JSON.stringify(error)
+            : String(error),
+          status: (error as any)?.status
+        } satisfies PostRequestError)
+    })
+  }
+  
+  export const checkBalances = Effect.repeat(
+    Effect.gen(function* (_) {
+      yield* Effect.log("Spawning per-plugin balance checks…")
+      const { config } = yield* Config
+      const sbConfig = config.signerBalances
+  
+      for (const [url, ports] of Object.entries(sbConfig)) {
+        for (const [portStr, plugins] of Object.entries(ports)) {
+          const port = Number(portStr)
+  
+          for (const [plugin, expectedThreshold] of Object.entries(plugins)) {
+            const payload = [
+              {
+                jsonrpc: "2.0",
+                id: 1,
+                method: "voyager_pluginCustom",
+                params: [plugin, "signerBalances", []] as const
+              }
+            ]
+  
+            const callWithRetry = safePostRequest({
+              url,
+              port,
+              headers: { "Content-Type": "application/json" },
+              payload
+            }).pipe(
+              // retry forever every 2 min on PostRequestError (or any thrown error)
+              Effect.retry(Schedule.spaced("2 minutes"))
+            )
+  
+            const worker = Effect.gen(function* (_) {
+              const result = yield* callWithRetry
+  
+              if (!Array.isArray(result) || result.length === 0) {
+                yield* Effect.logError(
+                  `Unexpected response shape for ${plugin} @ ${url}:${port}`
+                )
+                return
+              }
+  
+              const rpcObj = (result[0] as any).result
+              if (typeof rpcObj !== "object" || rpcObj === null) {
+                yield* Effect.logError(
+                  `No 'result' object for ${plugin} @ ${url}:${port}`
+                )
+                return
+              }
+  
+              for (const [wallet, balStr] of Object.entries(rpcObj)) {
+                let bal = BigInt(balStr as string)               
+  
+                const tags = {
+                  plugin,
+                  url,
+                  port: portStr,
+                  wallet,
+                  balance: bal.toString(),
+                  expected: expectedThreshold.toString()
+                }
+  
+                const key = `${url}:${port}:${plugin}:${wallet}`
+                const existing = getSignerIncident(db, key)
+  
+                if (bal < expectedThreshold) {
+                  yield* Effect.logError("SIGNER_BALANCE_LOW", tags)
+  
+                  if (!existing) {
+                    const inc = yield* triggerIncident(
+                      `SIGNER_BALANCE_LOW @ ${key}`,
+                      JSON.stringify({ plugin, url, port: portStr, wallet, balance: bal.toString() }),
+                      config.betterstack_api_key,
+                      "SENTINEL@union.build",
+                      "SIGNER_BALANCE_LOW",
+                      "Union",
+                      config.isLocal
+                    )
+                    markSignerIncident(db, key, inc.data.id)
+                  }
+                } else {
+                  yield* Effect.logInfo("SIGNER_BALANCE_OK", tags)
+  
+                  if (existing) {
+                    yield* resolveIncident(
+                      existing,
+                      config.betterstack_api_key,
+                      "Sentinel-Automatically resolved.",
+                      config.isLocal
+                    )
+                    clearSignerIncident(db, key)
+                  }
+                }
+              }
+            })
+            Effect.runFork(worker)
+          }
+        }
+      }
+    }),
+    Schedule.spaced("30 minutes")
+  )
+  
 const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
   Effect.gen(function* () {
     let allPackets: Packet[] = []
@@ -842,9 +1033,16 @@ const mainEffect = Effect.gen(function* (_) {
       .parseSync()
   )
 
+  console.info("Loading config from", argv.config)
   const config = yield* loadConfig(argv.config)
 
-  db = new Database(config.dbPath)
+  try{
+    db = new Database(config.dbPath)
+
+  } catch(  err) {
+    console.error("Error opening database:", err)
+    throw err
+  }
 
   db.prepare(`
     CREATE TABLE IF NOT EXISTS funded_txs (
@@ -860,9 +1058,22 @@ const mainEffect = Effect.gen(function* (_) {
     )
   `).run()
 
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS signer_incidents (
+      key          TEXT PRIMARY KEY,    -- "url:port:plugin:wallet"
+      incident_id  TEXT NOT NULL,
+      inserted_at  INTEGER
+    )
+  `).run()
+
   yield* Effect.log("Database opened at", config.dbPath, "hasuraEndpoint:", config.hasuraEndpoint)
 
-  yield* Effect.all([runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts], {
+  yield* Effect.all([
+    runIbcChecksForever,
+    escrowSupplyControlLoop,
+    fundBabylonAccounts,
+    checkBalances
+  ], {
     concurrency: "unbounded"
   }).pipe(Effect.provideService(Config, { config }))
 })

@@ -8,7 +8,10 @@
     "test": "vitest run",
     "test-watch": "vitest"
   },
-  "files": ["./src", "./dist"],
+  "files": [
+    "./src",
+    "./dist"
+  ],
   "keywords": [],
   "author": "",
   "license": "MIT",

@@ -42,6 +42,10 @@ let
           type = types.attrs;
           description = "chainConfig for escrow-totalsupply control.";
         };
+        signerBalances = mkOption {
+          type = types.attrs;
+          description = "Signer balances mapping for balance control";
+        };
         logLevel = mkOption {
           type = types.str;
           default = "info";
@@ -71,6 +75,7 @@ let
                     inherit (cfg) betterstack_api_key;
                     inherit (cfg) dbPath;
                     inherit (cfg) chainConfig;
+                    inherit (cfg) signerBalances; 
                     inherit (cfg) hasuraEndpoint;
                   }
                 )
@@ -109,7 +114,7 @@ in
       packages = {
         sentinel2 = pkgsUnstable.buildNpmPackage {
           inherit (pkgs) nodejs;
-          npmDepsHash = "sha256-4Od3bakA4AqPCnw+8mYqQOmf65qlYJ9kLEMgSZ5JVpQ=";
+          npmDepsHash = "sha256-K2uoRuMaRq1tEcTLBPb9q1Woko0kIQ79ouZ5kg/pGK4=";
           src = ./.;
           sourceRoot = "sentinel2";
           npmFlags = [
