@@ -1,6 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import { Cause, Effect, Exit, Match, Option } from "effect"
+import { constVoid } from "effect/Function"
 import {
   hasFailedExit as evmHasFailedExit,
   isComplete as evmIsComplete,
@@ -264,14 +265,20 @@ const handleSubmit = () => {
     return
   }
 
-  Effect.runPromise(submit).catch(err => {
-    console.error("Uncaught error in transfer process:", err)
-    error = Option.some({
-      _tag: err.name || "UnhandledError",
-      cause: err.message || "An unexpected error occurred"
+  Effect.runPromiseExit(submit).then(exit =>
+    Exit.match(exit, {
+      onFailure: cause => {
+        const err = Cause.originalError(cause)
+        console.error("Uncaught error in transfer process:", Cause.pretty(cause))
+        error = Option.some({
+          _tag: err.name || "UnhandledError",
+          cause: err.message || "An unexpected error occurred"
+        })
+        isSubmitting = false
+      },
+      onSuccess: constVoid
     })
-    isSubmitting = false
-  })
+  )
 }
 </script>
 

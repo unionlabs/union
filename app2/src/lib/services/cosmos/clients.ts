@@ -6,24 +6,29 @@ import type { Chain } from "@unionlabs/sdk/schema"
 import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer.ts"
 import { GasPrice } from "@cosmjs/stargate"
 import { getGasPriceForChain } from "$lib/services/cosmos/chain-info"
-import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos"
+import {
+  CosmWasmError,
+  type GasPriceError,
+  type GetChainInfoError,
+  type OfflineSignerError
+} from "$lib/services/transfer-ucs03-cosmos"
 
 export const getCosmWasmClient = (
   chain: Chain,
   connectedWallet: CosmosWalletId
-): Effect.Effect<SigningCosmWasmClient, CosmWasmError, never> =>
+): Effect.Effect<
+  SigningCosmWasmClient,
+  CosmWasmError | OfflineSignerError | GasPriceError | GetChainInfoError,
+  never
+> =>
   Effect.gen(function* () {
     if (!chain.rpcs) {
       return yield* Effect.fail(new CosmWasmError({ cause: "No RPCs available for chain" }))
     }
 
-    const offlineSigner = yield* getCosmosOfflineSigner(chain, connectedWallet).pipe(
-      Effect.mapError(error => new CosmWasmError({ cause: String(error) }))
-    )
+    const offlineSigner = yield* getCosmosOfflineSigner(chain, connectedWallet)
 
-    const gasPriceInfo = yield* getGasPriceForChain(chain, connectedWallet).pipe(
-      Effect.mapError(error => new CosmWasmError({ cause: String(error) }))
-    )
+    const gasPriceInfo = yield* getGasPriceForChain(chain, connectedWallet)
 
     const gasPrice = GasPrice.fromString(`${gasPriceInfo.amount}${gasPriceInfo.denom}`)
 
@@ -63,7 +68,7 @@ export const getCosmosWalletClient = (): Effect.Effect<CosmosWallet, CosmWasmErr
   Effect.gen(function* () {
     const { connectedWallet, connectionStatus } = cosmosStore
     if (connectionStatus !== "connected" || !connectedWallet) {
-      return yield* Effect.fail(new CosmWasmError({ cause: "Wallet not connected" }))
+      return yield* Effect.fail(new CosmWasmError({ cause: new Error("Wallet not connected") }))
     }
 
     const wallet = window[connectedWallet as keyof Window] as CosmosWallet
