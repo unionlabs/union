@@ -479,7 +479,7 @@ _: {
             pkgs.curl
           ];
           text = ''
-            embed-commit-verifier extract <(curl \
+            embed-commit-verifier extract <(curl -L \
               --silent \
               '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/Code"&data=0x'"$(
                 buf \
@@ -488,7 +488,7 @@ _: {
                   --type=cosmwasm.QueryCodeRequest \
                   --from=<(
                     echo "{\"code_id\":$(
-                      curl \
+                      curl -L \
                         --silent \
                         '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/ContractInfo"&data=0x'"$(
                           buf \
@@ -943,7 +943,7 @@ _: {
             # get the ucs03 minter address and info
             if [ "$(echo "$ADDRESSES" | jq '.app | has("ucs03")')" == "true" ]; then
               MINTER_ADDRESS="$(
-                curl \
+                curl -L \
                   --silent \
                   '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/SmartContractState"&data=0x'"$(
                     buf \
@@ -985,7 +985,7 @@ _: {
 
             echo "deployments: $DEPLOYMENTS"
 
-            CHAIN_ID="$(curl --silent ${rpc_url}/status | jq .result.node_info.network -r)"
+            CHAIN_ID="$(curl -L --silent ${rpc_url}/status | jq .result.node_info.network -r)"
             export CHAIN_ID
 
             echo "chain id: $CHAIN_ID"

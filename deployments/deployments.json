@@ -666,5 +666,47 @@
         }
       }
     }
+  },
+  {
+    "universal_chain_id": "xion.xion-testnet-2",
+    "chain_id": "xion-testnet-2",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "deployer": "xion10c4yqddv6w7sphruvhxs5v0es8r9fcj5nlckx8",
+      "core": {
+        "address": "xion1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqjrkp8m",
+        "height": 2864397,
+        "commit": "88b294bf58128e60324735bec76e3b90a264a858"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "xion1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqk9c3x6",
+          "height": 2864405,
+          "commit": "88b294bf58128e60324735bec76e3b90a264a858"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "xion1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufstvlas8",
+          "height": 2864414,
+          "commit": "88b294bf58128e60324735bec76e3b90a264a858"
+        },
+        "tendermint": {
+          "address": "xion1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqlrfkdw",
+          "height": 2864423,
+          "commit": "88b294bf58128e60324735bec76e3b90a264a858"
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "xion1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qlzhdk9",
+          "height": 2864437,
+          "commit": "88b294bf58128e60324735bec76e3b90a264a858",
+          "minter": {
+            "type": "cw20",
+            "address": "xion1ak8muzgf2nv5ukzeg2wpf2vls74247et33cfhmg87uvpey73xdeqexkzgc",
+            "commit": "88b294bf58128e60324735bec76e3b90a264a858"
+          }
+        }
+      }
+    }
   }
 ]
