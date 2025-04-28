@@ -427,7 +427,7 @@ mod tests {
         let zkgm = Addr::unchecked(ZKGM_ADDR_);
         let mut deps = setup(OPERATOR_ADDR, ZKGM_ADDR_);
 
-        let denom = "factory/omgomg/helloworld".to_string()
+        let denom = "factory/omgomg/helloworld".to_string();
 
         let metadata = Metadata {
             name: "Union Token".into(),
