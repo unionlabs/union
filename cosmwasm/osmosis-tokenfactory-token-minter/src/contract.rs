@@ -1,7 +1,7 @@
 use alloy::sol_types::SolValue;
 use cosmwasm_std::{
     entry_point, to_json_binary, wasm_execute, Addr, BankMsg, Binary, Coin, CosmosMsg, Deps,
-    DepsMut, Empty, Env, Event, MessageInfo, QueryRequest, Response, StdResult, Uint128,
+    DepsMut, Env, Event, MessageInfo, QueryRequest, Response, StdResult, Uint128,
 };
 use ibc_union_spec::ChannelId;
 use prost::Message;
