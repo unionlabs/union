@@ -50,44 +50,29 @@ pub fn instantiate(
 
 #[cw_serde]
 pub struct MigrateMsg {
-    /// Update admins of these contracts to the `new_admin`
-    pub cw20_contracts: Vec<cosmwasm_std::Addr>,
+    /// Update the admin for all *new* cw20 token contracts.
+    #[serde(default)]
+    pub new_admin: Option<cosmwasm_std::Addr>,
 
-    /// BE VERY CATIOUS WITH WHO TO BE THE ADMIN
-    pub new_admin: cosmwasm_std::Addr,
-
-    /// New cw20 code id that we are gonna migrate all `cw2_contracts`
-    pub new_cw20_code_id: u64,
+    /// New code id to store for all *new* cw20 token contracts.
+    #[serde(default)]
+    pub new_cw20_code_id: Option<u64>,
 }
 
 #[entry_point]
 pub fn migrate(deps: DepsMut, _: Env, msg: MigrateMsg) -> StdResult<Response> {
-    // Save the admin for the future instantiates
-    CW20_ADMIN.save(deps.storage, &msg.new_admin)?;
+    if let Some(new_admin) = msg.new_admin {
+        CW20_ADMIN.save(deps.storage, &new_admin)?;
+    }
 
-    CONFIG.update::<_, cosmwasm_std::StdError>(deps.storage, |mut c| {
-        c.cw20_base_code_id = msg.new_cw20_code_id;
-        Ok(c)
-    })?;
+    if let Some(new_cw20_code_id) = msg.new_cw20_code_id {
+        CONFIG.update::<_, cosmwasm_std::StdError>(deps.storage, |mut c| {
+            c.cw20_base_code_id = new_cw20_code_id;
+            Ok(c)
+        })?;
+    }
 
-    // let migrate_msg = to_json_binary(&UpgradeMsg::<Empty, _>::Migrate(Empty {}))?;
-
-    // Update all the owned cw20s
-    Ok(
-        Response::new().add_messages(msg.cw20_contracts.into_iter().flat_map(|contract| {
-            [
-                // WasmMsg::Migrate {
-                //     contract_addr: contract.to_string(),
-                //     new_code_id: msg.new_cw20_code_id,
-                //     msg: migrate_msg.clone(),
-                // },
-                WasmMsg::UpdateAdmin {
-                    contract_addr: contract.to_string(),
-                    admin: msg.new_admin.to_string(),
-                },
-            ]
-        })),
-    )
+    Ok(Response::new())
 }
 
 #[entry_point]
