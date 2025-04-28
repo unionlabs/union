@@ -24,6 +24,7 @@ import { cosmosStore } from "$lib/wallet/cosmos"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { erc20Abi, http, isHex, toHex } from "viem"
 import type { Steps } from "$lib/transfer/normal/steps"
+import { constVoid } from "effect/Function"
 
 //Probably something we can import from somewhere?
 const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
@@ -202,11 +203,17 @@ const submit = Effect.gen(function* () {
 const handleSubmit = () => {
   error = Option.none()
   showError = false
-  Effect.runPromise(submit).catch(err => {
-    console.error("Uncaught approval error:", err)
-    error = Option.some(err)
-    isSubmitting = false
-  })
+  Effect.runPromiseExit(submit).then(exit =>
+    Exit.match(exit, {
+      onFailure: cause => {
+        const err = Cause.originalError(cause)
+        console.error("Uncaught approval error:", Cause.pretty(cause))
+        error = Option.some(err)
+        isSubmitting = false
+      },
+      onSuccess: constVoid
+    })
+  )
 }
 
 const sourceChain = step.intent.sourceChain

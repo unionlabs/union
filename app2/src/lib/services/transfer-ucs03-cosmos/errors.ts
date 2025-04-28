@@ -5,7 +5,7 @@ export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{
 }> {}
 
 export class OfflineSignerError extends Data.TaggedError("OfflineSignerError")<{
-  cause: string
+  cause: unknown
 }> {}
 
 export class CosmWasmError extends Data.TaggedError("CosmWasmError")<{
