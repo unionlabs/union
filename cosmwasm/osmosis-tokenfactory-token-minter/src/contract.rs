@@ -80,12 +80,17 @@ pub fn execute(
                     wrapped_burn_tokens(deps, env, info, denom, amount)?
                 }
                 ZkgmExecuteMsg::Local(LocalTokenMsg::Escrow { denom, amount, .. }) => {
-                    let contains_base_token = info
+                    let fund_amount = info
                         .funds
                         .iter()
-                        .any(|coin| coin.denom == denom && coin.amount == amount);
-                    if !contains_base_token {
-                        return Err(Error::MissingFunds { denom, amount });
+                        .find(|c| c.denom == denom)
+                        .map(|c| c.amount)
+                        .unwrap_or(0u128.into());
+                    if fund_amount != amount {
+                        return Err(Error::InvalidFunds {
+                            needed: amount,
+                            given: fund_amount,
+                        });
                     }
                     Response::new()
                 }
@@ -171,13 +176,8 @@ fn wrapped_burn_tokens(
         .map(|c| c.amount)
         .unwrap_or(Uint128::zero());
 
-    if fund_amount < amount {
-        return Err(Error::MissingFunds {
-            denom: denom.clone(),
-            amount,
-        });
-    } else if fund_amount > amount {
-        return Err(Error::MoreFundsThenNeeded {
+    if fund_amount != amount {
+        return Err(Error::InvalidFunds {
             needed: amount,
             given: fund_amount,
         });
@@ -427,7 +427,7 @@ mod tests {
         let zkgm = Addr::unchecked(ZKGM_ADDR_);
         let mut deps = setup(OPERATOR_ADDR, ZKGM_ADDR_);
 
-        let denom = format!("factory/omgomg/helloworld");
+        let denom = "factory/omgomg/helloworld".to_string()
 
         let metadata = Metadata {
             name: "Union Token".into(),
@@ -464,7 +464,7 @@ mod tests {
     fn wrapped_mint_fails_if_no_token() {
         let mut deps = setup(OPERATOR_ADDR, ZKGM_ADDR_);
 
-        let denom = format!("factory/omgomg/helloworld");
+        let denom = "factory/omgomg/helloworld".to_string();
 
         let mint_tokens = |deps: DepsMut| {
             execute(
@@ -491,7 +491,7 @@ mod tests {
     fn wrapped_mint_tokens_ok() {
         let mut deps = setup(OPERATOR_ADDR, ZKGM_ADDR_);
 
-        let denom = format!("factory/omgomg/helloworld");
+        let denom = "factory/omgomg/helloworld".to_string();
 
         TOKEN_OWNERS
             .save(
@@ -559,7 +559,7 @@ mod tests {
     fn wrapped_token_burn_ok() {
         let mut deps = setup(OPERATOR_ADDR, ZKGM_ADDR_);
 
-        let denom = format!("factory/omgomg/helloworld");
+        let denom = "factory/omgomg/helloworld".to_string();
 
         TOKEN_OWNERS
             .save(
@@ -637,7 +637,7 @@ mod tests {
     fn wrapped_token_burn_insufficient_funds() {
         let mut deps = setup(OPERATOR_ADDR, ZKGM_ADDR_);
 
-        let denom = format!("factory/omgomg/helloworld");
+        let denom = "factory/omgomg/helloworld".to_string();
 
         TOKEN_OWNERS
             .save(
@@ -674,22 +674,19 @@ mod tests {
             )
         };
 
-        assert_eq!(
+        assert!(matches!(
             burn_tokens(deps.as_mut(), 50),
-            Err(Error::MissingFunds {
-                denom: denom.clone(),
-                amount: 100u128.into()
-            })
-        );
+            Err(Error::InvalidFunds { .. })
+        ));
 
         assert!(matches!(
             burn_tokens(deps.as_mut(), 0),
-            Err(Error::MissingFunds { .. })
+            Err(Error::InvalidFunds { .. })
         ));
 
         assert!(matches!(
             burn_tokens(deps.as_mut(), 101),
-            Err(Error::MoreFundsThenNeeded { .. })
+            Err(Error::InvalidFunds { .. })
         ));
     }
 
