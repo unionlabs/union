@@ -13,6 +13,9 @@
       "bob.808813": {
         "environment": "production"
       },
+      "testing.sorting": {
+        "environment": "do-not-merge"
+      },
       "corn.21000001": {
         "environment": "production"
       }
