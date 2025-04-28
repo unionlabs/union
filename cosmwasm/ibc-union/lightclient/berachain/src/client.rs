@@ -21,7 +21,7 @@ use unionlabs::{
     primitives::{encoding::HexUnprefixed, H256},
 };
 
-use crate::errors::Error;
+use crate::{errors::Error, verify::Bls12381Verifier};
 
 pub struct BerachainLightClient;
 
@@ -112,61 +112,43 @@ impl IbcClient for BerachainLightClient {
         header: Self::Header,
         _relayer: Addr,
     ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
-        // let ClientState::V1(mut client_state) = ctx.read_self_client_state()?;
-        // // 1. extract L1 state
-        // let l1_client_state = ctx
-        //     .read_client_state::<TendermintLightClient>(client_state.l1_client_id)
-        //     .map_err(Into::<Error>::into)?;
-        // let l1_consensus_state = ctx
-        //     .read_consensus_state::<TendermintLightClient>(
-        //         client_state.l1_client_id,
-        //         header.l1_height.height(),
-        //     )
-        //     .map_err(Into::<Error>::into)?;
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+        let consensus_state =
+            ctx.read_self_consensus_state(header.tm_header.trusted_height.height())?;
 
-        // // 2. verify that the evm execution header is part of the cometbft consensus state
-        // ics23::ibc_api::verify_membership(
-        //     &header.execution_header_proof,
-        //     &l1_client_state.proof_specs,
-        //     &l1_consensus_state.root.hash.into(),
-        //     &[
-        //         b"beacon".to_vec(),
-        //         [LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX].to_vec(),
-        //     ],
-        //     deneb::ExecutionPayloadHeaderSsz::<Mainnet>::try_from(header.execution_header.clone())
-        //         .map_err(Into::<Error>::into)?
-        //         .encode_as::<Ssz>(),
-        // )
-        // .map_err(Into::<Error>::into)?;
+        // 1. verify that the evm execution header is part of the cometbft consensus state
+        ics23::ibc_api::verify_membership(
+            &header.execution_header_proof,
+            &client_state.proof_specs,
+            &consensus_state.comet_root.hash.into(),
+            &[
+                b"beacon".to_vec(),
+                [LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX].to_vec(),
+            ],
+            deneb::ExecutionPayloadHeaderSsz::<Mainnet>::try_from(header.execution_header.clone())
+                .map_err(Into::<Error>::into)?
+                .encode_as::<Ssz>(),
+        )
+        .map_err(Into::<Error>::into)?;
 
-        // // 3. verify that the contract storage root is part of the evm execution header
-        // evm_storage_verifier::verify_account_storage_root(
-        //     header.execution_header.state_root,
-        //     &client_state.ibc_contract_address,
-        //     &header.account_proof.proof,
-        //     &header.account_proof.storage_root,
-        // )
-        // .map_err(Into::<Error>::into)?;
+        // 2. verify that the contract storage root is part of the evm execution header
+        evm_storage_verifier::verify_account_storage_root(
+            header.execution_header.state_root,
+            &client_state.ibc_contract_address,
+            &header.account_proof.proof,
+            &header.account_proof.storage_root,
+        )
+        .map_err(Into::<Error>::into)?;
 
-        // // 4. update
-        // let update_height = header.execution_header.block_number;
-
-        // let consensus_state = ConsensusState {
-        //     timestamp: Timestamp::from_secs(header.execution_header.timestamp),
-        //     state_root: header.execution_header.state_root,
-        //     storage_root: header.account_proof.storage_root,
-        // };
-
-        // let state_update = StateUpdate::new(update_height, consensus_state);
-
-        // if client_state.latest_height < update_height {
-        //     client_state.latest_height = update_height;
-        //     Ok(state_update.overwrite_client_state(ClientState::V1(client_state)))
-        // } else {
-        //     Ok(state_update)
-        // }
-
-        todo!()
+        // 3. Verify cometbft consensus and signatures
+        verify_header(
+            client_state,
+            consensus_state,
+            header.tm_header,
+            ctx.env.block.time,
+            Bls12381Verifier::new(ctx.deps),
+        )
+        .map_err(Into::into)
     }
 
     fn misbehaviour(
