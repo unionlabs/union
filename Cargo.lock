@@ -17014,6 +17014,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ucs03-zkgm-packet"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "serde",
+ "ucs03-zkgm",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "ucs03-zkgm-token-minter-api"
 version = "0.0.0"
 dependencies = [
