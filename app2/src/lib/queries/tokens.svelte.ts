@@ -1,36 +1,25 @@
 import { Effect, Option, Schema } from "effect"
-import { UniversalChainId } from "@unionlabs/sdk/schema"
+import type { UniversalChainId } from "@unionlabs/sdk/schema"
 import { TokenRawDenom, Tokens } from "@unionlabs/sdk/schema"
 import { isTokenBlacklisted } from "$lib/constants/tokens"
 import { createQueryGraphql, fetchDecodeGraphql } from "$lib/utils/queries"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { graphql } from "gql.tada"
-import { uiStore } from "$lib/stores/ui.svelte"
-import type { Edition } from "$lib/themes"
-
-const WHITELIST_CHAINS: Record<Edition, Array<UniversalChainId>> = {
-  btc: [
-    UniversalChainId.make("babylon.bbn-1"),
-    UniversalChainId.make("corn.21000000"),
-    UniversalChainId.make("bob.60808"),
-    UniversalChainId.make("ethereum.1")
-  ],
-  app: [UniversalChainId.make("ethereum.1")]
-}
-
-function getWhitelistArg(universalChainId: UniversalChainId) {
-  const chains = WHITELIST_CHAINS[uiStore.activeEdition]
-  return chains.some(chain => chain === universalChainId) ? "p_whitelist: true" : ""
-}
 
 export const tokensQuery = (universalChainId: UniversalChainId) =>
   Effect.gen(function* () {
     yield* Effect.log(`zkgm starting token fetcher for ${universalChainId}`)
     const response = yield* createQueryGraphql({
-      schema: Schema.Struct({ v2_tokens: Tokens }),
+      schema: Schema.Struct({
+        v2_tokens: Tokens,
+        whitelist: Schema.Array(Schema.Struct({ denom: TokenRawDenom }))
+      }),
       document: graphql(`
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
-          v2_tokens(args: { ${getWhitelistArg(universalChainId)}, p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
+          whitelist: v2_tokens(args: {p_whitelist: true, p_universal_chain_id: $universal_chain_id}, order_by: {rank: asc_nulls_last}) {
+            denom
+          }
+          v2_tokens(args: {p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
             rank
             denom
             bucket {
@@ -70,8 +59,18 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
         Effect.runSync(Effect.log(`storing new tokens for ${universalChainId}`))
         tokensStore.setData(
           universalChainId,
-          // Filter out blacklisted tokens
-          data.pipe(Option.map(d => d.v2_tokens.filter(token => !isTokenBlacklisted(token.denom))))
+          data.pipe(
+            Option.map(d => {
+              const tokensWithWhitelist = d.v2_tokens.map(token => {
+                const isWhitelisted = d.whitelist?.some(w => w.denom === token.denom) ?? false
+                return {
+                  ...token,
+                  whitelisted: isWhitelisted
+                }
+              })
+              return tokensWithWhitelist.filter(token => !isTokenBlacklisted(token.denom))
+            })
+          )
         )
       },
       writeError: error => {

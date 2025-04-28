@@ -33,11 +33,12 @@ const filteredTokens = $derived.by(() => {
     const sortedDenoms = transferData.sortedBalances.value.map(item => item.token.denom)
     const baseTokens = transferData.baseTokens.value
     const tokenMap = new Map(baseTokens.map(token => [token.denom, token]))
+
     tokensToShow = sortedDenoms
       .map(denom => tokenMap.get(denom))
-      .filter((token): token is Token => !!token)
+      .filter((token): token is Token => !!token && token.whitelisted === true)
   } else {
-    tokensToShow = [...transferData.baseTokens.value]
+    tokensToShow = transferData.baseTokens.value.filter(token => token.whitelisted)
   }
 
   if (!searchQuery) return tokensToShow
