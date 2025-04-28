@@ -9493,6 +9493,34 @@ dependencies = [
 ]
 
 [[package]]
+name = "osmosis-tokenfactory-token-minter"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "cw-storage-plus 2.0.0",
+ "embed-commit",
+ "enumorph",
+ "ibc-union-spec",
+ "prost 0.12.6",
+ "protos",
+ "thiserror 2.0.12",
+ "token-factory-api",
+ "ucs03-zkgm-token-minter-api",
+ "unionlabs",
+]
+
+[[package]]
+name = "osmosis-tokenfactory-token-owner"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "osmosis-tokenfactory-token-minter",
+ "token-factory-api",
+]
+
+[[package]]
 name = "ouroboros"
 version = "0.15.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -13472,6 +13500,7 @@ version = "0.0.0"
 dependencies = [
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
+ "enumorph",
 ]
 
 [[package]]
@@ -14309,7 +14338,7 @@ dependencies = [
  "bincode 2.0.1",
  "bip32",
  "borsh",
- "bs58 0.4.0",
+ "bs58 0.5.1",
  "chrono",
  "cosmwasm-std 2.2.2",
  "derive_more 0.99.19",
@@ -14367,6 +14396,7 @@ dependencies = [
  "alloy-sol-types",
  "base64 0.21.7",
  "bincode 2.0.1",
+ "bs58 0.5.1",
  "generic-array 0.14.7",
  "hex",
  "primitive-types 0.12.2",

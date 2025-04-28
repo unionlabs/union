@@ -16,6 +16,7 @@ alloy-primitives = { workspace = true, optional = true }
 alloy-sol-types  = { workspace = true, optional = true }
 base64           = { workspace = true, optional = true, features = ["std"] }
 bincode          = { workspace = true, optional = true, features = ["alloc"] }
+bs58             = { workspace = true, optional = true, features = ["std"] }
 generic-array    = { workspace = true, optional = true }
 hex              = { workspace = true, features = ["std"] }
 primitive-types  = { workspace = true }
@@ -36,6 +37,7 @@ unionlabs-primitives = { workspace = true, features = ["bincode"] }
 [features]
 default = ["serde", "base64"]
 
+base58   = ["dep:bs58"]
 base64   = ["dep:base64"]
 bincode  = ["dep:bincode"]
 rlp      = ["dep:rlp", "primitive-types/rlp"]

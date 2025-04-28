@@ -677,7 +677,7 @@ fn refund(
                 WrappedTokenMsg::MintTokens {
                     denom: base_denom,
                     amount: base_amount.into(),
-                    mint_to_address: sender.into_string(),
+                    mint_to_address: sender,
                 },
                 minter,
                 vec![],
@@ -747,7 +747,7 @@ fn acknowledge_fungible_asset_order(
                             WrappedTokenMsg::MintTokens {
                                 denom: base_denom,
                                 amount: base_amount.into(),
-                                mint_to_address: market_maker.into_string(),
+                                mint_to_address: market_maker,
                             },
                             minter,
                             vec![],
@@ -1405,7 +1405,7 @@ fn execute_fungible_asset_order(
                 WrappedTokenMsg::MintTokens {
                     denom: wrapped_denom.clone(),
                     amount: quote_amount.into(),
-                    mint_to_address: receiver.into_string(),
+                    mint_to_address: receiver,
                 },
                 &minter,
                 vec![],
@@ -1418,7 +1418,7 @@ fn execute_fungible_asset_order(
                 WrappedTokenMsg::MintTokens {
                     denom: wrapped_denom,
                     amount: fee_amount.into(),
-                    mint_to_address: relayer.into_string(),
+                    mint_to_address: relayer,
                 },
                 &minter,
                 vec![],
@@ -1841,7 +1841,7 @@ pub fn verify_fungible_asset_order(
                 amount: Uint256::from_be_bytes(order.base_amount.to_be_bytes())
                     .try_into()
                     .map_err(|_| ContractError::AmountOverflow)?,
-                burn_from_address: minter.to_string(),
+                burn_from_address: minter.clone(),
                 sender: info.sender,
             },
             &minter,

@@ -213,9 +213,10 @@ members = [
   "lib/state-lens-light-client-types",
   "lib/create3",
   "lib/linea-types",
-  # "cosmwasm/native-token-minter",
+  "cosmwasm/osmosis-tokenfactory-token-minter",
   "cosmwasm/cw20-token-minter",
   "cosmwasm/ucs03-zkgm-token-minter-api",
+  "cosmwasm/osmosis-tokenfactory-token-owner",
   "cosmwasm/cw20-base",
   "lib/scroll-types",
   "lib/fork-schedules",
@@ -322,10 +323,11 @@ ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-feature
 
 frissitheto = { path = "lib/frissitheto", default-features = false }
 
-cw20-base                   = { path = "cosmwasm/cw20-base", default-features = false }
-cw20-token-minter           = { path = "cosmwasm/cw20-token-minter", default-features = false }
-ucs03-zkgm                  = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
-ucs03-zkgm-token-minter-api = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
+cw20-base                         = { path = "cosmwasm/cw20-base", default-features = false }
+cw20-token-minter                 = { path = "cosmwasm/cw20-token-minter", default-features = false }
+osmosis-tokenfactory-token-minter = { path = "cosmwasm/osmosis-tokenfactory-token-minter", default-features = false }
+ucs03-zkgm                        = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
+ucs03-zkgm-token-minter-api       = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
 
 gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
 gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
@@ -397,6 +399,7 @@ bincode                  = { version = "2.0.1", default-features = false, featur
 bip32                    = { version = "0.5.0", default-features = false }
 bitvec                   = { version = "1.0.1", default-features = false }
 borsh                    = { version = "1.5.0", default-features = false }
+bs58                     = { version = "0.5.1", default-features = false }
 chrono                   = { version = "0.4.26", default-features = false }
 clap                     = { version = "4.3.0", default-features = false, features = ["std"] }       # clap has a fake std feature that is required to be enabled by default
 color-eyre               = { version = "0.6.2", default-features = false }

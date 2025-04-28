@@ -144,3 +144,49 @@ pub enum Base64Error {
         found_len: usize,
     },
 }
+
+#[cfg(feature = "base58")]
+pub struct Base58;
+#[cfg(feature = "base58")]
+impl Sealed for Base58 {}
+#[cfg(feature = "base58")]
+impl Encoding for Base58 {
+    const NAME: &'static str = "Base58";
+
+    type Error = Base58Error;
+
+    fn fmt(bytes: &[u8], f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&bs58::encode(bytes).into_string())
+    }
+
+    fn decode<T: AsRef<[u8]>>(data: T) -> Result<Vec<u8>, Self::Error> {
+        Ok(bs58::decode(data).into_vec()?)
+    }
+
+    fn decode_to_slice<T: AsRef<[u8]>>(data: T, out: &mut [u8]) -> Result<(), Base58Error> {
+        let len = out.len();
+
+        let written = bs58::decode(data).onto(out)?;
+
+        if written == len {
+            Ok(())
+        } else {
+            Err(Base58Error::InvalidLength {
+                expected_len: len,
+                found_len: written,
+            })
+        }
+    }
+}
+
+#[cfg(feature = "base58")]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum Base58Error {
+    #[error("invalid encoding")]
+    InvalidEncoding(#[from] bs58::decode::Error),
+    #[error("invalid length (expected {expected_len}, found {found_len})")]
+    InvalidLength {
+        expected_len: usize,
+        found_len: usize,
+    },
+}

@@ -1,8 +1,65 @@
-use cosmwasm_schema::{cw_serde, QueryResponses};
-use cosmwasm_std::{Coin, CustomMsg, CustomQuery, Uint128};
+//! Special messages to be supported by any chain that supports osmosis tokenfactory.
 
-/// Special messages to be supported by any chain that supports token_factory
+// TODO: Link to the protobuf definitions on all types
+
+use cosmwasm_schema::{cw_serde, QueryResponses};
+use cosmwasm_std::{Addr, Coin, CustomMsg, CustomQuery, Uint128};
+use enumorph::Enumorph;
+
+/// Contracts can mint native tokens for an existing factory denom
+/// that they are the admin of.
+///
+/// ```protobuf
+/// type MintTokens struct {
+///     Denom         string       `json:"denom"`
+///     Amount        osmomath.Int `json:"amount"`
+///     MintToAddress string       `json:"mint_to_address"`
+/// }
+/// ```
 #[cw_serde]
+pub struct MintTokensMsg {
+    pub denom: String,
+    pub amount: Uint128,
+    pub mint_to_address: Addr,
+}
+
+/// Contracts can burn native tokens for an existing factory denom
+/// that they are the admin of.
+/// Currently, the burn from address must be the admin contract.
+///
+/// ```protobuf
+/// type BurnTokens struct {
+///     Denom  string       `json:"denom"`
+///     Amount osmomath.Int `json:"amount"`
+///     // BurnFromAddress must be set to "" for now.
+///     BurnFromAddress string `json:"burn_from_address"`
+/// }
+/// ```
+#[cw_serde]
+pub struct BurnTokensMsg {
+    pub denom: String,
+    pub amount: Uint128,
+    pub burn_from_address: Addr,
+}
+
+/// ChangeAdmin changes the admin for a factory denom.
+/// Can only be called by the current contract admin.
+/// If the NewAdminAddress is empty, the denom will have no admin.
+///
+/// ```protobuf
+/// type ChangeAdmin struct {
+///     Denom           string `json:"denom"`
+///     NewAdminAddress string `json:"new_admin_address"`
+/// }
+/// ```
+#[cw_serde]
+pub struct ChangeAdminMsg {
+    pub denom: String,
+    pub new_admin_address: Addr,
+}
+
+#[cw_serde]
+#[derive(Enumorph)]
 pub enum TokenFactoryMsg {
     /// CreateDenom creates a new factory denom, of denomination:
     /// factory/{creating contract bech32 address}/{Subdenom}
@@ -10,43 +67,26 @@ pub enum TokenFactoryMsg {
     /// Empty subdenoms are valid.
     /// The (creating contract address, subdenom) pair must be unique.
     /// The created denom's admin is the creating contract address,
-    /// but this admin can be changed using the UpdateAdmin binding.
+    /// but this admin can be changed using the ChangeAdmin binding.
     ///
-    /// If you set an initial metadata here, this is equivalent
-    /// to calling SetMetadata directly on the returned denom.
+    /// ```protobuf
+    /// type CreateDenom struct {
+    ///     Subdenom string `json:"subdenom"`
+    /// }
+    /// ```
+    #[enumorph(ignore)]
     CreateDenom {
         subdenom: String,
-        // TODO: upgrade tokenfactory to handle this
-        metadata: Option<Metadata>,
     },
-    /// ChangeAdmin changes the admin for a factory denom.
-    /// Can only be called by the current contract admin.
-    /// If the NewAdminAddress is empty, the denom will have no admin.
-    ChangeAdmin {
-        denom: String,
-        new_admin_address: String,
-    },
-    /// Contracts can mint native tokens for an existing factory denom
-    /// that they are the admin of.
-    MintTokens {
-        denom: String,
-        amount: Uint128,
-        mint_to_address: String,
-    },
-    /// Contracts can burn native tokens for an existing factory denom
-    /// that they are the admin of.
-    /// Currently, the burn from address must be the admin contract.
-    BurnTokens {
-        denom: String,
-        amount: Uint128,
-        burn_from_address: String,
-    },
-    /// Contracts can set metadata for an existing factory denom that they are
-    /// admin of.
-    SetMetadata { denom: String, metadata: Metadata },
+
+    ChangeAdmin(ChangeAdminMsg),
+
+    MintTokens(MintTokensMsg),
+
+    BurnTokens(BurnTokensMsg),
 }
 
-/// This maps to cosmos.bank.v1beta1.Metadata protobuf struct
+/// This maps to `cosmos.bank.v1beta1.Metadata`.
 #[cw_serde]
 pub struct Metadata {
     pub description: Option<String>,
@@ -82,7 +122,7 @@ pub struct DenomUnit {
     pub aliases: Vec<String>,
 }
 
-/// This maps to tokenfactory.v1beta1.Params protobuf struct
+/// This maps to `osmosis.tokenfactory.v1beta1.Params`.
 #[cw_serde]
 pub struct Params {
     pub denom_creation_fee: Vec<Coin>,

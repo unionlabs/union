@@ -351,6 +351,7 @@ pub enum TokenMinterConfig {
         /// This MUST be the unionlabs fork of cw20-base, which forces instantiation through the migrate entrypoint, such that it can have a deterministic address.
         cw20_base: PathBuf,
     },
+    OsmosisTokenfactory {},
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -677,6 +678,9 @@ async fn do_main() -> Result<()> {
                                 cw20_base_code_id: code_id.get(),
                                 dummy_code_id: bytecode_base_code_id.get(),
                             }
+                        }
+                        TokenMinterConfig::OsmosisTokenfactory {} => {
+                            TokenMinterInitParams::OsmosisTokenFactory {}
                         }
                     };
 

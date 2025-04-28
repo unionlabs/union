@@ -431,9 +431,12 @@ mod tests {
     use hex::FromHexError;
 
     use super::*;
-    use crate::encoding::{Base64, Base64Error, HexPrefixedFromStrError, HexUnprefixed};
+    use crate::encoding::{
+        Base58, Base58Error, Base64, Base64Error, HexPrefixedFromStrError, HexUnprefixed,
+    };
 
     const BASE64_STR: &str = "YWJjZA==";
+    const BASE58_STR: &str = "3VNr6P";
     const HEX_PREFIXED_STR: &str = "0x61626364";
     const HEX_UNPREFIXED_STR: &str = "61626364";
 
@@ -536,6 +539,42 @@ mod tests {
         assert_eq!(
             H::from_str(BASE64_STR),
             Err(Base64Error::InvalidLength {
+                expected_len: 5,
+                found_len: 4
+            })
+        );
+    }
+
+    #[test]
+    fn base58() {
+        type H = FixedBytes<4, Base58>;
+
+        let decoded = H::from_str(BASE58_STR).unwrap();
+
+        assert_eq!(BASE58_STR, decoded.to_string());
+
+        assert_eq!(decoded.get(), RAW_VALUE);
+    }
+
+    #[test]
+    fn base58_too_long() {
+        type H = FixedBytes<3, Base58>;
+
+        assert_eq!(
+            H::from_str(BASE58_STR),
+            Err(Base58Error::InvalidEncoding(
+                bs58::decode::Error::BufferTooSmall
+            ))
+        );
+    }
+
+    #[test]
+    fn base58_too_short() {
+        type H = FixedBytes<5, Base58>;
+
+        assert_eq!(
+            H::from_str(BASE58_STR),
+            Err(Base58Error::InvalidLength {
                 expected_len: 5,
                 found_len: 4
             })

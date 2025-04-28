@@ -43,19 +43,25 @@ pub enum TokenMinterInitParams {
         // TODO: Should be NonZeroU64
         dummy_code_id: u64,
     },
+    /// Instantiate `ucs03-zkgm` with an osmosis token factory minter implementation.
+    OsmosisTokenFactory {},
 }
 
 impl TokenMinterInitParams {
     /// Completes the init msg by using the runtime parameters
     pub fn into_msg(self, zkgm_admin: Addr) -> TokenMinterInitMsg {
-        let TokenMinterInitParams::Cw20 {
-            cw20_base_code_id,
-            dummy_code_id,
-        } = self;
-        TokenMinterInitMsg::Cw20 {
-            cw20_base_code_id,
-            dummy_code_id,
-            zkgm_admin,
+        match self {
+            TokenMinterInitParams::Cw20 {
+                cw20_base_code_id,
+                dummy_code_id,
+            } => TokenMinterInitMsg::Cw20 {
+                cw20_base_code_id,
+                dummy_code_id,
+                zkgm_admin,
+            },
+            TokenMinterInitParams::OsmosisTokenFactory {} => {
+                TokenMinterInitMsg::OsmosisTokenFactory { zkgm_admin }
+            }
         }
     }
 }

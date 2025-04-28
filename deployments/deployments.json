@@ -604,5 +604,42 @@
         }
       }
     }
+  },
+  {
+    "universal_chain_id": "osmosis.osmo-test-5",
+    "chain_id": "osmo-test-5",
+    "ibc_interface": "ibc-cosmwasm",
+    "deployments": {
+      "deployer": "osmo10c4yqddv6w7sphruvhxs5v0es8r9fcj5ed3yx7",
+      "core": {
+        "address": "osmo1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqata4fx",
+        "height": 27869833,
+        "commit": "3738a801619e33aed5b706f9c0d3580140d05fc6"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "osmo1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqedn9g8",
+          "height": 27869882,
+          "commit": "3738a801619e33aed5b706f9c0d3580140d05fc6"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "osmo1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufsyy5f76",
+          "height": 27869886,
+          "commit": "3738a801619e33aed5b706f9c0d3580140d05fc6"
+        },
+        "tendermint": {
+          "address": "osmo1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqstzzrn",
+          "height": 27869890,
+          "commit": "3738a801619e33aed5b706f9c0d3580140d05fc6"
+        }
+      },
+      "app": {
+        "ucs03": {
+          "address": "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc",
+          "height": 27869895,
+          "commit": "3738a801619e33aed5b706f9c0d3580140d05fc6"
+        }
+      }
+    }
   }
 ]

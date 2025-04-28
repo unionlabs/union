@@ -26,12 +26,16 @@ pub fn instantiate(
     deps: DepsMut,
     _: Env,
     info: MessageInfo,
-    TokenMinterInitMsg::Cw20 {
+    msg: TokenMinterInitMsg,
+) -> Result<Response, Error> {
+    let TokenMinterInitMsg::Cw20 {
         cw20_base_code_id,
         dummy_code_id,
         zkgm_admin,
-    }: TokenMinterInitMsg,
-) -> StdResult<Response> {
+    } = msg
+    else {
+        return Err(Error::InvalidMinterConfig);
+    };
     CONFIG.save(
         deps.storage,
         &Config {
@@ -103,18 +107,18 @@ pub fn execute(
         ExecuteMsg::Wrapped(msg) => match msg {
             WrappedTokenMsg::CreateDenom {
                 metadata,
-                subdenom: denom,
+                subdenom,
                 path,
                 channel_id,
                 token,
             } => {
                 let token_name = if metadata.name.is_empty() {
-                    restrict_name(denom.clone())
+                    restrict_name(subdenom.clone())
                 } else {
                     restrict_name(metadata.name)
                 };
                 let token_symbol = if metadata.symbol.is_empty() {
-                    restrict_symbol(denom.clone())
+                    restrict_symbol(subdenom.clone())
                 } else {
                     restrict_symbol(metadata.symbol)
                 };
@@ -125,7 +129,7 @@ pub fn execute(
                         WasmMsg::Instantiate2 {
                             admin: Some(env.contract.address.to_string()),
                             code_id: config.dummy_code_id,
-                            label: denom.clone(),
+                            label: subdenom.clone(),
                             msg: to_json_binary(&cosmwasm_std::Empty {})?,
                             funds: vec![],
                             salt: Binary::new(calculate_salt(
@@ -142,7 +146,7 @@ pub fn execute(
                         // migrate entrypoint where it expects `InstantiateMsg` and calls the its `instantiate` function
                         // in the `migrate` function
                         WasmMsg::Migrate {
-                            contract_addr: denom.clone(),
+                            contract_addr: subdenom.clone(),
                             new_code_id: config.cw20_base_code_id,
                             msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
                                 cw20_base::msg::InstantiateMsg {
@@ -163,7 +167,7 @@ pub fn execute(
                     .add_message(WasmMsg::UpdateAdmin {
                         // We temporarily set ourselves as admin previously to be able to migrate the contract.
                         // Updating the admin to the correct admin finally.
-                        contract_addr: denom,
+                        contract_addr: subdenom,
                         admin: cw20_admin.to_string(),
                     })
             }
@@ -174,7 +178,7 @@ pub fn execute(
             } => Response::new().add_message(wasm_execute(
                 denom,
                 &cw20::Cw20ExecuteMsg::Mint {
-                    recipient: mint_to_address,
+                    recipient: mint_to_address.into_string(),
                     amount,
                 },
                 vec![],
