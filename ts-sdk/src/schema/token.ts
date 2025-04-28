@@ -64,7 +64,8 @@ export class Token extends Schema.Class<Token>("Token")({
   denom: TokenRawDenom,
   representations: Schema.Array(TokenRepresentation),
   wrapping: Schema.Array(TokenWrapping),
-  bucket: Schema.OptionFromNullOr(Bucket)
+  bucket: Schema.OptionFromNullOr(Bucket),
+  whitelisted: Schema.optional(Schema.Boolean)
 }) {}
 
 export const Tokens = Schema.Array(Token)
