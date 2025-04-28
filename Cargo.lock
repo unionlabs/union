@@ -2256,6 +2256,7 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-light-client",
+ "tendermint-light-client-types",
  "tendermint-verifier",
  "thiserror 2.0.12",
  "unionlabs",
@@ -2268,10 +2269,12 @@ dependencies = [
  "alloy",
  "beacon-api-types",
  "bincode 2.0.1",
+ "cometbft-types",
  "ethereum-light-client-types",
  "ibc-union-spec",
  "serde",
  "tendermint-light-client-types",
+ "tendermint-verifier",
  "unionlabs",
 ]
 

@@ -21,6 +21,7 @@ crate-type = ["cdylib", "rlib"]
 cometbft-types               = { workspace = true, features = ["hash"] }
 beacon-api-types             = { workspace = true, features = ["ssz"] }
 berachain-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
+tendermint-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
 cosmwasm-std                 = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 embed-commit                 = { workspace = true }
 ethereum-light-client        = { workspace = true, features = ["library"] }

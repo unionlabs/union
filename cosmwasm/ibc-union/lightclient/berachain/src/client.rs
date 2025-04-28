@@ -17,6 +17,7 @@ use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     bounded::BoundedI64,
     encoding::{Bincode, EncodeAs, Ssz},
+    ibc::core::commitment::merkle_root::MerkleRoot,
     primitives::{encoding::HexUnprefixed, H256},
 };
 
@@ -29,7 +30,6 @@ impl IbcClient for BerachainLightClient {
 
     type Header = Header;
 
-    // TODO(aeryz): Change this to appropriate misbehavior type when it is implemented
     type Misbehaviour = Header;
 
     type ClientState = ClientState;
@@ -227,28 +227,53 @@ pub fn construct_partial_header(
     }
 }
 
+pub fn check_trusted_header(
+    header: &tendermint_light_client_types::header::Header,
+    next_validators_hash: &H256,
+) -> Result<(), Error> {
+    let val_hash = tendermint_verifier::utils::validators_hash(&header.trusted_validators);
+
+    if &val_hash != next_validators_hash {
+        Err(Error::TrustedValidatorsMismatch {
+            calculated: val_hash,
+            given: *next_validators_hash,
+        })
+    } else {
+        Ok(())
+    }
+}
+
+pub fn parse_revision_number(chain_id: &str) -> Option<u64> {
+    chain_id
+        .rsplit('-')
+        .next()
+        .map(|height_str| height_str.parse().ok())?
+}
+
 pub fn verify_header<V: Verification>(
     mut client_state: ClientStateV1,
     consensus_state: ConsensusState,
-    mut header: Header,
+    mut header: tendermint_light_client_types::header::Header,
     block_timestamp: cosmwasm_std::Timestamp,
     mut signature_verifier: V,
 ) -> Result<StateUpdate<BerachainLightClient>, Error> {
     set_total_voting_power(&mut header.validator_set).unwrap();
     set_total_voting_power(&mut header.trusted_validators).unwrap();
 
-    check_trusted_header(&header, consensus_state.next_validators_hash.as_encoding())
-        .map_err(Error::from)?;
+    check_trusted_header(
+        &header,
+        consensus_state.comet_next_validators_hash.as_encoding(),
+    )?;
 
     let revision_number = parse_revision_number(&header.signed_header.header.chain_id).ok_or(
-        Error::from(InvalidChainId(header.signed_header.header.chain_id.clone())),
+        Error::InvalidChainId(header.signed_header.header.chain_id.clone()),
     )?;
 
     if revision_number != header.trusted_height.revision() {
-        return Err(Error::from(RevisionNumberMismatch {
+        return Err(Error::RevisionNumberMismatch {
             trusted_revision_number: revision_number,
             header_revision_number: header.trusted_height.revision(),
-        }));
+        });
     }
 
     let signed_height = header
@@ -260,7 +285,7 @@ pub fn verify_header<V: Verification>(
         .expect("value is bounded >= 0; qed;");
 
     if signed_height <= header.trusted_height.height() {
-        return Err(InvalidHeaderError::SignedHeaderHeightMustBeMoreRecent {
+        return Err(Error::SignedHeaderHeightMustBeMoreRecent {
             signed_height,
             trusted_height: header.trusted_height.height(),
         }
@@ -283,18 +308,18 @@ pub fn verify_header<V: Verification>(
         &construct_partial_header(
             client_state.chain_id.clone(),
             i64::try_from(header.trusted_height.height())
-                .map_err(|_| {
-                    Error::from(IbcHeightTooLargeForTendermintHeight(
-                        header.trusted_height.height(),
-                    ))
-                })?
+                .map_err(|_| Error::HeightTooLarge(header.trusted_height.height()))?
                 .try_into()
                 .expect(
                     "value is converted from u64, which is positive, \
                         and the expected bounded type is >= 0; qed;",
                 ),
-            consensus_state.timestamp,
-            consensus_state.next_validators_hash,
+            unionlabs::google::protobuf::timestamp::Timestamp::from_unix_nanos(
+                (consensus_state.comet_timestamp.as_nanos() as i128)
+                    .try_into()
+                    .expect("safe conversion"),
+            ),
+            consensus_state.comet_next_validators_hash,
         ),
         &header.trusted_validators,
         &header.signed_header,
@@ -318,17 +343,22 @@ pub fn verify_header<V: Verification>(
     let state_update = StateUpdate::new(
         update_height,
         ConsensusState {
-            timestamp: header.signed_header.header.time,
-            root: MerkleRoot {
+            evm_timestamp: todo!(),
+            evm_state_root: todo!(),
+            evm_storage_root: todo!(),
+            comet_timestamp: Timestamp::from_nanos(
+                header.signed_header.header.time.as_unix_nanos(),
+            ),
+            comet_root: MerkleRoot {
                 hash: (*header.signed_header.header.app_hash.get()).into(),
             },
-            next_validators_hash: header.signed_header.header.next_validators_hash,
+            comet_next_validators_hash: header.signed_header.header.next_validators_hash,
         },
     );
 
-    if client_state.latest_height.height() < update_height {
-        *client_state.latest_height.height_mut() = update_height;
-        Ok(state_update.overwrite_client_state(client_state))
+    if client_state.latest_height < update_height {
+        client_state.latest_height = update_height;
+        Ok(state_update.overwrite_client_state(ClientState::V1(client_state)))
     } else {
         Ok(state_update)
     }

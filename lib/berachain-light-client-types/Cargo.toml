@@ -15,11 +15,13 @@ workspace = true
 alloy                         = { workspace = true, features = ["sol-types"], optional = true }
 beacon-api-types              = { workspace = true }
 bincode                       = { workspace = true, features = ["alloc", "derive"], optional = true }
+cometbft-types = { workspace = true }
 ethereum-light-client-types   = { workspace = true }
 ibc-union-spec                = { workspace = true }
 serde                         = { workspace = true, optional = true, features = ["derive"] }
 tendermint-light-client-types = { workspace = true }
 unionlabs                     = { workspace = true }
+tendermint-verifier = { workspace = true }
 
 [features]
 default = []
@@ -31,6 +33,7 @@ bincode = [
   "tendermint-light-client-types/bincode",
   "ibc-union-spec/bincode",
   "beacon-api-types/bincode",
+  "cometbft-types/bincode"
 ]
 ethabi = ["dep:alloy", "unionlabs/ethabi", "ibc-union-spec/ethabi"]
 serde = [
@@ -38,5 +41,5 @@ serde = [
   "beacon-api-types/serde",
   "ethereum-light-client-types/serde",
   "tendermint-light-client-types/serde",
-  "ibc-union-spec/serde",
+  "ibc-union-spec/serde"
 ]

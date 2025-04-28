@@ -8,6 +8,7 @@ use tendermint_light_client::{
         NegativeTimestamp, RevisionNumberMismatch, TrustedValidatorsMismatch,
     },
 };
+use unionlabs::primitives::H256;
 
 use crate::client::BerachainLightClient;
 
@@ -31,15 +32,9 @@ pub enum Error {
     #[error(transparent)]
     IbcHeightTooLargeForTendermintHeight(#[from] IbcHeightTooLargeForTendermintHeight),
 
-    #[error(transparent)]
-    RevisionNumberMismatch(#[from] RevisionNumberMismatch),
-
     // NOTE: This is only emitted when it's not possible to parse the revision number from the chain id; perhaps make this more descriptive?
-    #[error(transparent)]
-    InvalidChainId(#[from] InvalidChainId),
-
-    #[error(transparent)]
-    TrustedValidatorsMismatch(#[from] TrustedValidatorsMismatch),
+    #[error("invalid chain id {0}")]
+    InvalidChainId(String),
 
     #[error(transparent)]
     ExecutionPayloadHeader(#[from] beacon_api_types::deneb::execution_payload_header::ssz::Error),
@@ -70,6 +65,24 @@ pub enum Error {
 
     #[error("error while querying l1 state: {0}")]
     L1Error(#[from] IbcClientError<TendermintLightClient>),
+
+    #[error("trusted validators don't match ({calculated} != {given})")]
+    TrustedValidatorsMismatch { calculated: H256, given: H256 },
+
+    #[error("revision number mismatch with trusted {trusted_revision_number} and the header {header_revision_number}")]
+    RevisionNumberMismatch {
+        trusted_revision_number: u64,
+        header_revision_number: u64,
+    },
+
+    #[error("the signed header height {signed_height} must be more recent than the trusted height {trusted_height}")]
+    SignedHeaderHeightMustBeMoreRecent {
+        signed_height: u64,
+        trusted_height: u64,
+    },
+
+    #[error("height {0} exceeds i64::MAX")]
+    HeightTooLarge(u64),
 }
 
 // required for IbcClient trait
