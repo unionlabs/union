@@ -242,7 +242,7 @@ pub struct MsgInfo {
     #[prost(string, tag = "2")]
     pub peer_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
-    pub receive_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub receive_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for MsgInfo {
     const NAME: &'static str = "MsgInfo";
@@ -256,7 +256,7 @@ impl ::prost::Name for MsgInfo {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimeoutInfo {
     #[prost(message, optional, tag = "1")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     #[prost(int64, tag = "2")]
     pub height: i64,
     #[prost(int32, tag = "3")]
@@ -322,7 +322,7 @@ impl ::prost::Name for WalMessage {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct TimedWalMessage {
     #[prost(message, optional, tag = "1")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(message, optional, tag = "2")]
     pub msg: ::core::option::Option<WalMessage>,
 }

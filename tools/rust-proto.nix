@@ -52,30 +52,8 @@
                 features = [ "derive" ];
                 optional = true;
               };
-              tonic = {
-                workspace = true;
-                features = [
-                  "codegen"
-                  "prost"
-                  "gzip"
-                  "transport"
-                  "tls"
-                  "tls-roots"
-                  "tls-webpki-roots"
-                ];
-                optional = true;
-              };
-              schemars = {
-                workspace = true;
-                optional = true;
-              };
               serde-utils = {
                 workspace = true;
-              };
-              # https://github.com/influxdata/pbjson/pull/118
-              pbjson-types = {
-                git = "https://github.com/recoord/pbjson";
-                rev = "2b7a8e4c2c83a40d04beed46aa26ab97a39a81fe";
               };
             };
             features = {
@@ -87,8 +65,6 @@
                 "prost/std"
                 "serde/std"
               ];
-              client = [ "tonic" ];
-              json-schema = [ "schemars" ];
               # nix attrsets don't preserve order, use this to replace with the insertion point (see command below)
               PROTOC_INSERTION_POINT = 1;
             };
@@ -143,31 +119,11 @@
             "${proto.gogoproto}"
           ];
           # inject https://github.com/cometbft/cometbft/blob/main/proto/cometbft/crypto/v1/keys.proto#L17
-          # note that this may cause issues if we decode proto bytes from another chain with this key type, since we use field identifier 3 for bn254 signatures.
-          # and yes prost is incredibly cursed. we have to annotate the field that uses the generated oneof `Sum` type with the additional enum tag for some reason? no clue why this information has to be duplicated.
+          # yes prost is incredibly cursed. we have to annotate the field that uses the generated oneof `Sum` type with the additional enum tag for some reason? no clue why this information has to be duplicated.
           # ask me how much time i wasted figuring this out
           fixup-script = ''
-            # sed -i 's/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3")\]/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3, 4")\]/' "./src/cometbft.crypto.v1.rs"
-            # sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>),/Bn254(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "4")\]Bls12381(::prost::alloc::vec::Vec<u8>),/' "./src/cometbft.crypto.rs"
-
-            # required until https://github.com/tokio-rs/prost/issues/507 is fixed
-            sed -i 's/pub sum: ::core::option::Option<public_key::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<public_key::Sum>,/' "./src/cometbft.crypto.v1.rs"
-            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/cometbft.crypto.v1.rs"
-
-            # i can't figure out how to add attributes to the variants directly, possibly related to the issue linked above
-            sed -i 's/Ed25519(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeyEd25519")\]Ed25519(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "tendermint\/PubKeySecp256k1")\]Secp256k1(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-            sed -i 's/Bn254(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBn254")\]Bn254(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-            sed -i 's/Bls12381(::prost::alloc::vec::Vec<u8>)/#\[serde(rename = "cometbft\/PubKeyBls12381")\]Bls12381(#[serde(with = "::serde_utils::base64")] ::prost::alloc::vec::Vec<u8>)/' "./src/cometbft.crypto.v1.rs"
-
-
-
-            # required until https://github.com/tokio-rs/prost/issues/507 is fixed
-            sed -i 's/pub sum: ::core::option::Option<evidence::Sum>,/#\[cfg_attr(feature = "serde", serde(flatten))\]pub sum: ::core::option::Option<evidence::Sum>,/' "./src/cometbft.types.v1.rs"
-            sed -i 's/pub enum Sum {/#\[cfg_attr(feature = "serde", serde(tag = "type", content = "value"))\]pub enum Sum {/' "./src/cometbft.types.v1.rs"
-
-            sed -i 's/DuplicateVoteEvidence(/#\[serde(rename = "tendermint\/DuplicateVoteEvidence")\]DuplicateVoteEvidence(/' "./src/cometbft.types.v1.rs"
-            sed -i 's/LightClientAttackEvidence(/#\[serde(rename = "tendermint\/LightClientAttackEvidence")\]LightClientAttackEvidence(/' "./src/cometbft.types.v1.rs"
+            sed -i 's/#\[prost(oneof = "public_key::Sum", tags = "1, 2")\]/#\[prost(oneof = "public_key::Sum", tags = "1, 2, 3, 99")\]/' "./src/tendermint.crypto.rs"
+            sed -i 's/Secp256k1(::prost::alloc::vec::Vec<u8>),/Secp256k1(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "3")\]Bn254(::prost::alloc::vec::Vec<u8>),#\[prost(bytes, tag = "99")\]Bls12381(::prost::alloc::vec::Vec<u8>),/' "./src/tendermint.crypto.rs"
           '';
         };
 
@@ -191,9 +147,6 @@
             src
           ];
           additional-filter = "-path '*google/protobuf/*.proto'";
-          fixup-script = ''
-            echo "pub use pbjson_types::*;" >> "./src/google.protobuf.rs"
-          '';
         };
         ibc-proto = rec {
           src = "${proto.ibc-go}/proto";
@@ -284,132 +237,20 @@
 
       prost-opts =
         let
-          # TODO(benluelo): structured rust attr builder?
-          # something like:
-          # { derive = ["Eq", "PartialOrd", "Ord"] }
-          # { cfg_attr = [{ feature = "std"; } {serde = ["default"]} ]}
-          # ord = ''#[derive(Eq, PartialOrd, Ord)]'';
-          # eq = ''#[derive(Eq)]'';
-
-          # eth_abi = ''#[cfg_attr(feature = "ethers", derive(::ethers::contract::EthAbiType, ::ethers::contract::EthAbiCodec))]'';
-
           serde = ''#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]'';
           serde_default = ''#[cfg_attr(feature = "serde", serde(default))]'';
-          # serde_flatten = ''#[cfg_attr(feature = "serde", serde(flatten))]'';
-          serde_string = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]'';
           serde_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]'';
-          # serde_base64_opt = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt"))]'';
-          serde_base64_opt_default = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]'';
-          serde_inner_base64 = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::inner_base64"))]'';
-          serde_hex_upper_unprefixed = ''#[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_upper_unprefixed"))]'';
-
-          # jsonschema = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), derive(::schemars::JsonSchema))]'';
-          # jsonschema_str = ''#[cfg_attr(all(feature = "json-schema", feature = "std"), schemars(with = "String"))]'';
-          serde_alias = alias: ''#[serde(alias = "${alias}")]'';
         in
         {
           type_attribute = {
-            ".google.protobuf.Any" = [ serde ];
-            ".google.protobuf.Duration" = [ serde ];
-            ".google.protobuf.Timestamp" = [ serde ];
-
-            ".ibc.core.client.v1" = [ serde ];
-            ".ibc.core.client.v1.Height" = [ ];
-
-            ".ibc.core.commitment.v1" = [ serde ];
-            ".ibc.core.commitment.v1.MerklePrefix" = [ ];
-            ".ibc.core.commitment.v1.MerkleRoot" = [ ];
-
-            ".ibc.core.channel.v1" = [ serde ];
-            ".ibc.core.channel.v1.Channel" = [ ];
-            ".ibc.core.channel.v1.Counterparty" = [ ];
-
-            ".ibc.core.connection.v1" = [ serde ];
-            ".ibc.core.connection.v1.ConnectionEnd" = [ ];
-            ".ibc.core.connection.v1.Counterparty" = [ ];
-            ".ibc.core.connection.v1.Version" = [ ];
-
-            ".ibc.core.types.v1" = [ serde ];
-
-            ".ibc.applications.interchain_accounts.controller.v1" = [ serde ];
-            ".ibc.applications.interchain_accounts.v1" = [ serde ];
-
-            ".ibc.applications.transfer.v1" = [ serde ];
-            ".ibc.applications.transfer.v2" = [ serde ];
-
-            ".ibc.lightclients.wasm.v1" = [ serde ];
-
-            ".ibc.lightclients.tendermint.v1.Fraction" = [ serde ];
-
-            ".union.ibc.lightclients.ethereum.v1" = [ serde ];
-
             ".cosmos.ics23.v1" = [ serde ];
             ".cosmos.ics23.v1.InnerOp" = [ ];
             ".cosmos.ics23.v1.InnerSpec" = [ ];
             ".cosmos.ics23.v1.LeafOp" = [ ];
             ".cosmos.ics23.v1.ProofSpec" = [ ];
-
-            ".cosmos.auth.v1beta1" = [ serde ];
-
-            ".cosmos.upgrade.v1beta1" = [ serde ];
-
-            ".cosmos.base.v1beta1" = [ serde ];
-            ".cosmos.base.query.v1beta1" = [ serde ];
-
-            ".cosmos.bank.v1beta1" = [ serde ];
-
-            ".cometbft.types.v1.Block" = [ serde ];
-            ".cometbft.types.v1.BlockID" = [ serde ];
-            ".cometbft.types.v1.Commit" = [ serde ];
-            ".cometbft.types.v1.CommitSig" = [ serde ];
-            ".cometbft.types.v1.Data" = [ serde ];
-            ".cometbft.types.v1.DuplicateVoteEvidence" = [ serde ];
-            ".cometbft.types.v1.Evidence" = [ serde ];
-            ".cometbft.types.v1.EvidenceList" = [ serde ];
-            ".cometbft.types.v1.Header" = [ serde ];
-            ".cometbft.types.v1.LightBlock" = [ serde ];
-            ".cometbft.types.v1.LightClientAttackEvidence" = [ serde ];
-            ".cometbft.types.v1.PartSetHeader" = [ serde ];
-            ".cometbft.types.v1.SignedHeader" = [ serde ];
-            ".cometbft.types.v1.TxProof" = [ serde ];
-            ".cometbft.types.v1.Validator" = [ serde ];
-            ".cometbft.types.v1.ValidatorSet" = [ serde ];
-            ".cometbft.types.v1.Vote" = [ serde ];
-
-            ".cometbft.version.v1.Consensus" = [ serde ];
-
-            ".cometbft.abci.v1.ExecTxResult" = [ serde ];
-            ".cometbft.abci.v1.Event" = [ serde ];
-            ".cometbft.abci.v1.EventAttribute" = [ serde ];
-            ".cometbft.abci.v1.QueryResponse" = [ serde ];
-
-            ".cometbft.crypto.v1.PublicKey" = [ serde ];
-            # ".cometbft.crypto.v1.PublicKey.sum" = [ serde ];
-            ".cometbft.crypto.v1.ProofOps" = [ serde ];
-            ".cometbft.crypto.v1.ProofOp" = [ serde ];
-            ".cometbft.crypto.v1.Proof" = [ serde ];
-
-            ".cometbft.p2p.v1.DefaultNodeInfo" = [ serde ];
-            ".cometbft.p2p.v1.DefaultNodeInfoOther" = [ serde ];
-            ".cometbft.p2p.v1.ProtocolVersion" = [ serde ];
-
-            # ".cometbft.types.v1.Validator" = [ serde ];
           };
 
           field_attribute = {
-            ".ibc.core.client.v1.Height" = [ serde_default ];
-
-            ".ibc.core.commitment.v1.MerkleRoot.hash" = [ serde_base64 ];
-
-            ".ibc.core.commitment.v1.MerklePrefix.key_prefix" = [ serde_base64 ];
-
-            ".ibc.lightclients.wasm.v1.ClientState.data" = [ serde_base64 ];
-            ".ibc.lightclients.wasm.v1.ClientState.checksum" = [ serde_base64 ];
-
-            ".ibc.lightclients.wasm.v1.ConsensusState.data" = [ serde_base64 ];
-
-            ".ibc.lightclients.wasm.v1.Header.data" = [ serde_base64 ];
-
             ".cosmos.ics23.v1.LeafOp.hash" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.prehash_key" = [ serde_default ];
             ".cosmos.ics23.v1.LeafOp.prehash_value" = [ serde_default ];
@@ -443,114 +284,10 @@
             ".cosmos.ics23.v1.ExistenceProof.leaf" = [ serde_default ];
 
             ".cosmos.ics23.v1.NonExistenceProof.value" = [ serde_base64 ];
-
-            ".cometbft.types.v1.Header.last_commit_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.data_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.validators_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.next_validators_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.consensus_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.app_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.last_results_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.evidence_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.proposer_address" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Header.height" = [ serde_string ];
-
-            # this type is so cursed
-            ".cometbft.types.v1.BlockID.hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.BlockID.part_set_header" = [ (serde_alias "parts") ];
-
-            ".cometbft.types.v1.PartSetHeader.hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Commit.height" = [ serde_string ];
-            ".cometbft.types.v1.CommitSig.signature" = [ serde_base64_opt_default ];
-            ".cometbft.types.v1.CommitSig.validator_address" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.CommitSig.timestamp" = [
-              ''
-                #[cfg_attr(
-                    feature = "serde",
-                    serde(default, with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
-                )]''
-            ];
-
-            ".cometbft.version.v1.Consensus.block" = [ serde_string ];
-            ".cometbft.version.v1.Consensus.app" = [ serde_default ];
-
-            ".cometbft.abci.v1.QueryResponse.index" = [ serde_string ];
-            ".cometbft.abci.v1.QueryResponse.height" = [ serde_string ];
-            ".cometbft.abci.v1.QueryResponse.key" = [ serde_base64_opt_default ];
-            ".cometbft.abci.v1.QueryResponse.value" = [ serde_base64_opt_default ];
-            ".cometbft.abci.v1.QueryResponse.proof_ops" = [ (serde_alias "proofOps") ];
-
-            ".cometbft.crypto.v1.ProofOp.key" = [ serde_base64 ];
-            ".cometbft.crypto.v1.ProofOp.data" = [ serde_base64 ];
-
-            ".cometbft.crypto.v1.Proof.total" = [ serde_string ];
-            ".cometbft.crypto.v1.Proof.index" = [ serde_string ];
-            ".cometbft.crypto.v1.Proof.leaf_hash" = [ serde_base64 ];
-            ".cometbft.crypto.v1.Proof.aunts" = [ serde_inner_base64 ];
-
-            ".cometbft.p2p.v1.DefaultNodeInfo.channels" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.p2p.v1.DefaultNodeInfo.default_node_id" = [ (serde_alias "id") ];
-
-            ".cometbft.p2p.v1.ProtocolVersion.p2p" = [ serde_string ];
-            ".cometbft.p2p.v1.ProtocolVersion.block" = [ serde_string ];
-            ".cometbft.p2p.v1.ProtocolVersion.app" = [ serde_string ];
-
-            ".cometbft.types.v1.Validator.address" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Validator.voting_power" = [ serde_string ];
-            ".cometbft.types.v1.Validator.proposer_priority" = [ serde_string ];
-            ".cometbft.types.v1.Validator.pub_key_type" = [ serde_default ];
-            ".cometbft.types.v1.Validator.pub_key_bytes" = [ serde_default ];
-
-            ".cometbft.types.v1.Data.txs" = [ serde_inner_base64 ];
-
-            ".cometbft.types.v1.Vote.height" = [ serde_string ];
-            ".cometbft.types.v1.Vote.validator_address" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.Vote.signature" = [ serde_base64 ];
-            ".cometbft.types.v1.Vote.extension" = [ serde_base64_opt_default ];
-            ".cometbft.types.v1.Vote.extension_signature" = [ serde_base64_opt_default ];
-
-            ".cometbft.types.v1.TxProof.root_hash" = [ serde_hex_upper_unprefixed ];
-            ".cometbft.types.v1.TxProof.data" = [ serde_base64 ];
-
-            ".cometbft.abci.v1.ExecTxResult.data" = [ serde_base64_opt_default ];
-            ".cometbft.abci.v1.ExecTxResult.gas_wanted" = [ serde_string ];
-            ".cometbft.abci.v1.ExecTxResult.gas_used" = [ serde_string ];
-
-            # ".cometbft.types.v1.Vote.timestamp" = [
-            #   ''#[cfg_attr(
-            #       feature = "serde",
-            #       serde(with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none")
-            #   )]''
-            # ];
-
-            ".cometbft.types.v1.DuplicateVoteEvidence.total_voting_power" = [
-              (serde_alias "TotalVotingPower")
-              serde_string
-            ];
-            ".cometbft.types.v1.DuplicateVoteEvidence.validator_power" = [
-              (serde_alias "ValidatorPower")
-              serde_string
-            ];
-            ".cometbft.types.v1.DuplicateVoteEvidence.timestamp" = [ (serde_alias "Timestamp") ];
-
-            ".cometbft.types.v1.LightClientAttackEvidence.common_height" = [ serde_string ];
-            ".cometbft.types.v1.LightClientAttackEvidence.total_voting_power" = [ serde_string ];
-            # ".cometbft.crypto.v1.PublicKey.sum" = [ serde_flatten ];
           };
 
-          enum_attribute = {
-            # ".cometbft.crypto.v1.PublicKey.sum.Ed25519" = [ (serde_alias "tendermint/PubKeyEd25519") ];
-            # ".cometbft.types.v1.Evidence.sum.DuplicateVoteEvidence" = [ (serde_alias "tendermint/DuplicateVoteEvidence") ];
-            # ".cometbft.types.v1.Evidence.sum.LightClientAttackEvidence" = [ (serde_alias "tendermint/LightClientAttackEvidence") ];
-          };
+          enum_attribute = { };
         };
-
-      tonic-opts = {
-        client_mod_attribute = {
-          "." = [ ''#[cfg(feature = "client")]'' ];
-        };
-        # server_mod_attribute = { "." = [ ''#[cfg(feature = "server")]'' ]; };
-      };
 
       proto-inputs =
         name:
@@ -621,13 +358,12 @@
             echo "[FOUND] $file"
           done
 
+          mkdir ./src
+
           protoc "''${protos[@]}" \
             --prost_opt=compile_well_known_types \
-            --prost_opt=extern_path=.google.protobuf=::pbjson_types \
             --prost_out=./src \
             --prost_opt=enable_type_names=true,compile_well_known_types=true,${fold-opts prost-opts} \
-            --tonic_out=./src \
-            --tonic_opt=compile_well_known_types=true,no_server=true,${fold-opts tonic-opts} \
             --prost-crate_out=. \
             --prost-crate_opt=package_separator="+",gen_crate=${cargo_toml { name = "protos"; }} \
             ${includes}

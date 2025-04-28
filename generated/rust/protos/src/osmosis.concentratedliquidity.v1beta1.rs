@@ -15,7 +15,7 @@ pub struct Position {
     #[prost(int64, tag = "5")]
     pub upper_tick: i64,
     #[prost(message, optional, tag = "6")]
-    pub join_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub join_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(string, tag = "7")]
     pub liquidity: ::prost::alloc::string::String,
 }
@@ -159,7 +159,7 @@ pub struct IncentiveRecord {
     /// incentive. It should be always be one of the supported uptimes in
     /// types.SupportedUptimes
     #[prost(message, optional, tag = "5")]
-    pub min_uptime: ::core::option::Option<::pbjson_types::Duration>,
+    pub min_uptime: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for IncentiveRecord {
     const NAME: &'static str = "IncentiveRecord";
@@ -181,7 +181,7 @@ pub struct IncentiveRecordBody {
     pub emission_rate: ::prost::alloc::string::String,
     /// start_time is the time when the incentive starts distributing
     #[prost(message, optional, tag = "3")]
-    pub start_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub start_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for IncentiveRecordBody {
     const NAME: &'static str = "IncentiveRecordBody";
@@ -219,7 +219,7 @@ impl ::prost::Name for FullTick {
 pub struct PoolData {
     /// pool struct
     #[prost(message, optional, tag = "1")]
-    pub pool: ::core::option::Option<::pbjson_types::Any>,
+    pub pool: ::core::option::Option<super::super::super::google::protobuf::Any>,
     /// pool's ticks
     #[prost(message, repeated, tag = "2")]
     pub ticks: ::prost::alloc::vec::Vec<FullTick>,
@@ -422,7 +422,8 @@ pub struct Pool {
     /// last_liquidity_update is the last time either the pool liquidity or the
     /// active tick changed
     #[prost(message, optional, tag = "13")]
-    pub last_liquidity_update: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub last_liquidity_update:
+        ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for Pool {
     const NAME: &'static str = "Pool";
@@ -539,7 +540,7 @@ impl ::prost::Name for PoolsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PoolsResponse {
     #[prost(message, repeated, tag = "1")]
-    pub pools: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub pools: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
     pub pagination:
@@ -1209,5 +1210,4 @@ impl ::prost::Name for MsgTransferPositionsResponse {
         ::prost::alloc::format!("osmosis.concentratedliquidity.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.concentratedliquidity.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

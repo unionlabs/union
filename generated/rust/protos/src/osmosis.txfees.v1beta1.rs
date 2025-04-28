@@ -245,5 +245,4 @@ impl ::prost::Name for MsgSetFeeTokensResponse {
         ::prost::alloc::format!("osmosis.txfees.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.txfees.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

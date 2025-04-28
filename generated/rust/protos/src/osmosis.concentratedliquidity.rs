@@ -30,7 +30,7 @@ pub struct Params {
     #[prost(string, repeated, tag = "4")]
     pub authorized_quote_denoms: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     #[prost(message, repeated, tag = "5")]
-    pub authorized_uptimes: ::prost::alloc::vec::Vec<::pbjson_types::Duration>,
+    pub authorized_uptimes: ::prost::alloc::vec::Vec<super::super::google::protobuf::Duration>,
     /// is_permissionless_pool_creation_enabled is a boolean that determines if
     /// concentrated liquidity pools can be created via message. At launch,
     /// we consider allowing only governance to create pools, and then later

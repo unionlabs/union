@@ -193,7 +193,7 @@ pub struct CheckpointStateUpdate {
     /// block_time is the timestamp in the Babylon block that triggers the state
     /// update
     #[prost(message, optional, tag = "3")]
-    pub block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for CheckpointStateUpdate {
     const NAME: &'static str = "CheckpointStateUpdate";
@@ -725,7 +725,7 @@ pub struct CheckpointStateUpdateResponse {
     /// block_time is the timestamp in the Babylon block that triggers the state
     /// update
     #[prost(message, optional, tag = "4")]
-    pub block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for CheckpointStateUpdateResponse {
     const NAME: &'static str = "CheckpointStateUpdateResponse";
@@ -794,5 +794,4 @@ impl ::prost::Name for MsgWrappedCreateValidatorResponse {
         ::prost::alloc::format!("babylon.checkpointing.v1.{}", Self::NAME)
     }
 }
-include!("babylon.checkpointing.v1.tonic.rs");
 // @@protoc_insertion_point(module)

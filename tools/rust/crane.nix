@@ -738,7 +738,7 @@
         check-all-workspace-members-individually = pkgs.writeShellApplication {
           name = "check-all-workspace-members-individually";
           text = ''
-            cargo metadata --no-deps | jq '.workspace_members[]' -r | xargs cargo check -p
+            cargo metadata --no-deps | jq '.workspace_members[]' -r | xargs -I{} cargo check -p {}
           '';
         };
       };

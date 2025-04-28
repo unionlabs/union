@@ -66,6 +66,8 @@ pub mod proto {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn json() {
         let json = r#"
@@ -115,7 +117,7 @@ mod tests {
 }
 "#;
 
-        let evidence = serde_json::from_str::<protos::cometbft::types::v1::Evidence>(json).unwrap();
+        let evidence = serde_json::from_str::<Evidence>(json).unwrap();
 
         dbg!(evidence);
     }

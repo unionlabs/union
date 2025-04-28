@@ -97,55 +97,55 @@ impl Header {
             leaf_hash(header.last_block_id?.encode_to_vec()),
             leaf_hash(
                 BytesValue {
-                    value: header.last_commit_hash.into(),
+                    value: header.last_commit_hash,
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.data_hash.into(),
+                    value: header.data_hash,
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.validators_hash.into(),
+                    value: header.validators_hash,
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.next_validators_hash.into(),
+                    value: header.next_validators_hash,
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.consensus_hash.into(),
+                    value: header.consensus_hash,
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.app_hash.into(),
+                    value: header.app_hash,
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.last_results_hash.into(),
+                    value: header.last_results_hash,
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.evidence_hash.into(),
+                    value: header.evidence_hash,
                 }
                 .encode_to_vec(),
             ),
             leaf_hash(
                 BytesValue {
-                    value: header.proposer_address.into(),
+                    value: header.proposer_address,
                 }
                 .encode_to_vec(),
             ),
@@ -360,7 +360,7 @@ mod tests {
         // https://stride-testnet-rpc.polkachu.com/block?hash=B1228B7D3D788854D73B082BFE307A9D12010550F369E9F9CFAD9DF9A1A13507
         let expected_merkle_root =
             hex_literal::hex!("B1228B7D3D788854D73B082BFE307A9D12010550F369E9F9CFAD9DF9A1A13507");
-        let header: Header = serde_json::from_str::<protos::cometbft::types::v1::Header>(
+        let header = serde_json::from_str::<Header>(
             r#"
 {
   "version": {
@@ -388,8 +388,6 @@ mod tests {
 }
 "#,
         )
-        .unwrap()
-        .try_into()
         .unwrap();
 
         assert_eq!(

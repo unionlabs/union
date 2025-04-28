@@ -3,6 +3,7 @@ use unionlabs::{bounded::BoundedI64, google::protobuf::timestamp::Timestamp};
 
 use crate::types::{light_block::LightBlock, validator::Validator};
 
+// TODO: Figure out serde for this type, I'm pretty sure this isn't quite correct
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LightClientAttackEvidence {
     pub conflicting_block: LightBlock,

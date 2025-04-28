@@ -55,5 +55,4 @@ impl ::prost::Name for ProcessBlockReply {
         ::prost::alloc::format!("osmosis.ingest.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.ingest.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

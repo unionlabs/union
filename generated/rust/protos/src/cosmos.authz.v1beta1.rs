@@ -21,12 +21,12 @@ impl ::prost::Name for GenericAuthorization {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Grant {
     #[prost(message, optional, tag = "1")]
-    pub authorization: ::core::option::Option<::pbjson_types::Any>,
+    pub authorization: ::core::option::Option<super::super::super::google::protobuf::Any>,
     /// time when the grant will expire and will be pruned. If null, then the grant
     /// doesn't have a time expiration (other conditions  in `authorization`
     /// may apply to invalidate the grant)
     #[prost(message, optional, tag = "2")]
-    pub expiration: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub expiration: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for Grant {
     const NAME: &'static str = "Grant";
@@ -45,9 +45,9 @@ pub struct GrantAuthorization {
     #[prost(string, tag = "2")]
     pub grantee: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
-    pub authorization: ::core::option::Option<::pbjson_types::Any>,
+    pub authorization: ::core::option::Option<super::super::super::google::protobuf::Any>,
     #[prost(message, optional, tag = "4")]
-    pub expiration: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub expiration: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GrantAuthorization {
     const NAME: &'static str = "GrantAuthorization";
@@ -279,7 +279,7 @@ pub struct MsgExec {
     /// The x/authz will try to find a grant matching (msg.signers\[0\], grantee, MsgTypeURL(msg))
     /// triple and validate it.
     #[prost(message, repeated, tag = "2")]
-    pub msgs: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub msgs: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for MsgExec {
     const NAME: &'static str = "MsgExec";
@@ -332,5 +332,4 @@ impl ::prost::Name for MsgRevokeResponse {
         ::prost::alloc::format!("cosmos.authz.v1beta1.{}", Self::NAME)
     }
 }
-include!("cosmos.authz.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

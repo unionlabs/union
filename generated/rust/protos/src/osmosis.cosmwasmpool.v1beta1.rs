@@ -28,7 +28,7 @@ pub struct GenesisState {
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
     #[prost(message, repeated, tag = "2")]
-    pub pools: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub pools: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
 }
 impl ::prost::Name for GenesisState {
     const NAME: &'static str = "GenesisState";
@@ -666,7 +666,7 @@ impl ::prost::Name for PoolsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct PoolsResponse {
     #[prost(message, repeated, tag = "1")]
-    pub pools: ::prost::alloc::vec::Vec<::pbjson_types::Any>,
+    pub pools: ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Any>,
     /// pagination defines the pagination in the response.
     #[prost(message, optional, tag = "2")]
     pub pagination:
@@ -747,5 +747,4 @@ impl ::prost::Name for PoolRawFilteredStateResponse {
         ::prost::alloc::format!("osmosis.cosmwasmpool.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.cosmwasmpool.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

@@ -20,7 +20,8 @@ impl ::prost::Name for Params {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct LockableDurationsInfo {
     #[prost(message, repeated, tag = "1")]
-    pub lockable_durations: ::prost::alloc::vec::Vec<::pbjson_types::Duration>,
+    pub lockable_durations:
+        ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for LockableDurationsInfo {
     const NAME: &'static str = "LockableDurationsInfo";
@@ -67,7 +68,7 @@ pub struct PoolToGauge {
     #[prost(uint64, tag = "2")]
     pub gauge_id: u64,
     #[prost(message, optional, tag = "3")]
-    pub duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub duration: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for PoolToGauge {
     const NAME: &'static str = "PoolToGauge";
@@ -110,7 +111,8 @@ pub struct GenesisState {
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
     #[prost(message, repeated, tag = "2")]
-    pub lockable_durations: ::prost::alloc::vec::Vec<::pbjson_types::Duration>,
+    pub lockable_durations:
+        ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Duration>,
     #[prost(message, optional, tag = "3")]
     pub distr_info: ::core::option::Option<DistrInfo>,
     /// any_pool_to_internal_gauges defines the gauges for any pool to internal
@@ -207,7 +209,8 @@ pub mod query_gauge_ids_response {
         #[prost(uint64, tag = "1")]
         pub gauge_id: u64,
         #[prost(message, optional, tag = "2")]
-        pub duration: ::core::option::Option<::pbjson_types::Duration>,
+        pub duration:
+            ::core::option::Option<super::super::super::super::google::protobuf::Duration>,
         #[prost(string, tag = "3")]
         pub gauge_incentive_percentage: ::prost::alloc::string::String,
     }
@@ -289,7 +292,8 @@ impl ::prost::Name for QueryLockableDurationsRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryLockableDurationsResponse {
     #[prost(message, repeated, tag = "1")]
-    pub lockable_durations: ::prost::alloc::vec::Vec<::pbjson_types::Duration>,
+    pub lockable_durations:
+        ::prost::alloc::vec::Vec<super::super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for QueryLockableDurationsResponse {
     const NAME: &'static str = "QueryLockableDurationsResponse";
@@ -314,7 +318,7 @@ pub struct IncentivizedPool {
     #[prost(uint64, tag = "1")]
     pub pool_id: u64,
     #[prost(message, optional, tag = "2")]
-    pub lockable_duration: ::core::option::Option<::pbjson_types::Duration>,
+    pub lockable_duration: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     #[prost(uint64, tag = "3")]
     pub gauge_id: u64,
 }
@@ -404,5 +408,4 @@ impl ::prost::Name for BalancerToConcentratedPoolLink {
         ::prost::alloc::format!("osmosis.poolincentives.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.poolincentives.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

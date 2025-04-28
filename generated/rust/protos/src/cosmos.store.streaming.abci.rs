@@ -61,5 +61,4 @@ impl ::prost::Name for ListenCommitResponse {
         ::prost::alloc::format!("cosmos.store.streaming.abci.{}", Self::NAME)
     }
 }
-include!("cosmos.store.streaming.abci.tonic.rs");
 // @@protoc_insertion_point(module)

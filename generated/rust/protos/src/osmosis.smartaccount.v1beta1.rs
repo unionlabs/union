@@ -286,5 +286,4 @@ impl ::prost::Name for TxExtension {
         ::prost::alloc::format!("osmosis.smartaccount.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.smartaccount.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

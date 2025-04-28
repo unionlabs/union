@@ -54,5 +54,4 @@ impl ::prost::Name for ParamsResponse {
         ::prost::alloc::format!("osmosis.ibcratelimit.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.ibcratelimit.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

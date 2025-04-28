@@ -1,6 +1,5 @@
 // @generated
 /// GenesisState defines 08-wasm's keeper genesis state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct GenesisState {
@@ -16,7 +15,6 @@ impl ::prost::Name for GenesisState {
     }
 }
 /// Contract stores contract code
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Contract {
@@ -31,8 +29,73 @@ impl ::prost::Name for Contract {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
     }
 }
+/// QueryChecksumsRequest is the request type for the Query/Checksums RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChecksumsRequest {
+    /// pagination defines an optional pagination for the request.
+    #[prost(message, optional, tag = "1")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
+    >,
+}
+impl ::prost::Name for QueryChecksumsRequest {
+    const NAME: &'static str = "QueryChecksumsRequest";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryChecksumsResponse is the response type for the Query/Checksums RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryChecksumsResponse {
+    /// checksums is a list of the hex encoded checksums of all wasm codes stored.
+    #[prost(string, repeated, tag = "1")]
+    pub checksums: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    /// pagination defines the pagination in the response.
+    #[prost(message, optional, tag = "2")]
+    pub pagination: ::core::option::Option<
+        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
+    >,
+}
+impl ::prost::Name for QueryChecksumsResponse {
+    const NAME: &'static str = "QueryChecksumsResponse";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodeRequest is the request type for the Query/Code RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodeRequest {
+    /// checksum is a hex encoded string of the code stored.
+    #[prost(string, tag = "1")]
+    pub checksum: ::prost::alloc::string::String,
+}
+impl ::prost::Name for QueryCodeRequest {
+    const NAME: &'static str = "QueryCodeRequest";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
+/// QueryCodeResponse is the response type for the Query/Code RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct QueryCodeResponse {
+    #[prost(bytes = "vec", tag = "1")]
+    pub data: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for QueryCodeResponse {
+    const NAME: &'static str = "QueryCodeResponse";
+    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
+    }
+}
 /// MsgStoreCode defines the request type for the StoreCode rpc.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgStoreCode {
@@ -51,7 +114,6 @@ impl ::prost::Name for MsgStoreCode {
     }
 }
 /// MsgStoreCodeResponse defines the response type for the StoreCode rpc
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgStoreCodeResponse {
@@ -67,7 +129,6 @@ impl ::prost::Name for MsgStoreCodeResponse {
     }
 }
 /// MsgRemoveChecksum defines the request type for the MsgRemoveChecksum rpc.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRemoveChecksum {
@@ -86,7 +147,6 @@ impl ::prost::Name for MsgRemoveChecksum {
     }
 }
 /// MsgStoreChecksumResponse defines the response type for the StoreCode rpc
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgRemoveChecksumResponse {}
@@ -98,7 +158,6 @@ impl ::prost::Name for MsgRemoveChecksumResponse {
     }
 }
 /// MsgMigrateContract defines the request type for the MigrateContract rpc.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgMigrateContract {
@@ -123,7 +182,6 @@ impl ::prost::Name for MsgMigrateContract {
     }
 }
 /// MsgMigrateContractResponse defines the response type for the MigrateContract rpc
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MsgMigrateContractResponse {}
@@ -134,88 +192,15 @@ impl ::prost::Name for MsgMigrateContractResponse {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
     }
 }
-/// QueryChecksumsRequest is the request type for the Query/Checksums RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChecksumsRequest {
-    /// pagination defines an optional pagination for the request.
-    #[prost(message, optional, tag = "1")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageRequest,
-    >,
-}
-impl ::prost::Name for QueryChecksumsRequest {
-    const NAME: &'static str = "QueryChecksumsRequest";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryChecksumsResponse is the response type for the Query/Checksums RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryChecksumsResponse {
-    /// checksums is a list of the hex encoded checksums of all wasm codes stored.
-    #[prost(string, repeated, tag = "1")]
-    pub checksums: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    /// pagination defines the pagination in the response.
-    #[prost(message, optional, tag = "2")]
-    pub pagination: ::core::option::Option<
-        super::super::super::super::cosmos::base::query::v1beta1::PageResponse,
-    >,
-}
-impl ::prost::Name for QueryChecksumsResponse {
-    const NAME: &'static str = "QueryChecksumsResponse";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodeRequest is the request type for the Query/Code RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodeRequest {
-    /// checksum is a hex encoded string of the code stored.
-    #[prost(string, tag = "1")]
-    pub checksum: ::prost::alloc::string::String,
-}
-impl ::prost::Name for QueryCodeRequest {
-    const NAME: &'static str = "QueryCodeRequest";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
-/// QueryCodeResponse is the response type for the Query/Code RPC method.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCodeResponse {
-    #[prost(bytes = "vec", tag = "1")]
-    pub data: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QueryCodeResponse {
-    const NAME: &'static str = "QueryCodeResponse";
-    const PACKAGE: &'static str = "ibc.lightclients.wasm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
-    }
-}
 /// Wasm light client's Client state
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientState {
     /// bytes encoding the client state of the underlying light client
     /// implemented as a Wasm contract.
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub checksum: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "3")]
     pub latest_height: ::core::option::Option<super::super::super::core::client::v1::Height>,
@@ -228,14 +213,12 @@ impl ::prost::Name for ClientState {
     }
 }
 /// Wasm light client's ConsensusState
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ConsensusState {
     /// bytes encoding the consensus state of the underlying light client
     /// implemented as a Wasm contract.
     #[prost(bytes = "vec", tag = "1")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for ConsensusState {
@@ -246,7 +229,6 @@ impl ::prost::Name for ConsensusState {
     }
 }
 /// Wasm light client message (either header(s) or misbehaviour)
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ClientMessage {
@@ -264,7 +246,6 @@ impl ::prost::Name for ClientMessage {
 ///
 /// Deprecated: This message is deprecated in favor of storing the checksums
 /// using a Collections.KeySet.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Checksums {
@@ -278,5 +259,4 @@ impl ::prost::Name for Checksums {
         ::prost::alloc::format!("ibc.lightclients.wasm.v1.{}", Self::NAME)
     }
 }
-include!("ibc.lightclients.wasm.v1.tonic.rs");
 // @@protoc_insertion_point(module)

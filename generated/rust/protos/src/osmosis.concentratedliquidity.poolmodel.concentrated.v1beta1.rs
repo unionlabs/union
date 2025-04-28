@@ -41,5 +41,4 @@ impl ::prost::Name for MsgCreateConcentratedPoolResponse {
         )
     }
 }
-include!("osmosis.concentratedliquidity.poolmodel.concentrated.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

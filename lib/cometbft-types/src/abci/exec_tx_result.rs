@@ -72,9 +72,11 @@ pub mod proto {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
     fn json() {
-        let json = serde_json::from_str::<protos::cometbft::abci::v1::ExecTxResult>(r#"{
+        let json = serde_json::from_str::<ExecTxResult>(r#"{
             "code": 5,
             "data": null,
             "log": "failed to execute message; message index: 0: spendable balance 2173muno is smaller than 2400muno: insufficient funds",

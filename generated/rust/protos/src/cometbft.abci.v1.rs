@@ -107,7 +107,7 @@ impl ::prost::Name for InfoRequest {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct InitChainRequest {
     #[prost(message, optional, tag = "1")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(string, tag = "2")]
     pub chain_id: ::prost::alloc::string::String,
     #[prost(message, optional, tag = "3")]
@@ -257,7 +257,7 @@ pub struct PrepareProposalRequest {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the validator proposing the block.
@@ -288,7 +288,7 @@ pub struct ProcessProposalRequest {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the original proposer of the block.
@@ -314,7 +314,7 @@ pub struct ExtendVoteRequest {
     pub height: i64,
     /// info of the block that this vote may be referring to
     #[prost(message, optional, tag = "3")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", repeated, tag = "4")]
     pub txs: ::prost::alloc::vec::Vec<::prost::alloc::vec::Vec<u8>>,
     #[prost(message, optional, tag = "5")]
@@ -373,7 +373,7 @@ pub struct FinalizeBlockRequest {
     #[prost(int64, tag = "5")]
     pub height: i64,
     #[prost(message, optional, tag = "6")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     #[prost(bytes = "vec", tag = "7")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
     /// address of the public key of the original proposer of the block.
@@ -531,7 +531,6 @@ impl ::prost::Name for InitChainResponse {
     }
 }
 /// QueryResponse contains the ABCI application data along with a proof.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct QueryResponse {
@@ -546,19 +545,14 @@ pub struct QueryResponse {
     #[prost(string, tag = "4")]
     pub info: ::prost::alloc::string::String,
     #[prost(int64, tag = "5")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub index: i64,
     #[prost(bytes = "vec", tag = "6")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub key: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "7")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub value: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, optional, tag = "8")]
-    #[serde(alias = "proofOps")]
     pub proof_ops: ::core::option::Option<super::super::crypto::v1::ProofOps>,
     #[prost(int64, tag = "9")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub height: i64,
     #[prost(string, tag = "10")]
     pub codespace: ::prost::alloc::string::String,
@@ -813,7 +807,6 @@ impl ::prost::Name for ExtendedCommitInfo {
 /// Up to 0.37, this could also be used in ResponseBeginBlock, ResponseEndBlock,
 /// and ResponseDeliverTx.
 /// Later, transactions may be queried using these events.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Event {
@@ -830,7 +823,6 @@ impl ::prost::Name for Event {
     }
 }
 /// EventAttribute is a single key-value pair, associated with an event.
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct EventAttribute {
@@ -852,14 +844,12 @@ impl ::prost::Name for EventAttribute {
 /// ExecTxResult contains results of executing one individual transaction.
 ///
 /// * Its structure is equivalent to #ResponseDeliverTx which will be deprecated/deleted
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ExecTxResult {
     #[prost(uint32, tag = "1")]
     pub code: u32,
     #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64_opt_default"))]
     pub data: ::prost::alloc::vec::Vec<u8>,
     /// nondeterministic
     #[prost(string, tag = "3")]
@@ -868,10 +858,8 @@ pub struct ExecTxResult {
     #[prost(string, tag = "4")]
     pub info: ::prost::alloc::string::String,
     #[prost(int64, tag = "5")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub gas_wanted: i64,
     #[prost(int64, tag = "6")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::string"))]
     pub gas_used: i64,
     /// nondeterministic
     #[prost(message, repeated, tag = "7")]
@@ -1000,7 +988,7 @@ pub struct Misbehavior {
     pub height: i64,
     /// The corresponding time where the offense occurred
     #[prost(message, optional, tag = "4")]
-    pub time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// Total voting power of the validator set in case the ABCI application does
     /// not store historical validators.
     /// <https://github.com/tendermint/tendermint/issues/4581>
@@ -1272,5 +1260,4 @@ impl MisbehaviorType {
         }
     }
 }
-include!("cometbft.abci.v1.tonic.rs");
 // @@protoc_insertion_point(module)

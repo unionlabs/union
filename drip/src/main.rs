@@ -515,7 +515,7 @@ impl ChainClient {
 
         let msg = protos::google::protobuf::Any {
             type_url: protos::cosmos::bank::v1beta1::MsgMultiSend::type_url(),
-            value: msg.encode_to_vec().into(),
+            value: msg.encode_to_vec(),
         };
 
         let (tx_hash, res) = self

@@ -100,7 +100,7 @@ pub struct GenesisDowntimeEntry {
     #[prost(enumeration = "Downtime", tag = "1")]
     pub duration: i32,
     #[prost(message, optional, tag = "2")]
-    pub last_downtime: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub last_downtime: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GenesisDowntimeEntry {
     const NAME: &'static str = "GenesisDowntimeEntry";
@@ -116,7 +116,7 @@ pub struct GenesisState {
     #[prost(message, repeated, tag = "1")]
     pub downtimes: ::prost::alloc::vec::Vec<GenesisDowntimeEntry>,
     #[prost(message, optional, tag = "2")]
-    pub last_block_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub last_block_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GenesisState {
     const NAME: &'static str = "GenesisState";
@@ -133,7 +133,7 @@ pub struct RecoveredSinceDowntimeOfLengthRequest {
     #[prost(enumeration = "Downtime", tag = "1")]
     pub downtime: i32,
     #[prost(message, optional, tag = "2")]
-    pub recovery: ::core::option::Option<::pbjson_types::Duration>,
+    pub recovery: ::core::option::Option<super::super::super::google::protobuf::Duration>,
 }
 impl ::prost::Name for RecoveredSinceDowntimeOfLengthRequest {
     const NAME: &'static str = "RecoveredSinceDowntimeOfLengthRequest";
@@ -155,5 +155,4 @@ impl ::prost::Name for RecoveredSinceDowntimeOfLengthResponse {
         ::prost::alloc::format!("osmosis.downtimedetector.v1beta1.{}", Self::NAME)
     }
 }
-include!("osmosis.downtimedetector.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

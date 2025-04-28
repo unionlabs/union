@@ -14,7 +14,7 @@ pub struct CrossChainValidator {
     pub power: i64,
     /// pubkey is the consensus public key of the validator, as a Protobuf Any.
     #[prost(message, optional, tag = "3")]
-    pub pubkey: ::core::option::Option<::pbjson_types::Any>,
+    pub pubkey: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
     /// !!! DEPRECATED !!! opted_out is deprecated because after the introduction of Partial Set Security (PSS)
     /// we removed the soft opt-out feature.
     #[deprecated]
@@ -38,7 +38,7 @@ pub struct SlashRecord {
     #[prost(bool, tag = "1")]
     pub waiting_on_reply: bool,
     #[prost(message, optional, tag = "2")]
-    pub send_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub send_time: ::core::option::Option<super::super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for SlashRecord {
     const NAME: &'static str = "SlashRecord";
@@ -341,5 +341,4 @@ impl ::prost::Name for MsgUpdateParamsResponse {
         ::prost::alloc::format!("interchain_security.ccv.consumer.v1.{}", Self::NAME)
     }
 }
-include!("interchain_security.ccv.consumer.v1.tonic.rs");
 // @@protoc_insertion_point(module)

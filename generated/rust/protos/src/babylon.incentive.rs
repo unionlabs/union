@@ -661,5 +661,4 @@ impl ::prost::Name for MsgSetWithdrawAddressResponse {
         ::prost::alloc::format!("babylon.incentive.{}", Self::NAME)
     }
 }
-include!("babylon.incentive.tonic.rs");
 // @@protoc_insertion_point(module)

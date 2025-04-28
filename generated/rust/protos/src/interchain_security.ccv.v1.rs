@@ -28,10 +28,11 @@ pub struct ConsumerParams {
     pub provider_fee_pool_addr_str: ::prost::alloc::string::String,
     /// Sent CCV related IBC packets will timeout after this duration
     #[prost(message, optional, tag = "5")]
-    pub ccv_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub ccv_timeout_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// Sent transfer related IBC packets will timeout after this duration
     #[prost(message, optional, tag = "6")]
-    pub transfer_timeout_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub transfer_timeout_period:
+        ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// The fraction of tokens allocated to the consumer redistribution address
     /// during distribution events. The fraction is a string representing a
     /// decimal number. For example "0.75" would represent 75%.
@@ -45,7 +46,7 @@ pub struct ConsumerParams {
     /// Unbonding period for the consumer,
     /// which should be smaller than that of the provider in general.
     #[prost(message, optional, tag = "9")]
-    pub unbonding_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub unbonding_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// !!! DEPRECATED !!! soft_opt_out_threshold is deprecated. see docs/docs/adrs/adr-015-partial-set-security.md
     #[deprecated]
     #[prost(string, tag = "10")]
@@ -60,7 +61,7 @@ pub struct ConsumerParams {
     pub provider_reward_denoms: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
     /// The period after which a consumer can retry sending a throttled packet.
     #[prost(message, optional, tag = "13")]
-    pub retry_delay_period: ::core::option::Option<::pbjson_types::Duration>,
+    pub retry_delay_period: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// The consumer ID of this consumer chain. Used by the consumer module to send
     /// ICS rewards.
     #[prost(string, tag = "14")]

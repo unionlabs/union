@@ -80,7 +80,7 @@ impl From<protos::google::protobuf::Any> for RawAny {
     fn from(value: protos::google::protobuf::Any) -> Self {
         Self {
             type_url: value.type_url,
-            value: value.value.to_vec(),
+            value: value.value,
         }
     }
 }
@@ -89,7 +89,7 @@ impl From<RawAny> for protos::google::protobuf::Any {
     fn from(value: RawAny) -> Self {
         Self {
             type_url: value.type_url,
-            value: value.value.into(),
+            value: value.value,
         }
     }
 }
@@ -132,7 +132,7 @@ impl<T: Encode<Proto> + TypeUrl> From<Any<T>> for protos::google::protobuf::Any 
     fn from(val: Any<T>) -> Self {
         protos::google::protobuf::Any {
             type_url: T::type_url().to_string(),
-            value: val.0.encode().into(),
+            value: val.0.encode(),
         }
     }
 }
@@ -253,10 +253,9 @@ where
 // for use with raw prost generated types
 #[must_use]
 pub fn mk_any<T: prost::Name + prost::Message>(t: &T) -> protos::google::protobuf::Any {
-    let bz = t.encode_to_vec();
     protos::google::protobuf::Any {
         type_url: T::type_url(),
-        value: bz.into(),
+        value: t.encode_to_vec(),
     }
 }
 

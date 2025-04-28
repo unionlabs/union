@@ -1,104 +1,4 @@
 // @generated
-/// StakeAuthorization defines authorization for delegate/undelegate/redelegate.
-///
-/// Since: cosmos-sdk 0.43
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct StakeAuthorization {
-    /// max_tokens specifies the maximum amount of tokens can be delegate to a validator. If it is
-    /// empty, there is no spend limit and any amount of coins can be delegated.
-    #[prost(message, optional, tag = "1")]
-    pub max_tokens: ::core::option::Option<super::super::base::v1beta1::Coin>,
-    /// authorization_type defines one of AuthorizationType.
-    #[prost(enumeration = "AuthorizationType", tag = "4")]
-    pub authorization_type: i32,
-    /// validators is the oneof that represents either allow_list or deny_list
-    #[prost(oneof = "stake_authorization::Validators", tags = "2, 3")]
-    pub validators: ::core::option::Option<stake_authorization::Validators>,
-}
-/// Nested message and enum types in `StakeAuthorization`.
-pub mod stake_authorization {
-    /// Validators defines list of validator addresses.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct ValidatorsList {
-        #[prost(string, repeated, tag = "1")]
-        pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
-    }
-    impl ::prost::Name for ValidatorsList {
-        const NAME: &'static str = "Validators";
-        const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-        fn full_name() -> ::prost::alloc::string::String {
-            ::prost::alloc::format!("cosmos.staking.v1beta1.StakeAuthorization.{}", Self::NAME)
-        }
-    }
-    /// validators is the oneof that represents either allow_list or deny_list
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Validators {
-        /// allow_list specifies list of validator addresses to whom grantee can delegate tokens on behalf of granter's
-        /// account.
-        #[prost(message, tag = "2")]
-        AllowList(ValidatorsList),
-        /// deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
-        #[prost(message, tag = "3")]
-        DenyList(ValidatorsList),
-    }
-}
-impl ::prost::Name for StakeAuthorization {
-    const NAME: &'static str = "StakeAuthorization";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// AuthorizationType defines the type of staking module authorization type
-///
-/// Since: cosmos-sdk 0.43
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum AuthorizationType {
-    /// AUTHORIZATION_TYPE_UNSPECIFIED specifies an unknown authorization type
-    Unspecified = 0,
-    /// AUTHORIZATION_TYPE_DELEGATE defines an authorization type for Msg/Delegate
-    Delegate = 1,
-    /// AUTHORIZATION_TYPE_UNDELEGATE defines an authorization type for Msg/Undelegate
-    Undelegate = 2,
-    /// AUTHORIZATION_TYPE_REDELEGATE defines an authorization type for Msg/BeginRedelegate
-    Redelegate = 3,
-    /// AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION defines an authorization type for Msg/MsgCancelUnbondingDelegation
-    CancelUnbondingDelegation = 4,
-}
-impl AuthorizationType {
-    /// String value of the enum field names used in the ProtoBuf definition.
-    ///
-    /// The values are not transformed in any way and thus are considered stable
-    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
-    pub fn as_str_name(&self) -> &'static str {
-        match self {
-            AuthorizationType::Unspecified => "AUTHORIZATION_TYPE_UNSPECIFIED",
-            AuthorizationType::Delegate => "AUTHORIZATION_TYPE_DELEGATE",
-            AuthorizationType::Undelegate => "AUTHORIZATION_TYPE_UNDELEGATE",
-            AuthorizationType::Redelegate => "AUTHORIZATION_TYPE_REDELEGATE",
-            AuthorizationType::CancelUnbondingDelegation => {
-                "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION"
-            }
-        }
-    }
-    /// Creates an enum from field names used in the ProtoBuf definition.
-    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
-        match value {
-            "AUTHORIZATION_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
-            "AUTHORIZATION_TYPE_DELEGATE" => Some(Self::Delegate),
-            "AUTHORIZATION_TYPE_UNDELEGATE" => Some(Self::Undelegate),
-            "AUTHORIZATION_TYPE_REDELEGATE" => Some(Self::Redelegate),
-            "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION" => {
-                Some(Self::CancelUnbondingDelegation)
-            }
-            _ => None,
-        }
-    }
-}
 /// HistoricalInfo contains header and validator information for a given block.
 /// It is stored as part of staking module's state, which persists the `n` most
 /// recent HistoricalInfo
@@ -149,7 +49,7 @@ pub struct Commission {
     pub commission_rates: ::core::option::Option<CommissionRates>,
     /// update_time is the last time the commission rate was changed.
     #[prost(message, optional, tag = "2")]
-    pub update_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub update_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for Commission {
     const NAME: &'static str = "Commission";
@@ -201,7 +101,7 @@ pub struct Validator {
     pub operator_address: ::prost::alloc::string::String,
     /// consensus_pubkey is the consensus public key of the validator, as a Protobuf Any.
     #[prost(message, optional, tag = "2")]
-    pub consensus_pubkey: ::core::option::Option<::pbjson_types::Any>,
+    pub consensus_pubkey: ::core::option::Option<super::super::super::google::protobuf::Any>,
     /// jailed defined whether the validator has been jailed from bonded status or not.
     #[prost(bool, tag = "3")]
     pub jailed: bool,
@@ -222,7 +122,7 @@ pub struct Validator {
     pub unbonding_height: i64,
     /// unbonding_time defines, if unbonding, the min time for the validator to complete unbonding.
     #[prost(message, optional, tag = "9")]
-    pub unbonding_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub unbonding_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// commission defines the commission parameters.
     #[prost(message, optional, tag = "10")]
     pub commission: ::core::option::Option<Commission>,
@@ -382,7 +282,7 @@ pub struct UnbondingDelegationEntry {
     pub creation_height: i64,
     /// completion_time is the unix time for unbonding completion.
     #[prost(message, optional, tag = "2")]
-    pub completion_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub completion_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// initial_balance defines the tokens initially scheduled to receive at completion.
     #[prost(string, tag = "3")]
     pub initial_balance: ::prost::alloc::string::String,
@@ -412,7 +312,7 @@ pub struct RedelegationEntry {
     pub creation_height: i64,
     /// completion_time defines the unix time for redelegation completion.
     #[prost(message, optional, tag = "2")]
-    pub completion_time: ::core::option::Option<::pbjson_types::Timestamp>,
+    pub completion_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
     /// initial_balance defines the initial balance when redelegation started.
     #[prost(string, tag = "3")]
     pub initial_balance: ::prost::alloc::string::String,
@@ -466,7 +366,7 @@ impl ::prost::Name for Redelegation {
 pub struct Params {
     /// unbonding_time is the time duration of unbonding.
     #[prost(message, optional, tag = "1")]
-    pub unbonding_time: ::core::option::Option<::pbjson_types::Duration>,
+    pub unbonding_time: ::core::option::Option<super::super::super::google::protobuf::Duration>,
     /// max_validators is the maximum number of validators.
     #[prost(uint32, tag = "2")]
     pub max_validators: u32,
@@ -647,6 +547,358 @@ impl Infraction {
             "INFRACTION_UNSPECIFIED" => Some(Self::Unspecified),
             "INFRACTION_DOUBLE_SIGN" => Some(Self::DoubleSign),
             "INFRACTION_DOWNTIME" => Some(Self::Downtime),
+            _ => None,
+        }
+    }
+}
+/// MsgCreateValidator defines a SDK message for creating a new validator.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCreateValidator {
+    #[prost(message, optional, tag = "1")]
+    pub description: ::core::option::Option<Description>,
+    #[prost(message, optional, tag = "2")]
+    pub commission: ::core::option::Option<CommissionRates>,
+    #[prost(string, tag = "3")]
+    pub min_self_delegation: ::prost::alloc::string::String,
+    /// Deprecated: Use of Delegator Address in MsgCreateValidator is deprecated.
+    /// The validator address bytes and delegator address bytes refer to the same account while creating validator (defer
+    /// only in bech32 notation).
+    #[deprecated]
+    #[prost(string, tag = "4")]
+    pub delegator_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "5")]
+    pub validator_address: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "6")]
+    pub pubkey: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    #[prost(message, optional, tag = "7")]
+    pub value: ::core::option::Option<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgCreateValidator {
+    const NAME: &'static str = "MsgCreateValidator";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgCreateValidatorResponse defines the Msg/CreateValidator response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCreateValidatorResponse {}
+impl ::prost::Name for MsgCreateValidatorResponse {
+    const NAME: &'static str = "MsgCreateValidatorResponse";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgEditValidator defines a SDK message for editing an existing validator.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgEditValidator {
+    #[prost(message, optional, tag = "1")]
+    pub description: ::core::option::Option<Description>,
+    #[prost(string, tag = "2")]
+    pub validator_address: ::prost::alloc::string::String,
+    /// We pass a reference to the new commission rate and min self delegation as
+    /// it's not mandatory to update. If not updated, the deserialized rate will be
+    /// zero with no way to distinguish if an update was intended.
+    /// REF: #2373
+    #[prost(string, tag = "3")]
+    pub commission_rate: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub min_self_delegation: ::prost::alloc::string::String,
+}
+impl ::prost::Name for MsgEditValidator {
+    const NAME: &'static str = "MsgEditValidator";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgEditValidatorResponse defines the Msg/EditValidator response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgEditValidatorResponse {}
+impl ::prost::Name for MsgEditValidatorResponse {
+    const NAME: &'static str = "MsgEditValidatorResponse";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgDelegate defines a SDK message for performing a delegation of coins
+/// from a delegator to a validator.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgDelegate {
+    #[prost(string, tag = "1")]
+    pub delegator_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub validator_address: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgDelegate {
+    const NAME: &'static str = "MsgDelegate";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgDelegateResponse defines the Msg/Delegate response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgDelegateResponse {}
+impl ::prost::Name for MsgDelegateResponse {
+    const NAME: &'static str = "MsgDelegateResponse";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgBeginRedelegate defines a SDK message for performing a redelegation
+/// of coins from a delegator and source validator to a destination validator.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgBeginRedelegate {
+    #[prost(string, tag = "1")]
+    pub delegator_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub validator_src_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "3")]
+    pub validator_dst_address: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "4")]
+    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgBeginRedelegate {
+    const NAME: &'static str = "MsgBeginRedelegate";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgBeginRedelegateResponse defines the Msg/BeginRedelegate response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgBeginRedelegateResponse {
+    #[prost(message, optional, tag = "1")]
+    pub completion_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+}
+impl ::prost::Name for MsgBeginRedelegateResponse {
+    const NAME: &'static str = "MsgBeginRedelegateResponse";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgUndelegate defines a SDK message for performing an undelegation from a
+/// delegate and a validator.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUndelegate {
+    #[prost(string, tag = "1")]
+    pub delegator_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub validator_address: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "3")]
+    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgUndelegate {
+    const NAME: &'static str = "MsgUndelegate";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgUndelegateResponse defines the Msg/Undelegate response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUndelegateResponse {
+    #[prost(message, optional, tag = "1")]
+    pub completion_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+    /// amount returns the amount of undelegated coins
+    ///
+    /// Since: cosmos-sdk 0.50
+    #[prost(message, optional, tag = "2")]
+    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
+}
+impl ::prost::Name for MsgUndelegateResponse {
+    const NAME: &'static str = "MsgUndelegateResponse";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
+///
+/// Since: cosmos-sdk 0.46
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCancelUnbondingDelegation {
+    #[prost(string, tag = "1")]
+    pub delegator_address: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub validator_address: ::prost::alloc::string::String,
+    /// amount is always less than or equal to unbonding delegation entry balance
+    #[prost(message, optional, tag = "3")]
+    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
+    /// creation_height is the height which the unbonding took place.
+    #[prost(int64, tag = "4")]
+    pub creation_height: i64,
+}
+impl ::prost::Name for MsgCancelUnbondingDelegation {
+    const NAME: &'static str = "MsgCancelUnbondingDelegation";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgCancelUnbondingDelegationResponse
+///
+/// Since: cosmos-sdk 0.46
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgCancelUnbondingDelegationResponse {}
+impl ::prost::Name for MsgCancelUnbondingDelegationResponse {
+    const NAME: &'static str = "MsgCancelUnbondingDelegationResponse";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParams is the Msg/UpdateParams request type.
+///
+/// Since: cosmos-sdk 0.47
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParams {
+    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
+    #[prost(string, tag = "1")]
+    pub authority: ::prost::alloc::string::String,
+    /// params defines the x/staking parameters to update.
+    ///
+    /// NOTE: All parameters must be supplied.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+}
+impl ::prost::Name for MsgUpdateParams {
+    const NAME: &'static str = "MsgUpdateParams";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// MsgUpdateParamsResponse defines the response structure for executing a
+/// MsgUpdateParams message.
+///
+/// Since: cosmos-sdk 0.47
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MsgUpdateParamsResponse {}
+impl ::prost::Name for MsgUpdateParamsResponse {
+    const NAME: &'static str = "MsgUpdateParamsResponse";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// StakeAuthorization defines authorization for delegate/undelegate/redelegate.
+///
+/// Since: cosmos-sdk 0.43
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct StakeAuthorization {
+    /// max_tokens specifies the maximum amount of tokens can be delegate to a validator. If it is
+    /// empty, there is no spend limit and any amount of coins can be delegated.
+    #[prost(message, optional, tag = "1")]
+    pub max_tokens: ::core::option::Option<super::super::base::v1beta1::Coin>,
+    /// authorization_type defines one of AuthorizationType.
+    #[prost(enumeration = "AuthorizationType", tag = "4")]
+    pub authorization_type: i32,
+    /// validators is the oneof that represents either allow_list or deny_list
+    #[prost(oneof = "stake_authorization::Validators", tags = "2, 3")]
+    pub validators: ::core::option::Option<stake_authorization::Validators>,
+}
+/// Nested message and enum types in `StakeAuthorization`.
+pub mod stake_authorization {
+    /// Validators defines list of validator addresses.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ValidatorsList {
+        #[prost(string, repeated, tag = "1")]
+        pub address: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
+    }
+    impl ::prost::Name for ValidatorsList {
+        const NAME: &'static str = "Validators";
+        const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!("cosmos.staking.v1beta1.StakeAuthorization.{}", Self::NAME)
+        }
+    }
+    /// validators is the oneof that represents either allow_list or deny_list
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Validators {
+        /// allow_list specifies list of validator addresses to whom grantee can delegate tokens on behalf of granter's
+        /// account.
+        #[prost(message, tag = "2")]
+        AllowList(ValidatorsList),
+        /// deny_list specifies list of validator addresses to whom grantee can not delegate tokens.
+        #[prost(message, tag = "3")]
+        DenyList(ValidatorsList),
+    }
+}
+impl ::prost::Name for StakeAuthorization {
+    const NAME: &'static str = "StakeAuthorization";
+    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
+    }
+}
+/// AuthorizationType defines the type of staking module authorization type
+///
+/// Since: cosmos-sdk 0.43
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[repr(i32)]
+pub enum AuthorizationType {
+    /// AUTHORIZATION_TYPE_UNSPECIFIED specifies an unknown authorization type
+    Unspecified = 0,
+    /// AUTHORIZATION_TYPE_DELEGATE defines an authorization type for Msg/Delegate
+    Delegate = 1,
+    /// AUTHORIZATION_TYPE_UNDELEGATE defines an authorization type for Msg/Undelegate
+    Undelegate = 2,
+    /// AUTHORIZATION_TYPE_REDELEGATE defines an authorization type for Msg/BeginRedelegate
+    Redelegate = 3,
+    /// AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION defines an authorization type for Msg/MsgCancelUnbondingDelegation
+    CancelUnbondingDelegation = 4,
+}
+impl AuthorizationType {
+    /// String value of the enum field names used in the ProtoBuf definition.
+    ///
+    /// The values are not transformed in any way and thus are considered stable
+    /// (if the ProtoBuf definition does not change) and safe for programmatic use.
+    pub fn as_str_name(&self) -> &'static str {
+        match self {
+            AuthorizationType::Unspecified => "AUTHORIZATION_TYPE_UNSPECIFIED",
+            AuthorizationType::Delegate => "AUTHORIZATION_TYPE_DELEGATE",
+            AuthorizationType::Undelegate => "AUTHORIZATION_TYPE_UNDELEGATE",
+            AuthorizationType::Redelegate => "AUTHORIZATION_TYPE_REDELEGATE",
+            AuthorizationType::CancelUnbondingDelegation => {
+                "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION"
+            }
+        }
+    }
+    /// Creates an enum from field names used in the ProtoBuf definition.
+    pub fn from_str_name(value: &str) -> ::core::option::Option<Self> {
+        match value {
+            "AUTHORIZATION_TYPE_UNSPECIFIED" => Some(Self::Unspecified),
+            "AUTHORIZATION_TYPE_DELEGATE" => Some(Self::Delegate),
+            "AUTHORIZATION_TYPE_UNDELEGATE" => Some(Self::Undelegate),
+            "AUTHORIZATION_TYPE_REDELEGATE" => Some(Self::Redelegate),
+            "AUTHORIZATION_TYPE_CANCEL_UNBONDING_DELEGATION" => {
+                Some(Self::CancelUnbondingDelegation)
+            }
             _ => None,
         }
     }
@@ -1190,257 +1442,4 @@ impl ::prost::Name for QueryParamsResponse {
         ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
     }
 }
-/// MsgCreateValidator defines a SDK message for creating a new validator.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateValidator {
-    #[prost(message, optional, tag = "1")]
-    pub description: ::core::option::Option<Description>,
-    #[prost(message, optional, tag = "2")]
-    pub commission: ::core::option::Option<CommissionRates>,
-    #[prost(string, tag = "3")]
-    pub min_self_delegation: ::prost::alloc::string::String,
-    /// Deprecated: Use of Delegator Address in MsgCreateValidator is deprecated.
-    /// The validator address bytes and delegator address bytes refer to the same account while creating validator (defer
-    /// only in bech32 notation).
-    #[deprecated]
-    #[prost(string, tag = "4")]
-    pub delegator_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "5")]
-    pub validator_address: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "6")]
-    pub pubkey: ::core::option::Option<::pbjson_types::Any>,
-    #[prost(message, optional, tag = "7")]
-    pub value: ::core::option::Option<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgCreateValidator {
-    const NAME: &'static str = "MsgCreateValidator";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgCreateValidatorResponse defines the Msg/CreateValidator response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateValidatorResponse {}
-impl ::prost::Name for MsgCreateValidatorResponse {
-    const NAME: &'static str = "MsgCreateValidatorResponse";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgEditValidator defines a SDK message for editing an existing validator.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgEditValidator {
-    #[prost(message, optional, tag = "1")]
-    pub description: ::core::option::Option<Description>,
-    #[prost(string, tag = "2")]
-    pub validator_address: ::prost::alloc::string::String,
-    /// We pass a reference to the new commission rate and min self delegation as
-    /// it's not mandatory to update. If not updated, the deserialized rate will be
-    /// zero with no way to distinguish if an update was intended.
-    /// REF: #2373
-    #[prost(string, tag = "3")]
-    pub commission_rate: ::prost::alloc::string::String,
-    #[prost(string, tag = "4")]
-    pub min_self_delegation: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MsgEditValidator {
-    const NAME: &'static str = "MsgEditValidator";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgEditValidatorResponse defines the Msg/EditValidator response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgEditValidatorResponse {}
-impl ::prost::Name for MsgEditValidatorResponse {
-    const NAME: &'static str = "MsgEditValidatorResponse";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgDelegate defines a SDK message for performing a delegation of coins
-/// from a delegator to a validator.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgDelegate {
-    #[prost(string, tag = "1")]
-    pub delegator_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub validator_address: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgDelegate {
-    const NAME: &'static str = "MsgDelegate";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgDelegateResponse defines the Msg/Delegate response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgDelegateResponse {}
-impl ::prost::Name for MsgDelegateResponse {
-    const NAME: &'static str = "MsgDelegateResponse";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgBeginRedelegate defines a SDK message for performing a redelegation
-/// of coins from a delegator and source validator to a destination validator.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgBeginRedelegate {
-    #[prost(string, tag = "1")]
-    pub delegator_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub validator_src_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "3")]
-    pub validator_dst_address: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "4")]
-    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgBeginRedelegate {
-    const NAME: &'static str = "MsgBeginRedelegate";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgBeginRedelegateResponse defines the Msg/BeginRedelegate response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgBeginRedelegateResponse {
-    #[prost(message, optional, tag = "1")]
-    pub completion_time: ::core::option::Option<::pbjson_types::Timestamp>,
-}
-impl ::prost::Name for MsgBeginRedelegateResponse {
-    const NAME: &'static str = "MsgBeginRedelegateResponse";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgUndelegate defines a SDK message for performing an undelegation from a
-/// delegate and a validator.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUndelegate {
-    #[prost(string, tag = "1")]
-    pub delegator_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub validator_address: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "3")]
-    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgUndelegate {
-    const NAME: &'static str = "MsgUndelegate";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgUndelegateResponse defines the Msg/Undelegate response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUndelegateResponse {
-    #[prost(message, optional, tag = "1")]
-    pub completion_time: ::core::option::Option<::pbjson_types::Timestamp>,
-    /// amount returns the amount of undelegated coins
-    ///
-    /// Since: cosmos-sdk 0.50
-    #[prost(message, optional, tag = "2")]
-    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
-}
-impl ::prost::Name for MsgUndelegateResponse {
-    const NAME: &'static str = "MsgUndelegateResponse";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgCancelUnbondingDelegation defines the SDK message for performing a cancel unbonding delegation for delegator
-///
-/// Since: cosmos-sdk 0.46
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCancelUnbondingDelegation {
-    #[prost(string, tag = "1")]
-    pub delegator_address: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub validator_address: ::prost::alloc::string::String,
-    /// amount is always less than or equal to unbonding delegation entry balance
-    #[prost(message, optional, tag = "3")]
-    pub amount: ::core::option::Option<super::super::base::v1beta1::Coin>,
-    /// creation_height is the height which the unbonding took place.
-    #[prost(int64, tag = "4")]
-    pub creation_height: i64,
-}
-impl ::prost::Name for MsgCancelUnbondingDelegation {
-    const NAME: &'static str = "MsgCancelUnbondingDelegation";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgCancelUnbondingDelegationResponse
-///
-/// Since: cosmos-sdk 0.46
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCancelUnbondingDelegationResponse {}
-impl ::prost::Name for MsgCancelUnbondingDelegationResponse {
-    const NAME: &'static str = "MsgCancelUnbondingDelegationResponse";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParams is the Msg/UpdateParams request type.
-///
-/// Since: cosmos-sdk 0.47
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParams {
-    /// authority is the address that controls the module (defaults to x/gov unless overwritten).
-    #[prost(string, tag = "1")]
-    pub authority: ::prost::alloc::string::String,
-    /// params defines the x/staking parameters to update.
-    ///
-    /// NOTE: All parameters must be supplied.
-    #[prost(message, optional, tag = "2")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for MsgUpdateParams {
-    const NAME: &'static str = "MsgUpdateParams";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-/// MsgUpdateParamsResponse defines the response structure for executing a
-/// MsgUpdateParams message.
-///
-/// Since: cosmos-sdk 0.47
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgUpdateParamsResponse {}
-impl ::prost::Name for MsgUpdateParamsResponse {
-    const NAME: &'static str = "MsgUpdateParamsResponse";
-    const PACKAGE: &'static str = "cosmos.staking.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.staking.v1beta1.{}", Self::NAME)
-    }
-}
-include!("cosmos.staking.v1beta1.tonic.rs");
 // @@protoc_insertion_point(module)

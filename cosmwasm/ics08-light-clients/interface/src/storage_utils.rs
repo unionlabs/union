@@ -95,7 +95,7 @@ pub fn save_proto_client_state<T: IbcClient>(
 ) {
     let any_state = ProtoAny {
         type_url: <ProtoClientState as ::prost::Name>::type_url(),
-        value: proto_wasm_state.encode_to_vec().into(),
+        value: proto_wasm_state.encode_to_vec(),
     };
 
     deps.storage.set(
@@ -135,7 +135,7 @@ pub fn save_proto_consensus_state<T: IbcClient>(
 ) {
     let any_state = ProtoAny {
         type_url: <ProtoConsensusState as ::prost::Name>::type_url(),
-        value: proto_wasm_state.encode_to_vec().into(),
+        value: proto_wasm_state.encode_to_vec(),
     };
 
     deps.storage.set(

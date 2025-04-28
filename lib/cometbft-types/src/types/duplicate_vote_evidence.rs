@@ -7,8 +7,11 @@ use crate::types::vote::Vote;
 pub struct DuplicateVoteEvidence {
     pub vote_a: Vote,
     pub vote_b: Vote,
+    #[serde(rename = "TotalVotingPower", with = "::serde_utils::string")]
     pub total_voting_power: i64,
+    #[serde(rename = "ValidatorPower", with = "::serde_utils::string")]
     pub validator_power: i64,
+    #[serde(rename = "Timestamp")]
     pub timestamp: Timestamp,
 }
 

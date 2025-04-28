@@ -156,5 +156,4 @@ impl ::prost::Name for MsgModuleQuerySafeResponse {
         )
     }
 }
-include!("ibc.applications.interchain_accounts.host.v1.tonic.rs");
 // @@protoc_insertion_point(module)
