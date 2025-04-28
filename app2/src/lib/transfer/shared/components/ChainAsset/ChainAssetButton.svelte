@@ -1,12 +1,13 @@
 <script lang="ts">
 import { cn } from "$lib/utils/index.js"
-import { Option } from "effect"
+import { Array as A, Match, Option, pipe } from "effect"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import Label from "$lib/components/ui/Label.svelte"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
 import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
 import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
+import type { Chain } from "@unionlabs/sdk/schema"
 
 type Props = {
   type: "source" | "destination"
@@ -15,19 +16,27 @@ type Props = {
 
 const { type, onClick }: Props = $props()
 
-const selectedChain = $derived.by(() => {
-  if (type === "source") {
-    return transferData.sourceChain
-  }
-  return transferData.destinationChain
-})
+const selectedChain: Option.Option<Chain> = $derived(
+  pipe(
+    Match.value(type),
+    Match.when("source", () => transferData.sourceChain),
+    Match.when("destination", () => transferData.destinationChain),
+    Match.exhaustive
+  )
+)
 
-const isChainLoading = $derived.by(() => {
-  if (type === "source") {
-    return transferData.raw.source && Option.isNone(transferData.sourceChain)
-  }
-  return transferData.raw.destination && Option.isNone(transferData.destinationChain)
-})
+const isChainLoading: boolean = $derived(
+  pipe(
+    Match.value(type),
+    Match.when("source", () =>
+      Boolean(transferData.raw.source && Option.isNone(transferData.sourceChain))
+    ),
+    Match.when("destination", () =>
+      Boolean(transferData.raw.destination && Option.isNone(transferData.destinationChain))
+    ),
+    Match.exhaustive
+  )
+)
 </script>
 
 <div class="w-full">
@@ -90,10 +99,39 @@ const isChainLoading = $derived.by(() => {
           <!--LOGO-->
           {#if selectedChain.value.universal_chain_id}
             {@const chainLogo = chainLogoMap.get(selectedChain.value.universal_chain_id)}
+            {@const selectedAsset = pipe(
+              Match.value(type),
+              Match.when("source", () => pipe(
+                transferData.baseToken,
+                Option.map(x => x.representations),
+                Option.flatMap(A.head),
+              )),
+              Match.when("destination", () => pipe(
+                transferData.baseToken,
+                Option.map(x => x.representations),
+                Option.flatMap(A.head),
+              )),
+              Match.exhaustive,
+            )}
+            {@const validSelectedAsset = Option.isSome(selectedAsset) && Option.isSome(selectedAsset.value.logo_uri)}
             {#if chainLogo?.color}
               <div class="flex items-center">
-                <div class="size-8 flex items-center justify-center overflow-hidden">
-                  <img src={chainLogo.color} alt="">
+                <div class="relative size-8 flex items-center justify-center overflow-visible mr-2">
+                  <img
+                    src={chainLogo.color}
+                    alt={selectedChain.value.display_name}
+                    class={cn(
+                      validSelectedAsset && "asset-mask"
+                    )}
+                  >
+                  {#if validSelectedAsset}
+                  <div
+                    class="absolute inline-flex items-center justify-center w-4 h-4 rounded-full bottom-0 -end-2 bg-clip-text bg-white"
+                  >
+                    <img class="h-4 w-4 object-fill" src={selectedAsset.value.logo_uri.value} alt={selectedAsset.value.name} />
+
+                  </div>
+                  {/if}
                 </div>
               </div>
             {/if}
@@ -130,3 +168,19 @@ const isChainLoading = $derived.by(() => {
     </div>
   </button>
 </div>
+
+<style>
+  .asset-mask {
+    --diameter: calc(var(--spacing) * 2.5);
+    --offset-x: calc(100% - var(--diameter) * 0);
+    --offset-y: calc(100% - var(--diameter) * 2.4/3);
+
+    mask-image: radial-gradient(
+      circle var(--diameter) at var(--offset-x) var(--offset-y),
+      transparent 90%,
+      white 100%
+    );
+    mask-composite: exclude;
+    -webkit-mask-composite: destination-out;
+  }
+</style>
