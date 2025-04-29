@@ -89,6 +89,12 @@ $effect(() => {
     videoKey++
   }
 })
+
+$effect(() => {
+  document.documentElement.style.setProperty('--color-accent', uiStore.theme.accent);
+  document.documentElement.style.setProperty('--color-primary', uiStore.theme.primary);
+  document.documentElement.style.setProperty('--color-background', uiStore.theme.background);
+})
 </script>
 
 <!-- Background video -->
@@ -177,12 +183,3 @@ $effect(() => {
   isOpen={uiStore.errorsModalOpen}
   onClose={() => uiStore.closeErrorsModal()}
 />
-
-<style>
-  :global(:root) {
-    --color-accent: v-bind(uiStore.theme.accent);
-    --color-primary: v-bind(uiStore.theme.primary);
-    --color-background: v-bind(uiStore.theme.background);
-    --color-text: v-bind(uiStore.theme.text);
-  }
-</style>
