@@ -25,6 +25,9 @@ importers:
       typescript:
         specifier: ~5.8.2
         version: 5.8.2
+      viem:
+        specifier: ^2.26.2
+        version: 2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.22.4)
       vite:
         specifier: ~6.3.1
         version: 6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
@@ -175,6 +178,9 @@ importers:
       crc:
         specifier: ^4.3.2
         version: 4.3.2(buffer@6.0.3)
+      viem:
+        specifier: ^2
+        version: 2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.22.4)
     devDependencies:
       '@babel/cli':
         specifier: ^7.24.8
@@ -215,9 +221,6 @@ importers:
       graphql-request:
         specifier: ^7.1.2
         version: 7.1.2(graphql@16.10.0)
-      viem:
-        specifier: ^2.23.12
-        version: 2.24.1(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.22.4)
 
   typescript-sdk:
     dependencies:

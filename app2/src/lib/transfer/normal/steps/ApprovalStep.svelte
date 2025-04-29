@@ -276,7 +276,7 @@ function handleCustomInput(event: Event) {
 
 function isValidCustomAmount(amount: string): boolean {
   return Effect.runSync(
-    Effect.gen(function* (_) {
+    Effect.gen(function* () {
       // Handle empty or invalid input
       if (!amount || amount === "." || amount === ",") return false
 
@@ -301,7 +301,7 @@ function isValidCustomAmount(amount: string): boolean {
 
 function handleBeforeInput(event: InputEvent) {
   return Effect.runSync(
-    Effect.gen(function* (_) {
+    Effect.gen(function* () {
       const { inputType, data } = event
       const { value } = event.currentTarget as HTMLInputElement
       const proposed = value + (data ?? "")

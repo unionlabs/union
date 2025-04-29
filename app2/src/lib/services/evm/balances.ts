@@ -74,7 +74,7 @@ export const fetchEvmBalance = ({
   tokenAddress: TokenRawDenom
   walletAddress: AddressEvmCanonical
 }) => {
-  return Effect.gen(function* (_) {
+  return Effect.gen(function* () {
     const client = yield* getPublicClient(chain)
     const decodedDenom = yield* fromHexString(tokenAddress)
 

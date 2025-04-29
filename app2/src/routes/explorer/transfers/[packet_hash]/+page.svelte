@@ -1,7 +1,7 @@
 <script lang="ts">
 import { page } from "$app/state"
 import { onMount } from "svelte"
-import { Effect, Fiber, Option, Struct } from "effect"
+import { Effect, Fiber, Option, pipe, Schema, Struct } from "effect"
 import { transferByPacketHashQuery } from "$lib/queries/transfer-by-hash.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
@@ -13,7 +13,7 @@ import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
-import { getChain, TokenRawDenom } from "@unionlabs/sdk/schema"
+import { getChain, PacketHash, TokenRawDenom } from "@unionlabs/sdk/schema"
 import PacketComponent from "$lib/components/model/PacketComponent.svelte"
 import { packetDetailsQuery } from "$lib/queries/packet-details.svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
@@ -34,7 +34,7 @@ import Button from "$lib/components/ui/Button.svelte"
 let showPacketDetails = $state(false)
 
 let fiber: Fiber.Fiber<any, any>
-const packetHash = page.params.packet_hash
+const packetHash = $derived(pipe(page.params.packet_hash, Schema.decodeSync(PacketHash)))
 
 onMount(() => {
   fiber = Effect.runFork(transferByPacketHashQuery(packetHash))
@@ -101,11 +101,13 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
           <div class="flex flex-col gap-6">
             <div class="flex flex-1 items-center justify-between pt-6 px-4">
               <div class="text-2xl">
+                {#if Option.isSome(destChain)}
                 <TokenComponent
                   chain={destChain.value}
                   denom={transfer.quote_token}
                   amount={transfer.quote_amount}
                 />
+                {/if}
               </div>
               {#if !inProgress}
                 <div class="flex items-center gap-2">

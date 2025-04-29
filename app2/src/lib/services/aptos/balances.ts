@@ -57,7 +57,7 @@ export const fetchAptosBalance = ({
   tokenAddress: TokenRawDenom
   walletAddress: string
 }) => {
-  return Effect.gen(function* (_) {
+  return Effect.gen(function* () {
     const aptosClient = yield* getPublicClient(chain)
 
     yield* Effect.log(

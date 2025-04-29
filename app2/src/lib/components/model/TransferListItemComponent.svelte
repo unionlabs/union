@@ -38,7 +38,7 @@ const handleClick = () => {
     onclick={handleClick}
   >
     <div>
-      {#if Option.isSome(sourceChain)}
+      {#if Option.isSome(sourceChain) && Option.isSome(destinationChain)}
         <TokenComponent
           showWrapping={false}
           chain={destinationChain.value}
