@@ -48,5 +48,11 @@
       "comments": "babylon.bbn-test-5 channel 2",
       "tags": ["canonical"]
     }
+  },
+  "xion.xion-testnet-2": {
+    "1": {
+      "comments": "ethereum.17000 channel 4",
+      "tags": ["canonical"]
+    }
   }
 }

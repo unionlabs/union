@@ -15,6 +15,9 @@
       },
       "corn.21000001": {
         "environment": "production"
+      },
+      "xion.xion-testnet-2": {
+        "environment": "production"
       }
     }
   },
