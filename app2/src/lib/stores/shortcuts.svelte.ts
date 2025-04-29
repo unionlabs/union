@@ -1,9 +1,9 @@
 type ModifierKey = "cmd" | "ctrl" | "option" | "alt" | "shift"
-type NormalKey = string
-type ShortcutKey = ModifierKey | NormalKey
+type KeyCode = `key${string}` | `digit${string}` | `f${number}`
+type ShortcutKey = ModifierKey | KeyCode
 
 interface Shortcut {
-  keys: Set<string> // Pre-normalized
+  keys: Set<string>
   action: () => void
 }
 
