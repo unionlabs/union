@@ -631,7 +631,7 @@ const fundBabylonAccounts = Effect.repeat(
       options
     )
 
-    if (!senderAccount || !senderAccount.address) {
+    if (!senderAccount?.address) {
       yield* Effect.logError("Sender account couldnt found!")
       return
     }
@@ -837,7 +837,7 @@ export const checkBalances = Effect.repeat(
 
 const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
   Effect.gen(function* () {
-    let allPackets: Packet[] = []
+    let allPackets: Array<Packet> = []
     let cursor: string | undefined
     let continueFetching = true
 
