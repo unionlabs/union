@@ -9,11 +9,9 @@ type SwitchChainSuccess = {
   chainId: string
 }
 
-export const switchChain = (
-  chain: Chain
-): Effect.Effect<SwitchChainSuccess, SwitchChainError | CosmWasmError> =>
+export const switchChain = (chain: Chain) =>
   Effect.gen(function* () {
-    const wallet = yield* getCosmosWalletClient()
+    const wallet = yield* getCosmosWalletClient
 
     if (!wallet) {
       return yield* Effect.fail(new SwitchChainError({ cause: "Wallet client is undefined" }))

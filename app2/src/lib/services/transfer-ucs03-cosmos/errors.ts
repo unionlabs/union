@@ -12,6 +12,16 @@ export class CosmWasmError extends Data.TaggedError("CosmWasmError")<{
   cause: string
 }> {}
 
+export class CosmosWalletNotConnectedError extends Data.TaggedError(
+  "CosmosWalletNotConnectedError"
+)<{
+  cause: string
+}> {}
+
+export class CosmosWalletNotOnWindowError extends Data.TaggedError("CosmosWalletNotOnWindowError")<{
+  kind: string
+}> {}
+
 export class GetChainInfoError extends Data.TaggedError("GetChainInfoError")<{
   cause: string
   chainId?: string

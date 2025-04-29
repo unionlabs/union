@@ -55,7 +55,7 @@ export const executeCosmWasmInstructions = (
 
       return Effect.flatMap(
         Effect.mapError(
-          getCosmosOfflineSigner(chain, connectedWallet),
+          getCosmosOfflineSigner(chain),
           err => new CosmWasmError({ cause: String(err) })
         ),
         offlineSigner => {
