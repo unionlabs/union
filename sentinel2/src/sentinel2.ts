@@ -138,18 +138,6 @@ export function clearSignerIncident(db: BetterSqlite3Database, key: string) {
   db.prepare(`DELETE FROM signer_incidents WHERE key = ?`).run(key)
 }
 
-export function getOpenErrors(
-  db: BetterSqlite3Database
-): Array<{ packet_hash: string; incident_id: string }> {
-  const stmt = db.prepare(`SELECT packet_hash, incident_id FROM transfer_errors`)
-
-  const rows = stmt.all({}) as Array<{
-    packet_hash: string
-    incident_id: string
-  }>
-
-  return rows
-}
 
 export function addFunded(db: BetterSqlite3Database, txHash: string) {
   db.prepare(`INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`).run(txHash)
@@ -162,25 +150,57 @@ export function getIncidentId(db: BetterSqlite3Database, packetHash: string): st
   return row?.incident_id
 }
 
+export function hasErrorOpen(
+  db: BetterSqlite3Database,
+  sla: string,
+  packetHash: string
+) {
+  return !!db
+    .prepare(
+      `SELECT 1
+         FROM transfer_errors
+        WHERE sla = ?
+          AND packet_hash = ?`
+    )
+    .get(sla, packetHash)
+}
+
 export function markTransferError(
   db: BetterSqlite3Database,
+  sla: string,
   packetHash: string,
   incidentId: string
 ) {
   db.prepare(`
     INSERT OR REPLACE INTO transfer_errors
-      (packet_hash, incident_id, inserted_at)
-    VALUES (?, ?, strftime('%s','now')*1000)
-  `).run(packetHash, incidentId)
+      (sla, packet_hash, incident_id, inserted_at)
+    VALUES (?, ?, ?, strftime('%s','now')*1000)
+  `).run(sla, packetHash, incidentId)
 }
 
-export function clearTransferError(db: BetterSqlite3Database, packetHash: string) {
-  db.prepare(`DELETE FROM transfer_errors WHERE packet_hash = ?`).run(packetHash)
+export function clearTransferError(
+  db: BetterSqlite3Database,
+  sla: string,
+  packetHash: string
+) {
+  db.prepare(`
+    DELETE FROM transfer_errors
+     WHERE sla = ?
+       AND packet_hash = ?
+  `).run(sla, packetHash)
 }
 
-export function hasErrorOpen(db: BetterSqlite3Database, packetHash: string) {
-  const row = db.prepare(`SELECT 1 FROM transfer_errors WHERE packet_hash = ?`).get(packetHash)
-  return !!row
+export function getOpenErrors(
+  db: BetterSqlite3Database,
+  sla: string
+): Array<{ packet_hash: string; incident_id: string }> {
+  return db
+    .prepare(
+      `SELECT packet_hash, incident_id
+         FROM transfer_errors
+        WHERE sla = ?`
+    )
+    .all(sla) as Array<{ packet_hash: string; incident_id: string }>
 }
 
 function hexToUtf8(hex: string): string {
@@ -932,7 +952,8 @@ export const checkPackets = (
   Effect.gen(function* () {
     yield* fetchOnlyUniBTC(hasuraEndpoint, "mainnet")
 
-    for (const sla of ["mainnet", "testnet"]) {
+    for (const sla of ["mainnet", "testnet"] as const) {
+
       const transfer_error = sla === "mainnet" ? "MAINNET_TRANSFER_ERROR" : "TESTNET_TRANSFER_ERROR"
       const missingPacketsMainnet = yield* fetchMissingPackets(hasuraEndpoint, sla)
       yield* Effect.log(`Fetched ${missingPacketsMainnet.length} missingPackets from Hasura`)
@@ -949,7 +970,7 @@ export const checkPackets = (
         }
         const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(transfer_error))
 
-        if (!hasErrorOpen(db, missingPacket.packet_hash)) {
+        if (!hasErrorOpen(db, sla, missingPacket.packet_hash)) {
           const val = yield* triggerIncident(
             transfer_error +
               " : " +
@@ -961,11 +982,11 @@ export const checkPackets = (
             "Union",
             isLocal
           )
-          markTransferError(db, missingPacket.packet_hash, val.data.id)
+          markTransferError(db, sla, missingPacket.packet_hash, val.data.id)
         }
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
       }
-      const openErrors = getOpenErrors(db)
+      const openErrors = getOpenErrors(db, sla)
 
       const missingSet = new Set(missingPacketsMainnet.map(p => p.packet_hash))
 
@@ -978,7 +999,7 @@ export const checkPackets = (
             "Sentinel-Automatically resolved.",
             isLocal
           )
-          clearTransferError(db, packet_hash)
+          clearTransferError(db, sla, packet_hash)
         }
       }
     }
@@ -1030,6 +1051,7 @@ const mainEffect = Effect.gen(function* (_) {
 
   db.prepare(`
     CREATE TABLE IF NOT EXISTS transfer_errors (
+      sla           TEXT    NOT NULL,
       packet_hash   TEXT PRIMARY KEY,
       incident_id   TEXT NOT NULL,
       inserted_at   INTEGER
