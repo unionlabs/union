@@ -12,6 +12,8 @@ import {
 } from "$lib/wallet/cosmos/chain-info.ts"
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 import type { ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
+import { xionKeplrChainInfo } from "$lib/services/cosmos/chain-info/configs/keplr"
+import { xionLeapChainInfo } from "$lib/services/cosmos/chain-info/configs/leap"
 
 //Fix types
 
@@ -28,7 +30,8 @@ export const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "stride-internal-1": strideKeplrChainInfo,
   "elgafar-1": elgafarKeplrChainInfo,
   "bbn-test-5": babylonTestnetKeplrChaininfo,
-  "bbn-1": babylonMainnetKeplrChaininfo
+  "bbn-1": babylonMainnetKeplrChaininfo,
+  "xion-testnet-2": xionKeplrChainInfo
 }
 
 export const leapChainInfoMap: Record<string, LeapExtendedInfo> = {
@@ -36,5 +39,6 @@ export const leapChainInfoMap: Record<string, LeapExtendedInfo> = {
   "stride-internal-1": strideLeapChainInfo,
   "elgafar-1": elgafarLeapChainInfo,
   "bbn-test-5": babylonTestnetLeapChaininfo,
-  "bbn-1": babylonMainnetLeapChainInfo
+  "bbn-1": babylonMainnetLeapChainInfo,
+  "xion-testnet-2": xionLeapChainInfo
 }
