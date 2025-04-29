@@ -16,6 +16,7 @@ import { runExample } from "$lib/utils/convert-display.ts"
 import { cn } from "$lib/utils"
 import { page } from "$app/state"
 import { runFork } from "$lib/utils/effect.svelte"
+import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 
 let { children } = $props()
 
@@ -47,21 +48,17 @@ onMount(() => {
   runFork(chainsQuery(ENV()))
   runFork(channelsQuery())
 
-  const handler = (e: KeyboardEvent) => {
-    const metaOrCtrl = e.metaKey || e.ctrlKey
-    if (metaOrCtrl && e.altKey && e.shiftKey) {
-      if (e.code === "KeyA") {
-        uiStore.overrideEdition = "app"
-      } else if (e.code === "KeyB") {
-        uiStore.overrideEdition = "btc"
-      }
-    }
-  }
+  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keya"], () => {
+    uiStore.overrideEdition = "app"
+  })
 
-  window.addEventListener("keydown", handler)
-  return () => {
-    window.removeEventListener("keydown", handler)
-  }
+  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyb"], () => {
+    uiStore.overrideEdition = "btc"
+  })
+
+  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyf"], () => {
+    uiStore.filterWhitelist = !uiStore.filterWhitelist
+  })
 })
 
 $effect(() => {
@@ -94,15 +91,6 @@ $effect(() => {
 })
 </script>
 
-<style>
-  :global(:root) {
-    --color-accent: v-bind(uiStore.theme.accent);
-    --color-primary: v-bind(uiStore.theme.primary);
-    --color-background: v-bind(uiStore.theme.background);
-    --color-text: v-bind(uiStore.theme.text);
-  }
-</style>
-
 <!-- Background video -->
 {#if !isMobile}
   <div
@@ -131,10 +119,7 @@ $effect(() => {
           this.muted = true;
         }}
       >
-        <source
-          src={currentVideoUrl}
-          type="video/webm"
-        />
+        <source src={currentVideoUrl} type="video/webm" />
       </video>
     {/key}
   </div>
@@ -156,7 +141,7 @@ $effect(() => {
   <aside
     class={cn(
       "fixed left-0 bottom-0 top-0 dark:bg-zinc-950 shadow overflow-auto border-r border-zinc-900 max-h-dvh",
-      fullPageSidebar ? "right-0" : "w-64",
+      fullPageSidebar ? "right-0" : "w-64"
     )}
     hidden={hideSidebar}
   >
@@ -168,7 +153,7 @@ $effect(() => {
     class={cn(
       "fixed min-h-svh grow right-0 top-0 bottom-0",
       fullPageSidebar ? "w-0" : null,
-      hideSidebar ? "left-0" : "left-64",
+      hideSidebar ? "left-0" : "left-64"
     )}
     hidden={fullPageSidebar}
   >
@@ -192,3 +177,12 @@ $effect(() => {
   isOpen={uiStore.errorsModalOpen}
   onClose={() => uiStore.closeErrorsModal()}
 />
+
+<style>
+  :global(:root) {
+    --color-accent: v-bind(uiStore.theme.accent);
+    --color-primary: v-bind(uiStore.theme.primary);
+    --color-background: v-bind(uiStore.theme.background);
+    --color-text: v-bind(uiStore.theme.text);
+  }
+</style>

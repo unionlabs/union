@@ -24,6 +24,7 @@ import { beforeNavigate } from "$app/navigation"
 import { onMount } from "svelte"
 import { fly } from "svelte/transition"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 
 let currentPage = $state(0)
 let previousPage = $state(0)
@@ -202,17 +203,9 @@ $effect(() => {
 beforeNavigate(newTransfer)
 
 onMount(() => {
-  const handler = (e: KeyboardEvent) => {
-    const metaOrCtrl = e.metaKey || e.ctrlKey
-
-    if (metaOrCtrl && e.altKey && e.shiftKey && e.code === "KeyD") {
-      e.preventDefault()
-      showDetails = !showDetails
-    }
-  }
-
-  window.addEventListener("keydown", handler)
-  return () => window.removeEventListener("keydown", handler)
+  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyd"], () => {
+    showDetails = !showDetails
+  })
 })
 
 const currentStep = $derived(
