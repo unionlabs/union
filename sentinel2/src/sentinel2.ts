@@ -89,8 +89,8 @@ export const triggerIncident = (
 export const resolveIncident = (
   incidentId: string,
   apiKey: string,
-  resolvedBy = "SENTINEL@union.build",
-  isLocal: boolean
+  isLocal: boolean,
+  resolvedBy = "SENTINEL@union.build"
 ) =>
   isLocal
     ? Effect.sync(() => {
@@ -310,7 +310,7 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
       }
     })
 
-    const tokens: WrappedToken[] = response?.v2_tokens || []
+    const tokens: Array<WrappedToken> = response?.v2_tokens || []
     return tokens
   })
 
@@ -336,8 +336,8 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
       }
     })
 
-    const tokens: FundableAccounts[] = response?.v2_transfers || []
-    const filtered: FundableAccounts[] = tokens
+    const tokens: Array<FundableAccounts> = response?.v2_transfers || []
+    const filtered: Array<FundableAccounts> = tokens
       .map(({ receiver_display, traces }) => ({
         receiver_display,
         traces: traces
@@ -347,6 +347,7 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
               trace.transaction_hash != null &&
               !isFunded(db, trace.transaction_hash)
           )
+          // biome-ignore lint/style/noNonNullAssertion: <explanation>
           .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! }))
       }))
       .filter(acc => acc.traces.length > 0)
@@ -382,12 +383,13 @@ const fetchSourceChannelId = (
       }
     })
 
-    const channels: ChannelInfo[] = response?.v2_channels || []
+    const channels: Array<ChannelInfo> = response?.v2_channels || []
     return channels[0]?.source_channel_id
   })
 
 function loadConfig(configPath: string) {
   return Effect.tryPromise({
+    // biome-ignore lint/suspicious/useAwait: <explanation>
     try: async () => {
       if (!fs.existsSync(configPath)) {
         throw new Error("Config file not found. Ensure config.json exists.")
@@ -423,6 +425,7 @@ const escrowSupplyControlLoop = Effect.repeat(
       const dstChain = token.chain.universal_chain_id
 
       const dstChannel = token.wrapping[0]?.destination_channel_id
+      // biome-ignore lint/complexity/useSimplifiedLogicExpression: <explanation>
       if (!srcChain || !dstChain || !dstChannel) {
         yield* Effect.log("Invalid token data. Skipping...")
         continue
@@ -436,7 +439,7 @@ const escrowSupplyControlLoop = Effect.repeat(
       const srcCfg = config.chainConfig[srcChain]
       const dstCfg = config.chainConfig[dstChain]
 
-      if (!srcCfg || !dstCfg) {
+      if (!(srcCfg && dstCfg)) {
         yield* Effect.log("Invalid source or destination chain configuration. Skipping...")
         continue
       }
@@ -447,6 +450,7 @@ const escrowSupplyControlLoop = Effect.repeat(
       }
 
       let srcChannelBal: bigint
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
       const key = token.wrapping[0]!.unwrapped_denom!
       const path = 0n
 
@@ -456,6 +460,7 @@ const escrowSupplyControlLoop = Effect.repeat(
           Effect.provideService(ViemPublicClientDestination, { client }),
           Effect.provideService(EvmChannelDestination, {
             ucs03address: srcCfg.zkgmAddress as Hex,
+            // biome-ignore lint/style/noNonNullAssertion: <explanation>
             channelId: sourceChannelId!
           })
         )
@@ -470,6 +475,7 @@ const escrowSupplyControlLoop = Effect.repeat(
           Effect.provideService(CosmWasmClientDestination, { client }),
           Effect.provideService(CosmosChannelDestination, {
             ucs03address: srcCfg.zkgmAddress,
+            // biome-ignore lint/style/noNonNullAssertion: <explanation>
             channelId: sourceChannelId!
           }),
           Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
@@ -707,13 +713,13 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
       }).then(async response => {
         if (response.status === 200) {
           return await response.json()
-        } else {
-          const text = await response.text().catch(() => "")
-          throw {
-            _tag: "PostRequestError",
-            message: `Non-200 status: ${response.status} body: ${text}`,
-            status: response.status
-          }
+        }
+        const text = await response.text().catch(() => "")
+        // biome-ignore lint/style/useThrowOnlyError: <explanation>
+        throw {
+          _tag: "PostRequestError",
+          message: `Non-200 status: ${response.status} body: ${text}`,
+          status: response.status
         }
       }),
     catch: error =>
@@ -813,8 +819,8 @@ export const checkBalances = Effect.repeat(
                   yield* resolveIncident(
                     existing,
                     config.betterstack_api_key,
-                    "Sentinel-Automatically resolved.",
-                    config.isLocal
+                    config.isLocal,
+                    "Sentinel-Automatically resolved."
                   )
                   clearSignerIncident(db, key)
                 }
@@ -890,11 +896,12 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
         })
       }
 
-      const page: Packet[] = response.v2_packets || []
+      const page: Array<Packet> = response.v2_packets || []
       if (page.length === 0) break
 
       allPackets.push(...page)
-      const last = page[page.length - 1]!
+      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+      const last = page.at(-1)!
 
       cursor = last.sort_order
     }
@@ -927,9 +934,7 @@ export const checkPackets = (
 
         if (!hasErrorOpen(db, sla, missingPacket.packet_hash)) {
           const val = yield* triggerIncident(
-            transfer_error +
-              " : " +
-              `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`,
+            `${transfer_error}: https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`,
             JSON.stringify(whole_description),
             betterstack_api_key,
             "SENTINEL@union.build",
@@ -951,8 +956,8 @@ export const checkPackets = (
           yield* resolveIncident(
             incident_id,
             betterstack_api_key,
-            "Sentinel-Automatically resolved.",
-            isLocal
+            isLocal,
+            "Sentinel-Automatically resolved."
           )
           clearTransferError(db, sla, packet_hash)
         }

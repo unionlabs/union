@@ -48,7 +48,7 @@ const filteredTokens = $derived.by(() => {
       // Only check whitelist on mainnet
       if (Option.isSome(transferData.sourceChain) && transferData.sourceChain.value.testnet)
         return true
-      return token.whitelisted
+      return token.whitelisted === true
     })
   }
 
