@@ -223,3 +223,59 @@ export const elgafarKeplrChainInfo: ChainInfo = {
   ],
   features: []
 }
+
+export const xionKeplrChainInfo: ChainInfo = {
+  rpc: "https://rpc.xion-testnet-2.burnt.com/",
+  rest: "https://api.xion-testnet-2.burnt.com/",
+  chainId: "xion-testnet-2",
+  chainName: "Xion Testnet",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+  nodeProvider: {
+    name: "🔥BurntLabs🔥",
+    email: "security@burnt.com",
+    website: "https://xion.burnt.com"
+  },
+  stakeCurrency: {
+    coinDenom: "XION",
+    coinMinimalDenom: "uxion",
+    coinDecimals: 6,
+    coinImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png"
+  },
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "xion",
+    bech32PrefixAccPub: "xionpub",
+    bech32PrefixValAddr: "xionvaloper",
+    bech32PrefixValPub: "xionvaloperpub",
+    bech32PrefixConsAddr: "xionvalcons",
+    bech32PrefixConsPub: "xionvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "XION",
+      coinMinimalDenom: "uxion",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png"
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "XION",
+      coinMinimalDenom: "uxion",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+      gasPriceStep: {
+        low: 0.001,
+        average: 0.001,
+        high: 0.002
+      }
+    }
+  ],
+  features: ["cosmwasm"]
+}

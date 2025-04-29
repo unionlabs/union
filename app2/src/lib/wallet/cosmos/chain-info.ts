@@ -1,6 +1,6 @@
 // @ts-nocheck
 //Leaps types doesnt match in their docs in regards to gasPriceStep
-import type { ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
+import type { ChainInfo, ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
 
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 import { cosmosStore } from "$lib/wallet/cosmos/config.svelte.ts"
@@ -570,13 +570,121 @@ export const babylonTestnetLeapChaininfo: LeapExtendedInfo = {
   }
 }
 
+export const xionKeplrChainInfo: ChainInfo = {
+  rpc: "https://rpc.xion-testnet-2.burnt.com/",
+  rest: "https://api.xion-testnet-2.burnt.com/",
+  chainId: "xion-testnet-2",
+  chainName: "Xion Testnet",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+  nodeProvider: {
+    name: "🔥BurntLabs🔥",
+    email: "security@burnt.com",
+    website: "https://xion.burnt.com"
+  },
+  stakeCurrency: {
+    coinDenom: "XION",
+    coinMinimalDenom: "uxion",
+    coinDecimals: 6,
+    coinImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png"
+  },
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "xion",
+    bech32PrefixAccPub: "xionpub",
+    bech32PrefixValAddr: "xionvaloper",
+    bech32PrefixValPub: "xionvaloperpub",
+    bech32PrefixConsAddr: "xionvalcons",
+    bech32PrefixConsPub: "xionvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "XION",
+      coinMinimalDenom: "uxion",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png"
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "XION",
+      coinMinimalDenom: "uxion",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+      gasPriceStep: {
+        low: 0.001,
+        average: 0.001,
+        high: 0.002
+      }
+    }
+  ],
+  features: ["cosmwasm"]
+}
+
+export const xionLeapChainInfo: LeapExtendedInfo = {
+  chainId: "xion-testnet-2",
+  chainName: "Xion Testnet",
+  rpc: "https://rpc.xion-testnet-2.burnt.com/",
+  rest: "https://api.xion-testnet-2.burnt.com/",
+  bip44: {
+    coinType: 118
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "xion",
+    bech32PrefixAccPub: "xionpub",
+    bech32PrefixValAddr: "xionvaloper",
+    bech32PrefixValPub: "xionvaloperpub",
+    bech32PrefixConsAddr: "xionvalcons",
+    bech32PrefixConsPub: "xionvalconspub"
+  },
+  currencies: [
+    {
+      coinDenom: "XION",
+      coinMinimalDenom: "uxion",
+      coinDecimals: 6,
+      coinGeckoId: "xion"
+    }
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "XION",
+      coinMinimalDenom: "uxion",
+      coinDecimals: 6,
+      coinGeckoId: "xion"
+    }
+  ],
+  gasPriceStep: {
+    low: 0.001,
+    average: 0.001,
+    high: 0.002
+  },
+  stakeCurrency: {
+    coinDenom: "XION",
+    coinMinimalDenom: "uxion",
+    coinDecimals: 6,
+    coinGeckoId: "xion"
+  },
+  theme: {
+    primaryColor: "#E91179",
+    gradient: "linear-gradient(180deg, rgba(233, 17, 121, 0.32) 0%, rgba(233, 17, 121, 0) 100%)"
+  },
+  image:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png"
+}
+
 //Maps
 const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "union-testnet-10": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo,
   "elgafar-1": elgafarKeplrChainInfo,
   "bbn-test-5": babylonTestnetKeplrChaininfo,
-  "bbn-1": babylonMainnetKeplrChaininfo
+  "bbn-1": babylonMainnetKeplrChaininfo,
+  "xion-testnet-2": xionKeplrChainInfo
 }
 
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
@@ -584,7 +692,8 @@ const leapChainInfoMap: Record<string, LeapChainInfo> = {
   "stride-internal-1": strideLeapChainInfo,
   "elgafar-1": elgafarLeapChainInfo,
   "bbn-test-5": babylonTestnetLeapChaininfo,
-  "bbn-1": babylonMainnetLeapChainInfo
+  "bbn-1": babylonMainnetLeapChainInfo,
+  "xion-testnet-2": xionKeplrChainInfo
 }
 
 //Helper functions
