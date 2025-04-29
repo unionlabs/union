@@ -10,7 +10,7 @@ use unionlabs::google::protobuf::{duration::Duration, timestamp::Timestamp};
 
 use crate::{
     error::Error,
-    types::Verification,
+    types::{ValidatorSig, Verification},
     utils::{canonical_vote_bytes, get_validator_by_address, header_expired, validators_hash},
 };
 
@@ -290,7 +290,11 @@ fn verify_commit<V: Verification>(
     let mut seen_vals: BTreeMap<usize, usize> = BTreeMap::new();
 
     for (i, commit_sig) in commit.signatures.iter().enumerate() {
-        let Some((validator_address, timestamp, signature)) = signature_verifier
+        let Some(ValidatorSig {
+            validator_address,
+            timestamp,
+            signature,
+        }) = signature_verifier
             .filter_commit(commit_sig)
             .map_err(Into::into)?
         else {
@@ -442,6 +446,7 @@ mod tests {
     use unionlabs::option_unwrap;
 
     use super::*;
+    use crate::types::ValidatorSig;
 
     pub struct Ed25519Verifier<'a> {
         deps: Deps<'a>,
@@ -469,14 +474,7 @@ mod tests {
         fn filter_commit(
             &self,
             commit_sig: &cometbft_types::types::commit_sig::CommitSigRaw,
-        ) -> Result<
-            Option<(
-                unionlabs::primitives::H160,
-                unionlabs::google::protobuf::timestamp::Timestamp,
-                Option<Vec<u8>>,
-            )>,
-            Self::Error,
-        > {
+        ) -> Result<Option<ValidatorSig>, Self::Error> {
             if commit_sig.block_id_flag == Into::<i32>::into(BlockIdFlag::Commit) {
                 let Some(timestamp) = commit_sig.timestamp else {
                     return Ok(None);
@@ -485,11 +483,11 @@ mod tests {
                     return Ok(None);
                 };
 
-                Ok(Some((
-                    commit_sig.validator_address,
+                Ok(Some(ValidatorSig {
+                    validator_address: commit_sig.validator_address,
                     timestamp,
-                    Some(signature.into_vec()),
-                )))
+                    signature: Some(signature.into_vec()),
+                }))
             } else {
                 Ok(None)
             }
@@ -584,24 +582,17 @@ mod tests {
         fn filter_commit(
             &self,
             commit_sig: &cometbft_types::types::commit_sig::CommitSigRaw,
-        ) -> Result<
-            Option<(
-                unionlabs::primitives::H160,
-                unionlabs::google::protobuf::timestamp::Timestamp,
-                Option<Vec<u8>>,
-            )>,
-            Self::Error,
-        > {
+        ) -> Result<Option<ValidatorSig>, Self::Error> {
             if commit_sig.block_id_flag == 4 {
                 let Some(signature) = commit_sig.signature.clone() else {
                     return Ok(None);
                 };
 
-                Ok(Some((
-                    commit_sig.validator_address,
-                    Timestamp::default(),
-                    Some(signature.into_vec()),
-                )))
+                Ok(Some(ValidatorSig {
+                    validator_address: commit_sig.validator_address,
+                    timestamp: Timestamp::default(),
+                    signature: Some(signature.into_vec()),
+                }))
             } else {
                 Ok(None)
             }

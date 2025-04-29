@@ -22,7 +22,7 @@ impl PublicKey {
             PublicKey::Ed25519(bytes)
             | PublicKey::Secp256k1(bytes)
             | PublicKey::Bls12_381(bytes)
-            | PublicKey::Bn254(bytes) => &bytes,
+            | PublicKey::Bn254(bytes) => bytes,
         }
     }
 }

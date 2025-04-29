@@ -1,8 +1,12 @@
-use std::{fmt::Debug, num::ParseIntError};
+use std::{
+    fmt::Debug,
+    num::{NonZeroU64, ParseIntError},
+    time::Duration,
+};
 
 use alloy::providers::{DynProvider, Provider, ProviderBuilder};
 use berachain_light_client_types::{client_state::ClientStateV1, ClientState, ConsensusState};
-use ibc_union_spec::ClientId;
+use ics23::ibc_api::SDK_SPECS;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -10,13 +14,19 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tendermint_light_client_types::Fraction;
 use tracing::{error, instrument};
-use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
+use unionlabs::{
+    ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
+    option_unwrap,
+    primitives::H160,
+    result_unwrap, ErrorReporter,
+};
 use voyager_message::{
     ensure_null, into_value,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
     primitives::{ChainId, ClientType, Timestamp},
-    ClientBootstrapModule, FATAL_JSONRPC_ERROR_CODE,
+    ClientBootstrapModule,
 };
 use voyager_vm::BoxDynError;
 
@@ -27,7 +37,12 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    pub comet_chain_id: ChainId,
+
     pub chain_id: ChainId,
+
+    pub cometbft_client: cometbft_rpc::Client,
+    pub chain_revision: u64,
 
     pub provider: DynProvider,
 
@@ -43,6 +58,9 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    /// The RPC endpoint for the consensus chain.
+    pub comet_rpc_url: String,
 }
 
 impl ClientBootstrapModule for Module {
@@ -59,10 +77,22 @@ impl ClientBootstrapModule for Module {
         info.ensure_chain_id(chain_id.to_string())?;
         info.ensure_client_type(ClientType::BEACON_KIT)?;
 
+        let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+
+        let comet_chain_id = cometbft_client
+            .status()
+            .await?
+            .node_info
+            .network
+            .to_string();
+
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
             provider,
             ibc_handler_address: config.ibc_handler_address,
+            chain_revision: chain_id,
+            cometbft_client,
+            comet_chain_id: ChainId::new(comet_chain_id.to_string()),
         })
     }
 }
@@ -93,9 +123,63 @@ impl ClientBootstrapModuleServer for Module {
     ) -> RpcResult<Value> {
         ensure_null(config)?;
 
+        let unbonding_period = {
+            let params = self
+                .cometbft_client
+                .grpc_abci_query::<_, protos::cosmos::staking::v1beta1::QueryParamsResponse>(
+                    "/cosmos.staking.v1beta1.Query/Params",
+                    &protos::cosmos::staking::v1beta1::QueryParamsRequest {},
+                    Some(i64::try_from(height.height()).unwrap().try_into().unwrap()),
+                    false,
+                )
+                .await
+                .unwrap()
+                .value
+                .unwrap()
+                .params
+                .unwrap();
+
+            let unbonding_period = params.unbonding_time.clone().unwrap();
+
+            Duration::new(
+                unbonding_period.seconds.try_into().unwrap(),
+                unbonding_period.nanos.try_into().unwrap(),
+            )
+        };
+
         Ok(into_value(ClientState::V1(ClientStateV1 {
-            l1_client_id: config.l1_client_id,
-            chain_id: self.chain_id.as_str().parse().unwrap(),
+            // l1_client_id: config.l1_client_id,
+            chain_id: self.comet_chain_id.as_str().to_string(),
+            // https://github.com/cometbft/cometbft/blob/da0e55604b075bac9e1d5866cb2e62eaae386dd9/light/verifier.go#L16
+            trust_level: Fraction {
+                numerator: 1,
+                denominator: const { option_unwrap!(NonZeroU64::new(3)) },
+            },
+            // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+            trusting_period: unionlabs::google::protobuf::duration::Duration::new(
+                (unbonding_period * 85 / 100).as_secs().try_into().unwrap(),
+                (unbonding_period * 85 / 100)
+                    .subsec_nanos()
+                    .try_into()
+                    .unwrap(),
+            )
+            .unwrap(),
+            unbonding_period: unionlabs::google::protobuf::duration::Duration::new(
+                unbonding_period.as_secs().try_into().unwrap(),
+                unbonding_period.subsec_nanos().try_into().unwrap(),
+            )
+            .unwrap(),
+            // https://github.com/cosmos/relayer/blob/23d1e5c864b35d133cad6a0ef06970a2b1e1b03f/relayer/chains/cosmos/provider.go#L177
+            max_clock_drift: const {
+                result_unwrap!(unionlabs::google::protobuf::duration::Duration::new(
+                    60 * 10,
+                    0
+                ))
+            },
+            frozen_height: None,
+            proof_specs: SDK_SPECS.into(),
+
+            evm_chain_id: self.chain_id.as_str().parse().unwrap(),
             latest_height: height.height(),
             ibc_contract_address: self.ibc_handler_address,
         })))
@@ -124,9 +208,28 @@ impl ClientBootstrapModuleServer for Module {
             })?
             .unwrap();
 
+        let commit = self
+            .cometbft_client
+            .commit(Some(height.height().try_into().unwrap()))
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("error fetching commit: {}", ErrorReporter(e)),
+                    None::<()>,
+                )
+            })?;
+
         Ok(into_value(ConsensusState {
-            state_root: block.header.state_root.into(),
-            storage_root: self
+            comet_timestamp: Timestamp::from_nanos(
+                commit.signed_header.header.time.as_unix_nanos(),
+            ),
+            comet_root: MerkleRoot {
+                hash: commit.signed_header.header.app_hash.into_encoding(),
+            },
+            comet_next_validators_hash: commit.signed_header.header.next_validators_hash,
+            evm_state_root: block.header.state_root.into(),
+            evm_storage_root: self
                 .provider
                 .get_proof(self.ibc_handler_address.into(), vec![])
                 .block_id(block.header.number.into())
@@ -135,7 +238,7 @@ impl ClientBootstrapModuleServer for Module {
                 .storage_hash
                 .0
                 .into(),
-            timestamp: Timestamp::from_secs(block.header.timestamp),
+            evm_timestamp: Timestamp::from_secs(block.header.timestamp),
         }))
     }
 }

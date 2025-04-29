@@ -1,6 +1,9 @@
 use cometbft_types::{crypto::public_key::PublicKey, types::block_id_flag::BlockIdFlag};
 use cosmwasm_std::Deps;
-use tendermint_verifier::{error::Error, types::Verification};
+use tendermint_verifier::{
+    error::Error,
+    types::{ValidatorSig, Verification},
+};
 
 pub struct Ed25519Verifier<'a> {
     deps: Deps<'a>,
@@ -36,9 +39,9 @@ pub enum VerificationError {
     SignatureVerificationFailed,
 }
 
-impl Into<Error> for VerificationError {
-    fn into(self) -> Error {
-        Error::ClientSpecific(Box::new(self))
+impl From<VerificationError> for Error {
+    fn from(value: VerificationError) -> Self {
+        Error::ClientSpecific(Box::new(value))
     }
 }
 
@@ -50,14 +53,7 @@ impl<'a> Verification for Ed25519Verifier<'a> {
     fn filter_commit(
         &self,
         commit_sig: &cometbft_types::types::commit_sig::CommitSigRaw,
-    ) -> Result<
-        Option<(
-            unionlabs::primitives::H160,
-            unionlabs::google::protobuf::timestamp::Timestamp,
-            Option<Vec<u8>>,
-        )>,
-        Self::Error,
-    > {
+    ) -> Result<Option<ValidatorSig>, Self::Error> {
         if commit_sig.block_id_flag == Into::<i32>::into(BlockIdFlag::Commit) {
             let timestamp = commit_sig
                 .timestamp
@@ -67,11 +63,11 @@ impl<'a> Verification for Ed25519Verifier<'a> {
                 .clone()
                 .ok_or(VerificationError::SignatureMustExist)?;
 
-            Ok(Some((
-                commit_sig.validator_address,
+            Ok(Some(ValidatorSig {
+                validator_address: commit_sig.validator_address,
                 timestamp,
-                Some(signature.into_vec()),
-            )))
+                signature: Some(signature.into_vec()),
+            }))
         } else {
             Ok(None)
         }

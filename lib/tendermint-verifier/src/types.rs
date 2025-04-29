@@ -6,6 +6,12 @@ use unionlabs::{google::protobuf::timestamp::Timestamp, primitives::H160};
 
 use crate::error::Error;
 
+pub struct ValidatorSig {
+    pub validator_address: H160,
+    pub timestamp: Timestamp,
+    pub signature: Option<Vec<u8>>,
+}
+
 pub trait Verification {
     type Error: Into<Error>;
 
@@ -22,10 +28,8 @@ pub trait Verification {
     ///     - `Ok(Some(..))` to process the signature. The expected return values are (validator_address, timestamp, signature),
     ///        if the signature check is aggregated such as BLS, you can return the `signature` as `None` so that
     ///        `process_signature` won't be called but the voting count will be processed.
-    fn filter_commit(
-        &self,
-        commit_sig: &CommitSigRaw,
-    ) -> Result<Option<(H160, Timestamp, Option<Vec<u8>>)>, Self::Error>;
+    fn filter_commit(&self, commit_sig: &CommitSigRaw)
+        -> Result<Option<ValidatorSig>, Self::Error>;
 
     /// On every iteration of the verification loop, if the `filter_commit` returns `Ok(Some(..))` with the signature value
     /// `Some(..)`, this function is being called to be able to process the signature. For example, for the case where you do

@@ -96,7 +96,7 @@ impl ClientModuleServer for Module {
         let cs = self.decode_consensus_state(&consensus_state)?;
 
         Ok(ConsensusStateMeta {
-            timestamp: cs.timestamp,
+            timestamp: cs.evm_timestamp,
         })
     }
 

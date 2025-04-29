@@ -1,6 +1,9 @@
 use cometbft_types::crypto::public_key::PublicKey;
 use cosmwasm_std::{Deps, BLS12_381_G1_GENERATOR};
-use tendermint_verifier::{error::Error, types::Verification};
+use tendermint_verifier::{
+    error::Error,
+    types::{ValidatorSig, Verification},
+};
 use unionlabs::google::protobuf::timestamp::Timestamp;
 
 pub const DST_POP_G2: &[u8] = b"BLS_SIG_BLS12381G2_XMD:SHA-256_SSWU_RO_NUL_";
@@ -45,9 +48,9 @@ pub enum VerificationError {
     SignatureNotSet,
 }
 
-impl Into<Error> for VerificationError {
-    fn into(self) -> Error {
-        Error::ClientSpecific(Box::new(self))
+impl From<VerificationError> for Error {
+    fn from(value: VerificationError) -> Self {
+        Self::ClientSpecific(Box::new(value))
     }
 }
 
@@ -59,24 +62,17 @@ impl<'a> Verification for Bls12381Verifier<'a> {
     fn filter_commit(
         &self,
         commit_sig: &cometbft_types::types::commit_sig::CommitSigRaw,
-    ) -> Result<
-        Option<(
-            unionlabs::primitives::H160,
-            unionlabs::google::protobuf::timestamp::Timestamp,
-            Option<Vec<u8>>,
-        )>,
-        Self::Error,
-    > {
+    ) -> Result<Option<ValidatorSig>, Self::Error> {
         if commit_sig.block_id_flag == 4 {
             let Some(signature) = commit_sig.signature.clone() else {
                 return Ok(None);
             };
 
-            Ok(Some((
-                commit_sig.validator_address,
-                Timestamp::default(),
-                Some(signature.into_vec()),
-            )))
+            Ok(Some(ValidatorSig {
+                validator_address: commit_sig.validator_address,
+                timestamp: Timestamp::default(),
+                signature: Some(signature.into_vec()),
+            }))
         } else {
             Ok(None)
         }
@@ -114,12 +110,7 @@ impl<'a> Verification for Bls12381Verifier<'a> {
     }
 
     fn finish(&mut self) -> Result<(), Self::Error> {
-        let pubkeys = self
-            .pubkeys
-            .iter()
-            .flatten()
-            .map(|x| *x)
-            .collect::<Vec<_>>();
+        let pubkeys = self.pubkeys.iter().flatten().copied().collect::<Vec<_>>();
 
         let pubkey = self.deps.api.bls12_381_aggregate_g1(&pubkeys).unwrap();
 
