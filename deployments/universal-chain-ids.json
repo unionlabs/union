@@ -11,5 +11,6 @@
   "scroll": ["534351"],
   "stargaze": ["elgafar-1"],
   "stride": ["stride-internal-1"],
-  "union": ["union-testnet-8", "union-testnet-9", "union-testnet-10", "union-1"]
+  "union": ["union-testnet-8", "union-testnet-9", "union-testnet-10", "union-1"],
+  "xion": ["xion-testnet-2", "xion-mainnet-1"]
 }
