@@ -81,7 +81,7 @@ onMount(() => {
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
     {#key uiStore.activeEdition}
       <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">
-        {uiStore.activeEdition === 'app' ? 'V2' : uiStore.activeEdition.toUpperCase()}
+        {uiStore.theme.label}
       </div>
     {/key}
   </a>
