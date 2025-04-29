@@ -60,8 +60,10 @@ $effect(() => {
 
 onMount(() => {
   window.addEventListener("resize", updateHighlightPosition)
-  // Trigger initial position
-  updateHighlightPosition()
+  // Use requestAnimationFrame to ensure DOM is fully rendered
+  requestAnimationFrame(() => {
+    updateHighlightPosition()
+  })
 
   return () => {
     window.removeEventListener("resize", updateHighlightPosition)
