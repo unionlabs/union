@@ -1,7 +1,6 @@
 import { Effect } from "effect"
 import {
   CosmosWalletNotConnectedError,
-  type CosmWasmError,
   NoCosmosChainInfoError,
   SwitchChainError
 } from "./errors.ts"

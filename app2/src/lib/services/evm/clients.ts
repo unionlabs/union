@@ -28,14 +28,13 @@ export class NoViemChainError extends Data.TaggedError("NoViemChain")<{
 }> {}
 
 export const getWagmiConnectorClient = Effect.tryPromise({
-    try: () => getConnectorClient(wagmiConfig),
-    catch: err =>
-      new ConnectorClientError({
-        wagmiConfig,
-        cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType
-      })
-  })
-
+  try: () => getConnectorClient(wagmiConfig),
+  catch: err =>
+    new ConnectorClientError({
+      wagmiConfig,
+      cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType
+    })
+})
 
 /**
  * @deprecated use the one from ts-sdk instead
