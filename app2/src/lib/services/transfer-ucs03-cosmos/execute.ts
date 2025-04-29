@@ -53,64 +53,58 @@ export const executeCosmWasmInstructions = (
         return Effect.fail(new CosmWasmError({ cause: "Client CosmWasm is undefined" }))
       }
 
-      return Effect.flatMap(
-        Effect.mapError(
-          getCosmosOfflineSigner(chain, connectedWallet),
-          err => new CosmWasmError({ cause: String(err) })
-        ),
-        offlineSigner => {
-          if (!offlineSigner) {
-            return Effect.fail(new CosmWasmError({ cause: "Offline signer is undefined" }))
-          }
+      return Effect.flatMap(getCosmosOfflineSigner(chain), offlineSigner => {
+        if (!offlineSigner) {
+          return Effect.fail(new CosmWasmError({ cause: "Offline signer is undefined" }))
+        }
 
-          return Effect.flatMap(
-            Effect.tryPromise({
-              try: () => offlineSigner.getAccounts(),
-              catch: err => new CosmWasmError({ cause: `Failed to get accounts: ${err}` })
-            }),
-            accounts => {
-              if (accounts.length === 0) {
-                return Effect.fail(new CosmWasmError({ cause: "No accounts found" }))
-              }
+        return Effect.flatMap(
+          Effect.tryPromise({
+            try: () => offlineSigner.getAccounts(),
+            catch: err => new CosmWasmError({ cause: `Failed to get accounts: ${err}` })
+          }),
+          accounts => {
+            if (accounts.length === 0) {
+              return Effect.fail(new CosmWasmError({ cause: "No accounts found" }))
+            }
 
-              const sender = accounts[0].address
+            const sender = accounts[0].address
 
-              if (!isValidBech32Address(sender)) {
-                return Effect.fail(
-                  new CosmWasmError({
-                    cause: `Invalid sender address format: ${sender}`
-                  })
-                )
-              }
-
-              const formattedInstructions = instructions.map(instr => ({
-                contractAddress: instr.contractAddress,
-                msg: instr.msg,
-                funds: instr.funds || []
-              }))
-
-              console.log("Sender:", sender)
-              console.log("Formatted instructions:", JSON.stringify(formattedInstructions, null, 2))
-
-              return Effect.map(
-                Effect.tryPromise({
-                  try: () => client.executeMultiple(sender, formattedInstructions, "auto"),
-                  catch: err => {
-                    console.error("CosmWasm execution error:", err)
-                    return new CosmWasmError({
-                      cause: err instanceof Error ? err.message : String(err)
-                    })
-                  }
-                }),
-                result => {
-                  console.log("Transaction hash:", result.transactionHash)
-                  return result.transactionHash
-                }
+            if (!isValidBech32Address(sender)) {
+              return Effect.fail(
+                new CosmWasmError({
+                  cause: `Invalid sender address format: ${sender}`
+                })
               )
             }
-          )
-        }
-      )
+
+            const formattedInstructions = instructions.map(instr => ({
+              contractAddress: instr.contractAddress,
+              msg: instr.msg,
+              funds: instr.funds || []
+            }))
+
+            console.log("Sender:", sender)
+            console.log("Formatted instructions:", JSON.stringify(formattedInstructions, null, 2))
+
+            return Effect.map(
+              Effect.tryPromise({
+                try: () => client.executeMultiple(sender, formattedInstructions, "auto"),
+                catch: err => {
+                  console.error("CosmWasm execution error:", err)
+                  return new CosmWasmError({
+                    cause: err instanceof Error ? err.message : String(err)
+                  })
+                }
+              }),
+              result => {
+                console.log("Transaction hash:", result.transactionHash)
+                return result.transactionHash
+              }
+            )
+          }
+        )
+      })
     }
   )
 }

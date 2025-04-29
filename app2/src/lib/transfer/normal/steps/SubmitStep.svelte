@@ -15,7 +15,7 @@ import {
   TransactionSubmissionCosmos
 } from "$lib/transfer/shared/services/write-cosmos.ts"
 import { generateSalt } from "@unionlabs/sdk/utils"
-import { getConnectorClient, http, type GetConnectorClientErrorType } from "@wagmi/core"
+import { http, type GetConnectorClientErrorType } from "@wagmi/core"
 import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
 import { custom, encodeAbiParameters, fromHex, toHex } from "viem"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.ts"
@@ -33,6 +33,7 @@ import Label from "$lib/components/ui/Label.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
+import { getWagmiConnectorClient } from "$lib/services/evm/clients.ts"
 
 type Props = {
   stepIndex: number
@@ -104,13 +105,7 @@ export const submit = Effect.gen(function* () {
             transport: http()
           })
 
-          const connectorClient = yield* Effect.tryPromise({
-            try: () => getConnectorClient(wagmiConfig),
-            catch: err =>
-              new ConnectorClientError({
-                cause: err as GetConnectorClientErrorType
-              })
-          })
+          const connectorClient = yield* getWagmiConnectorClient
 
           const walletClient = yield* createViemWalletClient({
             account: connectorClient.account,
@@ -188,7 +183,6 @@ export const submit = Effect.gen(function* () {
               nextStateCosmos(
                 cts,
                 step.intent.sourceChain,
-                signingClient,
                 sender,
                 fromHex(step.intent.channel.source_port_id, "string"),
                 {

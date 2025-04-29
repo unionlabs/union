@@ -7,36 +7,24 @@ import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offl
 import { GasPrice } from "@cosmjs/stargate"
 import { getGasPriceForChain } from "$lib/services/cosmos/chain-info"
 import {
-  CosmWasmError,
-  type GasPriceError,
-  type GetChainInfoError,
-  type OfflineSignerError
+  CosmosWalletNotConnectedError,
+  CosmosWalletNotOnWindowError,
+  CosmWasmError
 } from "$lib/services/transfer-ucs03-cosmos"
 
-export const getCosmWasmClient = (
-  chain: Chain,
-  connectedWallet: CosmosWalletId
-): Effect.Effect<
-  SigningCosmWasmClient,
-  CosmWasmError | OfflineSignerError | GasPriceError | GetChainInfoError,
-  never
-> =>
+export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId) =>
   Effect.gen(function* () {
     if (!chain.rpcs) {
-      return yield* Effect.fail(new CosmWasmError({ cause: "No RPCs available for chain" }))
+      return yield* new CosmWasmError({ cause: "No RPCs available for chain" })
     }
 
-    const offlineSigner = yield* getCosmosOfflineSigner(chain, connectedWallet)
-
+    const offlineSigner = yield* getCosmosOfflineSigner(chain)
     const gasPriceInfo = yield* getGasPriceForChain(chain, connectedWallet)
-
     const gasPrice = GasPrice.fromString(`${gasPriceInfo.amount}${gasPriceInfo.denom}`)
 
     const maybeRpcUrl = chain.getRpcUrl("rpc")
     if (Option.isNone(maybeRpcUrl)) {
-      return yield* Effect.fail(
-        new CosmWasmError({ cause: "No RPC URL of type 'rpc' available for chain" })
-      )
+      return yield* new CosmWasmError({ cause: "No RPC URL of type 'rpc' available for chain" })
     }
 
     const rpcUrl = maybeRpcUrl.value.toString()
@@ -64,17 +52,18 @@ export const getCosmosPublicClient = (
       })
   })
 
-export const getCosmosWalletClient = (): Effect.Effect<CosmosWallet, CosmWasmError, never> =>
-  Effect.gen(function* () {
-    const { connectedWallet, connectionStatus } = cosmosStore
-    if (connectionStatus !== "connected" || !connectedWallet) {
-      return yield* Effect.fail(new CosmWasmError({ cause: new Error("Wallet not connected") }))
-    }
+export const getCosmosWalletClient = Effect.gen(function* () {
+  const { connectedWallet, connectionStatus } = cosmosStore
+  if (connectionStatus !== "connected" || !connectedWallet) {
+    return yield* new CosmosWalletNotConnectedError({
+      cause: "wallet not connected according to cosmosStore"
+    })
+  }
 
-    const wallet = window[connectedWallet as keyof Window] as CosmosWallet
-    if (!wallet) {
-      return yield* Effect.fail(new CosmWasmError({ cause: `Wallet ${connectedWallet} not found` }))
-    }
+  const wallet = window[connectedWallet as keyof Window] as CosmosWallet
+  if (!wallet) {
+    return yield* new CosmosWalletNotOnWindowError({ kind: connectedWallet })
+  }
 
-    return wallet
-  })
+  return wallet
+})

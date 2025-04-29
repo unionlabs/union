@@ -31,6 +31,7 @@ export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{
 }> {}
 
 export class ConnectorClientError extends Data.TaggedError("ConnectorClientError")<{
+  wagmiConfig: unknown
   cause: GetConnectorClientErrorType
 }> {}
 
