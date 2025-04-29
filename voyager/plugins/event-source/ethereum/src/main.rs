@@ -17,7 +17,7 @@ use ibc_union_spec::{
     },
     path::{ChannelPath, ConnectionPath},
     query::PacketByHash,
-    ChannelId, IbcUnion, Packet,
+    ChannelId, IbcUnion, Packet, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -932,7 +932,7 @@ impl Module {
 
             // packet origin is this chain
             IbcEvents::PacketSend(raw_event) => {
-                let packet: Packet = raw_event.packet.try_into().unwrap();
+                let packet = convert_packet(raw_event.packet)?;
 
                 let (counterparty_chain_id, client_info, source_channel, destination_channel) =
                     self.make_packet_metadata(
@@ -1142,4 +1142,16 @@ impl Module {
             }
         }
     }
+}
+
+fn convert_packet(value: ibc_solidity::Packet) -> RpcResult<Packet> {
+    Ok(Packet {
+        source_channel_id: ChannelId::from_raw(value.source_channel_id)
+            .ok_or_else(|| ErrorObject::owned(-1, "invalid source channel id", None::<()>))?,
+        destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
+            .ok_or_else(|| ErrorObject::owned(-1, "invalid destination channel id", None::<()>))?,
+        data: value.data.into(),
+        timeout_height: value.timeout_height,
+        timeout_timestamp: Timestamp::from_nanos(value.timeout_timestamp),
+    })
 }

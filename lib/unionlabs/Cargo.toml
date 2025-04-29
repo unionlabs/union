@@ -22,7 +22,6 @@ frame-support-procedural = { workspace = true }
 hex                      = { workspace = true }
 k256                     = { version = "0.13.1", default-features = false, features = ["schnorr", "alloc"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
 macros                   = { workspace = true }
-paste                    = { version = "1.0" }
 prost                    = { workspace = true, features = ["std"] }
 protos                   = { workspace = true, features = ["proto_full", "serde"] }
 ripemd                   = { workspace = true }
@@ -37,9 +36,7 @@ static_assertions        = { workspace = true }
 subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
-wasmparser               = { version = "0.113" }
 
-alloy                = { workspace = true, optional = true, features = ["std", "sol-types"] }
 base64               = { workspace = true }
 bcs                  = { workspace = true }
 bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
@@ -63,7 +60,6 @@ default = ["ethabi", "std", "stargate", "proto"]
 
 cosmwasm = ["dep:cosmwasm-std"]
 ethabi = [
-  "alloy",
   "unionlabs-primitives/alloy-primitives-compat",
   "unionlabs-primitives/alloy-sol-types-compat",
   "unionlabs-encoding/ethabi",

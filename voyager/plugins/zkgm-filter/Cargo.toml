@@ -17,7 +17,7 @@ cometbft-rpc                     = { workspace = true }
 crc                              = "3.2.1"
 embed-commit                     = { workspace = true }
 enumorph                         = { workspace = true }
-ibc-union-spec                   = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
+ibc-union-spec                   = { workspace = true, features = ["serde", "ethabi"] }
 jsonrpsee                        = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                           = { workspace = true }
 ripemd                           = { workspace = true }

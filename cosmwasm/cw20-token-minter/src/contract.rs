@@ -1,4 +1,5 @@
-use alloy::{primitives::U256, sol_types::SolValue};
+use alloy_primitives::U256;
+use alloy_sol_types::SolValue;
 use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{
     entry_point, instantiate2_address, to_json_binary, wasm_execute, BankMsg, Binary,

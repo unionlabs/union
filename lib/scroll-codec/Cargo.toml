@@ -12,10 +12,10 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy     = { workspace = true, features = ["sol-types"] }
-sha3      = { workspace = true }
-thiserror = { workspace = true }
-unionlabs = { workspace = true, features = ["ethabi"] }
+alloy-sol-types = { workspace = true }
+sha3            = { workspace = true }
+thiserror       = { workspace = true }
+unionlabs       = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

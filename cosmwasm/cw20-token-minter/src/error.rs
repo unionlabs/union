@@ -1,4 +1,4 @@
-use alloy::primitives::ruint::ParseError;
+use alloy_primitives::ruint::ParseError;
 use cosmwasm_std::{Instantiate2AddressError, StdError};
 use ucs03_zkgm_token_minter_api::WrappedTokenMsg;
 

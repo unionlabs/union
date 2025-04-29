@@ -75,61 +75,6 @@ pub mod ethabi {
 
     use super::*;
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl From<Channel> for ibc_solidity::Channel {
-        fn from(value: Channel) -> Self {
-            Self {
-                state: match value.state {
-                    ChannelState::Init => ibc_solidity::ChannelState::Init,
-                    ChannelState::TryOpen => ibc_solidity::ChannelState::TryOpen,
-                    ChannelState::Open => ibc_solidity::ChannelState::Open,
-                    ChannelState::Closed => ibc_solidity::ChannelState::Closed,
-                },
-                connection_id: value.connection_id.raw(),
-                counterparty_channel_id: value
-                    .counterparty_channel_id
-                    .map(|counterparty_channel_id| counterparty_channel_id.raw())
-                    .unwrap_or_default(),
-                counterparty_port_id: value.counterparty_port_id.into(),
-                version: value.version,
-            }
-        }
-    }
-
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl TryFrom<ibc_solidity::Channel> for Channel {
-        type Error = Error;
-
-        fn try_from(value: ibc_solidity::Channel) -> Result<Self, Self::Error> {
-            Ok(Self {
-                state: match value.state {
-                    ibc_solidity::ChannelState::Init => ChannelState::Init,
-                    ibc_solidity::ChannelState::TryOpen => ChannelState::TryOpen,
-                    ibc_solidity::ChannelState::Open => ChannelState::Open,
-                    ibc_solidity::ChannelState::Closed => ChannelState::Closed,
-                    ibc_solidity::ChannelState::Unspecified
-                    | ibc_solidity::ChannelState::__Invalid => {
-                        return Err(Error::InvalidChannelState)
-                    }
-                },
-                connection_id: ConnectionId::from_raw(value.connection_id)
-                    .ok_or(Error::InvalidConnectionId)?,
-                counterparty_channel_id: ChannelId::from_raw(value.counterparty_channel_id),
-                counterparty_port_id: value.counterparty_port_id.into(),
-                version: value.version,
-            })
-        }
-    }
-
-    #[cfg(feature = "ibc-solidity-compat")]
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
-        #[error("invalid channel state")]
-        InvalidChannelState,
-        #[error("invalid connection id")]
-        InvalidConnectionId,
-    }
-
     type SolTuple = (Uint<8>, Uint<32>, Uint<32>, SolBytes, SolString);
 
     impl SolValue for Channel {
@@ -258,13 +203,11 @@ pub mod ethabi {
 
 #[cfg(test)]
 mod tests {
-    use alloy_sol_types::{private::U256, SolValue};
-
     use super::*;
 
     // NOTE: Explicit type annotations are intentional, to ensure the intended impls are called
     #[test]
-    fn connection_state_borrow_u8() {
+    fn channel_state_borrow_u8() {
         let connection_state: ChannelState = ChannelState::Open;
         let borrowed_u8: &u8 = <ChannelState as Borrow<u8>>::borrow(&connection_state);
         assert_eq!(&(connection_state as u8), borrowed_u8);
@@ -277,86 +220,5 @@ mod tests {
         // ayutoref coercion
         let borrowed_u8: &u8 = connection_state.borrow();
         assert_eq!(&(**connection_state as u8), borrowed_u8);
-    }
-
-    #[test]
-    fn abi_encode() {
-        let ibc_solidity_connection = ibc_solidity::Channel {
-            state: ibc_solidity::ChannelState::Init,
-            connection_id: 1,
-            counterparty_channel_id: 1,
-            counterparty_port_id: b"port".into(),
-            version: "version".into(),
-        };
-
-        let connection = Channel {
-            state: ChannelState::Init,
-            connection_id: ConnectionId::from_raw(1).unwrap(),
-            counterparty_channel_id: Some(ChannelId::from_raw(1).unwrap()),
-            counterparty_port_id: b"port".into(),
-            version: "version".into(),
-        };
-
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let bz = connection.abi_encode_params();
-        assert_eq!(ibc_solidity_bz, bz);
-
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let bz = connection.abi_encode();
-        assert_eq!(ibc_solidity_bz, bz);
-    }
-
-    #[test]
-    fn abi_decode() {
-        let ibc_solidity_connection = ibc_solidity::Channel {
-            state: ibc_solidity::ChannelState::Init,
-            connection_id: 1,
-            counterparty_channel_id: 1,
-            counterparty_port_id: b"port".into(),
-            version: "version".into(),
-        };
-
-        let connection = Channel {
-            state: ChannelState::Init,
-            connection_id: ConnectionId::from_raw(1).unwrap(),
-            counterparty_channel_id: Some(ChannelId::from_raw(1).unwrap()),
-            counterparty_port_id: b"port".into(),
-            version: "version".into(),
-        };
-
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let decoded_connection = Channel::abi_decode(&ibc_solidity_bz, true).unwrap();
-        assert_eq!(connection, decoded_connection);
-
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let decoded_connection = Channel::abi_decode_params(&ibc_solidity_bz, true).unwrap();
-        assert_eq!(connection, decoded_connection);
-    }
-
-    #[test]
-    fn abi_decode_invalid() {
-        let ibc_solidity_connection = ibc_solidity::Channel {
-            state: ibc_solidity::ChannelState::Unspecified,
-            connection_id: 1,
-            counterparty_channel_id: 1,
-            counterparty_port_id: b"port".into(),
-            version: "version".into(),
-        };
-
-        let expected_err = alloy_sol_types::Error::type_check_fail_token::<Channel>(&(
-            U256::from(0_u32).into(),
-            U256::from(1_u32).into(),
-            U256::from(1_u32).into(),
-            b"port".as_slice().into(),
-            b"version".as_slice().into(),
-        ));
-
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let err = Channel::abi_decode_params(&ibc_solidity_bz, true).unwrap_err();
-        assert_eq!(expected_err, err);
-
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let err = Channel::abi_decode(&ibc_solidity_bz, true).unwrap_err();
-        assert_eq!(expected_err, err);
     }
 }

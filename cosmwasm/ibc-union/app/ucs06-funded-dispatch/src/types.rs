@@ -1,10 +1,10 @@
-use alloy::primitives::U256;
+use alloy_primitives::U256;
 use cosmwasm_std::{Addr, Uint128};
 
 pub const FLAG_ALLOW_FAILURE: U256 = U256::from_be_slice(&[1]);
 pub const FLAG_ALLOW_MARKET_MAKER: U256 = U256::from_be_slice(&[2]);
 
-alloy::sol! {
+alloy_sol_types::sol! {
     #[derive(Debug)]
     struct FundedDispatchFund {
         bytes token;

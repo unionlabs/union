@@ -15,19 +15,13 @@
 extern crate alloc;
 
 use core::{
-    fmt::{self, Debug, Display},
+    fmt::{self, Display},
     iter,
-    str::FromStr,
 };
 
-use serde::{Deserialize, Serialize};
 pub use typenum;
 
-use crate::{
-    encoding::{Decode, Encode},
-    errors::{ExpectedLength, InvalidLength},
-    validated::Validated,
-};
+use crate::encoding::{Decode, Encode};
 
 pub const DELAY_PERIOD: u64 = 0;
 
@@ -68,9 +62,6 @@ pub mod bounded;
 
 pub mod constants;
 
-// TODO: Remove (only used in ucs01-relay-api currently)
-pub mod validated;
-
 /// Stable replacement for [`!`].
 pub mod never;
 
@@ -103,123 +94,6 @@ pub use unionlabs_encoding::{TryFromProtoBytesError, TypeUrl};
 
 pub trait Msg: Clone + Encode<encoding::Proto> + TypeUrl {
     type Response: Decode<encoding::Proto, Error: core::error::Error> + TypeUrl;
-}
-
-/// An empty string. Will only parse/serialize to/from `""`.
-pub type EmptyString<S = String> = Validated<S, EmptyStringValidator>;
-pub struct EmptyStringValidator;
-
-impl<T: AsRef<str>> validated::Validate<T> for EmptyStringValidator {
-    type Error = InvalidLength;
-
-    fn validate(s: T) -> Result<T, Self::Error> {
-        if s.as_ref().is_empty() {
-            Ok(s)
-        } else {
-            Err(InvalidLength {
-                expected: ExpectedLength::Exact(0),
-                found: s.as_ref().len(),
-            })
-        }
-    }
-}
-
-#[doc(hidden)]
-pub use paste::paste;
-
-#[macro_export]
-macro_rules! export_wasm_client_type {
-    ($type:ident) => {
-        const _: $crate::WasmClientType = $crate::WasmClientType::$type;
-        $crate::paste! {
-            #[no_mangle]
-            #[used]
-            #[allow(non_upper_case_globals)]
-            static [ <WASM_CLIENT_TYPE_ $type> ]: u8 = 0;
-        }
-    };
-}
-
-/// This type is used to discriminate 08-wasm light clients.
-///
-/// We need to be able to determine the light client from the light client code itself (not instantiated yet).
-/// Light clients supported by voyager must export a `#[no_mangle] static WASM_CLIENT_TYPE_<TYPE>: u8 = 0` variable.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum WasmClientType {
-    Cometbls,
-    Tendermint,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
-pub enum ClientType {
-    Wasm(WasmClientType),
-    Tendermint,
-    Cometbls,
-    _11Cometbls,
-}
-
-impl ClientType {
-    #[must_use]
-    pub const fn identifier_prefix(self) -> &'static str {
-        match self {
-            ClientType::Wasm(_) => "08-wasm",
-            ClientType::Tendermint => "07-tendermint",
-            ClientType::Cometbls => "cometbls",
-            ClientType::_11Cometbls => "11-cometbls",
-        }
-    }
-}
-
-impl FromStr for WasmClientType {
-    type Err = WasmClientTypeParseError;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "Cometbls" => Ok(WasmClientType::Cometbls),
-            "Tendermint" => Ok(WasmClientType::Tendermint),
-            _ => Err(WasmClientTypeParseError::UnknownType(s.to_string())),
-        }
-    }
-}
-
-impl Display for WasmClientType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            Self::Cometbls => write!(f, "Cometbls"),
-            Self::Tendermint => write!(f, "Tendermint"),
-        }
-    }
-}
-
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum WasmClientTypeParseError {
-    #[error("unknown wasm client type `{0}`")]
-    UnknownType(String),
-}
-
-// TODO: Move this and the above types into tools/parse-wasm-client-type, and make it into a library with an optional `parse` feature (so as to not bring in the very heavy wasmparser stack where it's not needed)
-pub fn parse_wasm_client_type(
-    bz: impl AsRef<[u8]>,
-) -> Result<Option<WasmClientType>, WasmClientTypeParseError> {
-    wasmparser::Parser::new(0)
-        .parse_all(bz.as_ref())
-        .find_map(|payload| {
-            payload.ok().and_then(|payload| match payload {
-                wasmparser::Payload::ExportSection(e) => Some(e),
-                _ => None,
-            })
-        })
-        .and_then(|exports| {
-            exports.into_iter().find_map(|export| {
-                export
-                    .ok()
-                    .and_then(|export| export.name.strip_prefix("WASM_CLIENT_TYPE_"))
-            })
-        })
-        .map(str::parse)
-        .transpose()
 }
 
 pub fn ensure<E>(expr: bool, err: E) -> Result<(), E> {

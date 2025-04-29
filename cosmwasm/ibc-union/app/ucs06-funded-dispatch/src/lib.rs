@@ -2,7 +2,7 @@ pub mod contract;
 pub mod msg;
 pub mod state;
 pub mod types;
-use alloy::primitives::U256;
+use alloy_primitives::U256;
 use cosmwasm_std::StdError;
 use frissitheto::UpgradeError;
 use thiserror::Error;
@@ -15,7 +15,7 @@ pub enum ContractError {
     #[error("migration error")]
     Migrate(#[from] UpgradeError),
     #[error(transparent)]
-    Alloy(#[from] alloy::sol_types::Error),
+    Alloy(#[from] alloy_sol_types::Error),
     #[error("a market maker is not allowed to fill this call")]
     MarketMakerNotAllowed,
     #[error("invalid contract address: {address}")]

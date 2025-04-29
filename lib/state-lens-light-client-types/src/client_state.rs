@@ -191,6 +191,7 @@ where
     }
 }
 
+// avert your eyes, here be dragons
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use alloy::{
@@ -206,8 +207,43 @@ pub mod ethabi {
     };
     use ibc_union_spec::ClientId;
     use tuple_join::{Join, Joined};
+    use unionlabs::encoding::{Decode, Encode, EthAbi};
 
     use crate::ClientState;
+
+    impl<Extra> Encode<EthAbi> for ClientState<Extra>
+    where
+        for<'a> Extra:
+            SolValue<SolType: SolType<RustType = Extra, Token<'a>: TokenSeq<'a>>> + 'static,
+        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Clone + Token<'a>>,
+        for<'a> <(PackedSeqToken<'a>, WordToken, WordToken, WordToken) as Join<
+            TokenOfSolValue<'a, Extra>,
+        >>::Out: Clone + TokenSeq<'a>,
+        for<'a> (PackedSeqToken<'a>, WordToken, WordToken, WordToken):
+            Join<<<Extra as SolValue>::SolType as SolType>::Token<'a>>,
+    {
+        fn encode(self) -> Vec<u8> {
+            self.abi_encode_params()
+        }
+    }
+
+    impl<Extra> Decode<EthAbi> for ClientState<Extra>
+    where
+        for<'a> Extra:
+            SolValue<SolType: SolType<RustType = Extra, Token<'a>: TokenSeq<'a>>> + 'static,
+        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Clone + Token<'a>>,
+        for<'a> <(PackedSeqToken<'a>, WordToken, WordToken, WordToken) as Join<
+            TokenOfSolValue<'a, Extra>,
+        >>::Out: Clone + TokenSeq<'a>,
+        for<'a> (PackedSeqToken<'a>, WordToken, WordToken, WordToken):
+            Join<<<Extra as SolValue>::SolType as SolType>::Token<'a>>,
+    {
+        type Error = alloy::sol_types::Error;
+
+        fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+            <ClientState<Extra> as SolValue>::abi_decode_params(bytes, true)
+        }
+    }
 
     type ClientStateTokenTuple<'a> = (PackedSeqToken<'a>, WordToken, WordToken, WordToken);
     type TokenOfSolValue<'a, T> = <<T as SolValue>::SolType as SolType>::Token<'a>;
@@ -310,7 +346,7 @@ mod tests {
         SolType, SolValue,
     };
     use unionlabs::{
-        encoding::{Bcs, Bincode, Json},
+        encoding::{Bcs, Bincode, EthAbi, Json},
         test_utils::assert_codec_iso,
         tuple::AsTuple,
     };
@@ -603,16 +639,16 @@ mod tests {
         assert_codec_iso::<_, Bcs>(&cs);
     }
 
-    // #[test]
-    // fn test_ethabi_unit() {
-    //     let cs = ClientState {
-    //         l2_chain_id: "l2_chain_id".to_owned(),
-    //         l1_client_id: 1,
-    //         l2_client_id: 2,
-    //         l2_latest_height: 100,
-    //         extra: (),
-    //     };
+    #[test]
+    fn test_ethabi_unit() {
+        let cs = ClientState {
+            l2_chain_id: "l2_chain_id".to_owned(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(2),
+            l2_latest_height: 100,
+            extra: (),
+        };
 
-    //     assert_codec_iso::<_, EthAbi>(&cs);
-    // }
+        assert_codec_iso::<_, EthAbi>(&cs);
+    }
 }

@@ -36,3 +36,4 @@ tracing          = { workspace = true }
 unionlabs        = { workspace = true, features = ["bincode"] }
 voyager-message  = { workspace = true }
 voyager-vm       = { workspace = true }
+wasm-client-type = { workspace = true }

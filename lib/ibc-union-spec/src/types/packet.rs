@@ -42,45 +42,6 @@ pub mod ethabi {
 
     use super::*;
 
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl From<Packet> for ibc_solidity::Packet {
-        fn from(value: Packet) -> Self {
-            Self {
-                source_channel_id: value.source_channel_id.raw(),
-                destination_channel_id: value.destination_channel_id.raw(),
-                data: value.data.into(),
-                timeout_height: value.timeout_height,
-                timeout_timestamp: value.timeout_timestamp.as_nanos(),
-            }
-        }
-    }
-
-    #[cfg(feature = "ibc-solidity-compat")]
-    impl TryFrom<ibc_solidity::Packet> for Packet {
-        type Error = Error;
-
-        fn try_from(value: ibc_solidity::Packet) -> Result<Self, Self::Error> {
-            Ok(Self {
-                source_channel_id: ChannelId::from_raw(value.source_channel_id)
-                    .ok_or(Error::InvalidSourceChannelId)?,
-                destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
-                    .ok_or(Error::InvalidDestinationChannelId)?,
-                data: value.data.into(),
-                timeout_height: value.timeout_height,
-                timeout_timestamp: Timestamp::from_nanos(value.timeout_timestamp),
-            })
-        }
-    }
-
-    #[cfg(feature = "ibc-solidity-compat")]
-    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-    pub enum Error {
-        #[error("invalid source channel id")]
-        InvalidSourceChannelId,
-        #[error("invalid destination channel id")]
-        InvalidDestinationChannelId,
-    }
-
     type SolTuple = (Uint<32>, Uint<32>, SolBytes, Uint<64>, Uint<64>);
 
     impl SolValue for Packet {
@@ -270,91 +231,9 @@ pub mod ethabi {
 
 #[cfg(test)]
 mod tests {
-    use alloy_sol_types::{private::U256, SolValue};
     use unionlabs::primitives::H256;
 
     use super::*;
-
-    #[test]
-    fn abi_encode() {
-        let ibc_solidity_packet = ibc_solidity::Packet {
-            source_channel_id: 1,
-            destination_channel_id: 1,
-            data: b"data".into(),
-            timeout_height: 1,
-            timeout_timestamp: 0,
-        };
-
-        let packet = Packet {
-            source_channel_id: ChannelId::from_raw(1).unwrap(),
-            destination_channel_id: ChannelId::from_raw(1).unwrap(),
-            data: b"data".into(),
-            timeout_height: 1,
-            timeout_timestamp: Timestamp::ZERO,
-        };
-
-        let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
-        let bz = packet.abi_encode_params();
-        assert_eq!(ibc_solidity_bz, bz);
-
-        let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
-        let bz = packet.abi_encode();
-        assert_eq!(ibc_solidity_bz, bz);
-    }
-
-    #[test]
-    fn abi_decode() {
-        let ibc_solidity_packet = ibc_solidity::Packet {
-            source_channel_id: 1,
-            destination_channel_id: 1,
-            data: b"data".into(),
-            timeout_height: 1,
-            timeout_timestamp: 0,
-        };
-
-        let packet = Packet {
-            source_channel_id: ChannelId::from_raw(1).unwrap(),
-            destination_channel_id: ChannelId::from_raw(1).unwrap(),
-            data: b"data".into(),
-            timeout_height: 1,
-            timeout_timestamp: Timestamp::ZERO,
-        };
-
-        let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
-        let decoded_packet = Packet::abi_decode(&ibc_solidity_bz, true).unwrap();
-        assert_eq!(packet, decoded_packet);
-
-        let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
-        let decoded_packet = Packet::abi_decode_params(&ibc_solidity_bz, true).unwrap();
-        assert_eq!(packet, decoded_packet);
-    }
-
-    #[test]
-    fn abi_decode_invalid() {
-        let ibc_solidity_connection = ibc_solidity::Packet {
-            source_channel_id: 0,
-            destination_channel_id: 0,
-            data: b"data".into(),
-            timeout_height: 0,
-            timeout_timestamp: 0,
-        };
-
-        let expected_err = alloy_sol_types::Error::type_check_fail_token::<Packet>(&(
-            U256::from(0_u32).into(),
-            U256::from(0_u32).into(),
-            b"data".as_slice().into(),
-            U256::from(0_u64).into(),
-            U256::from(0_u64).into(),
-        ));
-
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let err = Packet::abi_decode_params(&ibc_solidity_bz, true).unwrap_err();
-        assert_eq!(expected_err, err);
-
-        let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let err = Packet::abi_decode(&ibc_solidity_bz, true).unwrap_err();
-        assert_eq!(expected_err, err);
-    }
 
     #[test]
     fn packet_hash() {

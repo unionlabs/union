@@ -1,5 +1,5 @@
 [package]
-name    = "arbitrum-types"
+name    = "wasm-client-type"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -8,13 +8,11 @@ license-file = { workspace = true }
 publish      = { workspace = true }
 repository   = { workspace = true }
 
-[dependencies]
-alloy-sol-types      = { workspace = true }
-solidity-slot        = { workspace = true }
-unionlabs-primitives = { workspace = true }
-
 [lints]
 workspace = true
 
-[dev-dependencies]
-hex-literal.workspace = true
+[dependencies]
+paste      = { version = "1.0" }
+serde      = { workspace = true, features = ["derive"] }
+thiserror  = { workspace = true }
+wasmparser = { version = "0.113" }

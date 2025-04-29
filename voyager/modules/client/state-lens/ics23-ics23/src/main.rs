@@ -1,4 +1,4 @@
-use alloy::sol_types::SolValue as _;
+use alloy_sol_types::SolValue as _;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -294,7 +294,7 @@ fn encode_merkle_proof_for_move(
     .encode_as::<Bcs>()
 }
 
-alloy::sol! {
+alloy_sol_types::sol! {
     #[derive(Debug)]
     struct ExistenceProof {
         bytes key;

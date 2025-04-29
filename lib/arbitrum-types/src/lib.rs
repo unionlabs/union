@@ -105,7 +105,7 @@ pub mod slots {
     }
 }
 
-alloy::sol! {
+alloy_sol_types::sol! {
     /// <https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/state/GlobalState.sol>
     #[derive(Debug)]
     struct GlobalState {
@@ -154,15 +154,13 @@ alloy::sol! {
 
 #[cfg(test)]
 mod tests {
-    use alloy::hex;
-
     use crate::slots::read_latest_node_created;
 
     #[test]
     fn read_latest_node_created_correct_value() {
         assert_eq!(
-            read_latest_node_created(solidity_slot::U256::from_be_bytes(hex!(
-                "0x000000000143dd37000000000000011c00000000000001120000000000000111"
+            read_latest_node_created(solidity_slot::U256::from_be_bytes(hex_literal::hex!(
+                "000000000143dd37000000000000011c00000000000001120000000000000111"
             )),),
             0x000000000000011c,
         )

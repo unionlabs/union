@@ -4,10 +4,8 @@ use std::{
     error::Error,
     fmt::{Debug, Display},
     num::{NonZeroU32, ParseIntError},
-    sync::Arc,
 };
 
-use dashmap::DashMap;
 use ibc_classic_spec::{IbcClassic, StorePath};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -20,9 +18,7 @@ use tracing::{error, instrument};
 use unionlabs::{
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-    option_unwrap,
-    primitives::H256,
-    ErrorReporter, WasmClientType,
+    option_unwrap, ErrorReporter,
 };
 use voyager_message::{
     into_value,
@@ -50,8 +46,6 @@ pub struct Module {
     pub chain_revision: u64,
 
     pub cometbft_client: cometbft_rpc::Client,
-
-    pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -87,7 +81,6 @@ impl ProofModule<IbcClassic> for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            checksum_cache: Arc::new(DashMap::default()),
         })
     }
 }

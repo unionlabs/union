@@ -15,7 +15,7 @@ workspace = true
 alloy           = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 embed-commit    = { workspace = true }
 ibc-solidity    = { workspace = true, features = ["rpc", "serde"] }
-ibc-union-spec  = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
+ibc-union-spec  = { workspace = true, features = ["serde", "ethabi"] }
 jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
 serde           = { workspace = true, features = ["derive"] }
 serde_json      = { workspace = true }

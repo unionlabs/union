@@ -24,6 +24,7 @@ unionlabs                     = { workspace = true, features = ["ethabi", "proto
 [dev-dependencies]
 hex-literal                             = { workspace = true }
 state-lens-ics23-mpt-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
+unionlabs                               = { workspace = true, features = ["test-utils"] }
 
 [features]
 default = []

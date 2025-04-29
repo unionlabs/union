@@ -1,4 +1,4 @@
-use alloy::primitives::U256;
+use alloy_primitives::U256;
 
 pub const INSTR_VERSION_0: u8 = 0x00;
 pub const INSTR_VERSION_1: u8 = 0x01;
@@ -21,7 +21,7 @@ pub const FORWARD_SALT_MAGIC: U256 = U256::from_be_slice(&[
     0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xBA, 0xBE,
 ]);
 
-alloy::sol! {
+alloy_sol_types::sol! {
     #[derive(Debug)]
     struct ZkgmPacket {
         bytes32 salt;

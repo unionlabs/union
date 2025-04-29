@@ -15,7 +15,6 @@ workspace = true
 alloy-sol-types    = { workspace = true, optional = true }
 bincode            = { workspace = true, optional = true, features = ["derive"] }
 enumorph           = { workspace = true }
-ibc-solidity       = { workspace = true, optional = true }
 num-traits         = "0.2.19"
 schemars           = { workspace = true, optional = true, features = ["derive"] }
 serde              = { workspace = true, optional = true, features = ["derive"] }
@@ -26,15 +25,13 @@ unionlabs          = { workspace = true }
 voyager-primitives = { workspace = true }
 
 [dev-dependencies]
-ibc-solidity   = { workspace = true }
-ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde", "ibc-solidity-compat"] }
+ibc-union-spec = { workspace = true, features = ["ethabi", "schemars", "serde"] }
 
 [features]
 default = []
 
-bincode             = ["dep:bincode", "voyager-primitives/bincode", "unionlabs/bincode"]
-ethabi              = ["dep:alloy-sol-types", "unionlabs/ethabi"]
-ibc-solidity-compat = ["dep:ibc-solidity"]
-schemars            = ["dep:schemars", "voyager-primitives/schemars", "unionlabs/schemars"]
-serde               = ["dep:serde", "voyager-primitives/serde"]
-tracing             = ["dep:tracing", "ethabi"]                                             # ethabi for the packet hash in logs
+bincode  = ["dep:bincode", "voyager-primitives/bincode", "unionlabs/bincode"]
+ethabi   = ["dep:alloy-sol-types", "unionlabs/ethabi"]
+schemars = ["dep:schemars", "voyager-primitives/schemars", "unionlabs/schemars"]
+serde    = ["dep:serde", "voyager-primitives/serde"]
+tracing  = ["dep:tracing", "ethabi"]                                             # ethabi for the packet hash in logs

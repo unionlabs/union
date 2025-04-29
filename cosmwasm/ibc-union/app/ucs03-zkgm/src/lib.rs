@@ -5,7 +5,7 @@ mod state;
 #[cfg(test)]
 mod tests;
 pub mod token_bucket;
-use alloy::primitives::{ruint::ParseError, U256};
+use alloy_primitives::{ruint::ParseError, U256};
 use cosmwasm_std::StdError;
 use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
@@ -25,7 +25,7 @@ pub enum ContractError {
     #[error("invalid operation, sender must be self")]
     OnlySelf,
     #[error(transparent)]
-    Alloy(#[from] alloy::sol_types::Error),
+    Alloy(#[from] alloy_sol_types::Error),
     #[error("invalid zkgm instruction version: {version}")]
     UnsupportedVersion { version: u8 },
     #[error("unknown zkgm instruction opcode: {opcode}")]

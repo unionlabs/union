@@ -1,4 +1,4 @@
-use alloy::sol_types::SolValue;
+use alloy_sol_types::SolValue;
 use ark_serialize::{CanonicalSerialize, SerializationError, Valid};
 use cometbls_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
@@ -386,7 +386,7 @@ impl ClientModuleServer for Module {
 fn encode_merkle_proof_for_evm(
     proof: unionlabs::ibc::core::commitment::merkle_proof::MerkleProof,
 ) -> Vec<u8> {
-    alloy::sol! {
+    alloy_sol_types::sol! {
         struct ExistenceProof {
             bytes key;
             bytes value;

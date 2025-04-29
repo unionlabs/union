@@ -1,4 +1,5 @@
-use alloy::{primitives::U256, sol_types::SolValue};
+use alloy_primitives::U256;
+use alloy_sol_types::SolValue;
 use cosmwasm_std::{
     testing::{message_info, mock_dependencies, mock_env, MockApi, MockQuerier, MockStorage},
     wasm_execute, Addr, Binary, Coin, Coins, Deps, DepsMut, Empty, Env, MessageInfo, OwnedDeps,

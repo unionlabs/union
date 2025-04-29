@@ -643,6 +643,152 @@ impl Clone for Ibc::IbcEvents {
     }
 }
 
+/// Conversions between [`alloy::sol!`] generated types and the canonical tyeps in [`ibc_union_spec`].
+pub mod compat {
+    use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
+
+    use super::*;
+
+    impl From<ibc_union_spec::Packet> for Packet {
+        fn from(value: ibc_union_spec::Packet) -> Self {
+            Self {
+                source_channel_id: value.source_channel_id.raw(),
+                destination_channel_id: value.destination_channel_id.raw(),
+                data: value.data.into(),
+                timeout_height: value.timeout_height,
+                timeout_timestamp: value.timeout_timestamp.as_nanos(),
+            }
+        }
+    }
+
+    impl TryFrom<Packet> for ibc_union_spec::Packet {
+        type Error = InvalidPacketError;
+
+        fn try_from(value: Packet) -> Result<Self, Self::Error> {
+            Ok(Self {
+                source_channel_id: ChannelId::from_raw(value.source_channel_id)
+                    .ok_or(InvalidPacketError::InvalidSourceChannelId)?,
+                destination_channel_id: ChannelId::from_raw(value.destination_channel_id)
+                    .ok_or(InvalidPacketError::InvalidDestinationChannelId)?,
+                data: value.data.into(),
+                timeout_height: value.timeout_height,
+                timeout_timestamp: Timestamp::from_nanos(value.timeout_timestamp),
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum InvalidPacketError {
+        #[error("invalid source channel id")]
+        InvalidSourceChannelId,
+        #[error("invalid destination channel id")]
+        InvalidDestinationChannelId,
+    }
+
+    impl From<ibc_union_spec::Connection> for Connection {
+        fn from(value: ibc_union_spec::Connection) -> Self {
+            Self {
+                state: match value.state {
+                    ibc_union_spec::ConnectionState::Init => ConnectionState::Init,
+                    ibc_union_spec::ConnectionState::TryOpen => ConnectionState::TryOpen,
+                    ibc_union_spec::ConnectionState::Open => ConnectionState::Open,
+                },
+                client_id: value.client_id.raw(),
+                counterparty_client_id: value.counterparty_client_id.raw(),
+                counterparty_connection_id: value
+                    .counterparty_connection_id
+                    .map(|counterparty_connection_id| counterparty_connection_id.raw())
+                    .unwrap_or_default(),
+            }
+        }
+    }
+
+    impl TryFrom<Connection> for ibc_union_spec::Connection {
+        type Error = InvalidConnectionError;
+
+        fn try_from(value: Connection) -> Result<Self, Self::Error> {
+            Ok(Self {
+                state: match value.state {
+                    ConnectionState::Init => ibc_union_spec::ConnectionState::Init,
+                    ConnectionState::TryOpen => ibc_union_spec::ConnectionState::TryOpen,
+                    ConnectionState::Open => ibc_union_spec::ConnectionState::Open,
+                    ConnectionState::Unspecified | ConnectionState::__Invalid => {
+                        return Err(InvalidConnectionError::ConnectionState)
+                    }
+                },
+                client_id: ClientId::from_raw(value.client_id)
+                    .ok_or(InvalidConnectionError::ClientId)?,
+                counterparty_client_id: ClientId::from_raw(value.counterparty_client_id)
+                    .ok_or(InvalidConnectionError::CounterpartyClientId)?,
+                counterparty_connection_id: ConnectionId::from_raw(
+                    value.counterparty_connection_id,
+                ),
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum InvalidConnectionError {
+        #[error("invalid connection state")]
+        ConnectionState,
+        #[error("invalid client id")]
+        ClientId,
+        #[error("invalid counterparty client id")]
+        CounterpartyClientId,
+    }
+
+    impl From<ibc_union_spec::Channel> for Channel {
+        fn from(value: ibc_union_spec::Channel) -> Self {
+            Self {
+                state: match value.state {
+                    ibc_union_spec::ChannelState::Init => ChannelState::Init,
+                    ibc_union_spec::ChannelState::TryOpen => ChannelState::TryOpen,
+                    ibc_union_spec::ChannelState::Open => ChannelState::Open,
+                    ibc_union_spec::ChannelState::Closed => ChannelState::Closed,
+                },
+                connection_id: value.connection_id.raw(),
+                counterparty_channel_id: value
+                    .counterparty_channel_id
+                    .map(|counterparty_channel_id| counterparty_channel_id.raw())
+                    .unwrap_or_default(),
+                counterparty_port_id: value.counterparty_port_id.into(),
+                version: value.version,
+            }
+        }
+    }
+
+    impl TryFrom<Channel> for ibc_union_spec::Channel {
+        type Error = InvalidChannelError;
+
+        fn try_from(value: Channel) -> Result<Self, Self::Error> {
+            Ok(Self {
+                state: match value.state {
+                    ChannelState::Init => ibc_union_spec::ChannelState::Init,
+                    ChannelState::TryOpen => ibc_union_spec::ChannelState::TryOpen,
+                    ChannelState::Open => ibc_union_spec::ChannelState::Open,
+                    ChannelState::Closed => ibc_union_spec::ChannelState::Closed,
+                    ChannelState::Unspecified | ChannelState::__Invalid => {
+                        return Err(InvalidChannelError::InvalidChannelState)
+                    }
+                },
+                connection_id: ConnectionId::from_raw(value.connection_id)
+                    .ok_or(InvalidChannelError::InvalidConnectionId)?,
+                counterparty_channel_id: ChannelId::from_raw(value.counterparty_channel_id),
+                counterparty_port_id: value.counterparty_port_id.into(),
+                version: value.version,
+            })
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, thiserror::Error)]
+    pub enum InvalidChannelError {
+        #[error("invalid channel state")]
+        InvalidChannelState,
+        #[error("invalid connection id")]
+        InvalidConnectionId,
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use alloy::{
@@ -650,6 +796,7 @@ mod tests {
         sol_types::SolValue,
     };
 
+    use super::*;
     use crate::Packet;
 
     #[test]
@@ -664,5 +811,274 @@ mod tests {
             }
             .abi_encode()
         ));
+    }
+
+    mod connection {
+        use ibc_union_spec::{ClientId, ConnectionId};
+
+        use super::*;
+
+        #[test]
+        fn abi_encode() {
+            let ibc_solidity_connection = Connection {
+                state: ConnectionState::Init,
+                client_id: 1,
+                counterparty_client_id: 1,
+                counterparty_connection_id: 1,
+            };
+
+            let connection = ibc_union_spec::Connection {
+                state: ibc_union_spec::ConnectionState::Init,
+                client_id: ClientId!(1),
+                counterparty_client_id: ClientId!(1),
+                counterparty_connection_id: Some(ConnectionId!(1)),
+            };
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
+            let bz = connection.abi_encode_params();
+            assert_eq!(ibc_solidity_bz, bz);
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
+            let bz = connection.abi_encode();
+            assert_eq!(ibc_solidity_bz, bz);
+        }
+
+        #[test]
+        fn abi_decode() {
+            let ibc_solidity_connection = Connection {
+                state: ConnectionState::Init,
+                client_id: 1,
+                counterparty_client_id: 1,
+                counterparty_connection_id: 1,
+            };
+
+            let connection = ibc_union_spec::Connection {
+                state: ibc_union_spec::ConnectionState::Init,
+                client_id: ClientId!(1),
+                counterparty_client_id: ClientId!(1),
+                counterparty_connection_id: Some(ConnectionId!(1)),
+            };
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
+            let decoded_connection =
+                ibc_union_spec::Connection::abi_decode(&ibc_solidity_bz, true).unwrap();
+            assert_eq!(connection, decoded_connection);
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
+            let decoded_connection =
+                ibc_union_spec::Connection::abi_decode_params(&ibc_solidity_bz, true).unwrap();
+            assert_eq!(connection, decoded_connection);
+        }
+
+        #[test]
+        fn abi_decode_invalid() {
+            let ibc_solidity_connection = Connection {
+                state: ConnectionState::Unspecified,
+                client_id: 1,
+                counterparty_client_id: 1,
+                counterparty_connection_id: 1,
+            };
+
+            let expected_err =
+                alloy::sol_types::Error::type_check_fail_token::<ibc_union_spec::Connection>(&(
+                    alloy::sol_types::private::U256::from(0_u8).into(),
+                    alloy::sol_types::private::U256::from(1_u32).into(),
+                    alloy::sol_types::private::U256::from(1_u32).into(),
+                    alloy::sol_types::private::U256::from(1_u32).into(),
+                ));
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
+            let err =
+                ibc_union_spec::Connection::abi_decode_params(&ibc_solidity_bz, true).unwrap_err();
+            assert_eq!(expected_err, err);
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
+            let err = ibc_union_spec::Connection::abi_decode(&ibc_solidity_bz, true).unwrap_err();
+            assert_eq!(expected_err, err);
+        }
+    }
+
+    mod channel {
+        use alloy::primitives::U256;
+        use ibc_union_spec::{ChannelId, ConnectionId};
+
+        use super::*;
+
+        #[test]
+        fn abi_encode() {
+            let ibc_solidity_connection = Channel {
+                state: ChannelState::Init,
+                connection_id: 1,
+                counterparty_channel_id: 1,
+                counterparty_port_id: b"port".into(),
+                version: "version".into(),
+            };
+
+            let connection = ibc_union_spec::Channel {
+                state: ibc_union_spec::ChannelState::Init,
+                connection_id: ConnectionId!(1),
+                counterparty_channel_id: Some(ChannelId!(1)),
+                counterparty_port_id: b"port".into(),
+                version: "version".into(),
+            };
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
+            let bz = connection.abi_encode_params();
+            assert_eq!(ibc_solidity_bz, bz);
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
+            let bz = connection.abi_encode();
+            assert_eq!(ibc_solidity_bz, bz);
+        }
+
+        #[test]
+        fn abi_decode() {
+            let ibc_solidity_connection = Channel {
+                state: ChannelState::Init,
+                connection_id: 1,
+                counterparty_channel_id: 1,
+                counterparty_port_id: b"port".into(),
+                version: "version".into(),
+            };
+
+            let connection = ibc_union_spec::Channel {
+                state: ibc_union_spec::ChannelState::Init,
+                connection_id: ConnectionId!(1),
+                counterparty_channel_id: Some(ChannelId!(1)),
+                counterparty_port_id: b"port".into(),
+                version: "version".into(),
+            };
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
+            let decoded_connection =
+                ibc_union_spec::Channel::abi_decode(&ibc_solidity_bz, true).unwrap();
+            assert_eq!(connection, decoded_connection);
+
+            let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
+            let decoded_connection =
+                ibc_union_spec::Channel::abi_decode_params(&ibc_solidity_bz, true).unwrap();
+            assert_eq!(connection, decoded_connection);
+        }
+
+        #[test]
+        fn abi_decode_invalid() {
+            let ibc_solidity_channel = Channel {
+                state: ChannelState::Unspecified,
+                connection_id: 1,
+                counterparty_channel_id: 1,
+                counterparty_port_id: b"port".into(),
+                version: "version".into(),
+            };
+
+            let expected_err =
+                alloy::sol_types::Error::type_check_fail_token::<ibc_union_spec::Channel>(&(
+                    U256::from(0_u32).into(),
+                    U256::from(1_u32).into(),
+                    U256::from(1_u32).into(),
+                    b"port".as_slice().into(),
+                    b"version".as_slice().into(),
+                ));
+
+            let ibc_solidity_bz = ibc_solidity_channel.abi_encode_params();
+            let err =
+                ibc_union_spec::Channel::abi_decode_params(&ibc_solidity_bz, true).unwrap_err();
+            assert_eq!(expected_err, err);
+
+            let ibc_solidity_bz = ibc_solidity_channel.abi_encode();
+            let err = ibc_union_spec::Channel::abi_decode(&ibc_solidity_bz, true).unwrap_err();
+            assert_eq!(expected_err, err);
+        }
+    }
+
+    mod packet {
+        use alloy::sol_types::{private::U256, SolValue};
+        use ibc_union_spec::{ChannelId, Timestamp};
+
+        use super::*;
+
+        #[test]
+        fn abi_encode() {
+            let ibc_solidity_packet = Packet {
+                source_channel_id: 1,
+                destination_channel_id: 1,
+                data: b"data".into(),
+                timeout_height: 1,
+                timeout_timestamp: 0,
+            };
+
+            let packet = ibc_union_spec::Packet {
+                source_channel_id: ChannelId::from_raw(1).unwrap(),
+                destination_channel_id: ChannelId::from_raw(1).unwrap(),
+                data: b"data".into(),
+                timeout_height: 1,
+                timeout_timestamp: Timestamp::ZERO,
+            };
+
+            let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
+            let bz = packet.abi_encode_params();
+            assert_eq!(ibc_solidity_bz, bz);
+
+            let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
+            let bz = packet.abi_encode();
+            assert_eq!(ibc_solidity_bz, bz);
+        }
+
+        #[test]
+        fn abi_decode() {
+            let ibc_solidity_packet = Packet {
+                source_channel_id: 1,
+                destination_channel_id: 1,
+                data: b"data".into(),
+                timeout_height: 1,
+                timeout_timestamp: 0,
+            };
+
+            let packet = ibc_union_spec::Packet {
+                source_channel_id: ChannelId::from_raw(1).unwrap(),
+                destination_channel_id: ChannelId::from_raw(1).unwrap(),
+                data: b"data".into(),
+                timeout_height: 1,
+                timeout_timestamp: Timestamp::ZERO,
+            };
+
+            let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
+            let decoded_packet =
+                ibc_union_spec::Packet::abi_decode(&ibc_solidity_bz, true).unwrap();
+            assert_eq!(packet, decoded_packet);
+
+            let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
+            let decoded_packet =
+                ibc_union_spec::Packet::abi_decode_params(&ibc_solidity_bz, true).unwrap();
+            assert_eq!(packet, decoded_packet);
+        }
+
+        #[test]
+        fn abi_decode_invalid() {
+            let ibc_solidity_packet = Packet {
+                source_channel_id: 0,
+                destination_channel_id: 0,
+                data: b"data".into(),
+                timeout_height: 0,
+                timeout_timestamp: 0,
+            };
+
+            let expected_err =
+                alloy::sol_types::Error::type_check_fail_token::<ibc_union_spec::Packet>(&(
+                    U256::from(0_u32).into(),
+                    U256::from(0_u32).into(),
+                    b"data".as_slice().into(),
+                    U256::from(0_u64).into(),
+                    U256::from(0_u64).into(),
+                ));
+
+            let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
+            let err =
+                ibc_union_spec::Packet::abi_decode_params(&ibc_solidity_bz, true).unwrap_err();
+            assert_eq!(expected_err, err);
+
+            let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
+            let err = ibc_union_spec::Packet::abi_decode(&ibc_solidity_bz, true).unwrap_err();
+            assert_eq!(expected_err, err);
+        }
     }
 }

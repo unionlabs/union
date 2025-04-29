@@ -31,7 +31,7 @@ use unionlabs::{
     never::Never,
     option_unwrap,
     primitives::H256,
-    ErrorReporter, WasmClientType,
+    ErrorReporter,
 };
 use voyager_message::{
     call::{Call, WaitForHeight},
@@ -43,6 +43,7 @@ use voyager_message::{
     ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
+use wasm_client_type::WasmClientType;
 
 use crate::{
     call::{FetchBlock, FetchBlocks, MakeChainEvent, ModuleCall},

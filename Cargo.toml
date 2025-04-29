@@ -229,6 +229,7 @@ members = [
 
   "lib/consensus-primitives",
   "lib/solidity-slot",
+  "lib/wasm-client-type",
 ]
 
 [workspace.package]
@@ -373,7 +374,8 @@ consensus-primitives = { path = "lib/consensus-primitives", default-features = f
 
 state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
 
-solidity-slot = { path = "lib/solidity-slot", default-features = false }
+solidity-slot    = { path = "lib/solidity-slot", default-features = false }
+wasm-client-type = { path = "lib/wasm-client-type", default-features = false }
 
 # =====================
 # external dependencies

@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                  = { workspace = true, features = ["sol-types"] }
+alloy-sol-types        = { workspace = true }
 bob-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
 evm-storage-verifier   = { workspace = true }
 ibc-union-spec         = { workspace = true }

@@ -18,12 +18,12 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"] }
+alloy-primitives            = { workspace = true }
+alloy-sol-types             = { workspace = true }
 cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2"] }
 cw-storage-plus             = { workspace = true }
 embed-commit                = { workspace = true }
-ethabi                      = { workspace = true }
 frissitheto                 = { workspace = true }
 ibc-union-msg               = { workspace = true }
 ibc-union-spec              = { workspace = true, features = ["serde", "ethabi"] }

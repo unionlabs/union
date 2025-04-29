@@ -16,7 +16,7 @@ alloy           = { workspace = true, features = ["rpc", "rpc-types", "transport
 embed-commit    = { workspace = true }
 enumorph        = { workspace = true }
 ibc-solidity    = { workspace = true, features = ["serde", "rpc"] }
-ibc-union-spec  = { workspace = true, features = ["tracing", "serde", "ibc-solidity-compat"] }
+ibc-union-spec  = { workspace = true, features = ["tracing", "serde"] }
 jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
 macros          = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }

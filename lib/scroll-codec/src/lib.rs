@@ -10,7 +10,7 @@ use crate::batch_header::{BatchHeaderV3, BatchHeaderV3DecodeError};
 
 pub mod batch_header;
 
-alloy::sol! {
+alloy_sol_types::sol! {
     /// See <https://github.com/scroll-tech/scroll-contracts/blob/7bb751f9cf1b5fdde95297049e3407ce23d56ac6/src/mocks/ScrollChainMockFinalize.sol#L59>
     function finalizeBundle(
         bytes calldata _batchHeader,

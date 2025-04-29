@@ -87,7 +87,13 @@ mod ethabi {
 
 #[cfg(test)]
 mod tests {
-    use alloy::dyn_abi::SolType;
+    use alloy::{dyn_abi::SolType, hex};
+    use unionlabs::{
+        encoding::{Bincode, EthAbi},
+        test_utils::assert_codec_iso_bytes,
+    };
+
+    use super::*;
 
     #[test]
     fn ethabi() {
@@ -107,5 +113,46 @@ mod tests {
 
         SolClientState::abi_decode(&bz, true).unwrap();
         assert!(SolClientState::abi_decode_params(&bz, true).is_err());
+    }
+
+    #[test]
+    fn ethabi_encoding() {
+        let bz = hex!("0x00000000000000000000000000000000000000000000000000000000000000e00000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000007d22b100000000000000000000000000000000000000000000000000000000000000780000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000083131313535313131000000000000000000000000000000000000000000000000");
+
+        assert_codec_iso_bytes::<_, EthAbi>(
+            &ClientState {
+                l2_chain_id: "11155111".to_owned(),
+                l1_client_id: 1_u32.try_into().unwrap(),
+                l2_client_id: 1_u32.try_into().unwrap(),
+                l2_latest_height: 8200881,
+                extra: Extra {
+                    timestamp_offset: 120,
+                    state_root_offset: 32,
+                    storage_root_offset: 64,
+                },
+            },
+            &bz,
+        );
+    }
+
+    #[test]
+    fn bincode_encoding() {
+        let bz =
+            hex!("0x0800000000000000313131353531313101000000010000000c217d0000000000780020004000");
+
+        assert_codec_iso_bytes::<_, Bincode>(
+            &ClientState {
+                l2_chain_id: "11155111".to_owned(),
+                l1_client_id: 1_u32.try_into().unwrap(),
+                l2_client_id: 1_u32.try_into().unwrap(),
+                l2_latest_height: 8200460,
+                extra: Extra {
+                    timestamp_offset: 120,
+                    state_root_offset: 32,
+                    storage_root_offset: 64,
+                },
+            },
+            &bz,
+        );
     }
 }
