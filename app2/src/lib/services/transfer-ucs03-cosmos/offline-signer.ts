@@ -7,6 +7,7 @@ import {
 import type { Chain } from "@unionlabs/sdk/schema"
 import type { OfflineSigner } from "$lib/services/cosmos/types.ts"
 import { getCosmosWalletClient } from "$lib/services/cosmos/clients.ts"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
 
 export const getCosmosOfflineSigner: (
   chain: Chain,
@@ -35,9 +36,9 @@ export const getCosmosOfflineSigner: (
         wallet.getOfflineSignerAuto(chain.chain_id, {
           disableBalanceCheck: false
         }),
-      catch: cause => {
-        console.error("[getCosmosOfflineSigner]", cause)
-        return new OfflineSignerError({ cause })
+      catch: err => {
+        console.error("[getCosmosOfflineSigner]", err)
+        return new OfflineSignerError({ cause: extractErrorDetails(err) })
       }
     })
 
