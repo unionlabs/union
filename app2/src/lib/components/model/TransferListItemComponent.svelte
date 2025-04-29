@@ -46,17 +46,18 @@ const handleClick = () => {
         <TokenComponent
           showWrapping={false}
           chain={destinationChain.value}
+          showIcon={false}
           denom={transfer.quote_token}
           amount={transfer.quote_amount}
         />
       {/if}
       <div class="flex items-center gap-1 text-zinc-400 text-sm">
         {#if Option.isSome(sourceChain)}
-          <ChainComponent class="font-normal" chain={sourceChain.value} />
+          <ChainComponent class="font-normal" chain={sourceChain.value} withToken={transfer.base_token} />
         {/if}
         <SharpRightArrowIcon class="size-5" />
         {#if Option.isSome(destinationChain)}
-          <ChainComponent class="font-normal" chain={destinationChain.value} />
+          <ChainComponent class="font-normal" chain={destinationChain.value} withToken={transfer.quote_token} />
         {/if}
       </div>
     </div>

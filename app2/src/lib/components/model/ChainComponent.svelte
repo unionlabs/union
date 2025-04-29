@@ -1,23 +1,56 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import { Chain } from "@unionlabs/sdk/schema"
+import { Chain, Token, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import A from "../ui/A.svelte"
 import Label from "../ui/Label.svelte"
 import LongMonoWord from "../ui/LongMonoWord.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
+import { Array as Arr, Option, pipe } from "effect"
+import { tokensStore } from "$lib/stores/tokens.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   chain: Chain
   class?: string
+  withToken?: TokenRawDenom | undefined
   disableTooltip?: boolean
 }
 
-const { chain, class: className = "", disableTooltip = false, ...rest }: Props = $props()
+const {
+  chain,
+  class: className = "",
+  disableTooltip = false,
+  withToken: denom,
+  ...rest
+}: Props = $props()
 
 const classes = cn("text-md font-semibold", className)
+
+// Start the query when the component mounts
+$effect(() => {
+  console.log("FETCHI NGTKENS")
+  tokensStore.fetchTokens(chain.universal_chain_id)
+})
+
+const token = $derived(
+  pipe(
+    tokensStore.getData(chain.universal_chain_id),
+    Option.flatMap(tokens => Option.fromNullable(tokens.find(t => t.denom === denom)))
+  )
+)
+
+const tokenLogo = $derived(
+  pipe(
+    token,
+    Option.map(x => x.representations),
+    Option.flatMap(Arr.head),
+    Option.flatMap(x => Option.all({ alt: Option.some(x.name), uri: x.logo_uri }))
+  )
+)
+
+$effect(() => {})
 </script>
 
 {#if disableTooltip}
@@ -32,8 +65,13 @@ const classes = cn("text-md font-semibold", className)
       <div>
         {#if chainLogo?.color}
           <div class="flex items-center">
-            <div class="size-4 flex items-center justify-center overflow-hidden">
-              <img src={chainLogo.color} alt="">
+            <div class="flex items-center justify-center overflow-hidden">
+              <img class="size-4" src={chainLogo.color} alt="">
+              {#if Option.isSome(tokenLogo)}
+                {@const alt = tokenLogo.value.alt}
+                {@const src = tokenLogo.value.uri}
+                <img class="size-4" {src} {alt} />
+              {/if}
             </div>
           </div>
         {/if}
