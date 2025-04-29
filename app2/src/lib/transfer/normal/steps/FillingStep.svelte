@@ -81,7 +81,7 @@ $effect(() => {
           <Button
             class="flex-1"
             variant="danger"
-            onclick={() => (isModalOpen = true)}
+            onclick={() => (isErrorModalOpen = true)}
             disabled={!isButtonEnabled}
           >
             {uiStatus.text}
@@ -109,5 +109,5 @@ $effect(() => {
 <InsetError
   open={isErrorModalOpen}
   error={uiStatus.error}
-  onClose={() => (isModalOpen = false)}
+  onClose={() => (isErrorModalOpen = false)}
 />
