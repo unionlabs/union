@@ -90,3 +90,5 @@ dist/
 *.tsbuildinfo
 
 .gas-snapshot
+
+sentinel2/sentinel.db
