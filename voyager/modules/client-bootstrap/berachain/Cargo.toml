@@ -12,20 +12,20 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                        = { workspace = true, features = ["network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-berachain-light-client-types = { workspace = true, features = ["serde"] }
-embed-commit                 = { workspace = true }
-ibc-union-spec               = { workspace = true }
-ics23                        = { workspace = true }
-jsonrpsee                    = { workspace = true, features = ["macros", "server", "tracing"] }
-serde                        = { workspace = true, features = ["derive"] }
-serde_json                   = { workspace = true }
-thiserror                    = { workspace = true }
-tokio                        = { workspace = true }
-tracing                      = { workspace = true }
-unionlabs                    = { workspace = true }
-voyager-message              = { workspace = true }
-voyager-vm                   = { workspace = true }
-cometbft-rpc                 = { workspace = true }
-protos = { workspace = true }
-tendermint-light-client-types = { workspace = true, features = [ "serde" ]}
+alloy                         = { workspace = true, features = ["network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+berachain-light-client-types  = { workspace = true, features = ["serde"] }
+cometbft-rpc                  = { workspace = true }
+embed-commit                  = { workspace = true }
+ibc-union-spec                = { workspace = true }
+ics23                         = { workspace = true }
+jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
+protos                        = { workspace = true }
+serde                         = { workspace = true, features = ["derive"] }
+serde_json                    = { workspace = true }
+tendermint-light-client-types = { workspace = true, features = ["serde"] }
+thiserror                     = { workspace = true }
+tokio                         = { workspace = true }
+tracing                       = { workspace = true }
+unionlabs                     = { workspace = true }
+voyager-message               = { workspace = true }
+voyager-vm                    = { workspace = true }

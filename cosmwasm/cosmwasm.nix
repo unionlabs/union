@@ -135,7 +135,7 @@ _: {
             "berachain"
             "ethereum"
             "trusted-mpt"
-            "ethermint"
+            # "ethermint"
             "tendermint-bls"
             "parlia"
             # "movement"
@@ -445,11 +445,11 @@ _: {
           dir = "trusted-mpt";
           client-type = "trusted/evm/mpt";
         }
-        {
-          name = "ethermint";
-          dir = "ethermint";
-          client-type = "ethermint";
-        }
+        # {
+        #   name = "ethermint";
+        #   dir = "ethermint";
+        #   client-type = "ethermint";
+        # }
         {
           name = "tendermint";
           dir = "tendermint";
