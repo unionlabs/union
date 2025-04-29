@@ -141,7 +141,7 @@ function setMaxAmount() {
     autocapitalize="none"
     pattern="^[0-9]*[.,]?[0-9]*$"
     value={transferData.raw.amount}
-    class="h-14 text-center text-lg"
+    class="h-14 text-center text-lg text-white"
     oninput={(event) => {
       transferData.raw.updateField("amount", event);
     }}
