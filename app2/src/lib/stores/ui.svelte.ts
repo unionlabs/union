@@ -8,6 +8,7 @@ class UiStore {
   errorsModalOpen: boolean = $state(false)
   showZeroBalances: boolean = $state(false)
   showDeveloperPages: boolean = $state(false)
+  filterWhitelist: boolean = $state(true)
 
   edition: Edition = $state("app")
   overrideEdition: Edition | null = $state(null)

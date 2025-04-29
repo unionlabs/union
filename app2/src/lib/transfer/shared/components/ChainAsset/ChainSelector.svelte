@@ -157,7 +157,10 @@ const hasTokenBucket = (
   )
 }
 
-const filterChainsByTokenAvailability = (chains: Array<Chain>): Array<ChainWithAvailability> =>
+const filterChainsByTokenAvailability = (
+  chains: Array<Chain>,
+  filterWhitelist: boolean
+): Array<ChainWithAvailability> =>
   pipe(
     Match.value(type).pipe(
       Match.when("source", () => chains.map(chain => Tuple.make(chain, false))),
@@ -172,6 +175,9 @@ const filterChainsByTokenAvailability = (chains: Array<Chain>): Array<ChainWithA
             onSome: ({ baseToken, sourceChain }) =>
               chains.map(destinationChain => {
                 if (destinationChain.testnet === true) {
+                  return Tuple.make(destinationChain, true)
+                }
+                if (!filterWhitelist) {
                   return Tuple.make(destinationChain, true)
                 }
                 const tokens = tokensStore.getData(destinationChain.universal_chain_id)
@@ -200,7 +206,7 @@ const filteredChains = $derived(
           filterByEdition(chain, uiStore.activeEdition, getEnvironment().toLowerCase())
         ),
         filterBySigningMode,
-        filterChainsByTokenAvailability
+        chains => filterChainsByTokenAvailability(chains, uiStore.filterWhitelist)
       )
     )
   )
