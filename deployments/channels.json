@@ -34,6 +34,14 @@
       "comments": "union.union-testnet-10 channel 1",
       "tags": ["canonical"]
     },
+    "3": {
+      "comments": "trusted connection to union.union-testnet-10 channel 3 intended for development and testing only",
+      "tags": ["development"]
+    },
+    "6": {
+      "comments": "trusted connection to ethereum.17000 channel 1 intended for development and testing only",
+      "tags": ["development"]
+    },
     "7": {
       "comments": "babylon.bbn-test-5 channel 1",
       "tags": ["canonical"]
