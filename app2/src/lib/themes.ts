@@ -20,7 +20,7 @@ export const themes: Record<Edition, Theme> = {
     accent: "var(--color-union)",
     primary: "var(--color-union)",
     background: "var(--color-zinc-950)",
-    videoUrl: "https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/%20app-union-background-1.webm",
+    videoUrl: "https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/app-union-background-2.webm",
     staticImage: "/static-video.png"
   }
 }
