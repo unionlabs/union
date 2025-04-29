@@ -14,6 +14,10 @@ export const getCosmosOfflineSigner = (chain: Chain) =>
         wallet.getOfflineSignerAuto(chain.chain_id, {
           disableBalanceCheck: false
         }),
-      catch: err => new OfflineSignerError({ cause: extractErrorDetails(err as Error) })
+      catch: err =>
+        new OfflineSignerError({
+          cause: extractErrorDetails(err as Error),
+          chain_id: chain.chain_id
+        })
     })
   })

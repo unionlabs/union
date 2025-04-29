@@ -158,12 +158,15 @@ const submit = Effect.gen(function* () {
       ),
       Match.when("cosmos", () =>
         Effect.gen(function* () {
-          const signingClient = yield* getCosmWasmClient(chain, cosmosStore.connectedWallet)
-          const sender = yield* chain.getDisplayAddress(Option.getOrNull(wallets.cosmosAddress))
+          console.log("prior to do block")
+
+          const sender = yield* chain.getDisplayAddress(step.intent.sender) // TODO: fix type error
+
+          console.log("before do block")
 
           do {
             cts = yield* Effect.promise(() =>
-              nextStateCosmos(cts, chain, signingClient, sender, step.token, {
+              nextStateCosmos(cts, chain, sender, step.token, {
                 increase_allowance: {
                   spender: step.intent.sourceChain.minter_address_display,
                   amount: approvalAmount

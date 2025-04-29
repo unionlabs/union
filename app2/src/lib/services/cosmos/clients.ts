@@ -15,7 +15,7 @@ import {
 export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId) =>
   Effect.gen(function* () {
     if (!chain.rpcs) {
-      return yield* Effect.fail(new CosmWasmError({ cause: "No RPCs available for chain" }))
+      return yield* new CosmWasmError({ cause: "No RPCs available for chain" })
     }
 
     const offlineSigner = yield* getCosmosOfflineSigner(chain)

@@ -12,8 +12,11 @@ export type TransactionSubmissionCosmos = Data.TaggedEnum<{
   Filling: {}
   SwitchChainInProgress: {}
   SwitchChainComplete: { exit: EffectToExit<ReturnType<typeof switchChain>> }
-  WriteContractInProgress: {}
-  WriteContractComplete: { exit: EffectToExit<ReturnType<typeof executeContract>> }
+  WriteContractInProgress: { signingClient: SigningCosmWasmClient }
+  WriteContractComplete: {
+    signingClient: SigningCosmWasmClient
+    exit: EffectToExit<ReturnType<typeof executeContract>>
+  }
 }>
 
 export const TransactionSubmissionCosmos = Data.taggedEnum<TransactionSubmissionCosmos>()
@@ -27,7 +30,6 @@ const {
 export const nextStateCosmos = async (
   ts: TransactionSubmissionCosmos,
   chain: Chain,
-  signingClient: SigningCosmWasmClient,
   senderAddress: string,
   contractAddress: string,
   msg: Record<string, unknown>,
@@ -52,9 +54,9 @@ export const nextStateCosmos = async (
       console.log(
         "[SwitchChainComplete] Chain switch successful. → Moving to ExecuteContractInProgress"
       )
-      return WriteContractInProgress()
+      return WriteContractInProgress({ signingClient: exit.value.signingClient })
     },
-    WriteContractInProgress: async () => {
+    WriteContractInProgress: async ({ signingClient }) => {
       const retryableExecute = executeContract(
         signingClient,
         senderAddress,
@@ -69,15 +71,16 @@ export const nextStateCosmos = async (
       )
 
       return WriteContractComplete({
+        signingClient,
         exit: await Effect.runPromiseExit(retryableExecute)
       })
     },
 
-    WriteContractComplete: ({ exit }) => {
+    WriteContractComplete: ({ signingClient, exit }) => {
       if (exit._tag === "Failure") {
         console.error("[ExecuteContractComplete] Contract execution failed with error:", exit.cause)
         console.log("[ExecuteContractComplete] → Retrying ExecuteContractInProgress")
-        return WriteContractInProgress()
+        return WriteContractInProgress({ signingClient })
       }
       console.log("ExecuteContractComplete] Contract execution successful. Transaction complete!")
       return ts
