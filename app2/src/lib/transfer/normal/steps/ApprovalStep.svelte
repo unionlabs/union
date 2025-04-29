@@ -349,38 +349,25 @@ function handleBackClick() {
   <div class="grow flex flex-col gap-2 p-4">
     <h3 class="text-lg font-semibold">
       Approve
-      <TokenComponent chain={sourceChain} denom={massagedDenom} />
+      <TokenComponent chain={sourceChain} denom={massagedDenom} showWrapping={false} showIcon={false}/>
     </h3>
 
     <p class="text-sm text-zinc-400">
       You need to approve Union to send
-      <TokenComponent chain={sourceChain} denom={massagedDenom} />. This is a
+      <TokenComponent chain={sourceChain} denom={massagedDenom}  showWrapping={false}/>. This is a
       one-time approval for this token.
     </p>
 
-    <div class="mt-4 grid grid-cols-2 gap-4">
-      <div>
-        <Label class="text-zinc-400 mb-2 block text-sm">Current Approval</Label>
-        <div class="flex items-center gap-2">
-          <TokenComponent
-            chain={sourceChain}
-            denom={massagedDenom}
-            amount={step.currentAllowance}
-            showIcon={false}
-          />
-        </div>
-      </div>
-      <div>
-        <Label class="text-zinc-400 mb-2 block text-sm">Required Approval</Label
-        >
-        <div class="flex items-center gap-2">
-          <TokenComponent
-            chain={sourceChain}
-            denom={massagedDenom}
-            amount={step.requiredAmount}
-            showIcon={false}
-          />
-        </div>
+      
+    <div class="mt-4">
+      <Label class="text-zinc-400 mb-2 block text-sm">Required Approval</Label
+      >
+      <div class="flex items-center gap-2">
+        <TokenComponent
+          chain={sourceChain}
+          denom={massagedDenom}
+          amount={step.requiredAmount}
+        />
       </div>
     </div>
   </div>
