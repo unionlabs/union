@@ -5,7 +5,8 @@ import { TokenRawDenom } from "@unionlabs/sdk/schema"
  */
 export const TOKEN_BLACKLIST: Array<TokenRawDenom> = [
   TokenRawDenom.make("0x0000000000000000000000000000000000000000"),
-  TokenRawDenom.make("0xb7fb16053a3e3d4306791045769ec686f6ec4432")
+  TokenRawDenom.make("0xb7fb16053a3e3d4306791045769ec686f6ec4432"),
+  TokenRawDenom.make("0x6e6174697665")
 ]
 
 /**
