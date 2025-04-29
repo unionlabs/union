@@ -1,6 +1,6 @@
 <script lang="ts">
 import { type Chain, getChain, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Option } from "effect"
+import { Array as Arr, Option, pipe } from "effect"
 import Truncate from "$lib/components/ui/Truncate.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { chains } from "$lib/stores/chains.svelte"
@@ -93,10 +93,20 @@ const displayDenom = $derived(
   {#snippet trigger()}
     <div class="flex items-center gap-2 font-semibold">
       {#if showIcon}
+        {@const [alt, src] = pipe(
+          // TODO: move me into a Token class getter
+          token,
+          Option.map(x => x.representations),
+          Option.flatMap(Arr.head),
+          Option.flatMap(x => Option.all([Option.some(x.name), x.logo_uri])),
+          Option.getOrElse(() => [undefined, undefined])
+        )}
         {#if Option.isSome(icon) && icon.value.length > 0}
           <img class="size-4" src={icon.value} alt="" loading="lazy"/>
+        {:else if src && alt}
+          <img class="size-4" {src} {alt} loading="lazy"/>
         {:else}
-          <div class="size-5 flex items-center justify-center bg-zinc-700 rounded-full">
+          <div class="size-4 flex items-center justify-center bg-zinc-700 rounded-full">
             <span class="text-xs text-zinc-400">?</span>
           </div>
         {/if}
