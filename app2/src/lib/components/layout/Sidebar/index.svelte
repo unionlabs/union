@@ -80,7 +80,7 @@ onMount(() => {
   <a class="px-6 flex items-center gap-2 border-b-1 h-16 border-zinc-900" href="/">
     <img class="h-10" src="/images/union-logo.svg" alt="Union" />
     {#key uiStore.activeEdition}
-      <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">{uiStore.activeEdition.toUpperCase()}</div>
+      <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">{uiStore.theme.label}</div>
     {/key}
   </a>
   <div class="flex flex-col flex-1">

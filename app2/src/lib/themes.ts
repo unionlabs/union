@@ -1,6 +1,7 @@
 export type Edition = "btc" | "app"
 
 export interface Theme {
+  label: string
   accent: string
   primary: string
   background: string
@@ -10,6 +11,7 @@ export interface Theme {
 
 export const themes: Record<Edition, Theme> = {
   btc: {
+    label: "BTC",
     accent: "var(--color-babylon-orange)",
     primary: "var(--color-babylon-orange)",
     background: "var(--color-zinc-950)",
@@ -17,6 +19,7 @@ export const themes: Record<Edition, Theme> = {
     staticImage: "/static-video.png"
   },
   app: {
+    label: "V2",
     accent: "var(--color-union)",
     primary: "var(--color-union)",
     background: "var(--color-zinc-950)",
