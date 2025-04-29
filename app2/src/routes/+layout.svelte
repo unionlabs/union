@@ -17,6 +17,7 @@ import { cn } from "$lib/utils"
 import { page } from "$app/state"
 import { runFork } from "$lib/utils/effect.svelte"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
+import Seo from "$lib/components/Seo.svelte"
 
 let { children } = $props()
 
@@ -96,6 +97,8 @@ $effect(() => {
   document.documentElement.style.setProperty("--color-background", uiStore.theme.background)
 })
 </script>
+
+<Seo />
 
 <!-- Background video -->
 {#if !isMobile}
