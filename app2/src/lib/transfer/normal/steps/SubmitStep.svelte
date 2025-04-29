@@ -188,7 +188,6 @@ export const submit = Effect.gen(function* () {
               nextStateCosmos(
                 cts,
                 step.intent.sourceChain,
-                signingClient,
                 sender,
                 fromHex(step.intent.channel.source_port_id, "string"),
                 {
