@@ -1,7 +1,7 @@
 <script lang="ts">
 import type { TransferListItem } from "@unionlabs/sdk/schema"
 import { getChain } from "@unionlabs/sdk/schema"
-import { Option } from "effect"
+import { Option, pipe } from "effect"
 import ChainComponent from "./ChainComponent.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import { chains } from "$lib/stores/chains.svelte"
@@ -39,6 +39,10 @@ const handleClick = () => {
   >
     <div>
       {#if Option.isSome(sourceChain) && Option.isSome(destinationChain)}
+        {@const icon = pipe(
+          destinationChain,
+          Option.flatMap((chain) => getChain([chain], chain.universal_chain_id)),
+        )}
         <TokenComponent
           showWrapping={false}
           chain={destinationChain.value}
