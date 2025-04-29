@@ -33,6 +33,7 @@ import Label from "$lib/components/ui/Label.svelte"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
+import { getWagmiConnectorClient } from "$lib/services/evm/clients.ts" 
 
 type Props = {
   stepIndex: number
@@ -104,13 +105,7 @@ export const submit = Effect.gen(function* () {
             transport: http()
           })
 
-          const connectorClient = yield* Effect.tryPromise({
-            try: () => getConnectorClient(wagmiConfig),
-            catch: err =>
-              new ConnectorClientError({
-                cause: err as GetConnectorClientErrorType
-              })
-          })
+          const connectorClient = yield* getWagmiConnectorClient
 
           const walletClient = yield* createViemWalletClient({
             account: connectorClient.account,

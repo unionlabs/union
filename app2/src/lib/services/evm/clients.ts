@@ -1,14 +1,15 @@
 import { Context, Data, Effect, Option } from "effect"
+import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details.ts"
 import {
   createPublicClient,
   type CreatePublicClientErrorType,
   createWalletClient,
+  http,
   type CreateWalletClientErrorType,
   custom,
-  http,
   type PublicClient
 } from "viem"
-import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
 import { wagmiConfig } from "$lib/wallet/evm/wagmi-config"
 import {
   ConnectorClientError,
@@ -26,6 +27,19 @@ export class NoViemChainError extends Data.TaggedError("NoViemChain")<{
   chain: Chain
 }> {}
 
+export const getWagmiConnectorClient = Effect.tryPromise({
+    try: () => getConnectorClient(wagmiConfig),
+    catch: err =>
+      new ConnectorClientError({
+        wagmiConfig,
+        cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType
+      })
+  })
+
+
+/**
+ * @deprecated use the one from ts-sdk instead
+ */
 export const getPublicClient = (chain: Chain) =>
   Effect.gen(function* () {
     const viemChain = chain.toViemChain()
@@ -45,6 +59,9 @@ export const getPublicClient = (chain: Chain) =>
     return client
   })
 
+/**
+ * @deprecated use the one from ts-sdk instead
+ */
 export const getWalletClient = (chain: Chain) =>
   Effect.gen(function* () {
     const viemChain = chain.toViemChain()
