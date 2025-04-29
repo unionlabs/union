@@ -106,6 +106,7 @@ in
         python3
         pkg-config
         sqlite
+        nodejs_20
         nodePackages_latest."patch-package"
       ];
       packageJSON = lib.importJSON ./package.json;
@@ -127,7 +128,7 @@ in
             python3
             pkg-config
             sqlite
-            nodejs
+            nodejs_20
             nodePackages_latest."patch-package"
           ];
 
@@ -159,12 +160,12 @@ in
                         # IMPORTANT: Expand $out now, at build time, so the final script has a literal store path
                           cat <<EOF > $out/bin/sentinel2
             #!${pkgs.bashInteractive}/bin/bash
-            export PATH=${pkgs.nodejs}/bin:\$PATH
+            export PATH=${pkgs.nodejs_20}/bin:\$PATH
             cd "$out/lib"
             export NODE_PATH="$out/lib/node_modules"
             EOF
 
-                        echo 'exec '"${pkgs.nodejs}/bin/node"' src/sentinel2.js "$@"' >> $out/bin/sentinel2
+                        echo 'exec '"${pkgs.nodejs_20}/bin/node"' src/sentinel2.js "$@"' >> $out/bin/sentinel2
 
                         chmod +x $out/bin/sentinel2
           '';

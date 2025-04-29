@@ -138,7 +138,6 @@ export function clearSignerIncident(db: BetterSqlite3Database, key: string) {
   db.prepare(`DELETE FROM signer_incidents WHERE key = ?`).run(key)
 }
 
-
 export function addFunded(db: BetterSqlite3Database, txHash: string) {
   db.prepare(`INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`).run(txHash)
 }
@@ -150,11 +149,7 @@ export function getIncidentId(db: BetterSqlite3Database, packetHash: string): st
   return row?.incident_id
 }
 
-export function hasErrorOpen(
-  db: BetterSqlite3Database,
-  sla: string,
-  packetHash: string
-) {
+export function hasErrorOpen(db: BetterSqlite3Database, sla: string, packetHash: string) {
   return !!db
     .prepare(
       `SELECT 1
@@ -178,11 +173,7 @@ export function markTransferError(
   `).run(sla, packetHash, incidentId)
 }
 
-export function clearTransferError(
-  db: BetterSqlite3Database,
-  sla: string,
-  packetHash: string
-) {
+export function clearTransferError(db: BetterSqlite3Database, sla: string, packetHash: string) {
   db.prepare(`
     DELETE FROM transfer_errors
      WHERE sla = ?
@@ -691,41 +682,6 @@ const fundBabylonAccounts = Effect.repeat(
   Schedule.spaced("1 minutes")
 )
 
-const fetchOnlyUniBTC = (hasuraEndpoint: string, exceedingSla: string) =>
-  Effect.gen(function* () {
-    let response: any
-
-    // Next query: use the last sort_order as a cursor.
-    const queryNext = gql`
-        query MyQuery($sla: String!) {
-          v2_packets(args: { p_exceeding_sla: $sla }) {
-            decoded
-          }
-        }
-      `
-    response = yield* Effect.tryPromise({
-      try: () => request(hasuraEndpoint, queryNext, { sla: exceedingSla }),
-      catch: error => {
-        console.error("Error in second query:", error)
-        throw error
-      }
-    })
-
-    for (const packet of response.v2_packets) {
-      const operand = packet.decoded?.instruction?.operand
-      if (!operand) continue
-      if (operand.baseTokenName == "uniBTC" && operand.baseAmount) {
-        const baseAmount = BigInt(operand.baseAmount)
-        if (baseAmount >= 4000000n) {
-          const logEffect = Effect.annotateLogs({
-            packet: packet
-          })(Effect.logError(`BIG_UNI_BTC`))
-          Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-        }
-      }
-    }
-  })
-
 interface PostRequestInput {
   url: string
   port?: number
@@ -952,10 +908,7 @@ export const checkPackets = (
   isLocal: boolean
 ) =>
   Effect.gen(function* () {
-    yield* fetchOnlyUniBTC(hasuraEndpoint, "mainnet")
-
     for (const sla of ["mainnet", "testnet"] as const) {
-
       const transfer_error = sla === "mainnet" ? "MAINNET_TRANSFER_ERROR" : "TESTNET_TRANSFER_ERROR"
       const missingPacketsMainnet = yield* fetchMissingPackets(hasuraEndpoint, sla)
       yield* Effect.log(`Fetched ${missingPacketsMainnet.length} missingPackets from Hasura`)
