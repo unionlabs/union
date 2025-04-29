@@ -12,13 +12,13 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"], optional = true }
-bincode                     = { workspace = true, features = ["alloc", "derive"], optional = true }
+alloy                          = { workspace = true, features = ["sol-types"], optional = true }
+bincode                        = { workspace = true, features = ["alloc", "derive"], optional = true }
 consensus-primitives.workspace = true
-ethereum-light-client-types = { workspace = true }
-serde                       = { workspace = true, optional = true, features = ["derive"] }
-thiserror                   = { workspace = true }
-unionlabs                   = { workspace = true, features = ["rlp"] }
+ethereum-light-client-types    = { workspace = true }
+serde                          = { workspace = true, optional = true, features = ["derive"] }
+thiserror                      = { workspace = true }
+unionlabs                      = { workspace = true, features = ["rlp"] }
 
 [features]
 bincode = ["dep:bincode", "unionlabs/bincode", "ethereum-light-client-types/bincode"]

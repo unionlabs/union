@@ -1,6 +1,6 @@
 use beacon_api_types::{chain_spec::Mainnet, deneb};
 use berachain_light_client_types::{
-    client_state::ClientStateV1, ClientState, ConsensusState, Header,
+    ClientState, ConsensusState, Header, client_state::ClientStateV1,
 };
 use cometbft_types::types::{
     commit::Commit, signed_header::SignedHeader, validator_set::ValidatorSet,
@@ -11,14 +11,14 @@ use ibc_union_light_client::{
     ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
     spec::{Status, Timestamp},
 };
-use tendermint_light_client::client::TendermintLightClient;
+use ibc_union_msg::lightclient::Status;
 use tendermint_verifier::types::Verification;
 use unionlabs::{
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     bounded::BoundedI64,
     encoding::{Bincode, EncodeAs, Ssz},
     ibc::core::commitment::merkle_root::MerkleRoot,
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::{H256, encoding::HexUnprefixed},
 };
 
 use crate::{errors::Error, verify::Bls12381Verifier};
@@ -146,6 +146,9 @@ impl IbcClient for BerachainLightClient {
             consensus_state,
             header.tm_header,
             ctx.env.block.time,
+            Timestamp::from_secs(header.execution_header.timestamp),
+            header.execution_header.state_root,
+            header.account_proof.storage_root,
             Bls12381Verifier::new(ctx.deps),
         )
         .map_err(Into::into)
@@ -237,6 +240,9 @@ pub fn verify_header<V: Verification>(
     consensus_state: ConsensusState,
     mut header: tendermint_light_client_types::header::Header,
     block_timestamp: cosmwasm_std::Timestamp,
+    evm_timestamp: Timestamp,
+    evm_state_root: H256,
+    evm_storage_root: H256,
     mut signature_verifier: V,
 ) -> Result<StateUpdate<BerachainLightClient>, Error> {
     set_total_voting_power(&mut header.validator_set).unwrap();
@@ -325,9 +331,9 @@ pub fn verify_header<V: Verification>(
     let state_update = StateUpdate::new(
         update_height,
         ConsensusState {
-            evm_timestamp: todo!(),
-            evm_state_root: todo!(),
-            evm_storage_root: todo!(),
+            evm_timestamp,
+            evm_state_root,
+            evm_storage_root,
             comet_timestamp: Timestamp::from_nanos(
                 header.signed_header.header.time.as_unix_nanos(),
             ),

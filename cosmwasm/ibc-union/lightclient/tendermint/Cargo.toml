@@ -26,19 +26,19 @@ ibc-union-light-client        = { workspace = true }
 ibc-union-msg                 = { workspace = true }
 ibc-union-spec                = { workspace = true }
 ics23                         = { workspace = true }
+protos                        = { workspace = true }
 serde                         = { workspace = true, features = ["derive"] }
 sha2                          = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["ethabi", "serde", "bincode"] }
 tendermint-verifier           = { workspace = true }
 thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
-protos                        = { workspace = true }
 
 [dev-dependencies]
 base64      = { workspace = true }
 lazy_static = "1.5.0"
-serde_json  = { workspace = true }
 hex-literal = { workspace = true }
+serde_json  = { workspace = true }
 
 
 [features]

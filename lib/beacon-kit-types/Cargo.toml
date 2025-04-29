@@ -21,9 +21,9 @@ thiserror      = { workspace = true }
 unionlabs      = { workspace = true }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
-serde_json  = { workspace = true }
-beacon-kit-types = {workspace = true, features = ["bincode", "proto", "serde"] }
+beacon-kit-types = { workspace = true, features = ["bincode", "proto", "serde"] }
+hex-literal      = { workspace = true }
+serde_json       = { workspace = true }
 
 [features]
 default = []

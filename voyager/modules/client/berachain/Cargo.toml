@@ -12,14 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-embed-commit                  = { workspace = true }
-jsonrpsee                     = { workspace = true, features = ["macros", "server", "tracing"] }
-macros                        = { workspace = true }
-serde                         = { workspace = true, features = ["derive"] }
-serde_json                    = { workspace = true }
 berachain-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-tokio                         = { workspace = true }
-tracing                       = { workspace = true }
-unionlabs                     = { workspace = true, features = ["bincode"] }
-voyager-message               = { workspace = true }
-voyager-vm                    = { workspace = true }
+embed-commit                 = { workspace = true }
+jsonrpsee                    = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                       = { workspace = true }
+serde                        = { workspace = true, features = ["derive"] }
+serde_json                   = { workspace = true }
+tokio                        = { workspace = true }
+tracing                      = { workspace = true }
+unionlabs                    = { workspace = true, features = ["bincode"] }
+voyager-message              = { workspace = true }
+voyager-vm                   = { workspace = true }

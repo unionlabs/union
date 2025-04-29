@@ -12,14 +12,14 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy       = { workspace = true, features = ["sol-types"], optional = true }
-bincode     = { workspace = true, features = ["alloc", "derive"], optional = true }
+alloy                          = { workspace = true, features = ["sol-types"], optional = true }
+bincode                        = { workspace = true, features = ["alloc", "derive"], optional = true }
 consensus-primitives.workspace = true
-protos      = { workspace = true, features = ["union+ibc+lightclients+cometbls+v1"], optional = true }
-serde       = { workspace = true, features = ["derive"], optional = true }
-serde-utils = { workspace = true }
-thiserror   = { workspace = true }
-unionlabs   = { workspace = true }
+protos                         = { workspace = true, features = ["union+ibc+lightclients+cometbls+v1"], optional = true }
+serde                          = { workspace = true, features = ["derive"], optional = true }
+serde-utils                    = { workspace = true }
+thiserror                      = { workspace = true }
+unionlabs                      = { workspace = true }
 
 
 [features]

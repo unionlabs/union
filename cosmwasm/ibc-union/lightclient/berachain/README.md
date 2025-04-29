@@ -8,10 +8,10 @@ The BeaconKit lightclient first verifies the CometBFT conensus, verifying the ag
 
 The execution state is verified by verifying an ICS-23 proof of the `LatestExecutionPayloadHeader`, which is stored [SSZ]-encoded under the [`LatestExecutionPayloadHeaderPrefix`] prefix, in the [`"beacon"`] store. Membership proofs are verified using proofs of the execution layer's state, using [`evm-storage-verifier`].
 
-[BeaconKit]: https://github.com/berachain/beacon-kit
-[CometBFT]: https://github.com/berachain/cometbft/tree/v1.x-bera
-[Ethereum Engine API]: https://github.com/ethereum/execution-apis/tree/main/src/engine
-[`LatestExecutionPayloadHeaderPrefix`]: https://github.com/berachain/beacon-kit/blob/360265c6a0dca8459d451eaf0dfbdb500d941342/storage/beacondb/keys/keys.go#L41
+[beaconkit]: https://github.com/berachain/beacon-kit
+[cometbft]: https://github.com/berachain/cometbft/tree/v1.x-bera
+[ethereum engine api]: https://github.com/ethereum/execution-apis/tree/main/src/engine
+[ssz]: ../../../../ssz/README.md
 [`"beacon"`]: https://github.com/berachain/beacon-kit/blob/360265c6a0dca8459d451eaf0dfbdb500d941342/storage/kv_store_service.go#L33
-[SSZ]: ../../../../ssz/README.md 
 [`evm-storage-verifier`]: ../../../../lib/evm-storage-verifier
+[`latestexecutionpayloadheaderprefix`]: https://github.com/berachain/beacon-kit/blob/360265c6a0dca8459d451eaf0dfbdb500d941342/storage/beacondb/keys/keys.go#L41
