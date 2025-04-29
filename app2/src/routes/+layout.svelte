@@ -91,9 +91,9 @@ $effect(() => {
 })
 
 $effect(() => {
-  document.documentElement.style.setProperty('--color-accent', uiStore.theme.accent);
-  document.documentElement.style.setProperty('--color-primary', uiStore.theme.primary);
-  document.documentElement.style.setProperty('--color-background', uiStore.theme.background);
+  document.documentElement.style.setProperty("--color-accent", uiStore.theme.accent)
+  document.documentElement.style.setProperty("--color-primary", uiStore.theme.primary)
+  document.documentElement.style.setProperty("--color-background", uiStore.theme.background)
 })
 </script>
 
