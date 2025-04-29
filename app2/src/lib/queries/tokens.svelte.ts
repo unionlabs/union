@@ -1,4 +1,4 @@
-import { Effect, Option, Schema } from "effect"
+import { Array as Arr, Effect, Option, Schema } from "effect"
 import type { UniversalChainId } from "@unionlabs/sdk/schema"
 import { TokenRawDenom, Tokens } from "@unionlabs/sdk/schema"
 import { isTokenBlacklisted } from "$lib/constants/tokens"
@@ -9,6 +9,11 @@ import { graphql } from "gql.tada"
 export const tokensQuery = (universalChainId: UniversalChainId) =>
   Effect.gen(function* () {
     yield* Effect.log(`zkgm starting token fetcher for ${universalChainId}`)
+    const shouldWhitelist = Arr.contains(
+      ["btc.union.build", "app.union.build"],
+      window.location.hostname
+    )
+    const whitelistArg = shouldWhitelist ? `p_whitelist: true,` : ""
     const response = yield* createQueryGraphql({
       schema: Schema.Struct({
         v2_tokens: Tokens,
@@ -16,7 +21,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
       }),
       document: graphql(`
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
-          whitelist: v2_tokens(args: {p_whitelist: true, p_universal_chain_id: $universal_chain_id}, order_by: {rank: asc_nulls_last}) {
+          whitelist: v2_tokens(args: {${whitelistArg} p_universal_chain_id: $universal_chain_id}, order_by: {rank: asc_nulls_last}) {
             denom
           }
           v2_tokens(args: {p_universal_chain_id: $universal_chain_id }, order_by: {rank: asc_nulls_last}) {
@@ -57,21 +62,19 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
       refetchInterval: "10 minutes",
       writeData: data => {
         Effect.runSync(Effect.log(`storing new tokens for ${universalChainId}`))
-        tokensStore.setData(
-          universalChainId,
-          data.pipe(
-            Option.map(d => {
-              const tokensWithWhitelist = d.v2_tokens.map(token => {
-                const isWhitelisted = d.whitelist?.some(w => w.denom === token.denom) ?? false
-                return {
-                  ...token,
-                  whitelisted: isWhitelisted
-                }
-              })
-              return tokensWithWhitelist.filter(token => !isTokenBlacklisted(token.denom))
+        const filtered = data.pipe(
+          Option.map(d => {
+            const tokensWithWhitelist = d.v2_tokens.map(token => {
+              const isWhitelisted = d.whitelist?.some(w => w.denom === token.denom) ?? false
+              return {
+                ...token,
+                whitelisted: shouldWhitelist ? isWhitelisted : true
+              }
             })
-          )
+            return tokensWithWhitelist.filter(token => !isTokenBlacklisted(token.denom))
+          })
         )
+        tokensStore.setData(universalChainId, filtered)
       },
       writeError: error => {
         Effect.runSync(Effect.log(`storing new tokens error for ${universalChainId}`))
