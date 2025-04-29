@@ -834,7 +834,8 @@ export const checkBalances = Effect.repeat(
               const existing = getSignerIncident(db, key)
 
               if (bal < expectedThreshold) {
-                yield* Effect.logError("SIGNER_BALANCE_LOW", tags)
+                const logEffect = Effect.annotateLogs(tags)(Effect.logError("SIGNER_BALANCE_LOW"))
+                Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
                 if (!existing) {
                   const inc = yield* triggerIncident(
@@ -849,7 +850,8 @@ export const checkBalances = Effect.repeat(
                   markSignerIncident(db, key, inc.data.id)
                 }
               } else {
-                yield* Effect.logInfo("SIGNER_BALANCE_OK", tags)
+                const logEffect = Effect.annotateLogs(tags)(Effect.logInfo("SIGNER_BALANCE_OK"))
+                Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
                 if (existing) {
                   yield* resolveIncident(
