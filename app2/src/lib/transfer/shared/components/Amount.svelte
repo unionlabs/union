@@ -6,6 +6,7 @@ import { formatUnits, toHex } from "viem"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Label from "$lib/components/ui/Label.svelte"
+import { balancesStore } from "$lib/stores/balances.svelte"
 
 type Props = {
   type: "source" | "destination"
@@ -28,6 +29,18 @@ function allDataReadyForBalance() {
     Option.isSome(transferData.baseTokenBalance.value.balance)
   )
 }
+
+// Fetch denom only for selected balance
+$effect(() => {
+  const rec = Option.all({
+    chain: transferData.sourceChain,
+    address: transferData.derivedSender,
+    denom: Option.map(transferData.baseToken, x => x.denom)
+  })
+  if (Option.isSome(rec)) {
+    balancesStore.fetchBalances(rec.value.chain, rec.value.address, rec.value.denom, "10 seconds")
+  }
+})
 
 let displayBalance = $derived.by(() => {
   if (
