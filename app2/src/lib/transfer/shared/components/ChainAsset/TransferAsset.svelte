@@ -29,7 +29,6 @@ export const toDisplayName = (
   chain_id: string | undefined | null,
   chains: ReadonlyArray<Chain>
 ): string => chains.find(c => c.chain_id === chain_id)?.display_name ?? chain_id ?? "unknown chain"
-
 </script>
 
 <button
