@@ -71,6 +71,7 @@ pub struct Module {
     pub refetch_delay: u64,
 
     pub checksum_cache: Arc<DashMap<H256, WasmClientType>>,
+    pub index_trivial_events: bool,
 
     pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
@@ -79,11 +80,18 @@ pub struct Module {
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
+
     pub rpc_url: String,
+
     #[serde(default = "default_chunk_block_fetch_size")]
     pub chunk_block_fetch_size: u64,
+
     #[serde(default = "default_refetch_delay")]
     pub refetch_delay: u64,
+
+    /// Whether or not to fully index events that do not produce a counterparty action (packet_recv, packet_acknowledgement, packet_timeout, update_client).
+    #[serde(default)]
+    pub index_trivial_events: bool,
 
     #[serde(default)]
     pub ibc_host_contract_address: Option<Bech32<H256>>,
@@ -135,6 +143,7 @@ impl Plugin for Module {
             chunk_block_fetch_size: config.chunk_block_fetch_size,
             refetch_delay: config.refetch_delay,
             checksum_cache: Arc::new(DashMap::default()),
+            index_trivial_events: config.index_trivial_events,
             ibc_host_contract_address: config.ibc_host_contract_address,
         })
     }
@@ -556,14 +565,19 @@ impl Module {
                     }
 
                     let make_chain_event = || {
-                        call(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(MakeChainEvent {
-                                height,
-                                tx_hash: tx_response.hash.into_encoding(),
-                                event: event.event.clone(),
-                            }),
-                        ))
+                        if event.event.is_trivial() && !self.index_trivial_events {
+                            debug!("not indexing trivial event");
+                            None
+                        } else {
+                            Some(call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(MakeChainEvent {
+                                    height,
+                                    tx_hash: tx_response.hash.into_encoding(),
+                                    event: event.event.clone(),
+                                }),
+                            )))
+                        }
                     };
 
                     if let Some(ref mut already_seen_events) = already_seen_events {
@@ -599,7 +613,7 @@ impl Module {
             }
         }
 
-        Ok(conc(make_chain_event_ops.into_iter().chain(
+        Ok(conc(make_chain_event_ops.into_iter().flatten().chain(
             already_seen_events.is_none().then(|| {
                 seq([
                     call(WaitForHeight {
