@@ -55,6 +55,11 @@
       "counterparty": "corn.21000001",
       "client_type": "state-lens/ics23/mpt",
       "refresh_rate": "500"
+    },
+    "7": {
+      "counterparty": "xion.xion-testnet-2",
+      "client_type": "tendermint",
+      "refresh_rate": "500"
     }
   },
   "ethereum.11155111": {
@@ -205,10 +210,17 @@
   "xion.xion-testnet-2": {
     "1": {
       "counterparty": "union.union-testnet-10",
+      "client_type": "cometbls",
       "refresh_rate": "500"
     },
     "2": {
       "counterparty": "ethereum.17000",
+      "client_type": "state-lens/ics23/mpt",
+      "refresh_rate": "500"
+    },
+    "3": {
+      "counterparty": "babylon.bbn-test-5",
+      "client_type": "tendermint",
       "refresh_rate": "500"
     }
   }
