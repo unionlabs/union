@@ -20,7 +20,7 @@ import {
   scrollSepolia,
   sepolia
 } from "@wagmi/core/chains"
-import {getTestnetAppInfo} from "$lib/config/app"
+import { getTestnetAppInfo } from "$lib/config/app"
 
 export const chains = [
   mainnet,
