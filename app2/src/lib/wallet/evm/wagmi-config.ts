@@ -20,7 +20,7 @@ import {
   scrollSepolia,
   sepolia
 } from "@wagmi/core/chains"
-import { TESTNET_APP_INFO } from "$lib/config/app"
+import {getTestnetAppInfo} from "$lib/config/app"
 
 export const chains = [
   mainnet,
@@ -162,16 +162,16 @@ export const wagmiConfig = createConfig({
     }),
     coinbaseWallet({
       darkMode: true,
-      appName: TESTNET_APP_INFO.name,
-      appLogoUrl: TESTNET_APP_INFO.iconUrl,
+      appName: getTestnetAppInfo().name,
+      appLogoUrl: getTestnetAppInfo().iconUrl,
       enableMobileWalletLink: true
     }),
     metaMask({
       injectProvider: true,
       dappMetadata: {
-        name: TESTNET_APP_INFO.name,
-        url: TESTNET_APP_INFO.baseUrl,
-        iconUrl: TESTNET_APP_INFO.iconUrl
+        name: getTestnetAppInfo().name,
+        url: getTestnetAppInfo().baseUrl,
+        iconUrl: getTestnetAppInfo().iconUrl
       },
       useDeeplink: true
     }),
@@ -187,10 +187,10 @@ export const wagmiConfig = createConfig({
       projectId: WALLETCONNECT_PROJECT_ID,
       showQrModal: true,
       metadata: {
-        name: TESTNET_APP_INFO.name,
+        name: getTestnetAppInfo().name,
         description: "Connect via WalletConnect",
-        url: TESTNET_APP_INFO.baseUrl,
-        icons: [TESTNET_APP_INFO.iconUrl]
+        url: getTestnetAppInfo().baseUrl,
+        icons: [getTestnetAppInfo().iconUrl]
       }
     })
   ]
