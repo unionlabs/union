@@ -298,9 +298,7 @@ ethereum-sync-protocol-types = { path = "lib/ethereum-sync-protocol-types", defa
 evm-storage-verifier         = { path = "lib/evm-storage-verifier", default-features = false }
 
 berachain-light-client-types = { path = "lib/berachain-light-client-types", default-features = false }
-scroll-api                   = { path = "lib/scroll-api", default-features = false }
 scroll-codec                 = { path = "lib/scroll-codec", default-features = false }
-scroll-rpc                   = { path = "lib/scroll-rpc", default-features = false }
 scroll-types                 = { path = "lib/scroll-types", default-features = false }
 
 state-lens-ics23-ics23-light-client-types = { path = "lib/state-lens-ics23-ics23-light-client-types", default-features = false }

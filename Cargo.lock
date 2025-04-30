@@ -15741,7 +15741,6 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "embed-commit",
- "futures",
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
