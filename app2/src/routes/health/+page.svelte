@@ -36,7 +36,7 @@ const fetchHealth = (url: string) =>
       status: "ERROR",
       lastUpdate: new Date().toISOString(),
       color: "gray",
-      error: error instanceof Error ? error.message : "ERROR ERROR Unknown error"
+      error: error instanceof Error ? error.message : "ERR OR Unknown error"
     })
   })
 
