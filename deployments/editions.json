@@ -4,13 +4,13 @@
       "babylon.bbn-test-5": {
         "environment": "production"
       },
+      "corn.21000001": {
+        "environment": "production"
+      },
       "ethereum.11155111": {
         "environment": "production"
       },
       "ethereum.17000": {
-        "environment": "production"
-      },
-      "corn.21000001": {
         "environment": "production"
       },
       "xion.xion-testnet-2": {
