@@ -248,6 +248,26 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     serde_json::from_value(e.parsed_json).unwrap();
                                 events::IbcEvent::CreateClient(create_client)
                             }
+                            "ConnectionOpenInit" => {
+                                let connection_open: events::ConnectionOpenInit =
+                                    serde_json::from_value(e.parsed_token).unwrap();
+                                events::IbcEvent::ConnectionOpenInit(connection_open)
+                            }
+                            "ConnectionOpenTry" => {
+                                let connection_open: events::ConnectionOpenTry =
+                                    serde_json::from_value(e.parsed_token).unwrap();
+                                events::IbcEvent::ConnectionOpenTry(connection_open)
+                            }
+                            "ConnectionOpenAck" => {
+                                let connection_open: events::ConnectionOpenAck =
+                                    serde_json::from_value(e.parsed_token).unwrap();
+                                events::IbcEvent::ConnectionOpenAck(connection_open)
+                            }
+                            "ConnectionOpenConfirm" => {
+                                let connection_open: events::ConnectionOpenConfirm =
+                                    serde_json::from_value(e.parsed_token).unwrap();
+                                events::IbcEvent::ConnectionOpenConfirm(connection_open)
+                            }
                             e => panic!("unknown: {e}"),
                         };
                         call(PluginMessage::new(
