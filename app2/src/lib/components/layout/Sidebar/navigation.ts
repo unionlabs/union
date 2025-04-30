@@ -3,6 +3,8 @@ import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
+import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
+import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
 import type { Component } from "svelte"
 
 export interface NavSubItem {
@@ -16,6 +18,7 @@ export interface NavItem {
   title: string
   icon: Component
   subroutes?: Array<NavSubItem>
+  external?: boolean
 }
 
 export interface NavSection {
@@ -110,6 +113,29 @@ export const navigation: Array<NavSection> = [
         path: "/explorer/tokens",
         title: "Tokens",
         icon: OutlineControlPointDuplicate
+      }
+    ]
+  },
+  {
+    title: "More Union",
+    items: [
+      {
+        path: "https://dashboard.union.build",
+        title: "Dashboard",
+        icon: SharpDashboardIcon,
+        external: true
+      },
+      {
+        path: "https://discord.union.build",
+        title: "Discord",
+        icon: DiscordIcon,
+        external: true
+      },
+      {
+        path: "https://x.com/@union_build",
+        title: "@union_build",
+        icon: TwitterIcon,
+        external: true
       }
     ]
   }

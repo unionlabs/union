@@ -5,6 +5,7 @@ import { page } from "$app/state"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
 import { navigation } from "./navigation.js"
+import ExternalLinkIcon from "$lib/components/icons/ExternalLinkIcon.svelte"
 
 const isCurrentPath = (path: string) => {
   // Exact match
@@ -90,9 +91,9 @@ onMount(() => {
   <div class="flex flex-col flex-1">
   {#each navigation as section, i}
     {#if section.title !== "Developer" || uiStore.showDeveloperPages}
-      <section class="border-zinc-900 p-6">
+      <section class="border-zinc-900 p-6 last:flex-1 flex flex-col justify-end">
         {#if section.title}
-          <h2 class="font-bold text-sm -mt-8.5 mb-2.5 text-center uppercase text-zinc-600">{section.title}</h2>
+          <h2 class="font-bold text-sm mb-2.5 text-center uppercase text-zinc-600">{section.title}</h2>
         {/if}
         <ul class="flex flex-col gap-1">
           {#each section.items as item}
@@ -100,6 +101,8 @@ onMount(() => {
               <a 
                 href={item.path} 
                 data-path={item.path}
+                target={item.external ? "_blank" : undefined}
+                rel={item.external ? "noopener noreferrer" : undefined}
                 class={cn(
                   "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
                   isCurrentPath(item.path) ? "" : "dark:hover:bg-zinc-900"
@@ -109,6 +112,9 @@ onMount(() => {
                   class={cn(isCurrentPath(item.path) ?  "size-5 text-white" : "size-5 zinc-500")}
                 />
                 {item.title}
+                {#if item.external}
+                  <ExternalLinkIcon class="size-4 ml-auto text-zinc-500" />
+                {/if}
               </a>
               
               {#if item.subroutes && item.subroutes.length > 0}
