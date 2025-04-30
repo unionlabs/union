@@ -59,6 +59,7 @@ pub struct Module {
     pub ibc_handler_address: H160,
 
     pub chunk_block_fetch_size: u64,
+    pub index_trivial_events: bool,
 
     pub provider: DynProvider,
 }
@@ -77,6 +78,10 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    /// Whether or not to fully index events that do not produce a counterparty action (packet_recv, packet_acknowledgement, packet_timeout, update_client).
+    #[serde(default)]
+    pub index_trivial_events: bool,
 
     #[serde(default)]
     pub max_cache_size: u32,
@@ -137,6 +142,7 @@ impl Module {
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
+            index_trivial_events: config.index_trivial_events,
             chunk_block_fetch_size: config.chunk_block_fetch_size,
             provider,
         })
@@ -392,72 +398,103 @@ impl Module {
                     Ok(event) => {
                         trace!(?event, "found IbcHandler event");
 
-                        Some(call(PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::from(MakeFullEvent {
-                                block_number,
-                                tx_hash,
-                                event: match event.data {
-                                    Ibc::IbcEvents::RegisterClient(client_registered) => {
-                                        IbcEvents::RegisterClient(client_registered)
-                                    }
-                                    Ibc::IbcEvents::CreateClient(client_created) => {
-                                        IbcEvents::CreateClient(client_created)
-                                    }
-                                    Ibc::IbcEvents::UpdateClient(client_updated) => {
-                                        IbcEvents::UpdateClient(client_updated)
-                                    }
-                                    Ibc::IbcEvents::ConnectionOpenInit(connection_open_init) => {
-                                        IbcEvents::ConnectionOpenInit(connection_open_init)
-                                    }
-                                    Ibc::IbcEvents::ConnectionOpenTry(connection_open_try) => {
-                                        IbcEvents::ConnectionOpenTry(connection_open_try)
-                                    }
-                                    Ibc::IbcEvents::ConnectionOpenAck(connection_open_ack) => {
-                                        IbcEvents::ConnectionOpenAck(connection_open_ack)
-                                    }
-                                    Ibc::IbcEvents::ConnectionOpenConfirm(
-                                        connection_open_confirm,
-                                    ) => IbcEvents::ConnectionOpenConfirm(connection_open_confirm),
-                                    Ibc::IbcEvents::ChannelOpenInit(channel_open_init) => {
-                                        IbcEvents::ChannelOpenInit(channel_open_init)
-                                    }
-                                    Ibc::IbcEvents::ChannelOpenTry(channel_open_try) => {
-                                        IbcEvents::ChannelOpenTry(channel_open_try)
-                                    }
-                                    Ibc::IbcEvents::ChannelOpenAck(channel_open_ack) => {
-                                        IbcEvents::ChannelOpenAck(channel_open_ack)
-                                    }
-                                    Ibc::IbcEvents::ChannelOpenConfirm(channel_open_confirm) => {
-                                        IbcEvents::ChannelOpenConfirm(channel_open_confirm)
-                                    }
-                                    Ibc::IbcEvents::ChannelCloseInit(channel_close_init) => {
-                                        IbcEvents::ChannelCloseInit(channel_close_init)
-                                    }
-                                    Ibc::IbcEvents::ChannelCloseConfirm(channel_close_confirm) => {
-                                        IbcEvents::ChannelCloseConfirm(channel_close_confirm)
-                                    }
-                                    Ibc::IbcEvents::PacketSend(packet_send) => {
-                                        IbcEvents::PacketSend(packet_send)
-                                    }
-                                    Ibc::IbcEvents::PacketRecv(packet_recv) => {
-                                        IbcEvents::PacketRecv(packet_recv)
-                                    }
-                                    Ibc::IbcEvents::IntentPacketRecv(intent_packet_recv) => {
-                                        IbcEvents::IntentPacketRecv(intent_packet_recv)
-                                    }
-                                    Ibc::IbcEvents::WriteAck(write_acknowledgement) => {
-                                        IbcEvents::WriteAck(write_acknowledgement)
-                                    }
-                                    Ibc::IbcEvents::PacketAck(acknowledge_packet) => {
-                                        IbcEvents::PacketAck(acknowledge_packet)
-                                    }
-                                    Ibc::IbcEvents::PacketTimeout(timeout_packet) => {
-                                        IbcEvents::PacketTimeout(timeout_packet)
-                                    }
-                                },
-                            }),
-                        )))
+                        let event = match event.data {
+                            Ibc::IbcEvents::RegisterClient(e) => {
+                                if self.index_trivial_events {
+                                    Some(IbcEvents::RegisterClient(e))
+                                } else {
+                                    debug!("not indexing trivial event");
+                                    None
+                                }
+                            }
+                            Ibc::IbcEvents::CreateClient(e) => {
+                                if self.index_trivial_events {
+                                    Some(IbcEvents::CreateClient(e))
+                                } else {
+                                    debug!("not indexing trivial event");
+                                    None
+                                }
+                            }
+                            Ibc::IbcEvents::UpdateClient(e) => {
+                                if self.index_trivial_events {
+                                    Some(IbcEvents::UpdateClient(e))
+                                } else {
+                                    debug!("not indexing trivial event");
+                                    None
+                                }
+                            }
+                            Ibc::IbcEvents::ConnectionOpenInit(e) => {
+                                Some(IbcEvents::ConnectionOpenInit(e))
+                            }
+                            Ibc::IbcEvents::ConnectionOpenTry(e) => {
+                                Some(IbcEvents::ConnectionOpenTry(e))
+                            }
+                            Ibc::IbcEvents::ConnectionOpenAck(e) => {
+                                Some(IbcEvents::ConnectionOpenAck(e))
+                            }
+                            Ibc::IbcEvents::ConnectionOpenConfirm(e) => {
+                                Some(IbcEvents::ConnectionOpenConfirm(e))
+                            }
+                            Ibc::IbcEvents::ChannelOpenInit(e) => {
+                                Some(IbcEvents::ChannelOpenInit(e))
+                            }
+                            Ibc::IbcEvents::ChannelOpenTry(e) => Some(IbcEvents::ChannelOpenTry(e)),
+                            Ibc::IbcEvents::ChannelOpenAck(e) => Some(IbcEvents::ChannelOpenAck(e)),
+                            Ibc::IbcEvents::ChannelOpenConfirm(e) => {
+                                Some(IbcEvents::ChannelOpenConfirm(e))
+                            }
+                            Ibc::IbcEvents::ChannelCloseInit(e) => {
+                                Some(IbcEvents::ChannelCloseInit(e))
+                            }
+                            Ibc::IbcEvents::ChannelCloseConfirm(e) => {
+                                Some(IbcEvents::ChannelCloseConfirm(e))
+                            }
+                            Ibc::IbcEvents::PacketSend(e) => Some(IbcEvents::PacketSend(e)),
+                            Ibc::IbcEvents::PacketRecv(e) => {
+                                if self.index_trivial_events {
+                                    Some(IbcEvents::PacketRecv(e))
+                                } else {
+                                    debug!("not indexing trivial event");
+                                    None
+                                }
+                            }
+                            Ibc::IbcEvents::IntentPacketRecv(e) => {
+                                if self.index_trivial_events {
+                                    Some(IbcEvents::IntentPacketRecv(e))
+                                } else {
+                                    debug!("not indexing trivial event");
+                                    None
+                                }
+                            }
+                            Ibc::IbcEvents::WriteAck(e) => Some(IbcEvents::WriteAck(e)),
+                            Ibc::IbcEvents::PacketAck(e) => {
+                                if self.index_trivial_events {
+                                    Some(IbcEvents::PacketAck(e))
+                                } else {
+                                    debug!("not indexing trivial event");
+                                    None
+                                }
+                            }
+                            Ibc::IbcEvents::PacketTimeout(e) => {
+                                if self.index_trivial_events {
+                                    Some(IbcEvents::PacketTimeout(e))
+                                } else {
+                                    debug!("not indexing trivial event");
+                                    None
+                                }
+                            }
+                        };
+
+                        event.map(|event| {
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(MakeFullEvent {
+                                    block_number,
+                                    tx_hash,
+                                    event,
+                                }),
+                            ))
+                        })
                     }
                     Err(e) => {
                         warn!(

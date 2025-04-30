@@ -343,6 +343,25 @@ pub enum IbcEvent {
     },
 }
 
+impl IbcEvent {
+    pub fn is_trivial(&self) -> bool {
+        matches!(
+            self,
+            Self::CreateClient { .. }
+                | Self::UpdateClient { .. }
+                | Self::RecvPacket { .. }
+                | Self::AcknowledgePacket { .. }
+                | Self::TimeoutPacket { .. }
+                | Self::WasmCreateClient { .. }
+                | Self::WasmUpdateClient { .. }
+                | Self::WasmPacketRecv { .. }
+                // | Self::WasmPacketIntentRecv { .. }
+                // | Self::WasmPacketTimeout { .. }
+                | Self::WasmPacketAck { .. }
+        )
+    }
+}
+
 // TODO: Check if human readable
 pub mod height_list_comma_separated {
     use std::string::String;
