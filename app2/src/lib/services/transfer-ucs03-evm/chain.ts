@@ -1,13 +1,13 @@
 import { Effect } from "effect"
 import { switchChain as wagmiSwitchChain } from "@wagmi/core"
-import { type ConfiguredChainId, wagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
+import { type ConfiguredChainId, getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
 import { SwitchChainError } from "./errors.ts"
 import type { Chain as ViemChain, SwitchChainErrorType } from "viem"
 
 export const switchChain = (chain: ViemChain) =>
   Effect.gen(function* () {
     const res = yield* Effect.tryPromise({
-      try: () => wagmiSwitchChain(wagmiConfig, { chainId: chain.id as ConfiguredChainId }),
+      try: () => wagmiSwitchChain(getWagmiConfig(), { chainId: chain.id as ConfiguredChainId }),
       catch: err => new SwitchChainError({ cause: err as SwitchChainErrorType })
     })
 

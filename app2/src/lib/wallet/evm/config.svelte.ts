@@ -13,7 +13,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
 import type { Hex } from "viem"
 
-import { type ConfiguredChainId, wagmiConfig } from "./wagmi-config.svelte.ts"
+import { type ConfiguredChainId, getWagmiConfig } from "./wagmi-config.svelte.ts"
 import { mainnet } from "@wagmi/core/chains"
 
 export type Wallet = GetAccountReturnType
@@ -59,7 +59,7 @@ class SepoliaStore {
       this.unwatchAccount = undefined
     }
 
-    this.unwatchAccount = watchAccount(wagmiConfig, {
+    this.unwatchAccount = watchAccount(getWagmiConfig(), {
       onChange: account => {
         if (this.connectionStatus === "connected" && !account.address && this.address) {
           return
@@ -84,7 +84,7 @@ class SepoliaStore {
       }
 
       const result = await evmConnect(walletId, mainnet.id)
-      const account = getAccount(wagmiConfig)
+      const account = getAccount(getWagmiConfig())
       setLastConnectedWalletId(account.connector?.id)
 
       this.updateAccount({
@@ -137,16 +137,16 @@ class SepoliaStore {
     try {
       this.connectionStatus = "connecting"
 
-      const lastConnector = wagmiConfig.connectors.find(c => c.id === lastWalletId)
+      const lastConnector = getWagmiConfig().connectors.find(c => c.id === lastWalletId)
       if (!lastConnector) {
         console.warn("Last connected connector not found:", lastWalletId)
         this.connectionStatus = "disconnected"
         return
       }
 
-      await reconnect(wagmiConfig, { connectors: [lastConnector] })
+      await reconnect(getWagmiConfig(), { connectors: [lastConnector] })
 
-      const account = getAccount(wagmiConfig)
+      const account = getAccount(getWagmiConfig())
       this.updateAccount({
         chain: account.chain?.name ?? "sepolia",
         address: account.address,
@@ -188,8 +188,8 @@ export const sepoliaStore = new SepoliaStore()
 
 const excludeWalletList = ["io.leapwallet.LeapWallet", "app.keplr"]
 
-export const evmWalletsInformation = wagmiConfig.connectors
-  .map(connector => {
+export const evmWalletsInformation = getWagmiConfig()
+  .connectors.map(connector => {
     const id = connector.id.toLowerCase()
     const name = connector.name.toLowerCase()
     return {
@@ -222,20 +222,20 @@ export async function evmConnect(
   evmWalletId: EvmWalletId,
   chainId: ConfiguredChainId = mainnet.id
 ) {
-  const connector = wagmiConfig.connectors.find(connector => connector.id === evmWalletId)
+  const connector = getWagmiConfig().connectors.find(connector => connector.id === evmWalletId)
   if (connector) {
-    return await _connect(wagmiConfig, { connector, chainId })
+    return await _connect(getWagmiConfig(), { connector, chainId })
   }
   throw new Error(`Connector ${evmWalletId} not found`)
 }
 
 export async function evmDisconnect() {
   try {
-    const connector = getAccount(wagmiConfig).connector
+    const connector = getAccount(getWagmiConfig()).connector
     if (connector) {
-      await _disconnect(wagmiConfig, { connector })
+      await _disconnect(getWagmiConfig(), { connector })
     } else {
-      await _disconnect(wagmiConfig)
+      await _disconnect(getWagmiConfig())
     }
   } catch (error) {
     console.error("Error during disconnect:", error)
@@ -243,4 +243,5 @@ export async function evmDisconnect() {
   }
 }
 
-export const evmSwitchChain = (chainId: ConfiguredChainId) => _switchChain(wagmiConfig, { chainId })
+export const evmSwitchChain = (chainId: ConfiguredChainId) =>
+  _switchChain(getWagmiConfig(), { chainId })
