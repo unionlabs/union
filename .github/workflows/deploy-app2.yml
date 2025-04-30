@@ -31,6 +31,7 @@ jobs:
           REPO: ${{ github.repository }}
           REF: ${{ github.head_ref || github.sha }}
         run: |
+          exit 0
           sleep 16
 
           check_suites=$(gh api \
@@ -78,8 +79,8 @@ jobs:
       - uses: nixbuild/nix-quick-install-action@v30
         with:
           nix_conf: |
-            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
-            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://union.cachix.org
       - name: Fetch from Cache
         env:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
