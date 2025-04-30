@@ -602,6 +602,7 @@ impl Module {
                             .parent_beacon_block_root
                             .unwrap()
                             .into(),
+                        requests_hash: l2_block.header.requests_hash.map(Into::into).into(),
                     },
                     l2_oracle_l2_outputs_slot_proof: output_proposal_proof,
                     output_index,

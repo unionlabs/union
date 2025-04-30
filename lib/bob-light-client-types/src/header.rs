@@ -77,6 +77,36 @@ pub struct L2Header {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::u64_hex"))]
     pub excess_blob_gas: u64,
     pub parent_beacon_block_root: H256,
+    #[cfg_attr(
+        feature = "serde",
+        serde(default, skip_serializing_if = "Nullable::is_none")
+    )]
+    pub requests_hash: Nullable<H256>,
+}
+
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+#[derive(Default, Debug, Clone, PartialEq)]
+pub struct Nullable<T>(Option<T>);
+
+impl<T> Nullable<T> {
+    pub fn is_none(&self) -> bool {
+        self.0.is_none()
+    }
+}
+
+impl<T> From<Option<T>> for Nullable<T> {
+    fn from(value: Option<T>) -> Self {
+        Self(value)
+    }
+}
+
+impl<T: Encodable> Encodable for Nullable<T> {
+    fn rlp_append(&self, s: &mut rlp::RlpStream) {
+        if let Some(ref value) = self.0 {
+            s.append(value);
+        }
+    }
 }
 
 impl L2Header {
