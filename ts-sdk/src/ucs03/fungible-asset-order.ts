@@ -258,7 +258,7 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
       finalQuoteToken = graphqlDenom.value
     } else {
       yield* Effect.log("predicting quote token on chain")
-      finalQuoteToken = yield* predictCosmosQuoteToken(intent.baseToken)
+      finalQuoteToken = yield* predictCosmosQuoteToken(ensureHex(intent.baseToken))
       yield* Effect.log("received quote token onchain", finalQuoteToken)
     }
 
