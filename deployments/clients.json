@@ -33,6 +33,10 @@
     "10": {
       "counterparty": "xion.xion-testnet-2",
       "refresh_rate": "500"
+    },
+    "12": {
+      "counterparty": "bob.808813",
+      "refresh_rate": "500"
     }
   },
   "babylon.bbn-test-5": {
@@ -53,6 +57,11 @@
     },
     "6": {
       "counterparty": "corn.21000001",
+      "client_type": "state-lens/ics23/mpt",
+      "refresh_rate": "500"
+    },
+    "8": {
+      "counterparty": "bob.808813",
       "client_type": "state-lens/ics23/mpt",
       "refresh_rate": "500"
     }
@@ -209,6 +218,18 @@
     },
     "2": {
       "counterparty": "ethereum.17000",
+      "refresh_rate": "500"
+    }
+  },
+  "bob.808813": {
+    "3": {
+      "counterparty": "union.union-testnet-10",
+      "client_type": "cometbls",
+      "refresh_rate": "500"
+    },
+    "4": {
+      "counterparty": "babylon.bbn-test-5",
+      "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "500"
     }
   }
