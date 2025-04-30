@@ -170,9 +170,9 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
       Effect.either,
       Effect.map(
         Either.getOrElse(() => ({
-          symbol: intent.baseToken,
-          name: intent.baseToken,
-          decimals: 6
+          symbol: intent.baseToken === "uxion" ? "XION" : intent.baseToken,
+          name: intent.baseToken === "uxion" ? "xion" : intent.baseToken,
+          decimals: intent.baseToken === "uxion" ? 0 : 6
         }))
       )
     )
@@ -237,9 +237,9 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
       Effect.either,
       Effect.map(
         Either.getOrElse(() => ({
-          symbol: intent.baseToken,
-          name: intent.baseToken,
-          decimals: 6
+          symbol: intent.baseToken === "uxion" ? "XION" : intent.baseToken,
+          name: intent.baseToken === "uxion" ? "xion" : intent.baseToken,
+          decimals: intent.baseToken === "uxion" ? 0 : 6
         }))
       )
     )
