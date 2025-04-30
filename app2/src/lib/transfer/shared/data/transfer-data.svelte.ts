@@ -1,4 +1,3 @@
-
 import type { Channel, Token } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
@@ -57,6 +56,25 @@ export class TransferData {
     )
   )
 
+  channel = $derived<Option.Option<Channel>>(
+    Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
+      Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
+        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
+          Match.orElse(() =>
+            Option.fromNullable(
+              getChannelInfoSafe(
+                sourceChain.universal_chain_id,
+                destinationChain.universal_chain_id,
+                channelsData
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+
+
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(
       Option.flatMap(([token, sortedTokens]) =>
@@ -108,24 +126,6 @@ export class TransferData {
     )
   )
 
-  channel = $derived<Option.Option<Channel>>(
-    Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
-      Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
-        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
-          Match.orElse(() =>
-            Option.fromNullable(
-              getChannelInfoSafe(
-                sourceChain.universal_chain_id,
-                destinationChain.universal_chain_id,
-                channelsData
-              )
-            )
-          )
-        )
-      )
-    )
-  )
-
   ucs03address = $derived.by<Option.Option<Address>>(() => {
     return Option.all([
       this.sourceChain,
@@ -141,6 +141,30 @@ export class TransferData {
       })
     )
   })
+
+  quoteTokenDenom = $derived(
+    Option.all([this.baseToken, this.sourceChain, this.destinationChain]).pipe(
+      Option.flatMap(([token, sourceChain, destinationChain]) => {
+        // Find the wrapping that matches both source and destination chains
+        const wrapping = token.wrapping.find(
+          w => w.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+               w.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+        )
+
+        if (wrapping) {
+          return Option.some(wrapping.unwrapped_denom)
+        }
+
+        return Option.none()
+      })
+    )
+  )
+
+  flipTransfer = () => {
+    if (Option.isSome(this.quoteTokenDenom)) {
+      this.raw.flip(this.quoteTokenDenom.value)
+    }
+  }
 
   // wethBaseToken = $derived.by(() => {
   //   if (Option.isNone(this.sourceChain)) return Option.none()

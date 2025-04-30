@@ -69,6 +69,7 @@ $effect(() => {
 <div class="min-w-full flex flex-col grow">
   <div class="flex flex-col gap-4 p-4">
     <ChainAsset type="source"/>
+    <button onclick={() => transferData.flipTransfer()}>flip</button>
     <ChainAsset type="destination"/>
     <Amount type="source"/>
   </div>
