@@ -38,7 +38,7 @@ $effect(() => {
     denom: Option.map(transferData.baseToken, x => x.denom)
   })
   if (Option.isSome(rec)) {
-    balancesStore.fetchBalances(rec.value.chain, rec.value.address, rec.value.denom, "10 seconds")
+    balancesStore.fetchBalances(rec.value.chain, rec.value.address, rec.value.denom, "2 minutes")
   }
 })
 
