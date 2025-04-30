@@ -4,5 +4,7 @@ export const EXTERNAL_FAUCETS = {
   Chainlink: "https://faucets.chain.link/",
   "Google Cloud Web3": "https://cloud.google.com/application/web3/faucet",
   "Bitcorn Testnet": "https://faucet.usecorn.com/",
-  "Xion Testnet": "https://faucet.xion.burnt.com/"
+  "Xion Testnet": "https://faucet.xion.burnt.com/",
+  Hoodscan: "https://faucet.hoodscan.io/ ",
+  Circle: "https://faucet.circle.com/"
 } as Record<string, string>
