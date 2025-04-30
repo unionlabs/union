@@ -49,8 +49,6 @@ const tokenLogo = $derived(
     Option.flatMap(x => Option.all({ alt: Option.some(x.name), uri: x.logo_uri }))
   )
 )
-
-$effect(() => {})
 </script>
 
 {#if disableTooltip}
@@ -65,12 +63,19 @@ $effect(() => {})
       <div>
         {#if chainLogo?.color}
           <div class="flex items-center">
-            <div class="flex items-center justify-center overflow-hidden">
-              <img class="size-4" src={chainLogo.color} alt="">
+            <div class="relative flex items-center justify-center overflow-visible">
+              <img
+                src={chainLogo.color}
+                class={cn(
+                  "size-4",
+                  Option.isSome(tokenLogo) && "asset-mask mr-3"
+                )}
+                alt=""
+              />
               {#if Option.isSome(tokenLogo)}
                 {@const alt = tokenLogo.value.alt}
                 {@const src = tokenLogo.value.uri}
-                <img class="size-4" {src} {alt} />
+                <img class="absolute left-2 ml-1 size-4" {src} {alt} />
               {/if}
             </div>
           </div>
@@ -154,3 +159,19 @@ $effect(() => {})
     {/snippet}
   </Tooltip>
 {/if}
+
+<style>
+  .asset-mask {
+    --diameter: calc(var(--spacing) * 2 * 1.2);
+    --offset-x: calc(100% + var(--diameter) * 0.3);
+    --offset-y: calc(100% - var(--diameter) * 0.82);
+
+    mask-image: radial-gradient(
+      circle var(--diameter) at var(--offset-x) var(--offset-y),
+      transparent 90%,
+      white 100%
+    );
+    mask-composite: exclude;
+    -webkit-mask-composite: destination-out;
+  }
+</style>
