@@ -8,6 +8,7 @@ import { Match, Option } from "effect"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
 
 type Props = {
   onContinue: () => void
@@ -90,8 +91,14 @@ $effect(() => {
           <Button
             class="flex-1"
             variant="primary"
-            onclick={onContinue}
-            disabled={!isButtonEnabled}
+            onclick={() => {
+              if (uiStatus.text === "Connect wallet") {
+                uiStore.openWalletModal()
+              } else {
+                onContinue()
+              }
+            }}
+            disabled={!isButtonEnabled && uiStatus.text !== "Connect wallet"}
           >
             {uiStatus.text}
           </Button>
