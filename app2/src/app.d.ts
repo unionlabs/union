@@ -16,14 +16,15 @@ interface AptosWindow {
 
 declare global {
   namespace App {
-    //If we use +page/layout.ts for data
-    // interface PageData {
-    //
-    // }
+    // If we use +page/layout.ts for data
+    // interface PageData {}
   }
 
   interface Window extends AptosWindow, KeplrWindow, LeapWindow, Browser {
     EventEmitter: typeof EventEmitter
+
+    /** Guard to ensure GitHub logo proxy patches are applied only once */
+    __githubLogoProxyPatched?: boolean
   }
 
   interface Navigator {
