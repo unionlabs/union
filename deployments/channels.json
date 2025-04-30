@@ -17,6 +17,14 @@
         "reverse": "PT45M"
       },
       "tags": ["canonical"]
+    },
+    "3": {
+      "comments": "corn.21000001 channel 1",
+      "sla": {
+        "forward": "PT20M",
+        "reverse": "PT45M"
+      },
+      "tags": ["canonical"]
     }
   },
   "bob.60808": {
