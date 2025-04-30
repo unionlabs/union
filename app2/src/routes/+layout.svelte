@@ -18,6 +18,7 @@ import { page } from "$app/state"
 import { runFork } from "$lib/utils/effect.svelte"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 import Seo from "$lib/components/Seo.svelte"
+import { interceptLogos } from "$lib/utils/intercept-logos.ts"
 
 let { children } = $props()
 
@@ -45,6 +46,7 @@ $effect(() => {
 })
 
 onMount(() => {
+  interceptLogos()
   runExample()
   runFork(chainsQuery(ENV()))
   runFork(channelsQuery())
