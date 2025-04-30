@@ -3,7 +3,6 @@ import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
-import DashboardIcon from "$lib/components/icons/DashboardIcon.svelte"
 import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
 import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
 import type { Component } from "svelte"
@@ -118,12 +117,12 @@ export const navigation: Array<NavSection> = [
     ]
   },
   {
-    title: "External Links",
+    title: "More Union",
     items: [
       {
         path: "https://dashboard.union.build",
         title: "Dashboard",
-        icon: DashboardIcon,
+        icon: SharpDashboardIcon,
         external: true
       },
       {
