@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { switchChain as wagmiSwitchChain } from "@wagmi/core"
-import { type ConfiguredChainId, wagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
+import { type ConfiguredChainId, getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
 import { SwitchChainError } from "./errors.ts"
 import type { SwitchChainErrorType } from "viem"
 
@@ -9,7 +9,7 @@ export const switchChainAptos = (chainId: ConfiguredChainId) =>
     console.info("switching chain", chainId)
     // TODO: Find a way to switch chain in aptos.
     const res = yield* Effect.tryPromise({
-      try: () => wagmiSwitchChain(wagmiConfig, { chainId }),
+      try: () => wagmiSwitchChain(getWagmiConfig(), { chainId }),
       catch: err => new SwitchChainError({ cause: err as SwitchChainErrorType })
     })
     // Some wallets, like metamask, fulfill the promise before they are actually done with switching.
