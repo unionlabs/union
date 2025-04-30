@@ -164,10 +164,6 @@ export const submit = Effect.gen(function* () {
       ),
       Match.when("cosmos", () =>
         Effect.gen(function* () {
-          const signingClient = yield* getCosmWasmClient(
-            step.intent.sourceChain,
-            cosmosStore.connectedWallet
-          )
           const walletCosmosAddress = yield* wallets.cosmosAddress
 
           const sender = yield* step.intent.sourceChain.getDisplayAddress(walletCosmosAddress)
