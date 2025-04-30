@@ -89,6 +89,7 @@ members = [
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
   "lib/state-lens-ics23-smt-light-client-types",
+  "lib/sui-light-client-types",
 
   "cosmwasm/deployer",
 
@@ -104,6 +105,7 @@ members = [
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-ics23",
+  "cosmwasm/ibc-union/lightclient/sui",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
   # "cosmwasm/ibc-union/lightclient/scroll",
@@ -292,6 +294,7 @@ fork-schedules   = { path = "lib/fork-schedules", default-features = false }
 depolama = { path = "lib/depolama", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
+sui-light-client-types = { path = "lib/sui-light-client-types", default-features = false }
 
 bob-light-client-types = { path = "lib/bob-light-client-types", default-features = false }
 bob-verifier           = { path = "lib/bob-verifier", default-features = false }

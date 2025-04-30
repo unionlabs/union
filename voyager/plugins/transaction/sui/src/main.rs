@@ -194,7 +194,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         println!("GAS PRICE: {}", gas_price);
 
-                        // // create the transaction data that will be sent to the network.
+                        // create the transaction data that will be sent to the network.
 
                         let msgs = process_msgs(
                             SuiAddress::try_from(hex_literal::hex!("c096970f51724967ab2b66ef5e6af4802d4fc5c32f5d4f4ad3a95316f4a0bb01").as_slice()).unwrap(),
@@ -314,6 +314,68 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.client_type.to_string()).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.client_state_bytes).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.consensus_state_bytes).unwrap()),
+                ],
+            ),
+            Datagram::ConnectionOpenInit(data) => (
+                msg,
+                Identifier::new("ibc").unwrap(),
+                Identifier::new("connection_open_init").unwrap(),
+                vec![
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ibc_store.into(),
+                        initial_shared_version: 3.into(),
+                        mutable: true,
+                    }),
+                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
+                ],
+            ),
+            Datagram::ConnectionOpenTry(data) => (
+                msg,
+                Identifier::new("ibc").unwrap(),
+                Identifier::new("connection_open_try").unwrap(),
+                vec![
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ibc_store.into(),
+                        initial_shared_version: 3.into(),
+                        mutable: true,
+                    }),
+                    CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.counterparty_connection_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                ],
+            ),
+            Datagram::ConnectionOpenAck(data) => (
+                msg,
+                Identifier::new("ibc").unwrap(),
+                Identifier::new("connection_open_ack").unwrap(),
+                vec![
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ibc_store.into(),
+                        initial_shared_version: 3.into(),
+                        mutable: true,
+                    }),
+                    CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.counterparty_connection_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                ],
+            ),
+            Datagram::ConnectionOpenConfirm(data) => (
+                msg,
+                Identifier::new("ibc").unwrap(),
+                Identifier::new("connection_open_confirm").unwrap(),
+                vec![
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ibc_store.into(),
+                        initial_shared_version: 3.into(),
+                        mutable: true,
+                    }),
+                    CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                 ],
             ),
             _ => todo!(),
