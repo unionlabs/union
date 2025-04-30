@@ -20,7 +20,6 @@ import {
   scrollSepolia,
   sepolia
 } from "@wagmi/core/chains"
-import { getAppInfo } from "$lib/config/app"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 
 export const chains = [
@@ -40,7 +39,7 @@ export function getChainFromWagmi(chainId: number) {
   return chains.find(chain => chain.id === chainId)
 }
 
-const WALLETCONNECT_PROJECT_ID = getAppInfo(uiStore.activeEdition).projectId
+const WALLETCONNECT_PROJECT_ID = uiStore.appInfo.projectId
 
 export const wagmiConfig = createConfig({
   chains,
@@ -163,16 +162,16 @@ export const wagmiConfig = createConfig({
     }),
     coinbaseWallet({
       darkMode: true,
-      appName: getAppInfo(uiStore.activeEdition).name,
-      appLogoUrl: getAppInfo(uiStore.activeEdition).iconUrl,
+      appName: uiStore.appInfo.name,
+      appLogoUrl: uiStore.appInfo.iconUrl,
       enableMobileWalletLink: true
     }),
     metaMask({
       injectProvider: true,
       dappMetadata: {
-        name: getAppInfo(uiStore.activeEdition).name,
-        url: getAppInfo(uiStore.activeEdition).baseUrl,
-        iconUrl: getAppInfo(uiStore.activeEdition).iconUrl
+        name: uiStore.appInfo.name,
+        url: uiStore.appInfo.baseUrl,
+        iconUrl: uiStore.appInfo.iconUrl
       },
       useDeeplink: true
     }),
@@ -188,10 +187,10 @@ export const wagmiConfig = createConfig({
       projectId: WALLETCONNECT_PROJECT_ID,
       showQrModal: true,
       metadata: {
-        name: getAppInfo(uiStore.activeEdition).name,
+        name: uiStore.appInfo.name,
         description: "Connect via WalletConnect",
-        url: getAppInfo(uiStore.activeEdition).baseUrl,
-        icons: [getAppInfo(uiStore.activeEdition).iconUrl]
+        url: uiStore.appInfo.baseUrl,
+        icons: [uiStore.appInfo.iconUrl]
       }
     })
   ]

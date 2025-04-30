@@ -13,7 +13,7 @@ import { wallets } from "$lib/stores/wallets.svelte"
 import { Effect, Option } from "effect"
 import type { Hex } from "viem"
 
-import { type ConfiguredChainId, wagmiConfig } from "./wagmi-config.ts"
+import { type ConfiguredChainId, wagmiConfig } from "./wagmi-config.svelte.ts"
 import { mainnet } from "@wagmi/core/chains"
 
 export type Wallet = GetAccountReturnType

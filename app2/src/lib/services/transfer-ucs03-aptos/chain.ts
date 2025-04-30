@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { switchChain as wagmiSwitchChain } from "@wagmi/core"
-import { type ConfiguredChainId, wagmiConfig } from "$lib/wallet/evm/wagmi-config"
+import { type ConfiguredChainId, wagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
 import { SwitchChainError } from "./errors.ts"
 import type { SwitchChainErrorType } from "viem"
 

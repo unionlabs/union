@@ -4,4 +4,4 @@ export {
   type EvmWalletId,
   evmWalletsInformation
 } from "./config.svelte"
-export { getChainFromWagmi } from "./wagmi-config.ts"
+export { getChainFromWagmi } from "./wagmi-config.svelte.ts"
