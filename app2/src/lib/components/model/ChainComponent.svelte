@@ -1,23 +1,54 @@
 <script lang="ts">
 import type { HTMLAttributes } from "svelte/elements"
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import { Chain } from "@unionlabs/sdk/schema"
+import { Chain, Token, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { cn } from "$lib/utils"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import A from "../ui/A.svelte"
 import Label from "../ui/Label.svelte"
 import LongMonoWord from "../ui/LongMonoWord.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
+import { Array as Arr, Option, pipe } from "effect"
+import { tokensStore } from "$lib/stores/tokens.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   chain: Chain
   class?: string
+  withToken?: TokenRawDenom | undefined
   disableTooltip?: boolean
 }
 
-const { chain, class: className = "", disableTooltip = false, ...rest }: Props = $props()
+const {
+  chain,
+  class: className = "",
+  disableTooltip = false,
+  withToken: denom,
+  ...rest
+}: Props = $props()
 
 const classes = cn("text-md font-semibold", className)
+
+// Start the query when the component mounts
+$effect(() => {
+  console.log("FETCHI NGTKENS")
+  tokensStore.fetchTokens(chain.universal_chain_id)
+})
+
+const token = $derived(
+  pipe(
+    tokensStore.getData(chain.universal_chain_id),
+    Option.flatMap(tokens => Option.fromNullable(tokens.find(t => t.denom === denom)))
+  )
+)
+
+const tokenLogo = $derived(
+  pipe(
+    token,
+    Option.map(x => x.representations),
+    Option.flatMap(Arr.head),
+    Option.flatMap(x => Option.all({ alt: Option.some(x.name), uri: x.logo_uri }))
+  )
+)
 </script>
 
 {#if disableTooltip}
@@ -32,8 +63,20 @@ const classes = cn("text-md font-semibold", className)
       <div>
         {#if chainLogo?.color}
           <div class="flex items-center">
-            <div class="size-4 flex items-center justify-center overflow-hidden">
-              <img src={chainLogo.color} alt="">
+            <div class="relative flex items-center justify-center overflow-visible">
+              <img
+                src={chainLogo.color}
+                class={cn(
+                  "size-4",
+                  Option.isSome(tokenLogo) && "asset-mask mr-3"
+                )}
+                alt=""
+              />
+              {#if Option.isSome(tokenLogo)}
+                {@const alt = tokenLogo.value.alt}
+                {@const src = tokenLogo.value.uri}
+                <img class="absolute left-2 ml-1 size-4" {src} {alt} />
+              {/if}
             </div>
           </div>
         {/if}
@@ -116,3 +159,19 @@ const classes = cn("text-md font-semibold", className)
     {/snippet}
   </Tooltip>
 {/if}
+
+<style>
+  .asset-mask {
+    --diameter: calc(var(--spacing) * 2 * 1.2);
+    --offset-x: calc(100% + var(--diameter) * 0.3);
+    --offset-y: calc(100% - var(--diameter) * 0.82);
+
+    mask-image: radial-gradient(
+      circle var(--diameter) at var(--offset-x) var(--offset-y),
+      transparent 90%,
+      white 100%
+    );
+    mask-composite: exclude;
+    -webkit-mask-composite: destination-out;
+  }
+</style>
