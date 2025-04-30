@@ -1,8 +1,13 @@
 import { themes } from "$lib/themes"
 import type { Edition } from "$lib/themes"
+import base64Icon from "$lib/config/base64.txt?raw"
+
+const projectIds: Record<Edition, string> = {
+  app: "f544d5ee6eb61962408fd456c114e9ed",
+  btc: "49fe74ca5ded7142adefc69a7788d14a"
+}
 
 class UiStore {
-  // TODO: make Option<"wallet"|"settings"|"errors">
   walletModalOpen: boolean = $state(false)
   settingsModalOpen: boolean = $state(false)
   errorsModalOpen: boolean = $state(false)
@@ -13,14 +18,17 @@ class UiStore {
   edition: Edition = $state("app")
   overrideEdition: Edition | null = $state(null)
 
-  // Make activeEdition reactive
   activeEdition: Edition = $derived(this.overrideEdition ?? this.edition)
-  // Make theme reactive
   theme = $derived(themes[this.activeEdition])
 
-  get accentColor() {
-    return this.theme.accent
-  }
+  appInfo = $derived({
+    base64Icon,
+    name: "Union",
+    baseUrl: `https://${this.activeEdition}.union.build`,
+    docs: "https://docs.union.build",
+    iconUrl: "https://app.union.build/images/logo.png",
+    projectId: projectIds[this.activeEdition]
+  })
 
   private closeAllModals() {
     this.walletModalOpen = false
