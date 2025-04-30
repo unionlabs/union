@@ -32,7 +32,7 @@ use voyager_message::{
     into_value,
     module::{StateModuleInfo, StateModuleServer},
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    StateModule,
+    StateModule, MISSING_STATE_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
@@ -46,6 +46,8 @@ pub struct Module {
 
     pub ibc_handler_address: H160,
 
+    pub max_query_window: Option<u64>,
+
     pub provider: DynProvider,
 }
 
@@ -57,6 +59,9 @@ pub struct Config {
 
     /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
+
+    #[serde(default)]
+    pub max_query_window: Option<u64>,
 
     #[serde(default)]
     pub max_cache_size: u32,
@@ -80,6 +85,7 @@ impl StateModule<IbcUnion> for Module {
         Ok(Module {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
+            max_query_window: config.max_query_window,
             provider,
         })
     }
@@ -363,55 +369,101 @@ impl Module {
     ) -> RpcResult<Packet> {
         let ibc_handler = self.ibc_handler();
 
-        let query = ibc_handler
-            .PacketSend_filter()
-            .topic1(alloy::primitives::U256::from(channel_id.raw()))
-            .topic2(alloy::primitives::U256::from_be_bytes(*(packet_hash.get())))
-            .from_block(BlockNumberOrTag::Earliest)
-            .to_block(BlockNumberOrTag::Latest);
+        let windows = match self.max_query_window {
+            Some(window) => {
+                let latest_height = self.provider.get_block_number().await.map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        format!(
+                            "error querying latest height while constructing query windows for decoding packet send event for packet {packet_hash}: {}",
+                            ErrorReporter(e)
+                        ),
+                        None::<()>,
+                    )
+                })?;
+                mk_windows(latest_height, window)
+            }
+            None => vec![(BlockNumberOrTag::Earliest, BlockNumberOrTag::Latest)],
+        };
 
-        debug!(?query, "raw query");
+        for (from, to) in windows {
+            debug!(%from, %to, "querying range for packet");
 
-        query
-            .query()
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!(
-                        "error querying for packet {packet_hash}: {}",
-                        ErrorReporter(e)
-                    ),
-                    None::<()>,
-                )
-            })
-            .and_then(|mut packet_logs| {
-                if packet_logs.len() == 1 {
-                    // there's really no nicer way to do this without having multiple checks (we want to ensure there's only 1 item in the list)
-                    let (packet_log, _) = packet_logs.pop().expect("len is 1; qed;");
+            let query = ibc_handler
+                .PacketSend_filter()
+                .topic1(alloy::primitives::U256::from(channel_id.raw()))
+                .topic2(alloy::primitives::U256::from_be_bytes(*(packet_hash.get())));
 
-                    packet_log.packet.try_into().map_err(|e| {
+            trace!(?query, "raw query");
+
+            let mut packet_logs =
+                query
+                    .from_block(from)
+                    .to_block(to)
+                    .query()
+                    .await
+                    .map_err(|e| {
                         ErrorObject::owned(
                             -1,
                             format!(
-                                "error decoding packet send event for packet {packet_hash}: {}",
+                                "error querying for packet {packet_hash}: {}",
                                 ErrorReporter(e)
                             ),
                             None::<()>,
                         )
-                    })
-                } else {
-                    Err(ErrorObject::owned(
+                    })?;
+
+            if packet_logs.is_empty() {
+                debug!(%from, %to, "packet not found in range");
+                continue;
+            } else if packet_logs.len() == 1 {
+                // there's really no nicer way to do this without having multiple checks (we want to ensure there's only 1 item in the list)
+                let (packet_log, _) = packet_logs.pop().expect("len is 1; qed;");
+
+                return packet_log.packet.try_into().map_err(|e| {
+                    ErrorObject::owned(
                         -1,
                         format!(
-                            "error querying for packet {packet_hash}, expected 1 event but found {}",
-                            packet_logs.len()
+                            "error decoding packet send event \
+                            for packet {packet_hash}: {}",
+                            ErrorReporter(e)
                         ),
                         None::<()>,
-                    ))
-                }
-            })
+                    )
+                });
+            } else {
+                return Err(ErrorObject::owned(
+                    -1,
+                    format!(
+                        "error querying for packet {packet_hash}, \
+                        expected 1 event but found {}",
+                        packet_logs.len()
+                    ),
+                    None::<()>,
+                ));
+            }
+        }
+
+        Err(ErrorObject::owned(
+            MISSING_STATE_ERROR_CODE,
+            format!("packet {packet_hash} not found"),
+            None::<()>,
+        ))
     }
+}
+
+fn mk_windows(mut latest_height: u64, window: u64) -> Vec<(BlockNumberOrTag, BlockNumberOrTag)> {
+    std::iter::from_fn(|| {
+        if latest_height == 0 {
+            None
+        } else {
+            let upper_bound = latest_height;
+            let lower_bound = latest_height.saturating_sub(window);
+            latest_height = lower_bound;
+            Some((lower_bound.into(), upper_bound.into()))
+        }
+    })
+    .collect()
 }
 
 #[async_trait]
@@ -482,5 +534,31 @@ impl StateModuleServer<IbcUnion> for Module {
             ibc_interface: IbcInterface::new(IbcInterface::IBC_SOLIDITY),
             metadata: Default::default(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_mk_windows() {
+        assert_eq!(
+            mk_windows(30, 10),
+            vec![
+                (20.into(), 30.into()),
+                (10.into(), 20.into()),
+                (0.into(), 10.into())
+            ]
+        );
+
+        assert_eq!(
+            mk_windows(29, 10),
+            vec![
+                (19.into(), 29.into()),
+                (9.into(), 19.into()),
+                (0.into(), 9.into())
+            ]
+        )
     }
 }
