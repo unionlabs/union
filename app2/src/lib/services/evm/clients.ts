@@ -53,7 +53,10 @@ export const getPublicClient = (chain: Chain) =>
           chain: viemChain.value,
           transport: http()
         }),
-      catch: err => new CreatePublicClientError({ cause: err as CreatePublicClientErrorType })
+      catch: err =>
+        new CreatePublicClientError({
+          cause: extractErrorDetails(err as Error) as CreatePublicClientErrorType
+        })
     })
     return client
   })
@@ -71,7 +74,11 @@ export const getWalletClient = (chain: Chain) =>
 
     const connectorClient = yield* Effect.tryPromise({
       try: () => getConnectorClient(wagmiConfig),
-      catch: err => new ConnectorClientError({ cause: err as GetConnectorClientErrorType })
+      catch: err =>
+        new ConnectorClientError({
+          wagmiConfig,
+          cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType
+        })
     })
 
     return yield* Effect.try({
@@ -81,6 +88,9 @@ export const getWalletClient = (chain: Chain) =>
           chain: viemChain.value,
           transport: custom(connectorClient.transport)
         }),
-      catch: err => new CreateWalletClientError({ cause: err as CreateWalletClientErrorType })
+      catch: err =>
+        new CreateWalletClientError({
+          cause: extractErrorDetails(err as Error) as CreateWalletClientErrorType
+        })
     })
   })
