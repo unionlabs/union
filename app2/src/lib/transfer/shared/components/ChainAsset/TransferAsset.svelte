@@ -51,27 +51,28 @@ export const toDisplayName = (
         </span>
       {:else if Option.isSome(tokenBalance)}
         {#if Option.isSome(tokenBalance.value.balance)}
-          {@const icon = token.representations[0].logo_uri}
           <TokenComponent
             {chain}
             denom={token.denom}
             amount={tokenBalance.value.balance.value}
-            {icon}
+            icon={token.representations[0]?.logo_uri}
           />
         {:else}
-          {@const icon = token.representations[0].logo_uri}
           <TokenComponent
             {chain}
             denom={token.denom}
             amount={TokenRawAmount.make(0n)}
-            {icon}
+            icon={token.representations[0]?.logo_uri}
           />
         {/if}
       {:else}
-        {@const icon = token.representations[0].logo_uri}
         <div class="flex flex-row items-center gap-2">
           <SharpLinkOffIcon />
-          <TokenComponent {chain} denom={token.denom} {icon} />
+          <TokenComponent 
+          {chain} 
+          denom={token.denom} 
+          icon={token.representations[0]?.logo_uri}
+          />
         </div>
       {/if}
     </div>
