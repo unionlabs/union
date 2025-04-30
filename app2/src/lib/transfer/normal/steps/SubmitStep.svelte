@@ -14,7 +14,7 @@ import {
   nextStateCosmos,
   TransactionSubmissionCosmos
 } from "$lib/transfer/shared/services/write-cosmos.ts"
-import { generateSalt } from "@unionlabs/sdk/utils"
+import { extractErrorDetails, generateSalt } from "@unionlabs/sdk/utils"
 import { http, type GetConnectorClientErrorType } from "@wagmi/core"
 import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
 import { custom, encodeAbiParameters, fromHex, toHex } from "viem"
@@ -170,11 +170,10 @@ export const submit = Effect.gen(function* () {
           )
           const walletCosmosAddress = yield* wallets.cosmosAddress
 
-          console.log("here stop", step.intent.baseToken)
           const sender = yield* step.intent.sourceChain.getDisplayAddress(walletCosmosAddress)
           const isNative = !isValidBech32ContractAddress(step.intent.baseToken)
 
-          console.log({ isNative })
+          const baseToken = step.intent.baseToken === "xion" ? "uxion" : step.intent.baseToken
 
           do {
             const timeout_timestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
@@ -201,7 +200,7 @@ export const submit = Effect.gen(function* () {
                 isNative
                   ? [
                       {
-                        denom: step.intent.baseToken,
+                        denom: baseToken,
                         amount: step.intent.baseAmount.toString()
                       }
                     ]
@@ -262,10 +261,9 @@ const handleSubmit = () => {
     Exit.match(exit, {
       onFailure: cause => {
         const err = Cause.originalError(cause)
-        console.error("Uncaught error in transfer process:", Cause.pretty(cause))
         error = Option.some({
           _tag: err.name || "UnhandledError",
-          cause: err.message || "An unexpected error occurred"
+          cause: extractErrorDetails(cause)
         })
         isSubmitting = false
       },
