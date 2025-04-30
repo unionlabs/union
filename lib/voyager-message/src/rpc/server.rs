@@ -29,8 +29,8 @@ use crate::{
     },
     primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     rpc::{
-        json_rpc_error_to_error_object, server::cache::StateRequest, IbcProof, IbcState,
-        SelfClientState, SelfConsensusState, VoyagerRpcServer,
+        json_rpc_error_to_error_object, server::cache::StateRequest, IbcProof, IbcProofResponse,
+        IbcState, SelfClientState, SelfConsensusState, VoyagerRpcServer,
     },
     ExtensionsExt, IbcSpec, IbcStorePathKey, RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -612,7 +612,7 @@ impl Server {
         ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
-    ) -> RpcResult<IbcProof> {
+    ) -> RpcResult<IbcProofResponse> {
         self.span()
             .in_scope(|| async {
                 let height = self.query_height(&chain_id, height).await?;
@@ -625,19 +625,23 @@ impl Server {
                     .proof_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
-                let (proof, proof_type) = proof_module
+                let res = proof_module
                     .query_ibc_proof_raw(height, path)
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                debug!(%proof, ?proof_type, "fetched ibc proof");
+                debug!(result = %into_value(&res), "fetched ibc proof");
 
-                Ok(IbcProof {
-                    height,
-                    proof,
-                    proof_type,
-                })
+                Ok(
+                    res.map_or(IbcProofResponse::NotAvailable, |(proof, proof_type)| {
+                        IbcProofResponse::Proof(IbcProof {
+                            height,
+                            proof,
+                            proof_type,
+                        })
+                    }),
+                )
             })
             .await
     }
@@ -695,7 +699,7 @@ impl Server {
         chain_id: &ChainId,
         height: Height,
         path: <P::Spec as IbcSpec>::StorePath,
-    ) -> RpcResult<IbcProof> {
+    ) -> RpcResult<IbcProofResponse> {
         self.span()
             .in_scope(|| async {
                 trace!("fetching ibc state");
@@ -706,19 +710,23 @@ impl Server {
                     .proof_module(chain_id, &P::Spec::ID)?
                     .with_id(self.item_id);
 
-                let (proof, proof_type) = proof_module
+                let res = proof_module
                     .query_ibc_proof_raw(height, into_value(path.clone()))
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                debug!(%proof, ?proof_type, "fetched ibc proof");
+                debug!(result = %into_value(&res), "fetched ibc proof");
 
-                Ok(IbcProof {
-                    height,
-                    proof,
-                    proof_type,
-                })
+                Ok(
+                    res.map_or(IbcProofResponse::NotAvailable, |(proof, proof_type)| {
+                        IbcProofResponse::Proof(IbcProof {
+                            height,
+                            proof,
+                            proof_type,
+                        })
+                    }),
+                )
             })
             .await
     }
@@ -1056,7 +1064,7 @@ impl VoyagerRpcServer for Server {
         ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
-    ) -> RpcResult<IbcProof> {
+    ) -> RpcResult<IbcProofResponse> {
         self.with_id(e.try_get().ok().cloned())
             .query_ibc_proof_raw(chain_id, ibc_spec_id, height, path)
             .await

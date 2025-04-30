@@ -188,7 +188,8 @@ impl PluginServer<ModuleCall, Never> for Module {
                         QueryHeight::Specific(client_meta.counterparty_height),
                         BatchReceiptsPath::from_packets(&[event.packet().clone()]),
                     )
-                    .await?;
+                    .await?
+                    .into_result()?;
 
                 match proof_unreceived.proof_type {
                     ProofType::NonMembership => {

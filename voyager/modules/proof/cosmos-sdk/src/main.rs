@@ -115,7 +115,7 @@ impl ProofModuleServer<IbcClassic> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<(Value, ProofType)> {
+    ) -> RpcResult<Option<(Value, ProofType)>> {
         const IBC_STORE_PATH: &str = "store/ibc/key";
 
         let path_string = path.to_string();
@@ -183,7 +183,7 @@ impl ProofModuleServer<IbcClassic> for Module {
             ProofType::Membership
         };
 
-        Ok((into_value(proof), proof_type))
+        Ok(Some((into_value(proof), proof_type)))
     }
 }
 

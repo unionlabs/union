@@ -22,7 +22,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use tracing::{debug, info, instrument, warn};
-use ucs03_zkgm::com::{Ack, FungibleAssetOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
+use ucs03_zkgm::com::{Ack, BatchAck, FungibleAssetOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
 use unionlabs::{
     self,
     cosmos::tx::{tx_body::TxBody, tx_raw::TxRaw},
@@ -293,7 +293,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             }
                         }
                         FullEvent::WriteAck(write_ack) => {
-                            if self.drop_protocol_fill_acks && self.is_successful_protocol_fill(write_ack) {
+                            if self.drop_protocol_fill_acks && is_successful_protocol_fill(write_ack) {
                                 info!(
                                     packet_hash = %write_ack.packet().hash(),
                                     "not acknowledging protocol filled packet"
@@ -347,35 +347,6 @@ impl PluginServer<ModuleCall, Never> for Module {
 }
 
 impl Module {
-    /// The `ucs03-zkgm` protocol-filled packets do nothing on acknowledgement, so there's no need to relay those messages.
-    #[instrument(
-        skip_all,
-        fields(
-            packet_hash = %event.packet().hash()
-        )
-    )]
-    pub fn is_successful_protocol_fill(&self, event: &WriteAck) -> bool {
-        let Ok(ack) = Ack::abi_decode_params(&event.acknowledgement, true) else {
-            // not a zkgm ack
-            return false;
-        };
-
-        info!(%ack.tag, %ack.inner_ack, "zkgm ack");
-
-        if ack.tag != TAG_ACK_SUCCESS {
-            debug!("ack is not {TAG_ACK_SUCCESS}");
-            return false;
-        }
-
-        let Ok(ack) = FungibleAssetOrderAck::abi_decode_params(&ack.inner_ack, true) else {
-            return false;
-        };
-
-        info!(%ack.fill_type, %ack.market_maker, "fungible asset order ack");
-
-        ack.fill_type == FILL_TYPE_PROTOCOL
-    }
-
     #[instrument(
         skip_all,
         fields(
@@ -477,6 +448,53 @@ impl Module {
             }
         }
     }
+}
+
+/// The `ucs03-zkgm` protocol-filled packets do nothing on acknowledgement, so there's no need to relay those messages.
+#[instrument(
+    skip_all,
+    fields(
+        packet_hash = %event.packet().hash()
+    )
+)]
+pub fn is_successful_protocol_fill(event: &WriteAck) -> bool {
+    is_successful_protocol_fill_ack(&event.acknowledgement)
+}
+
+fn is_successful_protocol_fill_ack(acknowledgement: &[u8]) -> bool {
+    let Ok(ack) = Ack::abi_decode_params(acknowledgement, true) else {
+        // not a zkgm ack
+        return false;
+    };
+
+    dbg!(&ack);
+
+    info!(%ack.tag, %ack.inner_ack, "zkgm ack");
+
+    if ack.tag != TAG_ACK_SUCCESS {
+        debug!("ack is not {TAG_ACK_SUCCESS}");
+        return false;
+    }
+
+    let ack = match FungibleAssetOrderAck::abi_decode_params(&ack.inner_ack, true) {
+        Ok(ack) => ack,
+        Err(_) => match BatchAck::abi_decode_params(&ack.inner_ack, true) {
+            Ok(BatchAck { acknowledgements }) if acknowledgements.len() == 1 => {
+                let Ok(ack) = FungibleAssetOrderAck::abi_decode_params(&acknowledgements[0], true)
+                else {
+                    return false;
+                };
+                ack
+            }
+            _ => return false,
+        },
+    };
+
+    dbg!(&ack);
+
+    info!(%ack.fill_type, %ack.market_maker, "fungible asset order ack");
+
+    ack.fill_type == FILL_TYPE_PROTOCOL
 }
 
 /// NOTE: Assumes the tx contains only one MsgExecuteContract.
@@ -608,5 +626,12 @@ mod tests {
         let ok = valid_checksum_cosmos(&tx_bytes);
 
         assert!(ok);
+    }
+
+    #[test]
+    fn successful_protocol_fill() {
+        let ack = hex!("0x0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000b0cad000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000");
+
+        assert!(is_successful_protocol_fill_ack(&ack));
     }
 }

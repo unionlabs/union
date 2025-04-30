@@ -444,7 +444,8 @@ impl PluginServer<ModuleCall, Never> for Module {
                         QueryHeight::Specific(l1_latest_height),
                         l2_consensus_state_path,
                     )
-                    .await?;
+                    .await?
+                    .into_result()?;
 
                 if l2_consensus_state_proof.proof_type != ProofType::Membership {
                     return Err(ErrorObject::owned(

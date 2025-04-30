@@ -397,14 +397,18 @@ pub trait ProofModule<V: IbcSpec> {
         &self,
         at: Height,
         path: V::StorePath,
-    ) -> RpcResult<(Value, ProofType)>;
+    ) -> RpcResult<Option<(Value, ProofType)>>;
 }
 
 /// Type-erased version of [`ProofModuleClient`].
 #[rpc(client, namespace = "proof")]
 pub trait RawProofModule {
     #[method(name = "queryIbcProof")]
-    async fn query_ibc_proof_raw(&self, at: Height, path: Value) -> RpcResult<(Value, ProofType)>;
+    async fn query_ibc_proof_raw(
+        &self,
+        at: Height,
+        path: Value,
+    ) -> RpcResult<Option<(Value, ProofType)>>;
 }
 
 /// Client modules provide functionality to interact with a single light client
