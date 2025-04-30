@@ -10,7 +10,7 @@ import {
   custom,
   type PublicClient
 } from "viem"
-import { wagmiConfig } from "$lib/wallet/evm/wagmi-config"
+import { wagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
 import {
   ConnectorClientError,
   CreatePublicClientError,
@@ -31,7 +31,7 @@ export const getWagmiConnectorClient = Effect.tryPromise({
   try: () => getConnectorClient(wagmiConfig),
   catch: err =>
     new ConnectorClientError({
-      wagmiConfig,
+      wagmiConfig: wagmiConfig,
       cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType
     })
 })
@@ -76,7 +76,7 @@ export const getWalletClient = (chain: Chain) =>
       try: () => getConnectorClient(wagmiConfig),
       catch: err =>
         new ConnectorClientError({
-          wagmiConfig,
+          wagmiConfig: wagmiConfig,
           cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType
         })
     })
