@@ -9,6 +9,24 @@
       "tags": ["canonical"]
     }
   },
+  "babylon.bbn-test-5": {
+    "3": {
+      "comments": "corn.21000001 channel 1",
+      "sla": {
+        "forward": "PT20M",
+        "reverse": "PT45M"
+      },
+      "tags": ["canonical"]
+    },
+    "4": {
+      "comments": "xion.xion-testnet-2 channel 2",
+      "sla": {
+        "forward": "PT20M",
+        "reverse": "PT45M"
+      },
+      "tags": ["canonical"]
+    }
+  },
   "bob.60808": {
     "1": {
       "comments": "babylon.bbn-1 channel 1",
