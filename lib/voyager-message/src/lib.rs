@@ -56,7 +56,7 @@ use crate::{
         ClientModuleServer, ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginServer,
         ProofModuleInfo, ProofModuleServer, StateModuleInfo, StateModuleServer,
     },
-    rpc::{json_rpc_error_to_error_object, IbcProof, IbcState, VoyagerRpcClient},
+    rpc::{json_rpc_error_to_error_object, IbcProofResponse, IbcState, VoyagerRpcClient},
 };
 
 pub mod call;
@@ -814,7 +814,7 @@ impl VoyagerClient {
         chain_id: ChainId,
         height: QueryHeight,
         path: P,
-    ) -> RpcResult<IbcProof> {
+    ) -> RpcResult<IbcProofResponse> {
         let ibc_proof = self
             .0
             .query_ibc_proof(

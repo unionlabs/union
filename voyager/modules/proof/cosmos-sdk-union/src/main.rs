@@ -118,7 +118,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<(Value, ProofType)> {
+    ) -> RpcResult<Option<(Value, ProofType)>> {
         // TODO: Extract this into a function somewhere, reuse in lightclients
         let data = [0x03]
             .into_iter()
@@ -194,7 +194,7 @@ impl ProofModuleServer<IbcUnion> for Module {
             ProofType::Membership
         };
 
-        Ok((into_value(proof), proof_type))
+        Ok(Some((into_value(proof), proof_type)))
     }
 }
 

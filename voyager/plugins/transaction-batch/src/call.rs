@@ -206,6 +206,7 @@ impl MakeMsg<IbcUnion> {
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?
+                    .into_result()?
                     .proof;
                 debug!(%connection_proof, "connection proof");
 
@@ -271,6 +272,7 @@ impl MakeMsg<IbcUnion> {
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?
+                    .into_result()?
                     .proof;
                 debug!(%connection_proof, "connection proof");
 
@@ -334,6 +336,7 @@ impl MakeMsg<IbcUnion> {
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?
+                    .into_result()?
                     .proof;
                 debug!(%connection_proof, "connection proof");
 
@@ -358,7 +361,7 @@ impl MakeMsg<IbcUnion> {
             }
 
             EventUnion::ChannelOpenInit(event) => {
-                let proof_init = voyager_client
+                let proof = voyager_client
                     .query_ibc_proof(
                         origin_chain_id,
                         QueryHeight::Specific(origin_chain_proof_height),
@@ -366,7 +369,8 @@ impl MakeMsg<IbcUnion> {
                             channel_id: event.channel_id,
                         },
                     )
-                    .await?;
+                    .await?
+                    .into_result()?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(
@@ -375,11 +379,11 @@ impl MakeMsg<IbcUnion> {
                     )
                     .await?;
 
-                let encoded_proof_init = voyager_client
+                let encoded_proof = voyager_client
                     .encode_proof::<IbcUnion>(
                         client_info.client_type,
                         client_info.ibc_interface,
-                        proof_init.proof,
+                        proof.proof,
                     )
                     .await?;
 
@@ -395,7 +399,7 @@ impl MakeMsg<IbcUnion> {
                                 version: event.version.clone(),
                             },
                             counterparty_version: event.version,
-                            proof_init: encoded_proof_init,
+                            proof_init: encoded_proof,
                             proof_height: origin_chain_proof_height.height(),
                         },
                     ),
@@ -403,7 +407,7 @@ impl MakeMsg<IbcUnion> {
             }
 
             EventUnion::ChannelOpenTry(event) => {
-                let proof_try = voyager_client
+                let proof = voyager_client
                     .query_ibc_proof(
                         origin_chain_id,
                         QueryHeight::Specific(origin_chain_proof_height),
@@ -411,7 +415,8 @@ impl MakeMsg<IbcUnion> {
                             channel_id: event.channel_id,
                         },
                     )
-                    .await?;
+                    .await?
+                    .into_result()?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(
@@ -420,11 +425,11 @@ impl MakeMsg<IbcUnion> {
                     )
                     .await?;
 
-                let encoded_proof_try = voyager_client
+                let encoded_proof = voyager_client
                     .encode_proof::<IbcUnion>(
                         client_info.client_type,
                         client_info.ibc_interface,
-                        proof_try.proof,
+                        proof.proof,
                     )
                     .await?;
 
@@ -434,7 +439,7 @@ impl MakeMsg<IbcUnion> {
                             channel_id: event.counterparty_channel_id,
                             counterparty_channel_id: event.channel_id,
                             counterparty_version: event.version,
-                            proof_try: encoded_proof_try,
+                            proof_try: encoded_proof,
                             proof_height: origin_chain_proof_height.height(),
                         },
                     ),
@@ -442,7 +447,7 @@ impl MakeMsg<IbcUnion> {
             }
 
             EventUnion::ChannelOpenAck(event) => {
-                let proof_try = voyager_client
+                let proof = voyager_client
                     .query_ibc_proof(
                         origin_chain_id,
                         QueryHeight::Specific(origin_chain_proof_height),
@@ -450,7 +455,8 @@ impl MakeMsg<IbcUnion> {
                             channel_id: event.channel_id,
                         },
                     )
-                    .await?;
+                    .await?
+                    .into_result()?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(
@@ -459,11 +465,11 @@ impl MakeMsg<IbcUnion> {
                     )
                     .await?;
 
-                let encoded_proof_ack = voyager_client
+                let encoded_proof = voyager_client
                     .encode_proof::<IbcUnion>(
                         client_info.client_type,
                         client_info.ibc_interface,
-                        proof_try.proof,
+                        proof.proof,
                     )
                     .await?;
 
@@ -471,7 +477,7 @@ impl MakeMsg<IbcUnion> {
                     ibc_union_spec::datagram::Datagram::from(
                         ibc_union_spec::datagram::MsgChannelOpenConfirm {
                             channel_id: event.counterparty_channel_id,
-                            proof_ack: encoded_proof_ack,
+                            proof_ack: encoded_proof,
                             proof_height: origin_chain_proof_height.height(),
                         },
                     ),
@@ -481,13 +487,14 @@ impl MakeMsg<IbcUnion> {
             EventUnion::PacketSend(event) => {
                 let packet = event.packet();
 
-                let proof_try = voyager_client
+                let proof = voyager_client
                     .query_ibc_proof(
                         origin_chain_id,
                         QueryHeight::Specific(origin_chain_proof_height),
                         ibc_union_spec::path::BatchPacketsPath::from_packets(&[packet.clone()]),
                     )
-                    .await?;
+                    .await?
+                    .into_result()?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(
@@ -496,11 +503,11 @@ impl MakeMsg<IbcUnion> {
                     )
                     .await?;
 
-                let encoded_proof_commitment = voyager_client
+                let encoded_proof = voyager_client
                     .encode_proof::<IbcUnion>(
                         client_info.client_type,
                         client_info.ibc_interface,
-                        proof_try.proof,
+                        proof.proof,
                     )
                     .await?;
 
@@ -509,7 +516,7 @@ impl MakeMsg<IbcUnion> {
                         ibc_union_spec::datagram::MsgPacketRecv {
                             packets: vec![packet],
                             relayer_msgs: vec![vec![].into()],
-                            proof: encoded_proof_commitment,
+                            proof: encoded_proof,
                             proof_height: origin_chain_proof_height.height(),
                         },
                     ),
@@ -519,13 +526,14 @@ impl MakeMsg<IbcUnion> {
             EventUnion::WriteAck(event) => {
                 let packet = event.packet();
 
-                let proof_try = voyager_client
+                let proof = voyager_client
                     .query_ibc_proof(
                         origin_chain_id,
                         QueryHeight::Specific(origin_chain_proof_height),
                         ibc_union_spec::path::BatchReceiptsPath::from_packets(&[packet.clone()]),
                     )
-                    .await?;
+                    .await?
+                    .into_result()?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(
@@ -534,11 +542,11 @@ impl MakeMsg<IbcUnion> {
                     )
                     .await?;
 
-                let encoded_proof_commitment = voyager_client
+                let encoded_proof = voyager_client
                     .encode_proof::<IbcUnion>(
                         client_info.client_type,
                         client_info.ibc_interface,
-                        proof_try.proof,
+                        proof.proof,
                     )
                     .await?;
 
@@ -547,7 +555,7 @@ impl MakeMsg<IbcUnion> {
                         ibc_union_spec::datagram::MsgPacketAcknowledgement {
                             packets: vec![packet],
                             acknowledgements: vec![event.acknowledgement],
-                            proof: encoded_proof_commitment,
+                            proof: encoded_proof,
                             proof_height: origin_chain_proof_height.height(),
                         },
                     ),
@@ -926,6 +934,7 @@ async fn mk_connection_handshake_state_and_proofs(
             },
         )
         .await?
+        .into_result()?
         .proof;
     debug!(%connection_proof);
 

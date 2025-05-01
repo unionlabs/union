@@ -115,7 +115,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<(Value, ProofType)> {
+    ) -> RpcResult<Option<(Value, ProofType)>> {
         let data = [0x2]
             .into_iter()
             .chain(self.ibc_contract_address)
@@ -189,7 +189,7 @@ impl ProofModuleServer<IbcUnion> for Module {
             ProofType::Membership
         };
 
-        Ok((into_value(proof), proof_type))
+        Ok(Some((into_value(proof), proof_type)))
     }
 }
 

@@ -117,7 +117,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         _path: StorePath,
-    ) -> RpcResult<(Value, ProofType)> {
+    ) -> RpcResult<Option<(Value, ProofType)>> {
         let ledger_version = self.ledger_version_of_height(at.height()).await;
 
         let vault_addr = self
@@ -151,7 +151,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         //     at.revision_height,
         // ).await;
 
-        Ok((
+        Ok(Some((
             into_value(StorageProof {
                 state_value: None,
                 proof: SparseMerkleProof {
@@ -161,7 +161,7 @@ impl ProofModuleServer<IbcUnion> for Module {
             }),
             // TODO: Implement properly, see above
             ProofType::Membership,
-        ))
+        )))
     }
 }
 

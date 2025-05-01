@@ -102,7 +102,7 @@ pub trait VoyagerRpc {
         ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
-    ) -> RpcResult<IbcProof>;
+    ) -> RpcResult<IbcProofResponse>;
 
     // ========================================
     // self state queries, for creating clients
@@ -210,6 +210,26 @@ impl IbcState<Value> {
     //         )
     //     })
     // }
+}
+
+#[model]
+pub enum IbcProofResponse {
+    Proof(IbcProof),
+    /// Unable to query a proof for this state at the requested height. Try a more recent height.
+    NotAvailable,
+}
+
+impl IbcProofResponse {
+    pub fn into_result(self) -> RpcResult<IbcProof> {
+        match self {
+            Self::Proof(proof) => Ok(proof),
+            Self::NotAvailable => Err(ErrorObject::owned(
+                MISSING_STATE_ERROR_CODE,
+                "proof not available",
+                None::<()>,
+            )),
+        }
+    }
 }
 
 #[model]
