@@ -27,7 +27,7 @@ let
           description = "Hasura endpoint for graphql requests.";
         };
         rpcHostEndpoints = mkOption {
-          type = types.listOf;
+          type = types.listOf types.str;
           description = "RPC endpoints for SSL certificate control.";
         };
         signer_account_mnemonic = mkOption {
