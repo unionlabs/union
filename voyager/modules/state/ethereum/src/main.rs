@@ -1,5 +1,7 @@
 #![warn(clippy::unwrap_used)]
 
+use std::sync::Arc;
+
 use alloy::{
     eips::BlockNumberOrTag,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
@@ -13,7 +15,8 @@ use ibc_solidity::{
 use ibc_union_spec::{
     path::{BatchPacketsPath, BatchReceiptsPath, StorePath},
     query::Query,
-    Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet,
+    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionId, ConnectionState,
+    IbcUnion, Packet,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -22,7 +25,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use tracing::{debug, instrument, trace};
+use tracing::{debug, info, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{Bytes, H160, H256},
@@ -49,6 +52,10 @@ pub struct Module {
     pub max_query_window: Option<u64>,
 
     pub provider: DynProvider,
+
+    pub channel_cache: moka::future::Cache<ChannelId, Channel>,
+    pub connection_cache: moka::future::Cache<ConnectionId, Connection>,
+    pub client_address_cache: moka::future::Cache<u32, alloy::primitives::Address>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -86,6 +93,10 @@ impl StateModule<IbcUnion> for Module {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             max_query_window: config.max_query_window,
+            // should probably be big enough
+            channel_cache: moka::future::Cache::new(10_000),
+            connection_cache: moka::future::Cache::new(10_000),
+            client_address_cache: moka::future::Cache::new(10_000),
             provider,
         })
     }
@@ -108,24 +119,29 @@ impl Module {
         client_id: u32,
         height: u64,
     ) -> RpcResult<alloy::primitives::Address> {
-        let client_address = self
-            .ibc_handler()
-            .clientImpls(client_id)
-            .block(height.into())
-            .call()
+        self.client_address_cache
+            .try_get_with(client_id, async {
+                let client_address = self
+                    .ibc_handler()
+                    .clientImpls(client_id)
+                    .block(height.into())
+                    .call()
+                    .await
+                    .map_err(|err| {
+                        ErrorObject::owned(
+                            -1,
+                            format!("error fetching client address: {}", ErrorReporter(err)),
+                            None::<()>,
+                        )
+                    })?
+                    ._0;
+
+                debug!(%client_address, "fetched client address");
+
+                Ok(client_address)
+            })
             .await
-            .map_err(|err| {
-                ErrorObject::owned(
-                    -1,
-                    format!("error fetching client address: {}", ErrorReporter(err)),
-                    None::<()>,
-                )
-            })?
-            ._0;
-
-        trace!(%client_address, "fetched client address");
-
-        Ok(client_address)
+            .map_err(|e: Arc<ErrorObject>| (*e).clone())
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id, %height, %client_id))]
@@ -200,6 +216,12 @@ impl Module {
         height: Height,
         connection_id: ConnectionId,
     ) -> RpcResult<Option<Connection>> {
+        if let Some(connection) = self.connection_cache.get(&connection_id).await {
+            debug!("cache hit");
+
+            return Ok(Some(connection));
+        }
+
         let execution_height = height.height();
 
         let ibc_handler = self.ibc_handler();
@@ -236,6 +258,14 @@ impl Module {
             )
         })?;
 
+        if connection.state == ConnectionState::Open {
+            info!("connection is open, caching");
+
+            self.connection_cache
+                .insert(connection_id, connection.clone())
+                .await;
+        }
+
         Ok(Some(connection))
     }
 
@@ -245,6 +275,13 @@ impl Module {
         height: Height,
         channel_id: ChannelId,
     ) -> RpcResult<Option<Channel>> {
+        // NOTE: We will need to review this logic if/when we support channel closings
+        if let Some(channel) = self.channel_cache.get(&channel_id).await {
+            debug!("cache hit");
+
+            return Ok(Some(channel));
+        }
+
         let execution_height = height.height();
 
         let ibc_handler = self.ibc_handler();
@@ -295,6 +332,12 @@ impl Module {
                 None::<()>,
             )
         })?;
+
+        if channel.state == ChannelState::Open {
+            info!("channel is open, caching");
+
+            self.channel_cache.insert(channel_id, channel.clone()).await;
+        }
 
         Ok(Some(channel))
     }

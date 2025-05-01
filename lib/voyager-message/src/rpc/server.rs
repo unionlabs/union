@@ -95,6 +95,16 @@ pub mod cache {
             self.state_cache_size_metric
                 .record(self.state_cache.entry_count(), attributes);
 
+            if let Some(state) = self.state_cache.get(&state_request).await {
+                self.state_cache_hit_counter_metric.add(1, attributes);
+
+                return Ok(Some(serde_json::from_value(state).expect(
+                    "infallible; only valid values are inserted into the cache; qed;",
+                )));
+            };
+
+            self.state_cache_miss_counter_metric.add(1, attributes);
+
             let init = fut
                 .map_ok(|state| {
                     serde_json::to_value(state).expect("serialization is infallible; qed;")
@@ -105,12 +115,6 @@ pub mod cache {
                 Ok(None)
             } else {
                 let entry = self.state_cache.entry(state_request).or_insert(init).await;
-
-                if entry.is_fresh() {
-                    self.state_cache_miss_counter_metric.add(1, attributes);
-                } else {
-                    self.state_cache_hit_counter_metric.add(1, attributes);
-                }
 
                 let value = entry.into_value();
 
