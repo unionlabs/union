@@ -19,6 +19,7 @@ import {
 import {
   channelBalance as CosmosChannelBalance,
   readCw20TotalSupply,
+  readCw20Balance,
   createCosmWasmClient,
   CosmWasmClientContext,
   CosmWasmClientDestination,
@@ -103,6 +104,7 @@ export const triggerIncident = (
   summary: string,
   description: string,
   apiKey: string,
+  trigger_betterstack: boolean,
   requesterEmail: string,
   incidentName: string,
   teamName: string,
@@ -140,12 +142,19 @@ export const triggerIncident = (
     )
   );
 
-  return isLocal
-    ? Effect.sync(() => {
-        console.info("Local mode: skipping triggerIncident");
-        return { data: { id: "" } };
-      })
-    : remote;
+  if (isLocal) {
+    return Effect.sync(() => {
+      console.info("Local mode: skipping triggerIncident");
+      return { data: { id: "" } };
+    });
+  }
+  if (!trigger_betterstack) {
+    return Effect.sync(() => {
+      return { data: { id: "" } };
+    }
+    )
+  }
+  return remote;
 };
 
 /**
@@ -154,9 +163,15 @@ export const triggerIncident = (
 export const resolveIncident = (
   incidentId: string,
   apiKey: string,
+  trigger_betterstack: boolean,
   isLocal: boolean,
   resolvedBy = "SENTINEL@union.build"
 ) => {
+  if (!trigger_betterstack) {
+    return Effect.sync(() => {
+      return false
+    })
+  }
   if (isLocal) {
     return Effect.sync(() => {
       console.info("Local mode: skipping resolveIncident")
@@ -374,6 +389,7 @@ interface ConfigFile {
   chainConfig: ChainConfig
   signer_account_mnemonic: string
   betterstack_api_key: string
+  trigger_betterstack: boolean
   dbPath: string
   isLocal: boolean
 }
@@ -505,8 +521,6 @@ function loadConfig(configPath: string) {
       })
   })
 }
-
-
 const escrowSupplyControlLoop = Effect.repeat(
   Effect.gen(function* (_) {
     yield* Effect.log("Escrow supply control loop started")
@@ -622,17 +636,16 @@ const escrowSupplyControlLoop = Effect.repeat(
           totalSupply = BigInt(totalSupplyHere as bigint)
         } else {
           const client = yield* createCosmWasmClient(dstCfg.rpc)
-          const totalSupplyHere = BigInt(
+          const totalSupplyHere = 
             yield* readCw20TotalSupply(hexToUtf8(token.denom)).pipe(
               Effect.provideService(CosmWasmClientContext, { client }),
               Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
-            )
           )
           if(!totalSupplyHere){
             console.info("No total supply found for token:", token.denom)
             continue
           }
-          totalSupply = totalSupplyHere
+          totalSupply = BigInt(totalSupplyHere)
         }
 
         if (srcChannelBal < totalSupply) {
@@ -707,13 +720,23 @@ const escrowSupplyControlLoop = Effect.repeat(
           const cosmosClient = yield* createCosmWasmClient(rpc)
 
           for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
-            const { amount } = yield* Effect.tryPromise({
+            let { amount } = yield* Effect.tryPromise({
               try: () => cosmosClient.getBalance(minter, denom),
               catch: e => new Error(`bank query failed: ${e}`)
             })
             if(!amount)
               continue
-
+            
+            if(BigInt(amount) === 0n) {
+              const cw20Balance = 
+                yield* readCw20Balance(denom, minter).pipe(
+                  Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
+                  Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
+              )
+              if(!cw20Balance)
+                continue
+              amount = cw20Balance
+            }
             if (BigInt(amount) < channelSum) {
               const errLog = Effect.annotateLogs({
                 issueType: "AGGREGATE_GT_ONCHAIN",
@@ -954,6 +977,7 @@ export const checkSSLCertificates = Effect.repeat(
               `SSL expiring soon @ ${url}`,
               description,
               config.betterstack_api_key,
+              config.trigger_betterstack,
               "SENTINEL@union.build",
               "SSL_CERT_EXPIRY",
               "Union",
@@ -969,6 +993,7 @@ export const checkSSLCertificates = Effect.repeat(
             const didResolve = yield* resolveIncident(
               existingIncident,
               config.betterstack_api_key,
+              config.trigger_betterstack,
               config.isLocal,
               "Sentinel: SSL renewed"
             )
@@ -1049,6 +1074,7 @@ export const checkBalances = Effect.repeat(
                       `SIGNER_BALANCE_LOW @ ${key}`,
                       JSON.stringify({ plugin, url, port: portStr, wallet, balance: bal.toString() }),
                       config.betterstack_api_key,
+                      config.trigger_betterstack,
                       "SENTINEL@union.build",
                       "SIGNER_BALANCE_LOW",
                       "Union",
@@ -1066,6 +1092,7 @@ export const checkBalances = Effect.repeat(
                     const didResolve = yield* resolveIncident(
                       existing,
                       config.betterstack_api_key,
+                      config.trigger_betterstack,
                       config.isLocal,
                       "Sentinel-Automatically resolved."
                     )
@@ -1162,6 +1189,7 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
 export const checkPackets = (
   hasuraEndpoint: string,
   betterstack_api_key: string,
+  trigger_betterstack: boolean,
   isLocal: boolean
 ) =>
   Effect.gen(function* () {
@@ -1191,6 +1219,7 @@ export const checkPackets = (
             `${transfer_error}: https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`,
             JSON.stringify(whole_description),
             betterstack_api_key,
+            trigger_betterstack,
             "SENTINEL@union.build",
             transfer_error,
             "Union",
@@ -1210,6 +1239,7 @@ export const checkPackets = (
           const didResolve = yield* resolveIncident(
             incident_id,
             betterstack_api_key,
+            trigger_betterstack,
             isLocal,
             "Sentinel-Automatically resolved."
           )
@@ -1229,7 +1259,7 @@ const runIbcChecksForever = Effect.gen(function* (_) {
   const effectToRepeat = Effect.gen(function* (_) {
     yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
 
-    yield* checkPackets(config.hasuraEndpoint, config.betterstack_api_key, config.isLocal)
+    yield* checkPackets(config.hasuraEndpoint, config.betterstack_api_key, config.trigger_betterstack, config.isLocal)
   })
 
   return yield* Effect.repeat(effectToRepeat, schedule)

@@ -26,6 +26,10 @@ let
           type = types.str;
           description = "Hasura endpoint for graphql requests.";
         };
+        trigger_betterstack = mkOption {
+          type = types.bool;
+          description = "Boolean to decide if trigger betterstack or not";
+        }; 
         rpcHostEndpoints = mkOption {
           type = types.listOf types.str;
           description = "RPC endpoints for SSL certificate control.";
@@ -77,6 +81,7 @@ let
                     inherit (cfg) cycleIntervalMs;
                     inherit (cfg) signer_account_mnemonic;
                     inherit (cfg) betterstack_api_key;
+                    inherit (cfg) trigger_betterstack;
                     inherit (cfg) dbPath;
                     inherit (cfg) chainConfig;
                     inherit (cfg) signerBalances;
