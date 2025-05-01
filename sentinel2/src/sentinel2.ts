@@ -156,31 +156,43 @@ export const resolveIncident = (
   incidentId: string,
   apiKey: string,
   isLocal: boolean,
-  resolvedBy = "SENTINEL@union.build",
-) =>
-  isLocal
-    ? Effect.sync(() => {
+  resolvedBy = "SENTINEL@union.build"
+) => {
+  if (isLocal) {
+    return Effect.sync(() => {
       console.info("Local mode: skipping resolveIncident")
-      return { data: { id: incidentId } }
+      return true
     })
-    : Effect.tryPromise({
-      try: () =>
-        fetch(`https://uptime.betterstack.com/api/v3/incidents/${incidentId}/resolve`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({ resolved_by: resolvedBy }),
-        }).then(async res => {
-          const text = await res.text()
-          if (!res.ok) {
-            throw new Error(`Resolve failed: ${text}`)
-          }
-          return JSON.parse(text)
-        }),
-      catch: e => new Error(`Incident resolve error: ${e}`),
-    })
+  }
+
+  return Effect.tryPromise<unknown, Error>({
+    try: () =>
+      fetch(`https://uptime.betterstack.com/api/v3/incidents/${incidentId}/resolve`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({ resolved_by: resolvedBy }),
+      }).then(async (res) => {
+        const text = await res.text()
+        if (!res.ok) throw new Error(`Resolve failed: ${text}`)
+        return JSON.parse(text)
+      }),
+    catch: (e) => new Error(`Incident resolve error: ${e}`),
+  })
+    .pipe(
+      // if we parse successfully we consider it resolved
+      Effect.map(() => true),
+      // swallow any error and return `false`
+      Effect.catchAll(err =>
+        Effect.sync(() => {
+          console.error("⚠️ resolveIncident failed:", err)
+          return false
+        })
+      )
+    )
+}
 
 export function isFunded(db: BetterSqlite3Database, txHash: string) {
   const row = db.prepare(`SELECT 1 FROM funded_txs WHERE transaction_hash = ?`).get(txHash)
@@ -697,7 +709,13 @@ const escrowSupplyControlLoop = Effect.repeat(
         }
       }
     }
-  }),
+  }).pipe(
+    Effect.catchAll((err) =>
+      Effect.sync(() => {
+        console.error("⚠️ escrowSupplyControlLoop iteration failed, skipping:", err)
+      })
+    )    
+  ),
   Schedule.spaced("1 hours")
 )
 
@@ -916,13 +934,15 @@ export const checkSSLCertificates = Effect.repeat(
           yield* Effect.logError(`SSL expiring in ${(msLeft / 86400000).toFixed(1)} day. @ ${url}`)
         } else {
           if (existingIncident) {
-            yield* resolveIncident(
+            const didResolve = yield* resolveIncident(
               existingIncident,
               config.betterstack_api_key,
               config.isLocal,
               "Sentinel: SSL renewed"
             )
-            clearSslIncident(db, url)
+            if (didResolve) {
+              clearSslIncident(db, url)
+            }
           }
           yield* Effect.log(`SSL ok @ ${url}, expires in ${(msLeft / 86400000).toFixed(1)} days`)
         }
@@ -1011,13 +1031,15 @@ export const checkBalances = Effect.repeat(
                 Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
 
                 if (existing) {
-                  yield* resolveIncident(
+                  const didResolve = yield* resolveIncident(
                     existing,
                     config.betterstack_api_key,
                     config.isLocal,
                     "Sentinel-Automatically resolved.",
                   )
-                  clearSignerIncident(db, key)
+                  if (didResolve) {
+                    clearSignerIncident(db, key)
+                  }
                 }
               }
             }
