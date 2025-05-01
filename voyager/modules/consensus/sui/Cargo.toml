@@ -12,13 +12,13 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-embed-commit      = { workspace = true }
-jsonrpsee         = { workspace = true, features = ["macros", "server", "tracing"] }
-serde             = { workspace = true, features = ["derive"] }
-thiserror         = { workspace = true }
-tokio             = { workspace = true }
-tracing           = { workspace = true }
-unionlabs         = { workspace = true }
-voyager-message   = { workspace = true }
+embed-commit    = { workspace = true }
+jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
+serde           = { workspace = true, features = ["derive"] }
+thiserror       = { workspace = true }
+tokio           = { workspace = true }
+tracing         = { workspace = true }
+unionlabs       = { workspace = true }
+voyager-message = { workspace = true }
 
-sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk"}
+sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
