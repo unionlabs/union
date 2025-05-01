@@ -5,6 +5,7 @@ import { GasPrice } from "@cosmjs/stargate"
 import { Context, Data, Effect, Logger, Schedule } from "effect"
 import { createPublicClient, http } from "viem"
 
+import tls from "node:tls"
 import {
   channelBalance as EthereumChannelBalance,
   EvmChannelDestination,
@@ -35,6 +36,56 @@ import { hideBin } from "yargs/helpers"
 // @ts-ignore
 BigInt["prototype"].toJSON = function() {
   return this.toString()
+}
+
+/**
+ * Checks whether the TLS cert for `host` is valid and
+ * doesn’t expire within 1 week.
+ *
+ * @param host  hostname (e.g. "example.com")
+ * @returns     Effect<never, Error, boolean>
+ */
+export const checkSslCertificate = (host: string, isExpiringInDays: number) =>
+  Effect.tryPromise<boolean, Error>({
+    try: () =>
+      new Promise((resolve, reject) => {
+        // connect on port 443, SNI = host
+        const socket = tls.connect(443, host, { servername: host }, () => {
+          const cert = socket.getPeerCertificate()
+          socket.end()
+
+          if (!cert || typeof cert.valid_to !== "string") {
+            return reject(new Error("No certificate retrieved"))
+          }
+
+          const expiry = new Date(cert.valid_to)
+          const oneWeekFromNow = Date.now() + isExpiringInDays * 24 * 60 * 60 * 1_000
+
+          resolve(expiry.getTime() > oneWeekFromNow)
+        })
+
+        socket.on("error", reject)
+      }),
+    catch: (e) => new Error(`SSL certificate check failed: ${e}`)
+  })
+// helper to pull the cert expiry date out of a host:port
+function getCertExpiry(endpoint: string): Promise<Date> {
+  const { hostname, port } = new URL(endpoint)
+  const portNum = port ? Number(port) : 443
+  return new Promise((resolve, reject) => {
+    const socket = tls.connect(
+      { host: hostname, port: portNum, servername: hostname },
+      () => {
+        const cert = socket.getPeerCertificate()
+        socket.end()
+        if (!cert || !cert.valid_to) {
+          return reject(new Error(`no valid_to on cert for ${endpoint}`))
+        }
+        resolve(new Date(cert.valid_to))
+      }
+    )
+    socket.on("error", reject)
+  })
 }
 
 type Hex = `0x${string}`
@@ -133,13 +184,41 @@ export function getSignerIncident(db: BetterSqlite3Database, key: string): strin
 export function markSignerIncident(db: BetterSqlite3Database, key: string, incidentId: string) {
   db.prepare(`
     INSERT OR REPLACE INTO signer_incidents
-      (key, incident_id, inserted_at)
+      (url, incident_id, inserted_at)
     VALUES (?, ?, strftime('%s','now')*1000)
   `).run(key, incidentId)
 }
 
 export function clearSignerIncident(db: BetterSqlite3Database, key: string) {
   db.prepare(`DELETE FROM signer_incidents WHERE key = ?`).run(key)
+}
+export function getSslIncident(db: BetterSqlite3Database, url: string): string | undefined {
+  const row = db
+    .prepare(`SELECT incident_id FROM ssl_incidents WHERE url = ?`)
+    .get(url) as { incident_id: string } | undefined
+
+  return row?.incident_id?.length
+    ? row.incident_id
+    : undefined
+}
+
+export function markSslIncident(
+  db: BetterSqlite3Database,
+  url: string,
+  incidentId: string
+) {
+  db.prepare(`
+    INSERT OR REPLACE INTO ssl_incidents
+      (url, incident_id, inserted_at)
+    VALUES (?, ?, strftime('%s','now')*1000)
+  `).run(url, incidentId)
+}
+
+export function clearSslIncident(
+  db: BetterSqlite3Database,
+  url: string
+) {
+  db.prepare(`DELETE FROM ssl_incidents WHERE url = ?`).run(url)
 }
 
 export function addFunded(db: BetterSqlite3Database, txHash: string) {
@@ -275,6 +354,7 @@ export type SignerBalancesConfig = Record<string, PortSignerBalances>
 interface ConfigFile {
   cycleIntervalMs: number
   hasuraEndpoint: string
+  rpcHostEndpoint: string
   signerBalances: SignerBalancesConfig
   chainConfig: ChainConfig
   signer_account_mnemonic: string
@@ -704,6 +784,40 @@ interface PostRequestError {
   readonly message: string
   readonly status?: number
 }
+interface GetRequestError {
+  readonly _tag: "GetRequestError"
+  readonly message: string
+  readonly status?: number
+}
+
+// 1) make headers always defined by giving it a default
+export const safeGetRequest = ({ 
+  url, 
+  port, 
+  headers = {} as Record<string,string> 
+}: {
+  url: string
+  port?: number
+  headers?: Record<string,string>
+}) =>
+  Effect.tryPromise({
+    try: async () => {
+      const fullUrl = port ? `${url}:${port}` : url
+      const res = await fetch(fullUrl, { method: "GET", headers }) // headers is now always a Record<string,string>
+      const text = await res.text()
+      if (!res.ok) {
+        throw { _tag: "GetRequestError", message: `GET ${res.status}`, status: res.status }
+      }
+      return text
+    },
+    catch: error =>
+      ({
+        _tag: "GetRequestError",
+        message: error instanceof Error ? error.message : String(error),
+        status: (error as any)?.status
+      } as GetRequestError)
+  })
+
 
 export const safePostRequest = ({ url, port, headers, payload }: PostRequestInput) => {
   const fullUrl = port ? `${url}:${port}` : url
@@ -725,6 +839,7 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
           message: `Non-200 status: ${response.status} body: ${text}`,
           status: response.status,
         }
+      
       }),
     catch: error =>
       ({
@@ -738,6 +853,81 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
       }) satisfies PostRequestError,
   })
 }
+
+
+export const checkSSLCertificates = Effect.repeat(
+  Effect.gen(function* (_) {
+    yield* Effect.log("Spawning checkSSLCertificates loop")
+    const { config } = yield* Config
+    const rpchostEndpoint = config.rpcHostEndpoint
+
+    const pageHtml: string = yield* safeGetRequest({
+      url: rpchostEndpoint,
+      port: 443,
+      headers: {}
+    }).pipe(
+      Effect.retry(Schedule.spaced("2 minutes"))
+    )
+    const endpointAnchorRegex = /<a\s+href="([^"]+)">https?:\/\/[^<]+<\/a>/gi;
+    const links: string[] = []
+    let m: RegExpExecArray | null
+    while ((m = endpointAnchorRegex.exec(pageHtml))) {
+      const href = m[1]
+      if (href) {
+        links.push(href)
+      }
+
+    }
+    const uniqueEndpoints = Array.from(new Set(links));
+    yield* Effect.log(
+      `Found ${uniqueEndpoints.length} endpoints}`
+    );
+
+    const now = Date.now()
+    const fourDaysMs = 8 * 24 * 60 * 60 * 1000
+    for (const url of uniqueEndpoints) {
+      const existingIncident = getSslIncident(db, url)
+      const expiry: Date = yield* Effect.tryPromise({
+        try: () => getCertExpiry(url),
+        catch: e => new Error(`SSL check failed for ${url}: ${String(e)}`)
+      })
+
+      const msLeft = expiry.getTime() - now
+      const description = JSON.stringify({ endpoint: url, expiresAt: expiry.toISOString() })
+
+      if (msLeft <= fourDaysMs) {
+        if (!existingIncident) {
+          const inc = yield* triggerIncident(
+            `SSL expiring soon @ ${url}`,
+            description,
+            config.betterstack_api_key,
+            "SENTINEL@union.build",
+            "SSL_CERT_EXPIRY",
+            "Union",
+            config.isLocal
+          )
+          if(inc.data.id) {
+            markSslIncident(db, url, inc.data.id)
+          }
+        }
+        yield* Effect.logError(`SSL expiring in ${(msLeft/86400000).toFixed(1)} day. @ ${url}`)
+      } else {
+        if (existingIncident) {
+          yield* resolveIncident(
+            existingIncident,
+            config.betterstack_api_key,
+            config.isLocal,
+            "Sentinel: SSL renewed"
+          )
+          clearSslIncident(db, url)
+
+        }
+        yield* Effect.log(`SSL ok @ ${url}, expires in ${(msLeft/86400000).toFixed(1)} days`)
+      }
+    }
+  }),
+  Schedule.spaced("6 hours")
+)
 
 export const checkBalances = Effect.repeat(
   Effect.gen(function*(_) {
@@ -1031,10 +1221,18 @@ const mainEffect = Effect.gen(function*(_) {
     )
   `).run()
 
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS ssl_incidents (
+      url          TEXT    PRIMARY KEY,
+      incident_id  TEXT    NOT NULL,
+      inserted_at  INTEGER
+    )
+  `).run()
+
   yield* Effect.log("Database opened at", config.dbPath, "hasuraEndpoint:", config.hasuraEndpoint)
 
   yield* Effect.all(
-    [runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts, checkBalances],
+    [runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts, checkBalances, checkSSLCertificates],
     {
       concurrency: "unbounded",
     },

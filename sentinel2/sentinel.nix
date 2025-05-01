@@ -26,6 +26,10 @@ let
           type = types.str;
           description = "Hasura endpoint for graphql requests.";
         };
+        rpcHostEndpoint = mkOption {
+          type = types.str;
+          description = "RPC endpoint for SSL certificate control.";
+        }; 
         signer_account_mnemonic = mkOption {
           type = types.str;
           description = "mnemonic to send tokens to babylon users";
@@ -77,6 +81,7 @@ let
                     inherit (cfg) chainConfig;
                     inherit (cfg) signerBalances;
                     inherit (cfg) hasuraEndpoint;
+                    inherit (cfg) rpcHostEndpoint; 
                   }
                 )
               }
