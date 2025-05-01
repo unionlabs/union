@@ -5,6 +5,8 @@ import { GasPrice } from "@cosmjs/stargate"
 import { Context, Data, Effect, Logger, Schedule } from "effect"
 import { createPublicClient, http } from "viem"
 
+import { Exit, pipe } from "effect";
+import * as Cause from "effect/Cause"
 import tls from "node:tls"
 import {
   channelBalance as EthereumChannelBalance,
@@ -32,6 +34,13 @@ import fetch from "node-fetch"
 import fs from "node:fs"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
+
+process.on("uncaughtException", err => {
+  console.error("❌ Uncaught Exception:", err.stack || err);
+});
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
+});
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function() {
@@ -1226,4 +1235,15 @@ const mainEffect = Effect.gen(function*(_) {
   ).pipe(Effect.provideService(Config, { config }))
 })
 
-Effect.runPromise(mainEffect).catch(err => Effect.logError("Error in mainEffect", err))
+
+pipe(
+  mainEffect,
+  Effect.catchAllCause(cause =>
+    Effect.sync(() => {
+      console.error("💥 mainEffect failed:\n", Cause.pretty(cause))
+    })
+  ),
+  Effect.runPromise
+).catch(err => {
+  console.error("🔥 runPromise threw:", err.stack || err)
+})
