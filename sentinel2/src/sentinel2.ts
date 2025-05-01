@@ -937,11 +937,8 @@ export const checkBalances = Effect.repeat(
             url,
             port,
             headers: { "Content-Type": "application/json" },
-            payload,
-          }).pipe(
-            // retry forever every 2 min on PostRequestError (or any thrown error)
-            Effect.retry(Schedule.spaced("2 minutes")),
-          )
+            payload
+          })
 
           const worker = Effect.gen(function*(_) {
             const result = yield* callWithRetry
@@ -1218,7 +1215,7 @@ const mainEffect = Effect.gen(function*(_) {
   yield* Effect.all(
     [
       runIbcChecksForever,
-      /*escrowSupplyControlLoop,*/
+      escrowSupplyControlLoop,
       fundBabylonAccounts,
       checkBalances,
       checkSSLCertificates
