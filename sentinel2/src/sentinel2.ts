@@ -107,40 +107,47 @@ export const triggerIncident = (
   requesterEmail: string,
   incidentName: string,
   teamName: string,
-  isLocal: boolean,
-) =>
-  isLocal
-    ? Effect.sync(() => {
-      console.info("Local mode: skipping triggerIncident")
-      return { data: { id: "" } }
-    })
-    : Effect.tryPromise({
-      try: () =>
-        fetch("https://uptime.betterstack.com/api/v3/incidents", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            summary,
-            description,
-            requester_email: requesterEmail,
-            ...(teamName ? { team_name: teamName } : {}),
-            call: false,
-            sms: false,
-            email: false,
-            name: incidentName,
-          }),
-        }).then(async res => {
-          const text = await res.text()
-          if (!res.ok) {
-            throw new Error(`Trigger failed: ${text}`)
-          }
-          return JSON.parse(text)
+  isLocal: boolean
+) => {
+  const remote = Effect.tryPromise<{ data: { id: string } }, Error>({
+    try: () =>
+      fetch("https://uptime.betterstack.com/api/v3/incidents", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          summary,
+          description,
+          requester_email: requesterEmail,
+          ...(teamName ? { team_name: teamName } : {}),
+          call: false,
+          sms: false,
+          email: false,
+          name: incidentName,
         }),
-      catch: e => new Error(`Incident trigger error: ${e}`),
-    })
+      }).then(async (res) => {
+        const text = await res.text();
+        if (!res.ok) throw new Error(`Trigger failed: ${text}`);
+        return JSON.parse(text);
+      }),
+    catch: (e) => new Error(`Incident trigger error: ${e}`),
+  })
+  // if anything went wrong, swallow it and return { data:{ id:"" } }
+  .pipe(
+    Effect.orElse(() =>
+      Effect.sync(() => ({ data: { id: "" } }))
+    )
+  );
+
+  return isLocal
+    ? Effect.sync(() => {
+        console.info("Local mode: skipping triggerIncident");
+        return { data: { id: "" } };
+      })
+    : remote;
+};
 
 /**
  * Effect to resolve an existing BetterStack incident via the Uptime API
@@ -351,7 +358,7 @@ export type SignerBalancesConfig = Record<string, PortSignerBalances>
 interface ConfigFile {
   cycleIntervalMs: number
   hasuraEndpoint: string
-  rpcHostEndpoint: string
+  rpcHostEndpoints: string[]
   signerBalances: SignerBalancesConfig
   chainConfig: ChainConfig
   signer_account_mnemonic: string
@@ -858,64 +865,67 @@ export const checkSSLCertificates = Effect.repeat(
   Effect.gen(function* (_) {
     yield* Effect.log("Spawning checkSSLCertificates loop")
     const { config } = yield* Config
-    const rpchostEndpoint = config.rpcHostEndpoint
+    const rpchostEndpoints = config.rpcHostEndpoints
 
-    const pageHtml: string = yield* safeGetRequest({
-      url: rpchostEndpoint,
-      port: 443,
-      headers: {}
-    }).pipe(Effect.retry(Schedule.spaced("2 minutes")))
-    const endpointAnchorRegex = /<a\s+href="([^"]+)">https?:\/\/[^<]+<\/a>/gi
-    const links: string[] = []
-    let m: RegExpExecArray | null
-    while ((m = endpointAnchorRegex.exec(pageHtml))) {
-      const href = m[1]
-      if (href) {
-        links.push(href)
+    for(const rpchostEndpoint of rpchostEndpoints) {
+
+      const pageHtml: string = yield* safeGetRequest({
+        url: rpchostEndpoint,
+        port: 443,
+        headers: {}
+      }).pipe(Effect.retry(Schedule.spaced("2 minutes")))
+      const endpointAnchorRegex = /<a\s+href="([^"]+)">https?:\/\/[^<]+<\/a>/gi
+      const links: string[] = []
+      let m: RegExpExecArray | null
+      while ((m = endpointAnchorRegex.exec(pageHtml))) {
+        const href = m[1]
+        if (href) {
+          links.push(href)
+        }
       }
-    }
-    const uniqueEndpoints = Array.from(new Set(links))
-    yield* Effect.log(`Found ${uniqueEndpoints.length} endpoints}`)
+      const uniqueEndpoints = Array.from(new Set(links))
+      yield* Effect.log(`Found ${uniqueEndpoints.length} endpoints}`)
 
-    const now = Date.now()
-    const fourDaysMs = 4 * 24 * 60 * 60 * 1000
-    for (const url of uniqueEndpoints) {
-      const existingIncident = getSslIncident(db, url)
-      const expiry: Date = yield* Effect.tryPromise({
-        try: () => getCertExpiry(url),
-        catch: e => new Error(`SSL check failed for ${url}: ${String(e)}`)
-      })
+      const now = Date.now()
+      const fourDaysMs = 4 * 24 * 60 * 60 * 1000
+      for (const url of uniqueEndpoints) {
+        const existingIncident = getSslIncident(db, url)
+        const expiry: Date = yield* Effect.tryPromise({
+          try: () => getCertExpiry(url),
+          catch: e => new Error(`SSL check failed for ${url}: ${String(e)}`)
+        })
 
-      const msLeft = expiry.getTime() - now
-      const description = JSON.stringify({ endpoint: url, expiresAt: expiry.toISOString() })
+        const msLeft = expiry.getTime() - now
+        const description = JSON.stringify({ endpoint: url, expiresAt: expiry.toISOString() })
 
-      if (msLeft <= fourDaysMs) {
-        if (!existingIncident) {
-          const inc = yield* triggerIncident(
-            `SSL expiring soon @ ${url}`,
-            description,
-            config.betterstack_api_key,
-            "SENTINEL@union.build",
-            "SSL_CERT_EXPIRY",
-            "Union",
-            config.isLocal
-          )
-          if (inc.data.id) {
-            markSslIncident(db, url, inc.data.id)
+        if (msLeft <= fourDaysMs) {
+          if (!existingIncident) {
+            const inc = yield* triggerIncident(
+              `SSL expiring soon @ ${url}`,
+              description,
+              config.betterstack_api_key,
+              "SENTINEL@union.build",
+              "SSL_CERT_EXPIRY",
+              "Union",
+              config.isLocal
+            )
+            if (inc.data.id) {
+              markSslIncident(db, url, inc.data.id)
+            }
           }
+          yield* Effect.logError(`SSL expiring in ${(msLeft / 86400000).toFixed(1)} day. @ ${url}`)
+        } else {
+          if (existingIncident) {
+            yield* resolveIncident(
+              existingIncident,
+              config.betterstack_api_key,
+              config.isLocal,
+              "Sentinel: SSL renewed"
+            )
+            clearSslIncident(db, url)
+          }
+          yield* Effect.log(`SSL ok @ ${url}, expires in ${(msLeft / 86400000).toFixed(1)} days`)
         }
-        yield* Effect.logError(`SSL expiring in ${(msLeft / 86400000).toFixed(1)} day. @ ${url}`)
-      } else {
-        if (existingIncident) {
-          yield* resolveIncident(
-            existingIncident,
-            config.betterstack_api_key,
-            config.isLocal,
-            "Sentinel: SSL renewed"
-          )
-          clearSslIncident(db, url)
-        }
-        yield* Effect.log(`SSL ok @ ${url}, expires in ${(msLeft / 86400000).toFixed(1)} days`)
       }
     }
   }),
@@ -992,7 +1002,9 @@ export const checkBalances = Effect.repeat(
                     "Union",
                     config.isLocal,
                   )
-                  markSignerIncident(db, key, inc.data.id)
+                  if (inc.data.id) {
+                    markSignerIncident(db, key, inc.data.id)
+                  }
                 }
               } else {
                 const logEffect = Effect.annotateLogs(tags)(Effect.logInfo("SIGNER_BALANCE_OK"))
