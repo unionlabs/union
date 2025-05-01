@@ -66,24 +66,21 @@ export const checkSslCertificate = (host: string, isExpiringInDays: number) =>
 
         socket.on("error", reject)
       }),
-    catch: (e) => new Error(`SSL certificate check failed: ${e}`)
+    catch: e => new Error(`SSL certificate check failed: ${e}`)
   })
 // helper to pull the cert expiry date out of a host:port
 function getCertExpiry(endpoint: string): Promise<Date> {
   const { hostname, port } = new URL(endpoint)
   const portNum = port ? Number(port) : 443
   return new Promise((resolve, reject) => {
-    const socket = tls.connect(
-      { host: hostname, port: portNum, servername: hostname },
-      () => {
-        const cert = socket.getPeerCertificate()
-        socket.end()
-        if (!cert || !cert.valid_to) {
-          return reject(new Error(`no valid_to on cert for ${endpoint}`))
-        }
-        resolve(new Date(cert.valid_to))
+    const socket = tls.connect({ host: hostname, port: portNum, servername: hostname }, () => {
+      const cert = socket.getPeerCertificate()
+      socket.end()
+      if (!cert || !cert.valid_to) {
+        return reject(new Error(`no valid_to on cert for ${endpoint}`))
       }
-    )
+      resolve(new Date(cert.valid_to))
+    })
     socket.on("error", reject)
   })
 }
@@ -193,20 +190,14 @@ export function clearSignerIncident(db: BetterSqlite3Database, key: string) {
   db.prepare(`DELETE FROM signer_incidents WHERE key = ?`).run(key)
 }
 export function getSslIncident(db: BetterSqlite3Database, url: string): string | undefined {
-  const row = db
-    .prepare(`SELECT incident_id FROM ssl_incidents WHERE url = ?`)
-    .get(url) as { incident_id: string } | undefined
+  const row = db.prepare(`SELECT incident_id FROM ssl_incidents WHERE url = ?`).get(url) as
+    | { incident_id: string }
+    | undefined
 
-  return row?.incident_id?.length
-    ? row.incident_id
-    : undefined
+  return row?.incident_id?.length ? row.incident_id : undefined
 }
 
-export function markSslIncident(
-  db: BetterSqlite3Database,
-  url: string,
-  incidentId: string
-) {
+export function markSslIncident(db: BetterSqlite3Database, url: string, incidentId: string) {
   db.prepare(`
     INSERT OR REPLACE INTO ssl_incidents
       (url, incident_id, inserted_at)
@@ -214,10 +205,7 @@ export function markSslIncident(
   `).run(url, incidentId)
 }
 
-export function clearSslIncident(
-  db: BetterSqlite3Database,
-  url: string
-) {
+export function clearSslIncident(db: BetterSqlite3Database, url: string) {
   db.prepare(`DELETE FROM ssl_incidents WHERE url = ?`).run(url)
 }
 
@@ -791,14 +779,14 @@ interface GetRequestError {
 }
 
 // 1) make headers always defined by giving it a default
-export const safeGetRequest = ({ 
-  url, 
-  port, 
-  headers = {} as Record<string,string> 
+export const safeGetRequest = ({
+  url,
+  port,
+  headers = {} as Record<string, string>
 }: {
   url: string
   port?: number
-  headers?: Record<string,string>
+  headers?: Record<string, string>
 }) =>
   Effect.tryPromise({
     try: async () => {
@@ -815,9 +803,8 @@ export const safeGetRequest = ({
         _tag: "GetRequestError",
         message: error instanceof Error ? error.message : String(error),
         status: (error as any)?.status
-      } as GetRequestError)
+      }) as GetRequestError
   })
-
 
 export const safePostRequest = ({ url, port, headers, payload }: PostRequestInput) => {
   const fullUrl = port ? `${url}:${port}` : url
@@ -839,7 +826,6 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
           message: `Non-200 status: ${response.status} body: ${text}`,
           status: response.status,
         }
-      
       }),
     catch: error =>
       ({
@@ -854,7 +840,6 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
   })
 }
 
-
 export const checkSSLCertificates = Effect.repeat(
   Effect.gen(function* (_) {
     yield* Effect.log("Spawning checkSSLCertificates loop")
@@ -865,10 +850,8 @@ export const checkSSLCertificates = Effect.repeat(
       url: rpchostEndpoint,
       port: 443,
       headers: {}
-    }).pipe(
-      Effect.retry(Schedule.spaced("2 minutes"))
-    )
-    const endpointAnchorRegex = /<a\s+href="([^"]+)">https?:\/\/[^<]+<\/a>/gi;
+    }).pipe(Effect.retry(Schedule.spaced("2 minutes")))
+    const endpointAnchorRegex = /<a\s+href="([^"]+)">https?:\/\/[^<]+<\/a>/gi
     const links: string[] = []
     let m: RegExpExecArray | null
     while ((m = endpointAnchorRegex.exec(pageHtml))) {
@@ -876,12 +859,9 @@ export const checkSSLCertificates = Effect.repeat(
       if (href) {
         links.push(href)
       }
-
     }
-    const uniqueEndpoints = Array.from(new Set(links));
-    yield* Effect.log(
-      `Found ${uniqueEndpoints.length} endpoints}`
-    );
+    const uniqueEndpoints = Array.from(new Set(links))
+    yield* Effect.log(`Found ${uniqueEndpoints.length} endpoints}`)
 
     const now = Date.now()
     const fourDaysMs = 8 * 24 * 60 * 60 * 1000
@@ -906,11 +886,11 @@ export const checkSSLCertificates = Effect.repeat(
             "Union",
             config.isLocal
           )
-          if(inc.data.id) {
+          if (inc.data.id) {
             markSslIncident(db, url, inc.data.id)
           }
         }
-        yield* Effect.logError(`SSL expiring in ${(msLeft/86400000).toFixed(1)} day. @ ${url}`)
+        yield* Effect.logError(`SSL expiring in ${(msLeft / 86400000).toFixed(1)} day. @ ${url}`)
       } else {
         if (existingIncident) {
           yield* resolveIncident(
@@ -920,9 +900,8 @@ export const checkSSLCertificates = Effect.repeat(
             "Sentinel: SSL renewed"
           )
           clearSslIncident(db, url)
-
         }
-        yield* Effect.log(`SSL ok @ ${url}, expires in ${(msLeft/86400000).toFixed(1)} days`)
+        yield* Effect.log(`SSL ok @ ${url}, expires in ${(msLeft / 86400000).toFixed(1)} days`)
       }
     }
   }),
@@ -1232,7 +1211,13 @@ const mainEffect = Effect.gen(function*(_) {
   yield* Effect.log("Database opened at", config.dbPath, "hasuraEndpoint:", config.hasuraEndpoint)
 
   yield* Effect.all(
-    [runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts, checkBalances, checkSSLCertificates],
+    [
+      runIbcChecksForever,
+      escrowSupplyControlLoop,
+      fundBabylonAccounts,
+      checkBalances,
+      checkSSLCertificates
+    ],
     {
       concurrency: "unbounded",
     },
