@@ -1,27 +1,27 @@
 [package]
-name = "sui-light-client"
-version = "0.0.0"
-authors.workspace = true
-edition.workspace = true
+authors.workspace      = true
+edition.workspace      = true
 license-file.workspace = true
-publish.workspace = true
-repository.workspace = true
+name                   = "sui-light-client"
+publish.workspace      = true
+repository.workspace   = true
+version                = "0.0.0"
 
 [lints]
 workspace = true
 
 [dependencies]
-bincode                     = { workspace = true }
-cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
-depolama                    = { workspace = true }
-embed-commit                = { workspace = true }
-frissitheto                 = { workspace = true }
-ibc-union-light-client      = { workspace = true }
-ibc-union-msg               = { workspace = true }
-serde                       = { workspace = true, features = ["derive"] }
-thiserror                   = { workspace = true }
-unionlabs                   = { workspace = true, features = ["ethabi"] }
-sui-light-client-types      = { workspace = true, features = ["bincode", "ethabi", "serde"]}
+bincode                = { workspace = true }
+cosmwasm-std           = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
+depolama               = { workspace = true }
+embed-commit           = { workspace = true }
+frissitheto            = { workspace = true }
+ibc-union-light-client = { workspace = true }
+ibc-union-msg          = { workspace = true }
+serde                  = { workspace = true, features = ["derive"] }
+sui-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
+thiserror              = { workspace = true }
+unionlabs              = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
