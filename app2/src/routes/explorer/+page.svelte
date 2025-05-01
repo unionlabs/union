@@ -68,17 +68,7 @@ onMount(() => {
     {/if}
   </div>
 
-  <Card divided>
-    <A class="block p-4" href="/explorer/transfers" external={false}
-      >View all transfers</A
-    >
-    <A class="block p-4" href="/explorer/packets" external={false}
-      >View all packets</A
-    >
-  </Card>
-
   <!-- Daily Transfers Chart -->
-  <!--
   <Card class="h-80 relative" divided>
     <div class="p-4 gap-4 absolute top-0 left-0 border-b-0 w-full z-10">
       <div class="flex justify-between items-center">
@@ -98,5 +88,13 @@ onMount(() => {
       onHoverChange={(day) => hoveredDay = day}
     />
   </Card>
-  !-->
+
+  <Card divided>
+    <A class="block p-4" href="/explorer/transfers" external={false}
+      >View all transfers</A
+    >
+    <A class="block p-4" href="/explorer/packets" external={false}
+      >View all packets</A
+    >
+  </Card>
 </Sections>
