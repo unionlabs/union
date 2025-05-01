@@ -38,7 +38,17 @@ export const dailyTransfersQuery = (limit = 30) =>
     variables: { limit },
     refetchInterval: "60 seconds",
     writeData: data => {
-      dailyTransfers.data = data.pipe(Option.map(d => d.v2_stats_transfers_daily_count))
+      // Only show testnet 10 transfers
+      dailyTransfers.data = data.pipe(
+        Option.map(d => {
+          const modifiedData = [...d.v2_stats_transfers_daily_count]
+          const len = modifiedData.length
+          for (let i = Math.max(0, len - 10); i < len; i++) {
+            modifiedData[i] = { ...modifiedData[i], count: 0 }
+          }
+          return modifiedData
+        })
+      )
     },
     writeError: error => {
       dailyTransfers.error = error
