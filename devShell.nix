@@ -11,6 +11,7 @@ _: {
         vips
         pkg-config
         nodePackages_latest.nodejs
+        pkgsUnstable.dprint
       ];
     in
     {
