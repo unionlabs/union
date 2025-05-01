@@ -181,7 +181,6 @@ impl<const BYTES: usize, E: Encoding> serde::Serialize for FixedBytes<BYTES, E> 
         if serializer.is_human_readable() {
             serializer.collect_str(self)
         } else {
-            panic!("here??");
             use serde::ser::SerializeTupleStruct;
 
             let mut s = serializer.serialize_tuple_struct("Hash", BYTES)?;

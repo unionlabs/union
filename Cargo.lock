@@ -13967,9 +13967,9 @@ dependencies = [
 
 [[package]]
 name = "serde_repr"
-version = "0.1.18"
+version = "0.1.20"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0b2e6b945e9d3df726b65d6ee24060aff8e3533d431f677a9695db04eff9dfdb"
+checksum = "175ee3e80ae9982737ca543e96133087cbd9a485eecc3bc4de9c1a37b47ea59c"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -15331,8 +15331,11 @@ dependencies = [
  "bcs 0.1.6",
  "bincode 2.0.1",
  "blake2",
+ "cosmwasm-std 2.2.2",
+ "roaring",
  "serde",
  "serde_json",
+ "serde_repr",
  "serde_with",
  "thiserror 2.0.12",
  "typenum",
