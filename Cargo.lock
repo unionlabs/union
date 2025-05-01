@@ -15744,6 +15744,7 @@ dependencies = [
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
+ "moka",
  "serde",
  "serde_json",
  "tokio",

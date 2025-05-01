@@ -444,6 +444,8 @@ impl Module {
                     max: max_gas_price,
                     price: gas_price,
                 });
+            } else {
+                info!(%gas_price, "gas price");
             }
         }
 

@@ -29,8 +29,10 @@ use crate::{
     },
     primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     rpc::{
-        json_rpc_error_to_error_object, server::cache::StateRequest, IbcProof, IbcProofResponse,
-        IbcState, SelfClientState, SelfConsensusState, VoyagerRpcServer,
+        json_rpc_error_to_error_object,
+        server::cache::{ClientInfoRequest, StateRequest},
+        IbcProof, IbcProofResponse, IbcState, SelfClientState, SelfConsensusState,
+        VoyagerRpcServer,
     },
     ExtensionsExt, IbcSpec, IbcStorePathKey, RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -47,7 +49,9 @@ pub mod cache {
     use serde_json::Value;
     use tracing::trace;
     use unionlabs::ibc::core::client::height::Height;
-    use voyager_primitives::{ChainId, IbcSpec, IbcSpecId, IbcStorePathKey};
+    use voyager_primitives::{ChainId, ClientInfo, IbcSpec, IbcSpecId, IbcStorePathKey};
+
+    use crate::RawClientId;
 
     #[derive(Debug, Clone)]
     pub struct Cache {
@@ -55,6 +59,11 @@ pub mod cache {
         state_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
         state_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
         state_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
+
+        client_info_cache: moka::future::Cache<ClientInfoRequest, ClientInfo>,
+        client_info_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
+        client_info_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
+        client_info_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
         // proof_cache: moka::future::Cache,
     }
 
@@ -79,6 +88,27 @@ pub mod cache {
                 )
                 .u64_counter("miss")
                 .build(),
+                client_info_cache: moka::future::CacheBuilder::new(config.state.capacity)
+                    // never expire, this state is assumed to be immutable
+                    .time_to_live(Duration::from_secs(60 * 60 * 24 * 365 * 1000))
+                    .time_to_idle(Duration::from_secs(60 * 60 * 24 * 365 * 1000))
+                    .eviction_policy(EvictionPolicy::lru())
+                    .build(),
+                client_info_cache_size_metric: opentelemetry::global::meter(
+                    "voyager.cache.client_info",
+                )
+                .u64_gauge("size")
+                .build(),
+                client_info_cache_hit_counter_metric: opentelemetry::global::meter(
+                    "voyager.cache.client_info",
+                )
+                .u64_counter("hit")
+                .build(),
+                client_info_cache_miss_counter_metric: opentelemetry::global::meter(
+                    "voyager.cache.client_info",
+                )
+                .u64_counter("miss")
+                .build(),
             }
         }
 
@@ -95,6 +125,16 @@ pub mod cache {
             self.state_cache_size_metric
                 .record(self.state_cache.entry_count(), attributes);
 
+            if let Some(state) = self.state_cache.get(&state_request).await {
+                self.state_cache_hit_counter_metric.add(1, attributes);
+
+                return Ok(Some(serde_json::from_value(state).expect(
+                    "infallible; only valid values are inserted into the cache; qed;",
+                )));
+            };
+
+            self.state_cache_miss_counter_metric.add(1, attributes);
+
             let init = fut
                 .map_ok(|state| {
                     serde_json::to_value(state).expect("serialization is infallible; qed;")
@@ -106,18 +146,57 @@ pub mod cache {
             } else {
                 let entry = self.state_cache.entry(state_request).or_insert(init).await;
 
-                if entry.is_fresh() {
-                    self.state_cache_miss_counter_metric.add(1, attributes);
-                } else {
-                    self.state_cache_hit_counter_metric.add(1, attributes);
-                }
-
                 let value = entry.into_value();
 
                 trace!(%value, "cached value");
 
                 Ok(serde_json::from_value(value)
                     .expect("infallible; only valid values are inserted into the cache; qed;"))
+            }
+        }
+
+        pub async fn client_info(
+            &self,
+            client_info_request: ClientInfoRequest,
+            fut: impl Future<Output = RpcResult<Option<ClientInfo>>>,
+        ) -> RpcResult<Option<ClientInfo>> {
+            let attributes = &[KeyValue::new(
+                "chain_id",
+                client_info_request.chain_id.to_string(),
+            )];
+
+            self.client_info_cache_size_metric
+                .record(self.client_info_cache.entry_count(), attributes);
+
+            if let Some(client_info) = self.client_info_cache.get(&client_info_request).await {
+                self.client_info_cache_hit_counter_metric.add(1, attributes);
+
+                return Ok(Some(client_info));
+            };
+
+            self.client_info_cache_miss_counter_metric
+                .add(1, attributes);
+
+            match fut.await? {
+                Some(init) => {
+                    let entry = self
+                        .client_info_cache
+                        .entry(client_info_request)
+                        .or_insert(init)
+                        .await;
+
+                    let client_info = entry.into_value();
+
+                    trace!(
+                        %client_info.client_type,
+                        %client_info.ibc_interface,
+                        %client_info.metadata,
+                        "cached value"
+                    );
+
+                    Ok(Some(client_info))
+                }
+                None => Ok(None),
             }
         }
     }
@@ -167,6 +246,31 @@ pub mod cache {
                 ibc_spec_id,
                 height,
                 path,
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct ClientInfoRequest {
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        client_id: RawClientId,
+    }
+
+    impl ClientInfoRequest {
+        pub fn new<V: IbcSpec>(chain_id: ChainId, client_id: V::ClientId) -> Self {
+            Self {
+                chain_id,
+                ibc_spec_id: V::ID,
+                client_id: RawClientId::new(client_id),
+            }
+        }
+
+        pub fn new_raw(chain_id: ChainId, ibc_spec_id: IbcSpecId, client_id: RawClientId) -> Self {
+            Self {
+                chain_id,
+                ibc_spec_id,
+                client_id,
             }
         }
     }
@@ -332,32 +436,41 @@ impl Server {
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientInfo>> {
         self.span()
-            .in_scope(|| async {
-                trace!("fetching client info");
+            .in_scope(|| {
+                self.inner.cache.client_info(
+                    ClientInfoRequest::new_raw(
+                        chain_id.clone(),
+                        ibc_spec_id.clone(),
+                        client_id.clone(),
+                    ),
+                    async {
+                        trace!("fetching client info");
 
-                let client_info = self
-                    .inner
-                    .modules()?
-                    .state_module(chain_id, ibc_spec_id)?
-                    .with_id(self.item_id)
-                    .client_info_raw(client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                        let client_info = self
+                            .inner
+                            .modules()?
+                            .state_module(chain_id, ibc_spec_id)?
+                            .with_id(self.item_id)
+                            .client_info_raw(client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
 
-                match client_info {
-                    Some(ref client_info) => {
-                        trace!(
-                            %client_info.ibc_interface,
-                            %client_info.client_type,
-                            "fetched client info"
-                        );
-                    }
-                    None => {
-                        trace!("client not found");
-                    }
-                }
+                        match client_info {
+                            Some(ref client_info) => {
+                                trace!(
+                                    %client_info.ibc_interface,
+                                    %client_info.client_type,
+                                    "fetched client info"
+                                );
+                            }
+                            None => {
+                                trace!("client not found");
+                            }
+                        }
 
-                Ok(client_info)
+                        Ok(client_info)
+                    },
+                )
             })
             .await
     }
@@ -378,53 +491,66 @@ impl Server {
 
                 let modules = self.inner.modules()?;
 
-                let state_module = modules
-                    .state_module(chain_id, ibc_spec_id)?
-                    .with_id(self.item_id);
-
-                let client_info = state_module
-                    .client_info_raw(client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let client_info = self
+                    .client_info(chain_id, ibc_spec_id, client_id.clone())
+                    .await?;
 
                 let Some(client_info) = client_info else {
-                    trace!("client info for client {client_id} not found at height {height} on chain {chain_id}");
+                    trace!(
+                        "client info for client {client_id} not \
+                        found at height {height} on chain {chain_id}"
+                    );
                     return Ok(None);
                 };
 
-                let raw_client_state = state_module
+                let ibc_spec_handler = self
+                    .modules()?
+                    .ibc_spec_handlers
+                    .handlers
+                    .get(ibc_spec_id)
+                    .ok_or_else(|| {
+                        fatal_error(&*anyhow!(
+                            "ibc spec {ibc_spec_id} is not \
+                            supported in this build of voyager"
+                        ))
+                    })?;
+
+                let raw_client_state = self
                     .query_ibc_state_raw(
-                        height,
-                        (self
-                            .modules()?
-                            .ibc_spec_handlers
-                            .handlers
-                            .get(ibc_spec_id)
-                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
-                            .client_state_path)(client_id.clone())
-                        .map_err(|err| fatal_error(&*err))?,
+                        chain_id.clone(),
+                        ibc_spec_id.clone(),
+                        QueryHeight::Specific(height),
+                        (ibc_spec_handler.client_state_path)(client_id.clone())
+                            .map_err(|err| fatal_error(&*err))?,
                     )
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?
+                    .state;
 
-                trace!(%raw_client_state);
-
-                let client_state = serde_json::from_value::<Option<Bytes>>(raw_client_state)
-                    .with_context(|| format!("querying client state for client {client_id} at {height} on {chain_id}"))
-                    .map_err(|e| fatal_error(&*e))?;
-
-                let Some(client_state) = client_state else {
-                    trace!("client state for client {client_id} not found at height {height} on chain {chain_id}");
+                let Some(raw_client_state) = raw_client_state else {
+                    trace!(
+                        "client state for client {client_id} not \
+                        found at height {height} on chain {chain_id}"
+                    );
                     return Ok(None);
                 };
+
+                trace!(?raw_client_state);
+
+                let client_state = serde_json::from_value::<Bytes>(raw_client_state)
+                    .with_context(|| {
+                        format!(
+                            "querying client state for client \
+                            {client_id} at {height} on {chain_id}"
+                        )
+                    })
+                    .map_err(|e| fatal_error(&*e))?;
 
                 let meta = modules
                     .client_module(
                         &client_info.client_type,
                         &client_info.ibc_interface,
                         ibc_spec_id,
-                    )
-                    ?
+                    )?
                     .with_id(self.item_id)
                     .decode_client_state_meta(client_state)
                     .await
@@ -460,43 +586,68 @@ impl Server {
 
                 let modules = self.inner.modules()?;
 
-                let state_module = modules
-                    .state_module(chain_id, ibc_spec_id)?
-                    .with_id(self.item_id);
-
-                let client_info = state_module
-                    .client_info_raw(client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
-
-                let Some(client_info) = client_info else {
-                    trace!("client info for client {client_id} not found at height {height} on chain {chain_id}");
+                let Some(client_info) = self
+                    .client_info(chain_id, ibc_spec_id, client_id.clone())
+                    .await?
+                else {
+                    trace!(
+                        "client info for client {client_id} not \
+                        found at height {height} on chain {chain_id}"
+                    );
                     return Ok(None);
                 };
 
-                let raw_consensus_state = state_module
+                let ibc_spec_handler = self
+                    .modules()?
+                    .ibc_spec_handlers
+                    .handlers
+                    .get(ibc_spec_id)
+                    .ok_or_else(|| {
+                        fatal_error(&*anyhow!(
+                            "ibc spec {ibc_spec_id} is \
+                            not supported in this build of voyager"
+                        ))
+                    })?;
+
+                let raw_consensus_state = self
                     .query_ibc_state_raw(
-                        height,
-                        (self
-                            .modules()?
-                            .ibc_spec_handlers
-                            .handlers
-                            .get(ibc_spec_id)
-                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
-                            .consensus_state_path)(client_id.clone(), counterparty_height.to_string())
+                        chain_id.clone(),
+                        ibc_spec_id.clone(),
+                        QueryHeight::Specific(height),
+                        (ibc_spec_handler.consensus_state_path)(
+                            client_id.clone(),
+                            counterparty_height.to_string(),
+                        )
                         .map_err(|err| fatal_error(&*err))?,
                     )
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?
+                    .state;
 
-                trace!(%raw_consensus_state);
+                let Some(raw_consensus_state) = raw_consensus_state else {
+                    trace!(
+                        "consensus state for client {client_id}, \
+                        counterparty height {counterparty_height} not \
+                        found at height {height} on chain {chain_id}"
+                    );
+                    return Ok(None);
+                };
 
-                let client_state = serde_json::from_value::<Option<Bytes>>(raw_consensus_state)
-                    .with_context(|| format!("querying consensus state for client {client_id} at {height} on {chain_id}"))
+                let consensus_state = serde_json::from_value::<Option<Bytes>>(raw_consensus_state)
+                    .with_context(|| {
+                        format!(
+                            "querying consensus state for client {client_id}, \
+                            counterparty height {counterparty_height} at \
+                            {height} on {chain_id}"
+                        )
+                    })
                     .map_err(|e| fatal_error(&*e))?;
 
-                let Some(consensus_state) = client_state else {
-                    trace!("consensus state for client {client_id} not found at height {height} on chain {chain_id}");
+                let Some(consensus_state) = consensus_state else {
+                    trace!(
+                        "consensus state for client {client_id}, counterparty \
+                        height {counterparty_height} not found at height \
+                        {height} on chain {chain_id}"
+                    );
                     return Ok(None);
                 };
 
@@ -505,8 +656,7 @@ impl Server {
                         &client_info.client_type,
                         &client_info.ibc_interface,
                         ibc_spec_id,
-                    )
-                    ?
+                    )?
                     .with_id(self.item_id)
                     .decode_consensus_state_meta(consensus_state)
                     .await
