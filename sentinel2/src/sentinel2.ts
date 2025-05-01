@@ -732,7 +732,9 @@ const escrowSupplyControlLoop = Effect.repeat(
                 yield* readCw20Balance(denom, minter).pipe(
                   Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
                   Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
-              )
+              ) 
+              // TODO: send "tokenInfo" here before sending the new request because it may fail due to
+              // native token. Its not %100 guarantee
               if(!cw20Balance)
                 continue
               amount = cw20Balance
@@ -1194,6 +1196,10 @@ export const checkPackets = (
 ) =>
   Effect.gen(function* () {
     for (const sla of ["mainnet", "testnet"] as const) {
+      if(sla == "testnet" ) {
+        yield* Effect.log("Skipping testnet")
+        continue
+      }
       const transfer_error = sla === "mainnet" ? "MAINNET_TRANSFER_ERROR" : "TESTNET_TRANSFER_ERROR"
       const missingPacketsMainnet = yield* fetchMissingPackets(hasuraEndpoint, sla)
       if(!missingPacketsMainnet || missingPacketsMainnet.length === 0) {
