@@ -1,6 +1,6 @@
 <script lang="ts">
 import "../app.css"
-import { onMount } from "svelte"
+import { onMount, type Snippet } from "svelte"
 import { Effect, Fiber, Option } from "effect"
 import { chainsQuery } from "$lib/queries/chains.svelte"
 import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
@@ -19,8 +19,14 @@ import { runFork } from "$lib/utils/effect.svelte"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 import Seo from "$lib/components/Seo.svelte"
 import { interceptLogos } from "$lib/utils/intercept-logos.ts"
+import type { PageData } from "./$types.ts"
 
-let { children } = $props()
+interface Props {
+  children: Snippet
+  data: PageData
+}
+
+let { children, data }: Props = $props()
 
 /* Hack to be able to JSON.stringify BigInt */
 interface BigInt {
@@ -31,21 +37,8 @@ BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
-$effect(() => {
-  const hostname = page.url.hostname
-  // Clear any existing override when hostname changes
-  uiStore.overrideEdition = null
-
-  if (hostname.startsWith("btc.") || hostname.startsWith("staging.btc.")) {
-    uiStore.edition = "btc"
-  } else if (hostname.startsWith("app.") || hostname.startsWith("staging.app.")) {
-    uiStore.edition = "app"
-  } else {
-    uiStore.edition = "app"
-  }
-})
-
 onMount(() => {
+  uiStore.edition = data.edition
   interceptLogos()
   runExample()
   runFork(chainsQuery(ENV()))
