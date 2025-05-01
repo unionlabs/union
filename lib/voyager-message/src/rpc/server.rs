@@ -29,8 +29,10 @@ use crate::{
     },
     primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
     rpc::{
-        json_rpc_error_to_error_object, server::cache::StateRequest, IbcProof, IbcProofResponse,
-        IbcState, SelfClientState, SelfConsensusState, VoyagerRpcServer,
+        json_rpc_error_to_error_object,
+        server::cache::{ClientInfoRequest, StateRequest},
+        IbcProof, IbcProofResponse, IbcState, SelfClientState, SelfConsensusState,
+        VoyagerRpcServer,
     },
     ExtensionsExt, IbcSpec, IbcStorePathKey, RawClientId, FATAL_JSONRPC_ERROR_CODE,
 };
@@ -47,7 +49,9 @@ pub mod cache {
     use serde_json::Value;
     use tracing::trace;
     use unionlabs::ibc::core::client::height::Height;
-    use voyager_primitives::{ChainId, IbcSpec, IbcSpecId, IbcStorePathKey};
+    use voyager_primitives::{ChainId, ClientInfo, IbcSpec, IbcSpecId, IbcStorePathKey};
+
+    use crate::RawClientId;
 
     #[derive(Debug, Clone)]
     pub struct Cache {
@@ -55,6 +59,11 @@ pub mod cache {
         state_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
         state_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
         state_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
+
+        client_info_cache: moka::future::Cache<ClientInfoRequest, ClientInfo>,
+        client_info_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
+        client_info_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
+        client_info_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
         // proof_cache: moka::future::Cache,
     }
 
@@ -76,6 +85,27 @@ pub mod cache {
                     .build(),
                 state_cache_miss_counter_metric: opentelemetry::global::meter(
                     "voyager.cache.state",
+                )
+                .u64_counter("miss")
+                .build(),
+                client_info_cache: moka::future::CacheBuilder::new(config.state.capacity)
+                    // never expire, this state is assumed to be immutable
+                    .time_to_live(Duration::from_secs(60 * 60 * 24 * 365 * 1000))
+                    .time_to_idle(Duration::from_secs(60 * 60 * 24 * 365 * 1000))
+                    .eviction_policy(EvictionPolicy::lru())
+                    .build(),
+                client_info_cache_size_metric: opentelemetry::global::meter(
+                    "voyager.cache.client_info",
+                )
+                .u64_gauge("size")
+                .build(),
+                client_info_cache_hit_counter_metric: opentelemetry::global::meter(
+                    "voyager.cache.client_info",
+                )
+                .u64_counter("hit")
+                .build(),
+                client_info_cache_miss_counter_metric: opentelemetry::global::meter(
+                    "voyager.cache.client_info",
                 )
                 .u64_counter("miss")
                 .build(),
@@ -122,6 +152,51 @@ pub mod cache {
 
                 Ok(serde_json::from_value(value)
                     .expect("infallible; only valid values are inserted into the cache; qed;"))
+            }
+        }
+
+        pub async fn client_info(
+            &self,
+            client_info_request: ClientInfoRequest,
+            fut: impl Future<Output = RpcResult<Option<ClientInfo>>>,
+        ) -> RpcResult<Option<ClientInfo>> {
+            let attributes = &[KeyValue::new(
+                "chain_id",
+                client_info_request.chain_id.to_string(),
+            )];
+
+            self.client_info_cache_size_metric
+                .record(self.client_info_cache.entry_count(), attributes);
+
+            if let Some(client_info) = self.client_info_cache.get(&client_info_request).await {
+                self.client_info_cache_hit_counter_metric.add(1, attributes);
+
+                return Ok(Some(client_info));
+            };
+
+            self.client_info_cache_miss_counter_metric
+                .add(1, attributes);
+
+            match fut.await? {
+                Some(init) => {
+                    let entry = self
+                        .client_info_cache
+                        .entry(client_info_request)
+                        .or_insert(init)
+                        .await;
+
+                    let client_info = entry.into_value();
+
+                    trace!(
+                        %client_info.client_type,
+                        %client_info.ibc_interface,
+                        %client_info.metadata,
+                        "cached value"
+                    );
+
+                    Ok(Some(client_info))
+                }
+                None => Ok(None),
             }
         }
     }
@@ -171,6 +246,31 @@ pub mod cache {
                 ibc_spec_id,
                 height,
                 path,
+            }
+        }
+    }
+
+    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
+    pub struct ClientInfoRequest {
+        chain_id: ChainId,
+        ibc_spec_id: IbcSpecId,
+        client_id: RawClientId,
+    }
+
+    impl ClientInfoRequest {
+        pub fn new<V: IbcSpec>(chain_id: ChainId, client_id: V::ClientId) -> Self {
+            Self {
+                chain_id,
+                ibc_spec_id: V::ID,
+                client_id: RawClientId::new(client_id),
+            }
+        }
+
+        pub fn new_raw(chain_id: ChainId, ibc_spec_id: IbcSpecId, client_id: RawClientId) -> Self {
+            Self {
+                chain_id,
+                ibc_spec_id,
+                client_id,
             }
         }
     }
@@ -336,32 +436,41 @@ impl Server {
         client_id: RawClientId,
     ) -> RpcResult<Option<ClientInfo>> {
         self.span()
-            .in_scope(|| async {
-                trace!("fetching client info");
+            .in_scope(|| {
+                self.inner.cache.client_info(
+                    ClientInfoRequest::new_raw(
+                        chain_id.clone(),
+                        ibc_spec_id.clone(),
+                        client_id.clone(),
+                    ),
+                    async {
+                        trace!("fetching client info");
 
-                let client_info = self
-                    .inner
-                    .modules()?
-                    .state_module(chain_id, ibc_spec_id)?
-                    .with_id(self.item_id)
-                    .client_info_raw(client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                        let client_info = self
+                            .inner
+                            .modules()?
+                            .state_module(chain_id, ibc_spec_id)?
+                            .with_id(self.item_id)
+                            .client_info_raw(client_id.clone())
+                            .await
+                            .map_err(json_rpc_error_to_error_object)?;
 
-                match client_info {
-                    Some(ref client_info) => {
-                        trace!(
-                            %client_info.ibc_interface,
-                            %client_info.client_type,
-                            "fetched client info"
-                        );
-                    }
-                    None => {
-                        trace!("client not found");
-                    }
-                }
+                        match client_info {
+                            Some(ref client_info) => {
+                                trace!(
+                                    %client_info.ibc_interface,
+                                    %client_info.client_type,
+                                    "fetched client info"
+                                );
+                            }
+                            None => {
+                                trace!("client not found");
+                            }
+                        }
 
-                Ok(client_info)
+                        Ok(client_info)
+                    },
+                )
             })
             .await
     }
