@@ -512,7 +512,12 @@ const escrowSupplyControlLoop = Effect.repeat(
       const dstCfg = config.chainConfig[dstChain]
 
       if (!(srcCfg && dstCfg)) {
-        yield* Effect.log("Invalid source or destination chain configuration. Skipping...")
+        yield* Effect.log(
+          "Invalid source or destination chain configuration. Skipping... srcChain:",
+          srcChain,
+          "dstChain:",
+          dstChain
+        )
         continue
       }
 
@@ -677,7 +682,7 @@ const escrowSupplyControlLoop = Effect.repeat(
       }
     }
   }),
-  Schedule.spaced("15 minutes"),
+  Schedule.spaced("1 hours")
 )
 
 const fundBabylonAccounts = Effect.repeat(
@@ -864,7 +869,7 @@ export const checkSSLCertificates = Effect.repeat(
     yield* Effect.log(`Found ${uniqueEndpoints.length} endpoints}`)
 
     const now = Date.now()
-    const fourDaysMs = 8 * 24 * 60 * 60 * 1000
+    const fourDaysMs = 4 * 24 * 60 * 60 * 1000
     for (const url of uniqueEndpoints) {
       const existingIncident = getSslIncident(db, url)
       const expiry: Date = yield* Effect.tryPromise({
