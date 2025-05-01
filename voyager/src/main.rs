@@ -434,6 +434,25 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
 
                     print_json(&client_state_meta);
                 }
+                RpcCmd::ConsensusMeta {
+                    on,
+                    ibc_spec_id,
+                    client_id,
+                    trusted_height,
+                    height,
+                } => {
+                    let consensus_state_meta = voyager_client
+                        .consensus_state_meta(
+                            on.clone(),
+                            ibc_spec_id.clone(),
+                            height,
+                            client_id.clone(),
+                            trusted_height,
+                        )
+                        .await?;
+
+                    print_json(&consensus_state_meta);
+                }
                 RpcCmd::ClientInfo {
                     on,
                     client_id,

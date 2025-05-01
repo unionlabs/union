@@ -491,53 +491,66 @@ impl Server {
 
                 let modules = self.inner.modules()?;
 
-                let state_module = modules
-                    .state_module(chain_id, ibc_spec_id)?
-                    .with_id(self.item_id);
-
-                let client_info = state_module
-                    .client_info_raw(client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                let client_info = self
+                    .client_info(chain_id, ibc_spec_id, client_id.clone())
+                    .await?;
 
                 let Some(client_info) = client_info else {
-                    trace!("client info for client {client_id} not found at height {height} on chain {chain_id}");
+                    trace!(
+                        "client info for client {client_id} not \
+                        found at height {height} on chain {chain_id}"
+                    );
                     return Ok(None);
                 };
 
-                let raw_client_state = state_module
+                let ibc_spec_handler = self
+                    .modules()?
+                    .ibc_spec_handlers
+                    .handlers
+                    .get(ibc_spec_id)
+                    .ok_or_else(|| {
+                        fatal_error(&*anyhow!(
+                            "ibc spec {ibc_spec_id} is not \
+                            supported in this build of voyager"
+                        ))
+                    })?;
+
+                let raw_client_state = self
                     .query_ibc_state_raw(
-                        height,
-                        (self
-                            .modules()?
-                            .ibc_spec_handlers
-                            .handlers
-                            .get(ibc_spec_id)
-                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
-                            .client_state_path)(client_id.clone())
-                        .map_err(|err| fatal_error(&*err))?,
+                        chain_id.clone(),
+                        ibc_spec_id.clone(),
+                        QueryHeight::Specific(height),
+                        (ibc_spec_handler.client_state_path)(client_id.clone())
+                            .map_err(|err| fatal_error(&*err))?,
                     )
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?
+                    .state;
 
-                trace!(%raw_client_state);
-
-                let client_state = serde_json::from_value::<Option<Bytes>>(raw_client_state)
-                    .with_context(|| format!("querying client state for client {client_id} at {height} on {chain_id}"))
-                    .map_err(|e| fatal_error(&*e))?;
-
-                let Some(client_state) = client_state else {
-                    trace!("client state for client {client_id} not found at height {height} on chain {chain_id}");
+                let Some(raw_client_state) = raw_client_state else {
+                    trace!(
+                        "client state for client {client_id} not \
+                        found at height {height} on chain {chain_id}"
+                    );
                     return Ok(None);
                 };
+
+                trace!(?raw_client_state);
+
+                let client_state = serde_json::from_value::<Bytes>(raw_client_state)
+                    .with_context(|| {
+                        format!(
+                            "querying client state for client \
+                            {client_id} at {height} on {chain_id}"
+                        )
+                    })
+                    .map_err(|e| fatal_error(&*e))?;
 
                 let meta = modules
                     .client_module(
                         &client_info.client_type,
                         &client_info.ibc_interface,
                         ibc_spec_id,
-                    )
-                    ?
+                    )?
                     .with_id(self.item_id)
                     .decode_client_state_meta(client_state)
                     .await
@@ -573,43 +586,68 @@ impl Server {
 
                 let modules = self.inner.modules()?;
 
-                let state_module = modules
-                    .state_module(chain_id, ibc_spec_id)?
-                    .with_id(self.item_id);
-
-                let client_info = state_module
-                    .client_info_raw(client_id.clone())
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
-
-                let Some(client_info) = client_info else {
-                    trace!("client info for client {client_id} not found at height {height} on chain {chain_id}");
+                let Some(client_info) = self
+                    .client_info(chain_id, ibc_spec_id, client_id.clone())
+                    .await?
+                else {
+                    trace!(
+                        "client info for client {client_id} not \
+                        found at height {height} on chain {chain_id}"
+                    );
                     return Ok(None);
                 };
 
-                let raw_consensus_state = state_module
+                let ibc_spec_handler = self
+                    .modules()?
+                    .ibc_spec_handlers
+                    .handlers
+                    .get(ibc_spec_id)
+                    .ok_or_else(|| {
+                        fatal_error(&*anyhow!(
+                            "ibc spec {ibc_spec_id} is \
+                            not supported in this build of voyager"
+                        ))
+                    })?;
+
+                let raw_consensus_state = self
                     .query_ibc_state_raw(
-                        height,
-                        (self
-                            .modules()?
-                            .ibc_spec_handlers
-                            .handlers
-                            .get(ibc_spec_id)
-                            .ok_or_else(|| fatal_error(&*anyhow!("ibc spec {ibc_spec_id} is not supported in this build of voyager")))?
-                            .consensus_state_path)(client_id.clone(), counterparty_height.to_string())
+                        chain_id.clone(),
+                        ibc_spec_id.clone(),
+                        QueryHeight::Specific(height),
+                        (ibc_spec_handler.consensus_state_path)(
+                            client_id.clone(),
+                            counterparty_height.to_string(),
+                        )
                         .map_err(|err| fatal_error(&*err))?,
                     )
-                    .await
-                    .map_err(json_rpc_error_to_error_object)?;
+                    .await?
+                    .state;
 
-                trace!(%raw_consensus_state);
+                let Some(raw_consensus_state) = raw_consensus_state else {
+                    trace!(
+                        "consensus state for client {client_id}, \
+                        counterparty height {counterparty_height} not \
+                        found at height {height} on chain {chain_id}"
+                    );
+                    return Ok(None);
+                };
 
-                let client_state = serde_json::from_value::<Option<Bytes>>(raw_consensus_state)
-                    .with_context(|| format!("querying consensus state for client {client_id} at {height} on {chain_id}"))
+                let consensus_state = serde_json::from_value::<Option<Bytes>>(raw_consensus_state)
+                    .with_context(|| {
+                        format!(
+                            "querying consensus state for client {client_id}, \
+                            counterparty height {counterparty_height} at \
+                            {height} on {chain_id}"
+                        )
+                    })
                     .map_err(|e| fatal_error(&*e))?;
 
-                let Some(consensus_state) = client_state else {
-                    trace!("consensus state for client {client_id} not found at height {height} on chain {chain_id}");
+                let Some(consensus_state) = consensus_state else {
+                    trace!(
+                        "consensus state for client {client_id}, counterparty \
+                        height {counterparty_height} not found at height \
+                        {height} on chain {chain_id}"
+                    );
                     return Ok(None);
                 };
 
@@ -618,8 +656,7 @@ impl Server {
                         &client_info.client_type,
                         &client_info.ibc_interface,
                         ibc_spec_id,
-                    )
-                    ?
+                    )?
                     .with_id(self.item_id)
                     .decode_consensus_state_meta(consensus_state)
                     .await
