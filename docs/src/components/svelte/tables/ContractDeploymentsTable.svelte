@@ -5,7 +5,7 @@ import deployments from "~root/deployments/deployments.json" with { type: "json"
 
 {#each deployments as network}
   <h3>
-    {network.chain_id} Deployments
+    {network.universal_chain_id.split(".")[0].toUpperCase()} ({network.chain_id}) Deployments
   </h3>
   <Table.Root class="w-full border border-neutral-500 rounded-sm">
     <Table.Row class="w-full">
