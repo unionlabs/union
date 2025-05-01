@@ -247,7 +247,14 @@ export const xionLeapChainInfo: LeapExtendedInfo = {
       coinDenom: "XION",
       coinMinimalDenom: "uxion",
       coinDecimals: 6,
-      coinGeckoId: "xion"
+      coinGeckoId: "xion",
+      // XXX: incorrect placement given static analysis; resolution would require distriminated handling in `get*GasPriceStep()` helper functions.
+      // @ts-expect-error 2353
+      gasPriceStep: {
+        low: 0.001,
+        average: 0.001,
+        high: 0.002
+      }
     }
   ],
   gasPriceStep: {
