@@ -44,11 +44,25 @@ function goToNextPage() {
   }
 }
 
-function goToPreviousPage() {
-  if (currentPage > 0) {
-    previousPage = currentPage
-    currentPage--
-  }
+//Partial reset of the transfer
+function cancelTransfer() {
+  interruptFiber()
+  currentPage = 0
+  transferSteps = Option.none()
+  transferErrors = Option.none()
+  isLoading = false
+  transferHashStore.reset()
+}
+
+//Full reset of the transfer
+function newTransfer() {
+  interruptFiber()
+  transferSteps = Option.none()
+  transferErrors = Option.none()
+  isLoading = false
+  currentPage = 0
+  transferData.raw.reset()
+  transferHashStore.reset()
 }
 
 let actionButtonText = $derived.by(() => {
@@ -86,17 +100,6 @@ function interruptFiber() {
     onSome: fiber => Fiber.interruptFork(fiber)
   })
   currentFiber = Option.none()
-}
-
-function newTransfer() {
-  interruptFiber()
-  transferSteps = Option.none()
-  transferErrors = Option.none()
-  isLoading = false
-  statusMessage = ""
-  currentPage = 0
-  transferData.raw.reset()
-  transferHashStore.reset()
 }
 
 $effect(() => {
@@ -263,7 +266,7 @@ const currentStep = $derived(
             <CheckReceiverStep
               stepIndex={currentPage + 1}
               step={currentStep}
-              onBack={goToPreviousPage}
+              cancel={cancelTransfer}
               onSubmit={goToNextPage}
             />
           </div>
@@ -277,7 +280,7 @@ const currentStep = $derived(
             <ApprovalStep
               stepIndex={currentPage + 1}
               step={currentStep}
-              onBack={goToPreviousPage}
+              cancel={cancelTransfer}
               onApprove={handleActionButtonClick}
               {actionButtonText}
             />
@@ -292,7 +295,7 @@ const currentStep = $derived(
             <SubmitStep
               stepIndex={currentPage + 1}
               step={currentStep}
-              onCancel={newTransfer}
+              cancel={cancelTransfer}
               onSubmit={handleActionButtonClick}
               {actionButtonText}
             />
@@ -304,7 +307,7 @@ const currentStep = $derived(
             out:fly={{ x: direction * -382, duration:300 }}
             in:fly ={{ x: direction * 382, duration:300 }}
           >
-            <IndexStep {newTransfer} step={currentStep} />
+            <IndexStep newTransfer={cancelTransfer} step={currentStep} />
           </div>
         {/if}
   </div>
