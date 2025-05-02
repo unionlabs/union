@@ -182,3 +182,12 @@ FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000000", url =
 ```sh
 FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000001", url = "https://api.routescan.io/v2/network/testnet/evm/21000001/etherscan" } }' nix run .#evm-scripts.corn-testnet
 ```
+
+### `sei.1328`
+
+<https://seitrace.com/?chain=atlantic-2>
+
+```sh
+# key is an arbitrary non-empty string
+FOUNDRY_ETHERSCAN='{ chain = { key = "asdf", chain = "1328", url = "https://seitrace.com/atlantic-2/api" } }' nix run .#evm-scripts.sei-atlantic
+```
