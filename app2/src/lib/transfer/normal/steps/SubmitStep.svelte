@@ -35,11 +35,11 @@ type Props = {
   stepIndex: number
   step: SubmitInstruction
   onSubmit: () => void
-  onCancel?: () => void
+  cancel?: () => void
   actionButtonText: string
 }
 
-const { stepIndex, step, onSubmit, onCancel, actionButtonText }: Props = $props()
+const { stepIndex, step, onSubmit, cancel, actionButtonText }: Props = $props()
 
 let showError = $state(false)
 
@@ -289,7 +289,7 @@ const handleSubmit = () => {
     <div class="flex justify-between mt-4">
       <Button
         variant="secondary"
-        onclick={onCancel}
+        onclick={cancel}
         disabled={!isButtonEnabled}
       >
         Cancel

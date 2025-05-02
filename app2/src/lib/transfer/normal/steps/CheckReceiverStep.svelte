@@ -8,12 +8,12 @@ import { onDestroy, onMount } from "svelte"
 
 type Props = {
   stepIndex: number
-  onBack: () => void
+  cancel: () => void
   onSubmit: () => void
   step: CheckReceiver
 }
 
-const { step, onBack, onSubmit }: Props = $props()
+const { step, cancel, onSubmit }: Props = $props()
 
 const receiver = $derived(Option.isSome(step.receiver) ? step.receiver.value : undefined)
 const chain = $derived(
@@ -78,7 +78,7 @@ const buttonText = $derived.by(() => {
     </div>
 
     <div class="flex justify-between mt-4">
-      <Button variant="secondary" onclick={onBack}>Back</Button>
+      <Button variant="secondary" onclick={cancel}>Cancel</Button>
       <Button variant="primary" onclick={onSubmit} disabled={!isButtonEnabled}>
         {buttonText}
       </Button>

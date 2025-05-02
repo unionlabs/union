@@ -33,12 +33,12 @@ const MAX_UINT128 = BigInt("340282366920938463463374607431768211455")
 type Props = {
   stepIndex: number
   step: Steps.ApprovalRequired
-  onBack: () => void
+  cancel: () => void
   onApprove: () => void
   actionButtonText: string
 }
 
-const { step, onBack, onApprove, actionButtonText }: Props = $props()
+const { step, cancel, onApprove, actionButtonText }: Props = $props()
 
 let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
 let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
@@ -457,8 +457,8 @@ function handleBackClick() {
 
   <div class="border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
     <div class="flex justify-between p-4">
-      <Button variant="secondary" onclick={onBack} disabled={!isButtonEnabled}>
-        Back
+      <Button variant="secondary" onclick={cancel} disabled={!isButtonEnabled}>
+        Cancel
       </Button>
       {#if Option.isSome(error)}
         <div class="flex justify-end gap-2">
