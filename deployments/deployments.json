@@ -24,7 +24,7 @@
         "bob": {
           "address": "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s",
           "height": 461757,
-          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
+          "commit": "c9a0b82990813698dd9601099beb6477b64768e0"
         },
         "ethereum": {
           "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
@@ -101,7 +101,7 @@
         "bob": {
           "address": "union1lsn5mm3hf9cxqetp2dx47x7tq4kvxpk66e7v8c4d2j4cajrg7hsq0v877s",
           "height": 354886,
-          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
+          "commit": "c9a0b82990813698dd9601099beb6477b64768e0"
         },
         "ethereum": {
           "address": "union1a3gz55rhudakew7p3hccjarn8rk70guxnuqrw58tl00f5x4kyl9qj8t3xw",
