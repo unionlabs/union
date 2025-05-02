@@ -17,7 +17,8 @@ import {
 import { extractErrorDetails, generateSalt } from "@unionlabs/sdk/utils"
 import { http } from "@wagmi/core"
 import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
-import { custom, encodeAbiParameters, fromHex } from "viem"
+import { custom, encodeAbiParameters, fromHex, parseEther } from "viem"
+import { uiStore } from "$lib/stores/ui"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
@@ -112,6 +113,11 @@ export const submit = Effect.gen(function* () {
           do {
             const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
             const salt = yield* generateSalt("evm")
+
+            // v ATTACH FEE IF TESTNET
+            const value = uiStore.edition === "app" ? parseEther("0.04") : undefined
+            // ^ DON'T DO THIS ON MAINNET
+
             ets = yield* Effect.promise(() =>
               nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
                 chain: viemChain.value,
@@ -119,6 +125,7 @@ export const submit = Effect.gen(function* () {
                 address: step.intent.channel.source_port_id,
                 abi: ucs03ZkgmAbi,
                 functionName: "send",
+                value,
                 args: [
                   step.intent.channel.source_channel_id,
                   0n,
