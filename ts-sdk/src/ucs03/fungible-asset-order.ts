@@ -1,22 +1,22 @@
-import { toHex, type Address, type Hex } from "viem"
+import { Effect, Option, pipe, Schema as S } from "effect"
 import * as Either from "effect/Either"
-import { Effect, Schema as S, Option, pipe } from "effect"
+import { type Address, type Hex, toHex } from "viem"
+import { AptosPublicClient } from "../aptos/client.js"
+import { readFaTokenInfo } from "../aptos/fa.js"
+import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-token.js"
+import { CosmWasmClientContext, CosmWasmClientSource } from "../cosmos/client.js"
+import { readCw20TokenInfo } from "../cosmos/cw20.js"
+import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
 import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
-import { CosmWasmClientContext, CosmWasmClientSource } from "../cosmos/client.js"
-import { AptosPublicClient } from "../aptos/client.js"
-import { readCw20TokenInfo } from "../cosmos/cw20.js"
-import { readFaTokenInfo } from "../aptos/fa.js"
-import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
-import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-token.js"
-import { FungibleAssetOrder } from "./instruction.js"
-import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
-import { ensureHex } from "../utils/index.js"
-import type { TokenRawDenom } from "../schema/token.js"
 import { graphqlQuoteTokenUnwrapQuery } from "../graphql/unwrapped-quote-token.js"
+import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import type { UniversalChainId } from "../schema/chain.js"
 import type { ChannelId } from "../schema/channel.js"
+import type { TokenRawDenom } from "../schema/token.js"
+import { ensureHex } from "../utils/index.js"
+import { FungibleAssetOrder } from "./instruction.js"
 
 export type FungibleAssetOrderIntent = {
   sender: Address
@@ -45,17 +45,17 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
 }) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* ViemPublicClientSource).client
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
-      Effect.provideService(ViemPublicClient, { client: sourceClient })
+      Effect.provideService(ViemPublicClient, { client: sourceClient }),
     )
 
     const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
       baseToken: ensureHex(intent.baseToken),
       sourceChainId: intent.sourceChainId,
-      sourceChannelId: intent.sourceChannelId
+      sourceChannelId: intent.sourceChannelId,
     })
 
     yield* Effect.log("graphql quote", graphqlDenom)
@@ -82,8 +82,8 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
         tokenMeta.decimals,
         unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
         finalQuoteToken,
-        intent.quoteAmount
-      ]
+        intent.quoteAmount,
+      ],
     })
   })
 
@@ -99,24 +99,24 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
 }) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     yield* Effect.log("creating client")
     const sourceClient = (yield* ViemPublicClientSource).client
     yield* Effect.log("reading erc20 meta")
     const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
-      Effect.provideService(ViemPublicClient, { client: sourceClient })
+      Effect.provideService(ViemPublicClient, { client: sourceClient }),
     )
 
     yield* Effect.log(
       "checking if we should unwrap by querying graphql quote token",
-      ensureHex(intent.baseToken)
+      ensureHex(intent.baseToken),
     )
 
     const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
       baseToken: ensureHex(intent.baseToken),
       sourceChainId: intent.sourceChainId,
-      sourceChannelId: intent.sourceChannelId
+      sourceChannelId: intent.sourceChannelId,
     })
 
     yield* Effect.log("graphql quote", graphqlDenom)
@@ -143,8 +143,8 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.decimals,
         unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
         finalQuoteToken,
-        intent.quoteAmount
-      ]
+        intent.quoteAmount,
+      ],
     })
   }).pipe(Effect.withLogSpan("create fungible asset order"))
 
@@ -160,7 +160,7 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
 }) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
 
@@ -172,15 +172,15 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
         Either.getOrElse(() => ({
           symbol: intent.baseToken === "uxion" ? "XION" : intent.baseToken,
           name: intent.baseToken === "uxion" ? "xion" : intent.baseToken,
-          decimals: intent.baseToken === "uxion" ? 0 : 6
-        }))
-      )
+          decimals: intent.baseToken === "uxion" ? 0 : 6,
+        })),
+      ),
     )
 
     const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
       baseToken: ensureHex(intent.baseToken),
       sourceChainId: intent.sourceChainId,
-      sourceChannelId: intent.sourceChannelId
+      sourceChannelId: intent.sourceChannelId,
     })
 
     yield* Effect.log("graphql quote", graphqlDenom)
@@ -210,8 +210,8 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
         tokenMeta.decimals,
         unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
         finalQuoteToken,
-        intent.quoteAmount
-      ]
+        intent.quoteAmount,
+      ],
     })
   })
 
@@ -227,7 +227,7 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
   sourceChainId: UniversalChainId
   sourceChannelId: ChannelId
 }) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
 
@@ -239,15 +239,15 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
         Either.getOrElse(() => ({
           symbol: intent.baseToken === "uxion" ? "XION" : intent.baseToken,
           name: intent.baseToken === "uxion" ? "xion" : intent.baseToken,
-          decimals: intent.baseToken === "uxion" ? 0 : 6
-        }))
-      )
+          decimals: intent.baseToken === "uxion" ? 0 : 6,
+        })),
+      ),
     )
 
     const graphqlDenom = yield* graphqlQuoteTokenUnwrapQuery({
       baseToken: ensureHex(intent.baseToken),
       sourceChainId: intent.sourceChainId,
-      sourceChannelId: intent.sourceChannelId
+      sourceChannelId: intent.sourceChannelId,
     })
 
     yield* Effect.log("graphql quote", graphqlDenom)
@@ -274,8 +274,8 @@ export const createCosmosToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.decimals,
         unwrapping ? BigInt(intent.sourceChannelId) : 0n, // path is source channel when unwrapping, else 0
         finalQuoteToken,
-        intent.quoteAmount
-      ]
+        intent.quoteAmount,
+      ],
     })
   })
 
@@ -289,20 +289,19 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
   baseAmount: bigint
   quoteAmount: bigint
 }) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
     // HACK: special cased for muno for now
-    const tokenMeta =
-      intent.baseToken === "muno"
-        ? {
-            symbol: "muno",
-            name: "muno",
-            decimals: 0
-          }
-        : yield* readCw20TokenInfo(intent.baseToken).pipe(
-            Effect.provideService(CosmWasmClientContext, { client: sourceClient })
-          )
+    const tokenMeta = intent.baseToken === "muno"
+      ? {
+        symbol: "muno",
+        name: "muno",
+        decimals: 0,
+      }
+      : yield* readCw20TokenInfo(intent.baseToken).pipe(
+        Effect.provideService(CosmWasmClientContext, { client: sourceClient }),
+      )
 
     const quoteToken = yield* predictAptosQuoteToken(toHex(intent.baseToken))
 
@@ -321,8 +320,8 @@ export const createCosmosToAptosFungibleAssetOrder = (intent: {
         tokenMeta.decimals,
         0n, // channel if unwrapping
         quoteToken,
-        intent.quoteAmount
-      ]
+        intent.quoteAmount,
+      ],
     })
   })
 
@@ -336,11 +335,11 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
   baseAmount: bigint
   quoteAmount: bigint
 }) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* AptosPublicClient).client
     const tokenMeta = yield* readFaTokenInfo(intent.baseToken).pipe(
-      Effect.provideService(AptosPublicClient, { client: sourceClient })
+      Effect.provideService(AptosPublicClient, { client: sourceClient }),
     )
     const quoteToken = yield* predictCosmosQuoteToken(toHex(intent.baseToken))
 
@@ -357,7 +356,7 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.decimals,
         0n, // channel if unwrapping
         quoteToken,
-        intent.quoteAmount
-      ]
+        intent.quoteAmount,
+      ],
     })
   })

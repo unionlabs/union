@@ -1,6 +1,6 @@
 <script>
-import { onMount, onDestroy } from "svelte"
 import { browser } from "$app/environment"
+import { onDestroy, onMount } from "svelte"
 
 let containerWidth
 let containerRef
@@ -9,7 +9,7 @@ let characters = [
   { id: "omar", x: 10, direction: 1, speed: 2 },
   { id: "lukas", x: 300, direction: -1, speed: 3 },
   { id: "ben", x: 600, direction: 1, speed: 1.5 },
-  { id: "cor", x: 900, direction: -1, speed: 2.5 }
+  { id: "cor", x: 900, direction: -1, speed: 2.5 },
 ]
 
 const CHARACTER_WIDTH = 48
@@ -53,13 +53,12 @@ function updatePositions() {
       if (i !== index) {
         const other = newPositions[i]
 
-        const distance =
-          char.direction > 0
-            ? other.newX - (char.newX + CHARACTER_WIDTH)
-            : char.newX - (other.newX + CHARACTER_WIDTH)
+        const distance = char.direction > 0
+          ? other.newX - (char.newX + CHARACTER_WIDTH)
+          : char.newX - (other.newX + CHARACTER_WIDTH)
 
-        const isApproaching =
-          (char.direction > 0 && other.direction < 0) || (char.direction < 0 && other.direction > 0)
+        const isApproaching = (char.direction > 0 && other.direction < 0)
+          || (char.direction < 0 && other.direction > 0)
 
         if (isApproaching && Math.abs(distance) <= COLLISION_THRESHOLD) {
           finalX = char.x
@@ -74,7 +73,7 @@ function updatePositions() {
       ...char,
       x: finalX,
       direction: newDirection,
-      speed: newSpeed
+      speed: newSpeed,
     }
   })
 
@@ -100,18 +99,18 @@ onDestroy(() => {
 </script>
 
 <div
-        bind:this={containerRef}
-        class="relative w-full h-full bg-transparent overflow-hidden"
+  bind:this={containerRef}
+  class="relative w-full h-full bg-transparent overflow-hidden"
 >
   {#each characters as char (char.id)}
     <div
-            class="absolute bottom-0 transition-transform duration-100 ease-linear"
-            style="transform: translateX({char.x}px) scaleX({char.direction > 0 ? 1 : -1})"
+      class="absolute bottom-0 transition-transform duration-100 ease-linear"
+      style="transform: translateX({char.x}px) scaleX({char.direction > 0 ? 1 : -1})"
     >
       <img
-              src="/agents/{char.id}.png"
-              alt="Agent {char.id}"
-              class="h-16 w-16 flex-shrink-0"
+        src="/agents/{char.id}.png"
+        alt="Agent {char.id}"
+        class="h-16 w-16 flex-shrink-0"
       />
     </div>
   {/each}

@@ -1,48 +1,48 @@
+import { err, ok, type Result, ResultAsync } from "neverthrow"
 import {
-  erc20Abi,
-  getAddress,
   type Account,
-  publicActions,
-  type HttpTransport,
+  createPublicClient,
   createWalletClient,
   type CustomTransport,
+  erc20Abi,
   type FallbackTransport,
-  createPublicClient,
+  getAddress,
   http,
-  toHex
+  type HttpTransport,
+  publicActions,
+  toHex,
 } from "viem"
 import {
-  // evmSameChainTransfer,
-  transferAssetFromEvm,
-  evmApproveTransferAsset,
-  transferAssetFromEvmSimulate
-} from "./transfer.ts"
-import { err, ok, ResultAsync, type Result } from "neverthrow"
-import { getHubbleChainDetails } from "../pfm.ts"
-import {
-  sepolia,
+  arbitrumSepolia,
+  berachainTestnetbArtio,
   holesky,
   scrollSepolia,
-  arbitrumSepolia,
-  berachainTestnetbArtio
+  sepolia,
 } from "viem/chains"
+import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
+import { getHubbleChainDetails } from "../pfm.ts"
 import type {
-  TransferAssetsParametersLegacy,
-  LooseAutocomplete,
   Hex,
   HexAddress,
-  TransferAssetParameters
+  LooseAutocomplete,
+  TransferAssetParameters,
+  TransferAssetsParametersLegacy,
 } from "../types.ts"
-import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
 import { generateSalt, timestamp } from "../utilities/index.ts"
-export { sepolia, scrollSepolia, arbitrumSepolia, berachainTestnetbArtio }
+import {
+  evmApproveTransferAsset,
+  // evmSameChainTransfer,
+  transferAssetFromEvm,
+  transferAssetFromEvmSimulate,
+} from "./transfer.ts"
+export { arbitrumSepolia, berachainTestnetbArtio, scrollSepolia, sepolia }
 
 export const evmChains = [
   sepolia,
   holesky,
   scrollSepolia,
   arbitrumSepolia,
-  berachainTestnetbArtio
+  berachainTestnetbArtio,
 ] as const
 
 export const evmChainId = [
@@ -50,7 +50,7 @@ export const evmChainId = [
   `${holesky.id}`,
   `${scrollSepolia.id}`,
   `${arbitrumSepolia.id}`,
-  `${berachainTestnetbArtio.id}`
+  `${berachainTestnetbArtio.id}`,
 ] as const
 
 export type EvmChainId = `${(typeof evmChainId)[number]}`
@@ -68,7 +68,7 @@ export interface EvmClientParameters {
 export const createEvmClient = (parameters: EvmClientParameters) => {
   return createWalletClient({
     ...parameters,
-    chain: evmChainFromChainId(parameters.chainId)
+    chain: evmChainFromChainId(parameters.chainId),
   })
     .extend(publicActions)
     .extend(client => ({
@@ -80,9 +80,11 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         receiver,
         sourceChannelId,
         ucs03address,
-        wethQuoteToken
+        wethQuoteToken,
       }: TransferAssetParameters<EvmChainId>): Promise<Result<Hex, Error>> => {
-        if (!client.account) return err(new Error("No account found"))
+        if (!client.account) {
+          return err(new Error("No account found"))
+        }
 
         /**
          * @dev
@@ -116,9 +118,9 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             0n, // TODO: customize timeoutheight
             "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
             generateSalt(),
-            wethQuoteToken
+            wethQuoteToken,
           ],
-          value: BigInt(0.0080085 * 10 ** 18)
+          value: BigInt(0.0080085 * 10 ** 18),
         } as const
 
         return ResultAsync.fromPromise(client.writeContract(writeContractParameters), error => {
@@ -133,10 +135,12 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         denomAddress,
         simulate = true,
         destinationChainId,
-        autoApprove = false
+        autoApprove = false,
       }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<Hex, Error>> => {
         account ||= client.account
-        if (!account) return err(new Error("No account found"))
+        if (!account) {
+          return err(new Error("No account found"))
+        }
 
         console.log(`EVM client created for chainId: ${parameters.chainId}`)
 
@@ -144,15 +148,17 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
 
         const chainDetails = await getHubbleChainDetails({
           sourceChainId: parameters.chainId,
-          destinationChainId
+          destinationChainId,
         })
 
-        if (chainDetails.isErr()) return err(chainDetails.error)
+        if (chainDetails.isErr()) {
+          return err(chainDetails.error)
+        }
 
         // TODO: make resillient
         const destinationChainClient = createPublicClient({
           chain: evmChainFromChainId(destinationChainId),
-          transport: http()
+          transport: http(),
         })
 
         // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
@@ -161,7 +167,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           address: chainDetails.value.destinationUCS03Address as `0x${string}`,
           abi: ucs03ZkgmAbi,
           functionName: "predictWrappedToken",
-          args: [0, chainDetails.value.destinationChannel, baseToken]
+          args: [0, chainDetails.value.destinationChannel, baseToken],
         })) as ["0x${string}", string]
 
         const sourceChannel = chainDetails.value.sourceChannel
@@ -172,7 +178,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             amount,
             account,
             denomAddress: baseToken,
-            receiver: ucs03address
+            receiver: ucs03address,
           })
           if (approveResponse.isErr()) {
             return approveResponse
@@ -191,18 +197,18 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           quoteToken,
           quoteAmount: amount,
           sourceChannelId: sourceChannel,
-          ucs03address
+          ucs03address,
         })
       },
       approveErc20: async ({
         baseAmount,
         baseToken,
-        ucs03address
+        ucs03address,
       }: { baseAmount: bigint; baseToken: Hex; ucs03address: Hex }) => {
         return await evmApproveTransferAsset(client, {
           amount: baseAmount,
           denomAddress: baseToken,
-          receiver: ucs03address
+          receiver: ucs03address,
         })
       },
       approveTransactionLegacy: async ({
@@ -211,9 +217,11 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         receiver,
         denomAddress,
         simulate = true,
-        destinationChainId
+        destinationChainId,
       }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<Hex, Error>> => {
-        if (!account) return err(new Error("No account found"))
+        if (!account) {
+          return err(new Error("No account found"))
+        }
 
         let _receiver: HexAddress
 
@@ -223,18 +231,22 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           // TODO: don't hardcode
           const ucsDetails = await getHubbleChainDetails({
             destinationChainId,
-            sourceChainId: parameters.chainId
+            sourceChainId: parameters.chainId,
           })
-          if (ucsDetails.isErr()) return err(ucsDetails.error)
+          if (ucsDetails.isErr()) {
+            return err(ucsDetails.error)
+          }
           _receiver = ucsDetails.value.relayContractAddress as `0x${string}`
-        } else _receiver = getAddress(receiver)
+        } else {
+          _receiver = getAddress(receiver)
+        }
 
         return await evmApproveTransferAsset(client, {
           amount,
           account,
           simulate,
           denomAddress,
-          receiver: _receiver
+          receiver: _receiver,
         })
       },
       simulateTransaction: async ({
@@ -243,7 +255,7 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         receiver,
         denomAddress,
         destinationChainId,
-        relayContractAddress
+        relayContractAddress,
       }: TransferAssetsParametersLegacy<EvmChainId>): Promise<Result<string, Error>> => {
         const sourceChainId = parameters.chainId
 
@@ -253,14 +265,14 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
             account: client.account,
             functionName: "transfer",
             address: getAddress(denomAddress),
-            args: [getAddress(receiver), amount]
+            args: [getAddress(receiver), amount],
           })
           return ok(gas.toString())
         }
 
         const chainDetails = await getHubbleChainDetails({
           sourceChainId: parameters.chainId,
-          destinationChainId
+          destinationChainId,
         })
         // const chainDetails = {
         //   value: {
@@ -271,7 +283,9 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         //   }
         // }
 
-        if (chainDetails.isErr()) return err(chainDetails.error)
+        if (chainDetails.isErr()) {
+          return err(chainDetails.error)
+        }
 
         // if (chainDetails.value.transferType === "pfm") {
         //   if (!chainDetails.value.port) return err(new Error("Port not found in hubble"))
@@ -290,12 +304,19 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
         const sourceChannel = chainDetails.value.sourceChannel
         relayContractAddress ??= getAddress(chainDetails.value.relayContractAddress)
 
-        if (!sourceChannel) return err(new Error("Source channel not found"))
-        if (!relayContractAddress) return err(new Error("Relay contract address not found"))
+        if (!sourceChannel) {
+          return err(new Error("Source channel not found"))
+        }
+        if (!relayContractAddress) {
+          return err(new Error("Relay contract address not found"))
+        }
 
-        const account =
-          typeof client.account === "string" ? client.account : client.account?.address
-        if (!account) return err(new Error("No account found"))
+        const account = typeof client.account === "string"
+          ? client.account
+          : client.account?.address
+        if (!account) {
+          return err(new Error("No account found"))
+        }
 
         return await transferAssetFromEvmSimulate(client, {
           memo,
@@ -304,8 +325,8 @@ export const createEvmClient = (parameters: EvmClientParameters) => {
           receiver,
           sourceChannel,
           relayContractAddress,
-          denomAddress: getAddress(denomAddress)
+          denomAddress: getAddress(denomAddress),
         })
-      }
+      },
     }))
 }

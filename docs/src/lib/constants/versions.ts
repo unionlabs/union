@@ -3,7 +3,9 @@ import versions from "~root/versions/versions.json" with { type: "json" }
 
 export function chainVersion(parameters: { chainId?: keyof typeof versions } = {}) {
   const chainId = parameters.chainId ?? Object.keys(versions).at(-1)
-  if (!(chainId && isKeyOf(versions, chainId))) raise(`Invalid chainId: ${parameters.chainId}`)
+  if (!(chainId && isKeyOf(versions, chainId))) {
+    raise(`Invalid chainId: ${parameters.chainId}`)
+  }
   return versions[chainId]
 }
 

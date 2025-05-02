@@ -1,6 +1,6 @@
 import { Effect } from "effect"
-import { readContract } from "./contract.js"
 import { AptosPublicClient } from "./client.js"
+import { readContract } from "./contract.js"
 
 export type Hex = `0x${string}`
 
@@ -16,7 +16,7 @@ export interface FaTokenInfo {
 }
 
 export const readFaBalance = (contractAddress: string, address: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* AptosPublicClient).client
 
     const balance_module_name = "fungible_asset"
@@ -32,7 +32,7 @@ export const readFaBalance = (contractAddress: string, address: string) =>
       balance_module_name,
       function_name,
       type_arguments,
-      function_arguments
+      function_arguments,
     )
 
     // Extract the address from the result tuple
@@ -40,7 +40,7 @@ export const readFaBalance = (contractAddress: string, address: string) =>
   })
 
 export const readFaName = (contractAddress: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* AptosPublicClient).client
 
     const module_name = "fungible_asset"
@@ -55,7 +55,7 @@ export const readFaName = (contractAddress: string) =>
       module_name,
       function_name,
       type_arguments,
-      function_arguments
+      function_arguments,
     )
 
     // Extract the address from the result tuple
@@ -63,7 +63,7 @@ export const readFaName = (contractAddress: string) =>
   })
 
 export const readFaDecimals = (contractAddress: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* AptosPublicClient).client
 
     const contract_address = "0x1"
@@ -78,7 +78,7 @@ export const readFaDecimals = (contractAddress: string) =>
       module_name,
       function_name,
       type_arguments,
-      function_arguments
+      function_arguments,
     )
 
     // Extract the address from the result tuple
@@ -86,7 +86,7 @@ export const readFaDecimals = (contractAddress: string) =>
   })
 
 export const readFaSymbol = (contractAddress: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* AptosPublicClient).client
 
     const contract_address = "0x1"
@@ -101,7 +101,7 @@ export const readFaSymbol = (contractAddress: string) =>
       module_name,
       function_name,
       type_arguments,
-      function_arguments
+      function_arguments,
     )
 
     // Extract the address from the result tuple
@@ -109,7 +109,7 @@ export const readFaSymbol = (contractAddress: string) =>
   })
 
 export const readFaTokenInfo = (contractAddress: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* AptosPublicClient).client
 
     const contract_address = "0x1"
@@ -124,7 +124,7 @@ export const readFaTokenInfo = (contractAddress: string) =>
       module_name,
       function_name,
       type_arguments,
-      function_arguments
+      function_arguments,
     )
 
     const token_info = result[0] as FaTokenInfo

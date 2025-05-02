@@ -1,8 +1,8 @@
-import { Effect, identity, Option } from "effect"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
-import { isHex, toHex } from "viem"
 import { BalanceLookupError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import { Effect, identity, Option } from "effect"
+import { isHex, toHex } from "viem"
 
 const BABY_SUB_AMOUNT = 1n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"
@@ -11,21 +11,20 @@ const UBBN_DENOM = "ubbn"
 export type BalanceCheckResult = { _tag: "HasEnough" } | { _tag: "InsufficientFunds" }
 
 export const checkBalanceForIntent = (
-  context: TransferContext
+  context: TransferContext,
 ): Effect.Effect<BalanceCheckResult, BalanceLookupError> => {
   console.debug("[checkBalanceForIntent] raw contexts:", context.intents)
 
   const grouped = context.intents
     .map(intent => {
-      const needsFee =
-        intent.sourceChain.universal_chain_id === BABYLON_CHAIN_ID &&
-        intent.baseToken === UBBN_DENOM
+      const needsFee = intent.sourceChain.universal_chain_id === BABYLON_CHAIN_ID
+        && intent.baseToken === UBBN_DENOM
 
       return {
         sender: intent.sender,
         baseToken: intent.baseToken,
         required: intent.baseAmount + (needsFee ? BABY_SUB_AMOUNT : 0n),
-        source_universal_chain_id: intent.sourceChain.universal_chain_id
+        source_universal_chain_id: intent.sourceChain.universal_chain_id,
       }
     })
     .reduce(
@@ -48,7 +47,7 @@ export const checkBalanceForIntent = (
           required: bigint
           source_universal_chain_id: string
         }
-      >
+      >,
     )
 
   const groupedValues = Object.values(grouped)
@@ -59,7 +58,7 @@ export const checkBalanceForIntent = (
         return balancesStore.getBalance(
           group.source_universal_chain_id,
           group.sender,
-          isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken)
+          isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken),
         )
       }),
       balance => {
@@ -70,8 +69,8 @@ export const checkBalanceForIntent = (
               cause: "No balance found",
               token: group.baseToken,
               sender: group.sender,
-              chainId: group.source_universal_chain_id
-            })
+              chainId: group.source_universal_chain_id,
+            }),
           )
         }
 
@@ -81,15 +80,14 @@ export const checkBalanceForIntent = (
         console.debug("[checkBalanceForIntent] ✅ Found balance", {
           actual: actualBalance.toString(),
           required: group.required.toString(),
-          hasEnough
+          hasEnough,
         })
 
         return Effect.succeed(hasEnough)
-      }
+      },
+    )).pipe(
+      Effect.map(results =>
+        results.every(identity) ? { _tag: "HasEnough" } : { _tag: "InsufficientFunds" }
+      ),
     )
-  ).pipe(
-    Effect.map(results =>
-      results.every(identity) ? { _tag: "HasEnough" } : { _tag: "InsufficientFunds" }
-    )
-  )
 }

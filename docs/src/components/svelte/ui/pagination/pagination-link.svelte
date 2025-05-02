@@ -1,7 +1,7 @@
 <script lang="ts">
-import { Pagination as PaginationPrimitive } from "bits-ui"
+import { buttonVariants, type Props } from "#/components/svelte/ui/button/index.js"
 import { cn } from "#/lib/shadcn.js"
-import { type Props, buttonVariants } from "#/components/svelte/ui/button/index.js"
+import { Pagination as PaginationPrimitive } from "bits-ui"
 
 let {
   ref = $bindable(null),
@@ -11,8 +11,10 @@ let {
   page,
   children,
   ...restProps
-}: PaginationPrimitive.PageProps &
-  Props & {
+}:
+  & PaginationPrimitive.PageProps
+  & Props
+  & {
     isActive: boolean
   } = $props()
 </script>
@@ -26,9 +28,9 @@ let {
   {page}
   class={cn(
     buttonVariants({
-      variant: isActive ? 'outline' : 'ghost',
+      variant: isActive ? "outline" : "ghost",
       size,
-      class: isActive && 'text-black',
+      class: isActive && "text-black",
     }),
     className,
   )}

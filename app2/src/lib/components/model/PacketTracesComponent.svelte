@@ -1,13 +1,13 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
-import { getChain, PacketTrace } from "@unionlabs/sdk/schema"
-import { chains } from "$lib/stores/chains.svelte"
-import { Option } from "effect"
-import DateTimeComponent from "../ui/DateTimeComponent.svelte"
-import TransactionHashComponent from "./TransactionHashComponent.svelte"
-import ChainComponent from "./ChainComponent.svelte"
 import { type DisplayMode, PACKET_TRACE_DISPLAY_NAMES } from "$lib/constants/packet-trace-names"
+import { chains } from "$lib/stores/chains.svelte"
+import { getChain, PacketTrace } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
+import type { HTMLAttributes } from "svelte/elements"
 import SharpCheckIcon from "../icons/SharpCheckIcon.svelte"
+import DateTimeComponent from "../ui/DateTimeComponent.svelte"
+import ChainComponent from "./ChainComponent.svelte"
+import TransactionHashComponent from "./TransactionHashComponent.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   packetTraces: ReadonlyArray<PacketTrace>
@@ -21,11 +21,11 @@ const packetTracesWithOrWithoutAck = $derived(
   showAcks
     ? packetTraces
     : packetTraces.filter((trace, index) => {
-        // Find the index of the first PACKET_RECV
-        const recvIndex = packetTraces.findIndex(t => t.type === "PACKET_RECV")
-        // Keep all traces before and including PACKET_RECV
-        return recvIndex === -1 || index <= recvIndex
-      })
+      // Find the index of the first PACKET_RECV
+      const recvIndex = packetTraces.findIndex(t => t.type === "PACKET_RECV")
+      // Keep all traces before and including PACKET_RECV
+      return recvIndex === -1 || index <= recvIndex
+    }),
 )
 
 const toTraceName = (type: string) =>
@@ -43,16 +43,20 @@ function getChainPositions(traces: ReadonlyArray<PacketTrace>) {
     left: sendChain,
     center: l2Chain,
     right: recvChain,
-    columns: hasL2Update ? 3 : 2
+    columns: hasL2Update ? 3 : 2,
   }
 }
 
 function getTraceColumn(trace: PacketTrace, positions: ReturnType<typeof getChainPositions>) {
-  if (trace.chain.universal_chain_id === positions.left?.universal_chain_id) return 0
-  if (positions.center && trace.chain.universal_chain_id === positions.center.universal_chain_id)
+  if (trace.chain.universal_chain_id === positions.left?.universal_chain_id) {
+    return 0
+  }
+  if (positions.center && trace.chain.universal_chain_id === positions.center.universal_chain_id) {
     return 1
-  if (trace.chain.universal_chain_id === positions.right?.universal_chain_id)
+  }
+  if (trace.chain.universal_chain_id === positions.right?.universal_chain_id) {
     return positions.columns - 1
+  }
   return 1
 }
 
@@ -70,15 +74,19 @@ function getGridTemplateColumns(columns: number) {
 function getArrowSpan(
   currentTrace: PacketTrace,
   nextTrace: PacketTrace | undefined,
-  positions: ReturnType<typeof getChainPositions>
+  positions: ReturnType<typeof getChainPositions>,
 ) {
-  if (!nextTrace) return null
+  if (!nextTrace) {
+    return null
+  }
 
   const currentColumn = getTraceColumn(currentTrace, positions)
   const nextColumn = getTraceColumn(nextTrace, positions)
 
   // Don't draw arrow if on same column
-  if (currentColumn === nextColumn) return null
+  if (currentColumn === nextColumn) {
+    return null
+  }
 
   const isLeft = nextColumn < currentColumn
   const start = currentColumn * 2 + (isLeft ? 2 : 3)
@@ -86,7 +94,7 @@ function getArrowSpan(
 
   return {
     gridColumn: `${Math.min(start, end)} / ${Math.max(start, end)}`,
-    isLeft
+    isLeft,
   }
 }
 </script>
@@ -113,7 +121,8 @@ function getArrowSpan(
         <div
           class="bg-zinc-800"
           style="grid-row: 2 / 100; grid-column: {i * 2 + 2}"
-        ></div>
+        >
+        </div>
       {/each}
 
       <!-- Chain names with lines -->
@@ -131,9 +140,11 @@ function getArrowSpan(
 
       {#if Option.isSome(rightChain)}
         <div
-          class="text-center {Option.isSome(centerChain)
+          class="
+            text-center {Option.isSome(centerChain)
             ? 'col-start-5'
-            : 'col-start-3'} col-span-3 row-1"
+            : 'col-start-3'} col-span-3 row-1
+          "
         >
           <ChainComponent chain={rightChain.value} />
         </div>
@@ -145,17 +156,19 @@ function getArrowSpan(
         {@const column = getTraceColumn(trace, positions)}
         {@const nextTrace = packetTracesWithOrWithoutAck[i + 1]}
         {@const prevTrace = Option.fromNullable(
-          i > 0 ? packetTracesWithOrWithoutAck[i - 1] : null,
-        )}
+        i > 0 ? packetTracesWithOrWithoutAck[i - 1] : null,
+      )}
         {@const arrowSpan = getArrowSpan(trace, nextTrace, positions)}
 
         <!-- Trace card -->
 
         <div
           class="pb-1 rounded-lg col-span-3 flex flex-col items-center"
-          style="grid-row: {i * 2 + 2}; grid-column-start: {column * 2 + 1}  "
+          style="grid-row: {i * 2 + 2}; grid-column-start: {column * 2 + 1}"
         >
-          {#if Option.isSome(trace.height) && !(Option.isSome(prevTrace) && Option.isSome(prevTrace.value.height) && prevTrace.value.height.value === trace.height.value)}
+          {#if Option.isSome(trace.height)
+          && !(Option.isSome(prevTrace) && Option.isSome(prevTrace.value.height)
+            && prevTrace.value.height.value === trace.height.value)}
             <div class="text-zinc-500 pt-2 flex text-xs flex-col items-center">
               <div>{trace.height.value}</div>
               {#if Option.isSome(trace.timestamp)}
@@ -168,17 +181,20 @@ function getArrowSpan(
             </div>
           {/if}
           <div
-            class="{Option.isSome(trace.transaction_hash) &&
-            (trace.type === 'PACKET_RECV' || trace.type === 'PACKET_ACK')
+            class="
+              {Option.isSome(trace.transaction_hash) &&
+              (trace.type === 'PACKET_RECV' || trace.type === 'PACKET_ACK')
               ? 'border-accent border-2'
-              : ''} bg-zinc-800 flex flex-row items-center rounded px-2 py-1"
+              : ''} bg-zinc-800 flex flex-row items-center rounded px-2 py-1
+            "
           >
             <div class="flex flex-col">
               <div class="font-semibold text-sm">
                 {toTraceName(trace.type)}
               </div>
 
-              {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp) && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
+              {#if Option.isSome(trace.height) && Option.isSome(trace.timestamp)
+              && Option.isSome(trace.transaction_hash) && Option.isSome(chain)}
                 <div class="text-xs text-zinc-400">
                   <TransactionHashComponent
                     chain={chain.value}
@@ -187,7 +203,8 @@ function getArrowSpan(
                 </div>
               {/if}
             </div>
-            {#if Option.isSome(trace.transaction_hash) && (trace.type === "PACKET_RECV" || trace.type === "PACKET_ACK")}
+            {#if Option.isSome(trace.transaction_hash)
+            && (trace.type === "PACKET_RECV" || trace.type === "PACKET_ACK")}
               <div class="bg-accent rounded-full ml-3 -mr-5">
                 <SharpCheckIcon class="size-6" />
               </div>
@@ -197,30 +214,42 @@ function getArrowSpan(
 
         {#if arrowSpan}
           <div
-            class="flex py-2 items-center {arrowSpan.isLeft
+            class="
+              flex py-2 items-center {arrowSpan.isLeft
               ? 'flex-row-reverse'
-              : 'flex-row'}"
+              : 'flex-row'}
+            "
             style="grid-row: {i * 2 + 3}; grid-column: {arrowSpan.gridColumn};"
           >
             <div
-              class="flex-1 h-0.5 {Option.isSome(nextTrace?.transaction_hash)
+              class="
+                flex-1 h-0.5 {Option.isSome(nextTrace?.transaction_hash)
                 ? 'bg-accent'
-                : 'bg-zinc-700'}"
-            ></div>
+                : 'bg-zinc-700'}
+              "
+            >
+            </div>
             <div
-              class="border-[5px] border-transparent {arrowSpan.isLeft
+              class="
+                border-[5px] border-transparent {arrowSpan.isLeft
                 ? Option.isSome(nextTrace?.transaction_hash)
-                  ? 'dark:border-r-accent'
-                  : 'dark:border-r-zinc-700'
+                ? 'dark:border-r-accent'
+                : 'dark:border-r-zinc-700'
                 : Option.isSome(nextTrace?.transaction_hash)
-                  ? 'border-l-accent dark:border-l-accent'
-                  : 'border-l-zinc-400 dark:border-l-zinc-700'}"
-            ></div>
+                ? 'border-l-accent dark:border-l-accent'
+                : 'border-l-zinc-400 dark:border-l-zinc-700'}
+              "
+            >
+            </div>
           </div>
         {/if}
       {/each}
       <!-- spacer !-->
-      <div class="h-8" style="grid-row: 40;"></div>
+      <div
+        class="h-8"
+        style="grid-row: 40;"
+      >
+      </div>
     </div>
   </div>
 {/if}

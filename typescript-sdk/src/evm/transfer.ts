@@ -1,17 +1,17 @@
-import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
-import { timestamp } from "../utilities/index.ts"
 import { err, ok, type Result } from "neverthrow"
-import type { Hex, HexAddress } from "../types.ts"
-import { bech32AddressToHex } from "../convert.ts"
-import { simulateTransaction } from "../query/offchain/tenderly.ts"
 import {
+  type Account,
   erc20Abi,
   getAddress,
-  type Account,
-  type WalletClient,
   type PublicActions,
-  toHex
+  toHex,
+  type WalletClient,
 } from "viem"
+import { ucs03ZkgmAbi } from "../abi/ucs-03.ts"
+import { bech32AddressToHex } from "../convert.ts"
+import { simulateTransaction } from "../query/offchain/tenderly.ts"
+import type { Hex, HexAddress } from "../types.ts"
+import { timestamp } from "../utilities/index.ts"
 
 export type EvmTransferParams = {
   sourceChannelId: number
@@ -51,11 +51,13 @@ export async function transferAssetFromEvm(
     quoteAmount,
     sourceChannelId,
     simulate = true,
-    ucs03address
-  }: EvmTransferParams
+    ucs03address,
+  }: EvmTransferParams,
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
-  if (!account) return err(new Error("No account found"))
+  if (!account) {
+    return err(new Error("No account found"))
+  }
 
   // add a salt to each transfer to prevent hash collisions
   // important because ibc-union does not use sequence numbers
@@ -95,8 +97,8 @@ export async function transferAssetFromEvm(
       quoteAmount,
       0n, // TODO: customize timeoutheight
       "0x000000000000000000000000000000000000000000000000fffffffffffffffa", // TODO: make non-hexencoded timestamp
-      salt
-    ]
+      salt,
+    ],
   } as const
 
   if (!simulate) {
@@ -137,10 +139,12 @@ export type EvmApproveTransferParams = {
  */
 export async function evmApproveTransferAsset(
   client: WalletClient & PublicActions,
-  { amount, account, receiver, denomAddress, simulate = true }: EvmApproveTransferParams
+  { amount, account, receiver, denomAddress, simulate = true }: EvmApproveTransferParams,
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
-  if (!account) return err(new Error("No account found"))
+  if (!account) {
+    return err(new Error("No account found"))
+  }
 
   const approvalParameters = {
     account,
@@ -148,20 +152,26 @@ export async function evmApproveTransferAsset(
     chain: client.chain,
     functionName: "approve",
     address: getAddress(denomAddress),
-    args: [getAddress(receiver), amount]
+    args: [getAddress(receiver), amount],
   } as const
 
   if (!simulate) {
     const approveHash = await client.writeContract(approvalParameters)
-    if (!approveHash) return err(new Error("Approval failed"))
+    if (!approveHash) {
+      return err(new Error("Approval failed"))
+    }
     return ok(approveHash)
   }
 
   const { request } = await client.simulateContract(approvalParameters)
-  if (!request) return err(new Error("Simulation failed"))
+  if (!request) {
+    return err(new Error("Simulation failed"))
+  }
 
   const approveHash = await client.writeContract(request)
-  if (!approveHash) return err(new Error("Approval failed"))
+  if (!approveHash) {
+    return err(new Error("Approval failed"))
+  }
 
   const _receipt = await client.waitForTransactionReceipt({ hash: approveHash })
 
@@ -175,11 +185,13 @@ export async function evmSameChainTransfer(
     account,
     receiver,
     baseToken: denomAddress,
-    simulate = true
-  }: Omit<EvmTransferParams, "memo" | "sourceChannel" | "relayContractAddress" | "autoApprove">
+    simulate = true,
+  }: Omit<EvmTransferParams, "memo" | "sourceChannel" | "relayContractAddress" | "autoApprove">,
 ): Promise<Result<Hex, Error>> {
   account ||= client.account
-  if (!account) return err(new Error("No account found"))
+  if (!account) {
+    return err(new Error("No account found"))
+  }
 
   denomAddress = getAddress(denomAddress)
 
@@ -189,7 +201,7 @@ export async function evmSameChainTransfer(
     chain: client.chain,
     functionName: "transfer",
     address: getAddress(denomAddress),
-    args: [getAddress(receiver), amount]
+    args: [getAddress(receiver), amount],
   } as const
 
   if (!simulate) {
@@ -199,9 +211,11 @@ export async function evmSameChainTransfer(
       chain: client.chain,
       functionName: "transfer",
       address: getAddress(denomAddress),
-      args: [getAddress(receiver), amount]
+      args: [getAddress(receiver), amount],
     })
-    if (!hash) return err(new Error("Transfer failed"))
+    if (!hash) {
+      return err(new Error("Transfer failed"))
+    }
     return ok(hash)
   }
 
@@ -237,7 +251,7 @@ export async function transferAssetFromEvmSimulate(
     receiver,
     denomAddress,
     sourceChannel,
-    relayContractAddress
+    relayContractAddress,
   }: {
     memo?: string
     amount: bigint
@@ -246,9 +260,11 @@ export async function transferAssetFromEvmSimulate(
     denomAddress: HexAddress
     sourceChannel: number
     relayContractAddress: HexAddress
-  }
+  },
 ): Promise<Result<string, Error>> {
-  if (!account) return err(new Error("No account found"))
+  if (!account) {
+    return err(new Error("No account found"))
+  }
 
   denomAddress = getAddress(denomAddress)
   /* lowercasing because for some reason our ucs01 contract only likes lowercase address */
@@ -263,7 +279,7 @@ export async function transferAssetFromEvmSimulate(
     denomAddress,
     sourceChannel,
     account: account,
-    relayContractAddress
+    relayContractAddress,
   })
   return ok(gasEstimation.toString())
 }

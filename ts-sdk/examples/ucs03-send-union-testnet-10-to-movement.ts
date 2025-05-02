@@ -1,21 +1,21 @@
-import { Effect } from "effect"
 import { AptosConfig, Network } from "@aptos-labs/ts-sdk"
+import { Decimal } from "@cosmjs/math"
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import { Instruction } from "@unionlabs/sdk/ucs03"
+import { Effect } from "effect"
+import { AptosChannelDestination } from "../src/aptos/channel.js"
 import { AptosPublicClientDestination, createAptosPublicClient } from "../src/aptos/client.js"
-import { createCosmosToAptosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
+import { CosmosChannelSource } from "../src/cosmos/channel.js"
 import {
   CosmWasmClientSource,
-  SigningCosmWasmClientContext,
   createCosmWasmClient,
-  createSigningCosmWasmClient
+  createSigningCosmWasmClient,
+  SigningCosmWasmClientContext,
 } from "../src/cosmos/client.js"
-import { AptosChannelDestination } from "../src/aptos/channel.js"
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
-import { CosmosChannelSource } from "../src/cosmos/channel.js"
-import { Decimal } from "@cosmjs/math"
-import { Instruction } from "@unionlabs/sdk/ucs03"
+import { createCosmosToAptosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
@@ -32,11 +32,11 @@ const TRANSFERS = [
     receiver: RECEIVER,
     baseToken: "muno",
     baseAmount: 1n,
-    quoteAmount: 1n
-  }
+    quoteAmount: 1n,
+  },
 ] as const
 
-const createBatch = Effect.gen(function* () {
+const createBatch = Effect.gen(function*() {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createCosmosToAptosFungibleAssetOrder(TRANSFERS[0])
 
@@ -44,20 +44,20 @@ const createBatch = Effect.gen(function* () {
 }).pipe(Effect.withLogSpan("batch creation"))
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create clients and setup
     yield* Effect.log("transferring from sepolia to stargaze")
 
     yield* Effect.log("creating clients")
     const cosmWasmClientSource = yield* createCosmWasmClient(
-      "https://rpc.rpc-node.union-testnet-10.union.build"
+      "https://rpc.rpc-node.union-testnet-10.union.build",
     )
 
     const rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"
 
     const config = new AptosConfig({
       fullnode: rpcUrl,
-      network: Network.CUSTOM
+      network: Network.CUSTOM,
     })
     const publicDestinationClient = yield* createAptosPublicClient(config)
 
@@ -74,14 +74,14 @@ Effect.runPromiseExit(
       "https://rpc.rpc-node.union-testnet-10.union.build",
       wallet,
       {
-        gasPrice: { amount: Decimal.fromUserInput("1", 6), denom: "muno" }
-      }
+        gasPrice: { amount: Decimal.fromUserInput("1", 6), denom: "muno" },
+      },
     )
 
     yield* Effect.log("clients created")
 
     // Main effect: create the batch and send it
-    return yield* Effect.gen(function* () {
+    return yield* Effect.gen(function*() {
       yield* Effect.log("creating batch")
       const batch = yield* createBatch
       yield* Effect.log("batch created", JSON.stringify(batch, null, 2))
@@ -92,20 +92,20 @@ Effect.runPromiseExit(
     }).pipe(
       Effect.provideService(SigningCosmWasmClientContext, {
         client: signingClient,
-        address: firstAccount.address
+        address: firstAccount.address,
       }),
       Effect.provideService(CosmWasmClientSource, { client: cosmWasmClientSource }),
       Effect.provideService(AptosPublicClientDestination, { client: publicDestinationClient }),
       Effect.provideService(AptosChannelDestination, {
         ucs03address: "0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
-        channelId: 2
+        channelId: 2,
       }),
       Effect.provideService(CosmosChannelSource, {
         ucs03address: UCS03_ADDRESS,
-        channelId: 1
-      })
+        channelId: 1,
+      }),
     )
-  })
+  }),
 ).then(e => {
   console.log(JSON.stringify(e, null, 2))
   console.log(e)

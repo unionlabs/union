@@ -1,11 +1,11 @@
 <script lang="ts">
-import { cn } from "$lib/utils/index.js"
+import SharpLinkOffIcon from "$lib/components/icons/SharpLinkOffIcon.svelte"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { cn } from "$lib/utils/index.js"
 import { type Chain, type Token, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import SharpLinkOffIcon from "$lib/components/icons/SharpLinkOffIcon.svelte"
 
 type Props = {
   token: Token
@@ -18,7 +18,9 @@ let { token, chain, selectAsset }: Props = $props()
 let isSelected = $derived(transferData.raw.asset === token.denom)
 
 let tokenBalance = $derived.by(() => {
-  if (Option.isNone(transferData.sortedBalances)) return Option.none()
+  if (Option.isNone(transferData.sortedBalances)) {
+    return Option.none()
+  }
   const found = transferData.sortedBalances.value.find(t => t.token.denom === token.denom)
   return found ? Option.some(found) : Option.none()
 })
@@ -27,7 +29,7 @@ let isLoading = $derived(Option.isSome(transferData.sortedBalances) && Option.is
 
 export const toDisplayName = (
   chain_id: string | undefined | null,
-  chains: ReadonlyArray<Chain>
+  chains: ReadonlyArray<Chain>,
 ): string => chains.find(c => c.chain_id === chain_id)?.display_name ?? chain_id ?? "unknown chain"
 </script>
 
@@ -37,8 +39,8 @@ export const toDisplayName = (
     isSelected ? "bg-zinc-700 text-white" : "text-zinc-300",
   )}
   onclick={() => {
-    console.log(token);
-    selectAsset(token);
+    console.log(token)
+    selectAsset(token)
   }}
 >
   <div class="flex items-center gap-1 overflow-x-auto text-sm text-zinc-200">
@@ -68,10 +70,10 @@ export const toDisplayName = (
       {:else}
         <div class="flex flex-row items-center gap-2">
           <SharpLinkOffIcon />
-          <TokenComponent 
-          {chain} 
-          denom={token.denom} 
-          icon={token.representations[0]?.logo_uri}
+          <TokenComponent
+            {chain}
+            denom={token.denom}
+            icon={token.representations[0]?.logo_uri}
           />
         </div>
       {/if}

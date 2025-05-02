@@ -1,8 +1,8 @@
-import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { Data, Option } from "effect"
-import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
+import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
+import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
+import { Data, Option } from "effect"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -50,9 +50,15 @@ export const getFillingState = (transferData: TransferData): FillingState => {
     onNone: () => FillingState.SourceChainMissing(),
     onSome: sourceChain => {
       const sourceWallet = transferData.derivedSender
-      if (Option.isNone(sourceWallet)) return FillingState.SourceWalletMissing()
-      if (Option.isNone(transferData.baseToken)) return FillingState.BaseTokenMissing()
-      if (Option.isNone(transferData.destinationChain)) return FillingState.DestinationMissing()
+      if (Option.isNone(sourceWallet)) {
+        return FillingState.SourceWalletMissing()
+      }
+      if (Option.isNone(transferData.baseToken)) {
+        return FillingState.BaseTokenMissing()
+      }
+      if (Option.isNone(transferData.destinationChain)) {
+        return FillingState.DestinationMissing()
+      }
 
       if (Option.isNone(transferData.channel)) {
         return FillingState.NoRoute()
@@ -72,8 +78,8 @@ export const getFillingState = (transferData: TransferData): FillingState => {
       }
 
       if (
-        Option.isSome(transferData.destinationChain) &&
-        Option.isNone(transferData.derivedReceiver)
+        Option.isSome(transferData.destinationChain)
+        && Option.isNone(transferData.derivedReceiver)
       ) {
         return FillingState.ReceiverMissing()
       }
@@ -84,7 +90,7 @@ export const getFillingState = (transferData: TransferData): FillingState => {
         receiver: transferData.derivedReceiver,
         parsedAmount: transferData.parsedAmount,
         baseToken: transferData.baseToken,
-        ucs03address: transferData.ucs03address
+        ucs03address: transferData.ucs03address,
       })
 
       return Option.match(unwrapped, {
@@ -107,9 +113,9 @@ export const getFillingState = (transferData: TransferData): FillingState => {
             sender: sourceWallet.value,
             sourceRpcType: sourceChain.rpc_type,
             destinationRpcType: destinationChain.rpc_type,
-            sourceChannelId: channel.source_channel_id
-          })
+            sourceChannelId: channel.source_channel_id,
+          }),
       })
-    }
+    },
   })
 }

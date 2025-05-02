@@ -1,18 +1,18 @@
 import { Effect } from "effect"
-import { readErc20Meta } from "../src/evm/erc20.js"
-import { ViemPublicClient } from "../src/evm/client.js"
 import { createPublicClient, http } from "viem"
 import { sepolia } from "viem/chains"
+import { ViemPublicClient } from "../src/evm/client.js"
+import { readErc20Meta } from "../src/evm/erc20.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
 // Create a public client for Sepolia
 const client = createPublicClient({
   chain: sepolia,
-  transport: http()
+  transport: http(),
 })
 
 // USDC on Sepolia

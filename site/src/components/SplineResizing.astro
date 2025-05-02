@@ -34,57 +34,58 @@ const { model, loading = "auto", eventsTarget = "global", aspect, ...restProps }
     url={model}
     eventsTarget={eventsTarget}
     {...restProps}
-    class="size-auto"></spline-viewer>
+    class="size-auto"
+  ></spline-viewer>
 </div>
 
 <script>
-  // Create a ResizeObserver to handle resizing of the container
-  const container = document.getElementById("spline-container");
-  if (!container) {
-    console.error("spline container not found");
-  } else {
-    const originalClassName = container.className;
-    const hackClassName = originalClassName + " pr-1";
+// Create a ResizeObserver to handle resizing of the container
+const container = document.getElementById("spline-container")
+if (!container) {
+  console.error("spline container not found")
+} else {
+  const originalClassName = container.className
+  const hackClassName = originalClassName + " pr-1"
 
-    // Function to set canvas dimensions
-    function resizeCanvas() {
-      if (!container) {
-        console.error("spline container not found");
-        return;
-      }
-      const targetWidth = container.clientWidth;
-      const targetHeight = container.clientHeight;
+  // Function to set canvas dimensions
+  function resizeCanvas() {
+    if (!container) {
+      console.error("spline container not found")
+      return
+    }
+    const targetWidth = container.clientWidth
+    const targetHeight = container.clientHeight
 
-      const customElement = document.querySelector("spline-viewer");
+    const customElement = document.querySelector("spline-viewer")
 
-      // Access the shadow root of the spline-viewer and get the canvas from it
-      const shadowRoot = customElement?.shadowRoot;
-      const canvas = shadowRoot?.getElementById("spline");
+    // Access the shadow root of the spline-viewer and get the canvas from it
+    const shadowRoot = customElement?.shadowRoot
+    const canvas = shadowRoot?.getElementById("spline")
 
-      if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
-        console.error("canvas not found");
-        return;
-      }
-
-      canvas.style.width = `${targetWidth}px`;
-      canvas.style.height = `${targetHeight}px`;
-      canvas.width = targetWidth * 2;
-      canvas.height = targetHeight * 2;
+    if (!canvas || !(canvas instanceof HTMLCanvasElement)) {
+      console.error("canvas not found")
+      return
     }
 
-    const observer = new ResizeObserver(() => {
-      resizeCanvas();
-    });
-    observer.observe(container);
-
-    // Horrible hack to trigger the spline viewer to resize
-    container.className = hackClassName;
-    setInterval(function () {
-      if (container.className === originalClassName) {
-        container.className = hackClassName;
-      } else {
-        container.className = originalClassName;
-      }
-    }, 50);
+    canvas.style.width = `${targetWidth}px`
+    canvas.style.height = `${targetHeight}px`
+    canvas.width = targetWidth * 2
+    canvas.height = targetHeight * 2
   }
+
+  const observer = new ResizeObserver(() => {
+    resizeCanvas()
+  })
+  observer.observe(container)
+
+  // Horrible hack to trigger the spline viewer to resize
+  container.className = hackClassName
+  setInterval(function() {
+    if (container.className === originalClassName) {
+      container.className = hackClassName
+    } else {
+      container.className = originalClassName
+    }
+  }, 50)
+}
 </script>

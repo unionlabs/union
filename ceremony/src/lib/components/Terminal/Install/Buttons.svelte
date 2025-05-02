@@ -1,6 +1,6 @@
 <script lang="ts">
-import { cn, sleep } from "$lib/utils/utils.ts"
 import Button from "$lib/components/Terminal/Button.svelte"
+import { cn, sleep } from "$lib/utils/utils.ts"
 import { onDestroy, onMount } from "svelte"
 
 type Props = {
@@ -49,12 +49,12 @@ onDestroy(() => {
 {#each data as btn, index}
   {#key btn}
     <Button
-            {...props}
-            bind:value={buttons[index]}
-            onmouseenter={() => focusedIndex = index}
-            class={cn(focusedIndex === index ? "bg-union-accent-500 text-black" : "")}
-            onclick={() => trigger(btn.action)}
-            focus={focusedIndex === index}
+      {...props}
+      bind:value={buttons[index]}
+      onmouseenter={() => focusedIndex = index}
+      class={cn(focusedIndex === index ? "bg-union-accent-500 text-black" : "")}
+      onclick={() => trigger(btn.action)}
+      focus={focusedIndex === index}
     >
       &gt; {btn.text}
     </Button>

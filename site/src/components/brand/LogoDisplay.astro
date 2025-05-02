@@ -7,12 +7,12 @@ const { class: className = "" } = Astro.props
 
 const themes = [
   { id: "light", label: "LIGHT" },
-  { id: "dark", label: "DARK" }
+  { id: "dark", label: "DARK" },
 ]
 
 const themeColors = {
   light: { bg: "bg-white", logo: "/logo-black.svg" },
-  dark: { bg: "bg-black", logo: "/logo-white.svg" }
+  dark: { bg: "bg-black", logo: "/logo-white.svg" },
 }
 
 // Initial theme
@@ -21,7 +21,9 @@ const initialTheme = "dark"
 
 <div class="flex flex-col gap-4">
   <div
-    class={`w-full h-72 ${themeColors[initialTheme].bg} flex items-center justify-center border border-gray-200 transition-colors duration-300`}
+    class={`w-full h-72 ${
+      themeColors[initialTheme].bg
+    } flex items-center justify-center border border-gray-200 transition-colors duration-300`}
     id="header"
   >
     <img
@@ -65,56 +67,58 @@ const initialTheme = "dark"
       <p class="font-mono max-w-xs box-decoration-clone text-xs">
         Usage examples. For more information, please refer to our <a
           href="#brand-guide"
-          class="text-accent-500">Branding guide.</a
-        >
+          class="text-accent-500"
+        >Branding guide.</a>
       </p>
     </div>
   </div>
 </div>
 
 <script>
-  const logoLight = document.getElementById("logo-light");
-  const logoDark = document.getElementById("logo-dark");
-  const header = document.getElementById("header");
-  const themeButtons = document.querySelectorAll("[data-theme]");
+const logoLight = document.getElementById("logo-light")
+const logoDark = document.getElementById("logo-dark")
+const header = document.getElementById("header")
+const themeButtons = document.querySelectorAll("[data-theme]")
 
-  themeButtons.forEach((button) => {
-    button.addEventListener("click", () => {
-      const theme = button.getAttribute("data-theme");
-      if (!theme) return;
+themeButtons.forEach((button) => {
+  button.addEventListener("click", () => {
+    const theme = button.getAttribute("data-theme")
+    if (!theme) {
+      return
+    }
 
-      // Reset all buttons to black
-      themeButtons.forEach((btn) => {
-        btn.classList.remove("bg-white", "text-black");
-        btn.classList.add("bg-black", "text-white");
-      });
+    // Reset all buttons to black
+    themeButtons.forEach((btn) => {
+      btn.classList.remove("bg-white", "text-black")
+      btn.classList.add("bg-black", "text-white")
+    })
 
-      // Make clicked button white
-      button.classList.remove("bg-black", "text-white");
-      button.classList.add("bg-white", "text-black");
+    // Make clicked button white
+    button.classList.remove("bg-black", "text-white")
+    button.classList.add("bg-white", "text-black")
 
-      // Update header background
-      if (header) {
-        header.classList.remove("bg-white", "bg-black");
-        header.classList.add(theme === "light" ? "bg-white" : "bg-black");
+    // Update header background
+    if (header) {
+      header.classList.remove("bg-white", "bg-black")
+      header.classList.add(theme === "light" ? "bg-white" : "bg-black")
+    }
+
+    // Toggle logo visibility
+    if (logoLight && logoDark) {
+      if (theme === "light") {
+        logoLight.classList.remove("hidden")
+        logoDark.classList.add("hidden")
+      } else {
+        logoLight.classList.add("hidden")
+        logoDark.classList.remove("hidden")
       }
+    }
+  })
+})
 
-      // Toggle logo visibility
-      if (logoLight && logoDark) {
-        if (theme === "light") {
-          logoLight.classList.remove("hidden");
-          logoDark.classList.add("hidden");
-        } else {
-          logoLight.classList.add("hidden");
-          logoDark.classList.remove("hidden");
-        }
-      }
-    });
-  });
-
-  // Set initial theme
-  const initialButton = document.querySelector('[data-theme="dark"]');
-  if (initialButton instanceof HTMLElement) {
-    initialButton.click();
-  }
+// Set initial theme
+const initialButton = document.querySelector("[data-theme=\"dark\"]")
+if (initialButton instanceof HTMLElement) {
+  initialButton.click()
+}
 </script>

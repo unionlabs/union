@@ -8,5 +8,5 @@ export default defineConfig({
   treeshake: true,
   target: "es2022",
   entry: { index: "./src/mod.ts" },
-  outExtension: _context => ({ js: ".mjs", dts: ".d.ts" })
+  outExtension: _context => ({ js: ".mjs", dts: ".d.ts" }),
 })

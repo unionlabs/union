@@ -1,18 +1,18 @@
 <script lang="ts">
-import { supabase } from "$lib/supabase/client.ts"
-import { createState } from "$lib/state/index.svelte.ts"
-import { watch } from "runed"
-import { checkAuth } from "$lib/state/session.svelte.ts"
-import Terminal from "$lib/components/Terminal/index.svelte"
 import { start } from "$lib/client"
+import Terminal from "$lib/components/Terminal/index.svelte"
 import Timer from "$lib/components/Terminal/Timer.svelte"
-import { onMount } from "svelte"
+import { createState } from "$lib/state/index.svelte.ts"
+import { checkAuth } from "$lib/state/session.svelte.ts"
+import { supabase } from "$lib/supabase/client.ts"
 import { axiom } from "$lib/utils/axiom.ts"
 import {
   generateUserErrorMessage,
   sendWindowErrorLog,
-  sendWindowRejectionLog
+  sendWindowRejectionLog,
 } from "$lib/utils/error.ts"
+import { watch } from "runed"
+import { onMount } from "svelte"
 
 import "../styles/tailwind.css"
 
@@ -22,7 +22,7 @@ let { user, contributor, terminal } = createState()
 
 $effect(() => {
   const {
-    data: { subscription }
+    data: { subscription },
   } = supabase.auth.onAuthStateChange(() => {
     checkAuth()
   })
@@ -33,9 +33,9 @@ $effect(() => {
 
 $effect(() => {
   if (
-    contributor.contributionState === "contribute" &&
-    contributor.state !== "contributing" &&
-    contributor.storedSecret
+    contributor.contributionState === "contribute"
+    && contributor.state !== "contributing"
+    && contributor.storedSecret
   ) {
     axiom.ingest("monitor", [{ user: user.session?.user.id, type: "start_contribution" }])
     start()
@@ -50,7 +50,7 @@ watch(
   () => user.session?.user.id,
   () => {
     contributor.setUserId(user.session?.user.id)
-  }
+  },
 )
 
 $effect(() => {
@@ -84,37 +84,113 @@ const handleError = async (e: Event) => {
 const imagePath = "https://ceremony.union.build/images/ceremony-og.png"
 </script>
 
-<svelte:window on:error={handleError} on:unhandledrejection={handleRejection} />
+<svelte:window
+  on:error={handleError}
+  on:unhandledrejection={handleRejection}
+/>
 
 <svelte:head>
   <title>Union Ceremony</title>
-  <meta name="description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
+  <meta
+    name="description"
+    content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."
+  />
 
-  <meta property="og:title" content="Union Ceremony"/>
-  <meta property="og:description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
-  <meta property="og:type" content="website"/>
-  <meta property="og:url" content="https://ceremony.union.build"/>
-  <meta property="og:site_name" content="Union Ceremony"/>
-  <meta property="og:locale" content="en_US"/>
-  <meta property="og:image" content="https://ceremony.union.build/images/ceremony-og.png"/>
-  <meta property="og:image:secure_url" content="https://ceremony.union.build/images/ceremony-og.png"/>
-  <meta property="og:image:type" content="image/png"/>
-  <meta property="og:image:width" content="1200"/>
-  <meta property="og:image:height" content="630"/>
-  <meta property="og:image:alt" content="Union Ceremony event banner"/>
+  <meta
+    property="og:title"
+    content="Union Ceremony"
+  />
+  <meta
+    property="og:description"
+    content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."
+  />
+  <meta
+    property="og:type"
+    content="website"
+  />
+  <meta
+    property="og:url"
+    content="https://ceremony.union.build"
+  />
+  <meta
+    property="og:site_name"
+    content="Union Ceremony"
+  />
+  <meta
+    property="og:locale"
+    content="en_US"
+  />
+  <meta
+    property="og:image"
+    content="https://ceremony.union.build/images/ceremony-og.png"
+  />
+  <meta
+    property="og:image:secure_url"
+    content="https://ceremony.union.build/images/ceremony-og.png"
+  />
+  <meta
+    property="og:image:type"
+    content="image/png"
+  />
+  <meta
+    property="og:image:width"
+    content="1200"
+  />
+  <meta
+    property="og:image:height"
+    content="630"
+  />
+  <meta
+    property="og:image:alt"
+    content="Union Ceremony event banner"
+  />
 
-  <meta name="twitter:title" content="Union Ceremony"/>
-  <meta name="twitter:description" content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."/>
-  <meta name="twitter:card" content="summary_large_image"/>
-  <meta name="twitter:site" content="@union_build"/>
-  <meta name="twitter:creator" content="@union_build"/>
-  <meta name="twitter:image" content="https://ceremony.union.build/images/ceremony-og.png"/>
-  <meta name="twitter:image:alt" content="Union Ceremony event banner"/>
-  <meta name="twitter:image:width" content="1200"/>
-  <meta name="twitter:image:height" content="630"/>
+  <meta
+    name="twitter:title"
+    content="Union Ceremony"
+  />
+  <meta
+    name="twitter:description"
+    content="Ceremony to generate trustworthy cryptographic keys for securing the Union zero-knowledge system."
+  />
+  <meta
+    name="twitter:card"
+    content="summary_large_image"
+  />
+  <meta
+    name="twitter:site"
+    content="@union_build"
+  />
+  <meta
+    name="twitter:creator"
+    content="@union_build"
+  />
+  <meta
+    name="twitter:image"
+    content="https://ceremony.union.build/images/ceremony-og.png"
+  />
+  <meta
+    name="twitter:image:alt"
+    content="Union Ceremony event banner"
+  />
+  <meta
+    name="twitter:image:width"
+    content="1200"
+  />
+  <meta
+    name="twitter:image:height"
+    content="630"
+  />
 
-  <link rel="canonical" href="https://ceremony.union.build"/>
-  <link rel="icon" href="/favicon.ico" type="image/x-icon"/>
+  <link
+    rel="canonical"
+    href="https://ceremony.union.build"
+  />
+  <link
+    rel="icon"
+    href="/favicon.ico"
+    type="image/x-icon"
+  />
 </svelte:head>
 
 {#if showBootSequence}
@@ -135,7 +211,10 @@ const imagePath = "https://ceremony.union.build/images/ceremony-og.png"
       this.muted = true
     }}
   >
-    <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitchboot.webm" type="video/webm" />
+    <source
+      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitchboot.webm"
+      type="video/webm"
+    />
   </video>
 {:else}
   <video
@@ -155,9 +234,14 @@ const imagePath = "https://ceremony.union.build/images/ceremony-og.png"
       this.muted = true
     }}
   >
-    <source src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.webm" type="video/webm" />
+    <source
+      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.webm"
+      type="video/webm"
+    />
   </video>
-  <main class="flex w-full h-full overflow-hidden content flex-col items-center justify-center gap-4">
+  <main
+    class="flex w-full h-full overflow-hidden content flex-col items-center justify-center gap-4"
+  >
     <Terminal>
       {@render children()}
     </Terminal>
@@ -166,15 +250,15 @@ const imagePath = "https://ceremony.union.build/images/ceremony-og.png"
 {/if}
 
 <style lang="postcss">
-    video[data-video] {
-        right: 0;
-        bottom: 0;
-        z-index: -1;
-        width: 100vw;
-        height: 100vh;
-        min-width: 100%;
-        position: fixed;
-        min-height: 100%;
-        object-fit: cover;
-    }
+video[data-video] {
+    right: 0;
+    bottom: 0;
+    z-index: -1;
+    width: 100vw;
+    height: 100vh;
+    min-width: 100%;
+    position: fixed;
+    min-height: 100%;
+    object-fit: cover;
+}
 </style>

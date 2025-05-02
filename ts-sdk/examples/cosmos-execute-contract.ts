@@ -1,10 +1,10 @@
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { Effect } from "effect"
 import { createSigningCosmWasmClient } from "../src/cosmos/client.js"
 import { executeContract } from "../src/cosmos/contract.js"
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create a wallet from mnemonic (in a real app, use a secure method to get this)
     const wallet = yield* Effect.tryPromise(() =>
       DirectSecp256k1HdWallet.fromMnemonic("memo memo memo", { prefix: "stars" })
@@ -16,7 +16,7 @@ Effect.runPromiseExit(
     // Create a signing client
     const client = yield* createSigningCosmWasmClient(
       "https://rpc.elgafar-1.stargaze-apis.com",
-      wallet
+      wallet,
     )
 
     // Execute a CW20 token transfer
@@ -27,11 +27,11 @@ Effect.runPromiseExit(
       {
         transfer: {
           recipient: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4",
-          amount: "1"
-        }
-      }
+          amount: "1",
+        },
+      },
     )
 
     return result
-  })
+  }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

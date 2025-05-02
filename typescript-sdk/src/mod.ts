@@ -1,67 +1,67 @@
-export type * from "./types.ts"
 export {
-  hexToBytes,
-  bytesToHex,
-  bech32ToBytes,
   bech32AddressToHex,
-  hexAddressToBech32,
+  bech32ToBech32Address,
+  bech32ToBytes,
   bytesToBech32Address,
-  bech32ToBech32Address
+  bytesToHex,
+  hexAddressToBech32,
+  hexToBytes,
 } from "./convert.ts"
+export type * from "./types.ts"
 import {
-  evmChains,
-  evmChainId,
-  createEvmClient,
-  type EvmChainId,
-  evmChainFromChainId,
-  type EvmClientParameters,
-  sepolia,
-  scrollSepolia,
-  arbitrumSepolia,
-  berachainTestnetbArtio
-} from "./evm/client.ts"
+  type AptosBrowserWallet,
+  type AptosChainId,
+  aptosChainId,
+  type AptosClientParameters,
+  createAptosClient,
+} from "./aptos/client.ts"
 import {
-  cosmosChainId,
   type CosmosChainId,
+  cosmosChainId,
+  type CosmosClientParameters,
   createCosmosClient,
-  type CosmosClientParameters
 } from "./cosmos/client.ts"
 import {
-  aptosChainId,
-  type AptosChainId,
-  createAptosClient,
-  type AptosBrowserWallet,
-  type AptosClientParameters
-} from "./aptos/client.ts"
+  arbitrumSepolia,
+  berachainTestnetbArtio,
+  createEvmClient,
+  evmChainFromChainId,
+  type EvmChainId,
+  evmChainId,
+  evmChains,
+  type EvmClientParameters,
+  scrollSepolia,
+  sepolia,
+} from "./evm/client.ts"
+export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
+export { offchainQuery } from "./query/offchain/hubble.ts"
 export {
-  truncateAddress,
-  isValidEvmTxHash,
-  isValidEvmAddress,
-  isValidCosmosTxHash,
-  isValidBech32Address,
-  isValidBech32ContractAddress,
-  extractBech32AddressPrefix
-} from "./utilities/address.ts"
-export {
-  getCosmosHeight,
-  queryContractState,
-  queryCosmosCW20AddressBalance,
-  queryCosmosC20TokenMetadata,
-  getCosmosTransactionReceipt,
-  getAptosAccountTransactions,
-  getCosmosAccountTransactions
-} from "./query/on-chain.ts"
-export {
-  getRecommendedChannels,
   getChannelInfo,
   getQuoteToken,
-  getWethQuoteToken
+  getRecommendedChannels,
+  getWethQuoteToken,
 } from "./query/offchain/ucs03-channels.ts"
-export { offchainQuery } from "./query/offchain/hubble.ts"
-export { createPfmMemo, getHubbleChainDetails } from "./pfm.ts"
+export {
+  getAptosAccountTransactions,
+  getCosmosAccountTransactions,
+  getCosmosHeight,
+  getCosmosTransactionReceipt,
+  queryContractState,
+  queryCosmosC20TokenMetadata,
+  queryCosmosCW20AddressBalance,
+} from "./query/on-chain.ts"
+export {
+  extractBech32AddressPrefix,
+  isValidBech32Address,
+  isValidBech32ContractAddress,
+  isValidCosmosTxHash,
+  isValidEvmAddress,
+  isValidEvmTxHash,
+  truncateAddress,
+} from "./utilities/address.ts"
 import type { ChainId, TransferAssetsParametersLegacy } from "./types.ts"
 
-export { http, fallback } from "viem"
+export { fallback, http } from "viem"
 /**
  * @module
  *
@@ -100,7 +100,7 @@ export const GRAQPHQL_URL = "https://staging.graphql.union.build/v1/graphql"
  * ```
  */
 export function createUnionClient(
-  parameters: EvmClientParameters
+  parameters: EvmClientParameters,
 ): ReturnType<typeof createEvmClient>
 
 /**
@@ -122,7 +122,7 @@ export function createUnionClient(
  * ```
  */
 export function createUnionClient(
-  parameters: CosmosClientParameters
+  parameters: CosmosClientParameters,
 ): ReturnType<typeof createCosmosClient>
 
 // TODO(kaancaglan): Change the example when example is actually done.
@@ -145,7 +145,7 @@ export function createUnionClient(
  * ```
  */
 export function createUnionClient(
-  parameters: AptosClientParameters
+  parameters: AptosClientParameters,
 ): ReturnType<typeof createAptosClient>
 
 /**
@@ -165,11 +165,12 @@ export function createUnionClient(
  * Create Union Client for EVM, Cosmos, and Aptos
  */
 export function createUnionClient(
-  parameters: EvmClientParameters | CosmosClientParameters | AptosClientParameters
+  parameters: EvmClientParameters | CosmosClientParameters | AptosClientParameters,
 ):
   | ReturnType<typeof createEvmClient>
   | ReturnType<typeof createCosmosClient>
-  | ReturnType<typeof createAptosClient> {
+  | ReturnType<typeof createAptosClient>
+{
   if (evmChainId.includes(parameters.chainId)) {
     return createEvmClient(parameters as EvmClientParameters)
   }
@@ -211,21 +212,20 @@ export function createUnionClient(
 export function createMultiUnionClient<TChainId extends ChainId>(
   parameters: Array<
     {
-      [KChainId in TChainId]: (
-        | EvmClientParameters
-        | CosmosClientParameters
-        | AptosClientParameters
-      ) & { chainId: KChainId }
+      [KChainId in TChainId]:
+        & (
+          | EvmClientParameters
+          | CosmosClientParameters
+          | AptosClientParameters
+        )
+        & { chainId: KChainId }
     }[TChainId]
-  >
+  >,
 ): {
-  [KChainId in TChainId]: KChainId extends EvmChainId
-    ? EvmClient
-    : KChainId extends CosmosChainId
-      ? CosmosClient
-      : KChainId extends AptosChainId
-        ? AptosClient
-        : never
+  [KChainId in TChainId]: KChainId extends EvmChainId ? EvmClient
+    : KChainId extends CosmosChainId ? CosmosClient
+    : KChainId extends AptosChainId ? AptosClient
+    : never
 } {
   return parameters.reduce(
     (accumulator, parameter) => {
@@ -234,34 +234,31 @@ export function createMultiUnionClient<TChainId extends ChainId>(
       return accumulator
     },
     {} as {
-      [KChainId in TChainId]: KChainId extends EvmChainId
-        ? EvmClient
-        : KChainId extends CosmosChainId
-          ? CosmosClient
-          : KChainId extends AptosChainId
-            ? AptosClient
-            : never
-    }
+      [KChainId in TChainId]: KChainId extends EvmChainId ? EvmClient
+        : KChainId extends CosmosChainId ? CosmosClient
+        : KChainId extends AptosChainId ? AptosClient
+        : never
+    },
   )
 }
 
 export {
-  evmChains,
-  evmChainId,
-  type ChainId,
-  cosmosChainId,
-  aptosChainId,
-  type EvmChainId,
-  type CosmosChainId,
-  type AptosChainId,
-  evmChainFromChainId,
-  type EvmClientParameters,
   type AptosBrowserWallet,
-  type CosmosClientParameters,
+  type AptosChainId,
+  aptosChainId,
   type AptosClientParameters,
-  type TransferAssetsParametersLegacy as TransferAssetsParameters,
-  sepolia,
-  scrollSepolia,
   arbitrumSepolia,
-  berachainTestnetbArtio
+  berachainTestnetbArtio,
+  type ChainId,
+  type CosmosChainId,
+  cosmosChainId,
+  type CosmosClientParameters,
+  evmChainFromChainId,
+  type EvmChainId,
+  evmChainId,
+  evmChains,
+  type EvmClientParameters,
+  scrollSepolia,
+  sepolia,
+  type TransferAssetsParametersLegacy as TransferAssetsParameters,
 }

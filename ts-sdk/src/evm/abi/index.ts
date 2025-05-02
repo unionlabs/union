@@ -1,10 +1,10 @@
-import { ucs03abi } from "./ucs03.js"
 import { Option } from "effect"
+import { ucs03abi } from "./ucs03.js"
 
 export * from "./ucs03.js"
 
 const packetComponentAbis = Option.fromNullable(
-  ucs03abi.find(a => "name" in a && a.name === "ensureExported")
+  ucs03abi.find(a => "name" in a && a.name === "ensureExported"),
 ).pipe(Option.map(a => a.inputs))
 
 const getStructComponents = (structName: string) =>
@@ -13,7 +13,7 @@ const getStructComponents = (structName: string) =>
       Option.fromNullable(a.find(as => as.internalType === `struct ${structName}`))
     ),
     Option.map(a => a.components),
-    Option.getOrThrow
+    Option.getOrThrow,
   )
 
 export const fungibleAssetOrderAbi = getStructComponents("FungibleAssetOrder")

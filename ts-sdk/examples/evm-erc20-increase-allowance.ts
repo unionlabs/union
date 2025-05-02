@@ -1,22 +1,22 @@
 import { Effect } from "effect"
-import { ViemPublicClient, ViemWalletClient } from "../src/evm/client.js"
 import { createPublicClient, createWalletClient, http } from "viem"
-import { sepolia } from "viem/chains"
 import { privateKeyToAccount } from "viem/accounts"
+import { sepolia } from "viem/chains"
+import { ViemPublicClient, ViemWalletClient } from "../src/evm/client.js"
 import { increaseErc20Allowance, readErc20Allowance, readErc20Meta } from "../src/evm/erc20.js"
 import { waitForTransactionReceipt } from "../src/evm/receipts.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
 // Replace with your private key
-const PRIVATE_KEY =
-  process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
+const PRIVATE_KEY = process.env.PRIVATE_KEY
+  || "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create account from private key
     const chain = sepolia
     const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`)
@@ -27,7 +27,7 @@ Effect.runPromiseExit(
     const client = createWalletClient({
       account,
       chain,
-      transport: http()
+      transport: http(),
     })
 
     // Token address and spender address
@@ -36,30 +36,30 @@ Effect.runPromiseExit(
 
     // Read ERC20 token metadata
     const metadata = yield* readErc20Meta(tokenAddress).pipe(
-      Effect.provideService(ViemPublicClient, { client: publicClient })
+      Effect.provideService(ViemPublicClient, { client: publicClient }),
     )
 
     // Read current allowance
     const currentAllowance = yield* readErc20Allowance(
       tokenAddress,
       account.address,
-      spenderAddress
+      spenderAddress,
     ).pipe(
       Effect.provideService(ViemPublicClient, {
-        client: publicClient
-      })
+        client: publicClient,
+      }),
     )
 
     console.log("Current allowance:", currentAllowance.toString())
 
     // Increase allowance
     const txHash = yield* increaseErc20Allowance(tokenAddress, spenderAddress, 420n).pipe(
-      Effect.provideService(ViemWalletClient, { client, account, chain })
+      Effect.provideService(ViemWalletClient, { client, account, chain }),
     )
 
     // Wait for transaction receipt
     const receipt = yield* waitForTransactionReceipt(txHash).pipe(
-      Effect.provideService(ViemPublicClient, { client: publicClient })
+      Effect.provideService(ViemPublicClient, { client: publicClient }),
     )
 
     console.log("Transaction confirmed in block:", receipt.blockNumber)
@@ -68,11 +68,11 @@ Effect.runPromiseExit(
     const newAllowance = yield* readErc20Allowance(
       tokenAddress,
       account.address,
-      spenderAddress
+      spenderAddress,
     ).pipe(
       Effect.provideService(ViemPublicClient, {
-        client: publicClient
-      })
+        client: publicClient,
+      }),
     )
 
     return {
@@ -82,8 +82,8 @@ Effect.runPromiseExit(
       transactionHash: txHash,
       receipt: {
         blockNumber: receipt.blockNumber,
-        status: receipt.status
-      }
+        status: receipt.status,
+      },
     }
-  })
+  }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

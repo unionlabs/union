@@ -1,20 +1,20 @@
 import { Effect } from "effect"
-import { ViemPublicClient } from "../src/evm/client.js"
 import { createPublicClient, http } from "viem"
 import { sepolia } from "viem/chains"
-import { readErc20Meta, readErc20Balance } from "../src/evm/erc20.js"
+import { ViemPublicClient } from "../src/evm/client.js"
+import { readErc20Balance, readErc20Meta } from "../src/evm/erc20.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create a client
     const client = createPublicClient({
       chain: sepolia,
-      transport: http()
+      transport: http(),
     })
 
     // Provide the client to the Effect context
@@ -33,7 +33,7 @@ Effect.runPromiseExit(
     // Combine the results
     return {
       ...metadata,
-      balance
+      balance,
     }
-  })
+  }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

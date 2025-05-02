@@ -1,14 +1,14 @@
 #!/usr/bin/env bun
 import "scripts/patch.ts"
-import { http } from "viem"
-import { holesky } from "viem/chains"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { parseArgs } from "node:util"
-import { raise } from "../src/utilities/index.ts"
+import { http } from "viem"
+import { privateKeyToAccount } from "viem/accounts"
+import { holesky } from "viem/chains"
 import { consola } from "../scripts/logger.ts"
 import { hexToBytes } from "../src/convert.ts"
-import { privateKeyToAccount } from "viem/accounts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
+import { raise } from "../src/utilities/index.ts"
 
 /* `bun playground/union-to-holesky.ts --private-key "..."` --estimate-gas */
 
@@ -16,19 +16,21 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) raise("Private key not found")
+if (!PRIVATE_KEY) {
+  raise("Private key not found")
+}
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
-  "stars"
+  "stars",
 )
 
 try {
@@ -36,14 +38,14 @@ try {
     account: cosmosAccount,
     chainId: "elgafar-1",
     gasPrice: { amount: "0.025", denom: "ustars" },
-    transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen")
+    transport: http("https://rpc.elgafar-1.stargaze.chain.kitchen"),
   })
 
   const transferPayload = {
     amount: 1n,
     denomAddress: "ustars",
     destinationChainId: `${holesky.id}`,
-    receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd"
+    receiver: "0x8478B37E983F520dBCB5d7D3aAD8276B82631aBd",
   } satisfies TransferAssetsParametersLegacy<"elgafar-1">
 
   // const gasEstimationResponse = await client.simulateTransaction(transferPayload)

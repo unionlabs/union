@@ -1,5 +1,5 @@
-import { dedent } from "ts-dedent"
 import type { FileSystemTree } from "@webcontainer/api"
+import { dedent } from "ts-dedent"
 
 export const demoFiles = {
   "mod.ts": {
@@ -54,8 +54,8 @@ if (transfer.isErr()) {
 }
 
 console.info(\`Transfer hash: $\{transfer.value\}\`)
-        `).trim()
-    }
+        `).trim(),
+    },
   },
   ".npmrc": {
     file: {
@@ -66,8 +66,8 @@ console.info(\`Transfer hash: $\{transfer.value\}\`)
           enable-pre-post-scripts=true
           strict-peer-dependencies=false
           node-options="--no-warnings"
-        `).trim()
-    }
+        `).trim(),
+    },
   },
   "package.json": {
     file: {
@@ -81,7 +81,7 @@ console.info(\`Transfer hash: $\{transfer.value\}\`)
               "@unionlabs/client": "latest"
             }
           }
-        `).trim()
-    }
-  }
+        `).trim(),
+    },
+  },
 } satisfies FileSystemTree

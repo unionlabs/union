@@ -1,12 +1,12 @@
 <script lang="ts">
-import { onDestroy, onMount } from "svelte"
-import { getState } from "$lib/state/index.svelte.ts"
-import { axiom } from "$lib/utils/axiom.ts"
-import { user } from "$lib/state/session.svelte.ts"
-import { sleep } from "$lib/utils/utils.ts"
-import { queryContributionWindow } from "$lib/supabase/queries.ts"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import { getState } from "$lib/state/index.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
 import { rejoin } from "$lib/supabase"
+import { queryContributionWindow } from "$lib/supabase/queries.ts"
+import { axiom } from "$lib/utils/axiom.ts"
+import { sleep } from "$lib/utils/utils.ts"
+import { onDestroy, onMount } from "svelte"
 
 const { terminal, contributor } = getState()
 let showButtons = $state(false)
@@ -25,7 +25,9 @@ onMount(async () => {
       const formatDate = (date: string | number | Date): string => {
         const d = new Date(date)
         const pad = (num: number): string => num.toString().padStart(2, "0")
-        return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} - ${pad(d.getHours())}:${pad(d.getMinutes())}`
+        return `${d.getFullYear()}/${pad(d.getMonth() + 1)}/${pad(d.getDate())} - ${
+          pad(d.getHours())
+        }:${pad(d.getMinutes())}`
       }
 
       const startFormatted = formatDate(window.data.started)
@@ -37,7 +39,7 @@ onMount(async () => {
       await sleep(1000)
       terminal.updateHistory({
         text: `Your slot started at ${startFormatted} and expired at ${expireFormatted}.`,
-        replace: true
+        replace: true,
       })
       await sleep(1000)
       showButtons = true
@@ -98,5 +100,11 @@ async function trigger(value: "retry" | "help") {
 </script>
 
 {#if showButtons}
-  <Buttons data={[{text: "Generate new slot and continue", action: "retry"}, {text: "Exit and create a support ticket", action: "help"}]} trigger={(action) => trigger(action)}/>
+  <Buttons
+    data={[{ text: "Generate new slot and continue", action: "retry" }, {
+      text: "Exit and create a support ticket",
+      action: "help",
+    }]}
+    trigger={(action) => trigger(action)}
+  />
 {/if}

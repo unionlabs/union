@@ -1,18 +1,18 @@
-import { Effect, Option, Schema } from "effect"
+import { isTokenBlacklisted } from "$lib/constants/tokens"
+import { tokensStore } from "$lib/stores/tokens.svelte"
+import { createQueryGraphql, fetchDecodeGraphql } from "$lib/utils/queries"
 import type { UniversalChainId } from "@unionlabs/sdk/schema"
 import { TokenRawDenom, Tokens } from "@unionlabs/sdk/schema"
-import { isTokenBlacklisted } from "$lib/constants/tokens"
-import { createQueryGraphql, fetchDecodeGraphql } from "$lib/utils/queries"
-import { tokensStore } from "$lib/stores/tokens.svelte"
+import { Effect, Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 
 export const tokensQuery = (universalChainId: UniversalChainId) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* Effect.log(`zkgm starting token fetcher for ${universalChainId}`)
     const response = yield* createQueryGraphql({
       schema: Schema.Struct({
         v2_tokens: Tokens,
-        whitelist: Schema.Array(Schema.Struct({ denom: TokenRawDenom }))
+        whitelist: Schema.Array(Schema.Struct({ denom: TokenRawDenom })),
       }),
       document: graphql(`
         query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
@@ -65,33 +65,33 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
                 const isWhitelisted = d.whitelist?.some(w => w.denom === token.denom) ?? false
                 return {
                   ...token,
-                  whitelisted: isWhitelisted
+                  whitelisted: isWhitelisted,
                 }
               })
               return tokensWithWhitelist.filter(token => !isTokenBlacklisted(token.denom))
-            })
-          )
+            }),
+          ),
         )
       },
       writeError: error => {
         Effect.runSync(Effect.log(`storing new tokens error for ${universalChainId}`))
         tokensStore.setError(universalChainId, error)
-      }
+      },
     })
     return response
   })
 
 export const tokenWrappingQuery = ({
   denom,
-  universal_chain_id
+  universal_chain_id,
 }: { denom: TokenRawDenom; universal_chain_id: UniversalChainId }) =>
   fetchDecodeGraphql(
     Schema.Struct({
       v2_tokens: Schema.Array(
         Schema.Struct({
-          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: TokenRawDenom }))
-        })
-      )
+          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: TokenRawDenom })),
+        }),
+      ),
     }),
     graphql(/* GraphQL */ `
         query($denom: String!, $universal_chain_id: String!) {
@@ -107,6 +107,6 @@ export const tokenWrappingQuery = ({
     `),
     {
       denom,
-      universal_chain_id
-    }
+      universal_chain_id,
+    },
   )

@@ -2,7 +2,7 @@ export const ucs01RelayAbi = [
   {
     type: "constructor",
     inputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -12,10 +12,10 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "string",
-        internalType: "string"
-      }
+        internalType: "string",
+      },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -24,22 +24,22 @@ export const ucs01RelayAbi = [
       {
         name: "sourceChannel",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "denom",
         type: "string",
-        internalType: "string"
-      }
+        internalType: "string",
+      },
     ],
     outputs: [
       {
         name: "",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -48,22 +48,22 @@ export const ucs01RelayAbi = [
       {
         name: "sourceChannel",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "token",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
     outputs: [
       {
         name: "",
         type: "uint256",
-        internalType: "uint256"
-      }
+        internalType: "uint256",
+      },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -73,10 +73,10 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -85,16 +85,16 @@ export const ucs01RelayAbi = [
       {
         name: "_ibcHandler",
         type: "address",
-        internalType: "contract IIBCPacket"
+        internalType: "contract IIBCPacket",
       },
       {
         name: "admin",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -108,32 +108,32 @@ export const ucs01RelayAbi = [
           {
             name: "sequence",
             type: "uint64",
-            internalType: "uint64"
+            internalType: "uint64",
           },
           {
             name: "source_port",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "source_channel",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "destination_port",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "destination_channel",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "data",
             type: "bytes",
-            internalType: "bytes"
+            internalType: "bytes",
           },
           {
             name: "timeout_height",
@@ -143,35 +143,35 @@ export const ucs01RelayAbi = [
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64"
+                internalType: "uint64",
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64"
-              }
-            ]
+                internalType: "uint64",
+              },
+            ],
           },
           {
             name: "timeout_timestamp",
             type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+            internalType: "uint64",
+          },
+        ],
       },
       {
         name: "acknowledgement",
         type: "bytes",
-        internalType: "bytes"
+        internalType: "bytes",
       },
       {
         name: "",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -180,16 +180,16 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
-      }
+        internalType: "string",
+      },
     ],
     outputs: [],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -198,16 +198,16 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
-      }
+        internalType: "string",
+      },
     ],
     outputs: [],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -216,26 +216,26 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "counterpartyVersion",
         type: "string",
-        internalType: "string"
-      }
+        internalType: "string",
+      },
     ],
     outputs: [],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -244,16 +244,16 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
-      }
+        internalType: "string",
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -262,22 +262,22 @@ export const ucs01RelayAbi = [
       {
         name: "order",
         type: "uint8",
-        internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
+        internalType: "enum IbcCoreChannelV1GlobalEnums.Order",
       },
       {
         name: "",
         type: "string[]",
-        internalType: "string[]"
+        internalType: "string[]",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
@@ -287,23 +287,23 @@ export const ucs01RelayAbi = [
           {
             name: "port_id",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "channel_id",
             type: "string",
-            internalType: "string"
-          }
-        ]
+            internalType: "string",
+          },
+        ],
       },
       {
         name: "version",
         type: "string",
-        internalType: "string"
-      }
+        internalType: "string",
+      },
     ],
     outputs: [],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -312,22 +312,22 @@ export const ucs01RelayAbi = [
       {
         name: "order",
         type: "uint8",
-        internalType: "enum IbcCoreChannelV1GlobalEnums.Order"
+        internalType: "enum IbcCoreChannelV1GlobalEnums.Order",
       },
       {
         name: "",
         type: "string[]",
-        internalType: "string[]"
+        internalType: "string[]",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "",
@@ -337,28 +337,28 @@ export const ucs01RelayAbi = [
           {
             name: "port_id",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "channel_id",
             type: "string",
-            internalType: "string"
-          }
-        ]
+            internalType: "string",
+          },
+        ],
       },
       {
         name: "version",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "counterpartyVersion",
         type: "string",
-        internalType: "string"
-      }
+        internalType: "string",
+      },
     ],
     outputs: [],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -372,32 +372,32 @@ export const ucs01RelayAbi = [
           {
             name: "sequence",
             type: "uint64",
-            internalType: "uint64"
+            internalType: "uint64",
           },
           {
             name: "source_port",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "source_channel",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "destination_port",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "destination_channel",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "data",
             type: "bytes",
-            internalType: "bytes"
+            internalType: "bytes",
           },
           {
             name: "timeout_height",
@@ -407,36 +407,36 @@ export const ucs01RelayAbi = [
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64"
+                internalType: "uint64",
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64"
-              }
-            ]
+                internalType: "uint64",
+              },
+            ],
           },
           {
             name: "timeout_timestamp",
             type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+            internalType: "uint64",
+          },
+        ],
       },
       {
         name: "relayer",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
     outputs: [
       {
         name: "",
         type: "bytes",
-        internalType: "bytes"
-      }
+        internalType: "bytes",
+      },
     ],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -450,32 +450,32 @@ export const ucs01RelayAbi = [
           {
             name: "sequence",
             type: "uint64",
-            internalType: "uint64"
+            internalType: "uint64",
           },
           {
             name: "source_port",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "source_channel",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "destination_port",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "destination_channel",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "data",
             type: "bytes",
-            internalType: "bytes"
+            internalType: "bytes",
           },
           {
             name: "timeout_height",
@@ -485,30 +485,30 @@ export const ucs01RelayAbi = [
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64"
+                internalType: "uint64",
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64"
-              }
-            ]
+                internalType: "uint64",
+              },
+            ],
           },
           {
             name: "timeout_timestamp",
             type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+            internalType: "uint64",
+          },
+        ],
       },
       {
         name: "",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -522,32 +522,32 @@ export const ucs01RelayAbi = [
           {
             name: "sequence",
             type: "uint64",
-            internalType: "uint64"
+            internalType: "uint64",
           },
           {
             name: "source_port",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "source_channel",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "destination_port",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "destination_channel",
             type: "string",
-            internalType: "string"
+            internalType: "string",
           },
           {
             name: "data",
             type: "bytes",
-            internalType: "bytes"
+            internalType: "bytes",
           },
           {
             name: "timeout_height",
@@ -557,30 +557,30 @@ export const ucs01RelayAbi = [
               {
                 name: "revision_number",
                 type: "uint64",
-                internalType: "uint64"
+                internalType: "uint64",
               },
               {
                 name: "revision_height",
                 type: "uint64",
-                internalType: "uint64"
-              }
-            ]
+                internalType: "uint64",
+              },
+            ],
           },
           {
             name: "timeout_timestamp",
             type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+            internalType: "uint64",
+          },
+        ],
       },
       {
         name: "",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -590,10 +590,10 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -603,10 +603,10 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "bool",
-        internalType: "bool"
-      }
+        internalType: "bool",
+      },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -616,17 +616,17 @@ export const ucs01RelayAbi = [
       {
         name: "",
         type: "bytes32",
-        internalType: "bytes32"
-      }
+        internalType: "bytes32",
+      },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "renounceOwnership",
     inputs: [],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -635,12 +635,12 @@ export const ucs01RelayAbi = [
       {
         name: "sourceChannel",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "receiver",
         type: "bytes",
-        internalType: "bytes"
+        internalType: "bytes",
       },
       {
         name: "tokens",
@@ -650,19 +650,19 @@ export const ucs01RelayAbi = [
           {
             name: "denom",
             type: "address",
-            internalType: "address"
+            internalType: "address",
           },
           {
             name: "amount",
             type: "uint128",
-            internalType: "uint128"
-          }
-        ]
+            internalType: "uint128",
+          },
+        ],
       },
       {
         name: "extension",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "timeoutHeight",
@@ -672,23 +672,23 @@ export const ucs01RelayAbi = [
           {
             name: "revision_number",
             type: "uint64",
-            internalType: "uint64"
+            internalType: "uint64",
           },
           {
             name: "revision_height",
             type: "uint64",
-            internalType: "uint64"
-          }
-        ]
+            internalType: "uint64",
+          },
+        ],
       },
       {
         name: "timeoutTimestamp",
         type: "uint64",
-        internalType: "uint64"
-      }
+        internalType: "uint64",
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -697,11 +697,11 @@ export const ucs01RelayAbi = [
       {
         name: "newOwner",
         type: "address",
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -710,26 +710,26 @@ export const ucs01RelayAbi = [
       {
         name: "denom",
         type: "address",
-        internalType: "contract IERC20Denom"
+        internalType: "contract IERC20Denom",
       },
       {
         name: "newName",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "newSymbol",
         type: "string",
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "newDecimals",
         type: "uint8",
-        internalType: "uint8"
-      }
+        internalType: "uint8",
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -738,16 +738,16 @@ export const ucs01RelayAbi = [
       {
         name: "newImplementation",
         type: "address",
-        internalType: "address"
+        internalType: "address",
       },
       {
         name: "data",
         type: "bytes",
-        internalType: "bytes"
-      }
+        internalType: "bytes",
+      },
     ],
     outputs: [],
-    stateMutability: "payable"
+    stateMutability: "payable",
   },
   {
     type: "event",
@@ -757,28 +757,28 @@ export const ucs01RelayAbi = [
         name: "packetSequence",
         type: "uint64",
         indexed: true,
-        internalType: "uint64"
+        internalType: "uint64",
       },
       {
         name: "channelId",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "denom",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "token",
         type: "address",
         indexed: false,
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
@@ -788,10 +788,10 @@ export const ucs01RelayAbi = [
         name: "version",
         type: "uint64",
         indexed: false,
-        internalType: "uint64"
-      }
+        internalType: "uint64",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
@@ -801,16 +801,16 @@ export const ucs01RelayAbi = [
         name: "previousOwner",
         type: "address",
         indexed: true,
-        internalType: "address"
+        internalType: "address",
       },
       {
         name: "newOwner",
         type: "address",
         indexed: true,
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
@@ -820,10 +820,10 @@ export const ucs01RelayAbi = [
         name: "account",
         type: "address",
         indexed: false,
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
@@ -833,46 +833,46 @@ export const ucs01RelayAbi = [
         name: "packetSequence",
         type: "uint64",
         indexed: false,
-        internalType: "uint64"
+        internalType: "uint64",
       },
       {
         name: "channelId",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "sender",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "receiver",
         type: "address",
         indexed: true,
-        internalType: "address"
+        internalType: "address",
       },
       {
         name: "denom",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "token",
         type: "address",
         indexed: true,
-        internalType: "address"
+        internalType: "address",
       },
       {
         name: "amount",
         type: "uint256",
         indexed: false,
-        internalType: "uint256"
-      }
+        internalType: "uint256",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
@@ -882,46 +882,46 @@ export const ucs01RelayAbi = [
         name: "packetSequence",
         type: "uint64",
         indexed: false,
-        internalType: "uint64"
+        internalType: "uint64",
       },
       {
         name: "channelId",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "sender",
         type: "address",
         indexed: true,
-        internalType: "address"
+        internalType: "address",
       },
       {
         name: "receiver",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "denom",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "token",
         type: "address",
         indexed: true,
-        internalType: "address"
+        internalType: "address",
       },
       {
         name: "amount",
         type: "uint256",
         indexed: false,
-        internalType: "uint256"
-      }
+        internalType: "uint256",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
@@ -931,46 +931,46 @@ export const ucs01RelayAbi = [
         name: "packetSequence",
         type: "uint64",
         indexed: false,
-        internalType: "uint64"
+        internalType: "uint64",
       },
       {
         name: "channelId",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "sender",
         type: "address",
         indexed: true,
-        internalType: "address"
+        internalType: "address",
       },
       {
         name: "receiver",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "denom",
         type: "string",
         indexed: false,
-        internalType: "string"
+        internalType: "string",
       },
       {
         name: "token",
         type: "address",
         indexed: true,
-        internalType: "address"
+        internalType: "address",
       },
       {
         name: "amount",
         type: "uint256",
         indexed: false,
-        internalType: "uint256"
-      }
+        internalType: "uint256",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
@@ -980,10 +980,10 @@ export const ucs01RelayAbi = [
         name: "account",
         type: "address",
         indexed: false,
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
@@ -993,10 +993,10 @@ export const ucs01RelayAbi = [
         name: "implementation",
         type: "address",
         indexed: true,
-        internalType: "address"
-      }
+        internalType: "address",
+      },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "error",
@@ -1005,9 +1005,9 @@ export const ucs01RelayAbi = [
       {
         name: "target",
         type: "address",
-        internalType: "address"
-      }
-    ]
+        internalType: "address",
+      },
+    ],
   },
   {
     type: "error",
@@ -1016,9 +1016,9 @@ export const ucs01RelayAbi = [
       {
         name: "account",
         type: "address",
-        internalType: "address"
-      }
-    ]
+        internalType: "address",
+      },
+    ],
   },
   {
     type: "error",
@@ -1027,89 +1027,89 @@ export const ucs01RelayAbi = [
       {
         name: "implementation",
         type: "address",
-        internalType: "address"
-      }
-    ]
+        internalType: "address",
+      },
+    ],
   },
   {
     type: "error",
     name: "ERC1967NonPayable",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "EnforcedPause",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrInvalidAcknowledgement",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrInvalidAmount",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrInvalidBytesAddress",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrInvalidCounterpartyProtocolVersion",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrInvalidHexAddress",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrInvalidProtocolOrdering",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrInvalidProtocolVersion",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrNotIBC",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrUnauthorized",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ErrUnstoppable",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "ExpectedPause",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "FailedInnerCall",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "InvalidInitialization",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
     name: "NotInitializing",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
@@ -1118,9 +1118,9 @@ export const ucs01RelayAbi = [
       {
         name: "owner",
         type: "address",
-        internalType: "address"
-      }
-    ]
+        internalType: "address",
+      },
+    ],
   },
   {
     type: "error",
@@ -1129,9 +1129,9 @@ export const ucs01RelayAbi = [
       {
         name: "account",
         type: "address",
-        internalType: "address"
-      }
-    ]
+        internalType: "address",
+      },
+    ],
   },
   {
     type: "error",
@@ -1140,14 +1140,14 @@ export const ucs01RelayAbi = [
       {
         name: "token",
         type: "address",
-        internalType: "address"
-      }
-    ]
+        internalType: "address",
+      },
+    ],
   },
   {
     type: "error",
     name: "UUPSUnauthorizedCallContext",
-    inputs: []
+    inputs: [],
   },
   {
     type: "error",
@@ -1156,8 +1156,8 @@ export const ucs01RelayAbi = [
       {
         name: "slot",
         type: "bytes32",
-        internalType: "bytes32"
-      }
-    ]
-  }
+        internalType: "bytes32",
+      },
+    ],
+  },
 ] as const

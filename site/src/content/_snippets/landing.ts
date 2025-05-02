@@ -38,7 +38,7 @@ contract DexPortal is IBCAppBase {
   }
 }
 \`\`\`
-`
+`,
   },
   {
     lang: "rust",
@@ -75,6 +75,6 @@ fn swap(
         timeout: IbcTimeout::with_block(timeout),
     }))
 }
-`
-  }
+`,
+  },
 ] satisfies Array<Snippet>

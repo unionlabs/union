@@ -18,6 +18,6 @@ export const clickOutside: Action<
   return {
     destroy() {
       document.removeEventListener("click", handleClick, true)
-    }
+    },
   }
 }

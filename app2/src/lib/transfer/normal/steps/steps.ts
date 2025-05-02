@@ -1,13 +1,13 @@
-import { Data } from "effect"
+import type { Intent } from "$lib/transfer/shared/services/filling/create-context.ts"
 import type {
   AddressCanonicalBytes,
   Chain,
   TokenRawAmount,
-  TokenRawDenom
+  TokenRawDenom,
 } from "@unionlabs/sdk/schema"
-import type { ExtractTag } from "effect/Types"
-import type { Intent } from "$lib/transfer/shared/services/filling/create-context.ts"
 import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
+import { Data } from "effect"
+import type { ExtractTag } from "effect/Types"
 
 /**
  * Defines the different steps in a transfer process
@@ -47,7 +47,7 @@ export const {
   CheckReceiver,
   ApprovalRequired,
   SubmitInstruction,
-  WaitForIndex
+  WaitForIndex,
 } = Data.taggedEnum<Steps>()
 
 /**
@@ -58,5 +58,5 @@ export const description = match({
   CheckReceiver: () => "Ensure correct receiver",
   ApprovalRequired: () => "Approve token spending",
   SubmitInstruction: () => "Submit transfer to blockchain",
-  WaitForIndex: () => "Waiting for indexer"
+  WaitForIndex: () => "Waiting for indexer",
 })

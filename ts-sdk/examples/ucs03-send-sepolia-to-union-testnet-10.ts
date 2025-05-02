@@ -1,30 +1,30 @@
 import { Effect } from "effect"
-import {
-  ViemPublicClientSource,
-  ViemPublicClient,
-  createViemPublicClient,
-  createViemWalletClient
-} from "../src/evm/client.js"
 import { http } from "viem"
+import { privateKeyToAccount } from "viem/accounts"
 import { sepolia } from "viem/chains"
-import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
+import { CosmosChannelDestination } from "../src/cosmos/channel.js"
 import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/client.js"
+import { EvmChannelSource } from "../src/evm/channel.js"
+import {
+  createViemPublicClient,
+  createViemWalletClient,
+  ViemPublicClient,
+  ViemPublicClientSource,
+} from "../src/evm/client.js"
+import { ViemWalletClient } from "../src/evm/client.js"
+import { increaseErc20Allowance, readErc20Allowance } from "../src/evm/erc20.js"
+import { waitForTransactionReceipt } from "../src/evm/receipts.js"
+import { createEvmToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import { Batch } from "../src/ucs03/instruction.js"
 import { sendInstructionEvm } from "../src/ucs03/send-instruction.js"
-import { privateKeyToAccount } from "viem/accounts"
-import { ViemWalletClient } from "../src/evm/client.js"
-import { EvmChannelSource } from "../src/evm/channel.js"
-import { readErc20Allowance, increaseErc20Allowance } from "../src/evm/erc20.js"
-import { waitForTransactionReceipt } from "../src/evm/receipts.js"
-import { CosmosChannelDestination } from "../src/cosmos/channel.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
-const PRIVATE_KEY =
-  process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
+const PRIVATE_KEY = process.env.PRIVATE_KEY
+  || "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 // Define transfer parameters as constants for reuse
 const SENDER = "0xE6831e169d77a861A0E71326AFA6d80bCC8Bc6aA"
@@ -38,25 +38,25 @@ const TRANSFERS = [
     receiver: RECEIVER,
     baseToken: "0x779877a7b0d9e8603169ddbd7836e478b4624789", // LINK on sepolia
     baseAmount: 100n,
-    quoteAmount: 100n
+    quoteAmount: 100n,
   },
   {
     sender: SENDER,
     receiver: RECEIVER,
     baseToken: "0x1c7d4b196cb0c7b01d743fbc6116a902379c7238", // USDC on sepolia
     baseAmount: 100n,
-    quoteAmount: 100n
+    quoteAmount: 100n,
   },
   {
     sender: SENDER,
     receiver: RECEIVER,
     baseToken: "0x7b79995e5f793a07bc00c21412e50ecae098e7f9", // WETH on sepolia
     baseAmount: 50n,
-    quoteAmount: 0n
-  }
+    quoteAmount: 0n,
+  },
 ] as const
 
-const createBatch = Effect.gen(function* () {
+const createBatch = Effect.gen(function*() {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createEvmToCosmosFungibleAssetOrder(TRANSFERS[0])
   yield* Effect.log("creating transfer 2")
@@ -68,7 +68,7 @@ const createBatch = Effect.gen(function* () {
 }).pipe(Effect.withLogSpan("batch creation"))
 
 // Check and increase allowances if needed
-const checkAndIncreaseAllowances = Effect.gen(function* () {
+const checkAndIncreaseAllowances = Effect.gen(function*() {
   yield* Effect.log("Checking token allowances...")
 
   for (const transfer of TRANSFERS) {
@@ -78,7 +78,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
     const currentAllowance = yield* readErc20Allowance(
       transfer.baseToken,
       transfer.sender,
-      UCS03_ADDRESS
+      UCS03_ADDRESS,
     )
 
     yield* Effect.log(`current ${transfer.baseToken} allowance: ${currentAllowance}`)
@@ -91,7 +91,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       const txHash = yield* increaseErc20Allowance(
         transfer.baseToken,
         UCS03_ADDRESS,
-        transfer.baseAmount
+        transfer.baseAmount,
       )
 
       yield* Effect.log(`approval transaction sent: ${txHash}`)
@@ -105,7 +105,7 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
       const newAllowance = yield* readErc20Allowance(
         transfer.baseToken,
         transfer.sender,
-        UCS03_ADDRESS
+        UCS03_ADDRESS,
       )
 
       yield* Effect.log(`new ${transfer.baseToken} allowance: ${newAllowance}`)
@@ -118,31 +118,31 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
 }).pipe(Effect.withLogSpan("allowance check and increase"))
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create clients and setup
     yield* Effect.log("transferring from sepolia to stargaze")
 
     yield* Effect.log("creating clients")
     const cosmWasmClientDestination = yield* createCosmWasmClient(
-      "https://rpc.rpc-node.union-testnet-10.union.build"
+      "https://rpc.rpc-node.union-testnet-10.union.build",
     )
 
     const publicSourceClient = yield* createViemPublicClient({
       chain: sepolia,
-      transport: http()
+      transport: http(),
     })
 
     const account = privateKeyToAccount(PRIVATE_KEY as `0x${string}`)
     const walletClient = yield* createViemWalletClient({
       account,
       chain: sepolia,
-      transport: http()
+      transport: http(),
     })
 
     yield* Effect.log("clients created")
 
     // Main effect: create the batch and send it
-    return yield* Effect.gen(function* () {
+    return yield* Effect.gen(function*() {
       yield* Effect.log("creating batch")
       const batch = yield* createBatch
       yield* Effect.log("batch created", JSON.stringify(batch))
@@ -160,19 +160,19 @@ Effect.runPromiseExit(
       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
       Effect.provideService(CosmosChannelDestination, {
         ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
-        channelId: 1
+        channelId: 1,
       }),
       Effect.provideService(EvmChannelSource, {
         ucs03address: UCS03_ADDRESS,
-        channelId: 1
+        channelId: 1,
       }),
       Effect.provideService(ViemWalletClient, {
         client: walletClient,
         account: account,
-        chain: sepolia
-      })
+        chain: sepolia,
+      }),
     )
-  })
+  }),
 ).then(e => {
   console.log(JSON.stringify(e, null, 2))
   console.log(e)

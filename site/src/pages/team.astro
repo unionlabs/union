@@ -1,19 +1,19 @@
 ---
-import type { TeamPageFields, TeamPageSkeleton } from "../lib/contentful/types.ts"
-import { contentfulClient } from "../lib/contentful/client.ts"
 import TeamMember from "#/components/TeamMember.astro"
+import { contentfulClient } from "../lib/contentful/client.ts"
+import type { TeamPageFields, TeamPageSkeleton } from "../lib/contentful/types.ts"
 
-import vc_galileo from "#/assets/images/investors/galileo.svg"
-import vc_nascent from "#/assets/images/investors/nascent.svg"
-import vc_tioga from "#/assets/images/investors/tioga.png"
-import vc_semantic from "#/assets/images/investors/semantic.png"
-import vc_lightshift from "#/assets/images/investors/lightshift.png"
-import vc_udhc from "#/assets/images/investors/udhc.svg"
 import vc_founderheads from "#/assets/images/investors/founderheads.svg"
+import vc_galileo from "#/assets/images/investors/galileo.svg"
+import vc_lightshift from "#/assets/images/investors/lightshift.png"
+import vc_nascent from "#/assets/images/investors/nascent.svg"
+import vc_semantic from "#/assets/images/investors/semantic.png"
+import vc_tioga from "#/assets/images/investors/tioga.png"
+import vc_udhc from "#/assets/images/investors/udhc.svg"
 
-import team_spearbit from "#/assets/images/partners/spearbit.svg"
 import team_groomlake from "#/assets/images/partners/groomlake.png"
 import team_horizons from "#/assets/images/partners/horizons.svg"
+import team_spearbit from "#/assets/images/partners/spearbit.svg"
 import ContainedSection from "../components/ContainedSection.astro"
 import AnimationLayout from "../layouts/AnimationLayout.astro"
 
@@ -21,60 +21,60 @@ const teams = [
   {
     name: "Spearbit",
     logo: team_spearbit,
-    url: "https://spearbit.com"
+    url: "https://spearbit.com",
   },
   {
     name: "Groomlake",
     logo: team_groomlake,
-    url: "https://groomla.ke"
+    url: "https://groomla.ke",
   },
   {
     name: "Horizons Law",
     logo: team_horizons,
-    url: "https://www.horizonslaw.io/"
+    url: "https://www.horizonslaw.io/",
   },
   {
     name: "Lightshift",
     logo: vc_lightshift,
     url: "https://www.lightshift.xyz/",
-    clazz: "h-[44px]"
+    clazz: "h-[44px]",
   },
   {
     name: "Galileo",
     logo: vc_galileo,
     url: "https://www.galileogroup.xyz/",
-    clazz: "h-[28px]"
+    clazz: "h-[28px]",
   },
   {
     name: "Nascent",
     logo: vc_nascent,
     url: "https://www.nascent.xyz/",
-    clazz: "h-16"
+    clazz: "h-16",
   },
   {
     name: "Tioga",
     logo: vc_tioga,
     url: "https://tioga.capital/",
-    clazz: "h-16"
+    clazz: "h-16",
   },
   {
     name: "Semantic",
     logo: vc_semantic,
     url: "https://www.semantic.vc/",
-    clazz: "h-[38px]"
+    clazz: "h-[38px]",
   },
   {
     name: "UDHC",
     logo: vc_udhc,
     url: "https://www.udhc.finance/",
-    clazz: "h-[38px]"
+    clazz: "h-[38px]",
   },
   {
     name: "Founderheads",
     logo: vc_founderheads,
     url: "https://founderheads.com/",
-    clazz: "h-[38px]"
-  }
+    clazz: "h-[38px]",
+  },
 ]
 
 let teamData: Array<TeamPageFields> | null = null
@@ -82,7 +82,7 @@ let error: string | null = null
 
 try {
   const teamEntries = await contentfulClient.getEntries<TeamPageSkeleton>({
-    content_type: "team"
+    content_type: "team",
   })
 
   if (teamEntries.items.length > 0) {
@@ -109,14 +109,15 @@ try {
       <p>{error}</p>
     </div>
   ) : teamData ? (
-    <AnimationLayout title="Meet the team" text="Product People.">
+    <AnimationLayout
+      title="Meet the team"
+      text="Product People."
+    >
       <ContainedSection
         grid
         className="grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
       >
-        {teamData.map((person) => (
-          <TeamMember {person} />
-        ))}
+        {teamData.map((person) => <TeamMember {person} />)}
       </ContainedSection>
     </AnimationLayout>
   ) : (

@@ -1,8 +1,8 @@
 ---
-import { Icon } from "astro-icon/components"
-import { socialLinks } from "#/lib/constants/socials.ts"
 import Card from "#/components/Card.astro"
 import TextA from "#/components/TextA.astro"
+import { socialLinks } from "#/lib/constants/socials.ts"
+import { Icon } from "astro-icon/components"
 ---
 
 <section class="bg-black mb-px flex flex-col items-center justif-center">
@@ -20,7 +20,11 @@ import TextA from "#/components/TextA.astro"
             class="flex flex-col flex-1 p-7 text-center"
           >
             <Card>
-              <Icon name={socialLink.icon} class="mx-auto" size="2.5rem" />
+              <Icon
+                name={socialLink.icon}
+                class="mx-auto"
+                size="2.5rem"
+              />
               <TextA fake>{socialLink.cta}</TextA>
             </Card>
           </a>

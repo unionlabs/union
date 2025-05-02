@@ -1,6 +1,6 @@
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
-import { Option } from "effect"
 import type { Channels } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
 
 class ChannelsStore {
   data: Option.Option<typeof Channels.Type> = $state(Option.none())

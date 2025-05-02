@@ -1,6 +1,6 @@
 export {
   aptosStore,
-  getAptosWallet,
   type AptosWalletId,
-  aptosWalletsInformation
+  aptosWalletsInformation,
+  getAptosWallet,
 } from "./config.svelte.ts"

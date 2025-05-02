@@ -1,4 +1,4 @@
-import { toHex, type Hex } from "viem"
+import { type Hex, toHex } from "viem"
 
 /**
  * get the current timestamp in the format `YYYY-MM-DD--HH-MM-SS`

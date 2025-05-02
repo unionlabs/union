@@ -1,17 +1,17 @@
+import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { graphql } from "gql.tada"
+import { request } from "graphql-request"
+import { err, ok, type Result, ResultAsync } from "neverthrow"
+import { createPublicClient, fromHex, type Hex, http, isHex } from "viem"
+import { ucs03ZkgmAbi } from "../../abi/ucs-03.ts"
+import { type CosmosChainId, cosmosRpcs } from "../../cosmos/client.ts"
 import {
   cosmosChainId,
   evmChainFromChainId,
   type EvmChainId,
   evmChainId,
-  GRAQPHQL_URL
+  GRAQPHQL_URL,
 } from "../../mod.ts"
-import { graphql } from "gql.tada"
-import { request } from "graphql-request"
-import { createPublicClient, fromHex, http, isHex, type Hex } from "viem"
-import { err, ok, ResultAsync, type Result } from "neverthrow"
-import { ucs03ZkgmAbi } from "../../abi/ucs-03.ts"
-import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { cosmosRpcs, type CosmosChainId } from "../../cosmos/client.ts"
 
 const channelsQuery = graphql(/*  GraphQL */ `
   query Ucs03Channels {
@@ -66,7 +66,7 @@ function isPositiveInteger(str: string): boolean {
 export const getQuoteToken = async (
   source_chain_id: string,
   base_token: Hex,
-  channel: Channel
+  channel: Channel,
 ): Promise<
   Result<
     { quote_token: string; type: "UNWRAPPED" | "NEW_WRAPPED" } | { type: "NO_QUOTE_AVAILABLE" },
@@ -78,12 +78,12 @@ export const getQuoteToken = async (
     request(GRAQPHQL_URL, tokenWrappingQuery, {
       base_token,
       destination_channel_id: channel.source_channel_id, // not a mistake! because we're unwrapping
-      source_chain_id
+      source_chain_id,
     }),
     error => {
       console.error("@unionlabs/client-[getQuoteToken]", error)
       return new Error("failed to get quote token from graphql", { cause: error })
-    }
+    },
   )
 
   if (wrapping.isErr()) {
@@ -119,12 +119,12 @@ export const getQuoteToken = async (
         predict_wrapped_token: {
           path: "0",
           channel: channel.destination_channel_id,
-          token: base_token
-        }
+          token: base_token,
+        },
       }),
       error => {
         return new Error("failed to query predict wrapped denom", { cause: error })
-      }
+      },
     ).andThen(res =>
       res?.wrapped_token && isHex(res?.wrapped_token) && res?.wrapped_token.length > 2
         ? ok(res.wrapped_token)
@@ -142,7 +142,7 @@ export const getQuoteToken = async (
   if (evmChainId.includes(channel.destination_chain_id)) {
     const destinationChainClient = createPublicClient({
       chain: evmChainFromChainId(channel.destination_chain_id),
-      transport: http()
+      transport: http(),
     })
 
     // We need to predict the askToken denom based on the sentToken (denomAddress in the transferAssetFromEvm args)
@@ -153,11 +153,11 @@ export const getQuoteToken = async (
         address: `0x${channel.destination_port_id}`,
         abi: ucs03ZkgmAbi,
         functionName: "predictWrappedToken",
-        args: [0, channel.destination_channel_id, base_token]
+        args: [0, channel.destination_channel_id, base_token],
       }),
       error => {
         return new Error("failed to get predict token using evm call", { cause: error })
-      }
+      },
     )
 
     if (predictedQuoteToken.isErr()) {
@@ -166,10 +166,10 @@ export const getQuoteToken = async (
 
     if (
       !(
-        "value" in predictedQuoteToken &&
-        Array.isArray(predictedQuoteToken.value) &&
-        predictedQuoteToken.value.length > 0 &&
-        typeof predictedQuoteToken.value[0] === "string"
+        "value" in predictedQuoteToken
+        && Array.isArray(predictedQuoteToken.value)
+        && predictedQuoteToken.value.length > 0
+        && typeof predictedQuoteToken.value[0] === "string"
       )
     ) {
       return err(new Error(`invalid evm predict token response ${predictedQuoteToken}`))
@@ -184,11 +184,11 @@ export const getQuoteToken = async (
 export const getWethQuoteToken = async (
   sourceChainId: EvmChainId,
   ucs03Address: Hex,
-  channel: Channel
+  channel: Channel,
 ): Promise<Result<{ wethQuoteToken: string } | { type: "NO_WETH_QUOTE" }, Error>> => {
   const publicClient = createPublicClient({
     chain: evmChainFromChainId(sourceChainId),
-    transport: http()
+    transport: http(),
   })
 
   // Step 1: Get the local WETH address
@@ -197,9 +197,9 @@ export const getWethQuoteToken = async (
       address: ucs03Address,
       abi: ucs03ZkgmAbi,
       functionName: "weth",
-      args: []
+      args: [],
     }),
-    error => new Error("Failed to get WETH address from zkgm contract", { cause: error })
+    error => new Error("Failed to get WETH address from zkgm contract", { cause: error }),
   )
 
   if (wethAddressResult.isErr()) {
@@ -230,31 +230,36 @@ export const getRecommendedChannels = async () => {
 export const getChannelInfo = (
   source_chain_id: string,
   destination_chain_id: string,
-  channels: Awaited<ReturnType<typeof getRecommendedChannels>>
+  channels: Awaited<ReturnType<typeof getRecommendedChannels>>,
 ): Channel | null => {
   let rawChannel = channels.find(
     chan =>
-      chan.source_chain_id === source_chain_id && chan.destination_chain_id === destination_chain_id
+      chan.source_chain_id === source_chain_id
+      && chan.destination_chain_id === destination_chain_id,
   )
   if (
     // Validate that all required fields are included by the garphql api.
-    !rawChannel ||
-    rawChannel.source_connection_id === null ||
-    rawChannel.source_channel_id === null ||
-    !rawChannel.source_port_id ||
-    rawChannel.destination_connection_id === null ||
-    rawChannel.destination_channel_id === null ||
-    !rawChannel.destination_port_id
+    !rawChannel
+    || rawChannel.source_connection_id === null
+    || rawChannel.source_channel_id === null
+    || !rawChannel.source_port_id
+    || rawChannel.destination_connection_id === null
+    || rawChannel.destination_channel_id === null
+    || !rawChannel.destination_port_id
   ) {
     return null
   }
 
   let source_port_id = String(rawChannel.source_port_id)
-  if (source_port_id.length < 4) return null
+  if (source_port_id.length < 4) {
+    return null
+  }
   source_port_id = source_port_id.slice(2)
 
   let destination_port_id = String(rawChannel.destination_port_id)
-  if (destination_port_id.length < 4) return null
+  if (destination_port_id.length < 4) {
+    return null
+  }
   destination_port_id = destination_port_id.slice(2)
 
   return {
@@ -265,6 +270,6 @@ export const getChannelInfo = (
     destination_chain_id,
     destination_connection_id: rawChannel.destination_connection_id,
     destination_channel_id: rawChannel.destination_channel_id,
-    destination_port_id
+    destination_port_id,
   }
 }

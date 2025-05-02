@@ -1,5 +1,3 @@
-import { assert, describe, expect, it } from "vitest"
-import { runFork, runForkWithRuntime, runPromiseExit } from "./effect.svelte.js"
 import {
   Cause,
   Context,
@@ -14,9 +12,11 @@ import {
   Option,
   pipe,
   RuntimeFlags,
-  Stream
+  Stream,
 } from "effect"
 import { flushSync } from "svelte"
+import { assert, describe, expect, it } from "vitest"
+import { runFork, runForkWithRuntime, runPromiseExit } from "./effect.svelte.js"
 
 type AppliedReturn<F, A> = F extends (_: A) => infer R ? R : never
 
@@ -38,7 +38,7 @@ describe("Effect runes", () => {
       const latch = Deferred.unsafeMake<void>(FiberId.none)
       const asyncEffect = pipe(
         Deferred.complete(latch, Effect.void),
-        Effect.andThen(() => pipe(Effect.void, Effect.forever))
+        Effect.andThen(() => pipe(Effect.void, Effect.forever)),
       )
       let result = $state<AppliedReturn<typeof runPromiseExit, typeof asyncEffect> | null>(null)
       const cleanup = $effect.root(() => {
@@ -51,15 +51,15 @@ describe("Effect runes", () => {
         .poll(() => result?.current)
         .toStrictEqual(
           expect.objectContaining(
-            pipe(Cause.interrupt(anyRuntimeFiberId), Exit.failCause, Option.some)
-          )
+            pipe(Cause.interrupt(anyRuntimeFiberId), Exit.failCause, Option.some),
+          ),
         )
     })
     it("is interruptible", async ({ onTestFinished }) => {
       const latch = Deferred.unsafeMake<void>(FiberId.none)
       const asyncEffect = pipe(
         Deferred.complete(latch, Effect.void),
-        Effect.andThen(() => pipe(Effect.void, Effect.forever))
+        Effect.andThen(() => pipe(Effect.void, Effect.forever)),
       )
       let result = $state<AppliedReturn<typeof runPromiseExit, typeof asyncEffect> | null>(null)
       const cleanup = $effect.root(() => {
@@ -71,8 +71,8 @@ describe("Effect runes", () => {
         .poll(() => result?.current)
         .toStrictEqual(
           expect.objectContaining(
-            pipe(Cause.interrupt(anyRuntimeFiberId), Exit.failCause, Option.some)
-          )
+            pipe(Cause.interrupt(anyRuntimeFiberId), Exit.failCause, Option.some),
+          ),
         )
       onTestFinished(cleanup)
     })
@@ -90,8 +90,8 @@ describe("Effect runes", () => {
               Effect.sync(() => {
                 result = x
               })
-            )
-          )
+            ),
+          ),
         )
       })
       expect(result).toStrictEqual(0)
@@ -126,8 +126,8 @@ describe("Effect runes", () => {
               })
             ),
             Stream.onDone(() => Deferred.succeed(latch, undefined)),
-            Stream.runDrain
-          )
+            Stream.runDrain,
+          ),
         )
       })
       expect(count).toBe(0)
@@ -149,9 +149,9 @@ describe("Effect runes", () => {
           RuntimeFlags.make(
             RuntimeFlags.CooperativeYielding,
             RuntimeFlags.Interruption,
-            RuntimeFlags.RuntimeMetrics
-          )
-        )
+            RuntimeFlags.RuntimeMetrics,
+          ),
+        ),
       )
       cleanup()
       await expect

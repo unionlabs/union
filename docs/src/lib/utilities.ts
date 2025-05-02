@@ -6,7 +6,7 @@ export const graphqlQueryToCurl = ({ url, query }: { url: string; query: string 
       --url '${url}' \\
       --header 'Content-Type: application/json' \\
       --data '{ "query": "\\n
-            ${query.replace(/"/g, '\\"')}"
+            ${query.replace(/"/g, "\\\"")}"
       }'
   `
 
@@ -15,11 +15,13 @@ export const splitArray = <T>({ array, n }: { array: Array<T>; n: number }): Arr
   array.reduce(
     (accumulator, current, index) => {
       const chunkIndex = Math.floor(index / n)
-      if (!accumulator[chunkIndex]) accumulator[chunkIndex] = []
+      if (!accumulator[chunkIndex]) {
+        accumulator[chunkIndex] = []
+      }
       accumulator[chunkIndex].push(current)
       return accumulator
     },
-    [] as Array<Array<T>>
+    [] as Array<Array<T>>,
   )
 
 // remove duplicates from an array of objects by a key
@@ -31,7 +33,7 @@ export const removeArrayDuplicates = <T>(array: Array<T>, key: keyof T): Array<T
       }
       return accumulator
     },
-    [] as Array<T>
+    [] as Array<T>,
   )
 
 export function stringIsJSON(str: string) {
@@ -53,7 +55,7 @@ export const saneDateTime = (date?: string | Date) =>
   new Date(date ?? "").toLocaleDateString("fr-CA", {
     year: "numeric",
     month: "numeric",
-    day: "numeric"
+    day: "numeric",
   })
 
 export const arraySizeN = (n: number) => Array.from(new Array(n).keys())
@@ -70,6 +72,8 @@ export function raise(error: unknown): never {
 }
 
 export function isKeyOf<T extends object>(obj: T, key: keyof any): key is keyof T {
-  if (!key) return false
+  if (!key) {
+    return false
+  }
   return key in obj
 }

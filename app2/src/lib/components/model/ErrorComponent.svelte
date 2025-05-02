@@ -1,22 +1,22 @@
 <script lang="ts">
+import Button from "$lib/components/ui/Button.svelte"
+import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
+import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
+import type { NoViemChainError } from "$lib/services/evm/clients"
+import type { CreatePublicClientError } from "$lib/services/transfer/errors"
+import type { Base64EncodeError } from "$lib/utils/base64"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
+import type { NoRpcError } from "@unionlabs/sdk/schema"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import type { TimeoutException, UnknownException } from "effect/Cause"
 import type { ParseError } from "effect/ParseResult"
-import type { NoViemChainError } from "$lib/services/evm/clients"
-import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
-import type { CreatePublicClientError } from "$lib/services/transfer/errors"
-import type { NoRpcError } from "@unionlabs/sdk/schema"
 import { slide } from "svelte/transition"
-import Button from "$lib/components/ui/Button.svelte"
-import type { Base64EncodeError } from "$lib/utils/base64"
-import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
+import SharpDownloadIcon from "../icons/SharpDownloadIcon.svelte"
+import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
 import SharpOpenInBrowserIcon from "../icons/SharpOpenInBrowserIcon.svelte"
 import Modal from "../ui/Modal.svelte"
 import Tooltip from "../ui/Tooltip.svelte"
-import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
-import SharpDownloadIcon from "../icons/SharpDownloadIcon.svelte"
-import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
 
 interface Props {
   error:
@@ -88,15 +88,20 @@ const exportData = () => {
 </script>
 
 {#if visible}
-  <div
-    class="p-4 rounded bg-zinc-925 border-2 border-red-500 overflow-hidden flex flex-col"
-  >
+  <div class="p-4 rounded bg-zinc-925 border-2 border-red-500 overflow-hidden flex flex-col">
     {#if onClose}
       <div class="flex flex-row mb-2">
         <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
         <div class="grow"></div>
-        <Button class="self-end p-0 h-4" variant="outline" onclick={onClose}>
-          <BaselineCloseIcon height="1rem" width="1rem" />
+        <Button
+          class="self-end p-0 h-4"
+          variant="outline"
+          onclick={onClose}
+        >
+          <BaselineCloseIcon
+            height="1rem"
+            width="1rem"
+          />
         </Button>
       </div>
     {/if}
@@ -132,7 +137,10 @@ const exportData = () => {
     </Tooltip> -->
       <Tooltip delay={"quick"}>
         {#snippet trigger()}
-          <Button variant="primary" onclick={exportData}>
+          <Button
+            variant="primary"
+            onclick={exportData}
+          >
             <SharpDownloadIcon class="size-4" />
           </Button>
         {/snippet}
@@ -147,7 +155,11 @@ const exportData = () => {
       onClose={() => (showDetails = !showDetails)}
       class="w-full max-w-4xl"
     >
-      <div class="overflow-auto mt-6" in:slide out:slide|local={{ delay: 0 }}>
+      <div
+        class="overflow-auto mt-6"
+        in:slide
+        out:slide|local={{ delay: 0 }}
+      >
         <section class="mt-4">
           <h3 class="text-lg font-bold">Error Type</h3>
           <pre>{error._tag}</pre>
@@ -178,11 +190,15 @@ const exportData = () => {
             <p>Method and URL: {error.methodAndUrl}</p>
           {:else if error._tag === "ParseError"}
             <p>Actual data that was parsed:</p>
-            <pre class="text-sm">{JSON.stringify(
+            <pre
+              class="text-sm"
+            >
+{JSON.stringify(
                 error.issue.actual,
                 null,
                 2,
-              )}</pre>
+              )}</pre
+            >
           {:else if error._tag === "UnknownException"}
             <p>This is an unknown exception. Full details here:</p>
             <pre class="text-sm">{JSON.stringify(error, null, 2)}</pre>
@@ -208,11 +224,15 @@ const exportData = () => {
             <p>Chain: {error.chain.display_name}</p>
             <p>RPC Type: {error.type}</p>
             <p>Available RPC types:</p>
-            <pre class="text-sm">{JSON.stringify(
+            <pre
+              class="text-sm"
+            >
+{JSON.stringify(
                 error.chain.rpcs.map((r) => r.type),
                 null,
                 2,
-              )}</pre>
+              )}</pre
+            >
           {/if}
         </section>
       </div>

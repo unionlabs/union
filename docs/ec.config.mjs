@@ -1,6 +1,6 @@
-import ecTwoSlash from "expressive-code-twoslash"
-import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
 import { pluginCollapsibleSections } from "@expressive-code/plugin-collapsible-sections"
+import { pluginLineNumbers } from "@expressive-code/plugin-line-numbers"
+import ecTwoSlash from "expressive-code-twoslash"
 
 /**
  * @typedef {ReturnType<typeof import('@expressive-code/plugin-line-numbers')['pluginLineNumbers']>} ECPlugin
@@ -15,10 +15,10 @@ export default {
   frames: {
     extractFileNameFromCode: true,
     showCopyToClipboardButton: true,
-    removeCommentsWhenCopyingTerminalFrames: true
+    removeCommentsWhenCopyingTerminalFrames: true,
   },
   defaultProps: {
-    showLineNumbers: false
+    showLineNumbers: false,
   },
   useStarlightDarkModeSwitch: true,
   themes: ["github-light", "houston"],
@@ -26,9 +26,9 @@ export default {
     ecTwoSlash({
       includeJsDoc: true,
       explicitTrigger: true,
-      languages: ["ts", "tsx", "js", "jsx"]
+      languages: ["ts", "tsx", "js", "jsx"],
     }),
     pluginLineNumbers(),
-    pluginCollapsibleSections()
-  ]
+    pluginCollapsibleSections(),
+  ],
 }

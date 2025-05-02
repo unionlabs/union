@@ -1,10 +1,10 @@
-import { Terminal } from "@xterm/xterm"
-import { FitAddon } from "@xterm/addon-fit"
 import { xTermTheme } from "#/lib/xterm/theme"
-import { ImageAddon } from "@xterm/addon-image"
-import { WebLinksAddon } from "@xterm/addon-web-links"
 import { ClipboardAddon } from "@xterm/addon-clipboard"
+import { FitAddon } from "@xterm/addon-fit"
+import { ImageAddon } from "@xterm/addon-image"
 import { SerializeAddon } from "@xterm/addon-serialize"
+import { WebLinksAddon } from "@xterm/addon-web-links"
+import { Terminal } from "@xterm/xterm"
 
 export type XTermAddon = {
   fitAddon: FitAddon
@@ -20,7 +20,7 @@ export function initiateTerminal(
   options: {
     fontSize?: number
     readonly?: boolean
-  } = { fontSize: 28, readonly: false }
+  } = { fontSize: 28, readonly: false },
 ): {
   terminal: Terminal
   addons: XTermAddon
@@ -35,7 +35,7 @@ export function initiateTerminal(
     cursorInactiveStyle: "bar",
     fontSize: options.fontSize,
     disableStdin: options.readonly,
-    drawBoldTextInBrightColors: true
+    drawBoldTextInBrightColors: true,
   })
   const fitAddon = new FitAddon()
   terminal.loadAddon(fitAddon)
@@ -61,7 +61,7 @@ export function initiateTerminal(
       imageAddon,
       webLinksAddon,
       clipboardAddon,
-      serializeAddon
-    }
+      serializeAddon,
+    },
   }
 }

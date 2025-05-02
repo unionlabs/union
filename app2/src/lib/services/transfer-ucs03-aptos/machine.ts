@@ -1,13 +1,13 @@
+import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
+import { Effect } from "effect"
+import { switchChainAptos } from "./chain.ts"
 import {
   SwitchChainState,
   TransferReceiptState,
   TransferSubmission,
-  TransferSubmitState
+  TransferSubmitState,
 } from "./state.ts"
-import { Effect } from "effect"
-import { switchChainAptos } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions-aptos.ts"
-import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
 
 /**
  * This state machine is dedicated to Aptos transfers.
@@ -17,7 +17,7 @@ import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
 export async function nextState(
   ts: TransferSubmission,
   params: ValidTransfer["args"],
-  chain: Chain
+  chain: Chain,
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     // Initially, we’re in the Filling state.
@@ -39,7 +39,7 @@ export async function nextState(
           }
           // Once switched, move directly to TransferSubmit.
           return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
-        }
+        },
       })
     },
 
@@ -49,7 +49,7 @@ export async function nextState(
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(submitTransfer(chain, params))
           return TransferSubmission.TransferSubmit({
-            state: TransferSubmitState.Complete({ exit })
+            state: TransferSubmitState.Complete({ exit }),
           })
         },
         Complete: ({ exit }) => {
@@ -58,9 +58,9 @@ export async function nextState(
           }
           // After successful submission, move to waiting for receipt.
           return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.InProgress({ hash: exit.value.hash })
+            state: TransferReceiptState.InProgress({ hash: exit.value.hash }),
           })
-        }
+        },
       })
     },
 
@@ -70,15 +70,15 @@ export async function nextState(
         InProgress: async ({ hash }) => {
           const exit = await Effect.runPromiseExit(waitForTransferReceipt(chain, hash))
           return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.Complete({ exit })
+            state: TransferReceiptState.Complete({ exit }),
           })
         },
         Complete: ({ exit }) => {
           return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.Complete({ exit })
+            state: TransferReceiptState.Complete({ exit }),
           })
-        }
+        },
       })
-    }
+    },
   })
 }

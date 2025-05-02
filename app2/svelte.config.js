@@ -15,14 +15,14 @@ const config = {
   // },
   kit: {
     adapter: adapter({
-      fallback: "index.html"
+      fallback: "index.html",
     }),
     alias: {
       "@unionlabs/client": "../typescript-sdk/src/mod.js",
       "@unionlabs/sdk": "../ts-sdk/src/index.js",
-      "@unionlabs/sdk/*": "../ts-sdk/src/*"
-    }
-  }
+      "@unionlabs/sdk/*": "../ts-sdk/src/*",
+    },
+  },
 }
 
 export default config

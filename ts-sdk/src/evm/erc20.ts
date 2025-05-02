@@ -1,8 +1,8 @@
 import { Effect } from "effect"
-import { erc20Abi, type Address } from "viem"
+import { type Address, erc20Abi } from "viem"
+import { ViemPublicClient, ViemWalletClient } from "./client.js"
 import { readContract } from "./contract.js"
 import { writeContract } from "./contract.js"
-import { ViemPublicClient, ViemWalletClient } from "./client.js"
 
 /**
  * Read ERC20 token metadata (name, symbol, decimals)
@@ -10,7 +10,7 @@ import { ViemPublicClient, ViemWalletClient } from "./client.js"
  * @returns An Effect that resolves to the token metadata
  */
 export const readErc20Meta = (tokenAddress: Address) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const name = yield* readErc20Name(tokenAddress)
     const symbol = yield* readErc20Symbol(tokenAddress)
     const decimals = yield* readErc20Decimals(tokenAddress)
@@ -24,14 +24,14 @@ export const readErc20Meta = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the token balance
  */
 export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
       abi: erc20Abi,
       functionName: "balanceOf",
-      args: [ownerAddress]
+      args: [ownerAddress],
     })
   })
 
@@ -41,13 +41,13 @@ export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =
  * @returns An Effect that resolves to the token name
  */
 export const readErc20Name = (tokenAddress: Address) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
       abi: erc20Abi,
-      functionName: "name"
+      functionName: "name",
     })
   })
 
@@ -57,13 +57,13 @@ export const readErc20Name = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the token symbol
  */
 export const readErc20Symbol = (tokenAddress: Address) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
       abi: erc20Abi,
-      functionName: "symbol"
+      functionName: "symbol",
     })
   })
 
@@ -73,13 +73,13 @@ export const readErc20Symbol = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the token decimals
  */
 export const readErc20Decimals = (tokenAddress: Address) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
       abi: erc20Abi,
-      functionName: "decimals"
+      functionName: "decimals",
     })
   })
 
@@ -89,13 +89,13 @@ export const readErc20Decimals = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the totalSupply
  */
 export const readErc20TotalSupply = (tokenAddress: Address) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
       abi: erc20Abi,
-      functionName: "totalSupply"
+      functionName: "totalSupply",
     })
   })
 
@@ -109,16 +109,16 @@ export const readErc20TotalSupply = (tokenAddress: Address) =>
 export const readErc20Allowance = (
   tokenAddress: Address,
   ownerAddress: Address,
-  spenderAddress: Address
+  spenderAddress: Address,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
       abi: erc20Abi,
       functionName: "allowance",
-      args: [ownerAddress, spenderAddress]
+      args: [ownerAddress, spenderAddress],
     })
   })
 
@@ -132,9 +132,9 @@ export const readErc20Allowance = (
 export const increaseErc20Allowance = (
   tokenAddress: Address,
   spenderAddress: Address,
-  amount: bigint
+  amount: bigint,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const walletClient = yield* ViemWalletClient
 
     return yield* writeContract(walletClient.client, {
@@ -143,6 +143,6 @@ export const increaseErc20Allowance = (
       address: tokenAddress,
       abi: erc20Abi,
       functionName: "approve",
-      args: [spenderAddress, amount]
+      args: [spenderAddress, amount],
     })
   })

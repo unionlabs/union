@@ -1,7 +1,7 @@
-import { raise } from "./utilities/index.ts"
-import { bech32, hex, bytes } from "@scure/base"
+import { bech32, bytes, hex } from "@scure/base"
 import type { Bech32Address, HexAddress } from "./types.ts"
 import { isValidBech32Address, isValidBech32ContractAddress } from "./utilities/address.ts"
+import { raise } from "./utilities/index.ts"
 
 /**
  * convert a bech32 address (cosmos, osmosis, union addresses) to hex address (evm)
@@ -11,7 +11,9 @@ import { isValidBech32Address, isValidBech32ContractAddress } from "./utilities/
  * ```
  */
 export function bech32AddressToHex({ address }: { address: string }): HexAddress {
-  if (!isValidBech32ContractAddress(address)) raise(`Invalid bech32 address: ${address}`)
+  if (!isValidBech32ContractAddress(address)) {
+    raise(`Invalid bech32 address: ${address}`)
+  }
   const { bytes } = bech32.decodeToBytes(address)
   return `0x${bytesToHex(bytes)}`
 }
@@ -28,7 +30,7 @@ export function bech32AddressToHex({ address }: { address: string }): HexAddress
  */
 export function hexAddressToBech32({
   address,
-  bech32Prefix
+  bech32Prefix,
 }: { address: HexAddress; bech32Prefix: string }): Bech32Address {
   const words = bech32.toWords(hexToBytes(address))
   return bech32.encode(bech32Prefix, words, false)
@@ -46,9 +48,11 @@ export function hexAddressToBech32({
  */
 export function bech32ToBech32Address<ToPrefix extends string>({
   address,
-  toPrefix
+  toPrefix,
 }: { address: string; toPrefix: ToPrefix }): Bech32Address<ToPrefix> {
-  if (!isValidBech32Address(address)) raise(`Invalid bech32 address: ${address}`)
+  if (!isValidBech32Address(address)) {
+    raise(`Invalid bech32 address: ${address}`)
+  }
   return bech32.encode(toPrefix, bech32.decode(address).words, false) as Bech32Address<ToPrefix>
 }
 
@@ -64,7 +68,7 @@ export function bech32ToBech32Address<ToPrefix extends string>({
  */
 export function bytesToBech32Address<ToPrefix extends string>({
   bytes,
-  toPrefix
+  toPrefix,
 }: { bytes: Uint8Array; toPrefix: ToPrefix }): Bech32Address<ToPrefix> {
   return bech32.encode(toPrefix, bytes, false) as Bech32Address<ToPrefix>
 }

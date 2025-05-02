@@ -1,12 +1,12 @@
 <script lang="ts">
 import Input from "$lib/components/ui/Input.svelte"
+import Label from "$lib/components/ui/Label.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { balancesStore } from "$lib/stores/balances.svelte"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { Option, pipe } from "effect"
 import { formatUnits, toHex } from "viem"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import { balancesStore } from "$lib/stores/balances.svelte"
 
 type Props = {
   type: "source" | "destination"
@@ -23,10 +23,10 @@ let chainWallet = $derived.by(() => {
 
 function allDataReadyForBalance() {
   return (
-    Option.isSome(transferData.sourceChain) &&
-    Option.isSome(transferData.baseToken) &&
-    Option.isSome(transferData.baseTokenBalance) &&
-    Option.isSome(transferData.baseTokenBalance.value.balance)
+    Option.isSome(transferData.sourceChain)
+    && Option.isSome(transferData.baseToken)
+    && Option.isSome(transferData.baseTokenBalance)
+    && Option.isSome(transferData.baseTokenBalance.value.balance)
   )
 }
 
@@ -35,7 +35,7 @@ $effect(() => {
   const rec = Option.all({
     chain: transferData.sourceChain,
     address: transferData.derivedSender,
-    denom: Option.map(transferData.baseToken, x => x.denom)
+    denom: Option.map(transferData.baseToken, x => x.denom),
   })
   if (Option.isSome(rec)) {
     balancesStore.fetchBalances(rec.value.chain, rec.value.address, rec.value.denom, "2 minutes")
@@ -44,9 +44,9 @@ $effect(() => {
 
 let displayBalance = $derived.by(() => {
   if (
-    Option.isSome(transferData.sourceChain) &&
-    Option.isSome(transferData.baseToken) &&
-    Option.isSome(transferData.baseTokenBalance)
+    Option.isSome(transferData.sourceChain)
+    && Option.isSome(transferData.baseToken)
+    && Option.isSome(transferData.baseTokenBalance)
   ) {
     const bal = transferData.baseTokenBalance.value.balance
     if (Option.isSome(bal)) {
@@ -60,22 +60,30 @@ let displayBalance = $derived.by(() => {
 })
 
 function setMaxAmount() {
-  if (Option.isNone(transferData.baseToken)) return
-  if (Option.isNone(transferData.baseTokenBalance)) return
-  if (Option.isNone(transferData.baseTokenBalance.value.balance)) return
-  if (Option.isNone(transferData.sourceChain)) return
+  if (Option.isNone(transferData.baseToken)) {
+    return
+  }
+  if (Option.isNone(transferData.baseTokenBalance)) {
+    return
+  }
+  if (Option.isNone(transferData.baseTokenBalance.value.balance)) {
+    return
+  }
+  if (Option.isNone(transferData.sourceChain)) {
+    return
+  }
 
   const baseToken = transferData.baseToken.value
   const rawBalance = BigInt(transferData.baseTokenBalance.value.balance.value)
   const decimals = baseToken.representations[0]?.decimals ?? 0
-  const isUbbn =
-    transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1" &&
-    baseToken.denom === toHex("ubbn")
+  const isUbbn = transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1"
+    && baseToken.denom === toHex("ubbn")
 
   const BABY_SUB_AMOUNT = 20n * 10n ** BigInt(decimals)
 
-  const maxUsable =
-    isUbbn && rawBalance > BABY_SUB_AMOUNT ? rawBalance - BABY_SUB_AMOUNT : rawBalance
+  const maxUsable = isUbbn && rawBalance > BABY_SUB_AMOUNT
+    ? rawBalance - BABY_SUB_AMOUNT
+    : rawBalance
 
   const formattedAmount = formatUnits(maxUsable, decimals)
 
@@ -97,7 +105,7 @@ function setMaxAmount() {
         {#if !transferData.raw.source || !transferData.raw.asset}
           0
         {:else if !allDataReadyForBalance()}
-          <Skeleton class="h-3 w-16 inline-block"/>
+          <Skeleton class="h-3 w-16 inline-block" />
         {:else}
           {displayBalance}
         {/if}
@@ -109,7 +117,6 @@ function setMaxAmount() {
         MAX
       </button>
     </div>
-
   {/if}
   <Input
     id="amount"
@@ -123,32 +130,29 @@ function setMaxAmount() {
     inputmode="decimal"
     data-field="amount"
     onbeforeinput={(event) => {
-      const { inputType, data, currentTarget } = event;
-      const { value } = currentTarget;
-      const proposed = value + (data ?? "");
+      const { inputType, data, currentTarget } = event
+      const { value } = currentTarget
+      const proposed = value + (data ?? "")
 
       const maxDecimals = pipe(
         transferData.baseToken,
-        Option.flatMap((x) =>
-          Option.fromNullable(x.representations[0]?.decimals),
-        ),
+        Option.flatMap((x) => Option.fromNullable(x.representations[0]?.decimals)),
         Option.getOrElse(() => 0),
-      );
+      )
 
-      const validShape = /^\d*[.,]?\d*$/.test(proposed);
-      const validDecimalsDot =
-        !proposed.includes(".") || proposed.split(".")[1].length <= maxDecimals;
-      const validDecimalsComma =
-        !proposed.includes(",") || proposed.split(",")[1].length <= maxDecimals;
-      const isDelete = inputType.startsWith("delete");
-      const validDecimals = validDecimalsComma && validDecimalsDot;
-      const noDuplicateLeadingZeroes = !proposed.startsWith("00");
+      const validShape = /^\d*[.,]?\d*$/.test(proposed)
+      const validDecimalsDot = !proposed.includes(".")
+        || proposed.split(".")[1].length <= maxDecimals
+      const validDecimalsComma = !proposed.includes(",")
+        || proposed.split(",")[1].length <= maxDecimals
+      const isDelete = inputType.startsWith("delete")
+      const validDecimals = validDecimalsComma && validDecimalsDot
+      const noDuplicateLeadingZeroes = !proposed.startsWith("00")
 
-      const allow =
-        isDelete || (validDecimals && validShape && noDuplicateLeadingZeroes);
+      const allow = isDelete || (validDecimals && validShape && noDuplicateLeadingZeroes)
 
       if (!allow) {
-        event.preventDefault();
+        event.preventDefault()
       }
     }}
     autocapitalize="none"
@@ -156,14 +160,17 @@ function setMaxAmount() {
     value={transferData.raw.amount}
     class="h-14 text-center text-lg text-white"
     oninput={(event) => {
-      transferData.raw.updateField("amount", event);
+      transferData.raw.updateField("amount", event)
     }}
   />
 </div>
 {#if Option.isSome(transferData.sourceChain) && Option.isSome(transferData.baseToken)}
-  {#if transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1" && (transferData.baseToken.value.denom === "ubbn" || transferData.baseToken.value.denom === "0x" + Array.from(new TextEncoder().encode("ubbn"))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join(""))}
+  {#if transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1"
+    && (transferData.baseToken.value.denom === "ubbn"
+      || transferData.baseToken.value.denom
+        === "0x" + Array.from(new TextEncoder().encode("ubbn"))
+            .map((b) => b.toString(16).padStart(2, "0"))
+            .join(""))}
     <div class="text-xs text-zinc-400 text-end">Relayer Fee: 20 BABY</div>
   {/if}
 {/if}

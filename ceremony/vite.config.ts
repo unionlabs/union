@@ -7,7 +7,7 @@ export default defineConfig(config => {
   return {
     plugins: [sveltekit()],
     esbuild: {
-      drop: isProduction ? ["console", "debugger"] : []
-    }
+      drop: isProduction ? ["console", "debugger"] : [],
+    },
   }
 })

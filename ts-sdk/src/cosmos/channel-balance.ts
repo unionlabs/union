@@ -1,10 +1,10 @@
 import { Effect } from "effect"
+import { CosmosChannelDestination } from "./channel.js"
 import { CosmWasmClientDestination } from "./client.js"
 import { queryContract } from "./contract.js"
-import { CosmosChannelDestination } from "./channel.js"
 
 export const channelBalance = (path: bigint, token: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* CosmWasmClientDestination).client
     const config = yield* CosmosChannelDestination
 
@@ -12,8 +12,8 @@ export const channelBalance = (path: bigint, token: string) =>
       get_channel_balance: {
         channel_id: config.channelId,
         path: path,
-        denom: token
-      }
+        denom: token,
+      },
     })
     return result
   })

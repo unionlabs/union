@@ -1,7 +1,7 @@
+import { user, type UserSession } from "$lib/state/session.svelte.ts"
 import { getContext, setContext } from "svelte"
 import { Contributor } from "./contributor.svelte.ts"
 import { Terminal } from "./terminal.svelte.ts"
-import { user, type UserSession } from "$lib/state/session.svelte.ts"
 
 export interface AppState {
   contributor: Contributor
@@ -16,7 +16,7 @@ export function createState() {
   const state: AppState = {
     contributor: new Contributor(),
     terminal: new Terminal(),
-    user: user
+    user: user,
   }
 
   setContext(STATE_KEY, state)

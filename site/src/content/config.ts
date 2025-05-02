@@ -13,10 +13,10 @@ const blogCollection = defineCollection({
       cover: image().optional(),
       editUrl: z.union([z.string().url(), z.boolean()]).optional().default(true),
       lastUpdated: z.union([z.date(), z.boolean()]).optional(),
-      hidden: z.boolean().optional().default(false)
-    })
+      hidden: z.boolean().optional().default(false),
+    }),
 })
 
 export const collections = {
-  blog: blogCollection
+  blog: blogCollection,
 }

@@ -34,7 +34,7 @@ export class Terminal {
         key: event.key,
         type: event.type as "keydown" | "keyup",
         shiftKey: event.shiftKey,
-        ctrlKey: event.ctrlKey
+        ctrlKey: event.ctrlKey,
       })
     }
 

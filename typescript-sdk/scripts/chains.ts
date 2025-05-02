@@ -1,6 +1,6 @@
 #!/usr/bin/env bun
-import { consola } from "./logger.ts"
 import { offchainQuery } from "../src/mod.ts"
+import { consola } from "./logger.ts"
 
 const [, , chainId] = process.argv
 
@@ -8,7 +8,7 @@ if (chainId) {
   const data = await offchainQuery.chain({
     chainId,
     includeEndpoints: true,
-    includeContracts: true
+    includeContracts: true,
   })
 
   if (!data) {
@@ -22,7 +22,7 @@ if (chainId) {
 
 const data = await offchainQuery.chains({
   includeEndpoints: true,
-  includeContracts: true
+  includeContracts: true,
 })
 
 if (!data) {

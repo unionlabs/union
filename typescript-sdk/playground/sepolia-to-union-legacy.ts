@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
-import { sepolia } from "viem/chains"
-import { fallback, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { raise } from "../src/utilities/index.ts"
+import { fallback, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
+import { sepolia } from "viem/chains"
 import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
+import { raise } from "../src/utilities/index.ts"
 
 /* `bun playground/sepolia-to-union.ts --private-key "..."` --estimate-gas */
 
@@ -13,12 +13,14 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) raise("Private key not found")
+if (!PRIVATE_KEY) {
+  raise("Private key not found")
+}
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
@@ -34,11 +36,11 @@ try {
     transport: fallback([
       http("https://sepolia.infura.io/v3/238b407ca9d049829b99b15b3fd99246"),
       http(
-        "https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e"
+        "https://special-summer-film.ethereum-sepolia.quiknode.pro/3e6a917b56620f854de771c23f8f7a8ed973cf7e",
       ),
       http("https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D"),
-      http(sepolia?.rpcUrls.default.http.at(0))
-    ])
+      http(sepolia?.rpcUrls.default.http.at(0)),
+    ]),
   })
 
   const transactionPayload = {
@@ -47,14 +49,16 @@ try {
     denomAddress: LINK_CONTRACT_ADDRESS,
     destinationChainId: "union-testnet-8",
     // or `client.cosmos.account.address` if you want to send to yourself
-    receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
+    receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
   } satisfies TransferAssetsParametersLegacy<"11155111">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
   consola.box("Sepolia to Union gas cost:", gasEstimationResponse)
 
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
+  if (ONLY_ESTIMATE_GAS) {
+    process.exit(0)
+  }
 
   if (gasEstimationResponse.isErr()) {
     consola.info("Transaction simulation failed", gasEstimationResponse.error)
@@ -63,7 +67,9 @@ try {
 
   consola.success("Sepolia to Union gas cost:", gasEstimationResponse)
 
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
+  if (ONLY_ESTIMATE_GAS) {
+    process.exit(0)
+  }
 
   if (gasEstimationResponse.isErr()) {
     console.info("Transaction simulation failed", gasEstimationResponse.error)

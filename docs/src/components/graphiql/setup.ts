@@ -1,12 +1,12 @@
+import { stringIsJSON } from "#/lib/utilities.ts"
+import { explorerPlugin } from "@graphiql/plugin-explorer"
+import { createGraphiQLFetcher } from "@graphiql/toolkit"
+import { GraphiQL, type GraphiQLProps } from "graphiql"
 import * as React from "react"
 import { dedent } from "ts-dedent"
-import { stringIsJSON } from "#/lib/utilities.ts"
-import { GraphiQL, type GraphiQLProps } from "graphiql"
-import { createGraphiQLFetcher } from "@graphiql/toolkit"
-import { explorerPlugin } from "@graphiql/plugin-explorer"
 
-const GRAPHQL_ENDPOINT =
-  import.meta.env.PUBLIC_GRAPHQL_URL ?? "https://graphql.union.build/v1/graphql"
+const GRAPHQL_ENDPOINT = import.meta.env.PUBLIC_GRAPHQL_URL
+  ?? "https://graphql.union.build/v1/graphql"
 
 type LocalStorageParsedQuery = {
   query: string
@@ -17,7 +17,7 @@ type LocalStorageParsedQuery = {
 
 const fetcher = createGraphiQLFetcher({
   url: GRAPHQL_ENDPOINT,
-  enableIncrementalDelivery: true
+  enableIncrementalDelivery: true,
 })
 
 let query = dedent(/* GraphQL */ `
@@ -52,8 +52,8 @@ const graphiqlProps = {
       hideActions: true,
       title: "union.build",
       explorerIsOpen: true,
-      showAttribution: false
-    })
+      showAttribution: false,
+    }),
   ],
   disableTabs: true,
   isHeadersEditorEnabled: true,
@@ -64,41 +64,45 @@ const graphiqlProps = {
       React.createElement(
         "button",
         {
-          key: "share",
-          type: "button",
-          className: "graphiql-un-styled graphiql-toolbar-button",
-          title: "Copy sharable URL to clipboard",
+          "key": "share",
+          "type": "button",
+          "className": "graphiql-un-styled graphiql-toolbar-button",
+          "title": "Copy sharable URL to clipboard",
           "aria-label": "Copy sharable URL to clipboard",
-          onClick: (event: React.SyntheticEvent) => {
+          "onClick": (event: React.SyntheticEvent) => {
             event.preventDefault()
 
             const query = localStorage.getItem("graphiql:query")
-            if (!query) return
+            if (!query) {
+              return
+            }
 
             const encoded = encodeURIComponent(query)
             let urlPath = `?query=${encoded}`
 
             const variables = localStorage.getItem("graphiql:variables")
-            if (variables) urlPath += `&variables=${encodeURIComponent(variables)}`
+            if (variables) {
+              urlPath += `&variables=${encodeURIComponent(variables)}`
+            }
 
             window.history.pushState({}, "", urlPath)
             // copy url to clipboard
             navigator.clipboard.writeText(window.location.href)
-          }
+          },
         },
         React.createElement("img", {
           alt: "share",
           className: "graphiql-toolbar-button-image size-6 hover:[#e5e7eb]",
-          src: "https://api.iconify.design/ic:round-share.svg?color=%236b778a"
-        })
-      )
-    ]
+          src: "https://api.iconify.design/ic:round-share.svg?color=%236b778a",
+        }),
+      ),
+    ],
   },
-  defaultQuery: localStorage.getItem("graphiql:query") || query
+  defaultQuery: localStorage.getItem("graphiql:query") || query,
 } satisfies GraphiQLProps
 
 export const graphiqlElement = React.createElement(
   GraphiQL,
   graphiqlProps,
-  React.createElement(GraphiQL.Logo, {}, React.createElement("span", {}, "Union GraphiQL"))
+  React.createElement(GraphiQL.Logo, {}, React.createElement("span", {}, "Union GraphiQL")),
 )

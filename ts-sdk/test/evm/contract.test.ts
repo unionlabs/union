@@ -1,29 +1,29 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Effect } from "effect"
-import { readContract } from "../../src/evm/contract.js"
 import type { WalletClient } from "viem"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { readContract } from "../../src/evm/contract.js"
 
 // Mock clients for testing
 // @ts-ignore we do a partial mock
 const mockPublicClient = {
-  readContract: vi.fn()
+  readContract: vi.fn(),
 }
 
 // @ts-ignore we do a partial mock
 const mockWalletClient = {
-  writeContract: vi.fn()
+  writeContract: vi.fn(),
 } as WalletClient
 
 // Mock service layers
 // @ts-expect-error
 const mockPublicViemClient = {
-  client: mockPublicClient
+  client: mockPublicClient,
 }
 
 // @ts-expect-error
 const mockViemWalletClient = {
   // @ts-ignore we do a partial mock
-  client: mockWalletClient
+  client: mockWalletClient,
 }
 
 describe("Contract Module", () => {
@@ -41,7 +41,7 @@ describe("Contract Module", () => {
       const testParams = {
         address: "0x1234567890123456789012345678901234567890",
         abi: [{ name: "test", type: "function", inputs: [], outputs: [{ type: "string" }] }],
-        functionName: "test"
+        functionName: "test",
       }
 
       // Execute

@@ -8,31 +8,40 @@ interface Props {}
 <article id="graphiql">...</article>
 
 <script>
-  import ReactDOM from 'react-dom/client'
-  import { graphiqlElement } from './setup.ts'
+import ReactDOM from "react-dom/client"
+import { graphiqlElement } from "./setup.ts"
 
-  const graphqlElement = document.querySelector('article#graphiql')
-  if (!graphqlElement) throw new Error('GraphQL element not found')
+const graphqlElement = document.querySelector("article#graphiql")
+if (!graphqlElement) {
+  throw new Error("GraphQL element not found")
+}
 
-  const urlSearchParams = new URLSearchParams(window.location.search)
-  const query = urlSearchParams.get('query')
-  if (query) localStorage.setItem('graphiql:query', query)
+const urlSearchParams = new URLSearchParams(window.location.search)
+const query = urlSearchParams.get("query")
+if (query) {
+  localStorage.setItem("graphiql:query", query)
+}
 
-  const variables = urlSearchParams.get('variables')
-  if (variables) localStorage.setItem('graphiql:variables', variables)
+const variables = urlSearchParams.get("variables")
+if (variables) {
+  localStorage.setItem("graphiql:variables", variables)
+}
 
-  const root = ReactDOM.createRoot(graphqlElement)
-  root.render(graphiqlElement)
+const root = ReactDOM.createRoot(graphqlElement)
+root.render(graphiqlElement)
 </script>
 
 <script>
-  const footerElement = document.querySelector('footer.sl-flex')
-  footerElement?.remove()
-  const asideElement = document.querySelector('aside.right-sidebar-container')
-  asideElement?.remove()
+const footerElement = document.querySelector("footer.sl-flex")
+footerElement?.remove()
+const asideElement = document.querySelector("aside.right-sidebar-container")
+asideElement?.remove()
 </script>
 
-<style lang="postcss" is:global>
+<style
+  lang="postcss"
+  is:global
+>
 :root {
   --sl-mobile-toc-height: 0;
   --color-base: #1f1f1f;

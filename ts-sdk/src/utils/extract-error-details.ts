@@ -1,22 +1,27 @@
 export function extractErrorDetails<T extends Error>(
   error: T,
-  withOwnProperties: boolean | undefined = true
-): {
-  [K in keyof T]: T[K]
-} & {
-  message: string
-  name: string
-  stack?: string
-  cause?: unknown
-} {
-  const extractedError = {} as {
+  withOwnProperties: boolean | undefined = true,
+):
+  & {
     [K in keyof T]: T[K]
-  } & {
+  }
+  & {
     message: string
     name: string
     stack?: string
     cause?: unknown
   }
+{
+  const extractedError = {} as
+    & {
+      [K in keyof T]: T[K]
+    }
+    & {
+      message: string
+      name: string
+      stack?: string
+      cause?: unknown
+    }
 
   // Extract all own properties, including non-enumerable ones
   if (withOwnProperties) {
@@ -28,8 +33,12 @@ export function extractErrorDetails<T extends Error>(
   // Explicitly copy inherited properties
   extractedError.message = error.message
   extractedError.name = error.name
-  if (error.stack) extractedError.stack = error.stack
-  if ("cause" in error) extractedError.cause = error.cause
+  if (error.stack) {
+    extractedError.stack = error.stack
+  }
+  if ("cause" in error) {
+    extractedError.cause = error.cause
+  }
 
   return extractedError
 }

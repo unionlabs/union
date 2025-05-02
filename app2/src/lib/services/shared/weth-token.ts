@@ -1,15 +1,15 @@
+import { getPublicClient } from "$lib/services/evm/clients.ts"
+import type { Chain, Channel } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
 import type { Hex } from "viem"
-import type { Chain, Channel } from "@unionlabs/sdk/schema"
-import { getPublicClient } from "$lib/services/evm/clients.ts"
 
 export const getWethQuoteToken = (
   sourceChain: Chain,
   _ucs03Address: Hex,
   _channel: Channel,
-  _destinationChain: Chain
+  _destinationChain: Chain,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const publicClient = yield* getPublicClient(sourceChain)
     // const wethAddress = yield* Effect.tryPromise({
     //   try: () => new Promise(() => {Promise.resolve("0x000")}),

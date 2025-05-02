@@ -1,14 +1,14 @@
-import { BLOCKS, MARKS } from "@contentful/rich-text-types"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
+import { BLOCKS, MARKS } from "@contentful/rich-text-types"
 
 const defaultOptions = {
   renderMark: {
-    [MARKS.BOLD]: (text: string) => `<span class="text-accent-500">${text}</span>`
+    [MARKS.BOLD]: (text: string) => `<span class="text-accent-500">${text}</span>`,
   },
   renderNode: {
     [BLOCKS.PARAGRAPH]: (node: any, next: any) => `<p>${next(node.content)}</p>`,
-    [BLOCKS.DOCUMENT]: (node: any, next: any) => next(node.content).join("")
-  }
+    [BLOCKS.DOCUMENT]: (node: any, next: any) => next(node.content).join(""),
+  },
 }
 
 export const renderRichText = (content: any, customOptions: any = {}) => {

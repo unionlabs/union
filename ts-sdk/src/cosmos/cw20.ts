@@ -1,6 +1,6 @@
 import { Effect } from "effect"
 import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
-import { queryContract, executeContract } from "./contract.js"
+import { executeContract, queryContract } from "./contract.js"
 
 /**
  * Interface for CW20 token metadata
@@ -33,7 +33,7 @@ export interface Cw20AllowanceResponse {
  * @returns An Effect that resolves to the token metadata
  */
 export const readCw20TokenInfo = (contractAddress: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* CosmWasmClientContext).client
 
     return yield* queryContract<Cw20TokenInfo>(client, contractAddress, { token_info: {} })
@@ -45,10 +45,10 @@ export const readCw20TokenInfo = (contractAddress: string) =>
  * @returns An Effect that resolves to the token total supply
  */
 export const readCw20TotalSupply = (contractAddress: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* CosmWasmClientContext).client
     const token_info = yield* queryContract<Cw20TokenInfo>(client, contractAddress, {
-      token_info: {}
+      token_info: {},
     })
     return token_info.total_supply
   })
@@ -60,13 +60,13 @@ export const readCw20TotalSupply = (contractAddress: string) =>
  * @returns An Effect that resolves to the token balance
  */
 export const readCw20Balance = (contractAddress: string, address: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* CosmWasmClientContext).client
 
     const response = yield* queryContract<Cw20BalanceResponse>(client, contractAddress, {
       balance: {
-        address
-      }
+        address,
+      },
     })
 
     return response.balance
@@ -82,16 +82,16 @@ export const readCw20Balance = (contractAddress: string, address: string) =>
 export const readCw20Allowance = (
   contractAddress: string,
   ownerAddress: string,
-  spenderAddress: string
+  spenderAddress: string,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* CosmWasmClientContext).client
 
     const response = yield* queryContract<Cw20AllowanceResponse>(client, contractAddress, {
       allowance: {
         owner: ownerAddress,
-        spender: spenderAddress
-      }
+        spender: spenderAddress,
+      },
     })
 
     return response.allowance
@@ -111,15 +111,15 @@ export const writeCw20IncreaseAllowance = (
   contractAddress: string,
   senderAddress: string,
   spenderAddress: string,
-  amount: string
+  amount: string,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* SigningCosmWasmClientContext).client
 
     return yield* executeContract(client, senderAddress, contractAddress, {
       increase_allowance: {
         spender: spenderAddress,
-        amount
-      }
+        amount,
+      },
     })
   })

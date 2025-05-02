@@ -1,8 +1,8 @@
-import * as S from "effect/Schema"
-import { Hex, HexChecksum, HexFromString } from "./hex.js"
-import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "./bech32.js"
 import { pipe } from "effect"
+import * as S from "effect/Schema"
 import { isAddress } from "viem"
+import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "./bech32.js"
+import { Hex, HexChecksum, HexFromString } from "./hex.js"
 
 // For Reference, see: https://docs.union.build/ucs/05
 // We always store bytes arrays as hex-encoded strings
@@ -28,7 +28,7 @@ export const AddressCosmosZkgmFromAddressCanonicalBytesWithPrefix = (prefix: str
   pipe(
     Bech32FromAddressCanonicalBytesWithPrefix(prefix),
     S.compose(HexFromString),
-    S.compose(AddressCosmosZkgm)
+    S.compose(AddressCosmosZkgm),
   )
 
 // Evm Address Types
@@ -48,8 +48,8 @@ export const AddressAptosZkgm = AddressAptosCanonical
 
 export const ERC55 = S.NonEmptyString.pipe(
   S.filter(a => isAddress(a, { strict: true }), {
-    description: "a string matching ERC-55 in checksum format"
-  })
+    description: "a string matching ERC-55 in checksum format",
+  }),
 )
 export type ERC55 = typeof ERC55.Type
 

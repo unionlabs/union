@@ -1,8 +1,8 @@
 import { bech32, bytes } from "@scure/base"
 import { Effect, ParseResult, pipe, Schema as S } from "effect"
-import type { Hex } from "./hex.js"
 import { AddressCanonicalBytes } from "./address.js"
 import type { HRP } from "./chain.js"
+import type { Hex } from "./hex.js"
 
 export const Bech32 = S.NonEmptyString.pipe(
   S.brand("Bech32"),
@@ -13,21 +13,21 @@ export const Bech32 = S.NonEmptyString.pipe(
     } catch (e) {
       return new ParseResult.Type(ast, a, (e as Error).message)
     }
-  })
+  }),
 ) as unknown as S.filter<S.brand<S.TemplateLiteral<`${string}1${string}`>, "Bech32">>
 export type Bech32 = typeof Bech32.Type
 
 export class Bech32EncodeError extends S.TaggedClass<Bech32EncodeError>()("Bech32EncodeError", {
-  message: S.String
+  message: S.String,
 }) {}
 
 export class Bech32DecodeError extends S.TaggedClass<Bech32DecodeError>()("Bech32DecodeError", {
-  message: S.String
+  message: S.String,
 }) {}
 
 export const Bech32FromAddressCanonicalBytesWithPrefix = (
   // TODO(ehegnes): also validate HRP
-  prefix: HRP
+  prefix: HRP,
 ) =>
   S.transformOrFail(AddressCanonicalBytes, Bech32, {
     strict: true,
@@ -37,17 +37,17 @@ export const Bech32FromAddressCanonicalBytesWithPrefix = (
           const words = bech32.toWords(bytes("hex", fromA.slice(2)))
           return bech32.encode(prefix, words) as `${string}1${string}`
         },
-        catch: cause => new Bech32EncodeError({ message: (cause as Error).message })
+        catch: cause => new Bech32EncodeError({ message: (cause as Error).message }),
       }).pipe(
         Effect.mapBoth({
           onSuccess: a => Bech32.make(a as any),
-          onFailure: e => new ParseResult.Type(ast, fromA, e.message)
-        })
+          onFailure: e => new ParseResult.Type(ast, fromA, e.message),
+        }),
       ),
     encode: (toI, _options, ast, _toA) => {
       const a = Effect.try({
         try: () => bech32.decode(toI),
-        catch: cause => new Bech32DecodeError({ message: (cause as Error).message })
+        catch: cause => new Bech32DecodeError({ message: (cause as Error).message }),
       }).pipe(
         // TODO: convert to try; pull out fn
         Effect.map(decoded => {
@@ -57,13 +57,13 @@ export const Bech32FromAddressCanonicalBytesWithPrefix = (
             pipe(
               Array.from(bytes),
               arr => arr.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "0x"),
-              hex => hex as Hex
+              hex => hex as Hex,
             )
           return AddressCanonicalBytes.make(bytesToCanonicalHex(bytes))
         }),
-        Effect.mapError(e => new ParseResult.Type(ast, toI, e.message))
+        Effect.mapError(e => new ParseResult.Type(ast, toI, e.message)),
       )
       return a
       // return void 0 as unknown as Effect.Effect<Hex>
-    }
+    },
   })

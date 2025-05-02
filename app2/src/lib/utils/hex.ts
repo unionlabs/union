@@ -8,5 +8,5 @@ export class FromHexError extends Data.TaggedError("FromHexError")<{
 export const fromHexString = (hex: `0x${string}`) =>
   Effect.try({
     try: () => fromHex(hex, "string"),
-    catch: error => new FromHexError({ cause: error as FromHexErrorType })
+    catch: error => new FromHexError({ cause: error as FromHexErrorType }),
   })

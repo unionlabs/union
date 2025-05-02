@@ -1,25 +1,25 @@
 import { Effect } from "effect"
 
-import { AptosConfig, Network, Ed25519PrivateKey, Account } from "@aptos-labs/ts-sdk"
+import { Account, AptosConfig, Ed25519PrivateKey, Network } from "@aptos-labs/ts-sdk"
+import { AptosChannelSource } from "../src/aptos/channel.js"
 import {
   AptosPublicClient,
+  AptosWalletClient,
   createAptosPublicClient,
-  AptosWalletClient
 } from "../src/aptos/client.js"
-import { createAptosToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
+import { CosmosChannelDestination } from "../src/cosmos/channel.js"
 import { CosmWasmClientDestination, createCosmWasmClient } from "../src/cosmos/client.js"
+import { createAptosToCosmosFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
 import { Batch } from "../src/ucs03/instruction.js"
 import { sendInstructionAptos } from "../src/ucs03/send-instruction.js"
-import { AptosChannelSource } from "../src/aptos/channel.js"
-import { CosmosChannelDestination } from "../src/cosmos/channel.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
-const PRIVATE_KEY =
-  process.env.PRIVATE_KEY || "0x0000000000000000000000000000000000000000000000000000000000000000"
+const PRIVATE_KEY = process.env.PRIVATE_KEY
+  || "0x0000000000000000000000000000000000000000000000000000000000000000"
 
 // Define transfer parameters as constants for reuse
 const SENDER = "0x4f597b9ac27cc279a66f4963c7955861955604eab8b38dcffee4cbcb7756e4d8"
@@ -33,18 +33,18 @@ const TRANSFERS = [
     receiver: RECEIVER,
     baseToken: "0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c", // Muno on Movement
     baseAmount: 1n,
-    quoteAmount: 1n
+    quoteAmount: 1n,
   },
   {
     sender: SENDER,
     receiver: RECEIVER,
     baseToken: "0xfb706c831839f51ed5735e045720008d23ba4998e5a02e541af4a1bc9baabbc2", // stadv4tnt on Movement
     baseAmount: 1n,
-    quoteAmount: 1n
-  }
+    quoteAmount: 1n,
+  },
 ] as const
 
-const createBatch = Effect.gen(function* () {
+const createBatch = Effect.gen(function*() {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createAptosToCosmosFungibleAssetOrder(TRANSFERS[0])
   yield* Effect.log("creating transfer 2")
@@ -53,19 +53,19 @@ const createBatch = Effect.gen(function* () {
 }).pipe(Effect.withLogSpan("batch creation"))
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create clients and setup
     yield* Effect.log("transferring from APTOS to UNION")
 
     yield* Effect.log("creating clients")
     const cosmWasmClientDestination = yield* createCosmWasmClient(
-      "https://rpc.rpc-node.union-testnet-10.union.build"
+      "https://rpc.rpc-node.union-testnet-10.union.build",
     )
     const rpcUrl = "https://aptos.testnet.bardock.movementlabs.xyz/v1"
 
     const config = new AptosConfig({
       fullnode: rpcUrl,
-      network: Network.CUSTOM
+      network: Network.CUSTOM,
     })
     const publicClient = yield* createAptosPublicClient(config)
 
@@ -75,7 +75,7 @@ Effect.runPromiseExit(
     yield* Effect.log("clients created")
 
     // Main effect: create the batch and send it
-    return yield* Effect.gen(function* () {
+    return yield* Effect.gen(function*() {
       yield* Effect.log("creating batch")
       const batch = yield* createBatch
       yield* Effect.log("batch created", JSON.stringify(batch))
@@ -87,15 +87,15 @@ Effect.runPromiseExit(
       Effect.provideService(CosmWasmClientDestination, { client: cosmWasmClientDestination }),
       Effect.provideService(CosmosChannelDestination, {
         ucs03address: "union15zcptld878lux44lvc0chzhz7dcdh62nh0xehwa8y7czuz3yljls7u4ry6",
-        channelId: 1
+        channelId: 1,
       }),
       Effect.provideService(AptosWalletClient, { client: publicClient, account: account }),
       Effect.provideService(AptosChannelSource, {
         ucs03address: UCS03_ADDRESS,
-        channelId: 1
-      })
+        channelId: 1,
+      }),
     )
-  })
+  }),
 ).then(e => {
   console.log(JSON.stringify(e, null, 2))
   console.log(e)

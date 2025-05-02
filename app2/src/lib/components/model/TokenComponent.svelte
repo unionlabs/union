@@ -1,17 +1,17 @@
 <script lang="ts">
+import ArrowDownLeft from "$lib/components/icons/ArrowDownLeft.svelte"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import Truncate from "$lib/components/ui/Truncate.svelte"
+import { chains } from "$lib/stores/chains.svelte"
+import { tokensStore } from "$lib/stores/tokens.svelte"
 import { type Chain, getChain, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
 import { Array as Arr, Option, pipe } from "effect"
-import Truncate from "$lib/components/ui/Truncate.svelte"
-import { tokensStore } from "$lib/stores/tokens.svelte"
-import { chains } from "$lib/stores/chains.svelte"
-import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import ArrowDownLeft from "$lib/components/icons/ArrowDownLeft.svelte"
-import A from "../ui/A.svelte"
+import { fromHex } from "viem"
 import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
+import A from "../ui/A.svelte"
 import Label from "../ui/Label.svelte"
 import LongMonoWord from "../ui/LongMonoWord.svelte"
-import { fromHex } from "viem"
 
 interface Props {
   chain: Chain
@@ -30,7 +30,7 @@ const {
   showWrapping = true,
   icon = Option.none(),
   showIcon = true,
-  showSymbol = true
+  showSymbol = true,
 }: Props = $props()
 
 // Start the query when the component mounts
@@ -42,7 +42,7 @@ $effect(() => {
 const token = $derived(
   tokensStore
     .getData(chain.universal_chain_id)
-    .pipe(Option.flatMap(tokens => Option.fromNullable(tokens.find(t => t.denom === denom))))
+    .pipe(Option.flatMap(tokens => Option.fromNullable(tokens.find(t => t.denom === denom)))),
 )
 
 // Get display info from token representations
@@ -54,9 +54,9 @@ const displayInfo = $derived(
     const rep = t.representations[0] // Use first representation
     return Option.some({
       symbol: rep.symbol,
-      decimals: rep.decimals
+      decimals: rep.decimals,
     })
-  })
+  }),
 )
 
 // Format amount using token decimals if available
@@ -64,28 +64,29 @@ const displayAmount = $derived(
   Option.match(Option.all([Option.fromNullable(amount), displayInfo]), {
     onNone: () => Option.none(),
     onSome: ([amt, info]) => {
-      if (!amt) return Option.some("0")
+      if (!amt) {
+        return Option.some("0")
+      }
       const decimal = BigInt(10) ** BigInt(info.decimals)
       const whole = amt / decimal
       const fraction = amt % decimal
 
       // Convert fraction to string and remove trailing zeros
-      const fractionStr =
-        fraction === 0n
-          ? ""
-          : `.${fraction.toString().padStart(info.decimals, "0").replace(/0+$/, "")}`
+      const fractionStr = fraction === 0n
+        ? ""
+        : `.${fraction.toString().padStart(info.decimals, "0").replace(/0+$/, "")}`
 
       return Option.some(`${whole}${fractionStr}`)
-    }
-  })
+    },
+  }),
 )
 
 // Use symbol if available, otherwise truncate denom
 const displayDenom = $derived(
   Option.match(displayInfo, {
     onNone: () => denom,
-    onSome: info => info.symbol
-  })
+    onSome: info => info.symbol,
+  }),
 )
 </script>
 
@@ -94,17 +95,27 @@ const displayDenom = $derived(
     <div class="flex items-center gap-2 font-semibold">
       {#if showIcon}
         {@const [alt, src] = pipe(
-          // TODO: move me into a Token class getter
-          token,
-          Option.map(x => x.representations),
-          Option.flatMap(Arr.head),
-          Option.flatMap(x => Option.all([Option.some(x.name), x.logo_uri])),
-          Option.getOrElse(() => [undefined, undefined])
-        )}
+        // TODO: move me into a Token class getter
+        token,
+        Option.map(x => x.representations),
+        Option.flatMap(Arr.head),
+        Option.flatMap(x => Option.all([Option.some(x.name), x.logo_uri])),
+        Option.getOrElse(() => [undefined, undefined]),
+      )}
         {#if Option.isSome(icon) && icon.value.length > 0}
-          <img class="size-4" src={icon.value} alt="" loading="lazy"/>
+          <img
+            class="size-4"
+            src={icon.value}
+            alt=""
+            loading="lazy"
+          />
         {:else if src && alt}
-          <img class="size-4" {src} {alt} loading="lazy"/>
+          <img
+            class="size-4"
+            {src}
+            {alt}
+            loading="lazy"
+          />
         {:else}
           <div class="size-4 flex items-center justify-center bg-zinc-700 rounded-full">
             <span class="text-xs text-zinc-400">?</span>
@@ -113,13 +124,20 @@ const displayDenom = $derived(
       {/if}
       {#if amount !== undefined}
         <span>
-          {Option.getOrElse(displayAmount, () =>
-            amount === undefined ? "" : amount.toString(),
-          )}
+          {
+            Option.getOrElse(
+              displayAmount,
+              () => amount === undefined ? "" : amount.toString(),
+            )
+          }
         </span>
       {/if}
       {#if showSymbol}
-        <Truncate value={displayDenom} maxLength={10} showCopy={false} />
+        <Truncate
+          value={displayDenom}
+          maxLength={10}
+          showCopy={false}
+        />
       {/if}
     </div>
 
@@ -128,9 +146,9 @@ const displayDenom = $derived(
         {#each token.value.wrapping as wrap, i}
           {#if i === 0}<ArrowDownLeft class="size-3 ml-1 rotate-90" />{/if}
           {@const wrapChain = getChain(
-            chains.data.value,
-            wrap.unwrapped_chain.universal_chain_id,
-          )}
+        chains.data.value,
+        wrap.unwrapped_chain.universal_chain_id,
+      )}
           {#if Option.isSome(wrapChain)}
             {#if i != 0}<SharpRightArrowIcon class="size-4 rotate-180" />{/if}
             <div><ChainComponent chain={wrapChain.value} /></div>
@@ -156,13 +174,11 @@ const displayDenom = $derived(
                 {#if i === 0}<ArrowDownLeft class="size-3 rotate-90" />{/if}
 
                 {@const wrapChain = getChain(
-                  chains.data.value,
-                  wrap.unwrapped_chain.universal_chain_id,
-                )}
+            chains.data.value,
+            wrap.unwrapped_chain.universal_chain_id,
+          )}
                 {#if Option.isSome(wrapChain)}
-                  {#if i !== 0}<SharpRightArrowIcon
-                      class="size-4 rotate-180"
-                    />{/if}
+                  {#if i !== 0}<SharpRightArrowIcon class="size-4 rotate-180" />{/if}
                   <div><ChainComponent chain={wrapChain.value} /></div>
                 {/if}
               {/each}
@@ -171,45 +187,39 @@ const displayDenom = $derived(
         </section>
 
         <section>
-          <Label>Chain</Label>
-          <ChainComponent {chain} />
+          <Label>Chain</Label> <ChainComponent {chain} />
         </section>
         <section>
-          <Label>Raw Denom</Label>
-          <LongMonoWord>{denom}</LongMonoWord>
+          <Label>Raw Denom</Label> <LongMonoWord>{denom}</LongMonoWord>
         </section>
         {#if chain.rpc_type === "cosmos"}
           <section>
-            <Label>Denom</Label>
-            <LongMonoWord>{fromHex(denom, "string")}</LongMonoWord>
+            <Label>Denom</Label> <LongMonoWord>{fromHex(denom, "string")}</LongMonoWord>
           </section>
         {/if}
 
         {#each token.value.representations as rep}
           <section>
-            <Label>Name</Label>
-            <div>{rep.name}</div>
+            <Label>Name</Label> <div>{rep.name}</div>
           </section>
           <section>
-            <Label>Symbol</Label>
-            <div>{rep.symbol}</div>
+            <Label>Symbol</Label> <div>{rep.symbol}</div>
           </section>
           <section>
-            <Label>Decimals</Label>
-            <div>{rep.decimals}</div>
+            <Label>Decimals</Label> <div>{rep.decimals}</div>
           </section>
           <section>
-            <Label>Rank</Label>
-            <div>{Option.getOrElse(token.value.rank, () => "Unranked")}</div>
+            <Label>Rank</Label> <div>{Option.getOrElse(token.value.rank, () => "Unranked")}</div>
           </section>
           <section>
             {#each rep.sources as source}
               {#if source.source.source_uri}
                 <section>
                   <Label>Source</Label>
-                  <A class="underline" href={source.source.source_uri}
-                    >{source.source.name}</A
-                  >
+                  <A
+                    class="underline"
+                    href={source.source.source_uri}
+                  >{source.source.name}</A>
                 </section>
               {/if}
             {/each}

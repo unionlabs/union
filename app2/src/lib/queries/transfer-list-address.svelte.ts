@@ -1,16 +1,16 @@
-import { createQueryGraphql } from "$lib/utils/queries"
-import { Option, Schema } from "effect"
-import { graphql } from "gql.tada"
-import { transferListAddress } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
+import { transferListAddress } from "$lib/stores/transfers.svelte"
+import { createQueryGraphql } from "$lib/utils/queries"
 import type { AddressCanonicalBytes, SortOrder } from "@unionlabs/sdk/schema"
 import { TransferList } from "@unionlabs/sdk/schema"
+import { Option, Schema } from "effect"
+import { graphql } from "gql.tada"
 
 export const LIMIT = 10
 
 export const transferListLatestAddressQuery = (
   addresses: Array<typeof AddressCanonicalBytes.Type>,
-  limit = LIMIT
+  limit = LIMIT,
 ) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_transfers: TransferList }),
@@ -25,7 +25,7 @@ export const transferListLatestAddressQuery = (
       }
     }
   `,
-      [transferListItemFragment]
+      [transferListItemFragment],
     ),
     variables: { addresses, limit },
     refetchInterval: "1 second",
@@ -34,13 +34,13 @@ export const transferListLatestAddressQuery = (
     },
     writeError: error => {
       transferListAddress.error = error
-    }
+    },
   })
 
 export const transferListPageLtAddressQuery = (
   page: typeof SortOrder.Type,
   addresses: Array<typeof AddressCanonicalBytes.Type>,
-  limit = LIMIT
+  limit = LIMIT,
 ) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_transfers: TransferList }),
@@ -56,7 +56,7 @@ export const transferListPageLtAddressQuery = (
       }
     }
   `,
-      [transferListItemFragment]
+      [transferListItemFragment],
     ),
     variables: { page, addresses, limit },
     refetchInterval: "30 seconds",
@@ -65,7 +65,7 @@ export const transferListPageLtAddressQuery = (
     },
     writeError: error => {
       transferListAddress.error = error
-    }
+    },
   })
 
 // export const transferCountForAddressesQuery = (
@@ -106,7 +106,7 @@ export const transferListPageLtAddressQuery = (
 export const transferListPageGtAddressQuery = (
   page: typeof SortOrder.Type,
   addresses: Array<typeof AddressCanonicalBytes.Type>,
-  limit = LIMIT
+  limit = LIMIT,
 ) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_transfers: TransferList }),
@@ -123,7 +123,7 @@ export const transferListPageGtAddressQuery = (
       }
     }
   `,
-      [transferListItemFragment]
+      [transferListItemFragment],
     ),
     variables: { page, addresses, limit },
     refetchInterval: "30 seconds",
@@ -132,5 +132,5 @@ export const transferListPageGtAddressQuery = (
     },
     writeError: error => {
       transferListAddress.error = error
-    }
+    },
   })

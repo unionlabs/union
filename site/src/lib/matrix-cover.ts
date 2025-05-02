@@ -1,17 +1,17 @@
 // @ts-nocheck
-import * as glMatrix from "gl-matrix"
 import { pathConfigMap } from "#/lib/constants/pages.ts"
+import * as glMatrix from "gl-matrix"
 
 let currentColors = {
   primary: [0.71, 0.94, 0.99, 1.0],
   mid: [0.51, 0.94, 0.99, 1.0],
-  dark: [0.37, 0.87, 0.99, 1.0]
+  dark: [0.37, 0.87, 0.99, 1.0],
 }
 
 let targetColors = {
   primary: [0.71, 0.94, 0.99, 1.0],
   mid: [0.51, 0.94, 0.99, 1.0],
-  dark: [0.37, 0.87, 0.99, 1.0]
+  dark: [0.37, 0.87, 0.99, 1.0],
 }
 
 let isTransitioning = false
@@ -29,7 +29,7 @@ function lerpColor(start, end, t) {
     start[0] + (end[0] - start[0]) * t,
     start[1] + (end[1] - start[1]) * t,
     start[2] + (end[2] - start[2]) * t,
-    start[3] + (end[3] - start[3]) * t
+    start[3] + (end[3] - start[3]) * t,
   ]
 }
 
@@ -45,7 +45,9 @@ let currentRotationDirection: "left" | "right" = "right"
 
 export function rotateCamera(direction: "left" | "right") {
   const MAX_QUEUED_ROTATIONS = 4
-  if (queuedRotations >= MAX_QUEUED_ROTATIONS) return
+  if (queuedRotations >= MAX_QUEUED_ROTATIONS) {
+    return
+  }
 
   queuedRotations++
 
@@ -64,8 +66,8 @@ export function rotateCamera(direction: "left" | "right") {
     isRotating = true
     rotationStartTime = performance.now()
     initialRotation = currentPlaneRotation
-    targetPlaneRotation =
-      currentPlaneRotation + (direction === "right" ? Math.PI / 2 : -Math.PI / 2)
+    targetPlaneRotation = currentPlaneRotation
+      + (direction === "right" ? Math.PI / 2 : -Math.PI / 2)
   }
 }
 
@@ -139,27 +141,27 @@ class PerlinNoise {
         this.lerp(
           u,
           this.grad(this.permutation[AA], x, y, z),
-          this.grad(this.permutation[BA], x - 1, y, z)
+          this.grad(this.permutation[BA], x - 1, y, z),
         ),
         this.lerp(
           u,
           this.grad(this.permutation[AB], x, y - 1, z),
-          this.grad(this.permutation[BB], x - 1, y - 1, z)
-        )
+          this.grad(this.permutation[BB], x - 1, y - 1, z),
+        ),
       ),
       this.lerp(
         v,
         this.lerp(
           u,
           this.grad(this.permutation[AA + 1], x, y, z - 1),
-          this.grad(this.permutation[BA + 1], x - 1, y, z - 1)
+          this.grad(this.permutation[BA + 1], x - 1, y, z - 1),
         ),
         this.lerp(
           u,
           this.grad(this.permutation[AB + 1], x, y - 1, z - 1),
-          this.grad(this.permutation[BB + 1], x - 1, y - 1, z - 1)
-        )
-      )
+          this.grad(this.permutation[BB + 1], x - 1, y - 1, z - 1),
+        ),
+      ),
     )
   }
 }
@@ -221,7 +223,7 @@ function initWebGL() {
 
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
       console.error(
-        `Unable to initialize the shader program: ${gl.getProgramInfoLog(shaderProgram)}`
+        `Unable to initialize the shader program: ${gl.getProgramInfoLog(shaderProgram)}`,
       )
       return null
     }
@@ -253,31 +255,97 @@ function initWebGL() {
     program: shaderProgram,
     attribLocations: {
       vertexPosition: gl.getAttribLocation(shaderProgram, "aVertexPosition"),
-      vertexColor: gl.getAttribLocation(shaderProgram, "aVertexColor")
+      vertexColor: gl.getAttribLocation(shaderProgram, "aVertexColor"),
     },
     uniformLocations: {
       projectionMatrix: gl.getUniformLocation(shaderProgram, "uProjectionMatrix"),
       modelViewMatrix: gl.getUniformLocation(shaderProgram, "uModelViewMatrix"),
-      yOffset: gl.getUniformLocation(shaderProgram, "uYOffset")
+      yOffset: gl.getUniformLocation(shaderProgram, "uYOffset"),
       // Remove saturation uniform
-    }
+    },
   }
 
   // Create cube geometry
   function initBuffers(gl) {
     const positions = [
       // Front face
-      -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5, 0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
       // Back face
-      -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5, -0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
       // Top face
-      -0.5, 0.5, -0.5, -0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, 0.5, -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      -0.5,
       // Bottom face
-      -0.5, -0.5, -0.5, 0.5, -0.5, -0.5, 0.5, -0.5, 0.5, -0.5, -0.5, 0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
       // Right face
-      0.5, -0.5, -0.5, 0.5, 0.5, -0.5, 0.5, 0.5, 0.5, 0.5, -0.5, 0.5,
+      0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
       // Left face
-      -0.5, -0.5, -0.5, -0.5, -0.5, 0.5, -0.5, 0.5, 0.5, -0.5, 0.5, -0.5
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      -0.5,
+      0.5,
+      -0.5,
+      0.5,
+      0.5,
+      -0.5,
+      0.5,
+      -0.5,
     ]
 
     const positionBuffer = gl.createBuffer()
@@ -325,7 +393,7 @@ function initWebGL() {
       22,
       20,
       22,
-      23 // left
+      23, // left
     ]
 
     const indexBuffer = gl.createBuffer()
@@ -335,7 +403,7 @@ function initWebGL() {
     return {
       position: positionBuffer,
       color: colorBuffer,
-      indices: indexBuffer
+      indices: indexBuffer,
     }
   }
 
@@ -379,8 +447,9 @@ function initWebGL() {
       const progress = Math.min(elapsed / ROTATION_DURATION, 1)
 
       // Smooth easing function
-      let easeProgress =
-        progress < 0.5 ? (progress * 2) ** EASE_POWER / 2 : 1 - (2 - progress * 2) ** EASE_POWER / 2
+      let easeProgress = progress < 0.5
+        ? (progress * 2) ** EASE_POWER / 2
+        : 1 - (2 - progress * 2) ** EASE_POWER / 2
 
       // Smoothly update rotation
       const rotationDelta = targetPlaneRotation - initialRotation
@@ -393,9 +462,8 @@ function initWebGL() {
         if (queuedRotations > 0) {
           rotationStartTime = performance.now()
           initialRotation = currentPlaneRotation
-          targetPlaneRotation =
-            currentPlaneRotation +
-            (currentRotationDirection === "right" ? Math.PI / 2 : -Math.PI / 2)
+          targetPlaneRotation = currentPlaneRotation
+            + (currentRotationDirection === "right" ? Math.PI / 2 : -Math.PI / 2)
         } else {
           isRotating = false
           currentRotationDirection = "right"
@@ -408,14 +476,15 @@ function initWebGL() {
       const progress = Math.min(elapsed / COLOR_TRANSITION_DURATION, 1)
 
       // Smooth easing function
-      let easeProgress =
-        progress < 0.5 ? (progress * 2) ** EASE_POWER / 2 : 1 - (2 - progress * 2) ** EASE_POWER / 2
+      let easeProgress = progress < 0.5
+        ? (progress * 2) ** EASE_POWER / 2
+        : 1 - (2 - progress * 2) ** EASE_POWER / 2
 
       // Update current colors
       currentColors = {
         primary: lerpColor(currentColors.primary, targetColors.primary, easeProgress),
         mid: lerpColor(currentColors.mid, targetColors.mid, easeProgress),
-        dark: lerpColor(currentColors.dark, targetColors.dark, easeProgress)
+        dark: lerpColor(currentColors.dark, targetColors.dark, easeProgress),
       }
 
       if (progress >= 1) {
@@ -452,7 +521,7 @@ function initWebGL() {
         type,
         normalize,
         stride,
-        offset
+        offset,
       )
       gl.enableVertexAttribArray(programInfo.attribLocations.vertexPosition)
     }
@@ -470,7 +539,7 @@ function initWebGL() {
         type,
         normalize,
         stride,
-        offset
+        offset,
       )
       gl.enableVertexAttribArray(programInfo.attribLocations.vertexColor)
     }
@@ -575,10 +644,10 @@ function initWebGL() {
     const rect = canvas.getBoundingClientRect()
 
     if (
-      event.clientX < rect.left ||
-      event.clientX > rect.right ||
-      event.clientY < rect.top ||
-      event.clientY > rect.bottom
+      event.clientX < rect.left
+      || event.clientX > rect.right
+      || event.clientY < rect.top
+      || event.clientY > rect.bottom
     ) {
       return
     }
@@ -595,7 +664,7 @@ function initWebGL() {
     if (touch) {
       const mouseEvent = new MouseEvent("mousemove", {
         clientX: touch.clientX,
-        clientY: touch.clientY
+        clientY: touch.clientY,
       })
       updateMousePosition(mouseEvent)
     }
@@ -615,7 +684,7 @@ function generateColors(colorSet) {
     colorSet.primary, // Top face
     colorSet.primary, // Bottom face
     colorSet.dark, // Right face
-    colorSet.dark // Left face
+    colorSet.dark, // Left face
   ]
 
   let colors: Array<number> = []

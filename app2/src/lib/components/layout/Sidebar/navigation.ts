@@ -1,9 +1,9 @@
-import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
+import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
+import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
+import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
-import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
-import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
-import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
+import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
 import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
 import type { Component } from "svelte"
 
@@ -36,20 +36,20 @@ export const navigation: Array<NavSection> = [
         subroutes: [
           {
             path: "/transfer/multisig",
-            title: "Keplr Multisig"
+            title: "Keplr Multisig",
           },
           {
             path: "/transfers",
-            title: "History"
+            title: "History",
           },
           {
             path: "/faucet",
             title: "Faucets",
-            editions: ["app"]
-          }
-        ]
-      }
-    ]
+            editions: ["app"],
+          },
+        ],
+      },
+    ],
   },
   {
     items: [
@@ -60,16 +60,16 @@ export const navigation: Array<NavSection> = [
         subroutes: [
           {
             path: "/explorer/transfers",
-            title: "Transfers"
+            title: "Transfers",
           },
           {
             path: "/explorer/packets",
-            title: "Packets"
+            title: "Packets",
           },
           {
             path: "/explorer/find-packet",
-            title: "Find Packet"
-          }
+            title: "Find Packet",
+          },
           // {
           //   path: "/explorer/connections",
           //   title: "Connections"
@@ -82,9 +82,9 @@ export const navigation: Array<NavSection> = [
           //   path: "/explorer/clients",
           //   title: "Clients"
           // }
-        ]
-      }
-    ]
+        ],
+      },
+    ],
   },
   {
     title: "Developer",
@@ -92,29 +92,29 @@ export const navigation: Array<NavSection> = [
       {
         path: "/transfer/native",
         title: "Transfer Native",
-        icon: SharpTransferIcon
+        icon: SharpTransferIcon,
       },
       {
         path: "/dashboard",
         title: "Dashboard",
-        icon: SharpDashboardIcon
+        icon: SharpDashboardIcon,
       },
       {
         path: "/stake",
         title: "Stake with Escher",
-        icon: SharpStakeIcon
+        icon: SharpStakeIcon,
       },
       {
         path: "/balances",
         title: "Your Balances",
-        icon: OutlineControlPointDuplicate
+        icon: OutlineControlPointDuplicate,
       },
       {
         path: "/explorer/tokens",
         title: "Tokens",
-        icon: OutlineControlPointDuplicate
-      }
-    ]
+        icon: OutlineControlPointDuplicate,
+      },
+    ],
   },
   {
     title: "More Union",
@@ -123,20 +123,20 @@ export const navigation: Array<NavSection> = [
         path: "https://dashboard.union.build",
         title: "Dashboard",
         icon: SharpDashboardIcon,
-        external: true
+        external: true,
       },
       {
         path: "https://discord.union.build",
         title: "Discord",
         icon: DiscordIcon,
-        external: true
+        external: true,
       },
       {
         path: "https://x.com/@union_build",
         title: "@union_build",
         icon: TwitterIcon,
-        external: true
-      }
-    ]
-  }
+        external: true,
+      },
+    ],
+  },
 ]

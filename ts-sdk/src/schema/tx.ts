@@ -5,7 +5,7 @@ import { Uint128 } from "./uint128.js"
 export const Coin = S.Struct({ denom: S.String, amount: Uint128 })
 
 export const Msg = S.Struct({
-  "@type": S.String
+  "@type": S.String,
 })
 
 export const MsgExecuteContract = S.extend(
@@ -14,8 +14,8 @@ export const MsgExecuteContract = S.extend(
     sender: Bech32,
     contract: Bech32,
     msg: S.Any,
-    funds: S.Array(Coin)
-  })
+    funds: S.Array(Coin),
+  }),
 )
 
 // This message: https://github.com/cosmos/cosmos-sdk/blob/ccd37e1d993ba3f220ea61d5e8dffd43a894f68c/proto/cosmos/tx/v1beta1/tx.proto#L15-L28
@@ -23,8 +23,8 @@ export const MsgExecuteContract = S.extend(
 // ...but hardcoded to only contain MsgExecuteContract. Intended for multisig signing in multisig.keplr.app.
 export const Tx = S.Struct({
   body: S.Struct({
-    messages: S.NonEmptyArray(MsgExecuteContract)
-  })
+    messages: S.NonEmptyArray(MsgExecuteContract),
+  }),
 })
 
 export type Coin = typeof Coin.Type

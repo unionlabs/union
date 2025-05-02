@@ -1,31 +1,31 @@
 import { Effect } from "effect"
-import { ViemPublicClientDestination } from "../src/evm/client.js"
 import { createPublicClient, http, parseEther } from "viem"
 import { sepolia } from "viem/chains"
-import { DestinationConfig } from "../src/evm/quote-token.js"
-import { createCosmosToEvmFungibleAssetOrder } from "../src/evm/ucs03/fungible-asset-order.js"
 import {
   CosmWasmClientContext,
   CosmWasmClientSource,
-  createCosmWasmClient
+  createCosmWasmClient,
 } from "../src/cosmos/client.js"
-import { readCw20TokenInfo, readCw20Balance } from "../src/cosmos/cw20.js"
+import { readCw20Balance, readCw20TokenInfo } from "../src/cosmos/cw20.js"
+import { ViemPublicClientDestination } from "../src/evm/client.js"
+import { DestinationConfig } from "../src/evm/quote-token.js"
+import { createCosmosToEvmFungibleAssetOrder } from "../src/evm/ucs03/fungible-asset-order.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
 // Cosmos to EVM transfer example
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create a CosmWasm client for the source chain (Stargaze testnet)
     const cosmosClient = yield* createCosmWasmClient("https://rpc.elgafar-1.stargaze-apis.com")
 
     // Create an EVM client for the destination chain (Sepolia)
     const evmClient = createPublicClient({
       chain: sepolia,
-      transport: http()
+      transport: http(),
     })
 
     // Define the token contract and addresses
@@ -35,11 +35,11 @@ Effect.runPromiseExit(
 
     // Check the sender's balance before transfer
     const tokenInfo = yield* readCw20TokenInfo(cw20TokenAddress).pipe(
-      Effect.provideService(CosmWasmClientContext, { client: cosmosClient })
+      Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
     )
 
     const balance = yield* readCw20Balance(cw20TokenAddress, senderAddress).pipe(
-      Effect.provideService(CosmWasmClientContext, { client: cosmosClient })
+      Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
     )
 
     console.log(`Token: ${tokenInfo.name} (${tokenInfo.symbol})`)
@@ -54,20 +54,20 @@ Effect.runPromiseExit(
       receiver: receiverAddress,
       baseToken: cw20TokenAddress,
       baseAmount: transferAmount,
-      quoteAmount: quoteAmount
+      quoteAmount: quoteAmount,
     }).pipe(
       Effect.provideService(CosmWasmClientSource, { client: cosmosClient }),
       Effect.provideService(ViemPublicClientDestination, { client: evmClient }),
       Effect.provideService(DestinationConfig, {
         ucs03address: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
-        channelId: 8
-      })
+        channelId: 8,
+      }),
     )
 
     return {
       tokenInfo,
       senderBalance: balance,
-      order
+      order,
     }
-  })
+  }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

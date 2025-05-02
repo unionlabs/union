@@ -1,22 +1,22 @@
 <script lang="ts">
-import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
-import {
-  createContextState,
-  CreateContextState,
-  type StateResult
-} from "$lib/transfer/multisig/services/filling"
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { constVoid, pipe } from "effect/Function"
-import { FillingStep, MessageStep, Steps } from "$lib/transfer/multisig/steps"
+import { beforeNavigate } from "$app/navigation"
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
-import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import { fly } from "svelte/transition"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { beforeNavigate } from "$app/navigation"
 import transfer from "$lib/transfer/index.svelte"
+import {
+  CreateContextState,
+  createContextState,
+  type StateResult,
+} from "$lib/transfer/multisig/services/filling"
+import { FillingStep, MessageStep, Steps } from "$lib/transfer/multisig/steps"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import type { ContextFlowError } from "$lib/transfer/shared/errors"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
+import { constVoid, pipe } from "effect/Function"
+import { fly } from "svelte/transition"
 let currentPage = $state(0)
 let previousPage = $state(0)
 let isLoading = $state(true)
@@ -29,10 +29,10 @@ let direction = $derived(currentPage > previousPage ? 1 : -1)
 
 const currentStep = $derived(
   pipe(
-    steps, //[currentPage]
+    steps, // [currentPage]
     Option.flatMap(Arr.get(currentPage)),
-    Option.getOrElse(() => Steps.Filling())
-  )
+    Option.getOrElse(() => Steps.Filling()),
+  ),
 )
 
 function goToNextPage() {
@@ -50,7 +50,9 @@ function goToPreviousPage() {
 }
 
 function handleActionButtonClick() {
-  if (Option.isNone(steps)) return
+  if (Option.isNone(steps)) {
+    return
+  }
   const currentStep = steps.value[currentPage]
 
   if (Steps.is("Filling")(currentStep)) {
@@ -58,18 +60,22 @@ function handleActionButtonClick() {
     return
   }
 
-  if (Steps.is("CheckMessage")(currentStep)) goToNextPage()
+  if (Steps.is("CheckMessage")(currentStep)) {
+    goToNextPage()
+  }
 }
 
 $effect(() => {
-  if (currentPage !== 0) return
+  if (currentPage !== 0) {
+    return
+  }
   interruptFiber()
 
   isLoading = true
   steps = Option.none()
   errors = Option.none()
 
-  const machineEffect = Effect.gen(function* () {
+  const machineEffect = Effect.gen(function*() {
     let currentState: CreateContextState = CreateContextState.Filling()
     let context: TransferContext
 
@@ -100,8 +106,8 @@ $effect(() => {
     steps = Option.some([
       Steps.Filling(),
       Steps.CheckMessage({
-        context
-      })
+        context,
+      }),
     ])
     isLoading = false
     currentFiber = Option.none()
@@ -116,7 +122,7 @@ $effect(() => {
 function interruptFiber() {
   Option.match(currentFiber, {
     onNone: constVoid,
-    onSome: fiber => Fiber.interruptFork(fiber)
+    onSome: fiber => Fiber.interruptFork(fiber),
   })
   currentFiber = Option.none()
 }
@@ -150,11 +156,11 @@ $effect(() => {
       currentStep={currentPage + 1}
       totalSteps={steps.pipe(
         Option.map(ts => ts.length),
-        Option.getOrElse(() => 1)
+        Option.getOrElse(() => 1),
       )}
       stepDescriptions={steps.pipe(
         Option.map(ts => ts.map(Steps.description)),
-        Option.getOrElse(() => ["Configure your transfer"])
+        Option.getOrElse(() => ["Configure your transfer"]),
       )}
     />
   </div>
@@ -163,15 +169,15 @@ $effect(() => {
     {#if currentPage === 0}
       <div
         class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
-        out:fly={{ x: direction * -382, duration:300 }}
-        in:fly ={{ x: direction * 382, duration:300 }}
+        out:fly={{ x: direction * -382, duration: 300 }}
+        in:fly={{ x: direction * 382, duration: 300 }}
       >
         <FillingStep
           onContinue={handleActionButtonClick}
           {statusMessage}
           {errors}
           onErrorClose={() => {
-        }}
+          }}
           loading={isLoading}
         />
       </div>
@@ -179,8 +185,8 @@ $effect(() => {
     {#if Steps.is("CheckMessage")(currentStep)}
       <div
         class="flex grow col-start-1 col-end-2 row-start-1 row-end-2"
-        out:fly={{ x: direction * -382, duration:300 }}
-        in:fly ={{ x: direction * 382, duration:300 }}
+        out:fly={{ x: direction * -382, duration: 300 }}
+        in:fly={{ x: direction * 382, duration: 300 }}
       >
         <MessageStep
           stepIndex={currentPage + 1}

@@ -1,9 +1,9 @@
-import { Chains } from "@unionlabs/sdk/schema"
+import type { Environment } from "$lib/constants"
+import { chains } from "$lib/stores/chains.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
+import { Chains } from "@unionlabs/sdk/schema"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { chains } from "$lib/stores/chains.svelte"
-import type { Environment } from "$lib/constants"
 
 export const chainsQuery = (environment: Environment) =>
   createQueryGraphql({
@@ -53,5 +53,5 @@ export const chainsQuery = (environment: Environment) =>
     },
     writeError: error => {
       chains.error = error
-    }
+    },
   })

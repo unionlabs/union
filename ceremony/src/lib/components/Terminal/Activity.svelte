@@ -1,7 +1,7 @@
 <script lang="ts">
 import Print from "$lib/components/Terminal/Print.svelte"
-import { onDestroy, onMount } from "svelte"
 import { Activity } from "$lib/state/activity.svelte.ts"
+import { onDestroy, onMount } from "svelte"
 
 let activity: Activity | null = $state(null)
 
@@ -20,12 +20,12 @@ function formatTimestamp(timestamp: string): string {
   const time = date.toLocaleString("en-GB", {
     hour: "2-digit",
     minute: "2-digit",
-    hour12: false
+    hour12: false,
   })
   const datePart = date.toLocaleString("en-GB", {
     day: "2-digit",
     month: "2-digit",
-    year: "numeric"
+    year: "numeric",
   })
   return `${time} | ${datePart}`
 }

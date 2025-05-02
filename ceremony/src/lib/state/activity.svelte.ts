@@ -1,6 +1,6 @@
 import { supabase } from "$lib/supabase/client"
-import { onDestroy } from "svelte"
 import type { RealtimeChannel, RealtimePostgresInsertPayload } from "@supabase/supabase-js"
+import { onDestroy } from "svelte"
 
 export class Activity {
   #subscription: RealtimeChannel
@@ -36,10 +36,10 @@ export class Activity {
         {
           event: "INSERT",
           schema: "public",
-          table: "log"
+          table: "log",
         },
         (payload: RealtimePostgresInsertPayload<{ message: string; created_at: string }>) =>
-          this.#handleInserts(payload.new)
+          this.#handleInserts(payload.new),
       )
       .subscribe()
   }

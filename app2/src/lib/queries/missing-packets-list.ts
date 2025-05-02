@@ -1,10 +1,10 @@
 // src/lib/queries/transfer-list-expired-window.ts
-import { Effect, Option } from "effect"
-import { fetchDecodeGraphql } from "$lib/utils/queries"
-import { graphql } from "gql.tada"
-import { Schema } from "effect"
-import { PacketList } from "@unionlabs/sdk/schema"
 import { incompletePacketsList } from "$lib/stores/incomplete-packets.svelte"
+import { fetchDecodeGraphql } from "$lib/utils/queries"
+import { PacketList } from "@unionlabs/sdk/schema"
+import { Effect, Option } from "effect"
+import { Schema } from "effect"
+import { graphql } from "gql.tada"
 
 const missingAckDoc = graphql(`
   query MissingPackets(
@@ -36,7 +36,7 @@ const missingAckDoc = graphql(`
  * and which still have an ACK‐trace with `transaction_hash == null`.
  */
 export function missingPackets(exceedingSla: string) {
-  return Effect.gen(function* () {
+  return Effect.gen(function*() {
     console.info("Fetching missing packets...")
     let cursor: string | undefined
     let found: typeof PacketList.Type = []
@@ -46,10 +46,12 @@ export function missingPackets(exceedingSla: string) {
       const page = yield* fetchDecodeGraphql(
         Schema.Struct({ v2_packets: PacketList }),
         missingAckDoc,
-        { sortOrder: cursor, exceedingSla: exceedingSla }
+        { sortOrder: cursor, exceedingSla: exceedingSla },
       )
       const txs = page.v2_packets
-      if (txs.length === 0) break
+      if (txs.length === 0) {
+        break
+      }
 
       found.push(...txs)
 
@@ -75,8 +77,8 @@ export function missingPacketListPage(exceedingSla: string) {
         onFailure: err =>
           Effect.sync(() => {
             incompletePacketsList.error = Option.some(err)
-          })
-      })
-    )
+          }),
+      }),
+    ),
   )
 }

@@ -16,10 +16,12 @@ window.addEventListener(
     try {
       const url = new URL(window.location.href)
       const anchorWrapper = await isElementLoaded(CSS.escape(url.hash).slice(1))
-      if (anchorWrapper) anchorWrapper?.scrollIntoView({ behavior: "smooth" })
+      if (anchorWrapper) {
+        anchorWrapper?.scrollIntoView({ behavior: "smooth" })
+      }
     } catch {
       /* empty */
     }
   },
-  { once: true }
+  { once: true },
 )

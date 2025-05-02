@@ -1,8 +1,8 @@
 import { env } from "#/lib/constants/env.ts"
-import { createClient, type Entry } from "contentful"
 import { ContentfulLivePreview } from "@contentful/live-preview"
 import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
-import { BLOCKS, INLINES, MARKS, type Document } from "@contentful/rich-text-types"
+import { BLOCKS, type Document, INLINES, MARKS } from "@contentful/rich-text-types"
+import { createClient, type Entry } from "contentful"
 
 export type ConfigOptions = {
   locale: string
@@ -17,18 +17,18 @@ export function initializeContentfulLivePreview({
   fields,
   entryId,
   debugMode,
-  subscriptions
+  subscriptions,
 }: ConfigOptions) {
   const contentfulClient = createClient({
     space: env.CONTENTFUL_SPACE_ID,
     host: "preview.contentful.com",
-    accessToken: env.CONTENTFUL_ACCESS_TOKEN
+    accessToken: env.CONTENTFUL_ACCESS_TOKEN,
   })
   ContentfulLivePreview.init({
     locale,
     debugMode,
     enableLiveUpdates: true,
-    enableInspectorMode: true
+    enableInspectorMode: true,
   })
 
   contentfulClient
@@ -46,7 +46,7 @@ export function setupLivePreview({
   entry,
   entryId,
   fieldId,
-  subscriptions
+  subscriptions,
 }: {
   entry: Entry
   entryId: string
@@ -55,7 +55,9 @@ export function setupLivePreview({
 }) {
   const callback = (updatedData: any) => {
     const domElement = findElementByDataAttribute({ entryId, fieldId })
-    if (!domElement) return
+    if (!domElement) {
+      return
+    }
     if (domElement && updatedData.fields && updatedData.fields[fieldId]) {
       // Check if the content is text
       if (typeof updatedData.fields[fieldId] === "string") {
@@ -65,7 +67,9 @@ export function setupLivePreview({
       // Check if the content is rich text
       if (updatedData.fields[fieldId].nodeType === "document") {
         const document = updatedData.fields[fieldId]
-        if (!document) return
+        if (!document) {
+          return
+        }
         domElement.innerHTML = documentToHtmlString(document, {
           preserveWhitespace: true,
           renderMark: {
@@ -75,7 +79,7 @@ export function setupLivePreview({
             [MARKS["STRIKETHROUGH"]]: text => `<s>${text}</s>`,
             [MARKS["SUBSCRIPT"]]: text => `<sub>${text}</sub>`,
             [MARKS["BOLD"]]: text => `<strong>${text}</strong>`,
-            [MARKS["SUPERSCRIPT"]]: text => `<sup>${text}</sup>`
+            [MARKS["SUPERSCRIPT"]]: text => `<sup>${text}</sup>`,
           },
           renderNode: {
             [BLOCKS["HEADING_1"]]: (node, next) => `<h1>${next(node.content)}</h1>`,
@@ -91,7 +95,9 @@ export function setupLivePreview({
             [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) => `<th>${next(node.content)}</th>`,
             [BLOCKS["QUOTE"]]: (node, next) => `<blockquote>${next(node.content)}</blockquote>`,
             [BLOCKS["PARAGRAPH"]]: (node, next) =>
-              `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">iiii${next(node.content)}</p>`,
+              `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">iiii${
+                next(node.content)
+              }</p>`,
             [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
             [BLOCKS["OL_LIST"]]: (node, next) => `<ol>${next(node.content)}</ol>`,
             [BLOCKS["EMBEDDED_ASSET"]]: asset => {
@@ -101,12 +107,18 @@ export function setupLivePreview({
               return `<Image src="${imageUrl}" alt="${dataFields.title}" width={${width}} height={${height}} />`
             },
             [INLINES["HYPERLINK"]]: params => /* html */ `
-                  <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+                  <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${
+              (params.content.at(0) as any)?.value
+            }</a>`,
             [INLINES["ENTRY_HYPERLINK"]]: params => /* html */ `
-                    <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+                    <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${
+              (params.content.at(0) as any)?.value
+            }</a>`,
             [INLINES["ASSET_HYPERLINK"]]: params => /* html */ `
-                    <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
-          }
+                    <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${
+              (params.content.at(0) as any)?.value
+            }</a>`,
+          },
         })
       }
     }
@@ -114,23 +126,27 @@ export function setupLivePreview({
   const unsubscribe = ContentfulLivePreview.subscribe({
     callback,
     data: entry,
-    locale: "en-US"
+    locale: "en-US",
   })
 
-  if (!subscriptions) throw new Error("subscriptions is undefined")
+  if (!subscriptions) {
+    throw new Error("subscriptions is undefined")
+  }
   subscriptions.push(unsubscribe)
 }
 
 export function findElementByDataAttribute({
   entryId,
-  fieldId
+  fieldId,
 }: {
   entryId: string
   fieldId: string
 }) {
-  if (typeof document === "undefined") return
+  if (typeof document === "undefined") {
+    return
+  }
   return document.querySelector(
-    `[data-contentful-entry-id="${entryId}"][data-contentful-field-id="${fieldId}"]`
+    `[data-contentful-entry-id="${entryId}"][data-contentful-field-id="${fieldId}"]`,
   )
 }
 
@@ -139,7 +155,7 @@ export const imageWithProtocol = (url: string) => `https:${url}`
 export function displayFieldData<T extends Entry>({
   entry,
   fieldId,
-  entryId
+  entryId,
 }: {
   entry: T
   fieldId: string
@@ -152,7 +168,9 @@ export function displayFieldData<T extends Entry>({
     return
   }
 
-  if (typeof document === "undefined") return
+  if (typeof document === "undefined") {
+    return
+  }
 
   const field = entry.fields[fieldId]
   if (!field) {
@@ -162,7 +180,9 @@ export function displayFieldData<T extends Entry>({
   if (typeof field === "string") {
     domElement.textContent = field
   }
-  if ((field as Document)?.nodeType !== "document") return
+  if ((field as Document)?.nodeType !== "document") {
+    return
+  }
 
   domElement.innerHTML = documentToHtmlString(field as Document, {
     preserveWhitespace: true,
@@ -173,7 +193,7 @@ export function displayFieldData<T extends Entry>({
       [MARKS["STRIKETHROUGH"]]: text => `<s>${text}</s>`,
       [MARKS["SUBSCRIPT"]]: text => `<sub>${text}</sub>`,
       [MARKS["BOLD"]]: text => `<strong>${text}</strong>`,
-      [MARKS["SUPERSCRIPT"]]: text => `<sup>${text}</sup>`
+      [MARKS["SUPERSCRIPT"]]: text => `<sup>${text}</sup>`,
     },
     renderNode: {
       [BLOCKS["HEADING_1"]]: (node, next) => {
@@ -211,7 +231,9 @@ export function displayFieldData<T extends Entry>({
       [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) => `<th>${next(node.content)}</th>`,
       [BLOCKS["QUOTE"]]: (node, next) => `<blockquote>${next(node.content)}</blockquote>`,
       [BLOCKS["PARAGRAPH"]]: (node, next) =>
-        `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${next(node.content)}</p>`,
+        `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${
+          next(node.content)
+        }</p>`,
       [BLOCKS["EMBEDDED_ASSET"]]: asset => {
         const dataFields = asset.data.target.fields
         const imageUrl = imageWithProtocol(dataFields.file.url)
@@ -219,11 +241,17 @@ export function displayFieldData<T extends Entry>({
         return `<img src="${imageUrl}?fm=avif&w=1366" alt="${dataFields.title}"></img>`
       },
       [INLINES["HYPERLINK"]]: params => /* html */ `
-                  <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+                  <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${
+        (params.content.at(0) as any)?.value
+      }</a>`,
       [INLINES["ENTRY_HYPERLINK"]]: params => /* html */ `
-                    <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`,
+                    <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${
+        (params.content.at(0) as any)?.value
+      }</a>`,
       [INLINES["ASSET_HYPERLINK"]]: params => /* html */ `
-                    <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${(params.content.at(0) as any)?.value}</a>`
-    }
+                    <a target="_blank" href="${params.data.uri}" rel="noopener noreferrer">${
+        (params.content.at(0) as any)?.value
+      }</a>`,
+    },
   })
 }

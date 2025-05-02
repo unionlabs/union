@@ -3,6 +3,6 @@ interface BigInt {
   toJSON: () => string
 }
 
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }

@@ -5,7 +5,7 @@ import type {
   CreateWalletClientErrorType,
   SendTransactionErrorType,
   SwitchChainErrorType,
-  WaitForTransactionReceiptErrorType
+  WaitForTransactionReceiptErrorType,
 } from "viem"
 
 export class CreateWalletClientError extends Data.TaggedError("CreateWalletClientError")<{
@@ -13,7 +13,7 @@ export class CreateWalletClientError extends Data.TaggedError("CreateWalletClien
 }> {}
 
 export class WaitForTransactionReceiptError extends Data.TaggedError(
-  "WaitForTransactionReceiptError"
+  "WaitForTransactionReceiptError",
 )<{
   cause: WaitForTransactionReceiptErrorType
 }> {}

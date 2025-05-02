@@ -1,22 +1,22 @@
+import { GenerateMultisigError } from "$lib/transfer/shared/errors"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
+import { instructionAbi } from "@unionlabs/sdk/evm/abi"
+import { Tx } from "@unionlabs/sdk/schema"
+import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
+import { generateSalt } from "@unionlabs/sdk/utils"
+import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 import { Effect, Option, pipe } from "effect"
 import * as S from "effect/Schema"
-import { Tx } from "@unionlabs/sdk/schema"
 import { encodeAbiParameters } from "viem"
-import { instructionAbi } from "@unionlabs/sdk/evm/abi"
-import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import { generateSalt } from "@unionlabs/sdk/utils"
-import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
-import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
-import { GenerateMultisigError } from "$lib/transfer/shared/errors"
 
 export const createMultisigMessage = (context: TransferContext) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     console.log("[generateMultisigTx] intent:", JSON.parse(JSON.stringify(context)))
 
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
     const sender = yield* context.intents[0].sourceChain.getDisplayAddress(
-      context.intents[0].sender
+      context.intents[0].sender,
     )
     const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
     const salt = yield* generateSalt("cosmos")
@@ -35,20 +35,20 @@ export const createMultisigMessage = (context: TransferContext) =>
               {
                 "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
                 sender,
-                contract: allowance.token,
-                msg: {
+                "contract": allowance.token,
+                "msg": {
                   increase_allowance: {
                     spender: intent.sourceChain.minter_address_display,
-                    amount: allowance.requiredAmount
-                  }
+                    amount: allowance.requiredAmount,
+                  },
                 },
-                funds: []
-              }
+                "funds": [],
+              },
             ]
           })
         })
       ),
-      Option.getOrElse(() => [])
+      Option.getOrElse(() => []),
     )
 
     const instructionMsgs = pipe(
@@ -63,7 +63,7 @@ export const createMultisigMessage = (context: TransferContext) =>
           const encodedInstruction = encodeAbiParameters(instructionAbi, [
             instruction.version,
             instruction.opcode,
-            encodeAbi(instruction)
+            encodeAbi(instruction),
           ])
 
           console.log("[isNative] ", isNative)
@@ -72,28 +72,28 @@ export const createMultisigMessage = (context: TransferContext) =>
           return {
             "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
             sender,
-            contract: intent.ucs03address,
-            msg: {
+            "contract": intent.ucs03address,
+            "msg": {
               send: {
                 channel_id: intent.sourceChannelId,
                 timeout_height: "0",
                 timeout_timestamp: timeoutTimestamp,
                 salt,
-                instruction: encodedInstruction
-              }
+                instruction: encodedInstruction,
+              },
             },
-            funds: isNative
+            "funds": isNative
               ? [
-                  {
-                    denom: intent.baseToken,
-                    amount: intent.baseAmount
-                  }
-                ]
-              : []
+                {
+                  denom: intent.baseToken,
+                  amount: intent.baseAmount,
+                },
+              ]
+              : [],
           }
         })
       }),
-      Option.getOrElse(() => [])
+      Option.getOrElse(() => []),
     )
 
     const allMsgs = [...allowanceMsgs, ...instructionMsgs]
@@ -102,8 +102,8 @@ export const createMultisigMessage = (context: TransferContext) =>
 
     const encoded = txToJson({
       body: {
-        messages: allMsgs
-      }
+        messages: allMsgs,
+      },
     })
 
     return yield* encoded
@@ -114,8 +114,8 @@ export const createMultisigMessage = (context: TransferContext) =>
       return Effect.fail(
         new GenerateMultisigError({
           reason: "Failed to generate multisig tx",
-          cause
-        })
+          cause,
+        }),
       )
-    })
+    }),
   )

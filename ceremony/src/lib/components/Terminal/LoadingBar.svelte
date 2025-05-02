@@ -14,7 +14,7 @@ let progress = $derived(
     ? max === min
       ? 99.99
       : Math.min(((max - current) / (max - min)) * 100, 99.99)
-    : 0
+    : 0,
 )
 
 const TOTAL_SYMBOLS = 30

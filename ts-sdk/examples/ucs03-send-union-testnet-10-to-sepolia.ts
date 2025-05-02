@@ -1,27 +1,27 @@
+import { Decimal } from "@cosmjs/math"
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import { Instruction } from "@unionlabs/sdk/ucs03"
 import { Effect } from "effect"
-import {
-  ViemPublicClient,
-  createViemPublicClient,
-  ViemPublicClientDestination
-} from "../src/evm/client.js"
 import { http } from "viem"
 import { sepolia } from "viem/chains"
-import { createCosmosToEvmFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
+import { CosmosChannelSource } from "../src/cosmos/channel.js"
 import {
   CosmWasmClientSource,
-  SigningCosmWasmClientContext,
   createCosmWasmClient,
-  createSigningCosmWasmClient
+  createSigningCosmWasmClient,
+  SigningCosmWasmClientContext,
 } from "../src/cosmos/client.js"
-import { Instruction } from "@unionlabs/sdk/ucs03"
-import { sendInstructionCosmos } from "../src/ucs03/send-instruction.js"
 import { EvmChannelDestination } from "../src/evm/channel.js"
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
-import { CosmosChannelSource } from "../src/cosmos/channel.js"
-import { Decimal } from "@cosmjs/math"
+import {
+  createViemPublicClient,
+  ViemPublicClient,
+  ViemPublicClientDestination,
+} from "../src/evm/client.js"
+import { createCosmosToEvmFungibleAssetOrder } from "../src/ucs03/fungible-asset-order.js"
+import { sendInstructionCosmos } from "../src/ucs03/send-instruction.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
@@ -38,11 +38,11 @@ const TRANSFERS = [
     receiver: RECEIVER,
     baseToken: "muno",
     baseAmount: 100n,
-    quoteAmount: 100n
-  }
+    quoteAmount: 100n,
+  },
 ] as const
 
-const createBatch = Effect.gen(function* () {
+const createBatch = Effect.gen(function*() {
   yield* Effect.log("creating transfer 1")
   const transfer1 = yield* createCosmosToEvmFungibleAssetOrder(TRANSFERS[0])
 
@@ -50,7 +50,7 @@ const createBatch = Effect.gen(function* () {
 }).pipe(Effect.withLogSpan("batch creation"))
 
 // Check and increase allowances if needed
-const checkAndIncreaseAllowances = Effect.gen(function* () {
+const checkAndIncreaseAllowances = Effect.gen(function*() {
   const publicClient = (yield* ViemPublicClient).client
 
   yield* Effect.log("Checking token allowances...")
@@ -102,18 +102,18 @@ const checkAndIncreaseAllowances = Effect.gen(function* () {
 }).pipe(Effect.withLogSpan("allowance check and increase"))
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create clients and setup
     yield* Effect.log("transferring from sepolia to stargaze")
 
     yield* Effect.log("creating clients")
     const cosmWasmClientSource = yield* createCosmWasmClient(
-      "https://rpc.rpc-node.union-testnet-10.union.build"
+      "https://rpc.rpc-node.union-testnet-10.union.build",
     )
 
     const publicDestinationClient = yield* createViemPublicClient({
       chain: sepolia,
-      transport: http()
+      transport: http(),
     })
 
     // Create a wallet from mnemonic (in a real app, use a secure method to get this)
@@ -129,14 +129,14 @@ Effect.runPromiseExit(
       "https://rpc.rpc-node.union-testnet-10.union.build",
       wallet,
       {
-        gasPrice: { amount: Decimal.fromUserInput("1", 6), denom: "muno" }
-      }
+        gasPrice: { amount: Decimal.fromUserInput("1", 6), denom: "muno" },
+      },
     )
 
     yield* Effect.log("clients created")
 
     // Main effect: create the batch and send it
-    return yield* Effect.gen(function* () {
+    return yield* Effect.gen(function*() {
       yield* Effect.log("creating batch")
       const batch = yield* createBatch
       yield* Effect.log("batch created", JSON.stringify(batch, null, 2))
@@ -152,20 +152,20 @@ Effect.runPromiseExit(
     }).pipe(
       Effect.provideService(SigningCosmWasmClientContext, {
         client: signingClient,
-        address: firstAccount.address
+        address: firstAccount.address,
       }),
       Effect.provideService(CosmWasmClientSource, { client: cosmWasmClientSource }),
       Effect.provideService(ViemPublicClientDestination, { client: publicDestinationClient }),
       Effect.provideService(EvmChannelDestination, {
         ucs03address: "0xe33534b7f8D38C6935a2F6Ad35E09228dA239962",
-        channelId: 1
+        channelId: 1,
       }),
       Effect.provideService(CosmosChannelSource, {
         ucs03address: UCS03_ADDRESS,
-        channelId: 1
-      })
+        channelId: 1,
+      }),
     )
-  })
+  }),
 ).then(e => {
   console.log(JSON.stringify(e, null, 2))
   console.log(e)

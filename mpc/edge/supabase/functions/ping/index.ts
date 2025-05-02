@@ -7,15 +7,15 @@ const handler = async (request: Request): Promise<Response> => {
     return new Response(JSON.stringify("too bad"), {
       status: 403,
       headers: {
-        "Content-Type": "application/json"
-      }
+        "Content-Type": "application/json",
+      },
     })
   }
   const res = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${resendApiKey}`
+      "Authorization": `Bearer ${resendApiKey}`,
     },
     body: JSON.stringify({
       from: "Union Ceremony <alert@ceremony.union.build>",
@@ -34,15 +34,15 @@ const handler = async (request: Request): Promise<Response> => {
           Please go to <strong><a href="https://ceremony.union.build">ceremony.union.build</a></strong>, log in, and follow all steps on the page.<br/>
           If you do not follow all steps by the time your contribution slot arrives, <strong>you will lose your slot</strong>.
         </p>
-      `
-    })
+      `,
+    }),
   })
   const data = await res.json()
   return new Response(JSON.stringify(data), {
     status: 200,
     headers: {
-      "Content-Type": "application/json"
-    }
+      "Content-Type": "application/json",
+    },
   })
 }
 

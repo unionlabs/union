@@ -1,12 +1,12 @@
 <script lang="ts">
+import curlSvg from "#/assets/icons/curl.svg?raw"
+import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
+import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
+import * as Table from "#/components/svelte/ui/table/index.ts"
+import { cn } from "#/lib/shadcn.ts"
+import { graphqlQueryToCurl, splitArray } from "#/lib/utilities.ts"
 import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
-import { cn } from "#/lib/shadcn.ts"
-import curlSvg from "#/assets/icons/curl.svg?raw"
-import * as Table from "#/components/svelte/ui/table/index.ts"
-import { graphqlQueryToCurl, splitArray } from "#/lib/utilities.ts"
-import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
-import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
 const graphqlQuery = dedent /* GraphQL */`
     query ConnectionsForDocs {
@@ -21,7 +21,7 @@ const graphqlQuery = dedent /* GraphQL */`
 
 const curlCommand = graphqlQueryToCurl({
   query: graphqlQuery,
-  url: "https://development.graphql.union.build/v1/graphql"
+  url: "https://development.graphql.union.build/v1/graphql",
 })
 
 /**
@@ -51,8 +51,8 @@ async function fetchConnections() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      query: graphqlQuery
-    })
+      query: graphqlQuery,
+    }),
   })
   const json = await response.json()
   console.log(json)
@@ -64,7 +64,7 @@ async function fetchConnections() {
     item.source_universal_chain_id,
     item.destination_universal_chain_id,
     item.source_connection_id,
-    item.source_client_id
+    item.source_client_id,
   ]) as Array<Array<string>>
 
   return {
@@ -72,8 +72,8 @@ async function fetchConnections() {
       allRows: rows as Array<Array<string>>,
       total: rows.length,
       rowsChunks: splitArray({ array: rows, n: rowsPerPage }),
-      headers: ["source", "destination", "connection-id", "client-id"]
-    }
+      headers: ["source", "destination", "connection-id", "client-id"],
+    },
   }
 }
 </script>
@@ -97,7 +97,7 @@ async function fetchConnections() {
       onclick={event => {
         navigator.clipboard.writeText(curlCommand)
         const element = event.currentTarget
-        element.innerHTML = 'Copied!'
+        element.innerHTML = "Copied!"
         setTimeout(() => {
           element.innerHTML = curlSvg
         }, 1_000)
@@ -107,7 +107,7 @@ async function fetchConnections() {
       {@html curlSvg}
     </button>
 
-    <div class={cn('rounded-sm outline-[0.75px] w-1/2 my-auto')}>
+    <div class={cn("rounded-sm outline-[0.75px] w-1/2 my-auto")}>
       <input
         type="search"
         autocorrect="off"
@@ -117,7 +117,7 @@ async function fetchConnections() {
         placeholder="Search"
         bind:value={search}
         class={cn(
-          'py-1 px-2 rounded-sm focus:outline-accent-200 focus-visible:ring-0 w-full my-auto outline outline-1 outline-neutral-500/70',
+          "py-1 px-2 rounded-sm focus:outline-accent-200 focus-visible:ring-0 w-full my-auto outline outline-1 outline-neutral-500/70",
         )}
       />
     </div>
@@ -127,12 +127,12 @@ async function fetchConnections() {
     <Table.Header class="w-full">
       <Table.Row class="w-full">
         {#each headers as header, index}
-          {#if !header.includes('logo')}
+          {#if !header.includes("logo")}
             <Table.Head
               class={cn(
-                'text-nowrap uppercase',
-                index === 0 && 'w-[100px]',
-                index === headers.length - 1 && 'text-left',
+                "text-nowrap uppercase",
+                index === 0 && "w-[100px]",
+                index === headers.length - 1 && "text-left",
               )}
             >
               {header}
@@ -143,12 +143,12 @@ async function fetchConnections() {
     </Table.Header>
     <Table.Body class="w-full">
       {#each rows as row, rowIndex}
-        <Table.Row class={cn('w-full border-neutral-500')}>
+        <Table.Row class={cn("w-full border-neutral-500")}>
           {#each row as cell, cellIndex}
             <Table.Cell
               class={cn(
-                'border-neutral-500 text-right',
-                cellIndex === 0 && 'text-left font-medium w-[135px] text-nowrap',
+                "border-neutral-500 text-right",
+                cellIndex === 0 && "text-left font-medium w-[135px] text-nowrap",
               )}
             >
               {cell}
@@ -159,14 +159,21 @@ async function fetchConnections() {
     </Table.Body>
   </Table.Root>
 
-  <Pagination.Root {count} {perPage} siblingCount={0}>
+  <Pagination.Root
+    {count}
+    {perPage}
+    siblingCount={0}
+  >
     {#snippet children({ pages, currentPage })}
       <Pagination.Content class="px-0">
         <Pagination.Item>
-          <Pagination.PrevButton class="mr-2 mt-1" onclick={_ => (pageNumber = currentPage)} />
+          <Pagination.PrevButton
+            class="mr-2 mt-1"
+            onclick={_ => (pageNumber = currentPage)}
+          />
         </Pagination.Item>
         {#each pages as page (page.key)}
-          {#if page.type === 'ellipsis'}
+          {#if page.type === "ellipsis"}
             <Pagination.Item>
               <Pagination.Ellipsis />
             </Pagination.Item>
@@ -183,7 +190,10 @@ async function fetchConnections() {
           {/if}
         {/each}
         <Pagination.Item>
-          <Pagination.NextButton class="ml-2" onclick={_ => (pageNumber = currentPage)} />
+          <Pagination.NextButton
+            class="ml-2"
+            onclick={_ => (pageNumber = currentPage)}
+          />
         </Pagination.Item>
       </Pagination.Content>
     {/snippet}
@@ -193,29 +203,29 @@ async function fetchConnections() {
 {/await}
 
 <style lang="postcss">
-  :global(.sl-markdown-content table:not(:where(.not-content *))) {
-    display: table;
-  }
+:global(.sl-markdown-content table:not(:where(.not-content *))) {
+  display: table;
+}
 
-  :global(.sl-markdown-content th:not(:where(.not-content *))) {
-    border-bottom: 0.8px solid #a1a1ab;
-  }
+:global(.sl-markdown-content th:not(:where(.not-content *))) {
+  border-bottom: 0.8px solid #a1a1ab;
+}
 
-  :global(li::marker) {
-    color: transparent;
-  }
+:global(li::marker) {
+  color: transparent;
+}
 
-  :global(.rehype-pretty-copy) {
-    background-color: transparent;
-  }
+:global(.rehype-pretty-copy) {
+  background-color: transparent;
+}
 
-  :global(pre, figure) {
-    border-top: 0px solid transparent !important;
-  }
+:global(pre, figure) {
+  border-top: 0px solid transparent !important;
+}
 
-  :global(table) {
-    width: 100%;
-    min-width: 100%;
-    display: table;
-  }
+:global(table) {
+  width: 100%;
+  min-width: 100%;
+  display: table;
+}
 </style>

@@ -1,13 +1,13 @@
 <script lang="ts">
-import { getPublicHash } from "$lib/supabase"
+import { AddressForm, type ValidState } from "$lib/components/address"
+import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import Print from "$lib/components/Terminal/Print.svelte"
 import { getState } from "$lib/state/index.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
+import { getPublicHash } from "$lib/supabase"
+import { axiom } from "$lib/utils/axiom.ts"
 import { sleep } from "$lib/utils/utils.ts"
 import { onDestroy, onMount } from "svelte"
-import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
-import { axiom } from "$lib/utils/axiom.ts"
-import { user } from "$lib/state/session.svelte.ts"
-import Print from "$lib/components/Terminal/Print.svelte"
-import { AddressForm, type ValidState } from "$lib/components/address"
 
 type Actions = "tweet" | "view" | "wallet" | "back"
 
@@ -35,8 +35,9 @@ onMount(() => {
   terminal.updateHistory({ text: "Thank you!", replace: true })
   terminal.updateHistory({ text: "-------------" })
   terminal.updateHistory({
-    text: "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency.",
-    replace: true
+    text:
+      "Your contribution is complete. Thank you for securing the Union network. Tweet your cryptographic attestation for extra transparency.",
+    replace: true,
   })
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_thanks" }])
 })
@@ -49,7 +50,8 @@ async function shareOnTwitter() {
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "tweet" }])
   await sleep(2000)
   let url = `https://ceremony.union.build/contributions/${hash}`
-  const tweetText = `I just contributed to the @union_build Trusted Setup Ceremony, to secure its ZK circuit for trustless, decentralized interoperability. \n\nI attest to my contribution. My public key hash is: \n\n${url}\n\n#JoinTheUnion`
+  const tweetText =
+    `I just contributed to the @union_build Trusted Setup Ceremony, to secure its ZK circuit for trustless, decentralized interoperability. \n\nI attest to my contribution. My public key hash is: \n\n${url}\n\n#JoinTheUnion`
   const twitterIntentUrl = new URL("https://twitter.com/intent/tweet")
   twitterIntentUrl.searchParams.append("text", tweetText)
   window.open(twitterIntentUrl.toString(), "_blank")
@@ -76,15 +78,19 @@ onDestroy(() => {
 
 {#if showButtons}
   <Buttons
-          data={[{text: "Tweet your attestation", action: "tweet"}, {text: "View contributions", action: "view"}, {text: "Update wallet", action: "wallet"}]}
-          trigger={(value: Actions) => trigger(value)}/>
+    data={[{ text: "Tweet your attestation", action: "tweet" }, {
+      text: "View contributions",
+      action: "view",
+    }, { text: "Update wallet", action: "wallet" }]}
+    trigger={(value: Actions) => trigger(value)}
+  />
 {/if}
 
 {#if showInput}
   <Print>Enter your union or any cosmos address, or type "skip".</Print>
   {#if !contributor.userWallet || contributor.userWallet === "SKIPPED"}
     <Print>No wallet registered</Print>
-  {:else }
+  {:else}
     <Print>Registered: <span class="text-union-accent-500">{contributor.userWallet}</span></Print>
   {/if}
   <Print><br></Print>
@@ -92,6 +98,6 @@ onDestroy(() => {
     <div class="whitespace-nowrap">
       <Print>Enter address:</Print>
     </div>
-    <AddressForm {validation}/>
+    <AddressForm {validation} />
   </div>
 {/if}

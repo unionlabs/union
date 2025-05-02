@@ -5,8 +5,8 @@ export const pathConfigMap = {
       primary: hexToWebGL("#7ce9ff"),
       mid: hexToWebGL("#D0F7FF"),
       dark: hexToWebGL("#025C70"),
-      border: hexToRGB("#7ce9ff")
-    }
+      border: hexToRGB("#7ce9ff"),
+    },
   },
   "/learn": {
     index: 2,
@@ -14,8 +14,8 @@ export const pathConfigMap = {
       primary: hexToWebGL("#0d1e49"),
       mid: hexToWebGL("#040b18"),
       dark: hexToWebGL("#020c17"),
-      border: hexToRGB("#0d1e49")
-    }
+      border: hexToRGB("#0d1e49"),
+    },
   },
   "/ecosystem": {
     index: 3,
@@ -23,8 +23,8 @@ export const pathConfigMap = {
       primary: hexToWebGL("#3D3D3D"),
       mid: hexToWebGL("#151515"),
       dark: hexToWebGL("#2A2A2A"),
-      border: hexToRGB("#3D3D3D")
-    }
+      border: hexToRGB("#3D3D3D"),
+    },
   },
   "/blog": {
     index: 4,
@@ -32,8 +32,8 @@ export const pathConfigMap = {
       primary: hexToWebGL("#66919A"),
       mid: hexToWebGL("#4E737B"),
       dark: hexToWebGL("#2E4449"),
-      border: hexToRGB("#66919A")
-    }
+      border: hexToRGB("#66919A"),
+    },
   },
   "/team": {
     index: 5,
@@ -41,9 +41,9 @@ export const pathConfigMap = {
       primary: hexToWebGL("#FAF7F7"),
       mid: hexToWebGL("#B7B7B7"),
       dark: hexToWebGL("#7A7A7A"),
-      border: hexToRGB("#FAF7F7")
-    }
-  }
+      border: hexToRGB("#FAF7F7"),
+    },
+  },
 } as const
 
 function hexToWebGL(hex: string) {

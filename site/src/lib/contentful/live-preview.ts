@@ -1,5 +1,5 @@
-import { contentfulClient } from "./client.ts"
 import { ContentfulLivePreview } from "@contentful/live-preview"
+import { contentfulClient } from "./client.ts"
 
 type ConfigOptions = {
   locale: string
@@ -14,14 +14,14 @@ export function initializeContentfulLivePreview({
   fields,
   entryId,
   debugMode,
-  subscriptions
+  subscriptions,
 }: ConfigOptions) {
   ContentfulLivePreview.init({
     locale,
     debugMode,
     enableLiveUpdates: true,
     enableInspectorMode: true,
-    targetOrigin: "https://app.contentful.com"
+    targetOrigin: "https://app.contentful.com",
   })
 
   contentfulClient
@@ -40,7 +40,7 @@ export function setupLivePreview({
   entry,
   entryId,
   fieldId,
-  subscriptions
+  subscriptions,
 }: {
   entry: any
   entryId: string
@@ -50,10 +50,10 @@ export function setupLivePreview({
   const callback = (updatedData: any) => {
     const domElement = findElementByDataAttribute({ entryId, fieldId })
     if (
-      domElement &&
-      updatedData.fields &&
-      updatedData.fields[fieldId] &&
-      typeof updatedData.fields[fieldId] === "string"
+      domElement
+      && updatedData.fields
+      && updatedData.fields[fieldId]
+      && typeof updatedData.fields[fieldId] === "string"
     ) {
       domElement.textContent = updatedData.fields[fieldId]
     }
@@ -61,14 +61,16 @@ export function setupLivePreview({
   const unsubscribe = ContentfulLivePreview.subscribe({
     callback,
     data: entry,
-    locale: "en-US"
+    locale: "en-US",
   })
 
   subscriptions.push(unsubscribe)
 }
 
 function findElementByDataAttribute({ entryId, fieldId }: { entryId: string; fieldId: string }) {
-  if (typeof document === "undefined") return
+  if (typeof document === "undefined") {
+    return
+  }
   return document.querySelector(`[data-entry-id="${entryId}"][data-field-id="${fieldId}"]`)
 }
 
@@ -76,7 +78,7 @@ function displayFieldData({
   entry,
   client: _client,
   fieldId,
-  entryId
+  entryId,
 }: {
   entry: any
   client: any
@@ -90,6 +92,8 @@ function displayFieldData({
     return
   }
 
-  if (typeof document === "undefined") return
+  if (typeof document === "undefined") {
+    return
+  }
   domElement.textContent = entry.fields[fieldId]
 }

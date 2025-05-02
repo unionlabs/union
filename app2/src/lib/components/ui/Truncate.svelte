@@ -1,8 +1,8 @@
 <script lang="ts">
+import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
+import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte"
 import { cn } from "$lib/utils"
 import type { HTMLAttributes } from "svelte/elements"
-import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte"
-import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
 
 interface Props extends HTMLAttributes<HTMLDivElement> {
   value: string
@@ -17,7 +17,7 @@ const shouldTruncate = $derived(value.length > maxLength)
 const displayValue = $derived(
   shouldTruncate
     ? `${value.slice(0, Math.floor(maxLength / 2))}…${value.slice(-Math.floor(maxLength / 2))}`
-    : value
+    : value,
 )
 
 let showCopied = $state(false)
@@ -34,17 +34,23 @@ async function copyToClipboard() {
 }
 </script>
 
-<div class={cn("group flex items-center gap-1", className)} {...rest}>
+<div
+  class={cn("group flex items-center gap-1", className)}
+  {...rest}
+>
   {#if showCopy}
     <button
       type="button"
       class="flex items-center gap-1 text-zinc-500 hover:text-zinc-700 dark:hover:text-zinc-300 cursor-pointer transition-colors"
       onclick={(e) => {
-        e.stopPropagation();
-        copyToClipboard();
+        e.stopPropagation()
+        copyToClipboard()
       }}
     >
-      <span title={shouldTruncate ? value : undefined} class="transition-colors">
+      <span
+        title={shouldTruncate ? value : undefined}
+        class="transition-colors"
+      >
         {displayValue}
       </span>
       <span class="opacity-0 group-hover:opacity-100 transition-opacity">

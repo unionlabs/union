@@ -1,8 +1,8 @@
 <script lang="ts">
-import Modal from "./ui/Modal.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "./ui/Button.svelte"
+import Modal from "./ui/Modal.svelte"
 
 type Props = {
   isOpen: boolean
@@ -27,12 +27,19 @@ function handleSave() {
 }
 </script>
 
-<Modal {isOpen} {onClose} class="w-md">
+<Modal
+  {isOpen}
+  {onClose}
+  class="w-md"
+>
   <h2 class="text-xl font-bold mb-4">Settings</h2>
-  
+
   <div class="space-y-4">
     <div class="space-y-2">
-      <label for="pageLimit" class="block text-sm font-medium">
+      <label
+        for="pageLimit"
+        class="block text-sm font-medium"
+      >
         Items per page
       </label>
       <input
@@ -90,10 +97,16 @@ function handleSave() {
     </div>
 
     <div class="flex justify-start gap-2 pt-4">
-      <Button variant="primary" onclick={handleSave}>
+      <Button
+        variant="primary"
+        onclick={handleSave}
+      >
         Save
       </Button>
-      <Button variant="secondary" onclick={onClose}>
+      <Button
+        variant="secondary"
+        onclick={onClose}
+      >
         Cancel
       </Button>
     </div>

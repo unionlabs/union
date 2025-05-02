@@ -7,73 +7,73 @@ const menuSections = [
     items: [
       {
         url: "https://ceremony.union.build",
-        name: "Ceremony"
+        name: "Ceremony",
       },
       {
         url: "https://app.union.build",
-        name: "Testnet App"
+        name: "Testnet App",
       },
       {
         url: "https://dashboard.union.build/",
-        name: "Dashboard"
-      }
-    ]
+        name: "Dashboard",
+      },
+    ],
   },
   {
     title: "Resources",
     items: [
       {
         url: "https://docs.union.build",
-        name: "Docs"
+        name: "Docs",
       },
       {
         url: "https://research.union.build",
-        name: "Research"
+        name: "Research",
       },
       {
         url: "/brand-kit",
-        name: "Brand kit"
-      }
+        name: "Brand kit",
+      },
       // {
       //   url: "https://github.com/unionlabs/whitepaper",
       //   name: "Whitepaper"
       // }
-    ]
+    ],
   },
   {
     title: "About",
     items: [
       {
         url: "/blog",
-        name: "Blog"
+        name: "Blog",
       },
       {
         url: "/team",
-        name: "Team"
+        name: "Team",
       },
       {
         url: "/ecosystem",
-        name: "Ecosystem"
-      }
-    ]
+        name: "Ecosystem",
+      },
+    ],
   },
   {
     title: "Social",
     items: [
       {
         url: "https://x.com/union_build",
-        name: "X.com"
+        name: "X.com",
       },
       {
         url: "https://github.com/unionlabs/union",
-        name: "GitHub"
+        name: "GitHub",
       },
       {
         url: "https://discord.union.build",
-        name: "Discord"
-      }
-    ]
-  }
+        name: "Discord",
+      },
+    ],
+  },
 ]
 
 function isInternal(menuItem: { url: string }): boolean {
@@ -91,18 +91,20 @@ function isInternal(menuItem: { url: string }): boolean {
           <h3 class="font-supermolot text-lg font-bold uppercase !m-0 !p-0">
             {menuSection.title}
           </h3>
-          {menuSection.items.map((menuItem) => (
-            <div>
-              <a
-                href={menuItem.url}
-                target={isInternal(menuItem) ? "" : "_blank"}
-                rel={isInternal(menuItem) ? "" : "noopener noreferrer"}
-                class="text-normal !text-white !no-underline"
-              >
-                {menuItem.name}
-              </a>
-            </div>
-          ))}
+          {
+            menuSection.items.map((menuItem) => (
+              <div>
+                <a
+                  href={menuItem.url}
+                  target={isInternal(menuItem) ? "" : "_blank"}
+                  rel={isInternal(menuItem) ? "" : "noopener noreferrer"}
+                  class="text-normal !text-white !no-underline"
+                >
+                  {menuItem.name}
+                </a>
+              </div>
+            ))
+          }
         </li>
       ))
     }

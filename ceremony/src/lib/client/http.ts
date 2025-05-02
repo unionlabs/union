@@ -10,15 +10,17 @@ export const get = async <T>(
   resource: string,
   params: Params,
   credentials = false,
-  _fetch: Fetch = fetch
+  _fetch: Fetch = fetch,
 ): Promise<T | undefined> => {
   try {
     const url = new URL(`${host}/${resource}`)
     Object.entries(params).forEach(
-      ([key, value]) => value !== undefined && url.searchParams.set(key, `${value}`)
+      ([key, value]) => value !== undefined && url.searchParams.set(key, `${value}`),
     )
     const res = await _fetch(url, browser && credentials ? { credentials: "include" } : {})
-    if (!res.ok) throw res.status
+    if (!res.ok) {
+      throw res.status
+    }
     const data = await res.json()
     return data as T
   } catch (error) {
@@ -30,21 +32,23 @@ export const post = async <T>(
   resource: string,
   params: Params,
   body: Record<string, unknown> | string,
-  _fetch: Fetch = fetch
+  _fetch: Fetch = fetch,
 ): Promise<T | undefined> => {
   try {
     const url = new URL(`${host}/${resource}`)
     Object.entries(params).forEach(
-      ([key, value]) => value !== undefined && url.searchParams.set(key, `${value}`)
+      ([key, value]) => value !== undefined && url.searchParams.set(key, `${value}`),
     )
     const res = await _fetch(url, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify(body),
     })
-    if (!res.ok) throw res.status
+    if (!res.ok) {
+      throw res.status
+    }
     const data = await res.json()
     return data as T
   } catch (error) {

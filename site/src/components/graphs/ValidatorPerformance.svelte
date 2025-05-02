@@ -15,7 +15,7 @@ const constraints = [
   { x: 16, y: 2741935 },
   { x: 32, y: 2864516 },
   { x: 64, y: 3109677 },
-  { x: 128, y: 3600000 }
+  { x: 128, y: 3600000 },
 ]
 
 const ram = [
@@ -24,7 +24,7 @@ const ram = [
   { x: 16, y: 3.4 },
   { x: 32, y: 4.05 },
   { x: 64, y: 5.3 },
-  { x: 128, y: 8 }
+  { x: 128, y: 8 },
 ]
 
 const time = [
@@ -33,7 +33,7 @@ const time = [
   { x: 16, y: 6.23 },
   { x: 32, y: 6.7 },
   { x: 64, y: 6.91 },
-  { x: 128, y: 8.1 }
+  { x: 128, y: 8.1 },
 ]
 
 function seriesValue(value: any, name: string): string {
@@ -71,8 +71,8 @@ onMount(() => {
         z: -10000,
         lineStyle: {
           color: "#0f1013",
-          type: "solid"
-        }
+          type: "solid",
+        },
       },
       borderColor: "#0f1013",
       backgroundColor: "#000",
@@ -81,47 +81,49 @@ onMount(() => {
             <div class="text-gray-400">
                <div><span class="text-white">${params[0].value[0]}</span>&nbsp;Validators</div>
                <div>
-                 ${params
-                   .map(
-                     (x: { color: any; seriesName: string; value: Array<any> }) => `
+                 ${
+          params
+            .map(
+              (x: { color: any; seriesName: string; value: Array<any> }) => `
                     <div class="mt-0">
                        <div class="flex text-sm items-center">
-                          <span class="flex-none w-3 h-3 min-w-3 min-h-3 mr-1 rounded-full" style="background-color:${
-                            x.color
-                          };"></span>
+                          <span class="flex-none w-3 h-3 min-w-3 min-h-3 mr-1 rounded-full" style="background-color:${x.color};"></span>
                           <span class="flex-grow font-normal text-left mr-3">${x.seriesName}</span>
-                          <span class="font-mono flex-none">${seriesValue(x.value[1], x.seriesName)}</span>
+                          <span class="font-mono flex-none">${
+                seriesValue(x.value[1], x.seriesName)
+              }</span>
                        </div>
                     </div>
-                   `
-                   )
-                   .join("")}
+                   `,
+            )
+            .join("")
+        }
                </div>
             </div>
           `
-      }
+      },
     },
     grid: {
       left: "0%",
       right: "0%",
       bottom: "16.66666%",
-      top: "-1px"
+      top: "-1px",
     },
     xAxis: {
       axisLine: {
-        show: false
+        show: false,
       },
       splitLine: {
-        show: false
+        show: false,
       },
       axisTick: {
-        show: false
+        show: false,
       },
       interval: 4,
       axisLabel: {
         formatter(value: number, _index: any) {
           return [4, 64, 128].includes(value) ? value : null
-        }
+        },
       },
       type: "value",
       boundaryGap: false,
@@ -130,42 +132,42 @@ onMount(() => {
       },
       max(value: { max: number }) {
         return value.max + 12
-      }
+      },
     },
     yAxis: [
       {
         axisLine: {
-          show: false
+          show: false,
         },
         axisTick: {
-          show: false
+          show: false,
         },
         axisLabel: {
-          show: false
+          show: false,
         },
         splitLine: {
           lineStyle: {
-            color: "#0e0f12"
-          }
+            color: "#0e0f12",
+          },
         },
         max(_value: any) {
           return 6_000_000
         },
-        interval: 1_200_000
+        interval: 1_200_000,
       },
       {
         show: false,
         max(value: { max: number }) {
           return value.max * (6_000_000 / 1_600_000)
-        }
+        },
       },
       {
         show: false,
         max(value: { max: number }) {
           return value.max * (6_000_000 / 2_800_000)
-        }
-      }
-    ]
+        },
+      },
+    ],
   }
 
   option && myChart.setOption(option)
@@ -187,7 +189,7 @@ onMount(() => {
                 symbol: "circle",
                 data: constraints.map(({ x, y }) => [x, y]),
                 lineStyle: { color: constraintsLineColor },
-                itemStyle: { color: constraintsLineColor }
+                itemStyle: { color: constraintsLineColor },
               },
               {
                 name: PROVING_TIME,
@@ -196,7 +198,7 @@ onMount(() => {
                 symbol: "circle",
                 data: time.map(({ x, y }) => [x, y]),
                 lineStyle: { color: timeLineColor },
-                itemStyle: { color: timeLineColor }
+                itemStyle: { color: timeLineColor },
               },
               {
                 name: RAM,
@@ -205,20 +207,27 @@ onMount(() => {
                 symbol: "circle",
                 data: ram.map(({ x, y }) => [x, y]),
                 lineStyle: { color: ramLineColor },
-                itemStyle: { color: ramLineColor }
-              }
-            ]
+                itemStyle: { color: ramLineColor },
+              },
+            ],
           })
         }
       })
     },
-    { threshold: 0.5 }
+    { threshold: 0.5 },
   )
 
-  if (chartDom) observer.observe(chartDom)
+  if (chartDom) {
+    observer.observe(chartDom)
+  }
 })
 </script>
 
 <div class="size-full text-center flex antialiased">
-  <article id="galois-graph" class="w-full h-full" bind:this={myChart}></article>
+  <article
+    id="galois-graph"
+    class="w-full h-full"
+    bind:this={myChart}
+  >
+  </article>
 </div>

@@ -1,10 +1,10 @@
 <script lang="ts">
-import Button from "$lib/components/ui/Button.svelte"
 import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
 import AddressComponent from "$lib/components/model/AddressComponent.svelte"
-import type { CheckReceiver } from "../steps.ts"
+import Button from "$lib/components/ui/Button.svelte"
 import { Option } from "effect"
 import { onDestroy, onMount } from "svelte"
+import type { CheckReceiver } from "../steps.ts"
 
 type Props = {
   stepIndex: number
@@ -17,7 +17,7 @@ const { step, cancel, onSubmit }: Props = $props()
 
 const receiver = $derived(Option.isSome(step.receiver) ? step.receiver.value : undefined)
 const chain = $derived(
-  Option.isSome(step.destinationChain) ? step.destinationChain.value : undefined
+  Option.isSome(step.destinationChain) ? step.destinationChain.value : undefined,
 )
 
 let targetTime = $state(0)
@@ -63,7 +63,11 @@ const buttonText = $derived.by(() => {
   {#if receiver && chain}
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">Confirm Receiver</h3>
-      <SharpWarningIcon class="text-yellow-500 self-center" height="3rem" width="3rem" />
+      <SharpWarningIcon
+        class="text-yellow-500 self-center"
+        height="3rem"
+        width="3rem"
+      />
       <section>
         <p class="text-sm text-zinc-400">
           <span class="font-bold">
@@ -73,13 +77,23 @@ const buttonText = $derived.by(() => {
         </p>
       </section>
       <section>
-        <AddressComponent address={receiver} chain={chain} />
+        <AddressComponent
+          address={receiver}
+          chain={chain}
+        />
       </section>
     </div>
 
     <div class="flex justify-between mt-4">
-      <Button variant="secondary" onclick={cancel}>Cancel</Button>
-      <Button variant="primary" onclick={onSubmit} disabled={!isButtonEnabled}>
+      <Button
+        variant="secondary"
+        onclick={cancel}
+      >Cancel</Button>
+      <Button
+        variant="primary"
+        onclick={onSubmit}
+        disabled={!isButtonEnabled}
+      >
         {buttonText}
       </Button>
     </div>

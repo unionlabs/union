@@ -2,9 +2,9 @@
 import "#/styles/fonts.css"
 import "#/styles/reset.css"
 import "#/styles/tailwind.css"
-import { SEO } from "astro-seo"
 import { Head } from "astro-capo"
 import { AstroFont } from "astro-font"
+import { SEO } from "astro-seo"
 
 const BASE_URL = import.meta.env.PROD ? import.meta.env.SITE : ""
 
@@ -22,7 +22,7 @@ const {
   title = "Union",
   image = "/og.png",
   description = "The Modular ZK Interoperability Layer",
-  loadFonts = true
+  loadFonts = true,
 } = Astro.props
 
 const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
@@ -34,15 +34,15 @@ const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
 const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
 ---
 
-<!doctype html>
+<!DOCTYPE html>
 <script client:only>
-  // native ViewTransitions flash on page changes in some cases.
+// native ViewTransitions flash on page changes in some cases.
   // astro does not provide an option to use the fallback client router,
   // so we manually remove the ViewTransition API from the document
   // such that astro will use the fallback ClientRouter
   // https://github.com/withastro/astro/blob/74ef2feb3a6a68e45a0cbfe60a61e90af6b4e923/packages/astro/src/transitions/router.ts#L37
   // @ts-expect-error
-  document.startViewTransition = false;
+  document.startViewTransition = false
 </script>
 <html lang="en">
   <Head>
@@ -153,9 +153,7 @@ const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
       )
     }
   </Head>
-  <body
-    class="font-sans flex flex-col items-stretch flex-1 bg-black text-white not-content"
-  >
+  <body class="font-sans flex flex-col items-stretch flex-1 bg-black text-white not-content">
     <slot />
   </body>
 </html>

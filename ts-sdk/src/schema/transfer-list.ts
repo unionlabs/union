@@ -1,10 +1,10 @@
 import * as S from "effect/Schema"
+import { AggregateCount } from "./aggregate-count.js"
 import { ChainReference } from "./chain.js"
 import { Hex } from "./hex.js"
-import { SortOrder } from "./sort-order.js"
 import { PacketHash } from "./packet.js"
-import { TokenRawDenom, TokenRawAmount } from "./token.js"
-import { AggregateCount } from "./aggregate-count.js"
+import { SortOrder } from "./sort-order.js"
+import { TokenRawAmount, TokenRawDenom } from "./token.js"
 
 export class TransferListItem extends S.Class<TransferListItem>("TransferListItem")({
   source_chain: ChainReference,
@@ -18,13 +18,13 @@ export class TransferListItem extends S.Class<TransferListItem>("TransferListIte
   base_token: TokenRawDenom,
   base_amount: TokenRawAmount,
   quote_token: TokenRawDenom,
-  quote_amount: TokenRawAmount
+  quote_amount: TokenRawAmount,
 }) {}
 
 export const TransferList = S.Array(TransferListItem)
 export type TransferList = typeof TransferList.Type
 
 export const TransferCount = S.Struct({
-  aggregate: AggregateCount
+  aggregate: AggregateCount,
 })
 export type TransferCount = typeof TransferCount.Type

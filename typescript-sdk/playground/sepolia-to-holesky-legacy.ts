@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
-import { fallback, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { raise } from "../src/utilities/index.ts"
+import { fallback, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky, sepolia } from "viem/chains"
 import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
+import { raise } from "../src/utilities/index.ts"
 
 /* `bun playground/sepolia-to-holesky.ts --private-key "..."` */
 
@@ -13,12 +13,14 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) raise("Private key not found")
+if (!PRIVATE_KEY) {
+  raise("Private key not found")
+}
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
@@ -32,8 +34,8 @@ try {
     account: evmAccount,
     transport: fallback([
       http("https://rpc.11155111.sepolia.chain.kitchen"),
-      http(sepolia?.rpcUrls.default.http.at(0))
-    ])
+      http(sepolia?.rpcUrls.default.http.at(0)),
+    ]),
   })
 
   const transactionPayload = {
@@ -41,7 +43,7 @@ try {
     destinationChainId: `${holesky.id}`,
     receiver: RECEIVER,
     denomAddress: LINK_CONTRACT_ADDRESS,
-    autoApprove: true
+    autoApprove: true,
   } satisfies TransferAssetsParametersLegacy<"11155111">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
@@ -53,7 +55,9 @@ try {
 
   consola.success("Sepolia to Holesky gas cost:", gasEstimationResponse.value)
 
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
+  if (ONLY_ESTIMATE_GAS) {
+    process.exit(0)
+  }
 
   if (gasEstimationResponse.isErr()) {
     console.info("Transaction simulation failed", gasEstimationResponse.error)

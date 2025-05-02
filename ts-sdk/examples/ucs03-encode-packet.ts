@@ -1,5 +1,5 @@
-import { toHex } from "viem"
 import { Instruction } from "@unionlabs/sdk/ucs03"
+import { toHex } from "viem"
 import { encodeZkgmPacketAbi, type ZkgmPacket } from "../src/ucs03/zkgm-packet.js"
 
 const examplePacket: ZkgmPacket = {
@@ -16,9 +16,9 @@ const examplePacket: ZkgmPacket = {
       0,
       0n,
       "0x756e696f6e3170707865737461307064643038716537366779366b7438667563717978727a773076786a79366439767430676368357879707371656138377278",
-      1000000n
-    ]
-  })
+      1000000n,
+    ],
+  }),
 }
 
 console.log("ZkgmPacket:", examplePacket)

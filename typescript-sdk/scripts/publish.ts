@@ -1,9 +1,9 @@
 #!/usr/bin/env bun
 import * as Bun from "bun"
 import { parseArgs } from "node:util"
-import { consola } from "./logger.ts"
 import jsrJson from "../jsr.json" with { type: "json" }
 import packageJson from "../package.json" with { type: "json" }
+import { consola } from "./logger.ts"
 
 const CURRENT_JSR_JSON_VERSION = jsrJson.version
 const CURRENT_PACKAGE_JSON_VERSION = packageJson.version
@@ -23,9 +23,9 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   strict: true,
   options: {
-    period: { type: "string", default: "patch" },
-    "dry-run": { type: "boolean", default: false }
-  }
+    "period": { type: "string", default: "patch" },
+    "dry-run": { type: "boolean", default: false },
+  },
 })
 
 const PERIOD = values.period ?? "patch"
@@ -47,8 +47,8 @@ async function main() {
     const version = bumpPackage.text().trim().replace(/^v/, "")
 
     // sync jsr.json version with package.json version
-    const syncJsr =
-      await Bun.$ /* sh */`jq --arg version "${version}" '.version = $version' jsr.json > jsr.temp.json && mv jsr.temp.json jsr.json`
+    const syncJsr = await Bun
+      .$ /* sh */`jq --arg version "${version}" '.version = $version' jsr.json > jsr.temp.json && mv jsr.temp.json jsr.json`
 
     consola.info("Sync jsr.json version with package.json version", syncJsr.text())
 
@@ -66,7 +66,7 @@ async function main() {
 
 async function resetVersions() {
   const currentVersion = await Bun.$ /* sh */`jq --raw-output .version package.json`.text()
-  const newVersion =
-    await Bun.$ /* sh */`${currentVersion.trim()} | awk -F'[.-]' '{print $1"."$2"."$3"-"$4"."$6-1}'`
+  const newVersion = await Bun
+    .$ /* sh */`${currentVersion.trim()} | awk -F'[.-]' '{print $1"."$2"."$3"-"$4"."$6-1}'`
   await Bun.$ /* sh */`npm version ${newVersion} --no-git-tag-version`
 }

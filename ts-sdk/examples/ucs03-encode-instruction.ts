@@ -1,5 +1,5 @@
-import { toHex } from "viem"
 import { Instruction } from "@unionlabs/sdk/ucs03"
+import { toHex } from "viem"
 
 export const exampleBatchInstruction = new Instruction.Batch({
   operand: [
@@ -14,8 +14,8 @@ export const exampleBatchInstruction = new Instruction.Batch({
         18,
         0n,
         "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-        4n
-      ]
+        4n,
+      ],
     }),
     new Instruction.FungibleAssetOrder({
       operand: [
@@ -28,10 +28,10 @@ export const exampleBatchInstruction = new Instruction.Batch({
         18,
         0n,
         "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-        4n
-      ]
-    })
-  ]
+        4n,
+      ],
+    }),
+  ],
 })
 
 export const exampleMultiplexInstruction = new Instruction.Multiplex({
@@ -39,8 +39,8 @@ export const exampleMultiplexInstruction = new Instruction.Multiplex({
     "0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD",
     true,
     "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-    toHex("some smart contract data")
-  ]
+    toHex("some smart contract data"),
+  ],
 })
 
 export const exampleForwardInstruction = new Instruction.Forward({
@@ -59,10 +59,10 @@ export const exampleForwardInstruction = new Instruction.Forward({
         18,
         0n,
         "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-        4n
-      ]
-    })
-  ]
+        4n,
+      ],
+    }),
+  ],
 })
 
 export const exampleTransferAndCall = new Instruction.Batch({
@@ -78,16 +78,16 @@ export const exampleTransferAndCall = new Instruction.Batch({
         18,
         0n,
         "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-        4n
-      ]
+        4n,
+      ],
     }),
     new Instruction.Multiplex({
       operand: [
         "0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD",
         true,
         "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-        toHex("some smart contract data")
-      ]
+        toHex("some smart contract data"),
+      ],
     }),
     new Instruction.Forward({
       operand: [
@@ -107,14 +107,14 @@ export const exampleTransferAndCall = new Instruction.Batch({
                 18,
                 0n,
                 "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3",
-                4n
-              ]
-            })
-          ]
-        })
-      ]
-    })
-  ]
+                4n,
+              ],
+            }),
+          ],
+        }),
+      ],
+    }),
+  ],
 })
 
 console.log(exampleBatchInstruction, Instruction.encodeAbi(exampleBatchInstruction))

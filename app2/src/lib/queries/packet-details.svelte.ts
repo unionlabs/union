@@ -1,8 +1,8 @@
+import { packetDetails } from "$lib/stores/packets.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
+import { PacketDetails, type PacketHash } from "@unionlabs/sdk/schema"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { packetDetails } from "$lib/stores/packets.svelte"
-import { PacketDetails, type PacketHash } from "@unionlabs/sdk/schema"
 
 export const packetDetailsQuery = (packetHash: PacketHash) =>
   createQueryGraphql({
@@ -80,10 +80,10 @@ export const packetDetailsQuery = (packetHash: PacketHash) =>
         Option.tap(packet => {
           packetDetails.data = Option.some(packet)
           return Option.some(packet)
-        })
+        }),
       )
     },
     writeError: error => {
       packetDetails.error = error
-    }
+    },
   })

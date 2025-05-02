@@ -1,13 +1,13 @@
-import { Option, Schema } from "effect"
+import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { TransferDetails } from "@unionlabs/sdk/schema"
-import { transferDetails } from "$lib/stores/transfer-details.svelte"
+import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
 
 export const transferByPacketHashQuery = (packetHash: string) =>
   createQueryGraphql({
     schema: Schema.Struct({
-      v2_transfers: Schema.Array(TransferDetails)
+      v2_transfers: Schema.Array(TransferDetails),
     }),
     document: graphql(`
       query TransferByPacketHash($packet_hash: String!) {
@@ -53,5 +53,5 @@ export const transferByPacketHashQuery = (packetHash: string) =>
     },
     writeError: error => {
       transferDetails.error = error
-    }
+    },
   })

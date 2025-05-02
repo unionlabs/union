@@ -1,12 +1,12 @@
 import { Effect } from "effect"
 import { Data } from "effect"
-import { AptosPublicClient } from "./client.js"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
+import { AptosPublicClient } from "./client.js"
 
 export type Hash = `0x${string}`
 
 export class WaitForTransactionReceiptError extends Data.TaggedError(
-  "WaitForTransactionReceiptError"
+  "WaitForTransactionReceiptError",
 )<{
   cause: WaitForTransactionReceiptError
 }> {}
@@ -17,19 +17,19 @@ export class WaitForTransactionReceiptError extends Data.TaggedError(
  * @returns An Effect that resolves to the transaction receipt
  */
 export const waitForTransactionReceipt = (hash: Hash) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* AptosPublicClient).client
 
     const receipt = yield* Effect.tryPromise({
       try: () =>
         client.waitForTransaction({
           transactionHash: hash,
-          options: { checkSuccess: false }
+          options: { checkSuccess: false },
         }),
       catch: err =>
         new WaitForTransactionReceiptError({
-          cause: extractErrorDetails(err as WaitForTransactionReceiptError)
-        })
+          cause: extractErrorDetails(err as WaitForTransactionReceiptError),
+        }),
     }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 3 }))
 
     return receipt

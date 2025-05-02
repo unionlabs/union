@@ -10,7 +10,7 @@ export const commandType = [
   "update",
   "create",
   "update",
-  "dynamic"
+  "dynamic",
 ] as const
 export type CommandType = (typeof commandType)[number]
 
@@ -34,8 +34,8 @@ export const commands = {
       dynamic: "dlx",
       create: "create",
       remove: "remove",
-      update: "update"
-    }
+      update: "update",
+    },
   },
   bun: {
     icon: "bun",
@@ -47,8 +47,8 @@ export const commands = {
       shell: "exec",
       create: "create",
       remove: "remove",
-      update: "update"
-    }
+      update: "update",
+    },
   },
   npm: {
     icon: "seti:npm",
@@ -60,8 +60,8 @@ export const commands = {
       add: "install",
       update: "update",
       create: "create",
-      remove: "uninstall"
-    }
+      remove: "uninstall",
+    },
   },
   yarn: {
     icon: "seti:yarn",
@@ -73,9 +73,9 @@ export const commands = {
       dynamic: "dlx",
       create: "create",
       remove: "remove",
-      update: "update"
-    }
-  }
+      update: "update",
+    },
+  },
 } as const satisfies Record<
   PackageManager,
   {

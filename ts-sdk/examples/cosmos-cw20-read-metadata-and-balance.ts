@@ -1,9 +1,9 @@
 import { Effect } from "effect"
 import { CosmWasmClientContext, createCosmWasmClient } from "../src/cosmos/client.js"
-import { readCw20TokenInfo, readCw20Balance, readCw20Allowance } from "../src/cosmos/cw20.js"
+import { readCw20Allowance, readCw20Balance, readCw20TokenInfo } from "../src/cosmos/cw20.js"
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create a CosmWasm client
     const client = yield* createCosmWasmClient("https://rpc.elgafar-1.stargaze-apis.com")
 
@@ -23,14 +23,14 @@ Effect.runPromiseExit(
     const spender = "stars14qemq0vw6y3gc3u3e0aty2e764u4gs5lddqqxv"
     // Read CW20 token allowance
     const allowance = yield* readCw20Allowance(contractAddress, walletAddress, spender).pipe(
-      withClient
+      withClient,
     )
 
     // Combine the results
     return {
       ...tokenInfo,
       balance,
-      allowance
+      allowance,
     }
-  })
+  }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

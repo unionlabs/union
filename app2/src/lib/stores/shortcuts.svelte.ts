@@ -22,14 +22,24 @@ export class KeyboardShortcuts {
   private handleKeyDown = (event: KeyboardEvent) => {
     const pressedKeys = new Set<string>()
 
-    if (event.metaKey) pressedKeys.add("cmd")
-    if (event.ctrlKey) pressedKeys.add("ctrl")
-    if (event.altKey) pressedKeys.add("option")
-    if (event.shiftKey) pressedKeys.add("shift")
+    if (event.metaKey) {
+      pressedKeys.add("cmd")
+    }
+    if (event.ctrlKey) {
+      pressedKeys.add("ctrl")
+    }
+    if (event.altKey) {
+      pressedKeys.add("option")
+    }
+    if (event.shiftKey) {
+      pressedKeys.add("shift")
+    }
     pressedKeys.add(event.code.toLowerCase())
 
     for (const { keys: expectedKeys, action } of this.shortcuts) {
-      if (expectedKeys.size !== pressedKeys.size) continue
+      if (expectedKeys.size !== pressedKeys.size) {
+        continue
+      }
 
       let allMatch = true
       for (const key of expectedKeys) {

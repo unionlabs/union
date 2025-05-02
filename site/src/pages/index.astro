@@ -1,34 +1,34 @@
 ---
 import { contentfulClient } from "#/lib/contentful/client.ts"
-import type { LandingPageSkeleton, LandingPageFields } from "#/lib/contentful/types.ts"
+import type { LandingPageFields, LandingPageSkeleton } from "#/lib/contentful/types.ts"
 
-import SectionsContainer from "#/components/SectionsContainer.astro"
 import ContainedSection from "#/components//ContainedSection.astro"
 import ConsensusSection from "#/components/sections/landing/ConsensusSection.astro"
-import ZkSection from "#/components/sections/landing/ZkSection.astro"
 import ExecutionSection from "#/components/sections/landing/ExecutionSection.astro"
+import ZkSection from "#/components/sections/landing/ZkSection.astro"
 import MarqueeSection from "#/components/sections/MarqueeSection.astro"
+import SectionsContainer from "#/components/SectionsContainer.astro"
 
-import pod_polygon from "#/assets/images/marquee/pods/polygon.png"
-import pod_lightshift from "#/assets/images/marquee/pods/lightshift.png"
-import pod_semantic from "#/assets/images/marquee/pods/semantic.png"
-import pod_longhash from "#/assets/images/marquee/pods/longhash.png"
-import pod_galileo from "#/assets/images/marquee/pods/galileo.png"
-import pod_consensys from "#/assets/images/marquee/pods/consensys.png"
-import pod_tioga from "#/assets/images/marquee/pods/tioga.png"
-import pod_borderless from "#/assets/images/marquee/pods/borderless.png"
-import pod_gumi from "#/assets/images/marquee/pods/gumi.png"
-import pod_blockchange from "#/assets/images/marquee/pods/blockchange.png"
 import pod_atom from "#/assets/images/marquee/pods/atom.png"
+import pod_blockchange from "#/assets/images/marquee/pods/blockchange.png"
+import pod_borderless from "#/assets/images/marquee/pods/borderless.png"
+import pod_consensys from "#/assets/images/marquee/pods/consensys.png"
+import pod_galileo from "#/assets/images/marquee/pods/galileo.png"
+import pod_gumi from "#/assets/images/marquee/pods/gumi.png"
+import pod_lightshift from "#/assets/images/marquee/pods/lightshift.png"
+import pod_longhash from "#/assets/images/marquee/pods/longhash.png"
+import pod_polygon from "#/assets/images/marquee/pods/polygon.png"
+import pod_semantic from "#/assets/images/marquee/pods/semantic.png"
+import pod_tioga from "#/assets/images/marquee/pods/tioga.png"
 
-import partner_stride from "#/assets/images/marquee/partners/stride.png"
-import partner_stargaze from "#/assets/images/marquee/partners/stargaze.png"
-import partner_secret from "#/assets/images/marquee/partners/secret.png"
-import partner_scroll from "#/assets/images/marquee/partners/scroll.png"
-import partner_polygon from "#/assets/images/marquee/partners/polygon.png"
-import partner_movement from "#/assets/images/marquee/partners/movement.png"
-import partner_bera from "#/assets/images/marquee/partners/bera.png"
 import partner_arbitrum from "#/assets/images/marquee/partners/arbitrum.png"
+import partner_bera from "#/assets/images/marquee/partners/bera.png"
+import partner_movement from "#/assets/images/marquee/partners/movement.png"
+import partner_polygon from "#/assets/images/marquee/partners/polygon.png"
+import partner_scroll from "#/assets/images/marquee/partners/scroll.png"
+import partner_secret from "#/assets/images/marquee/partners/secret.png"
+import partner_stargaze from "#/assets/images/marquee/partners/stargaze.png"
+import partner_stride from "#/assets/images/marquee/partners/stride.png"
 import AnimationLayout from "#/layouts/AnimationLayout.astro"
 
 export const prerender = false
@@ -47,7 +47,7 @@ const pods = [
   { name: "Consensys", logo: pod_consensys, url: "" },
   { name: "Borderless", logo: pod_borderless, url: "" },
   { name: "Blockchange", logo: pod_blockchange, url: "" },
-  { name: "Atom", logo: pod_atom, url: "" }
+  { name: "Atom", logo: pod_atom, url: "" },
 ]
 
 const partners = [
@@ -58,14 +58,14 @@ const partners = [
   { name: "Polygon", logo: partner_polygon, url: "" },
   { name: "Movement", logo: partner_movement, url: "" },
   { name: "Bera", logo: partner_bera, url: "" },
-  { name: "Arbitrum", logo: partner_arbitrum, url: "" }
+  { name: "Arbitrum", logo: partner_arbitrum, url: "" },
 ]
 
 let landingData: LandingPageFields | null = null
 let error: string | null = null
 try {
   const landingEntries = await contentfulClient.getEntries<LandingPageSkeleton>({
-    content_type: "landing"
+    content_type: "landing",
   })
   if (landingEntries.items.length > 0) {
     landingData = landingEntries.items[0].fields

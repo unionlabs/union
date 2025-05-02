@@ -1,13 +1,13 @@
-import { getAddress, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
+import { getAddress, http } from "viem"
+import { privateKeyToAccount } from "viem/accounts"
 import { bech32AddressToHex, createUnionClient } from "../src/mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
-  getRecommendedChannels
+  getRecommendedChannels,
 } from "../src/query/offchain/ucs03-channels.ts"
-import { privateKeyToAccount } from "viem/accounts"
 
 // hack to encode bigints to json
 declare global {
@@ -18,11 +18,11 @@ declare global {
 
 if (!BigInt.prototype.toJSON) {
   Object.defineProperty(BigInt.prototype, "toJSON", {
-    value: function () {
+    value: function() {
       return this.toString()
     },
     writable: true,
-    configurable: true
+    configurable: true,
   })
 }
 // end hack
@@ -31,8 +31,8 @@ const cliArgs = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
@@ -73,7 +73,7 @@ const transferArgs = {
   quoteAmount: AMOUNT,
   receiver: RECEIVER,
   sourceChannelId: channel.source_channel_id,
-  ucs03address: getAddress(`0x${channel.source_port_id}`)
+  ucs03address: getAddress(`0x${channel.source_port_id}`),
 }
 
 consola.info("transfer args", transferArgs)
@@ -86,7 +86,7 @@ if (!PRIVATE_KEY) {
 const evmClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
   account: privateKeyToAccount(`0x${PRIVATE_KEY}`),
-  transport: http("https://rpc.17000.holesky.chain.kitchen")
+  transport: http("https://rpc.17000.holesky.chain.kitchen"),
 })
 
 const approveResponse = await evmClient.approveErc20(transferArgs)

@@ -1,10 +1,10 @@
 <script lang="ts">
 import Sections from "$lib/components/ui/Sections.svelte"
-import Transfer from "$lib/transfer/index.svelte"
-import { Option } from "effect"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
+import { tokensStore } from "$lib/stores/tokens.svelte.ts"
+import Transfer from "$lib/transfer/index.svelte"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import { Option } from "effect"
 
 $effect(() => {
   if (Option.isSome(transferData.sourceChain)) {
@@ -15,17 +15,23 @@ $effect(() => {
 let lastFetchKey = $state("")
 
 $effect(() => {
-  if (Option.isNone(transferData.sourceChain)) return
+  if (Option.isNone(transferData.sourceChain)) {
+    return
+  }
 
   const sourceChain = transferData.sourceChain.value
 
   const addressOption = transferData.derivedSender
-  if (Option.isNone(addressOption)) return
+  if (Option.isNone(addressOption)) {
+    return
+  }
 
   const address = addressOption.value
 
   const tokensOption = tokensStore.data.get(sourceChain.universal_chain_id) ?? Option.none()
-  if (Option.isNone(tokensOption)) return
+  if (Option.isNone(tokensOption)) {
+    return
+  }
 
   const fetchKey = `${sourceChain.universal_chain_id}:${address}`
 
@@ -40,5 +46,5 @@ $effect(() => {
 </script>
 
 <Sections>
-  <Transfer mode="multisig"/>
+  <Transfer mode="multisig" />
 </Sections>

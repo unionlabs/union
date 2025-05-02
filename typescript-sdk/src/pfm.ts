@@ -1,7 +1,7 @@
-import type { ChainId } from "./types.ts"
 import { err, ok, Result } from "neverthrow"
-import { sepolia } from "./mod.ts"
 import { holesky } from "viem/chains"
+import { sepolia } from "./mod.ts"
+import type { ChainId } from "./types.ts"
 
 export const createPfmMemo: (_args: {
   port: string
@@ -11,7 +11,7 @@ export const createPfmMemo: (_args: {
   ({
     port,
     channel,
-    receiver
+    receiver,
   }: {
     port: string
     channel: string
@@ -21,17 +21,17 @@ export const createPfmMemo: (_args: {
       forward: {
         port,
         channel,
-        receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver
-      }
+        receiver: receiver.startsWith("0x") ? receiver.slice(2) : receiver,
+      },
     }),
-  error => new Error("Failed to create PFM memo", { cause: error })
+  error => new Error("Failed to create PFM memo", { cause: error }),
 )
 
 /** Temporarily mocked
  */
 export async function getHubbleChainDetails({
   sourceChainId,
-  destinationChainId
+  destinationChainId,
 }: {
   sourceChainId: ChainId | (string & {})
   destinationChainId: ChainId | (string & {})
@@ -69,9 +69,9 @@ export async function getHubbleChainDetails({
       ucs3_config: {
         address: "0x84F074C15513F15baeA0fbEd3ec42F0Bd1fb3efa",
         channels: {
-          [holesky.id.toString()]: 4
-        }
-      }
+          [holesky.id.toString()]: 4,
+        },
+      },
     },
     {
       testnet: true,
@@ -84,9 +84,9 @@ export async function getHubbleChainDetails({
         channels: {
           [sepolia.id.toString()]: 9,
           "union-testnet-9": 8,
-          "elgafar-1": 11
-        }
-      }
+          "elgafar-1": 11,
+        },
+      },
     },
     {
       testnet: true,
@@ -97,9 +97,9 @@ export async function getHubbleChainDetails({
       ucs3_config: {
         address: "union19hspxmypfxsdsnxttma8rxvp7dtcmzhl9my0ee64avg358vlpawsdvucqa",
         channels: {
-          [holesky.id.toString()]: 7
-        }
-      }
+          [holesky.id.toString()]: 7,
+        },
+      },
     },
     {
       testnet: true,
@@ -110,28 +110,34 @@ export async function getHubbleChainDetails({
       ucs3_config: {
         address: "stars1vv5v4sk4tzxs9a0685j4shdqazj44dla8rfu6np40h9tneuruq0s3rs6kq",
         channels: {
-          [holesky.id.toString()]: 15
-        }
-      }
-    }
+          [holesky.id.toString()]: 15,
+        },
+      },
+    },
   ]
 
   const sourceChain = CHAINS.find(c => c.chain_id === sourceChainId)
   const destinationChain = CHAINS.find(c => c.chain_id === destinationChainId)
   // const transferType = "direct"
 
-  if (!sourceChain) return err(new Error("source chain not found in hubble"))
-  if (!destinationChain) return err(new Error("destination chain not found in hubble"))
+  if (!sourceChain) {
+    return err(new Error("source chain not found in hubble"))
+  }
+  if (!destinationChain) {
+    return err(new Error("destination chain not found in hubble"))
+  }
 
   const sourceChannel = sourceChain.ucs3_config.channels[destinationChainId]
   const destinationChannel = destinationChain.ucs3_config.channels[sourceChainId]
 
-  if (!sourceChannel)
+  if (!sourceChannel) {
     return err(new Error(`no source channel to go from ${sourceChainId} to ${destinationChainId}`))
-  if (!destinationChannel)
+  }
+  if (!destinationChannel) {
     return err(
-      new Error(`no destination channel to go from ${sourceChainId} to ${destinationChainId}`)
+      new Error(`no destination channel to go from ${sourceChainId} to ${destinationChainId}`),
     )
+  }
 
   // const checkAgainst = sourceChainId === "union-testnet-8" ? destinationChainId : "union-testnet-8"
   // const ucsConfiguration = chain.ucs1_configurations
@@ -146,7 +152,7 @@ export async function getHubbleChainDetails({
     sourceChannel,
     destinationChannel,
     relayContractAddress: sourceChain.ucs3_config.address,
-    destinationUCS03Address: destinationChain.ucs3_config.address
+    destinationUCS03Address: destinationChain.ucs3_config.address,
   })
   // }
 

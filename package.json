@@ -4,7 +4,6 @@
   "devDependencies": {
     "@effect/language-service": "~0.5.1",
     "@effect/vitest": "~0.20.14",
-    "dprint": "^0.49.1",
     "typescript": "~5.8.2",
     "viem": "^2.26.2",
     "vite": "~6.3.1",

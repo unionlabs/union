@@ -7,35 +7,35 @@ declare global {
 
 if (!BigInt.prototype.toJSON) {
   Object.defineProperty(BigInt.prototype, "toJSON", {
-    value: function () {
+    value: function() {
       return this.toString()
     },
     writable: true,
-    configurable: true
+    configurable: true,
   })
 }
 
-import { request, gql } from "graphql-request"
+import consola from "consola"
+import { gql, request } from "graphql-request"
 import fetch, { Headers } from "node-fetch"
 import fs from "node:fs"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
-import consola from "consola"
 
 // For the EVM cross-chain transfer snippet:
-import { type Address, fallback, http, fromHex, toHex } from "viem"
 import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
-import { privateKeyToAccount } from "viem/accounts"
 import {
   type ChainId,
   type CosmosChainId,
   createUnionClient,
   type EvmChainId,
-  hexToBytes,
-  getRecommendedChannels,
   getChannelInfo,
-  getQuoteToken
+  getQuoteToken,
+  getRecommendedChannels,
+  hexToBytes,
 } from "@unionlabs/client"
+import { type Address, fallback, fromHex, http, toHex } from "viem"
+import { privateKeyToAccount } from "viem/accounts"
 
 // Hasura endpoint
 const HASURA_ENDPOINT = "https://hubble-purple.hasura.app/v1/graphql"
@@ -147,7 +147,7 @@ function loadConfig(configPath: string): ConfigFile {
 export async function checkPackets(
   sourceChain: string,
   destinationChain: string,
-  timeframeMs: number
+  timeframeMs: number,
 ): Promise<void> {
   // Current time
   const now = Date.now()
@@ -157,7 +157,7 @@ export async function checkPackets(
   const sinceDate = new Date(now - searchRangeMs).toISOString()
 
   consola.info(
-    `Querying Hasura for packets >= ${sinceDate}, chain-pair: ${sourceChain} <-> ${destinationChain}`
+    `Querying Hasura for packets >= ${sinceDate}, chain-pair: ${sourceChain} <-> ${destinationChain}`,
   )
 
   // Build the GraphQL query:
@@ -200,16 +200,16 @@ export async function checkPackets(
   const variables = {
     since: sinceDate,
     srcChain: sourceChain,
-    dstChain: destinationChain
+    dstChain: destinationChain,
   }
-  //EEE48878CB7D9CE8DF02B87763FE6A8D8ECA7ACE77F9F483142415B0FFFD52FA
+  // EEE48878CB7D9CE8DF02B87763FE6A8D8ECA7ACE77F9F483142415B0FFFD52FA
   try {
     // Post to Hasura
     const response = await request<HasuraResponse>(HASURA_ENDPOINT, query, variables)
     const data = response.v1_ibc_union_packets ?? []
 
     consola.info(
-      `Found ${data.length} packets in the last ${searchRangeMs}ms for ${sourceChain} <-> ${destinationChain}`
+      `Found ${data.length} packets in the last ${searchRangeMs}ms for ${sourceChain} <-> ${destinationChain}`,
     )
     // Check each packet
     for (const p of data) {
@@ -242,13 +242,13 @@ export async function checkPackets(
         const recvTimeMs = new Date(recvStr).getTime()
         if (recvTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
-            `[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, sendTxHash=${sendTxHash}`
+            `[RECV TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, recv_time=${recvStr}, sendTxHash=${sendTxHash}`,
           )
           reportedsendTxHashes.add(sendTxHash)
         }
       } else {
         consola.error(
-          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+          `[TRANSFER_ERROR: RECV MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`,
         )
         reportedsendTxHashes.add(sendTxHash)
         continue
@@ -259,13 +259,13 @@ export async function checkPackets(
         const writeAckTimeMs = new Date(writeAckStr).getTime()
         if (writeAckTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
-            `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. sendTxHash=${sendTxHash}, send_time=${sendStr}, write_ack_time=${writeAckStr}`
+            `[TRANSFER_ERROR: WRITE_ACK TOO LATE] >${timeframeMs}ms. sendTxHash=${sendTxHash}, send_time=${sendStr}, write_ack_time=${writeAckStr}`,
           )
           reportedsendTxHashes.add(sendTxHash)
         }
       } else {
         consola.error(
-          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+          `[TRANSFER_ERROR: WRITE_ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`,
         )
         reportedsendTxHashes.add(sendTxHash)
         continue
@@ -276,13 +276,13 @@ export async function checkPackets(
         const ackTimeMs = new Date(ackStr).getTime()
         if (ackTimeMs - sendTimeMs > timeframeMs) {
           consola.error(
-            `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, sendTxHash=${sendTxHash}`
+            `[TRANSFER_ERROR: ACK TOO LATE] >${timeframeMs}ms. send_time=${sendStr}, ack_time=${ackStr}, sendTxHash=${sendTxHash}`,
           )
           reportedsendTxHashes.add(sendTxHash)
         }
       } else {
         consola.error(
-          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`
+          `[TRANSFER_ERROR: ACK MISSING] >${timeframeMs}ms since send. sendTxHash=${sendTxHash}, source_chain=${p.source_chain_id}, dest_chain=${p.destination_chain_id}`,
         )
         reportedsendTxHashes.add(sendTxHash)
       }
@@ -309,13 +309,13 @@ async function doTransfer(task: TransferConfig) {
       "\n[%s] Starting transfer for chainId=%s to chain=%s",
       chainType,
       isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
-      task.destinationChainId
+      task.destinationChainId,
     )
 
     const evmAccount = privateKeyToAccount(`0x${task.privateKey.replace(/^0x/, "")}`)
     const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
       Uint8Array.from(hexToBytes(task.privateKey)),
-      task.cosmosAccountType
+      task.cosmosAccountType,
     )
 
     const transports = task.rpcs.map(rpc => http(rpc))
@@ -329,7 +329,7 @@ async function doTransfer(task: TransferConfig) {
         "No channel found. Source chain ID:",
         sourceChainId,
         " Destination chain ID:",
-        task.destinationChainId
+        task.destinationChainId,
       )
       return
     }
@@ -366,36 +366,36 @@ async function doTransfer(task: TransferConfig) {
 
     const txPayload = isCosmosChain
       ? {
-          baseToken: task.denomAddress,
-          baseAmount: BigInt(random_amount),
-          quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
-          quoteAmount: BigInt(random_amount),
-          receiver: toHex(task.receiverAddress),
-          sourceChannelId: channel.source_channel_id,
-          ucs03address: fromHex(`0x${channel.source_port_id}`, "string") as `0x${string}`
-        }
+        baseToken: task.denomAddress,
+        baseAmount: BigInt(random_amount),
+        quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
+        quoteAmount: BigInt(random_amount),
+        receiver: toHex(task.receiverAddress),
+        sourceChannelId: channel.source_channel_id,
+        ucs03address: fromHex(`0x${channel.source_port_id}`, "string") as `0x${string}`,
+      }
       : {
-          baseToken: task.denomAddress,
-          baseAmount: BigInt(random_amount),
-          quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
-          quoteAmount: BigInt(random_amount),
-          receiver: task.receiverAddress,
-          sourceChannelId: channel.source_channel_id,
-          ucs03address: `0x${channel.source_port_id}` as `0x${string}`
-        }
+        baseToken: task.denomAddress,
+        baseAmount: BigInt(random_amount),
+        quoteToken: (quoteToken.value as { quote_token: string }).quote_token,
+        quoteAmount: BigInt(random_amount),
+        receiver: task.receiverAddress,
+        sourceChannelId: channel.source_channel_id,
+        ucs03address: `0x${channel.source_port_id}` as `0x${string}`,
+      }
     let unionClient: any
     if (isCosmosChain) {
       unionClient = createUnionClient({
         account: cosmosAccount,
         chainId: task.sourceChainIdCosmos,
         gasPrice: { amount: "0.025", denom: task.gasPriceDenom },
-        transport: transports[0]
+        transport: transports[0],
       })
     } else {
       unionClient = createUnionClient({
         account: evmAccount,
         chainId: task.sourceChainIdEVM,
-        transport: fallback(transports)
+        transport: fallback(transports),
       })
       // no need to approve for EVM, already approved all holesky & sepolia it will be waste
       // of time.
@@ -415,7 +415,7 @@ async function doTransfer(task: TransferConfig) {
         chainType,
         isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
         task.destinationChainId,
-        transferResp.error
+        transferResp.error,
       )
       return
     }
@@ -424,7 +424,7 @@ async function doTransfer(task: TransferConfig) {
       chainType,
       isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
       task.destinationChainId,
-      transferResp.value
+      transferResp.value,
     )
   } catch (error) {
     const msg = error instanceof Error ? error.message : String(error)
@@ -433,7 +433,7 @@ async function doTransfer(task: TransferConfig) {
       isCosmosChain ? task.sourceChainIdCosmos : task.sourceChainIdEVM,
       task.destinationChainId,
       chainType,
-      msg
+      msg,
     )
   }
 }
@@ -453,7 +453,7 @@ async function runIbcChecksForever(config: ConfigFile) {
         continue
       }
       consola.info(
-        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`
+        `Checking pair ${pair.sourceChain} <-> ${pair.destinationChain} with timeframe ${pair.timeframeMs}ms`,
       )
       try {
         await checkPackets(pair.sourceChain, pair.destinationChain, pair.timeframeMs)
@@ -461,7 +461,7 @@ async function runIbcChecksForever(config: ConfigFile) {
       } catch (err) {
         consola.error(
           `Error while checking pair ${pair.sourceChain} <-> ${pair.destinationChain}:`,
-          err
+          err,
         )
       }
     }
@@ -547,7 +547,7 @@ async function main() {
       alias: "c",
       type: "string",
       demandOption: true,
-      describe: "Path to the configuration file"
+      describe: "Path to the configuration file",
     })
     .help()
     .alias("help", "h")

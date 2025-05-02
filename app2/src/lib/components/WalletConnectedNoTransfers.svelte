@@ -1,9 +1,9 @@
 <script lang="ts">
+import { goto } from "$app/navigation"
 import { cn } from "$lib/utils"
 import type { HTMLAttributes } from "svelte/elements"
-import Button from "./ui/Button.svelte"
-import { goto } from "$app/navigation"
 import OutlineControlPointDuplicate from "./icons/OutlineControlPointDuplicate.svelte"
+import Button from "./ui/Button.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   class?: string
@@ -21,11 +21,17 @@ const {
 const containerClasses = cn("h-[600px] flex justify-center items-center", className)
 </script>
 
-<div class={containerClasses} {...rest}>
+<div
+  class={containerClasses}
+  {...rest}
+>
   <div class="flex flex-col items-center">
     <h2 class="text-xl font-bold">{title}</h2>
     <p class="pb-4">{description}</p>
-    <Button variant="secondary" onclick={() => goto("/transfer")}>
+    <Button
+      variant="secondary"
+      onclick={() => goto("/transfer")}
+    >
       <OutlineControlPointDuplicate />
       Transfer
     </Button>

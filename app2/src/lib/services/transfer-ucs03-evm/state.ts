@@ -1,11 +1,11 @@
-import { Data, type Effect, type Exit } from "effect"
-import type { Hash } from "viem"
-import type { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
-import type { switchChain } from "./chain.ts"
 import type {
   approveTransfer,
-  waitForApprovalReceipt
+  waitForApprovalReceipt,
 } from "$lib/services/transfer-ucs03-evm/approval.ts"
+import { Data, type Effect, type Exit } from "effect"
+import type { Hash } from "viem"
+import type { switchChain } from "./chain.ts"
+import type { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
 
 type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E> : never
 
@@ -60,14 +60,16 @@ type StateWithExit =
   | { _tag: "TransferReceipt"; state: TransferReceiptState }
 
 export function hasFailedExit(state: StateWithExit | { _tag: "Filling" }): boolean {
-  if (state._tag === "Filling") return false
+  if (state._tag === "Filling") {
+    return false
+  }
   return state.state._tag === "Complete" && state.state.exit._tag === "Failure"
 }
 
 export function isComplete(state: StateWithExit | { _tag: "Filling" }): boolean {
   return (
-    state._tag === "TransferReceipt" &&
-    state.state._tag === "Complete" &&
-    state.state.exit._tag === "Success"
+    state._tag === "TransferReceipt"
+    && state.state._tag === "Complete"
+    && state.state.exit._tag === "Success"
   )
 }

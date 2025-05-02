@@ -1,3 +1,5 @@
+import { xionKeplrChainInfo } from "$lib/services/cosmos/chain-info/configs/keplr"
+import { xionLeapChainInfo } from "$lib/services/cosmos/chain-info/configs/leap"
 import {
   babylonMainnetKeplrChaininfo,
   babylonMainnetLeapChainInfo,
@@ -8,14 +10,12 @@ import {
   strideKeplrChainInfo,
   strideLeapChainInfo,
   unionKeplrChainInfo,
-  unionLeapChainInfo
+  unionLeapChainInfo,
 } from "$lib/wallet/cosmos/chain-info.ts"
-import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 import type { ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
-import { xionKeplrChainInfo } from "$lib/services/cosmos/chain-info/configs/keplr"
-import { xionLeapChainInfo } from "$lib/services/cosmos/chain-info/configs/leap"
+import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 
-//Fix types
+// Fix types
 
 interface LeapExtendedInfo extends LeapChainInfo {
   theme: {
@@ -31,7 +31,7 @@ export const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "elgafar-1": elgafarKeplrChainInfo,
   "bbn-test-5": babylonTestnetKeplrChaininfo,
   "bbn-1": babylonMainnetKeplrChaininfo,
-  "xion-testnet-2": xionKeplrChainInfo
+  "xion-testnet-2": xionKeplrChainInfo,
 }
 
 export const leapChainInfoMap: Record<string, LeapExtendedInfo> = {
@@ -40,5 +40,5 @@ export const leapChainInfoMap: Record<string, LeapExtendedInfo> = {
   "elgafar-1": elgafarLeapChainInfo,
   "bbn-test-5": babylonTestnetLeapChaininfo,
   "bbn-1": babylonMainnetLeapChainInfo,
-  "xion-testnet-2": xionLeapChainInfo
+  "xion-testnet-2": xionLeapChainInfo,
 }

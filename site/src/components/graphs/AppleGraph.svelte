@@ -12,7 +12,7 @@ let isVisible = false
 
 onMount(() => {
   // The HTML Element to observe.
-  const element = document.querySelector('div[data-graph="apple"]') as HTMLElement
+  const element = document.querySelector("div[data-graph=\"apple\"]") as HTMLElement
   observer = new IntersectionObserver(entries => {
     isVisible = isVisible || entries[0].isIntersecting
   })
@@ -29,11 +29,17 @@ onMount(() => {
 </script>
 
 <div class="grid gap-2">
-  <div data-graph="apple" class="bg-transparent flex meter h-2 w-full">
-    <span class="flex" style={`width:${width}%;`}>
+  <div
+    data-graph="apple"
+    class="bg-transparent flex meter h-2 w-full"
+  >
+    <span
+      class="flex"
+      style={`width:${width}%;`}
+    >
       <span
-        class={`rounded-full flex ${primary ? "bg-accent" : "bg-gray-500"}` +
-          (isVisible ? " progress" : "")}
+        class={`rounded-full flex ${primary ? "bg-accent" : "bg-gray-500"}`
+        + (isVisible ? " progress" : "")}
       >
       </span>
     </span>
@@ -44,18 +50,18 @@ onMount(() => {
 </div>
 
 <style>
-  .progress {
-    animation: progressBar 1.5s ease-in-out;
-    animation-fill-mode: both;
+.progress {
+  animation: progressBar 1.5s ease-in-out;
+  animation-fill-mode: both;
+}
+
+@keyframes progressBar {
+  0% {
+    width: 0;
   }
 
-  @keyframes progressBar {
-    0% {
-      width: 0;
-    }
-
-    100% {
-      width: 100%;
-    }
+  100% {
+    width: 100%;
   }
+}
 </style>

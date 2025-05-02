@@ -1,12 +1,12 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { Array as Arr, Option, pipe, String as Str, Struct } from "effect"
-import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import Label from "../ui/Label.svelte"
+import type { HTMLAttributes } from "svelte/elements"
 import A from "../ui/A.svelte"
+import Label from "../ui/Label.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   hash: string
@@ -18,7 +18,7 @@ const { hash, chain, class: className = "", ...rest }: Props = $props()
 
 // For Cosmos chains: remove 0x prefix and convert to uppercase
 const formattedHash = $derived(
-  chain.rpc_type === "cosmos" && hash.startsWith("0x") ? hash.slice(2).toUpperCase() : hash
+  chain.rpc_type === "cosmos" && hash.startsWith("0x") ? hash.slice(2).toUpperCase() : hash,
 )
 
 const explorerUrl = $derived(
@@ -26,8 +26,8 @@ const explorerUrl = $derived(
     chain.explorers,
     Arr.head,
     Option.map(Struct.get("block_url")),
-    Option.map(Str.concat(formattedHash))
-  )
+    Option.map(Str.concat(formattedHash)),
+  ),
 )
 
 const explorerName = $derived(
@@ -35,22 +35,24 @@ const explorerName = $derived(
     chain.explorers,
     Arr.head,
     Option.map(Struct.get("display_name")),
-    Option.getOrElse(() => "Explorer")
-  )
+    Option.getOrElse(() => "Explorer"),
+  ),
 )
 </script>
 
 <Tooltip title={`Block on ${chain.display_name}`}>
   {#snippet trigger()}
-    <LongMonoWord class={className} {...rest}>
+    <LongMonoWord
+      class={className}
+      {...rest}
+    >
       {formattedHash}
     </LongMonoWord>
   {/snippet}
 
   {#snippet content()}
     <section>
-      <Label>Chain</Label>
-      <ChainComponent {chain} />
+      <Label>Chain</Label> <ChainComponent {chain} />
     </section>
 
     <section>
@@ -62,8 +64,7 @@ const explorerName = $derived(
 
     {#if Option.isSome(explorerUrl)}
       <section>
-        <Label>Explorer</Label>
-        <A href={explorerUrl.value}>View on {explorerName}</A>
+        <Label>Explorer</Label> <A href={explorerUrl.value}>View on {explorerName}</A>
       </section>
     {/if}
   {/snippet}

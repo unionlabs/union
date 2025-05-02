@@ -1,6 +1,6 @@
+import { bech32 } from "@scure/base"
 import { type ClassValue, clsx } from "clsx"
 import { twMerge } from "tailwind-merge"
-import { bech32 } from "@scure/base"
 
 export function cn(...inputs: Array<ClassValue>) {
   return twMerge(clsx(inputs))
@@ -8,7 +8,7 @@ export function cn(...inputs: Array<ClassValue>) {
 
 export function debounce<T extends (...args: Array<any>) => void>(
   handler: T,
-  delay = 500
+  delay = 500,
 ): (...args: Parameters<T>) => void {
   let id: number
   return (...args: Parameters<T>) => {
@@ -18,7 +18,9 @@ export function debounce<T extends (...args: Array<any>) => void>(
 }
 
 export function isValidBech32ContractAddress(address: unknown) {
-  if (typeof address !== "string") return false
+  if (typeof address !== "string") {
+    return false
+  }
   try {
     const { prefix: _, words } = bech32.decode(address)
     return true

@@ -1,10 +1,10 @@
-import { Effect, Option } from "effect"
-import { parseUnits } from "viem"
 import { AmountParsingError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import type { Token } from "@unionlabs/sdk/schema"
+import { Effect, Option } from "effect"
+import { parseUnits } from "viem"
 
 export const parseAmountEffect = (amount: string, token: Token) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     if (!token) {
       return "0"
     }
@@ -22,8 +22,8 @@ export const parseAmountEffect = (amount: string, token: Token) =>
         new AmountParsingError({
           input: amount,
           decimals,
-          cause: err
-        })
+          cause: err,
+        }),
     })
   })
 

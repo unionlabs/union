@@ -6,37 +6,42 @@ interface Props {
 const { src } = Astro.props
 ---
 
-<div set:html={src} class="mt-8" data-draw-io="" />
+<div
+  set:html={src}
+  class="mt-8"
+  data-draw-io=""
+/>
 
 <script>
-  const htmlElement = document.querySelector('html')
-  const selectThemeElement = document.querySelector('starlight-rapide-theme-select button')
-  const currentTheme = htmlElement?.getAttribute('data-theme')
-  const drawIOElement = document.querySelector('div[data-draw-io]')
+const htmlElement = document.querySelector("html")
+const selectThemeElement = document.querySelector("starlight-rapide-theme-select button")
+const currentTheme = htmlElement?.getAttribute("data-theme")
+const drawIOElement = document.querySelector("div[data-draw-io]")
 
-  let filter = currentTheme === 'dark' ? 'invert(1)' : 'none'
+let filter = currentTheme === "dark" ? "invert(1)" : "none"
 
-  if (currentTheme) drawIOElement?.setAttribute('style', `filter: ${filter}`)
+if (currentTheme) {
+  drawIOElement?.setAttribute("style", `filter: ${filter}`)
+}
 
-  const preferredTheme = window.matchMedia('(prefers-color-scheme: dark)').matches
-    ? 'dark'
-    : 'light'
+const preferredTheme = window.matchMedia("(prefers-color-scheme: dark)").matches
+  ? "dark"
+  : "light"
 
-  function onThemeChange(_event: Event) {
-    const selectedTheme = document.documentElement.getAttribute('data-theme')
-    filter =
-      selectedTheme === 'dark'
-        ? 'invert(1)'
-        : selectedTheme === 'auto' && preferredTheme === 'dark'
-          ? 'invert(1)'
-          : 'none'
-    drawIOElement?.setAttribute('style', `filter: ${filter}`)
+function onThemeChange(_event: Event) {
+  const selectedTheme = document.documentElement.getAttribute("data-theme")
+  filter = selectedTheme === "dark"
+    ? "invert(1)"
+    : selectedTheme === "auto" && preferredTheme === "dark"
+    ? "invert(1)"
+    : "none"
+  drawIOElement?.setAttribute("style", `filter: ${filter}`)
+}
+
+document.addEventListener("DOMContentLoaded", _event => {
+  selectThemeElement?.addEventListener("click", onThemeChange)
+  return () => {
+    selectThemeElement?.removeEventListener("click", onThemeChange)
   }
-
-  document.addEventListener('DOMContentLoaded', _event => {
-    selectThemeElement?.addEventListener('click', onThemeChange)
-    return () => {
-      selectThemeElement?.removeEventListener('click', onThemeChange)
-    }
-  })
+})
 </script>

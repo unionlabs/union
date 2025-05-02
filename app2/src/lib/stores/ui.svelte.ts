@@ -1,10 +1,10 @@
+import base64Icon from "$lib/config/base64.txt?raw"
 import { themes } from "$lib/themes"
 import type { Edition } from "$lib/themes"
-import base64Icon from "$lib/config/base64.txt?raw"
 
 const projectIds: Record<Edition, string> = {
   app: "f544d5ee6eb61962408fd456c114e9ed",
-  btc: "49fe74ca5ded7142adefc69a7788d14a"
+  btc: "49fe74ca5ded7142adefc69a7788d14a",
 }
 
 class UiStore {
@@ -27,7 +27,7 @@ class UiStore {
     baseUrl: `https://${this.activeEdition}.union.build`,
     docs: "https://docs.union.build",
     iconUrl: "https://app.union.build/images/logo.png",
-    projectId: projectIds[this.activeEdition]
+    projectId: projectIds[this.activeEdition],
   })
 
   private closeAllModals() {

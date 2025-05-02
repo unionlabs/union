@@ -1,8 +1,8 @@
 ---
+import AnimationLayout from "#/layouts/AnimationLayout.astro"
+import type { LearningPageFields } from "#/lib/contentful/types.ts"
 import DeepDiveSection from "../components/sections/DeepDiveSection.astro"
 import { contentfulClient } from "../lib/contentful/client.ts"
-import type { LearningPageFields } from "#/lib/contentful/types.ts"
-import AnimationLayout from "#/layouts/AnimationLayout.astro"
 
 export const prerender = false
 
@@ -10,7 +10,7 @@ let learningData: LearningPageFields | null = null
 let error: string | null = null
 try {
   const landingEntries = await contentfulClient.getEntries<LearningPageFields>({
-    content_type: "learn"
+    content_type: "learn",
   })
 
   if (landingEntries.items.length > 0) {
@@ -31,7 +31,10 @@ try {
       <p>{error}</p>
     </div>
   ) : learningData ? (
-    <AnimationLayout title="Learn" text="Study Union.">
+    <AnimationLayout
+      title="Learn"
+      text="Study Union."
+    >
       <DeepDiveSection entries={learningData} />
     </AnimationLayout>
   ) : (

@@ -46,7 +46,10 @@ function shouldUseBlackText(hexColor: string) {
           style={`background-color: ${color}`}
           data-color={color}
         >
-          <span data-copy class="font-mono uppercase">
+          <span
+            data-copy
+            class="font-mono uppercase"
+          >
             {color}
           </span>
         </button>
@@ -56,24 +59,24 @@ function shouldUseBlackText(hexColor: string) {
 </div>
 
 <script>
-  const buttons = document.querySelectorAll("[data-color]");
+const buttons = document.querySelectorAll("[data-color]")
 
-  buttons.forEach((button) => {
-    button.addEventListener("click", async () => {
-      const color = button.getAttribute("data-color");
-      const span = button.querySelector("[data-copy]");
-      const originalText = span.textContent;
+buttons.forEach((button) => {
+  button.addEventListener("click", async () => {
+    const color = button.getAttribute("data-color")
+    const span = button.querySelector("[data-copy]")
+    const originalText = span.textContent
 
-      try {
-        await navigator.clipboard.writeText(color);
-        span.textContent = "Copied";
+    try {
+      await navigator.clipboard.writeText(color)
+      span.textContent = "Copied"
 
-        setTimeout(() => {
-          span.textContent = originalText;
-        }, 2000);
-      } catch (err) {
-        console.error("Failed to copy:", err);
-      }
-    });
-  });
+      setTimeout(() => {
+        span.textContent = originalText
+      }, 2000)
+    } catch (err) {
+      console.error("Failed to copy:", err)
+    }
+  })
+})
 </script>

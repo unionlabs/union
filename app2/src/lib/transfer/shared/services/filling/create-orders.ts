@@ -1,32 +1,32 @@
-import { Effect, Match, Option, pipe, Schema, Array as Arr } from "effect"
-import { fromHex, http } from "viem"
-import {
-  createViemPublicClient,
-  EvmChannelDestination,
-  ViemPublicClientDestination,
-  ViemPublicClientSource
-} from "@unionlabs/sdk/evm"
+import type { OrderCreationError } from "$lib/transfer/shared/errors"
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import {
   CosmosChannelDestination,
   CosmWasmClientDestination,
   CosmWasmClientSource,
-  createCosmWasmClient
+  createCosmWasmClient,
 } from "@unionlabs/sdk/cosmos"
+import {
+  createViemPublicClient,
+  EvmChannelDestination,
+  ViemPublicClientDestination,
+  ViemPublicClientSource,
+} from "@unionlabs/sdk/evm"
+import { FungibleIntent } from "@unionlabs/sdk/schema"
 import {
   createCosmosToCosmosFungibleAssetOrder,
   createCosmosToEvmFungibleAssetOrder,
   createEvmToCosmosFungibleAssetOrder,
-  createEvmToEvmFungibleAssetOrder
+  createEvmToEvmFungibleAssetOrder,
 } from "@unionlabs/sdk/ucs03"
 import { Batch, type Instruction } from "@unionlabs/sdk/ucs03/instruction"
-import { FungibleIntent } from "@unionlabs/sdk/schema"
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import type { OrderCreationError } from "$lib/transfer/shared/errors"
+import { Array as Arr, Effect, Match, Option, pipe, Schema } from "effect"
+import { fromHex, http } from "viem"
 
 export function createOrdersBatch(
-  context: TransferContext
+  context: TransferContext,
 ): Effect.Effect<Option.Option<Instruction>, OrderCreationError> {
-  return Effect.gen(function* () {
+  return Effect.gen(function*() {
     if (context.intents.length === 0) {
       return Option.none<Instruction>()
     }
@@ -34,7 +34,7 @@ export function createOrdersBatch(
     const grouped = Arr.groupBy(
       context.intents,
       intent =>
-        `${intent.sourceChainId}-${intent.destinationChain.universal_chain_id}-${intent.channel.destination_channel_id}-${intent.ucs03address}`
+        `${intent.sourceChainId}-${intent.destinationChain.universal_chain_id}-${intent.channel.destination_channel_id}-${intent.ucs03address}`,
     )
 
     // We only support one group per batch
@@ -43,7 +43,7 @@ export function createOrdersBatch(
 
     const decodeIntent = Schema.decode(FungibleIntent.AssetOrderIntentFromTransferIntent, {
       errors: "all",
-      onExcessProperty: "ignore"
+      onExcessProperty: "ignore",
     })
 
     const newIntents = firstGroup.map(intent =>
@@ -56,7 +56,7 @@ export function createOrdersBatch(
         sourceChainId: intent.sourceChainId,
         sourceChannelId: intent.sourceChannelId,
         sourceChain: intent.sourceChain,
-        destinationChain: intent.destinationChain
+        destinationChain: intent.destinationChain,
       })
     )
 
@@ -64,133 +64,142 @@ export function createOrdersBatch(
 
     const provideClients = yield* Match.value([
       first.sourceChain.rpc_type,
-      first.destinationChain.rpc_type
+      first.destinationChain.rpc_type,
     ]).pipe(
-      Match.when(["evm", "cosmos"], () =>
-        Effect.all(resolvedIntents.map(createEvmToCosmosFungibleAssetOrder)).pipe(
-          Effect.provideServiceEffect(
-            ViemPublicClientSource,
-            pipe(
-              first.sourceChain.toViemChain(),
-              Option.map(chain => createViemPublicClient({ chain, transport: http() })),
-              Effect.flatten,
-              Effect.map(client => ({ client }))
-            )
+      Match.when(
+        ["evm", "cosmos"],
+        () =>
+          Effect.all(resolvedIntents.map(createEvmToCosmosFungibleAssetOrder)).pipe(
+            Effect.provideServiceEffect(
+              ViemPublicClientSource,
+              pipe(
+                first.sourceChain.toViemChain(),
+                Option.map(chain => createViemPublicClient({ chain, transport: http() })),
+                Effect.flatten,
+                Effect.map(client => ({ client })),
+              ),
+            ),
+            Effect.provideServiceEffect(
+              CosmWasmClientDestination,
+              pipe(
+                first.destinationChain.getRpcUrl("rpc"),
+                Option.map(createCosmWasmClient),
+                Effect.flatten,
+                Effect.map(client => ({ client })),
+              ),
+            ),
+            Effect.provideServiceEffect(
+              CosmosChannelDestination,
+              Effect.succeed({
+                ucs03address: fromHex(first.channel.destination_port_id, "string"),
+                channelId: first.channel.destination_channel_id,
+              }),
+            ),
           ),
-          Effect.provideServiceEffect(
-            CosmWasmClientDestination,
-            pipe(
-              first.destinationChain.getRpcUrl("rpc"),
-              Option.map(createCosmWasmClient),
-              Effect.flatten,
-              Effect.map(client => ({ client }))
-            )
-          ),
-          Effect.provideServiceEffect(
-            CosmosChannelDestination,
-            Effect.succeed({
-              ucs03address: fromHex(first.channel.destination_port_id, "string"),
-              channelId: first.channel.destination_channel_id
-            })
-          )
-        )
       ),
-      Match.when(["evm", "evm"], () =>
-        Effect.all(resolvedIntents.map(createEvmToEvmFungibleAssetOrder)).pipe(
-          Effect.provideServiceEffect(
-            ViemPublicClientSource,
-            pipe(
-              first.sourceChain.toViemChain(),
-              Option.map(chain => createViemPublicClient({ chain, transport: http() })),
-              Effect.flatten,
-              Effect.map(client => ({ client }))
-            )
+      Match.when(
+        ["evm", "evm"],
+        () =>
+          Effect.all(resolvedIntents.map(createEvmToEvmFungibleAssetOrder)).pipe(
+            Effect.provideServiceEffect(
+              ViemPublicClientSource,
+              pipe(
+                first.sourceChain.toViemChain(),
+                Option.map(chain => createViemPublicClient({ chain, transport: http() })),
+                Effect.flatten,
+                Effect.map(client => ({ client })),
+              ),
+            ),
+            Effect.provideServiceEffect(
+              ViemPublicClientDestination,
+              pipe(
+                first.destinationChain.toViemChain(),
+                Option.map(chain => createViemPublicClient({ chain, transport: http() })),
+                Effect.flatten,
+                Effect.map(client => ({ client })),
+              ),
+            ),
+            Effect.provideServiceEffect(
+              EvmChannelDestination,
+              Effect.succeed({
+                ucs03address: first.channel.destination_port_id,
+                channelId: first.channel.destination_channel_id,
+              }),
+            ),
           ),
-          Effect.provideServiceEffect(
-            ViemPublicClientDestination,
-            pipe(
-              first.destinationChain.toViemChain(),
-              Option.map(chain => createViemPublicClient({ chain, transport: http() })),
-              Effect.flatten,
-              Effect.map(client => ({ client }))
-            )
-          ),
-          Effect.provideServiceEffect(
-            EvmChannelDestination,
-            Effect.succeed({
-              ucs03address: first.channel.destination_port_id,
-              channelId: first.channel.destination_channel_id
-            })
-          )
-        )
       ),
-      Match.when(["cosmos", "evm"], () =>
-        Effect.all(resolvedIntents.map(createCosmosToEvmFungibleAssetOrder)).pipe(
-          Effect.provideServiceEffect(
-            CosmWasmClientSource,
-            pipe(
-              first.sourceChain.getRpcUrl("rpc"),
-              Option.map(createCosmWasmClient),
-              Effect.flatten,
-              Effect.map(client => ({ client }))
-            )
+      Match.when(
+        ["cosmos", "evm"],
+        () =>
+          Effect.all(resolvedIntents.map(createCosmosToEvmFungibleAssetOrder)).pipe(
+            Effect.provideServiceEffect(
+              CosmWasmClientSource,
+              pipe(
+                first.sourceChain.getRpcUrl("rpc"),
+                Option.map(createCosmWasmClient),
+                Effect.flatten,
+                Effect.map(client => ({ client })),
+              ),
+            ),
+            Effect.provideServiceEffect(
+              ViemPublicClientDestination,
+              pipe(
+                first.destinationChain.toViemChain(),
+                Option.map(chain => createViemPublicClient({ chain, transport: http() })),
+                Effect.flatten,
+                Effect.map(client => ({ client })),
+              ),
+            ),
+            Effect.provideServiceEffect(
+              EvmChannelDestination,
+              Effect.succeed({
+                ucs03address: first.channel.destination_port_id,
+                channelId: first.channel.destination_channel_id,
+              }),
+            ),
           ),
-          Effect.provideServiceEffect(
-            ViemPublicClientDestination,
-            pipe(
-              first.destinationChain.toViemChain(),
-              Option.map(chain => createViemPublicClient({ chain, transport: http() })),
-              Effect.flatten,
-              Effect.map(client => ({ client }))
-            )
-          ),
-          Effect.provideServiceEffect(
-            EvmChannelDestination,
-            Effect.succeed({
-              ucs03address: first.channel.destination_port_id,
-              channelId: first.channel.destination_channel_id
-            })
-          )
-        )
       ),
-      Match.when(["cosmos", "cosmos"], () =>
-        Effect.all(resolvedIntents.map(createCosmosToCosmosFungibleAssetOrder)).pipe(
-          Effect.provideServiceEffect(
-            CosmWasmClientSource,
-            pipe(
-              first.sourceChain.getRpcUrl("rpc"),
-              Option.map(createCosmWasmClient),
-              Effect.flatten,
-              Effect.map(client => ({ client }))
-            )
+      Match.when(
+        ["cosmos", "cosmos"],
+        () =>
+          Effect.all(resolvedIntents.map(createCosmosToCosmosFungibleAssetOrder)).pipe(
+            Effect.provideServiceEffect(
+              CosmWasmClientSource,
+              pipe(
+                first.sourceChain.getRpcUrl("rpc"),
+                Option.map(createCosmWasmClient),
+                Effect.flatten,
+                Effect.map(client => ({ client })),
+              ),
+            ),
+            Effect.provideServiceEffect(
+              CosmWasmClientDestination,
+              pipe(
+                first.destinationChain.getRpcUrl("rpc"),
+                Option.map(createCosmWasmClient),
+                Effect.flatten,
+                Effect.map(client => ({ client })),
+              ),
+            ),
+            Effect.provideServiceEffect(
+              CosmosChannelDestination,
+              Effect.succeed({
+                ucs03address: fromHex(first.channel.destination_port_id, "string"),
+                channelId: first.channel.destination_channel_id,
+              }),
+            ),
           ),
-          Effect.provideServiceEffect(
-            CosmWasmClientDestination,
-            pipe(
-              first.destinationChain.getRpcUrl("rpc"),
-              Option.map(createCosmWasmClient),
-              Effect.flatten,
-              Effect.map(client => ({ client }))
-            )
-          ),
-          Effect.provideServiceEffect(
-            CosmosChannelDestination,
-            Effect.succeed({
-              ucs03address: fromHex(first.channel.destination_port_id, "string"),
-              channelId: first.channel.destination_channel_id
-            })
-          )
-        )
       ),
       Match.orElse(() =>
         Effect.fail(
           new OrderCreationError({
             details: {
-              reason: `Unsupported combo: ${first.sourceChain.rpc_type} -> ${first.destinationChain.rpc_type}`
-            }
-          })
+              reason:
+                `Unsupported combo: ${first.sourceChain.rpc_type} -> ${first.destinationChain.rpc_type}`,
+            },
+          }),
         )
-      )
+      ),
     )
 
     const filtered = provideClients.filter((o): o is NonNullable<typeof o> => o !== null)
@@ -200,9 +209,9 @@ export function createOrdersBatch(
     Effect.catchAll(error =>
       Effect.fail(
         new OrderCreationError({
-          details: { error, intents: context.intents.length }
-        })
+          details: { error, intents: context.intents.length },
+        }),
       )
-    )
+    ),
   )
 }

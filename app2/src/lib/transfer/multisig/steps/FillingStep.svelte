@@ -1,14 +1,14 @@
 <script lang="ts">
-import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
-import Amount from "$lib/transfer/shared/components/Amount.svelte"
-import Button from "$lib/components/ui/Button.svelte"
-import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { Match, Option } from "effect"
-import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import InsetError from "$lib/components/model/InsetError.svelte"
+import Button from "$lib/components/ui/Button.svelte"
 import Input from "$lib/components/ui/Input.svelte"
-import SenderInput from "../components/SenderInput.svelte"
+import Amount from "$lib/transfer/shared/components/Amount.svelte"
+import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
+import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
+import type { ContextFlowError } from "$lib/transfer/shared/errors"
+import { Match, Option } from "effect"
 import ReceiverInput from "../components/ReceiverInput.svelte"
+import SenderInput from "../components/SenderInput.svelte"
 
 type Props = {
   onContinue: () => void
@@ -22,7 +22,7 @@ const {
   onContinue,
   loading,
   statusMessage,
-  errors = Option.none<ContextFlowError>()
+  errors = Option.none<ContextFlowError>(),
 }: Props = $props()
 
 let isModalOpen = $state(false)
@@ -33,28 +33,28 @@ const uiStatus = $derived.by(() => {
       const match = Match.type<ContextFlowError>().pipe(
         Match.tag("BalanceLookupError", () => ({
           text: "Failed checking balance",
-          error
+          error,
         })),
         Match.tag("AllowanceCheckError", () => ({
           text: "Failed checking allowance",
-          error
+          error,
         })),
         Match.tag("OrderCreationError", () => ({
           text: "Could not create orders",
-          error
+          error,
         })),
         Match.orElse(() => ({
           text: statusMessage ?? "Continue",
-          error
-        }))
+          error,
+        })),
       )
       return match(error)
     },
 
     onNone: () => ({
       text: statusMessage ?? "Continue",
-      error: null
-    })
+      error: null,
+    }),
   })
 })
 
@@ -64,10 +64,10 @@ const isButtonEnabled = $derived.by(() => !loading)
 <div class="min-w-full flex flex-col grow">
   <div class="flex flex-col gap-4 p-4">
     <SenderInput />
-    <ChainAsset type="source"/>
-    <ChainAsset type="destination"/>
+    <ChainAsset type="source" />
+    <ChainAsset type="destination" />
     <ReceiverInput />
-    <Amount type="source"/>
+    <Amount type="source" />
   </div>
 
   <div class="grow"></div>
@@ -94,7 +94,6 @@ const isButtonEnabled = $derived.by(() => !loading)
         </Button>
       {/if}
     </div>
-
   </div>
 </div>
 

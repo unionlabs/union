@@ -1,9 +1,9 @@
 <script lang="ts">
 import { cn } from "$lib/utils"
-import type { HTMLAttributes } from "svelte/elements"
-import type { Snippet } from "svelte"
-import { scale } from "svelte/transition"
 import { Match } from "effect"
+import type { Snippet } from "svelte"
+import type { HTMLAttributes } from "svelte/elements"
+import { scale } from "svelte/transition"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   trigger: Snippet
@@ -27,7 +27,7 @@ let showTimeout: number | undefined
 let [enterDelay, leaveDelay] = Match.value(delay).pipe(
   Match.when(Match.undefined, () => [750, 250]),
   Match.when("quick", () => [100, 100]),
-  Match.exhaustive
+  Match.exhaustive,
 )
 
 $effect(() => {
@@ -80,7 +80,9 @@ function onTriggerLeave() {
 }
 
 function updatePosition(e?: MouseEvent) {
-  if (!(tooltipElement && e && tooltipReady)) return
+  if (!(tooltipElement && e && tooltipReady)) {
+    return
+  }
 
   const tooltipRect = tooltipElement.getBoundingClientRect()
   const viewportWidth = window.innerWidth
@@ -112,8 +114,8 @@ const tooltipClasses = $derived(
     "fixed z-40 cursor-default overflow-visible border border-1 border-zinc-700 bg-zinc-800 p-2 rounded shadow-md",
     isVisible && "opacity-100 visible delay-600",
     isVisible ? "scale-100" : "scale-95",
-    className
-  )
+    className,
+  ),
 )
 </script>
 
@@ -153,7 +155,7 @@ const tooltipClasses = $derived(
 {/if}
 
 <style global>
-  .tooltip-content * {
-    pointer-events: auto !important;
-  }
+.tooltip-content * {
+  pointer-events: auto !important;
+}
 </style>

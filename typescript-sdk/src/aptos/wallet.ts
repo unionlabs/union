@@ -1,10 +1,10 @@
 import type {
-  RawTransaction,
   AccountAuthenticator,
+  InputGenerateTransactionOptions,
+  RawTransaction,
   UserTransactionResponse,
-  InputGenerateTransactionOptions
 } from "@aptos-labs/ts-sdk"
-import type { Prettify, KeysToSnakeCase } from "../types.ts"
+import type { KeysToSnakeCase, Prettify } from "../types.ts"
 
 const aptosNetworks = ["mainnet", "testnet", "devnet", "local", "custom"] as const
 type AptosNetwork = (typeof aptosNetworks)[number]
@@ -31,7 +31,7 @@ export interface AptosBrowserWallet {
   network: () => Promise<Capitalize<AptosNetwork>>
   getNetwork: () => Promise<AptosNetworkInfo>
   onAccountChange: (
-    callback: (account: AptosPublicAccountInfo & { type?: unknown }) => void
+    callback: (account: AptosPublicAccountInfo & { type?: unknown }) => void,
   ) => void
   onNetworkChange: (callback: (network: AptosNetworkInfo) => void) => void
 

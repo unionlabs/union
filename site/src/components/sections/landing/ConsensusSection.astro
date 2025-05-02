@@ -1,9 +1,9 @@
 ---
-import H1 from "../../typography/h2.astro"
-import ButtonA from "../../ButtonA.astro"
-import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
-import ContainedSection from "../../ContainedSection.astro"
 import { renderRichText, renderTitle } from "../../../lib/contentful/render.ts"
+import ButtonA from "../../ButtonA.astro"
+import ContainedSection from "../../ContainedSection.astro"
+import H1 from "../../typography/h2.astro"
+import QuoteSubTitle from "../../typography/QuoteSubTitle.astro"
 
 interface Props {
   title: any
@@ -40,7 +40,9 @@ const textHtml = renderRichText(text)
           oncanplay="true"
           onloadeddata="true"
           onloadedmetadata="true"
-          loop></video>
+          loop
+        >
+        </video>
       </div>
     </div>
   </div>

@@ -1,5 +1,5 @@
-import js from "@eslint/js"
 import { includeIgnoreFile } from "@eslint/compat"
+import js from "@eslint/js"
 import svelte from "eslint-plugin-svelte"
 import globals from "globals"
 import { fileURLToPath } from "node:url"
@@ -16,22 +16,22 @@ export default ts.config(
     languageOptions: {
       globals: {
         ...globals.browser,
-        ...globals.node
-      }
-    }
+        ...globals.node,
+      },
+    },
   },
   {
     files: ["**/*.svelte"],
 
     languageOptions: {
       parserOptions: {
-        parser: ts.parser
-      }
-    }
+        parser: ts.parser,
+      },
+    },
   },
   {
     rules: {
-      "@typescript-eslint/no-empty-object-type": "off"
-    }
-  }
+      "@typescript-eslint/no-empty-object-type": "off",
+    },
+  },
 )

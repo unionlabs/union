@@ -1,12 +1,12 @@
 <script lang="ts">
-import { onDestroy, onMount } from "svelte"
-import { type DetectedOS, detectOS, sleep } from "$lib/utils/utils.ts"
-import { getState } from "$lib/state/index.svelte.ts"
-import SelectOS from "$lib/components/Terminal/Install/SelectOS.svelte"
-import MacOS from "$lib/components/Terminal/Install/MacOS.svelte"
 import Linux from "$lib/components/Terminal/Install/Linux.svelte"
-import { axiom } from "$lib/utils/axiom.ts"
+import MacOS from "$lib/components/Terminal/Install/MacOS.svelte"
+import SelectOS from "$lib/components/Terminal/Install/SelectOS.svelte"
+import { getState } from "$lib/state/index.svelte.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import { axiom } from "$lib/utils/axiom.ts"
+import { type DetectedOS, detectOS, sleep } from "$lib/utils/utils.ts"
+import { onDestroy, onMount } from "svelte"
 
 let os = $state<DetectedOS | undefined>(undefined)
 let selectedOs = $state<string | undefined>(undefined)
@@ -38,10 +38,9 @@ onDestroy(() => {
 </script>
 
 {#if !selectedOs}
-  <SelectOS {select}/>
+  <SelectOS {select} />
 {:else if selectedOs === "macos"}
-  <MacOS {change}/>
+  <MacOS {change} />
 {:else if selectedOs === "linux"}
-  <Linux {change}/>
+  <Linux {change} />
 {/if}
-

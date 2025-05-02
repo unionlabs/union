@@ -1,10 +1,10 @@
-import icon from "astro-icon"
-import { loadEnv } from "vite"
-import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
+import svelte from "@astrojs/svelte"
 import tailwind from "@astrojs/tailwind"
-import { defineConfig } from "astro/config"
 import vercel from "@astrojs/vercel/serverless"
+import icon from "astro-icon"
+import { defineConfig } from "astro/config"
+import { loadEnv } from "vite"
 import { markdownConfiguration } from "./markdown.config.ts"
 
 const SITE_URL = "https://union.build"
@@ -12,7 +12,7 @@ const SITE_URL = "https://union.build"
 const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
   process.env.NODE_ENV,
   process.cwd(),
-  ""
+  "",
 )
 
 export default defineConfig({
@@ -20,19 +20,19 @@ export default defineConfig({
   output: "server",
   experimental: {
     clientPrerender: true,
-    contentIntellisense: true
+    contentIntellisense: true,
   },
   trailingSlash: "ignore",
   adapter: vercel({
-    imageService: true
+    imageService: true,
   }),
   image: {
     domains: [
       "cdn.contentful.com",
       "images.ctfassets.net",
       "raw.githubusercontent.com",
-      "avatars.githubusercontent.com"
-    ]
+      "avatars.githubusercontent.com",
+    ],
   },
   markdown: markdownConfiguration,
   server: _ => ({ port: Number(PORT) }),
@@ -40,24 +40,24 @@ export default defineConfig({
   prefetch: { prefetchAll: true, defaultStrategy: "viewport" },
   redirects: {
     "/feed": "/rss.xml",
-    "/logo": "/union-logo.zip"
+    "/logo": "/union-logo.zip",
   },
   vite: {
     assetsInclude: ["**/*.splinecode"],
     optimizeDeps: {
-      exclude: ["echarts"]
+      exclude: ["echarts"],
     },
     define: {
-      global: {}
-    }
+      global: {},
+    },
   },
   integrations: [
     icon(),
     tailwind({
       applyBaseStyles: false,
-      configFile: "tailwind.config.ts"
+      configFile: "tailwind.config.ts",
     }),
     svelte(),
-    sitemap()
-  ]
+    sitemap(),
+  ],
 })

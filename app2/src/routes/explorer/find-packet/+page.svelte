@@ -16,35 +16,48 @@ let transactionHash = $state("")
 </script>
 
 <Sections>
-  <Card divided >
+  <Card divided>
     <h2 class="p-4">Find packet / transfer</h2>
     <div class="flex flex-col gap-4 p-4">
       <section>
         Find a transfer or packet based on the hash of the transaction that initiated the transfer.
       </section>
       <section>
-        <Input id="transaction-hash" value="" oninput={(e) => {
+        <Input
+          id="transaction-hash"
+          value=""
+          oninput={(e) => {
             // used for conditionally displaying result
 
-            transactionHash = e.currentTarget.value.startsWith('0x') ? e.currentTarget.value : `0x${e.currentTarget.value}`
+            transactionHash = e.currentTarget.value.startsWith("0x")
+              ? e.currentTarget.value
+              : `0x${e.currentTarget.value}`
 
             // actually make the query
             transferHashStore.startPolling(transactionHash)
-          }} label="Transaction Hash"/>
+          }}
+          label="Transaction Hash"
+        />
       </section>
       {#if transactionHash}
-      <section>
-        {#if Option.isSome(transferHashStore.data)}
-          <Label>Packet Hash</Label>
-          {transferHashStore.data.value}
-          <div class="flex flex-col gap-2 mt-4">
-          <A external={false} href={`/explorer/transfers/${transferHashStore.data.value}`}>Go to transfer</A>
-          <A external={false} href={`/explorer/packets/${transferHashStore.data.value}`}>Go to packet</A>
-          </div>
-        {:else}
-          <p>No packet or transfer found.</p>
-        {/if}
-      </section>
+        <section>
+          {#if Option.isSome(transferHashStore.data)}
+            <Label>Packet Hash</Label>
+            {transferHashStore.data.value}
+            <div class="flex flex-col gap-2 mt-4">
+              <A
+                external={false}
+                href={`/explorer/transfers/${transferHashStore.data.value}`}
+              >Go to transfer</A>
+              <A
+                external={false}
+                href={`/explorer/packets/${transferHashStore.data.value}`}
+              >Go to packet</A>
+            </div>
+          {:else}
+            <p>No packet or transfer found.</p>
+          {/if}
+        </section>
       {/if}
     </div>
   </Card>

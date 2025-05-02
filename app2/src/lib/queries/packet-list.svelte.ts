@@ -1,10 +1,10 @@
-import { createQueryGraphql } from "$lib/utils/queries"
-import { Option, Schema } from "effect"
-import { graphql } from "gql.tada"
-import { packetList } from "$lib/stores/packets.svelte"
 import { packetListItemFragment } from "$lib/queries/fragments/packet-list-item"
+import { packetList } from "$lib/stores/packets.svelte"
+import { createQueryGraphql } from "$lib/utils/queries"
 import type { SortOrder } from "@unionlabs/sdk/schema"
 import { PacketList } from "@unionlabs/sdk/schema"
+import { Option, Schema } from "effect"
+import { graphql } from "gql.tada"
 
 export const LIMIT = 10
 
@@ -21,7 +21,7 @@ export let packetListLatestQuery = (limit = LIMIT) =>
       }
     }
   `,
-      [packetListItemFragment]
+      [packetListItemFragment],
     ),
     variables: { limit },
     refetchInterval: "1 second",
@@ -30,7 +30,7 @@ export let packetListLatestQuery = (limit = LIMIT) =>
     },
     writeError: error => {
       packetList.error = error
-    }
+    },
   })
 
 export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
@@ -49,7 +49,7 @@ export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) 
       }
     }
   `,
-      [packetListItemFragment]
+      [packetListItemFragment],
     ),
     variables: { page, limit },
     refetchInterval: "30 seconds",
@@ -58,7 +58,7 @@ export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) 
     },
     writeError: error => {
       packetList.error = error
-    }
+    },
   })
 
 export let packetListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
@@ -76,7 +76,7 @@ export let packetListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT) 
       }
     }
   `,
-      [packetListItemFragment]
+      [packetListItemFragment],
     ),
     variables: { page, limit },
     refetchInterval: "30 seconds",
@@ -85,5 +85,5 @@ export let packetListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT) 
     },
     writeError: error => {
       packetList.error = error
-    }
+    },
   })

@@ -1,7 +1,7 @@
 import type { Account as ViemAccount, Address } from "viem"
-import type { evmChainId, EvmChainId } from "./evm/client.ts"
-import type { cosmosChainId, CosmosChainId } from "./cosmos/client.ts"
-import type { aptosChainId, AptosChainId, AptosAccount } from "./aptos/client.ts"
+import type { AptosAccount, AptosChainId, aptosChainId } from "./aptos/client.ts"
+import type { CosmosChainId, cosmosChainId } from "./cosmos/client.ts"
+import type { EvmChainId, evmChainId } from "./evm/client.ts"
 
 export type LooseAutocomplete<T extends string> = T | Omit<string, T>
 
@@ -27,52 +27,51 @@ export type ChainId =
   | (typeof aptosChainId)[number]
 
 export type TransferAssetsParametersLegacy<
-  CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId
-> = {
-  memo?: string
-  amount: bigint
-  receiver: string
-  autoApprove?: boolean
-  destinationChainId: ChainId
-} & (CHAIN_ID extends CosmosChainId
-  ? {
+  CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId,
+> =
+  & {
+    memo?: string
+    amount: bigint
+    receiver: string
+    autoApprove?: boolean
+    destinationChainId: ChainId
+  }
+  & (CHAIN_ID extends CosmosChainId ? {
       denomAddress: string
       account?: OfflineSigner
       relayContractAddress?: string
       gasPrice?: { amount: string; denom: string }
     }
-  : CHAIN_ID extends EvmChainId
-    ? {
+    : CHAIN_ID extends EvmChainId ? {
         simulate?: boolean
         denomAddress: Address
         relayContractAddress?: Address
         account?: ViemAccount | undefined
       }
-    : CHAIN_ID extends AptosChainId
-      ? {
-          simulate?: boolean
-          denomAddress: string
-          account?: AptosAccount
-          authAccess: "key" | "wallet"
-          relayContractAddress?: string
-          gasPrice?: { amount: string; denom: string }
-        }
-      : undefined)
+    : CHAIN_ID extends AptosChainId ? {
+        simulate?: boolean
+        denomAddress: string
+        account?: AptosAccount
+        authAccess: "key" | "wallet"
+        relayContractAddress?: string
+        gasPrice?: { amount: string; denom: string }
+      }
+    : undefined)
 
-export type TransferAssetParameters<CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId> = {
-  baseAmount: bigint
-  baseToken: string
-  quoteAmount: bigint
-  quoteToken: string
-  receiver: string
-  sourceChannelId: number
-  wethQuoteToken: Hex
-} & (CHAIN_ID extends CosmosChainId
-  ? {
+export type TransferAssetParameters<CHAIN_ID extends EvmChainId | CosmosChainId | AptosChainId> =
+  & {
+    baseAmount: bigint
+    baseToken: string
+    quoteAmount: bigint
+    quoteToken: string
+    receiver: string
+    sourceChannelId: number
+    wethQuoteToken: Hex
+  }
+  & (CHAIN_ID extends CosmosChainId ? {
       ucs03address: string
     }
-  : CHAIN_ID extends EvmChainId
-    ? {
+    : CHAIN_ID extends EvmChainId ? {
         ucs03address: HexAddress
       }
     : undefined)
@@ -94,43 +93,43 @@ export type Coin = { denom: string; amount: string }
 /** Offline signer is the account for a Cosmos chain. */
 export type OfflineSigner =
   | {
-      /** getAccounts returns the list of accounts available on this signer. */
-      readonly getAccounts: () => Promise<ReadonlyArray<AccountData>>
-      readonly signDirect: (
-        signerAddress: string,
-        signDoc: SignDoc
-      ) => Promise<{
-        /**
-         * The sign doc that was signed.
-         * This may be different from the input signDoc when the signer modifies it as part of the signing process.
-         */
-        readonly signed: SignDoc
-        readonly signature: StdSignature
-      }>
-    }
-  | {
-      readonly getAccounts: () => Promise<ReadonlyArray<AccountData>>
+    /** getAccounts returns the list of accounts available on this signer. */
+    readonly getAccounts: () => Promise<ReadonlyArray<AccountData>>
+    readonly signDirect: (
+      signerAddress: string,
+      signDoc: SignDoc,
+    ) => Promise<{
       /**
-       * Request signature from whichever key corresponds to provided bech32-encoded address. Rejects if not enabled.
-       *
-       * The signer implementation may offer the user the ability to override parts of the signDoc. It must
-       * return the doc that was signed in the response.
-       *
-       * @param signerAddress The address of the account that should sign the transaction
-       * @param signDoc The content that should be signed
+       * The sign doc that was signed.
+       * This may be different from the input signDoc when the signer modifies it as part of the signing process.
        */
-      readonly signAmino: (
-        signerAddress: string,
-        signDoc: StdSignDoc
-      ) => Promise<{
-        /**
-         * The sign doc that was signed.
-         * This may be different from the input signDoc when the signer modifies it as part of the signing process.
-         */
-        readonly signed: StdSignDoc
-        readonly signature: StdSignature
-      }>
-    }
+      readonly signed: SignDoc
+      readonly signature: StdSignature
+    }>
+  }
+  | {
+    readonly getAccounts: () => Promise<ReadonlyArray<AccountData>>
+    /**
+     * Request signature from whichever key corresponds to provided bech32-encoded address. Rejects if not enabled.
+     *
+     * The signer implementation may offer the user the ability to override parts of the signDoc. It must
+     * return the doc that was signed in the response.
+     *
+     * @param signerAddress The address of the account that should sign the transaction
+     * @param signDoc The content that should be signed
+     */
+    readonly signAmino: (
+      signerAddress: string,
+      signDoc: StdSignDoc,
+    ) => Promise<{
+      /**
+       * The sign doc that was signed.
+       * This may be different from the input signDoc when the signer modifies it as part of the signing process.
+       */
+      readonly signed: StdSignDoc
+      readonly signature: StdSignature
+    }>
+  }
 
 export type Algo = "secp256k1" | "ed25519" | "sr25519"
 

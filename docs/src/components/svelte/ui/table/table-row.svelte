@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
-import type { WithElementRef } from "bits-ui"
 import { cn } from "#/lib/shadcn.js"
+import type { WithElementRef } from "bits-ui"
+import type { HTMLAttributes } from "svelte/elements"
 
 let {
   ref = $bindable(null),
@@ -12,12 +12,12 @@ let {
 </script>
 
 <tr
-	bind:this={ref}
-	class={cn(
-		"hover:bg-muted/10 data-[state=selected]:bg-muted border-b transition-colors",
-		className
-	)}
-	{...restProps}
+  bind:this={ref}
+  class={cn(
+    "hover:bg-muted/10 data-[state=selected]:bg-muted border-b transition-colors",
+    className,
+  )}
+  {...restProps}
 >
-	{@render children?.()}
+  {@render children?.()}
 </tr>
