@@ -1,4 +1,3 @@
-
 import type { Channel, Token } from "@unionlabs/sdk/schema"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
@@ -35,6 +34,12 @@ export class TransferData {
     this.sourceChain.pipe(Option.flatMap(sc => tokensStore.getData(sc.universal_chain_id)))
   )
 
+  quoteTokens = $derived(
+    this.destinationChain.pipe(
+      Option.flatMap(dc => tokensStore.getData(dc.universal_chain_id))
+    )
+  )
+  
   sortedBalances = $derived(
     this.sourceChain.pipe(
       Option.flatMap(sc =>
@@ -56,6 +61,58 @@ export class TransferData {
       )
     )
   )
+
+  quoteToken = $derived(
+    Option.all([this.baseToken, this.sourceChain, this.destinationChain, this.quoteTokens]).pipe(
+      Option.flatMap(([baseToken, sourceChain, destinationChain, quoteTokens]) => {
+        const baseDenom = baseToken.denom.toLowerCase()
+  
+        const maybeUnwrapped = baseToken.wrapping.find(
+          w =>
+            w.wrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+            w.unwrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+        )
+  
+        return pipe(
+          Option.fromNullable(maybeUnwrapped),
+          Option.match({
+            onSome: unwrapped => Option.some(unwrapped.unwrapped_denom),
+            onNone: () =>
+              Option.fromNullable(
+                quoteTokens.find(t =>
+                  t.wrapping.some(
+                    w =>
+                      w.unwrapped_denom.toLowerCase() === baseDenom &&
+                      w.unwrapped_chain.universal_chain_id === sourceChain.universal_chain_id &&
+                      w.wrapped_chain.universal_chain_id === destinationChain.universal_chain_id
+                  )
+                )?.denom
+              )
+          })
+        )
+      })
+    )
+  )
+  
+
+  channel = $derived<Option.Option<Channel>>(
+    Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
+      Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
+        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
+          Match.orElse(() =>
+            Option.fromNullable(
+              getChannelInfoSafe(
+                sourceChain.universal_chain_id,
+                destinationChain.universal_chain_id,
+                channelsData
+              )
+            )
+          )
+        )
+      )
+    )
+  )
+
 
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(
@@ -108,24 +165,6 @@ export class TransferData {
     )
   )
 
-  channel = $derived<Option.Option<Channel>>(
-    Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
-      Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
-        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
-          Match.orElse(() =>
-            Option.fromNullable(
-              getChannelInfoSafe(
-                sourceChain.universal_chain_id,
-                destinationChain.universal_chain_id,
-                channelsData
-              )
-            )
-          )
-        )
-      )
-    )
-  )
-
   ucs03address = $derived.by<Option.Option<Address>>(() => {
     return Option.all([
       this.sourceChain,
@@ -141,6 +180,13 @@ export class TransferData {
       })
     )
   })
+
+  
+  flipTransfer = () => {
+    if (Option.isSome(this.quoteToken)) {
+      this.raw.flip(this.quoteToken.value)
+    }
+  }
 
   // wethBaseToken = $derived.by(() => {
   //   if (Option.isNone(this.sourceChain)) return Option.none()

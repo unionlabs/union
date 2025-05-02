@@ -232,4 +232,32 @@ export class RawTransferDataSvelte {
       amount: ""
     })
   }
+
+  /**
+   * Flip source and destination chains along with their associated assets
+   * This method updates all fields at once without triggering the reset mapping
+   * @param newAsset The new asset denom to use after flipping
+   */
+  flip = (newAsset: string) => {
+    // Store current values
+    const currentSource = this.source
+    const currentDestination = this.destination
+    
+    // Update all fields at once using setWithoutUrlUpdate to avoid reset mapping
+    this.setWithoutUrlUpdate({
+      source: currentDestination,
+      destination: currentSource,
+      asset: newAsset
+    })
+    
+    // Update URL after all changes are made
+    this.debouncedUpdateUrl({
+      source: this.source,
+      destination: this.destination,
+      asset: this.asset,
+      receiver: this.receiver,
+      sender: this.sender,
+      amount: this.amount
+    })
+  }
 }

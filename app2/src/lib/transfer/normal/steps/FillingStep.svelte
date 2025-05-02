@@ -9,6 +9,8 @@ import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
+import Label from "$lib/components/ui/Label.svelte"
+import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
 
 type Props = {
   onContinue: () => void
@@ -60,15 +62,20 @@ const uiStatus = $derived.by(() => {
 })
 
 const isButtonEnabled = $derived.by(() => !loading)
-
-$effect(() => {
-  console.log("destinationChains", transferData.destinationChains)
-})
 </script>
 
 <div class="min-w-full flex flex-col grow">
   <div class="flex flex-col gap-4 p-4">
     <ChainAsset type="source"/>
+    <button class="group flex items-center gap-2 -mt-3 -mb-4 text-zinc-800 group-hover:text-zinc-600 transition-colors cursor-pointer" onclick={transferData.flipTransfer}>
+      <span class="sr-only">switch direction</span>
+      <span class="flex-1 h-px bg-zinc-800 group-hover:bg-zinc-700 transition-colors"></span>
+      <div class="flex group-hover:text-zinc-300 transition-colors">
+        <SharpChevronDownIcon class="size-5"/>
+        <SharpChevronDownIcon class="size-5 rotate-180"/>
+      </div>
+      <span class="flex-1 h-px bg-zinc-800 group-hover:bg-zinc-700 transition-colors"></span>
+    </button>
     <ChainAsset type="destination"/>
     <Amount type="source"/>
   </div>

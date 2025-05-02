@@ -2,11 +2,10 @@ import {
   Array as Arr,
   String as Str,
   Effect,
-  Fiber,
+  type Fiber,
   flow,
   Option,
   Stream,
-  Schedule,
   FiberMap,
   Match,
   pipe,
@@ -81,7 +80,6 @@ export class BalancesStore {
   pendingRequests = $state(new SvelteMap<ChainKey, Array<BalanceFetchRequest>>())
   #scope: Scope.Scope
   #fiberMap: FiberMap.FiberMap<BalanceKey>
-  #balancesFiber: Option.Option<Fiber.RuntimeFiber<void, never>> = Option.none()
 
   constructor() {
     this.#scope = pipe(Scope.make(), Effect.runSync)
@@ -123,18 +121,7 @@ export class BalancesStore {
   }
 
   interruptBalanceFetching() {
-    const self = this
-    Effect.gen(function* () {
-      yield* FiberMap.clear(self.#fiberMap)
-      yield* pipe(
-        self.#balancesFiber,
-        Option.map(Fiber.interrupt),
-        Option.getOrElse(() => Effect.void)
-      )
-      yield* Effect.sync(() => {
-        self.#balancesFiber = Option.none()
-      })
-    }).pipe(Effect.runPromise)
+    Effect.runPromise(FiberMap.clear(this.#fiberMap))
   }
 
   private processBatchedBalances(
@@ -229,12 +216,10 @@ export class BalancesStore {
       /**
        * Re-initiate balance queries on given schedule.
        */
-      Stream.repeat(Schedule.spaced(interval)),
-      Stream.runDrain,
-      Effect.onInterrupt(() => Effect.logWarning("STREAM INTERRUPTED"))
+      Stream.runDrain
     )
 
-    this.#balancesFiber = Option.some(Effect.runFork(batchProcessor))
+    Effect.runFork(batchProcessor)
   }
 
   fetchBalances(
