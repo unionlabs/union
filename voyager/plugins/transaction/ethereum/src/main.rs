@@ -29,7 +29,7 @@ use jsonrpsee::{
     Extensions, MethodsError,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{json, Value};
 use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
     never::Never,
@@ -86,6 +86,8 @@ pub struct ModuleInner {
 
     pub fixed_gas_price: Option<u128>,
 
+    pub gas_multiplier: f64,
+
     pub legacy: bool,
 
     pub fee_recipient: Option<alloy::primitives::Address>,
@@ -113,6 +115,8 @@ pub struct Config {
     /// Temporary fix for 0g until they fix their eth_feeHistory endpoint
     #[serde(default)]
     pub fixed_gas_price: Option<u128>,
+
+    pub gas_multiplier: f64,
 
     #[serde(default)]
     pub legacy: bool,
@@ -182,6 +186,7 @@ impl Plugin for Module {
             max_gas_price: config.max_gas_price,
             fixed_gas_price: config.fixed_gas_price,
             legacy: config.legacy,
+            gas_multiplier: config.gas_multiplier,
             fee_recipient: config.fee_recipient,
         })))
     }
@@ -337,20 +342,20 @@ impl PluginServer<ModuleCall, Never> for Module {
                     })
                     .await;
 
-                let rewrap_msg = || {
-                    PluginMessage::new(
-                        self.plugin_name(),
-                        ModuleCall::SubmitMulticall(msgs.clone()),
-                    )
-                };
-
                 match res {
                     Some(Ok(())) => Ok(Op::Noop),
-                    Some(Err(TxSubmitError::GasPriceTooHigh { .. })) => {
-                        Ok(seq([defer(now() + 6), call(rewrap_msg())]))
+                    Some(Err(TxSubmitError::GasPriceTooHigh { max, price })) => {
+                        Err(ErrorObject::owned(
+                            -1,
+                            "gas price too high",
+                            Some(json!({
+                                "max": max,
+                                "price": price
+                            })),
+                        ))
                     }
                     Some(Err(TxSubmitError::OutOfGas)) => {
-                        Ok(seq([defer(now() + 12), call(rewrap_msg())]))
+                        Err(ErrorObject::owned(-1, "out of gas", None::<()>))
                     }
                     Some(Err(TxSubmitError::EmptyRevert(msgs))) => Ok(seq([
                         defer(now() + 12),
@@ -377,7 +382,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                         ErrorReporter(err).to_string(),
                         None::<()>,
                     )),
-                    None => Ok(call(rewrap_msg())),
+                    None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
                 }
             }
         }
@@ -490,16 +495,15 @@ impl Module {
                 TxSubmitError::Estimate(e)
             }
         })?;
-        //     .map_err(|e| {
-        //     ErrorObject::owned(
-        //         -1,
-        //         format!("error estimating gas: {}", ErrorReporter(e), None::<()>),
-        //     )
-        // })?;
 
-        let gas_to_use = gas_estimate + (gas_estimate / 2);
+        let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
 
-        info!(gas_estimate, gas_to_use, "gas estimatation successful");
+        info!(
+            gas_multiplier = %self.gas_multiplier,
+            %gas_estimate,
+            %gas_to_use,
+            "gas estimatation successful"
+        );
 
         if let Some(fixed_gas_price) = self.fixed_gas_price {
             call = call.gas_price(fixed_gas_price);
