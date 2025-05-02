@@ -79,6 +79,10 @@
     "1": {
       "comments": "ethereum.17000 channel 4",
       "tags": ["canonical"]
+    },
+    "3": {
+      "comments": "corn.21000001 channel 2",
+      "tags": ["canonical"]
     }
   }
 }
