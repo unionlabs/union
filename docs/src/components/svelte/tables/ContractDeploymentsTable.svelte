@@ -5,7 +5,7 @@ import deployments from "~root/deployments/deployments.json" with { type: "json"
 
 {#each deployments as network}
   <h3>
-    {network.chain_id} Deployments
+    {network.universal_chain_id}
   </h3>
   <Table.Root class="w-full border border-neutral-500 rounded-sm">
     <Table.Row class="w-full">
