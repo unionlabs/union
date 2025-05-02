@@ -308,6 +308,19 @@ _: {
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
         }
+        rec {
+          chain-id = "1328";
+
+          name = "sei-atlantic";
+          rpc-url = "https://evm-rpc-testnet.sei-apis.com";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xDc78B593dD44914C326D1ed37501EAd48c4C5628";
+          rate-limit-enabled = "false";
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
         # {
         #   network = "0g-testnet";
         #   rpc-url = "https://evmrpc-testnet.0g.ai";

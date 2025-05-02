@@ -708,5 +708,59 @@
         }
       }
     }
+  },
+  {
+    "universal_chain_id": "sei.1328",
+    "chain_id": "1328",
+    "ibc_interface": "ibc-solidity",
+    "deployments": {
+      "multicall": {
+        "address": "0x70276995f225df69936eaec02ddece998a9e3662",
+        "height": 169277356,
+        "commit": "unknown"
+      },
+      "manager": "0x40cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f4",
+      "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
+      "sender": "0x95fb5cb304508d74d855514d7bc9bda75c304ce2",
+      "core": {
+        "address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "height": 169277356,
+        "commit": "3be0f9a289f3dafb3677723d943786e28ad6e3ef"
+      },
+      "lightclient": {
+        "cometbls": {
+          "address": "0x7700ea295f62989d2c98721389a521c96fe3c4c0",
+          "height": 169277356,
+          "commit": "3be0f9a289f3dafb3677723d943786e28ad6e3ef"
+        },
+        "state-lens/ics23/mpt": {
+          "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
+          "height": 169277356,
+          "commit": "3be0f9a289f3dafb3677723d943786e28ad6e3ef"
+        },
+        "state-lens/ics23/ics23": {
+          "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
+          "height": 169277356,
+          "commit": "3be0f9a289f3dafb3677723d943786e28ad6e3ef"
+        },
+        "state-lens/ics23/smt": {
+          "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
+          "height": 169277356,
+          "commit": "3be0f9a289f3dafb3677723d943786e28ad6e3ef"
+        }
+      },
+      "app": {
+        "ucs00": {
+          "address": "0x921e5b5091f431f84f14423ec487783a853bc4b0",
+          "height": 169277356,
+          "commit": "3be0f9a289f3dafb3677723d943786e28ad6e3ef"
+        },
+        "ucs03": {
+          "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
+          "height": 169277356,
+          "commit": "3be0f9a289f3dafb3677723d943786e28ad6e3ef"
+        }
+      }
+    }
   }
 ]
