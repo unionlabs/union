@@ -162,7 +162,7 @@ fn verify_chained_membership_proof(
 
 #[cfg(test)]
 mod tests {
-    use cometbft_types::crypto::{proof_op::ProofOp, proof_ops::ProofOps};
+    use cometbft_types::crypto::proof_ops::ProofOps;
     use hex_literal::hex;
     use unionlabs::{
         encoding::{Bincode, DecodeAs, Proto},
