@@ -120,7 +120,7 @@ pub fn verify_l2_header_is_related_to_output_root_proof(
 
 #[cfg(test)]
 mod tests {
-    use bob_light_client_types::{ClientStateV1, Header};
+    use bob_light_client_types::{header::Nullable, ClientStateV1, Header};
     use hex_literal::hex;
     use ibc_union_spec::ClientId;
     use unionlabs::encoding::{DecodeAs, Json};
@@ -236,5 +236,73 @@ mod tests {
         );
 
         assert_eq!(r2, Err(Error::HeaderNotFinalized));
+    }
+
+    #[test]
+    fn test_verify_l2_header_is_related_to_output_root_proof() {
+        verify_l2_header_is_related_to_output_root_proof(
+            &OutputRootProof {
+                version: hex!("0000000000000000000000000000000000000000000000000000000000000000")
+                    .into(),
+                state_root: hex!(
+                    "2ef85f4dfdbe515eb89fb7be3a156ea476483a17225039e5352bc72c9d9b5626"
+                )
+                .into(),
+                message_passer_storage_root: hex!(
+                    "61f529e3532e620cdd166738d3c6ccf05f9fe70b9d943a45f9183c34f730a4be"
+                )
+                .into(),
+                latest_block_hash: hex!(
+                    "ab1325306c1a2dea55f29320e30d76e43e99a167d4e74e9a5e9c18bad5127564"
+                )
+                .into(),
+            },
+            &L2Header {
+                parent_hash: hex!(
+                    "885d2dc6e52bda916b3ca9dcca29c1048b3d29e7258467a0c195c240020fef0c"
+                )
+                .into(),
+                sha3_uncles: hex!(
+                    "1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347"
+                )
+                .into(),
+                miner: hex!("4200000000000000000000000000000000000011").into(),
+                state_root: hex!(
+                    "2ef85f4dfdbe515eb89fb7be3a156ea476483a17225039e5352bc72c9d9b5626"
+                )
+                .into(),
+                transactions_root: hex!(
+                    "8b6c76337a74cf1447e0ff1143606bcca0896d2e842dda04958e709bf55270be"
+                )
+                .into(),
+                receipts_root: hex!(
+                    "351a05348a16ac245a8f9d8358f65f43f47bae4a1848e147a368b61ff3d86370"
+                )
+                .into(),
+                logs_bloom: Box::new(hex!("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").into()),
+                difficulty: 0_u64.into(),
+                number: 16632000_u64.into(),
+                gas_limit: 30000000,
+                gas_used: 43887,
+                timestamp: 1746125987,
+                extra_data: hex!("00000000fa00000006").into(),
+                mix_hash: hex!("8b8f9d75ccac014aae0e18afbcc54bc2c6e9e3aba801c81bdc359fb7e0b7f414")
+                    .into(),
+                nonce: hex!("0000000000000000").into(),
+                base_fee_per_gas: 252_u64.into(),
+                withdrawals_root: hex!(
+                    "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+                )
+                .into(),
+                blob_gas_used: 0,
+                excess_blob_gas: 0,
+                parent_beacon_block_root: hex!(
+                    "a4052c2062dd55cd35cd70061fbfd403863f1a08ac41df04f686fbf0460dd879"
+                )
+                .into(),
+                requests_hash: Nullable::from(None),
+            },
+        )
+        .unwrap();
     }
 }

@@ -115,3 +115,50 @@ impl L2Header {
         keccak256(self.rlp_bytes())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use hex_literal::hex;
+
+    use super::*;
+
+    #[test]
+    fn hash() {
+        let header = L2Header {
+            parent_hash: hex!("2e0fa901f264102bd20c86822222f0e3be0e72517ddf8ecae5bb09717c542f33").into(),
+            sha3_uncles: hex!("1dcc4de8dec75d7aab85b567b6ccd41ad312451b948a7413f0a142fd40d49347").into(),
+            miner: hex!("4200000000000000000000000000000000000011").into(),
+            state_root: hex!("1965c4276f2ee3e5e7f4190c1302835c630afeb7b1078f595ad80206d0901fc2").into(),
+            transactions_root: hex!(
+                "75418567809ce6cb380eebb1895034e31751b2eb691c2f4b170de50d25e8c061"
+            ).into(),
+            receipts_root: hex!(
+                "0d98745240a828bea4726880dca08008c87f95f6a55f7524861bb23917b0b6e7"
+            ).into(),
+            logs_bloom: Box::new(hex!("00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000").into()),
+            difficulty: 0_u64.into(),
+            number: 16649144_u64.into(),
+            gas_limit: 30000000,
+            gas_used: 64887,
+            timestamp: 1746160275,
+            extra_data: hex!("00000000fa00000006").into(),
+            mix_hash: hex!("a20ab72103cd88aefd65cb31a0c470a6a88e53b4d4da00b27503deb4580e128c").into(),
+            nonce: hex!("0000000000000000").into(),
+            base_fee_per_gas: 252_u64.into(),
+            withdrawals_root: hex!(
+                "56e81f171bcc55a6ff8345e692c0f86e5b48e01b996cadc001622fb5e363b421"
+            ).into(),
+            blob_gas_used: 0,
+            excess_blob_gas: 0,
+            parent_beacon_block_root: hex!(
+                "9467bee415d6385906410d33fc263b32ef2d4880f4a6c9559db669acfd325213"
+            ).into(),
+            requests_hash: Nullable(None),
+        };
+
+        let hash: H256 =
+            hex!("8975fdc9d79a1ad20b7cca844ef06f25b4a61e76c8d0cef32121aff90dbdef53").into();
+
+        assert_eq!(hash, header.hash());
+    }
+}
