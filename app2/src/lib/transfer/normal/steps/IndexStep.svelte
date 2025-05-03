@@ -8,6 +8,7 @@ import TransactionHashComponent from "$lib/components/model/TransactionHashCompo
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import type { WaitForIndex } from "$lib/transfer/normal/steps/steps.ts"
+import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
 
 type Props = {
   newTransfer: () => void
@@ -30,6 +31,18 @@ const handleRedirect = () => {
     goto(`/explorer/transfers/${packet}`)
     transferHashStore.reset()
   }
+}
+
+const handleTweet = () => {
+  const packet = Option.isSome(transferHashStore.data) ? transferHashStore.data.value : ""
+  const transferUrl = `https://app.union.build/explorer/transfers${packet ? `/${packet}` : ""}`
+
+  const tweets = [
+    `Zkgm frens 🤠 Just bridged using ${transferUrl} — smooth like butter on hot cornbread. Yeehaw!\n\nHop on the BTCfi wagon. Bridge your assets with @union_build, stack Union points, and ride into the future of trustless interoperability.`
+  ]
+
+  const tweetText = encodeURIComponent(tweets[Math.floor(Math.random() * tweets.length)])
+  window.open(`https://twitter.com/intent/tweet?text=${tweetText}`, "_blank")
 }
 </script>
 
@@ -69,9 +82,15 @@ const handleRedirect = () => {
         </div>
 
         <div class="flex flex-col justify-between gap-3 mt-6">
-          <Button onclick={newTransfer} variant="secondary">
-            New transfer
-          </Button>
+          <div class="flex w-full gap-3">
+            <Button onclick={newTransfer} variant="secondary" class="w-full">
+              New transfer
+            </Button>
+            <Button onclick={handleTweet} variant="secondary"  class="w-full">
+              <span>Share on</span>
+                <TwitterIcon  class="size-4 -ml-1"/>
+            </Button>
+          </div>
           <Button onclick={handleRedirect} variant="primary">
             Check on explorer
           </Button>
