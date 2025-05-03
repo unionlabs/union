@@ -71,7 +71,7 @@ impl Symlinker {
         Ok(())
     }
 
-    /// Only used by the `Symlinker` internally. Consumers of the current link should use [`current_validated`]
+    /// Only used by the `Symlinker` internally. Consumers of the current link should use [`Symlinker::current_validated`]
     fn current_path(&self) -> PathBuf {
         self.root.join("uniond")
     }

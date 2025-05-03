@@ -15,7 +15,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 pub use serde_json;
 pub use tracing;
 
-/// Types that can either be returned from #[view] functions or read from storage.
+/// Types that can either be returned from `#[view]` functions or read from storage.
 pub trait MoveOutputType {
     type Raw: DeserializeOwned;
 

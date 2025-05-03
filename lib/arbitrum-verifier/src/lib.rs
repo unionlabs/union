@@ -24,7 +24,7 @@ pub enum Error {
 /// Header verification for arbitrum consists of 4 steps:
 ///
 /// 1. Verify that the L1 `RollupCore` account root is part of the L1 state root.
-/// 2. Verify that the value stored at [`L1_LATEST_NODE_CREATED_SLOT`] is part of the L1
+/// 2. Verify that the value stored at L1_LATEST_NODE_CREATED_SLOT` is part of the L1
 ///    `RollupCore` account root
 /// 3. Verify that the confirm data stored in the `Node` struct at the `_nodes` mapping indexed by
 ///    the node number verified in 2. matches the
