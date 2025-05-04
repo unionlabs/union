@@ -317,6 +317,14 @@ pub enum IbcEvent {
         packet_hash: H256,
     },
 
+    #[serde(rename = "wasm-batch_send")]
+    WasmBatchSend {
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+        batch_hash: H256,
+    },
+
     #[serde(rename = "wasm-packet_recv")]
     WasmPacketRecv {
         #[serde(with = "serde_utils::string")]
@@ -452,6 +460,7 @@ impl IbcEvent {
             IbcEvent::WasmChannelOpenConfirm { .. } => "channel_open_confirm",
             IbcEvent::WasmPacketRecv { .. } => "recv_packet",
             IbcEvent::WasmPacketSend { .. } => "send_packet",
+            IbcEvent::WasmBatchSend { .. } => "batch_send",
             IbcEvent::WasmPacketAck { .. } => "acknowledge_packet",
             IbcEvent::WasmWriteAck { .. } => "write_ack",
             // IbcEvent::UnionTimeoutPacket{..} => "timeout_packet",

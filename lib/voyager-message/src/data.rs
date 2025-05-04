@@ -34,6 +34,14 @@ impl Data {
             this => Err(this),
         }
     }
+
+    pub fn into_ibc_event(self) -> Option<ChainEvent> {
+        if let Self::IbcEvent(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
 }
 
 #[model]
@@ -84,10 +92,10 @@ impl IbcDatagram {
     }
 
     // TODO: Make this accept Into<V::Datagram>?
-    pub fn new<V: IbcSpec>(datagram: V::Datagram) -> Self {
+    pub fn new<V: IbcSpec>(datagram: impl Into<V::Datagram>) -> Self {
         Self {
             ibc_spec_id: V::ID,
-            datagram: into_value(datagram),
+            datagram: into_value(datagram.into()),
         }
     }
 }

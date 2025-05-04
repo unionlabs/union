@@ -6,6 +6,7 @@ use crate::gas::u128_saturating_mul_f64;
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize)]
 pub struct GasFiller {
+    #[serde(with = "::serde_utils::string")]
     pub gas_price: f64,
     pub gas_denom: String,
     pub gas_multiplier: f64,

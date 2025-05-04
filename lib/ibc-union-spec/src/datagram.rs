@@ -298,7 +298,10 @@ pub struct MsgIntentPacketRecv {}
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
-pub struct MsgBatchSend {}
+pub struct MsgBatchSend {
+    // TODO: Ensure len >= 2
+    pub packets: Vec<Packet>,
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
@@ -307,4 +310,9 @@ pub struct MsgBatchSend {}
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case", deny_unknown_fields)
 )]
-pub struct MsgBatchAcks {}
+pub struct MsgBatchAcks {
+    // TODO: Ensure len >= 2
+    pub packets: Vec<Packet>,
+    // TODO: Ensure same length as packets somehow (maybe zip the lists into one field?)
+    pub acks: Vec<Bytes>,
+}

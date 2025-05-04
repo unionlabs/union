@@ -35,7 +35,7 @@ use voyager_message::{
     filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
-    primitives::{ChainId, ClientInfo, ClientType, IbcSpec},
+    primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
@@ -166,7 +166,7 @@ impl Module {
         let self_channel = voyager_client
             .query_ibc_state(
                 self.chain_id.clone(),
-                event_height,
+                QueryHeight::Specific(event_height),
                 ChannelPath {
                     channel_id: self_channel_id,
                 },
@@ -177,7 +177,7 @@ impl Module {
         let self_connection = voyager_client
             .query_ibc_state(
                 self.chain_id.clone(),
-                event_height,
+                QueryHeight::Specific(event_height),
                 ConnectionPath {
                     connection_id: self_connection_id,
                 },
@@ -204,7 +204,7 @@ impl Module {
         let other_channel = voyager_client
             .query_ibc_state(
                 client_state_meta.counterparty_chain_id.clone(),
-                counterparty_latest_height,
+                QueryHeight::Specific(counterparty_latest_height),
                 ChannelPath {
                     channel_id: other_channel_id.unwrap(),
                 },

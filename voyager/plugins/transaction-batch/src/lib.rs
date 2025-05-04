@@ -141,6 +141,7 @@ impl IbcSpecExt for IbcUnion {
             EventUnion::ChannelOpenTry(_) => "channel_open_try",
             EventUnion::ChannelOpenAck(_) => "channel_open_ack",
             EventUnion::PacketSend(_) => "packet_send",
+            EventUnion::BatchSend(_) => "batch_send",
             EventUnion::WriteAck(_) => "write_ack",
         }
     }
@@ -264,6 +265,9 @@ if ."@type" == "data" then
         ) or (
             $event_type == "packet_send"
             and ($event_data.packet.destination_channel.connection.client_id as $client_id | {clients_filter})
+        ) or (
+            $event_type == "batch_send"
+            and ($event_data.destination_channel.connection.client_id as $client_id | {clients_filter})
         ) or (
             $event_type == "write_ack"
             and ($event_data.packet.source_channel.connection.client_id as $client_id | {clients_filter})

@@ -1,5 +1,5 @@
 use enumorph::Enumorph;
-use unionlabs::primitives::Bytes;
+use unionlabs::primitives::{Bytes, H256};
 use voyager_primitives::{ClientType, Timestamp};
 
 use crate::{
@@ -33,6 +33,7 @@ pub enum FullEvent {
     ChannelCloseConfirm(ChannelCloseConfirm),
 
     PacketSend(PacketSend),
+    BatchSend(BatchSend),
     PacketRecv(PacketRecv),
     IntentPacketRecv(IntentPacketRecv),
     WriteAck(WriteAck),
@@ -56,6 +57,7 @@ impl FullEvent {
             Self::ChannelCloseInit(_) => todo!(),
             Self::ChannelCloseConfirm(_) => todo!(),
             Self::PacketSend(event) => Some(event.packet.destination_channel.connection.client_id),
+            Self::BatchSend(event) => Some(event.destination_channel.connection.client_id),
             Self::PacketRecv(event) => Some(event.packet.source_channel.connection.client_id),
             Self::IntentPacketRecv(event) => Some(event.packet.source_channel.connection.client_id),
             Self::WriteAck(event) => Some(event.packet.source_channel.connection.client_id),
@@ -81,6 +83,7 @@ impl FullEvent {
             Self::ChannelCloseInit(_) => "channel_close_init",
             Self::ChannelCloseConfirm(_) => "channel_close_confirm",
             Self::PacketSend(_) => "packet_send",
+            Self::BatchSend(_) => "batch_send",
             Self::PacketRecv(_) => "packet_recv",
             Self::IntentPacketRecv(_) => "intent_packet_recv",
             Self::WriteAck(_) => "write_ack",
@@ -262,6 +265,20 @@ pub struct PacketSend {
     pub packet_data: Bytes,
 
     pub packet: PacketMetadata,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct BatchSend {
+    pub batch_hash: H256,
+
+    pub source_channel: ChannelMetadata,
+    pub destination_channel: ChannelMetadata,
 }
 
 macro_rules! packet_method {

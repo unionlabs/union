@@ -1,4 +1,4 @@
-use std::borrow::Borrow;
+use core::{borrow::Borrow, fmt::Display};
 
 use unionlabs::{errors::UnknownEnumVariant, primitives::Bytes, tuple::AsTuple};
 
@@ -35,6 +35,17 @@ pub enum ChannelState {
     TryOpen = 2,
     Open = 3,
     Closed = 4,
+}
+
+impl Display for ChannelState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(match self {
+            ChannelState::Init => "init",
+            ChannelState::TryOpen => "try_open",
+            ChannelState::Open => "open",
+            ChannelState::Closed => "closed",
+        })
+    }
 }
 
 impl TryFrom<u8> for ChannelState {

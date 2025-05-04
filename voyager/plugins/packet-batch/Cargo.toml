@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-state-module-cosmos-sdk-union"
+name    = "voyager-plugin-packet-batch"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -12,19 +12,17 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-clap             = { workspace = true, features = ["derive"] }
-cometbft-rpc     = { workspace = true }
-cosmos-sdk-event = { workspace = true }
+either           = { workspace = true }
 embed-commit     = { workspace = true }
-futures.workspace = true
-ibc-union-msg    = { workspace = true }
-ibc-union-spec   = { workspace = true }
+enumorph         = { workspace = true }
+futures          = { workspace = true }
+ibc-union-spec   = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
+itertools        = { workspace = true }
 jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
-protos           = { workspace = true }
+macros           = { workspace = true }
 serde            = { workspace = true, features = ["derive"] }
-serde-utils      = { workspace = true }
 serde_json       = { workspace = true }
-thiserror        = { workspace = true }
+subset-of        = { workspace = true }
 tokio            = { workspace = true }
 tracing          = { workspace = true }
 unionlabs        = { workspace = true }

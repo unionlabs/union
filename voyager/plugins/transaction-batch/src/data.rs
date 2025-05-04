@@ -87,6 +87,7 @@ pub enum EventUnion {
     ChannelOpenAck(ibc_union_spec::event::ChannelOpenAck),
 
     PacketSend(ibc_union_spec::event::PacketSend),
+    BatchSend(ibc_union_spec::event::BatchSend),
     WriteAck(ibc_union_spec::event::WriteAck),
 }
 
@@ -108,6 +109,7 @@ impl TryFrom<ibc_union_spec::event::FullEvent> for EventUnion {
             ibc_union_spec::event::FullEvent::ChannelOpenTry(e) => Ok(Self::ChannelOpenTry(e)),
             ibc_union_spec::event::FullEvent::ChannelOpenAck(e) => Ok(Self::ChannelOpenAck(e)),
             ibc_union_spec::event::FullEvent::PacketSend(e) => Ok(Self::PacketSend(e)),
+            ibc_union_spec::event::FullEvent::BatchSend(e) => Ok(Self::BatchSend(e)),
             ibc_union_spec::event::FullEvent::WriteAck(e) => Ok(Self::WriteAck(e)),
             _ => Err(()),
         }

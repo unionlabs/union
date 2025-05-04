@@ -80,7 +80,7 @@ impl Deref for Module {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub chain_id: ChainId,
@@ -97,7 +97,7 @@ pub struct Config {
     pub fee_recipient: Option<Bech32<Bytes>>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type", content = "config")]
 pub enum GasFillerConfig {
     // fixed gas filler is it's own config
@@ -106,19 +106,22 @@ pub enum GasFillerConfig {
     OsmosisEip1559Feemarket(OsmosisEip1559FeemarketConfig),
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct FeemarketConfig {
     pub max_gas: u64,
+    #[serde(with = "::serde_utils::string_opt")]
     pub gas_multiplier: Option<f64>,
     pub denom: Option<String>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub struct OsmosisEip1559FeemarketConfig {
     pub max_gas: u64,
+    #[serde(with = "::serde_utils::string_opt")]
     pub gas_multiplier: Option<f64>,
+    #[serde(with = "::serde_utils::string_opt")]
     pub base_fee_multiplier: Option<f64>,
     pub denom: Option<String>,
 }
@@ -1105,7 +1108,20 @@ fn process_msgs(
                     ibc_union_spec::datagram::Datagram::IntentPacketRecv(
                         _msg_intent_packet_recv,
                     ) => todo!(),
-                    ibc_union_spec::datagram::Datagram::BatchSend(_msg_batch_send) => todo!(),
+                    ibc_union_spec::datagram::Datagram::BatchSend(msg_batch_send) => {
+                        let packet_recv = ibc_union_msg::msg::ExecuteMsg::BatchSend(
+                            ibc_union_msg::msg::MsgBatchSend {
+                                packets: msg_batch_send.packets,
+                            },
+                        );
+
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer.to_string(),
+                            contract: ibc_host_contract_address.to_string(),
+                            msg: serde_json::to_vec(&packet_recv).unwrap(),
+                            funds: vec![],
+                        })
+                    }
                     ibc_union_spec::datagram::Datagram::BatchAcks(_msg_batch_acks) => todo!(),
                 },
             };
@@ -1136,9 +1152,71 @@ fn parse_msg_idx_from_log(log: &str) -> Option<(usize, &str)> {
     Some((idx.parse().ok()?, log))
 }
 
-#[test]
-fn test_parse_wasm_failure() {
-    let (idx, log) = parse_msg_idx_from_log("rpc error: code = Unknown desc = failed to execute message; message index: 0: IBC_UNION_ERR_PACKET_COMMITMENT_NOT_FOUND packet commitment not found: execute wasm contract failed [CosmWasm/wasmd@v0.53.2/x/wasm/keeper/keeper.go:436] with gas used: '287090'").unwrap();
+#[cfg(test)]
+mod tests {
+    use concurrent_keyring::KeyringConfigEntry;
 
-    dbg!(idx, parse_wasm_failure(log));
+    use super::*;
+
+    #[test]
+    fn test_parse_wasm_failure() {
+        let (idx, log) = parse_msg_idx_from_log("rpc error: code = Unknown desc = failed to execute message; message index: 0: IBC_UNION_ERR_PACKET_COMMITMENT_NOT_FOUND packet commitment not found: execute wasm contract failed [CosmWasm/wasmd@v0.53.2/x/wasm/keeper/keeper.go:436] with gas used: '287090'").unwrap();
+
+        dbg!(idx, parse_wasm_failure(log));
+    }
+
+    #[test]
+    fn config_parse() {
+        let json = r#"{
+            "chain_id": "chain_id",
+            "gas_config": {
+              "config": {
+                "max_gas": 123456789,
+                "gas_multiplier": "1.4"
+              },
+              "type": "feemarket"
+            },
+            "ibc_host_contract_address": "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf",
+            "keyring": {
+              "keys": [
+                {
+                  "key": "0x0000000000000000000000000000000000000000000000000000000000000000",
+                  "name": "name",
+                  "type": "raw"
+                }
+              ],
+              "name": "name"
+            },
+            "rpc_url": "rpc_url"
+          }"#;
+
+        let config = serde_json::from_str::<Config>(json).unwrap();
+
+        assert_eq!(
+            config,
+            Config {
+                chain_id: ChainId::new("chain_id"),
+                ibc_host_contract_address:
+                    "union1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqvcmecf"
+                        .parse()
+                        .unwrap(),
+                keyring: KeyringConfig {
+                    name: "name".to_string(),
+                    keys: vec![KeyringConfigEntry::Raw {
+                        name: "name".to_string(),
+                        key: vec![0; 32],
+                    }]
+                },
+                rpc_url: "rpc_url".to_string(),
+                gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
+                    max_gas: 123456789,
+                    gas_multiplier: Some(1.4),
+                    denom: None
+                }),
+                fatal_errors: HashMap::default(),
+                gas_station_config: vec![],
+                fee_recipient: None
+            }
+        );
+    }
 }

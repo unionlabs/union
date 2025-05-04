@@ -8,6 +8,7 @@ use alloy::{
     rpc::types::{TransactionInput, TransactionRequest},
     sol_types::{SolCall, SolValue},
 };
+use futures::{stream::FuturesUnordered, TryStreamExt};
 use ibc_solidity::{
     ILightClient,
     Ibc::{self, IbcInstance},
@@ -493,6 +494,85 @@ impl Module {
             None::<()>,
         ))
     }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %batch_hash))]
+    async fn packets_by_batch_hash(
+        &self,
+        channel_id: ChannelId,
+        batch_hash: H256,
+    ) -> RpcResult<Vec<Packet>> {
+        let ibc_handler = self.ibc_handler();
+
+        let windows = match self.max_query_window {
+            Some(window) => {
+                let latest_height = self.provider.get_block_number().await.map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        format!(
+                            "error querying latest height while constructing query windows for decoding packet send event for packet {batch_hash}: {}",
+                            ErrorReporter(e)
+                        ),
+                        None::<()>,
+                    )
+                })?;
+                mk_windows(latest_height, window)
+            }
+            None => vec![(BlockNumberOrTag::Earliest, BlockNumberOrTag::Latest)],
+        };
+
+        for (from, to) in windows {
+            debug!(%from, %to, "querying range for packet");
+
+            let query = ibc_handler
+                .BatchedPreviouslySent_filter()
+                .topic1(alloy::primitives::U256::from(channel_id.raw()))
+                .topic2(alloy::primitives::U256::from_be_bytes(*(batch_hash.get())));
+
+            trace!(?query, "raw query");
+
+            let batch_logs = query
+                .from_block(from)
+                .to_block(to)
+                .query()
+                .await
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        format!(
+                            "error querying for packet {batch_hash}: {}",
+                            ErrorReporter(e)
+                        ),
+                        None::<()>,
+                    )
+                })?;
+
+            if batch_logs.is_empty() {
+                debug!(%from, %to, "batch not found in range");
+                continue;
+            } else {
+                return batch_logs
+                    .into_iter()
+                    .map(|(event, _)| {
+                        self.packet_by_packet_hash(
+                            event
+                                .channel_id
+                                .try_into()
+                                .expect("invalid channel id on event?"),
+                            event.packet_hash.into(),
+                        )
+                    })
+                    .collect::<FuturesUnordered<_>>()
+                    .try_collect::<Vec<_>>()
+                    .await;
+            }
+        }
+
+        Err(ErrorObject::owned(
+            MISSING_STATE_ERROR_CODE,
+            format!("packet {batch_hash} not found"),
+            None::<()>,
+        ))
+    }
 }
 
 fn mk_windows(mut latest_height: u64, window: u64) -> Vec<(BlockNumberOrTag, BlockNumberOrTag)> {
@@ -516,6 +596,13 @@ impl StateModuleServer<IbcUnion> for Module {
         match query {
             Query::PacketByHash(packet_by_hash) => self
                 .packet_by_packet_hash(packet_by_hash.channel_id, packet_by_hash.packet_hash)
+                .await
+                .map(into_value),
+            Query::PacketsByBatchHash(packets_by_batch_hash) => self
+                .packets_by_batch_hash(
+                    packets_by_batch_hash.channel_id,
+                    packets_by_batch_hash.batch_hash,
+                )
                 .await
                 .map(into_value),
         }

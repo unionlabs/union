@@ -165,6 +165,7 @@ impl StateModuleServer<IbcUnion> for Module {
     async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
         match query {
             Query::PacketByHash(_packet_by_hash) => todo!(),
+            Query::PacketsByBatchHash(_packets_by_batch_hash) => todo!(),
         }
     }
 

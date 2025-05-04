@@ -52,9 +52,11 @@ pub enum IbcEvents {
     ChannelCloseInit(Ibc::ChannelCloseInit),
     ChannelCloseConfirm(Ibc::ChannelCloseConfirm),
     PacketSend(Ibc::PacketSend),
+    BatchSend(Ibc::BatchedPreviouslySent),
     PacketRecv(Ibc::PacketRecv),
     IntentPacketRecv(Ibc::IntentPacketRecv),
     WriteAck(Ibc::WriteAck),
+    BatchAck(Ibc::BatchedPreviouslyAcked),
     PacketAck(Ibc::PacketAck),
     PacketTimeout(Ibc::PacketTimeout),
 }

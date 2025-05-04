@@ -189,6 +189,7 @@ members = [
   "voyager/plugins/transaction/aptos",
 
   "voyager/plugins/packet-filter",
+  "voyager/plugins/packet-batch",
   "voyager/plugins/transaction-batch",
   "voyager/plugins/packet-timeout",
   "voyager/plugins/zkgm-filter",
