@@ -29,7 +29,7 @@ let
         trigger_betterstack = mkOption {
           type = types.bool;
           description = "Boolean to decide if trigger betterstack or not";
-        }; 
+        };
         rpcHostEndpoints = mkOption {
           type = types.listOf types.str;
           description = "RPC endpoints for SSL certificate control.";
