@@ -110,7 +110,7 @@ impl Plugin for Module {
             name: plugin_name(&config.chain_id),
             interest_filter: UpdateHook::filter(
                 &config.chain_id,
-                &ClientType::new(ClientType::BEACON_KIT),
+                &ClientType::new(ClientType::BERACHAIN),
             ),
         }
     }
@@ -180,7 +180,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 .map(|mut op| {
                     UpdateHook::new(
                         &self.chain_id,
-                        &ClientType::new(ClientType::BEACON_KIT),
+                        &ClientType::new(ClientType::BERACHAIN),
                         |fetch| {
                             Call::Plugin(PluginMessage::new(
                                 self.plugin_name(),

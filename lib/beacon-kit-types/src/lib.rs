@@ -95,7 +95,7 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Commit as i32,
-                validator_address,
+                validator_address: validator_address.into_encoding(),
                 timestamp: Some(timestamp),
                 signature: Some(signature.into_encoding()),
             },
@@ -105,7 +105,7 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Nil as i32,
-                validator_address,
+                validator_address: validator_address.into_encoding(),
                 timestamp: Some(timestamp),
                 signature: Some(signature.into_encoding()),
             },
@@ -114,13 +114,13 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::AggCommit as i32,
-                validator_address,
+                validator_address: validator_address.into_encoding(),
                 timestamp: None,
                 signature: Some(signature.into_encoding()),
             },
             CommitSig::AggCommitAbsent { validator_address } => Self {
                 block_id_flag: BlockIdFlag::AggCommitAbsent as i32,
-                validator_address,
+                validator_address: validator_address.into_encoding(),
                 timestamp: None,
                 signature: None,
             },
@@ -129,13 +129,13 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::AggNil as i32,
-                validator_address,
+                validator_address: validator_address.into_encoding(),
                 timestamp: None,
                 signature: Some(signature.into_encoding()),
             },
             CommitSig::AggNilAbsent { validator_address } => Self {
                 block_id_flag: BlockIdFlag::AggNilAbsent as i32,
-                validator_address,
+                validator_address: validator_address.into_encoding(),
                 timestamp: None,
                 signature: None,
             },
@@ -162,7 +162,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                 }
             }
             BlockIdFlag::Commit => Ok(Self::Commit {
-                validator_address: value.validator_address,
+                validator_address: value.validator_address.into_encoding(),
                 timestamp: value.timestamp.ok_or(Error::CommitMissingTimestamp)?,
                 signature: value
                     .signature
@@ -170,7 +170,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     .into_encoding(),
             }),
             BlockIdFlag::Nil => Ok(Self::Nil {
-                validator_address: value.validator_address,
+                validator_address: value.validator_address.into_encoding(),
                 timestamp: value.timestamp.ok_or(Error::NilMissingTimestamp)?,
                 signature: value
                     .signature
@@ -178,7 +178,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     .into_encoding(),
             }),
             BlockIdFlag::AggCommit => Ok(Self::AggCommit {
-                validator_address: value.validator_address,
+                validator_address: value.validator_address.into_encoding(),
                 signature: value
                     .signature
                     .ok_or(Error::CommitMissingSignature)?
@@ -191,7 +191,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     Err(Error::AbsentWithSignature)
                 } else {
                     Ok(Self::AggCommitAbsent {
-                        validator_address: value.validator_address,
+                        validator_address: value.validator_address.into_encoding(),
                     })
                 }
             }
@@ -200,7 +200,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     Err(Error::AggNilWithTimestamp)
                 } else {
                     Ok(Self::AggNil {
-                        validator_address: value.validator_address,
+                        validator_address: value.validator_address.into_encoding(),
                         signature: value
                             .signature
                             .ok_or(Error::NilMissingSignature)?
@@ -215,7 +215,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     Err(Error::AbsentWithSignature)
                 } else {
                     Ok(Self::AggNilAbsent {
-                        validator_address: value.validator_address,
+                        validator_address: value.validator_address.into_encoding(),
                     })
                 }
             }

@@ -64,7 +64,7 @@ impl<'a> Verification for Ed25519Verifier<'a> {
                 .ok_or(VerificationError::SignatureMustExist)?;
 
             Ok(Some(ValidatorSig {
-                validator_address: commit_sig.validator_address,
+                validator_address: commit_sig.validator_address.into_encoding(),
                 timestamp,
                 signature: Some(signature.into_vec()),
             }))

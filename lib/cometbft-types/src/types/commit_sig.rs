@@ -33,7 +33,7 @@ pub enum CommitSig {
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CommitSigRaw {
     pub block_id_flag: i32,
-    pub validator_address: H160,
+    pub validator_address: H160<HexUnprefixed>,
     #[serde(
         default,
         with = "::serde_utils::parse_from_rfc3339_string_but_0001_01_01T00_00_00Z_is_none"
@@ -57,7 +57,7 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Commit.into(),
-                validator_address,
+                validator_address: validator_address.into_encoding(),
                 timestamp: Some(timestamp),
                 signature: Some(signature.into_encoding()),
             },
@@ -67,7 +67,7 @@ impl From<CommitSig> for CommitSigRaw {
                 signature,
             } => Self {
                 block_id_flag: BlockIdFlag::Nil.into(),
-                validator_address,
+                validator_address: validator_address.into_encoding(),
                 timestamp: Some(timestamp),
                 signature: Some(signature.into_encoding()),
             },
@@ -95,7 +95,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                 }
             }
             BlockIdFlag::Commit => Ok(Self::Commit {
-                validator_address: value.validator_address,
+                validator_address: value.validator_address.into_encoding(),
                 timestamp: value.timestamp.ok_or(Error::CommitMissingTimestamp)?,
                 signature: value
                     .signature
@@ -103,7 +103,7 @@ impl TryFrom<CommitSigRaw> for CommitSig {
                     .into_encoding(),
             }),
             BlockIdFlag::Nil => Ok(Self::Nil {
-                validator_address: value.validator_address,
+                validator_address: value.validator_address.into_encoding(),
                 timestamp: value.timestamp.ok_or(Error::NilMissingTimestamp)?,
                 signature: value
                     .signature

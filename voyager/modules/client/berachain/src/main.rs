@@ -40,8 +40,8 @@ impl ClientModule for Module {
     type Config = Config;
 
     async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
-        info.ensure_client_type(ClientType::BEACON_KIT)?;
-        info.ensure_consensus_type(ConsensusType::BEACON_KIT)?;
+        info.ensure_client_type(ClientType::BERACHAIN)?;
+        info.ensure_consensus_type(ConsensusType::BERACHAIN)?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;
         info.ensure_ibc_spec_id(IbcSpecId::UNION)?;
 

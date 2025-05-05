@@ -5,10 +5,12 @@ use beacon_api_types::{chain_spec::Mainnet, deneb};
 use jsonrpsee::{
     Extensions,
     core::{RpcResult, async_trait},
+    types::ErrorObject,
 };
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{
+    ErrorReporter,
     berachain::LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX,
     encoding::{DecodeAs, Ssz},
     ibc::core::client::height::Height,
@@ -53,7 +55,7 @@ impl FinalityModule for Module {
         let eth_chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 
         info.ensure_chain_id(eth_chain_id.as_str())?;
-        info.ensure_consensus_type(ConsensusType::BEACON_KIT)?;
+        info.ensure_consensus_type(ConsensusType::BERACHAIN)?;
 
         assert_eq!(
             config.comet_chain_id.as_str(),
@@ -73,13 +75,15 @@ impl FinalityModule for Module {
 impl FinalityModuleServer for Module {
     /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.eth_chain_id))]
-    async fn query_latest_height(&self, ext: &Extensions, finalized: bool) -> RpcResult<Height> {
+    async fn query_latest_height(&self, _: &Extensions, finalized: bool) -> RpcResult<Height> {
         if finalized {
-            let voyager_client = ext.try_get::<VoyagerClient>()?;
-
-            let l1_height = voyager_client
-                .query_latest_height(self.comet_chain_id.clone(), finalized)
-                .await?;
+            let exec_height = self.eth_provider.get_block_number().await.map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error querying latest execution height"),
+                    None::<()>,
+                )
+            })?;
 
             let raw_execution_header = self
                 .comet_client
@@ -87,7 +91,7 @@ impl FinalityModuleServer for Module {
                     "store/beacon/key",
                     [LATEST_EXECUTION_PAYLOAD_HEADER_PREFIX],
                     // proof for height H must be queried at H-1
-                    Some((l1_height.height() as i64 - 1).try_into().unwrap()),
+                    Some((exec_height as i64 - 1).try_into().unwrap()),
                     false,
                 )
                 .await
@@ -97,19 +101,30 @@ impl FinalityModuleServer for Module {
                 raw_execution_header
                     .response
                     .value
-                    .expect("big trouble")
+                    .ok_or_else(|| {
+                        ErrorObject::owned(
+                            -1,
+                            format!("execution payload header for block {exec_height} not found"),
+                            None::<()>,
+                        )
+                    })?
                     .as_ref(),
             )
             .unwrap();
 
             Ok(Height::new(execution_header.block_number))
         } else {
-            Ok(Height::new(
-                self.eth_provider
-                    .get_block_number()
-                    .await
-                    .expect("big trouble"),
-            ))
+            self.eth_provider
+                .get_block_number()
+                .await
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        ErrorReporter(e).with_message("error querying latest execution height"),
+                        None::<()>,
+                    )
+                })
+                .map(Height::new)
         }
     }
 
@@ -126,8 +141,16 @@ impl FinalityModuleServer for Module {
             .get_block_by_number(latest_height.height().into())
             .hashes()
             .await
-            .expect("big trouble")
-            .expect("big trouble");
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error querying latest execution height"),
+                    None::<()>,
+                )
+            })?
+            .ok_or_else(|| {
+                ErrorObject::owned(-1, format!("block {latest_height} not found"), None::<()>)
+            })?;
         // Normalize to nanos in order to be compliant with cosmos
         Ok(Timestamp::from_secs(latest_block.header.timestamp))
     }

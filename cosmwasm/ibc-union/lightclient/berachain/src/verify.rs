@@ -69,7 +69,7 @@ impl<'a> Verification for Bls12381Verifier<'a> {
             };
 
             Ok(Some(ValidatorSig {
-                validator_address: commit_sig.validator_address,
+                validator_address: commit_sig.validator_address.into_encoding(),
                 timestamp: Timestamp::default(),
                 signature: Some(signature.into_vec()),
             }))

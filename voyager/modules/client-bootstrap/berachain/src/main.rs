@@ -57,7 +57,7 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub rpc_url: String,
+    pub eth_rpc_url: String,
 
     /// The RPC endpoint for the consensus chain.
     pub comet_rpc_url: String,
@@ -70,14 +70,14 @@ impl ClientBootstrapModule for Module {
         config: Self::Config,
         info: ClientBootstrapModuleInfo,
     ) -> Result<Self, BoxDynError> {
-        let provider = DynProvider::new(ProviderBuilder::new().connect(&config.rpc_url).await?);
+        let provider = DynProvider::new(ProviderBuilder::new().connect(&config.eth_rpc_url).await?);
 
         let chain_id = provider.get_chain_id().await?;
 
         info.ensure_chain_id(chain_id.to_string())?;
-        info.ensure_client_type(ClientType::BEACON_KIT)?;
+        info.ensure_client_type(ClientType::BERACHAIN)?;
 
-        let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let cometbft_client = cometbft_rpc::Client::new(config.comet_rpc_url).await?;
 
         let comet_chain_id = cometbft_client
             .status()
