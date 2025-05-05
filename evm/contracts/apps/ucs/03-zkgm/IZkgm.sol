@@ -9,7 +9,7 @@ interface IZkgm {
         uint64 timeoutTimestamp,
         bytes32 salt,
         Instruction calldata instruction
-    ) external;
+    ) external payable;
 
     function predictWrappedToken(
         uint256 path,

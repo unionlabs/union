@@ -2694,7 +2694,7 @@ contract ZkgmTests is Test {
                 baseTokenName: baseTokenName,
                 baseTokenDecimals: baseTokenDecimals,
                 baseAmount: baseAmount,
-                quoteToken: abi.encodePacked(ZkgmLib.NATIVE_ETH_MAGIC),
+                quoteToken: abi.encodePacked(ZkgmLib.NATIVE_ETH_ERC_7528_ADDRESS),
                 quoteAmount: quoteAmount
             });
             expectOnRecvOrderMarketMakerFillSuccess(
