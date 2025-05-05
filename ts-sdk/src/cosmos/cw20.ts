@@ -64,24 +64,47 @@ export const readCw20TotalSupply = (contractAddress: string) =>
  * @returns An Effect that resolves to the token balance
  */
 export const readCw20BalanceAtHeight = (contractAddress: string, address: string, height: number) =>
-  Effect.gen(function* () {
-    const client = (yield* ExtendedCosmWasmClientContext).client
-    const resp = yield* Effect.tryPromise({
-      try: () =>
-        client.queryContractSmartAtHeight(
-          contractAddress,
-          {
-            balance: {
-              address
-            }
-          },
-          height
-        ),
-      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
-    }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
-    return resp.data.balance
-  })
+    Effect.gen(function* () {
+      const client = (yield* ExtendedCosmWasmClientContext).client
+      const resp = yield* Effect.tryPromise({
+        try: () =>
+          client.queryContractSmartAtHeight(
+            contractAddress,
+            {
+              balance: {
+                address
+              }
+            },
+            height
+          ),
+        catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
+      }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
+      return resp.data.balance
+    })
 
+/**
+ * Read CW20 token total_supply
+ * @param contractAddress The address of the CW20 token contract
+ * @param height Height of the chain
+ * @returns An Effect that resolves to the token total supply
+ */
+export const readCw20TotalSupplyAtHeight = (contractAddress: string, height: number) =>
+    Effect.gen(function* () {
+      const client = (yield* ExtendedCosmWasmClientContext).client
+      const resp = yield* Effect.tryPromise({
+        try: () =>
+          client.queryContractSmartAtHeight(
+            contractAddress,
+            {
+                token_info: {}
+            },
+            height
+          ),
+        catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
+      }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
+      return resp.data.total_supply
+    })
+  
 /**
  * Read the balance of a CW20 token for a specific address
  * @param contractAddress The address of the CW20 token contract

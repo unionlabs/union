@@ -8,7 +8,7 @@ import {
 import { channelBalance, channelBalanceAtHeight } from "../src/cosmos/channel-balance.js"
 import { CosmWasmClientDestination } from "../src/cosmos/client.js"
 import { CosmosChannelDestination } from "../src/cosmos/channel.js"
-import { readCw20BalanceAtHeight, readCw20Balance } from "../src/cosmos/cw20.js"
+import { readCw20BalanceAtHeight, readCw20Balance, readCw20TotalSupply, readCw20TotalSupplyAtHeight } from "../src/cosmos/cw20.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -69,11 +69,17 @@ Effect.runPromiseExit(
       ).pipe(withExtClient)
       console.info("cw20BalanceAtHeight", cw20BalanceAtHeight)
 
+      const cw20TotalSupply = yield* readCw20TotalSupply(contractAddr).pipe(withClient)
+
+      console.info("cw20TotalSupply", cw20TotalSupply)
+
+
+      const cw20TotalSupplyAtHeight = yield* readCw20TotalSupplyAtHeight(contractAddr, 912421).pipe(withExtClient)
+
+      console.info("cw20TotalSupplyAtHeight", cw20TotalSupplyAtHeight)
+
+
       return balanceAtBlock123;
-
-
-
-
   })
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
 
