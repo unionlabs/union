@@ -24,7 +24,14 @@ contract TestZkgm is UCS03Zkgm {
         IIBCModulePacket _ibcHandler,
         IWETH _weth
     )
-        UCS03Zkgm(_ibcHandler, _weth, new ZkgmERC20(), true, "Ether", "ETH", 18)
+        UCS03Zkgm(
+            _ibcHandler,
+            _weth,
+            new ZkgmERC20(),
+            true,
+            new UCS03ZkgmSendImpl(_ibcHandler, _weth, "Ether", "ETH", 18),
+            new UCS03ZkgmStakeImpl(_ibcHandler)
+        )
     {}
 
     function doExecuteForward(
@@ -59,14 +66,6 @@ contract TestZkgm is UCS03Zkgm {
         return _executeMultiplex(
             caller, ibcPacket, relayer, relayerMsg, path, salt, multiplex, false
         );
-    }
-
-    function doVerify(
-        uint32 channelId,
-        uint256 path,
-        Instruction calldata instruction
-    ) public {
-        _verifyInternal(channelId, path, instruction);
     }
 
     function doIncreaseOutstanding(
@@ -745,7 +744,7 @@ contract ZkgmTests is Test {
         uint32 counterpartyChannelId,
         address relayer
     ) public {
-        vm.assume(channelId != 0);
+        vm.assume(channelId > 0);
         vm.expectRevert(IBCAppLib.ErrNotIBC.selector);
         zkgm.onChanOpenTry(
             caller,
@@ -916,9 +915,11 @@ contract ZkgmTests is Test {
 
     function test_verify_forward_ok() public {
         handler.setChannel(1, 10);
-        zkgm.doVerify(
+        zkgm.send(
             1,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_FORWARD,
@@ -953,9 +954,11 @@ contract ZkgmTests is Test {
     ) public {
         vm.assume(version != ZkgmLib.INSTR_VERSION_0);
         vm.expectRevert(ZkgmLib.ErrUnsupportedVersion.selector);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: version,
                 opcode: ZkgmLib.OP_FORWARD,
@@ -977,9 +980,11 @@ contract ZkgmTests is Test {
         uint32 channelId
     ) public {
         vm.expectRevert(ZkgmLib.ErrInvalidForwardInstruction.selector);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_FORWARD,
@@ -1003,12 +1008,18 @@ contract ZkgmTests is Test {
 
     function test_verify_multiplex_ok(
         uint32 channelId,
+        uint32 counterpartyChannelId,
         bytes memory contractAddress,
         bytes memory contractCalldata
     ) public {
-        zkgm.doVerify(
+        vm.assume(channelId > 0);
+        vm.assume(counterpartyChannelId > 0);
+        handler.setChannel(channelId, counterpartyChannelId);
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_MULTIPLEX,
@@ -1032,9 +1043,11 @@ contract ZkgmTests is Test {
     ) public {
         vm.assume(sender != address(this));
         vm.expectRevert(ZkgmLib.ErrInvalidMultiplexSender.selector);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_MULTIPLEX,
@@ -1052,9 +1065,12 @@ contract ZkgmTests is Test {
 
     function test_verify_batch_ok(
         uint32 channelId,
+        uint32 counterpartyChannelId,
         bytes memory contractAddress,
         bytes memory contractCalldata
     ) public {
+        vm.assume(channelId > 0);
+        vm.assume(counterpartyChannelId > 0);
         Instruction[] memory instructions = new Instruction[](1);
         instructions[0] = Instruction({
             version: ZkgmLib.INSTR_VERSION_0,
@@ -1068,9 +1084,12 @@ contract ZkgmTests is Test {
                 })
             )
         });
-        zkgm.doVerify(
+        handler.setChannel(channelId, counterpartyChannelId);
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_BATCH,
@@ -1089,9 +1108,11 @@ contract ZkgmTests is Test {
             operand: hex""
         });
         vm.expectRevert(ZkgmLib.ErrInvalidBatchInstruction.selector);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_0,
                 opcode: ZkgmLib.OP_BATCH,
@@ -1106,7 +1127,6 @@ contract ZkgmTests is Test {
         uint32 destinationChannelId,
         address relayer,
         bytes memory relayerMsg,
-        uint192 path,
         bytes32 salt,
         bytes memory sender,
         address receiver,
@@ -1116,16 +1136,19 @@ contract ZkgmTests is Test {
         uint256 quoteAmount
     ) public {
         {
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
             vm.assume(receiver != address(0));
             vm.assume(quoteAmount <= baseAmount);
         }
+        handler.setChannel(destinationChannelId, sourceChannelId);
         address quoteToken = test_onRecvPacket_transferNative_newWrapped(
             caller,
             sourceChannelId,
             destinationChannelId,
             relayer,
             relayerMsg,
-            path,
+            0,
             salt,
             sender,
             receiver,
@@ -1136,9 +1159,11 @@ contract ZkgmTests is Test {
         vm.expectEmit();
         emit IERC20.Transfer(receiver, address(0), quoteAmount);
         vm.prank(receiver);
-        zkgm.doVerify(
+        zkgm.send(
             destinationChannelId,
-            ZkgmLib.reverseChannelPath(path),
+            0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
@@ -1148,7 +1173,7 @@ contract ZkgmTests is Test {
                         receiver: sender,
                         baseToken: abi.encodePacked(quoteToken),
                         baseTokenPath: ZkgmLib.updateChannelPath(
-                            path, destinationChannelId
+                            0, destinationChannelId
                         ),
                         baseTokenSymbol: baseTokenMeta.symbol,
                         baseTokenName: baseTokenMeta.name,
@@ -1164,6 +1189,7 @@ contract ZkgmTests is Test {
 
     function test_verify_order_transfer_native_escrow_increaseOutstanding_ok(
         uint32 channelId,
+        uint32 counterpartyChannelId,
         address caller,
         bytes memory sender,
         bytes memory receiver,
@@ -1171,7 +1197,10 @@ contract ZkgmTests is Test {
         bytes memory quoteToken,
         uint256 quoteAmount
     ) public {
+        vm.assume(channelId > 0);
+        vm.assume(counterpartyChannelId > 0);
         vm.assume(caller != address(0));
+        handler.setChannel(channelId, counterpartyChannelId);
         address baseToken = address(erc20);
         if (baseAmount > 0) {
             erc20.mint(caller, baseAmount);
@@ -1185,9 +1214,11 @@ contract ZkgmTests is Test {
         emit IERC20.Transfer(caller, address(zkgm), baseAmount);
         assertEq(zkgm.channelBalance(channelId, 0, baseToken), 0);
         vm.prank(caller);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
@@ -1229,9 +1260,11 @@ contract ZkgmTests is Test {
         uint8 decimals = erc20.decimals();
         vm.expectRevert();
         vm.prank(caller);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
@@ -1277,9 +1310,11 @@ contract ZkgmTests is Test {
         uint8 decimals = erc20.decimals();
         vm.expectRevert(ZkgmLib.ErrInvalidAssetSymbol.selector);
         vm.prank(caller);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
@@ -1325,9 +1360,11 @@ contract ZkgmTests is Test {
         uint8 decimals = erc20.decimals();
         vm.expectRevert(ZkgmLib.ErrInvalidAssetName.selector);
         vm.prank(caller);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
@@ -1373,9 +1410,11 @@ contract ZkgmTests is Test {
         string memory name = erc20.name();
         vm.expectRevert(ZkgmLib.ErrInvalidAssetDecimals.selector);
         vm.prank(caller);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
@@ -1422,9 +1461,11 @@ contract ZkgmTests is Test {
         uint8 decimals = erc20.decimals();
         vm.expectRevert(ZkgmLib.ErrInvalidAssetOrigin.selector);
         vm.prank(caller);
-        zkgm.doVerify(
+        zkgm.send(
             channelId,
             0,
+            type(uint64).max,
+            bytes32(0),
             Instruction({
                 version: ZkgmLib.INSTR_VERSION_1,
                 opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
