@@ -10,7 +10,13 @@
     "url": "https://github.com/unionlabs/union.git",
     "directory": "ts-sdk"
   },
-  "files": ["LICENSE", "README.md", "dist", "package.json", "src"],
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "package.json",
+    "src"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -72,7 +78,6 @@
     "@effect/build-utils": "^0.7.7",
     "@effect/platform": "0.80.14",
     "@types/node": "^22.13.1",
-    "@types/node-fetch": "3.0.2",
     "babel-plugin-annotate-pure-calls": "^0.5.0",
     "dpdm": "^3.14.0",
     "effect": "3.14.14",

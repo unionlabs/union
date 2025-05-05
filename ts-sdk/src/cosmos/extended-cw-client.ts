@@ -1,5 +1,7 @@
 import { CosmWasmClient, type HttpEndpoint } from "@cosmjs/cosmwasm-stargate"
 import { Tendermint34Client } from "@cosmjs/tendermint-rpc"
+import axios from "axios"
+
 
 export class ExtendedCosmWasmClient extends CosmWasmClient {
   private restUrl!: string
@@ -19,15 +21,19 @@ export class ExtendedCosmWasmClient extends CosmWasmClient {
   ) {
     const base = this.restUrl
     const encoded = btoa(JSON.stringify(queryMsg))
-    const resp = await fetch(`${base}/cosmwasm/wasm/v1/contract/${contract}/smart/${encoded}`, {
+    const url = `${base}/cosmwasm/wasm/v1/contract/${contract}/smart/${encoded}`
+
+    const resp = await axios.get(url, {
       headers: {
         "Content-Type": "application/json",
-        "x-cosmos-block-height": height.toString()
-      }
+        "x-cosmos-block-height": height.toString(),
+      },
     })
-    if (!resp.ok) {
-      throw new Error(`HTTP ${resp.status}: ${await resp.text()}`)
+    if (resp.status < 200 || resp.status >= 300) {
+      throw new Error(`HTTP ${resp.status}: ${JSON.stringify(resp.data)}`)
     }
-    return resp.json()
+
+    return resp.data
   }
+ 
 }
