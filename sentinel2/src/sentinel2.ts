@@ -9,6 +9,7 @@ import * as Cause from "effect/Cause"
 import tls from "node:tls"
 import {
   channelBalance as EthereumChannelBalance,
+  // channelBalanceAtBlock as EthereumChannelBalanceAtBlock,
   readErc20TotalSupply,
   ViemPublicClient as ViemPublicClientContext,
   ViemPublicClientDestination,
@@ -20,6 +21,7 @@ import {
   channelBalance as CosmosChannelBalance,
   readCw20TotalSupply,
   readCw20Balance,
+  readCw20TokenInfo,
   createCosmWasmClient,
   CosmWasmClientContext,
   CosmWasmClientDestination,
@@ -46,6 +48,24 @@ process.on("unhandledRejection", (reason, promise) => {
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
+
+  /**
+ * Checks whether a denom is a native token or CW20.
+ * @param denom The denom address to check.
+ * @returns An Effect that resolves to true if native, false if CW20.
+ */
+  export const isDenomNative = (denom: string) =>
+    Effect.gen(function* () {
+      const client = (yield* CosmWasmClientContext).client
+  
+      return yield* readCw20TokenInfo(denom)
+        .pipe(
+          Effect.provideService(CosmWasmClientContext, { client }),
+          Effect.map(() => false), // If query succeeds => CW20 => false
+          Effect.catchAllCause(() => Effect.succeed(true)) // If fails => native => true
+        )
+    })
+  
 
 /**
  * Checks whether the TLS cert for `host` is valid and
@@ -223,7 +243,7 @@ export function getSignerIncident(db: BetterSqlite3Database, key: string): strin
 export function markSignerIncident(db: BetterSqlite3Database, key: string, incidentId: string) {
   db.prepare(`
     INSERT OR REPLACE INTO signer_incidents
-      (url, incident_id, inserted_at)
+      (key, incident_id, inserted_at)
     VALUES (?, ?, strftime('%s','now')*1000)
   `).run(key, incidentId)
 }
@@ -532,8 +552,34 @@ const escrowSupplyControlLoop = Effect.repeat(
       string, // chainId
       Map<string, bigint> // denom → balance
     >()
+    // const blockNumbers = new Map<string, bigint>()
     const cosmosChannelBalances = new Map<string, Map<string, bigint>>()
     if(tokens) {
+      // for (const { rpc, chainType } of Object.values(config.chainConfig)) {
+      //   if (chainType === "evm") {
+      //     const latest = yield* Effect.tryPromise({
+      //       try: () => {
+      //         const client = createPublicClient({ transport: http(rpc) });
+      //         return client.getBlockNumber();
+      //       },
+      //       catch: (e) =>
+      //         new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
+      //     });
+      //     console.info("latest blockNumber", latest, "rpc", rpc);
+      //     blockNumbers.set(rpc, BigInt(latest));
+      //   } else {
+      //     const client = yield* createCosmWasmClient(rpc)
+      //     const latest = yield* Effect.tryPromise({
+      //       try: () => {
+      //         return client.getHeight()
+      //       },
+      //       catch: (e) =>
+      //         new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
+      //     });
+      //     console.info("latest blockNumber", latest, "rpc", rpc);
+      //     blockNumbers.set(rpc, BigInt(latest));
+      //   }
+      // }
       yield * Effect.log("Fetched wrapped tokens length:", tokens.length)
       for (const token of tokens) {
         const srcChain = token.wrapping[0]?.unwrapped_chain.universal_chain_id
@@ -591,7 +637,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
           )          
           if(!srcChannelBalHere){
-            console.info("No srcChannelBal for token:", token.denom)
+            yield* Effect.log("No srcChannelBal for token:", token.denom)
             continue
           }
           srcChannelBal = BigInt(srcChannelBalHere as bigint)
@@ -612,7 +658,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
           )
           if(!srcChannelBalUnknown){
-            console.info("No srcChannelBalUnknown for token:", token.denom)
+            yield* Effect.log("No srcChannelBalUnknown for token:", token.denom)
             continue
           }
           srcChannelBal = BigInt(srcChannelBalUnknown as bigint)
@@ -630,7 +676,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             Effect.provideService(ViemPublicClientContext, { client })
           )
           if(!totalSupplyHere){
-            console.info("No total supply found for token:", token.denom)
+            yield* Effect.log("No total supply found for token:", token.denom)
             continue
           }
           totalSupply = BigInt(totalSupplyHere as bigint)
@@ -642,7 +688,7 @@ const escrowSupplyControlLoop = Effect.repeat(
               Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
           )
           if(!totalSupplyHere){
-            console.info("No total supply found for token:", token.denom)
+            yield* Effect.log("No total supply found for token:", token.denom)
             continue
           }
           totalSupply = BigInt(totalSupplyHere)
@@ -691,8 +737,10 @@ const escrowSupplyControlLoop = Effect.repeat(
               Effect.provideService(ViemPublicClientContext, { client }),
               Effect.tapError(e => Effect.logError("Error querying balanceOf:", e))
             )
-            if(!onChain)
+            if(!onChain){
+              yield* Effect.log("No balance found for denom:", tokenAddr)
               continue
+            }
             if (BigInt(onChain) < channelSum) {
               const errLog = Effect.annotateLogs({
                 issueType: "AGGREGATE_GT_ONCHAIN",
@@ -720,24 +768,31 @@ const escrowSupplyControlLoop = Effect.repeat(
           const cosmosClient = yield* createCosmWasmClient(rpc)
 
           for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
-            let { amount } = yield* Effect.tryPromise({
-              try: () => cosmosClient.getBalance(minter, denom),
-              catch: e => new Error(`bank query failed: ${e}`)
-            })
-            if(!amount)
-              continue
-            
-            if(BigInt(amount) === 0n) {
-              const cw20Balance = 
-                yield* readCw20Balance(denom, minter).pipe(
-                  Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
-                  Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
-              ) 
-              // TODO: send "tokenInfo" here before sending the new request because it may fail due to
-              // native token. Its not %100 guarantee
-              if(!cw20Balance)
+            const isDenomNativeHere = yield* isDenomNative(denom).pipe(
+              Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
+              Effect.tapError(e => Effect.logError("Error checking denom type:", e))
+            )
+            let amount;
+            if(isDenomNativeHere) {
+              const balance = yield* Effect.tryPromise({
+                try: () => cosmosClient.getBalance(minter, denom),
+                catch: e => new Error(`bank query failed: ${e}`)
+              })
+              if(!balance){
+                yield* Effect.log("No balance found for denom:", denom)
                 continue
-              amount = cw20Balance
+              }
+              amount = BigInt(balance.amount)
+            } else {
+              const balance = yield* readCw20Balance(denom, minter).pipe(
+                Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
+                Effect.tapError(e => Effect.logError("Error fetching balance:", e))
+              )
+              if(!balance){
+                yield* Effect.log("No balance found for denom:", denom)
+                continue
+              }
+              amount = BigInt(balance)
             }
             if (BigInt(amount) < channelSum) {
               const errLog = Effect.annotateLogs({
@@ -1331,7 +1386,7 @@ const mainEffect = Effect.gen(function* (_) {
   yield* Effect.all(
     [
       runIbcChecksForever,
-      escrowSupplyControlLoop,
+      // escrowSupplyControlLoop,
       fundBabylonAccounts,
       checkBalances,
       checkSSLCertificates
