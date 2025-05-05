@@ -22,7 +22,7 @@
     "vitest": "^3.0.8"
   },
   "dependencies": {
-    "@unionlabs/sdk": "^1.9.1",
+    "@unionlabs/sdk": "^1.9.4",
     "better-sqlite3": "^11.9.1",
     "consola": "^3.4.0",
     "effect": "^3.13.2",

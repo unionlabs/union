@@ -9,24 +9,32 @@ import * as Cause from "effect/Cause"
 import tls from "node:tls"
 import {
   channelBalance as EthereumChannelBalance,
+  channelBalanceAtBlock as EthereumChannelBalanceAtBlock,
   // channelBalanceAtBlock as EthereumChannelBalanceAtBlock,
   readErc20TotalSupply,
+  readErc20BalanceAtBlock,
+  readErc20TotalSupplyAtBlock,
   ViemPublicClient as ViemPublicClientContext,
   ViemPublicClientDestination,
   EvmChannelDestination,
-  readErc20Balance
+  readErc20Balance,
 } from "@unionlabs/sdk/evm"
 
 import {
   channelBalance as CosmosChannelBalance,
+  channelBalanceAtHeight as CosmosChannelBalanceAtHeight,
   readCw20TotalSupply,
   readCw20Balance,
+  readCw20BalanceAtHeight,
+  readCw20TotalSupplyAtHeight,
   readCw20TokenInfo,
   createCosmWasmClient,
   CosmWasmClientContext,
   CosmWasmClientDestination,
   CosmosChannelDestination,
-  createSigningCosmWasmClient
+  createSigningCosmWasmClient,
+  ExtendedCosmWasmClientContext,
+  createExtendedCosmWasmClient
 } from "@unionlabs/sdk/cosmos"
 
 import yargs from "yargs"
@@ -386,6 +394,7 @@ type ChainType = "evm" | "cosmos"
 interface ChainConfigEntry {
   zkgmAddress: string
   rpc: string
+  restUrl: string
   chainType: ChainType
   minter: string
 }
@@ -552,34 +561,34 @@ const escrowSupplyControlLoop = Effect.repeat(
       string, // chainId
       Map<string, bigint> // denom → balance
     >()
-    // const blockNumbers = new Map<string, bigint>()
+    const blockNumbers = new Map<string, bigint>()
     const cosmosChannelBalances = new Map<string, Map<string, bigint>>()
     if(tokens) {
-      // for (const { rpc, chainType } of Object.values(config.chainConfig)) {
-      //   if (chainType === "evm") {
-      //     const latest = yield* Effect.tryPromise({
-      //       try: () => {
-      //         const client = createPublicClient({ transport: http(rpc) });
-      //         return client.getBlockNumber();
-      //       },
-      //       catch: (e) =>
-      //         new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
-      //     });
-      //     console.info("latest blockNumber", latest, "rpc", rpc);
-      //     blockNumbers.set(rpc, BigInt(latest));
-      //   } else {
-      //     const client = yield* createCosmWasmClient(rpc)
-      //     const latest = yield* Effect.tryPromise({
-      //       try: () => {
-      //         return client.getHeight()
-      //       },
-      //       catch: (e) =>
-      //         new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
-      //     });
-      //     console.info("latest blockNumber", latest, "rpc", rpc);
-      //     blockNumbers.set(rpc, BigInt(latest));
-      //   }
-      // }
+      for (const { rpc, chainType } of Object.values(config.chainConfig)) {
+        if (chainType === "evm") {
+          const latest = yield* Effect.tryPromise({
+            try: () => {
+              const client = createPublicClient({ transport: http(rpc) });
+              return client.getBlockNumber();
+            },
+            catch: (e) =>
+              new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
+          });
+          console.info("latest blockNumber", latest, "rpc", rpc);
+          blockNumbers.set(rpc, BigInt(latest));
+        } else {
+          const client = yield* createCosmWasmClient(rpc)
+          const latest = yield* Effect.tryPromise({
+            try: () => {
+              return client.getHeight()
+            },
+            catch: (e) =>
+              new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
+          });
+          console.info("latest blockNumber", latest, "rpc", rpc);
+          blockNumbers.set(rpc, BigInt(latest));
+        }
+      }
       yield * Effect.log("Fetched wrapped tokens length:", tokens.length)
       for (const token of tokens) {
         const srcChain = token.wrapping[0]?.unwrapped_chain.universal_chain_id
@@ -627,7 +636,12 @@ const escrowSupplyControlLoop = Effect.repeat(
 
         if (srcCfg.chainType === "evm") {
           const client = createPublicClient({ transport: http(srcCfg.rpc) })
-          const srcChannelBalHere = yield* EthereumChannelBalance(path, key as Hex).pipe(
+          const evmHeight = blockNumbers.get(srcCfg.rpc)!
+          if(!evmHeight) {
+            yield* Effect.log("No block number found for source chain:", srcChain)
+            continue
+          }
+          const srcChannelBalHere = yield* EthereumChannelBalanceAtBlock(path, key as Hex, evmHeight).pipe(
             Effect.provideService(ViemPublicClientDestination, { client }),
             Effect.provideService(EvmChannelDestination, {
               ucs03address: srcCfg.zkgmAddress as Hex,
@@ -647,9 +661,19 @@ const escrowSupplyControlLoop = Effect.repeat(
           evmChannelBalances.set(srcChain, chainMap)
         } else {
           const client = yield* createCosmWasmClient(srcCfg.rpc)
+          const extClient = yield* createExtendedCosmWasmClient(
+            srcCfg.rpc,
+            srcCfg.restUrl
+          )          
 
-          const srcChannelBalUnknown = yield* CosmosChannelBalance(path, hexToUtf8(key as Hex)).pipe(
-            Effect.provideService(CosmWasmClientDestination, { client }),
+          const cosmosHeight = blockNumbers.get(srcCfg.rpc)!
+          if(!cosmosHeight) {
+            yield* Effect.log("No block number found for cosmos - source chain:", srcChain)
+            continue
+          }
+
+          const srcChannelBalUnknown = yield* CosmosChannelBalanceAtHeight(path, hexToUtf8(key as Hex), Number(cosmosHeight)).pipe(
+            Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
             Effect.provideService(CosmosChannelDestination, {
               ucs03address: srcCfg.zkgmAddress,
               // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -672,7 +696,12 @@ const escrowSupplyControlLoop = Effect.repeat(
         let totalSupply = 0n
         if (dstCfg.chainType === "evm") {
           const client = createPublicClient({ transport: http(dstCfg.rpc) })
-          const totalSupplyHere = yield* readErc20TotalSupply(token.denom).pipe(
+          const evmHeight = blockNumbers.get(dstCfg.rpc)!
+          if(!evmHeight) {
+            yield* Effect.log("No block number found for destination chain:", dstChain)
+            continue
+          }
+          const totalSupplyHere = yield* readErc20TotalSupplyAtBlock(token.denom, evmHeight).pipe(
             Effect.provideService(ViemPublicClientContext, { client })
           )
           if(!totalSupplyHere){
@@ -682,9 +711,20 @@ const escrowSupplyControlLoop = Effect.repeat(
           totalSupply = BigInt(totalSupplyHere as bigint)
         } else {
           const client = yield* createCosmWasmClient(dstCfg.rpc)
+          const extClient = yield* createExtendedCosmWasmClient(
+            dstCfg.rpc,
+            dstCfg.restUrl
+          )  
+
+          const cosmosHeight = blockNumbers.get(dstCfg.rpc)!
+          if(!cosmosHeight) {
+            yield* Effect.log("No block number found for cosmos - destination chain:", dstChain)
+            continue
+          }
+
           const totalSupplyHere = 
-            yield* readCw20TotalSupply(hexToUtf8(token.denom)).pipe(
-              Effect.provideService(CosmWasmClientContext, { client }),
+            yield* readCw20TotalSupplyAtHeight(hexToUtf8(token.denom), Number(cosmosHeight)).pipe(
+              Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
               Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
           )
           if(!totalSupplyHere){
@@ -726,14 +766,20 @@ const escrowSupplyControlLoop = Effect.repeat(
 
       yield* Effect.log("Comparing aggregated channel balances to on‑chain holdings")
 
-      for (const [chainId, { rpc, chainType, minter }] of Object.entries(config.chainConfig)) {
+      for (const [chainId, { rpc, restUrl, chainType, minter }] of Object.entries(config.chainConfig)) {
         if (chainType === "evm") {
           const client = createPublicClient({
             transport: http(rpc)
           })
 
+          const evmHeight = blockNumbers.get(rpc)!
+          if(!evmHeight) {
+            yield* Effect.log("No block number found for source chain:", chainId)
+            continue
+          }
+
           for (const [tokenAddr, channelSum] of evmChannelBalances.get(chainId) ?? []) {
-            const onChain = yield* readErc20Balance(tokenAddr as Hex, minter as Hex).pipe(
+            const onChain = yield* readErc20BalanceAtBlock(tokenAddr as Hex, minter as Hex, evmHeight).pipe(
               Effect.provideService(ViemPublicClientContext, { client }),
               Effect.tapError(e => Effect.logError("Error querying balanceOf:", e))
             )
@@ -766,6 +812,10 @@ const escrowSupplyControlLoop = Effect.repeat(
           }
         } else {
           const cosmosClient = yield* createCosmWasmClient(rpc)
+          const extClient = yield* createExtendedCosmWasmClient(
+            rpc,
+            restUrl
+          )  
 
           for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
             const isDenomNativeHere = yield* isDenomNative(denom).pipe(
@@ -784,8 +834,15 @@ const escrowSupplyControlLoop = Effect.repeat(
               }
               amount = BigInt(balance.amount)
             } else {
-              const balance = yield* readCw20Balance(denom, minter).pipe(
-                Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
+
+              const cosmosHeight = blockNumbers.get(rpc)!
+              if(!cosmosHeight) {
+                yield* Effect.log("No block number found for cosmos - chain:", chainId)
+                continue
+              }
+
+              const balance = yield* readCw20BalanceAtHeight(denom, minter, Number(cosmosHeight)).pipe(
+                Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
                 Effect.tapError(e => Effect.logError("Error fetching balance:", e))
               )
               if(!balance){
@@ -1386,7 +1443,7 @@ const mainEffect = Effect.gen(function* (_) {
   yield* Effect.all(
     [
       runIbcChecksForever,
-      // escrowSupplyControlLoop,
+      escrowSupplyControlLoop,
       fundBabylonAccounts,
       checkBalances,
       checkSSLCertificates
