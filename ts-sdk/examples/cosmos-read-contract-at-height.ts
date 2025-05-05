@@ -5,15 +5,7 @@ import {
   ExtendedCosmWasmClientContext,
   CosmWasmClientContext
 } from "../src/cosmos/client.js"
-import { channelBalance, channelBalanceAtHeight } from "../src/cosmos/channel-balance.js"
-import { CosmWasmClientDestination } from "../src/cosmos/client.js"
-import { CosmosChannelDestination } from "../src/cosmos/channel.js"
-import {
-  readCw20BalanceAtHeight,
-  readCw20Balance,
-  readCw20TotalSupply,
-  readCw20TotalSupplyAtHeight
-} from "../src/cosmos/cw20.js"
+import { readCw20TotalSupply, readCw20TotalSupplyAtHeight } from "../src/cosmos/cw20.js"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
@@ -82,7 +74,6 @@ BigInt["prototype"].toJSON = function () {
 //   })
 // ).then(exit => console.log(JSON.stringify(exit, null, 2)))
 
-
 Effect.runPromiseExit(
   Effect.gen(function* () {
     // Create a CosmWasm client
@@ -93,9 +84,8 @@ Effect.runPromiseExit(
       try: () => {
         return client.getHeight()
       },
-      catch: (e) =>
-        new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
-    });
+      catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`)
+    })
     console.info("height: ", latest)
 
     const totalSupplyNow = yield* readCw20TotalSupply(tokenDenom).pipe(
@@ -113,6 +103,5 @@ Effect.runPromiseExit(
     )
 
     console.info("totalSupplyAtHeight:", totalSupplyAtHeight)
-
   })
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
