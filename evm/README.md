@@ -191,3 +191,11 @@ FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "21000001", url =
 # key is an arbitrary non-empty string
 FOUNDRY_ETHERSCAN='{ chain = { key = "asdf", chain = "1328", url = "https://seitrace.com/atlantic-2/api" } }' nix run .#evm-scripts.sei-atlantic
 ```
+
+### `berachain.80069`
+
+<https://bepolia.beratrail.io/>
+
+```sh
+FOUNDRY_ETHERSCAN='{ chain = { key = "verifyContract", chain = "80069", url = "https://api.routescan.io/v2/network/testnet/evm/80069/etherscan" } }' nix run .#evm-scripts.bepolia
+```
