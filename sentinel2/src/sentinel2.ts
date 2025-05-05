@@ -4,33 +4,25 @@ import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
 import { GasPrice } from "@cosmjs/stargate"
 import { coins } from "@cosmjs/proto-signing"
-import { Exit, pipe } from "effect";
+import { pipe } from "effect"
 import * as Cause from "effect/Cause"
 import tls from "node:tls"
 import {
-  channelBalance as EthereumChannelBalance,
   channelBalanceAtBlock as EthereumChannelBalanceAtBlock,
-  // channelBalanceAtBlock as EthereumChannelBalanceAtBlock,
-  readErc20TotalSupply,
   readErc20BalanceAtBlock,
   readErc20TotalSupplyAtBlock,
   ViemPublicClient as ViemPublicClientContext,
   ViemPublicClientDestination,
-  EvmChannelDestination,
-  readErc20Balance,
+  EvmChannelDestination
 } from "@unionlabs/sdk/evm"
 
 import {
-  channelBalance as CosmosChannelBalance,
   channelBalanceAtHeight as CosmosChannelBalanceAtHeight,
-  readCw20TotalSupply,
-  readCw20Balance,
   readCw20BalanceAtHeight,
   readCw20TotalSupplyAtHeight,
   readCw20TokenInfo,
   createCosmWasmClient,
   CosmWasmClientContext,
-  CosmWasmClientDestination,
   CosmosChannelDestination,
   createSigningCosmWasmClient,
   ExtendedCosmWasmClientContext,
@@ -46,34 +38,32 @@ import fetch from "node-fetch"
 import type { Database as BetterSqlite3Database } from "better-sqlite3"
 
 process.on("uncaughtException", err => {
-  console.error("❌ Uncaught Exception:", err.stack || err);
-});
+  console.error("❌ Uncaught Exception:", err.stack || err)
+})
 process.on("unhandledRejection", (reason, promise) => {
-  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason);
-});
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason)
+})
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function () {
   return this.toString()
 }
 
-  /**
+/**
  * Checks whether a denom is a native token or CW20.
  * @param denom The denom address to check.
  * @returns An Effect that resolves to true if native, false if CW20.
  */
-  export const isDenomNative = (denom: string) =>
-    Effect.gen(function* () {
-      const client = (yield* CosmWasmClientContext).client
-  
-      return yield* readCw20TokenInfo(denom)
-        .pipe(
-          Effect.provideService(CosmWasmClientContext, { client }),
-          Effect.map(() => false), // If query succeeds => CW20 => false
-          Effect.catchAllCause(() => Effect.succeed(true)) // If fails => native => true
-        )
-    })
-  
+export const isDenomNative = (denom: string) =>
+  Effect.gen(function* () {
+    const client = (yield* CosmWasmClientContext).client
+
+    return yield* readCw20TokenInfo(denom).pipe(
+      Effect.provideService(CosmWasmClientContext, { client }),
+      Effect.map(() => false), // If query succeeds => CW20 => false
+      Effect.catchAllCause(() => Effect.succeed(true)) // If fails => native => true
+    )
+  })
 
 /**
  * Checks whether the TLS cert for `host` is valid and
@@ -144,7 +134,7 @@ export const triggerIncident = (
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`
         },
         body: JSON.stringify({
           summary,
@@ -154,36 +144,31 @@ export const triggerIncident = (
           call: false,
           sms: false,
           email: false,
-          name: incidentName,
-        }),
-      }).then(async (res) => {
-        const text = await res.text();
-        if (!res.ok) throw new Error(`Trigger failed: ${text}`);
-        return JSON.parse(text);
+          name: incidentName
+        })
+      }).then(async res => {
+        const text = await res.text()
+        if (!res.ok) throw new Error(`Trigger failed: ${text}`)
+        return JSON.parse(text)
       }),
-    catch: (e) => new Error(`Incident trigger error: ${e}`),
+    catch: e => new Error(`Incident trigger error: ${e}`)
   })
-  // if anything went wrong, swallow it and return { data:{ id:"" } }
-  .pipe(
-    Effect.orElse(() =>
-      Effect.sync(() => ({ data: { id: "" } }))
-    )
-  );
+    // if anything went wrong, swallow it and return { data:{ id:"" } }
+    .pipe(Effect.orElse(() => Effect.sync(() => ({ data: { id: "" } }))))
 
   if (isLocal) {
     return Effect.sync(() => {
-      console.info("Local mode: skipping triggerIncident");
-      return { data: { id: "" } };
-    });
+      console.info("Local mode: skipping triggerIncident")
+      return { data: { id: "" } }
+    })
   }
   if (!trigger_betterstack) {
     return Effect.sync(() => {
-      return { data: { id: "" } };
-    }
-    )
+      return { data: { id: "" } }
+    })
   }
-  return remote;
-};
+  return remote
+}
 
 /**
  * Effect to resolve an existing BetterStack incident via the Uptime API
@@ -213,17 +198,16 @@ export const resolveIncident = (
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
+          Authorization: `Bearer ${apiKey}`
         },
-        body: JSON.stringify({ resolved_by: resolvedBy }),
-      }).then(async (res) => {
+        body: JSON.stringify({ resolved_by: resolvedBy })
+      }).then(async res => {
         const text = await res.text()
         if (!res.ok) throw new Error(`Resolve failed: ${text}`)
         return JSON.parse(text)
       }),
-    catch: (e) => new Error(`Incident resolve error: ${e}`),
-  })
-  .pipe(
+    catch: e => new Error(`Incident resolve error: ${e}`)
+  }).pipe(
     // if we parse successfully we consider it resolved
     Effect.map(() => true),
     // swallow any error and return `false`
@@ -563,33 +547,31 @@ const escrowSupplyControlLoop = Effect.repeat(
     >()
     const blockNumbers = new Map<string, bigint>()
     const cosmosChannelBalances = new Map<string, Map<string, bigint>>()
-    if(tokens) {
+    if (tokens) {
       for (const { rpc, chainType } of Object.values(config.chainConfig)) {
         if (chainType === "evm") {
           const latest = yield* Effect.tryPromise({
             try: () => {
-              const client = createPublicClient({ transport: http(rpc) });
-              return client.getBlockNumber();
+              const client = createPublicClient({ transport: http(rpc) })
+              return client.getBlockNumber()
             },
-            catch: (e) =>
-              new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
-          });
-          console.info("latest blockNumber", latest, "rpc", rpc);
-          blockNumbers.set(rpc, BigInt(latest));
+            catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`)
+          })
+          console.info("latest blockNumber", latest, "rpc", rpc)
+          blockNumbers.set(rpc, BigInt(latest))
         } else {
           const client = yield* createCosmWasmClient(rpc)
           const latest = yield* Effect.tryPromise({
             try: () => {
               return client.getHeight()
             },
-            catch: (e) =>
-              new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
-          });
-          console.info("latest blockNumber", latest, "rpc", rpc);
-          blockNumbers.set(rpc, BigInt(latest));
+            catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`)
+          })
+          console.info("latest blockNumber", latest, "rpc", rpc)
+          blockNumbers.set(rpc, BigInt(latest))
         }
       }
-      yield * Effect.log("Fetched wrapped tokens length:", tokens.length)
+      yield* Effect.log("Fetched wrapped tokens length:", tokens.length)
       for (const token of tokens) {
         const srcChain = token.wrapping[0]?.unwrapped_chain.universal_chain_id
         const dstChain = token.chain.universal_chain_id
@@ -606,11 +588,11 @@ const escrowSupplyControlLoop = Effect.repeat(
           dstChain,
           dstChannel
         )
-        if(!sourceChannelId){
+        if (!sourceChannelId) {
           yield* Effect.log("No source channel ID found. Skipping...")
           continue
         }
-        
+
         const srcCfg = config.chainConfig[srcChain]
         const dstCfg = config.chainConfig[dstChain]
 
@@ -637,11 +619,15 @@ const escrowSupplyControlLoop = Effect.repeat(
         if (srcCfg.chainType === "evm") {
           const client = createPublicClient({ transport: http(srcCfg.rpc) })
           const evmHeight = blockNumbers.get(srcCfg.rpc)!
-          if(!evmHeight) {
+          if (!evmHeight) {
             yield* Effect.log("No block number found for source chain:", srcChain)
             continue
           }
-          const srcChannelBalHere = yield* EthereumChannelBalanceAtBlock(path, key as Hex, evmHeight).pipe(
+          const srcChannelBalHere = yield* EthereumChannelBalanceAtBlock(
+            path,
+            key as Hex,
+            evmHeight
+          ).pipe(
             Effect.provideService(ViemPublicClientDestination, { client }),
             Effect.provideService(EvmChannelDestination, {
               ucs03address: srcCfg.zkgmAddress as Hex,
@@ -649,8 +635,8 @@ const escrowSupplyControlLoop = Effect.repeat(
               channelId: sourceChannelId!
             }),
             Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
-          )          
-          if(!srcChannelBalHere){
+          )
+          if (!srcChannelBalHere) {
             yield* Effect.log("No srcChannelBal for token:", token.denom)
             continue
           }
@@ -661,18 +647,19 @@ const escrowSupplyControlLoop = Effect.repeat(
           evmChannelBalances.set(srcChain, chainMap)
         } else {
           const client = yield* createCosmWasmClient(srcCfg.rpc)
-          const extClient = yield* createExtendedCosmWasmClient(
-            srcCfg.rpc,
-            srcCfg.restUrl
-          )          
+          const extClient = yield* createExtendedCosmWasmClient(srcCfg.rpc, srcCfg.restUrl)
 
           const cosmosHeight = blockNumbers.get(srcCfg.rpc)!
-          if(!cosmosHeight) {
+          if (!cosmosHeight) {
             yield* Effect.log("No block number found for cosmos - source chain:", srcChain)
             continue
           }
 
-          const srcChannelBalUnknown = yield* CosmosChannelBalanceAtHeight(path, hexToUtf8(key as Hex), Number(cosmosHeight)).pipe(
+          const srcChannelBalUnknown = yield* CosmosChannelBalanceAtHeight(
+            path,
+            hexToUtf8(key as Hex),
+            Number(cosmosHeight)
+          ).pipe(
             Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
             Effect.provideService(CosmosChannelDestination, {
               ucs03address: srcCfg.zkgmAddress,
@@ -681,7 +668,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             }),
             Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
           )
-          if(!srcChannelBalUnknown){
+          if (!srcChannelBalUnknown) {
             yield* Effect.log("No srcChannelBalUnknown for token:", token.denom)
             continue
           }
@@ -697,37 +684,36 @@ const escrowSupplyControlLoop = Effect.repeat(
         if (dstCfg.chainType === "evm") {
           const client = createPublicClient({ transport: http(dstCfg.rpc) })
           const evmHeight = blockNumbers.get(dstCfg.rpc)!
-          if(!evmHeight) {
+          if (!evmHeight) {
             yield* Effect.log("No block number found for destination chain:", dstChain)
             continue
           }
           const totalSupplyHere = yield* readErc20TotalSupplyAtBlock(token.denom, evmHeight).pipe(
             Effect.provideService(ViemPublicClientContext, { client })
           )
-          if(!totalSupplyHere){
+          if (!totalSupplyHere) {
             yield* Effect.log("No total supply found for token:", token.denom)
             continue
           }
           totalSupply = BigInt(totalSupplyHere as bigint)
         } else {
           const client = yield* createCosmWasmClient(dstCfg.rpc)
-          const extClient = yield* createExtendedCosmWasmClient(
-            dstCfg.rpc,
-            dstCfg.restUrl
-          )  
+          const extClient = yield* createExtendedCosmWasmClient(dstCfg.rpc, dstCfg.restUrl)
 
           const cosmosHeight = blockNumbers.get(dstCfg.rpc)!
-          if(!cosmosHeight) {
+          if (!cosmosHeight) {
             yield* Effect.log("No block number found for cosmos - destination chain:", dstChain)
             continue
           }
 
-          const totalSupplyHere = 
-            yield* readCw20TotalSupplyAtHeight(hexToUtf8(token.denom), Number(cosmosHeight)).pipe(
-              Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
-              Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
+          const totalSupplyHere = yield* readCw20TotalSupplyAtHeight(
+            hexToUtf8(token.denom),
+            Number(cosmosHeight)
+          ).pipe(
+            Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
+            Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
           )
-          if(!totalSupplyHere){
+          if (!totalSupplyHere) {
             yield* Effect.log("No total supply found for token:", token.denom)
             continue
           }
@@ -766,24 +752,30 @@ const escrowSupplyControlLoop = Effect.repeat(
 
       yield* Effect.log("Comparing aggregated channel balances to on‑chain holdings")
 
-      for (const [chainId, { rpc, restUrl, chainType, minter }] of Object.entries(config.chainConfig)) {
+      for (const [chainId, { rpc, restUrl, chainType, minter }] of Object.entries(
+        config.chainConfig
+      )) {
         if (chainType === "evm") {
           const client = createPublicClient({
             transport: http(rpc)
           })
 
           const evmHeight = blockNumbers.get(rpc)!
-          if(!evmHeight) {
+          if (!evmHeight) {
             yield* Effect.log("No block number found for source chain:", chainId)
             continue
           }
 
           for (const [tokenAddr, channelSum] of evmChannelBalances.get(chainId) ?? []) {
-            const onChain = yield* readErc20BalanceAtBlock(tokenAddr as Hex, minter as Hex, evmHeight).pipe(
+            const onChain = yield* readErc20BalanceAtBlock(
+              tokenAddr as Hex,
+              minter as Hex,
+              evmHeight
+            ).pipe(
               Effect.provideService(ViemPublicClientContext, { client }),
               Effect.tapError(e => Effect.logError("Error querying balanceOf:", e))
             )
-            if(!onChain){
+            if (!onChain) {
               yield* Effect.log("No balance found for denom:", tokenAddr)
               continue
             }
@@ -812,40 +804,40 @@ const escrowSupplyControlLoop = Effect.repeat(
           }
         } else {
           const cosmosClient = yield* createCosmWasmClient(rpc)
-          const extClient = yield* createExtendedCosmWasmClient(
-            rpc,
-            restUrl
-          )  
+          const extClient = yield* createExtendedCosmWasmClient(rpc, restUrl)
 
           for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
             const isDenomNativeHere = yield* isDenomNative(denom).pipe(
               Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
               Effect.tapError(e => Effect.logError("Error checking denom type:", e))
             )
-            let amount;
-            if(isDenomNativeHere) {
+            let amount
+            if (isDenomNativeHere) {
               const balance = yield* Effect.tryPromise({
                 try: () => cosmosClient.getBalance(minter, denom),
                 catch: e => new Error(`bank query failed: ${e}`)
               })
-              if(!balance){
+              if (!balance) {
                 yield* Effect.log("No balance found for denom:", denom)
                 continue
               }
               amount = BigInt(balance.amount)
             } else {
-
               const cosmosHeight = blockNumbers.get(rpc)!
-              if(!cosmosHeight) {
+              if (!cosmosHeight) {
                 yield* Effect.log("No block number found for cosmos - chain:", chainId)
                 continue
               }
 
-              const balance = yield* readCw20BalanceAtHeight(denom, minter, Number(cosmosHeight)).pipe(
+              const balance = yield* readCw20BalanceAtHeight(
+                denom,
+                minter,
+                Number(cosmosHeight)
+              ).pipe(
                 Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
                 Effect.tapError(e => Effect.logError("Error fetching balance:", e))
               )
-              if(!balance){
+              if (!balance) {
                 yield* Effect.log("No balance found for denom:", denom)
                 continue
               }
@@ -878,11 +870,11 @@ const escrowSupplyControlLoop = Effect.repeat(
       }
     }
   }).pipe(
-    Effect.catchAllCause((err) =>
+    Effect.catchAllCause(err =>
       Effect.sync(() => {
         console.error("⚠️ escrowSupplyControlLoop iteration failed, skipping:", err)
       })
-    )    
+    )
   ),
   Schedule.spaced("1 hours")
 )
@@ -1054,8 +1046,7 @@ export const checkSSLCertificates = Effect.repeat(
     const { config } = yield* Config
     const rpchostEndpoints = config.rpcHostEndpoints
 
-    for(const rpchostEndpoint of rpchostEndpoints) {
-
+    for (const rpchostEndpoint of rpchostEndpoints) {
       const pageHtml: string = yield* safeGetRequest({
         url: rpchostEndpoint,
         port: 443,
@@ -1152,21 +1143,21 @@ export const checkBalances = Effect.repeat(
 
           const worker = Effect.gen(function* (_) {
             const result = yield* callWithRetry
-            if(result){
+            if (result) {
               if (!Array.isArray(result) || result.length === 0) {
                 yield* Effect.logError(`Unexpected response shape for ${plugin} @ ${url}:${port}`)
                 return
               }
-  
+
               const rpcObj = (result[0] as any).result
               if (typeof rpcObj !== "object" || rpcObj === null) {
                 yield* Effect.logError(`No 'result' object for ${plugin} @ ${url}:${port}`)
                 return
               }
-  
+
               for (const [wallet, balStr] of Object.entries(rpcObj)) {
                 let bal = BigInt(balStr as string)
-  
+
                 const tags = {
                   plugin,
                   url,
@@ -1175,18 +1166,24 @@ export const checkBalances = Effect.repeat(
                   balance: bal.toString(),
                   expected: expectedThreshold.toString()
                 }
-  
+
                 const key = `${url}:${port}:${plugin}:${wallet}`
                 const existing = getSignerIncident(db, key)
-  
+
                 if (bal < expectedThreshold) {
                   const logEffect = Effect.annotateLogs(tags)(Effect.logError("SIGNER_BALANCE_LOW"))
                   Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-  
+
                   if (!existing) {
                     const inc = yield* triggerIncident(
                       `SIGNER_BALANCE_LOW @ ${key}`,
-                      JSON.stringify({ plugin, url, port: portStr, wallet, balance: bal.toString() }),
+                      JSON.stringify({
+                        plugin,
+                        url,
+                        port: portStr,
+                        wallet,
+                        balance: bal.toString()
+                      }),
                       config.betterstack_api_key,
                       config.trigger_betterstack,
                       "SENTINEL@union.build",
@@ -1201,7 +1198,7 @@ export const checkBalances = Effect.repeat(
                 } else {
                   const logEffect = Effect.annotateLogs(tags)(Effect.logInfo("SIGNER_BALANCE_OK"))
                   Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-  
+
                   if (existing) {
                     const didResolve = yield* resolveIncident(
                       existing,
@@ -1308,13 +1305,13 @@ export const checkPackets = (
 ) =>
   Effect.gen(function* () {
     for (const sla of ["mainnet", "testnet"] as const) {
-      if(sla == "testnet" ) {
+      if (sla == "testnet") {
         yield* Effect.log("Skipping testnet")
         continue
       }
       const transfer_error = sla === "mainnet" ? "MAINNET_TRANSFER_ERROR" : "TESTNET_TRANSFER_ERROR"
       const missingPacketsMainnet = yield* fetchMissingPackets(hasuraEndpoint, sla)
-      if(!missingPacketsMainnet || missingPacketsMainnet.length === 0) {
+      if (!missingPacketsMainnet || missingPacketsMainnet.length === 0) {
         yield* Effect.log(`No missing packets found for ${sla}`)
         continue
       }
@@ -1361,7 +1358,7 @@ export const checkPackets = (
             isLocal,
             "Sentinel-Automatically resolved."
           )
-          if(didResolve) {
+          if (didResolve) {
             clearTransferError(db, sla, packet_hash)
           }
         }
@@ -1377,7 +1374,12 @@ const runIbcChecksForever = Effect.gen(function* (_) {
   const effectToRepeat = Effect.gen(function* (_) {
     yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
 
-    yield* checkPackets(config.hasuraEndpoint, config.betterstack_api_key, config.trigger_betterstack, config.isLocal)
+    yield* checkPackets(
+      config.hasuraEndpoint,
+      config.betterstack_api_key,
+      config.trigger_betterstack,
+      config.isLocal
+    )
   })
 
   return yield* Effect.repeat(effectToRepeat, schedule)
@@ -1453,7 +1455,6 @@ const mainEffect = Effect.gen(function* (_) {
     }
   ).pipe(Effect.provideService(Config, { config }))
 })
-
 
 pipe(
   mainEffect,
