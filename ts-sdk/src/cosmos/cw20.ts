@@ -1,6 +1,9 @@
 import { Effect } from "effect"
 import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
-import { executeContract, queryContract } from "./contract.js"
+import { queryContract, executeContract } from "./contract.js"
+import { ExtendedCosmWasmClientContext } from "./client.js"
+import { QueryContractError } from "./contract.js"
+import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 /**
  * Interface for CW20 token metadata
@@ -51,6 +54,32 @@ export const readCw20TotalSupply = (contractAddress: string) =>
       token_info: {},
     })
     return token_info.total_supply
+  })
+
+/**
+ * Read the balance of a CW20 token for a specific address
+ * @param contractAddress The address of the CW20 token contract
+ * @param address The address to check the balance for
+ * @param height Height of the chain
+ * @returns An Effect that resolves to the token balance
+ */
+export const readCw20BalanceAtHeight = (contractAddress: string, address: string, height: number) =>
+  Effect.gen(function* () {
+    const client = (yield* ExtendedCosmWasmClientContext).client
+    const resp = yield* Effect.tryPromise({
+      try: () =>
+        client.queryContractSmartAtHeight(
+          contractAddress,
+          {
+            balance: {
+              address
+            }
+          },
+          height
+        ),
+      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
+    }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
+    return resp.data.balance
   })
 
 /**
@@ -122,4 +151,20 @@ export const writeCw20IncreaseAllowance = (
         amount,
       },
     })
+  })
+
+/**
+ * Checks whether a denom is a native token or CW20.
+ * @param denom The denom address to check.
+ * @returns An Effect that resolves to true if native, false if CW20.
+ */
+export const isDenomNative = (denom: string) =>
+  Effect.gen(function* () {
+    const client = (yield* CosmWasmClientContext).client
+
+    return yield* readCw20TokenInfo(denom).pipe(
+      Effect.provideService(CosmWasmClientContext, { client }),
+      Effect.map(() => false),
+      Effect.catchAllCause(() => Effect.succeed(true))
+    )
   })
