@@ -110,6 +110,24 @@ export const readErc20Decimals = (tokenAddress: Address) =>
 /**
  * Read the TotalSupply of an ERC20 token
  * @param tokenAddress The address of the ERC20 token
+ * @param blockNumber The blockNumber at certain point
+ * @returns An Effect that resolves to the totalSupply
+ */
+export const readErc20TotalSupplyAtBlock = (tokenAddress: Address, blockNumber: bigint) =>
+  Effect.gen(function* () {
+    const client = (yield* ViemPublicClient).client
+
+    return yield* readContract(client, {
+      address: tokenAddress,
+      abi: erc20Abi,
+      functionName: "totalSupply",
+      blockNumber: blockNumber
+    })
+  })
+
+/**
+ * Read the TotalSupply of an ERC20 token
+ * @param tokenAddress The address of the ERC20 token
  * @returns An Effect that resolves to the totalSupply
  */
 export const readErc20TotalSupply = (tokenAddress: Address) =>
