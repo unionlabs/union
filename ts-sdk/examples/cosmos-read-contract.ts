@@ -4,7 +4,7 @@ import { queryContract } from "../src/cosmos/contract.js"
 
 // Example CW20 token balance query
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create a CosmWasm client
     const client = yield* createCosmWasmClient("https://rpc.elgafar-1.stargaze-apis.com")
 
@@ -14,11 +14,11 @@ Effect.runPromiseExit(
       "stars1qrde534d4jwk44dn7w7gu9e2rayutr7kqx8lfjhsk3rd7z9rzxhq2gh3lr", // Example CW20 contract address
       {
         balance: {
-          address: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4" // The address to check balance for
-        }
-      }
+          address: "stars1qcvavxpxw3t8d9j7mwaeq9wgytkf5vwputv5x4", // The address to check balance for
+        },
+      },
     )
 
     return balance
-  })
+  }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

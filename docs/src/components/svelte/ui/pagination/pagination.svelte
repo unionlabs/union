@@ -15,11 +15,11 @@ let {
 </script>
 
 <PaginationPrimitive.Root
-	bind:ref
-	class={cn("mx-auto flex w-full flex-col items-center", className)}
-	{count}
-	{perPage}
-	{siblingCount}
-	bind:page
-	{...restProps}
+  bind:ref
+  class={cn("mx-auto flex w-full flex-col items-center", className)}
+  {count}
+  {perPage}
+  {siblingCount}
+  bind:page
+  {...restProps}
 />

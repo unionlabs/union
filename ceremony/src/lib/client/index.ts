@@ -1,10 +1,10 @@
 import { get, post } from "$lib/client/http.ts"
-import { queryQueuePayloadId } from "$lib/supabase/queries.ts"
 import type { ContributeBody } from "$lib/client/types.ts"
-import { supabase } from "$lib/supabase/client.ts"
 import type { ClientState } from "$lib/state/contributor.svelte.ts"
-import { axiom } from "$lib/utils/axiom.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import { supabase } from "$lib/supabase/client.ts"
+import { queryQueuePayloadId } from "$lib/supabase/queries.ts"
+import { axiom } from "$lib/utils/axiom.ts"
 
 export const start = async (): Promise<ClientState | undefined> => {
   const { data: session, error: sessionError } = await supabase.auth.refreshSession()
@@ -41,7 +41,7 @@ export const start = async (): Promise<ClientState | undefined> => {
     supabaseProject: import.meta.env.VITE_SUPABASE_URL,
     apiKey: import.meta.env.VITE_SUPABASE_ANON_KEY,
     bucket: import.meta.env.VITE_BUCKET_ID,
-    userEmail: email
+    userEmail: email,
   }
 
   return post<ClientState>("contribute", {}, contributeBody)
@@ -51,7 +51,7 @@ export const checkState = async (): Promise<ClientState> => {
   try {
     const response = await get<ClientState>("contribute", {})
     axiom.ingest("monitor", [
-      { user: user.session?.user.id, type: `client_state_${response ?? "offline"}` }
+      { user: user.session?.user.id, type: `client_state_${response ?? "offline"}` },
     ])
     return response ?? "offline"
   } catch (error) {

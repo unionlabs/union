@@ -1,18 +1,18 @@
-import { Effect, Option } from "effect"
-import { AddressValidationError } from "./errors.ts"
-import { getAddress, isHex } from "viem" // Add isHex to imports
 import { bech32AddressToHex } from "@unionlabs/client"
+import { Effect, Option } from "effect"
+import { getAddress, isHex } from "viem" // Add isHex to imports
+import { AddressValidationError } from "./errors.ts"
 
 export const deriveReceiverEffect = (input: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const trimmed = input.trim()
 
     if (!trimmed) {
       return yield* Effect.fail(
         new AddressValidationError({
           input,
-          cause: undefined
-        })
+          cause: undefined,
+        }),
       )
     }
 
@@ -22,8 +22,8 @@ export const deriveReceiverEffect = (input: string) =>
         catch: err =>
           new AddressValidationError({
             input: trimmed,
-            cause: err
-          })
+            cause: err,
+          }),
       })
     }
 
@@ -35,8 +35,8 @@ export const deriveReceiverEffect = (input: string) =>
       catch: err =>
         new AddressValidationError({
           input: trimmed,
-          cause: err
-        })
+          cause: err,
+        }),
     })
   })
 

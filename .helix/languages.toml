@@ -42,10 +42,10 @@ name             = "solidity"
 
 [[language]]
 auto-format      = true
-formatter        = { command = "biome", args = ["format", "**/*.astro", "--write"] }
+formatter        = { command = "treefmt", args = ["--stdin", ".astro"] }
 indent           = { tab-width = 2, unit = "  " }
 injection-regex  = "astro"
-language-servers = [{ name = "astro-ls", except-features = ["format"] }, "biome", "tailwindcss-ls"]
+language-servers = [{ name = "astro-ls", except-features = ["format"] }, "tailwindcss-ls"]
 name             = "astro"
 roots            = ["package.json", "astro.config.ts", "tsconfig.json", "tailwind.config.ts"]
 scope            = "source.astro"
@@ -74,26 +74,29 @@ scope            = "source.html"
 
 [[language]]
 auto-format      = true
-language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
+formatter        = { command = "treefmt", args = ["--stdin", ".js"] }
+language-servers = [{ name = "typescript-language-server", except-features = ["format"] }]
 name             = "javascript"
 
 [[language]]
 auto-format      = true
-language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
+formatter        = { command = "treefmt", args = ["--stdin", ".ts"] }
+language-servers = [{ name = "typescript-language-server", except-features = ["format"] }]
 name             = "typescript"
 
 [[language]]
 auto-format = true
+formatter = { command = "treefmt", args = ["--stdin", ".tsx"] }
 language-servers = [
   { name = "typescript-language-server", except-features = ["format"] },
-  "biome",
   "tailwindcss-ls",
 ]
 name = "tsx"
 
 [[language]]
 auto-format      = true
-language-servers = [{ name = "typescript-language-server", except-features = ["format"] }, "biome"]
+formatter        = { command = "treefmt", args = ["--stdin", ".jsx"] }
+language-servers = [{ name = "typescript-language-server", except-features = ["format"] }]
 name             = "jsx"
 
 [[language]]
@@ -101,16 +104,13 @@ language-servers = [{ name = "vscode-json-language-server", except-features = ["
 name             = "json"
 
 [[language]]
-auto-format = true
-file-types = ["svelte"]
-language-servers = [
-  { name = "svelteserver", except-features = ["format"] },
-  "biome",
-  "tailwindcss-ls",
-]
-name = "svelte"
-roots = ["svelte.config.js"]
-scope = "source.svelte"
+auto-format      = true
+file-types       = ["svelte"]
+formatter        = { command = "treefmt", args = ["--stdin", ".svelte"] }
+language-servers = ["svelteserver", "tailwindcss-ls"]
+name             = "svelte"
+roots            = ["svelte.config.js"]
+scope            = "source.svelte"
 
 [[language]]
 comment-token    = "#"

@@ -1,18 +1,18 @@
+import { AddressValidationError } from "$lib/services/shared"
+import { bech32AddressToHex } from "@unionlabs/client"
 import { Effect, Option } from "effect"
 import { getAddress, isHex } from "viem"
-import { bech32AddressToHex } from "@unionlabs/client"
-import { AddressValidationError } from "$lib/services/shared"
 
 export const deriveReceiverEffect = (input: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const trimmed = input.trim()
 
     if (!trimmed) {
       return yield* Effect.fail(
         new AddressValidationError({
           input,
-          cause: undefined
-        })
+          cause: undefined,
+        }),
       )
     }
 
@@ -23,8 +23,8 @@ export const deriveReceiverEffect = (input: string) =>
         catch: err =>
           new AddressValidationError({
             input: trimmed,
-            cause: err
-          })
+            cause: err,
+          }),
       })
     }
 
@@ -34,8 +34,8 @@ export const deriveReceiverEffect = (input: string) =>
         catch: err =>
           new AddressValidationError({
             input: trimmed,
-            cause: err
-          })
+            cause: err,
+          }),
       })
     }
 
@@ -47,8 +47,8 @@ export const deriveReceiverEffect = (input: string) =>
       catch: err =>
         new AddressValidationError({
           input: trimmed,
-          cause: err
-        })
+          cause: err,
+        }),
     })
   })
 
@@ -59,10 +59,14 @@ export const getDerivedReceiverSafe = (input: string): Option.Option<string> => 
 
 export function isHexMovement(
   value: unknown,
-  { strict = true }: { strict?: boolean } = {}
+  { strict = true }: { strict?: boolean } = {},
 ): boolean {
-  if (!value) return false
-  if (typeof value !== "string") return false
+  if (!value) {
+    return false
+  }
+  if (typeof value !== "string") {
+    return false
+  }
   // In strict mode, require a 0x prefix and exactly 64 hex characters after it.
   return strict ? /^0x[0-9a-fA-F]{64}$/.test(value) : value.startsWith("0x") && value.length === 66
 }

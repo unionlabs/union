@@ -3,7 +3,7 @@
  */
 
 window.addEventListener("DOMContentLoaded", () => {
-  const externalLinks = document.querySelectorAll('a[href^="http"]')
+  const externalLinks = document.querySelectorAll("a[href^=\"http\"]")
   try {
     for (const link of externalLinks) {
       link.setAttribute("target", "_blank")

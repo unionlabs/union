@@ -1,22 +1,22 @@
+import type { AllowanceState, ContributionState } from "$lib/state/contributor.svelte.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import { supabase } from "$lib/supabase/client.ts"
 import {
   queryContribution,
-  queryContributor,
-  queryQueueCount,
-  querySubmittedContribution,
-  queryUserQueuePosition,
   queryContributions,
   queryContributionTime,
+  queryContributionWindow,
+  queryContributor,
   queryCurrentUserState,
+  queryQueueCount,
+  querySubmittedContribution,
   queryUserContribution,
   queryUserPublicHash,
+  queryUserQueuePosition,
   queryUserWallet,
   queryVerificationTime,
-  queryContributionWindow
 } from "$lib/supabase/queries.ts"
-import { supabase } from "$lib/supabase/client.ts"
 import { msToTimeString, sleep, timeToMs } from "$lib/utils/utils.ts"
-import type { AllowanceState, ContributionState } from "$lib/state/contributor.svelte.ts"
 
 export interface TimeResult {
   verification: string | null
@@ -72,14 +72,14 @@ export const getUserQueueInfo = async () => {
   if (!data) {
     return {
       inQueue: false,
-      message: "User not found in the queue"
+      message: "User not found in the queue",
     }
   }
 
   return {
     inQueue: true,
     count: count,
-    ...data
+    ...data,
   }
 }
 
@@ -98,7 +98,7 @@ export const getContributionState = async (): Promise<ContributionState> => {
         queryContributor(userId),
         querySubmittedContribution(userId),
         queryContribution(userId),
-        queryContributionWindow(userId)
+        queryContributionWindow(userId),
       ])
 
     const isContributor = !!contributor?.data
@@ -136,17 +136,25 @@ export const getCurrentUserState = async (userId: string | undefined): Promise<A
   }
 
   const { data, error } = await queryCurrentUserState()
-  if (error || !data) return undefined
+  if (error || !data) {
+    return undefined
+  }
 
-  if (data.in_queue) return "inQueue"
-  if (data.has_redeemed) return "hasRedeemed"
+  if (data.in_queue) {
+    return "inQueue"
+  }
+  if (data.has_redeemed) {
+    return "hasRedeemed"
+  }
 
   return "join"
 }
 
 export const getContributions = async () => {
   const { data, error } = await queryContributions()
-  if (error || !data) return undefined
+  if (error || !data) {
+    return undefined
+  }
 
   return data
 }
@@ -154,7 +162,9 @@ export const getContributions = async () => {
 export const getUserContribution = async (hash: string) => {
   await sleep(500)
   const { data, error } = await queryUserContribution(hash)
-  if (error || !data) return undefined
+  if (error || !data) {
+    return undefined
+  }
 
   return data
 }
@@ -179,7 +189,7 @@ export const insertWalletData = async (data: WalletData) => {
     const { data: updatedData, error: updateError } = await supabase
       .from("wallet_address")
       .update({
-        wallet: data.wallet
+        wallet: data.wallet,
       })
       .eq("id", data.id)
       .select()
@@ -196,7 +206,7 @@ export const insertWalletData = async (data: WalletData) => {
     .from("wallet_address")
     .insert({
       id: data.id,
-      wallet: data.wallet
+      wallet: data.wallet,
     })
     .select()
 
@@ -215,7 +225,9 @@ export const getPublicHash = async () => {
   const userId = user.session.user.id
 
   const { data, error } = await queryUserPublicHash(userId)
-  if (error || !data) return undefined
+  if (error || !data) {
+    return undefined
+  }
 
   return data.public_key_hash
 }
@@ -227,7 +239,9 @@ export const getUserWallet = async (userId: string): Promise<string | undefined>
   }
 
   const { data, error } = await queryUserWallet(userId)
-  if (error || !data) return undefined
+  if (error || !data) {
+    return undefined
+  }
 
   return data.wallet
 }
@@ -239,7 +253,7 @@ export const getAverageTimes = async (): Promise<TimeResult> => {
   try {
     ;[contributionResult, verificationResult] = await Promise.all([
       queryContributionTime(),
-      queryVerificationTime()
+      queryVerificationTime(),
     ])
   } catch (error) {
     console.error("Error fetching times:", error)
@@ -262,7 +276,7 @@ export const getAverageTimes = async (): Promise<TimeResult> => {
     total: msToTimeString(totalMs),
     verificationMs,
     contributionMs,
-    totalMs
+    totalMs,
   }
 }
 

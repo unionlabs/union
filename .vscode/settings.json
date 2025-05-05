@@ -34,10 +34,10 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[typescript]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "[javascript]": {
-    "editor.defaultFormatter": "biomejs.biome"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "[css]": {
     "editor.defaultFormatter": "biomejs.biome"
@@ -46,10 +46,10 @@
     "editor.defaultFormatter": "biomejs.biome"
   },
   "[svelte]": {
-    "editor.defaultFormatter": "svelte.svelte-vscode"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   "[astro]": {
-    "editor.defaultFormatter": "astro-build.astro-vscode"
+    "editor.defaultFormatter": "dprint.dprint"
   },
   // https://github.com/tailwindlabs/tailwindcss-intellisense#recommended-vs-code-settings
   "editor.quickSuggestions": {

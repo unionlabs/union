@@ -7,9 +7,9 @@ const config = {
 
   kit: {
     adapter: adapterStatic({
-      fallback: "index.html"
-    })
-  }
+      fallback: "index.html",
+    }),
+  },
 }
 
 export default config

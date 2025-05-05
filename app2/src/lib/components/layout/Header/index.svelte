@@ -1,10 +1,10 @@
 <script lang="ts">
-import Button from "../../ui/Button.svelte"
-import { uiStore } from "$lib/stores/ui.svelte"
+import SharpBaselineArrowBackIcon from "$lib/components/icons/SharpBaselineArrowBackIcon.svelte"
 import { totalErrorCount } from "$lib/stores/app-errors.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import Button from "../../ui/Button.svelte"
 import Breadcrumbs from "./Breadcrumbs.svelte"
 import CopyLink from "./CopyLink.svelte"
-import SharpBaselineArrowBackIcon from "$lib/components/icons/SharpBaselineArrowBackIcon.svelte"
 
 type Props = {
   showNavigation?: boolean | undefined
@@ -20,7 +20,10 @@ const { showNavigation = false }: Props = $props()
       variant="icon"
       onclick={() => history.back()}
     >
-      <SharpBaselineArrowBackIcon width="1.5rem" height="1.5rem" />
+      <SharpBaselineArrowBackIcon
+        width="1.5rem"
+        height="1.5rem"
+      />
     </Button>
   {/if}
   <Breadcrumbs />
@@ -28,7 +31,10 @@ const { showNavigation = false }: Props = $props()
   <div class="flex items-center gap-3">
     <CopyLink />
     {#if totalErrorCount() > 0}
-      <Button variant="danger" onclick={() => uiStore.openErrorsModal()}>
+      <Button
+        variant="danger"
+        onclick={() => uiStore.openErrorsModal()}
+      >
         {totalErrorCount()} Error{totalErrorCount() > 1 ? "s" : ""}
       </Button>
     {/if}

@@ -1,13 +1,13 @@
-import { fromHex, http } from "viem"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
+import { fromHex, http } from "viem"
 import { createUnionClient, hexToBytes } from "../src/mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
-  getRecommendedChannels
+  getRecommendedChannels,
 } from "../src/query/offchain/ucs03-channels.ts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 // hack to encode bigints to json
 declare global {
@@ -18,11 +18,11 @@ declare global {
 
 if (!BigInt.prototype.toJSON) {
   Object.defineProperty(BigInt.prototype, "toJSON", {
-    value: function () {
+    value: function() {
       return this.toString()
     },
     writable: true,
-    configurable: true
+    configurable: true,
   })
 }
 // end hack
@@ -31,8 +31,8 @@ const cliArgs = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
@@ -74,7 +74,7 @@ const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
   account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "bbn"),
   gasPrice: { amount: "0.025", denom: "ubbn" },
-  transport: http("https://rpc.bbn-test-5.babylon.chain.kitchen")
+  transport: http("https://rpc.bbn-test-5.babylon.chain.kitchen"),
 })
 
 const transfer = await unionClient.transferAsset({
@@ -84,7 +84,7 @@ const transfer = await unionClient.transferAsset({
   quoteAmount: AMOUNT,
   receiver: RECEIVER,
   sourceChannelId: channel.source_channel_id,
-  ucs03address: fromHex(`0x${channel.source_port_id}`, "string")
+  ucs03address: fromHex(`0x${channel.source_port_id}`, "string"),
 })
 
 if (transfer.isErr()) {

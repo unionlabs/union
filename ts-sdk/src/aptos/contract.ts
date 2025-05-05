@@ -1,5 +1,5 @@
-import { Effect, Data } from "effect"
-import type { Aptos, Account as AptosAccount } from "@aptos-labs/ts-sdk"
+import type { Account as AptosAccount, Aptos } from "@aptos-labs/ts-sdk"
+import { Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 /**
@@ -23,7 +23,7 @@ export const readContract = <T = unknown>(
   module_name: string,
   function_name: string,
   typeArguments: Array<any>,
-  functionArguments: Array<any>
+  functionArguments: Array<any>,
 ) =>
   Effect.tryPromise({
     try: async () => {
@@ -31,12 +31,12 @@ export const readContract = <T = unknown>(
         payload: {
           function: `${contractAddress}::${module_name}::${function_name}`,
           typeArguments: typeArguments,
-          functionArguments: functionArguments
-        }
+          functionArguments: functionArguments,
+        },
       })
       return result as [T]
     },
-    catch: error => new readContractError({ cause: extractErrorDetails(error as Error) })
+    catch: error => new readContractError({ cause: extractErrorDetails(error as Error) }),
   }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
 
 // TODO: add comments - fix it when integrating with app2
@@ -68,7 +68,7 @@ export const writeContract = (
   module_name: string,
   function_name: string, // `ibc_app::predict_wrapped_token` as an example.
   typeArguments: Array<any>,
-  functionArguments: Array<any>
+  functionArguments: Array<any>,
 ) =>
   Effect.tryPromise({
     try: async () => {
@@ -77,12 +77,12 @@ export const writeContract = (
         data: {
           function: `${contractAddress}::${module_name}::${function_name}`,
           typeArguments: typeArguments,
-          functionArguments: functionArguments
-        }
+          functionArguments: functionArguments,
+        },
       })
 
       const txn = await client.signAndSubmitTransaction({ signer: signer, transaction: payload })
       return txn
     },
-    catch: error => new ExecuteContractError({ cause: extractErrorDetails(error as Error) })
+    catch: error => new ExecuteContractError({ cause: extractErrorDetails(error as Error) }),
   })

@@ -1,14 +1,14 @@
 <script lang="ts">
-import { crossfade, fade, fly } from "svelte/transition"
-import { onDestroy, onMount } from "svelte"
-import ChainAssetButton from "$lib/transfer/shared/components/ChainAsset/ChainAssetButton.svelte"
-import ChainSelector from "$lib/transfer/shared/components/ChainAsset/ChainSelector.svelte"
-import AssetSelector from "$lib/transfer/shared/components/ChainAsset/AssetSelector.svelte"
 import SharpChevronLeftIcon from "$lib/components/icons/SharpChevronLeftIcon.svelte"
-import { clickOutside } from "$lib/utils/actions.ts"
-import { Option } from "effect"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
+import AssetSelector from "$lib/transfer/shared/components/ChainAsset/AssetSelector.svelte"
+import ChainAssetButton from "$lib/transfer/shared/components/ChainAsset/ChainAssetButton.svelte"
+import ChainSelector from "$lib/transfer/shared/components/ChainAsset/ChainSelector.svelte"
+import { clickOutside } from "$lib/utils/actions.ts"
+import { Option } from "effect"
+import { onDestroy, onMount } from "svelte"
+import { crossfade, fade, fly } from "svelte/transition"
 
 type Props = {
   type: "source" | "destination"
@@ -60,7 +60,7 @@ const [send, receive] = crossfade({
   duration: 200,
   fallback(node) {
     return fly(node, { delay: 0, duration: 200, y: 20 })
-  }
+  },
 })
 
 $effect(() => {
@@ -72,37 +72,43 @@ $effect(() => {
 })
 </script>
 {#if open}
-  <div class="absolute inset-0 bg-zinc-925 z-40 flex"
-       transition:fade={{ duration: 300 }}>
-    <div class="w-full h-full flex flex-col"
-         transition:fly={{ y: 30, duration: 300, opacity: 0 }}>
+  <div
+    class="absolute inset-0 bg-zinc-925 z-40 flex"
+    transition:fade={{ duration: 300 }}
+  >
+    <div
+      class="w-full h-full flex flex-col"
+      transition:fly={{ y: 30, duration: 300, opacity: 0 }}
+    >
       <!-- Header with close button -->
-      <div class="p-4 border-b border-zinc-800 flex justify-between items-center h-12 flex-shrink-0">
+      <div
+        class="p-4 border-b border-zinc-800 flex justify-between items-center h-12 flex-shrink-0"
+      >
         <button
-                aria-label="Back"
-                onclick={back}
-                class="mr-3 flex items-center text-zinc-400 hover:text-zinc-200 cursor-pointer h-full"
+          aria-label="Back"
+          onclick={back}
+          class="mr-3 flex items-center text-zinc-400 hover:text-zinc-200 cursor-pointer h-full"
         >
-          <SharpChevronLeftIcon class="size-6"/>
+          <SharpChevronLeftIcon class="size-6" />
           <div class="ml-2 flex items-center">
             <span class="text-lg text-zinc-100">Select</span>
             <div class="relative w-16 h-6 flex items-center ml-2">
               {#if page === 1}
-          <span
+                <span
                   class="text-lg text-zinc-100 absolute"
-                  in:receive={{key: 'chain'}}
-                  out:send={{key: 'chain'}}
-          >
-            Chain
-          </span>
+                  in:receive={{ key: "chain" }}
+                  out:send={{ key: "chain" }}
+                >
+                  Chain
+                </span>
               {:else}
-          <span
+                <span
                   class="text-lg text-zinc-100 absolute"
-                  in:receive={{key: 'asset'}}
-                  out:send={{key: 'asset'}}
-          >
-            Asset
-          </span>
+                  in:receive={{ key: "asset" }}
+                  out:send={{ key: "asset" }}
+                >
+                  Asset
+                </span>
               {/if}
             </div>
           </div>
@@ -114,24 +120,27 @@ $effect(() => {
         <!-- These divs take up all available height but don't add their own scrolling -->
         {#if page === 1}
           <div
-                  class="absolute inset-0"
-                  in:fly={{ x: previousPage > page ? -20 : 20, duration: 300, opacity: 0 }}
-                  out:fly={{ x: previousPage > page ? 20 : -20, duration: 300, opacity: 0 }}
-                  use:clickOutside
-                  onClickOutside={() => back()}
+            class="absolute inset-0"
+            in:fly={{ x: previousPage > page ? -20 : 20, duration: 300, opacity: 0 }}
+            out:fly={{ x: previousPage > page ? 20 : -20, duration: 300, opacity: 0 }}
+            use:clickOutside
+            onClickOutside={() => back()}
           >
-            <ChainSelector {type} onSelect={onChainSelected}/>
+            <ChainSelector
+              {type}
+              onSelect={onChainSelected}
+            />
           </div>
         {:else if page === 2}
           <div
-                  class="absolute inset-0 h-full"
-                  in:fly={{ x: previousPage > page ? -20 : 20, duration: 300, opacity: 0 }}
-                  out:fly={{ x: previousPage > page ? 20 : -20, duration: 300, opacity: 0 }}
-                  use:clickOutside
-                  onClickOutside={() => back()}
+            class="absolute inset-0 h-full"
+            in:fly={{ x: previousPage > page ? -20 : 20, duration: 300, opacity: 0 }}
+            out:fly={{ x: previousPage > page ? 20 : -20, duration: 300, opacity: 0 }}
+            use:clickOutside
+            onClickOutside={() => back()}
           >
             {#if type === "source"}
-              <AssetSelector onSelect={onAssetSelected}/>
+              <AssetSelector onSelect={onAssetSelected} />
             {/if}
           </div>
         {/if}
@@ -140,4 +149,7 @@ $effect(() => {
   </div>
 {/if}
 <!-- Chain Asset Button -->
-<ChainAssetButton {type} onClick={() => open = true}/>
+<ChainAssetButton
+  {type}
+  onClick={() => open = true}
+/>

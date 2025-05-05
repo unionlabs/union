@@ -1,51 +1,51 @@
 ---
+import DropdownMenu from "#/components/DropdownMenu.astro"
 import { Icon } from "astro-icon/components"
 import ExternalLinkIcon from "./ExternalLinkIcon.astro"
-import DropdownMenu from "#/components/DropdownMenu.astro"
 
 const menuItems = [
   {
     url: "/learn",
     name: "learn",
     highlight: false,
-    external: false
+    external: false,
   },
   {
     url: "/ecosystem",
     name: "ecosystem",
     highlight: false,
-    external: false
+    external: false,
   },
   {
     url: "/blog",
     name: "blog",
     highlight: false,
-    external: false
+    external: false,
   },
   {
     url: "/team",
     name: "team",
     highlight: false,
-    external: false
+    external: false,
   },
   {
     url: "https://ceremony.union.build/",
     name: "ceremony",
     highlight: false,
-    external: true
+    external: true,
   },
   {
     url: "https://docs.union.build/",
     name: "docs",
     highlight: false,
-    external: true
+    external: true,
   },
   {
     url: "https://research.union.build/",
     name: "research",
     highlight: false,
-    external: true
-  }
+    external: true,
+  },
   // {
   //   url: "https://app.union.build",
   //   name: "testnet",
@@ -56,11 +56,16 @@ const menuItems = [
 ---
 
 <header class="z-[100] w-full flex justify-around">
-  <div
-    class="max-w-6xl min-h-[68px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl"
-  >
-    <a href="/" id="union-logo" class="flex items-center">
-      <img class="h-12 w-auto py-1 text-accent-500" src="/logo-full.svg" />
+  <div class="max-w-6xl min-h-[68px] flex flex-1 items-center px-4 sm:px-6 drop-shadow-2xl">
+    <a
+      href="/"
+      id="union-logo"
+      class="flex items-center"
+    >
+      <img
+        class="h-12 w-auto py-1 text-accent-500"
+        src="/logo-full.svg"
+      />
     </a>
 
     <nav class="hidden lg:block flex-1 justify-end">
@@ -77,18 +82,20 @@ const menuItems = [
                   { "text-accent-500": menuItem.highlight },
                 ]}
                 {...(menuItem.external
-                  ? {
-                      target: "_blank",
-                      rel: "noopener noreferrer",
-                    }
-                  : {})}
+                ? {
+                  target: "_blank",
+                  rel: "noopener noreferrer",
+                }
+                : {})}
               >
                 {menuItem.name}
-                {menuItem.external ? (
-                  <ExternalLinkIcon class="-mt-0.5 -mr-2 size-4 text-neutral-500" />
-                ) : (
-                  ""
-                )}
+                {
+                  menuItem.external ? (
+                    <ExternalLinkIcon class="-mt-0.5 -mr-2 size-4 text-neutral-500" />
+                  ) : (
+                ""
+              )
+                }
               </a>
             </li>
           ))
@@ -99,7 +106,11 @@ const menuItems = [
             rel="noopener noreferrer"
             href="https://discord.union.build"
           >
-            <Icon name="tabler:brand-discord-filled" color="#fff" size="20px" />
+            <Icon
+              name="tabler:brand-discord-filled"
+              color="#fff"
+              size="20px"
+            />
             <span class="sr-only">Discord</span>
           </a>
         </li>
@@ -109,7 +120,11 @@ const menuItems = [
             rel="noopener noreferrer"
             href="https://github.com/unionlabs/union"
           >
-            <Icon name="fa6-brands:github" color="#fff" size="20px" />
+            <Icon
+              name="fa6-brands:github"
+              color="#fff"
+              size="20px"
+            />
             <span class="sr-only">GitHub</span>
           </a>
         </li>
@@ -119,7 +134,11 @@ const menuItems = [
             rel="noopener noreferrer"
             href="https://x.com/union_build"
           >
-            <Icon name="fa6-brands:x-twitter" color="#fff" size="18px" />
+            <Icon
+              name="fa6-brands:x-twitter"
+              color="#fff"
+              size="18px"
+            />
             <span class="sr-only">X</span>
           </a>
         </li>
@@ -131,13 +150,13 @@ const menuItems = [
 </header>
 
 <style is:inline>
-  header {
-    max-height: var(--header-height) !important;
-    height: var(--header-height) !important;
-    min-height: var(--header-height) !important;
-  }
+header {
+  max-height: var(--header-height) !important;
+  height: var(--header-height) !important;
+  min-height: var(--header-height) !important;
+}
 
-  #union-logo {
-    z-index: 1000;
-  }
+#union-logo {
+  z-index: 1000;
+}
 </style>

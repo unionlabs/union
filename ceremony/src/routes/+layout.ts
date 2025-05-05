@@ -1,6 +1,6 @@
 import { checkAuth, type SessionError } from "$lib/state/session.svelte.ts"
-import type { LayoutLoad } from "../../.svelte-kit/types/src/routes/$types.ts"
 import { redirect } from "@sveltejs/kit"
+import type { LayoutLoad } from "../../.svelte-kit/types/src/routes/$types.ts"
 
 export const ssr = false
 export const prerender = true
@@ -20,7 +20,7 @@ export const load: LayoutLoad = async ({ url }) => {
         (error: SessionError) => {
           console.error(error.message)
           throw redirect(302, "/")
-        }
+        },
       )
     }
   }

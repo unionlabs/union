@@ -1,9 +1,9 @@
 <script lang="ts">
+import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte"
+import SharpDownloadIcon from "$lib/components/icons/SharpDownloadIcon.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { fade, fly } from "svelte/transition"
-import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte"
-import SharpDownloadIcon from "$lib/components/icons/SharpDownloadIcon.svelte"
 
 type Props = {
   error?: any
@@ -21,7 +21,9 @@ const writeToClipboard = () => {
 }
 
 const exportData = () => {
-  if (!errorDetails) return
+  if (!errorDetails) {
+    return
+  }
   const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "")
   const data = JSON.stringify(errorDetails, null, 2)
   const blob = new Blob([data], { type: "application/json" })
@@ -35,14 +37,19 @@ const exportData = () => {
 </script>
 
 {#if open}
-  <div class="absolute inset-0 z-40" transition:fade={{ duration: 300 }}>
+  <div
+    class="absolute inset-0 z-40"
+    transition:fade={{ duration: 300 }}
+  >
     <div
       class="absolute inset-0 flex flex-col bg-zinc-925"
       transition:fly={{ y: 30, duration: 300, opacity: 0 }}
     >
       <div class="p-4 overflow-y-auto flex-1">
         {#if errorDetails}
-          <pre class="text-xs whitespace-pre-wrap break-all">
+          <pre
+            class="text-xs whitespace-pre-wrap break-all"
+          >
             {JSON.stringify(errorDetails, null, 2)}
           </pre>
         {:else}
@@ -50,18 +57,29 @@ const exportData = () => {
         {/if}
       </div>
 
-      <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
+      <div
+        class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925"
+      >
         <div class="flex gap-2">
-          <Button variant="secondary" onclick={writeToClipboard}>
-            <SharpContentCopyIcon class="size-4"/>
+          <Button
+            variant="secondary"
+            onclick={writeToClipboard}
+          >
+            <SharpContentCopyIcon class="size-4" />
             <span>Copy</span>
           </Button>
-          <Button variant="secondary" onclick={exportData}>
-            <SharpDownloadIcon class="size-4"/>
+          <Button
+            variant="secondary"
+            onclick={exportData}
+          >
+            <SharpDownloadIcon class="size-4" />
             <span>Export</span>
           </Button>
         </div>
-        <Button variant="primary" onclick={onClose}>
+        <Button
+          variant="primary"
+          onclick={onClose}
+        >
           <span>Close</span>
         </Button>
       </div>

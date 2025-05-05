@@ -1,11 +1,11 @@
 // @ts-nocheck
-//Leaps types doesnt match in their docs in regards to gasPriceStep
+// Leaps types doesnt match in their docs in regards to gasPriceStep
 import type { ChainInfo, ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
 
-import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 import { cosmosStore } from "$lib/wallet/cosmos/config.svelte.ts"
+import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 
-//This exists according to docs
+// This exists according to docs
 interface LeapExtendedInfo extends LeapChainInfo {
   theme: {
     primaryColor: string
@@ -14,7 +14,7 @@ interface LeapExtendedInfo extends LeapChainInfo {
   image: string
 }
 
-//Keplr
+// Keplr
 
 export const babylonMainnetKeplrChaininfo: KeplrChainInfo = {
   chainId: "bbn-1",
@@ -25,7 +25,7 @@ export const babylonMainnetKeplrChaininfo: KeplrChainInfo = {
   rest: "https://lcd-babylon.keplr.app",
   walletUrlForStaking: "https://wallet.keplr.app/chains/babylon-genesis",
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "bbn",
@@ -33,7 +33,7 @@ export const babylonMainnetKeplrChaininfo: KeplrChainInfo = {
     bech32PrefixValAddr: "bbnvaloper",
     bech32PrefixValPub: "bbnvaloperpub",
     bech32PrefixConsAddr: "bbnvalcons",
-    bech32PrefixConsPub: "bbnvalconspub"
+    bech32PrefixConsPub: "bbnvalconspub",
   },
   currencies: [
     {
@@ -42,15 +42,15 @@ export const babylonMainnetKeplrChaininfo: KeplrChainInfo = {
       coinDecimals: 6,
       coinGeckoId: "babylon",
       coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png"
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
     },
     {
       coinDenom: "LBTC",
       coinMinimalDenom: "ibc/89EE10FCF78800B572BAAC7080AEFA301B5F3BBC51C5371E907EB129C5B900E7",
       coinDecimals: 8,
       coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/LBTC.png"
-    }
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/LBTC.png",
+    },
   ],
   feeCurrencies: [
     {
@@ -63,9 +63,9 @@ export const babylonMainnetKeplrChaininfo: KeplrChainInfo = {
       gasPriceStep: {
         low: 0.007,
         average: 0.007,
-        high: 0.01
-      }
-    }
+        high: 0.01,
+      },
+    },
   ],
   stakeCurrency: {
     coinDenom: "BABY",
@@ -73,9 +73,9 @@ export const babylonMainnetKeplrChaininfo: KeplrChainInfo = {
     coinDecimals: 6,
     coinGeckoId: "babylon",
     coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png"
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
   },
-  features: ["cosmwasm"]
+  features: ["cosmwasm"],
 }
 
 export const unionKeplrChainInfo: KeplrChainInfo = {
@@ -84,7 +84,7 @@ export const unionKeplrChainInfo: KeplrChainInfo = {
   rest: "https://rest.union-testnet-10.union.chain.cooking",
   rpc: "https://rpc.union-testnet-10.union.chain.cooking",
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "union",
@@ -92,15 +92,15 @@ export const unionKeplrChainInfo: KeplrChainInfo = {
     bech32PrefixValAddr: "unionvaloper",
     bech32PrefixValPub: "unionvaloperpub",
     bech32PrefixConsAddr: "unionvalcons",
-    bech32PrefixConsPub: "unionvalconspub"
+    bech32PrefixConsPub: "unionvalconspub",
   },
   currencies: [
     {
       coinDenom: "UNO",
       coinMinimalDenom: "muno",
       coinDecimals: 6,
-      coinGeckoId: "cosmos"
-    }
+      coinGeckoId: "cosmos",
+    },
   ],
   feeCurrencies: [
     {
@@ -111,16 +111,16 @@ export const unionKeplrChainInfo: KeplrChainInfo = {
       gasPriceStep: {
         low: 0.0025,
         average: 0.025,
-        high: 0.04
-      }
-    }
+        high: 0.04,
+      },
+    },
   ],
   stakeCurrency: {
     coinDenom: "UNO",
     coinMinimalDenom: "muno",
     coinDecimals: 6,
-    coinGeckoId: "union"
-  }
+    coinGeckoId: "union",
+  },
 }
 
 // source: https://github.com/chainapsis/keplr-chain-registry/blob/main/cosmos/bbn-test.json
@@ -134,10 +134,10 @@ export const babylonTestnetKeplrChaininfo: KeplrChainInfo = {
   nodeProvider: {
     name: "NodesGuru",
     email: "security@nodes.guru",
-    website: "https://nodes.guru/"
+    website: "https://nodes.guru/",
   },
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "bbn",
@@ -145,7 +145,7 @@ export const babylonTestnetKeplrChaininfo: KeplrChainInfo = {
     bech32PrefixValAddr: "bbnvaloper",
     bech32PrefixValPub: "bbnvaloperpub",
     bech32PrefixConsAddr: "bbnvalcons",
-    bech32PrefixConsPub: "bbnvalconspub"
+    bech32PrefixConsPub: "bbnvalconspub",
   },
   currencies: [
     {
@@ -153,8 +153,8 @@ export const babylonTestnetKeplrChaininfo: KeplrChainInfo = {
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
       coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png"
-    }
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
+    },
   ],
   feeCurrencies: [
     {
@@ -166,18 +166,18 @@ export const babylonTestnetKeplrChaininfo: KeplrChainInfo = {
       gasPriceStep: {
         low: 0.007,
         average: 0.007,
-        high: 0.01
-      }
-    }
+        high: 0.01,
+      },
+    },
   ],
   stakeCurrency: {
     coinDenom: "BABY",
     coinMinimalDenom: "ubbn",
     coinDecimals: 6,
     coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png"
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
   },
-  features: ["cosmwasm"]
+  features: ["cosmwasm"],
 }
 
 export const strideKeplrChainInfo: KeplrChainInfo = {
@@ -190,17 +190,17 @@ export const strideKeplrChainInfo: KeplrChainInfo = {
   nodeProvider: {
     name: "Stride Labs",
     email: "hello@stridelabs.co",
-    website: "https://stride.zone/"
+    website: "https://stride.zone/",
   },
   stakeCurrency: {
     coinDenom: "STRD",
     coinMinimalDenom: "ustrd",
     coinDecimals: 6,
     coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/ustrd.png"
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/ustrd.png",
   },
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "stride",
@@ -208,7 +208,7 @@ export const strideKeplrChainInfo: KeplrChainInfo = {
     bech32PrefixValAddr: "stridevaloper",
     bech32PrefixValPub: "stridevaloperpub",
     bech32PrefixConsAddr: "stridevalcons",
-    bech32PrefixConsPub: "stridevalconspub"
+    bech32PrefixConsPub: "stridevalconspub",
   },
   currencies: [
     {
@@ -216,8 +216,8 @@ export const strideKeplrChainInfo: KeplrChainInfo = {
       coinMinimalDenom: "ustrd",
       coinDecimals: 6,
       coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/ustrd.png"
-    }
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/ustrd.png",
+    },
   ],
   feeCurrencies: [
     {
@@ -229,8 +229,8 @@ export const strideKeplrChainInfo: KeplrChainInfo = {
       gasPriceStep: {
         low: 0.0005,
         average: 0.005,
-        high: 0.05
-      }
+        high: 0.05,
+      },
     },
     {
       coinDenom: "TIA",
@@ -239,11 +239,11 @@ export const strideKeplrChainInfo: KeplrChainInfo = {
       gasPriceStep: {
         low: 0.01,
         average: 0.01,
-        high: 0.01
-      }
-    }
+        high: 0.01,
+      },
+    },
   ],
-  features: []
+  features: [],
 }
 
 export const elgafarKeplrChainInfo: KeplrChainInfo = {
@@ -254,7 +254,7 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
   nodeProvider: {
     name: "Stargaze",
     email: "admin@stargaze.zone",
-    website: "https://www.stargaze.zone/"
+    website: "https://www.stargaze.zone/",
   },
   chainSymbolImageUrl:
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/chain.png",
@@ -263,10 +263,10 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
     coinMinimalDenom: "ustars",
     coinDecimals: 6,
     coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png"
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png",
   },
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "stars",
@@ -274,7 +274,7 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
     bech32PrefixValAddr: "starsvaloper",
     bech32PrefixValPub: "starsvaloperpub",
     bech32PrefixConsAddr: "starsvalcons",
-    bech32PrefixConsPub: "starsvalconspub"
+    bech32PrefixConsPub: "starsvalconspub",
   },
   currencies: [
     {
@@ -282,8 +282,8 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
       coinMinimalDenom: "ustars",
       coinDecimals: 6,
       coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png"
-    }
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stargaze/ustars.png",
+    },
   ],
   feeCurrencies: [
     {
@@ -295,21 +295,21 @@ export const elgafarKeplrChainInfo: KeplrChainInfo = {
       gasPriceStep: {
         low: 0.0005,
         average: 0.0025,
-        high: 0.025
-      }
-    }
+        high: 0.025,
+      },
+    },
   ],
-  features: []
+  features: [],
 }
 
-//Leap
+// Leap
 export const unionLeapChainInfo: LeapExtendedInfo = {
   chainId: "union-testnet-10",
   chainName: "uniontestnet",
   rest: "https://rpc.union-testnet-10.union.chain.cooking",
   rpc: "https://rpc.union-testnet-10.union.chain.cooking",
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "union",
@@ -317,15 +317,15 @@ export const unionLeapChainInfo: LeapExtendedInfo = {
     bech32PrefixValAddr: "unionvaloper",
     bech32PrefixValPub: "unionvaloperpub",
     bech32PrefixConsAddr: "unionvalcons",
-    bech32PrefixConsPub: "unionvalconspub"
+    bech32PrefixConsPub: "unionvalconspub",
   },
   currencies: [
     {
       coinDenom: "UNO",
       coinMinimalDenom: "muno",
       coinDecimals: 6,
-      coinGeckoId: "cosmos"
-    }
+      coinGeckoId: "cosmos",
+    },
   ],
   feeCurrencies: [
     {
@@ -336,22 +336,22 @@ export const unionLeapChainInfo: LeapExtendedInfo = {
       gasPriceStep: {
         low: 0.0025,
         average: 0.025,
-        high: 0.04
-      }
-    }
+        high: 0.04,
+      },
+    },
   ],
   stakeCurrency: {
     coinDenom: "UNO",
     coinMinimalDenom: "muno",
     coinDecimals: 6,
-    coinGeckoId: "union"
+    coinGeckoId: "union",
   },
   theme: {
     primaryColor: "#fff",
-    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)"
+    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)",
   },
   image:
-    "https://raw.githubusercontent.com/cosmos/chain-registry/master/testnets/uniontestnet/images/union.png"
+    "https://raw.githubusercontent.com/cosmos/chain-registry/master/testnets/uniontestnet/images/union.png",
 }
 
 export const elgafarLeapChainInfo: LeapExtendedInfo = {
@@ -360,7 +360,7 @@ export const elgafarLeapChainInfo: LeapExtendedInfo = {
   rpc: "https://rpc.elgafar-1.stargaze-apis.com",
   rest: "https://rest.elgafar-1.stargaze-apis.com",
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "stars",
@@ -368,15 +368,15 @@ export const elgafarLeapChainInfo: LeapExtendedInfo = {
     bech32PrefixValAddr: "starsvaloper",
     bech32PrefixValPub: "starsvaloperpub",
     bech32PrefixConsAddr: "starsvalcons",
-    bech32PrefixConsPub: "starsvalconspub"
+    bech32PrefixConsPub: "starsvalconspub",
   },
   currencies: [
     {
       coinDenom: "STARS",
       coinMinimalDenom: "ustars",
       coinDecimals: 6,
-      coinGeckoId: "stargaze"
-    }
+      coinGeckoId: "stargaze",
+    },
   ],
   feeCurrencies: [
     {
@@ -387,22 +387,22 @@ export const elgafarLeapChainInfo: LeapExtendedInfo = {
       gasPriceStep: {
         low: 0.03,
         average: 0.04,
-        high: 0.05
-      }
-    }
+        high: 0.05,
+      },
+    },
   ],
   stakeCurrency: {
     coinDenom: "STARS",
     coinMinimalDenom: "ustars",
     coinDecimals: 6,
-    coinGeckoId: "stargaze"
+    coinGeckoId: "stargaze",
   },
   theme: {
     primaryColor: "#E2447B",
-    gradient: "linear-gradient(180deg, rgba(226, 68, 123, 0.32) 0%, rgba(226, 68, 123, 0) 100%)"
+    gradient: "linear-gradient(180deg, rgba(226, 68, 123, 0.32) 0%, rgba(226, 68, 123, 0) 100%)",
   },
   image:
-    "https://raw.githubusercontent.com/cosmostation/chainlist/main/chain/stargaze/asset/stargaze.png"
+    "https://raw.githubusercontent.com/cosmostation/chainlist/main/chain/stargaze/asset/stargaze.png",
 }
 
 export const strideLeapChainInfo: LeapExtendedInfo = {
@@ -411,7 +411,7 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
   rpc: "https://stride.testnet-1.stridenet.co",
   rest: "https://stride.testnet-1.stridenet.co/api",
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "stride",
@@ -419,15 +419,15 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
     bech32PrefixValAddr: "stridevaloper",
     bech32PrefixValPub: "stridevaloperpub",
     bech32PrefixConsAddr: "stridevalcons",
-    bech32PrefixConsPub: "stridevalconspub"
+    bech32PrefixConsPub: "stridevalconspub",
   },
   currencies: [
     {
       coinDenom: "STRD",
       coinMinimalDenom: "ustrd",
       coinDecimals: 6,
-      coinGeckoId: "stride"
-    }
+      coinGeckoId: "stride",
+    },
   ],
   feeCurrencies: [
     {
@@ -438,28 +438,28 @@ export const strideLeapChainInfo: LeapExtendedInfo = {
       gasPriceStep: {
         low: 0.0005,
         average: 0.005,
-        high: 0.05
-      }
+        high: 0.05,
+      },
     },
     {
       coinDenom: "TIA",
       coinMinimalDenom: "ibc/1A7653323C1A9E267FF7BEBF40B3EEA8065E8F069F47F2493ABC3E0B621BF793",
       coinDecimals: 6,
-      coinGeckoId: "celestia"
-    }
+      coinGeckoId: "celestia",
+    },
   ],
   stakeCurrency: {
     coinDenom: "STRD",
     coinMinimalDenom: "ustrd",
     coinDecimals: 6,
-    coinGeckoId: "stride"
+    coinGeckoId: "stride",
   },
   theme: {
     primaryColor: "#E91179",
-    gradient: "linear-gradient(180deg, rgba(233, 17, 121, 0.32) 0%, rgba(233, 17, 121, 0) 100%)"
+    gradient: "linear-gradient(180deg, rgba(233, 17, 121, 0.32) 0%, rgba(233, 17, 121, 0) 100%)",
   },
   image:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/chain.png"
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/stride-internal/chain.png",
 }
 
 export const babylonMainnetLeapChainInfo: LeapExtendedInfo = {
@@ -468,7 +468,7 @@ export const babylonMainnetLeapChainInfo: LeapExtendedInfo = {
   rest: "https://lcd-babylon.keplr.app",
   rpc: "https://rpc-babylon.keplr.app",
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "bbn",
@@ -476,20 +476,20 @@ export const babylonMainnetLeapChainInfo: LeapExtendedInfo = {
     bech32PrefixValAddr: "bbnvaloper",
     bech32PrefixValPub: "bbnvaloperpub",
     bech32PrefixConsAddr: "bbnvalcons",
-    bech32PrefixConsPub: "bbnvalconspub"
+    bech32PrefixConsPub: "bbnvalconspub",
   },
   currencies: [
     {
       coinDenom: "BABY",
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
-      coinGeckoId: "babylon"
+      coinGeckoId: "babylon",
     },
     {
       coinDenom: "LBTC",
       coinMinimalDenom: "ibc/89EE10FCF78800B572BAAC7080AEFA301B5F3BBC51C5371E907EB129C5B900E7",
-      coinDecimals: 8
-    }
+      coinDecimals: 8,
+    },
   ],
   feeCurrencies: [
     {
@@ -500,23 +500,23 @@ export const babylonMainnetLeapChainInfo: LeapExtendedInfo = {
       gasPriceStep: {
         low: 0.007,
         average: 0.007,
-        high: 0.01
-      }
-    }
+        high: 0.01,
+      },
+    },
   ],
   stakeCurrency: {
     coinDenom: "BABY",
     coinMinimalDenom: "ubbn",
     coinDecimals: 6,
-    coinGeckoId: "babylon"
+    coinGeckoId: "babylon",
   },
   image:
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
   theme: {
     primaryColor: "#fff",
-    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)"
+    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)",
   },
-  features: ["cosmwasm"]
+  features: ["cosmwasm"],
 }
 
 export const babylonTestnetLeapChaininfo: LeapExtendedInfo = {
@@ -525,7 +525,7 @@ export const babylonTestnetLeapChaininfo: LeapExtendedInfo = {
   rest: "https://babylon-testnet-api.nodes.guru",
   rpc: "https://babylon-testnet-rpc.nodes.guru",
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "bbn",
@@ -533,15 +533,15 @@ export const babylonTestnetLeapChaininfo: LeapExtendedInfo = {
     bech32PrefixValAddr: "bbnvaloper",
     bech32PrefixValPub: "bbnvaloperpub",
     bech32PrefixConsAddr: "bbnvalcons",
-    bech32PrefixConsPub: "bbnvalconspub"
+    bech32PrefixConsPub: "bbnvalconspub",
   },
   currencies: [
     {
       coinDenom: "BABY",
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
-      coinGeckoId: ""
-    }
+      coinGeckoId: "",
+    },
   ],
   feeCurrencies: [
     {
@@ -552,22 +552,22 @@ export const babylonTestnetLeapChaininfo: LeapExtendedInfo = {
       gasPriceStep: {
         low: 0.007,
         average: 0.007,
-        high: 0.01
-      }
-    }
+        high: 0.01,
+      },
+    },
   ],
   stakeCurrency: {
     coinDenom: "BABY",
     coinMinimalDenom: "ubbn",
     coinDecimals: 6,
-    coinGeckoId: ""
+    coinGeckoId: "",
   },
   image:
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
   theme: {
     primaryColor: "#fff",
-    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)"
-  }
+    gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)",
+  },
 }
 
 export const xionKeplrChainInfo: ChainInfo = {
@@ -580,17 +580,17 @@ export const xionKeplrChainInfo: ChainInfo = {
   nodeProvider: {
     name: "🔥BurntLabs🔥",
     email: "security@burnt.com",
-    website: "https://xion.burnt.com"
+    website: "https://xion.burnt.com",
   },
   stakeCurrency: {
     coinDenom: "XION",
     coinMinimalDenom: "uxion",
     coinDecimals: 6,
     coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png"
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
   },
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "xion",
@@ -598,7 +598,7 @@ export const xionKeplrChainInfo: ChainInfo = {
     bech32PrefixValAddr: "xionvaloper",
     bech32PrefixValPub: "xionvaloperpub",
     bech32PrefixConsAddr: "xionvalcons",
-    bech32PrefixConsPub: "xionvalconspub"
+    bech32PrefixConsPub: "xionvalconspub",
   },
   currencies: [
     {
@@ -606,8 +606,8 @@ export const xionKeplrChainInfo: ChainInfo = {
       coinMinimalDenom: "uxion",
       coinDecimals: 6,
       coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png"
-    }
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+    },
   ],
   feeCurrencies: [
     {
@@ -619,11 +619,11 @@ export const xionKeplrChainInfo: ChainInfo = {
       gasPriceStep: {
         low: 0.001,
         average: 0.001,
-        high: 0.002
-      }
-    }
+        high: 0.002,
+      },
+    },
   ],
-  features: ["cosmwasm"]
+  features: ["cosmwasm"],
 }
 
 export const xionLeapChainInfo: LeapExtendedInfo = {
@@ -632,7 +632,7 @@ export const xionLeapChainInfo: LeapExtendedInfo = {
   rpc: "https://rpc.xion-testnet-2.burnt.com/",
   rest: "https://api.xion-testnet-2.burnt.com/",
   bip44: {
-    coinType: 118
+    coinType: 118,
   },
   bech32Config: {
     bech32PrefixAccAddr: "xion",
@@ -640,51 +640,51 @@ export const xionLeapChainInfo: LeapExtendedInfo = {
     bech32PrefixValAddr: "xionvaloper",
     bech32PrefixValPub: "xionvaloperpub",
     bech32PrefixConsAddr: "xionvalcons",
-    bech32PrefixConsPub: "xionvalconspub"
+    bech32PrefixConsPub: "xionvalconspub",
   },
   currencies: [
     {
       coinDenom: "XION",
       coinMinimalDenom: "uxion",
       coinDecimals: 6,
-      coinGeckoId: "xion"
-    }
+      coinGeckoId: "xion",
+    },
   ],
   feeCurrencies: [
     {
       coinDenom: "XION",
       coinMinimalDenom: "uxion",
       coinDecimals: 6,
-      coinGeckoId: "xion"
-    }
+      coinGeckoId: "xion",
+    },
   ],
   gasPriceStep: {
     low: 0.001,
     average: 0.001,
-    high: 0.002
+    high: 0.002,
   },
   stakeCurrency: {
     coinDenom: "XION",
     coinMinimalDenom: "uxion",
     coinDecimals: 6,
-    coinGeckoId: "xion"
+    coinGeckoId: "xion",
   },
   theme: {
     primaryColor: "#E91179",
-    gradient: "linear-gradient(180deg, rgba(233, 17, 121, 0.32) 0%, rgba(233, 17, 121, 0) 100%)"
+    gradient: "linear-gradient(180deg, rgba(233, 17, 121, 0.32) 0%, rgba(233, 17, 121, 0) 100%)",
   },
   image:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png"
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
 }
 
-//Maps
+// Maps
 const keplrChainInfoMap: Record<string, KeplrChainInfo> = {
   "union-testnet-10": unionKeplrChainInfo,
   "stride-internal-1": strideKeplrChainInfo,
   "elgafar-1": elgafarKeplrChainInfo,
   "bbn-test-5": babylonTestnetKeplrChaininfo,
   "bbn-1": babylonMainnetKeplrChaininfo,
-  "xion-testnet-2": xionKeplrChainInfo
+  "xion-testnet-2": xionKeplrChainInfo,
 }
 
 const leapChainInfoMap: Record<string, LeapChainInfo> = {
@@ -693,17 +693,17 @@ const leapChainInfoMap: Record<string, LeapChainInfo> = {
   "elgafar-1": elgafarLeapChainInfo,
   "bbn-test-5": babylonTestnetLeapChaininfo,
   "bbn-1": babylonMainnetLeapChainInfo,
-  "xion-testnet-2": xionKeplrChainInfo
+  "xion-testnet-2": xionKeplrChainInfo,
 }
 
-//Helper functions
+// Helper functions
 export function getCosmosChainInfo(chainId: string): LeapChainInfo | KeplrChainInfo | null {
   const chainInfoMap = cosmosStore.connectedWallet === "leap" ? leapChainInfoMap : keplrChainInfoMap
   return chainInfoMap[chainId] || null
 }
 
 export function getHighGasPriceStep(
-  chainInfo: KeplrChainInfo
+  chainInfo: KeplrChainInfo,
 ): { amount: string; denom: string } | null {
   if (!chainInfo.currencies || chainInfo.currencies.length === 0) {
     return null
@@ -711,13 +711,13 @@ export function getHighGasPriceStep(
 
   const firstCurrency = chainInfo.currencies[0]
   const matchedFeeCurrency = chainInfo.feeCurrencies.find(
-    feeCurrency => feeCurrency.coinMinimalDenom === firstCurrency.coinMinimalDenom
+    feeCurrency => feeCurrency.coinMinimalDenom === firstCurrency.coinMinimalDenom,
   )
 
   return matchedFeeCurrency?.gasPriceStep
     ? {
-        amount: matchedFeeCurrency.gasPriceStep.high.toString(),
-        denom: firstCurrency.coinMinimalDenom
-      }
+      amount: matchedFeeCurrency.gasPriceStep.high.toString(),
+      denom: firstCurrency.coinMinimalDenom,
+    }
     : null
 }

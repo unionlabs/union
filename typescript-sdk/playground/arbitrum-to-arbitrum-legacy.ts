@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
-import { http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { raise } from "../src/utilities/index.ts"
-import { arbitrumSepolia } from "viem/chains"
+import { http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
+import { arbitrumSepolia } from "viem/chains"
 import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
+import { raise } from "../src/utilities/index.ts"
 
 /* `bun playground/arbitrum-to-arbitrum.ts --private-key "..."` --estimate-gas */
 
@@ -13,12 +13,14 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) raise("Private key not found")
+if (!PRIVATE_KEY) {
+  raise("Private key not found")
+}
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const evmAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
@@ -31,7 +33,7 @@ try {
   const client = createUnionClient({
     account: evmAccount,
     chainId: `${arbitrumSepolia.id}`,
-    transport: http(arbitrumSepolia?.rpcUrls.default.http.at(0))
+    transport: http(arbitrumSepolia?.rpcUrls.default.http.at(0)),
   })
 
   const transactionPayload = {
@@ -39,7 +41,7 @@ try {
     autoApprove: false,
     denomAddress: LINK_CONTRACT_ADDRESS,
     destinationChainId: `${arbitrumSepolia.id}`,
-    receiver: "0xf4212614C7Fe0B3feef75057E88b2E77a7E23e83"
+    receiver: "0xf4212614C7Fe0B3feef75057E88b2E77a7E23e83",
   } satisfies TransferAssetsParametersLegacy<"80084">
 
   // const gasEstimationResponse = await client.simulateTransaction(transactionPayload)

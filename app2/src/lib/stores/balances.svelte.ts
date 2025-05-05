@@ -1,28 +1,28 @@
-import {
-  Array as Arr,
-  String as Str,
-  Effect,
-  type Fiber,
-  flow,
-  Option,
-  Stream,
-  FiberMap,
-  Match,
-  pipe,
-  Scope,
-  type Duration
-} from "effect"
+import { fetchAptosBalance, type FetchAptosBalanceError } from "$lib/services/aptos/balances"
+import { fetchCosmosBalance, type FetchCosmosBalanceError } from "$lib/services/cosmos/balances"
+import { fetchEvmBalance, type FetchEvmBalanceError } from "$lib/services/evm/balances"
 import type { Chain, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
 import {
   type AddressCanonicalBytes,
   AddressCosmosCanonical,
   AddressEvmCanonical,
-  RawTokenBalance
+  RawTokenBalance,
 } from "@unionlabs/sdk/schema"
-import { fetchEvmBalance, type FetchEvmBalanceError } from "$lib/services/evm/balances"
-import { fetchCosmosBalance, type FetchCosmosBalanceError } from "$lib/services/cosmos/balances"
+import {
+  Array as Arr,
+  type Duration,
+  Effect,
+  type Fiber,
+  FiberMap,
+  flow,
+  Match,
+  Option,
+  pipe,
+  Scope,
+  Stream,
+  String as Str,
+} from "effect"
 import { SvelteMap } from "svelte/reactivity"
-import { fetchAptosBalance, type FetchAptosBalanceError } from "$lib/services/aptos/balances"
 
 const MAX_FETCH_DELAY_MS = 500
 
@@ -33,7 +33,7 @@ export type BalanceKey = `${UniversalChainId}:${AddressCanonicalBytes}:${TokenRa
 export const createKey = (
   universalChainId: UniversalChainId,
   address: AddressCanonicalBytes,
-  denom: TokenRawDenom
+  denom: TokenRawDenom,
 ): BalanceKey => `${universalChainId}:${address}:${denom}`
 
 // Type for a balance fetch request
@@ -49,7 +49,7 @@ type ChainKey = `${UniversalChainId}:${AddressCanonicalBytes}`
 // Helper to create the chain key
 const createChainKey = (
   universalChainId: UniversalChainId,
-  address: AddressCanonicalBytes
+  address: AddressCanonicalBytes,
 ): ChainKey => `${universalChainId}:${address}`
 
 // TODO: move into ADT; remove throw
@@ -74,7 +74,7 @@ export class BalancesStore {
     new SvelteMap<
       BalanceKey,
       Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>
-    >()
+    >(),
   )
   chainFibers = $state(new SvelteMap<ChainKey, Fiber.RuntimeFiber<void, never>>())
   pendingRequests = $state(new SvelteMap<ChainKey, Array<BalanceFetchRequest>>())
@@ -90,7 +90,7 @@ export class BalancesStore {
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom,
-    balance: RawTokenBalance
+    balance: RawTokenBalance,
   ) {
     this.data.set(createKey(universalChainId, address, denom), balance)
   }
@@ -99,7 +99,7 @@ export class BalancesStore {
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom,
-    error: Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>
+    error: Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>,
   ) {
     this.errors.set(createKey(universalChainId, address, denom), error)
   }
@@ -107,7 +107,7 @@ export class BalancesStore {
   getBalance(
     chainId: UniversalChainId,
     address: AddressCanonicalBytes,
-    denom: TokenRawDenom
+    denom: TokenRawDenom,
   ): RawTokenBalance {
     return this.data.get(createKey(chainId, address, denom)) ?? RawTokenBalance.make(Option.none())
   }
@@ -115,7 +115,7 @@ export class BalancesStore {
   getError(
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
-    denom: TokenRawDenom
+    denom: TokenRawDenom,
   ): Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError> {
     return this.errors.get(createKey(universalChainId, address, denom)) ?? Option.none()
   }
@@ -128,14 +128,14 @@ export class BalancesStore {
     chain: Chain,
     address: AddressCanonicalBytes,
     denoms: ReadonlyArray<TokenRawDenom>,
-    interval: Duration.DurationInput
+    interval: Duration.DurationInput,
   ) {
     this.interruptBalanceFetching()
 
     const balanceFetchRequestPayloads: ReadonlyArray<BalanceFetchRequest> = denoms.map(denom => ({
       chain,
       address,
-      denom
+      denom,
     }))
 
     const fetchBalance = Match.type<BalanceFetchRequest>().pipe(
@@ -143,30 +143,33 @@ export class BalancesStore {
         fetchEvmBalance({
           chain,
           tokenAddress: denom,
-          walletAddress: AddressEvmCanonical.make(address)
-        })
+          walletAddress: AddressEvmCanonical.make(address),
+        })),
+      Match.when(
+        { chain: { rpc_type: "aptos" } },
+        ({ chain, address, denom }) =>
+          fetchAptosBalance({
+            chain,
+            tokenAddress: denom,
+            walletAddress: address,
+          }),
       ),
-      Match.when({ chain: { rpc_type: "aptos" } }, ({ chain, address, denom }) =>
-        fetchAptosBalance({
-          chain,
-          tokenAddress: denom,
-          walletAddress: address
-        })
+      Match.when(
+        { chain: { rpc_type: "cosmos" } },
+        ({ chain, address, denom }) =>
+          fetchCosmosBalance({
+            chain,
+            tokenAddress: denom,
+            walletAddress: AddressCosmosCanonical.make(address),
+          }),
       ),
-      Match.when({ chain: { rpc_type: "cosmos" } }, ({ chain, address, denom }) =>
-        fetchCosmosBalance({
-          chain,
-          tokenAddress: denom,
-          walletAddress: AddressCosmosCanonical.make(address)
-        })
-      ),
-      Match.orElseAbsurd
+      Match.orElseAbsurd,
     )
 
     const boundedDelay = boundedFibonacci$(MAX_FETCH_DELAY_MS)
     const fetchRequest$ = pipe(
       Stream.fromIterable(balanceFetchRequestPayloads),
-      Stream.zip(boundedDelay)
+      Stream.zip(boundedDelay),
     )
 
     console.log("[processBatchedBalances] batching balance payloads", balanceFetchRequestPayloads)
@@ -194,29 +197,29 @@ export class BalancesStore {
                 request.chain.universal_chain_id,
                 request.address,
                 request.denom,
-                balance
+                balance,
               )
               this.setError(
                 request.chain.universal_chain_id,
                 request.address,
                 request.denom,
-                Option.none()
+                Option.none(),
               )
             }),
             /**
              * Fork and collect in `FiberMap`.
              */
-            FiberMap.run(this.#fiberMap, balanceKeyFromRequest(request))
+            FiberMap.run(this.#fiberMap, balanceKeyFromRequest(request)),
           ),
         {
           concurrency: "unbounded",
-          unordered: false
-        }
+          unordered: false,
+        },
       ),
       /**
        * Re-initiate balance queries on given schedule.
        */
-      Stream.runDrain
+      Stream.runDrain,
     )
 
     Effect.runFork(batchProcessor)
@@ -226,7 +229,7 @@ export class BalancesStore {
     chain: Chain,
     address: AddressCanonicalBytes,
     denom: ReadonlyArray<TokenRawDenom> | TokenRawDenom,
-    interval: Duration.DurationInput | undefined = "60 seconds"
+    interval: Duration.DurationInput | undefined = "60 seconds",
   ) {
     this.processBatchedBalances(chain, address, Arr.ensure(denom), interval)
   }

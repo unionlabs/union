@@ -1,12 +1,12 @@
-import { getContext, onDestroy, setContext } from "svelte"
 import { checkState } from "$lib/client"
 import {
+  getContributionState,
   getCurrentUserState,
   getUserQueueInfo,
-  getContributionState,
-  getUserWallet
+  getUserWallet,
 } from "$lib/supabase"
 import { axiom } from "$lib/utils/axiom.ts"
+import { getContext, onDestroy, setContext } from "svelte"
 
 type IntervalID = NodeJS.Timeout | number
 
@@ -83,7 +83,7 @@ export class Contributor {
 
   queueState = $state<QueueState>({
     position: null,
-    count: null
+    count: null,
   })
 
   private pollIntervals: {
@@ -93,7 +93,7 @@ export class Contributor {
   } = {
     client: null,
     queue: null,
-    contribution: null
+    contribution: null,
   }
 
   constructor(userId?: string) {
@@ -119,7 +119,7 @@ export class Contributor {
     this.userWallet = undefined
     this.queueState = {
       position: null,
-      count: null
+      count: null,
     }
     this.stopPolling()
   }
@@ -145,7 +145,9 @@ export class Contributor {
   }
 
   async checkUserWallet(userId: string | undefined): Promise<string | undefined> {
-    if (!userId) return undefined
+    if (!userId) {
+      return undefined
+    }
     this.userWallet = await getUserWallet(userId)
     return this.userWallet
   }
@@ -189,7 +191,7 @@ export class Contributor {
     this.pollClientState()
     this.pollIntervals.client = setInterval(
       () => this.pollClientState(),
-      CLIENT_POLING_INTERVAL
+      CLIENT_POLING_INTERVAL,
     ) as IntervalID
   }
 
@@ -209,7 +211,7 @@ export class Contributor {
     this.pollQueueInfo()
     this.pollIntervals.queue = setInterval(
       () => this.pollQueueInfo(),
-      QUEUE_POLLING_INTERVAL
+      QUEUE_POLLING_INTERVAL,
     ) as IntervalID
   }
 
@@ -234,7 +236,7 @@ export class Contributor {
     this.pollContributionState()
     this.pollIntervals.contribution = setInterval(
       () => this.pollContributionState(),
-      CONTRIBUTION_POLLING_INTERVAL
+      CONTRIBUTION_POLLING_INTERVAL,
     ) as IntervalID
   }
 
@@ -265,13 +267,13 @@ export class Contributor {
       this.queueState = {
         ...this.queueState,
         position: queueInfo.position,
-        count: queueInfo.count
+        count: queueInfo.count,
       }
     } else {
       this.queueState = {
         ...this.queueState,
         position: null,
-        count: null
+        count: null,
       }
     }
     this.updateState()

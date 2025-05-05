@@ -1,10 +1,10 @@
 ---
+import ButtonA from "#/components/ButtonA.astro"
 import Card from "#/components/Card.astro"
 import TextA from "#/components/TextA.astro"
-import type { BlogPost } from "#/lib/types.ts"
-import ButtonA from "#/components/ButtonA.astro"
 import H3 from "#/components/typography/h3.astro"
 import { contentfulClient } from "#/lib/contentful/client.ts"
+import type { BlogPost } from "#/lib/types.ts"
 
 const BLOG_POST_COUNT = 4
 
@@ -12,7 +12,7 @@ const blogEntries = await contentfulClient.getEntries<BlogPost>({
   content_type: "blog",
   // @ts-expect-error
   order: "-fields.date",
-  limit: BLOG_POST_COUNT
+  limit: BLOG_POST_COUNT,
 })
 
 const publishedBlogPosts = blogEntries.items.filter(entry =>
@@ -33,9 +33,10 @@ const [latestBlogPost, ...blogPosts] = publishedBlogPosts
         {latestBlogPost.fields.description}
       </p>
       <div class="w-full flex flex-1 items-end">
-        <ButtonA href={`/blog/${latestBlogPost.fields.slug}`} fake
-          >read full post</ButtonA
-        >
+        <ButtonA
+          href={`/blog/${latestBlogPost.fields.slug}`}
+          fake
+        >read full post</ButtonA>
       </div>
     </a>
   </Card>

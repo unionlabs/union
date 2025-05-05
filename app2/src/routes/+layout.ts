@@ -15,6 +15,6 @@ export const load = ({ url }) => {
   }
 
   return {
-    edition
+    edition,
   }
 }

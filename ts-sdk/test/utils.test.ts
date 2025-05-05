@@ -7,22 +7,26 @@ describe.sequential("Utils", () => {
     vi.unstubAllGlobals()
   })
   describe("with crypto", () => {
-    it.effect.each(["evm", "cosmos"] as const)("computes verifiable salt", x =>
-      Effect.gen(function* () {
-        const salt = yield* generateSalt(x)
-        const verification = yield* verifySalt(salt)
-        assert.isTrue(verification)
-      })
+    it.effect.each(["evm", "cosmos"] as const)(
+      "computes verifiable salt",
+      x =>
+        Effect.gen(function*() {
+          const salt = yield* generateSalt(x)
+          const verification = yield* verifySalt(salt)
+          assert.isTrue(verification)
+        }),
     )
   })
 
   describe("without crypto", () => {
     vi.stubGlobal("crypto", undefined)
-    it.effect.each(["evm", "cosmos"] as const)("fails to compute salt", x =>
-      Effect.gen(function* () {
-        const result = yield* Effect.either(generateSalt(x))
-        assert.isTrue(Either.isRight(result))
-      })
+    it.effect.each(["evm", "cosmos"] as const)(
+      "fails to compute salt",
+      x =>
+        Effect.gen(function*() {
+          const result = yield* Effect.either(generateSalt(x))
+          assert.isTrue(Either.isRight(result))
+        }),
     )
   })
 })

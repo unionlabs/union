@@ -160,7 +160,6 @@
       ];
       imports = [
         ./deployments
-        ./devShell.nix
         ./uniond/uniond.nix
         ./galoisd/galoisd.nix
         ./unionvisor/unionvisor.nix

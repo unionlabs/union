@@ -1,11 +1,10 @@
-import { Data, Effect, type Exit, Schedule } from "effect"
 import { switchChain } from "$lib/services/transfer-ucs03-cosmos"
+import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { executeContract } from "@unionlabs/sdk/cosmos"
 import type { Chain } from "@unionlabs/sdk/schema"
-import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { Data, Effect, type Exit, Schedule } from "effect"
 
-export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
-  ? Exit.Exit<A, E>
+export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E>
   : never
 
 export type TransactionSubmissionCosmos = Data.TaggedEnum<{
@@ -24,7 +23,7 @@ const {
   SwitchChainInProgress,
   SwitchChainComplete,
   WriteContractInProgress,
-  WriteContractComplete
+  WriteContractComplete,
 } = TransactionSubmissionCosmos
 
 export const nextStateCosmos = async (
@@ -33,7 +32,7 @@ export const nextStateCosmos = async (
   senderAddress: string,
   contractAddress: string,
   msg: Record<string, unknown>,
-  funds?: ReadonlyArray<{ denom: string; amount: string }>
+  funds?: ReadonlyArray<{ denom: string; amount: string }>,
 ): Promise<TransactionSubmissionCosmos> =>
   TransactionSubmissionCosmos.$match(ts, {
     Filling: () => {
@@ -42,7 +41,7 @@ export const nextStateCosmos = async (
     SwitchChainInProgress: async () => {
       const switchResult = await Effect.runPromiseExit(switchChain(chain))
       return SwitchChainComplete({
-        exit: switchResult
+        exit: switchResult,
       })
     },
     SwitchChainComplete: ({ exit }) => {
@@ -52,7 +51,7 @@ export const nextStateCosmos = async (
         return SwitchChainInProgress()
       }
       console.log(
-        "[SwitchChainComplete] Chain switch successful. → Moving to ExecuteContractInProgress"
+        "[SwitchChainComplete] Chain switch successful. → Moving to ExecuteContractInProgress",
       )
       return WriteContractInProgress({ signingClient: exit.value.signingClient })
     },
@@ -62,17 +61,17 @@ export const nextStateCosmos = async (
         senderAddress,
         contractAddress,
         msg,
-        funds
+        funds,
       ).pipe(
         Effect.retry({
           while: error => error.message.includes("429"),
-          schedule: Schedule.fibonacci("1 second")
-        })
+          schedule: Schedule.fibonacci("1 second"),
+        }),
       )
 
       return WriteContractComplete({
         signingClient,
-        exit: await Effect.runPromiseExit(retryableExecute)
+        exit: await Effect.runPromiseExit(retryableExecute),
       })
     },
 
@@ -84,7 +83,7 @@ export const nextStateCosmos = async (
       }
       console.log("ExecuteContractComplete] Contract execution successful. Transaction complete!")
       return ts
-    }
+    },
   })
 
 export const hasFailedExit = (state: TransactionSubmissionCosmos) =>

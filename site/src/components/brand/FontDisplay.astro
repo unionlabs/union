@@ -13,12 +13,12 @@ const { label, fontFamily, sampleText, class: className = "", link } = Astro.pro
 const fontDetails = {
   mono: {
     name: "JetBrains Mono",
-    variants: ["Regular", "Bold"]
+    variants: ["Regular", "Bold"],
   },
   supermolot: {
     name: "Supermolot",
-    variants: ["Regular", "Bold"]
-  }
+    variants: ["Regular", "Bold"],
+  },
 }
 
 const currentFont = fontDetails[fontFamily]
@@ -44,14 +44,18 @@ const currentFont = fontDetails[fontFamily]
     {
       currentFont.variants.map((variant) => (
         <p
-          class={`font-${fontFamily} ${variant.toLowerCase() === "bold" ? "font-bold" : "font-normal"} text-lg`}
+          class={`font-${fontFamily} ${
+            variant.toLowerCase() === "bold" ? "font-bold" : "font-normal"
+          } text-lg`}
         >
           {currentFont.name} {variant}
         </p>
       ))
     }
-    <a href={link} target="_blank" class="text-accent-500 font-mono font-bold"
-      >[DOWNLOAD]</a
-    >
+    <a
+      href={link}
+      target="_blank"
+      class="text-accent-500 font-mono font-bold"
+    >[DOWNLOAD]</a>
   </div>
 </div>

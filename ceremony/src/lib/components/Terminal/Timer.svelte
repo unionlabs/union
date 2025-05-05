@@ -1,8 +1,8 @@
 <script lang="ts">
 import Print from "$lib/components/Terminal/Print.svelte"
 import { getState } from "$lib/state/index.svelte.ts"
-import { queryContributionWindow } from "$lib/supabase/queries.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import { queryContributionWindow } from "$lib/supabase/queries.ts"
 
 const { contributor } = getState()
 
@@ -11,13 +11,17 @@ let expireTimestamp = $state<number>()
 
 async function fetchTimestamps() {
   const userId = user.session?.user.id
-  if (!userId) return
+  if (!userId) {
+    return
+  }
   const window = await queryContributionWindow(userId)
   expireTimestamp = new Date(window.data?.expire).getTime()
 }
 
 function updateCountdown() {
-  if (!expireTimestamp) return
+  if (!expireTimestamp) {
+    return
+  }
   const now = Date.now()
 
   if (now < expireTimestamp) {
@@ -38,7 +42,9 @@ $effect(() => {
 })
 
 $effect(() => {
-  if (!expireTimestamp) return
+  if (!expireTimestamp) {
+    return
+  }
   const timer = setInterval(updateCountdown, 1000)
   updateCountdown()
   return () => clearInterval(timer)

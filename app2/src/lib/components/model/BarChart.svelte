@@ -1,8 +1,8 @@
 <script lang="ts">
-import { Option } from "effect"
-import type { DailyTransfer } from "@unionlabs/sdk/schema"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
+import type { DailyTransfer } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
 import { constVoid } from "effect/Function"
 
 type Props = {
@@ -29,9 +29,11 @@ let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
 
 // Find the day with the highest count
 const highestDay = $derived.by(() => {
-  if (!Option.isSome(data) || data.value.length === 0) return Option.none()
+  if (!Option.isSome(data) || data.value.length === 0) {
+    return Option.none()
+  }
   return Option.some(
-    data.value.reduce((max, current) => (current.count > max.count ? current : max), data.value[0])
+    data.value.reduce((max, current) => (current.count > max.count ? current : max), data.value[0]),
   )
 })
 
@@ -40,23 +42,23 @@ const displayCount = $derived(() =>
   Option.isSome(hoveredDay)
     ? hoveredDay.value.count
     : Option.isSome(highestDay)
-      ? highestDay.value.count
-      : 0
+    ? highestDay.value.count
+    : 0
 )
 const displayDate = $derived(() =>
   Option.isSome(hoveredDay)
     ? hoveredDay.value.day_date
     : Option.isSome(highestDay)
-      ? highestDay.value.day_date
-      : ""
+    ? highestDay.value.day_date
+    : ""
 )
 
 // Calculate bar heights as percentages
 const barHeights = $derived(
   reversedDailyTransfers.map(day => ({
     ...day,
-    heightPercent: maxCount > 0 ? Math.max((day.count / maxCount) * 100, 1) : 1
-  }))
+    heightPercent: maxCount > 0 ? Math.max((day.count / maxCount) * 100, 1) : 1,
+  })),
 )
 </script>
 
@@ -69,25 +71,25 @@ const barHeights = $derived(
         <div class="border-t first:border-0 border-zinc-200 dark:border-zinc-900 w-full h-0"></div>
       {/each}
     </div>
-    
+
     <!-- Bars -->
     <div class="absolute left-0 right-0 top-0 bottom-0 pt-1 px-4 pt-4">
       <div class="flex h-full items-end">
         {#each barHeights as day, i}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
-          <div 
+          <div
             class="flex pr-1 flex-col flex-1 group size-full justify-end hover:opacity-100"
             onmouseenter={() => {
-              hoveredDay = Option.some(day);
-              onHoverChange(Option.some(day));
+              hoveredDay = Option.some(day)
+              onHoverChange(Option.some(day))
             }}
             onmouseleave={() => {
-              hoveredDay = Option.none();
-              onHoverChange(Option.none());
+              hoveredDay = Option.none()
+              onHoverChange(Option.none())
             }}
           >
             <div class="w-full size-full flex items-end">
-              <div 
+              <div
                 class="relative w-full bg-white bar animate-bar"
                 style="--final-height: {day.heightPercent}%; --delay: {i * 50}ms; min-height: 1px;"
               >
@@ -108,28 +110,28 @@ const barHeights = $derived(
 {/if}
 
 <style>
-  /* Style for chart bars - make non-hovered bars darker when any bar is hovered */
-  :global(.chart-container:hover .flex-1) {
-    opacity: 0.3;
-  }
-  
-  :global(.chart-container .flex-1:hover) {
-    opacity: 1 !important;
-  }
+/* Style for chart bars - make non-hovered bars darker when any bar is hovered */
+:global(.chart-container:hover .flex-1) {
+  opacity: 0.3;
+}
 
-  /* Bar animation */
-  .animate-bar {
+:global(.chart-container .flex-1:hover) {
+  opacity: 1 !important;
+}
+
+/* Bar animation */
+.animate-bar {
+  height: 0;
+  animation: grow-bar 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+@keyframes grow-bar {
+  from {
     height: 0;
-    animation: grow-bar 0.8s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-    animation-delay: var(--delay, 0ms);
   }
-
-  @keyframes grow-bar {
-    from {
-      height: 0;
-    }
-    to {
-      height: var(--final-height, 0%);
-    }
+  to {
+    height: var(--final-height, 0%);
   }
+}
 </style>

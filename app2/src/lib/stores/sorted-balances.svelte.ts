@@ -1,12 +1,12 @@
-import { Option } from "effect"
 import type {
   AddressCanonicalBytes,
   Chain,
   TokenRawAmount,
   TokenRawDenom,
-  Tokens
+  Tokens,
 } from "@unionlabs/sdk/schema"
-import { balancesStore, type BalancesStore } from "./balances.svelte"
+import { Option } from "effect"
+import { type BalancesStore, balancesStore } from "./balances.svelte"
 import { chains } from "./chains.svelte"
 import { tokensStore } from "./tokens.svelte"
 import { wallets } from "./wallets.svelte"
@@ -28,7 +28,7 @@ const getSortedTokens = (
   tokens: Tokens,
   chain: Chain,
   bs: BalancesStore,
-  address: AddressCanonicalBytes
+  address: AddressCanonicalBytes,
 ): Array<SortedTokenInfo> =>
   tokens
     .map(token => {
@@ -37,14 +37,13 @@ const getSortedTokens = (
       const tokenInfo = tokensStore
         .getData(chain.universal_chain_id)
         .pipe(
-          Option.flatMap(tokens => Option.fromNullable(tokens.find(t => t.denom === token.denom)))
+          Option.flatMap(tokens => Option.fromNullable(tokens.find(t => t.denom === token.denom))),
         )
 
       // Get decimals from token info
-      const decimals =
-        Option.getOrNull(
-          Option.flatMap(tokenInfo, t => Option.fromNullable(t.representations[0]?.decimals))
-        ) ?? 18 // Default to 18 if not found
+      const decimals = Option.getOrNull(
+        Option.flatMap(tokenInfo, t => Option.fromNullable(t.representations[0]?.decimals)),
+      ) ?? 18 // Default to 18 if not found
 
       // Calculate numeric value for sorting
       const numericValue = Option.match(balance, {
@@ -52,8 +51,8 @@ const getSortedTokens = (
         onSome: bal =>
           Option.match(Option.fromNullable(bal), {
             onNone: () => 0n,
-            onSome: val => val
-          })
+            onSome: val => val,
+          }),
       })
 
       return {
@@ -61,23 +60,39 @@ const getSortedTokens = (
         balance,
         error,
         numericValue,
-        decimals
+        decimals,
       }
     })
     .sort((a, b) => {
       // First, separate by status
-      if (Option.isSome(a.error) && !Option.isSome(b.error)) return 1
-      if (!Option.isSome(a.error) && Option.isSome(b.error)) return -1
+      if (Option.isSome(a.error) && !Option.isSome(b.error)) {
+        return 1
+      }
+      if (!Option.isSome(a.error) && Option.isSome(b.error)) {
+        return -1
+      }
 
-      if (Option.isNone(a.balance) && Option.isSome(b.balance)) return 1
-      if (Option.isSome(a.balance) && Option.isNone(b.balance)) return -1
+      if (Option.isNone(a.balance) && Option.isSome(b.balance)) {
+        return 1
+      }
+      if (Option.isSome(a.balance) && Option.isNone(b.balance)) {
+        return -1
+      }
 
       // Then sort by value
-      if (a.numericValue === -1n && b.numericValue !== -1n) return 1
-      if (a.numericValue !== -1n && b.numericValue === -1n) return -1
+      if (a.numericValue === -1n && b.numericValue !== -1n) {
+        return 1
+      }
+      if (a.numericValue !== -1n && b.numericValue === -1n) {
+        return -1
+      }
 
-      if (a.numericValue === 0n && b.numericValue > 0n) return 1
-      if (a.numericValue > 0n && b.numericValue === 0n) return -1
+      if (a.numericValue === 0n && b.numericValue > 0n) {
+        return 1
+      }
+      if (a.numericValue > 0n && b.numericValue === 0n) {
+        return -1
+      }
 
       // Sort by actual value if both have balances
       if (a.numericValue > 0n && b.numericValue > 0n) {
@@ -104,12 +119,12 @@ class SortedBalancesStore {
               addr =>
                 tokensStore
                   .getData(chain.universal_chain_id)
-                  .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr)))
-            )
+                  .pipe(Option.map(ts => getSortedTokens(ts, chain, balancesStore, addr))),
+            ),
           }
         })
-      )
-    )
+      ),
+    ),
   )
 }
 

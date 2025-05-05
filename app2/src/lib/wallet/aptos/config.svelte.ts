@@ -1,9 +1,9 @@
-import type { Hex } from "viem"
 import { Option } from "effect"
+import type { Hex } from "viem"
 
+import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { AptosBrowserWallet } from "@unionlabs/client"
 import { AddressAptosCanonical } from "@unionlabs/sdk/schema"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
 
 export const aptosWalletsInformation = (
   [
@@ -13,7 +13,7 @@ export const aptosWalletsInformation = (
       name: "Petra",
       icon: "/images/icons/petra.svg",
       download: "https://petra.app",
-      deepLink: "https://petra.app/explore?link=https://app.union.build"
+      deepLink: "https://petra.app/explore?link=https://app.union.build",
     },
     // https://docs.martianwallet.xyz/docs
     {
@@ -22,16 +22,21 @@ export const aptosWalletsInformation = (
       // could not find a good svg for martian
       icon: "/images/icons/martian.png",
       download: "https://martianwallet.xyz/aptos-wallet",
-      deepLink: ""
+      deepLink: "",
     },
     // https://www.okx.com/web3/build/docs/sdks/chains/aptos/provider
     {
       id: "okxwallet",
       name: "OKX Wallet",
-      icon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJDSURBVHgB7Zq9jtpAEMfHlhEgQLiioXEkoAGECwoKxMcTRHmC5E3IoyRPkPAEkI7unJYmTgEFTYwA8a3NTKScLnCHN6c9r1e3P2llWQy7M/s1Gv1twCP0ej37dDq9x+Zut1t3t9vZjDEHIiSRSPg4ZpDL5fxkMvn1cDh8m0wmfugfO53OoFQq/crn8wxfY9EymQyrVCqMfHvScZx1p9ls3pFxXBy/bKlUipGPrVbLuQqAfsCliq3zl0H84zwtjQrOw4Mt1W63P5LvBm2d+Xz+YzqdgkqUy2WgWCy+Mc/nc282m4FqLBYL+3g8fjDxenq72WxANZbLJeA13zDX67UDioL5ybXwafMYu64Ltn3bdDweQ5R97fd7GyhBQMipx4POeEDHIu2LfDdBIGGz+hJ9CQ1ABjoA2egAZPM6AgiCAEQhsi/C4jHyPA/6/f5NG3Ks2+3CYDC4aTccDrn6ojG54MnEvG00GoVmWLIRNZ7wTCwDHYBsdACy0QHIhiuRETxlICWpMMhGZHmqS8qH6JLyGegAZKMDkI0uKf8X4SWlaZo+Pp1bRrwlJU8ZKLIvUjKh0WiQ3sRUbNVq9c5Ebew7KEo2m/1p4jJ4qAmDaqDQBzj5XyiAT4VCQezJigAU+IDU+z8vJFnGWeC+bKQV/5VZ71FV6L7PA3gg3tXrdQ+DgLhC+75Wq3no69P3MC0NFQpx2lL04Ql9gHK1bRDjsSBIvScBnDTk1WrlGIZBorIDEYJj+rhdgnQ67VmWRe0zlplXl81vcyEt0rSoYDUAAAAASUVORK5CYII=",
+      icon:
+        "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADAAAAAwCAYAAABXAvmHAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAJDSURBVHgB7Zq9jtpAEMfHlhEgQLiioXEkoAGECwoKxMcTRHmC5E3IoyRPkPAEkI7unJYmTgEFTYwA8a3NTKScLnCHN6c9r1e3P2llWQy7M/s1Gv1twCP0ej37dDq9x+Zut1t3t9vZjDEHIiSRSPg4ZpDL5fxkMvn1cDh8m0wmfugfO53OoFQq/crn8wxfY9EymQyrVCqMfHvScZx1p9ls3pFxXBy/bKlUipGPrVbLuQqAfsCliq3zl0H84zwtjQrOw4Mt1W63P5LvBm2d+Xz+YzqdgkqUy2WgWCy+Mc/nc282m4FqLBYL+3g8fjDxenq72WxANZbLJeA13zDX67UDioL5ybXwafMYu64Ltn3bdDweQ5R97fd7GyhBQMipx4POeEDHIu2LfDdBIGGz+hJ9CQ1ABjoA2egAZPM6AgiCAEQhsi/C4jHyPA/6/f5NG3Ks2+3CYDC4aTccDrn6ojG54MnEvG00GoVmWLIRNZ7wTCwDHYBsdACy0QHIhiuRETxlICWpMMhGZHmqS8qH6JLyGegAZKMDkI0uKf8X4SWlaZo+Pp1bRrwlJU8ZKLIvUjKh0WiQ3sRUbNVq9c5Ebew7KEo2m/1p4jJ4qAmDaqDQBzj5XyiAT4VCQezJigAU+IDU+z8vJFnGWeC+bKQV/5VZ71FV6L7PA3gg3tXrdQ+DgLhC+75Wq3no69P3MC0NFQpx2lL04Ql9gHK1bRDjsSBIvScBnDTk1WrlGIZBorIDEYJj+rhdgnQ67VmWRe0zlplXl81vcyEt0rSoYDUAAAAASUVORK5CYII=",
       download: "https://www.okx.com/download",
-      deepLink: `https://www.okx.com/download?deeplink=${encodeURIComponent(`okx://wallet/dapp/url?dappUrl=${encodeURIComponent(window.location.href)}`)}`
-    }
+      deepLink: `https://www.okx.com/download?deeplink=${
+        encodeURIComponent(
+          `okx://wallet/dapp/url?dappUrl=${encodeURIComponent(window.location.href)}`,
+        )
+      }`,
+    },
   ] as const
 )
   /**
@@ -55,16 +60,22 @@ export type AptosWalletId = (typeof aptosWalletsInformation)[number]["id"]
 
 export function getAptosWallet(walletId: AptosWalletId = "petra") {
   // handle okx wallet special case since it's nested
-  if (!window) return
+  if (!window) {
+    return
+  }
   if (
-    walletId === "okxwallet" &&
-    Object.hasOwn(window, "okxwallet") &&
-    Object.hasOwn(window.okxwallet, "aptos")
+    walletId === "okxwallet"
+    && Object.hasOwn(window, "okxwallet")
+    && Object.hasOwn(window.okxwallet, "aptos")
   ) {
     return window.okxwallet.aptos
   }
-  if (Object.hasOwn(window, walletId)) return window[walletId] as AptosBrowserWallet
-  if (Object.hasOwn(window, "aptos")) return window.aptos
+  if (Object.hasOwn(window, walletId)) {
+    return window[walletId] as AptosBrowserWallet
+  }
+  if (Object.hasOwn(window, "aptos")) {
+    return window.aptos
+  }
 
   window.open("https://petra.app/", "_blank", "noopener noreferrer")
 }
@@ -120,7 +131,7 @@ class AptosStore {
         address: this.address,
         connectedWallet: this.connectedWallet,
         connectionStatus: this.connectionStatus,
-        hoverState: this.hoverState
+        hoverState: this.hoverState,
       }
       sessionStorage.setItem("aptos-store", JSON.stringify(storeData))
     } catch (e) {
@@ -129,7 +140,9 @@ class AptosStore {
   }
 
   connect = async (walletId: string) => {
-    if (walletId !== "okxwallet" && walletId !== "petra" && walletId !== "martian") return
+    if (walletId !== "okxwallet" && walletId !== "petra" && walletId !== "martian") {
+      return
+    }
 
     this.connectionStatus = "connecting"
     this.connectedWallet = walletId as AptosWalletId
@@ -187,16 +200,24 @@ class AptosStore {
     connectedWallet?: AptosWalletId
     hoverState?: string
   }) => {
-    if (account.chain) this.chain = account.chain
+    if (account.chain) {
+      this.chain = account.chain
+    }
 
     if (account.address !== this.address) {
       this.address = account.address
       this.updateAptosAddress(account.address)
     }
 
-    if (account.connectionStatus) this.connectionStatus = account.connectionStatus
-    if (account.connectedWallet !== undefined) this.connectedWallet = account.connectedWallet
-    if (account.hoverState) this.hoverState = account.hoverState
+    if (account.connectionStatus) {
+      this.connectionStatus = account.connectionStatus
+    }
+    if (account.connectedWallet !== undefined) {
+      this.connectedWallet = account.connectedWallet
+    }
+    if (account.hoverState) {
+      this.hoverState = account.hoverState
+    }
     this.saveToStorage()
   }
 }

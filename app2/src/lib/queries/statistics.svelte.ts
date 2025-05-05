@@ -1,8 +1,8 @@
-import { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
+import { dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
+import { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
 import { Option, Schema } from "effect"
 import { graphql } from "gql.tada"
-import { dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
 
 export const statisticsQuery = createQueryGraphql({
   schema: Schema.Struct({ v2_stats_count: Statistics }),
@@ -21,7 +21,7 @@ export const statisticsQuery = createQueryGraphql({
   },
   writeError: error => {
     statistics.error = error
-  }
+  },
 })
 
 export const dailyTransfersQuery = (limit = 30) =>
@@ -47,10 +47,10 @@ export const dailyTransfersQuery = (limit = 30) =>
             modifiedData[i] = { ...modifiedData[i], count: 0 }
           }
           return modifiedData
-        })
+        }),
       )
     },
     writeError: error => {
       dailyTransfers.error = error
-    }
+    },
   })

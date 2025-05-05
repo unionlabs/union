@@ -1,22 +1,22 @@
+import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
+import { SwitchChainError } from "$lib/services/transfer-ucs03-evm/errors.ts"
+import type { ValidTransfer } from "@unionlabs/sdk/schema"
+import { Effect, Option } from "effect"
+import type { SwitchChainErrorType } from "viem"
+import { switchChain } from "./chain.ts"
 import {
   ApprovalReceiptState,
   ApprovalSubmitState,
   SwitchChainState,
   TransferReceiptState,
   TransferSubmission,
-  TransferSubmitState
+  TransferSubmitState,
 } from "./state.ts"
-import { Effect, Option } from "effect"
-import { switchChain } from "./chain.ts"
 import { submitTransfer, waitForTransferReceipt } from "./transactions.ts"
-import { approveTransfer, waitForApprovalReceipt } from "$lib/services/transfer-ucs03-evm/approval"
-import type { ValidTransfer } from "@unionlabs/sdk/schema"
-import { SwitchChainError } from "$lib/services/transfer-ucs03-evm/errors.ts"
-import type { SwitchChainErrorType } from "viem"
 
 export async function nextState(
   ts: TransferSubmission,
-  params: ValidTransfer["args"]
+  params: ValidTransfer["args"],
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Filling: () => {
@@ -34,12 +34,12 @@ export async function nextState(
                   new SwitchChainError({
                     cause: {
                       name: "UserRejectedRequestError",
-                      message: "Could not convert to viem chain for chain switch."
-                    } as SwitchChainErrorType
-                  })
+                      message: "Could not convert to viem chain for chain switch.",
+                    } as SwitchChainErrorType,
+                  }),
                 ),
-              onSome: switchChain
-            })
+              onSome: switchChain,
+            }),
           )
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
@@ -48,7 +48,7 @@ export async function nextState(
             return TransferSubmission.SwitchChain({ state: SwitchChainState.InProgress() })
           }
           return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
-        }
+        },
       })
     },
 
@@ -58,12 +58,12 @@ export async function nextState(
           const exit = await Effect.runPromiseExit(approveTransfer(params))
           if (exit._tag === "Failure") {
             return TransferSubmission.ApprovalSubmit({
-              state: ApprovalSubmitState.Complete({ exit })
+              state: ApprovalSubmitState.Complete({ exit }),
             })
           }
 
           return TransferSubmission.ApprovalReceipt({
-            state: ApprovalReceiptState.InProgress({ hash: exit.value })
+            state: ApprovalReceiptState.InProgress({ hash: exit.value }),
           })
         },
         Complete: ({ exit }) => {
@@ -71,7 +71,7 @@ export async function nextState(
             return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
           }
           return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
-        }
+        },
       })
     },
 
@@ -80,7 +80,7 @@ export async function nextState(
         InProgress: async ({ hash }) => {
           const exit = await Effect.runPromiseExit(waitForApprovalReceipt(params.sourceChain, hash))
           return TransferSubmission.ApprovalReceipt({
-            state: ApprovalReceiptState.Complete({ exit })
+            state: ApprovalReceiptState.Complete({ exit }),
           })
         },
         Complete: ({ exit }) => {
@@ -88,9 +88,9 @@ export async function nextState(
             return TransferSubmission.ApprovalSubmit({ state: ApprovalSubmitState.InProgress() })
           }
           return TransferSubmission.TransferSubmit({
-            state: TransferSubmitState.InProgress()
+            state: TransferSubmitState.InProgress(),
           })
-        }
+        },
       })
     },
 
@@ -99,7 +99,7 @@ export async function nextState(
         InProgress: async () => {
           const exit = await Effect.runPromiseExit(submitTransfer(params.sourceChain, params))
           return TransferSubmission.TransferSubmit({
-            state: TransferSubmitState.Complete({ exit })
+            state: TransferSubmitState.Complete({ exit }),
           })
         },
         Complete: ({ exit }) => {
@@ -107,9 +107,9 @@ export async function nextState(
             return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
           }
           return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.InProgress({ hash: exit.value })
+            state: TransferReceiptState.InProgress({ hash: exit.value }),
           })
-        }
+        },
       })
     },
 
@@ -118,16 +118,16 @@ export async function nextState(
         InProgress: async ({ hash }) => {
           const exit = await Effect.runPromiseExit(waitForTransferReceipt(params.sourceChain, hash))
           return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.Complete({ exit })
+            state: TransferReceiptState.Complete({ exit }),
           })
         },
         Complete: ({ exit }) => {
-          //TODO: there is no real next state here
+          // TODO: there is no real next state here
           return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.Complete({ exit })
+            state: TransferReceiptState.Complete({ exit }),
           })
-        }
+        },
       })
-    }
+    },
   })
 }

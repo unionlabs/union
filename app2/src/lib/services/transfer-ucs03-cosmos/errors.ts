@@ -1,6 +1,6 @@
-import { Data } from "effect"
 import type { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import type { Chain } from "@unionlabs/sdk/schema/chain"
+import { Data } from "effect"
 
 export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{
   cause: unknown
@@ -23,7 +23,7 @@ export class CosmWasmError extends Data.TaggedError("CosmWasmError")<{
 }> {}
 
 export class CosmosWalletNotConnectedError extends Data.TaggedError(
-  "CosmosWalletNotConnectedError"
+  "CosmosWalletNotConnectedError",
 )<{
   cause: string
 }> {}

@@ -1,9 +1,9 @@
-import { ofetch } from "ofetch"
 import process from "node:process"
-import type { ChainId } from "../../types.ts"
+import { ofetch } from "ofetch"
+import { type Address, encodeFunctionData, getAddress } from "viem"
 import { ucs01RelayAbi } from "../../abi/ucs-01.ts"
 import { bech32AddressToHex } from "../../convert.ts"
-import { encodeFunctionData, getAddress, type Address } from "viem"
+import type { ChainId } from "../../types.ts"
 
 /**
  * get tenderly credentials
@@ -27,12 +27,12 @@ function getTenderlyCreds(slug: {
   if (process["env"] === undefined || process["env"]?.["TENDERLY_URL"] === undefined) {
     return {
       key: "",
-      url: `${url}/${slug.account}/project/${slug.project}`
+      url: `${url}/${slug.account}/project/${slug.project}`,
     }
   }
   return {
     url: process["env"]?.["TENDERLY_URL"],
-    key: ""
+    key: "",
   }
 }
 
@@ -58,7 +58,7 @@ export async function simulateTransaction({
   receiver,
   denomAddress,
   sourceChannel,
-  relayContractAddress
+  relayContractAddress,
 }: {
   memo?: string
   amount: bigint
@@ -72,17 +72,17 @@ export async function simulateTransaction({
 }) {
   let { url: TENDERLY_URL, key: TENDERLY_KEY } = getTenderlyCreds({
     project: "project",
-    account: "amor-fati"
+    account: "amor-fati",
   })
 
   // @note throwaway key
   TENDERLY_KEY ||= "zQs9t0eoXQybyVbGfV4dSihLElP0Uyl1"
 
   const queryHeaders = new Headers({
-    Accept: "application/json",
+    "Accept": "application/json",
     "User-Agent": "typescript-sdk",
     "Content-Type": "application/json",
-    "X-Access-Key": TENDERLY_KEY
+    "X-Access-Key": TENDERLY_KEY,
   })
 
   const tenderlyRequest = ofetch.create({
@@ -90,7 +90,7 @@ export async function simulateTransaction({
     retryDelay: 500,
     timeout: 6_000,
     headers: queryHeaders,
-    baseURL: TENDERLY_URL
+    baseURL: TENDERLY_URL,
   })
 
   const encodedFunctionData = encodeFunctionData({
@@ -102,8 +102,8 @@ export async function simulateTransaction({
       [{ denom: denomAddress, amount }],
       memo ?? "",
       { revision_number: 9n, revision_height: BigInt(999_999_999) + 100n },
-      0n
-    ]
+      0n,
+    ],
   })
 
   const data = await tenderlyRequest<TenderlySimulationResponse>("/simulate", {
@@ -119,8 +119,8 @@ export async function simulateTransaction({
       input: encodedFunctionData,
       gas: 8000000,
       gas_price: 0,
-      value: amount.toString()
-    })
+      value: amount.toString(),
+    }),
   })
 
   return data.simulation.gas_used || data.transaction.gas_used

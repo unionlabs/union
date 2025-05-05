@@ -1,13 +1,13 @@
-import { Effect } from "effect"
-import { readContract } from "./contract.js"
-import { AptosPublicClientDestination } from "./client.js"
-import { AptosChannelDestination } from "./channel.js"
 import { MoveVector } from "@aptos-labs/ts-sdk"
+import { Effect } from "effect"
+import { AptosChannelDestination } from "./channel.js"
+import { AptosPublicClientDestination } from "./client.js"
+import { readContract } from "./contract.js"
 
 export type Hex = `0x${string}`
 
 export const predictQuoteToken = (baseToken: Hex) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     yield* Effect.log(`Predicting quote token for base token: ${baseToken}`)
     const client = (yield* AptosPublicClientDestination).client
     const config = yield* AptosChannelDestination
@@ -27,7 +27,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
       module_name,
       function_name,
       [],
-      function_arguments
+      function_arguments,
     )
 
     const wrapped_token = result[0] as Hex

@@ -2,12 +2,12 @@
 import Input from "$lib/components/ui/Input.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
+import { signingMode } from "$lib/transfer/signingMode.svelte.js"
 import { Bech32FromAddressCanonicalBytesWithPrefix } from "@unionlabs/sdk/schema"
 import { Array as A, Either as E, ParseResult, pipe, Schema as S } from "effect"
 import { apply } from "effect/Function"
-import type { FormEventHandler } from "svelte/elements"
 import { onMount } from "svelte"
-import { signingMode } from "$lib/transfer/signingMode.svelte.js"
+import type { FormEventHandler } from "svelte/elements"
 
 let messages = $state.raw<ReadonlyArray<string>>([])
 const sender = $derived(signingMode.mode === "multi" ? transferData.raw.sender : "")
@@ -22,15 +22,15 @@ const validateAddress = (address: string) => {
         messages = pipe(
           error,
           ParseResult.ArrayFormatter.formatErrorSync,
-          A.map(x => x.message)
+          A.map(x => x.message),
         )
       },
       onRight: encoded => {
         messages = A.empty()
         transferData.raw.updateField("sender", address)
         wallets.addInputAddress(encoded)
-      }
-    })
+      },
+    }),
   )
 }
 

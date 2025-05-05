@@ -1,6 +1,6 @@
+import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { Data } from "effect"
 import type { ExtractTag } from "effect/Types"
-import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 
 /**
  * Defines the different steps in a transfer process
@@ -23,5 +23,5 @@ export const { $match: match, $is: is, Filling, CheckMessage } = Data.taggedEnum
  */
 export const description = match({
   Filling: () => "Configure your transfer details",
-  CheckMessage: () => "Check your message"
+  CheckMessage: () => "Check your message",
 })

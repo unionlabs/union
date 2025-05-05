@@ -1,12 +1,12 @@
 import { Effect } from "effect"
-import { writeContract } from "../src/evm/contract.js"
-import { ViemWalletClient } from "../src/evm/client.js"
-import { createWalletClient, http, erc20Abi } from "viem"
-import { sepolia } from "viem/chains"
+import { createWalletClient, erc20Abi, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
+import { sepolia } from "viem/chains"
+import { ViemWalletClient } from "../src/evm/client.js"
+import { writeContract } from "../src/evm/contract.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
@@ -18,7 +18,7 @@ const account = privateKeyToAccount(privateKey)
 const walletClient = createWalletClient({
   account,
   chain: sepolia,
-  transport: http()
+  transport: http(),
 })
 
 const tokenAddress = "0x74d5b8eacfeb0dadaaf66403f40e304b3ef968b3"
@@ -30,11 +30,11 @@ writeContract(walletClient, {
   address: tokenAddress,
   abi: erc20Abi,
   functionName: "transfer",
-  args: ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", 2n]
+  args: ["0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266", 2n],
 })
   .pipe(
     Effect.provideService(ViemWalletClient, { client: walletClient }),
     Effect.mapError(e => e.cause.message),
-    Effect.runPromiseExit
+    Effect.runPromiseExit,
   )
   .then(exit => console.log(JSON.stringify(exit, null, 2)))

@@ -1,12 +1,12 @@
-import * as React from "react"
-import ts from "shiki/langs/typescript.mjs"
-import type * as Monaco from "monaco-editor"
-import { shikiToMonaco } from "@shikijs/monaco"
-import { createHighlighterCoreSync } from "shiki"
-import tokyoNight from "shiki/themes/tokyo-night.mjs"
-import type { FileSystemTree } from "@webcontainer/api"
-import { createJavaScriptRegexEngine } from "shiki/engine/javascript"
 import { default as MonacoEditor, type OnMount, useMonaco } from "@monaco-editor/react"
+import { shikiToMonaco } from "@shikijs/monaco"
+import type { FileSystemTree } from "@webcontainer/api"
+import type * as Monaco from "monaco-editor"
+import * as React from "react"
+import { createHighlighterCoreSync } from "shiki"
+import { createJavaScriptRegexEngine } from "shiki/engine/javascript"
+import ts from "shiki/langs/typescript.mjs"
+import tokyoNight from "shiki/themes/tokyo-night.mjs"
 
 type OnMountParameters = Parameters<OnMount>
 
@@ -19,12 +19,12 @@ export type Packages = {
 const highlighter = createHighlighterCoreSync({
   langs: [ts],
   themes: [tokyoNight],
-  engine: createJavaScriptRegexEngine()
+  engine: createJavaScriptRegexEngine(),
 })
 
 export function Editor({
   options,
-  dependencies
+  dependencies,
 }: {
   options: {
     width?: string
@@ -101,10 +101,10 @@ export function Editor({
             "lib.esnext.string.d.ts",
             "lib.esnext.weakref.d.ts",
             "lib.scripthost.d.ts",
-            "lib.webworker.d.ts"
+            "lib.webworker.d.ts",
           ],
           // ../
-          types: ["node", "react"]
+          types: ["node", "react"],
         })
       }}
       width={width}
@@ -123,7 +123,7 @@ export function Editor({
         minimap: { enabled: false },
         // fontFamily: "",
         scrollBeyondLastLine: false,
-        scrollbar: { vertical: "hidden" }
+        scrollbar: { vertical: "hidden" },
       }}
     />
   )
@@ -133,12 +133,12 @@ function handleEditorDidMount(
   code: string,
   editor: OnMountParameters[0],
   monaco: OnMountParameters[1],
-  dependenciesUrls: Array<Packages>
+  dependenciesUrls: Array<Packages>,
 ) {
   if (monaco) {
     monaco.languages.typescript.javascriptDefaults.setDiagnosticsOptions({
       noSyntaxValidation: false,
-      noSemanticValidation: true
+      noSemanticValidation: true,
     })
     monaco.languages.typescript.typescriptDefaults.setCompilerOptions({
       target: monaco.languages.typescript.ScriptTarget.Latest,
@@ -151,7 +151,7 @@ function handleEditorDidMount(
       jsx: monaco.languages.typescript.JsxEmit.React,
       reactNamespace: "React",
       allowJs: true,
-      types: ["node", "react"]
+      types: ["node", "react"],
     })
 
     Promise.all(
@@ -160,25 +160,26 @@ function handleEditorDidMount(
           res.text().then(content => ({
             content,
             name,
-            url
+            url,
           }))
         )
-      )
+      ),
     ).then(responses => {
       const libraries = responses.map(({ content, name }) => {
         return {
           content,
-          filePath:
-            name === "@types/node"
-              ? `file:///node_modules/@types/node/index.d.ts`
-              : `file:///node_modules/@types/${name.startsWith("@") ? name.slice(1).replace("/", "__") : name}/index.d.ts`
+          filePath: name === "@types/node"
+            ? `file:///node_modules/@types/node/index.d.ts`
+            : `file:///node_modules/@types/${
+              name.startsWith("@") ? name.slice(1).replace("/", "__") : name
+            }/index.d.ts`,
         }
       })
       console.info(monaco.languages.typescript.typescriptDefaults.getExtraLibs())
       libraries.map(library =>
         monaco.languages.typescript.typescriptDefaults.addExtraLib(
           library.content,
-          library.filePath
+          library.filePath,
         )
       )
     })

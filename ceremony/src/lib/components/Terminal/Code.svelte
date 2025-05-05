@@ -1,13 +1,13 @@
 <script lang="ts">
-import { getState } from "$lib/state/index.svelte.ts"
-import { onDestroy, onMount } from "svelte"
-import Print from "$lib/components/Terminal/Print.svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
-import { formatWaitTime, sleep } from "$lib/utils/utils.ts"
-import { callJoinQueue, getAverageTimes } from "$lib/supabase"
-import { axiom } from "$lib/utils/axiom.ts"
+import Print from "$lib/components/Terminal/Print.svelte"
+import { getState } from "$lib/state/index.svelte.ts"
 import { user } from "$lib/state/session.svelte.ts"
+import { callJoinQueue, getAverageTimes } from "$lib/supabase"
 import { queryQueueCount } from "$lib/supabase/queries.ts"
+import { axiom } from "$lib/utils/axiom.ts"
+import { formatWaitTime, sleep } from "$lib/utils/utils.ts"
+import { onDestroy, onMount } from "svelte"
 
 const { terminal, contributor } = getState()
 
@@ -27,14 +27,17 @@ async function handleKeyDown(event: KeyboardEvent) {
     terminal.updateHistory({ text: "", lineBreak: true, duplicate: true })
     terminal.updateHistory({ text: `Entered code: ${inputCode}`, duplicate: true })
     terminal.updateHistory({
-      text: "Warning: you must have your browser open and terminal running when it is your turn to contribute. You cannot leave the queue, and when it is your turn you have 1 hour to contribute.",
+      text:
+        "Warning: you must have your browser open and terminal running when it is your turn to contribute. You cannot leave the queue, and when it is your turn you have 1 hour to contribute.",
       type: "warning",
-      duplicate: true
+      duplicate: true,
     })
     if (queue.count !== null) {
       if (queue.count > 0) {
         terminal.updateHistory({ text: "", lineBreak: true, duplicate: true })
-        let message = `There ${queue.count === 1 ? "is" : "are"} ${queue.count} ${queue.count === 1 ? "person" : "people"} ahead of you in the queue.`
+        let message = `There ${queue.count === 1 ? "is" : "are"} ${queue.count} ${
+          queue.count === 1 ? "person" : "people"
+        } ahead of you in the queue.`
 
         if (averages.totalMs) {
           const waitTimeMinutes = (averages.totalMs / 1000 / 60) * queue.count
@@ -45,14 +48,14 @@ async function handleKeyDown(event: KeyboardEvent) {
         terminal.updateHistory({
           text: message,
           type: "warning",
-          duplicate: true
+          duplicate: true,
         })
       } else {
         terminal.updateHistory({ text: "", lineBreak: true, duplicate: true })
         terminal.updateHistory({
           text: "The queue is currently empty. You'll be the next to contribute if you enter now.",
           type: "warning",
-          duplicate: true
+          duplicate: true,
         })
       }
     }
@@ -122,20 +125,20 @@ function trigger(value: "enter" | "cancel") {
       <Print>Enter code:</Print>
     </div>
     <input
-            autofocus
-            bind:this={inputElement}
-            bind:value={inputCode}
-            onkeydown={handleKeyDown}
-            class="inline-flex bg-transparent w-full text-union-accent-500 outline-none focus:ring-0 focus:border-none"
-            style="--tw-ring-color: transparent;"
+      autofocus
+      bind:this={inputElement}
+      bind:value={inputCode}
+      onkeydown={handleKeyDown}
+      class="inline-flex bg-transparent w-full text-union-accent-500 outline-none focus:ring-0 focus:border-none"
+      style="--tw-ring-color: transparent;"
     />
   </div>
 {/if}
 
 {#if showConfirm && !showInput}
   <Buttons
-          index={1}
-          data={[{text: "Enter the queue", action: "enter"}, {text: "Cancel", action: "cancel"}]}
-          trigger={(value: 'enter' | 'cancel') => trigger(value)}
+    index={1}
+    data={[{ text: "Enter the queue", action: "enter" }, { text: "Cancel", action: "cancel" }]}
+    trigger={(value: "enter" | "cancel") => trigger(value)}
   />
 {/if}

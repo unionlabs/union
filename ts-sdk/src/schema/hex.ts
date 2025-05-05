@@ -8,7 +8,7 @@ import { fromHex, toHex } from "viem"
  */
 export const Hex = S.NonEmptyString.pipe(
   S.pattern(/^0x[0-9a-fA-F]+$/), // TODO: remove uppercase
-  S.minLength(3)
+  S.minLength(3),
 ) as unknown as S.TemplateLiteral<`0x${string}`>
 export type Hex = typeof Hex.Type
 
@@ -16,13 +16,13 @@ export type Hex = typeof Hex.Type
 // TODO: see `Hex` for type hacking to avoid `TemplateLiteral` incongruency
 export const HexChecksum = S.NonEmptyString.pipe(
   S.pattern(/^0x[0-9a-fA-F]+$/),
-  S.minLength(3)
+  S.minLength(3),
 ) as unknown as S.TemplateLiteral<`0x${string}`>
 export type HexChecksum = typeof HexChecksum.Type
 
 export const HexFromString = S.transform(S.String, Hex, {
   strict: true,
   decode: s => toHex(s),
-  encode: hex => fromHex(hex, "string")
+  encode: hex => fromHex(hex, "string"),
 })
 export type HexFromString = typeof HexFromString.Type

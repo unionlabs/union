@@ -1,35 +1,35 @@
 <script lang="ts">
+import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
+import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import { Cause, Effect, Exit, Match, Option } from "effect"
-import { constVoid } from "effect/Function"
-import {
-  hasFailedExit as evmHasFailedExit,
-  isComplete as evmIsComplete,
-  nextStateEvm,
-  TransactionSubmissionEvm
-} from "$lib/transfer/shared/services/write-evm.ts"
+import Label from "$lib/components/ui/Label.svelte"
+import { getWagmiConnectorClient } from "$lib/services/evm/clients.ts"
+import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
+import { wallets } from "$lib/stores/wallets.svelte.ts"
+import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
 import {
   hasFailedExit as cosmosHasFailedExit,
   isComplete as cosmosIsComplete,
   nextStateCosmos,
-  TransactionSubmissionCosmos
+  TransactionSubmissionCosmos,
 } from "$lib/transfer/shared/services/write-cosmos.ts"
-import { extractErrorDetails, generateSalt } from "@unionlabs/sdk/utils"
-import { http } from "@wagmi/core"
+import {
+  hasFailedExit as evmHasFailedExit,
+  isComplete as evmIsComplete,
+  nextStateEvm,
+  TransactionSubmissionEvm,
+} from "$lib/transfer/shared/services/write-evm.ts"
+import { isValidBech32ContractAddress } from "$lib/utils"
 import { createViemPublicClient, createViemWalletClient } from "@unionlabs/sdk/evm"
-import { custom, encodeAbiParameters, fromHex } from "viem"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
-import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
+import { extractErrorDetails, generateSalt } from "@unionlabs/sdk/utils"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
-import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { isValidBech32ContractAddress } from "$lib/utils"
-import Label from "$lib/components/ui/Label.svelte"
-import ChainComponent from "$lib/components/model/ChainComponent.svelte"
-import InsetError from "$lib/components/model/InsetError.svelte"
-import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
-import { getWagmiConnectorClient } from "$lib/services/evm/clients.ts"
+import { http } from "@wagmi/core"
+import { Cause, Effect, Exit, Match, Option } from "effect"
+import { constVoid } from "effect/Function"
+import { custom, encodeAbiParameters, fromHex } from "viem"
 
 type Props = {
   stepIndex: number
@@ -51,23 +51,23 @@ let isSubmitting = $state(false)
 const needsRetry = $derived(evmHasFailedExit(ets) || cosmosHasFailedExit(cts))
 
 const isButtonEnabled = $derived(
-  !isSubmitting && ((ets._tag === "Filling" && cts._tag === "Filling") || needsRetry)
+  !isSubmitting && ((ets._tag === "Filling" && cts._tag === "Filling") || needsRetry),
 )
 
 const getSubmitButtonText = $derived(
   ets._tag === "SwitchChainInProgress"
     ? "Switching Chain..."
     : ets._tag === "WriteContractInProgress"
-      ? "Confirming Transaction..."
-      : ets._tag === "TransactionReceiptInProgress"
-        ? "Waiting for Receipt..."
-        : cts._tag === "SwitchChainInProgress"
-          ? "Switching Chain..."
-          : cts._tag === "WriteContractInProgress"
-            ? "Confirming Transaction..."
-            : needsRetry
-              ? "Try Again"
-              : actionButtonText
+    ? "Confirming Transaction..."
+    : ets._tag === "TransactionReceiptInProgress"
+    ? "Waiting for Receipt..."
+    : cts._tag === "SwitchChainInProgress"
+    ? "Switching Chain..."
+    : cts._tag === "WriteContractInProgress"
+    ? "Confirming Transaction..."
+    : needsRetry
+    ? "Try Again"
+    : actionButtonText,
 )
 
 const resetState = () => {
@@ -77,7 +77,7 @@ const resetState = () => {
   isSubmitting = false
 }
 
-export const submit = Effect.gen(function* () {
+export const submit = Effect.gen(function*() {
   if (needsRetry) {
     resetState()
     return // Exit and let the button click call this function again
@@ -92,13 +92,15 @@ export const submit = Effect.gen(function* () {
 
     yield* Match.value(sourceChainRpcType).pipe(
       Match.when("evm", () =>
-        Effect.gen(function* () {
+        Effect.gen(function*() {
           const viemChain = step.intent.sourceChain.toViemChain()
-          if (Option.isNone(viemChain)) return Effect.succeed(null)
+          if (Option.isNone(viemChain)) {
+            return Effect.succeed(null)
+          }
 
           const publicClient = yield* createViemPublicClient({
             chain: viemChain.value,
-            transport: http()
+            transport: http(),
           })
 
           const connectorClient = yield* getWagmiConnectorClient
@@ -106,7 +108,7 @@ export const submit = Effect.gen(function* () {
           const walletClient = yield* createViemWalletClient({
             account: connectorClient.account,
             chain: viemChain.value,
-            transport: custom(connectorClient)
+            transport: custom(connectorClient),
           })
 
           do {
@@ -127,9 +129,9 @@ export const submit = Effect.gen(function* () {
                   {
                     opcode: step.instruction.opcode,
                     version: step.instruction.version,
-                    operand: encodeAbi(step.instruction)
-                  }
-                ]
+                    operand: encodeAbi(step.instruction),
+                  },
+                ],
               })
             )
 
@@ -143,7 +145,7 @@ export const submit = Effect.gen(function* () {
                 onSuccess: () =>
                   Effect.sync(() => {
                     error = Option.none()
-                  })
+                  }),
               })
             }
 
@@ -156,10 +158,9 @@ export const submit = Effect.gen(function* () {
           } while (!evmHasFailedExit(ets))
 
           return Effect.succeed(ets)
-        })
-      ),
+        })),
       Match.when("cosmos", () =>
-        Effect.gen(function* () {
+        Effect.gen(function*() {
           const walletCosmosAddress = yield* wallets.cosmosAddress
 
           const sender = yield* step.intent.sourceChain.getDisplayAddress(walletCosmosAddress)
@@ -185,18 +186,18 @@ export const submit = Effect.gen(function* () {
                     instruction: encodeAbiParameters(instructionAbi, [
                       step.instruction.version,
                       step.instruction.opcode,
-                      encodeAbi(step.instruction)
-                    ])
-                  }
+                      encodeAbi(step.instruction),
+                    ]),
+                  },
                 },
                 isNative
                   ? [
-                      {
-                        denom: baseToken,
-                        amount: step.intent.baseAmount.toString()
-                      }
-                    ]
-                  : undefined
+                    {
+                      denom: baseToken,
+                      amount: step.intent.baseAmount.toString(),
+                    },
+                  ]
+                  : undefined,
               )
             )
 
@@ -209,7 +210,7 @@ export const submit = Effect.gen(function* () {
                 onSuccess: () =>
                   Effect.sync(() => {
                     error = Option.none()
-                  })
+                  }),
               })
             }
 
@@ -222,18 +223,17 @@ export const submit = Effect.gen(function* () {
           } while (!cosmosHasFailedExit(cts))
 
           return Effect.succeed(cts)
-        })
-      ),
+        })),
       Match.orElse(() =>
-        Effect.gen(function* () {
+        Effect.gen(function*() {
           yield* Effect.log("Unknown chain type")
           error = Option.some({
             _tag: "UnknownError",
-            cause: "Unsupported chain type"
+            cause: "Unsupported chain type",
           })
           return Effect.succeed("unknown chain type")
         })
-      )
+      ),
     )
   } finally {
     // Reset submitting state when done, regardless of success/failure
@@ -255,34 +255,31 @@ const handleSubmit = () => {
         const err = Cause.originalError(cause)
         error = Option.some({
           _tag: err.name || "UnhandledError",
-          cause: extractErrorDetails(cause)
+          cause: extractErrorDetails(cause),
         })
         isSubmitting = false
       },
-      onSuccess: constVoid
+      onSuccess: constVoid,
     })
   )
 }
 </script>
-
 
 <div class="relative min-w-full p-4 flex flex-col justify-between h-full">
   {#if step && step.intent.sourceChain && step.intent.destinationChain}
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">Submit Transfer</h3>
       <section>
-        <Label>From</Label>
-        <ChainComponent chain={step.intent.sourceChain} />
+        <Label>From</Label> <ChainComponent chain={step.intent.sourceChain} />
       </section>
 
       <section>
-        <Label>To</Label>
-        <ChainComponent chain={step.intent.destinationChain} />
+        <Label>To</Label> <ChainComponent chain={step.intent.destinationChain} />
       </section>
       <p class="text-sm text-zinc-400">
         This will initiate the transfer on
-        <ChainComponent chain={step.intent.sourceChain} />. You'll need to confirm the
-        transfer in your wallet.
+        <ChainComponent chain={step.intent.sourceChain} />. You'll need to confirm the transfer in
+        your wallet.
       </p>
     </div>
 
@@ -296,7 +293,10 @@ const handleSubmit = () => {
       </Button>
       {#if Option.isSome(error)}
         <div class="flex gap-2">
-          <Button variant="danger" onclick={() => (showError = true)}>
+          <Button
+            variant="danger"
+            onclick={() => (showError = true)}
+          >
             Error
           </Button>
           <Button
@@ -326,7 +326,7 @@ const handleSubmit = () => {
     open={showError}
     error={Option.isSome(error) ? error.value : null}
     onClose={() => {
-      showError = false;
+      showError = false
     }}
   />
 </div>

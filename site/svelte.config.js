@@ -5,6 +5,6 @@ export default {
   preprocess: vitePreprocess(),
   compilerOptions: {
     hydratable: true,
-    dev: process.env.NODE_ENV !== "production"
-  }
+    dev: process.env.NODE_ENV !== "production",
+  },
 }

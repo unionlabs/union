@@ -10,9 +10,9 @@ const opts: Opts = {
     /gnosis-safe.io$/,
     /app.safe.global$/,
     /staging.btc.union.build$/,
-    /btc.union.build$/
+    /btc.union.build$/,
   ],
-  debug: false
+  debug: false,
 }
 
 export const safeWallet = new SafeAppsSDK(opts)

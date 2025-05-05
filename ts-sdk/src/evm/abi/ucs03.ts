@@ -4,112 +4,112 @@ export const ucs03abi = [
     name: "ACK_EMPTY",
     inputs: [],
     outputs: [{ name: "", type: "bytes", internalType: "bytes" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "ACK_ERR_ONLYMAKER",
     inputs: [],
     outputs: [{ name: "", type: "bytes", internalType: "bytes" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "ACK_ERR_ONLYMAKER_HASH",
     inputs: [],
     outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "ACK_FAILURE",
     inputs: [],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "ACK_SUCCESS",
     inputs: [],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "FILL_TYPE_MARKETMAKER",
     inputs: [],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "FILL_TYPE_PROTOCOL",
     inputs: [],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "FORWARD_SALT_MAGIC",
     inputs: [],
     outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "IBC_VERSION",
     inputs: [],
     outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "IBC_VERSION_STR",
     inputs: [],
     outputs: [{ name: "", type: "string", internalType: "string" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "INSTR_VERSION_0",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "INSTR_VERSION_1",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "OP_BATCH",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "OP_FORWARD",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "OP_FUNGIBLE_ASSET_ORDER",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "OP_MULTIPLEX",
     inputs: [],
     outputs: [{ name: "", type: "uint8", internalType: "uint8" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   { type: "error", name: "ErrAsyncMultiplexUnsupported", inputs: [] },
   { type: "error", name: "ErrBatchMustBeSync", inputs: [] },
@@ -148,10 +148,10 @@ export const ucs03abi = [
             components: [
               { name: "version", type: "uint8", internalType: "uint8" },
               { name: "opcode", type: "uint8", internalType: "uint8" },
-              { name: "operand", type: "bytes", internalType: "bytes" }
-            ]
-          }
-        ]
+              { name: "operand", type: "bytes", internalType: "bytes" },
+            ],
+          },
+        ],
       },
       {
         name: "",
@@ -160,8 +160,8 @@ export const ucs03abi = [
         components: [
           { name: "version", type: "uint8", internalType: "uint8" },
           { name: "opcode", type: "uint8", internalType: "uint8" },
-          { name: "operand", type: "bytes", internalType: "bytes" }
-        ]
+          { name: "operand", type: "bytes", internalType: "bytes" },
+        ],
       },
       {
         name: "",
@@ -178,10 +178,10 @@ export const ucs03abi = [
             components: [
               { name: "version", type: "uint8", internalType: "uint8" },
               { name: "opcode", type: "uint8", internalType: "uint8" },
-              { name: "operand", type: "bytes", internalType: "bytes" }
-            ]
-          }
-        ]
+              { name: "operand", type: "bytes", internalType: "bytes" },
+            ],
+          },
+        ],
       },
       {
         name: "",
@@ -191,8 +191,8 @@ export const ucs03abi = [
           { name: "sender", type: "bytes", internalType: "bytes" },
           { name: "eureka", type: "bool", internalType: "bool" },
           { name: "contractAddress", type: "bytes", internalType: "bytes" },
-          { name: "contractCalldata", type: "bytes", internalType: "bytes" }
-        ]
+          { name: "contractCalldata", type: "bytes", internalType: "bytes" },
+        ],
       },
       {
         name: "",
@@ -206,10 +206,10 @@ export const ucs03abi = [
             components: [
               { name: "version", type: "uint8", internalType: "uint8" },
               { name: "opcode", type: "uint8", internalType: "uint8" },
-              { name: "operand", type: "bytes", internalType: "bytes" }
-            ]
-          }
-        ]
+              { name: "operand", type: "bytes", internalType: "bytes" },
+            ],
+          },
+        ],
       },
       {
         name: "",
@@ -225,8 +225,8 @@ export const ucs03abi = [
           { name: "baseTokenDecimals", type: "uint8", internalType: "uint8" },
           { name: "baseTokenPath", type: "uint256", internalType: "uint256" },
           { name: "quoteToken", type: "bytes", internalType: "bytes" },
-          { name: "quoteAmount", type: "uint256", internalType: "uint256" }
-        ]
+          { name: "quoteAmount", type: "uint256", internalType: "uint256" },
+        ],
       },
       {
         name: "",
@@ -234,14 +234,14 @@ export const ucs03abi = [
         internalType: "struct Ack",
         components: [
           { name: "tag", type: "uint256", internalType: "uint256" },
-          { name: "innerAck", type: "bytes", internalType: "bytes" }
-        ]
+          { name: "innerAck", type: "bytes", internalType: "bytes" },
+        ],
       },
       {
         name: "",
         type: "tuple",
         internalType: "struct BatchAck",
-        components: [{ name: "acknowledgements", type: "bytes[]", internalType: "bytes[]" }]
+        components: [{ name: "acknowledgements", type: "bytes[]", internalType: "bytes[]" }],
       },
       {
         name: "",
@@ -249,12 +249,12 @@ export const ucs03abi = [
         internalType: "struct FungibleAssetOrderAck",
         components: [
           { name: "fillType", type: "uint256", internalType: "uint256" },
-          { name: "marketMaker", type: "bytes", internalType: "bytes" }
-        ]
-      }
+          { name: "marketMaker", type: "bytes", internalType: "bytes" },
+        ],
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   { type: "constructor", inputs: [], stateMutability: "nonpayable" },
   {
@@ -262,7 +262,7 @@ export const ucs03abi = [
     name: "UPGRADE_INTERFACE_VERSION",
     inputs: [],
     outputs: [{ name: "", type: "string", internalType: "string" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -270,10 +270,10 @@ export const ucs03abi = [
     inputs: [
       { name: "", type: "uint32", internalType: "uint32" },
       { name: "", type: "uint256", internalType: "uint256" },
-      { name: "", type: "address", internalType: "address" }
+      { name: "", type: "address", internalType: "address" },
     ],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -289,28 +289,28 @@ export const ucs03abi = [
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
           { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
-        ]
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
+        ],
       },
       { name: "relayer", type: "address", internalType: "address" },
-      { name: "relayerMsg", type: "bytes", internalType: "bytes" }
+      { name: "relayerMsg", type: "bytes", internalType: "bytes" },
     ],
     outputs: [{ name: "", type: "bytes", internalType: "bytes" }],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
     name: "ibcAddress",
     inputs: [],
     outputs: [{ name: "", type: "address", internalType: "address" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "ibcHandler",
     inputs: [],
     outputs: [{ name: "", type: "address", internalType: "contract IIBCModulePacket" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -321,19 +321,19 @@ export const ucs03abi = [
       { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
       { name: "data", type: "bytes", internalType: "bytes" },
       { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-      { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
+      { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "initialize",
     inputs: [
       { name: "_ibcHandler", type: "address", internalType: "contract IIBCModulePacket" },
-      { name: "admin", type: "address", internalType: "address" }
+      { name: "admin", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -349,14 +349,14 @@ export const ucs03abi = [
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
           { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
-        ]
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
+        ],
       },
       { name: "ack", type: "bytes", internalType: "bytes" },
-      { name: "relayer", type: "address", internalType: "address" }
+      { name: "relayer", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -364,10 +364,10 @@ export const ucs03abi = [
     inputs: [
       { name: "", type: "address", internalType: "address" },
       { name: "", type: "uint32", internalType: "uint32" },
-      { name: "", type: "address", internalType: "address" }
+      { name: "", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -375,10 +375,10 @@ export const ucs03abi = [
     inputs: [
       { name: "", type: "address", internalType: "address" },
       { name: "", type: "uint32", internalType: "uint32" },
-      { name: "", type: "address", internalType: "address" }
+      { name: "", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -388,10 +388,10 @@ export const ucs03abi = [
       { name: "channelId", type: "uint32", internalType: "uint32" },
       { name: "", type: "uint32", internalType: "uint32" },
       { name: "", type: "string", internalType: "string" },
-      { name: "", type: "address", internalType: "address" }
+      { name: "", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -399,10 +399,10 @@ export const ucs03abi = [
     inputs: [
       { name: "", type: "address", internalType: "address" },
       { name: "channelId", type: "uint32", internalType: "uint32" },
-      { name: "", type: "address", internalType: "address" }
+      { name: "", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -412,10 +412,10 @@ export const ucs03abi = [
       { name: "", type: "uint32", internalType: "uint32" },
       { name: "", type: "uint32", internalType: "uint32" },
       { name: "version", type: "string", internalType: "string" },
-      { name: "", type: "address", internalType: "address" }
+      { name: "", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -427,10 +427,10 @@ export const ucs03abi = [
       { name: "", type: "uint32", internalType: "uint32" },
       { name: "version", type: "string", internalType: "string" },
       { name: "counterpartyVersion", type: "string", internalType: "string" },
-      { name: "", type: "address", internalType: "address" }
+      { name: "", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -446,14 +446,14 @@ export const ucs03abi = [
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
           { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
-        ]
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
+        ],
       },
       { name: "", type: "address", internalType: "address" },
-      { name: "", type: "bytes", internalType: "bytes" }
+      { name: "", type: "bytes", internalType: "bytes" },
     ],
     outputs: [{ name: "", type: "bytes", internalType: "bytes" }],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -469,14 +469,14 @@ export const ucs03abi = [
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
           { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
-        ]
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
+        ],
       },
       { name: "relayer", type: "address", internalType: "address" },
-      { name: "relayerMsg", type: "bytes", internalType: "bytes" }
+      { name: "relayerMsg", type: "bytes", internalType: "bytes" },
     ],
     outputs: [{ name: "", type: "bytes", internalType: "bytes" }],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -492,27 +492,27 @@ export const ucs03abi = [
           { name: "destinationChannelId", type: "uint32", internalType: "uint32" },
           { name: "data", type: "bytes", internalType: "bytes" },
           { name: "timeoutHeight", type: "uint64", internalType: "uint64" },
-          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" }
-        ]
+          { name: "timeoutTimestamp", type: "uint64", internalType: "uint64" },
+        ],
       },
-      { name: "relayer", type: "address", internalType: "address" }
+      { name: "relayer", type: "address", internalType: "address" },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
     name: "owner",
     inputs: [],
     outputs: [{ name: "", type: "address", internalType: "address" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "paused",
     inputs: [],
     outputs: [{ name: "", type: "bool", internalType: "bool" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
@@ -520,27 +520,27 @@ export const ucs03abi = [
     inputs: [
       { name: "path", type: "uint256", internalType: "uint256" },
       { name: "channel", type: "uint32", internalType: "uint32" },
-      { name: "token", type: "bytes", internalType: "bytes" }
+      { name: "token", type: "bytes", internalType: "bytes" },
     ],
     outputs: [
       { name: "", type: "address", internalType: "address" },
-      { name: "", type: "bytes32", internalType: "bytes32" }
+      { name: "", type: "bytes32", internalType: "bytes32" },
     ],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "proxiableUUID",
     inputs: [],
     outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "renounceOwnership",
     inputs: [],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
@@ -557,84 +557,84 @@ export const ucs03abi = [
         components: [
           { name: "version", type: "uint8", internalType: "uint8" },
           { name: "opcode", type: "uint8", internalType: "uint8" },
-          { name: "operand", type: "bytes", internalType: "bytes" }
-        ]
-      }
+          { name: "operand", type: "bytes", internalType: "bytes" },
+        ],
+      },
     ],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
     name: "tokenOrigin",
     inputs: [{ name: "", type: "address", internalType: "address" }],
     outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
-    stateMutability: "view"
+    stateMutability: "view",
   },
   {
     type: "function",
     name: "transferOwnership",
     inputs: [{ name: "newOwner", type: "address", internalType: "address" }],
     outputs: [],
-    stateMutability: "nonpayable"
+    stateMutability: "nonpayable",
   },
   {
     type: "function",
     name: "upgradeToAndCall",
     inputs: [
       { name: "newImplementation", type: "address", internalType: "address" },
-      { name: "data", type: "bytes", internalType: "bytes" }
+      { name: "data", type: "bytes", internalType: "bytes" },
     ],
     outputs: [],
-    stateMutability: "payable"
+    stateMutability: "payable",
   },
   {
     type: "event",
     name: "Initialized",
     inputs: [{ name: "version", type: "uint64", indexed: false, internalType: "uint64" }],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
     name: "OwnershipTransferred",
     inputs: [
       { name: "previousOwner", type: "address", indexed: true, internalType: "address" },
-      { name: "newOwner", type: "address", indexed: true, internalType: "address" }
+      { name: "newOwner", type: "address", indexed: true, internalType: "address" },
     ],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
     name: "Paused",
     inputs: [{ name: "account", type: "address", indexed: false, internalType: "address" }],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
     name: "Unpaused",
     inputs: [{ name: "account", type: "address", indexed: false, internalType: "address" }],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "event",
     name: "Upgraded",
     inputs: [{ name: "implementation", type: "address", indexed: true, internalType: "address" }],
-    anonymous: false
+    anonymous: false,
   },
   {
     type: "error",
     name: "AddressEmptyCode",
-    inputs: [{ name: "target", type: "address", internalType: "address" }]
+    inputs: [{ name: "target", type: "address", internalType: "address" }],
   },
   {
     type: "error",
     name: "AddressInsufficientBalance",
-    inputs: [{ name: "account", type: "address", internalType: "address" }]
+    inputs: [{ name: "account", type: "address", internalType: "address" }],
   },
   {
     type: "error",
     name: "ERC1967InvalidImplementation",
-    inputs: [{ name: "implementation", type: "address", internalType: "address" }]
+    inputs: [{ name: "implementation", type: "address", internalType: "address" }],
   },
   { type: "error", name: "ERC1967NonPayable", inputs: [] },
   { type: "error", name: "EnforcedPause", inputs: [] },
@@ -665,22 +665,22 @@ export const ucs03abi = [
   {
     type: "error",
     name: "OwnableInvalidOwner",
-    inputs: [{ name: "owner", type: "address", internalType: "address" }]
+    inputs: [{ name: "owner", type: "address", internalType: "address" }],
   },
   {
     type: "error",
     name: "OwnableUnauthorizedAccount",
-    inputs: [{ name: "account", type: "address", internalType: "address" }]
+    inputs: [{ name: "account", type: "address", internalType: "address" }],
   },
   {
     type: "error",
     name: "SafeERC20FailedOperation",
-    inputs: [{ name: "token", type: "address", internalType: "address" }]
+    inputs: [{ name: "token", type: "address", internalType: "address" }],
   },
   { type: "error", name: "UUPSUnauthorizedCallContext", inputs: [] },
   {
     type: "error",
     name: "UUPSUnsupportedProxiableUUID",
-    inputs: [{ name: "slot", type: "bytes32", internalType: "bytes32" }]
-  }
+    inputs: [{ name: "slot", type: "bytes32", internalType: "bytes32" }],
+  },
 ] as const

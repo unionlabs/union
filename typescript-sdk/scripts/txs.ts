@@ -10,7 +10,7 @@ if (!address?.startsWith("union")) {
 
 const txs = await getCosmosAccountTransactions({
   address,
-  rpcUrl: "https://rpc.testnet-8.union.build"
+  rpcUrl: "https://rpc.testnet-8.union.build",
 })
 
 console.log(JSON.stringify(txs, undefined, 2))

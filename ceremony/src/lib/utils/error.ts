@@ -22,7 +22,7 @@ export const sendWindowErrorLog = async (event: Event) => {
     message,
     stack,
     type: event.type,
-    sessionId: browserErrorSessionId
+    sessionId: browserErrorSessionId,
   }
   return await sendErrorLog({ window: windowEventError }, "window")
 }
@@ -36,7 +36,7 @@ export const sendWindowRejectionLog = async (event: PromiseRejectionEvent) => {
     message: event.reason?.message,
     stack: event.reason?.stack,
     type: event.type,
-    sessionId: browserErrorSessionId
+    sessionId: browserErrorSessionId,
   }
   return await sendErrorLog({ window: windowEventError }, "window")
 }

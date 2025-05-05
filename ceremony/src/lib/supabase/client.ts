@@ -1,5 +1,5 @@
-import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 import { browser } from "$app/environment"
+import { createClient, type SupabaseClient } from "@supabase/supabase-js"
 
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL
@@ -10,7 +10,9 @@ export const createSupabaseClient = () => {
   const REFRESH_INTERVAL = 30 * 60 * 1000 // 30 minutes
 
   const getClient = () => {
-    if (client) return client
+    if (client) {
+      return client
+    }
 
     client = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
@@ -19,20 +21,22 @@ export const createSupabaseClient = () => {
         try {
           const {
             data: { session },
-            error
+            error,
           } = await supabase.auth.getSession()
 
           if (error || !session) {
-            if (refreshInterval) clearInterval(refreshInterval)
+            if (refreshInterval) {
+              clearInterval(refreshInterval)
+            }
             refreshInterval = null
             return
           }
 
           const {
             data: { session: newSession },
-            error: refreshError
+            error: refreshError,
           } = await supabase.auth.refreshSession({
-            refresh_token: session.refresh_token
+            refresh_token: session.refresh_token,
           })
 
           if (refreshError) {
@@ -41,7 +45,9 @@ export const createSupabaseClient = () => {
           }
 
           if (!newSession) {
-            if (refreshInterval) clearInterval(refreshInterval)
+            if (refreshInterval) {
+              clearInterval(refreshInterval)
+            }
             refreshInterval = null
           }
         } catch (error) {

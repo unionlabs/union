@@ -1,24 +1,24 @@
 <script lang="ts">
 import "../app.css"
-import { onMount, type Snippet } from "svelte"
-import { Effect, Fiber, Option } from "effect"
-import { chainsQuery } from "$lib/queries/chains.svelte"
-import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
-import { ENV, MAX_MOBILE_SIZE } from "$lib/constants"
-import { wallets } from "$lib/stores/wallets.svelte"
-import Wallet from "$lib/components/ui/Wallet/index.svelte"
-import SettingsModal from "$lib/components/SettingsModal.svelte"
-import { uiStore } from "$lib/stores/ui.svelte"
+import { page } from "$app/state"
 import ErrorsModal from "$lib/components/ErrorsModal.svelte"
 import Header from "$lib/components/layout/Header/index.svelte"
-import { channelsQuery } from "$lib/queries/channels.svelte.ts"
-import { runExample } from "$lib/utils/convert-display.ts"
-import { cn } from "$lib/utils"
-import { page } from "$app/state"
-import { runFork } from "$lib/utils/effect.svelte"
-import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
+import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
 import Seo from "$lib/components/Seo.svelte"
+import SettingsModal from "$lib/components/SettingsModal.svelte"
+import Wallet from "$lib/components/ui/Wallet/index.svelte"
+import { ENV, MAX_MOBILE_SIZE } from "$lib/constants"
+import { chainsQuery } from "$lib/queries/chains.svelte"
+import { channelsQuery } from "$lib/queries/channels.svelte.ts"
+import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
+import { cn } from "$lib/utils"
+import { runExample } from "$lib/utils/convert-display.ts"
+import { runFork } from "$lib/utils/effect.svelte"
 import { interceptLogos } from "$lib/utils/intercept-logos.ts"
+import { Effect, Fiber, Option } from "effect"
+import { onMount, type Snippet } from "svelte"
 import type { PageData } from "./$types.ts"
 
 interface Props {
@@ -33,7 +33,7 @@ interface BigInt {
   toJSON: () => string
 }
 
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
@@ -63,8 +63,8 @@ $effect(() => {
       "connected wallets",
       wallets.evmAddress.pipe(Option.getOrElse(() => "no evm")),
       wallets.cosmosAddress.pipe(Option.getOrElse(() => "no cosmos")),
-      wallets.aptosAddress.pipe(Option.getOrElse(() => "no aptos"))
-    )
+      wallets.aptosAddress.pipe(Option.getOrElse(() => "no aptos")),
+    ),
   )
 })
 
@@ -112,18 +112,21 @@ $effect(() => {
         playsinline
         data-video="glitch"
         disablePictureInPicture={true}
-        oncanplay={function () {
-          this.autoplay = true;
+        oncanplay={function() {
+          this.autoplay = true
         }}
-        onloadeddata={function () {
-          this.autoplay = true;
-          videoLoaded = true;
+        onloadeddata={function() {
+          this.autoplay = true
+          videoLoaded = true
         }}
-        onloadedmetadata={function () {
-          this.muted = true;
+        onloadedmetadata={function() {
+          this.muted = true
         }}
       >
-        <source src={currentVideoUrl} type="video/webm" />
+        <source
+          src={currentVideoUrl}
+          type="video/webm"
+        />
       </video>
     {/key}
   </div>
@@ -145,7 +148,7 @@ $effect(() => {
   <aside
     class={cn(
       "fixed left-0 bottom-0 top-0 dark:bg-zinc-950 shadow overflow-auto border-r border-zinc-900 max-h-dvh",
-      fullPageSidebar ? "right-0" : "w-64"
+      fullPageSidebar ? "right-0" : "w-64",
     )}
     hidden={hideSidebar}
   >
@@ -157,7 +160,7 @@ $effect(() => {
     class={cn(
       "fixed min-h-svh grow right-0 top-0 bottom-0",
       fullPageSidebar ? "w-0" : null,
-      hideSidebar ? "left-0" : "left-64"
+      hideSidebar ? "left-0" : "left-64",
     )}
     hidden={fullPageSidebar}
   >
@@ -165,9 +168,7 @@ $effect(() => {
       <Header showNavigation={isMobile} />
     </div>
 
-    <div
-      class="absolute top-16 left-0 right-0 bottom-0 flex-1 z-10 overflow-scroll"
-    >
+    <div class="absolute top-16 left-0 right-0 bottom-0 flex-1 z-10 overflow-scroll">
       {@render children()}
     </div>
   </main>

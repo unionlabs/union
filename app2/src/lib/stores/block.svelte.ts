@@ -1,6 +1,6 @@
 import type { FetchDecodeError } from "$lib/utils/queries"
-import { Option } from "effect"
 import type { Block } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
 
 class BlockStore {
   data: Option.Option<typeof Block.Type> = $state(Option.none())

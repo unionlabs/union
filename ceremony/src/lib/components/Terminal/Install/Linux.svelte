@@ -1,11 +1,11 @@
 <script lang="ts">
-import { onDestroy, onMount } from "svelte"
-import { getState } from "$lib/state/index.svelte.ts"
-import { sleep } from "$lib/utils/utils.ts"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
-import { axiom } from "$lib/utils/axiom.ts"
-import { user } from "$lib/state/session.svelte.ts"
 import { COMMAND } from "$lib/constants"
+import { getState } from "$lib/state/index.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
+import { axiom } from "$lib/utils/axiom.ts"
+import { sleep } from "$lib/utils/utils.ts"
+import { onDestroy, onMount } from "svelte"
 
 type Props = {
   change: () => void
@@ -21,7 +21,8 @@ onMount(() => {
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_linux" }])
   const messages = [
     {
-      text: "You must have docker installed and running in order to contribute. Once you have docker running, copy the following command in your terminal:"
+      text:
+        "You must have docker installed and running in order to contribute. Once you have docker running, copy the following command in your terminal:",
     },
     { text: "---", duplicate: true },
     { text: COMMAND, duplicate: true },
@@ -29,10 +30,11 @@ onMount(() => {
     { text: "Once the MPC client is running you can return to this page.", duplicate: true },
     { text: "---", duplicate: true },
     {
-      text: "If the MPC client is running but you still see this page, ensure that you are using Chrome, Firefox, or Brave. Also, make sure to temporarily turn off ad-blockers or browser shields (especially in Brave).",
+      text:
+        "If the MPC client is running but you still see this page, ensure that you are using Chrome, Firefox, or Brave. Also, make sure to temporarily turn off ad-blockers or browser shields (especially in Brave).",
       type: "warning",
-      duplicate: true
-    }
+      duplicate: true,
+    },
   ]
 
   messages.forEach(msg => {
@@ -70,7 +72,7 @@ function trigger(value: "copy" | "select") {
 
 {#if showButtons}
   <Buttons
-          data={[{text: "Copy command", action: "copy"}, {text: "Select different OS", action: "select"}]}
-          trigger={(value) => trigger(value)}/>
-
+    data={[{ text: "Copy command", action: "copy" }, { text: "Select different OS", action: "select" }]}
+    trigger={(value) => trigger(value)}
+  />
 {/if}

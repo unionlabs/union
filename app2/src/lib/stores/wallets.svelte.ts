@@ -1,11 +1,11 @@
-import { Option } from "effect"
 import type {
   AddressAptosCanonical,
   AddressCanonicalBytes,
   AddressCosmosCanonical,
   AddressEvmCanonical,
-  Chain
+  Chain,
 } from "@unionlabs/sdk/schema"
+import { Option } from "effect"
 
 class WalletsStore {
   evmAddress: Option.Option<typeof AddressEvmCanonical.Type> = $state(Option.none())
@@ -15,10 +15,10 @@ class WalletsStore {
 
   hasAnyWallet() {
     return (
-      Option.isSome(this.evmAddress) ||
-      Option.isSome(this.cosmosAddress) ||
-      Option.isSome(this.aptosAddress) ||
-      Option.isSome(this.inputAddress)
+      Option.isSome(this.evmAddress)
+      || Option.isSome(this.cosmosAddress)
+      || Option.isSome(this.aptosAddress)
+      || Option.isSome(this.inputAddress)
     )
   }
 
@@ -32,9 +32,15 @@ class WalletsStore {
 
   getCanonicalByteAddressList() {
     const addresses: Array<typeof AddressCanonicalBytes.Type> = []
-    if (Option.isSome(this.evmAddress)) addresses.push(this.evmAddress.value)
-    if (Option.isSome(this.cosmosAddress)) addresses.push(this.cosmosAddress.value)
-    if (Option.isSome(this.aptosAddress)) addresses.push(this.aptosAddress.value)
+    if (Option.isSome(this.evmAddress)) {
+      addresses.push(this.evmAddress.value)
+    }
+    if (Option.isSome(this.cosmosAddress)) {
+      addresses.push(this.cosmosAddress.value)
+    }
+    if (Option.isSome(this.aptosAddress)) {
+      addresses.push(this.aptosAddress.value)
+    }
     return addresses
   }
 

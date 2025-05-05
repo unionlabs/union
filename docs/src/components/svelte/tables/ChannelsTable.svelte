@@ -1,14 +1,14 @@
 <script lang="ts">
+import curlSvg from "#/assets/icons/curl.svg?raw"
+import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
+import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
+import * as Table from "#/components/svelte/ui/table/index.ts"
+import { highlightCode } from "#/lib/highlight-code.ts"
+import { cn } from "#/lib/shadcn.ts"
+import { graphqlQueryToCurl, splitArray, stringIsJSON } from "#/lib/utilities.ts"
+import JsonIcon from "icons:svelte/mdi/code-json"
 import { Debounced } from "runed"
 import { dedent } from "ts-dedent"
-import { cn } from "#/lib/shadcn.ts"
-import curlSvg from "#/assets/icons/curl.svg?raw"
-import JsonIcon from "icons:svelte/mdi/code-json"
-import { highlightCode } from "#/lib/highlight-code.ts"
-import * as Table from "#/components/svelte/ui/table/index.ts"
-import * as Pagination from "#/components/svelte/ui/pagination/index.ts"
-import { graphqlQueryToCurl, splitArray, stringIsJSON } from "#/lib/utilities.ts"
-import GraphqlPlaygroundLink from "#/components/svelte/graphql-playground-link.svelte"
 
 const graphqlQuery = dedent /* GraphQL */`
     query ChannelsForDocs {
@@ -24,7 +24,7 @@ const graphqlQuery = dedent /* GraphQL */`
 
 const curlCommand = graphqlQueryToCurl({
   query: graphqlQuery,
-  url: "https://development.graphql.union.build/v1/graphql"
+  url: "https://development.graphql.union.build/v1/graphql",
 })
 
 /**
@@ -55,8 +55,8 @@ async function fetchChannels() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      query: graphqlQuery
-    })
+      query: graphqlQuery,
+    }),
   })
   const json = await response.json()
   // @ts-expect-error
@@ -66,7 +66,7 @@ async function fetchChannels() {
     item.source_universal_chain_id,
     item.source_connection_id,
     item.source_channel_id,
-    item.version
+    item.version,
   ]) as Array<Array<string>>
 
   return {
@@ -74,17 +74,21 @@ async function fetchChannels() {
       allRows: rows as Array<Array<string>>,
       total: rows.length,
       rowsChunks: splitArray({ array: rows, n: rowsPerPage }),
-      headers: ["chain", "conn. #", "channel #", "version"]
-    }
+      headers: ["chain", "conn. #", "channel #", "version"],
+    },
   }
 }
 
 async function attachContent(event: MouseEvent, rowIndex: number, version: unknown) {
   let eventTarget = event.target?.closest("button") as HTMLElement
-  if (!eventTarget.innerHTML) return
+  if (!eventTarget.innerHTML) {
+    return
+  }
 
   const jsonSnippetElement = document.querySelector(`td[data-row-index="${rowIndex}"]`)
-  if (!jsonSnippetElement) return
+  if (!jsonSnippetElement) {
+    return
+  }
   const previousUncleElement = jsonSnippetElement.parentElement
     ?.previousElementSibling as HTMLTableRowElement
 
@@ -99,7 +103,7 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
     previousUncleElement.style.setProperty(
       "background-color",
       "hsl(var(--muted) / 0.1)",
-      "important"
+      "important",
     )
     jsonSnippetElement.dataset.state = "expanded"
   } else {
@@ -129,7 +133,7 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
       onclick={event => {
         navigator.clipboard.writeText(curlCommand)
         const element = event.currentTarget
-        element.innerHTML = 'Copied!'
+        element.innerHTML = "Copied!"
         setTimeout(() => {
           element.innerHTML = curlSvg
         }, 1_000)
@@ -139,7 +143,7 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
       {@html curlSvg}
     </button>
 
-    <div class={cn('rounded-sm outline-[0.75px] w-1/2 my-auto')}>
+    <div class={cn("rounded-sm outline-[0.75px] w-1/2 my-auto")}>
       <input
         type="search"
         autocorrect="off"
@@ -149,7 +153,7 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
         placeholder="Search"
         bind:value={search}
         class={cn(
-          'py-1 px-2 rounded-sm focus:outline-accent-200 focus-visible:ring-0 w-full my-auto outline outline-1 outline-neutral-500/70',
+          "py-1 px-2 rounded-sm focus:outline-accent-200 focus-visible:ring-0 w-full my-auto outline outline-1 outline-neutral-500/70",
         )}
       />
     </div>
@@ -161,9 +165,9 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
         {#each headers as header, index}
           <Table.Head
             class={cn(
-              'text-nowrap uppercase',
-              index === 0 && 'w-[100px]',
-              index === headers.length - 1 && 'text-right',
+              "text-nowrap uppercase",
+              index === 0 && "w-[100px]",
+              index === headers.length - 1 && "text-right",
             )}
           >
             {header}
@@ -173,11 +177,11 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
     </Table.Header>
     <Table.Body class="w-full">
       {#each rows as row, rowIndex}
-        <Table.Row class={cn('w-full border-neutral-500')}>
+        <Table.Row class={cn("w-full border-neutral-500")}>
           {#each row as cell, cellIndex}
             {@const lastColumn = cellIndex === row.length - 1}
             {#if lastColumn}
-              <Table.Cell class={cn('text-right text-nowrap border-neutral-500')}>
+              <Table.Cell class={cn("text-right text-nowrap border-neutral-500")}>
                 {@const isJSON = stringIsJSON(cell)}
                 {#if isJSON}
                   {@const version = JSON.parse(cell)}
@@ -194,8 +198,8 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
             {:else}
               <Table.Cell
                 class={cn(
-                  'border-neutral-500',
-                  cellIndex === 0 && 'font-medium w-[135px] text-nowrap',
+                  "border-neutral-500",
+                  cellIndex === 0 && "font-medium w-[135px] text-nowrap",
                 )}
               >
                 {cell}
@@ -215,14 +219,21 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
     </Table.Body>
   </Table.Root>
 
-  <Pagination.Root {count} {perPage} siblingCount={0}>
+  <Pagination.Root
+    {count}
+    {perPage}
+    siblingCount={0}
+  >
     {#snippet children({ pages, currentPage })}
       <Pagination.Content class="px-0">
         <Pagination.Item>
-          <Pagination.PrevButton class="mr-2 mt-1" onclick={_ => (pageNumber = currentPage)} />
+          <Pagination.PrevButton
+            class="mr-2 mt-1"
+            onclick={_ => (pageNumber = currentPage)}
+          />
         </Pagination.Item>
         {#each pages as page (page.key)}
-          {#if page.type === 'ellipsis'}
+          {#if page.type === "ellipsis"}
             <Pagination.Item>
               <Pagination.Ellipsis />
             </Pagination.Item>
@@ -239,7 +250,10 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
           {/if}
         {/each}
         <Pagination.Item>
-          <Pagination.NextButton class="ml-2" onclick={_ => (pageNumber = currentPage)} />
+          <Pagination.NextButton
+            class="ml-2"
+            onclick={_ => (pageNumber = currentPage)}
+          />
         </Pagination.Item>
       </Pagination.Content>
     {/snippet}
@@ -249,29 +263,29 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
 {/await}
 
 <style lang="postcss">
-  :global(.sl-markdown-content table:not(:where(.not-content *))) {
-    display: table;
-  }
+:global(.sl-markdown-content table:not(:where(.not-content *))) {
+  display: table;
+}
 
-  :global(.sl-markdown-content th:not(:where(.not-content *))) {
-    border-bottom: 0.8px solid #a1a1ab;
-  }
+:global(.sl-markdown-content th:not(:where(.not-content *))) {
+  border-bottom: 0.8px solid #a1a1ab;
+}
 
-  :global(li::marker) {
-    color: transparent;
-  }
+:global(li::marker) {
+  color: transparent;
+}
 
-  :global(.rehype-pretty-copy) {
-    background-color: transparent;
-  }
+:global(.rehype-pretty-copy) {
+  background-color: transparent;
+}
 
-  :global(pre, figure) {
-    border-top: 0px solid transparent !important;
-  }
+:global(pre, figure) {
+  border-top: 0px solid transparent !important;
+}
 
-  :global(table) {
-    width: 100%;
-    min-width: 100%;
-    display: table;
-  }
+:global(table) {
+  width: 100%;
+  min-width: 100%;
+  display: table;
+}
 </style>

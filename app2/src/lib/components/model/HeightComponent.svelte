@@ -1,8 +1,8 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
-import type { Chain, Height } from "@unionlabs/sdk/schema"
-import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import type { Chain, Height } from "@unionlabs/sdk/schema"
+import type { HTMLAttributes } from "svelte/elements"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   height: Height
@@ -33,7 +33,10 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
 
 <Tooltip>
   {#snippet trigger()}
-    <LongMonoWord class={className} {...rest}>
+    <LongMonoWord
+      class={className}
+      {...rest}
+    >
       {height}
     </LongMonoWord>
   {/snippet}
@@ -64,10 +67,10 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
         <section>
           <h3 class="text-white">Explorer</h3>
           <div>
-            <a 
-              href={explorerUrl} 
-              class="text-sky-400 hover:text-sky-300 underline" 
-              target="_blank" 
+            <a
+              href={explorerUrl}
+              class="text-sky-400 hover:text-sky-300 underline"
+              target="_blank"
               rel="noopener noreferrer"
             >
               View on {explorerName || "Explorer"}

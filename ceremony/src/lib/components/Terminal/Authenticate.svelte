@@ -1,10 +1,10 @@
 <script lang="ts">
-import { supabase } from "$lib/supabase/client.ts"
-import { onDestroy, onMount } from "svelte"
-import { sleep } from "$lib/utils/utils.ts"
-import Print from "$lib/components/Terminal/Print.svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
+import Print from "$lib/components/Terminal/Print.svelte"
 import { getState } from "$lib/state/index.svelte.ts"
+import { supabase } from "$lib/supabase/client.ts"
+import { sleep } from "$lib/utils/utils.ts"
+import { onDestroy, onMount } from "svelte"
 
 let redirecting = $state(false)
 const { terminal } = getState()
@@ -21,8 +21,8 @@ async function logIn(provider: "github" | "google") {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: provider,
     options: {
-      redirectTo: `/`
-    }
+      redirectTo: `/`,
+    },
   })
   if (error || !data) {
     terminal.updateHistory({ text: `Error signing in using ${provider}`, type: "warning" })
@@ -43,8 +43,12 @@ onDestroy(() => {
 
 {#if !redirecting}
   <Buttons
-          data={[{text: "GitHub", action: "github"}, {text: "Google", action: "google"}]}
-          trigger={(value: 'github' | 'google') => trigger(value)} />
+    data={[{ text: "GitHub", action: "github" }, { text: "Google", action: "google" }]}
+    trigger={(value: "github" | "google") => trigger(value)}
+  />
   <Print><br></Print>
-  <Print class="!text-[#FD6363]">By signing in, I acknowledge that my GPG key and signature will be permanently publicly available as it is cryptographically part of the MPC ceremony data. I am aware that my GPG key contains the email address I use to sign in.</Print>
+  <Print class="!text-[#FD6363]"
+  >By signing in, I acknowledge that my GPG key and signature will be permanently publicly available
+    as it is cryptographically part of the MPC ceremony data. I am aware that my GPG key contains
+    the email address I use to sign in.</Print>
 {/if}

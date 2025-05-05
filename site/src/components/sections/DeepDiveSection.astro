@@ -1,10 +1,10 @@
 ---
-import { Image } from "astro:assets"
-import trust from "#/assets/images/spline-holders/trust.png"
 import whale from "#/assets/images/spline-holders/diving-whale.png"
-import H1 from "../typography/h1.astro"
+import trust from "#/assets/images/spline-holders/trust.png"
+import { Image } from "astro:assets"
 import smallWhale from "../../assets/images/whale.png"
 import { renderRichText, renderTitle } from "../../lib/contentful/render.ts"
+import H1 from "../typography/h1.astro"
 
 const diver = [
   { id: "union", text: "What is Union?", meter: "200m" },
@@ -15,13 +15,16 @@ const diver = [
   { id: "verification", text: "Trust Verification", meter: "1200m" },
   { id: "galois", text: "Galois", meter: "1400m" },
   { id: "bls", text: "CometBLS", meter: "1600m" },
-  { id: "voyager", text: "Voyager", meter: "1800m" }
+  { id: "voyager", text: "Voyager", meter: "1800m" },
 ]
 
 const { entries } = Astro.props
 ---
 
-<div class="flex justify-center py-24 text-lg font-mono" id="swim-container">
+<div
+  class="flex justify-center py-24 text-lg font-mono"
+  id="swim-container"
+>
   <div class="relative grid grid-cols-2 gap-4 max-w-6xl px-6">
     <div class="flex flex-col col-span-full lg:col-span-1 gap-16 lg:gap-24">
       <div id="union">
@@ -43,7 +46,9 @@ const { entries } = Astro.props
             oncanplay="true"
             onloadeddata="true"
             onloadedmetadata="true"
-            loop></video>
+            loop
+          >
+          </video>
         </div>
       </div>
 
@@ -66,7 +71,9 @@ const { entries } = Astro.props
             oncanplay="true"
             onloadeddata="true"
             onloadedmetadata="true"
-            loop></video>
+            loop
+          >
+          </video>
         </div>
       </div>
 
@@ -98,7 +105,9 @@ const { entries } = Astro.props
             oncanplay="true"
             onloadeddata="true"
             onloadedmetadata="true"
-            loop></video>
+            loop
+          >
+          </video>
         </div>
       </div>
 
@@ -122,7 +131,11 @@ const { entries } = Astro.props
 
       <div class="w-full max-w-sm">
         <div class="relative w-full">
-          <Image src={trust} alt="Trust" class="w-full h-full object-cover" />
+          <Image
+            src={trust}
+            alt="Trust"
+            class="w-full h-full object-cover"
+          />
         </div>
       </div>
 
@@ -155,7 +168,11 @@ const { entries } = Astro.props
 
       <div class="w-full max-w-md">
         <div class="relative w-full">
-          <Image src={whale} alt="Whale" class="w-full h-full object-cover" />
+          <Image
+            src={whale}
+            alt="Whale"
+            class="w-full h-full object-cover"
+          />
         </div>
       </div>
     </div>
@@ -194,68 +211,70 @@ const { entries } = Astro.props
   </div>
 
   <script>
-    function initScrollHandler() {
-      const dot = document.getElementById("scrolling-dot");
-      const swimlane = document.getElementById("swim-lane");
+  function initScrollHandler() {
+    const dot = document.getElementById("scrolling-dot")
+    const swimlane = document.getElementById("swim-lane")
 
-      if (!dot || !swimlane) return;
-
-      const updateDotPosition = () => {
-        const documentHeight = document.documentElement.scrollHeight;
-        const viewportHeight = window.innerHeight;
-        const maxScroll = documentHeight - viewportHeight;
-        const scrollPercentage = window.scrollY / maxScroll;
-
-        const maxDotPosition = swimlane.offsetHeight - dot.offsetHeight;
-        const newPosition = scrollPercentage * maxDotPosition;
-
-        dot.style.transform = `translateY(${Math.max(0, Math.min(maxDotPosition, newPosition))}px)`;
-      };
-
-      // Throttled scroll handler using requestAnimationFrame
-      let isScrolling = false;
-      const scrollHandler = () => {
-        if (!isScrolling) {
-          requestAnimationFrame(() => {
-            updateDotPosition();
-            isScrolling = false;
-          });
-          isScrolling = true;
-        }
-      };
-
-      window.addEventListener("scroll", scrollHandler, { passive: true });
-      setTimeout(updateDotPosition, 0); // Initial position
-
-      return () => window.removeEventListener("scroll", scrollHandler);
+    if (!dot || !swimlane) {
+      return
     }
 
-    // Initialize scroll handler
-    const setup = () => {
-      const cleanup = initScrollHandler();
-      document.addEventListener("astro:before-preparation", cleanup, {
-        once: true,
-      });
-    };
+    const updateDotPosition = () => {
+      const documentHeight = document.documentElement.scrollHeight
+      const viewportHeight = window.innerHeight
+      const maxScroll = documentHeight - viewportHeight
+      const scrollPercentage = window.scrollY / maxScroll
 
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", setup);
-    } else {
-      setup();
+      const maxDotPosition = swimlane.offsetHeight - dot.offsetHeight
+      const newPosition = scrollPercentage * maxDotPosition
+
+      dot.style.transform = `translateY(${Math.max(0, Math.min(maxDotPosition, newPosition))}px)`
     }
 
-    document.addEventListener("astro:page-load", setup);
+    // Throttled scroll handler using requestAnimationFrame
+    let isScrolling = false
+    const scrollHandler = () => {
+      if (!isScrolling) {
+        requestAnimationFrame(() => {
+          updateDotPosition()
+          isScrolling = false
+        })
+        isScrolling = true
+      }
+    }
+
+    window.addEventListener("scroll", scrollHandler, { passive: true })
+    setTimeout(updateDotPosition, 0) // Initial position
+
+    return () => window.removeEventListener("scroll", scrollHandler)
+  }
+
+  // Initialize scroll handler
+  const setup = () => {
+    const cleanup = initScrollHandler()
+    document.addEventListener("astro:before-preparation", cleanup, {
+      once: true,
+    })
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setup)
+  } else {
+    setup()
+  }
+
+  document.addEventListener("astro:page-load", setup)
   </script>
 
   <style>
-    .dive-gradient {
-      background: linear-gradient(
-        180deg,
-        #ffffff 4%,
-        #a0ecfd 7.13%,
-        #030711 56%,
-        #000000 100%
-      );
-    }
+  .dive-gradient {
+    background: linear-gradient(
+      180deg,
+      #ffffff 4%,
+      #a0ecfd 7.13%,
+      #030711 56%,
+      #000000 100%
+    );
+  }
   </style>
 </div>

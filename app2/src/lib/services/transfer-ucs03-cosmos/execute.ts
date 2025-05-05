@@ -1,16 +1,16 @@
-import type { CosmosWalletId } from "$lib/wallet/cosmos"
-import type { Chain } from "@unionlabs/sdk/schema"
-import { Effect } from "effect"
-import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos/errors.ts"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
+import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos/errors.ts"
 import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer.ts"
+import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import type { ExecuteInstruction } from "@cosmjs/cosmwasm-stargate"
 import { isValidBech32Address, isValidBech32ContractAddress } from "@unionlabs/client"
+import type { Chain } from "@unionlabs/sdk/schema"
+import { Effect } from "effect"
 
 export const executeCosmWasmInstructions = (
   chain: Chain,
   connectedWallet: CosmosWalletId,
-  instructions: Array<ExecuteInstruction>
+  instructions: Array<ExecuteInstruction>,
 ) => {
   // Early validations
   if (!chain) {
@@ -33,8 +33,8 @@ export const executeCosmWasmInstructions = (
     if (!isValidBech32ContractAddress(instruction.contractAddress)) {
       return Effect.fail(
         new CosmWasmError({
-          cause: `Invalid contract address format: ${instruction.contractAddress}`
-        })
+          cause: `Invalid contract address format: ${instruction.contractAddress}`,
+        }),
       )
     }
 
@@ -46,7 +46,7 @@ export const executeCosmWasmInstructions = (
   return Effect.flatMap(
     Effect.mapError(
       getCosmWasmClient(chain, connectedWallet),
-      err => new CosmWasmError({ cause: String(err) })
+      err => new CosmWasmError({ cause: String(err) }),
     ),
     client => {
       if (!client) {
@@ -61,7 +61,7 @@ export const executeCosmWasmInstructions = (
         return Effect.flatMap(
           Effect.tryPromise({
             try: () => offlineSigner.getAccounts(),
-            catch: err => new CosmWasmError({ cause: `Failed to get accounts: ${err}` })
+            catch: err => new CosmWasmError({ cause: `Failed to get accounts: ${err}` }),
           }),
           accounts => {
             if (accounts.length === 0) {
@@ -73,15 +73,15 @@ export const executeCosmWasmInstructions = (
             if (!isValidBech32Address(sender)) {
               return Effect.fail(
                 new CosmWasmError({
-                  cause: `Invalid sender address format: ${sender}`
-                })
+                  cause: `Invalid sender address format: ${sender}`,
+                }),
               )
             }
 
             const formattedInstructions = instructions.map(instr => ({
               contractAddress: instr.contractAddress,
               msg: instr.msg,
-              funds: instr.funds || []
+              funds: instr.funds || [],
             }))
 
             console.log("Sender:", sender)
@@ -93,18 +93,18 @@ export const executeCosmWasmInstructions = (
                 catch: err => {
                   console.error("CosmWasm execution error:", err)
                   return new CosmWasmError({
-                    cause: err instanceof Error ? err.message : String(err)
+                    cause: err instanceof Error ? err.message : String(err),
                   })
-                }
+                },
               }),
               result => {
                 console.log("Transaction hash:", result.transactionHash)
                 return result.transactionHash
-              }
+              },
             )
-          }
+          },
         )
       })
-    }
+    },
   )
 }

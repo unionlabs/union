@@ -7,12 +7,12 @@ import type { Simplify } from "effect/Types"
  * @see https://github.com/Effect-TS/effect/blob/4a687e8dbe57702833d162a007a9f29863e514af/packages/effect/src/internal/runtime.ts#L29
  */
 const makeDual = <Args extends Array<any>, Return>(
-  f: (runtime: Runtime.Runtime<never>, effect: Effect.Effect<any, any>, ...args: Args) => Return
+  f: (runtime: Runtime.Runtime<never>, effect: Effect.Effect<any, any>, ...args: Args) => Return,
 ): {
   <R>(runtime: Runtime.Runtime<R>): <A, E>(effect: Effect.Effect<A, E, R>, ...args: Args) => Return
   <R, A, E>(runtime: Runtime.Runtime<R>, effect: Effect.Effect<A, E, R>, ...args: Args): Return
 } =>
-  function (this: any) {
+  function(this: any) {
     // biome-ignore lint/style/noArguments: <explanation>
     if (arguments.length === 1) {
       // biome-ignore lint/style/noArguments: <explanation>
@@ -37,17 +37,17 @@ export type RunPromiseExitResult<A, E> = {
  */
 export const runPromiseExitWithRuntime: {
   <R = never>(
-    runtime: Runtime.Runtime<R>
+    runtime: Runtime.Runtime<R>,
   ): <A, E, R>(effect: Effect.Effect<A, E, R>) => Simplify<RunPromiseExitResult<A, E>>
   <A, E, R = never>(
     effect: Effect.Effect<A, E, R>,
-    runtime: Runtime.Runtime<R>
+    runtime: Runtime.Runtime<R>,
   ): Simplify<RunPromiseExitResult<A, E>>
 } = dual(
   2,
   <A, E, R>(
     effect: Effect.Effect<A, E, R>,
-    runtime: Runtime.Runtime<R>
+    runtime: Runtime.Runtime<R>,
   ): Simplify<RunPromiseExitResult<A, E>> => {
     const runPromiseExit = Runtime.runPromiseExit(runtime)
     let state = $state<Option.Option<Exit.Exit<A, E>>>(Option.none())
@@ -73,13 +73,13 @@ export const runPromiseExitWithRuntime: {
           state,
           Exit.match({
             onFailure: Either.left,
-            onSuccess: Either.right
-          })
+            onSuccess: Either.right,
+          }),
         )
       },
-      interrupt: (reason?: any) => controller.abort(reason)
+      interrupt: (reason?: any) => controller.abort(reason),
     } as const
-  }
+  },
 )
 
 export type RunForkResult<A, E> = {
@@ -91,21 +91,21 @@ export type RunForkResult<A, E> = {
  */
 export const runForkWithRuntime: {
   <R>(
-    runtime: Runtime.Runtime<R>
+    runtime: Runtime.Runtime<R>,
   ): <A, E>(
     effect: Effect.Effect<A, E, R>,
-    options?: Runtime.RunForkOptions | undefined
+    options?: Runtime.RunForkOptions | undefined,
   ) => Simplify<RunForkResult<A, E>>
   <R, A, E>(
     runtime: Runtime.Runtime<R>,
     effect: Effect.Effect<A, E, R>,
-    options?: Runtime.RunForkOptions | undefined
+    options?: Runtime.RunForkOptions | undefined,
   ): Simplify<RunForkResult<A, E>>
 } = makeDual(
   <R, A, E>(
     runtime: Runtime.Runtime<R>,
     self: Effect.Effect<A, E, R>,
-    options?: Runtime.RunForkOptions
+    options?: Runtime.RunForkOptions,
   ): Simplify<RunForkResult<A, E>> => {
     const runFork = Runtime.runFork(runtime)
     let state = $state<Fiber.RuntimeFiber<A, E> | null>(null)
@@ -120,9 +120,9 @@ export const runForkWithRuntime: {
         // biome-ignore lint/style/noNonNullAssertion: immediate execution
         return state!
       },
-      interrupt: () => state?.unsafeInterruptAsFork(FiberId.none)
+      interrupt: () => state?.unsafeInterruptAsFork(FiberId.none),
     } as const
-  }
+  },
 )
 
 /**

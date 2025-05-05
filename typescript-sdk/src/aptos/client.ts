@@ -1,12 +1,12 @@
+import { AccountAddress, Aptos, AptosConfig, MoveVector, Network } from "@aptos-labs/ts-sdk"
+import { err, type Result } from "neverthrow"
+import { createClient, fallback, type HttpTransport } from "viem"
 import {
   type AptosAccount,
+  type AptosPublicAccountInfo,
   // (These below helpers remain as before)
   waitForTransactionReceipt,
-  type AptosPublicAccountInfo
 } from "./transfer.ts"
-import { err, type Result } from "neverthrow"
-import { Aptos, Network, AptosConfig, AccountAddress, MoveVector } from "@aptos-labs/ts-sdk"
-import { createClient, fallback, type HttpTransport } from "viem"
 import type { AptosBrowserWallet, AuthAccess } from "./wallet.ts"
 
 export type { AptosAccount, AptosBrowserWallet }
@@ -14,7 +14,7 @@ export type { AptosAccount, AptosBrowserWallet }
 export const aptosChainId = [
   "2", // aptos testnet
   "177", // movement porto
-  "250" // movement bardock
+  "250", // movement bardock
 ] as const
 export type AptosChainId = `${(typeof aptosChainId)[number]}`
 
@@ -25,18 +25,20 @@ export type AptosChainId = `${(typeof aptosChainId)[number]}`
  */
 type AptosWindowTransport = AptosBrowserWallet
 
-export type AptosClientParameters = {
-  chainId: AptosChainId
-} & (
-  | { account: AptosAccount; transport: HttpTransport }
-  | { account?: AptosPublicAccountInfo; transport: AptosWindowTransport }
-)
+export type AptosClientParameters =
+  & {
+    chainId: AptosChainId
+  }
+  & (
+    | { account: AptosAccount; transport: HttpTransport }
+    | { account?: AptosPublicAccountInfo; transport: AptosWindowTransport }
+  )
 
 /**
  * Overloads for retrieving an Aptos client.
  */
 async function getAptosClient(
-  parameters: AptosClientParameters & { authAccess: "key" }
+  parameters: AptosClientParameters & { authAccess: "key" },
 ): Promise<{ authAccess: "key"; aptos: Aptos; signer: AptosAccount }>
 
 // async function getAptosClient(
@@ -44,7 +46,7 @@ async function getAptosClient(
 // ): Promise<{ authAccess: "wallet"; aptos: Aptos; signer: AptosBrowserWallet }>
 
 async function getAptosClient(
-  parameters: AptosClientParameters & { authAccess: AuthAccess }
+  parameters: AptosClientParameters & { authAccess: AuthAccess },
 ): Promise<
   | { authAccess: "key"; aptos: Aptos; signer: AptosAccount }
   | { authAccess: "wallet"; aptos: Aptos; signer: AptosBrowserWallet }
@@ -54,15 +56,17 @@ async function getAptosClient(
       throw new Error("Invalid Aptos transport")
     }
     const rpcUrl = parameters.transport({}).value?.url
-    if (!rpcUrl) throw new Error("No Aptos RPC URL found")
+    if (!rpcUrl) {
+      throw new Error("No Aptos RPC URL found")
+    }
     const config = new AptosConfig({
       fullnode: rpcUrl,
-      network: Network.CUSTOM
+      network: Network.CUSTOM,
     })
     return {
       authAccess: "key",
       aptos: new Aptos(config),
-      signer: parameters.account as AptosAccount
+      signer: parameters.account as AptosAccount,
     }
   }
 
@@ -76,7 +80,7 @@ async function getAptosClient(
     return {
       authAccess: "wallet",
       aptos: new Aptos(config),
-      signer: parameters.transport as AptosBrowserWallet
+      signer: parameters.transport as AptosBrowserWallet,
     }
   }
   throw new Error("Invalid Aptos transport")
@@ -105,7 +109,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
     .extend(_ => ({
       // A helper to get the underlying Aptos client.
       // We default to "key" if an account was provided.
-      getAptosClient: async () => await getAptosClient({ ...clientParameters, authAccess: "key" })
+      getAptosClient: async () => await getAptosClient({ ...clientParameters, authAccess: "key" }),
       // clientParameters.account
       //   ? await getAptosClient({ ...clientParameters, authAccess: "key" })
       //   : await getAptosClient({ ...clientParameters, authAccess: "wallet" })
@@ -127,7 +131,7 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
         quoteToken,
         receiver,
         sourceChannelId,
-        ucs03address
+        ucs03address,
       }: TransferAssetParameters<AptosChainId>): Promise<Result<string, Error>> => {
         const { aptos, signer } = await client.getAptosClient()
 
@@ -155,21 +159,21 @@ export const createAptosClient = (clientParameters: AptosClientParameters) => {
               quoteAmount,
               18446744073709551615n,
               18446744073709551615n,
-              salt
-            ]
-          }
+              salt,
+            ],
+          },
         })
 
         try {
           const txn = await aptos.signAndSubmitTransaction({
             signer: signer,
-            transaction: payload
+            transaction: payload,
           })
           const receipt = await waitForTransactionReceipt({ aptos, hash: txn.hash })
           return receipt
         } catch (error) {
           return err(new Error("failed to execute aptos call", { cause: error as Error }))
         }
-      }
+      },
     }))
 }

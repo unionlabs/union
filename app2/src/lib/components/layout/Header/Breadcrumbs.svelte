@@ -1,11 +1,10 @@
-
 <script lang="ts">
 import { page } from "$app/state"
-import { navigation } from "../Sidebar/navigation.ts"
-import { fade, fly } from "svelte/transition"
-import { quintOut } from "svelte/easing"
-import { flip } from "svelte/animate"
 import Truncate from "$lib/components/ui/Truncate.svelte"
+import { flip } from "svelte/animate"
+import { quintOut } from "svelte/easing"
+import { fade, fly } from "svelte/transition"
+import { navigation } from "../Sidebar/navigation.ts"
 
 const toTitleCase = (str: string): string => {
   return str.charAt(0).toUpperCase() + str.slice(1)
@@ -38,7 +37,7 @@ $effect(() => {
     newCrumbs.push({
       title: matchingItem?.title || toTitleCase(part),
       path: currentPath,
-      id: currentPath // Unique ID for animation keying
+      id: currentPath, // Unique ID for animation keying
     })
   }
 
@@ -49,21 +48,27 @@ $effect(() => {
 
 <nav class="flex items-center gap-2 text-zinc-400 h-8 overflow-hidden">
   {#each currentBreadcrumbs as crumb, i (crumb.id)}
-    <div animate:flip={{ duration: 400 }} class="flex items-center last:text-white">
-        <a 
-          href={crumb.path}
-          class="hover:text-zinc-100 transition-colors transition-delay-100"
-          in:fly={{ x: -30, duration: 200, delay: i * 100, easing: quintOut }}
-          out:fly={{ x: 30, duration: 100 }}
-        >
-          <Truncate value={crumb.title} showCopy={false} maxLength={16}/>
-        </a>
-        <span 
-          class="text-zinc-600 ml-2"
-          in:fade={{ duration: 200, delay: i * 200 }}
-          out:fade={{ duration: 150 }}
-        >/</span>
+    <div
+      animate:flip={{ duration: 400 }}
+      class="flex items-center last:text-white"
+    >
+      <a
+        href={crumb.path}
+        class="hover:text-zinc-100 transition-colors transition-delay-100"
+        in:fly={{ x: -30, duration: 200, delay: i * 100, easing: quintOut }}
+        out:fly={{ x: 30, duration: 100 }}
+      >
+        <Truncate
+          value={crumb.title}
+          showCopy={false}
+          maxLength={16}
+        />
+      </a>
+      <span
+        class="text-zinc-600 ml-2"
+        in:fade={{ duration: 200, delay: i * 200 }}
+        out:fade={{ duration: 150 }}
+      >/</span>
     </div>
   {/each}
 </nav>
-

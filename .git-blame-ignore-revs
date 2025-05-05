@@ -16,3 +16,6 @@ c9ee5b0c2b8caa90b2dbe2dd42f89afcf5e45c0c
 5d892445d9e215589249fc0210d75491bb6b9d85
 636820c253581035e4d1aa3f595965221c8570b4
 a77587825b8a63a767c5d6761c98f1a612fc979a
+
+# switch from biome to dprint for specific langs until biome has proper html parser
+fd9caeb79d9c86904fdd7cc52013d57786f1680c

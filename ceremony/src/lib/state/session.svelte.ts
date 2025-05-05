@@ -1,10 +1,10 @@
-import type { Session } from "@supabase/supabase-js"
-import { supabase } from "$lib/supabase/client.ts"
-import { err, ok, type Result } from "neverthrow"
 import { goto, invalidateAll } from "$app/navigation"
-import type { Terminal } from "$lib/state/terminal.svelte.ts"
-import { sleep } from "$lib/utils/utils.ts"
 import type { Contributor } from "$lib/state/contributor.svelte.ts"
+import type { Terminal } from "$lib/state/terminal.svelte.ts"
+import { supabase } from "$lib/supabase/client.ts"
+import { sleep } from "$lib/utils/utils.ts"
+import type { Session } from "@supabase/supabase-js"
+import { err, ok, type Result } from "neverthrow"
 
 export type SessionError = {
   message: string
@@ -20,7 +20,7 @@ export let user = $state<UserSession>({ session: null, loading: true })
 export async function checkAuth(): Promise<Result<null, SessionError>> {
   const {
     data: { session },
-    error
+    error,
   } = await supabase.auth.getSession()
   if (error || !session) {
     user.session = null

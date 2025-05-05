@@ -1,6 +1,6 @@
-import { Data, Effect, Option } from "effect"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
+import { Data, Effect, Option } from "effect"
 // You can import a retry schedule specific for Aptos; here we assume one exists.
 import { aptosBalanceRetrySchedule } from "$lib/constants/schedules"
 import { getPublicClient } from "$lib/services/aptos/clients"
@@ -16,7 +16,7 @@ export class FetchAptosTokenBalanceError extends Data.TaggedError("FetchAptosTok
 const fetchFABalance = ({
   aptosClient,
   tokenAddress,
-  walletAddress
+  walletAddress,
 }: {
   aptosClient: Aptos
   tokenAddress: TokenRawDenom
@@ -28,11 +28,11 @@ const fetchFABalance = ({
         payload: {
           function: `0x1::primary_fungible_store::balance`,
           typeArguments: ["0x1::fungible_asset::Metadata"],
-          functionArguments: [walletAddress.toString(), tokenAddress.toString()]
-        }
+          functionArguments: [walletAddress.toString(), tokenAddress.toString()],
+        },
       }),
     catch: err =>
-      new FetchAptosTokenBalanceError({ cause: extractErrorDetails(err as AptosApiError) })
+      new FetchAptosTokenBalanceError({ cause: extractErrorDetails(err as AptosApiError) }),
   })
 
 /**
@@ -51,17 +51,17 @@ const fetchFABalance = ({
 export const fetchAptosBalance = ({
   chain,
   tokenAddress,
-  walletAddress
+  walletAddress,
 }: {
   chain: Chain
   tokenAddress: TokenRawDenom
   walletAddress: string
 }) => {
-  return Effect.gen(function* () {
+  return Effect.gen(function*() {
     const aptosClient = yield* getPublicClient(chain)
 
     yield* Effect.log(
-      `starting aptos balance fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
+      `starting aptos balance fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`,
     )
 
     let balance: bigint

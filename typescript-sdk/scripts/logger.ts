@@ -3,8 +3,8 @@ import { createConsola } from "consola"
 export const consola = createConsola({
   formatOptions: {
     date: true,
-    colors: true
-  }
+    colors: true,
+  },
 })
 
 export function timestamp() {

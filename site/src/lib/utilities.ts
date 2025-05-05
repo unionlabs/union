@@ -4,7 +4,7 @@ export const saneDateTime = (date?: string | Date) =>
   new Date(date ?? "").toLocaleDateString("fr-CA", {
     year: "numeric",
     month: "numeric",
-    day: "numeric"
+    day: "numeric",
   })
 
 export const arraySizeN = (n: number) => Array.from(new Array(n).keys())
@@ -21,6 +21,8 @@ export function raise(error: unknown): never {
 }
 
 export function isKeyOf<T extends object>(obj: T, key: keyof any): key is keyof T {
-  if (!key) return false
+  if (!key) {
+    return false
+  }
   return key in obj
 }

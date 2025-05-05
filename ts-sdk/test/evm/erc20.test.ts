@@ -1,23 +1,23 @@
-import { describe, it, expect, vi, beforeEach } from "vitest"
 import { Effect } from "effect"
+import { erc20Abi, type PublicClient } from "viem"
+import { beforeEach, describe, expect, it, vi } from "vitest"
+import { ViemPublicClient } from "../../src/evm/client.js"
 import {
+  readErc20Decimals,
   readErc20Meta,
   readErc20Name,
   readErc20Symbol,
-  readErc20Decimals
 } from "../../src/evm/erc20.js"
-import { ViemPublicClient } from "../../src/evm/client.js"
-import { erc20Abi, type PublicClient } from "viem"
 
 // Mock client for testing
 const mockClient = {
-  readContract: vi.fn()
+  readContract: vi.fn(),
 }
 
 // Mock service layer
 const mockViemPublicClient = {
   // @ts-ignore we do a partial mock
-  client: mockClient as PublicClient
+  client: mockClient as PublicClient,
 }
 
 describe("ERC20 Module", () => {
@@ -35,8 +35,8 @@ describe("ERC20 Module", () => {
       // Execute
       const result = await Effect.runPromise(
         readErc20Name(testTokenAddress).pipe(
-          Effect.provideService(ViemPublicClient, mockViemPublicClient)
-        )
+          Effect.provideService(ViemPublicClient, mockViemPublicClient),
+        ),
       )
 
       // Verify
@@ -44,7 +44,7 @@ describe("ERC20 Module", () => {
       expect(mockClient.readContract).toHaveBeenCalledWith({
         address: testTokenAddress,
         abi: erc20Abi,
-        functionName: "name"
+        functionName: "name",
       })
     })
 
@@ -57,9 +57,9 @@ describe("ERC20 Module", () => {
       await expect(
         Effect.runPromise(
           readErc20Name(testTokenAddress).pipe(
-            Effect.provideService(ViemPublicClient, mockViemPublicClient)
-          )
-        )
+            Effect.provideService(ViemPublicClient, mockViemPublicClient),
+          ),
+        ),
       ).rejects.toThrow()
     })
   })
@@ -72,8 +72,8 @@ describe("ERC20 Module", () => {
       // Execute
       const result = await Effect.runPromise(
         readErc20Symbol(testTokenAddress).pipe(
-          Effect.provideService(ViemPublicClient, mockViemPublicClient)
-        )
+          Effect.provideService(ViemPublicClient, mockViemPublicClient),
+        ),
       )
 
       // Verify
@@ -81,7 +81,7 @@ describe("ERC20 Module", () => {
       expect(mockClient.readContract).toHaveBeenCalledWith({
         address: testTokenAddress,
         abi: erc20Abi,
-        functionName: "symbol"
+        functionName: "symbol",
       })
     })
   })
@@ -94,8 +94,8 @@ describe("ERC20 Module", () => {
       // Execute
       const result = await Effect.runPromise(
         readErc20Decimals(testTokenAddress).pipe(
-          Effect.provideService(ViemPublicClient, mockViemPublicClient)
-        )
+          Effect.provideService(ViemPublicClient, mockViemPublicClient),
+        ),
       )
 
       // Verify
@@ -103,7 +103,7 @@ describe("ERC20 Module", () => {
       expect(mockClient.readContract).toHaveBeenCalledWith({
         address: testTokenAddress,
         abi: erc20Abi,
-        functionName: "decimals"
+        functionName: "decimals",
       })
     })
   })
@@ -118,15 +118,15 @@ describe("ERC20 Module", () => {
       // Execute
       const result = await Effect.runPromise(
         readErc20Meta(testTokenAddress).pipe(
-          Effect.provideService(ViemPublicClient, mockViemPublicClient)
-        )
+          Effect.provideService(ViemPublicClient, mockViemPublicClient),
+        ),
       )
 
       // Verify
       expect(result).toEqual({
         name: "Test Token",
         symbol: "TKN",
-        decimals: 18
+        decimals: 18,
       })
       expect(mockClient.readContract).toHaveBeenCalledTimes(3)
     })

@@ -1,11 +1,11 @@
 <script lang="ts">
+import { cn } from "$lib/utils"
+import { portal } from "$lib/utils/portal"
 import type { Snippet } from "svelte"
 import { onMount } from "svelte"
-import Card from "./Card.svelte"
 import type { HTMLAttributes } from "svelte/elements"
-import { cn } from "$lib/utils"
 import { fade, scale } from "svelte/transition"
-import { portal } from "$lib/utils/portal"
+import Card from "./Card.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   children: Snippet

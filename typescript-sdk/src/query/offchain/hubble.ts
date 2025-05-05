@@ -3,9 +3,9 @@ import type { ChainId } from "../../mod.ts"
 import type { Network } from "../../types.ts"
 
 const queryHeaders = new Headers({
-  Accept: "application/json",
+  "Accept": "application/json",
   "User-Agent": "typescript-sdk",
-  "Content-Type": "application/json"
+  "Content-Type": "application/json",
 })
 
 const HUBBLE_URL = "https://graphql.union.build"
@@ -16,7 +16,7 @@ const hubbleRestFetch = ofetch.create({
   timeout: 6_000,
   retryDelay: 500,
   headers: queryHeaders,
-  baseURL: `${HUBBLE_URL}/api/rest/v1`
+  baseURL: `${HUBBLE_URL}/api/rest/v1`,
 })
 
 export const offchainQuery = {
@@ -39,7 +39,7 @@ export const offchainQuery = {
     baseURL = `${HUBBLE_URL}/api/rest/v1`,
     includeEndpoints = false,
     includeContracts = false,
-    includeAssets = false
+    includeAssets = false,
   }: {
     baseURL?: string
     includeEndpoints?: boolean
@@ -55,8 +55,8 @@ export const offchainQuery = {
       query: {
         include_rpcs: includeEndpoints,
         include_contracts: includeContracts,
-        include_assets: includeAssets
-      }
+        include_assets: includeAssets,
+      },
     })
   },
   /**
@@ -80,7 +80,7 @@ export const offchainQuery = {
     baseURL = `${HUBBLE_URL}/api/rest/v1`,
     includeEndpoints = false,
     includeContracts = false,
-    includeAssets = false
+    includeAssets = false,
   }: {
     chainId: string
     baseURL?: string
@@ -97,10 +97,10 @@ export const offchainQuery = {
       query: {
         include_assets: includeAssets,
         include_rpcs: includeEndpoints,
-        include_contracts: includeContracts
-      }
+        include_contracts: includeContracts,
+      },
     })
-  }
+  },
 }
 
 interface OffchainQueryBaseResponse<T> {
@@ -157,7 +157,7 @@ export interface Ucs1Configuration {
 export interface Chain<
   IncludeEndpoints extends boolean | undefined = undefined,
   IncludeContracts extends boolean | undefined = undefined,
-  IncludeAssets extends boolean | undefined = undefined
+  IncludeAssets extends boolean | undefined = undefined,
 > {
   id: number
   testnet: boolean

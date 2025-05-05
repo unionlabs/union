@@ -1,13 +1,13 @@
-import { http } from "viem"
+import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
-import { Account, Ed25519PrivateKey } from "@aptos-labs/ts-sdk"
-import { createUnionClient, bech32AddressToHex } from "../src/mod.ts"
+import { http } from "viem"
+import { bech32AddressToHex, createUnionClient } from "../src/mod.ts"
 
 import {
   getChannelInfo,
   getQuoteToken,
-  getRecommendedChannels
+  getRecommendedChannels,
 } from "../src/query/offchain/ucs03-channels.ts"
 
 type Channel = {
@@ -30,11 +30,11 @@ declare global {
 
 if (!BigInt.prototype.toJSON) {
   Object.defineProperty(BigInt.prototype, "toJSON", {
-    value: function () {
+    value: function() {
       return this.toString()
     },
     writable: true,
-    configurable: true
+    configurable: true,
   })
 }
 // end hack
@@ -43,8 +43,8 @@ const cliArgs = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 // HOW TO RUN:
@@ -59,9 +59,9 @@ const DESTINATION_CHAIN_ID = "union-testnet-9"
 const RECEIVER = bech32AddressToHex({ address: "bbn14vcpe0yt8xdzaapm8yy6tm26sf45rdgu4u2ka9" })
 // const RECEIVER =
 //   "756E696F6E31786434787A356E346371657638643378657270666A656367706565706C34667834323263676A"
-/* 
+/*
 --------------------------------------------------------
--------------- HOW TO CALCULATE RECEIVER :-------------- 
+-------------- HOW TO CALCULATE RECEIVER :--------------
 --------------------------------------------------------
 
 ~/dev/union (movement_integration) ✗) $ printf "%s" union1xd4xz5n4cqev8d3xerpfjecgpeepl4fx422cgj  | xxd -p -u -c 10000
@@ -84,7 +84,7 @@ if (channel_info === null) {
     destination_port_id:
       "756e696f6e3178326a7a65757037757766786a78787274666e61326b746375676c746e746775366b766330656561796b306438326c32343763717a3636396565",
     destination_channel_id: 27,
-    destination_connection_id: 36
+    destination_connection_id: 36,
   }
 }
 
@@ -101,8 +101,8 @@ if (quoteToken.isErr()) {
 quoteToken = {
   type: "UNWRAPPED",
   value: {
-    quote_token: `0x6d756e6f`
-  }
+    quote_token: `0x6d756e6f`,
+  },
 }
 
 if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
@@ -122,7 +122,7 @@ const account = Account.fromPrivateKey({ privateKey })
 const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
   account: account,
-  transport: http("https://aptos.testnet.bardock.movementlabs.xyz/v1")
+  transport: http("https://aptos.testnet.bardock.movementlabs.xyz/v1"),
 })
 
 const transfer = await unionClient.transferAsset({
@@ -132,7 +132,7 @@ const transfer = await unionClient.transferAsset({
   quoteAmount: AMOUNT,
   receiver: RECEIVER,
   sourceChannelId: channel_info.source_channel_id,
-  ucs03address: `0x${channel_info.source_port_id}`
+  ucs03address: `0x${channel_info.source_port_id}`,
 })
 
 if (transfer.isErr()) {

@@ -1,6 +1,6 @@
 import { encodeAbiParameters, type Hex } from "viem"
-import { encodeAbi, type Instruction } from "./instruction.js"
 import { zkgmPacketAbi } from "../evm/abi/index.js"
+import { encodeAbi, type Instruction } from "./instruction.js"
 
 export type ZkgmPacket = {
   salt: Hex
@@ -15,6 +15,6 @@ export const encodeZkgmPacketAbi = (packet: ZkgmPacket) =>
     {
       opcode: packet.instruction.opcode,
       version: packet.instruction.version,
-      operand: encodeAbi(packet.instruction)
-    }
+      operand: encodeAbi(packet.instruction),
+    },
   ])

@@ -1,22 +1,22 @@
 import { Effect } from "effect"
+import { encodeAbiParameters } from "viem"
+import { AptosChannelSource } from "../aptos/channel.js"
+import { AptosWalletClient } from "../aptos/client.js"
+import { writeContract as writeContractAptos } from "../aptos/contract.js"
+import { CosmosChannelSource } from "../cosmos/channel.js"
+import { SigningCosmWasmClientContext } from "../cosmos/client.js"
+import { executeContract } from "../cosmos/contract.js"
+import { instructionAbi } from "../evm/abi/index.js"
 import { ucs03abi } from "../evm/abi/ucs03.js"
+import { EvmChannelSource } from "../evm/channel.js"
 import { ViemWalletClient } from "../evm/client.js"
 import { writeContract as writeContractEvm } from "../evm/contract.js"
-import { writeContract as writeContractAptos } from "../aptos/contract.js"
-import { AptosWalletClient } from "../aptos/client.js"
-import { type Instruction, encodeAbi } from "./instruction.js"
 import { generateSalt } from "../utils/index.js"
-import { EvmChannelSource } from "../evm/channel.js"
-import { AptosChannelSource } from "../aptos/channel.js"
-import { executeContract } from "../cosmos/contract.js"
-import { SigningCosmWasmClientContext } from "../cosmos/client.js"
-import { CosmosChannelSource } from "../cosmos/channel.js"
-import { encodeAbiParameters } from "viem"
-import { instructionAbi } from "../evm/abi/index.js"
 import { getTimeoutInNanoseconds24HoursFromNow } from "../utils/timeout.js"
+import { encodeAbi, type Instruction } from "./instruction.js"
 
 export const sendInstructionEvm = (instruction: Instruction) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const walletClient = yield* ViemWalletClient
     const sourceConfig = yield* EvmChannelSource
 
@@ -37,14 +37,14 @@ export const sendInstructionEvm = (instruction: Instruction) =>
         {
           opcode: instruction.opcode,
           version: instruction.version,
-          operand: encodeAbi(instruction)
-        }
-      ]
+          operand: encodeAbi(instruction),
+        },
+      ],
     })
   })
 
 export const sendInstructionCosmos = (instruction: Instruction) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const signingClient = yield* SigningCosmWasmClientContext
     const sourceConfig = yield* CosmosChannelSource
 
@@ -64,15 +64,15 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
           instruction: encodeAbiParameters(instructionAbi, [
             instruction.version,
             instruction.opcode,
-            encodeAbi(instruction)
-          ])
-        }
-      }
+            encodeAbi(instruction),
+          ]),
+        },
+      },
     )
   })
 
 export const sendInstructionAptos = (instruction: Instruction) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const walletClient = yield* AptosWalletClient
     const sourceConfig = yield* AptosChannelSource
     const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
@@ -87,7 +87,7 @@ export const sendInstructionAptos = (instruction: Instruction) =>
       salt,
       instruction.version,
       instruction.opcode,
-      encodeAbi(instruction)
+      encodeAbi(instruction),
     ]
 
     return yield* writeContractAptos(
@@ -97,6 +97,6 @@ export const sendInstructionAptos = (instruction: Instruction) =>
       module_name,
       function_name,
       [], // type arguments
-      function_arguments
+      function_arguments,
     )
   })

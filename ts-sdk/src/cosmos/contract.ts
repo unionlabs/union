@@ -1,5 +1,5 @@
-import { Effect, Data } from "effect"
-import type { SigningCosmWasmClient, CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import type { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 /**
@@ -29,14 +29,14 @@ export class ExecuteContractError extends Data.TaggedError("ExecuteContractError
 export const queryContract = <T = unknown>(
   client: CosmWasmClient,
   contractAddress: string,
-  queryMsg: Record<string, unknown>
+  queryMsg: Record<string, unknown>,
 ) =>
   Effect.tryPromise({
     try: async () => {
       const result = await client.queryContractSmart(contractAddress, queryMsg)
       return result as T
     },
-    catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
+    catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
   }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
 
 /**
@@ -55,13 +55,13 @@ export const executeContract = (
   senderAddress: string,
   contractAddress: string,
   msg: Record<string, unknown>,
-  funds?: ReadonlyArray<{ denom: string; amount: string }>
+  funds?: ReadonlyArray<{ denom: string; amount: string }>,
 ) =>
   Effect.tryPromise({
     try: () => client.execute(senderAddress, contractAddress, msg, "auto", undefined, funds),
     catch: error =>
       new ExecuteContractError({
         cause: extractErrorDetails(error as Error),
-        message: (error as Error).message
-      })
+        message: (error as Error).message,
+      }),
   })

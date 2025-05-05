@@ -1,8 +1,8 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import Label from "$lib/components/ui/Label.svelte"
-import type { StatisticItem } from "@unionlabs/sdk/schema"
 import NumberFlow from "@number-flow/svelte"
+import type { StatisticItem } from "@unionlabs/sdk/schema"
 import { onMount } from "svelte"
 
 type Props = {
@@ -33,7 +33,7 @@ $effect(() => {
 // Mapping of statistic names to display names
 const displayNames: Record<string, string> = {
   total_packets: "Total Packets",
-  total_fungible_asset_orders: "Total Transfers"
+  total_fungible_asset_orders: "Total Transfers",
 }
 
 // Format statistic name for display
@@ -54,6 +54,11 @@ function formatStatName(name: string): string {
 <Card class="h-22 transition-all hover:shadow-lg {className}">
   <Label>{formatStatName(statistic.name)}</Label>
   <p class="text-2xl font-bold mt-1">
-    <NumberFlow value={displayValue} transformTiming={{duration:1500, easing: 'ease-out'}} opacityTiming={{duration:1500, easing: 'ease-out'}} spinTiming={{duration:1500, easing: 'ease-out'}} />
+    <NumberFlow
+      value={displayValue}
+      transformTiming={{ duration: 1500, easing: "ease-out" }}
+      opacityTiming={{ duration: 1500, easing: "ease-out" }}
+      spinTiming={{ duration: 1500, easing: "ease-out" }}
+    />
   </p>
 </Card>

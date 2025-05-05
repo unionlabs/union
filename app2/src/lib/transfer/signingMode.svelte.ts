@@ -9,7 +9,7 @@ const createSigningModeStore = () => {
     },
     get mode() {
       return mode
-    }
+    },
   }
 }
 

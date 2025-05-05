@@ -1,17 +1,17 @@
-import { parseArgs } from "node:util"
-import { consola } from "scripts/logger"
 import {
   getChannelInfo,
   getQuoteToken,
-  getRecommendedChannels
+  getRecommendedChannels,
 } from "#query/offchain/ucs03-channels"
+import { parseArgs } from "node:util"
+import { consola } from "scripts/logger"
 
 const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = values["private-key"]

@@ -1,11 +1,11 @@
+import {
+  type Account as AptosAccount,
+  Aptos,
+  type AptosApiError,
+  type AptosConfig,
+} from "@aptos-labs/ts-sdk"
 import { Context, Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import {
-  Aptos,
-  type AptosConfig,
-  type AptosApiError,
-  type Account as AptosAccount
-} from "@aptos-labs/ts-sdk"
 
 export class AptosPublicClientSource extends Context.Tag("AptosPublicClientSource")<
   AptosPublicClientSource,
@@ -52,23 +52,23 @@ export class CreateWalletAptosClientError extends Data.TaggedError("CreateWallet
 }> {}
 
 export const createAptosPublicClient = (
-  parameters: AptosConfig
+  parameters: AptosConfig,
 ): Effect.Effect<Aptos, CreatePublicAptosClientError> =>
   Effect.try({
     try: () => new Aptos(parameters),
     catch: err =>
       new CreatePublicAptosClientError({
-        cause: extractErrorDetails(err as CreatePublicAptosClientError)
-      })
+        cause: extractErrorDetails(err as CreatePublicAptosClientError),
+      }),
   })
 
 export const createAptosWalletClient = (
-  parameters: AptosConfig
+  parameters: AptosConfig,
 ): Effect.Effect<Aptos, CreateWalletAptosClientError> =>
   Effect.try({
     try: () => new Aptos(parameters),
     catch: err =>
       new CreateWalletAptosClientError({
-        cause: extractErrorDetails(err as CreateWalletAptosClientError)
-      })
+        cause: extractErrorDetails(err as CreateWalletAptosClientError),
+      }),
   })

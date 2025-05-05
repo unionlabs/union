@@ -1,16 +1,16 @@
-import { loadEnv } from "vite"
 import react from "@astrojs/react"
-import svelte from "@astrojs/svelte"
 import sitemap from "@astrojs/sitemap"
-import Icons from "unplugin-icons/vite"
-import tailwind from "@astrojs/tailwind"
 import starlight from "@astrojs/starlight"
-import { defineConfig } from "astro/config"
-import starlightThemeRapide from "starlight-theme-rapide"
+import svelte from "@astrojs/svelte"
+import tailwind from "@astrojs/tailwind"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
-import { markdownConfiguration } from "./markdown.config.ts"
+import { defineConfig } from "astro/config"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
+import starlightThemeRapide from "starlight-theme-rapide"
+import Icons from "unplugin-icons/vite"
+import { loadEnv } from "vite"
+import { markdownConfiguration } from "./markdown.config.ts"
 
 const SITE_URL = "https://docs.union.build"
 const SITE_DESCRIPTION =
@@ -19,7 +19,7 @@ const SITE_DESCRIPTION =
 const { PORT = 4321, ENABLE_DEV_TOOLBAR = "false" } = loadEnv(
   process.env.NODE_ENV,
   process.cwd(),
-  ""
+  "",
 )
 
 export default defineConfig({
@@ -29,7 +29,7 @@ export default defineConfig({
     serverIslands: true,
     clientPrerender: true,
     directRenderScript: true,
-    contentIntellisense: true
+    contentIntellisense: true,
   },
   trailingSlash: "ignore",
   markdown: markdownConfiguration,
@@ -38,26 +38,26 @@ export default defineConfig({
       alias: [
         { find: "icons:svelte", replacement: "~icons" },
         { find: "icons:astro", replacement: "~icons" },
-        { find: "path", replacement: "rollup-plugin-node-polyfills/polyfills/path" }
-      ]
+        { find: "path", replacement: "rollup-plugin-node-polyfills/polyfills/path" },
+      ],
     },
     plugins: [
       Icons({
         compiler: "svelte",
-        autoInstall: true
+        autoInstall: true,
       }),
       Icons({
         compiler: "astro",
-        autoInstall: true
-      })
+        autoInstall: true,
+      }),
     ],
     ssr: {
-      noExternal: ["monaco-editor"]
+      noExternal: ["monaco-editor"],
     },
     optimizeDeps: {
       include: ["@xterm/xterm"],
-      esbuildOptions: { target: "es2020" }
-    }
+      esbuildOptions: { target: "es2020" },
+    },
   },
   server: _ => ({
     port: Number(PORT),
@@ -67,8 +67,8 @@ export default defineConfig({
      */
     headers: {
       "Cross-Origin-Embedder-Policy": "require-corp",
-      "Cross-Origin-Opener-Policy": "same-origin"
-    }
+      "Cross-Origin-Opener-Policy": "same-origin",
+    },
   }),
   redirects: { "/logo": "/union-logo.zip" },
   devToolbar: { enabled: ENABLE_DEV_TOOLBAR === "true" },
@@ -83,61 +83,61 @@ export default defineConfig({
       tagline: "Connecting blockchains trustlessly",
       locales: { root: { label: "English", lang: "en" } },
       editLink: {
-        baseUrl: "https://github.com/unionlabs/union/edit/main/docs/"
+        baseUrl: "https://github.com/unionlabs/union/edit/main/docs/",
       },
       social: {
-        github: "https://github.com/unionlabs",
-        discord: "https://discord.union.build",
-        "x.com": "https://x.com/union_build"
+        "github": "https://github.com/unionlabs",
+        "discord": "https://discord.union.build",
+        "x.com": "https://x.com/union_build",
       },
       logo: {
         alt: "Union Logo",
         replacesTitle: true,
         dark: "./src/assets/union-logo/union-logo-white.svg",
-        light: "./src/assets/union-logo/union-logo-black.svg"
+        light: "./src/assets/union-logo/union-logo-black.svg",
       },
       head: [
         {
           tag: "meta",
-          attrs: { property: "og:image", content: "/og.png" }
+          attrs: { property: "og:image", content: "/og.png" },
         },
         {
           tag: "meta",
-          attrs: { property: "twitter:image", content: "/og.png" }
+          attrs: { property: "twitter:image", content: "/og.png" },
         },
         {
           tag: "script",
-          attrs: { src: "/scripts/anchor-targets.js" }
+          attrs: { src: "/scripts/anchor-targets.js" },
         },
         {
           tag: "link",
           attrs: {
             rel: "apple-touch-icon",
-            href: "/pwa-192x192.png"
-          }
+            href: "/pwa-192x192.png",
+          },
         },
         {
           tag: "link",
           attrs: {
             rel: "mask-icon",
             href: "/favicon.svg",
-            color: "#FFFFFF"
-          }
+            color: "#FFFFFF",
+          },
         },
         {
           tag: "meta",
           attrs: {
             name: "msapplication-TileColor",
-            content: "#131313"
-          }
+            content: "#131313",
+          },
         },
         {
           tag: "meta",
           attrs: {
             name: "theme-color",
-            content: "#131313"
-          }
-        }
+            content: "#131313",
+          },
+        },
       ],
       sidebar: [
         {
@@ -145,58 +145,58 @@ export default defineConfig({
           items: [
             {
               label: "Introduction",
-              link: "/"
+              link: "/",
             },
             {
               label: "Protocol",
               items: [
                 {
                   label: "Overview",
-                  link: "/protocol/overview"
+                  link: "/protocol/overview",
                 },
                 {
                   label: "Deployments",
-                  link: "/protocol/deployments"
+                  link: "/protocol/deployments",
                 },
                 {
                   label: "Chains",
                   autogenerate: {
-                    directory: "/protocol/chains"
-                  }
+                    directory: "/protocol/chains",
+                  },
                 },
                 {
                   label: "Channels",
                   autogenerate: {
-                    directory: "/protocol/channels"
-                  }
+                    directory: "/protocol/channels",
+                  },
                 },
                 {
                   label: "Connections",
                   autogenerate: {
-                    directory: "/protocol/connections"
-                  }
-                }
-              ]
+                    directory: "/protocol/connections",
+                  },
+                },
+              ],
             },
             {
               label: "Architecture",
               items: [
                 {
                   label: "CometBLS",
-                  link: "/architecture/cometbls"
+                  link: "/architecture/cometbls",
                 },
                 {
                   label: "Galois",
-                  link: "/architecture/galois"
+                  link: "/architecture/galois",
                 },
                 {
                   label: "Voyager",
                   items: [
                     { label: "Overview", link: "/architecture/voyager/overview" },
-                    { label: "Concepts", link: "/architecture/voyager/concepts" }
-                  ]
-                }
-              ]
+                    { label: "Concepts", link: "/architecture/voyager/concepts" },
+                  ],
+                },
+              ],
             },
             {
               label: "Connect",
@@ -206,8 +206,8 @@ export default defineConfig({
                   items: [
                     {
                       label: "Overview",
-                      link: "/connect/new-chain/overview"
-                    }
+                      link: "/connect/new-chain/overview",
+                    },
                     // {
                     //   label: "EVM",
                     //   link: "/connect/new-chain/evm"
@@ -220,7 +220,7 @@ export default defineConfig({
                     //   label: "Move",
                     //   link: "/connect/new-chain/move"
                     // }
-                  ]
+                  ],
                 },
                 {
                   label: "Apps",
@@ -230,18 +230,18 @@ export default defineConfig({
                       items: [
                         {
                           label: "Introduction",
-                          link: "/connect/app/asset-transfer"
+                          link: "/connect/app/asset-transfer",
                         },
                         {
                           label: "Solidity",
-                          link: "/connect/app/asset-transfer/solidity"
+                          link: "/connect/app/asset-transfer/solidity",
                         },
                         {
                           label: "CosmWasm",
-                          link: "/connect/app/asset-transfer/cosmwasm"
-                        }
-                      ]
-                    }
+                          link: "/connect/app/asset-transfer/cosmwasm",
+                        },
+                      ],
+                    },
                     // {
                     //   label: "Custom Data",
                     //   items: [
@@ -251,66 +251,66 @@ export default defineConfig({
                     //     }
                     //   ]
                     // }
-                  ]
-                }
-              ]
+                  ],
+                },
+              ],
             },
             {
               label: "Concepts",
               autogenerate: {
-                directory: "/concepts"
-              }
+                directory: "/concepts",
+              },
             },
             {
               label: "Standards",
               autogenerate: {
-                directory: "/ucs"
-              }
+                directory: "/ucs",
+              },
             },
             {
               label: "Infrastructure",
               items: [
                 {
                   label: "Testnet 9",
-                  link: "/infrastructure/testnet-9"
+                  link: "/infrastructure/testnet-9",
                 },
                 {
                   label: "Node Operators",
                   collapsed: true,
                   autogenerate: {
-                    directory: "/infrastructure/node-operators"
-                  }
-                }
-              ]
+                    directory: "/infrastructure/node-operators",
+                  },
+                },
+              ],
             },
             {
               label: "Integrations",
               items: [
                 {
                   label: "Getting Started",
-                  link: "/integrations/getting-started"
+                  link: "/integrations/getting-started",
                 },
                 {
                   label: "TypeScript SDK",
-                  link: "/integrations/typescript"
+                  link: "/integrations/typescript",
                 },
                 {
                   label: "GraphQL",
-                  link: "/integrations/api/graphql"
-                }
-              ]
+                  link: "/integrations/api/graphql",
+                },
+              ],
             },
 
             {
               label: "Joining the Testnet",
               collapsed: true,
               autogenerate: {
-                directory: "/joining-testnet"
-              }
+                directory: "/joining-testnet",
+              },
             },
             {
               label: "Ceremony",
-              link: "/ceremony"
+              link: "/ceremony",
             },
             {
               label: "FAQ",
@@ -318,19 +318,19 @@ export default defineConfig({
               items: [
                 {
                   label: "How to conduct multisig transfers?",
-                  link: "/faq/multisig-transfers-union-btc"
+                  link: "/faq/multisig-transfers-union-btc",
                 },
                 {
                   label: "How to add new tokens from Union app?",
-                  link: "/faq/add-tokens-to-wallet"
+                  link: "/faq/add-tokens-to-wallet",
                 },
                 {
                   label: "GraphQL",
-                  link: "/integrations/api/graphql"
-                }
-              ]
-            }
-          ]
+                  link: "/integrations/api/graphql",
+                },
+              ],
+            },
+          ],
         },
         {
           label: "API",
@@ -338,38 +338,38 @@ export default defineConfig({
             {
               label: "GraphQL",
               link: "/reference/graphql",
-              badge: { text: "new", variant: "success" }
-            }
-          ]
-        }
+              badge: { text: "new", variant: "success" },
+            },
+          ],
+        },
       ],
       plugins: [
         starlightThemeRapide(),
         starlightUtils({
           multiSidebar: {
-            switcherStyle: "horizontalList"
-          }
+            switcherStyle: "horizontalList",
+          },
         }),
         starlightHeadingBadges(),
-        starlightLinksValidator()
+        starlightLinksValidator(),
       ],
       customCss: [
         "./src/styles/index.css",
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
         "./src/styles/starlight.css",
-        "./node_modules/katex/dist/katex.min.css"
-      ]
+        "./node_modules/katex/dist/katex.min.css",
+      ],
     }),
     sitemap(),
     tailwind({
       applyBaseStyles: false,
-      configFile: "tailwind.config.ts"
+      configFile: "tailwind.config.ts",
     }),
     svelte(),
     react({
       include: ["**/react/**"],
-      experimentalReactChildren: true
-    })
-  ]
+      experimentalReactChildren: true,
+    }),
+  ],
 })

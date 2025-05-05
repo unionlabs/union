@@ -13,10 +13,14 @@ export const interceptLogos = () => {
   const CDN = "https://cache-logos.unionlabs.workers.dev/"
 
   // Ensure this runs only in the browser
-  if (typeof window === "undefined") return
+  if (typeof window === "undefined") {
+    return
+  }
 
   // Prevent patching more than once
-  if (window.__githubLogoProxyPatched) return
+  if (window.__githubLogoProxyPatched) {
+    return
+  }
   window.__githubLogoProxyPatched = true
 
   /**
@@ -36,12 +40,12 @@ export const interceptLogos = () => {
    * Patch XMLHttpRequest.open to rewrite raw.githubusercontent.com URLs
    */
   const originalOpen = XMLHttpRequest.prototype.open
-  XMLHttpRequest.prototype.open = function (
+  XMLHttpRequest.prototype.open = function(
     method: string,
     url: string | URL,
     async = true,
     username?: string | null,
-    password?: string | null
+    password?: string | null,
   ) {
     if (typeof url === "string" && url.startsWith(RAW)) {
       url = url.replace(RAW, CDN)
@@ -53,7 +57,7 @@ export const interceptLogos = () => {
    * Patch HTMLImageElement.setAttribute to rewrite <img src="..."> URLs
    */
   const originalSetAttr = HTMLImageElement.prototype.setAttribute
-  HTMLImageElement.prototype.setAttribute = function (attr: string, value: string) {
+  HTMLImageElement.prototype.setAttribute = function(attr: string, value: string) {
     if (attr === "src" && typeof value === "string" && value.startsWith(RAW)) {
       value = value.replace(RAW, CDN)
     }

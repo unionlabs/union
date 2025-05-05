@@ -1,15 +1,15 @@
 import * as S from "effect/Schema"
-import { SortOrder } from "./sort-order.js"
-import { Hex } from "./hex.js"
-import { TransactionHash } from "./transaction.js"
+import { AggregateCount } from "./aggregate-count.js"
 import { ChainId, UniversalChainId } from "./chain.js"
 import { ChannelId, ChannelVersion } from "./channel.js"
-import { ConnectionId } from "./connection.js"
 import { ClientId } from "./client.js"
-import { PortId } from "./port.js"
+import { ConnectionId } from "./connection.js"
 import { Height } from "./height.js"
-import { AggregateCount } from "./aggregate-count.js"
+import { Hex } from "./hex.js"
 import { PacketTrace } from "./packet-trace.js"
+import { PortId } from "./port.js"
+import { SortOrder } from "./sort-order.js"
+import { TransactionHash } from "./transaction.js"
 
 export const PacketHash = S.String.pipe(S.pattern(/^0x[0-9a-f]{64}$/)).pipe(S.brand("PacketHash"))
 export type PacketHash = typeof PacketHash.Type
@@ -26,7 +26,7 @@ export class PacketListItem extends S.Class<PacketListItem>("PacketListItem")({
   packet_recv_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
   packet_ack_timestamp: S.OptionFromNullOr(S.DateTimeUtc),
   sort_order: SortOrder,
-  status: S.String
+  status: S.String,
 }) {}
 
 export const PacketList = S.Array(PacketListItem)
@@ -73,10 +73,10 @@ export class PacketDetails extends S.Class<PacketDetails>("PacketDetails")({
   decoded: S.OptionFromNullOr(S.Any),
   decoded_flattened: S.OptionFromNullOr(S.Array(S.Any)),
   acknowledgement: S.OptionFromNullOr(S.Any),
-  traces: S.Array(PacketTrace)
+  traces: S.Array(PacketTrace),
 }) {}
 
 export const PacketCount = S.Struct({
-  aggregate: AggregateCount
+  aggregate: AggregateCount,
 })
 export type PacketCount = typeof PacketCount.Type

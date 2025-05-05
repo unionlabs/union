@@ -1,11 +1,11 @@
 <script lang="ts">
-import { onDestroy, onMount } from "svelte"
-import { getState } from "$lib/state/index.svelte.ts"
 import Print from "$lib/components/Terminal/Print.svelte"
-import { axiom } from "$lib/utils/axiom.ts"
+import { getState } from "$lib/state/index.svelte.ts"
 import { user } from "$lib/state/session.svelte.ts"
-import { formatWaitTime, getNumberSuffix } from "$lib/utils/utils.js"
 import { getAverageTimes, type TimeResult } from "$lib/supabase"
+import { axiom } from "$lib/utils/axiom.ts"
+import { formatWaitTime, getNumberSuffix } from "$lib/utils/utils.js"
+import { onDestroy, onMount } from "svelte"
 
 const { contributor, terminal } = getState()
 
@@ -36,19 +36,23 @@ $effect(() => {
 
 {#if contributor.queueState.position}
   <Print class="text-red-500">
-    {contributor.queueState.position < 50 ?
-      "Do not close this tab or your Terminal. Ensure you have a reliable internet connection and that your computer does not go to sleep." :
-      "Your contribution slot is far in the future. You can turn your device off and return later without losing progression. If you are not online when it is your turn, you will lose your slot and not be able to contribute."
+    {
+      contributor.queueState.position < 50
+      ? "Do not close this tab or your Terminal. Ensure you have a reliable internet connection and that your computer does not go to sleep."
+      : "Your contribution slot is far in the future. You can turn your device off and return later without losing progression. If you are not online when it is your turn, you will lose your slot and not be able to contribute."
     }
   </Print>
 {/if}
 <Print><br></Print>
-<Print>Your place in line: <span
-        class="text-union-accent-500">{contributor.queueState.position ?? "LOADING"}{getNumberSuffix(contributor.queueState.position)}</span>
+<Print>Your place in line: <span class="text-union-accent-500">{
+    contributor.queueState.position ?? "LOADING"
+  }{getNumberSuffix(contributor.queueState.position)}</span>
 </Print>
 <Print><br></Print>
-<Print>Average wait time: <span class="text-union-accent-500">{formatWaitTime(avgWaitTime)}</span></Print>
-<Print>Maximum wait time: <span class="text-union-accent-500">{formatWaitTime(maxWaitTime)}</span></Print>
+<Print>Average wait time: <span class="text-union-accent-500">{formatWaitTime(avgWaitTime)}</span
+  ></Print>
+<Print>Maximum wait time: <span class="text-union-accent-500">{formatWaitTime(maxWaitTime)}</span
+  ></Print>
 <Print><br></Print>
 <Print><span class="text-green-400">✓</span> MPC Client connected.</Print>
 {#if contributor.userWallet && contributor.userWallet !== "SKIPPED"}
@@ -56,4 +60,3 @@ $effect(() => {
 {/if}
 <Print><span class="text-green-400">✓</span> Ready to contribute and awaiting slot.</Print>
 <Print><br></Print>
-

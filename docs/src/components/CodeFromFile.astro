@@ -1,8 +1,8 @@
 ---
 import "#/styles/fonts.css"
 
-import { Code } from "@astrojs/starlight/components"
 import { getFileContent } from "#/lib/node-utilities.ts"
+import { Code } from "@astrojs/starlight/components"
 
 type CodeProps = Parameters<typeof Code>[0]
 
@@ -21,6 +21,6 @@ const fileContent = await getFileContent({ filepath })
   lang={language}
   code={fileContent}
   title={filename || title}
-  class:list={['expressive-code']}
+  class:list={["expressive-code"]}
   {...remainingProps}
 />

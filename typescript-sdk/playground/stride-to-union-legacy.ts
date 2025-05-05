@@ -1,10 +1,10 @@
 #!/usr/bin/env bun
 import "scripts/patch"
-import { http } from "viem"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
+import { http } from "viem"
 import { hexToBytes } from "../src/convert.ts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
 
 /* `bun playground/stride-to-union.ts --private-key "..."` */
@@ -13,17 +13,19 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) throw new Error("Private key not found")
+if (!PRIVATE_KEY) {
+  throw new Error("Private key not found")
+}
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const cosmosAccount = await DirectSecp256k1Wallet.fromKey(
   Uint8Array.from(hexToBytes(PRIVATE_KEY)),
-  "stride"
+  "stride",
 )
 const [account] = await cosmosAccount.getAccounts()
 console.info(account?.address)
@@ -33,7 +35,7 @@ try {
     account: cosmosAccount,
     chainId: "stride-internal-1",
     gasPrice: { amount: "0.0025", denom: "ustrd" },
-    transport: http("https://stride-testnet-rpc.polkachu.com")
+    transport: http("https://stride-testnet-rpc.polkachu.com"),
   })
 
   const transactionPayload = {
@@ -41,14 +43,16 @@ try {
     autoApprove: true,
     denomAddress: "ustrd",
     destinationChainId: "union-testnet-8",
-    receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv"
+    receiver: "union14qemq0vw6y3gc3u3e0aty2e764u4gs5lnxk4rv",
   } satisfies TransferAssetsParametersLegacy<"stride-internal-1">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
 
   consola.box("Stride to Union gas cost:", gasEstimationResponse)
 
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
+  if (ONLY_ESTIMATE_GAS) {
+    process.exit(0)
+  }
 
   if (gasEstimationResponse.isErr()) {
     consola.info("Transaction simulation failed", gasEstimationResponse.error)
@@ -57,7 +61,9 @@ try {
 
   consola.success("Stride to Union gas cost:", gasEstimationResponse.value)
 
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
+  if (ONLY_ESTIMATE_GAS) {
+    process.exit(0)
+  }
 
   if (gasEstimationResponse.isErr()) {
     console.info("Transaction simulation failed", gasEstimationResponse.error)

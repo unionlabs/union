@@ -10,6 +10,6 @@ module.exports = {
     postcssImport,
     postcssNesting,
     tailwindcss(path.resolve(__dirname, "./tailwind.config.ts")),
-    autoprefixer
-  ]
+    autoprefixer,
+  ],
 }

@@ -1,39 +1,39 @@
-import { Effect, Schedule, Data, Context, Logger } from "effect"
-import { createPublicClient, http } from "viem"
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
-import { GasPrice } from "@cosmjs/stargate"
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { coins } from "@cosmjs/proto-signing"
+import { GasPrice } from "@cosmjs/stargate"
+import { Context, Data, Effect, Logger, Schedule } from "effect"
+import { createPublicClient, http } from "viem"
 
 import {
   channelBalance as EthereumChannelBalance,
+  EvmChannelDestination,
+  readErc20Balance,
   readErc20TotalSupply,
   ViemPublicClient as ViemPublicClientContext,
   ViemPublicClientDestination,
-  EvmChannelDestination,
-  readErc20Balance
 } from "@unionlabs/sdk/evm"
 
 import {
   channelBalance as CosmosChannelBalance,
-  readCw20TotalSupply,
-  createCosmWasmClient,
+  CosmosChannelDestination,
   CosmWasmClientContext,
   CosmWasmClientDestination,
-  CosmosChannelDestination,
-  createSigningCosmWasmClient
+  createCosmWasmClient,
+  createSigningCosmWasmClient,
+  readCw20TotalSupply,
 } from "@unionlabs/sdk/cosmos"
 
+import Database from "better-sqlite3"
+import type { Database as BetterSqlite3Database } from "better-sqlite3"
+import { gql, request } from "graphql-request"
+import fetch from "node-fetch"
+import fs from "node:fs"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
-import fs from "node:fs"
-import { request, gql } from "graphql-request"
-import Database from "better-sqlite3"
-import fetch from "node-fetch"
-import type { Database as BetterSqlite3Database } from "better-sqlite3"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
@@ -50,38 +50,40 @@ export const triggerIncident = (
   requesterEmail: string,
   incidentName: string,
   teamName: string,
-  isLocal: boolean
+  isLocal: boolean,
 ) =>
   isLocal
     ? Effect.sync(() => {
-        console.info("Local mode: skipping triggerIncident")
-        return { data: { id: "" } }
-      })
+      console.info("Local mode: skipping triggerIncident")
+      return { data: { id: "" } }
+    })
     : Effect.tryPromise({
-        try: () =>
-          fetch("https://uptime.betterstack.com/api/v3/incidents", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              summary,
-              description,
-              requester_email: requesterEmail,
-              ...(teamName ? { team_name: teamName } : {}),
-              call: false,
-              sms: false,
-              email: false,
-              name: incidentName
-            })
-          }).then(async res => {
-            const text = await res.text()
-            if (!res.ok) throw new Error(`Trigger failed: ${text}`)
-            return JSON.parse(text)
+      try: () =>
+        fetch("https://uptime.betterstack.com/api/v3/incidents", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            summary,
+            description,
+            requester_email: requesterEmail,
+            ...(teamName ? { team_name: teamName } : {}),
+            call: false,
+            sms: false,
+            email: false,
+            name: incidentName,
           }),
-        catch: e => new Error(`Incident trigger error: ${e}`)
-      })
+        }).then(async res => {
+          const text = await res.text()
+          if (!res.ok) {
+            throw new Error(`Trigger failed: ${text}`)
+          }
+          return JSON.parse(text)
+        }),
+      catch: e => new Error(`Incident trigger error: ${e}`),
+    })
 
 /**
  * Effect to resolve an existing BetterStack incident via the Uptime API
@@ -90,29 +92,31 @@ export const resolveIncident = (
   incidentId: string,
   apiKey: string,
   isLocal: boolean,
-  resolvedBy = "SENTINEL@union.build"
+  resolvedBy = "SENTINEL@union.build",
 ) =>
   isLocal
     ? Effect.sync(() => {
-        console.info("Local mode: skipping resolveIncident")
-        return { data: { id: incidentId } }
-      })
+      console.info("Local mode: skipping resolveIncident")
+      return { data: { id: incidentId } }
+    })
     : Effect.tryPromise({
-        try: () =>
-          fetch(`https://uptime.betterstack.com/api/v3/incidents/${incidentId}/resolve`, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              Authorization: `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({ resolved_by: resolvedBy })
-          }).then(async res => {
-            const text = await res.text()
-            if (!res.ok) throw new Error(`Resolve failed: ${text}`)
-            return JSON.parse(text)
-          }),
-        catch: e => new Error(`Incident resolve error: ${e}`)
-      })
+      try: () =>
+        fetch(`https://uptime.betterstack.com/api/v3/incidents/${incidentId}/resolve`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({ resolved_by: resolvedBy }),
+        }).then(async res => {
+          const text = await res.text()
+          if (!res.ok) {
+            throw new Error(`Resolve failed: ${text}`)
+          }
+          return JSON.parse(text)
+        }),
+      catch: e => new Error(`Incident resolve error: ${e}`),
+    })
 
 export function isFunded(db: BetterSqlite3Database, txHash: string) {
   const row = db.prepare(`SELECT 1 FROM funded_txs WHERE transaction_hash = ?`).get(txHash)
@@ -155,7 +159,7 @@ export function hasErrorOpen(db: BetterSqlite3Database, sla: string, packetHash:
       `SELECT 1
          FROM transfer_errors
         WHERE sla = ?
-          AND packet_hash = ?`
+          AND packet_hash = ?`,
     )
     .get(sla, packetHash)
 }
@@ -164,7 +168,7 @@ export function markTransferError(
   db: BetterSqlite3Database,
   sla: string,
   packetHash: string,
-  incidentId: string
+  incidentId: string,
 ) {
   db.prepare(`
     INSERT OR REPLACE INTO transfer_errors
@@ -183,13 +187,13 @@ export function clearTransferError(db: BetterSqlite3Database, sla: string, packe
 
 export function getOpenErrors(
   db: BetterSqlite3Database,
-  sla: string
+  sla: string,
 ): Array<{ packet_hash: string; incident_id: string }> {
   return db
     .prepare(
       `SELECT packet_hash, incident_id
          FROM transfer_errors
-        WHERE sla = ?`
+        WHERE sla = ?`,
     )
     .all(sla) as Array<{ packet_hash: string; incident_id: string }>
 }
@@ -287,7 +291,7 @@ class FilesystemError extends Data.TaggedError("FilesystemError")<{
 export class Config extends Context.Tag("Config")<Config, { readonly config: ConfigFile }>() {}
 
 const fetchWrappedTokens = (hasuraEndpoint: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const query = gql`
     query WrappedTokens {
       v2_tokens(where: { wrapping: { unwrapped_denom: { _is_null: false } } }) {
@@ -307,7 +311,7 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
       catch: error => {
         console.error("fetchWrappedTokens failed:", error)
         throw error
-      }
+      },
     })
 
     const tokens: Array<WrappedToken> = response?.v2_tokens || []
@@ -315,7 +319,7 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
   })
 
 const fetchFundableAccounts = (hasuraEndpoint: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const query = gql`
       query {
         v2_transfers(args: { p_destination_universal_chain_id: "babylon.bbn-1" }) {
@@ -333,7 +337,7 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
       catch: error => {
         console.error("fetchFundableAccounts failed:", error)
         throw error
-      }
+      },
     })
 
     const tokens: Array<FundableAccounts> = response?.v2_transfers || []
@@ -343,12 +347,12 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
         traces: traces
           .filter(
             trace =>
-              trace.type === "WRITE_ACK" &&
-              trace.transaction_hash != null &&
-              !isFunded(db, trace.transaction_hash)
+              trace.type === "WRITE_ACK"
+              && trace.transaction_hash != null
+              && !isFunded(db, trace.transaction_hash),
           )
           // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! }))
+          .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! })),
       }))
       .filter(acc => acc.traces.length > 0)
 
@@ -359,9 +363,9 @@ const fetchSourceChannelId = (
   hasuraEndpoint: string,
   srcChain: string,
   dstChain: string,
-  dstChannelId: number
+  dstChannelId: number,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const query = gql`
     query ChannelInfo($src: String!, $dst: String!, $dchan: Int!) {
       v2_channels(args: {
@@ -380,7 +384,7 @@ const fetchSourceChannelId = (
       catch: error => {
         console.error("fetchSourceChannelId failed:", error)
         throw error
-      }
+      },
     })
 
     const channels: Array<ChannelInfo> = response?.v2_channels || []
@@ -402,13 +406,13 @@ function loadConfig(configPath: string) {
     catch: error =>
       new FilesystemError({
         message: "Config file is invalid.",
-        cause: error
-      })
+        cause: error,
+      }),
   })
 }
 
 const escrowSupplyControlLoop = Effect.repeat(
-  Effect.gen(function* (_) {
+  Effect.gen(function*(_) {
     yield* Effect.log("Escrow supply control loop started")
     let config = (yield* Config).config
 
@@ -434,7 +438,7 @@ const escrowSupplyControlLoop = Effect.repeat(
         config.hasuraEndpoint,
         srcChain,
         dstChain,
-        dstChannel
+        dstChannel,
       )
       const srcCfg = config.chainConfig[srcChain]
       const dstCfg = config.chainConfig[dstChain]
@@ -461,8 +465,8 @@ const escrowSupplyControlLoop = Effect.repeat(
           Effect.provideService(EvmChannelDestination, {
             ucs03address: srcCfg.zkgmAddress as Hex,
             // biome-ignore lint/style/noNonNullAssertion: <explanation>
-            channelId: sourceChannelId!
-          })
+            channelId: sourceChannelId!,
+          }),
         )
         const chainMap = evmChannelBalances.get(srcChain) ?? new Map()
         const prev = chainMap.get(key) ?? 0n
@@ -476,9 +480,9 @@ const escrowSupplyControlLoop = Effect.repeat(
           Effect.provideService(CosmosChannelDestination, {
             ucs03address: srcCfg.zkgmAddress,
             // biome-ignore lint/style/noNonNullAssertion: <explanation>
-            channelId: sourceChannelId!
+            channelId: sourceChannelId!,
           }),
-          Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
+          Effect.tapError(e => Effect.logError("Error fetching channel balance:", e)),
         )
         srcChannelBal = BigInt(srcChannelBalUnknown as bigint)
 
@@ -492,14 +496,14 @@ const escrowSupplyControlLoop = Effect.repeat(
       if (dstCfg.chainType === "evm") {
         const client = createPublicClient({ transport: http(dstCfg.rpc) })
         totalSupply = yield* readErc20TotalSupply(token.denom).pipe(
-          Effect.provideService(ViemPublicClientContext, { client })
+          Effect.provideService(ViemPublicClientContext, { client }),
         )
       } else {
         const client = yield* createCosmWasmClient(dstCfg.rpc)
         totalSupply = BigInt(
           yield* readCw20TotalSupply(hexToUtf8(token.denom)).pipe(
-            Effect.provideService(CosmWasmClientContext, { client })
-          )
+            Effect.provideService(CosmWasmClientContext, { client }),
+          ),
         )
       }
 
@@ -513,7 +517,7 @@ const escrowSupplyControlLoop = Effect.repeat(
           sourceChannelId: `${sourceChannelId}`,
           sourceChannelBal: `${srcChannelBal}`,
           totalSupply: `${totalSupply}`,
-          destinationChannelId: `${dstChannel}`
+          destinationChannelId: `${dstChannel}`,
         })(Effect.logError(`SUPPLY ERROR`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
@@ -526,7 +530,7 @@ const escrowSupplyControlLoop = Effect.repeat(
           sourceChannelId: `${sourceChannelId}`,
           sourceChannelBal: `${srcChannelBal}`,
           totalSupply: `${totalSupply}`,
-          destinationChannelId: `${dstChannel}`
+          destinationChannelId: `${dstChannel}`,
         })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
 
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
@@ -538,13 +542,13 @@ const escrowSupplyControlLoop = Effect.repeat(
     for (const [chainId, { rpc, chainType, minter }] of Object.entries(config.chainConfig)) {
       if (chainType === "evm") {
         const client = createPublicClient({
-          transport: http(rpc)
+          transport: http(rpc),
         })
 
         for (const [tokenAddr, channelSum] of evmChannelBalances.get(chainId) ?? []) {
           const onChain = yield* readErc20Balance(tokenAddr as Hex, minter as Hex).pipe(
             Effect.provideService(ViemPublicClientContext, { client }),
-            Effect.tapError(e => Effect.logError("Error querying balanceOf:", e))
+            Effect.tapError(e => Effect.logError("Error querying balanceOf:", e)),
           )
 
           if (BigInt(onChain) < channelSum) {
@@ -554,7 +558,7 @@ const escrowSupplyControlLoop = Effect.repeat(
               tokenAddr,
               minter,
               aggregated: channelSum.toString(),
-              onChain: onChain.toString()
+              onChain: onChain.toString(),
             })(Effect.logError("AGGREGATE_MISMATCH"))
 
             Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
@@ -564,7 +568,7 @@ const escrowSupplyControlLoop = Effect.repeat(
               tokenAddr,
               minter,
               aggregated: channelSum.toString(),
-              onChain: onChain.toString()
+              onChain: onChain.toString(),
             })(Effect.logInfo("AGGREGATE_OK"))
 
             Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
@@ -576,7 +580,7 @@ const escrowSupplyControlLoop = Effect.repeat(
         for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
           const { amount } = yield* Effect.tryPromise({
             try: () => cosmosClient.getBalance(minter, denom),
-            catch: e => new Error(`bank query failed: ${e}`)
+            catch: e => new Error(`bank query failed: ${e}`),
           })
 
           if (BigInt(amount) < channelSum) {
@@ -586,7 +590,7 @@ const escrowSupplyControlLoop = Effect.repeat(
               denom,
               minter,
               aggregated: channelSum.toString(),
-              onChain: amount
+              onChain: amount,
             })(Effect.logError("AGGREGATE_MISMATCH"))
 
             Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
@@ -596,7 +600,7 @@ const escrowSupplyControlLoop = Effect.repeat(
               denom,
               minter,
               aggregated: channelSum.toString(),
-              onChain: amount
+              onChain: amount,
             })(Effect.logInfo("AGGREGATE_OK"))
 
             Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
@@ -605,11 +609,11 @@ const escrowSupplyControlLoop = Effect.repeat(
       }
     }
   }),
-  Schedule.spaced("15 minutes")
+  Schedule.spaced("15 minutes"),
 )
 
 const fundBabylonAccounts = Effect.repeat(
-  Effect.gen(function* (_) {
+  Effect.gen(function*(_) {
     yield* Effect.log("Funding babylon accounts loop started")
     let config = (yield* Config).config
     if (config.isLocal) {
@@ -621,14 +625,14 @@ const fundBabylonAccounts = Effect.repeat(
       DirectSecp256k1HdWallet.fromMnemonic(config.signer_account_mnemonic, { prefix: "bbn" })
     )
     const options: SigningCosmWasmClientOptions = {
-      gasPrice: GasPrice.fromString("0.025bbn")
+      gasPrice: GasPrice.fromString("0.025bbn"),
     }
     const [senderAccount] = yield* Effect.tryPromise(() => wallet.getAccounts())
 
     const client = yield* createSigningCosmWasmClient(
       "https://rpc.bbn-1.babylon.chain.kitchen",
       wallet,
-      options
+      options,
     )
 
     if (!senderAccount?.address) {
@@ -643,7 +647,7 @@ const fundBabylonAccounts = Effect.repeat(
         balance: balance.amount,
         chainId: "babylon.bbn-1",
         tokenAddr: "ubbn",
-        account: senderAccount.address
+        account: senderAccount.address,
       })(Effect.logError("SPENDER_BALANCE_LOW"))
 
       Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
@@ -652,7 +656,7 @@ const fundBabylonAccounts = Effect.repeat(
 
     const fee = {
       amount: coins(500, "ubbn"),
-      gas: "200000"
+      gas: "200000",
     }
 
     const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
@@ -664,12 +668,12 @@ const fundBabylonAccounts = Effect.repeat(
             senderAccount.address,
             receiver,
             coins(10000, "ubbn"), // send 0.01 bbn
-            fee
+            fee,
           ),
         catch: err => {
           console.error("raw sendTokens error:", err)
           throw err
-        }
+        },
       })
 
       addFunded(db, result.transactionHash)
@@ -680,12 +684,12 @@ const fundBabylonAccounts = Effect.repeat(
         tokenAddr: "ubbn",
         account: senderAccount.address,
         receiver,
-        transactionHash: result.transactionHash
+        transactionHash: result.transactionHash,
       })(Effect.logInfo("SENT_OK"))
       Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
     }
   }),
-  Schedule.spaced("1 minutes")
+  Schedule.spaced("1 minutes"),
 )
 
 interface PostRequestInput {
@@ -709,7 +713,7 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
       fetch(fullUrl, {
         method: "POST",
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       }).then(async response => {
         if (response.status === 200) {
           return await response.json()
@@ -719,25 +723,24 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
         throw {
           _tag: "PostRequestError",
           message: `Non-200 status: ${response.status} body: ${text}`,
-          status: response.status
+          status: response.status,
         }
       }),
     catch: error =>
       ({
         _tag: "PostRequestError",
-        message:
-          error instanceof Error
-            ? error.message
-            : typeof error === "object"
-              ? JSON.stringify(error)
-              : String(error),
-        status: (error as any)?.status
-      }) satisfies PostRequestError
+        message: error instanceof Error
+          ? error.message
+          : typeof error === "object"
+          ? JSON.stringify(error)
+          : String(error),
+        status: (error as any)?.status,
+      }) satisfies PostRequestError,
   })
 }
 
 export const checkBalances = Effect.repeat(
-  Effect.gen(function* (_) {
+  Effect.gen(function*(_) {
     yield* Effect.log("Spawning per-plugin balance checks…")
     const { config } = yield* Config
     const sbConfig = config.signerBalances
@@ -752,21 +755,21 @@ export const checkBalances = Effect.repeat(
               jsonrpc: "2.0",
               id: 1,
               method: "voyager_pluginCustom",
-              params: [plugin, "signerBalances", []] as const
-            }
+              params: [plugin, "signerBalances", []] as const,
+            },
           ]
 
           const callWithRetry = safePostRequest({
             url,
             port,
             headers: { "Content-Type": "application/json" },
-            payload
+            payload,
           }).pipe(
             // retry forever every 2 min on PostRequestError (or any thrown error)
-            Effect.retry(Schedule.spaced("2 minutes"))
+            Effect.retry(Schedule.spaced("2 minutes")),
           )
 
-          const worker = Effect.gen(function* (_) {
+          const worker = Effect.gen(function*(_) {
             const result = yield* callWithRetry
 
             if (!Array.isArray(result) || result.length === 0) {
@@ -789,7 +792,7 @@ export const checkBalances = Effect.repeat(
                 port: portStr,
                 wallet,
                 balance: bal.toString(),
-                expected: expectedThreshold.toString()
+                expected: expectedThreshold.toString(),
               }
 
               const key = `${url}:${port}:${plugin}:${wallet}`
@@ -807,7 +810,7 @@ export const checkBalances = Effect.repeat(
                     "SENTINEL@union.build",
                     "SIGNER_BALANCE_LOW",
                     "Union",
-                    config.isLocal
+                    config.isLocal,
                   )
                   markSignerIncident(db, key, inc.data.id)
                 }
@@ -820,7 +823,7 @@ export const checkBalances = Effect.repeat(
                     existing,
                     config.betterstack_api_key,
                     config.isLocal,
-                    "Sentinel-Automatically resolved."
+                    "Sentinel-Automatically resolved.",
                   )
                   clearSignerIncident(db, key)
                 }
@@ -832,11 +835,11 @@ export const checkBalances = Effect.repeat(
       }
     }
   }),
-  Schedule.spaced("30 minutes")
+  Schedule.spaced("30 minutes"),
 )
 
 const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     let allPackets: Array<Packet> = []
     let cursor: string | undefined
     let continueFetching = true
@@ -864,12 +867,12 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
           try: () =>
             request(hasuraEndpoint, queryNext, {
               sla: exceedingSla,
-              cursor
+              cursor,
             }),
           catch: err => {
             console.error("fetchMissingPackets (next) failed:", err)
             return []
-          }
+          },
         })
       } else {
         const queryFirst = gql`
@@ -887,17 +890,19 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
         response = yield* Effect.tryPromise({
           try: () =>
             request(hasuraEndpoint, queryFirst, {
-              sla: exceedingSla
+              sla: exceedingSla,
             }),
           catch: err => {
             console.error("fetchMissingPackets (first) failed:", err)
             return []
-          }
+          },
         })
       }
 
       const page: Array<Packet> = response.v2_packets || []
-      if (page.length === 0) break
+      if (page.length === 0) {
+        break
+      }
 
       allPackets.push(...page)
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -912,9 +917,9 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
 export const checkPackets = (
   hasuraEndpoint: string,
   betterstack_api_key: string,
-  isLocal: boolean
+  isLocal: boolean,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     for (const sla of ["mainnet", "testnet"] as const) {
       const transfer_error = sla === "mainnet" ? "MAINNET_TRANSFER_ERROR" : "TESTNET_TRANSFER_ERROR"
       const missingPacketsMainnet = yield* fetchMissingPackets(hasuraEndpoint, sla)
@@ -928,7 +933,7 @@ export const checkPackets = (
           destinationChain: missingPacket.destination_chain.universal_chain_id,
           packetSendTimestamp: missingPacket.packet_send_timestamp,
           packetHash: missingPacket.packet_hash,
-          explorerUrl: `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`
+          explorerUrl: `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`,
         }
         const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(transfer_error))
 
@@ -940,7 +945,7 @@ export const checkPackets = (
             "SENTINEL@union.build",
             transfer_error,
             "Union",
-            isLocal
+            isLocal,
           )
           markTransferError(db, sla, missingPacket.packet_hash, val.data.id)
         }
@@ -957,7 +962,7 @@ export const checkPackets = (
             incident_id,
             betterstack_api_key,
             isLocal,
-            "Sentinel-Automatically resolved."
+            "Sentinel-Automatically resolved.",
           )
           clearTransferError(db, sla, packet_hash)
         }
@@ -965,12 +970,12 @@ export const checkPackets = (
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
 
-const runIbcChecksForever = Effect.gen(function* (_) {
+const runIbcChecksForever = Effect.gen(function*(_) {
   const { config } = yield* Config
 
   const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
 
-  const effectToRepeat = Effect.gen(function* (_) {
+  const effectToRepeat = Effect.gen(function*(_) {
     yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
 
     yield* checkPackets(config.hasuraEndpoint, config.betterstack_api_key, config.isLocal)
@@ -979,14 +984,14 @@ const runIbcChecksForever = Effect.gen(function* (_) {
   return yield* Effect.repeat(effectToRepeat, schedule)
 })
 
-const mainEffect = Effect.gen(function* (_) {
+const mainEffect = Effect.gen(function*(_) {
   const argv = yield* Effect.sync(() =>
     yargs(hideBin(process.argv))
       .option("config", {
         alias: "c",
         type: "string",
         demandOption: true,
-        describe: "Path to the configuration file"
+        describe: "Path to the configuration file",
       })
       .help()
       .alias("help", "h")
@@ -1031,8 +1036,8 @@ const mainEffect = Effect.gen(function* (_) {
   yield* Effect.all(
     [runIbcChecksForever, escrowSupplyControlLoop, fundBabylonAccounts, checkBalances],
     {
-      concurrency: "unbounded"
-    }
+      concurrency: "unbounded",
+    },
   ).pipe(Effect.provideService(Config, { config }))
 })
 

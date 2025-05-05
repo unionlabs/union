@@ -1,14 +1,14 @@
-import { Effect } from "effect"
-import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
-import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import { executeCosmWasmInstructions } from "$lib/services/transfer-ucs03-cosmos/execute.ts"
-import { fromHex, isHex } from "viem"
+import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
+import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
+import { Effect } from "effect"
+import { fromHex, isHex } from "viem"
 
 export const approveTransfer = (
   chain: Chain,
   connectedWallet: CosmosWalletId,
-  params: ValidTransfer["args"]
+  params: ValidTransfer["args"],
 ) => {
   const decodedDenom = isHex(params.baseToken)
     ? fromHex(params.baseToken, "string")
@@ -26,10 +26,10 @@ export const approveTransfer = (
       msg: {
         increase_allowance: {
           spender: params.ucs03address,
-          amount: params.baseAmount.toString()
-        }
-      }
-    }
+          amount: params.baseAmount.toString(),
+        },
+      },
+    },
   ]
 
   return executeCosmWasmInstructions(chain, connectedWallet, instructions)

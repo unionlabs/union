@@ -1,13 +1,13 @@
 <script lang="ts">
+import { getState } from "$lib/state/index.svelte.ts"
+import { user } from "$lib/state/session.svelte.ts"
+import { insertWalletData } from "$lib/supabase"
+import { axiom } from "$lib/utils/axiom.ts"
+import { sleep } from "$lib/utils/utils.ts"
+import { onDestroy } from "svelte"
+import type { HTMLInputAttributes } from "svelte/elements"
 import type { ValidState } from "./index.ts"
 import { isValidBech32Address } from "./validator.ts"
-import type { HTMLInputAttributes } from "svelte/elements"
-import { insertWalletData } from "$lib/supabase"
-import { user } from "$lib/state/session.svelte.ts"
-import { getState } from "$lib/state/index.svelte.ts"
-import { sleep } from "$lib/utils/utils.ts"
-import { axiom } from "$lib/utils/axiom.ts"
-import { onDestroy } from "svelte"
 
 interface Props extends HTMLInputAttributes {
   class?: string
@@ -25,7 +25,9 @@ let validState: ValidState = $state(undefined)
 const onAddressSubmit = async (event: Event) => {
   event.preventDefault()
 
-  if (!inputText) return
+  if (!inputText) {
+    return
+  }
 
   if (inputText === "skip" || inputText === "Skip") {
     skip()
@@ -43,10 +45,12 @@ const onAddressSubmit = async (event: Event) => {
 
   if (validState === "VALID") {
     try {
-      if (!userId) return
+      if (!userId) {
+        return
+      }
       const result = await insertWalletData({
         id: userId,
-        wallet: inputText
+        wallet: inputText,
       })
       if (result) {
         terminal.updateHistory({ text: "Saving address...", duplicate: true })
@@ -63,7 +67,7 @@ const onAddressSubmit = async (event: Event) => {
       console.error("Error saving wallet address:", error)
       terminal.updateHistory({
         text: "An error occurred while saving the wallet address",
-        duplicate: true
+        duplicate: true,
       })
     }
   } else if (validState === "INVALID") {
@@ -75,10 +79,12 @@ const skip = async () => {
   terminal.updateHistory({ text: "Skipping reward step", duplicate: true })
   validation("SKIPPED")
   try {
-    if (!contributor.userId) return
+    if (!contributor.userId) {
+      return
+    }
     const result = await insertWalletData({
       id: contributor.userId,
-      wallet: "SKIPPED"
+      wallet: "SKIPPED",
     })
     if (result) {
       terminal.updateHistory({ text: "Saving to db...", duplicate: true })
@@ -93,7 +99,7 @@ const skip = async () => {
     console.error("Error saving wallet address:", error)
     terminal.updateHistory({
       text: "An error occurred while saving the wallet address",
-      duplicate: true
+      duplicate: true,
     })
   }
 }
@@ -108,16 +114,16 @@ function handleKeyDown(event: KeyboardEvent) {
 
 <form class="w-full">
   <input
-          autofocus
-          {...props}
-          type="text"
-          autocorrect="off"
-          autocomplete="off"
-          spellcheck="false"
-          autocapitalize="none"
-          bind:value={inputText}
-          onkeydown={handleKeyDown}
-          class="inline-flex bg-transparent w-full text-union-accent-500 outline-none focus:ring-0 focus:border-none"
+    autofocus
+    {...props}
+    type="text"
+    autocorrect="off"
+    autocomplete="off"
+    spellcheck="false"
+    autocapitalize="none"
+    bind:value={inputText}
+    onkeydown={handleKeyDown}
+    class="inline-flex bg-transparent w-full text-union-accent-500 outline-none focus:ring-0 focus:border-none"
   />
 </form>
 

@@ -1,13 +1,13 @@
 <script lang="ts">
-import type { State } from "@wagmi/core"
-import { type CosmosWalletId } from "$lib/wallet/cosmos"
-import { type AptosWalletId } from "$lib/wallet/aptos"
-import { type EvmWalletId } from "$lib/wallet/evm"
-import { Schema } from "effect"
-import { RpcType } from "@unionlabs/sdk/schema"
-import Truncate from "../../Truncate.svelte"
-import Label from "../../Label.svelte"
 import SharpPowerIcon from "$lib/components/icons/SharpPowerIcon.svelte"
+import { type AptosWalletId } from "$lib/wallet/aptos"
+import { type CosmosWalletId } from "$lib/wallet/cosmos"
+import { type EvmWalletId } from "$lib/wallet/evm"
+import { RpcType } from "@unionlabs/sdk/schema"
+import type { State } from "@wagmi/core"
+import { Schema } from "effect"
+import Label from "../../Label.svelte"
+import Truncate from "../../Truncate.svelte"
 
 type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]
@@ -26,18 +26,16 @@ let {
   connectedWalletId,
   onConnectClick,
   onDisconnectClick,
-  showDivider = true
+  showDivider = true,
 } = $props<{
   chain: Chain
   address: string | undefined
   connectStatus: ChainConnectStatus
   chainWalletsInformation: ChainWalletsInformation
   connectedWalletId:
-    | (Chain extends "cosmos"
-        ? CosmosWalletId
-        : Chain extends "aptos"
-          ? AptosWalletId
-          : EvmWalletId)
+    | (Chain extends "cosmos" ? CosmosWalletId
+      : Chain extends "aptos" ? AptosWalletId
+      : EvmWalletId)
     | null
     | undefined
   onConnectClick: (walletIdentifier: string) => void | Promise<void>
@@ -46,7 +44,7 @@ let {
 }>()
 
 let connectText = $derived(
-  connectStatus === "connected" && address && address?.length > 0 ? address : ""
+  connectStatus === "connected" && address && address?.length > 0 ? address : "",
 )
 
 let copyClicked = $state(false)
@@ -60,21 +58,20 @@ const onCopyClick = () => {
 }
 
 // filter items with duplicate names
-let sanitizeWalletInformation =
-  chainWalletsInformation.filter(
-    (wallet: { name: string }, index: number, array: ChainWalletsInformation) =>
-      array.findIndex((t: { name: string }) =>
-        t.name.toLowerCase().startsWith(wallet.name.toLowerCase())
-      ) === index
-  ) ?? chainWalletsInformation
+let sanitizeWalletInformation = chainWalletsInformation.filter(
+  (wallet: { name: string }, index: number, array: ChainWalletsInformation) =>
+    array.findIndex((t: { name: string }) =>
+      t.name.toLowerCase().startsWith(wallet.name.toLowerCase())
+    ) === index,
+) ?? chainWalletsInformation
 
 let walletListToRender = $derived(
-  connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation
+  connectStatus === "connected" ? chainWalletsInformation : sanitizeWalletInformation,
 )
 
 // Find the currently connected wallet to get its icon
 let connectedWallet = $derived(
-  chainWalletsInformation.find((wallet: { id: string }) => wallet.id === connectedWalletId)
+  chainWalletsInformation.find((wallet: { id: string }) => wallet.id === connectedWalletId),
 )
 </script>
 
@@ -82,7 +79,9 @@ let connectedWallet = $derived(
   {#if showDivider}
     <div class="flex items-center gap-4 mb-2">
       <div class="flex-1 h-px bg-zinc-200 dark:bg-zinc-800"></div>
-      <Label class="text-zinc-500 dark:text-zinc-400 {connectStatus === 'connected' ? 'opacity-60' : ''}">{chain}</Label>
+      <Label
+        class="text-zinc-500 dark:text-zinc-400 {connectStatus === 'connected' ? 'opacity-60' : ''}"
+      >{chain}</Label>
       <div class="flex-1 h-px bg-zinc-200 dark:bg-zinc-800"></div>
     </div>
   {/if}
@@ -93,18 +92,20 @@ let connectedWallet = $derived(
       <div class="flex items-center justify-between">
         <div class="flex gap-3 items-center">
           {#if connectedWallet?.icon}
-            <img 
-              src={connectedWallet.icon} 
-              alt={connectedWallet.name} 
-              class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1" 
+            <img
+              src={connectedWallet.icon}
+              alt={connectedWallet.name}
+              class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1"
             />
           {/if}
           <div class="flex flex-col">
-            <h4 class="capitalize font-semibold text-base text-zinc-900 dark:text-zinc-50">{connectedWallet.name}</h4>
-            <Truncate 
-              class="font-mono text-sm text-zinc-500 dark:text-zinc-400" 
-              value={connectText} 
-              maxLength={16} 
+            <h4 class="capitalize font-semibold text-base text-zinc-900 dark:text-zinc-50">
+              {connectedWallet.name}
+            </h4>
+            <Truncate
+              class="font-mono text-sm text-zinc-500 dark:text-zinc-400"
+              value={connectText}
+              maxLength={16}
               showCopy={true}
             />
           </div>
@@ -122,18 +123,20 @@ let connectedWallet = $derived(
 
   <!-- Wallet List -->
   <div class="grid grid-cols-1 gap-2">
-    {#each walletListToRender as {name, id, icon, download}, index (index)}
+    {#each walletListToRender as { name, id, icon, download }, index (index)}
       {@const walletIdentifier = id}
       {#if !(connectStatus === "connected" && connectedWalletId === id)}
         <button
           role="row"
           tabindex={0}
           data-index={index}
-          class="w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4
-                flex items-center justify-between cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800
-                transition-colors duration-200 ease-in-out focus:outline-none
-                text-base font-medium capitalize relative h-14
-                {connectStatus === 'connected' ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0' : ''}"
+          class="
+            w-full bg-zinc-100 dark:bg-zinc-900 rounded-lg p-4
+            flex items-center justify-between cursor-pointer hover:bg-zinc-200 dark:hover:bg-zinc-800
+            transition-colors duration-200 ease-in-out focus:outline-none
+            text-base font-medium capitalize relative h-14
+            {connectStatus === 'connected' ? 'opacity-60 grayscale hover:opacity-100 hover:grayscale-0' : ''}
+          "
           onclick={async () => {
             if (connectStatus === "disconnected") {
               console.info("disconnected, calling onConnectClick")
@@ -146,15 +149,16 @@ let connectedWallet = $derived(
         >
           <div class="flex items-center gap-3">
             {#if icon}
-              <img 
-                src={icon} 
-                alt={name} 
-                class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1" 
+              <img
+                src={icon}
+                alt={name}
+                class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1"
               />
             {/if}
             <span class="text-zinc-900 dark:text-zinc-50">{name}</span>
           </div>
-          {#if (connectStatus === "connecting" || connectStatus === "reconnecting") && connectedWalletId === id}
+          {#if (connectStatus === "connecting" || connectStatus === "reconnecting")
+          && connectedWalletId === id}
             <span class="text-zinc-400">⋯</span>
           {/if}
         </button>

@@ -1,17 +1,17 @@
-import { ofetch } from "ofetch"
-import type { Prettify } from "../types.ts"
-import { Base64, Hex, Json } from "ox"
-import { ResultAsync, err, ok, type Result } from "neverthrow"
 import { CosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { cosmosRpcs, type CosmosChainId } from "../cosmos/client.ts"
+import { err, ok, type Result, ResultAsync } from "neverthrow"
+import { ofetch } from "ofetch"
+import { Base64, Hex, Json } from "ox"
+import { type CosmosChainId, cosmosRpcs } from "../cosmos/client.ts"
+import type { Prettify } from "../types.ts"
 
 type rpcUrlArgument = { rpcUrl: string }
 export type RpcQueryPath = "height" | "block" | "transaction" | "net_info" | "health"
 
 const queryHeaders = new Headers({
-  Accept: "application/json",
+  "Accept": "application/json",
   "User-Agent": "typescript-sdk",
-  "Content-Type": "application/json"
+  "Content-Type": "application/json",
 })
 
 type CosmosRpcBaseResponse = {
@@ -52,7 +52,7 @@ type CosmosTransactionReceipt = {
 export async function queryCosmosCW20AddressBalance({
   address,
   contractAddress,
-  chainId
+  chainId,
 }: {
   address: string
   contractAddress: string
@@ -62,14 +62,16 @@ export async function queryCosmosCW20AddressBalance({
   let publicClient = await ResultAsync.fromPromise(CosmWasmClient.connect(rpc), error => {
     return new Error(`failed to create public cosmwasm client with rpc ${rpc}`, { cause: error })
   })
-  if (publicClient.isErr()) return err(publicClient.error)
+  if (publicClient.isErr()) {
+    return err(publicClient.error)
+  }
 
   let client = publicClient.value
   const balance = ResultAsync.fromPromise(
     client.queryContractSmart(contractAddress, { balance: { address } }),
     error => {
       return new Error(`failed to query balance for contract ${contractAddress}`, { cause: error })
-    }
+    },
   )
 
   return balance.andThen(balance => ok(balance.balance))
@@ -87,7 +89,7 @@ export async function queryCosmosCW20AddressBalance({
  */
 export async function queryCosmosC20TokenMetadata({
   contractAddress,
-  chainId
+  chainId,
 }: {
   contractAddress: string
   chainId: CosmosChainId
@@ -106,17 +108,19 @@ export async function queryCosmosC20TokenMetadata({
   let publicClient = await ResultAsync.fromPromise(CosmWasmClient.connect(rpc), error => {
     return new Error(`failed to create public cosmwasm client with rpc ${rpc}`, { cause: error })
   })
-  if (publicClient.isErr()) return err(publicClient.error)
+  if (publicClient.isErr()) {
+    return err(publicClient.error)
+  }
   let client = publicClient.value
   const response = ResultAsync.fromPromise(
     client.queryContractSmart(contractAddress, {
-      token_info: {}
+      token_info: {},
     }),
     error => {
       return new Error(`failed to query token info for contract ${contractAddress}`, {
-        cause: error
+        cause: error,
       })
-    }
+    },
   )
   return response
 }
@@ -126,21 +130,21 @@ const CW20_PREFIXES = [
   "\u0000\x08",
   "\u0000\x09",
   "\u0000\x0A",
-  "\u0000\x0B"
+  "\u0000\x0B",
 ] as const
 const CW20_HUMAN_PREFIXES = [
   "balance",
   "allowance",
   "token_info",
   "contract_info",
-  "allowance_spender"
+  "allowance_spender",
 ] as const
 
 const CW20_PREFIXES_MAP = {
   balance: "\u0000\x07",
   allowance: "\u0000\x08",
   token_info: "\u0000\x09",
-  contract_info: "\u0000\x0A"
+  contract_info: "\u0000\x0A",
 } as const
 
 interface ContractStateResponse {
@@ -158,7 +162,7 @@ interface ContractStateResponse {
 
 export async function queryContractState({
   contractAddress,
-  restUrl
+  restUrl,
 }: {
   contractAddress: string
   restUrl: string
@@ -179,12 +183,12 @@ export async function queryContractState({
       keyDecoded = prefix
       valueDecoded = {
         address,
-        amount: valueDecoded
+        amount: valueDecoded,
       }
     }
     return {
       key: keyDecoded.replaceAll(CW20_PREFIXES_MAP["balance"], ""),
-      value: valueDecoded
+      value: valueDecoded,
     }
   })
 }
@@ -196,13 +200,13 @@ export async function queryContractState({
  */
 export async function checkCosmosTokenType({
   address,
-  restEndpoint
+  restEndpoint,
 }: { address: string; restEndpoint: string }) {
   const query = { token_info: {} }
   const base64Encoded = btoa(JSON.stringify(query))
   console.info("base64Encoded", base64Encoded)
   const response = await fetch(
-    `${restEndpoint}/cosmwasm/wasm/v1/contract/${address}/smart/${base64Encoded}`
+    `${restEndpoint}/cosmwasm/wasm/v1/contract/${address}/smart/${base64Encoded}`,
   )
   const data = await response.json()
   return data
@@ -264,7 +268,7 @@ type CosmosAccountTransactions = Prettify<
  */
 export async function getCosmosAccountTransactions({
   address,
-  rpcUrl
+  rpcUrl,
 }: { address: string } & rpcUrlArgument): Promise<{
   total: number
   sent: CosmosAccountTransactions
@@ -278,28 +282,29 @@ export async function getCosmosAccountTransactions({
       .catch(),
     fetch(recipientUrl, { headers: queryHeaders })
       .then(_ => _.json())
-      .catch()
+      .catch(),
   ])) as [CosmosAccountTransactions, CosmosAccountTransactions]
 
   return {
     sent,
     received,
-    total: Number.parseInt(sent.result.total_count) + Number.parseInt(received.result.total_count)
+    total: Number.parseInt(sent.result.total_count) + Number.parseInt(received.result.total_count),
   }
 }
 
 export async function getAptosAccountTransactions({
   address,
-  rpcUrl
+  rpcUrl,
 }: { address: string; rpcUrl: string }): Promise<Array<AptosTransactionReceipt>> {
   const response = await fetch(`${rpcUrl}/accounts/${address}/transactions`, {
-    headers: queryHeaders
+    headers: queryHeaders,
   })
-  const data = (await response.json()) as
-    // TODO: add types
-    Array<any> | { error_code: string; message: string; vm_error_code: null }
+  const data = (await response.json()) as // TODO: add types
+  Array<any> | { error_code: string; message: string; vm_error_code: null }
 
-  if (!Array.isArray(data)) return data as Array<AptosTransactionReceipt>
+  if (!Array.isArray(data)) {
+    return data as Array<AptosTransactionReceipt>
+  }
   return data as Array<AptosTransactionReceipt>
 }
 
@@ -407,7 +412,7 @@ interface AptosTransactionReceipt {
         inner: string
       },
       string,
-      string
+      string,
     ]
     type: string
   }

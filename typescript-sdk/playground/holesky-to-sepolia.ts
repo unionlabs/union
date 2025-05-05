@@ -1,21 +1,21 @@
-import { fallback, http } from "viem"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
+import { fallback, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { holesky } from "viem/chains"
 import { createUnionClient } from "../src/mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
-  getRecommendedChannels
+  getRecommendedChannels,
 } from "../src/query/offchain/ucs03-channels.ts"
 
 const cliArgs = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
@@ -63,7 +63,7 @@ const transferArgs = {
   quoteAmount: AMOUNT,
   receiver: RECEIVER,
   sourceChannelId: channel.source_channel_id,
-  ucs03address: `0x${channel.source_port_id}`
+  ucs03address: `0x${channel.source_port_id}`,
 } as const
 
 consola.info("transfer args", transferArgs)
@@ -73,8 +73,8 @@ const holeskyClient = createUnionClient({
   account: privateKeyToAccount(`0x${PRIVATE_KEY}`),
   transport: fallback([
     http("https://rpc.17000.holesky.chain.kitchen"),
-    http(holesky?.rpcUrls.default.http.at(0))
-  ])
+    http(holesky?.rpcUrls.default.http.at(0)),
+  ]),
 })
 
 const approveResponse = await holeskyClient.approveErc20(transferArgs)

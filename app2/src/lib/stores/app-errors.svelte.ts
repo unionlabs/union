@@ -1,6 +1,6 @@
-import { Array as A, Option, pipe } from "effect"
 import { chains } from "$lib/stores/chains.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
+import { Array as A, Option, pipe } from "effect"
 
 // Get all token errors from the store
 const _tokenErrors = $derived(
@@ -9,9 +9,9 @@ const _tokenErrors = $derived(
     A.filterMap(([a, b]) => Option.all([Option.some(a), b])),
     A.map(([chainId, error]) => ({
       chainId,
-      error
-    }))
-  )
+      error,
+    })),
+  ),
 )
 export const tokenErrors = () => _tokenErrors
 

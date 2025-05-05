@@ -1,6 +1,6 @@
 ---
 import type { NoRepetition } from "#/lib/types.ts"
-import { Tabs, TabItem, Code } from "@astrojs/starlight/components"
+import { Code, TabItem, Tabs } from "@astrojs/starlight/components"
 import { commands, type CommandType, type PackageManager } from "./index.ts"
 
 interface Props {
@@ -16,20 +16,25 @@ const {
   postfix,
   command,
   packageId,
-  pkgManagers = ["pnpm", "bun", "npm", "yarn"]
+  pkgManagers = ["pnpm", "bun", "npm", "yarn"],
 } = Astro.props
 ---
 
 <Tabs syncKey="pkgManager">
   {
     pkgManagers.map(pkgManager => (
-      <TabItem label={pkgManager} icon={commands[pkgManager].icon}>
+      <TabItem
+        label={pkgManager}
+        icon={commands[pkgManager].icon}
+      >
         <Code
           lang="bash"
           frame="none"
           class="text-sm sm:text-base size-full"
-          code={`${prefix ?? ''} ${pkgManager} ${commands[pkgManager].commands[command]} ${packageId} ${postfix ?? ''}`.trim()}
-          />  
+          code={`${prefix ?? ""} ${pkgManager} ${
+            commands[pkgManager].commands[command]
+          } ${packageId} ${postfix ?? ""}`.trim()}
+        />
       </TabItem>
     ))
   }

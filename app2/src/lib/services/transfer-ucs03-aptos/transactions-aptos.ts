@@ -1,18 +1,19 @@
+import { getAccount } from "$lib/services/transfer-ucs03-aptos/account.ts"
+import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
+import { generateSalt } from "@unionlabs/sdk/utils"
 import { Effect } from "effect"
 import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
-import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 import { getPublicClient } from "../aptos/clients.ts"
-import { getAccount } from "$lib/services/transfer-ucs03-aptos/account.ts"
-import { generateSalt } from "@unionlabs/sdk/utils"
-import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
+import { WaitForTransactionReceiptError, WriteContractError } from "./errors.ts"
 
 export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     if (transfer.sourceRpcType !== "aptos") {
       return yield* Effect.fail(new Error("Only EVM transfers are supported"))
     }
-    const account = yield* Effect.flatMap(getAccount, account =>
-      account ? Effect.succeed(account) : Effect.fail(new Error("No account connected"))
+    const account = yield* Effect.flatMap(
+      getAccount,
+      account => account ? Effect.succeed(account) : Effect.fail(new Error("No account connected")),
     )
     const salt = yield* generateSalt("aptos")
 
@@ -28,29 +29,29 @@ export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =
         transfer.quoteAmount.toString(),
         18446744073709551615n.toString(), // TODO: Check this value, use transfer.timeoutHeight later
         18446744073709551615n.toString(), // TODO: Check this value, use transfer.timeoutTimestamp later
-        salt
-      ]
+        salt,
+      ],
     }
 
     return yield* Effect.tryPromise({
       try: () => {
         return account.signAndSubmitTransaction({ payload: walletPayload })
       },
-      catch: err => new WriteContractError({ cause: err as WriteContractErrorType })
+      catch: err => new WriteContractError({ cause: err as WriteContractErrorType }),
     })
   })
 
 export const waitForTransferReceipt = (chain: Chain, hash: Hash) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const publicClient = yield* getPublicClient(chain)
     return yield* Effect.tryPromise({
       try: () =>
         publicClient.waitForTransaction({
           transactionHash: hash,
-          options: { checkSuccess: false }
+          options: { checkSuccess: false },
         }),
       catch: err =>
-        new WaitForTransactionReceiptError({ cause: err as WaitForTransactionReceiptErrorType })
+        new WaitForTransactionReceiptError({ cause: err as WaitForTransactionReceiptErrorType }),
     })
   })
 

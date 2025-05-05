@@ -22,6 +22,20 @@
       enable = true;
       package = pkgs.biome;
     };
+    dprint = {
+      enable = true;
+      package = pkgsUnstable.dprint;
+      settings = {
+        extends = builtins.toString ./dprint.json;
+        plugins = map toString (
+          with pkgsUnstable.dprint-plugins;
+          [
+            dprint-plugin-typescript
+            g-plane-markup_fmt
+          ]
+        );
+      };
+    };
     yamlfmt = {
       enable = true;
       package = pkgs.yamlfmt;
@@ -64,6 +78,37 @@
         "-formatter"
         "retain_line_breaks=true"
       ];
+      dprint = {
+        includes = [
+          "*.ts"
+          "*.mts"
+          "*.cts"
+          "*.js"
+          "*.cjs"
+          "*.mjs"
+          "*.jsx"
+          "*.tsx"
+          "*.d.ts"
+          "*.d.mts"
+          "*.d.cts"
+          "*.svelte"
+          "*.astro"
+
+          "**/*.ts"
+          "**/*.mts"
+          "**/*.cts"
+          "**/*.js"
+          "**/*.cjs"
+          "**/*.mjs"
+          "**/*.jsx"
+          "**/*.tsx"
+          "**/*.d.ts"
+          "**/*.d.mts"
+          "**/*.d.cts"
+          "**/*.svelte"
+          "**/*.astro"
+        ];
+      };
       biome =
         let
           biomeJsonConfig = builtins.fromJSON (builtins.readFile ./biome.json);

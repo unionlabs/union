@@ -1,17 +1,17 @@
 <script lang="ts">
-import { onMount } from "svelte"
-import tw from "tailwind.config"
-import union from "#/assets/union-logo/union-logo-transparent.svg?raw"
-import skip from "#/assets/partners/skip.svg?raw"
-import noble from "#/assets/partners/noble.svg?raw"
-import quasar from "#/assets/partners/quasar.svg?raw"
+import canto from "#/assets/partners/canto.svg?raw"
 import celestia from "#/assets/partners/celestia.svg?raw"
 import ethereum from "#/assets/partners/ethereum.svg?raw"
 import movement from "#/assets/partners/movement.svg?raw"
+import noble from "#/assets/partners/noble.svg?raw"
 import polygon from "#/assets/partners/polygon.svg?raw"
+import quasar from "#/assets/partners/quasar.svg?raw"
 import scroll from "#/assets/partners/scroll.svg?raw"
 import secret from "#/assets/partners/secret.svg?raw"
-import canto from "#/assets/partners/canto.svg?raw"
+import skip from "#/assets/partners/skip.svg?raw"
+import union from "#/assets/union-logo/union-logo-transparent.svg?raw"
+import { onMount } from "svelte"
+import tw from "tailwind.config"
 
 /* Define our media query and media query object */
 let mq: MediaQueryList
@@ -62,7 +62,7 @@ const nodes: Record<string, Node> = {
     y: 3,
     logo: ethereum,
     url: "https://ethereum.org/",
-    scale: 1.2
+    scale: 1.2,
   },
   movement: { x: 4, y: 6, logo: movement, url: "https://movementlabs.xyz/" },
   noble: { x: 13, y: 8, logo: noble, url: "https://nobleassets.xyz/" },
@@ -71,7 +71,7 @@ const nodes: Record<string, Node> = {
   canto: { x: 8, y: 9, logo: canto, url: "https://canto.io/" },
   polygon: { x: 10, y: 3, logo: polygon, url: "https://polygon.technology/" },
   scroll: { x: 13, y: 4, logo: scroll, url: "https://scroll.io/" },
-  skip: { x: 14, y: 6, logo: skip, url: "https://skip.money/", scale: 1.2 }
+  skip: { x: 14, y: 6, logo: skip, url: "https://skip.money/", scale: 1.2 },
 }
 
 const conns: Array<{ from: string; to: string; delay: number }> = [
@@ -94,7 +94,7 @@ const conns: Array<{ from: string; to: string; delay: number }> = [
   { to: "union", from: "canto", delay: 3 },
   { to: "union", from: "noble", delay: 4 },
   { to: "union", from: "quasar", delay: 3 },
-  { to: "union", from: "skip", delay: 2 }
+  { to: "union", from: "skip", delay: 2 },
 ]
 
 const scale = (input: number, srcRange: [number, number], dstRange: [number, number]) => {
@@ -158,7 +158,7 @@ const connectionData = conns.map(({ from, to, delay }) => {
     cxKeyTimes,
     cyKeyTimes,
     radiusKeyTimes,
-    delay
+    delay,
   }
 })
 
@@ -173,19 +173,60 @@ const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
   xmlns="http://www.w3.org/2000/svg"
 >
   <defs>
-    <linearGradient id="edge-gradient-ns" x1="0" x2="0" y1="0" y2="1">
-      <stop offset="0%" stop-color="#000" />
-      <stop offset="50%" stop-color="#000" stop-opacity="0" />
-      <stop offset="100%" stop-color="#000" />
+    <linearGradient
+      id="edge-gradient-ns"
+      x1="0"
+      x2="0"
+      y1="0"
+      y2="1"
+    >
+      <stop
+        offset="0%"
+        stop-color="#000"
+      />
+      <stop
+        offset="50%"
+        stop-color="#000"
+        stop-opacity="0"
+      />
+      <stop
+        offset="100%"
+        stop-color="#000"
+      />
     </linearGradient>
-    <linearGradient id="edge-gradient-ew" x1="0" x2="1" y1="0" y2="0">
-      <stop offset="0%" stop-color="#000" />
-      <stop offset="20%" stop-color="#000" stop-opacity="0" />
-      <stop offset="80%" stop-color="#000" stop-opacity="0" />
-      <stop offset="100%" stop-color="#000" />
+    <linearGradient
+      id="edge-gradient-ew"
+      x1="0"
+      x2="1"
+      y1="0"
+      y2="0"
+    >
+      <stop
+        offset="0%"
+        stop-color="#000"
+      />
+      <stop
+        offset="20%"
+        stop-color="#000"
+        stop-opacity="0"
+      />
+      <stop
+        offset="80%"
+        stop-color="#000"
+        stop-opacity="0"
+      />
+      <stop
+        offset="100%"
+        stop-color="#000"
+      />
     </linearGradient>
 
-    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+    <pattern
+      id="grid"
+      width="32"
+      height="32"
+      patternUnits="userSpaceOnUse"
+    >
       <path
         d="M 32 0 L 32 32 0 32"
         fill="none"
@@ -201,9 +242,29 @@ const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
   <rect width="100%" height="100%" fill="#000" />
   !-->
 
-  <rect width="150%" height="150%" fill="url(#grid)" />
+  <rect
+    width="150%"
+    height="150%"
+    fill="url(#grid)"
+  />
 
-  {#each connectionData as { from, to, dx, dy, fromX, fromY, toX, toY, totalTime, cxKeyTimes, cyKeyTimes, radiusKeyTimes, delay }}
+  {#each connectionData as
+    {
+    from,
+    to,
+    dx,
+    dy,
+    fromX,
+    fromY,
+    toX,
+    toY,
+    totalTime,
+    cxKeyTimes,
+    cyKeyTimes,
+    radiusKeyTimes,
+    delay,
+  }
+  }
     <g>
       <path
         d={`M ${pos(fromX)} ${pos(fromY)} h ${pos(dx)} v ${pos(dy)}`}
@@ -223,15 +284,22 @@ const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
           gradientUnits="userSpaceOnUse"
           id="gradient-{from}-{to}"
         >
-          <stop offset="0" stop-color={tw.theme.extend.colors.accent[800]}
-          ></stop>
-          <stop offset="0.4" stop-color={tw.theme.extend.colors.accent[800]}
-          ></stop>
+          <stop
+            offset="0"
+            stop-color={tw.theme.extend.colors.accent[800]}
+          >
+          </stop>
+          <stop
+            offset="0.4"
+            stop-color={tw.theme.extend.colors.accent[800]}
+          >
+          </stop>
           <stop
             offset="1"
             stop-color={tw.theme.extend.colors.accent[800]}
             stop-opacity="0"
-          ></stop>
+          >
+          </stop>
           <animate
             attributeName="cx"
             dur="{totalTime}s"
@@ -240,7 +308,8 @@ const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
             repeatCount="indefinite"
             values="{pos(fromX)};{pos(toX)};{pos(toX)};{pos(toX)}"
             id="cx-{from}-{to}"
-          ></animate>
+          >
+          </animate>
           <animate
             attributeName="cy"
             dur="{totalTime}s"
@@ -249,7 +318,8 @@ const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
             repeatCount="indefinite"
             values="{pos(fromY)};{pos(fromY)};{pos(toY)};{pos(toY)};{pos(toY)}"
             id="cy-{from}-{to}"
-          ></animate>
+          >
+          </animate>
           <animate
             attributeName="r"
             dur="{totalTime}s"
@@ -258,7 +328,8 @@ const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
             values="12;16;16;12;0;0"
             repeatCount="indefinite"
             id="radius-{from}-{to}"
-          ></animate>
+          >
+          </animate>
         </radialGradient>
       </defs>
     </g>
@@ -273,9 +344,19 @@ const smallViewBox = `0 0 ${18 * 32 - 1} ${11 * 32 - 1}`
           gradientUnits="userSpaceOnUse"
           id="gradient-{id}"
         >
-          <stop offset="0" stop-color="black" />
-          <stop offset="0.1" stop-color="black" />
-          <stop offset="1" stop-color="black" stop-opacity="0" />
+          <stop
+            offset="0"
+            stop-color="black"
+          />
+          <stop
+            offset="0.1"
+            stop-color="black"
+          />
+          <stop
+            offset="1"
+            stop-color="black"
+            stop-opacity="0"
+          />
         </radialGradient>
       </defs>
       <a

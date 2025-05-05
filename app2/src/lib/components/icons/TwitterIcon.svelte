@@ -6,7 +6,11 @@ type Props = {
 let { class: className = "size-6" }: Props = $props()
 </script>
 
-<svg xmlns="http://www.w3.org/2000/svg" class={className} viewBox="0 0 24 24">
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  class={className}
+  viewBox="0 0 24 24"
+>
   <path
     fill="none"
     stroke="currentColor"

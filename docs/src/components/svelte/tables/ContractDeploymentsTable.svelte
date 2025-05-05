@@ -45,7 +45,7 @@ import deployments from "~root/deployments/deployments.json" with { type: "json"
         </Table.Cell>
       </Table.Row>
     {/each}
-    {#if Object.keys(network.deployments.app).length !== 0 }
+    {#if Object.keys(network.deployments.app).length !== 0}
       {#each Object.entries(network.deployments.app) as [name, data], index}
         <Table.Row>
           <Table.Cell class="w-full">

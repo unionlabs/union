@@ -1,5 +1,5 @@
 import { bech32 } from "@scure/base"
-import type { HexAddress, Bech32Address } from "../types.ts"
+import type { Bech32Address, HexAddress } from "../types.ts"
 
 /**
  * extract the bech32 prefix from a bech32 address
@@ -12,7 +12,9 @@ export function extractBech32AddressPrefix(address: string) {
   const pattern = /^([a-z]+)1[a-zA-Z0-9]{38,58}$/
 
   const match = address.match(pattern)
-  if (match) return match[1]
+  if (match) {
+    return match[1]
+  }
   return
 }
 
@@ -24,7 +26,9 @@ export function extractBech32AddressPrefix(address: string) {
  * ```
  */
 export function isValidCosmosTxHash(hash: unknown): hash is string {
-  if (typeof hash !== "string") return false
+  if (typeof hash !== "string") {
+    return false
+  }
   return typeof hash === "string" && /^[A-Fa-f0-9]{64}$/.test(hash)
 }
 
@@ -36,7 +40,9 @@ export function isValidCosmosTxHash(hash: unknown): hash is string {
  * ```
  */
 export function isValidEvmTxHash(hash: unknown): hash is string {
-  if (typeof hash !== "string" || hash.indexOf("0x") !== 0) return false
+  if (typeof hash !== "string" || hash.indexOf("0x") !== 0) {
+    return false
+  }
   return typeof hash === "string" && /^0x([A-Fa-f0-9]{64})$/.test(hash)
 }
 
@@ -58,12 +64,16 @@ export const isValidEvmAddress = (address: unknown): address is HexAddress =>
  * ```
  */
 export function isValidBech32Address(address: unknown): address is Bech32Address {
-  if (typeof address !== "string") return false
+  if (typeof address !== "string") {
+    return false
+  }
 
   try {
     const { prefix: _, words } = bech32.decode(address as Bech32Address)
     const size = words.length
-    if ([20, 32].indexOf(size) === -1) return false
+    if ([20, 32].indexOf(size) === -1) {
+      return false
+    }
 
     return true
   } catch {
@@ -79,7 +89,9 @@ export function isValidBech32Address(address: unknown): address is Bech32Address
  * ```
  */
 export function isValidBech32ContractAddress(address: unknown): address is Bech32Address {
-  if (typeof address !== "string") return false
+  if (typeof address !== "string") {
+    return false
+  }
 
   try {
     const { prefix: _, words } = bech32.decode(address as Bech32Address)
@@ -102,7 +114,7 @@ export function isValidBech32ContractAddress(address: unknown): address is Bech3
  */
 export const truncateAddress = ({
   address,
-  length = 6
+  length = 6,
 }: {
   address: string
   length?: number

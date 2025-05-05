@@ -3,21 +3,21 @@ import Input from "$lib/components/ui/Input.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import { Bech32FromAddressCanonicalBytesWithPrefix } from "@unionlabs/sdk/schema"
+import { Bech32 } from "@unionlabs/sdk/schema"
+import * as Address from "@unionlabs/sdk/schema/address"
 import {
-  String as Str,
   Array as A,
   Either as E,
   Match,
   Option as O,
   ParseResult,
   pipe,
-  Schema as S
+  Schema as S,
+  String as Str,
 } from "effect"
 import { apply, constVoid, flow } from "effect/Function"
-import type { FormEventHandler } from "svelte/elements"
 import { onMount } from "svelte"
-import * as Address from "@unionlabs/sdk/schema/address"
-import { Bech32 } from "@unionlabs/sdk/schema"
+import type { FormEventHandler } from "svelte/elements"
 
 let messages = $state.raw<ReadonlyArray<string>>([])
 const receiver = $derived(transferData.raw.receiver)
@@ -30,9 +30,9 @@ const schemaToUse = $derived(
       Match.value,
       Match.when("evm", () => Address.ERC55),
       Match.when("cosmos", () => Bech32),
-      Match.orElseAbsurd
-    )
-  )
+      Match.orElseAbsurd,
+    ),
+  ),
 )
 
 const validateAddress = (address: string) =>
@@ -47,17 +47,17 @@ const validateAddress = (address: string) =>
             messages = pipe(
               error,
               ParseResult.ArrayFormatter.formatErrorSync,
-              A.map(x => x.message)
+              A.map(x => x.message),
             )
           },
           onRight: () => {
             messages = A.empty()
             transferData.raw.updateField("receiver", address)
-          }
-        })
-      )
+          },
+        }),
+      ),
     ),
-    O.getOrElse(constVoid)
+    O.getOrElse(constVoid),
   )
 
 const onInput: FormEventHandler<HTMLInputElement> = event =>

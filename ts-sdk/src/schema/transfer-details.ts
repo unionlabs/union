@@ -1,8 +1,8 @@
 import * as S from "effect/Schema"
+import { AddressCanonicalBytes } from "./address.js"
 import { ChainReference } from "./chain.js"
 import { PacketTrace } from "./packet-trace.js"
-import { TokenRawDenom, TokenRawAmount } from "./token.js"
-import { AddressCanonicalBytes } from "./address.js"
+import { TokenRawAmount, TokenRawDenom } from "./token.js"
 
 export class TransferDetails extends S.Class<TransferDetails>("TransferDetails")({
   sender_canonical: AddressCanonicalBytes,
@@ -17,5 +17,5 @@ export class TransferDetails extends S.Class<TransferDetails>("TransferDetails")
   quote_amount: TokenRawAmount,
   quote_token: TokenRawDenom,
   success: S.OptionFromNullOr(S.Boolean),
-  traces: S.Array(PacketTrace)
+  traces: S.Array(PacketTrace),
 }) {}

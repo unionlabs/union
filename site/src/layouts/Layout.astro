@@ -1,7 +1,7 @@
 ---
-import BaseLayout from "./BaseLayout.astro"
-import Header from "#/components/Header.astro"
 import Footer from "#/components/Footer.astro"
+import Header from "#/components/Header.astro"
+import BaseLayout from "./BaseLayout.astro"
 
 interface Props {
   url?: string
@@ -13,7 +13,12 @@ interface Props {
 const { url, title, image, description } = Astro.props
 ---
 
-<BaseLayout {url} {title} {image} {description}>
+<BaseLayout
+  {url}
+  {title}
+  {image}
+  {description}
+>
   <Header />
   <slot />
   <Footer />

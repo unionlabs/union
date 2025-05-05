@@ -1,14 +1,14 @@
-import { fromHex, http } from "viem"
+import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 import { parseArgs } from "node:util"
 import { consola } from "scripts/logger"
+import { fromHex, http } from "viem"
 import { createUnionClient, hexToBytes } from "../src/mod.ts"
 import {
   getChannelInfo,
   getQuoteToken,
-  getRecommendedChannels //,
+  getRecommendedChannels, // ,
   // Channel
 } from "../src/query/offchain/ucs03-channels.ts"
-import { DirectSecp256k1Wallet } from "@cosmjs/proto-signing"
 
 type Channel = {
   source_chain_id: string
@@ -30,11 +30,11 @@ declare global {
 
 if (!BigInt.prototype.toJSON) {
   Object.defineProperty(BigInt.prototype, "toJSON", {
-    value: function () {
+    value: function() {
       return this.toString()
     },
     writable: true,
-    configurable: true
+    configurable: true,
   })
 }
 // end hack
@@ -43,8 +43,8 @@ const cliArgs = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = cliArgs.values["private-key"]
@@ -68,7 +68,7 @@ if (channel_info === null) {
     destination_chain_id: DESTINATION_CHAIN_ID,
     destination_port_id: "0x80a825c8878d4e22f459f76e581cb477d82f0222e136b06f01ad146e2ae9ed84",
     destination_channel_id: 2,
-    destination_connection_id: 1
+    destination_connection_id: 1,
   }
 }
 
@@ -85,8 +85,8 @@ let quoteToken = await getQuoteToken(SOURCE_CHAIN_ID, MUNO_DENOM, channel_info)
 quoteToken = {
   type: "UNWRAPPED",
   value: {
-    quote_token: `0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c`
-  }
+    quote_token: `0x188b41399546602e35658962477fdf72bd52443474a899d9d48636e8bc299c2c`,
+  },
 }
 
 // if (quoteToken.value.type === "NO_QUOTE_AVAILABLE") {
@@ -109,7 +109,7 @@ const unionClient = createUnionClient({
   chainId: SOURCE_CHAIN_ID,
   account: await DirectSecp256k1Wallet.fromKey(Uint8Array.from(hexToBytes(PRIVATE_KEY)), "union"),
   gasPrice: { amount: "0.025", denom: "muno" },
-  transport: http("https://rpc.testnet-9.union.build")
+  transport: http("https://rpc.testnet-9.union.build"),
 })
 
 const transfer = await unionClient.transferAsset({
@@ -119,7 +119,7 @@ const transfer = await unionClient.transferAsset({
   quoteAmount: AMOUNT,
   receiver: RECEIVER,
   sourceChannelId: channel_info.source_channel_id,
-  ucs03address: fromHex(`0x${channel_info.source_port_id}`, "string")
+  ucs03address: fromHex(`0x${channel_info.source_port_id}`, "string"),
 })
 
 if (transfer.isErr()) {

@@ -1,11 +1,11 @@
-import { Effect } from "effect"
 import { CosmWasmError } from "$lib/services/transfer-ucs03-cosmos/errors.ts"
 import { executeCosmWasmInstructions } from "$lib/services/transfer-ucs03-cosmos/execute.ts"
+import { isValidBech32ContractAddress } from "$lib/utils"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import type { ValidTransfer } from "@unionlabs/sdk/schema"
 import { generateSalt } from "@unionlabs/sdk/utils"
+import { Effect } from "effect"
 import { fromHex, isHex } from "viem"
-import { isValidBech32ContractAddress } from "$lib/utils"
 
 export const submitTransfer = (transfer: ValidTransfer["args"]) => {
   const { connectedWallet } = cosmosStore
@@ -21,7 +21,7 @@ export const submitTransfer = (transfer: ValidTransfer["args"]) => {
     quoteToken,
     receiver,
     sourceChannelId,
-    ucs03address
+    ucs03address,
   } = transfer
 
   if (!ucs03address) {
@@ -47,16 +47,16 @@ export const submitTransfer = (transfer: ValidTransfer["args"]) => {
             quote_amount: quoteAmount,
             timeout_height: 1000000000,
             timeout_timestamp: 0,
-            salt
-          }
+            salt,
+          },
         },
-        funds
-      }
+        funds,
+      },
     ]
 
     return Effect.mapError(
       executeCosmWasmInstructions(transfer.sourceChain, connectedWallet, instructions),
-      err => err
+      err => err,
     )
   })
 }

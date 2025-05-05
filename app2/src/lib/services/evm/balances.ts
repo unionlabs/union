@@ -1,14 +1,14 @@
-import { Data, Effect, Option, Schema } from "effect"
-import type { GetBalanceErrorType, ReadContractErrorType } from "viem"
-import { erc20Abi, type PublicClient } from "viem"
-import type { TimeoutException } from "effect/Cause"
+import { evmBalanceRetrySchedule } from "$lib/constants/schedules"
 import type { NoViemChainError } from "$lib/services/evm/clients"
 import { getPublicClient } from "$lib/services/evm/clients"
-import type { AddressEvmCanonical, Chain } from "@unionlabs/sdk/schema"
-import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
 import type { CreatePublicClientError } from "$lib/services/transfer"
 import { type FromHexError, fromHexString } from "$lib/utils/hex"
-import { evmBalanceRetrySchedule } from "$lib/constants/schedules"
+import type { AddressEvmCanonical, Chain } from "@unionlabs/sdk/schema"
+import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
+import { Data, Effect, Option, Schema } from "effect"
+import type { TimeoutException } from "effect/Cause"
+import type { GetBalanceErrorType, ReadContractErrorType } from "viem"
+import { erc20Abi, type PublicClient } from "viem"
 
 export type FetchEvmBalanceError =
   | NoViemChainError
@@ -29,25 +29,25 @@ export class ReadContractError extends Data.TaggedError("ReadContractError")<{
 export const BalanceSchema = Schema.Struct({
   balance: Schema.String,
   token: Schema.String,
-  address: Schema.String
+  address: Schema.String,
 })
 
 const fetchEvmGasBalance = ({
   client,
-  walletAddress
+  walletAddress,
 }: {
   client: PublicClient
   walletAddress: AddressEvmCanonical
 }) =>
   Effect.tryPromise({
     try: () => client.getBalance({ address: walletAddress }),
-    catch: err => new FetchNativeBalanceError({ cause: err as GetBalanceErrorType })
+    catch: err => new FetchNativeBalanceError({ cause: err as GetBalanceErrorType }),
   })
 
 const fetchEvmErc20Balance = ({
   client,
   tokenAddress,
-  walletAddress
+  walletAddress,
 }: {
   client: PublicClient
   tokenAddress: TokenRawDenom
@@ -59,33 +59,32 @@ const fetchEvmErc20Balance = ({
         address: tokenAddress,
         abi: erc20Abi,
         functionName: "balanceOf",
-        args: [walletAddress]
+        args: [walletAddress],
       }),
-    catch: err => new ReadContractError({ cause: err as ReadContractErrorType })
+    catch: err => new ReadContractError({ cause: err as ReadContractErrorType }),
   })
 
 // Core function to fetch a single Evm balance
 export const fetchEvmBalance = ({
   chain,
   tokenAddress,
-  walletAddress
+  walletAddress,
 }: {
   chain: Chain
   tokenAddress: TokenRawDenom
   walletAddress: AddressEvmCanonical
 }) => {
-  return Effect.gen(function* () {
+  return Effect.gen(function*() {
     const client = yield* getPublicClient(chain)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
     yield* Effect.log(
-      `fetching balance for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`
+      `fetching balance for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`,
     )
 
-    const fetchBalance =
-      decodedDenom === "native"
-        ? fetchEvmGasBalance({ client, walletAddress })
-        : fetchEvmErc20Balance({ client, tokenAddress, walletAddress })
+    const fetchBalance = decodedDenom === "native"
+      ? fetchEvmGasBalance({ client, walletAddress })
+      : fetchEvmErc20Balance({ client, tokenAddress, walletAddress })
 
     const balance = yield* Effect.retry(fetchBalance, evmBalanceRetrySchedule)
 

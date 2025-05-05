@@ -1,15 +1,15 @@
-import { VIEM_CHAINS } from "../constants/viem-chains.js"
-import { Array as Arr, Data, Effect, Option, Schema as S } from "effect"
-import type { Chain as ViemChain } from "viem"
-import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 import { bech32, bytes } from "@scure/base"
+import { Array as Arr, Data, Effect, Option, Schema as S } from "effect"
 import { dual } from "effect/Function"
+import type { Chain as ViemChain } from "viem"
+import { VIEM_CHAINS } from "../constants/viem-chains.js"
+import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
 
 export const ChainId = S.String.pipe(S.brand("ChainId"))
 // e.g. union.union-testnet-9
 // TODO: narrow filter for arbitraries
 export const UniversalChainId = S.String.pipe(S.pattern(/^[^:]+\.[^:]+$/)).pipe(
-  S.brand("UniversalChainId")
+  S.brand("UniversalChainId"),
 )
 export type UniversalChainId = typeof UniversalChainId.Type
 
@@ -23,11 +23,11 @@ export class ChainFeatures extends S.Class<ChainFeatures>("ChainFeatures")({
   index_status: S.Boolean,
   packet_list: S.Boolean,
   transfer_submission: S.Boolean,
-  transfer_list: S.Boolean
+  transfer_list: S.Boolean,
 }) {}
 
 export class ChainReference extends S.Class<Chain>("ChainReference")({
-  universal_chain_id: UniversalChainId
+  universal_chain_id: UniversalChainId,
 }) {}
 
 export const RpcProtocolType = S.Literal("rpc", "rest", "grpc")
@@ -35,7 +35,7 @@ export type RpcProtocolType = typeof RpcProtocolType.Type
 
 export class Rpc extends S.Class<Rpc>("Rpc")({
   type: RpcProtocolType,
-  url: S.String
+  url: S.String,
 }) {}
 
 export class Explorer extends S.Class<Explorer>("Explorer")({
@@ -45,12 +45,12 @@ export class Explorer extends S.Class<Explorer>("Explorer")({
   display_name: S.String,
   home_url: S.String,
   name: S.String,
-  tx_url: S.String
+  tx_url: S.String,
 }) {}
 
 export class Edition extends S.Class<Edition>("Edition")({
   environment: S.String,
-  name: S.String
+  name: S.String,
 }) {}
 
 export class NoRpcError extends Data.TaggedError("NoRpcError")<{
@@ -72,15 +72,15 @@ const HRP = S.String.pipe(
   S.length(
     {
       min: 1,
-      max: 83
+      max: 83,
     },
     {
-      description: "HRP must be between 1 to 83 US-ASCII characters, inclusive"
-    }
+      description: "HRP must be between 1 to 83 US-ASCII characters, inclusive",
+    },
   ),
   S.pattern(/^[\x21-\x7E]+$/, {
-    description: "HRP characters must be within the range [33-126], inclusive"
-  })
+    description: "HRP characters must be within the range [33-126], inclusive",
+  }),
 )
 export type HRP = typeof HRP.Type
 
@@ -95,7 +95,7 @@ export class Chain extends S.Class<Chain>("Chain")({
   features: S.Array(ChainFeatures),
   rpcs: S.Array(Rpc),
   explorers: S.Array(Explorer),
-  editions: S.NullishOr(S.Array(Edition))
+  editions: S.NullishOr(S.Array(Edition)),
 }) {
   toViemChain(): Option.Option<ViemChain> {
     if (this.rpc_type !== "evm") {
@@ -105,7 +105,7 @@ export class Chain extends S.Class<Chain>("Chain")({
   }
 
   toCosmosDisplay(
-    address: AddressCosmosCanonical
+    address: AddressCosmosCanonical,
   ): Effect.Effect<AddressCosmosDisplay, NotACosmosChainError | CosmosAddressEncodeError> {
     if (this.rpc_type !== "cosmos") {
       return Effect.fail(new NotACosmosChainError({ chain: this }))
@@ -121,8 +121,8 @@ export class Chain extends S.Class<Chain>("Chain")({
         new CosmosAddressEncodeError({
           cause: error,
           address: address,
-          prefix: this.addr_prefix
-        })
+          prefix: this.addr_prefix,
+        }),
     })
   }
 
@@ -133,12 +133,12 @@ export class Chain extends S.Class<Chain>("Chain")({
   requireRpcUrl(type: RpcProtocolType): Effect.Effect<string, NoRpcError> {
     return Option.match(this.getRpcUrl(type), {
       onNone: () => Effect.fail(new NoRpcError({ chain: this, type })),
-      onSome: Effect.succeed
+      onSome: Effect.succeed,
     })
   }
 
   getDisplayAddress(
-    address: AddressCosmosCanonical
+    address: AddressCosmosCanonical,
   ): Effect.Effect<string, NotACosmosChainError | CosmosAddressEncodeError> {
     switch (this.rpc_type) {
       case "cosmos":
@@ -164,5 +164,5 @@ export const getChain: {
 } = dual(
   2,
   (chains: Chains, universalChainId: UniversalChainId): Option.Option<Chain> =>
-    Arr.findFirst(chains, chain => chain.universal_chain_id === universalChainId)
+    Arr.findFirst(chains, chain => chain.universal_chain_id === universalChainId),
 )

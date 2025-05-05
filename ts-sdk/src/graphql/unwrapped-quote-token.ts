@@ -1,10 +1,10 @@
-import { TokenRawDenom } from "../schema/token.js"
-import type { UniversalChainId } from "../schema/chain.js"
-import { fetchDecodeGraphql } from "../utils/graphql-query.js"
-import { Effect, Schema, Struct, Array as Arr, flow, Option } from "effect"
+import { Array as Arr, Effect, flow, Option, Schema, Struct } from "effect"
 import { graphql } from "gql.tada"
+import type { UniversalChainId } from "../schema/chain.js"
 import type { ChannelId } from "../schema/channel.js"
 import type { Hex } from "../schema/hex.js"
+import { TokenRawDenom } from "../schema/token.js"
+import { fetchDecodeGraphql } from "../utils/graphql-query.js"
 
 export const graphqlQuoteTokenUnwrapQuery = (args: {
   baseToken: Hex // token raw denom
@@ -15,9 +15,9 @@ export const graphqlQuoteTokenUnwrapQuery = (args: {
     Schema.Struct({
       v2_tokens: Schema.Array(
         Schema.Struct({
-          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: TokenRawDenom }))
-        })
-      )
+          wrapping: Schema.Array(Schema.Struct({ unwrapped_denom: TokenRawDenom })),
+        }),
+      ),
     }),
     graphql(/* GraphQL */ `
       query QueryTokenWrapping($source_chain_id: String!, $base_token: String!, $destination_channel_id: Int!) {
@@ -37,8 +37,8 @@ export const graphqlQuoteTokenUnwrapQuery = (args: {
       base_token: args.baseToken,
       source_chain_id: args.sourceChainId,
       // Not a bug! It is the dest of the original transfer, so now a source
-      destination_channel_id: args.sourceChannelId
-    }
+      destination_channel_id: args.sourceChannelId,
+    },
   ).pipe(
     Effect.map(
       flow(
@@ -46,7 +46,7 @@ export const graphqlQuoteTokenUnwrapQuery = (args: {
         Arr.head,
         Option.map(Struct.get("wrapping")),
         Option.flatMap(Arr.head),
-        Option.map(Struct.get("unwrapped_denom"))
-      )
-    )
+        Option.map(Struct.get("unwrapped_denom")),
+      ),
+    ),
   )

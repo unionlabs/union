@@ -1,6 +1,6 @@
 <script lang="ts">
-import type { HTMLInputAttributes } from "svelte/elements"
 import { cn } from "$lib/utils"
+import type { HTMLInputAttributes } from "svelte/elements"
 import Label from "./Label.svelte"
 
 type Props = HTMLInputAttributes & {
@@ -31,7 +31,7 @@ const classes = cn(
   "focus:outline-none focus:ring-1 focus:ring-accent",
   "disabled:opacity-50 disabled:cursor-not-allowed",
   "transition-colors duration-200",
-  className
+  className,
 )
 </script>
 

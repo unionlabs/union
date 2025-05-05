@@ -1,9 +1,9 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
-import { onMount, onDestroy } from "svelte"
 import Buttons from "$lib/components/Terminal/Install/Buttons.svelte"
 import { Contributions } from "$lib/state/contributions.svelte.ts"
 import { getState } from "$lib/state/index.svelte.ts"
+import { onDestroy, onMount } from "svelte"
 
 const { terminal } = getState()
 
@@ -24,7 +24,7 @@ $effect(() => {
   if (contributions) {
     data = contributions.data.map(contribution => ({
       text: contribution.payload_id,
-      action: contribution.public_key_hash
+      action: contribution.public_key_hash,
     }))
   }
 })
@@ -35,4 +35,7 @@ function trigger(value: string) {
   terminal.setHash(value)
 }
 </script>
-<Buttons {data} trigger={(value) => trigger(value)}/>
+<Buttons
+  {data}
+  trigger={(value) => trigger(value)}
+/>

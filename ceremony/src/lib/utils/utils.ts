@@ -1,23 +1,31 @@
 import { browser } from "$app/environment"
-import { twMerge } from "tailwind-merge"
 import { type ClassValue, clsx } from "clsx"
+import { twMerge } from "tailwind-merge"
 
 export const cn = (...inputs: Array<ClassValue>) => twMerge(clsx(inputs))
 export function getNumberSuffix(n: number | null): string {
-  if (n == null) return ""
+  if (n == null) {
+    return ""
+  }
 
   const lastDigit = n % 10
   const lastTwoDigits = n % 100
 
   switch (lastDigit) {
     case 1:
-      if (lastTwoDigits !== 11) return "st"
+      if (lastTwoDigits !== 11) {
+        return "st"
+      }
       break
     case 2:
-      if (lastTwoDigits !== 12) return "nd"
+      if (lastTwoDigits !== 12) {
+        return "nd"
+      }
       break
     case 3:
-      if (lastTwoDigits !== 13) return "rd"
+      if (lastTwoDigits !== 13) {
+        return "rd"
+      }
       break
     default:
       break
@@ -40,7 +48,7 @@ export function sleep(ms: number): Promise<void> {
 }
 
 export async function detectOS(): Promise<DetectedOS> {
-  //@ts-ignore
+  // @ts-ignore
   if ("userAgentData" in navigator && "getHighEntropyValues" in navigator.userAgentData) {
     try {
       const ua = navigator.userAgentData as any
@@ -79,7 +87,9 @@ export async function detectOS(): Promise<DetectedOS> {
 export type DetectedOS = "Linux" | "macOS" | "Windows" | "Unknown"
 
 export function timeToMs(timeStr: string | null): number {
-  if (!timeStr) return 0
+  if (!timeStr) {
+    return 0
+  }
   const [time, milliseconds] = timeStr.split(".")
   const [hours, minutes, seconds] = time.split(":").map(Number)
   return hours * 3600000 + minutes * 60000 + seconds * 1000 + Number(milliseconds || 0)
@@ -90,7 +100,9 @@ export function msToTimeString(ms: number): string {
   const minutes = Math.floor((ms % 3600000) / 60000)
   const seconds = Math.floor((ms % 60000) / 1000)
   const milliseconds = ms % 1000
-  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")}.${milliseconds.toString().padStart(3, "0")}`
+  return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${
+    seconds.toString().padStart(2, "0")
+  }.${milliseconds.toString().padStart(3, "0")}`
 }
 
 export function formatWaitTime(minutes: number) {

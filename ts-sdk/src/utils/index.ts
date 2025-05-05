@@ -1,6 +1,6 @@
+import crc32 from "crc/crc32"
 import { Data, Effect, String as Str } from "effect"
 import { fromBytes, fromHex, isHex, toHex } from "viem"
-import crc32 from "crc/crc32"
 export { extractErrorDetails } from "./extract-error-details.js"
 
 const CHKSUM_LEN = 4
@@ -12,7 +12,7 @@ export class CryptoError extends Data.TaggedError("CryptoError")<{
 }> {}
 
 export const generateSalt = (rpcType: RpcType) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const len = (rpcType === "aptos" ? 14 : 32) - CHKSUM_LEN
     const saltBytes = new Uint8Array(len)
     if (globalThis.crypto instanceof Crypto) {

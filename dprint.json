@@ -1,0 +1,19 @@
+{
+  "$schema": "https://dprint.dev/schemas/v0.json",
+  "indentWidth": 2,
+  "lineWidth": 100,
+  "newLineKind": "auto",
+  "useTabs": false,
+  "typescript": {
+    "useTabs": false,
+    "semiColons": "asi",
+    "quoteProps": "consistent",
+    "singleBodyPosition": "nextLine"
+  },
+  "markup": {
+    "svelte.scriptIndent": false,
+    "astro.scriptIndent": false,
+    "preferAttrsSingleLine": false,
+    "maxAttrsPerLine": 1
+  }
+}

@@ -1,6 +1,8 @@
-import { Data, Effect, type Exit } from "effect"
 import { switchChain } from "$lib/services/transfer-ucs03-evm"
+import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash.ts"
+import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
 import { ViemPublicClient, waitForTransactionReceipt, writeContract } from "@unionlabs/sdk/evm"
+import { Data, Effect, type Exit } from "effect"
 import type {
   Abi,
   Chain,
@@ -9,13 +11,10 @@ import type {
   Hash,
   PublicClient,
   WalletClient,
-  WriteContractParameters
+  WriteContractParameters,
 } from "viem"
-import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
-import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash.ts"
 
-export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any>
-  ? Exit.Exit<A, E>
+export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E>
   : never
 
 export type TransactionSubmissionEvm = Data.TaggedEnum<{
@@ -37,7 +36,7 @@ const {
   WriteContractComplete,
   WaitForSafeWalletHash,
   TransactionReceiptInProgress,
-  TransactionReceiptComplete
+  TransactionReceiptComplete,
 } = TransactionSubmissionEvm
 
 export const nextStateEvm = async <
@@ -50,13 +49,13 @@ export const nextStateEvm = async <
     TAbi,
     "nonpayable" | "payable",
     TFunctionName
-  > = ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>
+  > = ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>,
 >(
   ts: TransactionSubmissionEvm,
   chain: Chain,
   publicClient: PublicClient,
   walletClient: WalletClient,
-  params: WriteContractParameters<TAbi, TFunctionName, TArgs>
+  params: WriteContractParameters<TAbi, TFunctionName, TArgs>,
 ): Promise<TransactionSubmissionEvm> =>
   TransactionSubmissionEvm.$match(ts, {
     Filling: () => SwitchChainInProgress(),
@@ -66,8 +65,8 @@ export const nextStateEvm = async <
       return isSafeWallet
         ? WriteContractInProgress()
         : SwitchChainComplete({
-            exit: await Effect.runPromiseExit(switchChain(chain))
-          })
+          exit: await Effect.runPromiseExit(switchChain(chain)),
+        })
     },
 
     SwitchChainComplete: ({ exit }) =>
@@ -75,7 +74,7 @@ export const nextStateEvm = async <
 
     WriteContractInProgress: async () =>
       WriteContractComplete({
-        exit: await Effect.runPromiseExit(writeContract(walletClient, params))
+        exit: await Effect.runPromiseExit(writeContract(walletClient, params)),
       }),
 
     WriteContractComplete: ({ exit }) => {
@@ -103,12 +102,12 @@ export const nextStateEvm = async <
       TransactionReceiptComplete({
         exit: await Effect.runPromiseExit(
           waitForTransactionReceipt(hash).pipe(
-            Effect.provideService(ViemPublicClient, { client: publicClient })
-          )
-        )
+            Effect.provideService(ViemPublicClient, { client: publicClient }),
+          ),
+        ),
       }),
 
-    TransactionReceiptComplete: () => ts
+    TransactionReceiptComplete: () => ts,
   })
 
 export const hasFailedExit = (state: TransactionSubmissionEvm) =>

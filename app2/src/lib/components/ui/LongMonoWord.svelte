@@ -1,7 +1,7 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
-import type { Snippet } from "svelte"
 import { cn } from "$lib/utils"
+import type { Snippet } from "svelte"
+import type { HTMLAttributes } from "svelte/elements"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   children: Snippet
@@ -11,6 +11,9 @@ type Props = HTMLAttributes<HTMLDivElement> & {
 const { children, class: className = "", ...rest }: Props = $props()
 </script>
 
-<div class={cn("text-xs font-mono break-all", className)} {...rest}>
+<div
+  class={cn("text-xs font-mono break-all", className)}
+  {...rest}
+>
   {@render children()}
 </div>

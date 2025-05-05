@@ -1,13 +1,13 @@
 <script lang="ts">
-import { Option } from "effect"
+import { goto } from "$app/navigation"
+import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
-import { goto } from "$app/navigation"
-import { fly } from "svelte/transition"
-import TransactionHashComponent from "$lib/components/model/TransactionHashComponent.svelte"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import type { WaitForIndex } from "$lib/transfer/normal/steps/steps.ts"
+import { Option } from "effect"
+import { fly } from "svelte/transition"
 
 type Props = {
   newTransfer: () => void
@@ -69,10 +69,16 @@ const handleRedirect = () => {
         </div>
 
         <div class="flex flex-col justify-between gap-3 mt-6">
-          <Button onclick={newTransfer} variant="secondary">
+          <Button
+            onclick={newTransfer}
+            variant="secondary"
+          >
             New transfer
           </Button>
-          <Button onclick={handleRedirect} variant="primary">
+          <Button
+            onclick={handleRedirect}
+            variant="primary"
+          >
             Check on explorer
           </Button>
         </div>

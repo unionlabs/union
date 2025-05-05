@@ -1,10 +1,10 @@
-import { createQueryGraphql } from "$lib/utils/queries"
-import { Option, Schema } from "effect"
-import { graphql } from "gql.tada"
-import { transferList } from "$lib/stores/transfers.svelte"
 import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
+import { transferList } from "$lib/stores/transfers.svelte"
+import { createQueryGraphql } from "$lib/utils/queries"
 import type { SortOrder } from "@unionlabs/sdk/schema"
 import { TransferList } from "@unionlabs/sdk/schema"
+import { Option, Schema } from "effect"
+import { graphql } from "gql.tada"
 
 export const LIMIT = 10
 
@@ -21,7 +21,7 @@ export let transferListLatestQuery = (limit = LIMIT) =>
       }
     }
   `,
-      [transferListItemFragment]
+      [transferListItemFragment],
     ),
     variables: { limit },
     refetchInterval: "1 second",
@@ -30,7 +30,7 @@ export let transferListLatestQuery = (limit = LIMIT) =>
     },
     writeError: error => {
       transferList.error = error
-    }
+    },
   })
 
 export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
@@ -48,7 +48,7 @@ export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT
       }
     }
   `,
-      [transferListItemFragment]
+      [transferListItemFragment],
     ),
     variables: { page, limit },
     refetchInterval: "30 seconds",
@@ -57,7 +57,7 @@ export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT
     },
     writeError: error => {
       transferList.error = error
-    }
+    },
   })
 
 export let transferListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
@@ -75,7 +75,7 @@ export let transferListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT
       }
     }
   `,
-      [transferListItemFragment]
+      [transferListItemFragment],
     ),
     variables: { page, limit },
     refetchInterval: "30 seconds",
@@ -84,5 +84,5 @@ export let transferListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT
     },
     writeError: error => {
       transferList.error = error
-    }
+    },
   })

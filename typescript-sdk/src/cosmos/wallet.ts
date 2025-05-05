@@ -1,6 +1,6 @@
-import { ResultAsync } from "neverthrow"
 import { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { GasPrice, SigningStargateClient } from "@cosmjs/stargate"
+import { ResultAsync } from "neverthrow"
 import type { OfflineSigner as CosmosOfflineSigner } from "../types.ts"
 
 /**
@@ -21,7 +21,7 @@ import type { OfflineSigner as CosmosOfflineSigner } from "../types.ts"
 export function connectStargateWithSigner({
   rpcUrl,
   account,
-  gasPrice
+  gasPrice,
 }: {
   rpcUrl: string
   account: CosmosOfflineSigner
@@ -29,12 +29,12 @@ export function connectStargateWithSigner({
 }): ResultAsync<SigningStargateClient, Error> {
   return ResultAsync.fromPromise(
     SigningStargateClient.connectWithSigner(rpcUrl, account, {
-      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`),
     }),
     error => {
       console.error("@unionlabs/client-[connectStargateWithSigner]", error)
       return new Error("Failed to connect with stargate signer", { cause: error })
-    }
+    },
   )
 }
 
@@ -56,7 +56,7 @@ export function connectStargateWithSigner({
 export function connectCosmwasmWithSigner({
   rpcUrl,
   account,
-  gasPrice
+  gasPrice,
 }: {
   rpcUrl: string
   account: CosmosOfflineSigner
@@ -64,11 +64,11 @@ export function connectCosmwasmWithSigner({
 }): ResultAsync<SigningCosmWasmClient, Error> {
   return ResultAsync.fromPromise(
     SigningCosmWasmClient.connectWithSigner(rpcUrl, account, {
-      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`)
+      gasPrice: GasPrice.fromString(`${gasPrice.amount}${gasPrice.denom}`),
     }),
     error => {
       console.error("@unionlabs/client-[connectCosmwasmWithSigner]", error)
       return new Error("Failed to connect with cosmwasm signer", { cause: error })
-    }
+    },
   )
 }

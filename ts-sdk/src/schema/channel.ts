@@ -1,9 +1,9 @@
-import * as S from "effect/Schema"
-import { PortId } from "./port.js"
-import { UniversalChainId } from "./chain.js"
-import { ConnectionId } from "./connection.js"
 import { Schema } from "effect"
+import * as S from "effect/Schema"
+import { UniversalChainId } from "./chain.js"
 import { ClientId } from "./client.js"
+import { ConnectionId } from "./connection.js"
+import { PortId } from "./port.js"
 
 export const ChannelId = S.Int.pipe(S.brand("ChannelId"))
 export type ChannelId = typeof ChannelId.Type
@@ -21,7 +21,7 @@ export class Channel extends Schema.Class<Channel>("Channel")({
   source_client_id: ClientId,
   source_connection_id: ConnectionId,
   source_port_id: PortId,
-  source_universal_chain_id: UniversalChainId
+  source_universal_chain_id: UniversalChainId,
 }) {}
 
 export const Channels = S.Array(Channel)

@@ -1,22 +1,22 @@
-import { Context, Data, Effect, Option } from "effect"
-import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
+import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
+import type { Chain } from "@unionlabs/sdk/schema"
 import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details.ts"
+import { getConnectorClient, type GetConnectorClientErrorType } from "@wagmi/core"
+import { Context, Data, Effect, Option } from "effect"
 import {
   createPublicClient,
   type CreatePublicClientErrorType,
   createWalletClient,
-  http,
   type CreateWalletClientErrorType,
   custom,
-  type PublicClient
+  http,
+  type PublicClient,
 } from "viem"
-import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte.ts"
 import {
   ConnectorClientError,
   CreatePublicClientError,
-  CreateWalletClientError
+  CreateWalletClientError,
 } from "../transfer/errors.ts"
-import type { Chain } from "@unionlabs/sdk/schema"
 
 export class PublicSourceViemClient extends Context.Tag("PublicSourceViemClient")<
   PublicSourceViemClient,
@@ -32,15 +32,15 @@ export const getWagmiConnectorClient = Effect.tryPromise({
   catch: err =>
     new ConnectorClientError({
       wagmiConfig: getWagmiConfig(),
-      cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType
-    })
+      cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType,
+    }),
 })
 
 /**
  * @deprecated use the one from ts-sdk instead
  */
 export const getPublicClient = (chain: Chain) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const viemChain = chain.toViemChain()
 
     if (Option.isNone(viemChain)) {
@@ -51,12 +51,12 @@ export const getPublicClient = (chain: Chain) =>
       try: () =>
         createPublicClient({
           chain: viemChain.value,
-          transport: http()
+          transport: http(),
         }),
       catch: err =>
         new CreatePublicClientError({
-          cause: extractErrorDetails(err as Error) as CreatePublicClientErrorType
-        })
+          cause: extractErrorDetails(err as Error) as CreatePublicClientErrorType,
+        }),
     })
     return client
   })
@@ -65,7 +65,7 @@ export const getPublicClient = (chain: Chain) =>
  * @deprecated use the one from ts-sdk instead
  */
 export const getWalletClient = (chain: Chain) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const viemChain = chain.toViemChain()
 
     if (Option.isNone(viemChain)) {
@@ -77,8 +77,8 @@ export const getWalletClient = (chain: Chain) =>
       catch: err =>
         new ConnectorClientError({
           wagmiConfig: getWagmiConfig(),
-          cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType
-        })
+          cause: extractErrorDetails(err as Error) as GetConnectorClientErrorType,
+        }),
     })
 
     return yield* Effect.try({
@@ -86,11 +86,11 @@ export const getWalletClient = (chain: Chain) =>
         createWalletClient({
           account: connectorClient.account,
           chain: viemChain.value,
-          transport: custom(connectorClient.transport)
+          transport: custom(connectorClient.transport),
         }),
       catch: err =>
         new CreateWalletClientError({
-          cause: extractErrorDetails(err as Error) as CreateWalletClientErrorType
-        })
+          cause: extractErrorDetails(err as Error) as CreateWalletClientErrorType,
+        }),
     })
   })

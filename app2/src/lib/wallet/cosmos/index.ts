@@ -1,5 +1,1 @@
-export {
-  cosmosStore,
-  type CosmosWalletId,
-  cosmosWalletsInformation
-} from "./config.svelte.ts"
+export { cosmosStore, type CosmosWalletId, cosmosWalletsInformation } from "./config.svelte.ts"

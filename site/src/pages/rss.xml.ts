@@ -5,7 +5,9 @@ import { getCollection } from "astro:content"
 export async function GET(context: APIContext) {
   const blog = await getCollection("blog")
   const site = context.site
-  if (!site) throw new Error("Missing site metadata")
+  if (!site) {
+    throw new Error("Missing site metadata")
+  }
 
   return rss({
     site,
@@ -18,9 +20,9 @@ export async function GET(context: APIContext) {
         title: post.data.title,
         pubDate: post.data.date,
         link: `/blog/${post.slug}/`,
-        description: post.data.description
+        description: post.data.description,
       })),
     // (optional) inject custom xml
-    customData: `<language>en-us</language>`
+    customData: `<language>en-us</language>`,
   })
 }

@@ -1,5 +1,5 @@
-import { Data, Effect } from "effect"
 import { Aptos, AptosConfig, Network } from "@aptos-labs/ts-sdk"
+import { Data, Effect } from "effect"
 // import { someWalletLibraryOrBrowserObject } from "some-aptos-wallet-lib"
 import type { Chain } from "@unionlabs/sdk/schema"
 
@@ -23,7 +23,7 @@ export class CreateWalletAptosClientError extends Data.TaggedError("CreateWallet
 }> {}
 
 export const getPublicClient = (chain: Chain) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     if (chain.rpc_type !== "aptos") {
       throw new NoAptosChainError({ chain })
     }
@@ -33,18 +33,18 @@ export const getPublicClient = (chain: Chain) =>
       try: () => {
         const config = new AptosConfig({
           fullnode: `${rpcUrl}/v1`, // TODO: there is not v1 in the url
-          network: Network.TESTNET
+          network: Network.TESTNET,
         })
         return new Aptos(config)
       },
-      catch: err => new CreatePublicAptosClientError({ cause: err })
+      catch: err => new CreatePublicAptosClientError({ cause: err }),
     })
     console.info("aptosClient", aptosClient)
     return aptosClient
   })
 
 export const getWalletClient = (chain: Chain) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     if (chain.rpc_type !== "aptos") {
       throw new NoAptosChainError({ chain })
     }
@@ -55,12 +55,12 @@ export const getWalletClient = (chain: Chain) =>
       try: () => {
         const config = new AptosConfig({
           fullnode: `${rpcUrl}/v1`, // TODO: there is not v1 in the url
-          network: Network.TESTNET
+          network: Network.TESTNET,
         })
         const aptos = new Aptos(config)
         return aptos
       },
-      catch: err => new CreateWalletAptosClientError({ cause: err })
+      catch: err => new CreateWalletAptosClientError({ cause: err }),
     })
 
     return aptosClient

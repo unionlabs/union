@@ -13,7 +13,9 @@ const widths = ["4rem", "5rem", "6rem", "7rem", "8rem"]
 let currentWidth = $state(widths[Math.floor(Math.random() * widths.length)])
 
 $effect(() => {
-  if (!useRandomWidth) return
+  if (!useRandomWidth) {
+    return
+  }
   const interval = setInterval(() => {
     let newWidth: string
     do {
@@ -33,4 +35,5 @@ const style = $derived(useRandomWidth ? `width: ${currentWidth}` : undefined)
   class={classes}
   style={style}
   {...rest}
-></div>
+>
+</div>

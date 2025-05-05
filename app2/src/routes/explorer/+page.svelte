@@ -1,30 +1,31 @@
 <script lang="ts">
-import { dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
+import BarChart from "$lib/components/model/BarChart.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import StatisticComponent from "$lib/components/model/StatisticComponent.svelte"
+import A from "$lib/components/ui/A.svelte"
+import Card from "$lib/components/ui/Card.svelte"
+import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
+import Label from "$lib/components/ui/Label.svelte"
+import Sections from "$lib/components/ui/Sections.svelte"
 import { dailyTransfersQuery, statisticsQuery } from "$lib/queries/statistics.svelte"
+import { dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
+import type { DailyTransfer } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { onMount } from "svelte"
-import Card from "$lib/components/ui/Card.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
-import Sections from "$lib/components/ui/Sections.svelte"
-import StatisticComponent from "$lib/components/model/StatisticComponent.svelte"
-import BarChart from "$lib/components/model/BarChart.svelte"
-import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
-import type { DailyTransfer } from "@unionlabs/sdk/schema"
-import A from "$lib/components/ui/A.svelte"
 
 // State for tracking the currently hovered day
 let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
 
 // Find the day with the highest count
 const highestDay = $derived.by(() => {
-  if (!Option.isSome(dailyTransfers.data) || dailyTransfers.data.value.length === 0)
+  if (!Option.isSome(dailyTransfers.data) || dailyTransfers.data.value.length === 0) {
     return Option.none()
+  }
   return Option.some(
     dailyTransfers.data.value.reduce(
       (max, current) => (current.count > max.count ? current : max),
-      dailyTransfers.data.value[0]
-    )
+      dailyTransfers.data.value[0],
+    ),
   )
 })
 
@@ -33,8 +34,8 @@ const displayDay = $derived(
   Option.isSome(hoveredDay)
     ? hoveredDay.value
     : Option.isSome(highestDay)
-      ? highestDay.value
-      : undefined
+    ? highestDay.value
+    : undefined,
 )
 
 onMount(() => {
@@ -69,32 +70,43 @@ onMount(() => {
   </div>
 
   <!-- Daily Transfers Chart -->
-  <Card class="h-80 relative" divided>
+  <Card
+    class="h-80 relative"
+    divided
+  >
     <div class="p-4 gap-4 absolute top-0 left-0 border-b-0 w-full z-10">
       <div class="flex justify-between items-center">
         {#if displayDay !== undefined}
           <div>
             <Label>Transfers</Label>
             <div class="text-2xl font-bold mt-1">{displayDay.count.toLocaleString()}</div>
-            {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent class="text-zinc-500" value={hoveredDay.value.day_date} showTime={false} /></Label>{/if}
+            {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent
+                  class="text-zinc-500"
+                  value={hoveredDay.value.day_date}
+                  showTime={false}
+                /></Label>{/if}
           </div>
         {/if}
       </div>
     </div>
-    
-    <BarChart 
-      data={dailyTransfers.data} 
-      error={dailyTransfers.error} 
+
+    <BarChart
+      data={dailyTransfers.data}
+      error={dailyTransfers.error}
       onHoverChange={(day) => hoveredDay = day}
     />
   </Card>
 
   <Card divided>
-    <A class="block p-4" href="/explorer/transfers" external={false}
-      >View all transfers</A
-    >
-    <A class="block p-4" href="/explorer/packets" external={false}
-      >View all packets</A
-    >
+    <A
+      class="block p-4"
+      href="/explorer/transfers"
+      external={false}
+    >View all transfers</A>
+    <A
+      class="block p-4"
+      href="/explorer/packets"
+      external={false}
+    >View all packets</A>
   </Card>
 </Sections>

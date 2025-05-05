@@ -1,12 +1,12 @@
 <script lang="ts">
-import type { HTMLAttributes } from "svelte/elements"
-import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
-import { truncate } from "$lib/utils/format"
-import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import { truncate } from "$lib/utils/format"
+import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
-import Label from "../ui/Label.svelte"
+import type { HTMLAttributes } from "svelte/elements"
 import A from "../ui/A.svelte"
+import Label from "../ui/Label.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   address: AddressCanonicalBytes
@@ -32,7 +32,7 @@ const fullDisplayAddress = $derived(Effect.runSync(chain.getDisplayAddress(addre
 const displayAddress = $derived(
   shouldTruncate
     ? truncate(fullDisplayAddress, truncateChars, truncatePosition)
-    : fullDisplayAddress
+    : fullDisplayAddress,
 )
 
 // Find the explorer URL for this address
@@ -56,7 +56,10 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
 
 <Tooltip>
   {#snippet trigger()}
-    <LongMonoWord class={className} {...rest}>
+    <LongMonoWord
+      class={className}
+      {...rest}
+    >
       {displayAddress}
     </LongMonoWord>
   {/snippet}
@@ -71,8 +74,7 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
       </section>
 
       <section>
-        <Label>Chain</Label>
-        <div>{chain.display_name}</div>
+        <Label>Chain</Label> <div>{chain.display_name}</div>
       </section>
       <section>
         <Label>Display</Label>
@@ -90,9 +92,12 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
 
       {#if explorerUrl}
         <section>
-        <Label>Explorer</Label>
+          <Label>Explorer</Label>
           <div>
-            <A class="underline"  href={explorerUrl}>
+            <A
+              class="underline"
+              href={explorerUrl}
+            >
               View on {explorerName || "Explorer"}
             </A>
           </div>

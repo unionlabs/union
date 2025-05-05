@@ -1,17 +1,17 @@
 import { Effect } from "effect"
 import type {
   Abi,
+  ContractFunctionArgs,
+  ContractFunctionName,
   PublicClient,
   ReadContractErrorType,
   ReadContractParameters,
-  ContractFunctionName,
-  ContractFunctionArgs,
-  WriteContractParameters,
   WalletClient,
-  WriteContractErrorType
+  WriteContractErrorType,
+  WriteContractParameters,
 } from "viem"
-import { ReadContractError, WriteContractError } from "./client.js"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
+import { ReadContractError, WriteContractError } from "./client.js"
 
 /**
  * A type-safe wrapper around viem's readContract that handles error cases
@@ -31,15 +31,15 @@ export const readContract = <
     TAbi,
     "pure" | "view",
     TFunctionName
-  >
+  >,
 >(
   client: PublicClient,
-  params: ReadContractParameters<TAbi, TFunctionName, TArgs>
+  params: ReadContractParameters<TAbi, TFunctionName, TArgs>,
 ) =>
   Effect.tryPromise({
     try: () => client.readContract(params),
     catch: error =>
-      new ReadContractError({ cause: extractErrorDetails(error as ReadContractErrorType) })
+      new ReadContractError({ cause: extractErrorDetails(error as ReadContractErrorType) }),
   })
 
 /**
@@ -60,13 +60,13 @@ export const writeContract = <
     TAbi,
     "nonpayable" | "payable",
     TFunctionName
-  > = ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>
+  > = ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>,
 >(
   client: WalletClient,
-  params: WriteContractParameters<TAbi, TFunctionName, TArgs>
+  params: WriteContractParameters<TAbi, TFunctionName, TArgs>,
 ) =>
   Effect.tryPromise({
     try: () => client.writeContract(params),
     catch: error =>
-      new WriteContractError({ cause: extractErrorDetails(error as WriteContractErrorType) })
+      new WriteContractError({ cause: extractErrorDetails(error as WriteContractErrorType) }),
   })

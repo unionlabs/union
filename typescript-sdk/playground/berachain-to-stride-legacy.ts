@@ -1,11 +1,11 @@
 #!/usr/bin/env bun
 import { parseArgs } from "node:util"
-import { fallback, http } from "viem"
 import { consola } from "scripts/logger"
-import { raise } from "../src/utilities/index.ts"
+import { fallback, http } from "viem"
 import { privateKeyToAccount } from "viem/accounts"
 import { berachainTestnetbArtio } from "viem/chains"
 import { createUnionClient, type TransferAssetsParametersLegacy } from "../src/mod.ts"
+import { raise } from "../src/utilities/index.ts"
 
 /* `bun playground/berachain-to-stride.ts --private-key "..."` --estimate-gas */
 
@@ -13,12 +13,14 @@ const { values } = parseArgs({
   args: process.argv.slice(2),
   options: {
     "private-key": { type: "string" },
-    "estimate-gas": { type: "boolean", default: false }
-  }
+    "estimate-gas": { type: "boolean", default: false },
+  },
 })
 
 const PRIVATE_KEY = values["private-key"]
-if (!PRIVATE_KEY) raise("Private key not found")
+if (!PRIVATE_KEY) {
+  raise("Private key not found")
+}
 const ONLY_ESTIMATE_GAS = values["estimate-gas"] ?? false
 
 const berachainAccount = privateKeyToAccount(`0x${PRIVATE_KEY}`)
@@ -32,10 +34,10 @@ try {
     chainId: `${berachainTestnetbArtio.id}`,
     transport: fallback([
       http(
-        "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/"
+        "https://autumn-solitary-bird.bera-bartio.quiknode.pro/3ddb9af57edab6bd075b456348a075f889eff5a7/",
       ),
-      http(berachainTestnetbArtio?.rpcUrls.default.http.at(0))
-    ])
+      http(berachainTestnetbArtio?.rpcUrls.default.http.at(0)),
+    ]),
   })
 
   const transactionPayload = {
@@ -44,7 +46,7 @@ try {
     denomAddress: HONEY_CONTRACT_ADDRESS,
     destinationChainId: "stride-internal-1",
     // or `client.cosmos.account.address` if you want to send to yourself
-    receiver: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3"
+    receiver: "stride14qemq0vw6y3gc3u3e0aty2e764u4gs5l66hpe3",
   } satisfies TransferAssetsParametersLegacy<"80084">
 
   const gasEstimationResponse = await client.simulateTransaction(transactionPayload)
@@ -56,7 +58,9 @@ try {
 
   consola.success("Berachain to Stride gas cost:", gasEstimationResponse.value)
 
-  if (ONLY_ESTIMATE_GAS) process.exit(0)
+  if (ONLY_ESTIMATE_GAS) {
+    process.exit(0)
+  }
 
   const transfer = await client.transferAssetLegacy(transactionPayload)
 

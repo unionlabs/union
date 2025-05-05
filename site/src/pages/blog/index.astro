@@ -1,9 +1,9 @@
 ---
 import Card from "#/components/Card.astro"
-import type { BlogPost } from "#/lib/types.ts"
-import { contentfulClient } from "#/lib/contentful/client.ts"
-import AnimationLayout from "#/layouts/AnimationLayout.astro"
 import ContainedSection from "#/components/ContainedSection.astro"
+import AnimationLayout from "#/layouts/AnimationLayout.astro"
+import { contentfulClient } from "#/lib/contentful/client.ts"
+import type { BlogPost } from "#/lib/types.ts"
 
 export const prerender = false
 
@@ -11,7 +11,7 @@ const blogEntries = await contentfulClient.getEntries<BlogPost>({
   content_type: "blog",
   // @ts-expect-error
   order: "-fields.date",
-  limit: 100 // max limit
+  limit: 100, // max limit
 })
 
 const publishedBlogPosts = blogEntries.items.filter(entry =>
@@ -24,21 +24,32 @@ Astro.response.headers.set("cache-control", "public, max-age=0, must-revalidate"
 const imageWithProtocol = (url: string) => `https:${url}`
 ---
 
-<AnimationLayout title="Blog" text="Stay updated on our progress.">
-  <ContainedSection grid className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+<AnimationLayout
+  title="Blog"
+  text="Stay updated on our progress."
+>
+  <ContainedSection
+    grid
+    className="grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
+  >
     {
       publishedBlogPosts.map((blogPostEntry: BlogPost) => (
-        <a class="pointer-cursor" href={`/blog/${blogPostEntry.fields.slug}`}>
+        <a
+          class="pointer-cursor"
+          href={`/blog/${blogPostEntry.fields.slug}`}
+        >
           <Card
             hoverScale
             class="group size-full rounded-tl-[2rem] overflow-hidden"
           >
             <div>
               <img
-                class="transition  w-full h-full object-cover border-none"
+                class="transition w-full h-full object-cover border-none"
                 loading="eager"
                 alt={blogPostEntry.fields.cover.fields.title}
-                src={`${imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)}?fit=fill&f=center&fm=avif&w=1344&h=706`}
+                src={`${
+                  imageWithProtocol(blogPostEntry.fields.cover.fields.file.url)
+                }?fit=fill&f=center&fm=avif&w=1344&h=706`}
               />
             </div>
             <div class="flex flex-col gap-2 p-4">
@@ -57,12 +68,12 @@ const imageWithProtocol = (url: string) => `https:${url}`
 </AnimationLayout>
 
 <style is:inline>
-  *::selection {
-    background-color: #a0ecfd;
-    color: #000;
-  }
-  .card-rounded {
-    border-top-left-radius: 0 50%;
-    overflow: hidden;
-  }
+*::selection {
+  background-color: #a0ecfd;
+  color: #000;
+}
+.card-rounded {
+  border-top-left-radius: 0 50%;
+  overflow: hidden;
+}
 </style>

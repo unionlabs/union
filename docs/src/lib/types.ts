@@ -11,5 +11,5 @@ export type DeepPartial<T> = {
 export type NoRepetition<U extends string, ResultT extends Array<any> = []> =
   | ResultT
   | {
-      [k in U]: NoRepetition<Exclude<U, k>, [k, ...ResultT]>
-    }[U]
+    [k in U]: NoRepetition<Exclude<U, k>, [k, ...ResultT]>
+  }[U]

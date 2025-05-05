@@ -20,5 +20,5 @@ export const xTermTheme = {
   cyan: "#5DA5D5",
   brightCyan: "#72F0FF",
   white: "#F8F8F8",
-  brightWhite: "#FFFFFF"
+  brightWhite: "#FFFFFF",
 } satisfies XTermTheme

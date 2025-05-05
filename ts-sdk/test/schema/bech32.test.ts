@@ -1,11 +1,11 @@
-import { assert, describe, it } from "vitest"
-import { Either, Schema as S } from "effect"
 import {
   AddressCosmosZkgm,
   Bech32,
   Bech32FromAddressCanonicalBytesWithPrefix,
-  HexFromString
+  HexFromString,
 } from "@unionlabs/sdk/schema"
+import { Either, Schema as S } from "effect"
+import { assert, describe, it } from "vitest"
 
 /**
  * This test suite implements a subset of tests from
@@ -19,7 +19,7 @@ describe("Bech32", () => {
     "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw",
     "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j",
     "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w",
-    "?1ezyfcl"
+    "?1ezyfcl",
   ])("decodes valid address %s", s => {
     assert.isTrue(Either.isRight(S.decodeUnknownEither(Bech32)(s)))
   })
@@ -36,7 +36,7 @@ describe("Bech32", () => {
     "s1vcsyn",
     "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j",
     "li1dgmt3",
-    Buffer.from("6465316c67377774ff", "hex").toString("binary")
+    Buffer.from("6465316c67377774ff", "hex").toString("binary"),
   ])("fails invalid address %s", s => {
     assert.isTrue(Either.isLeft(S.decodeEither(Bech32)(s)))
   })
@@ -45,7 +45,7 @@ describe("Bech32", () => {
     const addr = "0x52a648ef2157fd3bafa90bbac510b9a4870fdf36"
     const transform = Bech32FromAddressCanonicalBytesWithPrefix("bbn").pipe(
       S.compose(HexFromString),
-      S.compose(AddressCosmosZkgm)
+      S.compose(AddressCosmosZkgm),
     )
 
     const result = S.decodeUnknownSync(transform)(addr)

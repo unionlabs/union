@@ -1,13 +1,13 @@
 <script lang="ts">
+import { goto } from "$app/navigation"
+import TokenComponent from "$lib/components/model/TokenComponent.svelte"
+import { chains } from "$lib/stores/chains.svelte"
 import type { TransferListItem } from "@unionlabs/sdk/schema"
 import { getChain } from "@unionlabs/sdk/schema"
 import { Option, pipe } from "effect"
-import ChainComponent from "./ChainComponent.svelte"
-import TokenComponent from "$lib/components/model/TokenComponent.svelte"
-import { chains } from "$lib/stores/chains.svelte"
-import { goto } from "$app/navigation"
 import SharpRightArrowIcon from "../icons/SharpRightArrowIcon.svelte"
 import DateTimeComponent from "../ui/DateTimeComponent.svelte"
+import ChainComponent from "./ChainComponent.svelte"
 
 interface Props {
   transfer: TransferListItem
@@ -40,9 +40,9 @@ const handleClick = () => {
     <div>
       {#if Option.isSome(sourceChain) && Option.isSome(destinationChain)}
         {@const icon = pipe(
-          destinationChain,
-          Option.flatMap((chain) => getChain([chain], chain.universal_chain_id)),
-        )}
+        destinationChain,
+        Option.flatMap((chain) => getChain([chain], chain.universal_chain_id)),
+      )}
         <TokenComponent
           showWrapping={false}
           chain={destinationChain.value}
@@ -53,11 +53,19 @@ const handleClick = () => {
       {/if}
       <div class="flex items-center gap-1 text-zinc-400 text-sm">
         {#if Option.isSome(sourceChain)}
-          <ChainComponent class="font-normal" chain={sourceChain.value} withToken={transfer.base_token} />
+          <ChainComponent
+            class="font-normal"
+            chain={sourceChain.value}
+            withToken={transfer.base_token}
+          />
         {/if}
         <SharpRightArrowIcon class="size-5" />
         {#if Option.isSome(destinationChain)}
-          <ChainComponent class="font-normal" chain={destinationChain.value} withToken={transfer.quote_token} />
+          <ChainComponent
+            class="font-normal"
+            chain={destinationChain.value}
+            withToken={transfer.quote_token}
+          />
         {/if}
       </div>
     </div>

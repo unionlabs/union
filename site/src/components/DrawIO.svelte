@@ -22,6 +22,9 @@ onMount(() => {
 })
 </script>
 
-<div style:filter class="mt-8">
+<div
+  style:filter
+  class="mt-8"
+>
   {@html src}
 </div>
