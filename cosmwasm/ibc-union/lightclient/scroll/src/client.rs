@@ -90,7 +90,7 @@ impl IbcClient for ScrollLightClient {
         todo!()
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
         consensus_state.timestamp
     }
 

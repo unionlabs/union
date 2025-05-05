@@ -103,12 +103,11 @@ impl ClientType {
     /// [Arbitrum]: https://github.com/OffchainLabs/nitro-contracts
     pub const ARBITRUM: &'static str = "arbitrum";
 
-    /// A client tracking the state of a [BeaconKit] chain, verified by verifying the underlying
-    /// [CometBFT] consensus.
+    /// A client tracking the state of a Berachain chain, verified by verifying the underlying
+    /// [BeaconKit] consensus.
     ///
     /// [BeaconKit]: https://github.com/berachain/beacon-kit
-    /// [CometBFT]: https://github.com/cometbft/cometbft
-    pub const BEACON_KIT: &'static str = "beacon-kit";
+    pub const BERACHAIN: &'static str = "berachain";
 
     /// A client tracking the state of a [Movement] chain.
     ///
@@ -185,10 +184,10 @@ impl ConsensusType {
     /// [Arbitrum]: https://github.com/OffchainLabs/nitro-contracts
     pub const ARBITRUM: &'static str = "arbitrum";
 
-    /// [BeaconKit] consensus.
+    /// Berachain consensus ([BeaconKit]).
     ///
     /// [BeaconKit]: https://github.com/berachain/beacon-kit
-    pub const BEACON_KIT: &'static str = "beacon-kit";
+    pub const BERACHAIN: &'static str = "berachain";
 
     /// [Movement] consensus.
     ///

@@ -7,9 +7,9 @@ use call::FetchUpdateBoot;
 use cometbft_types::{
     crypto::public_key::PublicKey,
     types::{
-        canonical_block_id::CanonicalBlockId, canonical_part_set_header::CanonicalPartSetHeader,
-        commit_sig::CommitSig, signed_msg_type::SignedMsgType, simple_validator::SimpleValidator,
-        validator::Validator,
+        block_id_flag::BlockIdFlag, canonical_block_id::CanonicalBlockId,
+        canonical_part_set_header::CanonicalPartSetHeader, commit_sig::CommitSig,
+        signed_msg_type::SignedMsgType, simple_validator::SimpleValidator, validator::Validator,
     },
 };
 use galois_rpc::{
@@ -216,11 +216,8 @@ impl Module {
             // 2. compute trusted power
             let mut trusted_power = 0;
             for sig in signed_header.commit.signatures.iter() {
-                if let CommitSig::Commit {
-                    validator_address, ..
-                } = sig
-                {
-                    let address = validator_address.as_encoding();
+                if sig.block_id_flag == (BlockIdFlag::Commit as i32) {
+                    let address = sig.validator_address.as_encoding();
                     match (trusted_map.get(address), untrusted_map.get(address)) {
                         (Some(trusted_validator), Some(untrusted_validator))
                             if trusted_validator.voting_power
@@ -396,6 +393,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     // don't find a validator for a given signature as the validator set
                     // may have drifted (trusted validator set).
                     for sig in signed_header.commit.signatures.iter() {
+                        let sig = sig.clone().try_into().unwrap();
                         match sig {
                             CommitSig::Absent => {
                                 debug!("validator did not sign");

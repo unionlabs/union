@@ -114,9 +114,11 @@ _: {
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
-            "ethereum"
-            "trusted-mpt"
-            "bob"
+            # "tendermint-bls"
+            "berachain"
+            # "ethereum"
+            # "trusted-mpt"
+            # "bob"
           ];
         }
         {
@@ -126,6 +128,7 @@ _: {
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "feemarket";
+            gas_multiplier = 1.4;
           };
           apps = {
             ucs03 = ucs03-configs.cw20 // {
@@ -139,7 +142,7 @@ _: {
             "berachain"
             "ethereum"
             "trusted-mpt"
-            "ethermint"
+            # "ethermint"
             "tendermint-bls"
             "movement"
             "state-lens-ics23-mpt"
@@ -166,7 +169,7 @@ _: {
             "berachain"
             "ethereum"
             "trusted-mpt"
-            "ethermint"
+            # "ethermint"
             "tendermint-bls"
             "movement"
             "state-lens-ics23-mpt"
@@ -401,11 +404,11 @@ _: {
           dir = "trusted-mpt";
           client-type = "trusted/evm/mpt";
         }
-        {
-          name = "ethermint";
-          dir = "ethermint";
-          client-type = "ethermint";
-        }
+        # {
+        #   name = "ethermint";
+        #   dir = "ethermint";
+        #   client-type = "ethermint";
+        # }
         {
           name = "tendermint";
           dir = "tendermint";

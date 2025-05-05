@@ -8,7 +8,7 @@ use unionlabs::{
 
 use crate::client::TendermintLightClient;
 
-#[derive(Debug, Clone, PartialEq, thiserror::Error)]
+#[derive(Debug, thiserror::Error)]
 // TODO: Use an error reporter at the top level of ics008-wasm-client so we don't have to include the sources manually in the display impl
 pub enum Error {
     #[error(transparent)]
