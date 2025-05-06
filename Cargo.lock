@@ -14620,6 +14620,7 @@ dependencies = [
  "ethermint-light-client-types",
  "ics23",
  "jsonrpsee",
+ "prost 0.12.6",
  "protos",
  "serde",
  "serde_json",

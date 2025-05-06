@@ -54,7 +54,7 @@ pub struct BlockMeta {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+// #[serde(deny_unknown_fields)]
 pub struct StatusResponse {
     pub node_info: DefaultNodeInfo,
     pub sync_info: SyncInfo,
@@ -62,7 +62,7 @@ pub struct StatusResponse {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(deny_unknown_fields)]
+// #[serde(deny_unknown_fields)]
 pub struct SyncInfo {
     pub catching_up: bool,
     #[serde(with = "::cometbft_types::serde::maybe_empty_h256")]
