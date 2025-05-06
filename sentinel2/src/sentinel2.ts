@@ -1,41 +1,41 @@
-import { Effect, Schedule, Data, Context, Logger } from "effect"
-import { createPublicClient, http } from "viem"
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
-import { GasPrice } from "@cosmjs/stargate"
+import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { coins } from "@cosmjs/proto-signing"
-import { pipe } from "effect"
-import * as Cause from "effect/Cause"
-import tls from "node:tls"
+import { GasPrice } from "@cosmjs/stargate"
 import {
   channelBalanceAtBlock as EthereumChannelBalanceAtBlock,
+  EvmChannelDestination,
   readErc20BalanceAtBlock,
   readErc20TotalSupplyAtBlock,
   ViemPublicClient as ViemPublicClientContext,
   ViemPublicClientDestination,
-  EvmChannelDestination
 } from "@unionlabs/sdk/evm"
+import { Context, Data, Effect, Logger, Schedule } from "effect"
+import { pipe } from "effect"
+import * as Cause from "effect/Cause"
+import tls from "node:tls"
+import { createPublicClient, http } from "viem"
 
 import {
   channelBalanceAtHeight as CosmosChannelBalanceAtHeight,
-  readCw20BalanceAtHeight,
-  readCw20TotalSupplyAtHeight,
-  readCw20TokenInfo,
-  createCosmWasmClient,
-  CosmWasmClientContext,
   CosmosChannelDestination,
+  CosmWasmClientContext,
+  createCosmWasmClient,
+  createExtendedCosmWasmClient,
   createSigningCosmWasmClient,
   ExtendedCosmWasmClientContext,
-  createExtendedCosmWasmClient
+  readCw20BalanceAtHeight,
+  readCw20TokenInfo,
+  readCw20TotalSupplyAtHeight,
 } from "@unionlabs/sdk/cosmos"
 
+import Database from "better-sqlite3"
+import type { Database as BetterSqlite3Database } from "better-sqlite3"
+import { gql, request } from "graphql-request"
+import fetch from "node-fetch"
+import fs from "node:fs"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
-import fs from "node:fs"
-import { request, gql } from "graphql-request"
-import Database from "better-sqlite3"
-import fetch from "node-fetch"
-import type { Database as BetterSqlite3Database } from "better-sqlite3"
 
 process.on("uncaughtException", err => {
   console.error("❌ Uncaught Exception:", err.stack || err)
@@ -45,7 +45,7 @@ process.on("unhandledRejection", (reason, promise) => {
 })
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 
@@ -55,13 +55,13 @@ BigInt["prototype"].toJSON = function () {
  * @returns An Effect that resolves to true if native, false if CW20.
  */
 export const isDenomNative = (denom: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* CosmWasmClientContext).client
 
     return yield* readCw20TokenInfo(denom).pipe(
       Effect.provideService(CosmWasmClientContext, { client }),
       Effect.map(() => false), // If query succeeds => CW20 => false
-      Effect.catchAllCause(() => Effect.succeed(true)) // If fails => native => true
+      Effect.catchAllCause(() => Effect.succeed(true)), // If fails => native => true
     )
   })
 
@@ -93,7 +93,7 @@ export const checkSslCertificate = (host: string, isExpiringInDays: number) =>
 
         socket.on("error", reject)
       }),
-    catch: e => new Error(`SSL certificate check failed: ${e}`)
+    catch: e => new Error(`SSL certificate check failed: ${e}`),
   })
 // helper to pull the cert expiry date out of a host:port
 function getCertExpiry(endpoint: string): Promise<Date> {
@@ -126,7 +126,7 @@ export const triggerIncident = (
   requesterEmail: string,
   incidentName: string,
   teamName: string,
-  isLocal: boolean
+  isLocal: boolean,
 ) => {
   const remote = Effect.tryPromise<{ data: { id: string } }, Error>({
     try: () =>
@@ -134,7 +134,7 @@ export const triggerIncident = (
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`
+          "Authorization": `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
           summary,
@@ -144,14 +144,16 @@ export const triggerIncident = (
           call: false,
           sms: false,
           email: false,
-          name: incidentName
-        })
+          name: incidentName,
+        }),
       }).then(async res => {
         const text = await res.text()
-        if (!res.ok) throw new Error(`Trigger failed: ${text}`)
+        if (!res.ok) {
+          throw new Error(`Trigger failed: ${text}`)
+        }
         return JSON.parse(text)
       }),
-    catch: e => new Error(`Incident trigger error: ${e}`)
+    catch: e => new Error(`Incident trigger error: ${e}`),
   })
     // if anything went wrong, swallow it and return { data:{ id:"" } }
     .pipe(Effect.orElse(() => Effect.sync(() => ({ data: { id: "" } }))))
@@ -178,7 +180,7 @@ export const resolveIncident = (
   apiKey: string,
   trigger_betterstack: boolean,
   isLocal: boolean,
-  resolvedBy = "SENTINEL@union.build"
+  resolvedBy = "SENTINEL@union.build",
 ) => {
   if (!trigger_betterstack) {
     return Effect.sync(() => {
@@ -198,15 +200,17 @@ export const resolveIncident = (
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`
+          "Authorization": `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({ resolved_by: resolvedBy })
+        body: JSON.stringify({ resolved_by: resolvedBy }),
       }).then(async res => {
         const text = await res.text()
-        if (!res.ok) throw new Error(`Resolve failed: ${text}`)
+        if (!res.ok) {
+          throw new Error(`Resolve failed: ${text}`)
+        }
         return JSON.parse(text)
       }),
-    catch: e => new Error(`Incident resolve error: ${e}`)
+    catch: e => new Error(`Incident resolve error: ${e}`),
   }).pipe(
     // if we parse successfully we consider it resolved
     Effect.map(() => true),
@@ -216,7 +220,7 @@ export const resolveIncident = (
         console.error("⚠️ resolveIncident failed:", err)
         return false
       })
-    )
+    ),
   )
 }
 
@@ -280,7 +284,7 @@ export function hasErrorOpen(db: BetterSqlite3Database, sla: string, packetHash:
       `SELECT 1
          FROM transfer_errors
         WHERE sla = ?
-          AND packet_hash = ?`
+          AND packet_hash = ?`,
     )
     .get(sla, packetHash)
 }
@@ -289,7 +293,7 @@ export function markTransferError(
   db: BetterSqlite3Database,
   sla: string,
   packetHash: string,
-  incidentId: string
+  incidentId: string,
 ) {
   db.prepare(`
     INSERT OR REPLACE INTO transfer_errors
@@ -308,13 +312,13 @@ export function clearTransferError(db: BetterSqlite3Database, sla: string, packe
 
 export function getOpenErrors(
   db: BetterSqlite3Database,
-  sla: string
+  sla: string,
 ): Array<{ packet_hash: string; incident_id: string }> {
   return db
     .prepare(
       `SELECT packet_hash, incident_id
          FROM transfer_errors
-        WHERE sla = ?`
+        WHERE sla = ?`,
     )
     .all(sla) as Array<{ packet_hash: string; incident_id: string }>
 }
@@ -415,7 +419,7 @@ class FilesystemError extends Data.TaggedError("FilesystemError")<{
 export class Config extends Context.Tag("Config")<Config, { readonly config: ConfigFile }>() {}
 
 const fetchWrappedTokens = (hasuraEndpoint: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const query = gql`
     query WrappedTokens {
       v2_tokens(where: { wrapping: { unwrapped_denom: { _is_null: false } } }) {
@@ -435,7 +439,7 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
       catch: error => {
         console.error("fetchWrappedTokens failed:", error)
         throw error
-      }
+      },
     })
 
     const tokens: Array<WrappedToken> = response?.v2_tokens || []
@@ -443,7 +447,7 @@ const fetchWrappedTokens = (hasuraEndpoint: string) =>
   })
 
 const fetchFundableAccounts = (hasuraEndpoint: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const query = gql`
       query {
         v2_transfers(args: { p_destination_universal_chain_id: "babylon.bbn-1" }) {
@@ -461,7 +465,7 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
       catch: error => {
         console.error("fetchFundableAccounts failed:", error)
         throw error
-      }
+      },
     })
 
     const tokens: Array<FundableAccounts> = response?.v2_transfers || []
@@ -471,12 +475,12 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
         traces: traces
           .filter(
             trace =>
-              trace.type === "WRITE_ACK" &&
-              trace.transaction_hash != null &&
-              !isFunded(db, trace.transaction_hash)
+              trace.type === "WRITE_ACK"
+              && trace.transaction_hash != null
+              && !isFunded(db, trace.transaction_hash),
           )
           // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! }))
+          .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! })),
       }))
       .filter(acc => acc.traces.length > 0)
 
@@ -487,9 +491,9 @@ const fetchSourceChannelId = (
   hasuraEndpoint: string,
   srcChain: string,
   dstChain: string,
-  dstChannelId: number
+  dstChannelId: number,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const query = gql`
     query ChannelInfo($src: String!, $dst: String!, $dchan: Int!) {
       v2_channels(args: {
@@ -508,7 +512,7 @@ const fetchSourceChannelId = (
       catch: error => {
         console.error("fetchSourceChannelId failed:", error)
         throw error
-      }
+      },
     })
 
     const channels: Array<ChannelInfo> = response?.v2_channels || []
@@ -530,12 +534,12 @@ function loadConfig(configPath: string) {
     catch: error =>
       new FilesystemError({
         message: "Config file is invalid.",
-        cause: error
-      })
+        cause: error,
+      }),
   })
 }
 const escrowSupplyControlLoop = Effect.repeat(
-  Effect.gen(function* (_) {
+  Effect.gen(function*(_) {
     yield* Effect.log("Escrow supply control loop started")
     let config = (yield* Config).config
 
@@ -555,7 +559,7 @@ const escrowSupplyControlLoop = Effect.repeat(
               const client = createPublicClient({ transport: http(rpc) })
               return client.getBlockNumber()
             },
-            catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`)
+            catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
           })
           console.info("latest blockNumber", latest, "rpc", rpc)
           blockNumbers.set(rpc, BigInt(latest))
@@ -565,7 +569,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             try: () => {
               return client.getHeight()
             },
-            catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`)
+            catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
           })
           console.info("latest blockNumber", latest, "rpc", rpc)
           blockNumbers.set(rpc, BigInt(latest))
@@ -586,7 +590,7 @@ const escrowSupplyControlLoop = Effect.repeat(
           config.hasuraEndpoint,
           srcChain,
           dstChain,
-          dstChannel
+          dstChannel,
         )
         if (!sourceChannelId) {
           yield* Effect.log("No source channel ID found. Skipping...")
@@ -601,7 +605,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             "Invalid source or destination chain configuration. Skipping... srcChain:",
             srcChain,
             "dstChain:",
-            dstChain
+            dstChain,
           )
           continue
         }
@@ -626,15 +630,15 @@ const escrowSupplyControlLoop = Effect.repeat(
           const srcChannelBalHere = yield* EthereumChannelBalanceAtBlock(
             path,
             key as Hex,
-            evmHeight
+            evmHeight,
           ).pipe(
             Effect.provideService(ViemPublicClientDestination, { client }),
             Effect.provideService(EvmChannelDestination, {
               ucs03address: srcCfg.zkgmAddress as Hex,
               // biome-ignore lint/style/noNonNullAssertion: <explanation>
-              channelId: sourceChannelId!
+              channelId: sourceChannelId!,
             }),
-            Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
+            Effect.tapError(e => Effect.logError("Error fetching channel balance:", e)),
           )
           if (!srcChannelBalHere) {
             yield* Effect.log("No srcChannelBal for token:", token.denom)
@@ -658,15 +662,15 @@ const escrowSupplyControlLoop = Effect.repeat(
           const srcChannelBalUnknown = yield* CosmosChannelBalanceAtHeight(
             path,
             hexToUtf8(key as Hex),
-            Number(cosmosHeight)
+            Number(cosmosHeight),
           ).pipe(
             Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
             Effect.provideService(CosmosChannelDestination, {
               ucs03address: srcCfg.zkgmAddress,
               // biome-ignore lint/style/noNonNullAssertion: <explanation>
-              channelId: sourceChannelId!
+              channelId: sourceChannelId!,
             }),
-            Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
+            Effect.tapError(e => Effect.logError("Error fetching channel balance:", e)),
           )
           if (!srcChannelBalUnknown) {
             yield* Effect.log("No srcChannelBalUnknown for token:", token.denom)
@@ -689,7 +693,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             continue
           }
           const totalSupplyHere = yield* readErc20TotalSupplyAtBlock(token.denom, evmHeight).pipe(
-            Effect.provideService(ViemPublicClientContext, { client })
+            Effect.provideService(ViemPublicClientContext, { client }),
           )
           if (!totalSupplyHere) {
             yield* Effect.log("No total supply found for token:", token.denom)
@@ -708,10 +712,10 @@ const escrowSupplyControlLoop = Effect.repeat(
 
           const totalSupplyHere = yield* readCw20TotalSupplyAtHeight(
             hexToUtf8(token.denom),
-            Number(cosmosHeight)
+            Number(cosmosHeight),
           ).pipe(
             Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
-            Effect.tapError(e => Effect.logError("Error fetching total supply:", e))
+            Effect.tapError(e => Effect.logError("Error fetching total supply:", e)),
           )
           if (!totalSupplyHere) {
             yield* Effect.log("No total supply found for token:", token.denom)
@@ -730,7 +734,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             sourceChannelId: `${sourceChannelId}`,
             sourceChannelBal: `${srcChannelBal}`,
             totalSupply: `${totalSupply}`,
-            destinationChannelId: `${dstChannel}`
+            destinationChannelId: `${dstChannel}`,
           })(Effect.logError(`SUPPLY ERROR`))
 
           Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
@@ -743,7 +747,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             sourceChannelId: `${sourceChannelId}`,
             sourceChannelBal: `${srcChannelBal}`,
             totalSupply: `${totalSupply}`,
-            destinationChannelId: `${dstChannel}`
+            destinationChannelId: `${dstChannel}`,
           })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
 
           Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
@@ -752,12 +756,14 @@ const escrowSupplyControlLoop = Effect.repeat(
 
       yield* Effect.log("Comparing aggregated channel balances to on‑chain holdings")
 
-      for (const [chainId, { rpc, restUrl, chainType, minter }] of Object.entries(
-        config.chainConfig
-      )) {
+      for (
+        const [chainId, { rpc, restUrl, chainType, minter }] of Object.entries(
+          config.chainConfig,
+        )
+      ) {
         if (chainType === "evm") {
           const client = createPublicClient({
-            transport: http(rpc)
+            transport: http(rpc),
           })
 
           const evmHeight = blockNumbers.get(rpc)!
@@ -770,10 +776,10 @@ const escrowSupplyControlLoop = Effect.repeat(
             const onChain = yield* readErc20BalanceAtBlock(
               tokenAddr as Hex,
               minter as Hex,
-              evmHeight
+              evmHeight,
             ).pipe(
               Effect.provideService(ViemPublicClientContext, { client }),
-              Effect.tapError(e => Effect.logError("Error querying balanceOf:", e))
+              Effect.tapError(e => Effect.logError("Error querying balanceOf:", e)),
             )
             if (!onChain) {
               yield* Effect.log("No balance found for denom:", tokenAddr)
@@ -786,7 +792,7 @@ const escrowSupplyControlLoop = Effect.repeat(
                 tokenAddr,
                 minter,
                 aggregated: channelSum.toString(),
-                onChain: onChain.toString()
+                onChain: onChain.toString(),
               })(Effect.logError("AGGREGATE_MISMATCH"))
 
               Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
@@ -796,7 +802,7 @@ const escrowSupplyControlLoop = Effect.repeat(
                 tokenAddr,
                 minter,
                 aggregated: channelSum.toString(),
-                onChain: onChain.toString()
+                onChain: onChain.toString(),
               })(Effect.logInfo("AGGREGATE_OK"))
 
               Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
@@ -809,13 +815,13 @@ const escrowSupplyControlLoop = Effect.repeat(
           for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
             const isDenomNativeHere = yield* isDenomNative(denom).pipe(
               Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
-              Effect.tapError(e => Effect.logError("Error checking denom type:", e))
+              Effect.tapError(e => Effect.logError("Error checking denom type:", e)),
             )
             let amount
             if (isDenomNativeHere) {
               const balance = yield* Effect.tryPromise({
                 try: () => cosmosClient.getBalance(minter, denom),
-                catch: e => new Error(`bank query failed: ${e}`)
+                catch: e => new Error(`bank query failed: ${e}`),
               })
               if (!balance) {
                 yield* Effect.log("No balance found for denom:", denom)
@@ -832,10 +838,10 @@ const escrowSupplyControlLoop = Effect.repeat(
               const balance = yield* readCw20BalanceAtHeight(
                 denom,
                 minter,
-                Number(cosmosHeight)
+                Number(cosmosHeight),
               ).pipe(
                 Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
-                Effect.tapError(e => Effect.logError("Error fetching balance:", e))
+                Effect.tapError(e => Effect.logError("Error fetching balance:", e)),
               )
               if (!balance) {
                 yield* Effect.log("No balance found for denom:", denom)
@@ -850,7 +856,7 @@ const escrowSupplyControlLoop = Effect.repeat(
                 denom,
                 minter,
                 aggregated: channelSum.toString(),
-                onChain: amount
+                onChain: amount,
               })(Effect.logError("AGGREGATE_MISMATCH"))
 
               Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
@@ -860,7 +866,7 @@ const escrowSupplyControlLoop = Effect.repeat(
                 denom,
                 minter,
                 aggregated: channelSum.toString(),
-                onChain: amount
+                onChain: amount,
               })(Effect.logInfo("AGGREGATE_OK"))
 
               Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
@@ -874,13 +880,13 @@ const escrowSupplyControlLoop = Effect.repeat(
       Effect.sync(() => {
         console.error("⚠️ escrowSupplyControlLoop iteration failed, skipping:", err)
       })
-    )
+    ),
   ),
-  Schedule.spaced("1 hours")
+  Schedule.spaced("1 hours"),
 )
 
 const fundBabylonAccounts = Effect.repeat(
-  Effect.gen(function* (_) {
+  Effect.gen(function*(_) {
     yield* Effect.log("Funding babylon accounts loop started")
     let config = (yield* Config).config
     if (config.isLocal) {
@@ -892,14 +898,14 @@ const fundBabylonAccounts = Effect.repeat(
       DirectSecp256k1HdWallet.fromMnemonic(config.signer_account_mnemonic, { prefix: "bbn" })
     )
     const options: SigningCosmWasmClientOptions = {
-      gasPrice: GasPrice.fromString("0.025bbn")
+      gasPrice: GasPrice.fromString("0.025bbn"),
     }
     const [senderAccount] = yield* Effect.tryPromise(() => wallet.getAccounts())
 
     const client = yield* createSigningCosmWasmClient(
       "https://rpc.bbn-1.babylon.chain.kitchen",
       wallet,
-      options
+      options,
     )
 
     if (!senderAccount?.address) {
@@ -914,7 +920,7 @@ const fundBabylonAccounts = Effect.repeat(
         balance: balance.amount,
         chainId: "babylon.bbn-1",
         tokenAddr: "ubbn",
-        account: senderAccount.address
+        account: senderAccount.address,
       })(Effect.logError("SPENDER_BALANCE_LOW"))
 
       Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
@@ -923,7 +929,7 @@ const fundBabylonAccounts = Effect.repeat(
 
     const fee = {
       amount: coins(500, "ubbn"),
-      gas: "200000"
+      gas: "200000",
     }
 
     const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
@@ -935,12 +941,12 @@ const fundBabylonAccounts = Effect.repeat(
             senderAccount.address,
             receiver,
             coins(10000, "ubbn"), // send 0.01 bbn
-            fee
+            fee,
           ),
         catch: err => {
           console.error("raw sendTokens error:", err)
           throw err
-        }
+        },
       })
 
       addFunded(db, result.transactionHash)
@@ -951,12 +957,12 @@ const fundBabylonAccounts = Effect.repeat(
         tokenAddr: "ubbn",
         account: senderAccount.address,
         receiver,
-        transactionHash: result.transactionHash
+        transactionHash: result.transactionHash,
       })(Effect.logInfo("SENT_OK"))
       Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
     }
   }),
-  Schedule.spaced("1 minutes")
+  Schedule.spaced("1 minutes"),
 )
 
 interface PostRequestInput {
@@ -981,7 +987,7 @@ interface GetRequestError {
 export const safeGetRequest = ({
   url,
   port,
-  headers = {} as Record<string, string>
+  headers = {} as Record<string, string>,
 }: {
   url: string
   port?: number
@@ -1001,8 +1007,8 @@ export const safeGetRequest = ({
       ({
         _tag: "GetRequestError",
         message: error instanceof Error ? error.message : String(error),
-        status: (error as any)?.status
-      }) as GetRequestError
+        status: (error as any)?.status,
+      }) as GetRequestError,
   })
 
 export const safePostRequest = ({ url, port, headers, payload }: PostRequestInput) => {
@@ -1013,7 +1019,7 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
       fetch(fullUrl, {
         method: "POST",
         headers,
-        body: JSON.stringify(payload)
+        body: JSON.stringify(payload),
       }).then(async response => {
         if (response.status === 200) {
           return await response.json()
@@ -1023,25 +1029,24 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
         throw {
           _tag: "PostRequestError",
           message: `Non-200 status: ${response.status} body: ${text}`,
-          status: response.status
+          status: response.status,
         }
       }),
     catch: error =>
       ({
         _tag: "PostRequestError",
-        message:
-          error instanceof Error
-            ? error.message
-            : typeof error === "object"
-              ? JSON.stringify(error)
-              : String(error),
-        status: (error as any)?.status
-      }) satisfies PostRequestError
+        message: error instanceof Error
+          ? error.message
+          : typeof error === "object"
+          ? JSON.stringify(error)
+          : String(error),
+        status: (error as any)?.status,
+      }) satisfies PostRequestError,
   })
 }
 
 export const checkSSLCertificates = Effect.repeat(
-  Effect.gen(function* (_) {
+  Effect.gen(function*(_) {
     yield* Effect.log("Spawning checkSSLCertificates loop")
     const { config } = yield* Config
     const rpchostEndpoints = config.rpcHostEndpoints
@@ -1050,7 +1055,7 @@ export const checkSSLCertificates = Effect.repeat(
       const pageHtml: string = yield* safeGetRequest({
         url: rpchostEndpoint,
         port: 443,
-        headers: {}
+        headers: {},
       }).pipe(Effect.retry(Schedule.spaced("2 minutes")))
       const endpointAnchorRegex = /<a\s+href="([^"]+)">https?:\/\/[^<]+<\/a>/gi
       const links: string[] = []
@@ -1070,7 +1075,7 @@ export const checkSSLCertificates = Effect.repeat(
         const existingIncident = getSslIncident(db, url)
         const expiry: Date = yield* Effect.tryPromise({
           try: () => getCertExpiry(url),
-          catch: e => new Error(`SSL check failed for ${url}: ${String(e)}`)
+          catch: e => new Error(`SSL check failed for ${url}: ${String(e)}`),
         })
 
         const msLeft = expiry.getTime() - now
@@ -1086,7 +1091,7 @@ export const checkSSLCertificates = Effect.repeat(
               "SENTINEL@union.build",
               "SSL_CERT_EXPIRY",
               "Union",
-              config.isLocal
+              config.isLocal,
             )
             if (inc.data.id) {
               markSslIncident(db, url, inc.data.id)
@@ -1100,7 +1105,7 @@ export const checkSSLCertificates = Effect.repeat(
               config.betterstack_api_key,
               config.trigger_betterstack,
               config.isLocal,
-              "Sentinel: SSL renewed"
+              "Sentinel: SSL renewed",
             )
             if (didResolve) {
               clearSslIncident(db, url)
@@ -1111,11 +1116,11 @@ export const checkSSLCertificates = Effect.repeat(
       }
     }
   }),
-  Schedule.spaced("6 hours")
+  Schedule.spaced("6 hours"),
 )
 
 export const checkBalances = Effect.repeat(
-  Effect.gen(function* (_) {
+  Effect.gen(function*(_) {
     yield* Effect.log("Spawning per-plugin balance checks…")
     const { config } = yield* Config
     const sbConfig = config.signerBalances
@@ -1130,18 +1135,18 @@ export const checkBalances = Effect.repeat(
               jsonrpc: "2.0",
               id: 1,
               method: "voyager_pluginCustom",
-              params: [plugin, "signerBalances", []] as const
-            }
+              params: [plugin, "signerBalances", []] as const,
+            },
           ]
 
           const callWithRetry = safePostRequest({
             url,
             port,
             headers: { "Content-Type": "application/json" },
-            payload
+            payload,
           })
 
-          const worker = Effect.gen(function* (_) {
+          const worker = Effect.gen(function*(_) {
             const result = yield* callWithRetry
             if (result) {
               if (!Array.isArray(result) || result.length === 0) {
@@ -1164,7 +1169,7 @@ export const checkBalances = Effect.repeat(
                   port: portStr,
                   wallet,
                   balance: bal.toString(),
-                  expected: expectedThreshold.toString()
+                  expected: expectedThreshold.toString(),
                 }
 
                 const key = `${url}:${port}:${plugin}:${wallet}`
@@ -1182,14 +1187,14 @@ export const checkBalances = Effect.repeat(
                         url,
                         port: portStr,
                         wallet,
-                        balance: bal.toString()
+                        balance: bal.toString(),
                       }),
                       config.betterstack_api_key,
                       config.trigger_betterstack,
                       "SENTINEL@union.build",
                       "SIGNER_BALANCE_LOW",
                       "Union",
-                      config.isLocal
+                      config.isLocal,
                     )
                     if (inc.data.id) {
                       markSignerIncident(db, key, inc.data.id)
@@ -1205,7 +1210,7 @@ export const checkBalances = Effect.repeat(
                       config.betterstack_api_key,
                       config.trigger_betterstack,
                       config.isLocal,
-                      "Sentinel-Automatically resolved."
+                      "Sentinel-Automatically resolved.",
                     )
                     if (didResolve) {
                       clearSignerIncident(db, key)
@@ -1220,11 +1225,11 @@ export const checkBalances = Effect.repeat(
       }
     }
   }),
-  Schedule.spaced("30 minutes")
+  Schedule.spaced("30 minutes"),
 )
 
 const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     let allPackets: Array<Packet> = []
     let cursor: string | undefined
     let continueFetching = true
@@ -1252,12 +1257,12 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
           try: () =>
             request(hasuraEndpoint, queryNext, {
               sla: exceedingSla,
-              cursor
+              cursor,
             }),
           catch: err => {
             console.error("fetchMissingPackets (next) failed:", err)
             return []
-          }
+          },
         })
       } else {
         const queryFirst = gql`
@@ -1275,17 +1280,19 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
         response = yield* Effect.tryPromise({
           try: () =>
             request(hasuraEndpoint, queryFirst, {
-              sla: exceedingSla
+              sla: exceedingSla,
             }),
           catch: err => {
             console.error("fetchMissingPackets (first) failed:", err)
             return []
-          }
+          },
         })
       }
 
       const page: Array<Packet> = response.v2_packets || []
-      if (page.length === 0) break
+      if (page.length === 0) {
+        break
+      }
 
       allPackets.push(...page)
       // biome-ignore lint/style/noNonNullAssertion: <explanation>
@@ -1301,9 +1308,9 @@ export const checkPackets = (
   hasuraEndpoint: string,
   betterstack_api_key: string,
   trigger_betterstack: boolean,
-  isLocal: boolean
+  isLocal: boolean,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     for (const sla of ["mainnet", "testnet"] as const) {
       if (sla == "testnet") {
         yield* Effect.log("Skipping testnet")
@@ -1325,7 +1332,7 @@ export const checkPackets = (
           destinationChain: missingPacket.destination_chain.universal_chain_id,
           packetSendTimestamp: missingPacket.packet_send_timestamp,
           packetHash: missingPacket.packet_hash,
-          explorerUrl: `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`
+          explorerUrl: `https://btc.union.build/explorer/transfers/${missingPacket.packet_hash}`,
         }
         const logEffect = Effect.annotateLogs(whole_description)(Effect.logError(transfer_error))
 
@@ -1338,7 +1345,7 @@ export const checkPackets = (
             "SENTINEL@union.build",
             transfer_error,
             "Union",
-            isLocal
+            isLocal,
           )
           markTransferError(db, sla, missingPacket.packet_hash, val.data.id)
         }
@@ -1356,7 +1363,7 @@ export const checkPackets = (
             betterstack_api_key,
             trigger_betterstack,
             isLocal,
-            "Sentinel-Automatically resolved."
+            "Sentinel-Automatically resolved.",
           )
           if (didResolve) {
             clearTransferError(db, sla, packet_hash)
@@ -1366,33 +1373,33 @@ export const checkPackets = (
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
 
-const runIbcChecksForever = Effect.gen(function* (_) {
+const runIbcChecksForever = Effect.gen(function*(_) {
   const { config } = yield* Config
 
   const schedule = Schedule.spaced(`${config.cycleIntervalMs / 1000 / 60} minutes`)
 
-  const effectToRepeat = Effect.gen(function* (_) {
+  const effectToRepeat = Effect.gen(function*(_) {
     yield* Effect.log("\n========== Starting IBC cross-chain checks ==========")
 
     yield* checkPackets(
       config.hasuraEndpoint,
       config.betterstack_api_key,
       config.trigger_betterstack,
-      config.isLocal
+      config.isLocal,
     )
   })
 
   return yield* Effect.repeat(effectToRepeat, schedule)
 })
 
-const mainEffect = Effect.gen(function* (_) {
+const mainEffect = Effect.gen(function*(_) {
   const argv = yield* Effect.sync(() =>
     yargs(hideBin(process.argv))
       .option("config", {
         alias: "c",
         type: "string",
         demandOption: true,
-        describe: "Path to the configuration file"
+        describe: "Path to the configuration file",
       })
       .help()
       .alias("help", "h")
@@ -1448,11 +1455,11 @@ const mainEffect = Effect.gen(function* (_) {
       escrowSupplyControlLoop,
       fundBabylonAccounts,
       checkBalances,
-      checkSSLCertificates
+      checkSSLCertificates,
     ],
     {
-      concurrency: "unbounded"
-    }
+      concurrency: "unbounded",
+    },
   ).pipe(Effect.provideService(Config, { config }))
 })
 
@@ -1463,7 +1470,7 @@ pipe(
       console.error("💥 mainEffect failed:\n", Cause.pretty(cause))
     })
   ),
-  Effect.runPromise
+  Effect.runPromise,
 ).catch(err => {
   console.error("🔥 runPromise threw:", err.stack || err)
 })
