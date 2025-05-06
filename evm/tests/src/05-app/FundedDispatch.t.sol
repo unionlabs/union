@@ -130,6 +130,7 @@ contract FundedDispatchTests is Test {
         uint256 amount,
         bool intent
     ) public {
+        vm.assume(sender != address(fundedDispatch));
         vm.assume(sender != address(0));
         vm.assume(amount > 0);
 
