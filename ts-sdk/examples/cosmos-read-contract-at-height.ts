@@ -1,14 +1,14 @@
 import { Effect } from "effect"
 import {
+  CosmWasmClientContext,
   createCosmWasmClient,
   createExtendedCosmWasmClient,
   ExtendedCosmWasmClientContext,
-  CosmWasmClientContext
 } from "../src/cosmos/client.js"
 import { readCw20TotalSupply, readCw20TotalSupplyAtHeight } from "../src/cosmos/cw20.js"
 
 // @ts-ignore
-BigInt["prototype"].toJSON = function () {
+BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
 // Example CW20 token balance query
@@ -75,7 +75,7 @@ BigInt["prototype"].toJSON = function () {
 // ).then(exit => console.log(JSON.stringify(exit, null, 2)))
 
 Effect.runPromiseExit(
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     // Create a CosmWasm client
     const rpc = "https://rpc.xion-testnet-2.xion.chain.cooking"
     const client = yield* createCosmWasmClient(rpc)
@@ -84,13 +84,13 @@ Effect.runPromiseExit(
       try: () => {
         return client.getHeight()
       },
-      catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`)
+      catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
     })
     console.info("height: ", latest)
 
     const totalSupplyNow = yield* readCw20TotalSupply(tokenDenom).pipe(
       Effect.provideService(CosmWasmClientContext, { client }),
-      Effect.tapError(e => Effect.logError("Error fetching channel balance:", e))
+      Effect.tapError(e => Effect.logError("Error fetching channel balance:", e)),
     )
     console.info("totalSupplyNow", totalSupplyNow)
 
@@ -99,9 +99,9 @@ Effect.runPromiseExit(
 
     const totalSupplyAtHeight = yield* readCw20TotalSupplyAtHeight(tokenDenom, Number(latest)).pipe(
       Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
-      Effect.tapError(e => Effect.logError("height-query failed:", e))
+      Effect.tapError(e => Effect.logError("height-query failed:", e)),
     )
 
     console.info("totalSupplyAtHeight:", totalSupplyAtHeight)
-  })
+  }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

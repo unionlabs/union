@@ -1,10 +1,10 @@
 import { Effect } from "effect"
+import { extractErrorDetails } from "../utils/extract-error-details.js"
 import { CosmosChannelDestination } from "./channel.js"
 import { CosmWasmClientDestination } from "./client.js"
-import { queryContract } from "./contract.js"
 import { ExtendedCosmWasmClientContext } from "./client.js"
+import { queryContract } from "./contract.js"
 import { QueryContractError } from "./contract.js"
-import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 export const channelBalance = (path: bigint, token: string) =>
   Effect.gen(function*() {
@@ -22,7 +22,7 @@ export const channelBalance = (path: bigint, token: string) =>
   })
 
 export const channelBalanceAtHeight = (path: bigint, token: string, height: number) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ExtendedCosmWasmClientContext).client
     const config = yield* CosmosChannelDestination
     const resp = yield* Effect.tryPromise({
@@ -33,12 +33,12 @@ export const channelBalanceAtHeight = (path: bigint, token: string, height: numb
             get_channel_balance: {
               channel_id: config.channelId,
               path,
-              denom: token
-            }
+              denom: token,
+            },
           },
-          height
+          height,
         ),
-      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
+      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
     }).pipe(
       Effect.timeout("10 seconds"),
       Effect.retry({ times: 5 }),
@@ -46,7 +46,7 @@ export const channelBalanceAtHeight = (path: bigint, token: string, height: numb
         Effect.sync(() => {
           console.error("Error in channelBalanceAtHeight:", err)
         })
-      )
+      ),
     )
     return resp.data
   })

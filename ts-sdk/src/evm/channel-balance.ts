@@ -21,7 +21,7 @@ export const channelBalance = (path: bigint, token: Hex) =>
   })
 
 export const channelBalanceAtBlock = (path: bigint, token: Hex, blockNumber: bigint) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClientDestination).client
     const config = yield* EvmChannelDestination
 
@@ -30,7 +30,7 @@ export const channelBalanceAtBlock = (path: bigint, token: Hex, blockNumber: big
       abi: ucs03abi,
       functionName: "channelBalance",
       args: [config.channelId, path, token],
-      blockNumber: blockNumber
+      blockNumber: blockNumber,
     })
 
     return result

@@ -1,8 +1,8 @@
 import {
   CosmWasmClient,
+  type HttpEndpoint,
   SigningCosmWasmClient,
   type SigningCosmWasmClientOptions,
-  type HttpEndpoint
 } from "@cosmjs/cosmwasm-stargate"
 import { Context, Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
@@ -91,5 +91,5 @@ export class ExtendedCosmWasmClientContext extends Context.Tag("ExtendedCosmWasm
 export const createExtendedCosmWasmClient = (endpoint: HttpEndpoint | string, rest: string) =>
   Effect.tryPromise({
     try: () => ExtendedCosmWasmClient.connectWithHeightSupport(endpoint, rest),
-    catch: error => new CosmWasmClientError({ cause: extractErrorDetails(error as Error) })
+    catch: error => new CosmWasmClientError({ cause: extractErrorDetails(error as Error) }),
   }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))

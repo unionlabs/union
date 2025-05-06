@@ -45,9 +45,9 @@ export const readErc20Balance = (tokenAddress: Address, ownerAddress: Address) =
 export const readErc20BalanceAtBlock = (
   tokenAddress: Address,
   ownerAddress: Address,
-  blockNumber: bigint
+  blockNumber: bigint,
 ) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
@@ -55,7 +55,7 @@ export const readErc20BalanceAtBlock = (
       abi: erc20Abi,
       functionName: "balanceOf",
       args: [ownerAddress],
-      blockNumber: blockNumber
+      blockNumber: blockNumber,
     })
   })
 
@@ -114,14 +114,14 @@ export const readErc20Decimals = (tokenAddress: Address) =>
  * @returns An Effect that resolves to the totalSupply
  */
 export const readErc20TotalSupplyAtBlock = (tokenAddress: Address, blockNumber: bigint) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ViemPublicClient).client
 
     return yield* readContract(client, {
       address: tokenAddress,
       abi: erc20Abi,
       functionName: "totalSupply",
-      blockNumber: blockNumber
+      blockNumber: blockNumber,
     })
   })
 

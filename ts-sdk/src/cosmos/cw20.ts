@@ -1,9 +1,9 @@
 import { Effect } from "effect"
-import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
-import { queryContract, executeContract } from "./contract.js"
-import { ExtendedCosmWasmClientContext } from "./client.js"
-import { QueryContractError } from "./contract.js"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
+import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
+import { ExtendedCosmWasmClientContext } from "./client.js"
+import { executeContract, queryContract } from "./contract.js"
+import { QueryContractError } from "./contract.js"
 
 /**
  * Interface for CW20 token metadata
@@ -64,7 +64,7 @@ export const readCw20TotalSupply = (contractAddress: string) =>
  * @returns An Effect that resolves to the token balance
  */
 export const readCw20BalanceAtHeight = (contractAddress: string, address: string, height: number) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ExtendedCosmWasmClientContext).client
     const resp = yield* Effect.tryPromise({
       try: () =>
@@ -72,12 +72,12 @@ export const readCw20BalanceAtHeight = (contractAddress: string, address: string
           contractAddress,
           {
             balance: {
-              address
-            }
+              address,
+            },
           },
-          height
+          height,
         ),
-      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
+      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
     }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
     return resp.data.balance
   })
@@ -89,18 +89,18 @@ export const readCw20BalanceAtHeight = (contractAddress: string, address: string
  * @returns An Effect that resolves to the token total supply
  */
 export const readCw20TotalSupplyAtHeight = (contractAddress: string, height: number) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* ExtendedCosmWasmClientContext).client
     const resp = yield* Effect.tryPromise({
       try: () =>
         client.queryContractSmartAtHeight(
           contractAddress,
           {
-            token_info: {}
+            token_info: {},
           },
-          height
+          height,
         ),
-      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) })
+      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
     }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
     return resp.data.total_supply
   })
@@ -182,12 +182,12 @@ export const writeCw20IncreaseAllowance = (
  * @returns An Effect that resolves to true if native, false if CW20.
  */
 export const isDenomNative = (denom: string) =>
-  Effect.gen(function* () {
+  Effect.gen(function*() {
     const client = (yield* CosmWasmClientContext).client
 
     return yield* readCw20TokenInfo(denom).pipe(
       Effect.provideService(CosmWasmClientContext, { client }),
       Effect.map(() => false),
-      Effect.catchAllCause(() => Effect.succeed(true))
+      Effect.catchAllCause(() => Effect.succeed(true)),
     )
   })

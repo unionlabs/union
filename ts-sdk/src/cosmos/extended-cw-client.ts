@@ -16,7 +16,7 @@ export class ExtendedCosmWasmClient extends CosmWasmClient {
   async queryContractSmartAtHeight(
     contract: string,
     queryMsg: Record<string, unknown>,
-    height: number
+    height: number,
   ) {
     const base = this.restUrl
     const encoded = btoa(JSON.stringify(queryMsg))
@@ -25,8 +25,8 @@ export class ExtendedCosmWasmClient extends CosmWasmClient {
     const resp = await axios.get(url, {
       headers: {
         "Content-Type": "application/json",
-        "x-cosmos-block-height": height.toString()
-      }
+        "x-cosmos-block-height": height.toString(),
+      },
     })
     if (resp.status < 200 || resp.status >= 300) {
       throw new Error(`HTTP ${resp.status}: ${JSON.stringify(resp.data)}`)
