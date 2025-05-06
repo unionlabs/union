@@ -15492,6 +15492,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-plugin-packet-batch"
+version = "0.0.0"
+dependencies = [
+ "either",
+ "embed-commit",
+ "enumorph",
+ "futures",
+ "ibc-union-spec",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
 name = "voyager-plugin-packet-filter"
 version = "0.0.0"
 dependencies = [
@@ -15721,6 +15743,7 @@ dependencies = [
  "cometbft-rpc",
  "cosmos-sdk-event",
  "embed-commit",
+ "futures",
  "ibc-union-msg",
  "ibc-union-spec",
  "jsonrpsee",
@@ -15742,6 +15765,7 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "embed-commit",
+ "futures",
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
@@ -15851,6 +15875,7 @@ dependencies = [
  "jsonrpsee",
  "macros",
  "serde",
+ "serde-utils",
  "serde_json",
  "thiserror 2.0.12",
  "tokio",

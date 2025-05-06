@@ -435,6 +435,14 @@ impl<T: QueueMessage> Op<T> {
             })
             .collect()
     }
+
+    pub fn into_data(self) -> Option<T::Data> {
+        if let Self::Data(v) = self {
+            Some(v)
+        } else {
+            None
+        }
+    }
 }
 
 #[derive(Debug, thiserror::Error)]

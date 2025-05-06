@@ -383,7 +383,7 @@ impl Module {
         let raw_bob_client_state = voy_client
             .query_ibc_state(
                 counterparty_chain_id.clone(),
-                counterparty_latest_height,
+                QueryHeight::Specific(counterparty_latest_height),
                 ClientStatePath { client_id },
             )
             .await?;
@@ -497,7 +497,7 @@ impl Module {
         let raw_bob_client_state = voy_client
             .query_ibc_state(
                 counterparty_chain_id.clone(),
-                counterparty_latest_height,
+                QueryHeight::Specific(counterparty_latest_height),
                 ClientStatePath { client_id },
             )
             .await?;

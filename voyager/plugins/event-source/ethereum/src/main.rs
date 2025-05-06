@@ -15,9 +15,9 @@ use ibc_union_spec::{
         ConnectionOpenTry, CreateClient, FullEvent, PacketAck, PacketMetadata, PacketRecv,
         PacketSend, PacketTimeout, UpdateClient, WriteAck,
     },
-    path::{ChannelPath, ConnectionPath},
+    path::{BatchPacketsPath, BatchReceiptsPath, ChannelPath, ConnectionPath},
     query::PacketByHash,
-    ChannelId, IbcUnion, Packet,
+    ChannelId, ChannelState, IbcUnion, Packet,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -38,7 +38,7 @@ use voyager_message::{
     filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
-    primitives::{ChainId, ClientInfo, IbcSpec},
+    primitives::{ChainId, ClientInfo, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
@@ -157,7 +157,7 @@ impl Module {
         let self_channel = voyager_client
             .query_ibc_state(
                 self.chain_id.clone(),
-                event_height,
+                QueryHeight::Specific(event_height),
                 ChannelPath {
                     channel_id: self_channel_id,
                 },
@@ -168,7 +168,7 @@ impl Module {
         let self_connection = voyager_client
             .query_ibc_state(
                 self.chain_id.clone(),
-                event_height,
+                QueryHeight::Specific(event_height),
                 ConnectionPath {
                     connection_id: self_connection_id,
                 },
@@ -196,7 +196,7 @@ impl Module {
         let other_channel = voyager_client
             .query_ibc_state(
                 client_state_meta.counterparty_chain_id.clone(),
-                counterparty_latest_height,
+                QueryHeight::Specific(counterparty_latest_height),
                 ChannelPath {
                     channel_id: other_channel_id,
                 },
@@ -450,6 +450,13 @@ impl Module {
                                 Some(IbcEvents::ChannelCloseConfirm(e))
                             }
                             Ibc::IbcEvents::PacketSend(e) => Some(IbcEvents::PacketSend(e)),
+                            Ibc::IbcEvents::BatchedPreviouslySent(e) => {
+                                dbg!(&e);
+                                Some(IbcEvents::BatchSend(e))
+                            }
+                            Ibc::IbcEvents::BatchedPreviouslyAcked(e) => {
+                                Some(IbcEvents::BatchAck(e))
+                            }
                             Ibc::IbcEvents::PacketRecv(e) => {
                                 if self.index_trivial_events {
                                     Some(IbcEvents::PacketRecv(e))
@@ -523,6 +530,7 @@ impl Module {
 
         let provable_height = Height::new(block_number);
 
+        // TODO: Make short circuiting configurable OR always short circuit on noop events
         match event {
             IbcEvents::CreateClient(raw_event) => {
                 let client_id = raw_event.client_id.try_into().unwrap();
@@ -746,10 +754,23 @@ impl Module {
                 let channel_id = raw_event.channel_id.try_into().unwrap();
                 let connection_id = raw_event.connection_id.try_into().unwrap();
 
+                let channel = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(provable_height),
+                        ChannelPath { channel_id },
+                    )
+                    .await?;
+
+                if channel.state != ChannelState::Init {
+                    info!(state = %channel.state, "channel state is not init");
+                    return Ok(noop());
+                }
+
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height,
+                        QueryHeight::Specific(provable_height),
                         ConnectionPath { connection_id },
                     )
                     .await?;
@@ -763,14 +784,6 @@ impl Module {
                         self.chain_id.clone(),
                         provable_height.into(),
                         connection.client_id,
-                    )
-                    .await?;
-
-                let channel = voyager_client
-                    .query_ibc_state(
-                        self.chain_id.clone(),
-                        provable_height,
-                        ChannelPath { channel_id },
                     )
                     .await?;
 
@@ -800,10 +813,23 @@ impl Module {
                 let connection_id = raw_event.connection_id.try_into().unwrap();
                 let counterparty_channel_id = raw_event.counterparty_channel_id.try_into().unwrap();
 
+                let channel = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(provable_height),
+                        ChannelPath { channel_id },
+                    )
+                    .await?;
+
+                if channel.state != ChannelState::TryOpen {
+                    info!(state = %channel.state, "channel state is not try_open");
+                    return Ok(noop());
+                }
+
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height,
+                        QueryHeight::Specific(provable_height),
                         ConnectionPath { connection_id },
                     )
                     .await?;
@@ -817,14 +843,6 @@ impl Module {
                         self.chain_id.clone(),
                         provable_height.into(),
                         connection.client_id,
-                    )
-                    .await?;
-
-                let channel = voyager_client
-                    .query_ibc_state(
-                        self.chain_id.clone(),
-                        provable_height,
-                        ChannelPath { channel_id },
                     )
                     .await?;
 
@@ -855,10 +873,23 @@ impl Module {
                 let connection_id = raw_event.connection_id.try_into().unwrap();
                 let counterparty_channel_id = raw_event.counterparty_channel_id.try_into().unwrap();
 
+                let channel = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(provable_height),
+                        ChannelPath { channel_id },
+                    )
+                    .await?;
+
+                if channel.state != ChannelState::Init {
+                    info!(state = %channel.state, "channel state is not init");
+                    return Ok(noop());
+                }
+
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height,
+                        QueryHeight::Specific(provable_height),
                         ConnectionPath { connection_id },
                     )
                     .await?;
@@ -872,14 +903,6 @@ impl Module {
                         self.chain_id.clone(),
                         provable_height.into(),
                         connection.client_id,
-                    )
-                    .await?;
-
-                let channel = voyager_client
-                    .query_ibc_state(
-                        self.chain_id.clone(),
-                        provable_height,
-                        ChannelPath { channel_id },
                     )
                     .await?;
 
@@ -913,7 +936,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height,
+                        QueryHeight::Specific(provable_height),
                         ConnectionPath { connection_id },
                     )
                     .await?;
@@ -933,7 +956,7 @@ impl Module {
                 let channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        provable_height,
+                        QueryHeight::Specific(provable_height),
                         ChannelPath { channel_id },
                     )
                     .await?;
@@ -971,22 +994,95 @@ impl Module {
             IbcEvents::PacketSend(raw_event) => {
                 let packet: Packet = raw_event.packet.try_into().unwrap();
 
+                let ack = voyager_client
+                    .maybe_query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Latest,
+                        BatchReceiptsPath::from_packets(&[packet.clone()]),
+                    )
+                    .await?
+                    .state;
+
+                match ack {
+                    Some(ack) => {
+                        info!(packet_hash = %packet.hash(), %ack, "packet already acknowledged");
+                        Ok(noop())
+                    }
+                    None => {
+                        info!(packet_hash = %packet.hash(), "packet not acked yet");
+
+                        let (
+                            counterparty_chain_id,
+                            client_info,
+                            source_channel,
+                            destination_channel,
+                        ) = self
+                            .make_packet_metadata(
+                                provable_height,
+                                packet.source_channel_id,
+                                voyager_client,
+                            )
+                            .await?;
+
+                        let receipt = voyager_client
+                            .maybe_query_ibc_state(
+                                counterparty_chain_id.clone(),
+                                QueryHeight::Latest,
+                                BatchPacketsPath::from_packets(&[packet.clone()]),
+                            )
+                            .await?
+                            .state;
+
+                        match receipt {
+                            Some(receipt) => {
+                                info!(packet_hash = %packet.hash(), %receipt, "packet already received");
+                                Ok(noop())
+                            }
+                            None => {
+                                info!(packet_hash = %packet.hash(), "packet not received yet");
+
+                                let event = PacketSend {
+                                    packet_data: packet.data.to_vec().into(),
+                                    packet: PacketMetadata {
+                                        source_channel,
+                                        destination_channel,
+                                        timeout_height: packet.timeout_height,
+                                        timeout_timestamp: packet.timeout_timestamp,
+                                    },
+                                }
+                                .into();
+
+                                ibc_union_spec::log_event(&event, &self.chain_id);
+
+                                Ok(data(ChainEvent {
+                                    chain_id: self.chain_id.clone(),
+                                    client_info,
+                                    counterparty_chain_id,
+                                    tx_hash,
+                                    provable_height,
+                                    ibc_spec_id: IbcUnion::ID,
+                                    event: into_value::<FullEvent>(event),
+                                }))
+                            }
+                        }
+                    }
+                }
+            }
+
+            // packet origin is this chain
+            IbcEvents::BatchSend(raw_event) => {
                 let (counterparty_chain_id, client_info, source_channel, destination_channel) =
                     self.make_packet_metadata(
                         provable_height,
-                        packet.source_channel_id,
+                        raw_event.channel_id.try_into().unwrap(),
                         voyager_client,
                     )
                     .await?;
 
-                let event = PacketSend {
-                    packet_data: packet.data.to_vec().into(),
-                    packet: PacketMetadata {
-                        source_channel,
-                        destination_channel,
-                        timeout_height: packet.timeout_height,
-                        timeout_timestamp: packet.timeout_timestamp,
-                    },
+                let event = ibc_union_spec::event::BatchSend {
+                    batch_hash: raw_event.batch_hash.into(),
+                    source_channel,
+                    destination_channel,
                 }
                 .into();
 
@@ -1002,6 +1098,7 @@ impl Module {
                     event: into_value::<FullEvent>(event),
                 }))
             }
+
             IbcEvents::PacketTimeout(raw_event) => {
                 let (counterparty_chain_id, client_info, source_channel, destination_channel) =
                     self.make_packet_metadata(
@@ -1087,6 +1184,51 @@ impl Module {
                     event: into_value::<FullEvent>(event),
                 }))
             }
+            IbcEvents::BatchAck(_raw_event) => {
+                // let (counterparty_chain_id, client_info, source_channel, destination_channel) =
+                //     self.make_packet_metadata(
+                //         provable_height,
+                //         raw_event.channel_id.try_into().unwrap(),
+                //         voyager_client,
+                //     )
+                //     .await?;
+
+                // let packet = voyager_client
+                //     .query(
+                //         self.chain_id.clone(),
+                //         PacketByHash {
+                //             channel_id: raw_event.channel_id.try_into().unwrap(),
+                //             packet_hash: raw_event.packet_hash.0.into(),
+                //         },
+                //     )
+                //     .await?;
+
+                // let event = PacketAck {
+                //     packet: PacketMetadata {
+                //         source_channel,
+                //         destination_channel,
+                //         timeout_height: packet.timeout_height,
+                //         timeout_timestamp: packet.timeout_timestamp,
+                //     },
+                //     packet_data: packet.data,
+                //     acknowledgement: raw_event.acknowledgement.into(),
+                // }
+                // .into();
+
+                // ibc_union_spec::log_event(&event, &self.chain_id);
+
+                // Ok(data(ChainEvent {
+                //     chain_id: self.chain_id.clone(),
+                //     client_info,
+                //     counterparty_chain_id,
+                //     tx_hash,
+                //     provable_height,
+                //     ibc_spec_id: IbcUnion::ID,
+                //     event: into_value::<FullEvent>(event),
+                // }))
+
+                todo!()
+            }
             // packet origin is the counterparty chain
             IbcEvents::WriteAck(raw_event) => {
                 let (counterparty_chain_id, client_info, destination_channel, source_channel) =
@@ -1096,6 +1238,27 @@ impl Module {
                         voyager_client,
                     )
                     .await?;
+
+                let ack = voyager_client
+                    .maybe_query_ibc_state(
+                        counterparty_chain_id.clone(),
+                        QueryHeight::Latest,
+                        BatchReceiptsPath {
+                            batch_hash: raw_event.packet_hash.into(),
+                        },
+                    )
+                    .await?
+                    .state;
+
+                match ack {
+                    Some(ack) => {
+                        info!(packet_hash = %raw_event.packet_hash, %ack, "packet already acknowledged");
+                        return Ok(noop());
+                    }
+                    None => {
+                        info!(packet_hash = %raw_event.packet_hash, "packet not acked yet");
+                    }
+                }
 
                 let packet = voyager_client
                     .query(

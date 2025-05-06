@@ -116,6 +116,7 @@ pub struct Config {
     #[serde(default)]
     pub fixed_gas_price: Option<u128>,
 
+    #[serde(with = "::serde_utils::string")]
     pub gas_multiplier: f64,
 
     #[serde(default)]
@@ -784,6 +785,14 @@ fn process_msgs<'a>(
                             proof: data.proof.into(),
                             proof_height: data.proof_height,
                             relayer: relayer.into(),
+                        })
+                        .clear_decoder(),
+                ),
+                Datagram::BatchSend(data) => (
+                    msg,
+                    ibc_handler
+                        .batchSend(ibc_solidity::MsgBatchSend {
+                            packets: data.packets.into_iter().map(Into::into).collect(),
                         })
                         .clear_decoder(),
                 ),

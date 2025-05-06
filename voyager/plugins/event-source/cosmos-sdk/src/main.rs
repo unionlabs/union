@@ -212,7 +212,7 @@ impl Module {
         let self_connection = voyager_client
             .query_ibc_state(
                 self.chain_id.clone(),
-                event_height,
+                QueryHeight::Specific(event_height),
                 ibc_classic_spec::ConnectionPath {
                     connection_id: self_connection_id.clone(),
                 },
@@ -234,7 +234,7 @@ impl Module {
         let this_channel = voyager_client
             .query_ibc_state(
                 self.chain_id.clone(),
-                event_height,
+                QueryHeight::Specific(event_height),
                 ibc_classic_spec::ChannelEndPath {
                     port_id: self_port_id.clone(),
                     channel_id: self_channel_id.clone(),
@@ -249,7 +249,7 @@ impl Module {
         let counterparty_channel = voyager_client
             .query_ibc_state(
                 client_state_meta.counterparty_chain_id.clone(),
-                counterparty_latest_height,
+                QueryHeight::Specific(counterparty_latest_height),
                 ibc_classic_spec::ChannelEndPath {
                     port_id: other_port_id.clone(),
                     channel_id: other_channel_id.clone(),
@@ -508,6 +508,8 @@ impl Module {
 
         let mut total_count = 0;
 
+        let mut seen_batches = BTreeSet::new();
+
         loop {
             info!(%height, %page, "fetching page {page}");
 
@@ -533,7 +535,7 @@ impl Module {
                 for event in tx_response.tx_result.events {
                     trace!(%event.ty, "observed event");
 
-                    let event = match CosmosSdkEvent::<IbcEvent>::new(event.clone()) {
+                    let event = match CosmosSdkEvent::<IbcEvent>::new(event) {
                         Ok(event) => event,
                         Err(cosmos_sdk_event::Error::Deserialize(error)) => {
                             trace!("unable to parse event: {error}");
@@ -564,17 +566,33 @@ impl Module {
                         }
                     }
 
-                    let make_chain_event = || {
+                    let mut make_chain_event = || {
                         if event.event.is_trivial() && !self.index_trivial_events {
                             debug!("not indexing trivial event");
                             None
                         } else {
+                            let event = match event.event {
+                                IbcEvent::WasmBatchSend {
+                                    channel_id,
+                                    batch_hash,
+                                    packet_hash,
+                                } => {
+                                    debug!(%packet_hash, %batch_hash, %channel_id, "found batch send event");
+                                    if seen_batches.insert((channel_id, batch_hash)) {
+                                        info!(%batch_hash, %channel_id, "found batch send event");
+                                        event.clone()
+                                    } else {
+                                        return None;
+                                    }
+                                }
+                                _ => event.clone(),
+                            };
                             Some(call(PluginMessage::new(
                                 self.plugin_name(),
                                 ModuleCall::from(MakeChainEvent {
                                     height,
                                     tx_hash: tx_response.hash.into_encoding(),
-                                    event: event.event.clone(),
+                                    event: event.event,
                                 }),
                             )))
                         }
@@ -762,7 +780,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_classic_spec::ConnectionPath {
                             connection_id: connection_id.clone(),
                         },
@@ -841,7 +859,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_classic_spec::ConnectionPath {
                             connection_id: connection_id.clone(),
                         },
@@ -863,7 +881,7 @@ impl Module {
                 let channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_classic_spec::ChannelEndPath {
                             port_id: port_id.to_owned(),
                             channel_id: channel_id.to_owned(),
@@ -1384,7 +1402,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?;
@@ -1433,7 +1451,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?;
@@ -1482,7 +1500,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?;
@@ -1500,7 +1518,11 @@ impl Module {
                     .await?;
 
                 let channel = voyager_client
-                    .query_ibc_state(self.chain_id.clone(), height, ChannelPath { channel_id })
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(height),
+                        ChannelPath { channel_id },
+                    )
                     .await?;
 
                 let event = ibc_union_spec::event::ChannelOpenAck {
@@ -1536,7 +1558,7 @@ impl Module {
                 let channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ChannelPath { channel_id },
                     )
                     .await?;
@@ -1544,7 +1566,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?;
@@ -1616,7 +1638,7 @@ impl Module {
                 let source_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ChannelPath {
                             channel_id: packet.source_channel_id,
                         },
@@ -1626,7 +1648,7 @@ impl Module {
                 let source_connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ConnectionPath {
                             connection_id: source_channel.connection_id,
                         },
@@ -1684,6 +1706,76 @@ impl Module {
                     event: into_value::<ibc_union_spec::event::FullEvent>(event),
                 }))
             }
+            IbcEvent::WasmBatchSend {
+                channel_id,
+                packet_hash: _,
+                batch_hash,
+            } => {
+                let source_channel = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(height),
+                        ibc_union_spec::path::ChannelPath { channel_id },
+                    )
+                    .await?;
+
+                let source_connection = voyager_client
+                    .query_ibc_state(
+                        self.chain_id.clone(),
+                        QueryHeight::Specific(height),
+                        ibc_union_spec::path::ConnectionPath {
+                            connection_id: source_channel.connection_id,
+                        },
+                    )
+                    .await?;
+
+                let client_info = voyager_client
+                    .client_info::<IbcUnion>(self.chain_id.clone(), source_connection.client_id)
+                    .await?;
+
+                let client_state_meta = voyager_client
+                    .client_state_meta::<IbcUnion>(
+                        self.chain_id.clone(),
+                        height.into(),
+                        source_connection.client_id,
+                    )
+                    .await?;
+
+                let event = ibc_union_spec::event::BatchSend {
+                    batch_hash,
+                    source_channel: ibc_union_spec::event::ChannelMetadata {
+                        channel_id,
+                        version: source_channel.version.clone(),
+                        connection: ibc_union_spec::event::ConnectionMetadata {
+                            client_id: source_connection.client_id,
+                            connection_id: source_channel.connection_id,
+                        },
+                    },
+                    destination_channel: ibc_union_spec::event::ChannelMetadata {
+                        channel_id: source_channel
+                            .counterparty_channel_id
+                            .expect("channel is open"),
+                        version: source_channel.version,
+                        connection: ibc_union_spec::event::ConnectionMetadata {
+                            client_id: source_connection.counterparty_client_id,
+                            connection_id: source_connection.counterparty_connection_id.unwrap(),
+                        },
+                    },
+                }
+                .into();
+
+                ibc_union_spec::log_event(&event, &self.chain_id);
+
+                Ok(data(ChainEvent {
+                    chain_id: self.chain_id.clone(),
+                    client_info,
+                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                    tx_hash,
+                    provable_height,
+                    ibc_spec_id: IbcUnion::ID,
+                    event: into_value::<ibc_union_spec::event::FullEvent>(event),
+                }))
+            }
             IbcEvent::WasmPacketAck {
                 acknowledgement,
                 channel_id,
@@ -1702,7 +1794,7 @@ impl Module {
                 let source_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ChannelPath {
                             channel_id: packet.source_channel_id,
                         },
@@ -1712,7 +1804,7 @@ impl Module {
                 let source_connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ConnectionPath {
                             connection_id: source_channel.connection_id,
                         },
@@ -1780,7 +1872,7 @@ impl Module {
                 let destination_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ChannelPath { channel_id },
                     )
                     .await?;
@@ -1788,7 +1880,7 @@ impl Module {
                 let destination_connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ConnectionPath {
                             connection_id: destination_channel.connection_id,
                         },
@@ -1817,7 +1909,7 @@ impl Module {
                 let source_channel = voyager_client
                     .query_ibc_state(
                         client_state_meta.counterparty_chain_id.clone(),
-                        counterparty_latest_height,
+                        QueryHeight::Specific(counterparty_latest_height),
                         ibc_union_spec::path::ChannelPath {
                             channel_id: destination_channel.counterparty_channel_id.unwrap(),
                         },
@@ -1882,7 +1974,7 @@ impl Module {
                 let destination_channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ChannelPath { channel_id },
                     )
                     .await?;
@@ -1890,7 +1982,7 @@ impl Module {
                 let destination_connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        height,
+                        QueryHeight::Specific(height),
                         ibc_union_spec::path::ConnectionPath {
                             connection_id: destination_channel.connection_id,
                         },
@@ -1919,7 +2011,7 @@ impl Module {
                 let source_channel = voyager_client
                     .query_ibc_state(
                         client_state_meta.counterparty_chain_id.clone(),
-                        counterparty_latest_height,
+                        QueryHeight::Specific(counterparty_latest_height),
                         ibc_union_spec::path::ChannelPath {
                             channel_id: destination_channel.counterparty_channel_id.unwrap(),
                         },

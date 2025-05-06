@@ -8,9 +8,10 @@ use std::{
 
 use cometbft_rpc::rpc_types::Order;
 use cosmos_sdk_event::CosmosSdkEvent;
+use futures::{stream::FuturesUnordered, TryStreamExt};
 use ibc_union_spec::{
     path::StorePath,
-    query::{PacketByHash, Query},
+    query::{PacketByHash, PacketsByBatchHash, Query},
     Channel, ChannelId, ClientId, Connection, ConnectionId, IbcUnion, Packet, Timestamp,
 };
 use jsonrpsee::{
@@ -102,6 +103,66 @@ impl Module {
     #[must_use]
     pub fn make_height(&self, height: u64) -> Height {
         Height::new_with_revision(self.chain_revision, height)
+    }
+
+    #[instrument(skip_all, fields(chain_id = %self.chain_id, %channel_id, %packet_hash))]
+    pub async fn query_packet_by_hash(
+        &self,
+        channel_id: ChannelId,
+        packet_hash: H256,
+    ) -> RpcResult<Packet> {
+        let query = format!("wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}");
+
+        let mut res = self
+            .cometbft_client
+            .tx_search(
+                query,
+                false,
+                option_unwrap!(NonZeroU32::new(1)),
+                option_unwrap!(NonZeroU8::new(1)),
+                Order::Asc,
+            )
+            .await
+            .map_err(rpc_error("error querying packet by packet hash", None))?;
+
+        if res.total_count != 1 {
+            return Err(ErrorObject::owned(
+                -1,
+                format!(
+                    "error querying for packet {packet_hash}, \
+                    expected 1 event but found {}",
+                    res.total_count,
+                ),
+                None::<()>,
+            ));
+        }
+
+        let res = res.txs.pop().unwrap();
+
+        let Some(IbcEvent::WasmPacketSend {
+            packet_source_channel_id,
+            packet_destination_channel_id,
+            packet_data,
+            packet_timeout_height,
+            packet_timeout_timestamp,
+            channel_id: _,
+            packet_hash: _,
+        }) = res.tx_result.events.into_iter().find_map(|event| {
+            CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
+                (e.contract_address.unwrap() == self.ibc_host_contract_address).then_some(e.event)
+            })
+        })
+        else {
+            panic!()
+        };
+
+        Ok(Packet {
+            source_channel_id: packet_source_channel_id,
+            destination_channel_id: packet_destination_channel_id,
+            data: packet_data,
+            timeout_height: packet_timeout_height,
+            timeout_timestamp: packet_timeout_timestamp,
+        })
     }
 
     #[instrument(skip_all, fields(?height))]
@@ -330,10 +391,17 @@ impl StateModuleServer<IbcUnion> for Module {
             Query::PacketByHash(PacketByHash {
                 channel_id,
                 packet_hash,
+            }) => self
+                .query_packet_by_hash(channel_id, packet_hash)
+                .await
+                .map(into_value),
+            Query::PacketsByBatchHash(PacketsByBatchHash {
+                channel_id,
+                batch_hash,
             }) => {
-                let query = format!("wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}");
+                let query = format!("wasm-batch_send.batch_hash='{batch_hash}' AND wasm-batch_send.channel_id={channel_id}");
 
-                let mut res = self
+                let res = self
                     .cometbft_client
                     .tx_search(
                         query,
@@ -345,45 +413,45 @@ impl StateModuleServer<IbcUnion> for Module {
                     .await
                     .map_err(rpc_error("error querying packet by packet hash", None))?;
 
-                if res.total_count != 1 {
+                if res.total_count < 2 {
                     return Err(ErrorObject::owned(
                         -1,
                         format!(
-                            "error querying for packet {packet_hash}, \
-                            expected 1 event but found {}",
+                            "error querying for batch {batch_hash}, \
+                            expected at least 2 events but found {}",
                             res.total_count,
                         ),
                         None::<()>,
                     ));
                 }
 
-                let res = res.txs.pop().unwrap();
-
-                let Some(IbcEvent::WasmPacketSend {
-                    packet_source_channel_id,
-                    packet_destination_channel_id,
-                    packet_data,
-                    packet_timeout_height,
-                    packet_timeout_timestamp,
-                    channel_id: _,
-                    packet_hash: _,
-                }) = res.tx_result.events.into_iter().find_map(|event| {
-                    CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
-                        (e.contract_address.unwrap() == self.ibc_host_contract_address)
-                            .then_some(e.event)
+                let packets = res
+                    .txs
+                    .into_iter()
+                    .flat_map(|res| {
+                        res.tx_result
+                            .events
+                            .into_iter()
+                            .filter_map(|event| {
+                                CosmosSdkEvent::<IbcEvent>::new(event).ok().and_then(|e| {
+                                    (e.contract_address.unwrap() == self.ibc_host_contract_address)
+                                        .then_some(e.event)
+                                })
+                            })
+                            .map(|event| match event {
+                                IbcEvent::WasmBatchSend {
+                                    channel_id,
+                                    packet_hash,
+                                    batch_hash: _,
+                                } => self.query_packet_by_hash(channel_id, packet_hash),
+                                _ => panic!(),
+                            })
                     })
-                })
-                else {
-                    panic!()
-                };
+                    .collect::<FuturesUnordered<_>>()
+                    .try_collect::<Vec<_>>()
+                    .await?;
 
-                Ok(into_value(Packet {
-                    source_channel_id: packet_source_channel_id,
-                    destination_channel_id: packet_destination_channel_id,
-                    data: packet_data,
-                    timeout_height: packet_timeout_height,
-                    timeout_timestamp: packet_timeout_timestamp,
-                }))
+                Ok(into_value(packets))
             }
         }
     }
@@ -475,5 +543,12 @@ pub enum IbcEvent {
         #[serde(with = "serde_utils::string")]
         channel_id: ChannelId,
         packet_hash: H256,
+    },
+    #[serde(rename = "wasm-batch_send")]
+    WasmBatchSend {
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+        batch_hash: H256,
     },
 }

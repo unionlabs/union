@@ -277,7 +277,7 @@ impl Module {
 
         match receipt.state {
             Some(receipt) => {
-                info!("packet received (receipt: {receipt})");
+                info!(%receipt, "packet received");
                 Ok(noop())
             }
             None => {

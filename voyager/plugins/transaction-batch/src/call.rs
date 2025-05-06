@@ -1,6 +1,6 @@
 use enumorph::Enumorph;
 use ibc_classic_spec::IbcClassic;
-use ibc_union_spec::IbcUnion;
+use ibc_union_spec::{query::PacketsByBatchHash, IbcUnion};
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use serde_json::json;
@@ -189,7 +189,7 @@ impl MakeMsg<IbcUnion> {
                 let connection_state = voyager_client
                     .query_ibc_state(
                         origin_chain_id.clone(),
-                        origin_chain_proof_height,
+                        QueryHeight::Specific(origin_chain_proof_height),
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?;
@@ -255,7 +255,7 @@ impl MakeMsg<IbcUnion> {
                 let connection_state = voyager_client
                     .query_ibc_state(
                         origin_chain_id.clone(),
-                        origin_chain_proof_height,
+                        QueryHeight::Specific(origin_chain_proof_height),
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?;
@@ -319,7 +319,7 @@ impl MakeMsg<IbcUnion> {
                 let connection_state = voyager_client
                     .query_ibc_state(
                         origin_chain_id.clone(),
-                        origin_chain_proof_height,
+                        QueryHeight::Specific(origin_chain_proof_height),
                         ibc_union_spec::path::ConnectionPath { connection_id },
                     )
                     .await?;
@@ -516,6 +516,57 @@ impl MakeMsg<IbcUnion> {
                         ibc_union_spec::datagram::MsgPacketRecv {
                             packets: vec![packet],
                             relayer_msgs: vec![vec![].into()],
+                            proof: encoded_proof,
+                            proof_height: origin_chain_proof_height.height(),
+                        },
+                    ),
+                )))
+            }
+
+            EventUnion::BatchSend(event) => {
+                let mut packets = voyager_client
+                    .query(
+                        origin_chain_id.clone(),
+                        PacketsByBatchHash {
+                            channel_id: event.source_channel.channel_id,
+                            batch_hash: event.batch_hash,
+                        },
+                    )
+                    .await?;
+
+                packets.sort_by_cached_key(|packet| packet.hash());
+
+                let proof = voyager_client
+                    .query_ibc_proof(
+                        origin_chain_id,
+                        QueryHeight::Specific(origin_chain_proof_height),
+                        ibc_union_spec::path::BatchPacketsPath {
+                            batch_hash: event.batch_hash,
+                        },
+                    )
+                    .await?
+                    .into_result()?;
+
+                let client_info = voyager_client
+                    .client_info::<IbcUnion>(
+                        target_chain_id,
+                        event.destination_channel.connection.client_id,
+                    )
+                    .await?;
+
+                let encoded_proof = voyager_client
+                    .encode_proof::<IbcUnion>(
+                        client_info.client_type,
+                        client_info.ibc_interface,
+                        proof.proof,
+                    )
+                    .await?;
+
+                Ok(data(IbcDatagram::new::<IbcUnion>(
+                    ibc_union_spec::datagram::Datagram::from(
+                        ibc_union_spec::datagram::MsgPacketRecv {
+                            relayer_msgs: vec![vec![].into(); packets.len()],
+                            packets,
                             proof: encoded_proof,
                             proof_height: origin_chain_proof_height.height(),
                         },
@@ -914,7 +965,7 @@ async fn mk_connection_handshake_state_and_proofs(
     let connection_state = voyager_client
         .query_ibc_state(
             origin_chain_id.clone(),
-            origin_chain_proof_height,
+            QueryHeight::Specific(origin_chain_proof_height),
             ibc_classic_spec::ConnectionPath {
                 connection_id: connection_id.clone(),
             },

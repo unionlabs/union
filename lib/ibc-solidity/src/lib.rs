@@ -345,24 +345,24 @@ maybe_sol_attr! {
                 bytes32 indexed packet_hash,
                 address indexed maker
             );
-            // #[cfg_attr(
-            //     feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            //     serde(deny_unknown_fields)
-            // )]
-            // event BatchedPreviouslySent(
-            //     uint32 indexed channel_id,
-            //     bytes32 indexed batch_hash,
-            //     bytes32 indexed packet_hash
-            // );
-            // #[cfg_attr(
-            //     feature = "serde", derive(serde::Serialize, serde::Deserialize),
-            //     serde(deny_unknown_fields)
-            // )]
-            // event BatchedPreviouslyAcked(
-            //     uint32 indexed channel_id,
-            //     bytes32 indexed batch_hash,
-            //     bytes32 indexed packet_hash
-            // );
+            #[cfg_attr(
+                feature = "serde", derive(serde::Serialize, serde::Deserialize),
+                serde(deny_unknown_fields)
+            )]
+            event BatchedPreviouslySent(
+                uint32 indexed channel_id,
+                bytes32 indexed batch_hash,
+                bytes32 indexed packet_hash
+            );
+            #[cfg_attr(
+                feature = "serde", derive(serde::Serialize, serde::Deserialize),
+                serde(deny_unknown_fields)
+            )]
+            event BatchedPreviouslyAcked(
+                uint32 indexed channel_id,
+                bytes32 indexed batch_hash,
+                bytes32 indexed packet_hash
+            );
 
             error ErrUnauthorized();
             error ErrLatestTimestampNotFound();
@@ -552,7 +552,6 @@ maybe_sol_attr! {
         }
 
         struct MsgBatchSend {
-            uint32 source_channel;
             Packet[] packets;
         }
 
@@ -638,6 +637,12 @@ impl Clone for Ibc::IbcEvents {
             }
             Ibc::IbcEvents::PacketTimeout(timeout_packet) => {
                 Ibc::IbcEvents::PacketTimeout(timeout_packet.clone())
+            }
+            Ibc::IbcEvents::BatchedPreviouslySent(batched_previously_sent) => {
+                Ibc::IbcEvents::BatchedPreviouslySent(batched_previously_sent.clone())
+            }
+            Ibc::IbcEvents::BatchedPreviouslyAcked(batched_previously_acked) => {
+                Ibc::IbcEvents::BatchedPreviouslyAcked(batched_previously_acked.clone())
             }
         }
     }

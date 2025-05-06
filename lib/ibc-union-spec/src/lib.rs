@@ -196,6 +196,23 @@ pub fn log_event(e: &FullEvent, chain_id: &voyager_primitives::ChainId) {
             data.packet.timeout_timestamp = %e.packet.timeout_timestamp,
             "event"
         ),
+        FullEvent::BatchSend(e) => info!(
+            event,
+            %chain_id,
+
+            data.batch_hash = %e.batch_hash,
+
+            data.source_channel.channel_id = %e.source_channel.channel_id,
+            data.source_channel.version = %e.source_channel.version,
+            data.source_channel.connection.client_id = %e.source_channel.connection.client_id,
+            data.source_channel.connection.connection_id = %e.source_channel.connection.connection_id,
+
+            data.destination_channel.channel_id = %e.destination_channel.channel_id,
+            data.destination_channel.version = %e.destination_channel.version,
+            data.destination_channel.connection.client_id = %e.destination_channel.connection.client_id,
+            data.destination_channel.connection.connection_id = %e.destination_channel.connection.connection_id,
+            "event"
+        ),
         FullEvent::PacketRecv(e) => info!(
             event,
             %chain_id,

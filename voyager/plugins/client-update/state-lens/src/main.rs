@@ -119,7 +119,7 @@ impl Module {
         let raw_state_lens_client_state = voyager_client
             .query_ibc_state(
                 counterparty_chain_id.clone(),
-                counterparty_latest_height,
+                QueryHeight::Specific(counterparty_latest_height),
                 ClientStatePath { client_id },
             )
             .await?;
@@ -431,7 +431,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 let l2_consensus_state = voyager_client
                     .query_ibc_state(
                         l1_client_state_meta.counterparty_chain_id.clone(),
-                        l1_latest_height,
+                        QueryHeight::Specific(l1_latest_height),
                         l2_consensus_state_path.clone(),
                     )
                     .await?;

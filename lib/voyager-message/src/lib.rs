@@ -747,15 +747,11 @@ impl VoyagerClient {
     pub async fn query_ibc_state<P: IbcStorePathKey>(
         &self,
         chain_id: ChainId,
-        height: Height,
+        height: QueryHeight,
         path: P,
     ) -> RpcResult<P::Value> {
         let state = self
-            .maybe_query_ibc_state(
-                chain_id.clone(),
-                QueryHeight::Specific(height),
-                path.clone(),
-            )
+            .maybe_query_ibc_state(chain_id.clone(), height, path.clone())
             .await?
             .state
             .ok_or_else(|| {

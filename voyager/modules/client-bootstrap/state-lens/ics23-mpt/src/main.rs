@@ -181,7 +181,7 @@ impl ClientBootstrapModuleServer for Module {
         let l2_raw_consensus_state = voyager_client
             .query_ibc_state(
                 l1_client_meta.counterparty_chain_id.clone(),
-                l1_latest_height,
+                QueryHeight::Specific(l1_latest_height),
                 ConsensusStatePath {
                     client_id: config.l2_client_id,
                     height: height.height(),

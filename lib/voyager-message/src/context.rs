@@ -317,7 +317,8 @@ impl Context {
             })
             .zip(stream::repeat(main_rpc_server.clone()))
             .then(async |((idx, plugin_config), server)| {
-                let plugin_info = get_plugin_info(&plugin_config)?;
+                let plugin_info = info_span!("get_plugin_info", %idx)
+                    .in_scope(|| get_plugin_info(&plugin_config))?;
 
                 debug!("starting rpc server for plugin {}", plugin_info.name);
                 tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
@@ -1066,21 +1067,21 @@ pub struct PluginNotFound {
 
 module_error!(PluginNotFound);
 
-pub fn get_plugin_info(module_config: &PluginConfig) -> anyhow::Result<PluginInfo> {
+pub fn get_plugin_info(plugin_config: &PluginConfig) -> anyhow::Result<PluginInfo> {
     debug!(
         "querying module info from plugin at {}",
-        &module_config.path.to_string_lossy(),
+        &plugin_config.path.to_string_lossy(),
     );
 
-    let mut cmd = std::process::Command::new(&module_config.path);
+    let mut cmd = std::process::Command::new(&plugin_config.path);
     cmd.arg("info");
-    cmd.arg(module_config.config.to_string());
+    cmd.arg(plugin_config.config.to_string());
 
     let output = cmd
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .spawn()
-        .with_context(|| format!("spawning plugin at {}", module_config.path.display()))?
+        .with_context(|| format!("spawning plugin at {}", plugin_config.path.display()))?
         .wait_with_output()
         .unwrap();
 
@@ -1088,15 +1089,15 @@ pub fn get_plugin_info(module_config: &PluginConfig) -> anyhow::Result<PluginInf
         match output.status.code() {
             Some(code) if code == INVALID_CONFIG_EXIT_CODE as i32 => {
                 return Err(anyhow!(
-                    "invalid config for module at path {}:\n{}",
-                    &module_config.path.to_string_lossy(),
+                    "unable to query info for module at path {}: stdout:\n{}",
+                    &plugin_config.path.to_string_lossy(),
                     String::from_utf8_lossy(&output.stdout)
                 ));
             }
             Some(_) | None => {
                 return Err(anyhow!(
-                    "unable to query info for module at path {}:\n{}",
-                    &module_config.path.to_string_lossy(),
+                    "unable to query info for module at path {}: stdout:\n{}",
+                    &plugin_config.path.to_string_lossy(),
                     String::from_utf8_lossy(&output.stdout)
                 ));
             }
