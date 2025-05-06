@@ -125,7 +125,7 @@ in
       packages = {
         sentinel2 = pkgsUnstable.buildNpmPackage {
           inherit (pkgs) nodejs;
-          npmDepsHash = "sha256-QX8M7LAdLAWGGiwR4VhBEvTQkSEHr/GkmU6njsQnv3U=";
+          npmDepsHash = "sha256-PcIKkKwJfLmxDH4nDwQg8rJ2zXgoTX7ouV9lHoGU6v8=";
           src = ./.;
           sourceRoot = "sentinel2";
           npmFlags = [
