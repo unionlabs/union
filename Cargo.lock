@@ -12599,8 +12599,9 @@ version = "0.0.0"
 dependencies = [
  "alloy",
  "hex-literal",
- "protos",
+ "ibc-union-spec",
  "serde",
+ "state-lens-ics23-ics23-light-client-types",
  "state-lens-light-client-types",
  "thiserror 2.0.12",
  "unionlabs",
@@ -12637,6 +12638,7 @@ dependencies = [
  "bincode 2.0.1",
  "consensus-primitives",
  "hex-literal",
+ "ibc-union-spec",
  "protos",
  "serde",
  "state-lens-ics23-mpt-light-client-types",

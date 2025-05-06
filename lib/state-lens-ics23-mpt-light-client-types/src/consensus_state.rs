@@ -53,3 +53,32 @@ pub mod ethabi {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use alloy::hex;
+    use unionlabs::{encoding::EthAbi, test_utils::assert_codec_iso_bytes};
+
+    use super::*;
+
+    #[test]
+    fn ethabi() {
+        // voyager rpc -r voy.run rpc consensus-state 11155111 3 3697397
+        // note that this consensus state is technically invalid - this is from before we pushed the fix to the client
+        let bz = hex!(
+            "000000000000000000000000000000000000000000000000321386383136d3f2" // timestamp
+            "00000000000000000000000000000000000000000000000000000000003e7d40" // state_root
+            "56013ecdec1cff8ae46d82d3a021ebe40b327a0a6b915383af7756c3fc53797f" // storage_root
+        );
+
+        let value = ConsensusState {
+            timestamp: Timestamp::from_nanos(3608375302355866610),
+            state_root: hex!("00000000000000000000000000000000000000000000000000000000003e7d40")
+                .into(),
+            storage_root: hex!("56013ecdec1cff8ae46d82d3a021ebe40b327a0a6b915383af7756c3fc53797f")
+                .into(),
+        };
+
+        assert_codec_iso_bytes::<_, EthAbi>(&value, &bz);
+    }
+}
