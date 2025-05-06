@@ -226,7 +226,10 @@ abstract contract UnionScript is UnionBase {
         Manager manager,
         IWETH weth,
         ZkgmERC20 erc20,
-        bool rateLimitEnabled
+        bool rateLimitEnabled,
+        string memory nativeTokenName,
+        string memory nativeTokenSymbol,
+        uint8 nativeTokenDecimals
     ) internal returns (UCS03Zkgm) {
         UCS03Zkgm zkgm = UCS03Zkgm(
             payable(
@@ -235,7 +238,13 @@ abstract contract UnionScript is UnionBase {
                     abi.encode(
                         address(
                             new UCS03Zkgm(
-                                handler, weth, erc20, rateLimitEnabled
+                                handler,
+                                weth,
+                                erc20,
+                                rateLimitEnabled,
+                                nativeTokenName,
+                                nativeTokenSymbol,
+                                nativeTokenDecimals
                             )
                         ),
                         abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
@@ -268,7 +277,10 @@ abstract contract UnionScript is UnionBase {
     function deployIBC(
         address owner,
         IWETH weth,
-        bool rateLimitEnabled
+        bool rateLimitEnabled,
+        string memory nativeTokenName,
+        string memory nativeTokenSymbol,
+        uint8 nativeTokenDecimals
     )
         internal
         returns (
@@ -296,8 +308,16 @@ abstract contract UnionScript is UnionBase {
             deployStateLensIcs23SmtClient(handler, manager);
         PingPong pingpong = deployUCS00(handler, manager, 100000000000000);
         ZkgmERC20 zkgmERC20 = deployZkgmERC20();
-        UCS03Zkgm ucs03 =
-            deployUCS03(handler, manager, weth, zkgmERC20, rateLimitEnabled);
+        UCS03Zkgm ucs03 = deployUCS03(
+            handler,
+            manager,
+            weth,
+            zkgmERC20,
+            rateLimitEnabled,
+            nativeTokenName,
+            nativeTokenSymbol,
+            nativeTokenDecimals
+        );
         UCS06FundedDispatch ucs06 = deployUCS06(manager);
         Multicall multicall = deployMulticall(manager);
         setupRoles(owner, manager, handler, cometblsClient, ucs03, multicall);
@@ -575,14 +595,25 @@ contract DeployUCS03 is UnionScript {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
 
         Manager manager = Manager(getDeployed(IBC.MANAGER));
         IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
 
         vm.startBroadcast(privateKey);
-        UCS03Zkgm zkgm =
-            deployUCS03(handler, manager, weth, zkgmERC20, rateLimitEnabled);
+        UCS03Zkgm zkgm = deployUCS03(
+            handler,
+            manager,
+            weth,
+            zkgmERC20,
+            rateLimitEnabled,
+            nativeTokenName,
+            nativeTokenSymbol,
+            nativeTokenDecimals
+        );
         vm.stopBroadcast();
 
         console.log("UCS03: ", address(zkgm));
@@ -686,6 +717,9 @@ contract DeployIBC is UnionScript {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
 
         address owner = vm.addr(privateKey);
         vm.startBroadcast(privateKey);
@@ -701,7 +735,14 @@ contract DeployIBC is UnionScript {
             UCS06FundedDispatch ucs06,
             Multicall multicall,
             Manager manager
-        ) = deployIBC(vm.addr(privateKey), weth, rateLimitEnabled);
+        ) = deployIBC(
+            vm.addr(privateKey),
+            weth,
+            rateLimitEnabled,
+            nativeTokenName,
+            nativeTokenSymbol,
+            nativeTokenDecimals
+        );
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
@@ -747,6 +788,9 @@ contract DeployDeployerAndIBC is UnionScript {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
 
         vm.startBroadcast(privateKey);
         deployer = deployDeployer();
@@ -762,7 +806,14 @@ contract DeployDeployerAndIBC is UnionScript {
             UCS06FundedDispatch ucs06,
             Multicall multicall,
             Manager manager
-        ) = deployIBC(vm.addr(privateKey), weth, rateLimitEnabled);
+        ) = deployIBC(
+            vm.addr(privateKey),
+            weth,
+            rateLimitEnabled,
+            nativeTokenName,
+            nativeTokenSymbol,
+            nativeTokenDecimals
+        );
         handler.registerClient(LightClients.COMETBLS, cometblsClient);
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
@@ -1132,6 +1183,10 @@ contract DryUpgradeUCS03 is VersionedScript {
     function run() public {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
@@ -1140,8 +1195,17 @@ contract DryUpgradeUCS03 is VersionedScript {
             string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
         );
 
-        address newImplementation =
-            address(new UCS03Zkgm(handler, weth, zkgmERC20, rateLimitEnabled));
+        address newImplementation = address(
+            new UCS03Zkgm(
+                handler,
+                weth,
+                zkgmERC20,
+                rateLimitEnabled,
+                nativeTokenName,
+                nativeTokenSymbol,
+                nativeTokenDecimals
+            )
+        );
         vm.prank(owner);
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
@@ -1172,6 +1236,10 @@ contract UpgradeUCS03 is VersionedScript {
     function run() public {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
@@ -1181,8 +1249,17 @@ contract UpgradeUCS03 is VersionedScript {
         );
 
         vm.startBroadcast(privateKey);
-        address newImplementation =
-            address(new UCS03Zkgm(handler, weth, zkgmERC20, rateLimitEnabled));
+        address newImplementation = address(
+            new UCS03Zkgm(
+                handler,
+                weth,
+                zkgmERC20,
+                rateLimitEnabled,
+                nativeTokenName,
+                nativeTokenSymbol,
+                nativeTokenDecimals
+            )
+        );
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }

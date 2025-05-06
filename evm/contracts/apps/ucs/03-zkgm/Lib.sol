@@ -35,11 +35,8 @@ library ZkgmLib {
     bytes32 public constant FORWARD_SALT_MAGIC =
         0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
 
-    address public constant NATIVE_ETH_ERC_7528_ADDRESS =
+    address public constant NATIVE_TOKEN_ERC_7528_ADDRESS =
         0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    string public constant NATIVE_ETH_NAME = "Ether";
-    string public constant NATIVE_ETH_SYMBOL = "ETH";
-    uint8 public constant NATIVE_ETH_DECIMALS = 18;
 
     string public constant IBC_VERSION_STR = "ucs03-zkgm-0";
     bytes32 public constant IBC_VERSION = keccak256(bytes(IBC_VERSION_STR));

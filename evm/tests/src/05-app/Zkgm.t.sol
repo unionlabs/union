@@ -23,7 +23,7 @@ contract TestZkgm is UCS03Zkgm {
     constructor(
         IIBCModulePacket _ibcHandler,
         IWETH _weth
-    ) UCS03Zkgm(_ibcHandler, _weth, new ZkgmERC20(), true) {}
+    ) UCS03Zkgm(_ibcHandler, _weth, new ZkgmERC20(), true, "Ether", "ETH", 18) {}
 
     function doExecuteForward(
         IBCPacket calldata ibcPacket,
@@ -2694,7 +2694,7 @@ contract ZkgmTests is Test {
                 baseTokenName: baseTokenName,
                 baseTokenDecimals: baseTokenDecimals,
                 baseAmount: baseAmount,
-                quoteToken: abi.encodePacked(ZkgmLib.NATIVE_ETH_ERC_7528_ADDRESS),
+                quoteToken: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
                 quoteAmount: quoteAmount
             });
             expectOnRecvOrderMarketMakerFillSuccess(

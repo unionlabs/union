@@ -118,7 +118,7 @@ contract UCS06FundedDispatch is
         for (uint256 i = 0; i < params.funds.length; i++) {
             FundedDispatchFund calldata fund = params.funds[i];
             address token = address(bytes20(fund.token));
-            if (token == ZkgmLib.NATIVE_ETH_ERC_7528_ADDRESS) {
+            if (token == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
                 value = fund.amount;
             } else {
                 IERC20(token).approve(contractAddress, fund.amount);
@@ -137,7 +137,7 @@ contract UCS06FundedDispatch is
         for (uint256 i = 0; i < params.funds.length; i++) {
             FundedDispatchFund calldata fund = params.funds[i];
             address token = address(bytes20(fund.token));
-            if (token == ZkgmLib.NATIVE_ETH_ERC_7528_ADDRESS) {
+            if (token == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
                 if (!success && allowFailure) {
                     beneficiary.sendValue(fund.amount);
                 }

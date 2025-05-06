@@ -58,7 +58,7 @@ contract TestTarget {
             revert Eureka();
         }
 
-        emit Executed(ZkgmLib.NATIVE_ETH_ERC_7528_ADDRESS, amount);
+        emit Executed(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS, amount);
     }
 
     function explode(address token, uint256 amount) public {
@@ -258,7 +258,7 @@ contract FundedDispatchTests is Test {
 
         FundedDispatchFund[] memory funds = new FundedDispatchFund[](1);
         funds[0] = FundedDispatchFund({
-            token: abi.encodePacked(ZkgmLib.NATIVE_ETH_ERC_7528_ADDRESS),
+            token: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
             amount: amount
         });
 
@@ -337,7 +337,7 @@ contract FundedDispatchTests is Test {
         vm.deal(address(fundedDispatch), fundedDispatchBalanceBefore + amount);
         FundedDispatchFund[] memory funds = new FundedDispatchFund[](1);
         funds[0] = FundedDispatchFund({
-            token: abi.encodePacked(ZkgmLib.NATIVE_ETH_ERC_7528_ADDRESS),
+            token: abi.encodePacked(ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS),
             amount: amount
         });
 
