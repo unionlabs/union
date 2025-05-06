@@ -2,12 +2,12 @@ import { describe, it } from "@effect/vitest"
 
 import { createWalletClient, http } from "viem"
 import { mnemonicToAccount } from "viem/accounts"
-import { sepolia, holesky } from "viem/chains"
 import { english, generateMnemonic } from "viem/accounts"
+import { holesky, sepolia } from "viem/chains"
 
-import { toHex, type Hex } from "viem"
 import { ucs03abi } from "@unionlabs/sdk/evm/abi"
 import * as Instruction from "@unionlabs/sdk/ucs03/instruction"
+import { type Hex, toHex } from "viem"
 
 function generateSalt() {
   const rawSalt = new Uint8Array(32)
@@ -24,13 +24,13 @@ describe("Dispatching an Asset Transfer", () => {
       const sepoliaWallet = createWalletClient({
         account,
         chain: sepolia,
-        transport: http()
+        transport: http(),
       })
 
       const holeskyWallet = createWalletClient({
         account,
         chain: holesky,
-        transport: http()
+        transport: http(),
       })
 
       console.log(`Sepolia address: ${sepoliaWallet.account.address}`)
@@ -49,13 +49,13 @@ describe("Dispatching an Asset Transfer", () => {
       const sepoliaWallet = createWalletClient({
         account,
         chain: sepolia,
-        transport: http()
+        transport: http(),
       })
 
       const holeskyWallet = createWalletClient({
         account,
         chain: holesky,
-        transport: http()
+        transport: http(),
       })
 
       // We're actually enqueuing two transfers, the main transfer, and fee.
@@ -79,8 +79,8 @@ describe("Dispatching an Asset Transfer", () => {
               // quote token
               "0x685a6d912eced4bdd441e58f7c84732ceccbd1e4",
               // quote amount
-              4n
-            ]
+              4n,
+            ],
           }),
           // Our fee transfer.
           new Instruction.FungibleAssetOrder({
@@ -100,10 +100,10 @@ describe("Dispatching an Asset Transfer", () => {
               // quote token
               "0x685a6d912eced4bdd441e58f7c84732ceccbd1e4",
               // quote amount
-              0n
-            ]
-          })
-        ]
+              0n,
+            ],
+          }),
+        ],
       })
 
       const transferHash = await sepoliaWallet.writeContract({
@@ -123,9 +123,9 @@ describe("Dispatching an Asset Transfer", () => {
           {
             opcode: instruction.opcode,
             version: instruction.version,
-            operand: Instruction.encodeAbi(instruction)
-          }
-        ]
+            operand: Instruction.encodeAbi(instruction),
+          },
+        ],
       })
 
       console.log("transferHash", transferHash)
