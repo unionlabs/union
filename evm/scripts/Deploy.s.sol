@@ -397,7 +397,7 @@ contract DeployDeployer is UnionBase, VersionedScript {
     }
 }
 
-contract DeployMulticall is UnionScript, VersionedScript  {
+contract DeployMulticall is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -432,7 +432,7 @@ contract DeployMulticall is UnionScript, VersionedScript  {
     }
 }
 
-contract DeployManager is UnionScript, VersionedScript  {
+contract DeployManager is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -471,7 +471,7 @@ contract DeployManager is UnionScript, VersionedScript  {
     }
 }
 
-contract DeployStateLensIcs23MptClient is UnionScript, VersionedScript  {
+contract DeployStateLensIcs23MptClient is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -512,7 +512,7 @@ contract DeployStateLensIcs23MptClient is UnionScript, VersionedScript  {
     }
 }
 
-contract DeployZkgmERC20 is UnionScript, VersionedScript  {
+contract DeployZkgmERC20 is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -547,7 +547,7 @@ contract DeployZkgmERC20 is UnionScript, VersionedScript  {
     }
 }
 
-contract DeployUCS03 is UnionScript, VersionedScript  {
+contract DeployUCS03 is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -589,7 +589,7 @@ contract DeployUCS03 is UnionScript, VersionedScript  {
     }
 }
 
-contract DeployStateLensIcs23Ics23Client is UnionScript, VersionedScript  {
+contract DeployStateLensIcs23Ics23Client is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
