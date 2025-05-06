@@ -64,7 +64,7 @@ abstract contract VersionedScript is Script {
     }
 }
 
-abstract contract UnionBase is VersionedScript {
+abstract contract UnionBase {
     function deployDeployer() internal returns (Deployer) {
         return new Deployer();
     }
@@ -387,7 +387,7 @@ abstract contract UnionScript is UnionBase {
     }
 }
 
-contract DeployDeployer is UnionBase {
+contract DeployDeployer is UnionBase, VersionedScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
@@ -397,7 +397,7 @@ contract DeployDeployer is UnionBase {
     }
 }
 
-contract DeployMulticall is UnionScript {
+contract DeployMulticall is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -432,7 +432,7 @@ contract DeployMulticall is UnionScript {
     }
 }
 
-contract DeployManager is UnionScript {
+contract DeployManager is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -471,7 +471,7 @@ contract DeployManager is UnionScript {
     }
 }
 
-contract DeployStateLensIcs23MptClient is UnionScript {
+contract DeployStateLensIcs23MptClient is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -512,7 +512,7 @@ contract DeployStateLensIcs23MptClient is UnionScript {
     }
 }
 
-contract DeployZkgmERC20 is UnionScript {
+contract DeployZkgmERC20 is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -547,7 +547,7 @@ contract DeployZkgmERC20 is UnionScript {
     }
 }
 
-contract DeployUCS03 is UnionScript {
+contract DeployUCS03 is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -589,7 +589,7 @@ contract DeployUCS03 is UnionScript {
     }
 }
 
-contract DeployStateLensIcs23Ics23Client is UnionScript {
+contract DeployStateLensIcs23Ics23Client is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -630,7 +630,7 @@ contract DeployStateLensIcs23Ics23Client is UnionScript {
     }
 }
 
-contract DeployStateLensIcs23SmtClient is UnionScript {
+contract DeployStateLensIcs23SmtClient is UnionScript, VersionedScript {
     using LibString for *;
 
     address immutable deployer;
@@ -671,7 +671,7 @@ contract DeployStateLensIcs23SmtClient is UnionScript {
     }
 }
 
-contract DeployIBC is UnionScript {
+contract DeployIBC is UnionScript, VersionedScript {
     Deployer immutable deployer;
 
     constructor() {
@@ -712,6 +712,7 @@ contract DeployIBC is UnionScript {
         handler.registerClient(
             LightClients.STATE_LENS_ICS23_SMT, stateLensIcs23SmtClient
         );
+        setupRoles(owner, manager, handler, cometblsClient, ucs03, multicall);
         vm.stopBroadcast();
 
         console.log("Manager: ", address(manager));
@@ -736,7 +737,7 @@ contract DeployIBC is UnionScript {
     }
 }
 
-contract DeployDeployerAndIBC is UnionScript {
+contract DeployDeployerAndIBC is UnionScript, VersionedScript {
     Deployer deployer;
 
     function getDeployer() internal view override returns (Deployer) {
@@ -1502,7 +1503,7 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     }
 }
 
-contract DeployRoles is UnionScript {
+contract DeployRoles is UnionScript, Script {
     using LibString for *;
 
     Deployer immutable deployer;

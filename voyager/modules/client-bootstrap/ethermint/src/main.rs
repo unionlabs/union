@@ -17,7 +17,7 @@ use tracing::{error, instrument};
 use unionlabs::{
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     option_unwrap,
-    primitives::H160,
+    primitives::{Bytes, H160},
     result_unwrap, ErrorReporter,
 };
 use voyager_message::{
@@ -41,14 +41,18 @@ pub struct Module {
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
 
-    pub ibc_host_contract_address: H160,
+    pub ibc_handler_address: H160,
+    pub store_key: Bytes,
+    pub key_prefix_storage: Bytes,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub ibc_host_contract_address: H160,
+    pub ibc_handler_address: H160,
+    pub store_key: Bytes,
+    pub key_prefix_storage: Bytes,
 }
 
 impl ClientBootstrapModule for Module {
@@ -87,7 +91,9 @@ impl ClientBootstrapModule for Module {
             cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            ibc_host_contract_address: config.ibc_host_contract_address,
+            ibc_handler_address: config.ibc_handler_address,
+            store_key: config.store_key,
+            key_prefix_storage: config.key_prefix_storage,
         })
     }
 }
@@ -98,6 +104,27 @@ pub struct ChainIdParseError {
     found: String,
     #[source]
     source: Option<ParseIntError>,
+}
+
+// in order to support as many tendermint-ish forks as possible, we define only the bare minimum required here to get the unbonding_period field (since that's all we use anyways)
+//
+// both of these fields use field tag 7:
+// max_voting_power_ratio: https://github.com/sei-protocol/sei-cosmos/blob/7780ddba9e56ac67ff4ef339508bf0c047d4a488/proto/cosmos/staking/v1beta1/staking.proto#L292
+// jailed_validator_threshold: https://github.com/unionlabs/cosmos-sdk/blob/0f0e36772bd6be187544eb55d022ad92dd91ece1/proto/cosmos/staking/v1beta1/staking.proto#L326
+
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MinimalQueryParamsResponse {
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<MinimalParams>,
+}
+
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct MinimalParams {
+    /// unbonding_time is the time duration of unbonding.
+    #[prost(message, optional, tag = "1")]
+    pub unbonding_time: Option<protos::google::protobuf::Duration>,
 }
 
 impl Module {
@@ -126,7 +153,7 @@ impl ClientBootstrapModuleServer for Module {
 
         let params = self
             .cometbft_client
-            .grpc_abci_query::<_, protos::cosmos::staking::v1beta1::QueryParamsResponse>(
+            .grpc_abci_query::<_, MinimalQueryParamsResponse>(
                 "/cosmos.staking.v1beta1.Query/Params",
                 &protos::cosmos::staking::v1beta1::QueryParamsRequest {},
                 Some(i64::try_from(height.height()).unwrap().try_into().unwrap()),
@@ -196,9 +223,9 @@ impl ClientBootstrapModuleServer for Module {
                 upgrade_path: vec!["upgrade".into(), "upgradedIBCState".into()],
                 contract_address: Default::default(),
             },
-            store_key: b"evm".into(),
-            key_prefix_storage: [0x2].into(),
-            ibc_contract_address: self.ibc_host_contract_address,
+            store_key: self.store_key.clone(),
+            key_prefix_storage: self.key_prefix_storage.clone(),
+            ibc_contract_address: self.ibc_handler_address,
         })
         .unwrap())
     }

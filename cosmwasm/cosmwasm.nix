@@ -114,9 +114,10 @@ _: {
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
-            "ethereum"
-            "trusted-mpt"
-            "bob"
+            # "ethereum"
+            # "trusted-mpt"
+            # "bob"
+            "ethermint"
           ];
         }
         {

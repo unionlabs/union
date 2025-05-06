@@ -20,7 +20,7 @@ use unionlabs::{
     cosmos::ics23::commitment_proof::CommitmentProof,
     ethereum::ibc_commitment_key,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-    primitives::H160,
+    primitives::{Bytes, H160},
     ErrorReporter,
 };
 use voyager_message::{
@@ -50,14 +50,18 @@ pub struct Module {
 
     pub cometbft_client: cometbft_rpc::Client,
 
-    pub ibc_contract_address: H160,
+    pub ibc_handler_address: H160,
+    pub store_key: Bytes,
+    pub key_prefix_storage: Bytes,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    pub ibc_contract_address: H160,
+    pub ibc_handler_address: H160,
+    pub store_key: Bytes,
+    pub key_prefix_storage: Bytes,
 }
 
 impl ProofModule<IbcUnion> for Module {
@@ -87,7 +91,9 @@ impl ProofModule<IbcUnion> for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            ibc_contract_address: config.ibc_contract_address,
+            ibc_handler_address: config.ibc_handler_address,
+            store_key: config.store_key,
+            key_prefix_storage: config.key_prefix_storage,
         })
     }
 }
@@ -116,16 +122,21 @@ impl ProofModuleServer<IbcUnion> for Module {
         at: Height,
         path: StorePath,
     ) -> RpcResult<Option<(Value, ProofType)>> {
-        let data = [0x2]
+        let data = self
+            .key_prefix_storage
+            .clone()
             .into_iter()
-            .chain(self.ibc_contract_address)
+            .chain(self.ibc_handler_address)
             .chain(ibc_commitment_key(path.key()).to_be_bytes())
             .collect::<Vec<_>>();
 
         let query_result = self
             .cometbft_client
             .abci_query(
-                "store/evm/key",
+                format!(
+                    "store/{}/key",
+                    String::from_utf8(self.store_key.to_vec()).expect("idk how to handle this")
+                ),
                 data,
                 // THIS -1 IS VERY IMPORTANT!!!
                 //
