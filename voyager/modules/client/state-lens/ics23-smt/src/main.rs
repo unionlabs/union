@@ -200,7 +200,7 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcSolidity => cs.abi_encode_params(),
+                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>(),
             })
             .map(Into::into)
