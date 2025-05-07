@@ -22,7 +22,7 @@ thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true, features = ["ethabi", "proto"] }
 
 [dev-dependencies]
-hex-literal                               = { workspace = true }
+hex-literal = { workspace = true }
 
 [features]
 default = []

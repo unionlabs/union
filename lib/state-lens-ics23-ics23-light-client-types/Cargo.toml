@@ -22,7 +22,7 @@ unionlabs                     = { workspace = true }
 [dev-dependencies]
 hex-literal                               = { workspace = true }
 state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
-unionlabs                     = { workspace = true, features = ["test-utils"]}
+unionlabs                                 = { workspace = true, features = ["test-utils"] }
 
 [features]
 default = []
