@@ -6,9 +6,9 @@ use jsonrpsee::{
 };
 use macros::model;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use state_lens_ics23_ics23_light_client_types::{
-    client_state::{Extra, VersionedExtra, VersionedExtraV1},
+    client_state::{Extra, ExtraV1},
     ClientState, ConsensusState,
 };
 use state_lens_light_client_types::Header;
@@ -116,17 +116,17 @@ impl Module {
                     )
                 }),
             SupportedIbcInterface::IbcMoveAptos => <state_lens_light_client_types::ClientState<
-                VersionedExtraV1,
+                ExtraV1,
             > as AsTuple>::Tuple::decode_as::<Bcs>(
                 client_state
             )
-            .map(<state_lens_light_client_types::ClientState<VersionedExtraV1>>::from_tuple)
+            .map(<state_lens_light_client_types::ClientState<ExtraV1>>::from_tuple)
             .map(|cs| ClientState {
                 l2_chain_id: cs.l2_chain_id,
                 l1_client_id: cs.l1_client_id,
                 l2_client_id: cs.l2_client_id,
                 l2_latest_height: cs.l2_latest_height,
-                extra: Extra::Versioned(VersionedExtra::V1(cs.extra)),
+                extra: Extra::V1(cs.extra),
             })
             .map_err(|err| {
                 ErrorObject::owned(
@@ -205,30 +205,19 @@ impl ClientModuleServer for Module {
                     None::<()>,
                 )
             })
-            .and_then(|cs| match self.ibc_interface {
+            .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcMoveAptos => match cs.extra {
-                    Extra::Legacy(legacy_extra) => Err(ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        "legacy state is not supported for bcs encoding",
-                        Some(json!({
-                            "extra": legacy_extra
-                        })),
-                    )),
-                    Extra::Versioned(versioned_extra) => match versioned_extra {
-                        VersionedExtra::V1(versioned_extra_v1) => {
-                            Ok(state_lens_light_client_types::ClientState {
-                                l2_chain_id: cs.l2_chain_id,
-                                l1_client_id: cs.l1_client_id,
-                                l2_client_id: cs.l2_client_id,
-                                l2_latest_height: cs.l2_latest_height,
-                                extra: versioned_extra_v1,
-                            }
-                            .as_tuple()
-                            .encode_as::<Bcs>())
-                        }
-                    },
+                    Extra::V1(versioned_extra_v1) => state_lens_light_client_types::ClientState {
+                        l2_chain_id: cs.l2_chain_id,
+                        l1_client_id: cs.l1_client_id,
+                        l2_client_id: cs.l2_client_id,
+                        l2_latest_height: cs.l2_latest_height,
+                        extra: versioned_extra_v1,
+                    }
+                    .as_tuple()
+                    .encode_as::<Bcs>(),
                 },
-                SupportedIbcInterface::IbcSolidity => Ok(cs.encode_as::<EthAbi>()),
+                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
             })
             .map(Into::into)
     }

@@ -7,7 +7,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use state_lens_ics23_ics23_light_client_types::{
-    client_state::{Extra, LegacyExtra, VersionedExtra, VersionedExtraV1},
+    client_state::{Extra, ExtraV1},
     ClientState, ConsensusState,
 };
 use tracing::instrument;
@@ -86,10 +86,10 @@ impl ClientBootstrapModuleServer for Module {
             l2_chain_id: self.l2_chain_id.to_string(),
             l2_client_id: config.l2_client_id,
             l2_latest_height: height.height(),
-            extra: Extra::Versioned(VersionedExtra::V1(VersionedExtraV1 {
+            extra: Extra::V1(ExtraV1 {
                 store_key: config.store_key,
                 key_prefix_storage: config.key_prefix_storage,
-            })),
+            }),
         }))
     }
 
