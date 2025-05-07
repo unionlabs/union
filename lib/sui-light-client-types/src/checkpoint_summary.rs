@@ -1,6 +1,4 @@
 use blake2::{Blake2b, Digest as _};
-use serde::{Deserialize, Serialize};
-use serde_with::serde_as;
 use unionlabs_primitives::{
     encoding::{Base58, Base64, Encoding as _},
     Bytes,
@@ -12,7 +10,9 @@ pub type CheckpointSequenceNumber = u64;
 pub type CheckpointTimestamp = u64;
 pub type EpochId = u64;
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CheckpointSummary {
     pub epoch: EpochId,
     pub sequence_number: CheckpointSequenceNumber,
@@ -48,9 +48,13 @@ pub struct CheckpointSummary {
     pub version_specific_data: Vec<u8>,
 }
 
-#[derive(Eq, PartialEq, Clone, Debug, Serialize, Deserialize)]
-#[serde_as]
-#[serde(rename_all = "camelCase")]
+#[derive(Eq, PartialEq, Clone, Debug)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "camelCase")
+)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct GasCostSummary {
     /// Cost of computation/execution
     pub computation_cost: U64,
@@ -63,7 +67,9 @@ pub struct GasCostSummary {
     pub non_refundable_storage_fee: U64,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct EndOfEpochData {
     /// next_epoch_committee is `Some` if and only if the current checkpoint is
     /// the last checkpoint of an epoch.
@@ -84,7 +90,8 @@ pub struct EndOfEpochData {
     pub epoch_commitments: Vec<()>,
 }
 
-#[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum CheckpointContents {
     V1(CheckpointContentsV1),
 }
@@ -102,7 +109,8 @@ impl CheckpointContents {
 /// They must have already been causally ordered. Since the causal order algorithm
 /// is the same among validators, we expect all honest validators to come up with
 /// the same order for each checkpoint content.
-#[derive(Clone, Debug, PartialEq, Serialize, Eq, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CheckpointContentsV1 {
     pub transactions: Vec<ExecutionDigests>,
 
@@ -112,7 +120,8 @@ pub struct CheckpointContentsV1 {
     pub user_signatures: Vec<Vec<GenericSignature>>,
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Serialize, Deserialize, Debug)]
+#[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ExecutionDigests {
     pub transaction: Digest,
     pub effects: Digest,

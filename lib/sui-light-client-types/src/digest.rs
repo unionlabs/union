@@ -1,9 +1,9 @@
 use std::fmt::Display;
 
-use serde::{Deserialize, Serialize};
 use unionlabs_primitives::{encoding::Base58, Bytes, FixedBytes};
 
 #[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Debug)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct Digest(pub FixedBytes<32, Base58>);
 
 impl Display for Digest {
@@ -12,7 +12,8 @@ impl Display for Digest {
     }
 }
 
-impl Serialize for Digest {
+#[cfg(feature = "serde")]
+impl serde::Serialize for Digest {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -21,7 +22,8 @@ impl Serialize for Digest {
     }
 }
 
-impl<'de> Deserialize<'de> for Digest {
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Digest {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
