@@ -29,6 +29,27 @@
     "0x17140b69FfaDfF9e87BF1D86D99119ee10AD24ff": {
       "comments": "satSolvBTC"
     },
+    "0xd9d920aa40f578ab794426f5c90f6c731d159def": {
+      "comments": "xSolvBTC"
+    },
+    "0xe2C6755C10d0B61D8B11Dd2851AE8266Cea912DC": {
+      "comments": "satFBTC"
+    },
+    "0x69223B5B36a785Ec08e5f685fd7961399982C566": {
+      "comments": "satWBTC"
+    },
+    "0xFF2858Cc8227aA45a51c8961598Edc2d44B5ee5b": {
+      "comments": "satStBTC"
+    },
+    "0x0c4dd69705D16d91bC9C0534Cc926966f23430c7": {
+      "comments": "satPumpBTC"
+    },
+    "0x657e8c867d8b37dcc18fa4caead9c45eb088c642": {
+      "comments": "eBTC"
+    },
+    "0xbdf245957992bfbc62b07e344128a1eec7b7ee3f": {
+      "comments": "mBTC"
+    },
     "0x067e11Ac5471C853aea205B3C1933a5f6367152F": {
       "comments": "satLBTC"
     }
