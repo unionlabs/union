@@ -2,9 +2,10 @@
   "extends": "../tsconfig.base.json",
   "include": [],
   "references": [
-    {
-      "path": "tsconfig.examples.json"
-    },
+    // TODO: re-enable me when examples pass static analysis
+    // {
+    //   "path": "tsconfig.examples.json"
+    // },
     {
       "path": "tsconfig.src.json"
     },

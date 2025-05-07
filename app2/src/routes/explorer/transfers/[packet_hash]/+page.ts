@@ -9,7 +9,7 @@ export const load: PageLoad = ({ params }) => {
 
   return E.match(packetHash, {
     onLeft: () => {
-      throw redirect(302, "/explorer/packets")
+      throw redirect(302, "/explorer/transfers")
     },
     onRight: (packetHash) => ({
       packetHash,

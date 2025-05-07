@@ -1,21 +1,25 @@
 <script lang="ts">
-import { packetDetailsQuery } from "$lib/queries/packet-details.svelte"
-import { onMount } from "svelte"
-import { packetDetails } from "$lib/stores/packets.svelte"
+import { goto } from "$app/navigation"
+import { page } from "$app/state"
+import PacketComponent from "$lib/components/model/PacketComponent.svelte"
+import PacketHashComponent from "$lib/components/model/PacketHashComponent.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { page } from "$app/state"
-import { goto } from "$app/navigation"
-import PacketComponent from "$lib/components/model/PacketComponent.svelte"
+import { packetDetailsQuery } from "$lib/queries/packet-details.svelte"
+import { packetDetails } from "$lib/stores/packets.svelte"
+import { PacketHash } from "@unionlabs/sdk/schema"
+import { Either, flow, pipe, Schema as S } from "effect"
+import { onMount } from "svelte"
+import type { PageData } from "./$types"
+
+type Props = {
+  data: PageData
+}
+
+const { data }: Props = $props()
 
 onMount(() => {
-  const packetHash = page.params.packet_hash
-  if (!packetHash) {
-    goto("/explorer/packets")
-    return
-  }
-
-  packetDetails.runEffect(packetDetailsQuery(packetHash))
+  packetDetails.runEffect(packetDetailsQuery(data.packetHash))
 
   return () => {
     packetDetails.interruptFiber()
@@ -25,6 +29,6 @@ onMount(() => {
 
 <Sections>
   <Card divided>
-    <PacketComponent/>
+    <PacketComponent />
   </Card>
 </Sections>

@@ -1,17 +1,21 @@
 import { assert, describe, it } from "@effect/vitest"
-// TODO: fix mocking instancing
 import { ensureHex } from "@unionlabs/sdk/utils/index"
-import { type Context, Effect, Exit, Layer } from "effect"
+import { Arbitrary, type Context, Effect, Exit, Layer, pipe } from "effect"
+import * as fc from "effect/FastCheck"
 import { vi } from "vitest"
 import { CosmosChannelDestination } from "../../src/cosmos/channel.js"
 import { CosmWasmClientDestination, CosmWasmClientSource } from "../../src/cosmos/client.js"
 import { EvmChannelDestination } from "../../src/evm/channel.js"
 import { ViemPublicClientDestination, ViemPublicClientSource } from "../../src/evm/client.js"
 import {
+  CosmosToCosmosIntent,
+  CosmosToEvmIntent,
   createCosmosToCosmosFungibleAssetOrder,
   createCosmosToEvmFungibleAssetOrder,
   createEvmToCosmosFungibleAssetOrder,
   createEvmToEvmFungibleAssetOrder,
+  EvmToCosmosIntent,
+  EvmToEvmIntent,
 } from "../../src/ucs03/fungible-asset-order.js"
 
 vi.mock("../../src/graphql/unwrapped-quote-token.js", async importOriginal => {
@@ -97,27 +101,6 @@ const mockCosmWasmClientDestination = {
   },
 }
 
-// Test data
-const evmIntent = {
-  sender: "0x123",
-  receiver: "0x123",
-  baseToken: "0x123",
-  baseAmount: 1000000000000000000n, // 1 token with 18 decimals
-  quoteAmount: 500000000000000000n, // 0.5 token with 18 decimals
-  sourceChainId: "chainId",
-  sourceChannelId: 999,
-} as const
-
-const cosmosIntent = {
-  sender: "0x123",
-  receiver: "0x123",
-  baseToken: "0x123",
-  baseAmount: BigInt(1000000), // 1 token with 6 decimals
-  quoteAmount: BigInt(500000), // 0.5 token with 6 decimals
-  sourceChainId: "chainId",
-  sourceChannelId: 999,
-} as const
-
 const EvmToEvm = Layer.mergeAll(
   // @ts-expect-error
   Layer.succeed(ViemPublicClientSource, mockViemPublicClientSource),
@@ -187,6 +170,11 @@ describe("Fungible Asset Order Tests", () => {
   it.layer(EvmToEvm)("EVM to EVM", it => {
     it.effect("should create a fungible asset order from EVM to EVM", () =>
       Effect.gen(function*() {
+        const evmIntent = pipe(
+          EvmToEvmIntent,
+          Arbitrary.make,
+          (arb) => fc.sample(arb, 1)[0],
+        )
         const result = yield* createEvmToEvmFungibleAssetOrder(evmIntent)
         assert.deepStrictEqual(result, {
           _tag: "FungibleAssetOrder",
@@ -211,6 +199,11 @@ describe("Fungible Asset Order Tests", () => {
   it.layer(EvmToCosmos)("EVM to Cosmos", it => {
     it.effect("should create a fungible asset order from EVM to Cosmos", () =>
       Effect.gen(function*() {
+        const evmIntent = pipe(
+          EvmToCosmosIntent,
+          Arbitrary.make,
+          (arb) => fc.sample(arb, 1)[0],
+        )
         const result = yield* createEvmToCosmosFungibleAssetOrder(evmIntent)
         assert.deepStrictEqual(result, {
           _tag: "FungibleAssetOrder",
@@ -218,7 +211,7 @@ describe("Fungible Asset Order Tests", () => {
           version: 1,
           operand: [
             evmIntent.sender,
-            "0x123",
+            evmIntent.receiver,
             evmIntent.baseToken,
             evmIntent.baseAmount,
             mockErc20Meta.symbol,
@@ -235,6 +228,11 @@ describe("Fungible Asset Order Tests", () => {
   it.layer(CosmosToEvm)("Cosmos to EVM", it => {
     it.effect("should create a fungible asset order from Cosmos to EVM", () =>
       Effect.gen(function*() {
+        const cosmosIntent = pipe(
+          CosmosToEvmIntent,
+          Arbitrary.make,
+          (arb) => fc.sample(arb, 1)[0],
+        )
         const result = yield* createCosmosToEvmFungibleAssetOrder(cosmosIntent)
         assert.deepStrictEqual(result, {
           _tag: "FungibleAssetOrder",
@@ -242,7 +240,7 @@ describe("Fungible Asset Order Tests", () => {
           version: 1,
           operand: [
             cosmosIntent.sender,
-            "0x123",
+            cosmosIntent.receiver,
             ensureHex(cosmosIntent.baseToken),
             cosmosIntent.baseAmount,
             mockCw20TokenInfo.symbol,
@@ -259,6 +257,11 @@ describe("Fungible Asset Order Tests", () => {
   it.layer(CosmosToCosmos)("Cosmos to Cosmos", it => {
     it.effect("should create a fungible asset order from Cosmos to Cosmos", () =>
       Effect.gen(function*() {
+        const cosmosIntent = pipe(
+          CosmosToCosmosIntent,
+          Arbitrary.make,
+          (arb) => fc.sample(arb, 1)[0],
+        )
         const result = yield* createCosmosToCosmosFungibleAssetOrder(cosmosIntent)
         assert.deepStrictEqual(result, {
           _tag: "FungibleAssetOrder",
@@ -267,7 +270,7 @@ describe("Fungible Asset Order Tests", () => {
           operand: [
             cosmosIntent.sender,
             cosmosIntent.receiver,
-            cosmosIntent.baseToken,
+            ensureHex(cosmosIntent.baseToken),
             cosmosIntent.baseAmount,
             mockCw20TokenInfo.symbol,
             mockCw20TokenInfo.name,
@@ -286,6 +289,11 @@ describe("Fungible Asset Order Tests", () => {
         "should handle errors when creating EVM to EVM fungible asset order with invalid input",
         () =>
           Effect.gen(function*() {
+            const evmIntent = pipe(
+              EvmToEvmIntent,
+              Arbitrary.make,
+              (arb) => fc.sample(arb, 1)[0],
+            )
             const result = yield* Effect.exit(
               createEvmToEvmFungibleAssetOrder({
                 ...evmIntent,

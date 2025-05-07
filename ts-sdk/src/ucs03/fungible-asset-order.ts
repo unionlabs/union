@@ -11,20 +11,22 @@ import { ViemPublicClient, ViemPublicClientSource } from "../evm/client.js"
 import { readErc20Meta } from "../evm/erc20.js"
 import { predictQuoteToken as predictEvmQuoteToken } from "../evm/quote-token.js"
 import { graphqlQuoteTokenUnwrapQuery } from "../graphql/unwrapped-quote-token.js"
-import type { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
-import type { UniversalChainId } from "../schema/chain.js"
-import type { ChannelId } from "../schema/channel.js"
-import type { TokenRawDenom } from "../schema/token.js"
+import { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
+import { UniversalChainId } from "../schema/chain.js"
+import { ChannelId } from "../schema/channel.js"
+import { TokenRawDenom } from "../schema/token.js"
 import { ensureHex } from "../utils/index.js"
 import { FungibleAssetOrder } from "./instruction.js"
 
-export type FungibleAssetOrderIntent = {
-  sender: Address
-  receiver: Address
-  baseToken: Hex
-  baseAmount: bigint
-  quoteAmount: bigint
-}
+const BaseIntent = S.Struct({
+  baseAmount: S.BigIntFromSelf.pipe(
+    S.greaterThanBigInt(0n),
+  ),
+  quoteAmount: S.BigIntFromSelf,
+  sourceChainId: UniversalChainId,
+  sourceChannelId: ChannelId,
+})
+type BaseIntent = typeof BaseIntent.Type
 
 const guardAgainstZeroAmount = (intent: { baseAmount: bigint; quoteAmount: bigint }) => {
   if (intent.baseAmount <= 0n) {
@@ -33,18 +35,19 @@ const guardAgainstZeroAmount = (intent: { baseAmount: bigint; quoteAmount: bigin
   return Effect.succeed(intent)
 }
 
+export const EvmToEvmIntent = pipe(
+  S.Struct({
+    sender: AddressEvmZkgm,
+    receiver: AddressEvmZkgm,
+    baseToken: TokenRawDenom,
+  }),
+  S.extend(BaseIntent),
+)
+export type EvmToEvmIntent = typeof EvmToEvmIntent.Type
 /**
  * Creates a fungible asset order from EVM to EVM
  */
-export const createEvmToEvmFungibleAssetOrder = (intent: {
-  sender: AddressEvmZkgm
-  receiver: AddressEvmZkgm
-  baseToken: TokenRawDenom
-  baseAmount: bigint
-  quoteAmount: bigint
-  sourceChainId: UniversalChainId
-  sourceChannelId: ChannelId
-}) =>
+export const createEvmToEvmFungibleAssetOrder = (intent: EvmToEvmIntent) =>
   Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* ViemPublicClientSource).client
@@ -87,18 +90,19 @@ export const createEvmToEvmFungibleAssetOrder = (intent: {
     })
   })
 
+export const EvmToCosmosIntent = pipe(
+  S.Struct({
+    sender: AddressEvmZkgm,
+    receiver: AddressCosmosZkgm,
+    baseToken: TokenRawDenom,
+  }),
+  S.extend(BaseIntent),
+)
+export type EvmToCosmosIntent = typeof EvmToCosmosIntent.Type
 /**
  * Creates a fungible asset order from EVM to Cosmos
  */
-export const createEvmToCosmosFungibleAssetOrder = (intent: {
-  sender: AddressEvmZkgm
-  receiver: AddressCosmosZkgm
-  baseToken: TokenRawDenom
-  baseAmount: bigint
-  quoteAmount: bigint
-  sourceChainId: UniversalChainId
-  sourceChannelId: ChannelId
-}) =>
+export const createEvmToCosmosFungibleAssetOrder = (intent: EvmToCosmosIntent) =>
   Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     yield* Effect.log("creating client")
@@ -148,18 +152,22 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: {
     })
   }).pipe(Effect.withLogSpan("create fungible asset order"))
 
+export const CosmosToEvmIntent = pipe(
+  S.Struct({
+    sender: AddressCosmosZkgm,
+    receiver: AddressEvmZkgm,
+    baseToken: S.Union(
+      TokenRawDenom,
+      S.Literal("uxion"),
+    ),
+  }),
+  S.extend(BaseIntent),
+)
+export type CosmosToEvmIntent = typeof CosmosToEvmIntent.Type
 /**
  * Creates a fungible asset order from Cosmos to EVM
  */
-export const createCosmosToEvmFungibleAssetOrder = (intent: {
-  sender: AddressCosmosZkgm
-  receiver: AddressEvmZkgm
-  baseToken: string
-  baseAmount: bigint
-  quoteAmount: bigint
-  sourceChainId: UniversalChainId
-  sourceChannelId: ChannelId
-}) =>
+export const createCosmosToEvmFungibleAssetOrder = (intent: CosmosToEvmIntent) =>
   Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client
@@ -197,7 +205,6 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
 
     // const quoteToken = yield* predictEvmQuoteToken(toHex(intent.baseToken))
 
-    console.log("here", intent)
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",
       operand: [
@@ -215,18 +222,22 @@ export const createCosmosToEvmFungibleAssetOrder = (intent: {
     })
   })
 
+export const CosmosToCosmosIntent = pipe(
+  S.Struct({
+    sender: AddressCosmosZkgm,
+    receiver: AddressCosmosZkgm,
+    baseToken: S.Union(
+      TokenRawDenom,
+      S.Literal("uxion"),
+    ),
+  }),
+  S.extend(BaseIntent),
+)
+export type CosmosToCosmosIntent = typeof CosmosToCosmosIntent.Type
 /**
  * Creates a fungible asset order from Cosmos to Cosmos
  */
-export const createCosmosToCosmosFungibleAssetOrder = (intent: {
-  sender: AddressCosmosZkgm
-  receiver: AddressCosmosZkgm
-  baseToken: string
-  baseAmount: bigint
-  quoteAmount: bigint
-  sourceChainId: UniversalChainId
-  sourceChannelId: ChannelId
-}) =>
+export const createCosmosToCosmosFungibleAssetOrder = (intent: CosmosToCosmosIntent) =>
   Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* CosmWasmClientSource).client

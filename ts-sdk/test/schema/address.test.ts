@@ -16,16 +16,6 @@ const validErc55s = [
   "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb",
 ]
 
-const validBech32s = [
-  "A12UEL5L",
-  "a12uel5l",
-  "an83characterlonghumanreadablepartthatcontainsthenumber1andtheexcludedcharactersbio1tt5tgs",
-  "abcdef1qpzry9x8gf2tvdw0s3jn54khce6mua7lmqqqxw",
-  "11qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqc8247j",
-  "split1checkupstagehandshakeupstreamerranterredcaperred2y9e3w",
-  "?1ezyfcl",
-]
-
 describe("Address", () => {
   describe("ERC-55", () => {
     it.effect.each(validErc55s)("passes for %s", x => S.decode(Address.ERC55)(x))
