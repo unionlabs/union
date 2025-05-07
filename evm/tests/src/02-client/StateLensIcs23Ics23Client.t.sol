@@ -607,4 +607,9 @@ contract StateLensIcs23Ics23ClientTest is Test {
         );
         client.verifyNonMembership(1, 1, bytes(""), bytes(""));
     }
+
+    function do_test_checkIfLegacyClientState(bytes calldata clientStateBytes, bool shouldBeLegacy) public {
+        bool isLegacy = StateLensIcs23Ics23Lib.checkIfLegacyClientState(clientStateBytes);
+        assertEq(isLegacy, shouldBeLegacy);
+    }
 }

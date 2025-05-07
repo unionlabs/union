@@ -1,4 +1,3 @@
-use alloy::sol_types::SolValue;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -103,15 +102,14 @@ impl Module {
 
     pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<ClientState> {
         match self.ibc_interface {
-            SupportedIbcInterface::IbcSolidity => {
-                ClientState::abi_decode_params(client_state, true).map_err(|err| {
+            SupportedIbcInterface::IbcSolidity => ClientState::decode_as::<EthAbi>(client_state)
+                .map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
                         format!("unable to decode client state: {err}"),
                         None::<()>,
                     )
-                })
-            }
+                }),
             SupportedIbcInterface::IbcCosmwasm => <ClientState>::decode_as::<Bincode>(client_state)
                 .map_err(|err| {
                     ErrorObject::owned(
@@ -200,7 +198,7 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcSolidity => cs.abi_encode_params(),
+                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
                 SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>(),
             })
             .map(Into::into)
