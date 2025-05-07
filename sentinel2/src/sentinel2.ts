@@ -638,7 +638,10 @@ const escrowSupplyControlLoop = Effect.repeat(
               // biome-ignore lint/style/noNonNullAssertion: <explanation>
               channelId: sourceChannelId!,
             }),
-            Effect.tapError(e => Effect.logError("Error fetching channel balance:", e)),
+            Effect.catchAllCause((cause) => {
+              console.error(`Error fetching channel balance: ${Cause.pretty(cause)}`);
+              return Effect.succeed(null); 
+            })
           )
           if (!srcChannelBalHere) {
             yield* Effect.log("No srcChannelBal for token:", token.denom)
@@ -670,7 +673,10 @@ const escrowSupplyControlLoop = Effect.repeat(
               // biome-ignore lint/style/noNonNullAssertion: <explanation>
               channelId: sourceChannelId!,
             }),
-            Effect.tapError(e => Effect.logError("Error fetching channel balance:", e)),
+            Effect.catchAllCause((cause) => {
+              console.error(`Error fetching channel balance: ${Cause.pretty(cause)}`);
+              return Effect.succeed(null); 
+            })
           )
           if (!srcChannelBalUnknown) {
             yield* Effect.log("No srcChannelBalUnknown for token:", token.denom)
@@ -694,7 +700,12 @@ const escrowSupplyControlLoop = Effect.repeat(
           }
           const totalSupplyHere = yield* readErc20TotalSupplyAtBlock(token.denom, evmHeight).pipe(
             Effect.provideService(ViemPublicClientContext, { client }),
-          )
+            Effect.catchAllCause((cause) => {
+              console.error(`Failed to fetch total supply for token ${token.denom}: ${Cause.pretty(cause)}`);
+              return Effect.succeed(null); 
+            })
+          );
+        
           if (!totalSupplyHere) {
             yield* Effect.log("No total supply found for token:", token.denom)
             continue
@@ -715,7 +726,10 @@ const escrowSupplyControlLoop = Effect.repeat(
             Number(cosmosHeight),
           ).pipe(
             Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
-            Effect.tapError(e => Effect.logError("Error fetching total supply:", e)),
+            Effect.catchAllCause((cause) => {
+              console.error(`Error fetching total supply: ${Cause.pretty(cause)}`);
+              return Effect.succeed(null); 
+            })
           )
           if (!totalSupplyHere) {
             yield* Effect.log("No total supply found for token:", token.denom)
@@ -779,7 +793,10 @@ const escrowSupplyControlLoop = Effect.repeat(
               evmHeight,
             ).pipe(
               Effect.provideService(ViemPublicClientContext, { client }),
-              Effect.tapError(e => Effect.logError("Error querying balanceOf:", e)),
+              Effect.catchAllCause((cause) => {
+                console.error(`Error querying balanceOf: ${Cause.pretty(cause)}`);
+                return Effect.succeed(null); 
+              })
             )
             if (!onChain) {
               yield* Effect.log("No balance found for denom:", tokenAddr)
@@ -815,7 +832,10 @@ const escrowSupplyControlLoop = Effect.repeat(
           for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
             const isDenomNativeHere = yield* isDenomNative(denom).pipe(
               Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
-              Effect.tapError(e => Effect.logError("Error checking denom type:", e)),
+              Effect.catchAllCause((cause) => {
+                console.error(`Error checking denom type: ${Cause.pretty(cause)}`);
+                return Effect.succeed(null); 
+              })
             )
             let amount
             if (isDenomNativeHere) {
@@ -841,7 +861,10 @@ const escrowSupplyControlLoop = Effect.repeat(
                 Number(cosmosHeight),
               ).pipe(
                 Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
-                Effect.tapError(e => Effect.logError("Error fetching balance:", e)),
+                Effect.catchAllCause((cause) => {
+                  console.error(`Error fetching balance: ${Cause.pretty(cause)}`);
+                  return Effect.succeed(null); 
+                })
               )
               if (!balance) {
                 yield* Effect.log("No balance found for denom:", denom)
