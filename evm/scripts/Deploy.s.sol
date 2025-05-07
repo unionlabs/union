@@ -86,7 +86,7 @@ abstract contract VersionedScript is Script {
     }
 }
 
-abstract contract UnionBase {
+abstract contract UnionBase is Script {
     function deployDeployer() internal returns (Deployer) {
         return new Deployer();
     }
@@ -721,7 +721,6 @@ contract DeployIBC is UnionScript, VersionedScript {
         contracts.handler.registerClient(
             LightClients.STATE_LENS_ICS23_SMT, contracts.stateLensIcs23SmtClient
         );
-        setupRoles(owner, manager, handler, cometblsClient, ucs03, multicall);
         vm.stopBroadcast();
 
         console.log("Manager: ", address(contracts.manager));
@@ -1549,7 +1548,7 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     }
 }
 
-contract DeployRoles is UnionScript, Script {
+contract DeployRoles is UnionScript {
     using LibString for *;
 
     Deployer immutable deployer;
