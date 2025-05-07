@@ -44,6 +44,8 @@ pub enum Forks {
     Deneb = 4,
     /// <https://github.com/ethereum/consensus-specs/tree/dev/specs/electra>
     Electra = 5,
+    /// <https://github.com/ethereum/consensus-specs/tree/dev/specs/fulu>
+    Fulu = 6,
 }
 
 impl ForkSchedule {
@@ -169,7 +171,7 @@ impl ForkSchedule {
     /// # use hex_literal::hex;
     /// # use beacon_api_types::custom_types::Version;
     /// assert_eq!(
-    ///     MAINNET.fork(Forks::Electra),
+    ///     MAINNET.fork(Forks::Fulu),
     ///     None
     /// );
     /// ```
@@ -232,6 +234,7 @@ pub const MAINNET: _ = [
     ("02000000", 144896), // bellatrix
     ("03000000", 194048), // capella
     ("04000000", 269568), // deneb
+    ("05000000", 364032), // electra
 ];
 
 /// Mainnet chain id.
@@ -322,6 +325,11 @@ mod tests {
                     current_version: Version(hex!("04000000").into()),
                     epoch: Epoch::new(269568),
                 },
+                Fork {
+                    previous_version: Version(hex!("04000000").into()),
+                    current_version: Version(hex!("05000000").into()),
+                    epoch: Epoch::new(364032),
+                },
             ]
         );
     }
@@ -355,11 +363,18 @@ mod tests {
             }),
         );
 
-        assert_eq!(MAINNET.fork(Forks::Electra), None);
+        assert_eq!(
+            MAINNET.fork(Forks::Electra),
+            Some(Fork {
+                previous_version: Version(hex!("04000000").into()),
+                current_version: Version(hex!("05000000").into()),
+                epoch: Epoch::new(364032),
+            }),
+        );
     }
 
     #[test]
     fn test_len() {
-        assert_eq!(MAINNET.len(), 5);
+        assert_eq!(MAINNET.len(), 6);
     }
 }
