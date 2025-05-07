@@ -41,8 +41,8 @@ export class ExtendedCosmWasmClient extends CosmWasmClient {
     const resp = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
-        "x-cosmos-block-height": height.toString()
-      }
+        "x-cosmos-block-height": height.toString(),
+      },
     })
 
     if (!resp.ok) {
@@ -58,5 +58,4 @@ export class ExtendedCosmWasmClient extends CosmWasmClient {
       return null // No balance found for this denom
     }
   }
-
 }
