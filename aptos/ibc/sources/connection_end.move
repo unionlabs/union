@@ -136,13 +136,8 @@ module ibc::connection_end {
         }
     }
 
-    // Default function
-    public fun default(): ConnectionEnd {
-        new(0, 0, 0, 0)
-    }
-
     #[test]
-    fun test_encode_decode_connection() {
+    fun connection_encode_decode() {
         let buf =
             x"0000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000006400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014";
         let connection = ConnectionEnd {
@@ -153,8 +148,6 @@ module ibc::connection_end {
         };
 
         let encoded = encode(&connection);
-
-        std::debug::print(&encoded);
 
         assert!(encoded == buf, 1);
     }
