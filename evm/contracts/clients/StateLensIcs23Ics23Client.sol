@@ -1,6 +1,5 @@
 pragma solidity ^0.8.27;
 
-import "forge-std/console.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import
@@ -87,7 +86,7 @@ library StateLensIcs23Ics23Lib {
     }
 
     function encode(
-        ClientStateV1 memory clientState
+        ClientState memory clientState
     ) internal pure returns (bytes memory) {
         return abi.encode(
             clientState.l2ChainId,
@@ -139,7 +138,7 @@ contract StateLensIcs23Ics23Client is
 
     address public immutable IBC_HANDLER;
 
-    mapping(uint32 => ClientStateLegacy) private legacyClientStates;
+    mapping(uint32 => LegacyClientState) private legacyClientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
 
     mapping(uint32 => ClientState) private clientStates;
@@ -174,8 +173,8 @@ contract StateLensIcs23Ics23Client is
                 keyPrefixStorage: abi.encodePacked(
                     IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
                     legacyState.contractAddress,
-                    IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
-                ),
+                    IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX
+                )
             }).encode();
 
             delete legacyState;

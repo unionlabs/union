@@ -1,7 +1,4 @@
-use unionlabs::{
-    primitives::{Bytes, H256},
-    tuple::AsTuple,
-};
+use unionlabs::{primitives::Bytes, tuple::AsTuple};
 
 pub type ClientState = state_lens_light_client_types::ClientState<Extra>;
 
@@ -28,11 +25,7 @@ pub struct ExtraV1 {
 
 #[cfg(feature = "ethabi")]
 mod ethabi {
-    use alloy::{
-        dyn_abi::{abi::token::PackedSeqToken, DynSolValue, Word},
-        primitives::U256,
-        sol_types::SolValue,
-    };
+    use alloy::{dyn_abi::abi::token::PackedSeqToken, primitives::U256, sol_types::SolValue};
     use state_lens_light_client_types::client_state::ethabi::{DecodeExtra, ExtraToTokens};
 
     use super::*;
