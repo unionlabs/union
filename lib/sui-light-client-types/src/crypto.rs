@@ -1,8 +1,7 @@
 use core::fmt::{Debug, Display};
+use std::io;
 
 use roaring::RoaringBitmap;
-use serde::{ser::Error as _, Deserialize, Deserializer, Serialize, Serializer};
-use serde_with::{serde_as, DeserializeAs, SerializeAs};
 use unionlabs_primitives::{encoding::Base64, Bytes, FixedBytes};
 
 use crate::checkpoint_summary::EpochId;
@@ -14,6 +13,7 @@ pub const BLS_DST: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
 pub type AuthorityPublicKeyBytes = CryptoBytes<BLS_G2_SIZE>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CryptoBytes<const N: usize>(pub FixedBytes<N, Base64>);
 
 impl<const N: usize> Display for CryptoBytes<N> {
@@ -22,7 +22,8 @@ impl<const N: usize> Display for CryptoBytes<N> {
     }
 }
 
-impl<const N: usize> Serialize for CryptoBytes<N> {
+#[cfg(feature = "serde")]
+impl<const N: usize> serde::Serialize for CryptoBytes<N> {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -31,7 +32,8 @@ impl<const N: usize> Serialize for CryptoBytes<N> {
     }
 }
 
-impl<'de, const N: usize> Deserialize<'de> for CryptoBytes<N> {
+#[cfg(feature = "serde")]
+impl<'de, const N: usize> serde::Deserialize<'de> for CryptoBytes<N> {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -47,70 +49,102 @@ impl<'de, const N: usize> Deserialize<'de> for CryptoBytes<N> {
 pub type AuthorityStrongQuorumSignInfo = AuthorityQuorumSignInfo<true>;
 pub type AggregateAuthoritySignature = CryptoBytes<BLS_G1_SIZE>;
 
-#[serde_as]
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct AuthorityQuorumSignInfo<const STRONG_THRESHOLD: bool> {
     pub epoch: EpochId,
     pub signature: AggregateAuthoritySignature,
-    #[serde_as(as = "SuiBitmap")]
-    pub signers_map: RoaringBitmap,
+    pub signers_map: SuiBitmap,
 }
 
-pub(crate) struct SuiBitmap;
+#[derive(Clone, Debug)]
+pub struct SuiBitmap(pub RoaringBitmap);
 
-#[inline]
-pub(crate) fn to_custom_deser_error<'de, D, E>(e: E) -> D::Error
-where
-    E: Debug,
-    D: Deserializer<'de>,
-{
-    serde::de::Error::custom(format!("byte deserialization failed, cause by: {:?}", e))
-}
-
-#[inline]
-pub(crate) fn to_custom_ser_error<S, E>(e: E) -> S::Error
-where
-    E: Debug,
-    S: Serializer,
-{
-    S::Error::custom(format!("byte serialization failed, cause by: {:?}", e))
-}
-
-impl SerializeAs<roaring::RoaringBitmap> for SuiBitmap {
-    fn serialize_as<S>(source: &roaring::RoaringBitmap, serializer: S) -> Result<S::Ok, S::Error>
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for SuiBitmap {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
-        S: Serializer,
+        D: serde::Deserializer<'de>,
     {
-        let mut bytes = vec![];
+        let bytes: Vec<u8> = Vec::<u8>::deserialize(deserializer)?;
+        Ok(Self::deserialize_from_bytes(&bytes).map_err(|e| {
+            serde::de::Error::custom(format!("byte deserialization failed, cause by: {:?}", e))
+        })?)
+    }
+}
 
-        source
-            .serialize_into(&mut bytes)
-            .map_err(to_custom_ser_error::<S, _>)?;
+#[cfg(feature = "serde")]
+impl serde::Serialize for SuiBitmap {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        use serde::ser::Error as _;
+        let bytes = self.serialize_to_bytes().map_err(|e| {
+            S::Error::custom(format!("byte serialization failed, cause by: {:?}", e))
+        })?;
+
         Vec::<u8>::serialize(&bytes, serializer)
     }
 }
 
-impl<'de> DeserializeAs<'de, roaring::RoaringBitmap> for SuiBitmap {
-    fn deserialize_as<D>(deserializer: D) -> Result<roaring::RoaringBitmap, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let bytes: Vec<u8> = Vec::<u8>::deserialize(deserializer)?;
-        deserialize_sui_bitmap(&bytes).map_err(to_custom_deser_error::<'de, D, _>)
+#[cfg(feature = "bincode")]
+impl bincode::Encode for SuiBitmap {
+    fn encode<E: bincode::enc::Encoder>(
+        &self,
+        encoder: &mut E,
+    ) -> Result<(), bincode::error::EncodeError> {
+        let bytes = self
+            .serialize_to_bytes()
+            .map_err(|e| bincode::error::EncodeError::OtherString(e.to_string()))?;
+
+        bytes.encode(encoder)
     }
 }
 
-// RoaringBitmap::deserialize_from() or iter() do not check for duplicates.
-// So this function is needed to sanitize the bitmap to ensure unique entries.
-fn deserialize_sui_bitmap(bytes: &[u8]) -> std::io::Result<roaring::RoaringBitmap> {
-    let orig_bitmap = roaring::RoaringBitmap::deserialize_from(bytes)?;
-    // Ensure there is no duplicated entries in the bitmap.
-    let mut seen = std::collections::BTreeSet::new();
-    let mut new_bitmap = roaring::RoaringBitmap::new();
-    for v in orig_bitmap.iter() {
-        if seen.insert(v) {
-            new_bitmap.insert(v);
-        }
+#[cfg(feature = "bincode")]
+impl<Context> bincode::Decode<Context> for SuiBitmap {
+    fn decode<D: bincode::de::Decoder<Context = Context>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        let bytes = Vec::<u8>::decode(decoder)?;
+
+        Ok(Self::deserialize_from_bytes(&bytes)
+            .map_err(|e| bincode::error::DecodeError::OtherString(e.to_string()))?)
     }
-    Ok(new_bitmap)
+}
+
+#[cfg(feature = "bincode")]
+impl<'de, Context> bincode::BorrowDecode<'de, Context> for SuiBitmap {
+    fn borrow_decode<D: bincode::de::BorrowDecoder<'de>>(
+        decoder: &mut D,
+    ) -> Result<Self, bincode::error::DecodeError> {
+        bincode::Decode::decode(decoder)
+    }
+}
+
+impl SuiBitmap {
+    pub fn serialize_to_bytes(&self) -> io::Result<Vec<u8>> {
+        let mut bytes: Vec<u8> = vec![];
+
+        self.0.serialize_into(&mut bytes)?;
+
+        Ok(bytes)
+    }
+
+    // RoaringBitmap::deserialize_from() or iter() do not check for duplicates.
+    // So this function is needed to sanitize the bitmap to ensure unique entries.
+    pub fn deserialize_from_bytes(bytes: &[u8]) -> io::Result<Self> {
+        let orig_bitmap = roaring::RoaringBitmap::deserialize_from(bytes)?;
+        // Ensure there is no duplicated entries in the bitmap.
+        let mut seen = std::collections::BTreeSet::new();
+        let mut new_bitmap = roaring::RoaringBitmap::new();
+        for v in orig_bitmap.iter() {
+            if seen.insert(v) {
+                new_bitmap.insert(v);
+            }
+        }
+        Ok(Self(new_bitmap))
+    }
 }
