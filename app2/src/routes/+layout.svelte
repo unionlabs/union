@@ -28,15 +28,6 @@ interface Props {
 
 let { children, data }: Props = $props()
 
-/* Hack to be able to JSON.stringify BigInt */
-interface BigInt {
-  toJSON: () => string
-}
-
-BigInt["prototype"].toJSON = function() {
-  return this.toString()
-}
-
 onMount(() => {
   uiStore.edition = data.edition
   interceptLogos()

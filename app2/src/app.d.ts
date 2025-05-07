@@ -32,6 +32,10 @@ declare global {
       isBrave: () => Promise<boolean>
     }
   }
+
+  interface BigInt {
+    toJSON(): string
+  }
 }
 
 interface Browser {
