@@ -25,6 +25,28 @@ import "../contracts/apps/ucs/06-funded-dispatch/FundedDispatch.sol";
 
 import "./Deployer.sol";
 
+struct Contracts {
+    Manager manager;
+    Multicall multicall;
+    IBCHandler handler;
+    CometblsClient cometblsClient;
+    StateLensIcs23MptClient stateLensIcs23MptClient;
+    StateLensIcs23Ics23Client stateLensIcs23Ics23Client;
+    StateLensIcs23SmtClient stateLensIcs23SmtClient;
+    PingPong ucs00;
+    ZkgmERC20 ucs03Erc20Impl;
+    UCS03Zkgm ucs03;
+    UCS06FundedDispatch ucs06;
+}
+
+struct UCS03Parameters {
+    IWETH weth;
+    bool rateLimitEnabled;
+    string nativeTokenName;
+    string nativeTokenSymbol;
+    uint8 nativeTokenDecimals;
+}
+
 library LIB {
     string constant MULTICALL = "lib/multicall-v2";
     string constant UCS03_ZKGM_ERC20_IMPL = "lib/zkgm-erc20-v2";
@@ -67,6 +89,21 @@ abstract contract VersionedScript is Script {
 abstract contract UnionBase {
     function deployDeployer() internal returns (Deployer) {
         return new Deployer();
+    }
+
+    function getUCS03Params() internal returns (UCS03Parameters memory) {
+        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+        return UCS03Parameters({
+            weth: weth,
+            rateLimitEnabled: rateLimitEnabled,
+            nativeTokenName: nativeTokenName,
+            nativeTokenSymbol: nativeTokenSymbol,
+            nativeTokenDecimals: nativeTokenDecimals
+        });
     }
 }
 
@@ -224,9 +261,8 @@ abstract contract UnionScript is UnionBase {
     function deployUCS03(
         IBCHandler handler,
         Manager manager,
-        IWETH weth,
-        ZkgmERC20 erc20,
-        bool rateLimitEnabled
+        ZkgmERC20 zkgmERC20,
+        UCS03Parameters memory params
     ) internal returns (UCS03Zkgm) {
         UCS03Zkgm zkgm = UCS03Zkgm(
             payable(
@@ -235,7 +271,13 @@ abstract contract UnionScript is UnionBase {
                     abi.encode(
                         address(
                             new UCS03Zkgm(
-                                handler, weth, erc20, rateLimitEnabled
+                                handler,
+                                params.weth,
+                                zkgmERC20,
+                                params.rateLimitEnabled,
+                                params.nativeTokenName,
+                                params.nativeTokenSymbol,
+                                params.nativeTokenDecimals
                             )
                         ),
                         abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
@@ -267,24 +309,8 @@ abstract contract UnionScript is UnionBase {
 
     function deployIBC(
         address owner,
-        IWETH weth,
-        bool rateLimitEnabled
-    )
-        internal
-        returns (
-            IBCHandler,
-            CometblsClient,
-            StateLensIcs23MptClient,
-            StateLensIcs23Ics23Client,
-            StateLensIcs23SmtClient,
-            PingPong,
-            ZkgmERC20,
-            UCS03Zkgm,
-            UCS06FundedDispatch,
-            Multicall,
-            Manager
-        )
-    {
+        UCS03Parameters memory ucs03Params
+    ) internal returns (Contracts memory) {
         Manager manager = deployManager(owner);
         IBCHandler handler = deployIBCHandler(manager);
         CometblsClient cometblsClient = deployCometbls(handler, manager);
@@ -294,36 +320,29 @@ abstract contract UnionScript is UnionBase {
             deployStateLensIcs23Ics23Client(handler, manager);
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
             deployStateLensIcs23SmtClient(handler, manager);
-        PingPong pingpong = deployUCS00(handler, manager, 100000000000000);
+        PingPong ucs00 = deployUCS00(handler, manager, 100000000000000);
         ZkgmERC20 zkgmERC20 = deployZkgmERC20();
-        UCS03Zkgm ucs03 =
-            deployUCS03(handler, manager, weth, zkgmERC20, rateLimitEnabled);
+        UCS03Zkgm ucs03 = deployUCS03(handler, manager, zkgmERC20, ucs03Params);
         UCS06FundedDispatch ucs06 = deployUCS06(manager);
         Multicall multicall = deployMulticall(manager);
-        setupRoles(owner, manager, handler, cometblsClient, ucs03, multicall);
-        return (
-            handler,
-            cometblsClient,
-            stateLensIcs23MptClient,
-            stateLensIcs23Ics23Client,
-            stateLensIcs23SmtClient,
-            pingpong,
-            zkgmERC20,
-            ucs03,
-            ucs06,
-            multicall,
-            manager
-        );
+        Contracts memory contracts = Contracts({
+            handler: handler,
+            cometblsClient: cometblsClient,
+            stateLensIcs23MptClient: stateLensIcs23MptClient,
+            stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
+            stateLensIcs23SmtClient: stateLensIcs23SmtClient,
+            ucs00: ucs00,
+            ucs03Erc20Impl: zkgmERC20,
+            ucs03: ucs03,
+            ucs06: ucs06,
+            multicall: multicall,
+            manager: manager
+        });
+        setupRoles(owner, contracts);
+        return contracts;
     }
 
-    function setupRoles(
-        address owner,
-        Manager manager,
-        IBCHandler handler,
-        CometblsClient cometbls,
-        UCS03Zkgm zkgm,
-        Multicall multicall
-    ) internal {
+    function setupRoles(address owner, Contracts memory contracts) internal {
         bytes4[] memory relayerSelectors = new bytes4[](10);
         relayerSelectors[0] = IBCClient.registerClient.selector;
         relayerSelectors[1] = IBCClient.createClient.selector;
@@ -335,55 +354,57 @@ abstract contract UnionScript is UnionBase {
         relayerSelectors[7] = IBCPacketImpl.recvIntentPacket.selector;
         relayerSelectors[8] = IBCPacketImpl.acknowledgePacket.selector;
         relayerSelectors[9] = IBCPacketImpl.timeoutPacket.selector;
-        manager.setTargetFunctionRole(
-            address(handler), relayerSelectors, Roles.RELAYER
+        contracts.manager.setTargetFunctionRole(
+            address(contracts.handler), relayerSelectors, Roles.RELAYER
         );
 
         bytes4[] memory multicallSelectors = new bytes4[](1);
         multicallSelectors[0] = Multicall.multicall.selector;
-        manager.setTargetFunctionRole(
-            address(multicall), multicallSelectors, Roles.RELAYER
+        contracts.manager.setTargetFunctionRole(
+            address(contracts.multicall), multicallSelectors, Roles.RELAYER
         );
 
-        manager.labelRole(Roles.RELAYER, "RELAYER");
+        contracts.manager.labelRole(Roles.RELAYER, "RELAYER");
 
         // Pause selector is the same accross contracts
         bytes4[] memory pauserSelectors = new bytes4[](1);
         pauserSelectors[0] = CometblsClient.pause.selector;
-        manager.setTargetFunctionRole(
-            address(cometbls), pauserSelectors, Roles.PAUSER
+        contracts.manager.setTargetFunctionRole(
+            address(contracts.cometblsClient), pauserSelectors, Roles.PAUSER
         );
-        manager.setTargetFunctionRole(
-            address(zkgm), pauserSelectors, Roles.PAUSER
+        contracts.manager.setTargetFunctionRole(
+            address(contracts.ucs03), pauserSelectors, Roles.PAUSER
         );
-        manager.labelRole(Roles.PAUSER, "PAUSER");
+        contracts.manager.labelRole(Roles.PAUSER, "PAUSER");
 
         // Unpause selector is the same accross contracts
         bytes4[] memory unpauserSelectors = new bytes4[](1);
         pauserSelectors[0] = CometblsClient.unpause.selector;
-        manager.setTargetFunctionRole(
-            address(cometbls), unpauserSelectors, Roles.UNPAUSER
+        contracts.manager.setTargetFunctionRole(
+            address(contracts.cometblsClient), unpauserSelectors, Roles.UNPAUSER
         );
-        manager.setTargetFunctionRole(
-            address(zkgm), unpauserSelectors, Roles.UNPAUSER
+        contracts.manager.setTargetFunctionRole(
+            address(contracts.ucs03), unpauserSelectors, Roles.UNPAUSER
         );
-        manager.labelRole(Roles.UNPAUSER, "UNPAUSER");
+        contracts.manager.labelRole(Roles.UNPAUSER, "UNPAUSER");
 
         bytes4[] memory rateLimiterSelectors = new bytes4[](1);
         rateLimiterSelectors[0] = UCS03Zkgm.setBucketConfig.selector;
-        manager.setTargetFunctionRole(
-            address(zkgm), rateLimiterSelectors, Roles.RATE_LIMITER
+        contracts.manager.setTargetFunctionRole(
+            address(contracts.ucs03), rateLimiterSelectors, Roles.RATE_LIMITER
         );
-        manager.labelRole(Roles.RATE_LIMITER, "RATE_LIMITER");
+        contracts.manager.labelRole(Roles.RATE_LIMITER, "RATE_LIMITER");
 
         // Owner is granted all roles.
-        manager.grantRole(Roles.RELAYER, owner, 0);
-        manager.grantRole(Roles.PAUSER, owner, 0);
-        manager.grantRole(Roles.UNPAUSER, owner, 0);
-        manager.grantRole(Roles.RATE_LIMITER, owner, 0);
+        contracts.manager.grantRole(Roles.RELAYER, owner, 0);
+        contracts.manager.grantRole(Roles.PAUSER, owner, 0);
+        contracts.manager.grantRole(Roles.UNPAUSER, owner, 0);
+        contracts.manager.grantRole(Roles.RATE_LIMITER, owner, 0);
 
         // Multicall is granted relayer such that relayers can batch through it.
-        manager.grantRole(Roles.RELAYER, address(multicall), 0);
+        contracts.manager.grantRole(
+            Roles.RELAYER, address(contracts.multicall), 0
+        );
     }
 }
 
@@ -573,8 +594,6 @@ contract DeployUCS03 is UnionScript, VersionedScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
-        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
 
         Manager manager = Manager(getDeployed(IBC.MANAGER));
         IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
@@ -582,7 +601,7 @@ contract DeployUCS03 is UnionScript, VersionedScript {
 
         vm.startBroadcast(privateKey);
         UCS03Zkgm zkgm =
-            deployUCS03(handler, manager, weth, zkgmERC20, rateLimitEnabled);
+            deployUCS03(handler, manager, zkgmERC20, getUCS03Params());
         vm.stopBroadcast();
 
         console.log("UCS03: ", address(zkgm));
@@ -684,56 +703,49 @@ contract DeployIBC is UnionScript, VersionedScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
-        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
 
         address owner = vm.addr(privateKey);
         vm.startBroadcast(privateKey);
-        (
-            IBCHandler handler,
-            CometblsClient cometblsClient,
-            StateLensIcs23MptClient stateLensIcs23MptClient,
-            StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
-            StateLensIcs23SmtClient stateLensIcs23SmtClient,
-            PingPong pingpong,
-            ZkgmERC20 zkgmERC20,
-            UCS03Zkgm ucs03,
-            UCS06FundedDispatch ucs06,
-            Multicall multicall,
-            Manager manager
-        ) = deployIBC(vm.addr(privateKey), weth, rateLimitEnabled);
-        handler.registerClient(LightClients.COMETBLS, cometblsClient);
-        handler.registerClient(
-            LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
+        Contracts memory contracts =
+            deployIBC(vm.addr(privateKey), getUCS03Params());
+        contracts.handler.registerClient(
+            LightClients.COMETBLS, contracts.cometblsClient
         );
-        handler.registerClient(
-            LightClients.STATE_LENS_ICS23_ICS23, stateLensIcs23Ics23Client
+        contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_MPT, contracts.stateLensIcs23MptClient
         );
-        handler.registerClient(
-            LightClients.STATE_LENS_ICS23_SMT, stateLensIcs23SmtClient
+        contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_ICS23,
+            contracts.stateLensIcs23Ics23Client
+        );
+        contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_SMT, contracts.stateLensIcs23SmtClient
         );
         setupRoles(owner, manager, handler, cometblsClient, ucs03, multicall);
         vm.stopBroadcast();
 
-        console.log("Manager: ", address(manager));
+        console.log("Manager: ", address(contracts.manager));
         console.log("Deployer: ", address(deployer));
         console.log("Sender: ", vm.addr(privateKey));
-        console.log("IBCHandler: ", address(handler));
-        console.log("CometblsClient: ", address(cometblsClient));
+        console.log("IBCHandler: ", address(contracts.handler));
+        console.log("CometblsClient: ", address(contracts.cometblsClient));
         console.log(
-            "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
+            "StateLensIcs23MptClient: ",
+            address(contracts.stateLensIcs23MptClient)
         );
         console.log(
-            "StateLensIcs23Ics23Client: ", address(stateLensIcs23Ics23Client)
+            "StateLensIcs23Ics23Client: ",
+            address(contracts.stateLensIcs23Ics23Client)
         );
         console.log(
-            "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
+            "StateLensIcs23SmtClient: ",
+            address(contracts.stateLensIcs23SmtClient)
         );
-        console.log("UCS00: ", address(pingpong));
-        console.log("ZkgmERC20: ", address(zkgmERC20));
-        console.log("UCS03: ", address(ucs03));
-        console.log("UCS06: ", address(ucs06));
-        console.log("Multicall: ", address(multicall));
+        console.log("UCS00: ", address(contracts.ucs00));
+        console.log("ZkgmERC20: ", address(contracts.ucs03Erc20Impl));
+        console.log("UCS03: ", address(contracts.ucs03));
+        console.log("UCS06: ", address(contracts.ucs06));
+        console.log("Multicall: ", address(contracts.multicall));
     }
 }
 
@@ -746,55 +758,48 @@ contract DeployDeployerAndIBC is UnionScript, VersionedScript {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
-        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
 
         vm.startBroadcast(privateKey);
         deployer = deployDeployer();
-        (
-            IBCHandler handler,
-            CometblsClient cometblsClient,
-            StateLensIcs23MptClient stateLensIcs23MptClient,
-            StateLensIcs23Ics23Client stateLensIcs23Ics23Client,
-            StateLensIcs23SmtClient stateLensIcs23SmtClient,
-            PingPong pingpong,
-            ZkgmERC20 zkgmERC20,
-            UCS03Zkgm ucs03,
-            UCS06FundedDispatch ucs06,
-            Multicall multicall,
-            Manager manager
-        ) = deployIBC(vm.addr(privateKey), weth, rateLimitEnabled);
-        handler.registerClient(LightClients.COMETBLS, cometblsClient);
-        handler.registerClient(
-            LightClients.STATE_LENS_ICS23_MPT, stateLensIcs23MptClient
+        Contracts memory contracts =
+            deployIBC(vm.addr(privateKey), getUCS03Params());
+        contracts.handler.registerClient(
+            LightClients.COMETBLS, contracts.cometblsClient
         );
-        handler.registerClient(
-            LightClients.STATE_LENS_ICS23_ICS23, stateLensIcs23Ics23Client
+        contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_MPT, contracts.stateLensIcs23MptClient
         );
-        handler.registerClient(
-            LightClients.STATE_LENS_ICS23_SMT, stateLensIcs23SmtClient
+        contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_ICS23,
+            contracts.stateLensIcs23Ics23Client
+        );
+        contracts.handler.registerClient(
+            LightClients.STATE_LENS_ICS23_SMT, contracts.stateLensIcs23SmtClient
         );
         vm.stopBroadcast();
 
-        console.log("Manager: ", address(manager));
+        console.log("Manager: ", address(contracts.manager));
         console.log("Deployer: ", address(deployer));
         console.log("Sender: ", vm.addr(privateKey));
-        console.log("IBCHandler: ", address(handler));
-        console.log("CometblsClient: ", address(cometblsClient));
+        console.log("IBCHandler: ", address(contracts.handler));
+        console.log("CometblsClient: ", address(contracts.cometblsClient));
         console.log(
-            "StateLensIcs23MptClient: ", address(stateLensIcs23MptClient)
+            "StateLensIcs23MptClient: ",
+            address(contracts.stateLensIcs23MptClient)
         );
         console.log(
-            "StateLensIcs23Ics23Client: ", address(stateLensIcs23Ics23Client)
+            "StateLensIcs23Ics23Client: ",
+            address(contracts.stateLensIcs23Ics23Client)
         );
         console.log(
-            "StateLensIcs23SmtClient: ", address(stateLensIcs23SmtClient)
+            "StateLensIcs23SmtClient: ",
+            address(contracts.stateLensIcs23SmtClient)
         );
-        console.log("UCS00: ", address(pingpong));
-        console.log("ZkgmERC20: ", address(zkgmERC20));
-        console.log("UCS03: ", address(ucs03));
-        console.log("UCS06: ", address(ucs06));
-        console.log("Multicall: ", address(multicall));
+        console.log("UCS00: ", address(contracts.ucs00));
+        console.log("ZkgmERC20: ", address(contracts.ucs03Erc20Impl));
+        console.log("UCS03: ", address(contracts.ucs03));
+        console.log("UCS06: ", address(contracts.ucs06));
+        console.log("Multicall: ", address(contracts.multicall));
     }
 }
 
@@ -829,6 +834,11 @@ contract GetDeployed is VersionedScript {
     }
 
     function run() public {
+        bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+
         address multicall = getDeployed(LIB.MULTICALL);
         address zkgmERC20 = getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL);
 
@@ -1100,8 +1110,18 @@ contract GetDeployed is VersionedScript {
         implUCS03.serialize(
             "contract", string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03Zkgm")
         );
-        implUCS03 =
-            implUCS03.serialize("args", abi.encode(handler, weth, zkgmERC20));
+        implUCS03 = implUCS03.serialize(
+            "args",
+            abi.encode(
+                handler,
+                weth,
+                zkgmERC20,
+                rateLimitEnabled,
+                nativeTokenName,
+                nativeTokenSymbol,
+                nativeTokenDecimals
+            )
+        );
         impls = impls.serialize(implOf(ucs03).toHexString(), implUCS03);
 
         impls.write(vm.envString("OUTPUT"));
@@ -1133,6 +1153,10 @@ contract DryUpgradeUCS03 is VersionedScript {
     function run() public {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
@@ -1141,8 +1165,17 @@ contract DryUpgradeUCS03 is VersionedScript {
             string(abi.encodePacked("UCS03: ", address(ucs03).toHexString()))
         );
 
-        address newImplementation =
-            address(new UCS03Zkgm(handler, weth, zkgmERC20, rateLimitEnabled));
+        address newImplementation = address(
+            new UCS03Zkgm(
+                handler,
+                weth,
+                zkgmERC20,
+                rateLimitEnabled,
+                nativeTokenName,
+                nativeTokenSymbol,
+                nativeTokenDecimals
+            )
+        );
         vm.prank(owner);
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
@@ -1173,6 +1206,10 @@ contract UpgradeUCS03 is VersionedScript {
     function run() public {
         IWETH weth = IWETH(vm.envAddress("WETH_ADDRESS"));
         bool rateLimitEnabled = vm.envBool("RATE_LIMIT_ENABLED");
+        string memory nativeTokenName = vm.envString("NATIVE_TOKEN_NAME");
+        string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
+        uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
+
         IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
         ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
@@ -1182,8 +1219,17 @@ contract UpgradeUCS03 is VersionedScript {
         );
 
         vm.startBroadcast(privateKey);
-        address newImplementation =
-            address(new UCS03Zkgm(handler, weth, zkgmERC20, rateLimitEnabled));
+        address newImplementation = address(
+            new UCS03Zkgm(
+                handler,
+                weth,
+                zkgmERC20,
+                rateLimitEnabled,
+                nativeTokenName,
+                nativeTokenSymbol,
+                nativeTokenDecimals
+            )
+        );
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
@@ -1527,20 +1573,48 @@ contract DeployRoles is UnionScript, Script {
         );
     }
 
+    function getContracts() internal returns (Contracts memory) {
+        Manager manager = Manager(getDeployed(IBC.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        CometblsClient cometblsClient =
+            CometblsClient(getDeployed(LightClients.COMETBLS));
+        PingPong ucs00 = PingPong(getDeployed(Protocols.UCS00));
+        ZkgmERC20 ucs03Erc20Impl =
+            ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
+        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
+        UCS06FundedDispatch ucs06 =
+            UCS06FundedDispatch(getDeployed(Protocols.UCS06));
+        Multicall multicall = Multicall(getDeployed(LIB.MULTICALL));
+        StateLensIcs23MptClient stateLensIcs23MptClient =
+        StateLensIcs23MptClient(getDeployed(LightClients.STATE_LENS_ICS23_MPT));
+        StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
+        StateLensIcs23Ics23Client(
+            getDeployed(LightClients.STATE_LENS_ICS23_ICS23)
+        );
+        StateLensIcs23SmtClient stateLensIcs23SmtClient =
+        StateLensIcs23SmtClient(getDeployed(LightClients.STATE_LENS_ICS23_SMT));
+        return Contracts({
+            manager: manager,
+            multicall: multicall,
+            handler: handler,
+            cometblsClient: cometblsClient,
+            stateLensIcs23MptClient: stateLensIcs23MptClient,
+            stateLensIcs23Ics23Client: stateLensIcs23Ics23Client,
+            stateLensIcs23SmtClient: stateLensIcs23SmtClient,
+            ucs00: ucs00,
+            ucs03Erc20Impl: ucs03Erc20Impl,
+            ucs03: ucs03,
+            ucs06: ucs06
+        });
+    }
+
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
         address owner = vm.addr(privateKey);
 
-        Manager manager = Manager(getDeployed(IBC.MANAGER));
-        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
-        CometblsClient cometbls =
-            CometblsClient(getDeployed(LightClients.COMETBLS));
-        UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
-        Multicall multicall = Multicall(getDeployed(LIB.MULTICALL));
-
         vm.startBroadcast(privateKey);
-        setupRoles(owner, manager, handler, cometbls, ucs03, multicall);
+        setupRoles(owner, getContracts());
         vm.stopBroadcast();
     }
 }

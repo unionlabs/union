@@ -71,6 +71,9 @@ contract UCS03Zkgm is
     IWETH public immutable WETH;
     ZkgmERC20 public immutable ERC20_IMPL;
     bool public immutable RATE_LIMIT_ENABLED;
+    bytes32 public immutable NATIVE_TOKEN_NAME_HASH;
+    bytes32 public immutable NATIVE_TOKEN_SYMBOL_HASH;
+    uint8 public immutable NATIVE_TOKEN_DECIMALS;
 
     IIBCModulePacket private _deprecated_ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
@@ -82,13 +85,19 @@ contract UCS03Zkgm is
         IIBCModulePacket _ibcHandler,
         IWETH _weth,
         ZkgmERC20 _erc20Impl,
-        bool _rateLimitEnabled
+        bool _rateLimitEnabled,
+        string memory _nativeTokenName,
+        string memory _nativeTokenSymbol,
+        uint8 _nativeTokenDecimals
     ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
         WETH = _weth;
         ERC20_IMPL = _erc20Impl;
         RATE_LIMIT_ENABLED = _rateLimitEnabled;
+        NATIVE_TOKEN_NAME_HASH = keccak256(bytes(_nativeTokenName));
+        NATIVE_TOKEN_SYMBOL_HASH = keccak256(bytes(_nativeTokenSymbol));
+        NATIVE_TOKEN_DECIMALS = _nativeTokenDecimals;
     }
 
     function initialize(
@@ -109,7 +118,7 @@ contract UCS03Zkgm is
         uint64 timeoutTimestamp,
         bytes32 salt,
         Instruction calldata instruction
-    ) public whenNotPaused {
+    ) public payable whenNotPaused {
         _verifyInternal(channelId, 0, instruction);
         IBC_HANDLER.sendPacket(
             channelId,
@@ -196,14 +205,16 @@ contract UCS03Zkgm is
     ) internal {
         IERC20Metadata baseToken =
             IERC20Metadata(address(bytes20(order.baseToken)));
-        if (!order.baseTokenName.eq(baseToken.name())) {
-            revert ZkgmLib.ErrInvalidAssetName();
-        }
-        if (!order.baseTokenSymbol.eq(baseToken.symbol())) {
-            revert ZkgmLib.ErrInvalidAssetSymbol();
-        }
-        if (order.baseTokenDecimals != baseToken.decimals()) {
-            revert ZkgmLib.ErrInvalidAssetDecimals();
+        if (address(baseToken) != ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
+            if (!order.baseTokenName.eq(baseToken.name())) {
+                revert ZkgmLib.ErrInvalidAssetName();
+            }
+            if (!order.baseTokenSymbol.eq(baseToken.symbol())) {
+                revert ZkgmLib.ErrInvalidAssetSymbol();
+            }
+            if (order.baseTokenDecimals != baseToken.decimals()) {
+                revert ZkgmLib.ErrInvalidAssetDecimals();
+            }
         }
         // The origin is the concatenation of (path, destinationChannelId) where
         // path are the intermediate channels hops, if we send from channel X on
@@ -240,9 +251,33 @@ contract UCS03Zkgm is
             _increaseOutstanding(
                 channelId, path, address(baseToken), order.baseAmount
             );
-            baseToken.safeTransferFrom(
-                msg.sender, address(this), order.baseAmount
-            );
+            if (
+                address(baseToken) == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
+                    && msg.value >= order.baseAmount
+            ) {
+                if (
+                    keccak256(bytes(order.baseTokenName))
+                        != NATIVE_TOKEN_NAME_HASH
+                ) {
+                    revert ZkgmLib.ErrInvalidAssetName();
+                }
+                if (
+                    keccak256(bytes(order.baseTokenSymbol))
+                        != NATIVE_TOKEN_SYMBOL_HASH
+                ) {
+                    revert ZkgmLib.ErrInvalidAssetSymbol();
+                }
+                if (order.baseTokenDecimals != NATIVE_TOKEN_DECIMALS) {
+                    revert ZkgmLib.ErrInvalidAssetDecimals();
+                }
+                // Use the deposit as a mechanism to consume the order amount from the msg.value.
+                // This avoids issue if multiple native eth orders are present.
+                WETH.deposit{value: order.baseAmount}();
+            } else {
+                baseToken.safeTransferFrom(
+                    msg.sender, address(this), order.baseAmount
+                );
+            }
         }
     }
 
@@ -655,11 +690,32 @@ contract UCS03Zkgm is
                 quoteToken,
                 quoteAmount + fee
             );
-            if (quoteAmount > 0) {
-                IERC20(quoteToken).safeTransfer(receiver, quoteAmount);
-            }
-            if (fee > 0) {
-                IERC20(quoteToken).safeTransfer(relayer, fee);
+            if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
+                if (quoteAmount + fee > 0) {
+                    WETH.withdraw(quoteAmount + fee);
+                }
+                if (quoteAmount > 0) {
+                    payable(receiver).sendValue(quoteAmount);
+                }
+
+                if (fee > 0) {
+                    if (
+                        !SafeTransferLib.trySafeTransferETH(
+                            relayer,
+                            fee,
+                            SafeTransferLib.GAS_STIPEND_NO_STORAGE_WRITES
+                        )
+                    ) {
+                        return ZkgmLib.ACK_ERR_ONLYMAKER;
+                    }
+                }
+            } else {
+                if (quoteAmount > 0) {
+                    IERC20(quoteToken).safeTransfer(receiver, quoteAmount);
+                }
+                if (fee > 0) {
+                    IERC20(quoteToken).safeTransfer(relayer, fee);
+                }
             }
         }
         return ZkgmLib.encodeFungibleAssetOrderAck(
@@ -688,7 +744,7 @@ contract UCS03Zkgm is
             // gas token. The MM has to provide WETH funds that will be
             // unwrapped, avoiding us from having to manage msg.value accross
             // the stack.
-            if (quoteToken == ZkgmLib.NATIVE_ETH_MAGIC) {
+            if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
                 // Transfert to protocol.
                 if (
                     !WETH.trySafeTransferFrom(caller, address(this), quoteAmount)

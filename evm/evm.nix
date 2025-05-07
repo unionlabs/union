@@ -196,19 +196,24 @@ _: {
         chain-id:
         "https://api.tenderly.co/api/v1/account/unionlabs/project/union/etherscan/verify/network/${chain-id}/public";
 
-      # name              : plaintext name of network
-      # chain-id          : chain id of the network
-      # rpc-url           : rpc url for this network, should support full eth_getLogs (for fetching the
-      #                     deployment heights)
-      # private-key       : bash expression that evaluates to the private key to use for deployments
-      # weth              : address of the WETH equivalent on this chain, to use for ucs03-zkgm
+      # name                  : plaintext name of network
+      # chain-id              : chain id of the network
+      # rpc-url               : rpc url for this network, should support full eth_getLogs (for fetching the
+      #                         deployment heights)
+      # private-key           : bash expression that evaluates to the private key to use for deployments
       #
-      # verify            : whether this chain supports verification. defaults to true, if true then the
-      #                     following args are also read:
-      # verifier          : forge --verifier to use
-      # verification-key  : bash expression that evaluates to the verification key, this will be available
-      #                     in the $VERIFICATION_KEY env var
-      # verifier-url      : contract verification endpoint for this chain
+      # weth                  : ucs03 - address of the WETH equivalent on this chain
+      # rate-limit-enabled    : ucs03 - whether rate limiting is enabled for ucs03-zkgm
+      # native-token-name     : ucs03 - name of the native token on the chain, default to Ether
+      # native-token-symbol   : ucs03 - symbol of the native token on the chain, default to ETH
+      # native-token-decimals : ucs03 - number of decimal places for the native token, default to 18
+      #
+      # verify                : whether this chain supports verification. defaults to true, if true then the
+      #                         following args are also read:
+      # verifier              : forge --verifier to use
+      # verification-key      : bash expression that evaluates to the verification key, this will be available
+      #                         in the $VERIFICATION_KEY env var
+      # verifier-url          : contract verification endpoint for this chain
       networks = [
         # devnets
         {
@@ -277,6 +282,9 @@ _: {
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2";
           rate-limit-enabled = "false";
+          native-token-name = "Bitcorn";
+          native-token-symbol = "BTCN";
+          native-token-decimals = 18;
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -303,6 +311,9 @@ _: {
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x6969696969696969696969696969696969696969";
           rate-limit-enabled = "false";
+          native-token-name = "Bera";
+          native-token-symbol = "BERA";
+          native-token-decimals = 18;
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -361,6 +372,9 @@ _: {
           rpc-url = "https://mainnet.corn-rpc.com";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xda5dDd7270381A7C2717aD10D1c0ecB19e3CDFb2";
+          native-token-name = "Bitcorn";
+          native-token-symbol = "BTCN";
+          native-token-decimals = 18;
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -541,6 +555,9 @@ _: {
           private-key,
           weth,
           rate-limit-enabled ? "true",
+          native-token-name ? "Ether",
+          native-token-symbol ? "ETH",
+          native-token-decimals ? 18,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -568,6 +585,9 @@ _: {
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
+              NATIVE_TOKEN_NAME=${native-token-name} \
+              NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
+              NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
               PRIVATE_KEY=${private-key} \
               DEPLOYER="''${1:?deployer must be set to deploy with this script (first arg to this script)}" \
               FOUNDRY_LIBS='["libs"]' \
@@ -623,6 +643,9 @@ _: {
           private-key,
           weth,
           rate-limit-enabled ? "true",
+          native-token-name ? "Ether",
+          native-token-symbol ? "ETH",
+          native-token-decimals ? 18,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -650,6 +673,9 @@ _: {
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
+              NATIVE_TOKEN_NAME=${native-token-name} \
+              NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
+              NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
               PRIVATE_KEY=${private-key} \
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
@@ -717,6 +743,9 @@ _: {
           private-key,
           weth,
           rate-limit-enabled ? "true",
+          native-token-name ? "Ether",
+          native-token-symbol ? "ETH",
+          native-token-decimals ? 18,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -738,6 +767,9 @@ _: {
 
               WETH_ADDRESS=${weth} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
+              NATIVE_TOKEN_NAME=${native-token-name} \
+              NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
+              NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
                 nix run .#evm-contracts-addresses -- "$1" "$2" ${rpc-url}
 
               PROJECT_ROOT=$(pwd)
@@ -761,6 +793,9 @@ _: {
                     VERIFICATION_KEY=${verification-key} \
                     WETH_ADDRESS=${weth} \
                     RATE_LIMIT_ENABLED=${rate-limit-enabled} \
+                    NATIVE_TOKEN_NAME=${native-token-name} \
+                    NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
+                    NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
                     PRIVATE_KEY=${private-key} \
                     FOUNDRY_LIBS='["libs"]' \
                     FOUNDRY_PROFILE="script" \
@@ -787,6 +822,9 @@ _: {
           rpc-url,
           weth,
           rate-limit-enabled ? "true",
+          native-token-name ? "Ether",
+          native-token-symbol ? "ETH",
+          native-token-decimals ? 18,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -826,6 +864,9 @@ _: {
               VERIFICATION_KEY=${verification-key} \
               WETH_ADDRESS=${weth} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
+              NATIVE_TOKEN_NAME=${native-token-name} \
+              NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
+              NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
               DEPLOYER="$argc_deployer_pk" \
               SENDER="$argc_sender_pk" \
               PRIVATE_KEY=${private-key} \
@@ -853,6 +894,9 @@ _: {
           rpc-url,
           weth,
           rate-limit-enabled ? "true",
+          native-token-name ? "Ether",
+          native-token-symbol ? "ETH",
+          native-token-decimals ? 18,
 
           verify ? true,
           verifier ? if verify then throw "verifier must be set in order to verify" else "",
@@ -898,6 +942,9 @@ _: {
 
               WETH_ADDRESS=${weth} \
               RATE_LIMIT_ENABLED=${rate-limit-enabled} \
+              NATIVE_TOKEN_NAME=${native-token-name} \
+              NATIVE_TOKEN_SYMBOL=${native-token-symbol} \
+              NATIVE_TOKEN_DECIMALS=${toString native-token-decimals} \
               FOUNDRY_ETHERSCAN="$FOUNDRY_ETHERSCAN" \
               VERIFICATION_KEY=${verification-key} \
               DEPLOYER="$argc_deployer_pk" \
