@@ -103,5 +103,22 @@ Effect.runPromiseExit(
     )
 
     console.info("totalSupplyAtHeight:", totalSupplyAtHeight)
+
+    const minter = "xion1egp7k30mskfxmhy2awk677tnqdl6lfkfxhrwsv"
+    const { amount } = yield* Effect.tryPromise({
+      try: () => client.getBalance(minter, "uxion"),
+      catch: e =>{
+        console.error(`Failed to fetch balance for ${minter}: ${String(e)}`)
+      } 
+    })
+    console.info("Balance: ", amount)
+
+    const amountAtHeight = yield* Effect.tryPromise({
+      try: () => extClient.getBalanceAtHeight(minter, "uxion", 3250775),
+      catch: e =>{
+        console.error(`Failed to fetch balance for ${minter}: ${String(e)}`)
+      } 
+    })
+    console.info("Balance at height: ", amountAtHeight)
   }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))

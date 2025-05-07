@@ -34,4 +34,29 @@ export class ExtendedCosmWasmClient extends CosmWasmClient {
 
     return resp.data
   }
+
+  async getBalanceAtHeight(address: string, denom: string, height: number) {
+    const base = this.restUrl
+    const url = `${base}/cosmos/bank/v1beta1/balances/${address}`
+    const resp = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        "x-cosmos-block-height": height.toString()
+      }
+    })
+
+    if (!resp.ok) {
+      throw new Error(`HTTP ${resp.status}: ${await resp.text()}`)
+    }
+
+    const data = await resp.json()
+
+    const balance = data.balances.find((b: { denom: string }) => b.denom === denom)
+    if (balance) {
+      return BigInt(balance.amount)
+    } else {
+      return null // No balance found for this denom
+    }
+  }
+
 }
