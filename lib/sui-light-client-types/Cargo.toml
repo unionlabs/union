@@ -18,13 +18,12 @@ bincode              = { workspace = true, features = ["alloc", "derive"], optio
 blake2               = "0.10.6"
 roaring = "0.10.12"
 serde                = { workspace = true, optional = true, features = ["derive"] }
-serde_with           = { workspace = true }
 thiserror            = { workspace = true }
 typenum              = { version = "1.17.0", default-features = false }
 unionlabs            = { workspace = true }
 unionlabs-primitives = { workspace = true, features = ["base58"] }
 cosmwasm-std = { workspace = true, features = ["cosmwasm_2_1"]}
-serde_repr = "0.1.20"
+serde_repr = { version = "0.1.20", optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
@@ -34,4 +33,4 @@ default = ["serde"]
 
 bincode = ["dep:bincode", "unionlabs/bincode"]
 ethabi  = ["unionlabs/ethabi", "dep:alloy"]
-serde   = ["dep:serde"]
+serde   = ["dep:serde", "dep:serde_repr"]

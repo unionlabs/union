@@ -1,5 +1,4 @@
 use cosmwasm_std::{testing::mock_dependencies, Api, HashFunction, BLS12_381_G2_GENERATOR};
-use serde::{Deserialize, Serialize};
 
 use crate::{
     checkpoint_summary::CheckpointSummary,
@@ -7,7 +6,8 @@ use crate::{
     Intent, IntentMessage, U64,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Committee {
     pub epoch: U64,
     pub voting_rights: Vec<(AuthorityPublicKeyBytes, U64)>,
@@ -23,7 +23,7 @@ impl Committee {
 
         let mut seen = std::collections::BTreeSet::new();
 
-        for authority_index in &sign_info.signers_map {
+        for authority_index in &sign_info.signers_map.0 {
             if !seen.insert(authority_index) {
                 continue;
             }

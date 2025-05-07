@@ -1,7 +1,5 @@
 use checkpoint_summary::CheckpointSummary;
 use crypto::AuthorityStrongQuorumSignInfo;
-use serde::{Deserialize, Serialize};
-use serde_repr::{Deserialize_repr, Serialize_repr};
 
 pub mod checkpoint_summary;
 pub mod client_state;
@@ -11,19 +9,28 @@ pub mod crypto;
 pub mod digest;
 pub mod header;
 
-#[derive(Debug, PartialEq, Eq, Serialize, Deserialize, Clone, Hash)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Intent {
     pub scope: IntentScope,
     pub version: IntentVersion,
     pub app_id: AppId,
 }
-#[derive(Serialize_repr, Deserialize_repr, Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
+)]
 #[repr(u8)]
 pub enum IntentVersion {
     V0 = 0,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
+)]
 #[repr(u8)]
 pub enum AppId {
     Sui = 0,
@@ -31,7 +38,11 @@ pub enum AppId {
     Consensus = 2,
 }
 
-#[derive(Serialize_repr, Deserialize_repr, Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[derive(Copy, Clone, PartialEq, Eq, Debug, Hash)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde_repr::Serialize_repr, serde_repr::Deserialize_repr)
+)]
 #[repr(u8)]
 pub enum IntentScope {
     TransactionData = 0,         // Used for a user signature on a transaction data.
@@ -46,16 +57,19 @@ pub enum IntentScope {
     DiscoveryPeers = 9,    // Used for reporting peer addresses in discovery.
 }
 
-#[derive(Debug, PartialEq, Eq, Serialize, Clone, Hash, Deserialize)]
+#[derive(Debug, PartialEq, Eq, Clone, Hash)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct IntentMessage<T> {
     pub intent: Intent,
     pub value: T,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct U64(pub u64);
 
-impl Serialize for U64 {
+#[cfg(feature = "serde")]
+impl serde::Serialize for U64 {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -68,7 +82,8 @@ impl Serialize for U64 {
     }
 }
 
-impl<'de> Deserialize<'de> for U64 {
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for U64 {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -83,33 +98,12 @@ impl<'de> Deserialize<'de> for U64 {
     }
 }
 
-// fn verify_secure<T: Serialize>(
-//     &self,
-//     data: &T,
-//     intent: Intent,
-//     committee: &Committee,
-// ) -> SuiResult {
-//     let mut obligation = VerificationObligation::default();
-//     let idx = obligation.add_message(data, self.epoch, intent);
-//     self.add_to_verification_obligation(committee, &mut obligation, idx)?;
-//     obligation.verify_all()?;
-//     Ok(())
-// }
-
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct CertifiedCheckpointSummary {
     data: CheckpointSummary,
     auth_signature: AuthorityStrongQuorumSignInfo,
 }
-
-// #[serde_as]
-// #[derive(Debug, Deserialize)]
-// pub struct AuthorityQuorumSignInfo {
-//     pub epoch: U64,
-//     pub signature: FixedBytes<48, Base64>,
-//     #[serde_as(as = "SuiBitmap")]
-//     pub signers_map: RoaringBitmap,
-// }
 
 #[cfg(test)]
 mod tests {
