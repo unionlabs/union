@@ -5,6 +5,7 @@ import {
   HexFromString,
 } from "@unionlabs/sdk/schema"
 import { Either, Schema as S } from "effect"
+import { isHex } from "viem"
 import { assert, describe, it } from "vitest"
 
 /**
@@ -38,7 +39,7 @@ describe("Bech32", () => {
     "li1dgmt3",
     Buffer.from("6465316c67377774ff", "hex").toString("binary"),
   ])("fails invalid address %s", s => {
-    assert.isTrue(Either.isLeft(S.decodeEither(Bech32)(s)))
+    assert.isTrue(Either.isLeft(S.decodeUnknownEither(Bech32)(s)))
   })
 
   it("Bech32FromAddressCanonicalBytesWithPrefix", () => {
@@ -50,6 +51,6 @@ describe("Bech32", () => {
 
     const result = S.decodeUnknownSync(transform)(addr)
 
-    assert.isTrue(true)
+    assert.isTrue(isHex(result))
   })
 })

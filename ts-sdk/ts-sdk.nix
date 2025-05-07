@@ -40,6 +40,7 @@ _: {
             cp -r ./ts-sdk/* $out
           '';
           checkPhase = ''
+            pnpm run --filter=@unionlabs/sdk check
             pnpm run --filter=@unionlabs/sdk test
           '';
         };
