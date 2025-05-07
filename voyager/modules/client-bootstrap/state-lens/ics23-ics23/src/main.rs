@@ -7,11 +7,15 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use state_lens_ics23_ics23_light_client_types::{
-    client_state::LegacyExtra, ClientState, ConsensusState,
+    client_state::{Extra, LegacyExtra, VersionedExtra, VersionedExtraV1},
+    ClientState, ConsensusState,
 };
 use tracing::instrument;
 use unionlabs::{
-    bech32::Bech32, ibc::core::client::height::Height, primitives::H256, ErrorReporter,
+    bech32::Bech32,
+    ibc::core::client::height::Height,
+    primitives::{Bytes, H256},
+    ErrorReporter,
 };
 use voyager_message::{
     ensure_null, into_value,
@@ -36,7 +40,8 @@ pub struct Module {
 pub struct ClientStateConfig {
     pub l1_client_id: ClientId,
     pub l2_client_id: ClientId,
-    pub l2_contract_address: Bech32<H256>,
+    pub store_key: Bytes,
+    pub key_prefix_storage: Bytes,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,9 +86,10 @@ impl ClientBootstrapModuleServer for Module {
             l2_chain_id: self.l2_chain_id.to_string(),
             l2_client_id: config.l2_client_id,
             l2_latest_height: height.height(),
-            extra: LegacyExtra {
-                contract_address: *config.l2_contract_address.data(),
-            },
+            extra: Extra::Versioned(VersionedExtra::V1(VersionedExtraV1 {
+                store_key: config.store_key,
+                key_prefix_storage: config.key_prefix_storage,
+            })),
         }))
     }
 

@@ -23,89 +23,101 @@ pub struct Extra {
 
 #[cfg(feature = "ethabi")]
 mod ethabi {
-    use alloy::{
-        dyn_abi::SolType,
-        sol_types::{private::SolTypeValue, SolValue},
-    };
+    use alloy::sol_types::SolValue;
+    use state_lens_light_client_types::client_state::ethabi::{DecodeExtra, ExtraToTokens};
 
     use super::*;
 
-    impl SolType for Extra {
-        type RustType = Self;
-
-        type Token<'a> = <<<Self as AsTuple>::Tuple as SolValue>::SolType as SolType>::Token<'a>;
-
-        const SOL_NAME: &'static str = "Extra";
-
-        const ENCODED_SIZE: Option<usize> = None;
-
-        const PACKED_ENCODED_SIZE: Option<usize> = None;
-
-        fn valid_token(_token: &Self::Token<'_>) -> bool {
-            true
-        }
-
-        fn detokenize(
-            (timestamp_offset, state_root_offset, storage_root_offset): Self::Token<'_>,
-        ) -> Self::RustType {
-            Self {
-                timestamp_offset: <<u16 as SolValue>::SolType as SolType>::detokenize(
-                    timestamp_offset,
-                ),
-                state_root_offset: <<u16 as SolValue>::SolType as SolType>::detokenize(
-                    state_root_offset,
-                ),
-                storage_root_offset: <<u16 as SolValue>::SolType as SolType>::detokenize(
-                    storage_root_offset,
-                ),
-            }
+    impl DecodeExtra for Extra {
+        fn decode_extra(
+            decoder: &mut alloy::dyn_abi::Decoder,
+        ) -> Result<Self, alloy::dyn_abi::Error> {
+            Ok(Self {
+                timestamp_offset: u16::detokenize(decoder.take_word()?.into()),
+                state_root_offset: u16::detokenize(decoder.take_word()?.into()),
+                storage_root_offset: u16::detokenize(decoder.take_word()?.into()),
+            })
         }
     }
 
-    impl SolValue for Extra {
-        type SolType = Self;
-    }
-
-    impl SolTypeValue<Self> for Extra {
-        fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
-            (
-                <<u16 as SolValue>::SolType as SolType>::tokenize(&self.timestamp_offset),
-                <<u16 as SolValue>::SolType as SolType>::tokenize(&self.state_root_offset),
-                <<u16 as SolValue>::SolType as SolType>::tokenize(&self.storage_root_offset),
-            )
-        }
-
-        fn stv_abi_encode_packed_to(&self, _out: &mut Vec<u8>) {
-            todo!()
-        }
-
-        fn stv_eip712_data_word(&self) -> alloy::sol_types::Word {
-            todo!()
+    impl ExtraToTokens for Extra {
+        fn encode_extra_to_dyn_value(self) -> Vec<alloy::dyn_abi::DynSolValue> {
+            vec![
+                self.timestamp_offset.into(),
+                self.state_root_offset.into(),
+                self.storage_root_offset.into(),
+            ]
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use alloy::dyn_abi::SolType;
+    use hex_literal::hex;
+    use ibc_union_spec::ClientId;
+    use unionlabs::{
+        encoding::{Bincode, EthAbi},
+        test_utils::assert_codec_iso_bytes,
+    };
+
+    use super::*;
+
+    #[test]
+    fn bincode() {
+        // voyager rpc -r voy.run client-state 17000 3
+        let bz = hex!(
+            "0800000000000000" // l2_chain_id length (u64, 8)
+            "3231303030303031" // l2_chain_id ("21000001")
+            "01000000"         // l1_client_id (u32, 1)
+            "07000000"         // l2_client_id (u32, 7)
+            "489a030000000000" // l2_latest_height (u32, 1)
+            "5800"             // timestamp_offset (u16, 88)
+            "0000"             // state_root_offset (u16, 0)
+            "2000"             // storage_root_offset (u16, 32)
+        );
+
+        let value = ClientState {
+            l2_chain_id: "21000001".to_owned(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(7),
+            l2_latest_height: 236104,
+            extra: Extra {
+                timestamp_offset: 88,
+                state_root_offset: 0,
+                storage_root_offset: 32,
+            },
+        };
+
+        assert_codec_iso_bytes::<_, Bincode>(&value, &bz);
+    }
 
     #[test]
     fn ethabi() {
-        alloy::sol! {
-            struct SolClientState {
-                string l2ChainId;
-                uint32 l1ClientId;
-                uint32 l2ClientId;
-                uint64 l2LatestHeight;
-                uint16 timestampOffset;
-                uint16 stateRootOffset;
-                uint16 storageRootOffset;
-            }
-        }
+        // voyager rpc -r voy.run client-state 17000 3
+        let bz = hex!(
+            "00000000000000000000000000000000000000000000000000000000000000e0" // l2_chain_id offset (224, 7 slots)
+            "0000000000000000000000000000000000000000000000000000000000000001" // l1_client_id
+            "0000000000000000000000000000000000000000000000000000000000000001" // l2_client_id
+            "00000000000000000000000000000000000000000000000000000000007e36fd" // l2_latest_height
+            "0000000000000000000000000000000000000000000000000000000000000078" // timestamp_offset
+            "0000000000000000000000000000000000000000000000000000000000000020" // state_root_offset
+            "0000000000000000000000000000000000000000000000000000000000000040" // storage_root_offset
+            "0000000000000000000000000000000000000000000000000000000000000008" // l2_chain_id length (8)
+            "3131313535313131000000000000000000000000000000000000000000000000" // l2_chain_id data
+        );
 
-        let bz = alloy::hex::decode("000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000030000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000072734500000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000083131313535313131000000000000000000000000000000000000000000000000").unwrap();
+        let value = ClientState {
+            l2_chain_id: "11155111".to_owned(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(1),
+            l2_latest_height: 8271613,
+            extra: Extra {
+                timestamp_offset: 120,
+                state_root_offset: 32,
+                storage_root_offset: 64,
+            },
+        };
 
-        SolClientState::abi_decode(&bz, true).unwrap();
-        assert!(SolClientState::abi_decode_params(&bz, true).is_err());
+        assert_codec_iso_bytes::<_, EthAbi>(&value, &bz);
     }
 }

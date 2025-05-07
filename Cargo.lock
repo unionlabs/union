@@ -12618,6 +12618,7 @@ dependencies = [
  "bincode 2.0.1",
  "consensus-primitives",
  "hex-literal",
+ "ibc-union-spec",
  "protos",
  "serde",
  "state-lens-ics23-mpt-light-client-types",

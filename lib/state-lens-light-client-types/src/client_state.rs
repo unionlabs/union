@@ -29,22 +29,40 @@ use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 ///
 /// ## EthAbi
 ///
-/// EthAbi encoding is supported for this structure. This is achieved by flattening the tuple of
-/// `Extra` into the tuple of `ClientState`.
+/// EthAbi encoding is supported for this structure through the [`DecodeExtra`] and
+/// [`ExtraToTokens`] traits.
 ///
-/// The standalone client state tuple:
+/// The following is an example implementation of these traits for `Extra`:
+///
+/// ```rust,ignore
+/// // decodes as (uint64,string)
+/// impl DecodeExtra for Extra {
+///     fn decode_extra(
+///         decoder: &mut alloy::dyn_abi::Decoder,
+///     ) -> Result<Self, alloy::dyn_abi::Error> {
+///         Ok(Self {
+///             a: u64::detokenize(decoder.take_word()?.into()),
+///             b: String::detokenize(decoder.decode::<PackedSeqToken>()?),
+///         })
+///     }
+/// }
+///
+///
+/// // encodes as (uint64,string)
+/// impl ExtraToTokens for Extra {
+///     fn encode_extra_to_dyn_value(self) -> Vec<DynSolValue> {
+///         vec![self.a.into(), self.b.into()]
+///     }
+/// }
+/// ```
+///
+/// With these implementations, and the standalone client state tuple:
 ///
 /// ```txt
 /// (string,uint32,uint32,uint64)
 /// ```
 ///
-/// And the tuple of `Extra`:
-///
-/// ```txt
-/// (uint64,string)
-/// ```
-///
-/// This then becomes:
+/// ClientState<Extra> is then encoded and decoded as if it were this tuple:
 ///
 /// ```txt
 /// (string,uint32,uint32,uint64,uint64,string)
@@ -63,12 +81,12 @@ use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 /// }
 /// ```
 ///
-/// The expected encoding of this tuple is ***unprefixed***. In solidity, `abi.encode(value)`
-/// ***MUST NOT*** be used, as this will wrap the entire structure in a single item tuple. Instead,
-/// use `abi.encode(value.l2_chain_id,value.l1_client_id, value.l2_client_id,
-/// value.l2_latest_height, value.a, value.b)`. Although this is more verbose, it results in a
-/// consistent and predictable encoding and decoding. This also enables certain optimizations in
-/// solidity, such as directly decoding the state from calldata:
+/// The encoding of this tuple is ***unprefixed***. In solidity, `abi.encode(value)` ***MUST NOT***
+/// be used, as this will wrap the entire structure in a single item tuple. Instead, use
+/// `abi.encode(value.l2_chain_id,value.l1_client_id, value.l2_client_id, value.l2_latest_height,
+/// value.a, value.b)`. Although this is more verbose, it results in a consistent and predictable
+/// encoding and decoding. This also enables certain optimizations in solidity, such as directly
+/// decoding the state from calldata:
 ///
 /// ```solidity
 /// ClientState calldata clientState;
@@ -77,12 +95,8 @@ use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 /// }
 /// ```
 ///
-/// In rust, `abi_encode_params` ***MUST*** be used. This has the same effect as the per-field
-/// `abi.encode` in solidity.
-///
-/// NOTE: For ethabi encoding, `Extra` must implement [`SolType`][alloy::sol_types::SolType],
-/// [`SolValue`][alloy::sol_types::SolValue], and
-/// [`SolTypeValue`][alloy::sol_types::private::SolTypeValue].
+/// In rust, `Encode<EthAbi>` ***MUST*** be used (as it uses `abi_encode_params` internally). This
+/// has the same effect as the per-field `abi.encode` in solidity.
 ///
 /// ## JSON
 ///
@@ -194,10 +208,7 @@ where
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use alloy::{
-        dyn_abi::{
-            abi::token::{DynSeqToken, FixedSeqToken, PackedSeqToken},
-            Decoder, DynSolValue, DynToken, Encoder,
-        },
+        dyn_abi::{abi::token::PackedSeqToken, Decoder, DynSolValue},
         sol_types::SolValue,
     };
     use ibc_union_spec::ClientId;
@@ -205,10 +216,14 @@ pub mod ethabi {
 
     use crate::ClientState;
 
+    /// Decode this type from the given decoder. This allows for dynamic decoding depending on the
+    /// values decoded.
     pub trait DecodeExtra: Sized {
         fn decode_extra(decoder: &mut Decoder) -> Result<Self, alloy::dyn_abi::Error>;
     }
 
+    /// Encode this value into a stream of tokens. This allows for dynamic encoding depending on the
+    /// values of self.
     pub trait ExtraToTokens: Sized {
         fn encode_extra_to_dyn_value(self) -> Vec<DynSolValue>;
     }
@@ -265,7 +280,6 @@ mod tests {
     };
     use unionlabs::{
         encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi, Json},
-        primitives::Bytes,
         test_utils::assert_codec_iso,
         tuple::AsTuple,
     };

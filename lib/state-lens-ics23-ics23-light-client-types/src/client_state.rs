@@ -3,30 +3,46 @@ use unionlabs::{
     tuple::AsTuple,
 };
 
-pub type ClientState = state_lens_light_client_types::ClientState<LegacyExtra>;
+pub type ClientState = state_lens_light_client_types::ClientState<Extra>;
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(untagged)
+)]
 pub enum Extra {
     Legacy(LegacyExtra),
     Versioned(VersionedExtra),
 }
 
 #[derive(Debug, Clone, PartialEq, AsTuple)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct LegacyExtra {
     /// ibc contract that is running on l2
     pub contract_address: H256,
 }
 
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case")
+)]
 pub enum VersionedExtra {
     V1(VersionedExtraV1),
 }
 
-#[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(Debug, Clone, PartialEq, AsTuple)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
 pub struct VersionedExtraV1 {
     pub store_key: Bytes,
     pub key_prefix_storage: Bytes,
@@ -35,11 +51,10 @@ pub struct VersionedExtraV1 {
 #[cfg(feature = "ethabi")]
 mod ethabi {
     use alloy::{
-        dyn_abi::{abi::token::PackedSeqToken, DynSolValue, SolType, Word},
+        dyn_abi::{abi::token::PackedSeqToken, DynSolValue, Word},
         primitives::U256,
-        sol_types::{private::SolTypeValue, SolValue},
+        sol_types::SolValue,
     };
-    use ibc_union_spec::ClientId;
     use state_lens_light_client_types::client_state::ethabi::{DecodeExtra, ExtraToTokens};
 
     use super::*;
@@ -108,17 +123,17 @@ mod ethabi {
 
 #[cfg(test)]
 mod tests {
-    use alloy::{hex, sol_types::SolValue};
+    use alloy::hex;
     use ibc_union_spec::ClientId;
     use unionlabs::{
-        encoding::{DecodeAs, EncodeAs, EthAbi},
+        encoding::{EthAbi, Json},
         test_utils::assert_codec_iso_bytes,
     };
 
     use super::*;
 
     #[test]
-    fn legacy() {
+    fn legacy_ethabi() {
         // voyager rpc -r voy.run client-state 17000 4 --height 3794906
         let bz = hex!(
             "00000000000000000000000000000000000000000000000000000000000000a0" // l2_chain_id offset (160, 5 slots)
@@ -147,7 +162,7 @@ mod tests {
     }
 
     #[test]
-    fn v1() {
+    fn v1_ethabi() {
         let bz = hex!(
             "00000000000000000000000000000000000000000000000000000000000000e0" // l2_chain_id offset (224, 7 slots)
             "0000000000000000000000000000000000000000000000000000000000000001" // l1_client_id
@@ -186,5 +201,48 @@ mod tests {
         };
 
         assert_codec_iso_bytes::<_, EthAbi>(&value, &bz);
+    }
+
+    #[test]
+    fn legacy_json() {
+        // voyager rpc -r voy.run client-state 17000 4 --height 3794906 --decode
+        let json = r#"{"l2_chain_id":"bbn-test-5","l1_client_id":1,"l2_client_id":6,"l2_latest_height":923715,"contract_address":"0xbcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"}"#;
+
+        let value = state_lens_light_client_types::ClientState::<Extra> {
+            l2_chain_id: "bbn-test-5".to_string(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(6),
+            l2_latest_height: 923715,
+            extra: Extra::Legacy(LegacyExtra {
+                contract_address: hex!(
+                    "0xbcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"
+                )
+                .into(),
+            }),
+        };
+
+        assert_codec_iso_bytes::<_, Json>(&value, json.as_bytes());
+    }
+
+    #[test]
+    fn v1_json() {
+        let json = r#"{"l2_chain_id":"bbn-test-5","l1_client_id":1,"l2_client_id":6,"l2_latest_height":921807,"v1":{"store_key":"0x65766d","key_prefix_storage":"0x03bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"}}"#;
+
+        let value = state_lens_light_client_types::ClientState::<Extra> {
+            l2_chain_id: "bbn-test-5".to_string(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(6),
+            l2_latest_height: 921807,
+            extra: Extra::Versioned(VersionedExtra::V1(VersionedExtraV1 {
+                store_key: b"evm".into(),
+                key_prefix_storage: hex!(
+                    "03"
+                    "bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"
+                )
+                .into(),
+            })),
+        };
+
+        assert_codec_iso_bytes::<_, Json>(&value, json.as_bytes());
     }
 }
