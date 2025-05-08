@@ -19,6 +19,9 @@ let
         PRIVATE_KEY=0x${builtins.readFile ./../genesis/devnet-eth/dev-key0.prv} \
         FOUNDRY_PROFILE="script" \
         BYPASS_GITREV=1 \
+        NATIVE_TOKEN_NAME=Ether \
+        NATIVE_TOKEN_DECIMALS=18 \
+        NATIVE_TOKEN_SYMBOL=ETH \
         forge script scripts/Deploy.s.sol:DeployDeployerAndIBC -vvv --rpc-url http://geth:8545 --broadcast ${
           pkgs.lib.optionalString (
             pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == null)
