@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use axum::async_trait;
 use color_eyre::eyre::{eyre, Report};
@@ -124,7 +124,39 @@ impl TmBlockHandle {
     }
 }
 
-// checking if the _contract_address of the event exists in active_contracts.
+#[derive(Clone, Debug)]
+pub struct ActiveContracts(HashMap<String, HashSet<String>>);
+
+impl ActiveContracts {
+    pub fn new() -> Self {
+        Self(HashMap::new())
+    }
+
+    pub fn register(&mut self, address: String, flow: String) {
+        self.0.entry(address).or_default().insert(flow);
+    }
+
+    pub fn flows(&self, address: &str) -> Option<&HashSet<String>> {
+        self.0.get(address)
+    }
+
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+}
+
+pub struct EventInFlows {
+    pub event: PgEvent,
+    pub flows: HashSet<String>,
+}
+
+impl EventInFlows {
+    pub fn new(event: PgEvent, flows: HashSet<String>) -> EventInFlows {
+        EventInFlows { event, flows }
+    }
+}
+
+// extracting the _contract_address of the event (if it exists in active_contracts).
 // evaluating a json like below. we only include if:
 // - event type starts with 'wasm-'
 // - event attribute with key '_contract_address' exist and it's value exists in provided active contracts
@@ -146,11 +178,7 @@ impl TmBlockHandle {
 //    list of events as above (we ignore the arrays, because they are not related to a transaction)
 // ]
 //
-fn should_include_event(
-    reference: &BlockReference,
-    event_data: &Value,
-    active_contracts: &HashSet<String>,
-) -> bool {
+fn wasm_contract_address(reference: &BlockReference, event_data: &Value) -> Option<String> {
     // the event property that contains the wasm contract address that emitted the event
     const TYPE: &str = "type";
 
@@ -174,7 +202,7 @@ fn should_include_event(
         trace!(
             "{reference}: event is not of type object (probably a block event) => do not include"
         );
-        return false;
+        return None;
     };
 
     // 1. fetch the event type.
@@ -183,13 +211,13 @@ fn should_include_event(
             "{reference}: unexpected: event has no type with String value: {:?} => do not include",
             data.get(TYPE)
         );
-        return false;
+        return None;
     };
 
     // 2. starts with 'wasm-'
     if !event_type.starts_with(TYPE_WASM_PREFIX) && event_type != TYPE_WASM_EVENT {
         trace!("{reference}: not a wasm event type: {event_type} => do not include");
-        return false;
+        return None;
     }
 
     // 3. fetch the attributes
@@ -198,7 +226,7 @@ fn should_include_event(
             "{reference}: unexpected: event has no attributes with Array value: {:?} => do not include",
             data.get(ATTRIBUTES)
         );
-        return false;
+        return None;
     };
 
     // 4. evaluate the attributes
@@ -233,19 +261,15 @@ fn should_include_event(
             continue;
         };
 
-        // 8. check if active
-        let active = active_contracts.contains(event_contract_address);
-        trace!("{reference}: found event contract address: {event_contract_address} => include: {active}");
-
-        // found the contract address: include if active
-        return active;
+        // 8. found contract address
+        return Some(event_contract_address.to_string());
     }
 
     trace!(
         "{reference}: unexpected: there is no contract address in a wasm event => do not include"
     );
 
-    false
+    None
 }
 
 #[async_trait]
@@ -276,12 +300,20 @@ impl BlockHandle for TmBlockHandle {
 
         let filtered_events = events
             .into_iter()
-            .filter(|event| should_include_event(&self.reference, &event.data, &active_contracts))
+            .filter_map(|event| {
+                wasm_contract_address(&self.reference, &event.data)
+                    .map(|contract_address| (event, contract_address))
+            })
+            .filter_map(|(event, contract_address)| {
+                active_contracts
+                    .flows(&contract_address)
+                    .map(move |flows| EventInFlows::new(event.clone(), flows.clone()))
+            })
             .collect_vec();
 
         let transaction_hashes_of_filtered_events = filtered_events
             .iter()
-            .filter_map(|event| event.transaction_hash.clone())
+            .filter_map(|event| event.event.transaction_hash.clone())
             .collect::<HashSet<String>>();
 
         let filtered_transactions = transactions
@@ -323,163 +355,51 @@ impl BlockHandle for TmBlockHandle {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
-
     use serde_json::{json, Value};
     use time::OffsetDateTime;
 
-    use crate::indexer::{api::BlockReference, tendermint::block_handle::should_include_event};
+    use crate::indexer::{api::BlockReference, tendermint::block_handle::wasm_contract_address};
 
     #[tokio::test]
-    async fn true_when_contract_address_is_active() {
-        let should_include = get_should_include_event_result(
-            &json!(
+    async fn none_when_there_is_no_contract_address_attribute() {
+        let actual = get_wasm_contract_address(&json!(
+            {
+                "type": "wasm-packet_send",
+                "attributes": [
                 {
-                    "type": "wasm-packet_send",
-                    "attributes": [
-                    {
-                        "key": "_contract_address",
-                        "index": true,
-                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-                    }
-                    ]
+                    "key": "not-a-contract-address",
+                    "index": true,
+                    "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
                 }
-            ),
-            &HashSet::from([
-                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
-                "some-other-contract".to_string(),
-            ]),
-        );
-
-        assert!(should_include);
-    }
-
-    #[tokio::test]
-    async fn true_when_contract_address_is_active_in_a_wasm_event() {
-        let should_include = get_should_include_event_result(
-            &json!(
-                {
-                    "type": "wasm",
-                    "attributes": [
-                    {
-                        "key": "_contract_address",
-                        "index": true,
-                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-                    }
-                    ]
-                }
-            ),
-            &HashSet::from([
-                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
-                "some-other-contract".to_string(),
-            ]),
-        );
-
-        assert!(should_include);
-    }
-
-    #[tokio::test]
-    async fn false_when_contract_address_is_not_active() {
-        let should_include = get_should_include_event_result(
-            &json!(
-                {
-                    "type": "wasm-packet_send",
-                    "attributes": [
-                    {
-                        "key": "_contract_address",
-                        "index": true,
-                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-                    }
-                    ]
-                }
-            ),
-            &HashSet::from([
-                "one-contract".to_string(),
-                "some-other-contract".to_string(),
-            ]),
-        );
-
-        assert!(!should_include);
-    }
-
-    #[tokio::test]
-    async fn false_when_there_is_no_contract_address_attribute() {
-        let should_include = get_should_include_event_result(
-            &json!(
-                {
-                    "type": "wasm-packet_send",
-                    "attributes": [
-                    {
-                        "key": "not-a-contract-address",
-                        "index": true,
-                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-                    }
-                    ]
-                }
-            ),
-            &HashSet::from([
-                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
-                "some-other-contract".to_string(),
-            ]),
-        );
-
-        assert!(!should_include);
-    }
-
-    #[tokio::test]
-    async fn false_when_type_is_not_wasm() {
-        let should_include = get_should_include_event_result(
-            &json!(
-                {
-                    "type": "wasmXpacket_send", // wasm events start with `wasm-`.
-                    "attributes": [
-                    {
-                        "key": "_contract_address",
-                        "index": true,
-                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-                    }
-                    ]
-                }
-            ),
-            &HashSet::from([
-                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
-                "some-other-contract".to_string(),
-            ]),
-        );
-
-        assert!(!should_include);
-    }
-
-    #[tokio::test]
-    async fn false_when_data_is_array() {
-        let should_include = get_should_include_event_result(
-            &json!(
-                [
-                    {
-                        "type": "wasm-packet_send",
-                        "attributes": [
-                        {
-                            "key": "_contract_address",
-                            "index": true,
-                            "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-                        }
-                        ]
-                    }
                 ]
-            ),
-            &HashSet::from([
-                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
-                "some-other-contract".to_string(),
-            ]),
-        );
+            }
+        ));
 
-        assert!(!should_include);
+        assert_eq!(actual, None);
     }
 
     #[tokio::test]
-    async fn true_when_first_contract_address_is_active_others_are_ignored() {
-        let should_include = get_should_include_event_result(
-            &json!(
+    async fn none_when_type_is_not_wasm() {
+        let actual = get_wasm_contract_address(&json!(
+            {
+                "type": "wasmXpacket_send", // wasm events start with `wasm-`.
+                "attributes": [
+                {
+                    "key": "_contract_address",
+                    "index": true,
+                    "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                }
+                ]
+            }
+        ));
+
+        assert_eq!(actual, None);
+    }
+
+    #[tokio::test]
+    async fn none_when_data_is_array() {
+        let actual = get_wasm_contract_address(&json!(
+            [
                 {
                     "type": "wasm-packet_send",
                     "attributes": [
@@ -487,58 +407,45 @@ mod tests {
                         "key": "_contract_address",
                         "index": true,
                         "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-                    },
-                    {
-                        "key": "_contract_address",
-                        "index": true,
-                        "value": "ignored_contract_address"
                     }
                     ]
                 }
-            ),
-            &HashSet::from([
-                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
-                "some-other-contract".to_string(),
-            ]),
-        );
+            ]
+        ));
 
-        assert!(should_include);
+        assert_eq!(actual, None);
     }
 
     #[tokio::test]
-    async fn true_when_first_contract_address_is_active_in_a_wasm_event_others_are_ignored() {
-        let should_include = get_should_include_event_result(
-            &json!(
+    async fn extracts_first_contract_address_others_are_ignored() {
+        let actual = get_wasm_contract_address(&json!(
+            {
+                "type": "wasm",
+                "attributes": [
                 {
-                    "type": "wasm",
-                    "attributes": [
-                    {
-                        "key": "_contract_address",
-                        "index": true,
-                        "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
-                    },
-                    {
-                        "key": "_contract_address",
-                        "index": true,
-                        "value": "ignored_contract_address"
-                    }
-                    ]
+                    "key": "_contract_address",
+                    "index": true,
+                    "value": "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme"
+                },
+                {
+                    "key": "_contract_address",
+                    "index": true,
+                    "value": "ignored_contract_address"
                 }
-            ),
-            &HashSet::from([
-                "union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string(),
-                "some-other-contract".to_string(),
-            ]),
-        );
+                ]
+            }
+        ));
 
-        assert!(should_include);
+        assert_eq!(
+            actual,
+            Some("union17e93ukhcyesrvu72cgfvamdhyracghrx4f7ww89rqjg944ntdegscxepme".to_string())
+        );
     }
 
-    fn get_should_include_event_result(data: &Value, contracts: &HashSet<String>) -> bool {
-        should_include_event(
+    fn get_wasm_contract_address(data: &Value) -> Option<String> {
+        wasm_contract_address(
             &BlockReference::new(0, "hash".to_string(), OffsetDateTime::now_utc()),
             data,
-            contracts,
         )
     }
 }
