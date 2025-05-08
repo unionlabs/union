@@ -1,5 +1,7 @@
+#![feature(let_chains)]
+
 use std::{
-    collections::{BTreeMap, VecDeque},
+    collections::{BTreeMap, HashSet, VecDeque},
     time::{SystemTime, UNIX_EPOCH},
 };
 
@@ -10,6 +12,7 @@ use alloy::{
     sol_types::{SolCall, SolValue},
 };
 use crc::{Crc, CRC_32_ISO_HDLC};
+use futures::TryStreamExt;
 use ibc_union_spec::{
     event::{FullEvent, WriteAck},
     IbcUnion,
@@ -21,16 +24,22 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tracing::{debug, info, instrument, warn};
+use sqlx::{
+    postgres::{PgPoolOptions, PgRow},
+    prelude::FromRow,
+    Executor, PgPool, Row,
+};
+use tracing::{debug, info, info_span, instrument, trace, warn, Instrument};
 use ucs03_zkgm::com::{Ack, BatchAck, FungibleAssetOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
 use unionlabs::{
     self,
+    bech32::Bech32,
     cosmos::tx::{tx_body::TxBody, tx_raw::TxRaw},
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     encoding::{DecodeAs, Proto},
     google::protobuf::any::RawAny,
     never::Never,
-    primitives::{ByteArrayExt, H32},
+    primitives::{ByteArrayExt, Bytes, H160, H32},
     traits::Member,
     ErrorReporter,
 };
@@ -38,7 +47,7 @@ use voyager_message::{
     data::Data,
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, IbcSpec},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_plugin_transaction_batch::data::{BatchableEvent, EventBatch};
 use voyager_vm::{call, data, noop, pass::PassResult, BoxDynError, Op};
@@ -79,8 +88,13 @@ pub mod call {
 pub struct Module {
     drop_protocol_fill_acks: bool,
     drop_invalid_checksum: bool,
+    drop_suspicious: bool,
     /// chain id -> provider
     providers: BTreeMap<ChainId, ChainProvider>,
+    db: PgPool,
+    whitelisted_addresses: HashSet<Bytes>,
+    // i64 for ease of use with the sqlx types
+    max_invalid_per_address: i64,
 }
 
 pub enum ChainProvider {
@@ -93,10 +107,18 @@ pub enum ChainProvider {
 pub struct Config {
     drop_protocol_fill_acks: bool,
     drop_invalid_checksum: bool,
+    drop_suspicious: bool,
     /// chain id -> rpc url
     ///
     /// salt checks will only be done on configured chains, any unconfigured chain will send all send_packets through
     providers: BTreeMap<ChainId, ChainProviderConfig>,
+    db_url: String,
+    #[serde(default)]
+    whitelisted_addresses_evm: HashSet<H160>,
+    // NOTE: Prefix is ignored, normalized address is used
+    #[serde(default)]
+    whitelisted_addresses_cosmos: HashSet<Bech32<Bytes>>,
+    max_invalid_per_address: usize,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -116,10 +138,33 @@ impl Plugin for Module {
     type Callback = Never;
 
     type Config = Config;
-    type Cmd = DefaultCmd;
+    type Cmd = Cmd;
 
     async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
         let mut providers = BTreeMap::new();
+
+        let db = PgPoolOptions::new().connect(&config.db_url).await?;
+
+        db.execute_many(
+            r#"
+            CREATE TABLE IF NOT EXISTS
+              invalid_checksum (
+                id BIGSERIAL PRIMARY KEY,
+                -- 0x + 32 byte hash
+                packet_hash CHAR(66) NOT NULL,
+                chain_id TEXT NOT NULL,
+                address TEXT NOT NULL
+              );
+
+            CREATE UNIQUE INDEX IF NOT EXISTS packet_hash_chain_id_address_unique ON invalid_checksum(packet_hash, chain_id, address);
+            "#,
+        )
+        .try_for_each(|result| async move {
+            trace!("rows affected: {}", result.rows_affected());
+            Ok(())
+        })
+        .instrument(info_span!("db_init"))
+        .await?;
 
         for (chain_id, provider_config) in config.providers {
             info!("registering chain {chain_id}");
@@ -163,6 +208,20 @@ impl Plugin for Module {
             providers,
             drop_protocol_fill_acks: config.drop_protocol_fill_acks,
             drop_invalid_checksum: config.drop_invalid_checksum,
+            drop_suspicious: config.drop_suspicious,
+            db,
+            whitelisted_addresses: config
+                .whitelisted_addresses_evm
+                .into_iter()
+                .map(Into::into)
+                .chain(
+                    config
+                        .whitelisted_addresses_cosmos
+                        .into_iter()
+                        .map(|a| a.into_data()),
+                )
+                .collect(),
+            max_invalid_per_address: config.max_invalid_per_address.try_into().unwrap(),
         })
     }
 
@@ -189,9 +248,133 @@ end
         }
     }
 
-    async fn cmd(_config: Self::Config, cmd: Self::Cmd) {
-        match cmd {}
+    async fn cmd(config: Self::Config, cmd: Self::Cmd) {
+        match cmd {
+            Cmd::InvalidBySender {
+                sender,
+                count,
+                limit,
+            } => {
+                let db = PgPoolOptions::new().connect(&config.db_url).await.unwrap();
+
+                let sender = sender
+                    .parse::<Bytes>()
+                    .unwrap_or_else(|_| sender.parse::<Bech32<Bytes>>().unwrap().into_data());
+
+                if count {
+                    let res = sqlx::query(
+                        r#"
+                        SELECT
+                            count(*)
+                        FROM
+                            invalid_checksum
+                        WHERE
+                            address = $1
+                        "#,
+                    )
+                    .bind(sender.to_string())
+                    .map::<_, i64>(|r| r.get("count"))
+                    .fetch_one(&db)
+                    .await
+                    .unwrap();
+
+                    println!(
+                        "{}",
+                        serde_json::to_string(&res).expect("serialization is infallible; qed;")
+                    );
+                } else {
+                    let res = sqlx::query(
+                        r#"
+                        SELECT
+                            packet_hash, chain_id
+                        FROM
+                            invalid_checksum
+                        WHERE
+                            address = $1
+                        LIMIT
+                            $2
+                        "#,
+                    )
+                    .bind(sender.to_string())
+                    .bind(limit)
+                    .map::<_, (String, String)>(|r| (r.get("packet_hash"), r.get("chain_id")))
+                    .fetch_all(&db)
+                    .await
+                    .unwrap();
+
+                    println!(
+                        "{}",
+                        serde_json::to_string(&res).expect("serialization is infallible; qed;")
+                    );
+                }
+            }
+            Cmd::InvalidSenders { limit, count } => {
+                let db = PgPoolOptions::new().connect(&config.db_url).await.unwrap();
+
+                if count {
+                    let res = sqlx::query(
+                        r#"
+                        SELECT
+                            count(distinct address)
+                        FROM
+                            invalid_checksum
+                    "#,
+                    )
+                    .map::<_, i64>(|r: PgRow| r.get("count"))
+                    .fetch_one(&db)
+                    .await
+                    .unwrap();
+
+                    println!(
+                        "{}",
+                        serde_json::to_string(&res).expect("serialization is infallible; qed;")
+                    );
+                } else {
+                    let res = sqlx::query(
+                        r#"
+                        SELECT
+                            count(*), address
+                        FROM
+                            invalid_checksum
+                        GROUP BY
+                            address
+                        ORDER BY
+                            -count(*)
+                        LIMIT
+                            $1
+                    "#,
+                    )
+                    .bind(limit)
+                    .map::<_, (String, i64)>(|r: PgRow| (r.get("address"), r.get("count")))
+                    .fetch_all(&db)
+                    .await
+                    .unwrap();
+
+                    println!(
+                        "{}",
+                        serde_json::to_string(&res).expect("serialization is infallible; qed;")
+                    );
+                }
+            }
+        }
     }
+}
+
+#[derive(Debug, clap::Subcommand)]
+pub enum Cmd {
+    InvalidBySender {
+        sender: String,
+        #[arg(long, short = 'c')]
+        count: bool,
+        #[arg(long, short = 'l', conflicts_with("count"))]
+        limit: Option<i64>,
+    },
+    InvalidSenders {
+        #[arg(long, short = 'c')]
+        count: bool,
+        #[arg(long, short = 'l', conflicts_with("count"))]
+        limit: Option<i64>,
+    },
 }
 
 pub const PLUGIN_NAME: &str = env!("CARGO_PKG_NAME");
@@ -375,20 +558,24 @@ impl Module {
             )
         })?;
 
-        let valid = match provider {
+        let packet_hash = event.packet().hash();
+
+        let (valid, address) = match provider {
             ChainProvider::Cosmos { client } => {
                 let tx = client.tx(tx_hash, false).await.map_err(|err| {
                     ErrorObject::owned(
                         -1,
                         ErrorReporter(err).with_message("error fetching source tx for packet"),
                         Some(json!({
-                            "packet_hash": event.packet().hash(),
+                            "packet_hash": packet_hash,
                             "tx_hash": tx_hash,
                         })),
                     )
                 })?;
 
-                valid_checksum_cosmos(&tx.tx)
+                let (valid, address) = valid_checksum_cosmos(&tx.tx);
+
+                (valid, address.map(Bech32::into_data))
             }
             ChainProvider::Evm { provider } => {
                 let tx = provider
@@ -399,14 +586,17 @@ impl Module {
                             -1,
                             ErrorReporter(err).with_message("error fetching source tx for packet"),
                             Some(json!({
-                                "packet_hash": event.packet().hash(),
+                                "packet_hash": packet_hash,
                                 "tx_hash": tx_hash,
                             })),
                         )
                     })?
                     .expect("tx exists");
 
-                valid_checksum_eth(tx.input())
+                (
+                    valid_checksum_eth(tx.input()),
+                    Some(tx.inner.signer().into()),
+                )
             }
         };
 
@@ -438,10 +628,61 @@ impl Module {
         if valid {
             info!("valid checksum");
             continuation()
+        } else if let Some(ref address) = address
+            && self.whitelisted_addresses.contains(address)
+        {
+            info!(%address, "invalid checksum from whitelisted address");
+            continuation()
         } else {
             warn!("invalid checksum");
 
-            if self.drop_invalid_checksum {
+            #[derive(Debug, FromRow)]
+            struct Count {
+                count: i64,
+            }
+
+            if let Some(address) = address {
+                let res = sqlx::query(
+                    r#"
+                    WITH res AS (
+                        INSERT INTO invalid_checksum(chain_id, address, packet_hash)
+                        VALUES($1, $2, $3)
+                        ON CONFLICT(packet_hash, chain_id, address) DO NOTHING
+                    )
+                    SELECT count(*) FROM invalid_checksum WHERE invalid_checksum.address = $2
+                    "#,
+                )
+                .bind(chain_id.to_string())
+                .bind(address.to_string())
+                .bind(packet_hash.to_string())
+                .try_map(|r| Count::from_row(&r))
+                .fetch_one(&self.db)
+                .await
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        -1,
+                        ErrorReporter(err).with_message("error inserting into db"),
+                        Some(json!({
+                            "packet_hash": packet_hash,
+                            "tx_hash": tx_hash,
+                        })),
+                    )
+                })?;
+
+                info!(total_invalid = %res.count, %address, "invalid checksum for address");
+
+                if res.count > self.max_invalid_per_address {
+                    info!(total_invalid = %res.count, %address, "suspicious address");
+
+                    if self.drop_suspicious || self.drop_invalid_checksum {
+                        Ok(noop())
+                    } else {
+                        continuation()
+                    }
+                } else {
+                    continuation()
+                }
+            } else if self.drop_invalid_checksum {
                 Ok(noop())
             } else {
                 continuation()
@@ -467,8 +708,6 @@ fn is_successful_protocol_fill_ack(acknowledgement: &[u8]) -> bool {
         return false;
     };
 
-    dbg!(&ack);
-
     info!(%ack.tag, %ack.inner_ack, "zkgm ack");
 
     if ack.tag != TAG_ACK_SUCCESS {
@@ -490,15 +729,13 @@ fn is_successful_protocol_fill_ack(acknowledgement: &[u8]) -> bool {
         },
     };
 
-    dbg!(&ack);
-
     info!(%ack.fill_type, %ack.market_maker, "fungible asset order ack");
 
     ack.fill_type == FILL_TYPE_PROTOCOL
 }
 
 /// NOTE: Assumes the tx contains only one MsgExecuteContract.
-fn valid_checksum_cosmos(tx_bytes: &[u8]) -> bool {
+fn valid_checksum_cosmos(tx_bytes: &[u8]) -> (bool, Option<Bech32<Bytes>>) {
     let tx_raw = TxRaw::decode_as::<Proto>(tx_bytes).expect("invalid transaction?");
 
     let tx_body = match <TxBody<RawAny>>::decode_as::<Proto>(&tx_raw.body_bytes) {
@@ -510,7 +747,7 @@ fn valid_checksum_cosmos(tx_bytes: &[u8]) -> bool {
                 "unable to decode transaction, crc will not be checked"
             );
 
-            return true;
+            return (true, None);
         }
     };
 
@@ -528,7 +765,7 @@ fn valid_checksum_cosmos(tx_bytes: &[u8]) -> bool {
                 "unable to decode MsgExecuteContract from transaction, crc will not be checked"
             );
 
-            return true;
+            return (true, None);
         }
     };
 
@@ -541,12 +778,12 @@ fn valid_checksum_cosmos(tx_bytes: &[u8]) -> bool {
                 "unable to decode ExecuteMsg, crc will not be checked"
             );
 
-            return true;
+            return (true, None);
         }
     };
 
     match execute_msg {
-        ucs03_zkgm::msg::ExecuteMsg::Send { salt, .. } => valid_checksum(salt),
+        ucs03_zkgm::msg::ExecuteMsg::Send { salt, .. } => (valid_checksum(salt), Some(msg.sender)),
         _ => panic!("????? {execute_msg:?}"),
     }
 }
@@ -623,7 +860,7 @@ mod tests {
     pub(crate) fn cosmos_checksum() {
         let tx_bytes = "Cp4QCpsQCiQvY29zbXdhc20ud2FzbS52MS5Nc2dFeGVjdXRlQ29udHJhY3QS8g8KKmJibjE5bG5wY3MwcHZ6OWh0Y3ZtNThqa3A2YWs1NW00OXg1bjYzcm5mbhI+YmJuMTMzNmpqOGVydGw4aDdyZHZuejRkaDVycWFoZDA5Y3kweDQzZ3Voc3h4Nnh5cnp0eDI5MnE3Nzk0NWga9w57InNlbmQiOnsiY2hhbm5lbF9pZCI6MSwidGltZW91dF9oZWlnaHQiOiIwIiwidGltZW91dF90aW1lc3RhbXAiOiIxNzQ0ODQ1NTQyNDQ1MDAwMDAwIiwic2FsdCI6IjB4NGU0N2Y5NmVkNDBiZGY2YjIxMmE1YWYxZWRkNzA3MjkxNTg1ZmE4ZDdiMTk0MzY2OTM1MmNiODgxNmExOGQ5NSIsImluc3RydWN0aW9uIjoiMHgwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMzAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwNjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMmUwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDE0MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxYTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMWUwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwYTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAyMjAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMjYwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMmEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwYTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMmE2MjYyNmUzMTM5NmM2ZTcwNjM3MzMwNzA3NjdhMzk2ODc0NjM3NjZkMzUzODZhNmI3MDM2NjE2YjM1MzU2ZDM0Mzk3ODM1NmUzNjMzNzI2ZTY2NmUwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMTQyYzk2ZTUyZmNlMTRiYWExMzg2OGNhODE4MmY4YTc5MDNlNGU3NmUwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwNDc1NjI2MjZlMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA0NzU2MjYyNmUwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDQ3NTYyNjI2ZTAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAxNGU1M2RDZWMwN2QxNkQ4OGUzODZBRTA3MTBFODZkOWE0MDBmODNjMzEwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAifX0qCgoEdWJibhICMTASZgpQCkYKHy9jb3Ntb3MuY3J5cHRvLnNlY3AyNTZrMS5QdWJLZXkSIwohAu6hSq9M46334S1bIA4kRXOc0AQlDOemU4GnuAfsFmtgEgQKAggBGBASEgoMCgR1YmJuEgQzMzc2EKK3HRpA5/p8D7nvFFWmTHvG08hjVNRFy5M7O7KxUPovXKLxk0BPa7utQEYZp9dVl1DNwHskCQNfGkRr0AW//HtERChn+w==".parse::<Bytes<Base64>>().unwrap();
 
-        let ok = valid_checksum_cosmos(&tx_bytes);
+        let (ok, _address) = valid_checksum_cosmos(&tx_bytes);
 
         assert!(ok);
     }

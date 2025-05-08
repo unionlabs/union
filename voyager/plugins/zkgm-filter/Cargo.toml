@@ -13,16 +13,19 @@ workspace = true
 
 [dependencies]
 alloy                            = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+clap                             = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 cometbft-rpc                     = { workspace = true }
 crc                              = "3.2.1"
 embed-commit                     = { workspace = true }
 enumorph                         = { workspace = true }
+futures                          = { workspace = true }
 ibc-union-spec                   = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
 jsonrpsee                        = { workspace = true, features = ["macros", "server", "tracing"] }
 macros                           = { workspace = true }
 ripemd                           = { workspace = true }
 serde                            = { workspace = true, features = ["derive"] }
 serde_json                       = { workspace = true }
+sqlx                             = { workspace = true, features = ["macros", "postgres", "runtime-tokio"] }
 tokio                            = { workspace = true }
 tracing                          = { workspace = true }
 ucs03-zkgm                       = { workspace = true, features = ["library"] }
