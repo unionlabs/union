@@ -9,6 +9,7 @@ pub struct GasFiller {
     #[serde(with = "::serde_utils::string")]
     pub gas_price: f64,
     pub gas_denom: String,
+    #[serde(with = "::serde_utils::string")]
     pub gas_multiplier: f64,
     pub max_gas: u64,
     #[serde(default)]

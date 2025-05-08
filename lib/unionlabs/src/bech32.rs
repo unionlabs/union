@@ -24,6 +24,10 @@ impl<Data, Hrp> Bech32<Data, Hrp> {
         &self.data
     }
 
+    pub fn into_data(self) -> Data {
+        self.data
+    }
+
     pub fn map_data<NewData>(self, f: impl FnOnce(Data) -> NewData) -> Bech32<NewData, Hrp> {
         Bech32::<NewData, Hrp>::new(self.hrp, f(self.data))
     }
