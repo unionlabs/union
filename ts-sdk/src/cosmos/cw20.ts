@@ -1,5 +1,6 @@
 import { FetchHttpClient } from "@effect/platform"
 import { Effect } from "effect"
+import { AddressCosmosDisplay, AddressCosmosDisplay } from "../schema/address.js"
 import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
 import { executeContract, queryContract } from "./contract.js"
 import { queryContractSmartAtHeight } from "./query.js"
@@ -135,23 +136,23 @@ export const readCw20Balance = (contractAddress: string, address: string) =>
 
 /**
  * Read the allowance of a CW20 token for a specific addresses
- * @param contractAddress The address of the CW20 token contract
- * @param ownerAddress The owner of the token
- * @param spenderAddress The spender who will spend the token
+ * @param contract The address of the CW20 token contract
+ * @param owner The owner of the token
+ * @param spender The spender who will spend the token
  * @returns An Effect that resolves to the token allowance
  */
 export const readCw20Allowance = (
-  contractAddress: string,
-  ownerAddress: string,
-  spenderAddress: string,
+  contract: AddressCosmosDisplay,
+  owner: AddressCosmosDisplay,
+  spender: AddressCosmosDisplay,
 ) =>
   Effect.gen(function*() {
     const client = (yield* CosmWasmClientContext).client
 
-    const response = yield* queryContract<Cw20AllowanceResponse>(client, contractAddress, {
+    const response = yield* queryContract<Cw20AllowanceResponse>(client, contract, {
       allowance: {
-        owner: ownerAddress,
-        spender: spenderAddress,
+        owner: owner,
+        spender: spender,
       },
     })
 

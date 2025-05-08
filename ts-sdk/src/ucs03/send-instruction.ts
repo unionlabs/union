@@ -43,7 +43,10 @@ export const sendInstructionEvm = (instruction: Instruction) =>
     })
   })
 
-export const sendInstructionCosmos = (instruction: Instruction) =>
+export const sendInstructionCosmos = (
+  instruction: Instruction,
+  funds?: ReadonlyArray<{ denom: string; amount: string }>,
+) =>
   Effect.gen(function*() {
     const signingClient = yield* SigningCosmWasmClientContext
     const sourceConfig = yield* CosmosChannelSource
@@ -68,6 +71,7 @@ export const sendInstructionCosmos = (instruction: Instruction) =>
           ]),
         },
       },
+      funds,
     )
   })
 
