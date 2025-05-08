@@ -106,6 +106,7 @@ _: {
             "ethereum"
             "trusted-mpt"
             "bob"
+            "sui"
           ];
         }
         {

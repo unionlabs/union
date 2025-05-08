@@ -15336,7 +15336,6 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_repr",
- "serde_with",
  "thiserror 2.0.12",
  "typenum",
  "unionlabs",
@@ -17496,27 +17495,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-bootstrap-module-bob"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "bob-client",
- "bob-light-client-types",
- "bob-types",
- "bob-verifier",
- "embed-commit",
- "ibc-union-spec",
- "jsonrpsee",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-client-bootstrap-module-cometbls"
 version = "0.0.0"
 dependencies = [
@@ -17574,25 +17552,6 @@ dependencies = [
  "unionlabs",
  "voyager-message",
  "voyager-vm",
-]
-
-[[package]]
-name = "voyager-client-bootstrap-module-movement"
-version = "0.0.0"
-dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "cosmwasm-std 2.2.2",
- "embed-commit",
- "jsonrpsee",
- "movement-light-client-types",
- "serde",
- "serde_json",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
 ]
 
 [[package]]
@@ -17662,6 +17621,24 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-sui"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "sui-light-client-types",
+ "sui-sdk",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-tendermint"
 version = "0.0.0"
 dependencies = [
@@ -17704,23 +17681,6 @@ name = "voyager-client-module-arbitrum"
 version = "0.0.0"
 dependencies = [
  "arbitrum-light-client-types",
- "embed-commit",
- "ethereum-light-client-types",
- "jsonrpsee",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-client-module-bob"
-version = "0.0.0"
-dependencies = [
- "bob-light-client-types",
  "embed-commit",
  "ethereum-light-client-types",
  "jsonrpsee",
@@ -17790,22 +17750,6 @@ dependencies = [
  "unionlabs",
  "voyager-message",
  "voyager-vm",
-]
-
-[[package]]
-name = "voyager-client-module-movement"
-version = "0.0.0"
-dependencies = [
- "embed-commit",
- "jsonrpsee",
- "movement-light-client-types",
- "serde",
- "serde_json",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
 ]
 
 [[package]]
@@ -17882,6 +17826,22 @@ dependencies = [
  "unionlabs",
  "voyager-message",
  "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-module-sui"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "sui-light-client-types",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
 ]
 
 [[package]]
@@ -17975,31 +17935,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-update-plugin-bob"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "bob-client",
- "bob-light-client-types",
- "bob-types",
- "bob-verifier",
- "embed-commit",
- "enumorph",
- "ethereum-light-client-types",
- "futures",
- "ibc-union-spec",
- "jsonrpsee",
- "macros",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-client-update-plugin-cometbls"
 version = "0.0.0"
 dependencies = [
@@ -18070,30 +18005,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-client-update-plugin-movement"
-version = "0.0.0"
-dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "embed-commit",
- "enumorph",
- "ethereum-light-client-types",
- "jsonrpsee",
- "macros",
- "movement-light-client-types",
- "reqwest 0.11.27",
- "serde",
- "serde_json",
- "subset-of",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-client-update-plugin-state-lens"
 version = "0.0.0"
 dependencies = [
@@ -18111,6 +18022,28 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber 0.3.18",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-sui"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "enumorph",
+ "jsonrpsee",
+ "macros",
+ "reqwest 0.11.27",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "sui-light-client-types",
+ "sui-sdk",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
  "unionlabs",
  "voyager-message",
  "voyager-vm",
@@ -18211,26 +18144,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-consensus-module-bob"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "bob-client",
- "bob-light-client-types",
- "bob-types",
- "bob-verifier",
- "embed-commit",
- "ibc-union-spec",
- "jsonrpsee",
- "serde",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-consensus-module-cometbls"
 version = "0.0.0"
 dependencies = [
@@ -18261,22 +18174,6 @@ dependencies = [
  "unionlabs",
  "voyager-message",
  "voyager-vm",
-]
-
-[[package]]
-name = "voyager-consensus-module-movement"
-version = "0.0.0"
-dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "embed-commit",
- "jsonrpsee",
- "serde",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
 ]
 
 [[package]]
@@ -18376,31 +18273,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-event-source-plugin-movement"
-version = "0.0.0"
-dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
- "bcs 0.1.6",
- "clap 4.5.18",
- "embed-commit",
- "enumorph",
- "ibc-solidity",
- "ibc-union-spec",
- "jsonrpsee",
- "macros",
- "move-bindgen",
- "serde",
- "serde_json",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-event-source-plugin-sui"
 version = "0.0.0"
 dependencies = [
@@ -18412,7 +18284,6 @@ dependencies = [
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
- "move-bindgen",
  "serde",
  "serde_json",
  "sui-sdk",
@@ -18663,12 +18534,9 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-proof-module-movement"
+name = "voyager-proof-module-sui"
 version = "0.0.0"
 dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
  "clap 4.5.18",
  "embed-commit",
  "ibc-union-spec",
@@ -18676,6 +18544,7 @@ dependencies = [
  "reqwest 0.11.27",
  "serde",
  "serde_json",
+ "sui-sdk",
  "tokio",
  "tracing",
  "unionlabs",
@@ -18750,48 +18619,22 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-state-module-movement"
+name = "voyager-state-module-sui"
 version = "0.0.0"
 dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
  "bcs 0.1.6",
  "clap 4.5.18",
  "embed-commit",
  "enumorph",
+ "hex-literal",
  "ibc-solidity",
  "ibc-union-spec",
  "jsonrpsee",
  "macros",
- "move-bindgen",
  "reqwest 0.11.27",
  "serde",
  "serde_json",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-transaction-plugin-aptos"
-version = "0.0.0"
-dependencies = [
- "aptos-crypto",
- "aptos-move-ibc",
- "aptos-rest-client",
- "aptos-types",
- "concurrent-keyring",
- "embed-commit",
- "enumorph",
- "ibc-union-spec",
- "jsonrpsee",
- "macros",
- "move-core-types 0.0.4 (git+https://github.com/unionlabs/aptos-core)",
- "serde",
- "sha3 0.10.8",
+ "sui-sdk",
  "tokio",
  "tracing",
  "unionlabs",

@@ -181,7 +181,7 @@ impl Encoding for Base58 {
     }
 }
 
-// #[cfg(feature = "base58")]
+#[cfg(feature = "base58")]
 #[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum Base58Error {
     #[error("invalid encoding")]

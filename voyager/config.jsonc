@@ -23,6 +23,19 @@
           "rpc_url": "http://localhost:26657",
           "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
         }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-state-module-sui",
+        "info": {
+          "chain_id": "dddd8bc9",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "http://127.0.0.1:9000",
+          "ibc_contract": "0xb644ca812080b776e4eb7e1ba5793e05602d27767f8fe853d3e5786117285006",
+          "ibc_store": "0x00a204f53ff4ae488e92e5c5117a3ad03d10331240715be25eeb2d392c5cbc1e"
+        }
       }
       // {
       //   "enabled": true,
@@ -49,6 +62,17 @@
           "rpc_url": "http://localhost:26657",
           "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
         }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-proof-module-sui",
+        "info": {
+          "chain_id": "dddd8bc9",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "http://127.0.0.1:9000"
+        }
       }
       // {
       //   "enabled": true,
@@ -68,7 +92,7 @@
         "enabled": true,
         "path": "./target/debug/voyager-consensus-module-sui",
         "info": {
-          "chain_id": "9d7f70f1",
+          "chain_id": "dddd8bc9",
           "consensus_type": "sui"
         },
         "config": {
@@ -172,6 +196,16 @@
           "ibc_interface": "ibc-cosmwasm",
           "ibc_spec_id": "ibc-union"
         }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-client-module-sui",
+        "info": {
+          "client_type": "sui",
+          "consensus_type": "sui",
+          "ibc_interface": "ibc-cosmwasm",
+          "ibc_spec_id": "ibc-union"
+        }
       }
     ],
     "client_bootstrap": [
@@ -186,6 +220,19 @@
           "client_type": "cometbls"
         },
         "path": "./target/debug/voyager-client-bootstrap-module-cometbls"
+      },
+      {
+        "config": {
+          "rpc_url": "http://127.0.0.1:9000",
+          "ibc_store": "0x00a204f53ff4ae488e92e5c5117a3ad03d10331240715be25eeb2d392c5cbc1e",
+          "ibc_contract": "0xb644ca812080b776e4eb7e1ba5793e05602d27767f8fe853d3e5786117285006"
+        },
+        "enabled": true,
+        "info": {
+          "chain_id": "dddd8bc9",
+          "client_type": "sui"
+        },
+        "path": "./target/debug/voyager-client-bootstrap-module-sui"
       }
       // {
       //   "config": {
@@ -232,9 +279,9 @@
       "enabled": true,
       "path": "./target/debug/voyager-event-source-plugin-sui",
       "config": {
-        "chain_id": "9d7f70f1",
+        "chain_id": "dddd8bc9",
         "rpc_url": "http://127.0.0.1:9000",
-        "ibc_handler_address": "0x455cc5ae1145401d8f3214c489718d2156bb0c24db06c78f00e842bb9fef58c9"
+        "ibc_handler_address": "0xb644ca812080b776e4eb7e1ba5793e05602d27767f8fe853d3e5786117285006"
       }
     },
     // {
@@ -276,7 +323,7 @@
       "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-sui",
       "config": {
-        "chain_id": "9d7f70f1",
+        "chain_id": "dddd8bc9",
         "ibc_handler_address": "0x455cc5ae1145401d8f3214c489718d2156bb0c24db06c78f00e842bb9fef58c9",
         "keyring": {
           "name": "sui",

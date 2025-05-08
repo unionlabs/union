@@ -68,8 +68,8 @@ module ibc::light_client {
 
     public struct Client has key, store {
         id: UID,
-        client_state: vector<u8>,
-        consensus_states: Table<u64, vector<u8>>,
+        client_state: ClientState,
+        consensus_states: Table<u64, ConsensusState>,
     }
 
     public struct ConsensusState has copy, drop, store {
@@ -107,10 +107,10 @@ module ibc::light_client {
         ctx: &mut TxContext,
     ): (Client, vector<u8>, vector<u8>) {
         let mut consensus_states = table::new(ctx);
-        consensus_states.add(0, consensus_state_bytes);
+        consensus_states.add(0, decode_consensus_state(consensus_state_bytes));
         (Client {
             id: object::new(ctx),
-            client_state: client_state_bytes,
+            client_state: decode_client_state(client_state_bytes),
             consensus_states: consensus_states
         },
         client_state_bytes,
@@ -156,6 +156,26 @@ module ibc::light_client {
             timestamp: (timestamp as u64),
             app_hash: MerkleRoot { hash: app_hash },
             next_validators_hash: next_validators_hash
+        }
+    }
+
+    fun decode_client_state(buf: vector<u8>): ClientState {
+        let mut buf = bcs::new(buf);
+
+        let chain_id = string::utf8(buf.peel_vec_u8());
+        let trusting_period = buf.peel_u64();
+        let max_clock_drift = buf.peel_u64();
+        let frozen_height = height::decode_bcs(&mut buf); // TODO: Not sure if its correc;
+        let latest_height = height::decode_bcs(&mut buf);
+        let contract_address = buf.into_remainder_bytes();
+
+        ClientState {
+            chain_id,
+            trusting_period,
+            max_clock_drift,
+            frozen_height,
+            latest_height,
+            contract_address
         }
     }
 
@@ -232,5 +252,19 @@ module ibc::light_client {
         value: vector<u8>
     ): u64 {
         0
+    }
+
+    public(package) fun get_client_state(
+        client: &Client,
+    ): vector<u8> {        
+        encode_client_state(&client.client_state)
+    }
+
+    public(package) fun get_consensus_state(
+        client: &Client,
+        height: u64,
+    ): vector<u8> {
+        let consensus_state = client.consensus_states.borrow(height);
+        encode_consensus_state(consensus_state)
     }
 }
