@@ -1,7 +1,7 @@
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
-    placeholder: u32,
+    pub timestamp: u64,
 }
 
 #[cfg(feature = "ethabi")]
@@ -15,14 +15,14 @@ pub mod ethabi {
 
     alloy::sol! {
         struct SolConsensusState {
-            uint32 placeholder;
+            uint64 timestamp;
         }
     }
 
     impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
             Self {
-                placeholder: value.placeholder,
+                timestamp: value.timestamp,
             }
         }
     }
@@ -35,7 +35,7 @@ pub mod ethabi {
 
         fn try_from(value: SolConsensusState) -> Result<Self, Self::Error> {
             Ok(Self {
-                placeholder: value.placeholder,
+                timestamp: value.timestamp,
             })
         }
     }

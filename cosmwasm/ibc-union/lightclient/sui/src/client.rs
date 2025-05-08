@@ -1,5 +1,6 @@
 use cosmwasm_std::Empty;
-use ibc_union_light_client::IbcClient;
+use ibc_union_light_client::{ClientCreationResult, IbcClient, IbcClientError, StateUpdate};
+use ibc_union_msg::lightclient::Status;
 use sui_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
 };
@@ -27,72 +28,69 @@ impl IbcClient for SuiLightClient {
     type Encoding = Bincode;
 
     fn verify_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        height: u64,
-        key: Vec<u8>,
-        storage_proof: Self::StorageProof,
-        value: Vec<u8>,
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _height: u64,
+        _key: Vec<u8>,
+        _storage_proof: Self::StorageProof,
+        _value: Vec<u8>,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         todo!()
     }
 
     fn verify_non_membership(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        height: u64,
-        key: Vec<u8>,
-        storage_proof: Self::StorageProof,
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _height: u64,
+        _key: Vec<u8>,
+        _storage_proof: Self::StorageProof,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
         todo!()
     }
 
     fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
-        todo!()
+        consensus_state.timestamp
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {
-        todo!()
+        let ClientState::V1(client_state) = client_state;
+        client_state.latest_checkpoint
     }
 
-    fn get_counterparty_chain_id(client_state: &Self::ClientState) -> String {
+    fn get_counterparty_chain_id(_client_state: &Self::ClientState) -> String {
         todo!()
     }
 
     fn status(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        client_state: &Self::ClientState,
-    ) -> ibc_union_msg::lightclient::Status {
-        todo!()
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _client_state: &Self::ClientState,
+    ) -> Status {
+        Status::Active
     }
 
     fn verify_creation(
-        caller: cosmwasm_std::Addr,
-        client_state: &Self::ClientState,
-        consensus_state: &Self::ConsensusState,
-        relayer: cosmwasm_std::Addr,
-    ) -> Result<
-        ibc_union_light_client::ClientCreationResult<Self>,
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
-        todo!()
+        _caller: cosmwasm_std::Addr,
+        _client_state: &Self::ClientState,
+        _consensus_state: &Self::ConsensusState,
+        _relayer: cosmwasm_std::Addr,
+    ) -> Result<ClientCreationResult<Self>, IbcClientError<Self>> {
+        Ok(ClientCreationResult::new())
     }
 
     fn verify_header(
         ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        caller: cosmwasm_std::Addr,
-        header: Self::Header,
-        relayer: cosmwasm_std::Addr,
-    ) -> Result<
-        ibc_union_light_client::StateUpdate<Self>,
-        ibc_union_light_client::IbcClientError<Self>,
-    > {
-        todo!()
+        _caller: cosmwasm_std::Addr,
+        _header: Self::Header,
+        _relayer: cosmwasm_std::Addr,
+    ) -> Result<StateUpdate<Self>, IbcClientError<Self>> {
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+        let consensus_state = ctx.read_self_consensus_state(client_state.latest_checkpoint)?;
+        Ok(StateUpdate::new(10, consensus_state))
     }
 
     fn misbehaviour(
-        ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        caller: cosmwasm_std::Addr,
-        misbehaviour: Self::Misbehaviour,
-        relayer: cosmwasm_std::Addr,
+        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        _caller: cosmwasm_std::Addr,
+        _misbehaviour: Self::Misbehaviour,
+        _relayer: cosmwasm_std::Addr,
     ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
         todo!()
     }
