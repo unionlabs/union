@@ -1,11 +1,12 @@
-use std::collections::HashSet;
-
 use itertools::Itertools;
 use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 
 use crate::{
-    indexer::api::{BlockHash, BlockHeight},
+    indexer::{
+        api::{BlockHash, BlockHeight},
+        tendermint::block_handle::{ActiveContracts, EventInFlows},
+    },
     postgres::{schedule_replication_reset, ChainId},
 };
 
@@ -114,7 +115,7 @@ pub async fn insert_batch_transactions(
 
 pub async fn insert_batch_events(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    events: impl IntoIterator<Item = PgEvent>,
+    events: impl IntoIterator<Item = EventInFlows>,
 ) -> sqlx::Result<()> {
     #![allow(clippy::type_complexity)]
     let (
@@ -126,6 +127,7 @@ pub async fn insert_batch_events(
         transaction_indexes,
         data,
         times,
+        flows,
     ): (
         Vec<i32>,
         Vec<String>,
@@ -135,29 +137,35 @@ pub async fn insert_batch_events(
         Vec<Option<i32>>,
         Vec<_>,
         Vec<OffsetDateTime>,
+        Vec<String>,
     ) = events
         .into_iter()
-        .map(|e| {
-            let block_height: i64 = e.block_height.try_into().unwrap();
-
-            (
-                e.chain_id.db,
-                e.block_hash,
-                block_height,
-                e.transaction_hash,
-                e.block_index,
-                e.transaction_index,
-                e.data,
-                e.time,
-            )
+        .flat_map(|e| {
+            e.flows
+                .iter()
+                .map(|flow| {
+                    let block_height: i64 = e.event.block_height.try_into().unwrap();
+                    (
+                        e.event.chain_id.db,
+                        e.event.block_hash.clone(),
+                        block_height,
+                        e.event.transaction_hash.clone(),
+                        e.event.block_index,
+                        e.event.transaction_index,
+                        e.event.data.clone(),
+                        e.event.time,
+                        flow.clone(),
+                    )
+                })
+                .collect::<Vec<_>>()
         })
         .multiunzip();
 
     sqlx::query!("
-        INSERT INTO v2_cosmos.events (internal_chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time)
-        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[])
+        INSERT INTO v2_cosmos.events (internal_chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time, flow)
+        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[]), unnest($9::text[])
         ",
-        &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times)
+        &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times, &flows)
     .execute(tx.as_mut()).await?;
 
     Ok(())
@@ -209,12 +217,14 @@ pub async fn active_contracts(
     tx: &mut Transaction<'_, Postgres>,
     internal_chain_id: i32,
     height: BlockHeight,
-) -> sqlx::Result<HashSet<String>> {
+) -> sqlx::Result<ActiveContracts> {
     let height: i64 = height.try_into().unwrap();
 
-    let result = sqlx::query!(
+    let mut result = ActiveContracts::new();
+
+    sqlx::query!(
         r#"
-        SELECT    address
+        SELECT    address, flow
         FROM      v2_cosmos.contracts
         WHERE     internal_chain_id = $1
         AND       $2 between start_height and end_height
@@ -225,8 +235,9 @@ pub async fn active_contracts(
     .fetch_all(tx.as_mut())
     .await?
     .into_iter()
-    .map(|record| record.address)
-    .collect();
+    .for_each(|record| {
+        result.register(record.address, record.flow);
+    });
 
     Ok(result)
 }
