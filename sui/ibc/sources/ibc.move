@@ -93,10 +93,10 @@ module ibc::ibc {
     const CHAN_ORDERING_UNORDERED: u8 = 1;
     const CHAN_ORDERING_ORDERED: u8 = 2;
 
-    const CONN_STATE_UNSPECIFIED: u64 = 0;
-    const CONN_STATE_INIT: u64 = 1;
-    const CONN_STATE_TRYOPEN: u64 = 2;
-    const CONN_STATE_OPEN: u64 = 3;
+    const CONN_STATE_UNSPECIFIED: u8 = 0;
+    const CONN_STATE_INIT: u8 = 1;
+    const CONN_STATE_TRYOPEN: u8 = 2;
+    const CONN_STATE_OPEN: u8 = 3;
 
     const VAULT_SEED: vector<u8> = b"IBC_VAULT_SEED";
 
@@ -619,8 +619,6 @@ module ibc::ibc {
     fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, mut value: P) {
         if (table.contains(key)) {
             let mut val = table.borrow_mut(key);
-            debug::print(&utf8(b"Updating value under add_or_update_table"));
-            debug::print(&value);
             *val = value;
         } else {
             table.add(key, value);
@@ -1230,12 +1228,28 @@ module ibc::ibc {
         }
     }
 
-    public fun get_commitment(ibc_store: &mut IBCStore, key: vector<u8>): vector<u8> {
+    public fun get_commitment(ibc_store: &IBCStore, key: vector<u8>): vector<u8> {
         if (ibc_store.commitments.contains(key)) {
             return *ibc_store.commitments.borrow(key)
         } else {
             return vector::empty<u8>()
         }
+    }
+
+    public fun get_client_state(ibc_store: &IBCStore, client_id: u32): vector<u8> {
+        let client = ibc_store.clients.borrow(client_id);
+
+        client.get_client_state()
+    }
+
+    public fun get_consensus_state(ibc_store: &IBCStore, client_id: u32, height: u64): vector<u8> {
+        let client = ibc_store.clients.borrow(client_id);
+
+        client.get_consensus_state(height)
+    }
+
+    public fun get_connection(ibc_store: &IBCStore, connection_id: u32): ConnectionEnd {
+        *ibc_store.connections.borrow(connection_id)
     }
 
     public fun set_commitment(ibc_store: &mut IBCStore,key: vector<u8>, value: vector<u8>) {

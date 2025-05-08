@@ -20,7 +20,6 @@ ibc-solidity    = { workspace = true }
 ibc-union-spec  = { workspace = true, features = ["serde", "tracing"] }
 jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
 macros          = { workspace = true }
-move-bindgen    = { workspace = true }
 serde           = { workspace = true, features = ["derive"] }
 serde_json      = { workspace = true }
 tokio           = { workspace = true }

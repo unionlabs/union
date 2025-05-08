@@ -54,6 +54,8 @@ impl IbcInterface {
 
     pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
 
+    pub const IBC_MOVE_SUI: &'static str = "ibc-move/sui";
+
     // lots more to come - near, fuel - stay tuned
 }
 
@@ -151,6 +153,8 @@ impl ClientType {
     ///
     /// [Bob]: https://github.com/ethereum-optimism/optimism/blob/v1.7.2/packages/contracts-bedrock/src/L1/L2OutputOracle.sol
     pub const BOB: &'static str = "bob";
+
+    pub const SUI: &'static str = "sui";
 
     // lots more to come - near, linea, polygon - stay tuned
 }

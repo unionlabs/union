@@ -8,7 +8,7 @@ use ibc_union_spec::{
         PacketSend, UpdateClient, WriteAck,
     },
     path::{ChannelPath, ConnectionPath},
-    ChannelId, ClientId, Connection, ConnectionState, IbcUnion, Timestamp,
+    ChannelId, ClientId, Connection, ConnectionId, ConnectionState, IbcUnion, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -250,24 +250,24 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             }
                             "ConnectionOpenInit" => {
                                 let connection_open: events::ConnectionOpenInit =
-                                    serde_json::from_value(e.parsed_token).unwrap();
+                                    serde_json::from_value(e.parsed_json).unwrap();
                                 events::IbcEvent::ConnectionOpenInit(connection_open)
                             }
-                            "ConnectionOpenTry" => {
-                                let connection_open: events::ConnectionOpenTry =
-                                    serde_json::from_value(e.parsed_token).unwrap();
-                                events::IbcEvent::ConnectionOpenTry(connection_open)
-                            }
-                            "ConnectionOpenAck" => {
-                                let connection_open: events::ConnectionOpenAck =
-                                    serde_json::from_value(e.parsed_token).unwrap();
-                                events::IbcEvent::ConnectionOpenAck(connection_open)
-                            }
-                            "ConnectionOpenConfirm" => {
-                                let connection_open: events::ConnectionOpenConfirm =
-                                    serde_json::from_value(e.parsed_token).unwrap();
-                                events::IbcEvent::ConnectionOpenConfirm(connection_open)
-                            }
+                            // "ConnectionOpenTry" => {
+                            //     let connection_open: events::ConnectionOpenTry =
+                            //         serde_json::from_value(e.parsed_json).unwrap();
+                            //     events::IbcEvent::ConnectionOpenTry(connection_open)
+                            // }
+                            // "ConnectionOpenAck" => {
+                            //     let connection_open: events::ConnectionOpenAck =
+                            //         serde_json::from_value(e.parsed_json).unwrap();
+                            //     events::IbcEvent::ConnectionOpenAck(connection_open)
+                            // }
+                            // "ConnectionOpenConfirm" => {
+                            //     let connection_open: events::ConnectionOpenConfirm =
+                            //         serde_json::from_value(e.parsed_json).unwrap();
+                            //     events::IbcEvent::ConnectionOpenConfirm(connection_open)
+                            // }
                             e => panic!("unknown: {e}"),
                         };
                         call(PluginMessage::new(
@@ -292,6 +292,18 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         CreateClient {
                             client_type: ClientType::new(event.client_type),
                             client_id: event.client_id.try_into().unwrap(),
+                        }
+                        .into(),
+                        event.client_id.try_into().unwrap(),
+                    ),
+                    events::IbcEvent::ConnectionOpenInit(event) => (
+                        ConnectionOpenInit {
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            client_id: ClientId::new(event.client_id.try_into().unwrap()),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
                         }
                         .into(),
                         event.client_id.try_into().unwrap(),

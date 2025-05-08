@@ -197,7 +197,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         // create the transaction data that will be sent to the network.
 
                         let msgs = process_msgs(
-                            SuiAddress::try_from(hex_literal::hex!("c096970f51724967ab2b66ef5e6af4802d4fc5c32f5d4f4ad3a95316f4a0bb01").as_slice()).unwrap(),
+                            SuiAddress::try_from(hex_literal::hex!("00a204f53ff4ae488e92e5c5117a3ad03d10331240715be25eeb2d392c5cbc1e").as_slice()).unwrap(),
                             msgs.clone(),
                         )
                         .await;

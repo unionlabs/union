@@ -64,14 +64,14 @@ module ibc::connection_end {
     use ibc::ethabi;
 
     public struct ConnectionEnd has copy, store, drop {
-        state: u64,
+        state: u8,
         client_id: u32,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
     }
 
     // Getters
-    public fun state(connection: &ConnectionEnd): u64 {
+    public fun state(connection: &ConnectionEnd): u8 {
         connection.state
     }
 
@@ -88,7 +88,7 @@ module ibc::connection_end {
     }
 
     // Setters
-    public fun set_state(connection: &mut ConnectionEnd, new_state: u64) {
+    public fun set_state(connection: &mut ConnectionEnd, new_state: u8) {
         connection.state = new_state;
     }
 
@@ -126,7 +126,7 @@ module ibc::connection_end {
 
     // Constructor
     public fun new(
-        state: u64,
+        state: u8,
         client_id: u32,
         counterparty_client_id: u32,
         counterparty_connection_id: u32
