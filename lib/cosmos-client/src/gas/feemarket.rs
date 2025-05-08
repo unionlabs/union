@@ -114,7 +114,7 @@ impl GasFillerT for GasFiller {
 
         let amount = gas_price * BigRational::from_integer(gas_limit.into());
 
-        let amount = amount.to_integer().try_into().unwrap_or(u128::MAX);
+        let amount = amount.ceil().to_integer().try_into().unwrap_or(u128::MAX);
 
         debug!(amount, "fee");
 
