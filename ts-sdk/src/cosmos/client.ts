@@ -1,6 +1,5 @@
 import {
   CosmWasmClient,
-  type HttpEndpoint,
   SigningCosmWasmClient,
   type SigningCosmWasmClientOptions,
 } from "@cosmjs/cosmwasm-stargate"

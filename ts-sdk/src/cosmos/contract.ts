@@ -19,14 +19,6 @@ export class ExecuteContractError extends Data.TaggedError("ExecuteContractError
 }> {}
 
 /**
- * Error type for HttpRequest execution failures
- */
-export class HttpRequestFailed extends Data.TaggedError("HttpRequestFailed")<{
-  status: number
-  body: unknown
-}> {}
-
-/**
  * Error when fetching the latest block height
  */
 export class GetHeightError extends Data.TaggedError("GetHeightError")<{
