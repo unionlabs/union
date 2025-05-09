@@ -65,7 +65,7 @@ impl DomainType {
 
 macro_rules! u64_newtype {
     ($T:ident) => {
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Default, Hash)]
         #[cfg_attr(feature = "ssz", derive(ssz::Ssz), ssz(transparent))]
         #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
         pub struct $T(u64);

@@ -151,7 +151,7 @@ impl Plugin for Module {
             .into());
         }
 
-        let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url).await?;
+        let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url);
 
         let spec = beacon_api_client
             .spec()
@@ -436,87 +436,83 @@ impl Module {
             period {target_period}, something is wrong!",
         );
 
-        // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
-        // updates until we reach the `target_period - 1`.
+        let (lc_updates, last_update_block_number) = if trusted_period < target_period {
+            // Eth chain is more than 1 signature period ahead of us. We need to do sync committee
+            // updates until we reach the `target_period - 1`.
 
-        // let target_period = sync_committee_period(finality_update.signature_slot, spec.period());
+            // let target_period = sync_committee_period(finality_update.signature_slot, spec.period());
 
-        let light_client_updates = self
-            .beacon_api_client
-            .light_client_updates(trusted_period + 1, target_period - trusted_period)
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching light client updates"),
-                    None::<()>,
-                )
-            })?
-            .into_iter()
-            .map(|x| {
-                x.fold::<ethereum_sync_protocol_types::LightClientUpdate>(
-                    |u| match u {},
-                    |_| todo!("altair is not supported"),
-                    |_| todo!("bellatrix is not supported"),
-                    |_| todo!("capella is not supported"),
-                    |u| u.into(),
-                    |u| u.into(),
-                )
-            })
-            .collect::<Vec<_>>();
+            let light_client_updates = self
+                .beacon_api_client
+                .light_client_updates(trusted_period + 1, target_period - trusted_period)
+                .await
+                .map_err(|e| {
+                    ErrorObject::owned(
+                        -1,
+                        ErrorReporter(e).with_message("error fetching light client updates"),
+                        None::<()>,
+                    )
+                })?
+                .into_iter()
+                .map(|x| {
+                    x.fold::<ethereum_sync_protocol_types::LightClientUpdate>(
+                        |u| match u {},
+                        |_| todo!("altair is not supported"),
+                        |_| todo!("bellatrix is not supported"),
+                        |_| todo!("capella is not supported"),
+                        |u| u.into(),
+                        |u| u.into(),
+                    )
+                })
+                .collect::<Vec<_>>();
 
-        info!(
-            "fetched {} light client updates",
-            light_client_updates.len()
-        );
+            info!(
+                "fetched {} light client updates",
+                light_client_updates.len()
+            );
 
-        let (updates, last_update_block_number) = stream::iter(light_client_updates)
-            .map(<RpcResult<_>>::Ok)
-            .try_fold((VecDeque::new(), update_from_block_number.height()), {
-                |(mut vec, mut trusted_block_number), update| {
-                    let self_ = self.clone();
-
-                    async move {
+            let (updates, last_update_block_number) = stream::iter(light_client_updates)
+                .map(<RpcResult<_>>::Ok)
+                .try_fold((VecDeque::new(), update_from_block_number.height()), {
+                    async |(mut vec, mut trusted_block_number), update| {
                         let old_trusted_block_number = trusted_block_number;
 
                         // REVIEW: Assert that this is greater (i.e. increasing)?
                         trusted_block_number = update.finalized_header.execution.block_number;
 
                         vec.push_back(
-                            self_
-                                .make_header(
-                                    old_trusted_block_number,
-                                    LightClientUpdateData {
-                                        attested_header: update.attested_header,
-                                        finalized_header: update.finalized_header,
-                                        finality_branch: update.finality_branch,
-                                        sync_aggregate: update.sync_aggregate,
-                                        signature_slot: update.signature_slot,
-                                    },
-                                    Some((
-                                        update
-                                            .next_sync_committee
-                                            .expect("next_sync_committee should exist"),
-                                        update
-                                            .next_sync_committee_branch
-                                            .expect("next_sync_committee_branch should exist"),
-                                    )),
-                                )
-                                .await?,
+                            self.make_header(
+                                old_trusted_block_number,
+                                LightClientUpdateData {
+                                    attested_header: update.attested_header,
+                                    finalized_header: update.finalized_header,
+                                    finality_branch: update.finality_branch,
+                                    sync_aggregate: update.sync_aggregate,
+                                    signature_slot: update.signature_slot,
+                                },
+                                Some((
+                                    update
+                                        .next_sync_committee
+                                        .expect("next_sync_committee should exist"),
+                                    update
+                                        .next_sync_committee_branch
+                                        .expect("next_sync_committee_branch should exist"),
+                                )),
+                            )
+                            .await?,
                         );
 
                         Ok((vec, trusted_block_number))
                     }
-                }
-            })
-            .await?;
+                })
+                .await?;
 
-        let lc_updates = if trusted_period < target_period {
-            updates
+            (updates, last_update_block_number)
         } else {
-            [].into()
+            ([].into(), update_from_block_number.height())
         };
 
+        // no finality update required if the sync committee updates go beyond the requested update_to height
         let does_not_have_finality_update =
             last_update_block_number >= update_to_block_number.height();
 
