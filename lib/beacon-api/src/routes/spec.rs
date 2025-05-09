@@ -107,6 +107,7 @@ pub struct Spec {
     // MAX_VALIDATORS_PER_WITHDRAWALS_SWEEP: 16384,
     // FIELD_ELEMENTS_PER_BLOB: 4096,
     // MAX_BLOBS_PER_BLOCK: 4,
+    #[serde(default)]
     pub genesis_slot: Slot,
     // GENESIS_EPOCH: 0,
     // FAR_FUTURE_EPOCH: 18446744073709551615,

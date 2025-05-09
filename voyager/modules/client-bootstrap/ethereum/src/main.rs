@@ -136,7 +136,7 @@ impl ClientBootstrapModule for Module {
         info.ensure_chain_id(chain_id.to_string())?;
         info.ensure_client_type(ClientType::ETHEREUM)?;
 
-        let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url).await?;
+        let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url);
 
         let spec = beacon_api_client.spec().await.unwrap().data;
 

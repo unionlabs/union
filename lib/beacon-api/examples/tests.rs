@@ -9,9 +9,7 @@ async fn main() {
 }
 
 async fn do_main() {
-    let client = BeaconApiClient::new("https://lodestar-sepolia.chainsafe.io".to_string())
-        .await
-        .unwrap();
+    let client = BeaconApiClient::new("https://lodestar-sepolia.chainsafe.io");
 
     // genesis
     let block = client

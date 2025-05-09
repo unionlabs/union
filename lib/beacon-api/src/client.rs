@@ -5,11 +5,12 @@ use std::fmt::{Debug, Display};
 use beacon_api_types::custom_types::Slot;
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde_json::Value;
 use tracing::{debug, info, trace};
 use unionlabs::primitives::H256;
 
 use crate::{
-    errors::{Error, InternalServerError, NotFoundError},
+    errors::Error,
     routes::{
         block::BeaconBlockResponse, genesis::GenesisResponse, header::BeaconBlockHeaderResponse,
         light_client_bootstrap::LightClientBootstrapResponseTypes,
@@ -26,22 +27,12 @@ pub struct BeaconApiClient {
     base_url: String,
 }
 
-#[derive(Debug, thiserror::Error)]
-pub enum NewError {
-    #[error("incorrect chain spec")]
-    IncorrectChainSpec,
-    #[error(transparent)]
-    Error(#[from] Error),
-}
-
 impl BeaconApiClient {
-    pub async fn new(base_url: impl Into<String>) -> core::result::Result<Self, NewError> {
-        let this = Self {
+    pub fn new(base_url: impl AsRef<str>) -> Self {
+        Self {
             client: reqwest::Client::new(),
-            base_url: base_url.into(),
-        };
-
-        Ok(this)
+            base_url: base_url.as_ref().trim_end_matches('/').into(),
+        }
     }
 
     pub async fn spec(&self) -> Result<SpecResponse> {
@@ -81,6 +72,7 @@ impl BeaconApiClient {
         self.get_json("/eth/v1/beacon/genesis").await
     }
 
+    /// NOTE: Lodestar will return an empty array if count is 0, however other implementations return an error response.
     pub async fn light_client_updates(
         &self,
         start_period: u64,
@@ -143,11 +135,7 @@ impl BeaconApiClient {
 
             let header = match header_response {
                 Ok(header) => header,
-                Err(Error::NotFound(NotFoundError {
-                    status_code: _,
-                    error: _,
-                    message,
-                })) if message.starts_with("No block found for id") => {
+                Err(Error::NotFound(_)) => {
                     amount_of_slots_back = Slot::new(amount_of_slots_back.get() + 1);
                     continue;
                 }
@@ -160,11 +148,7 @@ impl BeaconApiClient {
             match bootstrap_response {
                 Ok(ok) => break Ok(ok),
                 Err(err) => match err {
-                    Error::Internal(InternalServerError {
-                        status_code: _,
-                        error: _,
-                        message,
-                    }) if message.starts_with("syncCommitteeWitness not available") => {
+                    Error::Internal(_) => {
                         amount_of_slots_back = Slot::new(amount_of_slots_back.get() + 1);
                     }
                     _ => return Err(err),
@@ -190,9 +174,15 @@ impl BeaconApiClient {
 
                 Ok(serde_json::from_slice(&bytes).map_err(Error::Json)?)
             }
-            StatusCode::NOT_FOUND => Err(Error::NotFound(res.json::<NotFoundError>().await?)),
+            StatusCode::NOT_FOUND => {
+                let raw = res.json::<Value>().await?;
+                trace!(%raw, "not found");
+                Err(Error::NotFound(raw))
+            }
             StatusCode::INTERNAL_SERVER_ERROR => {
-                Err(Error::Internal(res.json::<InternalServerError>().await?))
+                let raw = res.json::<Value>().await?;
+                trace!(%raw, "internal server error");
+                Err(Error::Internal(raw))
             }
             code => Err(Error::Other {
                 code,
@@ -258,30 +248,12 @@ impl<T: VersionedResponseTypes> VersionedResponse<T> {
         electra: impl FnOnce(T::Electra) -> U,
     ) -> U {
         match self {
-            VersionedResponse::Phase0(t) => {
-                trace!(?t, "phase0");
-                phase0(t)
-            }
-            VersionedResponse::Altair(t) => {
-                trace!(?t, "altair");
-                altair(t)
-            }
-            VersionedResponse::Bellatrix(t) => {
-                trace!(?t, "bellatrix");
-                bellatrix(t)
-            }
-            VersionedResponse::Capella(t) => {
-                trace!(?t, "capella");
-                capella(t)
-            }
-            VersionedResponse::Deneb(t) => {
-                trace!(?t, "deneb");
-                deneb(t)
-            }
-            VersionedResponse::Electra(t) => {
-                trace!(?t, "electra");
-                electra(t)
-            }
+            VersionedResponse::Phase0(t) => phase0(t),
+            VersionedResponse::Altair(t) => altair(t),
+            VersionedResponse::Bellatrix(t) => bellatrix(t),
+            VersionedResponse::Capella(t) => capella(t),
+            VersionedResponse::Deneb(t) => deneb(t),
+            VersionedResponse::Electra(t) => electra(t),
         }
     }
 }
