@@ -145,10 +145,17 @@ pub async fn update_tokens_for_source(
             .get(common_token_key)
             .expect("token to exist in db (common)");
 
+        let instantiate_height_from_source = token_from_source
+            .extensions
+            .as_ref()
+            .and_then(|e| e.hubble.as_ref())
+            .and_then(|h| h.instantiate_height);
+
         if token_from_source.decimals != token_from_db.decimals
             || token_from_source.logo_uri != token_from_db.logo_uri
             || token_from_source.name != token_from_db.name
             || token_from_source.symbol != token_from_db.symbol
+            || instantiate_height_from_source != token_from_db.instantiate_height
         {
             debug!("update token: {token_from_db} <> {token_from_source}");
 
@@ -160,6 +167,7 @@ pub async fn update_tokens_for_source(
                 name: token_from_source.name.clone(),
                 decimals: token_from_source.decimals,
                 logo_uri: token_from_source.logo_uri.clone(),
+                instantiate_height: instantiate_height_from_source,
             };
 
             upsert_token_representation(&mut tx, &token_representation)
@@ -190,6 +198,11 @@ pub async fn update_tokens_for_source(
             name: token_from_source.name.clone(),
             decimals: token_from_source.decimals,
             logo_uri: token_from_source.logo_uri.clone(),
+            instantiate_height: token_from_source
+                .extensions
+                .as_ref()
+                .and_then(|e| e.hubble.as_ref())
+                .and_then(|h| h.instantiate_height),
         };
 
         upsert_token_representation(&mut tx, &token_representation)
