@@ -1,3 +1,4 @@
+import { FetchHttpClient } from "@effect/platform"
 import { Effect } from "effect"
 import { channelBalance, channelBalanceAtHeight } from "../src/cosmos/channel-balance.js"
 import { CosmosChannelDestination } from "../src/cosmos/channel.js"
@@ -11,7 +12,6 @@ import {
   readCw20TotalSupplyAtHeight,
 } from "../src/cosmos/cw20.js"
 import { getBalanceAtHeight } from "../src/cosmos/query.js"
-import { FetchHttpClient } from "@effect/platform"
 
 // @ts-ignore
 BigInt["prototype"].toJSON = function() {
@@ -105,7 +105,8 @@ Effect.runPromiseExit(
       Effect.provide(FetchHttpClient.layer),
       Effect.tapErrorCause((cause) =>
         Effect.logError("Error fetching channel balance at height:", cause)
-      ))
+      ),
+    )
     console.info("Balance at height2: ", amountAtHeight2)
   }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
