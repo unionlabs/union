@@ -1,7 +1,6 @@
 import type { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import { ExtendedCosmWasmClientContext } from "./client.js"
 
 /**
  * Error type for CosmWasm contract query failures

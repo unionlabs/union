@@ -1,11 +1,9 @@
 import { Effect } from "effect"
-import { extractErrorDetails } from "../utils/extract-error-details.js"
 import { CosmosChannelDestination } from "./channel.js"
 import { CosmWasmClientDestination } from "./client.js"
-import { ExtendedCosmWasmClientContext } from "./client.js"
 import { queryContract } from "./contract.js"
-import { QueryContractError } from "./contract.js"
 import { queryContractSmartAtHeight } from "./query.js"
+import { FetchHttpClient } from "@effect/platform"
 
 export const channelBalance = (path: bigint, token: string) =>
   Effect.gen(function*() {
@@ -25,12 +23,17 @@ export const channelBalance = (path: bigint, token: string) =>
 export const channelBalanceAtHeight = (rest: string, path: bigint, token: string, height: number) =>
   Effect.gen(function*() {
     const config = yield* CosmosChannelDestination
-    const resp = yield* queryContractSmartAtHeight(rest, config.ucs03address, {
+    const resp = yield* queryContractSmartAtHeight<{ data: string }>(rest, config.ucs03address, {
       get_channel_balance: {
         channel_id: config.channelId,
         path,
         denom: token,
       },
-    }, height)
-    return resp
+    }, height).pipe(
+      Effect.provide(FetchHttpClient.layer),
+      Effect.tapErrorCause((cause) =>
+        Effect.logError("Error fetching channel balance at height:", cause)
+      )
+    )
+    return resp.data
   })

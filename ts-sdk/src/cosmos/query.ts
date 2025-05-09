@@ -1,9 +1,9 @@
-// query.ts
-import axios from "axios"
 import { Data, Effect, pipe } from "effect"
-import { extractErrorDetails } from "../utils/extract-error-details.js"
 import { QueryContractError } from "./contract.js"
-
+import {
+  HttpClient,
+  HttpClientRequest
+} from "@effect/platform"
 /**
  * Error type for HttpRequest execution failures
  */
@@ -21,37 +21,39 @@ export function queryContractSmartAtHeight<T = unknown>(
   queryMsg: Record<string, unknown>,
   height: number,
 ) {
+    
   const base = restEndpoint.replace(/\/+$/, "")
   const encoded = btoa(JSON.stringify(queryMsg))
   const url = `${base}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${encoded}`
-
   return pipe(
-    Effect.tryPromise({
-      try: async () => {
-        const resp = await axios.get(url, {
-          headers: {
+    Effect.gen(function*() {
+        const request = HttpClientRequest.get(url).pipe(
+            HttpClientRequest.setHeaders({
             "Content-Type": "application/json",
-            "x-cosmos-block-height": height.toString(),
-          },
-        })
-        if (resp.status < 200 || resp.status >= 300) {
-          throw new HttpRequestFailed({ status: resp.status, body: resp.data })
-        }
-        return resp.data as T
-      },
-      catch: (err: unknown) =>
-        err instanceof HttpRequestFailed
-          ? err
-          : new QueryContractError({ cause: extractErrorDetails(err as Error) }),
+            "x-cosmos-block-height": height.toString()
+            })
+        )
+
+        const client = yield* HttpClient.HttpClient
+        const response = yield* client.execute(request)
+        const data = yield* response.json
+
+        return data as T
+
     }),
     Effect.timeout("10 seconds"),
     Effect.retry({ times: 5 }),
-  )
-}
+    Effect.catchAll((err) =>
+      err instanceof HttpRequestFailed
+        ? Effect.fail(err)
+        : Effect.fail(new QueryContractError({ cause: err }))
+    )
+)}
 
-/**
- * Fetch an account's balance for a denom at a specific block height.
- */
+
+// /**
+//  * Fetch an account's balance for a denom at a specific block height.
+//  */
 export function getBalanceAtHeight(
   restEndpoint: string,
   address: string,
@@ -60,33 +62,32 @@ export function getBalanceAtHeight(
 ) {
   const base = restEndpoint.replace(/\/+$/, "")
   const url = `${base}/cosmos/bank/v1beta1/balances/${address}`
-
   return pipe(
-    Effect.tryPromise({
-      try: async () => {
-        const resp = await axios.get(url, {
-          headers: {
+    Effect.gen(function*() {
+        const request = HttpClientRequest.get(url).pipe(
+            HttpClientRequest.setHeaders({
             "Content-Type": "application/json",
-            "x-cosmos-block-height": height.toString(),
-          },
-        })
-        if (resp.status < 200 || resp.status >= 300) {
-          throw new HttpRequestFailed({ status: resp.status, body: resp.data })
-        }
+            "x-cosmos-block-height": height.toString()
+            })
+        )
 
-        const data: any = resp.data
-        const entry = data.balances.find((b: { denom: string }) => b.denom === denom)
+        const client = yield* HttpClient.HttpClient
+        const response = yield* client.execute(request)
+        const raw = yield* response.json
+
+        const data = raw as {
+            balances: Array<{ denom: string; amount: string }>
+          }
+
+        const entry = data.balances.find((b) => b.denom === denom)
         return entry ? BigInt(entry.amount) : null
-      },
-      catch: (err: unknown) =>
-        err instanceof HttpRequestFailed
-          ? err
-          : new HttpRequestFailed({
-            status: 0,
-            body: extractErrorDetails(err as Error),
-          }),
+
     }),
     Effect.timeout("10 seconds"),
     Effect.retry({ times: 5 }),
-  )
-}
+    Effect.catchAll((err) =>
+      err instanceof HttpRequestFailed
+        ? Effect.fail(err)
+        : Effect.fail(new QueryContractError({ cause: err }))
+    )
+)}

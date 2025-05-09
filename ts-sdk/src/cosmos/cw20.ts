@@ -1,10 +1,8 @@
 import { Effect } from "effect"
-import { extractErrorDetails } from "../utils/extract-error-details.js"
 import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
-import { ExtendedCosmWasmClientContext } from "./client.js"
 import { executeContract, queryContract } from "./contract.js"
-import { QueryContractError } from "./contract.js"
 import { queryContractSmartAtHeight } from "./query.js"
+import { FetchHttpClient } from "@effect/platform"
 
 /**
  * Interface for CW20 token metadata
@@ -72,11 +70,16 @@ export const readCw20BalanceAtHeight = (
   height: number,
 ) =>
   Effect.gen(function*() {
-    const resp = yield* queryContractSmartAtHeight(rest, contractAddress, {
+    const resp = yield* queryContractSmartAtHeight<{ data: {balance: string} }>(rest, contractAddress, {
       balance: {
         address,
       },
-    }, height)
+    }, height).pipe(
+      Effect.provide(FetchHttpClient.layer),
+      Effect.tapErrorCause((cause) =>
+        Effect.logError("Error fetching channel balance at height:", cause)
+      )
+    )
     return resp.data.balance
   })
 
@@ -93,9 +96,14 @@ export const readCw20TotalSupplyAtHeight = (
   height: number,
 ) =>
   Effect.gen(function*() {
-    const resp = yield* queryContractSmartAtHeight(rest, contractAddress, {
+    const resp = yield* queryContractSmartAtHeight<{ data: {name: string, symbol: string, decimals: number, total_supply: string} }>(rest, contractAddress, {
       token_info: {},
-    }, height)
+    }, height).pipe(
+      Effect.provide(FetchHttpClient.layer),
+      Effect.tapErrorCause((cause) =>
+        Effect.logError("Error fetching channel balance at height:", cause)
+      )
+    )
     return resp.data.total_supply
   })
 
