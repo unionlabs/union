@@ -224,6 +224,45 @@ export const resolveIncident = (
   )
 }
 
+export function getAggregateIncident(db: BetterSqlite3Database, key: string): string | undefined {
+  const row = db
+    .prepare(`SELECT incident_id FROM aggregate_incidents WHERE key = ?`)
+    .get(key) as { incident_id: string } | undefined
+  return row?.incident_id
+}
+
+export function markAggregateIncident(db: BetterSqlite3Database, key: string, incidentId: string) {
+  db.prepare(`
+    INSERT OR REPLACE INTO aggregate_incidents
+      (key, incident_id, inserted_at)
+    VALUES (?, ?, strftime('%s','now')*1000)
+  `).run(key, incidentId)
+}
+
+export function clearAggregateIncident(db: BetterSqlite3Database, key: string) {
+  db.prepare(`DELETE FROM aggregate_incidents WHERE key = ?`).run(key)
+}
+
+
+export function getSupplyIncident(db: BetterSqlite3Database, key: string): string | undefined {
+  const row = db.prepare(`SELECT incident_id FROM supply_incidents WHERE key = ?`).get(key) as
+    | { incident_id: string }
+    | undefined
+  return row?.incident_id
+}
+
+export function markSupplyIncident(db: BetterSqlite3Database, key: string, incidentId: string) {
+  db.prepare(`
+    INSERT OR REPLACE INTO supply_incidents
+      (key, incident_id, inserted_at)
+    VALUES (?, ?, strftime('%s','now')*1000)
+  `).run(key, incidentId)
+}
+
+export function clearSupplyIncident(db: BetterSqlite3Database, key: string) {
+  db.prepare(`DELETE FROM supply_incidents WHERE key = ?`).run(key)
+}
+
 export function isFunded(db: BetterSqlite3Database, txHash: string) {
   const row = db.prepare(`SELECT 1 FROM funded_txs WHERE transaction_hash = ?`).get(txHash)
   return !!row
@@ -712,7 +751,6 @@ const escrowSupplyControlLoop = Effect.repeat(
           }
           totalSupply = BigInt(totalSupplyHere as bigint)
         } else {
-          const client = yield* createCosmWasmClient(dstCfg.rpc)
           const extClient = yield* createExtendedCosmWasmClient(dstCfg.rpc, dstCfg.restUrl)
 
           const cosmosHeight = blockNumbers.get(dstCfg.rpc)!
@@ -737,8 +775,34 @@ const escrowSupplyControlLoop = Effect.repeat(
           }
           totalSupply = BigInt(totalSupplyHere)
         }
+        
+        const supplyKey = `${srcChain}:${dstChain}:${token.denom}`
+        const existingSupplyIncident = getSupplyIncident(db, supplyKey)
 
         if (srcChannelBal < totalSupply) {
+          if (!existingSupplyIncident) {
+            const inc = yield* triggerIncident(
+              `SUPPLY_ERROR @ ${supplyKey}`,
+              JSON.stringify({
+                issueType: "TOTAL_SUPPLY_GT_CHANNEL_BALANCE",
+                sourceChain: srcChain,
+                destinationChain: dstChain,
+                denom: token.denom,
+                unwrappedDenom: token.wrapping[0]?.unwrapped_denom,
+                sourceChannelId,
+                sourceChannelBal: srcChannelBal.toString(),
+                totalSupply: totalSupply.toString(),
+              }),
+              config.betterstack_api_key,
+              config.trigger_betterstack,
+              "SENTINEL@union.build",
+              "TOTAL_SUPPLY_GT_CHANNEL_BALANCE",
+              "Union",
+              config.isLocal,
+            )
+            if (inc.data.id) markSupplyIncident(db, supplyKey, inc.data.id)
+          }        
+
           const logEffect = Effect.annotateLogs({
             issueType: "TOTAL SUPPLY IS HIGHER THAN SOURCE CHANNEL BALANCE",
             sourceChain: `${srcChain}`,
@@ -749,10 +813,21 @@ const escrowSupplyControlLoop = Effect.repeat(
             sourceChannelBal: `${srcChannelBal}`,
             totalSupply: `${totalSupply}`,
             destinationChannelId: `${dstChannel}`,
-          })(Effect.logError(`SUPPLY ERROR`))
+          })(Effect.logError(`SUPPLY_ERROR`))
 
           Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
         } else {
+          if (existingSupplyIncident) {
+            const didResolve = yield* resolveIncident(
+              existingSupplyIncident,
+              config.betterstack_api_key,
+              config.trigger_betterstack,
+              config.isLocal,
+              "Sentinel: supply back in sync",
+            )
+            if (didResolve) clearSupplyIncident(db, supplyKey)
+            }
+        
           const logEffect = Effect.annotateLogs({
             sourceChain: `${srcChain}`,
             destinationChain: `${dstChain}`,
@@ -787,7 +862,7 @@ const escrowSupplyControlLoop = Effect.repeat(
           }
 
           for (const [tokenAddr, channelSum] of evmChannelBalances.get(chainId) ?? []) {
-            const onChain = yield* readErc20BalanceAtBlock(
+            const onChainRaw = yield* readErc20BalanceAtBlock(
               tokenAddr as Hex,
               minter as Hex,
               evmHeight,
@@ -798,11 +873,37 @@ const escrowSupplyControlLoop = Effect.repeat(
                 return Effect.succeed(null); 
               })
             )
-            if (!onChain) {
+            if (!onChainRaw) {
               yield* Effect.log("No balance found for denom:", tokenAddr)
               continue
             }
-            if (BigInt(onChain) < channelSum) {
+            const onChain = BigInt(onChainRaw as bigint)
+            const aggregateKey = `${chainId}:${tokenAddr}`
+            const existingAgg = getAggregateIncident(db, aggregateKey)
+
+
+            if (onChain < channelSum) {
+              if (!existingAgg) {
+                const inc = yield* triggerIncident(
+                  `AGGREGATE_MISMATCH @ ${aggregateKey}`,
+                  JSON.stringify({
+                    issueType: "AGGREGATE_GT_ONCHAIN",
+                    chainId,
+                    tokenAddr,
+                    minter,
+                    aggregated: channelSum.toString(),
+                    onChain: onChain.toString(),
+                  }),
+                  config.betterstack_api_key,
+                  config.trigger_betterstack,
+                  "SENTINEL@union.build",
+                  "AGGREGATE_GT_ONCHAIN",
+                  "Union",
+                  config.isLocal,
+                )
+                if (inc.data.id) markAggregateIncident(db, aggregateKey, inc.data.id)
+              }
+
               const errLog = Effect.annotateLogs({
                 issueType: "AGGREGATE_GT_ONCHAIN",
                 chainId,
@@ -814,6 +915,17 @@ const escrowSupplyControlLoop = Effect.repeat(
 
               Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
             } else {
+              if (existingAgg) {
+                const didResolve = yield* resolveIncident(
+                  existingAgg,
+                  config.betterstack_api_key,
+                  config.trigger_betterstack,
+                  config.isLocal,
+                  "Sentinel: aggregate back in sync",
+                )
+                if (didResolve) clearAggregateIncident(db, aggregateKey)
+              }
+          
               const okLog = Effect.annotateLogs({
                 chainId,
                 tokenAddr,
@@ -838,22 +950,27 @@ const escrowSupplyControlLoop = Effect.repeat(
               })
             )
             let amount
+            const cosmosHeight = blockNumbers.get(rpc)!
+            if (!cosmosHeight) {
+              yield* Effect.log("No block number found for cosmos - chain:", chainId)
+              continue
+            }
             if (isDenomNativeHere) {
+              // const balance = yield* Effect.tryPromise({
+              //   try: () => cosmosClient.getBalance(minter, denom),
+              //   catch: e => new Error(`bank query failed: ${e}`),
+              // })
               const balance = yield* Effect.tryPromise({
-                try: () => cosmosClient.getBalance(minter, denom),
+                try: () => extClient.getBalanceAtHeight(minter, denom, Number(cosmosHeight)),
                 catch: e => new Error(`bank query failed: ${e}`),
               })
               if (!balance) {
                 yield* Effect.log("No balance found for denom:", denom)
                 continue
               }
-              amount = BigInt(balance.amount)
+              amount = BigInt(balance)
             } else {
-              const cosmosHeight = blockNumbers.get(rpc)!
-              if (!cosmosHeight) {
-                yield* Effect.log("No block number found for cosmos - chain:", chainId)
-                continue
-              }
+
 
               const balance = yield* readCw20BalanceAtHeight(
                 denom,
@@ -1546,15 +1663,31 @@ const mainEffect = Effect.gen(function*(_) {
     )
   `).run()
 
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS supply_incidents (
+      key            TEXT PRIMARY KEY,  -- e.g. "$srcChain:dstChain:token.denom"
+      incident_id    TEXT NOT NULL,
+      inserted_at    INTEGER
+    )
+  `).run()
+
+  db.prepare(`
+    CREATE TABLE IF NOT EXISTS aggregate_incidents (
+      key            TEXT PRIMARY KEY,  -- e.g. "chainId:tokenAddr"
+      incident_id    TEXT NOT NULL,
+      inserted_at    INTEGER
+    )
+  `).run()
+
   yield* Effect.log("Database opened at", config.dbPath, "hasuraEndpoint:", config.hasuraEndpoint)
 
   yield* Effect.all(
     [
-      runIbcChecksForever,
+      // runIbcChecksForever,
       escrowSupplyControlLoop,
-      fundBabylonAccounts,
-      checkBalances,
-      checkSSLCertificates,
+      // fundBabylonAccounts,
+      // checkBalances,
+      // checkSSLCertificates,
     ],
     {
       concurrency: "unbounded",
