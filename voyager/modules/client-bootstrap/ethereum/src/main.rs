@@ -138,7 +138,7 @@ impl ClientBootstrapModule for Module {
 
         let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url);
 
-        let spec = beacon_api_client.spec().await.unwrap().data;
+        let spec = beacon_api_client.spec().await.unwrap();
 
         if spec.preset_base != config.chain_spec {
             return Err(format!(
@@ -169,9 +169,9 @@ impl ClientBootstrapModuleServer for Module {
     ) -> RpcResult<Value> {
         ensure_null(config)?;
 
-        let genesis = self.beacon_api_client.genesis().await.unwrap().data;
+        let genesis = self.beacon_api_client.genesis().await.unwrap();
 
-        let spec = self.beacon_api_client.spec().await.unwrap().data;
+        let spec = self.beacon_api_client.spec().await.unwrap();
 
         let beacon_slot = self
             .beacon_slot_of_execution_block_number(height.height())

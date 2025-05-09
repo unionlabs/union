@@ -1,10 +1,15 @@
 #![warn(clippy::unwrap_used)]
 
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
+
 use alloy::{
     eips::BlockNumberOrTag,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
 };
-use beacon_api::client::BeaconApiClient;
+use beacon_api::{
+    client::{BeaconApiClient, VersionedResponse},
+    routes::light_client_finality_update::LightClientFinalityUpdateResponseTypes,
+};
 use beacon_api_types::{chain_spec::PresetBaseKind, custom_types::Slot};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -12,7 +17,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{instrument, trace};
+use tracing::{debug, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
     module::{ConsensusModuleInfo, ConsensusModuleServer},
@@ -28,12 +33,13 @@ async fn main() {
 
 #[derive(Debug, Clone)]
 pub struct Module {
-    pub chain_id: ChainId,
+    chain_id: ChainId,
 
-    pub chain_spec: PresetBaseKind,
+    provider: DynProvider,
+    beacon_api_client: BeaconApiClient,
 
-    pub provider: DynProvider,
-    pub beacon_api_client: BeaconApiClient,
+    finality_update:
+        moka::future::Cache<(), VersionedResponse<LightClientFinalityUpdateResponseTypes>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -51,11 +57,74 @@ pub struct Config {
 }
 
 impl Module {
+    async fn finality_update_cached(
+        &self,
+    ) -> RpcResult<VersionedResponse<LightClientFinalityUpdateResponseTypes>> {
+        Ok(self
+            .finality_update
+            .entry(())
+            .and_try_compute_with(async |spec| {
+                let put = async || {
+                    self.beacon_api_client
+                        .finality_update()
+                        .await
+                        .map(moka::ops::compute::Op::Put)
+                };
+
+                match spec {
+                    Some(finality_update) => {
+                        let Some(timestamp) = finality_update.value().fold_ref(
+                            |f| match *f {},
+                            // altair can't be trivially cached as it doesn't contain the execution payload
+                            |_| None,
+                            |f| Some(f.finalized_header.execution.timestamp),
+                            |f| Some(f.finalized_header.execution.timestamp),
+                            |f| Some(f.finalized_header.execution.timestamp),
+                            |f| Some(f.finalized_header.execution.timestamp),
+                        ) else {
+                            return put().await;
+                        };
+
+                        let spec = self.beacon_api_client.spec().await?;
+                        // 3 epochs is finalized
+                        let max_age = 3 * spec.seconds_per_slot * spec.slots_per_epoch.get();
+
+                        let now = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .expect("should be fine")
+                            .as_secs();
+
+                        let age = now.saturating_sub(timestamp);
+
+                        debug!(%age, %max_age, %timestamp, %now, "finality update cache info");
+
+                        if age >= max_age {
+                            debug!("expired");
+                            put().await
+                        } else {
+                            debug!("not yet expired");
+                            Ok(moka::ops::compute::Op::Nop)
+                        }
+                    }
+                    None => put().await,
+                }
+            })
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(err).with_message("error fetching finality update"),
+                    None::<()>,
+                )
+            })?
+            .unwrap()
+            .into_value())
+    }
+
     /// Returns (block_number, timestamp)
     async fn query_latest_execution_meta(&self) -> RpcResult<(u64, u64)> {
         Ok(self
-            .beacon_api_client
-            .finality_update()
+            .finality_update_cached()
             .await
             .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
             .fold(
@@ -158,8 +227,7 @@ impl ConsensusModule for Module {
         let spec = beacon_api_client
             .spec()
             .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
-            .data;
+            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
 
         if spec.preset_base != config.chain_spec {
             return Err(format!(
@@ -171,9 +239,14 @@ impl ConsensusModule for Module {
 
         Ok(Self {
             chain_id,
-            chain_spec: spec.preset_base,
             provider,
             beacon_api_client,
+            finality_update: moka::future::CacheBuilder::new(1)
+                .name("finality_update")
+                .initial_capacity(1)
+                .time_to_live(Duration::from_secs(12 * 60 * 60))
+                .time_to_idle(Duration::from_secs(12 * 60 * 60))
+                .build(),
         })
     }
 }

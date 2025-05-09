@@ -11,6 +11,14 @@ async fn main() {
 async fn do_main() {
     let client = BeaconApiClient::new("https://lodestar-sepolia.chainsafe.io");
 
+    // let spec = client.spec().await.unwrap();
+
+    // let spec = client.spec().await.unwrap();
+
+    // let genesis = client.genesis().await.unwrap();
+
+    // let genesis = client.genesis().await.unwrap();
+
     // genesis
     let block = client
         .block(BlockId::Slot(Slot::new(5772606)))
