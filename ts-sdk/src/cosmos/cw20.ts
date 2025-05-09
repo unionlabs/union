@@ -4,6 +4,7 @@ import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js
 import { ExtendedCosmWasmClientContext } from "./client.js"
 import { executeContract, queryContract } from "./contract.js"
 import { QueryContractError } from "./contract.js"
+import { queryContractSmartAtHeight } from "./query.js"
 
 /**
  * Interface for CW20 token metadata
@@ -58,50 +59,40 @@ export const readCw20TotalSupply = (contractAddress: string) =>
 
 /**
  * Read the balance of a CW20 token for a specific address
+ * @param rest The rest url
  * @param contractAddress The address of the CW20 token contract
  * @param address The address to check the balance for
  * @param height Height of the chain
  * @returns An Effect that resolves to the token balance
  */
-export const readCw20BalanceAtHeight = (contractAddress: string, address: string, height: number) =>
+export const readCw20BalanceAtHeight = (rest: string, contractAddress: string, address: string, height: number) =>
   Effect.gen(function*() {
-    const client = (yield* ExtendedCosmWasmClientContext).client
-    const resp = yield* Effect.tryPromise({
-      try: () =>
-        client.queryContractSmartAtHeight(
-          contractAddress,
-          {
-            balance: {
-              address,
-            },
-          },
-          height,
-        ),
-      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
-    }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
+    const resp = yield* queryContractSmartAtHeight(rest, contractAddress,
+      {
+        balance: {
+          address,
+        },
+      },
+      height,
+    )
     return resp.data.balance
   })
 
 /**
  * Read CW20 token total_supply
+ * @param rest The rest url
  * @param contractAddress The address of the CW20 token contract
  * @param height Height of the chain
  * @returns An Effect that resolves to the token total supply
  */
-export const readCw20TotalSupplyAtHeight = (contractAddress: string, height: number) =>
+export const readCw20TotalSupplyAtHeight = (rest: string, contractAddress: string, height: number) =>
   Effect.gen(function*() {
-    const client = (yield* ExtendedCosmWasmClientContext).client
-    const resp = yield* Effect.tryPromise({
-      try: () =>
-        client.queryContractSmartAtHeight(
-          contractAddress,
-          {
-            token_info: {},
-          },
-          height,
-        ),
-      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
-    }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
+    const resp = yield* queryContractSmartAtHeight(rest, contractAddress,
+      {
+        token_info: {},
+      },
+      height,
+    )
     return resp.data.total_supply
   })
 

@@ -19,6 +19,28 @@ export class ExecuteContractError extends Data.TaggedError("ExecuteContractError
 }> {}
 
 /**
+ * Error type for HttpRequest execution failures
+ */
+export class HttpRequestFailed extends Data.TaggedError("HttpRequestFailed")<{
+  status: number
+  body: unknown
+}> {}
+
+/**
+ * Error when fetching the latest block height
+ */
+export class GetHeightError extends Data.TaggedError("GetHeightError")<{
+  cause: unknown
+}> {}
+
+/**
+ * Error when fetching a balance at latest height
+ */
+export class GetBalanceError extends Data.TaggedError("GetBalanceError")<{
+  cause: unknown
+}> {}
+
+/**
  * A type-safe wrapper around CosmWasm's queryContract that handles error cases
  * and returns an Effect with proper type inference.
  *
@@ -68,18 +90,35 @@ export const executeContract = (
   })
 
 /**
- * Query at an explicit block height
+ * Wrap CosmWasmClient.getHeight() in an Effect
  */
-export const queryContractAtHeight = <T = unknown>(
-  contractAddress: string,
-  queryMsg: Record<string, unknown>,
-  height: number,
-) =>
-  Effect.gen(function*() {
-    const client = (yield* ExtendedCosmWasmClientContext).client
-    const resp = yield* Effect.tryPromise({
-      try: () => client.queryContractSmartAtHeight(contractAddress, queryMsg, height),
-      catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
-    }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
-    return resp as T
-  })
+export function getChainHeight(
+  client: CosmWasmClient
+) {
+  return Effect.tryPromise({
+    try: () => client.getHeight(),
+    catch: (err) =>
+      new GetHeightError({ cause: extractErrorDetails(err as Error) }),
+  }).pipe(
+    Effect.timeout("10 seconds"),
+    Effect.retry({ times: 5 })
+  )
+}
+
+/**
+ * Wrap CosmWasmClient.getBalance() in an Effect
+ */
+export function getBalanceNow(
+  client: CosmWasmClient,
+  address: string,
+  denom: string
+) {
+  return Effect.tryPromise({
+    try: () => client.getBalance(address, denom),
+    catch: (err) =>
+      new GetBalanceError({ cause: extractErrorDetails(err as Error) }),
+  }).pipe(
+    Effect.timeout("10 seconds"),
+    Effect.retry({ times: 5 })
+  )
+}
