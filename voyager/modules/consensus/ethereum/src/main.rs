@@ -158,8 +158,7 @@ impl ConsensusModule for Module {
         let spec = beacon_api_client
             .spec()
             .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?
-            .data;
+            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
 
         if spec.preset_base != config.chain_spec {
             return Err(format!(

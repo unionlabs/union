@@ -1,8 +1,12 @@
 //! Beacon API client, implemented as per <https://ethereum.github.io/beacon-APIs/releases/v2.4.1/beacon-node-oapi.json>
 
-use std::fmt::{Debug, Display};
+use std::{
+    fmt::{Debug, Display},
+    time::Duration,
+};
 
 use beacon_api_types::custom_types::Slot;
+use moka::{future::Cache, ops::compute::Op};
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
@@ -12,10 +16,13 @@ use unionlabs::primitives::H256;
 use crate::{
     errors::Error,
     routes::{
-        block::BeaconBlockResponse, genesis::GenesisResponse, header::BeaconBlockHeaderResponse,
+        block::BeaconBlockResponse,
+        genesis::{GenesisData, GenesisResponse},
+        header::BeaconBlockHeaderResponse,
         light_client_bootstrap::LightClientBootstrapResponseTypes,
         light_client_finality_update::LightClientFinalityUpdateResponseTypes,
-        light_client_updates::LightClientUpdateResponseTypes, spec::SpecResponse,
+        light_client_updates::LightClientUpdateResponseTypes,
+        spec::{Spec, SpecResponse},
     },
 };
 
@@ -25,6 +32,8 @@ pub type Result<T> = core::result::Result<T, Error>;
 pub struct BeaconApiClient {
     client: Client,
     base_url: String,
+    spec: Cache<(), Spec>,
+    genesis: Cache<(), GenesisData>,
 }
 
 impl BeaconApiClient {
@@ -32,11 +41,37 @@ impl BeaconApiClient {
         Self {
             client: reqwest::Client::new(),
             base_url: base_url.as_ref().trim_end_matches('/').into(),
+
+            // refresh these caches every 12 hours
+            spec: moka::future::CacheBuilder::new(1)
+                .name("spec")
+                .initial_capacity(1)
+                .time_to_live(Duration::from_secs(12 * 60 * 60))
+                .time_to_idle(Duration::from_secs(12 * 60 * 60))
+                .build(),
+            genesis: moka::future::CacheBuilder::new(1)
+                .name("genesis")
+                .initial_capacity(1)
+                .time_to_live(Duration::from_secs(12 * 60 * 60))
+                .time_to_idle(Duration::from_secs(12 * 60 * 60))
+                .build(),
         }
     }
 
-    pub async fn spec(&self) -> Result<SpecResponse> {
-        self.get_json("/eth/v1/config/spec").await
+    pub async fn spec(&self) -> Result<Spec> {
+        Ok(self
+            .spec
+            .entry(())
+            .and_try_compute_with(async |spec| match spec {
+                Some(_) => Ok(Op::Nop),
+                None => self
+                    .get_json::<SpecResponse>("/eth/v1/config/spec")
+                    .await
+                    .map(|res| Op::Put(res.data)),
+            })
+            .await?
+            .unwrap()
+            .into_value())
     }
 
     pub async fn finality_update(
@@ -68,8 +103,20 @@ impl BeaconApiClient {
 
     // Light Client API
 
-    pub async fn genesis(&self) -> Result<GenesisResponse> {
-        self.get_json("/eth/v1/beacon/genesis").await
+    pub async fn genesis(&self) -> Result<GenesisData> {
+        Ok(self
+            .genesis
+            .entry(())
+            .and_try_compute_with(async |spec| match spec {
+                Some(_) => Ok(Op::Nop),
+                None => self
+                    .get_json::<GenesisResponse>("/eth/v1/beacon/genesis")
+                    .await
+                    .map(|res| Op::Put(res.data)),
+            })
+            .await?
+            .unwrap()
+            .into_value())
     }
 
     /// NOTE: Lodestar will return an empty array if count is 0, however other implementations return an error response.
@@ -119,7 +166,7 @@ impl BeaconApiClient {
 
         let mut amount_of_slots_back = Slot::new(0);
 
-        let spec = self.spec().await?.data;
+        let spec = self.spec().await?;
 
         let floored_slot = Slot::new(
             slot.get() / (spec.slots_per_epoch.get() * spec.epochs_per_sync_committee_period)

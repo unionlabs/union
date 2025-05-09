@@ -153,17 +153,13 @@ impl Plugin for Module {
 
         let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url);
 
-        let spec = beacon_api_client
-            .spec()
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching beacon spec"),
-                    None::<()>,
-                )
-            })?
-            .data;
+        let spec = beacon_api_client.spec().await.map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                ErrorReporter(e).with_message("error fetching beacon spec"),
+                None::<()>,
+            )
+        })?;
 
         if spec.preset_base != config.chain_spec {
             return Err(format!(
@@ -370,18 +366,13 @@ impl Module {
                 },
             );
 
-        let spec = self
-            .beacon_api_client
-            .spec()
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching beacon spec"),
-                    None::<()>,
-                )
-            })?
-            .data;
+        let spec = self.beacon_api_client.spec().await.map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                ErrorReporter(e).with_message("error fetching beacon spec"),
+                None::<()>,
+            )
+        })?;
 
         // === FETCH VALID FINALITY UPDATE
 
@@ -538,18 +529,13 @@ impl Module {
 
         // header.sort_by_key(|header| header.consensus_update.attested_header.beacon.slot);
 
-        let genesis = self
-            .beacon_api_client
-            .genesis()
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    ErrorReporter(e).with_message("error fetching beacon genesis"),
-                    None::<()>,
-                )
-            })?
-            .data;
+        let genesis = self.beacon_api_client.genesis().await.map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                ErrorReporter(e).with_message("error fetching beacon genesis"),
+                None::<()>,
+            )
+        })?;
 
         let last_update_signature_slot = headers
             .iter()
