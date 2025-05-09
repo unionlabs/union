@@ -1,5 +1,3 @@
-use std::time::Duration;
-
 use beacon_api::client::{BeaconApiClient, BlockId};
 use beacon_api_types::custom_types::Slot;
 
@@ -11,7 +9,7 @@ async fn main() {
 }
 
 async fn do_main() {
-    let client = BeaconApiClient::new("https://rpc.ankr.com/premium-http/eth_sepolia_beacon/600e64992540cbffec77b76818b06928007ba789f9a03f4407557e94dcc6ccdf");
+    let client = BeaconApiClient::new("https://lodestar-sepolia.chainsafe.io");
 
     // let spec = client.spec().await.unwrap();
 
@@ -20,14 +18,6 @@ async fn do_main() {
     // let genesis = client.genesis().await.unwrap();
 
     // let genesis = client.genesis().await.unwrap();
-
-    loop {
-        let f = client.finality_update().await.unwrap();
-
-        dbg!(f);
-
-        tokio::time::sleep(Duration::from_secs(15)).await;
-    }
 
     // genesis
     let block = client

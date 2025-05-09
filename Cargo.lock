@@ -15310,6 +15310,7 @@ dependencies = [
  "beacon-api-types",
  "embed-commit",
  "jsonrpsee",
+ "moka",
  "serde",
  "tokio",
  "tracing",

@@ -467,7 +467,13 @@ mod tests {
             Err(Error::InsufficientSyncCommitteeParticipants(..))
         ));
 
-        let _ = update.sync_aggregate.sync_committee_bits.pop();
+        // this is just .pop()
+        update.sync_aggregate.sync_committee_bits = update
+            .sync_aggregate
+            .sync_committee_bits
+            .into_iter()
+            .skip(1)
+            .collect();
 
         assert!(matches!(
             update_6553725(&update, AlwaysSuccessBlsVerifier),
