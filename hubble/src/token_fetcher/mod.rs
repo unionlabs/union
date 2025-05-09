@@ -27,19 +27,23 @@ pub struct TokenRepresentation {
     name: String,
     decimals: i32,
     logo_uri: Option<String>,
+    instantiate_height: Option<u64>,
 }
 
 impl Display for TokenRepresentation {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_fmt(format_args!(
-            "{}.{}:{}, {} ({}) [{}] - {}",
+            "{}.{}:{}, {} ({}) [{}] - {}{}",
             self.token_source_id,
             self.internal_chain_id,
             hex::encode(&self.address),
             self.symbol,
             self.name,
             self.decimals,
-            self.logo_uri.as_deref().unwrap_or("None")
+            self.logo_uri.as_deref().unwrap_or("None"),
+            self.instantiate_height
+                .map(|h| format!(" instantiated at {h}"))
+                .unwrap_or("".to_string()),
         ))
     }
 }

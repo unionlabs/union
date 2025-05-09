@@ -33,7 +33,7 @@ pub async fn get_token_representations(
 ) -> sqlx::Result<Vec<TokenRepresentation>> {
     Ok(sqlx::query!(
         r#"
-        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri
+        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri, instantiate_height
         FROM token.token_source_representations
         WHERE token_source_id = $1
         "#,
@@ -50,6 +50,7 @@ pub async fn get_token_representations(
         name: record.name,
         decimals: record.decimals,
         logo_uri: record.logo_uri,
+        instantiate_height: record.instantiate_height.map(|h| h.try_into().unwrap()),
     })
     .collect())
 }
@@ -79,14 +80,15 @@ pub async fn upsert_token_representation(
 ) -> sqlx::Result<()> {
     sqlx::query!(
         "
-        INSERT INTO token.token_source_representations (token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri)
-        VALUES ($1, $2, $3, $4, $5, $6, $7)
+        INSERT INTO token.token_source_representations (token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri, instantiate_height)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
         ON CONFLICT (token_source_id, internal_chain_id, address) DO 
         UPDATE SET
             symbol = excluded.symbol,
             name = excluded.name,
             decimals = excluded.decimals,
-            logo_uri = excluded.logo_uri
+            logo_uri = excluded.logo_uri,
+            instantiate_height = excluded.instantiate_height
         ",
         token_representation.token_source_id,
         token_representation.internal_chain_id,
@@ -95,6 +97,7 @@ pub async fn upsert_token_representation(
         token_representation.name,
         token_representation.decimals,
         token_representation.logo_uri,
+        token_representation.instantiate_height.map(|h| h.try_into().unwrap()) as std::option::Option<i64>,
     )
     .execute(tx.as_mut())
     .await?;
