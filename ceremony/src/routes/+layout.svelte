@@ -212,7 +212,7 @@ const imagePath = "https://ceremony.union.build/images/ceremony-og.png"
     }}
   >
     <source
-      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitchboot.webm"
+      src="https://videos.cdn.union.build/glitchboot.webm"
       type="video/webm"
     />
   </video>
@@ -235,7 +235,7 @@ const imagePath = "https://ceremony.union.build/images/ceremony-og.png"
     }}
   >
     <source
-      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/glitch.webm"
+      src="https://videos.cdn.union.build/glitch.webm"
       type="video/webm"
     />
   </video>
