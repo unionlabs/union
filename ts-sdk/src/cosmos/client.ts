@@ -78,4 +78,3 @@ export const createSigningCosmWasmClient = (
     try: () => SigningCosmWasmClient.connectWithSigner(rpcEndpoint, signer, options),
     catch: error => new CosmWasmClientError({ cause: extractErrorDetails(error as Error) }),
   }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
-

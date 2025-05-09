@@ -93,15 +93,14 @@ export const executeContract = (
  * Wrap CosmWasmClient.getHeight() in an Effect
  */
 export function getChainHeight(
-  client: CosmWasmClient
+  client: CosmWasmClient,
 ) {
   return Effect.tryPromise({
     try: () => client.getHeight(),
-    catch: (err) =>
-      new GetHeightError({ cause: extractErrorDetails(err as Error) }),
+    catch: (err) => new GetHeightError({ cause: extractErrorDetails(err as Error) }),
   }).pipe(
     Effect.timeout("10 seconds"),
-    Effect.retry({ times: 5 })
+    Effect.retry({ times: 5 }),
   )
 }
 
@@ -111,14 +110,13 @@ export function getChainHeight(
 export function getBalanceNow(
   client: CosmWasmClient,
   address: string,
-  denom: string
+  denom: string,
 ) {
   return Effect.tryPromise({
     try: () => client.getBalance(address, denom),
-    catch: (err) =>
-      new GetBalanceError({ cause: extractErrorDetails(err as Error) }),
+    catch: (err) => new GetBalanceError({ cause: extractErrorDetails(err as Error) }),
   }).pipe(
     Effect.timeout("10 seconds"),
-    Effect.retry({ times: 5 })
+    Effect.retry({ times: 5 }),
   )
 }

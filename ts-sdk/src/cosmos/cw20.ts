@@ -65,16 +65,18 @@ export const readCw20TotalSupply = (contractAddress: string) =>
  * @param height Height of the chain
  * @returns An Effect that resolves to the token balance
  */
-export const readCw20BalanceAtHeight = (rest: string, contractAddress: string, address: string, height: number) =>
+export const readCw20BalanceAtHeight = (
+  rest: string,
+  contractAddress: string,
+  address: string,
+  height: number,
+) =>
   Effect.gen(function*() {
-    const resp = yield* queryContractSmartAtHeight(rest, contractAddress,
-      {
-        balance: {
-          address,
-        },
+    const resp = yield* queryContractSmartAtHeight(rest, contractAddress, {
+      balance: {
+        address,
       },
-      height,
-    )
+    }, height)
     return resp.data.balance
   })
 
@@ -85,14 +87,15 @@ export const readCw20BalanceAtHeight = (rest: string, contractAddress: string, a
  * @param height Height of the chain
  * @returns An Effect that resolves to the token total supply
  */
-export const readCw20TotalSupplyAtHeight = (rest: string, contractAddress: string, height: number) =>
+export const readCw20TotalSupplyAtHeight = (
+  rest: string,
+  contractAddress: string,
+  height: number,
+) =>
   Effect.gen(function*() {
-    const resp = yield* queryContractSmartAtHeight(rest, contractAddress,
-      {
-        token_info: {},
-      },
-      height,
-    )
+    const resp = yield* queryContractSmartAtHeight(rest, contractAddress, {
+      token_info: {},
+    }, height)
     return resp.data.total_supply
   })
 

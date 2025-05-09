@@ -19,7 +19,7 @@ export function queryContractSmartAtHeight<T = unknown>(
   restEndpoint: string,
   contractAddress: string,
   queryMsg: Record<string, unknown>,
-  height: number
+  height: number,
 ) {
   const base = restEndpoint.replace(/\/+$/, "")
   const encoded = btoa(JSON.stringify(queryMsg))
@@ -45,7 +45,7 @@ export function queryContractSmartAtHeight<T = unknown>(
           : new QueryContractError({ cause: extractErrorDetails(err as Error) }),
     }),
     Effect.timeout("10 seconds"),
-    Effect.retry({ times: 5 })
+    Effect.retry({ times: 5 }),
   )
 }
 
@@ -56,7 +56,7 @@ export function getBalanceAtHeight(
   restEndpoint: string,
   address: string,
   denom: string,
-  height: number
+  height: number,
 ) {
   const base = restEndpoint.replace(/\/+$/, "")
   const url = `${base}/cosmos/bank/v1beta1/balances/${address}`
@@ -82,11 +82,11 @@ export function getBalanceAtHeight(
         err instanceof HttpRequestFailed
           ? err
           : new HttpRequestFailed({
-              status: 0,
-              body: extractErrorDetails(err as Error),
-            }),
+            status: 0,
+            body: extractErrorDetails(err as Error),
+          }),
     }),
     Effect.timeout("10 seconds"),
-    Effect.retry({ times: 5 })
+    Effect.retry({ times: 5 }),
   )
 }

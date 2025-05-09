@@ -25,15 +25,12 @@ export const channelBalance = (path: bigint, token: string) =>
 export const channelBalanceAtHeight = (rest: string, path: bigint, token: string, height: number) =>
   Effect.gen(function*() {
     const config = yield* CosmosChannelDestination
-    const resp = yield* queryContractSmartAtHeight(rest, config.ucs03address, 
-      {
-        get_channel_balance: {
-          channel_id: config.channelId,
-          path,
-          denom: token,
-        },
+    const resp = yield* queryContractSmartAtHeight(rest, config.ucs03address, {
+      get_channel_balance: {
+        channel_id: config.channelId,
+        path,
+        denom: token,
       },
-      height,
-    )
+    }, height)
     return resp
   })
