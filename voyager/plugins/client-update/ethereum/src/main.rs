@@ -378,7 +378,11 @@ impl Module {
 
         let does_not_have_has_supermajority = {
             let sync_committee_bits = BitVec::<u8, Msb0>::try_from(
-                finality_update.sync_aggregate.sync_committee_bits.clone(),
+                finality_update
+                    .sync_aggregate
+                    .sync_committee_bits
+                    .to_vec()
+                    .clone(),
             )
             .expect("sync committee bits should be valid");
 

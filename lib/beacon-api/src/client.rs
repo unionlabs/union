@@ -2,7 +2,7 @@
 
 use std::{
     fmt::{Debug, Display},
-    time::Duration,
+    time::{Duration, SystemTime, UNIX_EPOCH},
 };
 
 use beacon_api_types::custom_types::Slot;
@@ -34,6 +34,7 @@ pub struct BeaconApiClient {
     base_url: String,
     spec: Cache<(), Spec>,
     genesis: Cache<(), GenesisData>,
+    finality_update: Cache<(), VersionedResponse<LightClientFinalityUpdateResponseTypes>>,
 }
 
 impl BeaconApiClient {
@@ -51,6 +52,12 @@ impl BeaconApiClient {
                 .build(),
             genesis: moka::future::CacheBuilder::new(1)
                 .name("genesis")
+                .initial_capacity(1)
+                .time_to_live(Duration::from_secs(12 * 60 * 60))
+                .time_to_idle(Duration::from_secs(12 * 60 * 60))
+                .build(),
+            finality_update: moka::future::CacheBuilder::new(1)
+                .name("finality_update")
                 .initial_capacity(1)
                 .time_to_live(Duration::from_secs(12 * 60 * 60))
                 .time_to_idle(Duration::from_secs(12 * 60 * 60))
@@ -77,8 +84,57 @@ impl BeaconApiClient {
     pub async fn finality_update(
         &self,
     ) -> Result<VersionedResponse<LightClientFinalityUpdateResponseTypes>> {
-        self.get_json("/eth/v1/beacon/light_client/finality_update")
-            .await
+        Ok(self
+            .finality_update
+            .entry(())
+            .and_try_compute_with(async |spec| {
+                let put = async || {
+                    self.get_json("/eth/v1/beacon/light_client/finality_update")
+                        .await
+                        .map(Op::Put)
+                };
+
+                match spec {
+                    Some(finality_update) => {
+                        let Some(timestamp) = finality_update.value().fold_ref(
+                            |f| match *f {},
+                            // altair can't be trivially cached as it doesn't contain the execution payload
+                            |_| None,
+                            |f| Some(f.finalized_header.execution.timestamp),
+                            |f| Some(f.finalized_header.execution.timestamp),
+                            |f| Some(f.finalized_header.execution.timestamp),
+                            |f| Some(f.finalized_header.execution.timestamp),
+                        ) else {
+                            return put().await;
+                        };
+
+                        let spec = self.spec().await?;
+                        // 3 epochs is finalized
+                        let max_age = 3 * spec.seconds_per_slot * spec.slots_per_epoch.get();
+
+                        let now = SystemTime::now()
+                            .duration_since(UNIX_EPOCH)
+                            .unwrap()
+                            .as_secs();
+
+                        let age = now.saturating_sub(timestamp);
+
+                        info!(%age, %max_age, %timestamp, %now, "finality update cache info");
+
+                        if age >= max_age {
+                            info!("expired");
+                            put().await
+                        } else {
+                            info!("not yet expired");
+                            Ok(Op::Nop)
+                        }
+                    }
+                    None => put().await,
+                }
+            })
+            .await?
+            .unwrap()
+            .into_value())
     }
 
     pub async fn header(&self, block_id: BlockId) -> Result<BeaconBlockHeaderResponse> {
@@ -293,6 +349,25 @@ impl<T: VersionedResponseTypes> VersionedResponse<T> {
         capella: impl FnOnce(T::Capella) -> U,
         deneb: impl FnOnce(T::Deneb) -> U,
         electra: impl FnOnce(T::Electra) -> U,
+    ) -> U {
+        match self {
+            VersionedResponse::Phase0(t) => phase0(t),
+            VersionedResponse::Altair(t) => altair(t),
+            VersionedResponse::Bellatrix(t) => bellatrix(t),
+            VersionedResponse::Capella(t) => capella(t),
+            VersionedResponse::Deneb(t) => deneb(t),
+            VersionedResponse::Electra(t) => electra(t),
+        }
+    }
+
+    pub fn fold_ref<U>(
+        &self,
+        phase0: impl FnOnce(&T::Phase0) -> U,
+        altair: impl FnOnce(&T::Altair) -> U,
+        bellatrix: impl FnOnce(&T::Bellatrix) -> U,
+        capella: impl FnOnce(&T::Capella) -> U,
+        deneb: impl FnOnce(&T::Deneb) -> U,
+        electra: impl FnOnce(&T::Electra) -> U,
     ) -> U {
         match self {
             VersionedResponse::Phase0(t) => phase0(t),
