@@ -60,7 +60,7 @@ async function startVideo() {
     data-video="glitch"
   >
     <source
-      src="https://pub-32dd1494f0fa423cb1013941269ecce9.r2.dev/zkgm-v1.mp4"
+      src="https://videos.cdn.union.build/zkgm-v1.mp4"
       type="video/mp4"
     />
   </video>
