@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{fmt::Display, str::FromStr};
 
 use reqwest::StatusCode;
 use serde::{de, Deserialize, Deserializer};
@@ -71,6 +71,7 @@ pub struct Token {
     pub decimals: i32,
     #[serde(rename = "logoURI")]
     pub logo_uri: Option<String>,
+    pub extensions: Option<Extensions>,
 }
 
 impl Display for Token {
@@ -83,6 +84,49 @@ impl Display for Token {
             self.decimals,
             self.logo_uri.as_deref().unwrap_or("None")
         ))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Extensions {
+    pub hubble: Option<HubbleExtension>,
+}
+
+impl Display for Extensions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(hubble) = &self.hubble {
+            f.write_fmt(format_args!("hubble: {}", hubble))
+        } else {
+            f.write_str("no extensions")
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct HubbleExtension {
+    #[serde(default, deserialize_with = "deserialize_opt_u64_from_string")]
+    pub instantiate_height: Option<u64>,
+}
+
+impl Display for HubbleExtension {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "instantiate_height: {}",
+            self.instantiate_height
+                .map(|h| h.to_string())
+                .unwrap_or_else(|| "None".to_string())
+        ))
+    }
+}
+
+fn deserialize_opt_u64_from_string<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let opt = Option::<&str>::deserialize(deserializer)?;
+    match opt {
+        Some(s) => u64::from_str(s).map(Some).map_err(serde::de::Error::custom),
+        None => Ok(None),
     }
 }
 
