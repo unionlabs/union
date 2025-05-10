@@ -275,9 +275,14 @@ abstract contract UnionScript is UnionBase {
                                 params.weth,
                                 zkgmERC20,
                                 params.rateLimitEnabled,
-                                params.nativeTokenName,
-                                params.nativeTokenSymbol,
-                                params.nativeTokenDecimals
+                                new UCS03ZkgmSendImpl(
+                                    handler,
+                                    params.weth,
+                                    params.nativeTokenName,
+                                    params.nativeTokenSymbol,
+                                    params.nativeTokenDecimals
+                                ),
+                                new UCS03ZkgmStakeImpl(handler)
                             )
                         ),
                         abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
@@ -1170,11 +1175,17 @@ contract DryUpgradeUCS03 is VersionedScript {
                 weth,
                 zkgmERC20,
                 rateLimitEnabled,
-                nativeTokenName,
-                nativeTokenSymbol,
-                nativeTokenDecimals
+                new UCS03ZkgmSendImpl(
+                    handler,
+                    weth,
+                    nativeTokenName,
+                    nativeTokenSymbol,
+                    nativeTokenDecimals
+                ),
+                new UCS03ZkgmStakeImpl(handler)
             )
         );
+
         vm.prank(owner);
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
@@ -1224,9 +1235,14 @@ contract UpgradeUCS03 is VersionedScript {
                 weth,
                 zkgmERC20,
                 rateLimitEnabled,
-                nativeTokenName,
-                nativeTokenSymbol,
-                nativeTokenDecimals
+                new UCS03ZkgmSendImpl(
+                    handler,
+                    weth,
+                    nativeTokenName,
+                    nativeTokenSymbol,
+                    nativeTokenDecimals
+                ),
+                new UCS03ZkgmStakeImpl(handler)
             )
         );
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));

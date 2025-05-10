@@ -43,6 +43,24 @@ struct FungibleAssetOrder {
     uint256 quoteAmount;
 }
 
+struct Stake {
+    uint256 tokenId;
+    bytes sender;
+    bytes beneficiary;
+    uint256 amount;
+}
+
+struct Unstake {
+    bytes sender;
+    uint256 tokenId;
+}
+
+struct WithdrawStake {
+    uint256 tokenId;
+    bytes sender;
+    bytes beneficiary;
+}
+
 struct Ack {
     uint256 tag;
     bytes innerAck;
@@ -55,4 +73,30 @@ struct BatchAck {
 struct FungibleAssetOrderAck {
     uint256 fillType;
     bytes marketMaker;
+}
+
+struct UnstakeAck {
+    uint256 completionTime;
+}
+
+enum ZkgmStakeState {
+    // The position doesn't exist yet.
+    UNDEFINED,
+    // The tokens are being staked, the position isn't earning rewards yet.
+    STAKING,
+    // The tokens are bonded and the position is being rewarded.
+    STAKED,
+    // The tokens are being unbonded, the position no longer earns rewards.
+    UNSTAKING
+}
+
+struct ZkgmStake {
+    // Staking position state.
+    ZkgmStakeState state;
+    // The channel we staked on.
+    uint32 channelId;
+    // Bonded amount.
+    uint256 amount;
+    // Time at which unbonding will complete (allows the NFT to be burnt in exchange for withdrawal).
+    uint256 unstakingCompletion;
 }
