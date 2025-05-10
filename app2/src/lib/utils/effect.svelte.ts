@@ -1,3 +1,4 @@
+import { runtime } from "$lib/runtime"
 import { type Cause, type Effect, Either, Exit, type Fiber, FiberId, Option, Runtime } from "effect"
 import { dual } from "effect/Function"
 import type { Simplify } from "effect/Types"
@@ -128,8 +129,8 @@ export const runForkWithRuntime: {
 /**
  * {@link Effect.runFork} with automatic {@link Fiber} cleanup.
  */
-export const runFork = runForkWithRuntime(Runtime.defaultRuntime)
+export const runFork = runForkWithRuntime(runtime)
 /**
  * {@link Effect.runFork} with automatic {@link Fiber} cleanup.
  */
-export const runPromiseExit = runPromiseExitWithRuntime(Runtime.defaultRuntime)
+export const runPromiseExit = runPromiseExitWithRuntime(runtime)

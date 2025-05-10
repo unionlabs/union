@@ -4,13 +4,16 @@ import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Label from "$lib/components/ui/Label.svelte"
+import { A, runSync } from "$lib/runtime"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
 import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import { Match, Option } from "effect"
+import { runPromiseExit as runPromiseExit$ } from "$lib/utils/effect.svelte.js"
+import { Effect, identity, Match, Option } from "effect"
+import { onMount } from "svelte"
 
 type Props = {
   onContinue: () => void
@@ -29,6 +32,14 @@ const {
 
 let isErrorModalOpen = $state(false)
 let isReceiverOpen = $state(false)
+
+onMount(() => {
+  runSync(Effect.log("[runtime] hello, world"))
+})
+
+const runPromiseResult = runPromiseExit$(
+  Effect.andThen(A, identity),
+)
 
 const uiStatus = $derived.by(() => {
   return Option.match(transferErrors, {
@@ -66,6 +77,7 @@ const isButtonEnabled = $derived.by(() => !loading)
 
 <div class="min-w-full flex flex-col grow">
   <div class="flex flex-col gap-4 p-4">
+    <div>{runPromiseResult?.current}</div>
     <ChainAsset type="source" />
     <button
       class="group flex items-center gap-2 -mt-3 -mb-4 text-zinc-800 group-hover:text-zinc-600 transition-colors cursor-pointer"

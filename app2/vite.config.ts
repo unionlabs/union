@@ -4,6 +4,9 @@ import { svelteTesting } from "@testing-library/svelte/vite"
 import { defineConfig } from "vite"
 
 export default defineConfig({
+  define: {
+    // TODO: complete me <3
+  },
   plugins: [sveltekit(), tailwindcss()],
   build: { sourcemap: true },
   server: { allowedHosts: true },
