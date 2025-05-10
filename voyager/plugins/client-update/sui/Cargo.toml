@@ -27,5 +27,9 @@ tracing                     = { workspace = true }
 unionlabs                   = { workspace = true }
 voyager-message             = { workspace = true }
 voyager-vm                  = { workspace = true }
+bcs = { workspace = true }
 
 sui_sdk       = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+
+[dev-dependencies]
+hex-literal = { workspace = true }

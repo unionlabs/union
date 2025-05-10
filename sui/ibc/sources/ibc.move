@@ -145,14 +145,14 @@ module ibc::ibc {
     const E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH: u64 = 1045;
 
     #[event]
-    public struct ClientCreatedEvent has copy, drop, store {
+    public struct CreateClient has copy, drop, store {
         client_id: u32,
         client_type: String,
-        consensus_height: u64
+        counterparty_chain_id: String,
     }
 
     #[event]
-    public struct ClientUpdated has copy, drop, store {
+    public struct UpdateClient has copy, drop, store {
         client_id: u32,
         client_type: String,
         height: u64
@@ -163,6 +163,30 @@ module ibc::ibc {
         connection_id: u32,
         client_id: u32,
         counterparty_client_id: u32
+    }
+
+    #[event]
+    public struct ConnectionOpenTry has copy, drop, store {
+        connection_id: u32,
+        client_id: u32,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32
+    }
+
+    #[event]
+    public struct ConnectionOpenAck has copy, drop, store {
+        connection_id: u32,
+        client_id: u32,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32
+    }
+
+    #[event]
+    public struct ConnectionOpenConfirm has copy, drop, store {
+        connection_id: u32,
+        client_id: u32,
+        counterparty_client_id: u32,
+        counterparty_connection_id: u32
     }
 
     #[event]
@@ -201,31 +225,6 @@ module ibc::ibc {
         counterparty_channel_id: u32,
         connection_id: u32
     }
-
-    #[event]
-    public struct ConnectionOpenTry has copy, drop, store {
-        connection_id: u32,
-        client_id: u32,
-        counterparty_client_id: u32,
-        counterparty_connection_id: u32
-    }
-
-    #[event]
-    public struct ConnectionOpenAck has copy, drop, store {
-        connection_id: u32,
-        client_id: u32,
-        counterparty_client_id: u32,
-        counterparty_connection_id: u32
-    }
-
-    #[event]
-    public struct ConnectionOpenConfirm has copy, drop, store {
-        connection_id: u32,
-        client_id: u32,
-        counterparty_client_id: u32,
-        counterparty_connection_id: u32
-    }
-
 
     #[event]
     public struct SendPacket has drop, copy, store {
@@ -309,7 +308,7 @@ module ibc::ibc {
 
         let client_id = ibc_store.generate_client_identifier();
         
-        let (client, client_state_bytes, consensus_state_bytes) = light_client::create_client(
+        let (client, client_state_bytes, consensus_state_bytes, counterparty_chain_id) = light_client::create_client(
             client_id,
             client_state_bytes,
             consensus_state_bytes,
@@ -326,10 +325,10 @@ module ibc::ibc {
         ibc_store.clients.add(client_id, client);
 
         event::emit(
-            ClientCreatedEvent {
+            CreateClient {
                 client_id,
                 client_type,
-                consensus_height: latest_height,
+                counterparty_chain_id
             },
         )
     }
@@ -363,9 +362,8 @@ module ibc::ibc {
             hash::keccak256(&consensus_state)
         );
 
-        // Emit a ClientUpdated event for each updated height
         event::emit(
-            ClientUpdated {
+            UpdateClient {
                 client_id,
                 client_type: utf8(CLIENT_TYPE_COMETBLS),
                 height

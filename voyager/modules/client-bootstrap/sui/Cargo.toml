@@ -23,5 +23,7 @@ tokio                       = { workspace = true }
 tracing                     = { workspace = true }
 unionlabs                   = { workspace = true }
 voyager-message             = { workspace = true }
+reqwest = { workspace = true }
+bcs = { workspace = true }
 
 sui_sdk       = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }

@@ -1,7 +1,10 @@
+use crate::digest::Digest;
+
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     pub timestamp: u64,
+    pub content_digest: Digest,
 }
 
 #[cfg(feature = "ethabi")]
@@ -16,6 +19,7 @@ pub mod ethabi {
     alloy::sol! {
         struct SolConsensusState {
             uint64 timestamp;
+            bytes32 content_digest;
         }
     }
 
@@ -23,6 +27,7 @@ pub mod ethabi {
         fn from(value: ConsensusState) -> Self {
             Self {
                 timestamp: value.timestamp,
+                content_digest: value.content_digest.0.into(),
             }
         }
     }
@@ -36,6 +41,7 @@ pub mod ethabi {
         fn try_from(value: SolConsensusState) -> Result<Self, Self::Error> {
             Ok(Self {
                 timestamp: value.timestamp,
+                content_digest: Digest(value.content_digest.into()),
             })
         }
     }

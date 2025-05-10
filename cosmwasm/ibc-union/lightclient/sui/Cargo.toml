@@ -10,6 +10,9 @@ version                = "0.0.0"
 [lints]
 workspace = true
 
+[lib]
+crate-type = ["cdylib", "rlib"]
+
 [dependencies]
 bincode                = { workspace = true }
 cosmwasm-std           = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
@@ -22,9 +25,12 @@ serde                  = { workspace = true, features = ["derive"] }
 sui-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
 thiserror              = { workspace = true }
 unionlabs              = { workspace = true, features = ["ethabi"] }
+bcs = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
+unionlabs-primitives = { workspace = true, features = ["base64"]}
+serde_json = { workspace = true }
 
 [features]
 library = []

@@ -2,31 +2,26 @@ use std::{cmp::Ordering, collections::VecDeque};
 
 use ibc_union_spec::{
     event::{
-        ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
-        ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, FullEvent, PacketAck, PacketMetadata, PacketRecv,
-        PacketSend, UpdateClient, WriteAck,
+        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
+        CreateClient, FullEvent, UpdateClient,
     },
-    path::{ChannelPath, ConnectionPath},
-    ChannelId, ClientId, Connection, ConnectionId, ConnectionState, IbcUnion, Timestamp,
+    ClientId, IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use sui_sdk::{rpc_types::SuiTransactionBlockResponseOptions, SuiClientBuilder};
-use tracing::{debug, info, instrument};
-use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
+use tracing::{info, instrument};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256};
 use voyager_message::{
     call::{Call, WaitForHeight},
     data::{ChainEvent, Data},
     filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
-    primitives::{ChainId, ClientInfo, ClientType, IbcSpec},
+    primitives::{ChainId, ClientType, IbcSpec},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
@@ -243,7 +238,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .map(|(e, hash)| {
                         let event = match e.type_.name.as_str() {
-                            "ClientCreatedEvent" => {
+                            "CreateClient" => {
                                 let create_client: events::CreateClient =
                                     serde_json::from_value(e.parsed_json).unwrap();
                                 events::IbcEvent::CreateClient(create_client)
@@ -253,23 +248,25 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     serde_json::from_value(e.parsed_json).unwrap();
                                 events::IbcEvent::ConnectionOpenInit(connection_open)
                             }
-                            // "ConnectionOpenTry" => {
-                            //     let connection_open: events::ConnectionOpenTry =
-                            //         serde_json::from_value(e.parsed_json).unwrap();
-                            //     events::IbcEvent::ConnectionOpenTry(connection_open)
-                            // }
-                            // "ConnectionOpenAck" => {
-                            //     let connection_open: events::ConnectionOpenAck =
-                            //         serde_json::from_value(e.parsed_json).unwrap();
-                            //     events::IbcEvent::ConnectionOpenAck(connection_open)
-                            // }
-                            // "ConnectionOpenConfirm" => {
-                            //     let connection_open: events::ConnectionOpenConfirm =
-                            //         serde_json::from_value(e.parsed_json).unwrap();
-                            //     events::IbcEvent::ConnectionOpenConfirm(connection_open)
-                            // }
+                            "ConnectionOpenTry" => {
+                                let connection_open: events::ConnectionOpenTry =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::ConnectionOpenTry(connection_open)
+                            }
+                            "ConnectionOpenAck" => {
+                                let connection_open: events::ConnectionOpenAck =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::ConnectionOpenAck(connection_open)
+                            }
+                            "ConnectionOpenConfirm" => {
+                                let connection_open: events::ConnectionOpenConfirm =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::ConnectionOpenConfirm(connection_open)
+                            }
                             e => panic!("unknown: {e}"),
                         };
+
+                        info!("found event: {event:?}");
                         call(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(MakeFullEvent {
@@ -296,12 +293,69 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .into(),
                         event.client_id.try_into().unwrap(),
                     ),
+                    events::IbcEvent::UpdateClient(event) => (
+                        UpdateClient {
+                            client_type: ClientType::new(event.client_type),
+                            client_id: event.client_id.try_into().unwrap(),
+                            height,
+                        }
+                        .into(),
+                        event.client_id.try_into().unwrap(),
+                    ),
                     events::IbcEvent::ConnectionOpenInit(event) => (
                         ConnectionOpenInit {
                             connection_id: event.connection_id.try_into().unwrap(),
                             client_id: ClientId::new(event.client_id.try_into().unwrap()),
                             counterparty_client_id: event
                                 .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                        }
+                        .into(),
+                        event.client_id.try_into().unwrap(),
+                    ),
+                    events::IbcEvent::ConnectionOpenTry(event) => (
+                        ConnectionOpenTry {
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
+                                .try_into()
+                                .unwrap(),
+                        }
+                        .into(),
+                        event.client_id.try_into().unwrap(),
+                    ),
+                    events::IbcEvent::ConnectionOpenAck(event) => (
+                        ConnectionOpenAck {
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
+                                .try_into()
+                                .unwrap(),
+                        }
+                        .into(),
+                        event.client_id.try_into().unwrap(),
+                    ),
+                    events::IbcEvent::ConnectionOpenConfirm(event) => (
+                        ConnectionOpenConfirm {
+                            client_id: event.client_id.try_into().unwrap(),
+                            connection_id: event.connection_id.try_into().unwrap(),
+                            counterparty_client_id: event
+                                .counterparty_client_id
+                                .try_into()
+                                .unwrap(),
+                            counterparty_connection_id: event
+                                .counterparty_connection_id
                                 .try_into()
                                 .unwrap(),
                         }
@@ -337,535 +391,5 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 }))
             }
         }
-        //     match msg {
-        //         ModuleCall::FetchTransactions(FetchTransactions { height }) => {
-        //             info!("fetching block height {height}");
-        //             let events = self
-        //                 .aptos_client
-        //                 .get_block_by_height(height, true)
-        //                 .await
-        //                 .map_err(|e| {
-        //                     ErrorObject::owned(
-        //                         -1,
-        //                         format!("error fetching height: {}", ErrorReporter(e)),
-        //                         None::<()>,
-        //                     )
-        //                 })?
-        //                 .into_inner()
-        //                 .transactions
-        //                 .unwrap_or_default()
-        //                 .into_iter()
-        //                 .filter_map(|tx| match tx {
-        //                     Transaction::UserTransaction(tx) => Some(tx),
-        //                     _ => None,
-        //                 })
-        //                 .flat_map(|tx| {
-        //                     tx.events
-        //                         .into_iter()
-        //                         .map(move |events| (events, tx.info.hash))
-        //                 })
-        //                 .filter_map(|(e, hash)| match e.typ {
-        //                     MoveType::Struct(s) => {
-        //                         (s.address == self.ibc_handler_address).then_some((s, e.data, hash))
-        //                     }
-        //                     _ => None,
-        //                 })
-        //                 .filter(|(typ, _, _)| typ.name.0.as_str() != "CreateLensClient")
-        //                 .map(|(typ, data, hash)| {
-        //                     let event = match dbg!(typ).name.0.as_str() {
-        //                         "CreateClient" => from_raw_event::<ibc::CreateClient>(data),
-        //                         "UpdateClient" => from_raw_event::<ibc::UpdateClient>(data),
-        //                         "ConnectionOpenInit" => from_raw_event::<ibc::ConnectionOpenInit>(data),
-        //                         "ConnectionOpenTry" => from_raw_event::<ibc::ConnectionOpenTry>(data),
-        //                         "ConnectionOpenAck" => from_raw_event::<ibc::ConnectionOpenAck>(data),
-        //                         "ConnectionOpenConfirm" => {
-        //                             from_raw_event::<ibc::ConnectionOpenConfirm>(data)
-        //                         }
-        //                         "ChannelOpenInit" => from_raw_event::<ibc::ChannelOpenInit>(data),
-        //                         "ChannelOpenTry" => from_raw_event::<ibc::ChannelOpenTry>(data),
-        //                         "ChannelOpenAck" => from_raw_event::<ibc::ChannelOpenAck>(data),
-        //                         "ChannelOpenConfirm" => from_raw_event::<ibc::ChannelOpenConfirm>(data),
-        //                         "WriteAck" => from_raw_event::<ibc::WriteAck>(data),
-        //                         "PacketRecv" => from_raw_event::<ibc::PacketRecv>(data),
-        //                         "PacketSend" => from_raw_event::<ibc::PacketSend>(data),
-        //                         "PacketAck" => from_raw_event::<ibc::PacketAck>(data),
-        //                         "TimeoutPacket" => from_raw_event::<ibc::TimeoutPacket>(data),
-        //                         unknown => panic!("unknown event `{unknown}`"),
-        //                     };
-        //                     // TODO: Check the type before deserializing
-        //                     call(PluginMessage::new(
-        //                         self.plugin_name(),
-        //                         ModuleCall::from(MakeFullEvent {
-        //                             event,
-        //                             tx_hash: H256::new(*hash.0),
-        //                             height,
-        //                         }),
-        //                     ))
-        //                 });
-
-        //             Ok(conc(events))
-        //         }
-        //         ModuleCall::FetchBlocks(FetchBlocks { height }) => Ok(conc([
-        //             call(PluginMessage::new(
-        //                 self.plugin_name(),
-        //                 ModuleCall::from(FetchTransactions { height }),
-        //             )),
-        //             {
-        //                 let latest_height = self
-        //                     .aptos_client
-        //                     .get_index()
-        //                     .await
-        //                     .unwrap()
-        //                     .into_inner()
-        //                     .block_height
-        //                     .0;
-        //                 match height.cmp(&latest_height) {
-        //                     Ordering::Less => {
-        //                         let next_height = (latest_height - height).clamp(1, 10) + height;
-        //                         conc(
-        //                             ((height + 1)..next_height)
-        //                                 .map(|height| {
-        //                                     call(PluginMessage::new(
-        //                                         self.plugin_name(),
-        //                                         ModuleCall::from(FetchTransactions { height }),
-        //                                     ))
-        //                                 })
-        //                                 .chain([call(PluginMessage::new(
-        //                                     self.plugin_name(),
-        //                                     ModuleCall::from(FetchBlocks {
-        //                                         height: next_height,
-        //                                     }),
-        //                                 ))]),
-        //                         )
-        //                     }
-        //                     Ordering::Equal | Ordering::Greater => seq([
-        //                         call(WaitForHeight {
-        //                             chain_id: self.chain_id.clone(),
-        //                             height: Height::new(height + 1),
-        //                             finalized: true,
-        //                         }),
-        //                         call(PluginMessage::new(
-        //                             self.plugin_name(),
-        //                             ModuleCall::from(FetchBlocks { height: height + 1 }),
-        //                         )),
-        //                     ]),
-        //                 }
-        //             },
-        //         ])),
-        //         ModuleCall::MakeFullEvent(MakeFullEvent {
-        //             event,
-        //             tx_hash,
-        //             height,
-        //         }) => {
-        //             let (full_event, client_id): (FullEvent, ClientId) = match event {
-        //                 events::IbcEvent::CreateClient(event) => (
-        //                     CreateClient {
-        //                         client_id: event.client_id.try_into().unwrap(),
-        //                         client_type: ClientType::new(event.client_type),
-        //                     }
-        //                     .into(),
-        //                     event.client_id.try_into().unwrap(),
-        //                 ),
-        //                 events::IbcEvent::UpdateClient(event) => (
-        //                     UpdateClient {
-        //                         client_id: event.client_id.try_into().unwrap(),
-        //                         client_type: ClientType::new(event.client_type),
-        //                         height: event.counterparty_height,
-        //                     }
-        //                     .into(),
-        //                     event.client_id.try_into().unwrap(),
-        //                 ),
-        //                 events::IbcEvent::ConnectionOpenInit(event) => (
-        //                     ConnectionOpenInit {
-        //                         client_id: event.client_id.try_into().unwrap(),
-        //                         connection_id: event.connection_id.try_into().unwrap(),
-        //                         counterparty_client_id: event
-        //                             .counterparty_client_id
-        //                             .try_into()
-        //                             .unwrap(),
-        //                     }
-        //                     .into(),
-        //                     event.client_id.try_into().unwrap(),
-        //                 ),
-        //                 events::IbcEvent::ConnectionOpenTry(event) => (
-        //                     ConnectionOpenTry {
-        //                         client_id: event.client_id.try_into().unwrap(),
-        //                         connection_id: event.connection_id.try_into().unwrap(),
-        //                         counterparty_client_id: event
-        //                             .counterparty_client_id
-        //                             .try_into()
-        //                             .unwrap(),
-        //                         counterparty_connection_id: event
-        //                             .counterparty_connection_id
-        //                             .try_into()
-        //                             .unwrap(),
-        //                     }
-        //                     .into(),
-        //                     event.client_id.try_into().unwrap(),
-        //                 ),
-        //                 events::IbcEvent::ConnectionOpenAck(event) => (
-        //                     ConnectionOpenAck {
-        //                         client_id: event.client_id.try_into().unwrap(),
-        //                         connection_id: event.connection_id.try_into().unwrap(),
-        //                         counterparty_client_id: event
-        //                             .counterparty_client_id
-        //                             .try_into()
-        //                             .unwrap(),
-        //                         counterparty_connection_id: event
-        //                             .counterparty_connection_id
-        //                             .try_into()
-        //                             .unwrap(),
-        //                     }
-        //                     .into(),
-        //                     event.client_id.try_into().unwrap(),
-        //                 ),
-        //                 events::IbcEvent::ConnectionOpenConfirm(event) => (
-        //                     ConnectionOpenConfirm {
-        //                         client_id: event.client_id.try_into().unwrap(),
-        //                         connection_id: event.connection_id.try_into().unwrap(),
-        //                         counterparty_client_id: event
-        //                             .counterparty_client_id
-        //                             .try_into()
-        //                             .unwrap(),
-        //                         counterparty_connection_id: event
-        //                             .counterparty_connection_id
-        //                             .try_into()
-        //                             .unwrap(),
-        //                     }
-        //                     .into(),
-        //                     event.client_id.try_into().unwrap(),
-        //                 ),
-        //                 events::IbcEvent::ChannelOpenInit(event) => {
-        //                     let ledger_version = self.ledger_version_of_height(height).await;
-
-        //                     let connection = self
-        //                         .get_connection(
-        //                             self.ibc_handler_address.into(),
-        //                             Some(ledger_version),
-        //                             (event.connection_id,),
-        //                         )
-        //                         .await
-        //                         .unwrap()
-        //                         .unwrap();
-
-        //                     let connection = convert_connection(connection);
-        //                     let client_id = connection.client_id;
-
-        //                     (
-        //                         ChannelOpenInit {
-        //                             port_id: event.port_id.parse().unwrap(),
-        //                             channel_id: event.channel_id.try_into().unwrap(),
-        //                             counterparty_port_id: event.counterparty_port_id.into(),
-        //                             connection,
-        //                             version: event.version,
-        //                         }
-        //                         .into(),
-        //                         client_id,
-        //                     )
-        //                 }
-        //                 events::IbcEvent::ChannelOpenTry(event) => {
-        //                     let ledger_version = self.ledger_version_of_height(height).await;
-
-        //                     let connection = self
-        //                         .get_connection(
-        //                             self.ibc_handler_address.into(),
-        //                             Some(ledger_version),
-        //                             (event.connection_id,),
-        //                         )
-        //                         .await
-        //                         .unwrap()
-        //                         .unwrap();
-
-        //                     let connection = convert_connection(connection);
-
-        //                     let client_id = connection.client_id;
-
-        //                     (
-        //                         ChannelOpenTry {
-        //                             port_id: event.port_id.parse().unwrap(),
-        //                             channel_id: event.channel_id.try_into().unwrap(),
-        //                             counterparty_port_id: event.counterparty_port_id.into(),
-        //                             counterparty_channel_id: event
-        //                                 .counterparty_channel_id
-        //                                 .try_into()
-        //                                 .unwrap(),
-        //                             connection,
-        //                             version: event.version,
-        //                         }
-        //                         .into(),
-        //                         client_id,
-        //                     )
-        //                 }
-        //                 events::IbcEvent::ChannelOpenAck(event) => {
-        //                     let ledger_version = self.ledger_version_of_height(height).await;
-
-        //                     let connection = self
-        //                         .get_connection(
-        //                             self.ibc_handler_address.into(),
-        //                             Some(ledger_version),
-        //                             (event.connection_id,),
-        //                         )
-        //                         .await
-        //                         .unwrap()
-        //                         .unwrap();
-
-        //                     let channel = self
-        //                         .get_channel(
-        //                             self.ibc_handler_address.into(),
-        //                             Some(ledger_version),
-        //                             (event.channel_id,),
-        //                         )
-        //                         .await
-        //                         .unwrap()
-        //                         .unwrap();
-
-        //                     let connection = convert_connection(connection);
-
-        //                     let client_id = connection.client_id;
-
-        //                     (
-        //                         ChannelOpenAck {
-        //                             port_id: event.port_id.parse().unwrap(),
-        //                             channel_id: event.channel_id.try_into().unwrap(),
-        //                             counterparty_port_id: event.counterparty_port_id.into(),
-        //                             counterparty_channel_id: event
-        //                                 .counterparty_channel_id
-        //                                 .try_into()
-        //                                 .unwrap(),
-        //                             connection,
-        //                             version: channel.version,
-        //                         }
-        //                         .into(),
-        //                         client_id,
-        //                     )
-        //                 }
-        //                 events::IbcEvent::ChannelOpenConfirm(event) => {
-        //                     let ledger_version = self.ledger_version_of_height(height).await;
-
-        //                     let connection = self
-        //                         .get_connection(
-        //                             self.ibc_handler_address.into(),
-        //                             Some(ledger_version),
-        //                             (event.connection_id,),
-        //                         )
-        //                         .await
-        //                         .unwrap()
-        //                         .unwrap();
-
-        //                     let channel = self
-        //                         .get_channel(
-        //                             self.ibc_handler_address.into(),
-        //                             Some(ledger_version),
-        //                             (event.channel_id,),
-        //                         )
-        //                         .await
-        //                         .unwrap()
-        //                         .unwrap();
-
-        //                     let connection = convert_connection(connection);
-
-        //                     let client_id = connection.client_id;
-
-        //                     (
-        //                         ChannelOpenConfirm {
-        //                             port_id: event.port_id.parse().unwrap(),
-        //                             channel_id: event.channel_id.try_into().unwrap(),
-        //                             counterparty_port_id: event.counterparty_port_id.into(),
-        //                             counterparty_channel_id: event
-        //                                 .counterparty_channel_id
-        //                                 .try_into()
-        //                                 .unwrap(),
-        //                             connection,
-        //                             version: channel.version,
-        //                         }
-        //                         .into(),
-        //                         client_id,
-        //                     )
-        //                 }
-        //                 events::IbcEvent::WriteAcknowledgement(event) => {
-        //                     let (
-        //                         _counterparty_chain_id,
-        //                         _client_info,
-        //                         destination_channel,
-        //                         source_channel,
-        //                     ) = self
-        //                         .make_packet_metadata(
-        //                             self.make_height(height),
-        //                             event.packet.destination_channel_id.try_into().unwrap(),
-        //                             e.try_get()?,
-        //                         )
-        //                         .await?;
-
-        //                     let client_id = destination_channel.connection.client_id;
-
-        //                     (
-        //                         WriteAck {
-        //                             packet_data: event.packet.data.into(),
-        //                             acknowledgement: event.acknowledgement.into(),
-        //                             packet: PacketMetadata {
-        //                                 source_channel,
-        //                                 destination_channel,
-        //                                 timeout_height: event.packet.timeout_height,
-        //                                 timeout_timestamp: Timestamp::from_nanos(
-        //                                     event.packet.timeout_timestamp,
-        //                                 ),
-        //                             },
-        //                         }
-        //                         .into(),
-        //                         client_id,
-        //                     )
-        //                 }
-        //                 events::IbcEvent::RecvPacket(event) => {
-        //                     let (
-        //                         _counterparty_chain_id,
-        //                         _client_info,
-        //                         destination_channel,
-        //                         source_channel,
-        //                     ) = self
-        //                         .make_packet_metadata(
-        //                             self.make_height(height),
-        //                             event.packet.destination_channel_id.try_into().unwrap(),
-        //                             e.try_get()?,
-        //                         )
-        //                         .await?;
-
-        //                     let client_id = destination_channel.connection.client_id;
-
-        //                     (
-        //                         PacketRecv {
-        //                             packet_data: event.packet.data.into(),
-        //                             packet: PacketMetadata {
-        //                                 source_channel,
-        //                                 destination_channel,
-        //                                 timeout_height: event.packet.timeout_height,
-        //                                 timeout_timestamp: Timestamp::from_nanos(
-        //                                     event.packet.timeout_timestamp,
-        //                                 ),
-        //                             },
-        //                             maker_msg: Default::default(),
-        //                         }
-        //                         .into(),
-        //                         client_id,
-        //                     )
-        //                 }
-        //                 events::IbcEvent::SendPacket(event) => {
-        //                     let (
-        //                         _counterparty_chain_id,
-        //                         _client_info,
-        //                         source_channel,
-        //                         destination_channel,
-        //                     ) = self
-        //                         .make_packet_metadata(
-        //                             self.make_height(height),
-        //                             event.source_channel_id.try_into().unwrap(),
-        //                             e.try_get()?,
-        //                         )
-        //                         .await?;
-
-        //                     let client_id = source_channel.connection.client_id;
-
-        //                     (
-        //                         PacketSend {
-        //                             packet_data: event.data.into(),
-        //                             packet: PacketMetadata {
-        //                                 source_channel,
-        //                                 destination_channel,
-        //                                 timeout_height: event.timeout_height,
-        //                                 timeout_timestamp: Timestamp::from_nanos(
-        //                                     event.timeout_timestamp,
-        //                                 ),
-        //                             },
-        //                         }
-        //                         .into(),
-        //                         client_id,
-        //                     )
-        //                 }
-        //                 events::IbcEvent::AcknowledgePacket(event) => {
-        //                     let (
-        //                         _counterparty_chain_id,
-        //                         _client_info,
-        //                         source_channel,
-        //                         destination_channel,
-        //                     ) = self
-        //                         .make_packet_metadata(
-        //                             self.make_height(height),
-        //                             event.packet.source_channel_id.try_into().unwrap(),
-        //                             e.try_get()?,
-        //                         )
-        //                         .await?;
-
-        //                     let client_id = source_channel.connection.client_id;
-
-        //                     (
-        //                         PacketAck {
-        //                             packet_data: event.packet.data.into(),
-        //                             packet: PacketMetadata {
-        //                                 source_channel,
-        //                                 destination_channel,
-        //                                 timeout_height: event.packet.timeout_height,
-        //                                 timeout_timestamp: Timestamp::from_nanos(
-        //                                     event.packet.timeout_timestamp,
-        //                                 ),
-        //                             },
-        //                             acknowledgement: event.acknowledgement.into(),
-        //                         }
-        //                         .into(),
-        //                         client_id,
-        //                     )
-        //                 }
-        //                 events::IbcEvent::TimeoutPacket(_) => todo!(),
-        //             };
-
-        //             ibc_union_spec::log_event(&full_event, &self.chain_id);
-
-        //             let voyager_client = e.try_get::<VoyagerClient>()?;
-
-        //             let client_info = voyager_client
-        //                 .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
-        //                 .await?;
-
-        //             let client_state_meta = voyager_client
-        //                 .client_state_meta::<IbcUnion>(
-        //                     self.chain_id.clone(),
-        //                     self.make_height(height).into(),
-        //                     client_id,
-        //                 )
-        //                 .await?;
-
-        //             Ok(data(ChainEvent {
-        //                 chain_id: self.chain_id.clone(),
-        //                 client_info,
-        //                 counterparty_chain_id: client_state_meta.counterparty_chain_id,
-        //                 tx_hash,
-        //                 // TODO: Review this, does it need to be +1?
-        //                 provable_height: self.make_height(height),
-        //                 event: into_value::<FullEvent>(full_event),
-        //                 ibc_spec_id: IbcUnion::ID,
-        //             }))
-        //         }
-        //     }
     }
 }
-
-// pub fn rest_error_to_rpc_error(e: RestError) -> ErrorObjectOwned {
-//     ErrorObject::owned(-1, format!("rest error: {}", ErrorReporter(e)), None::<()>)
-// }
-
-// fn convert_connection(connection: ConnectionEnd) -> Connection {
-//     Connection {
-//         state: match connection.state {
-//             1 => ConnectionState::Init,
-//             2 => ConnectionState::TryOpen,
-//             3 => ConnectionState::Open,
-//             _ => panic!("connection state must be 1..=3"),
-//         },
-//         client_id: connection.client_id.try_into().unwrap(),
-//         counterparty_client_id: connection.counterparty_client_id.try_into().unwrap(),
-//         counterparty_connection_id: connection.counterparty_connection_id.try_into().ok(),
-//     }
-// }
-
-// fn from_raw_event<T: MoveOutputType + Into<events::IbcEvent>>(data: Value) -> events::IbcEvent {
-//     let raw_event = serde_json::from_value::<T::Raw>(data).unwrap();
-//     T::from_raw(raw_event).into()
-// }
