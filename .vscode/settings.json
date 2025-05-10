@@ -72,7 +72,7 @@
   },
   /* theme and icon settings */
   "workbench.iconTheme": "material-icon-theme",
-  /* excluding files and directoriwes from global search */
+  /* excluding files and directories from global search */
   "search.exclude": {
     "._*": true,
     "*.lock": true,
