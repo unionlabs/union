@@ -1,11 +1,7 @@
-use std::{any::Any, collections::VecDeque, fmt::Pointer, panic::AssertUnwindSafe, sync::Arc};
+use std::{collections::VecDeque, panic::AssertUnwindSafe, sync::Arc};
 
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
-use fastcrypto::{
-    ed25519::Ed25519KeyPair,
-    hash::HashFunction,
-    traits::{Signer, ToFromBytes},
-};
+use fastcrypto::{hash::HashFunction, traits::Signer};
 use ibc_union_spec::{datagram::Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -14,9 +10,9 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
-    rpc_types::SuiTransactionBlockResponseOptions,
+    rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions},
     types::{
-        base_types::{ObjectID, SuiAddress},
+        base_types::{ObjectID, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
@@ -54,9 +50,13 @@ pub struct Module {
 
     pub ibc_handler_address: ObjectID,
 
+    pub ibc_store: SuiAddress,
+
     pub sui_client: sui_sdk::SuiClient,
 
     pub keyring: ConcurrentKeyring<SuiAddress, Arc<SuiKeyPair>>,
+
+    pub ibc_store_initial_seq: SequenceNumber,
 }
 
 impl Plugin for Module {
@@ -71,10 +71,26 @@ impl Plugin for Module {
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
 
+        let ibc_store_initial_seq = sui_client
+            .read_api()
+            .get_object_with_options(
+                ObjectID::new(config.ibc_store.to_inner()),
+                SuiObjectDataOptions::default().with_owner(),
+            )
+            .await
+            .unwrap()
+            .data
+            .unwrap()
+            .owner
+            .unwrap()
+            .start_version()
+            .unwrap();
+
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             sui_client,
+            ibc_store_initial_seq,
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|config| {
@@ -90,6 +106,7 @@ impl Plugin for Module {
                     }
                 }),
             ),
+            ibc_store: config.ibc_store,
         })
     }
 
@@ -111,6 +128,7 @@ pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
     pub ibc_handler_address: ObjectID,
+    pub ibc_store: SuiAddress,
 
     pub keyring: KeyringConfig,
 }
@@ -195,12 +213,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         println!("GAS PRICE: {}", gas_price);
 
                         // create the transaction data that will be sent to the network.
-
-                        let msgs = process_msgs(
-                            SuiAddress::try_from(hex_literal::hex!("00a204f53ff4ae488e92e5c5117a3ad03d10331240715be25eeb2d392c5cbc1e").as_slice()).unwrap(),
-                            msgs.clone(),
-                        )
-                        .await;
+                        //
+                        let msgs =
+                            process_msgs(self.ibc_store, self.ibc_store_initial_seq, msgs.clone())
+                                .await;
 
                         for (_, (_, module, entry_fn, arguments)) in msgs.into_iter().enumerate() {
                             let mut ptb = ProgrammableTransactionBuilder::new();
@@ -296,6 +312,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 #[allow(clippy::type_complexity)]
 async fn process_msgs(
     ibc_store: SuiAddress,
+    initial_shared_version: SequenceNumber,
     msgs: Vec<Datagram>,
 ) -> Vec<(Datagram, Identifier, Identifier, Vec<CallArg>)> {
     let mut data = vec![];
@@ -308,7 +325,7 @@ async fn process_msgs(
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
                         id: ibc_store.into(),
-                        initial_shared_version: 3.into(),
+                        initial_shared_version,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.client_type.to_string()).unwrap()),
@@ -323,7 +340,7 @@ async fn process_msgs(
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
                         id: ibc_store.into(),
-                        initial_shared_version: 3.into(),
+                        initial_shared_version,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
@@ -337,7 +354,7 @@ async fn process_msgs(
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
                         id: ibc_store.into(),
-                        initial_shared_version: 3.into(),
+                        initial_shared_version,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
@@ -354,7 +371,7 @@ async fn process_msgs(
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
                         id: ibc_store.into(),
-                        initial_shared_version: 3.into(),
+                        initial_shared_version,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
@@ -370,7 +387,7 @@ async fn process_msgs(
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
                         id: ibc_store.into(),
-                        initial_shared_version: 3.into(),
+                        initial_shared_version,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),

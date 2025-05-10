@@ -27,6 +27,7 @@ serde_repr = { version = "0.1.20", optional = true }
 
 [dev-dependencies]
 serde_json = { workspace = true }
+hex-literal = { workspace = true }
 
 [features]
 default = ["serde"]

@@ -6,12 +6,11 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use sui_light_client_types::{
-    checkpoint_summary::{CheckpointSummary, GasCostSummary},
-    crypto::{AuthorityQuorumSignInfo, CryptoBytes, SuiBitmap},
-    U64,
+use sui_light_client_types::{checkpoint_summary::CheckpointContents, CertifiedCheckpointSummary};
+use sui_sdk::{
+    types::{base_types::ObjectID, full_checkpoint_content::CheckpointTransaction},
+    SuiClient, SuiClientBuilder,
 };
-use sui_sdk::{types::base_types::ObjectID, SuiClient, SuiClientBuilder};
 use tracing::instrument;
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
@@ -42,6 +41,8 @@ pub struct Module {
     /// The address of the IBC smart contract.
     pub ibc_handler_address: ObjectID,
 
+    pub sui_object_store_rpc_url: String,
+
     pub sui_client: SuiClient,
 }
 
@@ -68,6 +69,7 @@ impl Plugin for Module {
         Ok(Self {
             chain_id: config.chain_id,
             ibc_handler_address: config.ibc_handler_address,
+            sui_object_store_rpc_url: config.sui_object_store_rpc_url,
             sui_client,
         })
     }
@@ -77,7 +79,7 @@ impl Plugin for Module {
             name: plugin_name(&config.chain_id),
             interest_filter: UpdateHook::filter(
                 &config.chain_id,
-                &ClientType::new(ClientType::MOVEMENT),
+                &ClientType::new(ClientType::SUI),
             ),
         }
     }
@@ -102,8 +104,17 @@ pub struct Config {
     /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: ObjectID,
 
+    pub sui_object_store_rpc_url: String,
+
     /// The RPC endpoint for custom movement apis.
     pub rpc_url: String,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct MyCheckpointData {
+    pub checkpoint_summary: CertifiedCheckpointSummary,
+    pub checkpoint_contents: CheckpointContents,
+    pub transactions: Vec<CheckpointTransaction>,
 }
 
 impl Module {
@@ -147,41 +158,46 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::FetchUpdate(FetchUpdate { to, .. }) => {
-                // NOTE(aeryz): This only works with Union's custom Movement node. When the following PR is merged,
-                // we will uncomment this: https://github.com/movementlabsxyz/movement/pull/645
-                // let header = get_lc_header(&self.movement_rest_url, from, to).await;
+            ModuleCall::FetchUpdate(FetchUpdate { from, to }) => {
+                let client = reqwest::Client::new();
+                let req = format!("{}/{}.chk", self.sui_object_store_rpc_url, to);
+                let res = client.get(req).send().await.unwrap().bytes().await.unwrap();
+
+                let (_, checkpoint) = bcs::from_bytes::<(
+                    u8,
+                    sui_sdk::types::full_checkpoint_content::CheckpointData,
+                )>(&res)
+                .unwrap();
+
+                let checkpoint = serde_json::to_string(&checkpoint).unwrap();
+                // TODO(aeryz): this is due to some `is_human_readable` thing in somewhere
+                // sorry for who reads this code, i'll fix it
+                let checkpoint: MyCheckpointData = serde_json::from_str(&checkpoint).unwrap();
+
+                let log = serde_json::to_string(&sui_light_client_types::header::Header {
+                    trusted_height: from,
+                    checkpoint_summary: checkpoint.checkpoint_summary.data.clone(),
+                    sign_info: checkpoint.checkpoint_summary.auth_signature.clone(),
+                    transactions: checkpoint
+                        .checkpoint_contents
+                        .clone()
+                        .as_inner()
+                        .transactions,
+                })
+                .unwrap();
+
+                println!("{}", log);
+
                 Ok(data(OrderedHeaders {
                     headers: vec![(
                         DecodedHeaderMeta {
                             height: Height::new(to),
                         },
                         serde_json::to_value(sui_light_client_types::header::Header {
-                            trusted_height: 10,
-                            checkpoint_summary: CheckpointSummary {
-                                epoch: 10,
-                                sequence_number: 10,
-                                network_total_transactions: 10,
-                                content_digest: sui_light_client_types::digest::Digest(
-                                    Default::default(),
-                                ),
-                                previous_digest: None,
-                                epoch_rolling_gas_cost_summary: GasCostSummary {
-                                    computation_cost: U64(0),
-                                    storage_cost: U64(0),
-                                    storage_rebate: U64(0),
-                                    non_refundable_storage_fee: U64(0),
-                                },
-                                timestamp_ms: 10,
-                                checkpoint_commitments: vec![],
-                                end_of_epoch_data: None,
-                                version_specific_data: vec![],
-                            },
-                            sign_info: AuthorityQuorumSignInfo::<true> {
-                                epoch: 10,
-                                signature: CryptoBytes(Default::default()),
-                                signers_map: SuiBitmap(Default::default()),
-                            },
+                            trusted_height: from,
+                            checkpoint_summary: checkpoint.checkpoint_summary.data,
+                            sign_info: checkpoint.checkpoint_summary.auth_signature,
+                            transactions: checkpoint.checkpoint_contents.as_inner().transactions,
                         })
                         .unwrap(),
                     )],
@@ -200,3 +216,32 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         match cb {}
     }
 }
+
+// pub async fn query_last_checkpoint_of_epoch(config: &Config, epoch_id: u64) -> anyhow::Result<u64> {
+//     // GraphQL query to get the last checkpoint of an epoch
+//     let query = json!({
+//         "query": "query ($epochID: Int) { epoch(id: $epochID) { checkpoints(last: 1) { nodes { sequenceNumber } } } }",
+//         "variables": { "epochID": epoch_id }
+//     });
+
+//     // Submit the query by POSTing to the GraphQL endpoint
+//     let client = reqwest::Client::new();
+//     let resp = client
+//         .post(config.graphql_url.as_ref().cloned().unwrap())
+//         .header("Content-Type", "application/json")
+//         .body(query.to_string())
+//         .send()
+//         .await
+//         .expect("Cannot connect to graphql")
+//         .text()
+//         .await
+//         .expect("Cannot parse response");
+
+//     // Parse the JSON response to get the last checkpoint of the epoch
+//     let v: Value = serde_json::from_str(resp.as_str()).expect("Incorrect JSON response");
+//     let checkpoint_number = v["data"]["epoch"]["checkpoints"]["nodes"][0]["sequenceNumber"]
+//         .as_u64()
+//         .unwrap();
+
+//     Ok(checkpoint_number)
+// }

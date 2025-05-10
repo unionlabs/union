@@ -436,6 +436,11 @@ _: {
           dir = "state-lens-ics23-ics23";
           client-type = "state-lens/ics23/ics23";
         }
+        {
+          name = "sui";
+          dir = "sui";
+          client-type = "sui";
+        }
       ];
 
       # client type => package name

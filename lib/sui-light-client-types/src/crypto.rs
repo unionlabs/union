@@ -2,7 +2,7 @@ use core::fmt::{Debug, Display};
 use std::io;
 
 use roaring::RoaringBitmap;
-use unionlabs_primitives::{encoding::Base64, Bytes, FixedBytes};
+use unionlabs_primitives::{encoding::Base64, FixedBytes};
 
 use crate::checkpoint_summary::EpochId;
 
@@ -13,36 +13,13 @@ pub const BLS_DST: &[u8] = b"BLS_SIG_BLS12381G1_XMD:SHA-256_SSWU_RO_NUL_";
 pub type AuthorityPublicKeyBytes = CryptoBytes<BLS_G2_SIZE>;
 
 #[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CryptoBytes<const N: usize>(pub FixedBytes<N, Base64>);
 
 impl<const N: usize> Display for CryptoBytes<N> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.0)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<const N: usize> serde::Serialize for CryptoBytes<N> {
-    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: serde::Serializer,
-    {
-        Bytes::<Base64>::new(self.0.get().to_vec()).serialize(serializer)
-    }
-}
-
-#[cfg(feature = "serde")]
-impl<'de, const N: usize> serde::Deserialize<'de> for CryptoBytes<N> {
-    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
-    where
-        D: serde::Deserializer<'de>,
-    {
-        let b = Bytes::<Base64>::deserialize(deserializer)?;
-
-        Ok(Self(
-            b.as_ref().try_into().map_err(serde::de::Error::custom)?,
-        ))
     }
 }
 

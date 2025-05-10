@@ -25,3 +25,25 @@ pub struct ClientStateV1 {
     )]
     pub initial_committee: Option<Committee>,
 }
+
+#[test]
+fn encode() {
+    let client_state = <ClientState as unionlabs::encoding::DecodeAs>::decode_as::<
+        unionlabs::encoding::Bincode,
+    >(&hex_literal::hex!(
+        "000000000800000000000000346337386164616371ae8e0b00000000000000000000000000"
+    ))
+    .unwrap();
+
+    println!("client state: {:?}", client_state);
+
+    let consensus_state =
+        <crate::consensus_state::ConsensusState as unionlabs::encoding::DecodeAs>::decode_as::<
+            unionlabs::encoding::EthAbi,
+        >(&hex_literal::hex!(
+            "00000000000000000000000000000000000000000000000000000000000003e8"
+        ))
+        .unwrap();
+
+    println!("consensus state: {:?}", consensus_state);
+}
