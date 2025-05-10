@@ -1,8 +1,11 @@
 name: Nightly
 
 on:
+  schedule:
+    - cron: '0 2 * * *'  # Her gece 02:00 UTC'de çalışır
   workflow_dispatch:
   workflow_call:
+
 
 jobs:
   build:
