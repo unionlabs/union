@@ -9,7 +9,7 @@ pub struct CreateClient {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
-pub struct ClientUpdated {
+pub struct UpdateClient {
     pub client_id: u32,
     pub client_type: String,
     pub height: u64,
@@ -20,6 +20,30 @@ pub struct ConnectionOpenInit {
     pub connection_id: u32,
     pub client_id: u32,
     pub counterparty_client_id: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ConnectionOpenTry {
+    pub connection_id: u32,
+    pub client_id: u32,
+    pub counterparty_client_id: u32,
+    pub counterparty_connection_id: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ConnectionOpenAck {
+    pub connection_id: u32,
+    pub client_id: u32,
+    pub counterparty_client_id: u32,
+    pub counterparty_connection_id: u32,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct ConnectionOpenConfirm {
+    pub connection_id: u32,
+    pub client_id: u32,
+    pub counterparty_client_id: u32,
+    pub counterparty_connection_id: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
@@ -63,11 +87,11 @@ pub struct ChannelOpenConfirm {
 #[derive(Enumorph)]
 pub enum IbcEvent {
     CreateClient(CreateClient),
-    // UpdateClient(UpdateClient),
+    UpdateClient(UpdateClient),
     ConnectionOpenInit(ConnectionOpenInit),
-    // ConnectionOpenTry(ConnectionOpenTry),
-    // ConnectionOpenAck(ConnectionOpenAck),
-    // ConnectionOpenConfirm(ConnectionOpenConfirm),
+    ConnectionOpenTry(ConnectionOpenTry),
+    ConnectionOpenAck(ConnectionOpenAck),
+    ConnectionOpenConfirm(ConnectionOpenConfirm),
     // ChannelOpenInit(ibc::ChannelOpenInit),
     // ChannelOpenTry(ibc::ChannelOpenTry),
     // ChannelOpenAck(ibc::ChannelOpenAck),

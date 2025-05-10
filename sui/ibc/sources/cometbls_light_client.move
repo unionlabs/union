@@ -105,8 +105,9 @@ module ibc::light_client {
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
-    ): (Client, vector<u8>, vector<u8>) {
+    ): (Client, vector<u8>, vector<u8>, String) {
         let mut consensus_states = table::new(ctx);
+        let client_state = decode_client_state(client_state_bytes);
         consensus_states.add(0, decode_consensus_state(consensus_state_bytes));
         (Client {
             id: object::new(ctx),
@@ -114,7 +115,8 @@ module ibc::light_client {
             consensus_states: consensus_states
         },
         client_state_bytes,
-        consensus_state_bytes)
+        consensus_state_bytes,
+        client_state.chain_id)
     }
 
     public(package) fun status(

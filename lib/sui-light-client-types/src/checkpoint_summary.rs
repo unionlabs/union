@@ -97,6 +97,11 @@ pub enum CheckpointContents {
 }
 
 impl CheckpointContents {
+    pub fn as_inner(self) -> CheckpointContentsV1 {
+        let CheckpointContents::V1(inner) = self;
+        inner
+    }
+
     pub fn digest(&self) -> Bytes<Base58> {
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("CheckpointContents::");
@@ -120,8 +125,9 @@ pub struct CheckpointContentsV1 {
     pub user_signatures: Vec<Vec<GenericSignature>>,
 }
 
-#[derive(Eq, PartialEq, Ord, PartialOrd, Copy, Clone, Hash, Debug)]
+#[derive(Eq, PartialEq, Copy, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ExecutionDigests {
     pub transaction: Digest,
     pub effects: Digest,

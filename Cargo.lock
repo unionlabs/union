@@ -15309,6 +15309,7 @@ dependencies = [
 name = "sui-light-client"
 version = "0.0.0"
 dependencies = [
+ "bcs 0.1.6",
  "bincode 2.0.1",
  "cosmwasm-std 2.2.2",
  "depolama",
@@ -15318,9 +15319,11 @@ dependencies = [
  "ibc-union-light-client",
  "ibc-union-msg",
  "serde",
+ "serde_json",
  "sui-light-client-types",
  "thiserror 2.0.12",
  "unionlabs",
+ "unionlabs-primitives",
 ]
 
 [[package]]
@@ -15332,6 +15335,7 @@ dependencies = [
  "bincode 2.0.1",
  "blake2",
  "cosmwasm-std 2.2.2",
+ "hex-literal",
  "roaring",
  "serde",
  "serde_json",
@@ -17624,9 +17628,11 @@ dependencies = [
 name = "voyager-client-bootstrap-module-sui"
 version = "0.0.0"
 dependencies = [
+ "bcs 0.1.6",
  "cosmwasm-std 2.2.2",
  "embed-commit",
  "jsonrpsee",
+ "reqwest 0.11.27",
  "serde",
  "serde_json",
  "sui-light-client-types",
@@ -18031,8 +18037,10 @@ dependencies = [
 name = "voyager-client-update-plugin-sui"
 version = "0.0.0"
 dependencies = [
+ "bcs 0.1.6",
  "embed-commit",
  "enumorph",
+ "hex-literal",
  "jsonrpsee",
  "macros",
  "reqwest 0.11.27",
