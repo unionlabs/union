@@ -2456,6 +2456,7 @@ name = "beacon-api"
 version = "0.0.0"
 dependencies = [
  "beacon-api-types",
+ "moka",
  "reqwest 0.11.27",
  "serde",
  "serde-utils",
@@ -15309,6 +15310,7 @@ dependencies = [
  "beacon-api-types",
  "embed-commit",
  "jsonrpsee",
+ "moka",
  "serde",
  "tokio",
  "tracing",

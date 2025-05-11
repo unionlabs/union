@@ -166,7 +166,7 @@ mod tests {
             },
             finality_branch: vec![H256::new([0xAA; 32]); 6],
             sync_aggregate: SyncAggregate {
-                sync_committee_bits: [1, 2, 3].to_vec(),
+                sync_committee_bits: [1, 2, 3].into(),
                 sync_committee_signature: H768::new([0xAA; 96]),
             },
             signature_slot: Slot::new(123),

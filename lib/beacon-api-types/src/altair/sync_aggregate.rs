@@ -1,4 +1,4 @@
-use unionlabs::primitives::H768;
+use unionlabs::primitives::{Bytes, H768};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(
@@ -8,8 +8,7 @@ use unionlabs::primitives::H768;
 )]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct SyncAggregate {
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::hex_string"))]
-    pub sync_committee_bits: Vec<u8>,
+    pub sync_committee_bits: Bytes,
     pub sync_committee_signature: H768,
 }
 
@@ -44,7 +43,9 @@ pub mod ssz {
 
         fn try_from(value: SyncAggregate) -> Result<Self, Self::Error> {
             Ok(Self {
-                sync_committee_bits: BitVector::from_bytes(value.sync_committee_bits.into())?,
+                sync_committee_bits: BitVector::from_bytes(
+                    value.sync_committee_bits.to_vec().into(),
+                )?,
                 sync_committee_signature: value.sync_committee_signature,
             })
         }
