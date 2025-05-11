@@ -9,9 +9,9 @@ use beacon_api_types::custom_types::Slot;
 use moka::{future::Cache, ops::compute::Op};
 use reqwest::{Client, StatusCode};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use serde_json::Value;
+use serde_json::{value::RawValue, Value};
 use tracing::{debug, info, trace};
-use unionlabs::primitives::H256;
+use unionlabs::{primitives::H256, ErrorReporter};
 
 use crate::{
     errors::Error,
@@ -245,10 +245,14 @@ pub enum Encoding {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+// #[serde(
+//     tag = "version",
+//     content = "data",
+//     rename_all = "snake_case",
+//     bound(serialize = "", deserialize = "")
+// )]
 #[serde(
-    tag = "version",
-    content = "data",
-    rename_all = "snake_case",
+    try_from = "VersionedResponseRaw",
     bound(serialize = "", deserialize = "")
 )]
 pub enum VersionedResponse<T: VersionedResponseTypes> {
@@ -258,6 +262,41 @@ pub enum VersionedResponse<T: VersionedResponseTypes> {
     Capella(T::Capella),
     Deneb(T::Deneb),
     Electra(T::Electra),
+}
+
+#[derive(Deserialize)]
+pub struct VersionedResponseRaw<'a> {
+    version: Option<String>,
+    #[serde(borrow)]
+    data: &'a RawValue,
+}
+
+impl<'a, T: VersionedResponseTypes> TryFrom<VersionedResponseRaw<'a>> for VersionedResponse<T> {
+    type Error = String;
+
+    fn try_from(value: VersionedResponseRaw<'a>) -> std::result::Result<Self, Self::Error> {
+        Ok(match value.version.as_deref() {
+            Some("phase0") => Self::Phase0(
+                serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
+            ),
+            Some("altair") => Self::Altair(
+                serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
+            ),
+            Some("bellatrix") => Self::Bellatrix(
+                serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
+            ),
+            Some("capella") => Self::Capella(
+                serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
+            ),
+            Some("deneb") => Self::Deneb(
+                serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
+            ),
+            Some("electra") | None => Self::Electra(
+                serde_json::from_str(value.data.get()).map_err(|e| ErrorReporter(e).to_string())?,
+            ),
+            v => return Err(format!("unknown version {v:?}")),
+        })
+    }
 }
 
 impl<T: VersionedResponseTypes> VersionedResponse<T>

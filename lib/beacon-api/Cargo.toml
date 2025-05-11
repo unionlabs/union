@@ -17,7 +17,7 @@ moka             = { version = "0.12.10", features = ["future"] }
 reqwest          = { workspace = true, features = ["rustls-tls", "json"] }
 serde            = { workspace = true, features = ["derive"] }
 serde-utils      = { workspace = true }
-serde_json       = { workspace = true }
+serde_json       = { workspace = true, features = ["raw_value"] }
 thiserror        = { workspace = true }
 tokio            = { workspace = true, features = ["rt-multi-thread", "macros"] }
 tracing          = { workspace = true }
