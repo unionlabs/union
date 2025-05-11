@@ -12,7 +12,8 @@
     "check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
     "lint": "eslint .",
     "test:watch": "vitest",
-    "test": "vitest --run"
+    "test": "vitest --run",
+    "supabase:generate": "supabase gen types --lang='typescript' --project-id='uorqzpuryrgfnecadajo' > './src/lib/dashboard/database.types.ts'"
   },
   "devDependencies": {
     "@aptos-labs/ts-sdk": "1.38.0",
@@ -56,5 +57,14 @@
     "typescript-eslint": "^8.30.1",
     "viem": "^2.27.2",
     "vite": "^6.3.1"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "rehype-rewrite": "^4.0.2",
+    "rehype-stringify": "^10.0.1",
+    "remark-parse": "^11.0.0",
+    "remark-rehype": "^11.1.2",
+    "unified": "^11.0.5",
+    "vfile": "^6.0.3"
   }
 }

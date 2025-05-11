@@ -120,12 +120,6 @@ export const navigation: Array<NavSection> = [
     title: "More Union",
     items: [
       {
-        path: "https://dashboard.union.build",
-        title: "Dashboard",
-        icon: SharpDashboardIcon,
-        external: true,
-      },
-      {
         path: "https://discord.union.build",
         title: "Discord",
         icon: DiscordIcon,

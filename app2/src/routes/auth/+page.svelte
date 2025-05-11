@@ -1,0 +1,29 @@
+<script lang="ts">
+  import { onMount } from 'svelte';
+  import { dashboard } from '$lib/dashboard/stores/user.svelte';
+  import { Option } from 'effect';
+  import { goto } from '$app/navigation';
+  import { page } from '$app/state';
+
+  onMount(() => {
+    const returnUrl = page.url.searchParams.get('returnTo') || '/dashboard';
+    const isLinking = page.url.searchParams.get('linking') === 'true';
+
+    // First ensure minimum wait time
+    setTimeout(() => {
+      // Then check session and redirect
+      if (Option.isSome(dashboard.session)) {
+        goto(returnUrl);
+      } else if (!isLinking) {
+        goto('/');
+      }
+    }, 3000);
+  });
+</script>
+
+<div class="flex items-center justify-center min-h-screen">
+  <div class="text-center">
+    <h1 class="text-2xl font-bold mb-4">Updating account...</h1>
+    <p class="text-zinc-400">Please wait while we update your account.</p>
+  </div>
+</div> 
