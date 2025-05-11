@@ -23,7 +23,5 @@ export const load: LayoutLoad = ({ url }) => {
     Match.orElse(() => "app" as const),
   )
 
-  return {
-    edition,
-  }
+  return { edition }
 }

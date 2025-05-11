@@ -87,7 +87,7 @@ const internalOnClose = () => {
       >
         {#if showCloseButton}
           <button
-            class="cursor-pointer border-0 absolute top-2 right-4 text-white text-lg"
+            class="cursor-pointer border-0 absolute top-2 right-4 text-white text-lg z-50"
             onclick={internalOnClose}
           >
             ✕
