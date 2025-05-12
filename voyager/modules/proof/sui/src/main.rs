@@ -3,14 +3,13 @@ use std::fmt::Debug;
 use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_sdk::SuiClientBuilder;
 use tracing::instrument;
-use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
+use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     module::{ProofModuleInfo, ProofModuleServer},
     primitives::ChainId,

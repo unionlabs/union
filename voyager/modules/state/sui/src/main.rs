@@ -1,6 +1,8 @@
 use std::fmt::Debug;
 
-use ibc_union_spec::{path::StorePath, query::Query, ClientId, Connection, IbcUnion};
+use ibc_union_spec::{
+    path::StorePath, query::Query, ClientId, Connection, ConnectionState, IbcUnion,
+};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -22,6 +24,7 @@ use tracing::{debug, instrument, trace};
 use unionlabs::{
     encoding::{Bcs, DecodeAs as _},
     ibc::core::client::height::Height,
+    primitives::Bytes,
     ErrorReporter,
 };
 use voyager_message::{
@@ -159,7 +162,7 @@ impl StateModuleServer<IbcUnion> for Module {
         Ok(ClientInfo {
             // TODO(aeryz): make this queryable
             client_type: ClientType::new("cometbls"),
-            ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_SUI),
+            ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
             metadata: Default::default(),
         })
     }
@@ -184,7 +187,9 @@ impl StateModuleServer<IbcUnion> for Module {
                     panic!("expected a single encoded connection end")
                 }
 
-                into_value(Connection::decode_as::<Bcs>(&res[0].0).unwrap())
+                into_value(convert_connection(
+                    ConnectionEnd::decode_as::<Bcs>(&res[0].0).unwrap(),
+                ))
             }
             StorePath::ClientState(path) => {
                 let res = query
@@ -197,7 +202,11 @@ impl StateModuleServer<IbcUnion> for Module {
                     panic!("was expecting a single encoded client state");
                 }
 
-                into_value(res[0].clone().0)
+                // Doing 1.. here since the return data is bcs encoded vector<u8> which is
+                // just `prefix + vector<u8>`
+                let client_state_bytes: Bytes = res[0].clone().0[1..].into();
+
+                into_value(client_state_bytes)
             }
             StorePath::ConsensusState(path) => {
                 let res = query
@@ -211,7 +220,11 @@ impl StateModuleServer<IbcUnion> for Module {
                     panic!("was expecting a single encoded consensus state");
                 }
 
-                into_value(res[0].clone().0)
+                // Doing 1.. here since the return data is bcs encoded vector<u8> which is
+                // just `prefix + vector<u8>`
+                let consensus_state_bytes: Bytes = res[0].clone().0[1..].into();
+
+                into_value(consensus_state_bytes)
             }
             _ => todo!(),
         })
@@ -388,4 +401,26 @@ async fn sui_test() {
     //     .await
     //     .unwrap();
     panic!("{:?}", res);
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+pub struct ConnectionEnd {
+    pub state: u8,
+    pub client_id: u32,
+    pub counterparty_client_id: u32,
+    pub counterparty_connection_id: u32,
+}
+
+fn convert_connection(connection: ConnectionEnd) -> Connection {
+    Connection {
+        state: match connection.state {
+            1 => ConnectionState::Init,
+            2 => ConnectionState::TryOpen,
+            3 => ConnectionState::Open,
+            _ => panic!("connection state must be 1..=3"),
+        },
+        client_id: connection.client_id.try_into().unwrap(),
+        counterparty_client_id: connection.counterparty_client_id.try_into().unwrap(),
+        counterparty_connection_id: connection.counterparty_connection_id.try_into().ok(),
+    }
 }
