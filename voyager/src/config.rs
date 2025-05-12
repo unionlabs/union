@@ -57,7 +57,7 @@ pub const fn default_rpc_laddr() -> SocketAddr {
 
 #[must_use]
 pub fn default_metrics_endpoint() -> String {
-    "http://localhost:4318/v1/metrics".to_owned()
+    "http://localhost:4318".to_owned()
 }
 
 #[must_use]
