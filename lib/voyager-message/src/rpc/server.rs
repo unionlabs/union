@@ -209,7 +209,7 @@ pub mod cache {
     pub struct StateRequest {
         chain_id: ChainId,
         ibc_spec_id: IbcSpecId,
-        height: Height,
+        height: u64,
         path: Value,
     }
 
@@ -222,7 +222,7 @@ pub mod cache {
             Self {
                 chain_id,
                 ibc_spec_id: P::Spec::ID,
-                height,
+                height: height.height(),
                 path: serde_json::to_value(path).expect("serialization is infallible; qed;"),
             }
         }
@@ -236,7 +236,7 @@ pub mod cache {
             Self {
                 chain_id,
                 ibc_spec_id,
-                height,
+                height: height.height(),
                 path,
             }
         }
