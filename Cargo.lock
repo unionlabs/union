@@ -14046,6 +14046,47 @@ dependencies = [
 ]
 
 [[package]]
+name = "u"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "arbitrum-light-client-types",
+ "base64 0.21.7",
+ "berachain-light-client-types",
+ "bob-light-client-types",
+ "clap 4.5.35",
+ "cometbft-rpc",
+ "cometbls-light-client-types",
+ "derive_more 0.99.19",
+ "embed-commit",
+ "ethereum-light-client-types",
+ "ethermint-light-client-types",
+ "hex",
+ "ibc-classic-spec",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "linea-light-client-types",
+ "movement-light-client-types",
+ "protos",
+ "scroll-light-client-types",
+ "serde",
+ "serde_json",
+ "state-lens-ics23-ics23-light-client-types",
+ "state-lens-ics23-mpt-light-client-types",
+ "state-lens-ics23-smt-light-client-types",
+ "tendermint-light-client-types",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "trusted-mpt-light-client-types",
+ "ucs03-zkgm",
+ "ucs04",
+ "unionlabs",
+ "voyager-primitives",
+]
+
+[[package]]
 name = "ucd-trie"
 version = "0.1.7"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14107,6 +14148,7 @@ name = "ucs04"
 version = "0.0.0"
 dependencies = [
  "heck 0.5.0",
+ "serde",
  "serde_json",
  "thiserror 2.0.12",
 ]

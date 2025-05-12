@@ -89,7 +89,6 @@ members = [
   "lib/linea-light-client-types",
   "lib/scroll-light-client-types",
   "lib/state-lens-ics23-mpt-light-client-types",
-  "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
   "lib/state-lens-ics23-smt-light-client-types",
 
@@ -230,6 +229,7 @@ members = [
 
   "lib/consensus-primitives",
   "lib/solidity-slot",
+  "tools/u",
 ]
 
 [workspace.package]
@@ -373,6 +373,7 @@ consensus-primitives = { path = "lib/consensus-primitives", default-features = f
 state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
 
 solidity-slot = { path = "lib/solidity-slot", default-features = false }
+ucs04         = { path = "lib/ucs04", default-features = false }
 
 # =====================
 # external dependencies

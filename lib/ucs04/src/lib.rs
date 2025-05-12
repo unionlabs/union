@@ -20,6 +20,11 @@ include!(concat!(env!("OUT_DIR"), "/out.rs"));
 
 /// A representation of a universal chain id.
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(try_from = "&'de str", into = "String", bound(deserialize = "'de: 'a"))
+)]
 pub struct UniversalChainId<'a> {
     family: Family,
     id: Cow<'a, Id>,
@@ -101,6 +106,12 @@ impl UniversalChainId<'static> {
 impl Display for UniversalChainId<'_> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         write!(f, "{}.{}", self.family, self.id)
+    }
+}
+
+impl From<UniversalChainId<'_>> for String {
+    fn from(value: UniversalChainId<'_>) -> Self {
+        value.to_string()
     }
 }
 
