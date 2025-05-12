@@ -169,6 +169,11 @@
                           default = null;
                           example = "0.0.0.0:7178";
                         };
+                        metrics_endpoint = mkOption {
+                          type = types.nullOr types.str;
+                          default = null;
+                          example = "0.0.0.0:4318";
+                        };
                         queue = mkOption {
                           type = types.submodule {
                             options = {
