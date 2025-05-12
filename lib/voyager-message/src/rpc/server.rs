@@ -77,38 +77,30 @@ pub mod cache {
                     .time_to_idle(Duration::from_secs(config.state.time_to_idle))
                     .eviction_policy(EvictionPolicy::lru())
                     .build(),
-                state_cache_size_metric: opentelemetry::global::meter("voyager.cache.state")
-                    .u64_gauge("size")
+                state_cache_size_metric: opentelemetry::global::meter("voyager")
+                    .u64_gauge("cache.state.size")
                     .build(),
-                state_cache_hit_counter_metric: opentelemetry::global::meter("voyager.cache.state")
-                    .u64_counter("hit")
+                state_cache_hit_counter_metric: opentelemetry::global::meter("voyager")
+                    .u64_counter("cache.state.hit")
                     .build(),
-                state_cache_miss_counter_metric: opentelemetry::global::meter(
-                    "voyager.cache.state",
-                )
-                .u64_counter("miss")
-                .build(),
+                state_cache_miss_counter_metric: opentelemetry::global::meter("voyager")
+                    .u64_counter("cache.state.miss")
+                    .build(),
                 client_info_cache: moka::future::CacheBuilder::new(config.state.capacity)
                     // never expire, this state is assumed to be immutable
                     .time_to_live(Duration::from_secs(60 * 60 * 24 * 365 * 1000))
                     .time_to_idle(Duration::from_secs(60 * 60 * 24 * 365 * 1000))
                     .eviction_policy(EvictionPolicy::lru())
                     .build(),
-                client_info_cache_size_metric: opentelemetry::global::meter(
-                    "voyager.cache.client_info",
-                )
-                .u64_gauge("size")
-                .build(),
-                client_info_cache_hit_counter_metric: opentelemetry::global::meter(
-                    "voyager.cache.client_info",
-                )
-                .u64_counter("hit")
-                .build(),
-                client_info_cache_miss_counter_metric: opentelemetry::global::meter(
-                    "voyager.cache.client_info",
-                )
-                .u64_counter("miss")
-                .build(),
+                client_info_cache_size_metric: opentelemetry::global::meter("voyager")
+                    .u64_gauge("cache.client_info.size")
+                    .build(),
+                client_info_cache_hit_counter_metric: opentelemetry::global::meter("voyager")
+                    .u64_counter("cache.client_info.hit")
+                    .build(),
+                client_info_cache_miss_counter_metric: opentelemetry::global::meter("voyager")
+                    .u64_counter("cache.client_info.miss")
+                    .build(),
             }
         }
 
