@@ -128,7 +128,7 @@ impl Module {
 
                 match latest_height.cmp(&latest_height) {
                     Ordering::Less => {
-                        let next_height = (latest_height - height).clamp(1, 10) + height;
+                        let next_height = (latest_height - height).clamp(1, 20) + height;
                         conc(
                             ((height + 1)..next_height)
                                 .map(|height| {
@@ -243,6 +243,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     serde_json::from_value(e.parsed_json).unwrap();
                                 events::IbcEvent::CreateClient(create_client)
                             }
+                            "UpdateClient" => {
+                                let update_client: events::UpdateClient =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::UpdateClient(update_client)
+                            }
                             "ConnectionOpenInit" => {
                                 let connection_open: events::ConnectionOpenInit =
                                     serde_json::from_value(e.parsed_json).unwrap();
@@ -297,7 +302,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         UpdateClient {
                             client_type: ClientType::new(event.client_type),
                             client_id: event.client_id.try_into().unwrap(),
-                            height,
+                            height: event.height.0,
                         }
                         .into(),
                         event.client_id.try_into().unwrap(),

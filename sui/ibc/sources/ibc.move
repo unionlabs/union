@@ -412,8 +412,6 @@ module ibc::ibc {
                 0
             );
 
-        add_or_update_table<u32, ConnectionEnd>(&mut ibc_store.connections, connection_id, connection);
-
         ibc_store.commit_connection(connection_id, connection);
 
         event::emit(
@@ -435,7 +433,7 @@ module ibc::ibc {
     ) {
         let connection_id = ibc_store.generate_connection_identifier();
 
-        let mut connection = &connection_end::new(
+        let mut connection = connection_end::new(
             CONN_STATE_TRYOPEN,
             client_id,
             counterparty_client_id,
@@ -474,7 +472,7 @@ module ibc::ibc {
         );
 
         // Commit the updated connection to storage
-        ibc_store.commit_connection(connection_id, *connection);
+        ibc_store.commit_connection(connection_id, connection);
     }
 
     public entry fun connection_open_ack(
@@ -646,6 +644,7 @@ module ibc::ibc {
 
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, key, encoded);
 
+        add_or_update_table<u32, ConnectionEnd>(&mut ibc_store.connections, connection_id, connection);
     }
 
     fun commit_channel(ibc_store: &mut IBCStore, channel_id: u32, channel: Channel) {

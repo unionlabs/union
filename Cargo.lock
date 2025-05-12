@@ -18294,6 +18294,7 @@ dependencies = [
  "macros",
  "serde",
  "serde_json",
+ "sui-light-client-types",
  "sui-sdk",
  "tokio",
  "tracing",

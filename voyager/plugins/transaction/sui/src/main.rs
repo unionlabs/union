@@ -21,7 +21,7 @@ use sui_sdk::{
     },
     SuiClientBuilder,
 };
-use tracing::instrument;
+use tracing::instrument::{self, WithSubscriber};
 use unionlabs::primitives::{encoding::HexPrefixed, Bytes};
 use voyager_message::{
     data::Data,
@@ -182,7 +182,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         })
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::SubmitTransaction(msgs) => self
@@ -218,66 +218,62 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             process_msgs(self.ibc_store, self.ibc_store_initial_seq, msgs.clone())
                                 .await;
 
-                        for (_, (_, module, entry_fn, arguments)) in msgs.into_iter().enumerate() {
-                            let mut ptb = ProgrammableTransactionBuilder::new();
+                        let mut ptb = ProgrammableTransactionBuilder::new();
 
+                        for (_, (_, module, entry_fn, arguments)) in msgs.into_iter().enumerate() {
+                            let arguments = arguments
+                                .into_iter()
+                                .map(|arg| ptb.input(arg).unwrap())
+                                .collect();
                             ptb.command(Command::move_call(
                                 self.ibc_handler_address,
                                 module,
                                 entry_fn,
                                 vec![],
-                                arguments
-                                    .iter()
-                                    .enumerate()
-                                    .map(|(i, _)| Argument::Input(i as u16))
-                                    .collect(),
+                                arguments,
                             ));
-
-                            for i in arguments {
-                                ptb.input(i).unwrap();
-                            }
-
-                            let builder = ptb.finish();
-
-                            let tx_data = TransactionData::new_programmable(
-                                sender,
-                                vec![gas_coin.object_ref()],
-                                builder,
-                                gas_budget,
-                                gas_price,
-                            );
-
-                            let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
-                            let raw_tx = bcs::to_bytes(&intent_msg).expect("bcs should not fail");
-                            let mut hasher = DefaultHash::default();
-                            hasher.update(raw_tx.clone());
-                            let digest = hasher.finalize().digest;
-
-                            // use SuiKeyPair to sign the digest.
-                            let sui_sig = pk.sign(&digest);
-
-                            // if you would like to verify the signature locally before submission, use this function.
-                            // if it fails to verify locally, the transaction will fail to execute in Sui.
-                            sui_sig
-                                .verify_secure(&intent_msg, sender, SignatureScheme::ED25519)
-                                .unwrap();
-
-                            let transaction_response = self
-                                .sui_client
-                                .quorum_driver_api()
-                                .execute_transaction_block(
-                                    Transaction::from_generic_sig_data(
-                                        intent_msg.value,
-                                        vec![GenericSignature::Signature(sui_sig)],
-                                    ),
-                                    SuiTransactionBlockResponseOptions::default(),
-                                    None,
-                                )
-                                .await
-                                .unwrap();
-
-                            println!("{transaction_response:?}");
                         }
+
+                        let builder = ptb.finish();
+
+                        let tx_data = TransactionData::new_programmable(
+                            sender,
+                            vec![gas_coin.object_ref()],
+                            builder,
+                            gas_budget,
+                            gas_price,
+                        );
+
+                        let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
+                        let raw_tx = bcs::to_bytes(&intent_msg).expect("bcs should not fail");
+                        let mut hasher = DefaultHash::default();
+                        hasher.update(raw_tx.clone());
+                        let digest = hasher.finalize().digest;
+
+                        // use SuiKeyPair to sign the digest.
+                        let sui_sig = pk.sign(&digest);
+
+                        // if you would like to verify the signature locally before submission, use this function.
+                        // if it fails to verify locally, the transaction will fail to execute in Sui.
+                        sui_sig
+                            .verify_secure(&intent_msg, sender, SignatureScheme::ED25519)
+                            .unwrap();
+
+                        let transaction_response = self
+                            .sui_client
+                            .quorum_driver_api()
+                            .execute_transaction_block(
+                                Transaction::from_generic_sig_data(
+                                    intent_msg.value,
+                                    vec![GenericSignature::Signature(sui_sig)],
+                                ),
+                                SuiTransactionBlockResponseOptions::default(),
+                                None,
+                            )
+                            .await
+                            .unwrap();
+
+                        println!("{transaction_response:?}");
 
                         // res.into_inner().transaction_failures
 
@@ -294,7 +290,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         }
     }
 
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn callback(
         &self,
         _: &Extensions,
@@ -331,6 +327,20 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.client_type.to_string()).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.client_state_bytes).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.consensus_state_bytes).unwrap()),
+                ],
+            ),
+            Datagram::UpdateClient(data) => (
+                msg,
+                Identifier::new("ibc").unwrap(),
+                Identifier::new("update_client").unwrap(),
+                vec![
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ibc_store.into(),
+                        initial_shared_version,
+                        mutable: true,
+                    }),
+                    CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
+                    CallArg::Pure(bcs::to_bytes(&data.client_message).unwrap()),
                 ],
             ),
             Datagram::ConnectionOpenInit(data) => (
