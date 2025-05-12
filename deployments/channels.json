@@ -25,6 +25,14 @@
         "reverse": "PT45M"
       },
       "tags": ["canonical"]
+    },
+    "5": {
+      "comments": "osmosis.osmo-test-5 channel 3, official channel but with no relaying guarantees",
+      "sla": {
+        "forward": "PT5M",
+        "reverse": "PT10M"
+      },
+      "tags": ["development"]
     }
   },
   "bob.60808": {
