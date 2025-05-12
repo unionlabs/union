@@ -24,6 +24,7 @@ unionlabs            = { workspace = true }
 unionlabs-primitives = { workspace = true, features = ["base58"] }
 cosmwasm-std = { workspace = true, features = ["cosmwasm_2_1"]}
 serde_repr = { version = "0.1.20", optional = true }
+serde_with   = { workspace = true, features = ["macros", "json"] }
 
 [dev-dependencies]
 serde_json = { workspace = true }

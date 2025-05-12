@@ -8,6 +8,7 @@ pub mod consensus_state;
 pub mod crypto;
 pub mod digest;
 pub mod header;
+pub mod transaction;
 
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
