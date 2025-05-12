@@ -4,6 +4,7 @@ import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Label from "$lib/components/ui/Label.svelte"
+import { runPromiseExit } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients.ts"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
@@ -249,7 +250,7 @@ const handleSubmit = () => {
     return
   }
 
-  Effect.runPromiseExit(submit).then(exit =>
+  runPromiseExit(submit).then(exit =>
     Exit.match(exit, {
       onFailure: cause => {
         const err = Cause.originalError(cause)

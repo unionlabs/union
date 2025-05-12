@@ -1,4 +1,5 @@
 // import { submitTransfer, switchChain, waitForReceipt } from "./index.ts"
+import { runPromiseExit } from "$lib/runtime.js"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
 import type { Address, Chain as ViemChain } from "viem"
@@ -31,7 +32,7 @@ export async function nextState(
       return SwitchChainState.$match(state, {
         InProgress: async () => {
           // @ts-ignore
-          const exit = await Effect.runPromiseExit(switchChain(params.chain.id))
+          const exit = await runPromiseExit(switchChain(params.chain.id))
           return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
         },
         Complete: ({ exit }) => {
@@ -45,7 +46,7 @@ export async function nextState(
     TransferSubmit: ({ state }) => {
       return TransferSubmitState.$match(state, {
         InProgress: async () => {
-          const exit = await Effect.runPromiseExit(submitTransfer(chain, params))
+          const exit = await runPromiseExit(submitTransfer(chain, params))
           return TransferSubmission.TransferSubmit({
             state: TransferSubmitState.Complete({ exit }),
           })
@@ -63,7 +64,7 @@ export async function nextState(
     TransferReceipt: ({ state }) => {
       return TransferReceiptState.$match(state, {
         InProgress: async ({ hash }) => {
-          const exit = await Effect.runPromiseExit(waitForReceipt(chain, hash))
+          const exit = await runPromiseExit(waitForReceipt(chain, hash))
           return TransferSubmission.TransferReceipt({
             state: TransferReceiptState.Complete({ exit }),
           })

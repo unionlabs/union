@@ -1,3 +1,4 @@
+import { runPromiseExit } from "$lib/runtime"
 import { switchChain } from "$lib/services/transfer-ucs03-evm"
 import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash.ts"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
@@ -65,7 +66,7 @@ export const nextStateEvm = async <
       return isSafeWallet
         ? WriteContractInProgress()
         : SwitchChainComplete({
-          exit: await Effect.runPromiseExit(switchChain(chain)),
+          exit: await runPromiseExit(switchChain(chain)),
         })
     },
 
@@ -74,7 +75,7 @@ export const nextStateEvm = async <
 
     WriteContractInProgress: async () =>
       WriteContractComplete({
-        exit: await Effect.runPromiseExit(writeContract(walletClient, params)),
+        exit: await runPromiseExit(writeContract(walletClient, params)),
       }),
 
     WriteContractComplete: ({ exit }) => {
@@ -91,7 +92,7 @@ export const nextStateEvm = async <
     },
 
     WaitForSafeWalletHash: async ({ hash }) => {
-      const resolvedExit = await Effect.runPromiseExit(resolveSafeTx(hash)) // TODO
+      const resolvedExit = await runPromiseExit(resolveSafeTx(hash)) // TODO
 
       return resolvedExit._tag === "Failure"
         ? WaitForSafeWalletHash({ hash })
@@ -100,7 +101,7 @@ export const nextStateEvm = async <
 
     TransactionReceiptInProgress: async ({ hash }) =>
       TransactionReceiptComplete({
-        exit: await Effect.runPromiseExit(
+        exit: await runPromiseExit(
           waitForTransactionReceipt(hash).pipe(
             Effect.provideService(ViemPublicClient, { client: publicClient }),
           ),

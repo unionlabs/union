@@ -1,3 +1,4 @@
+import { runSync } from "$lib/runtime"
 import { AddressValidationError } from "$lib/services/shared"
 import { bech32AddressToHex } from "@unionlabs/client"
 import { Effect, Option } from "effect"
@@ -53,7 +54,7 @@ export const deriveReceiverEffect = (input: string) =>
   })
 
 export const getDerivedReceiverSafe = (input: string): Option.Option<string> => {
-  const result = Effect.runSync(Effect.either(deriveReceiverEffect(input)))
+  const result = runSync(Effect.either(deriveReceiverEffect(input)))
   return result._tag === "Right" ? Option.some(result.right) : Option.none()
 }
 

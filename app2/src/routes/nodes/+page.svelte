@@ -8,6 +8,7 @@ import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { chains } from "$lib/stores/chains.svelte"
 import type { RpcProtocolType } from "@unionlabs/sdk/schema"
+    import { runPromise } from "$lib/runtime";
 
 type RpcType = "cosmos" | "evm"
 
@@ -193,7 +194,7 @@ async function checkAllNodes() {
   )
 
   await Promise.all(
-    rpcNodes.map(({ chain, rpc }) => checkNode(chain, rpc.url).pipe(Effect.runPromise))
+    rpcNodes.map(({ chain, rpc }) => checkNode(chain, rpc.url).pipe(runPromise))
   )
 }
 
