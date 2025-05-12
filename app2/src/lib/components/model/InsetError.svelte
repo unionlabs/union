@@ -45,6 +45,9 @@ const exportData = () => {
       class="absolute inset-0 flex flex-col bg-zinc-925"
       transition:fly={{ y: 30, duration: 300, opacity: 0 }}
     >
+      {#if errorDetails?.message}
+        <div>Message: {errorDetails.message}</div>
+      {/if}
       <div class="p-4 overflow-y-auto flex-1">
         {#if errorDetails}
           <pre

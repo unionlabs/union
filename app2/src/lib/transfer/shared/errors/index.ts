@@ -9,7 +9,8 @@ export class InsufficientFundsError extends Data.TaggedError("InsufficientFundsE
 }> {}
 
 export class AllowanceCheckError extends Data.TaggedError("AllowanceCheckError")<{
-  cause: unknown
+  message: string
+  cause?: unknown
 }> {}
 
 export class OrderCreationError extends Data.TaggedError("OrderCreationError")<{

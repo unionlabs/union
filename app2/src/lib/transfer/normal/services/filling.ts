@@ -17,7 +17,7 @@ import {
 } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { createOrdersBatch } from "$lib/transfer/shared/services/filling/create-orders.ts"
 import { Data, Effect, Match, Option } from "effect"
-import { constVoid } from "effect/Function"
+import { constVoid, pipe } from "effect/Function"
 
 export type StateResult = {
   nextState: Option.Option<CreateContextState>
@@ -123,16 +123,18 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
     },
 
     CheckBalance: ({ context }) => {
-      return checkBalanceForIntent(context).pipe(
-        Effect.flatMap((result: BalanceCheckResult) =>
-          Match.type<BalanceCheckResult>().pipe(
-            Match.tag("HasEnough", () =>
-              Effect.succeed(ok(CheckAllowance({ context }), "Checking allowance..."))),
-            Match.tag("InsufficientFunds", () =>
-              Effect.succeed(ok(Empty(), "Insufficient balance"))),
-            Match.exhaustive,
-          )(result)
-        ),
+      const nextState = pipe(
+        Match.type<BalanceCheckResult>(),
+        Match.tagsExhaustive({
+          HasEnough: () => Effect.succeed(ok(CheckAllowance({ context }), "Checking allowance...")),
+          InsufficientFunds: () => Effect.succeed(ok(Empty(), "Insufficient balance")),
+        }),
+      )
+      return pipe(
+        context,
+        checkBalanceForIntent,
+        Effect.flatMap(nextState),
+        Effect.catchAll((error) => Effect.succeed(fail("Check balance failed", error))),
       )
     },
 
