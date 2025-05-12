@@ -1,5 +1,6 @@
 use enumorph::Enumorph;
 use macros::model;
+use sui_light_client_types::U64;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CreateClient {
@@ -12,7 +13,7 @@ pub struct CreateClient {
 pub struct UpdateClient {
     pub client_id: u32,
     pub client_type: String,
-    pub height: u64,
+    pub height: U64,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
