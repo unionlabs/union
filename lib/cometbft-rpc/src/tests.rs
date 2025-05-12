@@ -4,11 +4,19 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 
 #[track_caller]
 fn ensure_json<T: DeserializeOwned + PartialEq + Debug>(path: impl AsRef<Path>, t: T) {
-    let response =
-        serde_json::from_str::<JsonRpcResponse<T>>(&std::fs::read_to_string(path).unwrap())
-            .unwrap();
+    let json = std::fs::read_to_string(path).unwrap();
+    let jd = &mut serde_json::Deserializer::from_str(&json);
 
-    assert_eq!(t, response.result);
+    let result: Result<JsonRpcResponse<T>, _> = serde_path_to_error::deserialize(jd);
+
+    match result {
+        Ok(response) => {
+            assert_eq!(t, response.result);
+        }
+        Err(err) => {
+            panic!("{err}");
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -337,6 +345,80 @@ mod validators {
                 ],
                 count: 30,
                 total: 141,
+            },
+        );
+    }
+}
+
+mod status {
+    use cometbft_types::{
+        crypto::public_key::PublicKey,
+        p2p::{
+            default_node_info::DefaultNodeInfo,
+            default_node_info_other::{DefaultNodeInfoOther, TxIndex},
+            protocol_version::ProtocolVersion,
+        },
+    };
+
+    use super::*;
+    use crate::rpc_types::{StatusResponse, SyncInfo, ValidatorInfo};
+
+    #[test]
+    fn status() {
+        ensure_json(
+            "testdata/status/bbn-1.json",
+            StatusResponse {
+                node_info: DefaultNodeInfo {
+                    protocol_version: ProtocolVersion {
+                        p2p: 8,
+                        block: 11,
+                        app: 0,
+                    },
+                    default_node_id: "d2380a09d4b363458d74c41393507eb116a231d1".parse().unwrap(),
+                    listen_addr: "tcp://0.0.0.0:26656".to_owned(),
+                    network: "bbn-1".to_owned(),
+                    version: "0.38.17".to_owned(),
+                    channels: "40202122233038606100".parse().unwrap(),
+                    moniker: "liquify-main".to_owned(),
+                    other: DefaultNodeInfoOther {
+                        tx_index: TxIndex::On,
+                        rpc_address: "tcp://0.0.0.0:8545".to_owned(),
+                    },
+                },
+                sync_info: SyncInfo {
+                    catching_up: false,
+                    earliest_app_hash: Some(
+                        "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+                            .parse()
+                            .unwrap(),
+                    ),
+                    earliest_block_hash: Some(
+                        "c9e667e281ef251fa941666ad594bf8c6ca0b5890a91ddc777f9b3f31c58060d"
+                            .parse()
+                            .unwrap(),
+                    ),
+                    earliest_block_height: 1,
+                    earliest_block_time: "2024-08-13T15:45:14.000000000Z".parse().unwrap(),
+                    latest_app_hash:
+                        "5933c3aa776e3d9976694ed85f4d420db92d13025fac557f1334c9ff03696889"
+                            .parse()
+                            .unwrap(),
+                    latest_block_hash:
+                        "317cac7db536eaf1686b7a5319ce201530ee27a15b902679dac7adcd9633cc80"
+                            .parse()
+                            .unwrap(),
+                    latest_block_height: 290884,
+                    latest_block_time: "2025-05-12T02:32:24.240017347Z".parse().unwrap(),
+                },
+                validator_info: ValidatorInfo {
+                    address: "eed6c88fb89c7107825824745588c3d9ed0c2158".parse().unwrap(),
+                    pub_key: PublicKey::Ed25519(
+                        "R+TEZaXlj9hsbL2PG8kDxtGIVlmTt2n2BRjMJ1wtnt4="
+                            .parse()
+                            .unwrap(),
+                    ),
+                    voting_power: 0,
+                },
             },
         );
     }

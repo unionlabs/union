@@ -3519,6 +3519,7 @@ dependencies = [
  "serde",
  "serde-utils",
  "serde_json",
+ "serde_path_to_error",
  "thiserror 2.0.12",
  "tokio",
  "tracing",
