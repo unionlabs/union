@@ -1,7 +1,9 @@
+use blake2::{Blake2b, Digest as _};
 use cosmwasm_std::{Deps, Empty, HashFunction, StdError, BLS12_381_G2_GENERATOR};
 use depolama::{KeyCodec, Prefix, Store, ValueCodec};
 use ibc_union_light_client::{ClientCreationResult, IbcClient, IbcClientError, StateUpdate};
 use ibc_union_msg::lightclient::Status;
+use serde::Serialize;
 use sui_light_client_types::{
     checkpoint_summary::CheckpointSummary,
     client_state::ClientState,
@@ -244,17 +246,72 @@ impl ValueCodec<Committee> for CommitteeStore {
         })
     }
 }
+#[derive(Serialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+pub enum TypeTag {
+    // alias for compatibility with old json serialized data.
+    #[serde(rename = "bool", alias = "Bool")]
+    Bool,
+    #[serde(rename = "u8", alias = "U8")]
+    U8,
+    #[serde(rename = "u64", alias = "U64")]
+    U64,
+    #[serde(rename = "u128", alias = "U128")]
+    U128,
+    #[serde(rename = "address", alias = "Address")]
+    Address,
+    #[serde(rename = "signer", alias = "Signer")]
+    Signer,
+    #[serde(rename = "vector", alias = "Vector")]
+    Vector(Box<TypeTag>),
+    // #[serde(rename = "struct", alias = "Struct")]
+    // Struct(Box<StructTag>),
+
+    // NOTE: Added in bytecode version v6, do not reorder!
+    #[serde(rename = "u16", alias = "U16")]
+    U16,
+    #[serde(rename = "u32", alias = "U32")]
+    U32,
+    #[serde(rename = "u256", alias = "U256")]
+    U256,
+}
+
+/// Calculate the object_id of the dynamic field within the commitments mapping
+fn calculate_dynamic_field_key(parent: [u8; 32], key_bytes: &[u8]) -> Vec<u8> {
+    #[repr(u8)]
+    enum HashingIntentScope {
+        ChildObjectId = 0xf0,
+        RegularObjectId = 0xf1,
+    }
+
+    // hash(parent || len(key) || key || key_type_tag)
+    let mut hasher = Blake2b::<typenum::U32>::default();
+    hasher.update([HashingIntentScope::ChildObjectId as u8]);
+    hasher.update(parent);
+    // +1 since `key_bytes` should be prefixed with its length (bcs encoding)
+    hasher.update((key_bytes.len() + 1).to_le_bytes());
+    // instead of calling bcs::serialize, we just prefix the bytes with the its length
+    // since the table we are verifying uses `vector<u8>` keys
+    hasher.update([key_bytes.len() as u8]);
+    hasher.update(key_bytes);
+    hasher.update(
+        bcs::to_bytes(&TypeTag::Vector(Box::new(TypeTag::U8))).expect("bcs serialization works"),
+    );
+    let hash = hasher.finalize();
+
+    hash.to_vec()
+}
 
 #[cfg(test)]
 mod tests {
     use std::str::FromStr;
 
     use cosmwasm_std::testing::mock_dependencies;
+    use hex_literal::hex;
     use sui_light_client_types::{
         checkpoint_summary::CheckpointContents, CertifiedCheckpointSummary,
     };
     use unionlabs::{encoding::Decode as _, primitives::encoding::Base64};
-    use unionlabs_primitives::Bytes;
+    use unionlabs_primitives::{encoding::HexPrefixed, Bytes};
 
     use super::*;
 
@@ -271,6 +328,29 @@ mod tests {
             &committee,
             &header.checkpoint_summary,
             header.sign_info,
+        );
+    }
+
+    #[test]
+    fn calculate_hash() {
+        let parent_address =
+            hex!("78f2ce59629d065e94d2cd7a457d972937ba428ae186413cc2a08c8431f9e804");
+        let this_address = hex!("e809eb6e1c3b1077f08e3a1c8228a8e0d3c3480895a315e7911cc206886bdaed");
+
+        let key_bytes = [
+            0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+            0, 0, 0, 0, 0, 3,
+        ];
+
+        // let key_bytes = [[key_bytes.len() as u8].as_slice(), &key_bytes].concat();
+
+        let hash = calculate_dynamic_field_key(parent_address, &key_bytes);
+
+        panic!(
+            "hash: {}, this: {}",
+            Bytes::<HexPrefixed>::new(hash),
+            Bytes::<HexPrefixed>::new(this_address.to_vec())
         );
     }
 }

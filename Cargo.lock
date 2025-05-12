@@ -15311,6 +15311,7 @@ version = "0.0.0"
 dependencies = [
  "bcs 0.1.6",
  "bincode 2.0.1",
+ "blake2",
  "cosmwasm-std 2.2.2",
  "depolama",
  "embed-commit",
@@ -15320,8 +15321,10 @@ dependencies = [
  "ibc-union-msg",
  "serde",
  "serde_json",
+ "serde_repr",
  "sui-light-client-types",
  "thiserror 2.0.12",
+ "typenum",
  "unionlabs",
  "unionlabs-primitives",
 ]
@@ -15340,6 +15343,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serde_repr",
+ "serde_with",
  "thiserror 2.0.12",
  "typenum",
  "unionlabs",
