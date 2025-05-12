@@ -6,6 +6,7 @@ import { defineConfig } from "vite"
 export default defineConfig({
   define: {
     // TODO: complete me <3
+    "import.meta.vitest": "undefined",
   },
   plugins: [sveltekit(), tailwindcss()],
   build: { sourcemap: true },

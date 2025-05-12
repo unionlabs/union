@@ -4,7 +4,7 @@ import {
   WaitForTransactionReceiptError,
 } from "$lib/services/transfer-ucs03-evm"
 import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash.ts"
-import type { EffectToExit, HasKey } from "$lib/types"
+import type { HasKey } from "$lib/types"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
 import {
   ViemPublicClient,
@@ -12,9 +12,7 @@ import {
   writeContract,
   WriteContractError,
 } from "@unionlabs/sdk/evm"
-import { Data, Effect, Exit, flow, Match, pipe, Predicate } from "effect"
-import { constant } from "effect/Function"
-import type { Simplify } from "effect/Types"
+import { Data, Effect, Match, pipe } from "effect"
 import type {
   Abi,
   Chain,

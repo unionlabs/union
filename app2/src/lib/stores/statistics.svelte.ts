@@ -1,3 +1,4 @@
+import { runFork, runPromise } from "$lib/runtime"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
 import { Effect, Fiber, Option } from "effect"
@@ -10,14 +11,14 @@ class StatisticsStore {
   async runEffect<R>(effect: Effect.Effect<R>) {
     this.data = Option.none()
     await this.interruptFiber()
-    const fiber = Effect.runFork(effect)
+    const fiber = runFork(effect)
     this.fiber = Option.some(fiber)
     return fiber
   }
 
   async interruptFiber() {
     if (Option.isSome(this.fiber)) {
-      await Effect.runPromise(Fiber.interrupt(this.fiber.value))
+      await runPromise(Fiber.interrupt(this.fiber.value))
       this.fiber = Option.none()
     }
   }
@@ -31,14 +32,14 @@ class DailyTransfersStore {
   async runEffect<R>(effect: Effect.Effect<R>) {
     this.data = Option.none()
     await this.interruptFiber()
-    const fiber = Effect.runFork(effect)
+    const fiber = runFork(effect)
     this.fiber = Option.some(fiber)
     return fiber
   }
 
   async interruptFiber() {
     if (Option.isSome(this.fiber)) {
-      await Effect.runPromise(Fiber.interrupt(this.fiber.value))
+      await runPromise(Fiber.interrupt(this.fiber.value))
       this.fiber = Option.none()
     }
   }

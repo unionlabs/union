@@ -11,6 +11,7 @@ import {
   RawTokenBalance,
   TokenRawAmount,
   type TokenRawDenom,
+  UniversalChainId,
 } from "@unionlabs/sdk/schema"
 import { Data, Effect, Option, Schema } from "effect"
 import type { ParseError } from "effect/ParseResult"
@@ -87,14 +88,18 @@ export const fetchCosmosBalance = ({
   chain: Chain
   tokenAddress: TokenRawDenom
   walletAddress: AddressCosmosCanonical
-}) => {
-  return Effect.gen(function*() {
+}) =>
+  Effect.gen(function*() {
     const rpcUrl = yield* chain.requireRpcUrl("rest")
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
-    yield* Effect.log(
-      `fetching balance for ${chain.universal_chain_id}:${displayAddress}:${decodedDenom}`,
+    yield* Effect.logTrace("Fetching Cosmos balance").pipe(
+      Effect.annotateLogs({
+        universalChainId: chain.universal_chain_id,
+        displayAddress,
+        decodedDenom,
+      }),
     )
 
     const fetchBalance = decodedDenom.startsWith(`${chain.addr_prefix}1`)
@@ -117,4 +122,3 @@ export const fetchCosmosBalance = ({
     Effect.provide(FetchHttpClient.layer),
     withTracerDisabledWhen(() => true), // important! this prevents CORS issues: https://github.com/Effect-TS/effect/issues/4568
   )
-}

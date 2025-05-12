@@ -8,7 +8,6 @@ import { graphql } from "gql.tada"
 
 export const tokensQuery = (universalChainId: UniversalChainId) =>
   Effect.gen(function*() {
-    yield* Effect.log(`zkgm starting token fetcher for ${universalChainId}`)
     const response = yield* createQueryGraphql({
       schema: Schema.Struct({
         v2_tokens: Tokens,
@@ -56,7 +55,6 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
       variables: { universal_chain_id: universalChainId },
       refetchInterval: "10 minutes",
       writeData: data => {
-        Effect.runSync(Effect.log(`storing new tokens for ${universalChainId}`))
         tokensStore.setData(
           universalChainId,
           data.pipe(
@@ -74,10 +72,10 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
         )
       },
       writeError: error => {
-        Effect.runSync(Effect.log(`storing new tokens error for ${universalChainId}`))
         tokensStore.setError(universalChainId, error)
       },
     })
+
     return response
   })
 

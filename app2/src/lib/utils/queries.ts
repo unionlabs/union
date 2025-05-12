@@ -28,8 +28,12 @@ export const fetchDecodeGraphql = <S, E, D, V extends object | undefined>(
   variables?: V,
 ) =>
   Effect.gen(function*() {
-    const data = yield* Effect.tryPromise(() => request(URLS().GRAPHQL, document, variables))
-    return yield* Schema.decodeUnknown(schema)(data)
+    const data = yield* Effect.tryPromise(() => request(URLS().GRAPHQL, document, variables)).pipe(
+      Effect.withSpan("fetch"),
+    )
+    return yield* Schema.decodeUnknown(schema)(data).pipe(
+      Effect.withSpan("decode"),
+    )
   })
 
 export const createQuery = <S>({

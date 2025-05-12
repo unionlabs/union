@@ -1,25 +1,50 @@
-import { Context, Effect, Layer, Logger, LogLevel, ManagedRuntime } from "effect"
-import type { RunCallbackOptions, RunForkOptions } from "effect/Runtime"
+import { runForkWithRuntime, runPromiseExitWithRuntime } from "$lib/utils/effect.svelte.js"
+import { Layer, ManagedRuntime, Match, pipe } from "effect"
+import { isNotUndefined } from "effect/Predicate"
 
-// XXX: serice should live elsewhere; only for dev testing
-export const A = Context.GenericTag<"A">("A")
+const IS_VITEST = isNotUndefined(import.meta.vitest)
 
-// TODO: add mocking layer
-const LayerLive = Layer.mergeAll(
-  Layer.succeed(A, "A"),
-  Logger.minimumLogLevel(LogLevel.Trace),
-)
+type AppLayer = Layer.Layer<never, never, never>
 
-const managedRuntime = ManagedRuntime.make(LayerLive)
+const make = async () => {
+  const layer = (await pipe(
+    Match.value(IS_VITEST),
+    Match.when(true, () => import("$lib/layers/test.js")),
+    Match.when(false, () => import("$lib/layers/live.js")),
+    Match.orElseAbsurd,
+  )).default satisfies AppLayer
+
+  const {
+    runFork,
+    runPromise,
+    runPromiseExit,
+    runSync,
+    runSyncExit,
+    runtime: _runtime,
+  } = ManagedRuntime.make(layer)
+
+  const runtime = await _runtime()
+
+  const runFork$ = runForkWithRuntime(runtime)
+  const runPromiseExit$ = runPromiseExitWithRuntime(runtime)
+
+  return {
+    runFork$,
+    runFork,
+    runPromise,
+    runPromiseExit$,
+    runPromiseExit,
+    runSync,
+    runSyncExit,
+  } as const
+}
 
 export const {
+  runFork$,
+  runFork,
+  runPromise,
+  runPromiseExit$,
+  runPromiseExit,
   runSync,
   runSyncExit,
-  runPromise,
-  runPromiseExit,
-  runFork,
-  runCallback,
-  dispose,
-} = managedRuntime
-
-export const runtime = await managedRuntime.runtime()
+} = await make()

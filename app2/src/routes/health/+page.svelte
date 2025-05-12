@@ -2,6 +2,7 @@
 import Card from "$lib/components/ui/Card.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { runPromise } from "$lib/runtime"
 import { cn } from "$lib/utils"
 import { Effect, Option } from "effect"
 
@@ -50,7 +51,7 @@ async function fetchAllHealth() {
         })),
       )
     ),
-  ).pipe(Effect.runPromise)
+  ).pipe(runPromise)
 
   healthData = Option.some(data)
 }

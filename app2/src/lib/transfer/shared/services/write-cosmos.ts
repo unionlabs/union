@@ -9,11 +9,11 @@ import {
   OfflineSignerError,
   switchChain,
 } from "$lib/services/transfer-ucs03-cosmos"
-import type { EffectToExit, HasKey } from "$lib/types"
+import type { HasKey } from "$lib/types"
 import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { executeContract, ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import type { Chain } from "@unionlabs/sdk/schema"
-import { Data, Effect, Exit, Match, pipe, Predicate, Schedule } from "effect"
+import { Data, Effect, Match, pipe, Schedule } from "effect"
 
 export type TransactionState = Data.TaggedEnum<{
   Filling: {}
