@@ -5,13 +5,9 @@
       self',
       pkgs,
       system,
-      config,
-      inputs',
       crane,
-      stdenv,
       get-flake,
       uniondBundleVersions,
-      dbg,
       ...
     }:
     let
