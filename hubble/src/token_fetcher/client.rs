@@ -1,4 +1,4 @@
-use std::{fmt::Display, str::FromStr};
+use std::fmt::Display;
 
 use reqwest::StatusCode;
 use serde::{de, Deserialize, Deserializer};
@@ -104,7 +104,7 @@ impl Display for Extensions {
 
 #[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct HubbleExtension {
-    #[serde(default, deserialize_with = "deserialize_opt_u64_from_string")]
+    #[serde(with = "::serde_utils::string_opt")]
     pub instantiate_height: Option<u64>,
 }
 
@@ -116,17 +116,6 @@ impl Display for HubbleExtension {
                 .map(|h| h.to_string())
                 .unwrap_or_else(|| "None".to_string())
         ))
-    }
-}
-
-fn deserialize_opt_u64_from_string<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let opt = Option::<&str>::deserialize(deserializer)?;
-    match opt {
-        Some(s) => u64::from_str(s).map(Some).map_err(serde::de::Error::custom),
-        None => Ok(None),
     }
 }
 
