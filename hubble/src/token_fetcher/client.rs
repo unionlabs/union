@@ -71,6 +71,7 @@ pub struct Token {
     pub decimals: i32,
     #[serde(rename = "logoURI")]
     pub logo_uri: Option<String>,
+    pub extensions: Option<Extensions>,
 }
 
 impl Display for Token {
@@ -82,6 +83,38 @@ impl Display for Token {
             self.name,
             self.decimals,
             self.logo_uri.as_deref().unwrap_or("None")
+        ))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct Extensions {
+    pub hubble: Option<HubbleExtension>,
+}
+
+impl Display for Extensions {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        if let Some(hubble) = &self.hubble {
+            f.write_fmt(format_args!("hubble: {}", hubble))
+        } else {
+            f.write_str("no extensions")
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
+pub struct HubbleExtension {
+    #[serde(with = "::serde_utils::string_opt")]
+    pub instantiate_height: Option<u64>,
+}
+
+impl Display for HubbleExtension {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!(
+            "instantiate_height: {}",
+            self.instantiate_height
+                .map(|h| h.to_string())
+                .unwrap_or_else(|| "None".to_string())
         ))
     }
 }

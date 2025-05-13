@@ -35,6 +35,7 @@ lazy_static        = { workspace = true }
 prometheus         = { version = "0.13.3", features = ["process"] }
 reqwest            = { workspace = true, features = ["json", "blocking"] }
 serde              = { workspace = true, features = ["derive"] }
+serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
 sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
 tempfile           = "3.19.1"

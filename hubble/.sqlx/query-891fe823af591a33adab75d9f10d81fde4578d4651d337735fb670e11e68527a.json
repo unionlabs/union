@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri\n        FROM token.token_source_representations\n        WHERE token_source_id = $1\n        ",
+  "query": "\n        SELECT token_source_id, internal_chain_id, address, symbol, name, decimals, logo_uri, instantiate_height\n        FROM token.token_source_representations\n        WHERE token_source_id = $1\n        ",
   "describe": {
     "columns": [
       {
@@ -37,6 +37,11 @@
         "ordinal": 6,
         "name": "logo_uri",
         "type_info": "Text"
+      },
+      {
+        "ordinal": 7,
+        "name": "instantiate_height",
+        "type_info": "Int8"
       }
     ],
     "parameters": {
@@ -51,8 +56,9 @@
       false,
       false,
       false,
+      true,
       true
     ]
   },
-  "hash": "7b076b39e5594d8a04448ab264a6095c7b7d8faa17c90e7ee5ca8d90877c768f"
+  "hash": "891fe823af591a33adab75d9f10d81fde4578d4651d337735fb670e11e68527a"
 }

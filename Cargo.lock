@@ -6764,6 +6764,7 @@ dependencies = [
  "prometheus",
  "reqwest 0.11.27",
  "serde",
+ "serde-utils",
  "serde_json",
  "sqlx",
  "tempfile",
