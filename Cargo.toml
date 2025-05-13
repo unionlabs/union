@@ -215,6 +215,7 @@ members = [
   "lib/linea-types",
   "cosmwasm/osmosis-tokenfactory-token-minter",
   "cosmwasm/cw20-token-minter",
+  "cosmwasm/cw-account",
   "cosmwasm/ucs03-zkgm-token-minter-api",
   "cosmwasm/osmosis-tokenfactory-token-owner",
   "cosmwasm/cw20-base",
@@ -322,6 +323,7 @@ ibc-union-msg          = { path = "cosmwasm/ibc-union/core/msg", default-feature
 
 frissitheto = { path = "lib/frissitheto", default-features = false }
 
+cw-account                        = { path = "cosmwasm/cw-account", default-features = false }
 cw20-base                         = { path = "cosmwasm/cw20-base", default-features = false }
 cw20-token-minter                 = { path = "cosmwasm/cw20-token-minter", default-features = false }
 osmosis-tokenfactory-token-minter = { path = "cosmwasm/osmosis-tokenfactory-token-minter", default-features = false }

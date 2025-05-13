@@ -6,7 +6,8 @@ mod state;
 mod tests;
 pub mod token_bucket;
 use alloy::primitives::{ruint::ParseError, U256};
-use cosmwasm_std::StdError;
+use com::Stake;
+use cosmwasm_std::{Addr, Instantiate2AddressError, StdError};
 use frissitheto::UpgradeError;
 use ibc_union_spec::ChannelId;
 use thiserror::Error;
@@ -52,7 +53,7 @@ pub enum ContractError {
     MissingFunds,
     #[error("receiver must be a valid address")]
     InvalidReceiver,
-    #[error("receiver must be a valid address")]
+    #[error("sender must be a valid address")]
     InvalidSender,
     #[error(
         "the receiver can't be validated, make sure the bech prefix matches the current chain"
@@ -125,4 +126,14 @@ pub enum ContractError {
     OnlyRateLimitOperator,
     #[error("the instruction cannot be executed by a market maker")]
     InvalidMarketMakerOperation,
+    #[error(transparent)]
+    StakeInstantiate2(#[from] Instantiate2AddressError),
+    #[error("validator must be a valid address")]
+    InvalidValidator,
+    #[error("the validator address can't be validated, make sure the bech prefix matches the current chain")]
+    UnableToValidateValidator,
+    #[error("the governance token must match the local native token")]
+    InvalidGovernanceToken,
+    #[error("staking position must be unique but found an already deployed staking account")]
+    StakingAccountAlreadyExist { stake: Stake, account: Addr },
 }

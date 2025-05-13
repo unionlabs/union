@@ -20,7 +20,8 @@ library = []
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"] }
 cosmwasm-schema             = { workspace = true }
-cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2"] }
+cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "staking"] }
+cw-account                  = { workspace = true }
 cw-storage-plus             = { workspace = true }
 embed-commit                = { workspace = true }
 ethabi                      = { workspace = true }

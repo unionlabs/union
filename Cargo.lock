@@ -4482,6 +4482,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw-account"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "cw-storage-plus 2.0.0",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal",
+ "serde",
+ "thiserror 2.0.12",
+ "unionlabs",
+]
+
+[[package]]
 name = "cw-multi-test"
 version = "2.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -14112,6 +14127,7 @@ dependencies = [
  "alloy",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
+ "cw-account",
  "cw-multi-test",
  "cw-storage-plus 2.0.0",
  "cw20",

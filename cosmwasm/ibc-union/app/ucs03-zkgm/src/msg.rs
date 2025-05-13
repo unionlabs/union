@@ -27,6 +27,13 @@ pub struct Config {
     /// Enable or disable rate limiting.
     #[serde(default, skip_serializing_if = "core::ops::Not::not")]
     pub rate_limit_disabled: bool,
+    /// The dummy code id for staking account deployment.
+    #[serde(default)]
+    pub dummy_code_id: u64,
+    #[serde(default)]
+    pub cw_account_code_id: u64,
+    #[serde(default)]
+    pub unbonding_period: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -146,6 +153,13 @@ pub struct MigrateMsg {}
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum QueryMsg {
+    /// Calculate the stake account address
+    PredictStakeAccount {
+        /// The channel ID
+        channel_id: ChannelId,
+        /// The NFT ID
+        token_id: Uint256,
+    },
     /// Calculate the wrapped token denom
     PredictWrappedToken {
         path: String,
