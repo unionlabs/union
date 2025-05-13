@@ -1,7 +1,13 @@
 use core::f64;
 use std::{
-    borrow::Borrow, cmp::Eq, collections::HashMap, fmt::Write, future::Future, hash::Hash,
-    marker::PhantomData, time::Duration,
+    borrow::Borrow,
+    cmp::Eq,
+    collections::HashMap,
+    fmt::Write,
+    future::Future,
+    hash::Hash,
+    marker::PhantomData,
+    time::{Duration, Instant},
 };
 
 use futures_util::TryStreamExt;
@@ -19,7 +25,7 @@ use voyager_vm::{
     BoxDynError, Captures, EnqueueResult, ItemId, Op, QueueError, QueueMessage,
 };
 
-use crate::metrics::{ITEM_PROCESSING_DURATION, OPTIMIZE_ITEM_COUNT, OPTIMIZE_PROCESSING_DURATION};
+use crate::metrics::Metrics;
 
 pub mod metrics;
 
@@ -39,6 +45,9 @@ pub struct PgQueue<T> {
     optimize_batch_limit: Option<i64>,
     retryable_error_expo_backoff_max: f64,
     retryable_error_expo_backoff_multiplier: f64,
+
+    metrics: Metrics,
+
     __marker: PhantomData<fn() -> T>,
 }
 
@@ -280,6 +289,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             optimize_batch_limit,
             retryable_error_expo_backoff_max,
             retryable_error_expo_backoff_multiplier,
+            metrics: Metrics::new(),
             __marker: PhantomData,
         })
     }
@@ -405,6 +415,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         let res = match row {
             Some(record) => {
                 process_item(
+                    &self.metrics,
                     &mut tx,
                     record,
                     f,
@@ -481,8 +492,11 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             .collect::<Result<(Vec<_>, Vec<_>), sqlx::Error>>()
             .map_err(Either::Left)?;
 
-        OPTIMIZE_ITEM_COUNT.observe(msgs.len() as f64);
-        let timer = OPTIMIZE_PROCESSING_DURATION.start_timer();
+        self.metrics
+            .optimize_item_count
+            .record(msgs.len() as u64, &[]);
+
+        let now = std::time::Instant::now();
 
         let PassResult {
             optimize_further,
@@ -499,7 +513,9 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             ))
             .await
             .map_err(Either::Right)?;
-        let _ = timer.stop_and_record();
+        self.metrics
+            .optimize_processing_duration
+            .record(now.duration_since(Instant::now()).as_secs_f64(), &[]);
 
         trace!(
             ready = ready.len(),
@@ -614,6 +630,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     )
 )]
 async fn process_item<'a, T: QueueMessage, F, Fut, R>(
+    metrics: &Metrics,
     tx: &mut Transaction<'static, Postgres>,
     record: QueueRecord,
     f: F,
@@ -631,9 +648,11 @@ where
     // really don't feel like defining a new error type right now
     let op = de::<Op<T>>(&record.item).map_err(|e| sqlx::Error::Decode(Box::new(e)))?;
 
-    let timer = ITEM_PROCESSING_DURATION.start_timer();
+    let now = std::time::Instant::now();
     let (r, res) = f(op.clone(), ItemId::new(record.id).unwrap()).await;
-    let _ = timer.stop_and_record();
+    metrics
+        .item_processing_duration
+        .record(now.duration_since(Instant::now()).as_secs_f64(), &[]);
 
     match res {
         Err(QueueError::Fatal(error)) => {
