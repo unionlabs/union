@@ -235,7 +235,7 @@ members = [
   "lib/ucs04",
 
   "lib/consensus-primitives",
-  "lib/solidity-slot",
+  "lib/solidity-slot", "lib/sui-verifier",
 ]
 
 [workspace.package]

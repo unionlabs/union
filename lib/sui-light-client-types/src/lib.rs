@@ -21,6 +21,41 @@ pub type SuiAddress = FixedBytes<32, HexPrefixed>;
 
 pub type ObjectRef = (ObjectID, u64, Digest);
 
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum Owner {
+    /// Object is exclusively owned by a single address, and is mutable.
+    AddressOwner(SuiAddress),
+    /// Object is exclusively owned by a single object, and is mutable.
+    /// The object ID is converted to SuiAddress as SuiAddress is universal.
+    ObjectOwner(SuiAddress),
+    /// Object is shared, can be used by any address, and is mutable.
+    Shared {
+        /// The version at which the object became shared
+        initial_shared_version: u64,
+    },
+    /// Object is immutable, and hence ownership doesn't matter.
+    Immutable,
+    /// Object is sequenced via consensus. Ownership is managed by the configured authenticator.
+    ///
+    /// Note: wondering what happened to `V1`? `Shared` above was the V1 of consensus objects.
+    ConsensusV2 {
+        /// The version at which the object most recently became a consensus object.
+        /// This serves the same function as `initial_shared_version`, except it may change
+        /// if the object's Owner type changes.
+        start_version: u64,
+        /// The authentication mode of the object
+        authenticator: Box<Authenticator>,
+    },
+}
+
+#[derive(Debug, Clone, Copy)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+pub enum Authenticator {
+    /// The contained SuiAddress exclusively has all permissions: read, write, delete, transfer
+    SingleOwner(SuiAddress),
+}
+
 #[derive(Debug, PartialEq, Eq, Clone, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct Intent {
