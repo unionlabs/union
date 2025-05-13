@@ -21,6 +21,8 @@ import (
 	"github.com/cosmos/gogoproto/proto"
 	ibcfee "github.com/cosmos/ibc-go/v8/modules/apps/29-fee"
 	porttypes "github.com/cosmos/ibc-go/v8/modules/core/05-port/types"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/spf13/cast"
 )
 
 // ContractMemoryLimit is the memory limit of each contract execution (in MiB)
@@ -59,6 +61,10 @@ func (app *App) registerWasmModules(
 		panic(err)
 	}
 	wasmOpts = append(wasmOpts, wasmkeeper.WithWasmEngine(wasmer))
+
+	if cast.ToBool(appOpts.Get("telemetry.enabled")) {
+		wasmOpts = append(wasmOpts, wasmkeeper.WithVMCacheMetrics(prometheus.DefaultRegisterer))
+	}
 
 	// The last arguments can contain custom message handlers, and custom query handlers,
 	// if we want to allow any custom callbacks
