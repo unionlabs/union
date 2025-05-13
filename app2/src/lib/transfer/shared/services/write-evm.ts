@@ -1,8 +1,20 @@
-import { switchChain } from "$lib/services/transfer-ucs03-evm"
+import {
+  EvmSwitchChainError,
+  switchChain,
+  WaitForTransactionReceiptError,
+} from "$lib/services/transfer-ucs03-evm"
 import { resolveSafeTx } from "$lib/transfer/shared/services/handlers/safe-hash.ts"
+import type { EffectToExit, HasKey } from "$lib/types"
 import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
-import { ViemPublicClient, waitForTransactionReceipt, writeContract } from "@unionlabs/sdk/evm"
-import { Data, Effect, type Exit } from "effect"
+import {
+  ViemPublicClient,
+  waitForTransactionReceipt,
+  writeContract,
+  WriteContractError,
+} from "@unionlabs/sdk/evm"
+import { Data, Effect, Exit, flow, Match, pipe, Predicate } from "effect"
+import { constant } from "effect/Function"
+import type { Simplify } from "effect/Types"
 import type {
   Abi,
   Chain,
@@ -14,22 +26,22 @@ import type {
   WriteContractParameters,
 } from "viem"
 
-export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E>
-  : never
-
-export type TransactionSubmissionEvm = Data.TaggedEnum<{
+export type TransactionState = Data.TaggedEnum<{
   Filling: {}
   SwitchChainInProgress: {}
-  SwitchChainComplete: { exit: EffectToExit<ReturnType<typeof switchChain>> }
+  SwitchChainComplete: { exit: Effect.Effect.Success<ReturnType<typeof switchChain>> }
   WriteContractInProgress: {}
-  WriteContractComplete: { exit: EffectToExit<ReturnType<typeof writeContract>> }
+  WriteContractComplete: { exit: Effect.Effect.Success<ReturnType<typeof writeContract>> }
   WaitForSafeWalletHash: { readonly hash: Hash } // the safeTxHash
   TransactionReceiptInProgress: { readonly hash: Hash } // on chain hash
-  TransactionReceiptComplete: { exit: EffectToExit<ReturnType<typeof waitForTransactionReceipt>> }
+  TransactionReceiptComplete: {
+    exit: Effect.Effect.Success<ReturnType<typeof waitForTransactionReceipt>>
+  }
 }>
+type ExitStates = HasKey<TransactionState, "exit">
 
-export const TransactionSubmissionEvm = Data.taggedEnum<TransactionSubmissionEvm>()
-const {
+export const TransactionState = Data.taggedEnum<TransactionState>()
+export const {
   SwitchChainInProgress,
   SwitchChainComplete,
   WriteContractInProgress,
@@ -37,9 +49,10 @@ const {
   WaitForSafeWalletHash,
   TransactionReceiptInProgress,
   TransactionReceiptComplete,
-} = TransactionSubmissionEvm
+  $is: is,
+} = TransactionState
 
-export const nextStateEvm = async <
+export const nextState = <
   TAbi extends Abi,
   TFunctionName extends ContractFunctionName<TAbi, "nonpayable" | "payable"> = ContractFunctionName<
     TAbi,
@@ -51,71 +64,97 @@ export const nextStateEvm = async <
     TFunctionName
   > = ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>,
 >(
-  ts: TransactionSubmissionEvm,
+  ts: TransactionState,
   chain: Chain,
   publicClient: PublicClient,
   walletClient: WalletClient,
   params: WriteContractParameters<TAbi, TFunctionName, TArgs>,
-): Promise<TransactionSubmissionEvm> =>
-  TransactionSubmissionEvm.$match(ts, {
-    Filling: () => SwitchChainInProgress(),
+): Effect.Effect<
+  TransactionState,
+  EvmSwitchChainError | WaitForTransactionReceiptError | WriteContractError,
+  never
+> =>
+  TransactionState.$match(ts, {
+    Filling: () => Effect.succeed(SwitchChainInProgress()),
 
-    SwitchChainInProgress: async () => {
-      const isSafeWallet = getLastConnectedWalletId() === "safe" // safe wagmi connector does not support wagmiSwitchChain
-      return isSafeWallet
-        ? WriteContractInProgress()
-        : SwitchChainComplete({
-          exit: await Effect.runPromiseExit(switchChain(chain)),
-        })
-    },
+    SwitchChainInProgress: () =>
+      Effect.gen(function*() {
+        const isSafeWallet = getLastConnectedWalletId() === "safe" // safe wagmi connector does not support wagmiSwitchChain
+
+        if (isSafeWallet) {
+          return WriteContractInProgress()
+        }
+
+        yield* Effect.logInfo("switch chain in progress")
+
+        return yield* pipe(
+          switchChain(chain),
+          Effect.map((exit) => SwitchChainComplete({ exit })),
+        )
+      }),
 
     SwitchChainComplete: ({ exit }) =>
-      exit._tag === "Failure" ? SwitchChainInProgress() : WriteContractInProgress(),
+      // exit._tag === "Failure" ? SwitchChainInProgress() : WriteContractInProgress(),
+      Effect.succeed(WriteContractInProgress()),
 
-    WriteContractInProgress: async () =>
-      WriteContractComplete({
-        exit: await Effect.runPromiseExit(writeContract(walletClient, params)),
-      }),
-
-    WriteContractComplete: ({ exit }) => {
-      if (exit._tag === "Failure") {
-        return WriteContractInProgress()
-      }
-
-      const wallet = getLastConnectedWalletId()
-      const hash = exit.value
-
-      return wallet === "safe" // needed due to safe wagmi connector returns safeTx hash and not the onchain one
-        ? WaitForSafeWalletHash({ hash })
-        : TransactionReceiptInProgress({ hash })
-    },
-
-    WaitForSafeWalletHash: async ({ hash }) => {
-      const resolvedExit = await Effect.runPromiseExit(resolveSafeTx(hash)) // TODO
-
-      return resolvedExit._tag === "Failure"
-        ? WaitForSafeWalletHash({ hash })
-        : TransactionReceiptInProgress({ hash: resolvedExit.value })
-    },
-
-    TransactionReceiptInProgress: async ({ hash }) =>
-      TransactionReceiptComplete({
-        exit: await Effect.runPromiseExit(
-          waitForTransactionReceipt(hash).pipe(
-            Effect.provideService(ViemPublicClient, { client: publicClient }),
-          ),
+    WriteContractInProgress: () =>
+      pipe(
+        writeContract(walletClient, params),
+        Effect.map((exit) =>
+          WriteContractComplete({
+            exit,
+          })
         ),
+      ),
+
+    WriteContractComplete: ({ exit: hash }) =>
+      Effect.gen(function*() {
+        // if (exit._tag === "Failure") {
+        //   return WriteContractInProgress()
+        // }
+
+        const wallet = getLastConnectedWalletId()
+
+        // needed due to safe wagmi connector returns safeTx hash and not the onchain one
+        if (wallet === "safe") {
+          return WaitForSafeWalletHash({ hash })
+        }
+
+        return TransactionReceiptInProgress({ hash })
+
+        return wallet === "safe"
+          ? WaitForSafeWalletHash({ hash })
+          : TransactionReceiptInProgress({ hash })
       }),
 
-    TransactionReceiptComplete: () => ts,
+    WaitForSafeWalletHash: ({ hash }) =>
+      Effect.gen(function*() {
+        const resolvedHash = yield* resolveSafeTx(hash) // TODO ???
+
+        return TransactionReceiptInProgress({ hash: resolvedHash })
+        // return resolvedExit._tag === "Failure"
+        //   ? WaitForSafeWalletHash({ hash })
+        //   : TransactionReceiptInProgress({ hash: resolvedExit.value })
+      }),
+
+    TransactionReceiptInProgress: ({ hash }) =>
+      pipe(
+        waitForTransactionReceipt(hash),
+        Effect.provideService(ViemPublicClient, { client: publicClient }),
+        Effect.map((exit) => TransactionReceiptComplete({ exit })),
+      ),
+
+    TransactionReceiptComplete: () => Effect.succeed(ts),
   })
 
-export const hasFailedExit = (state: TransactionSubmissionEvm) =>
-  "exit" in state && state.exit._tag === "Failure"
-
-export const isComplete = (state: TransactionSubmissionEvm): string | false => {
-  if (state._tag === "TransactionReceiptComplete" && state.exit._tag === "Success") {
-    return state.exit.value.transactionHash
-  }
-  return false
-}
+export const toCtaText = (orElse: string) =>
+  pipe(
+    Match.type<TransactionState>(),
+    Match.tags({
+      WriteContractInProgress: () => "Confirming Transaction..." as const,
+      SwitchChainInProgress: () => "Switching Chain..." as const,
+      TransactionReceiptInProgress: () => "Waiting for Receipt..." as const,
+      WaitForSafeWalletHash: () => "Confirming Safe Wallet..." as const,
+    }),
+    Match.orElse(() => orElse),
+  )

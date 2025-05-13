@@ -26,7 +26,7 @@ export class WriteContractError extends Data.TaggedError("WriteContractError")<{
   cause: WriteContractErrorType
 }> {}
 
-export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{
+export class EvmSwitchChainError extends Data.TaggedError("EvmSwitchChainError")<{
   cause: SwitchChainErrorType
 }> {}
 

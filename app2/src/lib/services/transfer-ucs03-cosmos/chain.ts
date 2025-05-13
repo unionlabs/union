@@ -6,9 +6,9 @@ import type { Chain } from "@unionlabs/sdk/schema"
 import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details.ts"
 import { Effect } from "effect"
 import {
+  CosmosSwitchChainError,
   CosmosWalletNotConnectedError,
   NoCosmosChainInfoError,
-  SwitchChainError,
 } from "./errors.ts"
 
 type SwitchChainSuccess = {
@@ -23,6 +23,7 @@ export const switchChain = (chain: Chain) =>
     const { connectedWallet, connectionStatus } = cosmosStore
     if (connectionStatus !== "connected" || !connectedWallet) {
       return yield* new CosmosWalletNotConnectedError({
+        // TODO: move to `message`
         cause: "wallet not connected according to cosmosStore",
       })
     }
@@ -39,7 +40,7 @@ export const switchChain = (chain: Chain) =>
     yield* Effect.tryPromise({
       try: () => wallet.experimentalSuggestChain(chainInfo),
       catch: err =>
-        new SwitchChainError({
+        new CosmosSwitchChainError({
           cause: extractErrorDetails(err as Error),
           chainId: chain.universal_chain_id,
           phase: "suggest",
@@ -50,7 +51,7 @@ export const switchChain = (chain: Chain) =>
     yield* Effect.tryPromise({
       try: () => wallet.enable([chain.chain_id]),
       catch: err =>
-        new SwitchChainError({
+        new CosmosSwitchChainError({
           cause: extractErrorDetails(err as Error),
           chainId: chain.universal_chain_id,
           phase: "enable",

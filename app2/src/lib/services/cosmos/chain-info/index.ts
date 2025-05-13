@@ -66,6 +66,8 @@ export const getHighGasPriceStep = (
     if (!feeCurrency.gasPriceStep) {
       yield* Effect.fail(
         new GasPriceError({
+          // TODO: change to `message`
+          // TODO: reserve `cause` for originally thrown error
           cause: "Gas price step not defined for fee currency",
           chainId: chainInfo.chainId,
         }),

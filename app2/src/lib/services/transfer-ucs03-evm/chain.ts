@@ -2,13 +2,13 @@ import { type ConfiguredChainId, getWagmiConfig } from "$lib/wallet/evm/wagmi-co
 import { switchChain as wagmiSwitchChain } from "@wagmi/core"
 import { Effect } from "effect"
 import type { Chain as ViemChain, SwitchChainErrorType } from "viem"
-import { SwitchChainError } from "./errors.ts"
+import { EvmSwitchChainError } from "./errors.ts"
 
 export const switchChain = (chain: ViemChain) =>
   Effect.gen(function*() {
     const res = yield* Effect.tryPromise({
       try: () => wagmiSwitchChain(getWagmiConfig(), { chainId: chain.id as ConfiguredChainId }),
-      catch: err => new SwitchChainError({ cause: err as SwitchChainErrorType }),
+      catch: err => new EvmSwitchChainError({ cause: err as SwitchChainErrorType }),
     })
 
     // Some wallets, like metamask, fulfill the promise before they are actually done with switching.

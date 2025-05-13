@@ -1,7 +1,14 @@
 {
   "$schema": "https://json.schemastore.org/tsconfig",
   "extends": "./.svelte-kit/tsconfig.json",
-  "references": [{ "path": "../ts-sdk" }, { "path": "../typescript-sdk" }],
+  "references": [
+    {
+      "path": "../ts-sdk"
+    },
+    {
+      "path": "../typescript-sdk"
+    }
+  ],
   "compilerOptions": {
     "allowJs": true,
     "checkJs": true,
@@ -12,10 +19,13 @@
     "sourceMap": true,
     "strict": true,
     "exactOptionalPropertyTypes": true,
+    "noErrorTruncation": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "plugins": [
-      { "name": "@effect/language-service" },
+      {
+        "name": "@effect/language-service"
+      },
       {
         "name": "gql.tada/ts-plugin",
         "schema": "./src/generated/schema.graphql",
