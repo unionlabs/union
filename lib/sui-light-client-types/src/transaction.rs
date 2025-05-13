@@ -4,15 +4,7 @@ use unionlabs_primitives::{
     Bytes, FixedBytes,
 };
 
-use crate::digest::Digest;
-
-pub type ObjectID = FixedBytes<32, HexPrefixed>;
-
-pub type AccountAddress = FixedBytes<32, HexPrefixed>;
-
-pub type SuiAddress = FixedBytes<32, HexPrefixed>;
-
-pub type ObjectRef = (ObjectID, u64, Digest);
+use crate::{digest::Digest, AccountAddress, ObjectID, ObjectRef, SuiAddress};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
