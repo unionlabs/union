@@ -1,6 +1,6 @@
 use bytemuck::CheckedBitPattern;
 
-/// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the [`commit_hash`] export.
+/// The git rev of the code, as supplied at build time. On `wasm32` targets, this is available via the [`crate::commit_hash`] export.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, CheckedBitPattern)]
 #[repr(C, u64)]
 #[rustfmt::skip]
@@ -50,7 +50,7 @@ pub static GIT_REV: Rev = match option_env!("GIT_REV") {
     },
 };
 
-#[cfg(target_arch = "wasm32")]
+#[cfg(any(target_arch = "wasm32", doc))]
 #[no_mangle]
 pub extern "C" fn commit_hash() -> Rev {
     unsafe { core::ptr::read_volatile(&GIT_REV as *const _) }
