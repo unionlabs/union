@@ -307,11 +307,16 @@ mod tests {
 
     use cosmwasm_std::testing::mock_dependencies;
     use hex_literal::hex;
+    use serde::Deserialize;
     use sui_light_client_types::{
-        checkpoint_summary::CheckpointContents, CertifiedCheckpointSummary,
+        checkpoint_summary::CheckpointContents, digest::Digest, AccountAddress,
+        CertifiedCheckpointSummary, SuiAddress,
     };
     use unionlabs::{encoding::Decode as _, primitives::encoding::Base64};
-    use unionlabs_primitives::{encoding::HexPrefixed, Bytes};
+    use unionlabs_primitives::{
+        encoding::{Base58, HexPrefixed},
+        Bytes, FixedBytes,
+    };
 
     use super::*;
 
@@ -329,6 +334,124 @@ mod tests {
             &header.checkpoint_summary,
             header.sign_info,
         );
+    }
+
+    #[derive(Serialize, Deserialize)]
+    pub enum Owner {
+        AddrOwner,
+        ObjectOwner(SuiAddress),
+    }
+
+    #[derive(Serialize)]
+    pub enum Data {
+        /// An object whose governing logic lives in a published Move module
+        Move(MoveObject),
+    }
+
+    #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+    pub struct MoveObject {
+        /// The type of this object. Immutable
+        type_: MoveObjectType,
+        /// DEPRECATED this field is no longer used to determine whether a tx can transfer this
+        /// object. Instead, it is always calculated from the objects type when loaded in execution
+        has_public_transfer: bool,
+        /// Number that increases each time a tx takes this object as a mutable input
+        /// This is a lamport timestamp, not a sequentially increasing version
+        version: u64,
+        /// BCS bytes of a Move struct value
+        contents: Bytes,
+    }
+
+    #[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Clone, Deserialize, Serialize, Hash)]
+    pub enum MoveObjectType {
+        /// A type that is not `0x2::coin::Coin<T>`
+        Other(StructTag),
+        /// A SUI coin (i.e., `0x2::coin::Coin<0x2::sui::SUI>`)
+        GasCoin,
+        /// A record of a staked SUI coin (i.e., `0x3::staking_pool::StakedSui`)
+        StakedSui,
+        /// A non-SUI coin type (i.e., `0x2::coin::Coin<T> where T != 0x2::sui::SUI`)
+        Coin(TypeTag),
+        // NOTE: if adding a new type here, and there are existing on-chain objects of that
+        // type with Other(_), that is ok, but you must hand-roll PartialEq/Eq/Ord/maybe Hash
+        // to make sure the new type and Other(_) are interpreted consistently.
+    }
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+    pub struct StructTag {
+        pub address: AccountAddress,
+        pub module: String,
+        pub name: String,
+        // alias for compatibility with old json serialized data.
+        #[serde(rename = "type_args", alias = "type_params")]
+        pub type_params: Vec<TypeTag>,
+    }
+
+    #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+    pub enum TypeTag {
+        // alias for compatibility with old json serialized data.
+        Bool,
+        U8,
+        U64,
+        U128,
+        Address,
+        Signer,
+        Vector(Box<TypeTag>),
+        Struct(Box<StructTag>),
+        U16,
+        U32,
+        U256,
+    }
+
+    #[derive(Serialize)]
+    pub struct ObjectInner {
+        data: Data,
+        owner: Owner,
+        previous_transaction: Digest,
+        storage_rebate: u64,
+    }
+
+    impl ObjectInner {
+        fn digest(&self) -> Bytes<Base58> {
+            let mut hasher = Blake2b::<typenum::U32>::new();
+            hasher.update("Object::");
+            bcs::serialize_into(&mut hasher, self).unwrap();
+            Bytes::new(hasher.finalize().to_vec())
+        }
+    }
+
+    #[test]
+    fn object_digest() {
+        let object = ObjectInner {
+            data: Data::Move(MoveObject {
+                type_: MoveObjectType::Other(StructTag {
+                    address: hex!(
+                        "0000000000000000000000000000000000000000000000000000000000000002"
+                    )
+                    .into(),
+                    module: "dynamic_field".into(),
+                    name: "Field".into(),
+                    type_params: vec![
+                        TypeTag::Vector(Box::new(TypeTag::U8)),
+                        TypeTag::Vector(Box::new(TypeTag::U8)),
+                    ],
+                }),
+                has_public_transfer: false,
+                version: 349179418,
+                contents: hex!("0ed5840c06ba5b53ed19307535a6d16ea7d8766532d3e1fc3f700aa50ffa18866000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000020290decd9548b62a8d60345a988386fc84ba6bc95484008f6362f93160ef3e563").as_slice().into(),
+            }),
+            owner: Owner::ObjectOwner(
+                hex!("78f2ce59629d065e94d2cd7a457d972937ba428ae186413cc2a08c8431f9e804").into(),
+            ),
+            previous_transaction: Digest(
+                hex!("90d9f071c0ddcac62b8ac32cd7645c895821a0f5a1af602aa0db8cfe6b30d4f5").into(),
+            ),
+            storage_rebate: 2348400,
+        };
+
+        let digest = object.digest();
+
+        panic!("digest: {}", digest);
     }
 
     #[test]
