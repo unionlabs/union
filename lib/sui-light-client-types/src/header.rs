@@ -10,5 +10,4 @@ pub struct Header {
     pub trusted_height: u64,
     pub checkpoint_summary: CheckpointSummary,
     pub sign_info: AuthorityStrongQuorumSignInfo,
-    pub transactions: Vec<ExecutionDigests>,
 }
