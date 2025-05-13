@@ -12,11 +12,11 @@ impl Metrics {
     pub fn new() -> Self {
         Self {
             item_processing_duration: opentelemetry::global::meter("pg_queue")
-                .f64_histogram("pg_queue_item_processing_duration_nanoseconds")
+                .f64_histogram("pg_queue_item_processing_duration_seconds")
                 .with_description("The time it takes to process an item in the queue.")
                 .build(),
             optimize_processing_duration: opentelemetry::global::meter("pg_queue")
-                .f64_histogram("pg_queue_optimize_processing_duration_nanoseconds")
+                .f64_histogram("pg_queue_optimize_processing_duration_seconds")
                 .with_description("The time it takes to run a pass over the optimize queue.")
                 .build(),
             optimize_item_count: opentelemetry::global::meter("pg_queue")
