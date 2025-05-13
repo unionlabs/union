@@ -115,7 +115,7 @@
 
     # uniond versions
     v1_0_0 = {
-      url = "github:unionlabs/union/release/uniond/v1.0.0";
+      url = "github:unionlabs/union/cosmwasm-metrics";
       flake = false;
     };
   };
