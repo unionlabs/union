@@ -9851,7 +9851,7 @@ version = "0.0.0"
 dependencies = [
  "futures-util",
  "itertools 0.13.0",
- "prometheus",
+ "opentelemetry",
  "schemars",
  "serde",
  "serde_json",
