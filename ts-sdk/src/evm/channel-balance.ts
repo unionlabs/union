@@ -19,3 +19,19 @@ export const channelBalance = (path: bigint, token: Hex) =>
 
     return result
   })
+
+export const channelBalanceAtBlock = (path: bigint, token: Hex, blockNumber: bigint) =>
+  Effect.gen(function*() {
+    const client = (yield* ViemPublicClientDestination).client
+    const config = yield* EvmChannelDestination
+
+    const result = yield* readContract(client, {
+      address: config.ucs03address,
+      abi: ucs03abi,
+      functionName: "channelBalance",
+      args: [config.channelId, path, token],
+      blockNumber: blockNumber,
+    })
+
+    return result
+  })

@@ -18,6 +18,20 @@ export class ExecuteContractError extends Data.TaggedError("ExecuteContractError
 }> {}
 
 /**
+ * Error when fetching the latest block height
+ */
+export class GetHeightError extends Data.TaggedError("GetHeightError")<{
+  cause: unknown
+}> {}
+
+/**
+ * Error when fetching a balance at latest height
+ */
+export class GetBalanceError extends Data.TaggedError("GetBalanceError")<{
+  cause: unknown
+}> {}
+
+/**
  * A type-safe wrapper around CosmWasm's queryContract that handles error cases
  * and returns an Effect with proper type inference.
  *
@@ -65,3 +79,35 @@ export const executeContract = (
         message: (error as Error).message,
       }),
   })
+
+/**
+ * Wrap CosmWasmClient.getHeight() in an Effect
+ */
+export function getChainHeight(
+  client: CosmWasmClient,
+) {
+  return Effect.tryPromise({
+    try: () => client.getHeight(),
+    catch: (err) => new GetHeightError({ cause: extractErrorDetails(err as Error) }),
+  }).pipe(
+    Effect.timeout("10 seconds"),
+    Effect.retry({ times: 5 }),
+  )
+}
+
+/**
+ * Wrap CosmWasmClient.getBalance() in an Effect
+ */
+export function getBalanceNow(
+  client: CosmWasmClient,
+  address: string,
+  denom: string,
+) {
+  return Effect.tryPromise({
+    try: () => client.getBalance(address, denom),
+    catch: (err) => new GetBalanceError({ cause: extractErrorDetails(err as Error) }),
+  }).pipe(
+    Effect.timeout("10 seconds"),
+    Effect.retry({ times: 5 }),
+  )
+}

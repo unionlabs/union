@@ -1,6 +1,8 @@
+import { FetchHttpClient } from "@effect/platform"
 import { Effect } from "effect"
 import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
 import { executeContract, queryContract } from "./contract.js"
+import { queryContractSmartAtHeight } from "./query.js"
 
 /**
  * Interface for CW20 token metadata
@@ -51,6 +53,65 @@ export const readCw20TotalSupply = (contractAddress: string) =>
       token_info: {},
     })
     return token_info.total_supply
+  })
+
+/**
+ * Read the balance of a CW20 token for a specific address
+ * @param rest The rest url
+ * @param contractAddress The address of the CW20 token contract
+ * @param address The address to check the balance for
+ * @param height Height of the chain
+ * @returns An Effect that resolves to the token balance
+ */
+export const readCw20BalanceAtHeight = (
+  rest: string,
+  contractAddress: string,
+  address: string,
+  height: number,
+) =>
+  Effect.gen(function*() {
+    const resp = yield* queryContractSmartAtHeight<{ data: { balance: string } }>(
+      rest,
+      contractAddress,
+      {
+        balance: {
+          address,
+        },
+      },
+      height,
+    ).pipe(
+      Effect.provide(FetchHttpClient.layer),
+      Effect.tapErrorCause((cause) =>
+        Effect.logError("Error fetching channel balance at height:", cause)
+      ),
+    )
+    return resp.data.balance
+  })
+
+/**
+ * Read CW20 token total_supply
+ * @param rest The rest url
+ * @param contractAddress The address of the CW20 token contract
+ * @param height Height of the chain
+ * @returns An Effect that resolves to the token total supply
+ */
+export const readCw20TotalSupplyAtHeight = (
+  rest: string,
+  contractAddress: string,
+  height: number,
+) =>
+  Effect.gen(function*() {
+    const resp = yield* queryContractSmartAtHeight<
+      { data: { name: string; symbol: string; decimals: number; total_supply: string } }
+    >(rest, contractAddress, {
+      token_info: {},
+    }, height).pipe(
+      Effect.provide(FetchHttpClient.layer),
+      Effect.tapErrorCause((cause) =>
+        Effect.logError("Error fetching channel balance at height:", cause)
+      ),
+    )
+    return resp.data.total_supply
   })
 
 /**
@@ -122,4 +183,20 @@ export const writeCw20IncreaseAllowance = (
         amount,
       },
     })
+  })
+
+/**
+ * Checks whether a denom is a native token or CW20.
+ * @param denom The denom address to check.
+ * @returns An Effect that resolves to true if native, false if CW20.
+ */
+export const isDenomNative = (denom: string) =>
+  Effect.gen(function*() {
+    const client = (yield* CosmWasmClientContext).client
+
+    return yield* readCw20TokenInfo(denom).pipe(
+      Effect.provideService(CosmWasmClientContext, { client }),
+      Effect.map(() => false),
+      Effect.catchAllCause(() => Effect.succeed(true)),
+    )
   })
