@@ -254,6 +254,7 @@ members = [
   "lib/voyager-plugin",
   "lib/voyager-sdk",
   "lib/voyager-plugin-protocol",
+  "lib/sui-verifier",
 ]
 
 [workspace.package]
