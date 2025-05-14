@@ -1,6 +1,6 @@
 import { FetchHttpClient } from "@effect/platform"
 import { Effect } from "effect"
-import { AddressCosmosDisplay, AddressCosmosDisplay } from "../schema/address.js"
+import { AddressCosmosDisplay } from "../schema/address.js"
 import { CosmWasmClientContext, SigningCosmWasmClientContext } from "./client.js"
 import { executeContract, queryContract } from "./contract.js"
 import { queryContractSmartAtHeight } from "./query.js"
