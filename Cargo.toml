@@ -301,6 +301,7 @@ depolama = { path = "lib/depolama", default-features = false }
 
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 sui-light-client-types        = { path = "lib/sui-light-client-types", default-features = false }
+sui-verifier = { path = "lib/sui-verifier", default-features = false }
 
 bob-light-client-types = { path = "lib/bob-light-client-types", default-features = false }
 bob-verifier           = { path = "lib/bob-verifier", default-features = false }

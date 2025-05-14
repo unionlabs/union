@@ -6,6 +6,9 @@ use crate::client::SuiLightClient;
 pub enum Error {
     #[error("initial committee not set")]
     NoInitialCommittee,
+
+    #[error(transparent)]
+    Verifier(#[from] sui_verifier::Error),
 }
 
 impl From<Error> for IbcClientError<SuiLightClient> {

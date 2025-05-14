@@ -11,6 +11,7 @@ pub mod crypto;
 pub mod digest;
 pub mod header;
 pub mod object;
+pub mod storage_proof;
 pub mod transaction;
 pub mod transaction_effects;
 

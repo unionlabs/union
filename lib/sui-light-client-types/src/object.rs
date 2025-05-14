@@ -1,8 +1,10 @@
+use std::collections::BTreeMap;
+
 use blake2::{Blake2b, Digest as _};
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{encoding::Base58, Bytes};
+use unionlabs_primitives::{encoding::Base58, Bytes, FixedBytes};
 
-use crate::{digest::Digest, AccountAddress, Owner};
+use crate::{digest::Digest, AccountAddress, ObjectID, Owner, SuiAddress};
 
 #[derive(Serialize)]
 pub struct ObjectInner {
@@ -13,11 +15,11 @@ pub struct ObjectInner {
 }
 
 impl ObjectInner {
-    pub fn digest(&self) -> Bytes<Base58> {
+    pub fn digest(&self) -> Digest {
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("Object::");
         bcs::serialize_into(&mut hasher, self).unwrap();
-        Bytes::new(hasher.finalize().to_vec())
+        Digest(FixedBytes::new(hasher.finalize().into()))
     }
 }
 
@@ -80,4 +82,21 @@ pub enum TypeTag {
     U16,
     U32,
     U256,
+}
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use unionlabs_primitives::encoding::{Base64, HexPrefixed};
+
+    use super::*;
+    #[test]
+    fn object() {
+        let bcs_bytes = Bytes::<Base64>::from_str("OEFp/jw2aT/lQdeNUyaKpj307NdfpvLogPgIZZvXeedAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATsKdGhpcy1jaGFpbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoAwAAAAAAAA==").unwrap();
+
+        let decoded: (SuiAddress, Vec<u8>, Vec<u8>) = bcs::from_bytes(&bcs_bytes).unwrap();
+
+        panic!("{decoded:?}");
+    }
 }

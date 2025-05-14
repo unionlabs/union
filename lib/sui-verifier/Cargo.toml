@@ -12,6 +12,9 @@ sui-light-client-types = { workspace = true, features = ["serde"] }
 unionlabs = { workspace = true }
 unionlabs-primitives = { workspace = true }
 bcs = { workspace = true }
+blake2               = "0.10.6"
+typenum              = { version = "1.17.0", default-features = false }
+thiserror = { workspace = true }
 
 [lints]
 workspace = true

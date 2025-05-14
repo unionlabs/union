@@ -102,11 +102,11 @@ impl CheckpointContents {
         inner
     }
 
-    pub fn digest(&self) -> Bytes<Base58> {
+    pub fn digest(&self) -> Digest {
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("CheckpointContents::");
         bcs::serialize_into(&mut hasher, self).unwrap();
-        Bytes::new(hasher.finalize().to_vec())
+        Digest(FixedBytes::new(hasher.finalize().into()))
     }
 }
 
