@@ -15323,6 +15323,7 @@ dependencies = [
  "serde_json",
  "serde_repr",
  "sui-light-client-types",
+ "sui-verifier",
  "thiserror 2.0.12",
  "typenum",
  "unionlabs",
@@ -15629,7 +15630,10 @@ name = "sui-verifier"
 version = "0.1.0"
 dependencies = [
  "bcs 0.1.6",
+ "blake2",
  "sui-light-client-types",
+ "thiserror 2.0.12",
+ "typenum",
  "unionlabs",
  "unionlabs-primitives",
 ]
