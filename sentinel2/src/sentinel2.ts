@@ -2,6 +2,7 @@ import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { coins } from "@cosmjs/proto-signing"
 import { GasPrice } from "@cosmjs/stargate"
+import { FetchHttpClient } from "@effect/platform"
 import {
   channelBalanceAtBlock as EthereumChannelBalanceAtBlock,
   EvmChannelDestination,
@@ -17,13 +18,14 @@ import tls from "node:tls"
 import { createPublicClient, http } from "viem"
 
 import {
+  channelBalanceAtHeight,
   channelBalanceAtHeight as CosmosChannelBalanceAtHeight,
   CosmosChannelDestination,
   CosmWasmClientContext,
   createCosmWasmClient,
-  createExtendedCosmWasmClient,
   createSigningCosmWasmClient,
-  ExtendedCosmWasmClientContext,
+  getBalanceAtHeight,
+  getChainHeight,
   readCw20BalanceAtHeight,
   readCw20TokenInfo,
   readCw20TotalSupplyAtHeight,
@@ -242,7 +244,6 @@ export function markAggregateIncident(db: BetterSqlite3Database, key: string, in
 export function clearAggregateIncident(db: BetterSqlite3Database, key: string) {
   db.prepare(`DELETE FROM aggregate_incidents WHERE key = ?`).run(key)
 }
-
 
 export function getSupplyIncident(db: BetterSqlite3Database, key: string): string | undefined {
   const row = db.prepare(`SELECT incident_id FROM supply_incidents WHERE key = ?`).get(key) as
@@ -600,17 +601,22 @@ const escrowSupplyControlLoop = Effect.repeat(
             },
             catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
           })
-          console.info("latest blockNumber", latest, "rpc", rpc)
           blockNumbers.set(rpc, BigInt(latest))
         } else {
-          const client = yield* createCosmWasmClient(rpc)
-          const latest = yield* Effect.tryPromise({
-            try: () => {
-              return client.getHeight()
-            },
-            catch: e => new Error(`Failed to fetch blockNumber for ${rpc}: ${String(e)}`),
-          })
-          console.info("latest blockNumber", latest, "rpc", rpc)
+          const client = yield* createCosmWasmClient(rpc).pipe(
+            Effect.catchAllCause((cause) => {
+              console.error(`Error fetching channel balance: ${Cause.pretty(cause)}`)
+              return Effect.succeed(null)
+            }),
+          )
+          if (!client) {
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No client found for rpc:",
+              rpc,
+            )
+            continue
+          }
+          const latest = yield* getChainHeight(client)
           blockNumbers.set(rpc, BigInt(latest))
         }
       }
@@ -622,7 +628,9 @@ const escrowSupplyControlLoop = Effect.repeat(
         const dstChannel = token.wrapping[0]?.destination_channel_id
         // biome-ignore lint/complexity/useSimplifiedLogicExpression: <explanation>
         if (!srcChain || !dstChain || !dstChannel) {
-          yield* Effect.log("Invalid token data. Skipping...")
+          yield* Effect.log(
+            "[escrowSupplyControlLoop continue loop] Invalid token data. Skipping...",
+          )
           continue
         }
         const sourceChannelId = yield* fetchSourceChannelId(
@@ -632,7 +640,9 @@ const escrowSupplyControlLoop = Effect.repeat(
           dstChannel,
         )
         if (!sourceChannelId) {
-          yield* Effect.log("No source channel ID found. Skipping...")
+          yield* Effect.log(
+            "[escrowSupplyControlLoop continue loop] No source channel ID found. Skipping...",
+          )
           continue
         }
 
@@ -641,7 +651,7 @@ const escrowSupplyControlLoop = Effect.repeat(
 
         if (!(srcCfg && dstCfg)) {
           yield* Effect.log(
-            "Invalid source or destination chain configuration. Skipping... srcChain:",
+            "[escrowSupplyControlLoop continue loop] Invalid source or destination chain configuration. Skipping... srcChain:",
             srcChain,
             "dstChain:",
             dstChain,
@@ -650,7 +660,9 @@ const escrowSupplyControlLoop = Effect.repeat(
         }
 
         if (!token.wrapping || token.wrapping.length === 0 || !token.wrapping[0]?.unwrapped_denom) {
-          yield* Effect.log("No wrapping information available. Skipping...")
+          yield* Effect.log(
+            "[escrowSupplyControlLoop continue loop] No wrapping information available. Skipping...",
+          )
           continue
         }
 
@@ -663,7 +675,10 @@ const escrowSupplyControlLoop = Effect.repeat(
           const client = createPublicClient({ transport: http(srcCfg.rpc) })
           const evmHeight = blockNumbers.get(srcCfg.rpc)!
           if (!evmHeight) {
-            yield* Effect.log("No block number found for source chain:", srcChain)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No block number found for source chain:",
+              srcChain,
+            )
             continue
           }
           const srcChannelBalHere = yield* EthereumChannelBalanceAtBlock(
@@ -678,12 +693,15 @@ const escrowSupplyControlLoop = Effect.repeat(
               channelId: sourceChannelId!,
             }),
             Effect.catchAllCause((cause) => {
-              console.error(`Error fetching channel balance: ${Cause.pretty(cause)}`);
-              return Effect.succeed(null); 
-            })
+              console.error(`Error fetching channel balance: ${Cause.pretty(cause)}`)
+              return Effect.succeed(null)
+            }),
           )
           if (!srcChannelBalHere) {
-            yield* Effect.log("No srcChannelBal for token:", token.denom)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No srcChannelBal for token:",
+              token.denom,
+            )
             continue
           }
           srcChannelBal = BigInt(srcChannelBalHere as bigint)
@@ -692,36 +710,52 @@ const escrowSupplyControlLoop = Effect.repeat(
           chainMap.set(key, prev + srcChannelBal)
           evmChannelBalances.set(srcChain, chainMap)
         } else {
-          const client = yield* createCosmWasmClient(srcCfg.rpc)
-          const extClient = yield* createExtendedCosmWasmClient(srcCfg.rpc, srcCfg.restUrl)
-
           const cosmosHeight = blockNumbers.get(srcCfg.rpc)!
           if (!cosmosHeight) {
-            yield* Effect.log("No block number found for cosmos - source chain:", srcChain)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No block number found for cosmos - source chain:",
+              srcChain,
+            )
             continue
           }
 
-          const srcChannelBalUnknown = yield* CosmosChannelBalanceAtHeight(
+          const srcChannelBalUnknown = yield* channelBalanceAtHeight(
+            srcCfg.restUrl,
             path,
             hexToUtf8(key as Hex),
             Number(cosmosHeight),
           ).pipe(
-            Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
             Effect.provideService(CosmosChannelDestination, {
               ucs03address: srcCfg.zkgmAddress,
               // biome-ignore lint/style/noNonNullAssertion: <explanation>
               channelId: sourceChannelId!,
             }),
             Effect.catchAllCause((cause) => {
-              console.error(`Error fetching channel balance: ${Cause.pretty(cause)}`);
-              return Effect.succeed(null); 
-            })
+              console.error(`Error fetching channel balance: ${Cause.pretty(cause)}`)
+              return Effect.succeed(null)
+            }),
           )
+
           if (!srcChannelBalUnknown) {
-            yield* Effect.log("No srcChannelBalUnknown for token:", token.denom)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No srcChannelBalUnknown for token:",
+              token.denom,
+              "rest:",
+              srcCfg.restUrl,
+              "path:",
+              path,
+              "key:",
+              key,
+              "cosmosHeight:",
+              cosmosHeight,
+              "sourceChannelId:",
+              sourceChannelId,
+              "zkgmAddress:",
+              srcCfg.zkgmAddress,
+            )
             continue
           }
-          srcChannelBal = BigInt(srcChannelBalUnknown as bigint)
+          srcChannelBal = BigInt(srcChannelBalUnknown)
 
           const chainMap = cosmosChannelBalances.get(srcChain) ?? new Map()
           const prev = chainMap.get(hexToUtf8(key as Hex)) ?? 0n
@@ -734,48 +768,60 @@ const escrowSupplyControlLoop = Effect.repeat(
           const client = createPublicClient({ transport: http(dstCfg.rpc) })
           const evmHeight = blockNumbers.get(dstCfg.rpc)!
           if (!evmHeight) {
-            yield* Effect.log("No block number found for destination chain:", dstChain)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No block number found for destination chain:",
+              dstChain,
+            )
             continue
           }
           const totalSupplyHere = yield* readErc20TotalSupplyAtBlock(token.denom, evmHeight).pipe(
             Effect.provideService(ViemPublicClientContext, { client }),
             Effect.catchAllCause((cause) => {
-              console.error(`Failed to fetch total supply for token ${token.denom}: ${Cause.pretty(cause)}`);
-              return Effect.succeed(null); 
-            })
-          );
-        
+              console.error(
+                `Failed to fetch total supply for token ${token.denom}: ${Cause.pretty(cause)}`,
+              )
+              return Effect.succeed(null)
+            }),
+          )
+
           if (!totalSupplyHere) {
-            yield* Effect.log("No total supply found for token:", token.denom)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No total supply found for token:",
+              token.denom,
+            )
             continue
           }
           totalSupply = BigInt(totalSupplyHere as bigint)
         } else {
-          const extClient = yield* createExtendedCosmWasmClient(dstCfg.rpc, dstCfg.restUrl)
-
           const cosmosHeight = blockNumbers.get(dstCfg.rpc)!
           if (!cosmosHeight) {
-            yield* Effect.log("No block number found for cosmos - destination chain:", dstChain)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No block number found for cosmos - destination chain:",
+              dstChain,
+            )
             continue
           }
 
           const totalSupplyHere = yield* readCw20TotalSupplyAtHeight(
+            dstCfg.restUrl,
             hexToUtf8(token.denom),
             Number(cosmosHeight),
           ).pipe(
-            Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
             Effect.catchAllCause((cause) => {
-              console.error(`Error fetching total supply: ${Cause.pretty(cause)}`);
-              return Effect.succeed(null); 
-            })
+              console.error(`Error fetching total supply: ${Cause.pretty(cause)}`)
+              return Effect.succeed(null)
+            }),
           )
           if (!totalSupplyHere) {
-            yield* Effect.log("No total supply found for token:", token.denom)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No total supply found for token:",
+              token.denom,
+            )
             continue
           }
           totalSupply = BigInt(totalSupplyHere)
         }
-        
+
         const supplyKey = `${srcChain}:${dstChain}:${token.denom}`
         const existingSupplyIncident = getSupplyIncident(db, supplyKey)
 
@@ -800,8 +846,10 @@ const escrowSupplyControlLoop = Effect.repeat(
               "Union",
               config.isLocal,
             )
-            if (inc.data.id) markSupplyIncident(db, supplyKey, inc.data.id)
-          }        
+            if (inc.data.id) {
+              markSupplyIncident(db, supplyKey, inc.data.id)
+            }
+          }
 
           const logEffect = Effect.annotateLogs({
             issueType: "TOTAL SUPPLY IS HIGHER THAN SOURCE CHANNEL BALANCE",
@@ -825,9 +873,11 @@ const escrowSupplyControlLoop = Effect.repeat(
               config.isLocal,
               "Sentinel: supply back in sync",
             )
-            if (didResolve) clearSupplyIncident(db, supplyKey)
+            if (didResolve) {
+              clearSupplyIncident(db, supplyKey)
             }
-        
+          }
+
           const logEffect = Effect.annotateLogs({
             sourceChain: `${srcChain}`,
             destinationChain: `${dstChain}`,
@@ -837,7 +887,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             sourceChannelBal: `${srcChannelBal}`,
             totalSupply: `${totalSupply}`,
             destinationChannelId: `${dstChannel}`,
-          })(Effect.logInfo(`Channel balance is higher or equal, which is expected.`))
+          })(Effect.logInfo(`SUPPLY_OK`))
 
           Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
         }
@@ -857,7 +907,10 @@ const escrowSupplyControlLoop = Effect.repeat(
 
           const evmHeight = blockNumbers.get(rpc)!
           if (!evmHeight) {
-            yield* Effect.log("No block number found for source chain:", chainId)
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No block number found for source chain:",
+              chainId,
+            )
             continue
           }
 
@@ -869,18 +922,20 @@ const escrowSupplyControlLoop = Effect.repeat(
             ).pipe(
               Effect.provideService(ViemPublicClientContext, { client }),
               Effect.catchAllCause((cause) => {
-                console.error(`Error querying balanceOf: ${Cause.pretty(cause)}`);
-                return Effect.succeed(null); 
-              })
+                console.error(`Error querying balanceOf: ${Cause.pretty(cause)}`)
+                return Effect.succeed(null)
+              }),
             )
             if (!onChainRaw) {
-              yield* Effect.log("No balance found for denom:", tokenAddr)
+              yield* Effect.log(
+                "[escrowSupplyControlLoop continue loop] No balance found for denom:",
+                tokenAddr,
+              )
               continue
             }
             const onChain = BigInt(onChainRaw as bigint)
             const aggregateKey = `${chainId}:${tokenAddr}`
             const existingAgg = getAggregateIncident(db, aggregateKey)
-
 
             if (onChain < channelSum) {
               if (!existingAgg) {
@@ -901,7 +956,9 @@ const escrowSupplyControlLoop = Effect.repeat(
                   "Union",
                   config.isLocal,
                 )
-                if (inc.data.id) markAggregateIncident(db, aggregateKey, inc.data.id)
+                if (inc.data.id) {
+                  markAggregateIncident(db, aggregateKey, inc.data.id)
+                }
               }
 
               const errLog = Effect.annotateLogs({
@@ -923,9 +980,11 @@ const escrowSupplyControlLoop = Effect.repeat(
                   config.isLocal,
                   "Sentinel: aggregate back in sync",
                 )
-                if (didResolve) clearAggregateIncident(db, aggregateKey)
+                if (didResolve) {
+                  clearAggregateIncident(db, aggregateKey)
+                }
               }
-          
+
               const okLog = Effect.annotateLogs({
                 chainId,
                 tokenAddr,
@@ -938,21 +997,35 @@ const escrowSupplyControlLoop = Effect.repeat(
             }
           }
         } else {
-          const cosmosClient = yield* createCosmWasmClient(rpc)
-          const extClient = yield* createExtendedCosmWasmClient(rpc, restUrl)
+          const cosmosClient = yield* createCosmWasmClient(rpc).pipe(
+            Effect.catchAllCause((cause) => {
+              console.error(`Error fetching channel balance: ${Cause.pretty(cause)}`)
+              return Effect.succeed(null)
+            }),
+          )
+          if (!cosmosClient) {
+            yield* Effect.log(
+              "[escrowSupplyControlLoop continue loop] No client found for rpc:",
+              rpc,
+            )
+            continue
+          }
 
           for (const [denom, channelSum] of cosmosChannelBalances.get(chainId) ?? []) {
             const isDenomNativeHere = yield* isDenomNative(denom).pipe(
               Effect.provideService(CosmWasmClientContext, { client: cosmosClient }),
               Effect.catchAllCause((cause) => {
-                console.error(`Error checking denom type: ${Cause.pretty(cause)}`);
-                return Effect.succeed(null); 
-              })
+                console.error(`Error checking denom type: ${Cause.pretty(cause)}`)
+                return Effect.succeed(null)
+              }),
             )
             let amount
             const cosmosHeight = blockNumbers.get(rpc)!
             if (!cosmosHeight) {
-              yield* Effect.log("No block number found for cosmos - chain:", chainId)
+              yield* Effect.log(
+                "[escrowSupplyControlLoop continue loop] No block number found for cosmos - chain:",
+                chainId,
+              )
               continue
             }
             if (isDenomNativeHere) {
@@ -960,31 +1033,43 @@ const escrowSupplyControlLoop = Effect.repeat(
               //   try: () => cosmosClient.getBalance(minter, denom),
               //   catch: e => new Error(`bank query failed: ${e}`),
               // })
-              const balance = yield* Effect.tryPromise({
-                try: () => extClient.getBalanceAtHeight(minter, denom, Number(cosmosHeight)),
-                catch: e => new Error(`bank query failed: ${e}`),
-              })
+              const balance = yield* getBalanceAtHeight(
+                restUrl,
+                minter,
+                denom,
+                Number(cosmosHeight),
+              ).pipe(
+                Effect.provide(FetchHttpClient.layer),
+                Effect.catchAllCause((cause) => {
+                  console.error(`Error fetching channel balance at height: ${Cause.pretty(cause)}`)
+                  return Effect.succeed(null)
+                }),
+              )
               if (!balance) {
-                yield* Effect.log("No balance found for denom:", denom)
+                yield* Effect.log(
+                  "[escrowSupplyControlLoop continue loop] No balance found for denom:",
+                  denom,
+                )
                 continue
               }
               amount = BigInt(balance)
             } else {
-
-
               const balance = yield* readCw20BalanceAtHeight(
+                restUrl,
                 denom,
                 minter,
                 Number(cosmosHeight),
               ).pipe(
-                Effect.provideService(ExtendedCosmWasmClientContext, { client: extClient }),
                 Effect.catchAllCause((cause) => {
-                  console.error(`Error fetching balance: ${Cause.pretty(cause)}`);
-                  return Effect.succeed(null); 
-                })
+                  console.error(`Error fetching balance: ${Cause.pretty(cause)}`)
+                  return Effect.succeed(null)
+                }),
               )
               if (!balance) {
-                yield* Effect.log("No balance found for denom:", denom)
+                yield* Effect.log(
+                  "[escrowSupplyControlLoop continue loop] No balance found for denom:",
+                  denom,
+                )
                 continue
               }
               amount = BigInt(balance)
@@ -1282,7 +1367,7 @@ export const checkBalances = Effect.repeat(
               }) as unknown) as PromiseLike<Response>,
             catch: e => new Error(`RPC probe connection failed: ${e}`),
           })
-          
+
           const text = yield* Effect.tryPromise<string, Error>({
             try: () => resp.text(),
             catch: e => new Error(`RPC probe read failed: ${e}`),
@@ -1290,7 +1375,9 @@ export const checkBalances = Effect.repeat(
           const took = Date.now() - start
 
           let json: any = null
-          try { json = JSON.parse(text) } catch { /* leave json=null */ }
+          try {
+            json = JSON.parse(text)
+          } catch { /* leave json=null */ }
 
           return [json, took] as const
         })
@@ -1341,9 +1428,10 @@ export const checkBalances = Effect.repeat(
             config.isLocal,
             "Sentinel: RPC back online",
           )
-          if (resolved) clearSignerIncident(db, portKey)
+          if (resolved) {
+            clearSignerIncident(db, portKey)
+          }
         }
-
 
         for (const [plugin, expectedThreshold] of Object.entries(plugins)) {
           const payload = [
@@ -1366,13 +1454,19 @@ export const checkBalances = Effect.repeat(
             const result = yield* callWithRetry
             if (result) {
               if (!Array.isArray(result) || result.length === 0) {
-                yield* Effect.logError(`Unexpected response shape for ${plugin} @ ${url}:${port}`)
+                yield* Effect.logError(
+                  `Unexpected response shape for ${plugin} @ ${url}:${port}. Result: ${result}`,
+                )
                 return
               }
 
               const rpcObj = (result[0] as any).result
               if (typeof rpcObj !== "object" || rpcObj === null) {
-                yield* Effect.logError(`No 'result' object for ${plugin} @ ${url}:${port}`)
+                yield* Effect.logError(
+                  `No 'result' object for ${plugin} @ ${url}:${port}. Result: ${
+                    JSON.stringify(result)
+                  }`,
+                )
                 return
               }
 
@@ -1683,11 +1777,11 @@ const mainEffect = Effect.gen(function*(_) {
 
   yield* Effect.all(
     [
-      // runIbcChecksForever,
+      runIbcChecksForever,
       escrowSupplyControlLoop,
-      // fundBabylonAccounts,
-      // checkBalances,
-      // checkSSLCertificates,
+      fundBabylonAccounts,
+      checkBalances,
+      checkSSLCertificates,
     ],
     {
       concurrency: "unbounded",
