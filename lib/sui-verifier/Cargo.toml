@@ -8,6 +8,10 @@ publish.workspace = true
 repository.workspace = true
 
 [dependencies]
+sui-light-client-types = { workspace = true, features = ["serde"] }
+unionlabs = { workspace = true }
+unionlabs-primitives = { workspace = true }
+bcs = { workspace = true }
 
 [lints]
 workspace = true
