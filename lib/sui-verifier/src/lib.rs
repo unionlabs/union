@@ -1,13 +1,15 @@
+use blake2::{Blake2b, Digest as _};
 use sui_light_client_types::{
-    checkpoint_summary::CheckpointSummary,
+    checkpoint_summary::{CheckpointContents, CheckpointSummary, ExecutionDigests},
     committee::Committee,
     crypto::{
         AggregateAuthoritySignature, AuthorityPublicKeyBytes, AuthorityStrongQuorumSignInfo,
         BLS_DST,
     },
-    object::ObjectInner,
-    transaction_effects::TransactionEffects,
-    AppId, Intent, IntentMessage, IntentScope, IntentVersion,
+    digest::Digest,
+    object::{Data, MoveObject, ObjectInner, TypeTag},
+    transaction_effects::{EffectsObjectChange, ObjectOut, TransactionEffects},
+    AppId, Intent, IntentMessage, IntentScope, IntentVersion, ObjectID,
 };
 
 mod error;
@@ -81,10 +83,96 @@ pub fn verify_checkpoint<V: SignatureVerification>(
 }
 
 pub fn verify_membership(
+    commitments_object: ObjectID,
     key: Bytes,
     value: Bytes,
     object: ObjectInner,
     effects: TransactionEffects,
+    checkpoint_contents: CheckpointContents,
+    contents_digest: Digest,
 ) -> Result<(), Error> {
+    // STEP 1: check if the given `object` has the correct object address
+    let commitment_object = calculate_dynamic_field_key(*commitments_object.get(), &key);
+
+    let Data::Move(object_data) = object.data;
+    let object_data: (ObjectID, Bytes, Bytes) = bcs::from_bytes(&object_data.contents).unwrap();
+
+    if commitment_object != object_data.0 {
+        panic!("mismatched object");
+    }
+
+    // STEP 2: check if the given `key` and the `value` belongs to the `object`
+    if key != object_data.1 {
+        panic!("key mismatch");
+    }
+
+    if value != object_data.2 {
+        panic!("value mismatch");
+    }
+
+    // STEP 3: find the effect in the `effects` and compare the digest with the given `object`s digest
+    let digest = find_write_effect(&effects, commitment_object).unwrap();
+
+    if digest != object.digest() {
+        panic!("object hash mismatch");
+    }
+
+    // STEP 4: find the effect digest in `checkpoint_contents.transactions` to verify it exists
+    let CheckpointContents::V1(checkpoint_contents) = checkpoint_contents;
+    let _ = checkpoint_contents
+        .transactions
+        .iter()
+        .find(|e| e.effects == digest)
+        .expect("execution digests do not contain the given effect");
+
+    // STEP 5: compare the digest of `checkpoint_contents` with the `contents_digest` which is verified previously by the client
+    if contents_digest != CheckpointContents::V1(checkpoint_contents).digest() {
+        panic!("contents digest does not match the checkpoint contents digest");
+    }
+
     Ok(())
+}
+
+/// find a write effect in `effects` that effects the `object` and return the object's digest
+fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<Digest> {
+    match effects {
+        TransactionEffects::V1(transaction_effects_v1) => None,
+        TransactionEffects::V2(effects) => {
+            let effect = effects.changed_objects.iter().find(|eff| {
+                eff.0 == object && matches!(eff.1.output_state, ObjectOut::ObjectWrite(..))
+            })?;
+
+            let ObjectOut::ObjectWrite(write) = &effect.1.output_state else {
+                panic!("wut?");
+            };
+
+            Some(write.0)
+        }
+    }
+}
+
+/// Calculate the object_id of the dynamic field within the commitments mapping
+fn calculate_dynamic_field_key(parent: [u8; 32], key_bytes: &[u8]) -> ObjectID {
+    #[repr(u8)]
+    enum HashingIntentScope {
+        ChildObjectId = 0xf0,
+        RegularObjectId = 0xf1,
+    }
+
+    // hash(parent || len(key) || key || key_type_tag)
+    let mut hasher = Blake2b::<typenum::U32>::default();
+    hasher.update([HashingIntentScope::ChildObjectId as u8]);
+    hasher.update(parent);
+    // +1 since `key_bytes` should be prefixed with its length (bcs encoding)
+    hasher.update((key_bytes.len() + 1).to_le_bytes());
+    // instead of calling bcs::serialize, we just prefix the bytes with the its length
+    // since the table we are verifying uses `vector<u8>` keys
+    hasher.update([key_bytes.len() as u8]);
+    hasher.update(key_bytes);
+    hasher.update(
+        bcs::to_bytes(&TypeTag::Vector(Box::new(TypeTag::U8))).expect("bcs serialization works"),
+    );
+    let hash = hasher.finalize();
+
+    ObjectID::new(hash.into())
 }

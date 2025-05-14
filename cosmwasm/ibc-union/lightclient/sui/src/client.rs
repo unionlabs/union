@@ -12,6 +12,7 @@ use sui_light_client_types::{
     crypto::{AuthorityStrongQuorumSignInfo, BLS_DST},
     header::Header,
     object::TypeTag,
+    storage_proof::StorageProof,
     AppId, Intent, IntentMessage, IntentScope, IntentVersion, U64,
 };
 use unionlabs::encoding::{Bincode, DecodeAs, EncodeAs};
@@ -33,17 +34,32 @@ impl IbcClient for SuiLightClient {
 
     type ConsensusState = ConsensusState;
 
-    type StorageProof = Header;
+    type StorageProof = StorageProof;
 
     type Encoding = Bincode;
 
     fn verify_membership(
-        _ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        _height: u64,
-        _key: Vec<u8>,
-        _storage_proof: Self::StorageProof,
-        _value: Vec<u8>,
+        ctx: ibc_union_light_client::IbcClientCtx<Self>,
+        height: u64,
+        key: Vec<u8>,
+        storage_proof: Self::StorageProof,
+        value: Vec<u8>,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
+        let client_state = ctx.read_self_client_state()?;
+
+        let consensus_state = ctx.read_self_consensus_state(height)?;
+
+        sui_verifier::verify_membership(
+            client_state.ibc_commitments_object_id,
+            key.into(),
+            value.into(),
+            storage_proof.object,
+            storage_proof.transaction_effects,
+            storage_proof.checkpoint_contents,
+            consensus_state.contents_digest,
+        )
+        .map_err(Into::<Error>::into);
+
         Ok(())
     }
 
