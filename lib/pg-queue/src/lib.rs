@@ -12,6 +12,7 @@ use std::{
 
 use futures_util::TryStreamExt;
 use itertools::Itertools;
+use opentelemetry::KeyValue;
 use schemars::JsonSchema;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use sqlx::{
@@ -492,9 +493,10 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             .collect::<Result<(Vec<_>, Vec<_>), sqlx::Error>>()
             .map_err(Either::Left)?;
 
-        self.metrics
-            .optimize_item_count
-            .record(msgs.len() as u64, &[]);
+        self.metrics.optimize_item_count.record(
+            msgs.len() as u64,
+            &[KeyValue::new("tag".to_owned(), tag.to_owned())],
+        );
 
         let now = std::time::Instant::now();
 
@@ -513,9 +515,10 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             ))
             .await
             .map_err(Either::Right)?;
-        self.metrics
-            .optimize_processing_duration
-            .record(now.duration_since(Instant::now()).as_secs_f64(), &[]);
+        self.metrics.optimize_processing_duration.record(
+            now.duration_since(Instant::now()).as_secs_f64(),
+            &[KeyValue::new("tag".to_owned(), tag.to_owned())],
+        );
 
         trace!(
             ready = ready.len(),
@@ -652,18 +655,20 @@ where
     let (r, res) = f(op.clone(), ItemId::new(record.id).unwrap()).await;
     metrics
         .item_processing_duration
-        .record(now.duration_since(Instant::now()).as_secs_f64(), &[]);
+        .record(Instant::now().duration_since(now).as_secs_f64(), &[]);
 
     match res {
         Err(QueueError::Fatal(error)) => {
             let error = full_error_string(error);
             error!(%error, "fatal error");
             insert_error(record, error, tx).await?;
+            metrics.fatal_errors_count.add(1, &[]);
         }
         Err(QueueError::Unprocessable(error)) => {
             let error = full_error_string(error);
             info!(%error, "unprocessable message");
             insert_error(record, error, tx).await?;
+            metrics.unprocessable_count.add(1, &[]);
         }
         Err(QueueError::Retry(error)) => {
             warn!(error = %full_error_string(error), "retryable error");
@@ -695,6 +700,7 @@ where
             .await?;
 
             tokio::time::sleep(Duration::from_millis(500)).await;
+            metrics.retryable_errors_count.add(1, &[]);
         }
         Ok(ops) => {
             'block: {
@@ -760,6 +766,8 @@ where
                 )
                 .execute(tx.as_mut())
                 .await?;
+
+                metrics.processed_item_count.add(1, &[]);
             }
         }
     }
