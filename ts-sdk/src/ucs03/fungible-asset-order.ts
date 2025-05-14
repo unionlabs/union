@@ -62,16 +62,16 @@ export const createEvmToEvmFungibleAssetOrder = (intent: EvmToEvmIntent) =>
       sourceChannelId: intent.sourceChannelId,
     })
 
-    yield* Effect.log("graphql quote", graphqlDenom)
+    yield* Effect.logTrace("graphql quote", graphqlDenom)
     let finalQuoteToken: Hex
     const unwrapping = Option.isSome(graphqlDenom)
     if (unwrapping) {
-      yield* Effect.log("using the graphql quote token unwrapped", graphqlDenom.value)
+      yield* Effect.logTrace("using the graphql quote token unwrapped", graphqlDenom.value)
       finalQuoteToken = graphqlDenom.value
     } else {
-      yield* Effect.log("predicting quote token on chain")
+      yield* Effect.logTrace("predicting quote token on chain")
       finalQuoteToken = yield* predictEvmQuoteToken(intent.baseToken)
-      yield* Effect.log("received quote token onchain", finalQuoteToken)
+      yield* Effect.logTrace("received quote token onchain", finalQuoteToken)
     }
 
     return yield* S.decode(FungibleAssetOrder)({

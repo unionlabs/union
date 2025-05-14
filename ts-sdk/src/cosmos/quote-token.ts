@@ -9,8 +9,6 @@ export const predictQuoteToken = (baseToken: string) =>
     const client = (yield* CosmWasmClientDestination).client
     const config = yield* CosmosChannelDestination
 
-    console.log({ config, client })
-
     const result = yield* queryContract<{ wrapped_token: Hex }>(client, config.ucs03address, {
       predict_wrapped_token: {
         path: "0",
