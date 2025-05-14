@@ -10,6 +10,7 @@ pub mod consensus_state;
 pub mod crypto;
 pub mod digest;
 pub mod header;
+pub mod object;
 pub mod transaction;
 pub mod transaction_effects;
 

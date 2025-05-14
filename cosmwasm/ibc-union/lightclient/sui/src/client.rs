@@ -11,6 +11,7 @@ use sui_light_client_types::{
     consensus_state::ConsensusState,
     crypto::{AuthorityStrongQuorumSignInfo, BLS_DST},
     header::Header,
+    object::TypeTag,
     AppId, Intent, IntentMessage, IntentScope, IntentVersion, U64,
 };
 use unionlabs::encoding::{Bincode, DecodeAs, EncodeAs};
@@ -159,31 +160,6 @@ fn verify_signature(
     sign_info: AuthorityStrongQuorumSignInfo,
 ) {
     // TODO(aeryz): VERIFY QUORUM
-    let mut selected_public_keys = vec![];
-
-    let mut seen = std::collections::BTreeSet::new();
-
-    for authority_index in sign_info.signers_map.0.iter() {
-        if !seen.insert(authority_index) {
-            continue;
-        }
-
-        selected_public_keys.push(committee.voting_rights[authority_index as usize].0.clone());
-    }
-
-    let intent_msg = IntentMessage {
-        intent: Intent {
-            scope: IntentScope::CheckpointSummary,
-            version: IntentVersion::V0,
-            app_id: AppId::Sui,
-        },
-        value: checkpoint.clone(),
-    };
-    let mut intent_msg_bytes =
-        bcs::to_bytes(&intent_msg).expect("Message serialization should not fail");
-    bcs::serialize_into(&mut intent_msg_bytes, &checkpoint.epoch)
-        .expect("Message serialization should not fail");
-
     let pubkeys = selected_public_keys
         .into_iter()
         .flat_map(|x| x.0)
@@ -246,34 +222,6 @@ impl ValueCodec<Committee> for CommitteeStore {
         })
     }
 }
-#[derive(Serialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
-pub enum TypeTag {
-    // alias for compatibility with old json serialized data.
-    #[serde(rename = "bool", alias = "Bool")]
-    Bool,
-    #[serde(rename = "u8", alias = "U8")]
-    U8,
-    #[serde(rename = "u64", alias = "U64")]
-    U64,
-    #[serde(rename = "u128", alias = "U128")]
-    U128,
-    #[serde(rename = "address", alias = "Address")]
-    Address,
-    #[serde(rename = "signer", alias = "Signer")]
-    Signer,
-    #[serde(rename = "vector", alias = "Vector")]
-    Vector(Box<TypeTag>),
-    // #[serde(rename = "struct", alias = "Struct")]
-    // Struct(Box<StructTag>),
-
-    // NOTE: Added in bytecode version v6, do not reorder!
-    #[serde(rename = "u16", alias = "U16")]
-    U16,
-    #[serde(rename = "u32", alias = "U32")]
-    U32,
-    #[serde(rename = "u256", alias = "U256")]
-    U256,
-}
 
 /// Calculate the object_id of the dynamic field within the commitments mapping
 fn calculate_dynamic_field_key(parent: [u8; 32], key_bytes: &[u8]) -> Vec<u8> {
@@ -309,8 +257,10 @@ mod tests {
     use hex_literal::hex;
     use serde::Deserialize;
     use sui_light_client_types::{
-        checkpoint_summary::CheckpointContents, digest::Digest, AccountAddress,
-        CertifiedCheckpointSummary, SuiAddress,
+        checkpoint_summary::CheckpointContents,
+        digest::Digest,
+        object::{MoveObject, ObjectInner},
+        AccountAddress, CertifiedCheckpointSummary, SuiAddress,
     };
     use unionlabs::{encoding::Decode as _, primitives::encoding::Base64};
     use unionlabs_primitives::{
@@ -340,84 +290,6 @@ mod tests {
     pub enum Owner {
         AddrOwner,
         ObjectOwner(SuiAddress),
-    }
-
-    #[derive(Serialize)]
-    pub enum Data {
-        /// An object whose governing logic lives in a published Move module
-        Move(MoveObject),
-    }
-
-    #[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
-    pub struct MoveObject {
-        /// The type of this object. Immutable
-        type_: MoveObjectType,
-        /// DEPRECATED this field is no longer used to determine whether a tx can transfer this
-        /// object. Instead, it is always calculated from the objects type when loaded in execution
-        has_public_transfer: bool,
-        /// Number that increases each time a tx takes this object as a mutable input
-        /// This is a lamport timestamp, not a sequentially increasing version
-        version: u64,
-        /// BCS bytes of a Move struct value
-        contents: Bytes,
-    }
-
-    #[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Clone, Deserialize, Serialize, Hash)]
-    pub enum MoveObjectType {
-        /// A type that is not `0x2::coin::Coin<T>`
-        Other(StructTag),
-        /// A SUI coin (i.e., `0x2::coin::Coin<0x2::sui::SUI>`)
-        GasCoin,
-        /// A record of a staked SUI coin (i.e., `0x3::staking_pool::StakedSui`)
-        StakedSui,
-        /// A non-SUI coin type (i.e., `0x2::coin::Coin<T> where T != 0x2::sui::SUI`)
-        Coin(TypeTag),
-        // NOTE: if adding a new type here, and there are existing on-chain objects of that
-        // type with Other(_), that is ok, but you must hand-roll PartialEq/Eq/Ord/maybe Hash
-        // to make sure the new type and Other(_) are interpreted consistently.
-    }
-
-    #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
-    pub struct StructTag {
-        pub address: AccountAddress,
-        pub module: String,
-        pub name: String,
-        // alias for compatibility with old json serialized data.
-        #[serde(rename = "type_args", alias = "type_params")]
-        pub type_params: Vec<TypeTag>,
-    }
-
-    #[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
-    pub enum TypeTag {
-        // alias for compatibility with old json serialized data.
-        Bool,
-        U8,
-        U64,
-        U128,
-        Address,
-        Signer,
-        Vector(Box<TypeTag>),
-        Struct(Box<StructTag>),
-        U16,
-        U32,
-        U256,
-    }
-
-    #[derive(Serialize)]
-    pub struct ObjectInner {
-        data: Data,
-        owner: Owner,
-        previous_transaction: Digest,
-        storage_rebate: u64,
-    }
-
-    impl ObjectInner {
-        fn digest(&self) -> Bytes<Base58> {
-            let mut hasher = Blake2b::<typenum::U32>::new();
-            hasher.update("Object::");
-            bcs::serialize_into(&mut hasher, self).unwrap();
-            Bytes::new(hasher.finalize().to_vec())
-        }
     }
 
     #[test]
