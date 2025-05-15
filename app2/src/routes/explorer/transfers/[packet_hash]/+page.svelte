@@ -15,8 +15,8 @@ import { chains } from "$lib/stores/chains.svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import { getChain, PacketHash, TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Effect, Fiber, Option, pipe, Schema, Struct } from "effect"
+import { getChain, PacketHash, TokenRawDenom, TransactionHash } from "@unionlabs/sdk/schema"
+import { Data, Effect, Fiber, Option, pipe, Schema, Struct } from "effect"
 import { onMount } from "svelte"
 
 // Store for the transfer details
@@ -57,15 +57,48 @@ onMount(() => {
   }
 })
 
-const inProgress = $derived(
-  transferDetails.data.pipe(
-    Option.map(Struct.get("traces")),
-    Option.map(
-      traces => !traces.some(t => t.type === "WRITE_ACK" && Option.isSome(t.transaction_hash)),
-    ),
-    Option.getOrElse(() => true),
-  ),
-)
+type SimpleTransferStatus = Data.TaggedEnum<{
+  NoDetails: {}
+  Timeout: {
+    tx_hash: TransactionHash
+  }
+  SuccessAck: {}
+  Success: {}
+  FailedAck: {}
+  Failed: {}
+  InProgress: {}
+}>
+export const SimpleTransferStatus = Data.taggedEnum<SimpleTransferStatus>()
+
+const simpleStatus = $derived.by(() => {
+  if (Option.isNone(transferDetails.data)) {
+    return SimpleTransferStatus.NoDetails()
+  }
+  const details = transferDetails.data.value
+
+  if (Option.isSome(details.transfer_timeout_transaction_hash)) {
+    return SimpleTransferStatus.Timeout({
+      tx_hash: details.transfer_timeout_transaction_hash.value,
+    })
+  }
+
+  if (details.traces.some(t => t.type === "PACKET_ACK" && Option.isSome(t.transaction_hash))) {
+    if (details.success) {
+      return SimpleTransferStatus.SuccessAck()
+    } else {
+      return SimpleTransferStatus.FailedAck()
+    }
+  }
+
+  if (details.traces.some(t => t.type === "WRITE_ACK" && Option.isSome(t.transaction_hash))) {
+    if (details.success) {
+      return SimpleTransferStatus.Success()
+    } else {
+      return SimpleTransferStatus.Failed()
+    }
+  }
+  return SimpleTransferStatus.InProgress()
+})
 
 const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
   console.log("suggest token", chain_id, denom)
@@ -119,31 +152,18 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                   />
                 {/if}
               </div>
-              {#if !inProgress}
-                <div class="flex items-center gap-2">
-                  {#if Option.isSome(transfer.success)}
-                    {#if transfer.success.value}
-                      <SharpCheckIcon class="size-6 text-accent" />
-                      <p class="text-babylon">Received</p>
-                    {:else}
-                      <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
-                      <p class="text-babylon">Failed transfer. Will be refunded.</p>
-                    {/if}
-                  {:else}
-                    <SharpWarningIcon
-                      class="text-yellow-500 self-center"
-                      height="3rem"
-                      width="3rem"
-                    />
-                    <p class="text-babylon">Received with unknown status</p>
-                  {/if}
-                </div>
-              {:else}
-                <div class="flex items-center gap-4">
+              <div class="flex items-center gap-4">
+                {#if simpleStatus._tag === "InProgress"}
                   <SpinnerIcon class="size-6" />
                   <p>In progress</p>
-                </div>
-              {/if}
+                {:else if simpleStatus._tag === "Success"}
+                  <SharpCheckIcon class="size-6 text-accent" />
+                  <p class="text-babylon">Received</p>
+                {:else if simpleStatus._tag === "Failed"}
+                  <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
+                  <p class="text-babylon">Failed transfer. Will be refunded.</p>
+                {/if}
+              </div>
             </div>
             <section class="flex flex-col px-4">
               <Label>From</Label>
