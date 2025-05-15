@@ -6,7 +6,9 @@ use unionlabs_primitives::{encoding::Base58, Bytes, FixedBytes};
 
 use crate::{digest::Digest, AccountAddress, ObjectID, Owner, SuiAddress};
 
-#[derive(Serialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ObjectInner {
     pub data: Data,
     pub owner: Owner,
@@ -23,13 +25,17 @@ impl ObjectInner {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum Data {
     /// An object whose governing logic lives in a published Move module
     Move(MoveObject),
 }
 
-#[derive(Eq, PartialEq, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct MoveObject {
     /// The type of this object. Immutable
     pub type_: MoveObjectType,
@@ -43,7 +49,9 @@ pub struct MoveObject {
     pub contents: Bytes,
 }
 
-#[derive(Eq, PartialEq, PartialOrd, Ord, Debug, Clone, Deserialize, Serialize, Hash)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum MoveObjectType {
     /// A type that is not `0x2::coin::Coin<T>`
     Other(StructTag),
@@ -58,7 +66,9 @@ pub enum MoveObjectType {
     // to make sure the new type and Other(_) are interpreted consistently.
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct StructTag {
     pub address: AccountAddress,
     pub module: String,
@@ -68,7 +78,9 @@ pub struct StructTag {
     pub type_params: Vec<TypeTag>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq, Hash, Eq, Clone, PartialOrd, Ord)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum TypeTag {
     // alias for compatibility with old json serialized data.
     Bool,

@@ -178,11 +178,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     trusted_height: from,
                     checkpoint_summary: checkpoint.checkpoint_summary.data.clone(),
                     sign_info: checkpoint.checkpoint_summary.auth_signature.clone(),
-                    transactions: checkpoint
-                        .checkpoint_contents
-                        .clone()
-                        .as_inner()
-                        .transactions,
                 })
                 .unwrap();
 
@@ -197,7 +192,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             trusted_height: from,
                             checkpoint_summary: checkpoint.checkpoint_summary.data,
                             sign_info: checkpoint.checkpoint_summary.auth_signature,
-                            transactions: checkpoint.checkpoint_contents.as_inner().transactions,
                         })
                         .unwrap(),
                     )],

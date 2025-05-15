@@ -1,7 +1,7 @@
 use blake2::{Blake2b, Digest as _};
 use unionlabs_primitives::{
     encoding::{Base58, Base64, Encoding as _},
-    Bytes,
+    Bytes, FixedBytes,
 };
 
 use crate::{crypto::AuthorityPublicKeyBytes, digest::Digest, U64};
@@ -92,6 +92,7 @@ pub struct EndOfEpochData {
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum CheckpointContents {
     V1(CheckpointContentsV1),
 }
@@ -116,6 +117,7 @@ impl CheckpointContents {
 /// the same order for each checkpoint content.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct CheckpointContentsV1 {
     pub transactions: Vec<ExecutionDigests>,
 
@@ -134,6 +136,7 @@ pub struct ExecutionDigests {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum GenericSignature {
     /// TODO(aeryz): this enum normally contains more field, see if we need the other fields
     Signature(Bytes<Base64>),
@@ -162,9 +165,7 @@ impl<'de> ::serde::Deserialize<'de> for GenericSignature {
 
             let data = GenericSignature::deserialize(deserializer)?;
             // Self::from_bytes(&data.0).map_err(|e| Error::custom(e.to_string()))
-            Ok(Self::Signature(Bytes::new(
-                Base64::decode(data.0.as_slice()).map_err(serde::de::Error::custom)?,
-            )))
+            Ok(Self::Signature(Bytes::new(data.0)))
         }
     }
 }

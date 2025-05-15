@@ -1,4 +1,4 @@
-use checkpoint_summary::CheckpointSummary;
+use checkpoint_summary::{CheckpointContents, CheckpointSummary};
 use crypto::AuthorityStrongQuorumSignInfo;
 use digest::Digest;
 use unionlabs_primitives::{encoding::HexPrefixed, FixedBytes};
@@ -25,6 +25,7 @@ pub type ObjectRef = (ObjectID, u64, Digest);
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum Owner {
     /// Object is exclusively owned by a single address, and is mutable.
     AddressOwner(SuiAddress),
@@ -53,6 +54,7 @@ pub enum Owner {
 
 #[derive(Debug, Clone, Copy)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum Authenticator {
     /// The contained SuiAddress exclusively has all permissions: read, write, delete, transfer
     SingleOwner(SuiAddress),
