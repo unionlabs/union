@@ -18564,6 +18564,7 @@ dependencies = [
 name = "voyager-proof-module-sui"
 version = "0.0.0"
 dependencies = [
+ "bcs 0.1.6",
  "clap 4.5.18",
  "embed-commit",
  "ibc-union-spec",
@@ -18571,7 +18572,9 @@ dependencies = [
  "reqwest 0.11.27",
  "serde",
  "serde_json",
+ "sui-light-client-types",
  "sui-sdk",
+ "sui-verifier",
  "tokio",
  "tracing",
  "unionlabs",

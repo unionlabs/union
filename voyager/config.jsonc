@@ -33,8 +33,8 @@
         },
         "config": {
           "rpc_url": "https://fullnode.testnet.sui.io:443",
-          "ibc_contract": "0x88292c3a638db1a3df19d3a561746040dd7c3c4b1448785ea986a62a11603607",
-          "ibc_store": "0xaa1ec2e2f63d5b910f87d5018af7aabcecb47365101e1d63fd67bcdc3a5ecad3"
+          "ibc_contract": "0xf43594b47947e395ccdb94f2106597ece633712c4ca641150bad6fdd545ad796",
+          "ibc_store": "0x7085d44bcb530cb1b2fb5507ecdf5ed34ddd7bcb5be8b7bbea22236396df5ac5"
         }
       }
       // {
@@ -71,7 +71,9 @@
           "ibc_spec_id": "ibc-union"
         },
         "config": {
-          "rpc_url": "https://fullnode.testnet.sui.io:443"
+          "rpc_url": "https://fullnode.testnet.sui.io:443",
+          "ibc_commitments_object_id": "0x1428bf949b8486c4f0d4077ba84ffb5d29e26cc648833ed090cd539ae113ef80",
+          "sui_object_store_rpc_url": "https://checkpoints.testnet.sui.io"
         }
       }
       // {
@@ -224,9 +226,10 @@
       {
         "config": {
           "rpc_url": "https://fullnode.testnet.sui.io:443",
-          "ibc_store": "0xaa1ec2e2f63d5b910f87d5018af7aabcecb47365101e1d63fd67bcdc3a5ecad3",
-          "ibc_contract": "0x88292c3a638db1a3df19d3a561746040dd7c3c4b1448785ea986a62a11603607",
-          "sui_object_store_rpc_url": "https://checkpoints.testnet.sui.io"
+          "ibc_store": "0x7085d44bcb530cb1b2fb5507ecdf5ed34ddd7bcb5be8b7bbea22236396df5ac5",
+          "ibc_contract": "0xf43594b47947e395ccdb94f2106597ece633712c4ca641150bad6fdd545ad796",
+          "sui_object_store_rpc_url": "https://checkpoints.testnet.sui.io",
+          "ibc_commitments_object_id": "0x1428bf949b8486c4f0d4077ba84ffb5d29e26cc648833ed090cd539ae113ef80"
         },
         "enabled": true,
         "info": {
@@ -282,7 +285,7 @@
       "config": {
         "chain_id": "4c78adac",
         "rpc_url": "https://fullnode.testnet.sui.io:443",
-        "ibc_handler_address": "0x88292c3a638db1a3df19d3a561746040dd7c3c4b1448785ea986a62a11603607"
+        "ibc_handler_address": "0xf43594b47947e395ccdb94f2106597ece633712c4ca641150bad6fdd545ad796"
       }
     },
     // {
@@ -325,15 +328,15 @@
       "path": "./target/debug/voyager-transaction-plugin-sui",
       "config": {
         "chain_id": "4c78adac",
-        "ibc_handler_address": "0x88292c3a638db1a3df19d3a561746040dd7c3c4b1448785ea986a62a11603607",
-        "ibc_store": "0xaa1ec2e2f63d5b910f87d5018af7aabcecb47365101e1d63fd67bcdc3a5ecad3",
+        "ibc_handler_address": "0xf43594b47947e395ccdb94f2106597ece633712c4ca641150bad6fdd545ad796",
+        "ibc_store": "0x7085d44bcb530cb1b2fb5507ecdf5ed34ddd7bcb5be8b7bbea22236396df5ac5",
         "keyring": {
           "name": "sui",
           "keys": [
             {
               "type": "raw",
               "name": "alice",
-              "key": ""
+              "key": "0x737569707269766b6579317178786d3761797a797038786372777a396a39676666657a6c327078336c7332786578396a6e6d77766c6b616873396136756632797867666c3438"
             }
           ]
         },
@@ -443,7 +446,7 @@
       "config": {
         "chain_id": "4c78adac",
         "rpc_url": "https://fullnode.testnet.sui.io:443",
-        "ibc_handler_address": "0x88292c3a638db1a3df19d3a561746040dd7c3c4b1448785ea986a62a11603607",
+        "ibc_handler_address": "0xf43594b47947e395ccdb94f2106597ece633712c4ca641150bad6fdd545ad796",
         "sui_object_store_rpc_url": "https://checkpoints.testnet.sui.io"
       }
     }
