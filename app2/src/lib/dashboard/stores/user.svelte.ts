@@ -176,6 +176,7 @@ export class Dashboard {
    * Initializes the Dashboard instance and sets up authentication listeners
    */
   constructor() {
+    if (!browser) return
     this.listenToAuth()
   }
 
@@ -577,4 +578,4 @@ export class Dashboard {
   }
 }
 
-export const dashboard = browser ? new Dashboard() : null
+export const dashboard = new Dashboard()

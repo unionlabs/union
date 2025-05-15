@@ -126,7 +126,7 @@ let isOnLeaderboardPage = $derived($page.url.pathname === "/dashboard/leaderboar
               <div
                 class="text-sm {rank === 0 ? 'text-accent' : rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-amber-700' : 'text-zinc-100'}"
               >
-                {truncate(entry.user_id, 24, "end")}
+                {truncate(entry.display_name ?? entry.user_id, 24, "end")}
               </div>
               <div class="text-xs text-zinc-400">
                 Level {entry.level ?? 1}
