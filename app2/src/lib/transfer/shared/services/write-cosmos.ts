@@ -1,3 +1,4 @@
+import { runPromiseExit } from "$lib/runtime"
 import { switchChain } from "$lib/services/transfer-ucs03-cosmos"
 import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { executeContract } from "@unionlabs/sdk/cosmos"
@@ -39,7 +40,7 @@ export const nextStateCosmos = async (
       return SwitchChainInProgress()
     },
     SwitchChainInProgress: async () => {
-      const switchResult = await Effect.runPromiseExit(switchChain(chain))
+      const switchResult = await runPromiseExit(switchChain(chain))
       return SwitchChainComplete({
         exit: switchResult,
       })
@@ -71,7 +72,7 @@ export const nextStateCosmos = async (
 
       return WriteContractComplete({
         signingClient,
-        exit: await Effect.runPromiseExit(retryableExecute),
+        exit: await runPromiseExit(retryableExecute),
       })
     },
 

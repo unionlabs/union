@@ -4,6 +4,7 @@ import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Input from "$lib/components/ui/Input.svelte"
 import Label from "$lib/components/ui/Label.svelte"
+import { runPromiseExit, runSync } from "$lib/runtime"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { getWalletClient } from "$lib/services/evm/clients.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
@@ -60,7 +61,7 @@ const approvalAmount = $derived(
     : selectedMultiplier === 1
     ? step.requiredAmount
     : customAmount && isValidCustomAmount(customAmount)
-    ? Effect.runSync(
+    ? runSync(
       Effect.try({
         try: () => {
           const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
@@ -206,7 +207,7 @@ const submit = Effect.gen(function*() {
 const handleSubmit = () => {
   error = Option.none()
   showError = false
-  Effect.runPromiseExit(submit).then(exit =>
+  runPromiseExit(submit).then(exit =>
     Exit.match(exit, {
       onFailure: cause => {
         const err = Cause.originalError(cause)
@@ -244,7 +245,7 @@ function getApprovalAmount() {
       if (!(customAmount && isValidCustomAmount(customAmount))) {
         return step.requiredAmount
       }
-      return Effect.runSync(
+      return runSync(
         Effect.try({
           try: () => {
             const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
@@ -278,7 +279,7 @@ function handleCustomInput(event: Event) {
 }
 
 function isValidCustomAmount(amount: string): boolean {
-  return Effect.runSync(
+  return runSync(
     Effect.gen(function*() {
       // Handle empty or invalid input
       if (!amount || amount === "." || amount === ",") {
@@ -307,7 +308,7 @@ function isValidCustomAmount(amount: string): boolean {
 }
 
 function handleBeforeInput(event: InputEvent) {
-  return Effect.runSync(
+  return runSync(
     Effect.gen(function*() {
       const { inputType, data } = event
       const { value } = event.currentTarget as HTMLInputElement

@@ -1,4 +1,5 @@
 import { tokensQuery } from "$lib/queries/tokens.svelte"
+import { runFork } from "$lib/runtime"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { Tokens, UniversalChainId } from "@unionlabs/sdk/schema"
 import { Effect, type Fiber, Option } from "effect"
@@ -32,7 +33,7 @@ class TokensStore {
     }
 
     // Start new query and store its fiber
-    const fiber = Effect.runFork(tokensQuery(chainId))
+    const fiber = runFork(tokensQuery(chainId))
     this.fibers.set(chainId, fiber)
   }
 }

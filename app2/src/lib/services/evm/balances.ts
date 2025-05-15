@@ -73,14 +73,11 @@ export const fetchEvmBalance = ({
   chain: Chain
   tokenAddress: TokenRawDenom
   walletAddress: AddressEvmCanonical
-}) => {
-  return Effect.gen(function*() {
+}) =>
+  Effect.gen(function*() {
+    yield* Effect.logTrace("Fetching EVM balance")
     const client = yield* getPublicClient(chain)
     const decodedDenom = yield* fromHexString(tokenAddress)
-
-    yield* Effect.log(
-      `fetching balance for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`,
-    )
 
     const fetchBalance = decodedDenom === "native"
       ? fetchEvmGasBalance({ client, walletAddress })
@@ -89,5 +86,10 @@ export const fetchEvmBalance = ({
     const balance = yield* Effect.retry(fetchBalance, evmBalanceRetrySchedule)
 
     return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))
-  })
-}
+  }).pipe(
+    Effect.annotateLogs({
+      universalChainId: chain.universal_chain_id,
+      walletAddress,
+      tokenAddress,
+    }),
+  )

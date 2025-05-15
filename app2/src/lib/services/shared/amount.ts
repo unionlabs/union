@@ -1,3 +1,4 @@
+import { runSync } from "$lib/runtime"
 import { AmountParsingError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import type { Token } from "@unionlabs/sdk/schema"
 import { Effect, Option } from "effect"
@@ -29,7 +30,7 @@ export const parseAmountEffect = (amount: string, token: Token) =>
 
 // Updated to return Option.Option<string> (the string representation)
 export const getParsedAmountSafe = (amount: string, token: Token): Option.Option<string> => {
-  const result = Effect.runSync(Effect.either(parseAmountEffect(amount.replace(",", "."), token)))
+  const result = runSync(Effect.either(parseAmountEffect(amount.replace(",", "."), token)))
 
   return result._tag === "Right"
     ? Option.some(result.right) // Already a string

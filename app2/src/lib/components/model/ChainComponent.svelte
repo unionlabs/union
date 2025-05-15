@@ -30,7 +30,6 @@ const classes = cn("text-md font-semibold", className)
 
 // Start the query when the component mounts
 $effect(() => {
-  console.log("FETCHI NGTKENS")
   tokensStore.fetchTokens(chain.universal_chain_id)
 })
 

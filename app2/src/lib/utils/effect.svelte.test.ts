@@ -11,12 +11,16 @@ import {
   ManagedRuntime,
   Option,
   pipe,
+  Runtime,
   RuntimeFlags,
   Stream,
 } from "effect"
 import { flushSync } from "svelte"
 import { assert, describe, expect, it } from "vitest"
-import { runFork, runForkWithRuntime, runPromiseExit } from "./effect.svelte.js"
+import { runForkWithRuntime, runPromiseExitWithRuntime } from "./effect.svelte.js"
+
+const runFork = runForkWithRuntime(Runtime.defaultRuntime)
+const runPromiseExit = runPromiseExitWithRuntime(Runtime.defaultRuntime)
 
 type AppliedReturn<F, A> = F extends (_: A) => infer R ? R : never
 

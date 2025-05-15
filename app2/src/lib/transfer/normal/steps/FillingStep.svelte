@@ -4,13 +4,15 @@ import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Label from "$lib/components/ui/Label.svelte"
+import { runPromiseExit$, runSync } from "$lib/runtime"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
 import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import { Match, Option } from "effect"
+import { Effect, identity, Match, Option } from "effect"
+import { onMount } from "svelte"
 
 type Props = {
   onContinue: () => void

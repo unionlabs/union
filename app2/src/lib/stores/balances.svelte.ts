@@ -1,3 +1,4 @@
+import { runFork, runPromise, runSync } from "$lib/runtime"
 import { fetchAptosBalance, type FetchAptosBalanceError } from "$lib/services/aptos/balances"
 import { fetchCosmosBalance, type FetchCosmosBalanceError } from "$lib/services/cosmos/balances"
 import { fetchEvmBalance, type FetchEvmBalanceError } from "$lib/services/evm/balances"
@@ -82,8 +83,8 @@ export class BalancesStore {
   #fiberMap: FiberMap.FiberMap<BalanceKey>
 
   constructor() {
-    this.#scope = pipe(Scope.make(), Effect.runSync)
-    this.#fiberMap = pipe(FiberMap.make<BalanceKey>(), Scope.extend(this.#scope), Effect.runSync)
+    this.#scope = pipe(Scope.make(), runSync)
+    this.#fiberMap = pipe(FiberMap.make<BalanceKey>(), Scope.extend(this.#scope), runSync)
   }
 
   setBalance(
@@ -121,7 +122,7 @@ export class BalancesStore {
   }
 
   interruptBalanceFetching() {
-    Effect.runPromise(FiberMap.clear(this.#fiberMap))
+    runPromise(FiberMap.clear(this.#fiberMap))
   }
 
   private processBatchedBalances(
@@ -172,8 +173,6 @@ export class BalancesStore {
       Stream.zip(boundedDelay),
     )
 
-    console.log("[processBatchedBalances] batching balance payloads", balanceFetchRequestPayloads)
-
     const batchProcessor = fetchRequest$.pipe(
       /**
        * Preload all requests to be executed after given delay.
@@ -222,7 +221,7 @@ export class BalancesStore {
       Stream.runDrain,
     )
 
-    Effect.runFork(batchProcessor)
+    runFork(batchProcessor)
   }
 
   fetchBalances(

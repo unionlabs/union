@@ -200,6 +200,8 @@ export function createOrdersBatch(
           }),
         )
       ),
+    ).pipe(
+      Effect.tap(x => Effect.log("create order", x)),
     )
 
     const filtered = provideClients.filter((o): o is NonNullable<typeof o> => o !== null)

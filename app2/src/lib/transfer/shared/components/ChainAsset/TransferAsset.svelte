@@ -38,10 +38,7 @@ export const toDisplayName = (
     "flex flex-col items-start w-full overflow-x-auto px-4 py-3 text-left bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded",
     isSelected ? "bg-zinc-700 text-white" : "text-zinc-300",
   )}
-  onclick={() => {
-    console.log(token)
-    selectAsset(token)
-  }}
+  onclick={() => selectAsset(token)}
 >
   <div class="flex items-center gap-1 overflow-x-auto text-sm text-zinc-200">
     <div class="mr-1">

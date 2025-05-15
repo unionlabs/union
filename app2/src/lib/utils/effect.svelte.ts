@@ -124,12 +124,3 @@ export const runForkWithRuntime: {
     } as const
   },
 )
-
-/**
- * {@link Effect.runFork} with automatic {@link Fiber} cleanup.
- */
-export const runFork = runForkWithRuntime(Runtime.defaultRuntime)
-/**
- * {@link Effect.runFork} with automatic {@link Fiber} cleanup.
- */
-export const runPromiseExit = runPromiseExitWithRuntime(Runtime.defaultRuntime)

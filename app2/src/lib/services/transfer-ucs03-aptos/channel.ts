@@ -1,3 +1,4 @@
+import { runSync } from "$lib/runtime"
 import { ChannelValidationError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import { Channel, type Channels } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
@@ -49,7 +50,7 @@ export const getChannelInfoSafe = (
   destination_chain_id: string,
   channels: typeof Channels.Type,
 ): typeof Channel.Type | null => {
-  const result = Effect.runSync(
+  const result = runSync(
     Effect.either(getChannelInfoEffect(source_chain_id, destination_chain_id, channels)),
   )
 

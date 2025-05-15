@@ -1,4 +1,5 @@
 <script lang="ts">
+import { runSyncExit } from "$lib/runtime"
 import { cn } from "$lib/utils"
 import { DateTime, Effect } from "effect"
 import type { HTMLAttributes } from "svelte/elements"
@@ -67,7 +68,7 @@ const formatDate = (value: DateTime.DateTime) =>
       : `${DateTime.formatIntl(zonedValue, dateFormat)}`
   }).pipe(DateTime.withCurrentZoneLocal)
 
-const formattedDate = $derived(Effect.runSyncExit(formatDate(value)))
+const formattedDate = $derived(runSyncExit(formatDate(value)))
 
 // Keep ISO format for the datetime attribute for accessibility
 const isoDate = $derived(DateTime.formatIso(value))

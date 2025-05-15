@@ -13,7 +13,7 @@
     "experimentalDecorators": true,
     "moduleResolution": "NodeNext",
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
-    "types": [],
+    "types": ["vitest/importMeta"],
     "isolatedModules": true,
     "sourceMap": true,
     "declarationMap": true,
