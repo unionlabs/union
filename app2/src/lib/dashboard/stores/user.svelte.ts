@@ -8,7 +8,7 @@ import { AuthenticationError, SupabaseClientError } from "../errors"
 import { hasProviderLinked } from "../helpers"
 import { invokeTick } from "../queries/private"
 import { AchievementsStore } from "./achievements.svelte"
-import { ExperienceStore } from "./experiance.svelte"
+import { ExperienceStore } from "./experience.svelte"
 import { LeaderboardStore } from "./leaderboard.svelte"
 import { MissionsStore } from "./missions.svelte"
 import { RewardsStore } from "./rewards.svelte"
@@ -189,9 +189,23 @@ export class Dashboard {
         getSupabaseClient(),
         Effect.flatMap((client) =>
           Effect.tryPromise({
-            try: () => client.auth.getSession(),
-            catch: (error) =>
-              new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+            try: async () => {
+              try {
+                const { data, error } = await client.auth.getSession()
+                if (error) {
+                  console.error("Error getting session:", error)
+                  throw error
+                }
+                return { data }
+              } catch (error) {
+                console.error("Failed to get session:", error)
+                throw error
+              }
+            },
+            catch: (error) => {
+              console.error("Authentication error:", error)
+              return new AuthenticationError({ cause: extractErrorDetails(error as Error) })
+            },
           })
         ),
         Effect.tap(({ data }) =>
@@ -209,6 +223,9 @@ export class Dashboard {
             })
           })
         ),
+        Effect.catchAll((error) => {
+          return Effect.void
+        })
       ),
     )
   }
