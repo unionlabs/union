@@ -100,21 +100,21 @@ const getUserFriendlyMessage = pipe(
       `Cosmos wallet not connected. Please check wallet connection.`,
     CosmosWalletNotOnWindowError: (x) => `${x.kind} not found on window. Please check wallet.`,
     CreatePublicClientError: () => "Failed to create network connection.",
-    CreateViemPublicClientError: (x) => `Could not create the viem public client: ${x.message}`,
-    CreateViemWalletClientError: (x) => ``,
+    CreateViemPublicClientError: (x) => `Could not create the EVM public client: ${x.message}`,
+    CreateViemWalletClientError: (x) => `Could not create the EVM wallet client: ${x.message}.`,
     CreateWalletClientError: (x) => `Could not create the wallet client: ${x.message}.`,
-    CryptoError: (x) => ``,
+    CryptoError: (x) => `Browser does not support cryptography functions.`,
     EvmSwitchChainError: (x) => `Failed to switch chain. Please switch manually within wallet.`,
     ExecuteContractError: (x) => `Failed to execute contract: ${x.cause.message}`,
     FetchNativeBalanceError: () => "Failed to fetch native token balance.",
-    GasPriceError: (x) => ``,
-    GetChainInfoError: (x) => ``,
-    NoCosmosChainInfoError: (x) => ``,
+    GasPriceError: (x) => `Incorrect gas price configuration.`,
+    GetChainInfoError: (x) => `No info for EVM chain ${x.chainId}.`, // TODO: rename to EVM
+    NoCosmosChainInfoError: (x) => `No info for Cosmos chain ${x.chain.display_name}.`,
     NoRpcError: (error) => `No ${error.type} endpoint available for ${error.chain.display_name}.`,
-    NoSuchElementException: () => "No such element was found.", // TODO: remove me for more explicit errors
+    NoSuchElementException: () => "An unexpected error occurred.", // TODO: remove me for more explicit errors
     NoViemChain: () => "Chain configuration not found for the selected network.",
     NotACosmosChainError: () => "The selected chain is not a Cosmos chain.",
-    OfflineSignerError: (x) => ``,
+    OfflineSignerError: (x) => `Wallet failed to provide offline signer for ${x.chain_id}.`,
     ParseError: () => "There was an error processing the data from the server.",
     QueryBankBalanceError: () => "Failed to query bank balance from the network.",
     ReadContractError: () => "Failed to read contract data from the network.",
@@ -124,7 +124,7 @@ const getUserFriendlyMessage = pipe(
     UnknownException: () => "An unexpected error occurred.",
     WaitForTransactionReceiptError: (x) =>
       `Waiting for the transaction receipt failed: ${x.message}`,
-    WriteContractError: (e) => `Failed to write to the contract: ${e.cause.cause.shortMessage}`,
+    WriteContractError: (e) => `Failed to write to the contract: ${e.cause.cause.shortMessage}`, // TODO: needs types
   }),
   Match.orElse((x) => `Unexpected error: ${x?.["_tag"]}`),
 )
