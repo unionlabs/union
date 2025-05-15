@@ -17,7 +17,7 @@ use sui_light_client_types::{
 };
 use unionlabs::encoding::{Bincode, DecodeAs, EncodeAs};
 
-use crate::error::Error;
+use crate::{error::Error, verifier::Verifier};
 
 pub enum SuiLightClient {}
 
@@ -45,7 +45,7 @@ impl IbcClient for SuiLightClient {
         storage_proof: Self::StorageProof,
         value: Vec<u8>,
     ) -> Result<(), ibc_union_light_client::IbcClientError<Self>> {
-        let client_state = ctx.read_self_client_state()?;
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
 
         let consensus_state = ctx.read_self_consensus_state(height)?;
 
@@ -56,7 +56,7 @@ impl IbcClient for SuiLightClient {
             storage_proof.object,
             storage_proof.transaction_effects,
             storage_proof.checkpoint_contents,
-            consensus_state.contents_digest,
+            consensus_state.content_digest,
         )
         .map_err(Into::<Error>::into);
 
@@ -126,12 +126,13 @@ impl IbcClient for SuiLightClient {
 
         let committee = ctx.read_self_storage::<CommitteeStore>(header.checkpoint_summary.epoch)?;
 
-        verify_signature(
-            ctx.deps,
+        sui_verifier::verify_checkpoint(
             &committee,
             &header.checkpoint_summary,
-            header.sign_info,
-        );
+            &header.sign_info,
+            &Verifier { deps: ctx.deps },
+        )
+        .unwrap();
 
         let consensus_state = ConsensusState {
             timestamp: header.checkpoint_summary.timestamp_ms * 1_000_000,
@@ -167,38 +168,6 @@ impl IbcClient for SuiLightClient {
     ) -> Result<Self::ClientState, ibc_union_light_client::IbcClientError<Self>> {
         todo!()
     }
-}
-
-fn verify_signature(
-    deps: Deps,
-    committee: &Committee,
-    checkpoint: &CheckpointSummary,
-    sign_info: AuthorityStrongQuorumSignInfo,
-) {
-    // TODO(aeryz): VERIFY QUORUM
-    let pubkeys = selected_public_keys
-        .into_iter()
-        .flat_map(|x| x.0)
-        .collect::<Vec<u8>>();
-
-    let aggregate_pubkey = deps.api.bls12_381_aggregate_g2(&pubkeys).unwrap();
-
-    let hashed_msg = deps
-        .api
-        .bls12_381_hash_to_g1(HashFunction::Sha256, &intent_msg_bytes, BLS_DST)
-        .unwrap();
-
-    let valid = deps
-        .api
-        .bls12_381_pairing_equality(
-            sign_info.signature.0.as_ref(),
-            &BLS12_381_G2_GENERATOR,
-            &hashed_msg,
-            &aggregate_pubkey,
-        )
-        .unwrap();
-
-    assert!(valid);
 }
 
 pub enum CommitteeStore {}

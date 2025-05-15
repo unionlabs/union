@@ -5,6 +5,7 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum TransactionEffects {
     V1(TransactionEffectsV1),
     V2(TransactionEffectsV2),
@@ -12,6 +13,7 @@ pub enum TransactionEffects {
 
 /// The response from processing a transaction or a certified transaction
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionEffectsV1 {
     /// The status of the execution
     pub status: ExecutionStatus,
@@ -50,6 +52,7 @@ pub struct TransactionEffectsV1 {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionEffectsV2 {
     /// The status of the execution
     pub status: ExecutionStatus,
@@ -86,6 +89,7 @@ pub struct TransactionEffectsV2 {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct EffectsObjectChange {
     // input_state and output_state are the core fields that's required by
     // the protocol as it tells how an object changes on-chain.
@@ -103,6 +107,7 @@ pub struct EffectsObjectChange {
 pub type VersionDigest = (u64, Digest);
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ObjectIn {
     NotExist,
     /// The old version, digest and owner.
@@ -110,6 +115,7 @@ pub enum ObjectIn {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ObjectOut {
     /// Same definition as in ObjectIn.
     NotExist,
@@ -121,6 +127,7 @@ pub enum ObjectOut {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum UnchangedSharedKind {
     /// Read-only shared objects from the input. We don't really need ObjectDigest
     /// for protocol correctness, but it will make it easier to verify untrusted read.
@@ -136,6 +143,7 @@ pub enum UnchangedSharedKind {
 }
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum IDOperation {
     None,
     Created,
@@ -143,6 +151,7 @@ pub enum IDOperation {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ExecutionStatus {
     // We don't care about the failure case
     Success,

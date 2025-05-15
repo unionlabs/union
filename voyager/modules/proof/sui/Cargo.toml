@@ -25,3 +25,6 @@ tracing           = { workspace = true }
 unionlabs         = { workspace = true }
 voyager-message   = { workspace = true }
 voyager-vm        = { workspace = true }
+sui-verifier = { workspace = true }
+sui-light-client-types = { workspace = true }
+bcs = { workspace = true }

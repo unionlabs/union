@@ -16,3 +16,9 @@ impl From<Error> for IbcClientError<SuiLightClient> {
         Self::ClientSpecific(value)
     }
 }
+
+impl Into<sui_verifier::Error> for Error {
+    fn into(self) -> sui_verifier::Error {
+        sui_verifier::Error::Client(Box::new(self))
+    }
+}

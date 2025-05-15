@@ -92,9 +92,9 @@ pub fn verify_membership(
     contents_digest: Digest,
 ) -> Result<(), Error> {
     // STEP 1: check if the given `object` has the correct object address
-    let commitment_object = calculate_dynamic_field_key(*commitments_object.get(), &key);
+    let commitment_object = calculate_dynamic_field_object_id(*commitments_object.get(), &key);
 
-    let Data::Move(object_data) = object.data;
+    let Data::Move(ref object_data) = object.data;
     let object_data: (ObjectID, Bytes, Bytes) = bcs::from_bytes(&object_data.contents).unwrap();
 
     if commitment_object != object_data.0 {
@@ -136,7 +136,7 @@ pub fn verify_membership(
 /// find a write effect in `effects` that effects the `object` and return the object's digest
 fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<Digest> {
     match effects {
-        TransactionEffects::V1(transaction_effects_v1) => None,
+        TransactionEffects::V1(_) => None,
         TransactionEffects::V2(effects) => {
             let effect = effects.changed_objects.iter().find(|eff| {
                 eff.0 == object && matches!(eff.1.output_state, ObjectOut::ObjectWrite(..))
@@ -152,7 +152,7 @@ fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<D
 }
 
 /// Calculate the object_id of the dynamic field within the commitments mapping
-fn calculate_dynamic_field_key(parent: [u8; 32], key_bytes: &[u8]) -> ObjectID {
+pub fn calculate_dynamic_field_object_id(parent: [u8; 32], key_bytes: &[u8]) -> ObjectID {
     #[repr(u8)]
     enum HashingIntentScope {
         ChildObjectId = 0xf0,
