@@ -94,8 +94,6 @@ _: {
         pname = "movefmt";
         version = "3201309e4cce72205994e32a4d45d1447db705e5";
 
-        nativeBuildInputs = [ pkgs.git ];
-
         src = builtins.fetchGit {
           url = "https://github.com/movebit/movefmt";
           ref = "develop";
