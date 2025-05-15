@@ -19,7 +19,6 @@
     "sourceMap": true,
     "strict": true,
     "exactOptionalPropertyTypes": true,
-    "noErrorTruncation": true,
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "plugins": [

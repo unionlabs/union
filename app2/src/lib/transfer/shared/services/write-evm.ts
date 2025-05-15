@@ -79,13 +79,12 @@ export const nextState = <
 
     SwitchChainInProgress: () =>
       Effect.gen(function*() {
-        const isSafeWallet = getLastConnectedWalletId() === "safe" // safe wagmi connector does not support wagmiSwitchChain
+        // safe wagmi connector does not support wagmiSwitchChain
+        const isSafeWallet = getLastConnectedWalletId() === "safe"
 
         if (isSafeWallet) {
           return WriteContractInProgress()
         }
-
-        yield* Effect.logInfo("switch chain in progress")
 
         return yield* pipe(
           switchChain(chain),
@@ -93,9 +92,7 @@ export const nextState = <
         )
       }),
 
-    SwitchChainComplete: ({ exit }) =>
-      // exit._tag === "Failure" ? SwitchChainInProgress() : WriteContractInProgress(),
-      Effect.succeed(WriteContractInProgress()),
+    SwitchChainComplete: ({ exit }) => Effect.succeed(WriteContractInProgress()),
 
     WriteContractInProgress: () =>
       pipe(
@@ -109,19 +106,9 @@ export const nextState = <
 
     WriteContractComplete: ({ exit: hash }) =>
       Effect.gen(function*() {
-        // if (exit._tag === "Failure") {
-        //   return WriteContractInProgress()
-        // }
-
         const wallet = getLastConnectedWalletId()
 
         // needed due to safe wagmi connector returns safeTx hash and not the onchain one
-        if (wallet === "safe") {
-          return WaitForSafeWalletHash({ hash })
-        }
-
-        return TransactionReceiptInProgress({ hash })
-
         return wallet === "safe"
           ? WaitForSafeWalletHash({ hash })
           : TransactionReceiptInProgress({ hash })
@@ -132,9 +119,6 @@ export const nextState = <
         const resolvedHash = yield* resolveSafeTx(hash) // TODO ???
 
         return TransactionReceiptInProgress({ hash: resolvedHash })
-        // return resolvedExit._tag === "Failure"
-        //   ? WaitForSafeWalletHash({ hash })
-        //   : TransactionReceiptInProgress({ hash: resolvedExit.value })
       }),
 
     TransactionReceiptInProgress: ({ hash }) =>

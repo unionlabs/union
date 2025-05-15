@@ -77,7 +77,8 @@ export const nextState = (
           msg,
           funds,
         ).pipe(
-          // TODO: replace with retry-after header policy
+          // TODO: replace with retry-after header policy (?)
+          // TODO: consider load-balancer scenario
           Effect.retry({
             while: error => error.message.includes("429"),
             schedule: Schedule.fibonacci("1 second"),
