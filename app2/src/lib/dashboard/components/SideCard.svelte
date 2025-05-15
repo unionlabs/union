@@ -1,11 +1,12 @@
 <script lang="ts">
+import { goto } from "$app/navigation";
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte.js"
 import { uiStore } from "$lib/stores/ui.svelte"
-import { Effect, Option } from "effect"
+import { Option } from "effect"
 import { onDestroy, onMount } from "svelte"
 
 let isNewUser = $state(false)
@@ -147,7 +148,7 @@ onDestroy(() => {
     <Button
       variant="secondary"
       class="w-full"
-      onclick={() => window.location.href = "/auth/sign-in"}
+      onclick={() => goto("/auth/sign-in")}
     >
       Sign in
     </Button>
