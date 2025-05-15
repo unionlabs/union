@@ -2,7 +2,7 @@ import type { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import type { Chain } from "@unionlabs/sdk/schema/chain"
 import { Data } from "effect"
 
-export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{
+export class CosmosSwitchChainError extends Data.TaggedError("CosmosSwitchChainError")<{
   cause: unknown
   chainId: string
   phase: "enable" | "suggest"

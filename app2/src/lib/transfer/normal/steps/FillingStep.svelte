@@ -38,8 +38,8 @@ const uiStatus = $derived.by(() => {
           text: "Failed checking balance",
           error,
         })),
-        Match.tag("AllowanceCheckError", () => ({
-          text: "Failed checking allowance",
+        Match.tag("AllowanceCheckError", (err) => ({
+          text: `Failed checking allowance: ${err.message}`,
           error,
         })),
         Match.tag("OrderCreationError", () => ({

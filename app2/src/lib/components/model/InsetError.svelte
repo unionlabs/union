@@ -3,6 +3,7 @@ import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.sve
 import SharpDownloadIcon from "$lib/components/icons/SharpDownloadIcon.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { String as Str } from "effect"
 import { fade, fly } from "svelte/transition"
 
 type Props = {
@@ -50,7 +51,7 @@ const exportData = () => {
           <pre
             class="text-xs whitespace-pre-wrap break-all"
           >
-            {JSON.stringify(errorDetails, null, 2)}
+{Str.trim(JSON.stringify(errorDetails, null, 2))}
           </pre>
         {:else}
           <p class="text-zinc-300">No error info available.</p>

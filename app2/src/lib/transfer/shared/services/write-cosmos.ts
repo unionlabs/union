@@ -1,97 +1,105 @@
-import { switchChain } from "$lib/services/transfer-ucs03-cosmos"
+import {
+  CosmosSwitchChainError,
+  CosmosWalletNotConnectedError,
+  CosmosWalletNotOnWindowError,
+  CosmWasmError,
+  GasPriceError,
+  GetChainInfoError,
+  NoCosmosChainInfoError,
+  OfflineSignerError,
+  switchChain,
+} from "$lib/services/transfer-ucs03-cosmos"
+import type { EffectToExit, HasKey } from "$lib/types"
 import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
-import { executeContract } from "@unionlabs/sdk/cosmos"
+import { executeContract, ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import type { Chain } from "@unionlabs/sdk/schema"
-import { Data, Effect, type Exit, Schedule } from "effect"
+import { Data, Effect, Exit, Match, pipe, Predicate, Schedule } from "effect"
 
-export type EffectToExit<T> = T extends Effect.Effect<infer A, infer E, any> ? Exit.Exit<A, E>
-  : never
-
-export type TransactionSubmissionCosmos = Data.TaggedEnum<{
+export type TransactionState = Data.TaggedEnum<{
   Filling: {}
   SwitchChainInProgress: {}
-  SwitchChainComplete: { exit: EffectToExit<ReturnType<typeof switchChain>> }
+  SwitchChainComplete: { exit: Effect.Effect.Success<ReturnType<typeof switchChain>> }
   WriteContractInProgress: { signingClient: SigningCosmWasmClient }
   WriteContractComplete: {
     signingClient: SigningCosmWasmClient
-    exit: EffectToExit<ReturnType<typeof executeContract>>
+    exit: Effect.Effect.Success<ReturnType<typeof executeContract>>
   }
 }>
+type ExitStates = HasKey<TransactionState, "exit">
 
-export const TransactionSubmissionCosmos = Data.taggedEnum<TransactionSubmissionCosmos>()
-const {
+export const TransactionState = Data.taggedEnum<TransactionState>()
+export const {
   SwitchChainInProgress,
   SwitchChainComplete,
   WriteContractInProgress,
   WriteContractComplete,
-} = TransactionSubmissionCosmos
+  $is: is,
+} = TransactionState
 
-export const nextStateCosmos = async (
-  ts: TransactionSubmissionCosmos,
+export const nextState = (
+  ts: TransactionState,
   chain: Chain,
   senderAddress: string,
   contractAddress: string,
   msg: Record<string, unknown>,
   funds?: ReadonlyArray<{ denom: string; amount: string }>,
-): Promise<TransactionSubmissionCosmos> =>
-  TransactionSubmissionCosmos.$match(ts, {
-    Filling: () => {
-      return SwitchChainInProgress()
-    },
-    SwitchChainInProgress: async () => {
-      const switchResult = await Effect.runPromiseExit(switchChain(chain))
-      return SwitchChainComplete({
-        exit: switchResult,
-      })
-    },
-    SwitchChainComplete: ({ exit }) => {
-      if (exit._tag === "Failure") {
-        console.error("[SwitchChainComplete] Chain switch failed with error:", exit.cause)
-        console.log("[SwitchChainComplete] → Retrying SwitchChainInProgress")
-        return SwitchChainInProgress()
-      }
-      console.log(
-        "[SwitchChainComplete] Chain switch successful. → Moving to ExecuteContractInProgress",
-      )
-      return WriteContractInProgress({ signingClient: exit.value.signingClient })
-    },
-    WriteContractInProgress: async ({ signingClient }) => {
-      const retryableExecute = executeContract(
-        signingClient,
-        senderAddress,
-        contractAddress,
-        msg,
-        funds,
-      ).pipe(
-        Effect.retry({
-          while: error => error.message.includes("429"),
-          schedule: Schedule.fibonacci("1 second"),
-        }),
-      )
+): Effect.Effect<
+  TransactionState,
+  | CosmWasmError
+  | CosmosWalletNotConnectedError
+  | CosmosWalletNotOnWindowError
+  | ExecuteContractError
+  | GasPriceError
+  | GetChainInfoError
+  | NoCosmosChainInfoError
+  | OfflineSignerError
+  | CosmosSwitchChainError,
+  never
+> =>
+  TransactionState.$match(ts, {
+    Filling: () => Effect.succeed(SwitchChainInProgress()),
 
-      return WriteContractComplete({
-        signingClient,
-        exit: await Effect.runPromiseExit(retryableExecute),
-      })
-    },
+    SwitchChainInProgress: () =>
+      pipe(
+        switchChain(chain),
+        Effect.map((exit) => SwitchChainComplete({ exit })),
+      ),
 
-    WriteContractComplete: ({ signingClient, exit }) => {
-      if (exit._tag === "Failure") {
-        console.error("[ExecuteContractComplete] Contract execution failed with error:", exit.cause)
-        console.log("[ExecuteContractComplete] → Retrying ExecuteContractInProgress")
-        return WriteContractInProgress({ signingClient })
-      }
-      console.log("ExecuteContractComplete] Contract execution successful. Transaction complete!")
-      return ts
-    },
+    SwitchChainComplete: ({ exit }) =>
+      Effect.succeed(WriteContractInProgress({ signingClient: exit.signingClient })),
+
+    WriteContractInProgress: ({ signingClient }) =>
+      Effect.gen(function*() {
+        const retryableExecute = yield* executeContract(
+          signingClient,
+          senderAddress,
+          contractAddress,
+          msg,
+          funds,
+        ).pipe(
+          // TODO: replace with retry-after header policy (?)
+          // TODO: consider load-balancer scenario
+          Effect.retry({
+            while: error => error.message.includes("429"),
+            schedule: Schedule.fibonacci("1 second"),
+          }),
+        )
+
+        return WriteContractComplete({
+          signingClient,
+          exit: retryableExecute,
+        })
+      }),
+
+    WriteContractComplete: ({ signingClient, exit }) => Effect.succeed(ts),
   })
 
-export const hasFailedExit = (state: TransactionSubmissionCosmos) =>
-  "exit" in state && state.exit._tag === "Failure"
-
-export const isComplete = (state: TransactionSubmissionCosmos): string | false => {
-  if (state._tag === "WriteContractComplete" && state.exit._tag === "Success") {
-    return state.exit.value.transactionHash
-  }
-  return false
-}
+export const toCtaText = (orElse: string) =>
+  pipe(
+    Match.type<TransactionState>(),
+    Match.tags({
+      WriteContractInProgress: () => "Confirming Transaction..." as const,
+      SwitchChainInProgress: () => "Switching Chain..." as const,
+    }),
+    Match.orElse(() => orElse),
+  )

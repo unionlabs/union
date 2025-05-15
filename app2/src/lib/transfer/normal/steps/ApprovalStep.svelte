@@ -1,29 +1,44 @@
 <script lang="ts">
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Input from "$lib/components/ui/Input.svelte"
 import Label from "$lib/components/ui/Label.svelte"
+import { SwitchChainCopy } from "$lib/copy"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
-import { getWalletClient } from "$lib/services/evm/clients.ts"
+import { getWalletClient, NoViemChainError } from "$lib/services/evm/clients.ts"
+import type {
+  ConnectorClientError,
+  CreateWalletClientError,
+  SwitchChainError,
+} from "$lib/services/transfer"
+import type {
+  CosmosWalletNotConnectedError,
+  CosmosWalletNotOnWindowError,
+  CosmWasmError,
+  GasPriceError,
+  GetChainInfoError,
+  NoCosmosChainInfoError,
+  OfflineSignerError,
+} from "$lib/services/transfer-ucs03-cosmos"
+import type { WaitForTransactionReceiptError } from "$lib/services/transfer-ucs03-evm"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { Steps } from "$lib/transfer/normal/steps"
-import {
-  hasFailedExit as cosmosHasFailedExit,
-  isComplete as cosmosIsComplete,
-  nextStateCosmos,
-  TransactionSubmissionCosmos,
-} from "$lib/transfer/shared/services/write-cosmos.ts"
-import {
-  hasFailedExit as evmHasFailedExit,
-  isComplete as evmIsComplete,
-  nextStateEvm,
-  TransactionSubmissionEvm,
-} from "$lib/transfer/shared/services/write-evm.ts"
+import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos.ts"
+import * as WriteEvm from "$lib/transfer/shared/services/write-evm.ts"
+import type { Tail } from "$lib/types"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import { createViemPublicClient } from "@unionlabs/sdk/evm"
-import { Cause, Effect, Exit, Match, Option } from "effect"
-import { constVoid } from "effect/Function"
+import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
+import {
+  createViemPublicClient,
+  CreateViemPublicClientError,
+  WriteContractError,
+} from "@unionlabs/sdk/evm"
+import type { CosmosAddressEncodeError, NotACosmosChainError } from "@unionlabs/sdk/schema"
+import { Array as Arr, Cause, Data, Effect, Exit, Match, Option, Predicate, Unify } from "effect"
+import { not } from "effect/Boolean"
+import { compose, constVoid, flow, pipe } from "effect/Function"
 import { erc20Abi, http, isHex, toHex } from "viem"
 
 // Probably something we can import from somewhere?
@@ -40,12 +55,38 @@ type Props = {
 
 const { step, cancel, onApprove, actionButtonText }: Props = $props()
 
-let ets = $state<TransactionSubmissionEvm>(TransactionSubmissionEvm.Filling())
-let cts = $state<TransactionSubmissionCosmos>(TransactionSubmissionCosmos.Filling())
+let ets = $state<WriteEvm.TransactionState>(WriteEvm.TransactionState.Filling())
+let cts = $state<WriteCosmos.TransactionState>(WriteCosmos.TransactionState.Filling())
+
+class AmountError extends Data.TaggedError("AmountError")<{
+  message: string
+}> {}
 
 let showError = $state(false)
 let isSubmitting = $state(false)
-let error = $state<Option.Option<unknown>>(Option.none())
+let error = $state<
+  Option.Option<
+    | AmountError
+    | Cause.NoSuchElementException
+    | ConnectorClientError
+    | CosmWasmError
+    | CosmosAddressEncodeError
+    | CosmosWalletNotConnectedError
+    | CosmosWalletNotOnWindowError
+    | CreateViemPublicClientError
+    | CreateWalletClientError
+    | ExecuteContractError
+    | GasPriceError
+    | GetChainInfoError
+    | NoCosmosChainInfoError
+    | NoViemChainError
+    | NotACosmosChainError
+    | OfflineSignerError
+    | SwitchChainError
+    | WaitForTransactionReceiptError
+    | WriteContractError
+  >
+>(Option.none())
 let selectedMultiplier = $state<1 | "max" | null>(1)
 let customAmount = $state("")
 let showCustomInput = $state(false)
@@ -75,132 +116,128 @@ const approvalAmount = $derived(
 )
 
 // Derive button state
-const isButtonEnabled = $derived(
-  !isSubmitting
-    && ((ets._tag === "Filling" && cts._tag === "Filling")
-      || evmHasFailedExit(ets)
-      || cosmosHasFailedExit(cts)),
-)
+const isButtonEnabled = $derived.by(() => {
+  const isFilling = WriteEvm.is("Filling")(ets) || WriteCosmos.is("Filling")(cts)
+  const hasError = Option.isSome(error)
+  return !isSubmitting && isFilling || hasError
+})
 
 // Derive submit button text
-const submitButtonText = $derived(
-  ets._tag === "SwitchChainInProgress"
-    ? "Switching Chain..."
-    : ets._tag === "WriteContractInProgress"
-    ? "Confirming Transaction..."
-    : ets._tag === "TransactionReceiptInProgress"
-    ? "Waiting for Receipt..."
-    : cts._tag === "SwitchChainInProgress"
-    ? "Switching Chain..."
-    : cts._tag === "WriteContractInProgress"
-    ? "Confirming Transaction..."
-    : evmHasFailedExit(ets) || cosmosHasFailedExit(cts)
-    ? "Try Again"
-    : actionButtonText,
-)
+const submitButtonText = $derived.by(() => {
+  if (Option.isSome(error)) {
+    return "Try Again"
+  }
+
+  if (!WriteEvm.is("Filling")(ets)) {
+    return WriteEvm.toCtaText(actionButtonText)(ets)
+  }
+
+  if (!WriteCosmos.is("Filling")(cts)) {
+    return WriteCosmos.toCtaText(actionButtonText)(cts)
+  }
+
+  return actionButtonText
+})
 
 const submit = Effect.gen(function*() {
-  isSubmitting = true
-  error = Option.none()
+  yield* Effect.sync(() => {
+    isSubmitting = true
+    error = Option.none()
+  })
 
   // Validate custom amount if in custom input mode
   if (showCustomInput && !(customAmount && isValidCustomAmount(customAmount))) {
-    error = Option.some(new Error("Custom amount must be greater than the required amount"))
+    error = Option.some(
+      new AmountError({ message: `Custom amount must be greater than the required amount.` }),
+    )
     isSubmitting = false
     return
   }
 
-  try {
-    const chain = step.intent.sourceChain
-    const rpcType = chain.rpc_type
-    const approvalAmount = getApprovalAmount()
+  const chain = step.intent.sourceChain
+  const rpcType = chain.rpc_type
+  const approvalAmount = getApprovalAmount()
+  const approve = Effect.sync(() => onApprove())
 
-    yield* Match.value(rpcType).pipe(
-      Match.when("evm", () =>
-        Effect.gen(function*() {
-          const viemChain = chain.toViemChain()
-          if (Option.isNone(viemChain)) {
-            return Effect.succeed(null)
-          }
+  const doEvm = Effect.gen(function*() {
+    const viemChain = yield* chain.toViemChain()
+    const publicClient = yield* createViemPublicClient({
+      chain: viemChain,
+      transport: http(),
+    })
+    const walletClient = yield* getWalletClient(chain)
 
-          const publicClient = yield* createViemPublicClient({
-            chain: viemChain.value,
-            transport: http(),
-          })
+    const setEts = (nextEts: typeof ets) =>
+      Effect.sync(() => {
+        console.log(`ETS transitioning: ${ets._tag} -> ${nextEts._tag}`)
+        ets = nextEts
+      })
 
-          const walletClient = yield* getWalletClient(chain)
-
-          do {
-            ets = yield* Effect.promise(() =>
-              nextStateEvm(ets, viemChain.value, publicClient, walletClient, {
-                chain: viemChain.value,
-                account: walletClient.account,
-                address: step.token,
-                abi: erc20Abi,
-                functionName: "approve",
-                args: [step.intent.ucs03address, approvalAmount],
-              })
-            )
-
-            if (ets._tag === "SwitchChainComplete" || ets._tag === "WriteContractComplete") {
-              yield* Exit.matchEffect(ets.exit, {
-                onFailure: cause => Effect.sync(() => (error = Option.some(Cause.squash(cause)))),
-                onSuccess: () => Effect.sync(() => (error = Option.none())),
-              })
-            }
-
-            if (evmIsComplete(ets)) {
-              onApprove()
-              break
-            }
-          } while (!evmHasFailedExit(ets))
-
-          return Effect.succeed(ets)
-        })),
-      Match.when("cosmos", () =>
-        Effect.gen(function*() {
-          console.log("prior to do block")
-
-          const sender = yield* chain.getDisplayAddress(step.intent.sender) // TODO: fix type error
-
-          console.log("before do block")
-
-          do {
-            cts = yield* Effect.promise(() =>
-              nextStateCosmos(cts, chain, sender, step.token, {
-                increase_allowance: {
-                  spender: step.intent.sourceChain.minter_address_display,
-                  amount: approvalAmount,
-                },
-              })
-            )
-
-            if (cts._tag === "SwitchChainComplete" || cts._tag === "WriteContractComplete") {
-              yield* Exit.matchEffect(cts.exit, {
-                onFailure: cause => Effect.sync(() => (error = Option.some(Cause.squash(cause)))),
-                onSuccess: () => Effect.sync(() => (error = Option.none())),
-              })
-            }
-
-            if (cosmosIsComplete(cts)) {
-              onApprove()
-              break
-            }
-          } while (!cosmosHasFailedExit(cts))
-
-          return Effect.succeed(cts)
-        })),
-      Match.orElse(() =>
-        Effect.gen(function*() {
-          yield* Effect.log("Unsupported chain type")
-          error = Option.some(new Error("Unsupported chain type"))
-          return Effect.succeed("unsupported")
+    // TODO: use explicit tail recursion such that `ets` is not mutable between recursions
+    const nextState = Effect.tap(
+      Effect.suspend(() =>
+        WriteEvm.nextState(ets, viemChain, publicClient, walletClient, {
+          chain: viemChain,
+          account: walletClient.account,
+          address: step.token,
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [step.intent.ucs03address, approvalAmount],
         })
       ),
+      setEts,
     )
-  } finally {
+
+    yield* pipe(
+      nextState,
+      Effect.repeat({ until: WriteEvm.is("TransactionReceiptComplete") }),
+      Effect.andThen(() => approve),
+    )
+  })
+
+  const doCosmos = Effect.gen(function*() {
+    const sender = yield* chain.getDisplayAddress(step.intent.sender)
+
+    const setCts = (nextCts: typeof cts) =>
+      Effect.sync(() => {
+        console.log(`CTS transitioning: ${cts._tag} -> ${nextCts._tag}`)
+        cts = nextCts
+      })
+
+    const nextState = Effect.tap(
+      Effect.suspend(() =>
+        WriteCosmos.nextState(cts, chain, sender, step.token, {
+          increase_allowance: {
+            spender: step.intent.sourceChain.minter_address_display,
+            amount: approvalAmount,
+          },
+        })
+      ),
+      setCts,
+    )
+
+    yield* pipe(
+      nextState,
+      Effect.repeat({ until: WriteCosmos.is("WriteContractComplete") }),
+      Effect.andThen(() => approve),
+    )
+  })
+
+  yield* Match.value(rpcType).pipe(
+    Match.when("evm", () => doEvm),
+    Match.when("cosmos", () => doCosmos),
+    Match.orElse(() =>
+      Effect.gen(function*() {
+        yield* Effect.logFatal("Unsupported chain type")
+        // TODO: make fail
+        return Effect.succeed("unsupported")
+      })
+    ),
+  )
+
+  yield* Effect.sync(() => {
     isSubmitting = false
-  }
+  })
 })
 
 const handleSubmit = () => {
@@ -210,8 +247,14 @@ const handleSubmit = () => {
     Exit.match(exit, {
       onFailure: cause => {
         const err = Cause.originalError(cause)
-        console.error("Uncaught approval error:", Cause.pretty(cause))
-        error = Option.some(err)
+        Effect.runSync(Effect.logError(cause))
+        error = pipe(
+          err,
+          Cause.failures,
+          xs => Array.from(xs),
+          Arr.head,
+        )
+        console.log("SET ERROR")
         isSubmitting = false
       },
       onSuccess: constVoid,
@@ -481,30 +524,24 @@ function handleBackClick() {
       >
         Cancel
       </Button>
-      {#if Option.isSome(error)}
-        <div class="flex justify-end gap-2">
-          <Button
-            variant="danger"
-            onclick={() => (showError = true)}
-          >Error</Button>
-          <Button
-            variant="primary"
-            onclick={handleSubmit}
-            disabled={!isButtonEnabled || (showCustomInput && !isValidAmount)}
-          >
-            {submitButtonText}
-          </Button>
-        </div>
-      {:else}
-        <Button
-          variant="primary"
-          onclick={handleSubmit}
-          disabled={!isButtonEnabled || (showCustomInput && !isValidAmount)}
-        >
-          {submitButtonText}
-        </Button>
-      {/if}
+      <Button
+        variant="primary"
+        onclick={handleSubmit}
+        disabled={!isButtonEnabled || (showCustomInput && !isValidAmount)}
+      >
+        {submitButtonText}
+      </Button>
     </div>
+    {#if Option.isSome(error)}
+      <div class="mb-4 mx-4">
+        <ErrorComponent
+          onOpen={() => {
+            showError = true
+          }}
+          error={error.value}
+        />
+      </div>
+    {/if}
   </div>
 
   <InsetError
@@ -513,6 +550,8 @@ function handleBackClick() {
     onClose={() => {
       showError = false
       error = Option.none()
+      ets = WriteEvm.TransactionState.Filling()
+      cts = WriteCosmos.TransactionState.Filling()
     }}
   />
 </div>

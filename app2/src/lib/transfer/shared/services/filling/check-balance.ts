@@ -1,14 +1,18 @@
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { BalanceLookupError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import { Effect, identity, Option } from "effect"
+import { Data, Effect, identity, Option } from "effect"
 import { isHex, toHex } from "viem"
 
 const BABY_SUB_AMOUNT = 1n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"
 const UBBN_DENOM = "ubbn"
 
-export type BalanceCheckResult = { _tag: "HasEnough" } | { _tag: "InsufficientFunds" }
+export type BalanceCheckResult = Data.TaggedEnum<{
+  HasEnough: {}
+  InsufficientFunds: {}
+}>
+export const BalanceCheckResult = Data.taggedEnum<BalanceCheckResult>()
 
 export const checkBalanceForIntent = (
   context: TransferContext,
@@ -77,7 +81,7 @@ export const checkBalanceForIntent = (
         const actualBalance = balance.value
         const hasEnough = group.required <= BigInt(actualBalance)
 
-        console.debug("[checkBalanceForIntent] ✅ Found balance", {
+        console.info("[checkBalanceForIntent] ✅ Found balance", {
           actual: actualBalance.toString(),
           required: group.required.toString(),
           hasEnough,
@@ -87,7 +91,9 @@ export const checkBalanceForIntent = (
       },
     )).pipe(
       Effect.map(results =>
-        results.every(identity) ? { _tag: "HasEnough" } : { _tag: "InsufficientFunds" }
+        results.every(identity)
+          ? BalanceCheckResult.HasEnough()
+          : BalanceCheckResult.InsufficientFunds()
       ),
     )
 }

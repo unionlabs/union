@@ -23,6 +23,7 @@ export class PublicSourceViemClient extends Context.Tag("PublicSourceViemClient"
   { readonly client: PublicClient }
 >() {}
 
+// XXX: change tag to NoViemChainError
 export class NoViemChainError extends Data.TaggedError("NoViemChain")<{
   chain: Chain
 }> {}

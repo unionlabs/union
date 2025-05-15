@@ -6,7 +6,13 @@ import {
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
 import { CosmWasmClientSource, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
-import { createViemPublicClient, readErc20Allowance, ViemPublicClient } from "@unionlabs/sdk/evm"
+import {
+  createViemPublicClient,
+  CreateViemPublicClientError,
+  ReadContractError,
+  readErc20Allowance,
+  ViemPublicClient,
+} from "@unionlabs/sdk/evm"
 import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
 import { Data, Effect, Match, Option } from "effect"
 import { fromHex, http, isHex } from "viem"
@@ -44,19 +50,32 @@ export function checkAllowances(
     )
     const tokenAddresses = [...neededMap.keys()]
 
-    const allowancesOpt = yield* Match.value(chain.rpc_type).pipe(
+    const allowances = yield* Match.value(chain.rpc_type).pipe(
       Match.when("evm", () =>
         handleEvmAllowances(tokenAddresses, sender, spender, chain).pipe(
-          Effect.mapError(err => new AllowanceCheckError({ cause: err })),
+          Effect.mapError(err =>
+            new AllowanceCheckError({
+              message: (err as Error).message ?? "unknown message",
+              cause: err,
+            })
+          ),
         )),
       Match.when("cosmos", () =>
         handleCosmosAllowances(tokenAddresses, sender, chain).pipe(
-          Effect.mapError(err => new AllowanceCheckError({ cause: err })),
+          Effect.mapError(err =>
+            new AllowanceCheckError({
+              message: "Failed to check cosmos balance",
+              cause: err,
+            })
+          ),
         )),
-      Match.orElse(() => Effect.succeed(Option.none())),
+      Match.orElse((x) =>
+        new AllowanceCheckError({
+          message: `Could not match RPC type ${x}`,
+        })
+      ),
     )
 
-    const allowances = Option.getOrElse(allowancesOpt, () => [])
     const steps: Array<ApprovalStep> = []
 
     for (const { token, allowance } of allowances) {
@@ -76,16 +95,19 @@ export function checkAllowances(
   })
 }
 
-function handleEvmAllowances(
+const handleEvmAllowances = (
   tokenAddresses: Array<string>,
   sender: AddressCanonicalBytes,
   spender: string,
   sourceChain: Chain,
-): Effect.Effect<Option.Option<Array<{ token: string; allowance: bigint }>>, unknown> {
-  return Effect.gen(function*() {
+): Effect.Effect<
+  Array<{ token: string; allowance: bigint }>,
+  AllowanceCheckError | CreateViemPublicClientError | ReadContractError
+> =>
+  Effect.gen(function*() {
     const viemChainOpt = sourceChain.toViemChain()
     if (Option.isNone(viemChainOpt)) {
-      return Option.none()
+      return yield* new AllowanceCheckError({ message: "could not" })
     }
 
     const publicClientSource = yield* createViemPublicClient({
@@ -102,16 +124,15 @@ function handleEvmAllowances(
       ),
     )
 
-    return Option.some(results)
+    return results
   })
-}
 
-export function handleCosmosAllowances(
+export const handleCosmosAllowances = (
   tokenAddresses: Array<string>,
   sender: AddressCanonicalBytes,
   sourceChain: Chain,
-): Effect.Effect<Option.Option<Array<{ token: string; allowance: bigint }>>, CosmosQueryError> {
-  return Effect.gen(function*() {
+): Effect.Effect<Array<{ token: string; allowance: bigint }>, CosmosQueryError> =>
+  Effect.gen(function*() {
     const rpcUrlOpt = sourceChain.getRpcUrl("rpc")
     if (Option.isNone(rpcUrlOpt) || !sourceChain.toCosmosDisplay) {
       return yield* Effect.fail(
@@ -151,7 +172,7 @@ export function handleCosmosAllowances(
     const contractTokens = yield* Effect.filter(contractTokenCandidates, isContractToken)
 
     if (contractTokens.length === 0) {
-      return Option.some([])
+      return []
     }
 
     const checks = yield* Effect.all(
@@ -191,6 +212,5 @@ export function handleCosmosAllowances(
       ),
     )
 
-    return Option.some(checks)
+    return checks
   })
-}

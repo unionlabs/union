@@ -3,12 +3,39 @@ import Button from "$lib/components/ui/Button.svelte"
 import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
 import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
 import type { NoViemChainError } from "$lib/services/evm/clients"
-import type { CreatePublicClientError } from "$lib/services/transfer/errors"
+import type {
+  CosmosWalletNotConnectedError,
+  CosmosWalletNotOnWindowError,
+  CosmWasmError,
+  GasPriceError,
+  GetChainInfoError,
+  NoCosmosChainInfoError,
+  OfflineSignerError,
+} from "$lib/services/transfer-ucs03-cosmos"
+import type { WaitForTransactionReceiptError } from "$lib/services/transfer-ucs03-evm"
+import type {
+  AmountError,
+  ConnectorClientError,
+  CreatePublicClientError,
+  CreateWalletClientError,
+  SwitchChainError,
+} from "$lib/services/transfer/errors"
 import type { Base64EncodeError } from "$lib/utils/base64"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
-import type { NoRpcError } from "@unionlabs/sdk/schema"
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
-import type { TimeoutException, UnknownException } from "effect/Cause"
+import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
+import {
+  CreateViemPublicClientError,
+  CreateViemWalletClientError,
+  WriteContractError,
+} from "@unionlabs/sdk/evm"
+import type {
+  CosmosAddressEncodeError,
+  NoRpcError,
+  NotACosmosChainError,
+} from "@unionlabs/sdk/schema"
+import { CryptoError, extractErrorDetails } from "@unionlabs/sdk/utils"
+import { Match, pipe } from "effect"
+import type { NoSuchElementException, TimeoutException, UnknownException } from "effect/Cause"
 import type { ParseError } from "effect/ParseResult"
 import { slide } from "svelte/transition"
 import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
@@ -20,55 +47,87 @@ import Tooltip from "../ui/Tooltip.svelte"
 
 interface Props {
   error:
-    | UnknownException
-    | HttpClientError
-    | ParseError
-    | TimeoutException
-    | NoViemChainError
-    | ReadContractError
-    | FetchNativeBalanceError
-    | CreatePublicClientError
-    | QueryBankBalanceError
+    | AmountError
     | Base64EncodeError
+    | ConnectorClientError
+    | CosmWasmError
+    | CosmosAddressEncodeError
+    | CosmosWalletNotConnectedError
+    | CosmosWalletNotOnWindowError
+    | CreatePublicClientError
+    | CreateViemPublicClientError
+    | CreateViemWalletClientError
+    | CreateWalletClientError
+    | CryptoError
+    | ExecuteContractError
+    | FetchNativeBalanceError
+    | GasPriceError
+    | GetChainInfoError
+    | HttpClientError
+    | NoCosmosChainInfoError
     | NoRpcError
+    | NoSuchElementException
+    | NoViemChainError
+    | NotACosmosChainError
+    | OfflineSignerError
+    | ParseError
+    | QueryBankBalanceError
+    | ReadContractError
+    | SwitchChainError
+    | TimeoutException
+    | UnknownException
+    | WaitForTransactionReceiptError
+    | WriteContractError
+  onOpen?: () => void | undefined
   onClose?: (() => void) | undefined
 }
 
-let { error, onClose }: Props = $props()
+let { error, onClose, onOpen }: Props = $props()
 let showDetails = $state(false)
 let visible = $state(true)
 
-// TODO: replace me with an exhaustive matcher :)
-function getUserFriendlyMessage(error: Props["error"]): string {
-  switch (error._tag) {
-    case "RequestError":
-      return "Unable to connect to the server. Please check your internet connection."
-    case "ResponseError":
-      return "The server encountered an error processing your request."
-    case "ParseError":
-      return "There was an error processing the data from the server."
-    case "TimeoutException":
-      return "The request timed out because it took too long. Please try again."
-    case "UnknownException":
-      return "An unexpected error occurred."
-    case "NoViemChain":
-      return "Chain configuration not found for the selected network."
-    case "ReadContractError":
-      return "Failed to read contract data from the network."
-    case "FetchNativeBalanceError":
-      return "Failed to fetch native token balance."
-    case "CreatePublicClientError":
-      return "Failed to create network connection."
-    case "QueryBankBalanceError":
-      return "Failed to query bank balance from the network."
-    case "Base64EncodeError":
-      return "Failed to encode query parameters."
-    case "NoRpcError":
-      return `No ${error.type} endpoint available for ${error.chain.display_name}.`
-    default:
-      return "Something went wrong. Please try again later."
-  }
-}
+const getUserFriendlyMessage = pipe(
+  Match.type<Props["error"]>(),
+  Match.tags({
+    AmountError: () => "Amount invalid.",
+    Base64EncodeError: () => "Failed to encode query parameters.",
+    ConnectorClientError: (x) => `A connector client error occurred: ${x.message}`,
+    CosmWasmError: (x) => `CosmWasm failure: ${x.message}`,
+    CosmosAddressEncodeError: (x) => `Failed to encode the Cosmos address ${x.address}.`,
+    CosmosSwitchChainError: (x) =>
+      `Failed to switch to chain ${x.chainInfo?.chainName}. Please switch manually within wallet.`,
+    CosmosWalletNotConnectedError: (x) =>
+      `Cosmos wallet not connected. Please check wallet connection.`,
+    CosmosWalletNotOnWindowError: (x) => `${x.kind} not found on window. Please check wallet.`,
+    CreatePublicClientError: () => "Failed to create network connection.",
+    CreateViemPublicClientError: (x) => `Could not create the EVM public client: ${x.message}`,
+    CreateViemWalletClientError: (x) => `Could not create the EVM wallet client: ${x.message}.`,
+    CreateWalletClientError: (x) => `Could not create the wallet client: ${x.message}.`,
+    CryptoError: (x) => `Browser does not support cryptography functions.`,
+    EvmSwitchChainError: (x) => `Failed to switch chain. Please switch manually within wallet.`,
+    ExecuteContractError: (x) => `Failed to execute contract: ${x.cause.message}`,
+    FetchNativeBalanceError: () => "Failed to fetch native token balance.",
+    GasPriceError: (x) => `Incorrect gas price configuration.`,
+    GetChainInfoError: (x) => `No info for EVM chain ${x.chainId}.`, // TODO: rename to EVM
+    NoCosmosChainInfoError: (x) => `No info for Cosmos chain ${x.chain.display_name}.`,
+    NoRpcError: (error) => `No ${error.type} endpoint available for ${error.chain.display_name}.`,
+    NoSuchElementException: () => "An unexpected error occurred.", // TODO: remove me for more explicit errors
+    NoViemChain: () => "Chain configuration not found for the selected network.",
+    NotACosmosChainError: () => "The selected chain is not a Cosmos chain.",
+    OfflineSignerError: (x) => `Wallet failed to provide offline signer for ${x.chain_id}.`,
+    ParseError: () => "There was an error processing the data from the server.",
+    QueryBankBalanceError: () => "Failed to query bank balance from the network.",
+    ReadContractError: () => "Failed to read contract data from the network.",
+    RequestError: () => "Unable to connect to the server. Please check your internet connection.",
+    ResponseError: () => "The server encountered an error processing your request.",
+    TimeoutException: () => "The request timed out because it took too long. Please try again.",
+    UnknownException: () => "An unexpected error occurred.",
+    WaitForTransactionReceiptError: (x) =>
+      `Waiting for the transaction receipt failed: ${x.message}`,
+    WriteContractError: (e) => `Failed to write to the contract: ${e.cause.cause.shortMessage}`, // TODO: needs types
+  }),
+  Match.orElse((x) => `Unexpected error: ${x?.["_tag"]}`),
+)
 
 const writeToClipboard = () => {
   navigator.clipboard.writeText(JSON.stringify(extractErrorDetails(error), null, 2))
@@ -84,6 +143,14 @@ const exportData = () => {
   anchor.download = `union-log-${datetime}.json`
   anchor.click()
   window.URL.revokeObjectURL(anchor.href)
+}
+
+const onShowDetails = () => {
+  if (onOpen) {
+    onOpen()
+  } else {
+    showDetails = !showDetails
+  }
 }
 </script>
 
@@ -115,7 +182,7 @@ const exportData = () => {
         {#snippet trigger()}
           <Button
             variant="secondary"
-            onclick={() => (showDetails = !showDetails)}
+            onclick={onShowDetails}
           >
             <SharpOpenInBrowserIcon class="size-4" />
           </Button>
@@ -135,19 +202,21 @@ const exportData = () => {
         Copy to Clipboard
       {/snippet}
     </Tooltip> -->
-      <Tooltip delay={"quick"}>
-        {#snippet trigger()}
-          <Button
-            variant="primary"
-            onclick={exportData}
-          >
-            <SharpDownloadIcon class="size-4" />
-          </Button>
-        {/snippet}
-        {#snippet content()}
-          Download Log
-        {/snippet}
-      </Tooltip>
+      {#if !onOpen}
+        <Tooltip delay={"quick"}>
+          {#snippet trigger()}
+            <Button
+              variant="primary"
+              onclick={exportData}
+            >
+              <SharpDownloadIcon class="size-4" />
+            </Button>
+          {/snippet}
+          {#snippet content()}
+            Download Log
+          {/snippet}
+        </Tooltip>
+      {/if}
     </div>
 
     <Modal

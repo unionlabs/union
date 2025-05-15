@@ -7,6 +7,8 @@ import type {
   SwitchChainErrorType,
   WaitForTransactionReceiptErrorType,
 } from "viem"
+import { CosmosSwitchChainError } from "../transfer-ucs03-cosmos"
+import { EvmSwitchChainError } from "../transfer-ucs03-evm"
 
 export class CreateWalletClientError extends Data.TaggedError("CreateWalletClientError")<{
   cause: CreateWalletClientErrorType
@@ -26,13 +28,14 @@ export class SendTransactionError extends Data.TaggedError("SendTransactionError
   cause: SendTransactionErrorType
 }> {}
 
-export class SwitchChainError extends Data.TaggedError("SwitchChainError")<{
-  cause: SwitchChainErrorType
-}> {}
+export type SwitchChainError = EvmSwitchChainError | CosmosSwitchChainError
 
 export class ConnectorClientError extends Data.TaggedError("ConnectorClientError")<{
   wagmiConfig: unknown
   cause: GetConnectorClientErrorType
+}> {}
+export class AmountError extends Data.TaggedError("AmountError")<{
+  message: string
 }> {}
 
 export type SubmitTransferError = SendTransactionError | CreateWalletClientError
