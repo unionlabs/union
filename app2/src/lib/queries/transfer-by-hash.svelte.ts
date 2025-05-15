@@ -25,6 +25,7 @@ export const transferByPacketHashQuery = (packetHash: string) =>
           }
           transfer_send_timestamp
           transfer_recv_timestamp
+          transfer_timeout_transaction_hash
           base_token
           base_amount
           quote_amount
