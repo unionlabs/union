@@ -51,7 +51,7 @@
       {#if !isOnMissionsPage}
         <a 
           href="/dashboard/missions" 
-          class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded"
+          class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded cursor-pointer"
         >
           View all
         </a>

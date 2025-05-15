@@ -61,14 +61,14 @@
       {:else}
         <MissionBoxIcon class="size-5 text-accent" />
       {/if}
-      <h3 class="text-lg font-bold group">
+      <h3 class="text-sm lg:text-base font-medium lg:font-bold group">
         {mission.title}
       </h3>
     </div>
     <div class="flex items-center gap-2">
       <div class="relative">
         <div class="px-2 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {showXp ? 'scale-110 border-accent/50' : ''} transition-all duration-300">
-          <span class="text-sm font-medium {showXp ? 'text-accent' : 'text-white'} transition-all duration-300">
+          <span class="text-[10px] lg:text-xs font-medium {showXp ? 'text-accent' : 'text-white'} transition-all duration-300">
             {mission.xp} XP
           </span>
         </div>
@@ -81,7 +81,7 @@
 
   {#if isExpanded}
     <div class="flex flex-col gap-4" transition:fade>
-      <div class="text-sm text-neutral-300 [&_a]:text-accent [&_strong]:font-bold [&_strong]:text-white">
+      <div class="text-xs lg:text-sm text-neutral-300 [&_a]:text-accent [&_strong]:font-bold [&_strong]:text-white">
         {#await mdToHTML(mission.description)}
           <p>Loading description...</p>
         {:then vFile}
@@ -90,7 +90,7 @@
       </div>
 
       <div class="flex flex-col gap-2">
-        <div class="flex justify-between text-xs">
+        <div class="flex justify-between text-[10px] lg:text-xs">
           <span class="text-zinc-400">Progress</span>
           <span class="text-zinc-400">
             <span class="font-medium ">
@@ -107,7 +107,7 @@
         </div>
       </div>
 
-      <div class="flex justify-between text-xs text-zinc-400">
+      <div class="flex justify-between text-[10px] lg:text-xs text-zinc-400">
         <span>Started: {new Date(mission.start).toLocaleDateString()}</span>
         <span>Ends: {new Date(mission.end).toLocaleDateString()}</span>
       </div>

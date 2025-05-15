@@ -4,7 +4,6 @@
   import Achievement from "./Achievement.svelte";
   import Skeleton from "$lib/components/ui/Skeleton.svelte";
   import Card from "$lib/components/ui/Card.svelte";
-  import ProgressBar from "$lib/components/ui/ProgressBar.svelte";
   import type { Achievement as AchievementType } from "../stores/achievements.svelte";
   import type { UserAchievement } from "../stores/achievements.svelte";
   import { page } from "$app/state";
@@ -363,7 +362,6 @@
                   if (!r || !Array.isArray(r)) return false;
                   return r.some(reward => !reward.cutoff || new Date(reward.cutoff) > new Date());
                 })}
-                {@const debug = console.log('Chain:', chain, 'Available Rewards:', availableRewards, 'Earned Rewards:', earnedRewards)}
                 <div class="flex flex-col gap-2 mt-2 pt-2 border-t border-zinc-800">
                   <!-- Chain Rewards -->
                   {#if availableRewards.length > 0}

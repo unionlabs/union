@@ -41,5 +41,5 @@ export class RewardError extends Data.TaggedError("RewardError")<{
 
 export class WalletError extends Data.TaggedError("WalletError")<{
   cause: unknown;
-  operation: "add" | "remove" | "load";
+  operation: "add" | "remove" | "load" | "loadChains";
 }> {}

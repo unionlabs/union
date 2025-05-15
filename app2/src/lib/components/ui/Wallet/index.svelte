@@ -1,6 +1,6 @@
 <script lang="ts">
 import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
-  import { dashboard } from "$lib/dashboard/stores/user.svelte";
+import { dashboard } from "$lib/dashboard/stores/user.svelte";
 import { uiStore } from "$lib/stores/ui.svelte"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { evmWalletsInformation, sepoliaStore } from "$lib/wallet/evm/index.js"

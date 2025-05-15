@@ -1,7 +1,6 @@
 <script lang="ts">
   import ProfileCard from "$lib/dashboard/components/ProfileCard.svelte";
   import SocialConnections from "$lib/dashboard/components/SocialConnections.svelte";
-  import Sections from "$lib/components/ui/Sections.svelte";
   import MissionStats from "$lib/dashboard/components/MissionStats.svelte";
   import AchievementStats from "$lib/dashboard/components/AchievementStats.svelte";
   import RewardStats from "$lib/dashboard/components/RewardStats.svelte";
@@ -9,7 +8,6 @@
   import Leaderboard from "$lib/dashboard/components/Leaderboard.svelte";
   import { dashboard } from "$lib/dashboard/stores/user.svelte";
   import { Effect, pipe } from "effect";
-  import { extractErrorDetails } from "@unionlabs/sdk/utils";
 
   let isDeleting = false;
   let error: string | null = null;
@@ -24,10 +22,8 @@
 
     pipe(
       dashboard.deleteAccount(),
-      Effect.catchAll((e) => {
-        const errorDetails = extractErrorDetails(e);
-        error = typeof errorDetails === 'string' ? errorDetails : JSON.stringify(errorDetails);
-        console.error("Delete account error:", e);
+      Effect.catchAll((error) => {
+        console.error("Delete account error:", error);
         return Effect.void;
       }),
       Effect.ensuring(Effect.sync(() => {

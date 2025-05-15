@@ -1,51 +1,41 @@
-import { Data, Effect, Option, Match } from "effect"
-import { constVoid } from "effect/Function"
+import { Data, Effect, Option, pipe } from "effect"
 import { switchChain } from "$lib/services/transfer-ucs03-evm"
-import { getLastConnectedWalletId } from "$lib/wallet/evm/config.svelte.ts"
-import { writeContract, waitForTransactionReceipt } from "@unionlabs/sdk/evm"
-import { ViemPublicClient } from "@unionlabs/sdk/evm"
-import type { Chain, PublicClient, WalletClient, Hash } from "viem"
+import type { Chain, WalletClient, Hash } from "viem"
+import { signMessage } from "@wagmi/core"
+import { Siwe } from "ox"
+import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte"
+import { submitWalletVerification } from "$lib/dashboard/queries/private"
+import { getSupabaseClient } from "$lib/dashboard/client"
+import { clearLocalStorageCacheEntry } from "$lib/dashboard/services/cache"
+import { CACHE_VERSION } from "$lib/dashboard/config"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import type { WalletStore } from "$lib/dashboard/stores/wallets.svelte"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
+
+export class WalletVerificationError extends Data.TaggedError("WalletVerificationError")<{
+  cause: unknown
+  operation: "switchChain" | "sign" | "verify" | "update"
+}> {}
 
 export type AddEvmWalletState = Data.TaggedEnum<{
-  Idle: {}
-  Connecting: {}
   SwitchChain: { 
-    chainId: number
+    chain: Chain
   }
   Signing: { 
-    address: string 
-    chainId: number
+    walletClient: WalletClient 
+    chain: Chain
   }
   Verifying: { 
     address: string
-    chainId: number
-    signature: string
+    chain: Chain
+    signature: Hash
     message: string
   }
-  Adding: {
-    address: string
-    chainId: number
-    signature: string
-    message: string
-  }
-  Success: { address: string }
-  Error: { 
-    message: string
-    cause?: unknown 
-  }
+  Updating: {}
 }>
 
 export const AddEvmWalletState = Data.taggedEnum<AddEvmWalletState>()
-const {
-  Idle,
-  Connecting,
-  SwitchChain,
-  Signing,
-  Verifying,
-  Adding,
-  Success,
-  Error
-} = AddEvmWalletState
+const { Signing, Verifying, Updating } = AddEvmWalletState
 
 export type StateResult = {
   nextState: Option.Option<AddEvmWalletState>
@@ -53,10 +43,10 @@ export type StateResult = {
   error: Option.Option<Error>
 }
 
-const fail = (msg: string, err?: Error): StateResult => ({
+const fail = (msg: string, error?: Error): StateResult => ({
   nextState: Option.none(),
   message: msg,
-  error: err ? Option.some(err) : Option.none(),
+  error: Option.fromNullable(error),
 })
 
 const ok = (state: AddEvmWalletState, msg: string): StateResult => ({
@@ -65,76 +55,149 @@ const ok = (state: AddEvmWalletState, msg: string): StateResult => ({
   error: Option.none(),
 })
 
-const complete = (address: string): StateResult => ({
-  nextState: Option.some(Success({ address })),
+const complete = (): StateResult => ({
+  nextState: Option.none(),
   message: "Wallet added successfully",
   error: Option.none(),
 })
 
-export const addEvmWalletState = (
+export const addEvmWallet = (
   state: AddEvmWalletState,
-  chain: Chain,
-  publicClient: PublicClient,
   walletClient: WalletClient
 ) => {
   return AddEvmWalletState.$match(state, {
-    Idle: () => {
-      console.log("Idle state")
-      return Effect.succeed(ok(Connecting(), "Connecting to wallet..."))
-    },
-    Connecting: () => {
-      console.log("Connecting state")
-      return Effect.succeed(ok(SwitchChain({ chainId: chain.id }), "Switching chain..."))
-    },
-    SwitchChain: ({ chainId }) => {
-      console.log("SwitchChain state", { chainId })
-      const isSafeWallet = getLastConnectedWalletId() === "safe"
-      
-      return Effect.flatMap(
-        Effect.tryPromise(() => 
-          isSafeWallet 
-            ? Promise.resolve() 
-            : Effect.runPromise(switchChain(chain))
+    SwitchChain: ({ chain }) => {
+      return pipe(
+        switchChain(chain),
+        Effect.map(() => ok(Signing({ walletClient, chain }), "Chain switched successfully")),
+        Effect.catchAll((error) => 
+          Effect.fail(new WalletVerificationError({ 
+            cause: extractErrorDetails(error), 
+            operation: "switchChain" 
+          }))
         ),
-        () => Effect.succeed(ok(Signing({ 
-          address: walletClient.account.address, 
-          chainId 
-        }), "Signing message..."))
+        Effect.match({
+          onFailure: (error) => fail("Failed to switch chain", error),
+          onSuccess: (result) => result
+        })
       )
     },
-    Signing: ({ address, chainId }) => {
-      console.log("Signing state", { address, chainId })
-      // Here we would implement the actual signing logic
-      const message = "Sign this message to verify wallet ownership"
-      return Effect.succeed(ok(Verifying({ 
-        address, 
-        chainId, 
-        signature: "0x...", // This would be the actual signature
-        message 
-      }), "Verifying signature..."))
+    Signing: ({ walletClient, chain }) => {
+      const address = walletClient.account?.address
+      if (!address) {
+        return fail("No wallet address found")
+      }
+
+      const siweMessage = Siwe.createMessage({
+        address: address as `0x${string}`,
+        version: "1" as const,
+        chainId: chain.id,
+        nonce: Siwe.generateNonce(),
+        domain: 'dashboard.union.build',
+        uri: 'https://dashboard.union.build/wallet',
+        statement: "Sign this message to verify wallet ownership."
+      })
+
+      const messageToSign = siweMessage.toString()
+
+      return pipe(
+        Effect.tryPromise(() => 
+          signMessage(getWagmiConfig(), {
+            account: address as `0x${string}`,
+            message: messageToSign,
+          })
+        ),
+        Effect.map((signature) => ok(Verifying({ address, chain, signature, message: messageToSign }), "Signature received. Verifying...")),
+        Effect.catchAll((error) => 
+          Effect.fail(new WalletVerificationError({ 
+            cause: extractErrorDetails(error), 
+            operation: "sign" 
+          }))
+        ),
+        Effect.match({
+          onFailure: (error) => fail("Failed to sign message. Please try again.", error),
+          onSuccess: (result) => result
+        })
+      )
     },
-    Verifying: ({ address, chainId, signature, message }) => {
-      console.log("Verifying state", { address, chainId, signature, message })
-      // Here we would implement the actual verification logic
-      return Effect.succeed(ok(Adding({ 
-        address, 
-        chainId, 
-        signature, 
-        message 
-      }), "Adding wallet..."))
+    Verifying: ({ address, chain, signature, message }) => {
+      return pipe(
+        getSupabaseClient(),
+        Effect.flatMap(client => Effect.tryPromise(() => client.auth.refreshSession())),
+        Effect.flatMap(({ data: { session } }) => {
+          if (!session?.user.id) {
+            return Effect.fail(new WalletVerificationError({ 
+              cause: "No authenticated user found", 
+              operation: "verify" 
+            }))
+          }
+          return submitWalletVerification({
+            id: session.user.id,
+            address,
+            chainId: `evm:${chain.id}`,
+            message,
+            signature,
+            selectedChains: null
+          })
+        }),
+        Effect.flatMap(() => getSupabaseClient()),
+        Effect.flatMap(client => Effect.tryPromise(() => client.auth.getSession())),
+        Effect.flatMap(({ data: { session } }) => {
+          if (!session?.user.id) {
+            return Effect.fail(new WalletVerificationError({ 
+              cause: "No user ID found", 
+              operation: "verify" 
+            }))
+          }
+          return Effect.succeed(ok(Updating(), "Wallet verified. Updating data..."))
+        }),
+        Effect.catchAll((error) => 
+          Effect.fail(new WalletVerificationError({ 
+            cause: extractErrorDetails(error), 
+            operation: "verify" 
+          }))
+        ),
+        Effect.match({
+          onFailure: (error) => fail("Failed to verify wallet", error),
+          onSuccess: (result) => result
+        })
+      )
     },
-    Adding: ({ address, chainId, signature, message }) => {
-      console.log("Adding state", { address, chainId, signature, message })
-      // Here we would implement the actual wallet addition logic
-      return Effect.succeed(complete(address))
+    Updating: () => {
+      return pipe(
+        getSupabaseClient(),
+        Effect.flatMap(client => Effect.tryPromise(() => client.auth.getSession())),
+        Effect.flatMap(({ data: { session } }) => {
+          if (!session?.user.id) {
+            return Effect.fail(new WalletVerificationError({ 
+              cause: "No user ID found", 
+              operation: "update" 
+            }))
+          }
+          return pipe(
+            clearLocalStorageCacheEntry("wallets", `${CACHE_VERSION}:${session.user.id}`),
+            Effect.mapError(error => new WalletVerificationError({ 
+              cause: extractErrorDetails(error), 
+              operation: "update" 
+            })),
+            Effect.flatMap(() => Effect.sleep("3 seconds")),
+            Effect.flatMap(() => Effect.sync(() => {
+              Option.map(dashboard.wallets, (store: WalletStore) => store.refresh())
+              return complete()
+            }))
+          )
+        }),
+        Effect.catchAll((error) => 
+          Effect.fail(new WalletVerificationError({ 
+            cause: extractErrorDetails(error), 
+            operation: "update" 
+          }))
+        ),
+        Effect.match({
+          onFailure: (error) => fail("Failed to update wallet data", error),
+          onSuccess: (result) => result
+        })
+      )
     },
-    Success: ({ address }) => {
-      console.log("Success state", { address })
-      return Effect.succeed(complete(address))
-    },
-    Error: ({ message, cause }) => {
-      console.log("Error state", { message, cause })
-      return Effect.succeed(fail(message, cause as Error))
-    }
   })
 }

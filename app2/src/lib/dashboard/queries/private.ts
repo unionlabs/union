@@ -2,19 +2,16 @@ import { Effect, pipe, Option } from "effect";
 import { getSupabaseClient } from "../client";
 import { SupabaseError } from "../errors";
 import { retryForever } from "./retry";
-import { withLocalStorageCacheStale } from "../cache";
+import { withLocalStorageCacheStale, clearLocalStorageCacheEntry } from "../services/cache";
 import type { Entity } from "../client";
 import { extractErrorDetails } from "@unionlabs/sdk/utils";
+import { CACHE_VERSION, TTL, STALE } from "../config";
 
 export type UserAchievement = Entity<"user_achievements">;
 export type UserExperience = Entity<"leaderboard">;
 export type UserMission = Entity<"user_missions">;
 export type UserReward = Entity<"user_rewards_with_queue">;
 export type Wallet = Entity<"wallets">;
-
-const TTL = 5 * 60_000;         // 5 minutes
-const STALE = 24 * 60 * 60_000; // 24 hours
-const CACHE_VERSION = "v1";
 
 export const getUserAchievements = (userId: string) =>
   withLocalStorageCacheStale(
@@ -169,14 +166,38 @@ export const removeUserWallet = (userId: string, address: string) =>
       })
     ),
     Effect.retry(retryForever),
-    Effect.map(({ error }) => {
-      if (error) {
-        console.error("Error removing user wallet:", error);
-        return false;
+    Effect.flatMap(response => {
+      if (response.error) {
+        return pipe(
+          Effect.logError("Database error removing user wallet.", {
+            userId: userId,
+            address: address,
+            error: extractErrorDetails(response.error)
+          }),
+          Effect.map(() => false)
+        );
       }
-      return true;
+
+      const walletCacheKeySuffix = `${CACHE_VERSION}:${userId}`;
+      return pipe(
+        Effect.logInfo(
+          `Database wallet removal successful for user ${userId}, address ${address}. Attempting to clear cache for namespace 'wallets', key suffix: ${walletCacheKeySuffix}`
+        ),
+        Effect.flatMap(() => 
+          clearLocalStorageCacheEntry("wallets", walletCacheKeySuffix)
+        ),
+        Effect.map(() => true),
+        Effect.catchAll(() => {
+          return Effect.succeed(true);
+        })
+      );
     }),
-    Effect.catchAll(() => Effect.succeed(false))
+    Effect.catchAll((pipelineError) => {
+      return pipe(
+        Effect.logError("Unhandled error in removeUserWallet pipeline.", { error: pipelineError }),
+        Effect.flatMap(() => Effect.succeed(false))
+      );
+    })
   );
 
 export const insertWalletData = (data: { address: string; chain_id: string; user_id: string }) =>
@@ -244,4 +265,51 @@ export const invokeTick = (userId: string) =>
     ),
     Effect.retry(retryForever),
     Effect.catchAll(() => Effect.succeed(void 0))
+  );
+
+interface SubmitWalletVerificationInput {
+  id: string;
+  address: string;
+  chainId: string;
+  message: string;
+  signature: string;
+  selectedChains: string[] | null;
+}
+
+export const submitWalletVerification = (
+  input: SubmitWalletVerificationInput
+) =>
+  pipe(
+    getSupabaseClient(),
+    Effect.flatMap((client) =>
+      Effect.tryPromise({
+        try: () =>
+          client.functions.invoke("verify-wallet", {
+            method: "POST",
+            body: input,
+          }),
+        catch: (error) => {
+          return new SupabaseError({
+            cause: extractErrorDetails(error as Error),
+          });
+        },
+      })
+    ),
+    Effect.flatMap(response => {
+      if (response.error) {
+        const errorDetails = extractErrorDetails(response.error);
+        return Effect.zipRight(
+          Effect.logError("Wallet verification function returned an error in its response.", { error: errorDetails }),
+          Effect.fail(new SupabaseError({ cause: errorDetails }))
+        );
+      }
+      return Effect.succeed(response.data);
+    }),
+    Effect.retry(retryForever),
+    Effect.catchAll((error) => {
+      return pipe(
+        Effect.logError("Unhandled error in submitWalletVerification pipeline.", { error }),
+        Effect.flatMap(() => Effect.succeed(Option.none()))
+      );
+    })
   );
