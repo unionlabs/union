@@ -13,10 +13,7 @@
     clippy::missing_errors_doc
 )]
 
-use std::{
-    collections::HashMap, ffi::OsStr, fmt::Write, fs::read_to_string, iter, path::PathBuf,
-    process::ExitCode, time::Duration,
-};
+use std::{collections::HashMap, fmt::Write, iter, process::ExitCode, time::Duration};
 
 use anyhow::{anyhow, Context as _};
 use clap::Parser;
@@ -32,7 +29,7 @@ use serde::Serialize;
 use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
-use tracing_subscriber::EnvFilter;
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use voyager_message::{
     call::{FetchBlocks, FetchUpdateHeaders},
     callback::AggregateSubmitTxFromOrderedHeaders,
@@ -51,7 +48,10 @@ use voyager_vm::{call, promise, Op, Queue};
 static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
-    cli::{AppArgs, Command, ConfigCmd, ModuleCmd, MsgCmd, PluginCmd, QueueCmd, RpcCmd},
+    cli::{
+        get_voyager_config, App, Command, ConfigCmd, LogFormat, ModuleCmd, MsgCmd, PluginCmd,
+        QueueCmd, RpcCmd,
+    },
     config::{
         default_metrics_endpoint, default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig,
     },
@@ -72,30 +72,16 @@ pub mod metrics;
 pub mod queue;
 
 fn main() -> ExitCode {
-    let args = AppArgs::parse();
+    let app = App::parse();
 
-    match args.log_format {
-        cli::LogFormat::Text => {
-            tracing_subscriber::fmt()
-                .with_env_filter(EnvFilter::from_default_env())
-                // .with_span_events(FmtSpan::CLOSE)
-                .init();
-        }
-        cli::LogFormat::Json => {
-            tracing_subscriber::fmt()
-                .with_env_filter(EnvFilter::from_default_env())
-                // .with_span_events(FmtSpan::CLOSE)
-                .json()
-                .init();
-        }
-    }
+    init_logging(app.log_format);
 
     let res = tokio::runtime::Builder::new_multi_thread()
         .enable_all()
-        .thread_stack_size(args.stack_size)
+        .thread_stack_size(app.stack_size)
         .build()
         .expect("building the tokio runtime is infallible; qed;")
-        .block_on(do_main(args));
+        .block_on(do_main(app));
 
     match res {
         Ok(()) => ExitCode::SUCCESS,
@@ -114,37 +100,29 @@ fn main() -> ExitCode {
     }
 }
 
+fn init_logging(log_format: LogFormat) {
+    match log_format {
+        LogFormat::Text => {
+            tracing_subscriber::registry()
+                .with(tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()))
+                .init();
+        }
+        LogFormat::Json => {
+            tracing_subscriber::registry()
+                .with(
+                    tracing_subscriber::fmt::layer()
+                        .json()
+                        .with_filter(EnvFilter::from_default_env()),
+                )
+                .init();
+        }
+    }
+}
+
 #[allow(clippy::too_many_lines)]
 // NOTE: This function is a mess, will be cleaned up
-async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
-    let get_voyager_config = || match &args.config_file_path {
-        Some(config_file_path) => {
-            let config_file_path = PathBuf::from(config_file_path);
-            let ext = config_file_path.extension();
-            read_to_string(&config_file_path)
-                .with_context(|| {
-                    format!(
-                        "unable to read the config file at `{}`",
-                        config_file_path.to_string_lossy()
-                    )
-                })
-                .and_then(|s| match ext.map(OsStr::as_encoded_bytes) {
-                    Some(b"jsonc") => serde_jsonc::from_str::<Config>(&s).with_context(|| {
-                        format!(
-                            "unable to parse the config file at `{}`",
-                            config_file_path.to_string_lossy()
-                        )
-                    }),
-                    _ => serde_json::from_str::<Config>(&s).with_context(|| {
-                        format!(
-                            "unable to parse the config file at `{}`",
-                            config_file_path.to_string_lossy()
-                        )
-                    }),
-                })
-        }
-        None => Err(anyhow!("config file must be specified")),
-    };
+async fn do_main(app: cli::App) -> anyhow::Result<()> {
+    let get_voyager_config = || get_voyager_config(app.config_file_path.as_deref());
 
     let get_rest_url = |rest_url: Option<String>| match (get_voyager_config(), rest_url) {
         (Ok(config), None) => format!("http://{}", config.voyager.rest_laddr),
@@ -160,7 +138,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
         (Err(_), None) => format!("http://{}", default_rpc_laddr()),
     };
 
-    match args.command {
+    match app.command {
         Command::Config(cmd) => match cmd {
             ConfigCmd::Print => {
                 print_json(&get_voyager_config()?);
@@ -641,6 +619,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     },
                     Duration::new(60, 0),
                     cache::Config::default(),
+                    Some(voyager_config.voyager.metrics_endpoint.clone()),
                 )
                 .await?;
 
@@ -690,6 +669,7 @@ async fn do_main(args: cli::AppArgs) -> anyhow::Result<()> {
                     },
                     Duration::new(60, 0),
                     cache::Config::default(),
+                    Some(voyager_config.voyager.metrics_endpoint.clone()),
                 )
                 .await?;
 

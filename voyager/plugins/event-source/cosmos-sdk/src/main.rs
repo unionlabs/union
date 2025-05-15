@@ -55,7 +55,7 @@ pub mod call;
 
 const PER_PAGE_LIMIT: NonZeroU8 = option_unwrap!(NonZeroU8::new(100));
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     Module::run().await
 }

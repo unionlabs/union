@@ -14,7 +14,7 @@ workspace = true
 [dependencies]
 futures-util  = "0.3.30"
 itertools     = { workspace = true }
-opentelemetry = { version = "0.28.0" }
+opentelemetry = { workspace = true }
 schemars      = { workspace = true, features = ["derive"] }
 serde         = { workspace = true }
 serde_json    = { workspace = true, features = ["unbounded_depth"] }

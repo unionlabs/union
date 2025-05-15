@@ -32,6 +32,7 @@ pub struct VoyagerConfig {
     pub rest_laddr: SocketAddr,
     #[serde(default = "default_rpc_laddr")]
     pub rpc_laddr: SocketAddr,
+    // REVIEW: Make optional? I.e. not set == don't export metrics
     #[serde(default = "default_metrics_endpoint")]
     pub metrics_endpoint: String,
     pub queue: QueueConfig,

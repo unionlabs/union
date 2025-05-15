@@ -19,21 +19,24 @@ impl Metrics {
                 .f64_histogram("pg_queue_item_processing_duration_seconds")
                 .with_description("The time it takes to process an item in the queue.")
                 .with_boundaries(vec![
-                    0.0, 0.00001, 0.001, 0.01, 0.1, 0.5, 1.0, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0,
+                    0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 1.5, 2.0, 5.0, 10.0, 20.0,
+                    50.0,
                 ])
                 .build(),
             optimize_processing_duration: opentelemetry::global::meter("pg_queue")
                 .f64_histogram("pg_queue_optimize_processing_duration_seconds")
                 .with_description("The time it takes to run a pass over the optimize queue.")
                 .with_boundaries(vec![
-                    0.0, 0.00001, 0.001, 0.01, 0.1, 0.5, 1.0, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0,
+                    0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 1.5, 2.0, 5.0, 10.0, 20.0,
+                    50.0,
                 ])
                 .build(),
             optimize_item_count: opentelemetry::global::meter("pg_queue")
                 .u64_histogram("pg_queue_optimize_item_count")
                 .with_description("The amount of items processed in an optimize pass.")
                 .with_boundaries(vec![
-                    0.0, 0.00001, 0.001, 0.01, 0.1, 0.5, 1.0, 1.5, 2.0, 5.0, 10.0, 20.0, 50.0,
+                    0.0, 0.00001, 0.0001, 0.001, 0.01, 0.1, 0.5, 1.0, 1.5, 2.0, 5.0, 10.0, 20.0,
+                    50.0,
                 ])
                 .build(),
             processed_item_count: opentelemetry::global::meter("pg_queue")

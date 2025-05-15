@@ -1,5 +1,11 @@
-use std::{ffi::OsString, str::FromStr};
+use std::{
+    ffi::{OsStr, OsString},
+    fs::read_to_string,
+    path::PathBuf,
+    str::FromStr,
+};
 
+use anyhow::{anyhow, Context};
 use clap::{self, Parser, Subcommand};
 use ibc_union_spec::IbcUnion;
 use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
@@ -10,9 +16,11 @@ use voyager_message::{
 };
 use voyager_vm::{BoxDynError, Op};
 
+use crate::config::Config;
+
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
-pub struct AppArgs {
+pub struct App {
     #[arg(
         long,
         short = 'c',
@@ -42,7 +50,38 @@ pub struct AppArgs {
     pub command: Command,
 }
 
-#[derive(Debug, Clone, PartialEq, Default, clap::ValueEnum, derive_more::Display)]
+pub fn get_voyager_config(config_file_path: Option<&OsStr>) -> anyhow::Result<Config> {
+    match config_file_path {
+        Some(config_file_path) => {
+            let config_file_path = PathBuf::from(config_file_path);
+            let ext = config_file_path.extension();
+            read_to_string(&config_file_path)
+                .with_context(|| {
+                    format!(
+                        "unable to read the config file at `{}`",
+                        config_file_path.to_string_lossy()
+                    )
+                })
+                .and_then(|s| match ext.map(OsStr::as_encoded_bytes) {
+                    Some(b"jsonc") => serde_jsonc::from_str::<Config>(&s).with_context(|| {
+                        format!(
+                            "unable to parse the config file at `{}`",
+                            config_file_path.to_string_lossy()
+                        )
+                    }),
+                    _ => serde_json::from_str::<Config>(&s).with_context(|| {
+                        format!(
+                            "unable to parse the config file at `{}`",
+                            config_file_path.to_string_lossy()
+                        )
+                    }),
+                })
+        }
+        None => Err(anyhow!("config file must be specified")),
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Default, clap::ValueEnum, derive_more::Display)]
 pub enum LogFormat {
     #[default]
     #[display(fmt = "text")]

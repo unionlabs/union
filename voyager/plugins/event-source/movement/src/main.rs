@@ -46,7 +46,7 @@ pub mod call;
 
 pub mod events;
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     Module::run().await
 }
