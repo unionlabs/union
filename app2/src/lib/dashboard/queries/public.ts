@@ -1,18 +1,18 @@
-import { Effect, pipe, Option } from "effect";
-import { getSupabaseClient } from "../client";
-import { SupabaseError } from "../errors";
-import { retryForever } from "./retry";
-import { withLocalStorageCacheStale } from "../services/cache";
-import type { Entity } from "../client";
-import { extractErrorDetails } from "@unionlabs/sdk/utils";
-import { CACHE_VERSION, TTL, STALE } from "../config";
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { Effect, Option, pipe } from "effect"
+import { getSupabaseClient } from "../client"
+import type { Entity } from "../client"
+import { CACHE_VERSION, STALE, TTL } from "../config"
+import { SupabaseError } from "../errors"
+import { withLocalStorageCacheStale } from "../services/cache"
+import { retryForever } from "./retry"
 
-export type Achievement = Entity<"achievements">;
-export type Level = Entity<"levels">;
-export type Category = Entity<"categories">;
-export type UserExperience = Entity<"user_levels">;
-export type Mission = Entity<"missions">;
-export type Reward = Entity<"rewards">;
+export type Achievement = Entity<"achievements">
+export type Level = Entity<"levels">
+export type Category = Entity<"categories">
+export type UserExperience = Entity<"user_levels">
+export type Mission = Entity<"missions">
+export type Reward = Entity<"rewards">
 
 export const getChains = () =>
   withLocalStorageCacheStale(
@@ -25,15 +25,14 @@ export const getChains = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("chains").select("*"),
-          catch: (error) =>
-            new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none()))
-    )
-  );
+      Effect.catchAll(() => Effect.succeed(Option.none())),
+    ),
+  )
 
 export const getAvailableAchievements = () =>
   withLocalStorageCacheStale(
@@ -54,15 +53,14 @@ export const getAvailableAchievements = () =>
                 category:categories!achievements_category_fkey(id, title),
                 subcategory:categories!achievements_subcategory_fkey(id, title)
               `),
-          catch: (error) =>
-            new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none()))
-    )
-  );
+      Effect.catchAll(() => Effect.succeed(Option.none())),
+    ),
+  )
 
 export const getAvailableLevels = () =>
   withLocalStorageCacheStale(
@@ -79,15 +77,14 @@ export const getAvailableLevels = () =>
               .from("levels")
               .select("*")
               .order("experience_required", { ascending: true }),
-          catch: (error) =>
-            new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none()))
-    )
-  );
+      Effect.catchAll(() => Effect.succeed(Option.none())),
+    ),
+  )
 
 export const getCategories = () =>
   withLocalStorageCacheStale(
@@ -100,15 +97,14 @@ export const getCategories = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("categories").select("*"),
-          catch: (error) =>
-            new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none()))
-    )
-  );
+      Effect.catchAll(() => Effect.succeed(Option.none())),
+    ),
+  )
 
 export const getLeaderboard = () =>
   withLocalStorageCacheStale(
@@ -126,15 +122,14 @@ export const getLeaderboard = () =>
               .select("*")
               .order("total_xp", { ascending: false })
               .limit(50),
-          catch: (error) =>
-            new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none()))
-    )
-  );
+      Effect.catchAll(() => Effect.succeed(Option.none())),
+    ),
+  )
 
 export const getAvailableMissions = () =>
   withLocalStorageCacheStale(
@@ -151,15 +146,14 @@ export const getAvailableMissions = () =>
               .from("missions")
               .select("*")
               .order("priority", { ascending: false }),
-          catch: (error) =>
-            new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none()))
-    )
-  );
+      Effect.catchAll(() => Effect.succeed(Option.none())),
+    ),
+  )
 
 export const getAvailableRewards = () =>
   withLocalStorageCacheStale(
@@ -172,12 +166,11 @@ export const getAvailableRewards = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("rewards").select("*"),
-          catch: (error) =>
-            new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none()))
-    )
-  );
+      Effect.catchAll(() => Effect.succeed(Option.none())),
+    ),
+  )

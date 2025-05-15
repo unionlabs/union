@@ -1,10 +1,9 @@
 import { runSync } from "$lib/runtime.js"
 import { type ClientInit } from "@sveltejs/kit"
-import { Data, Effect, identity, Match } from "effect"
+import { Data, Effect, identity, Match, pipe, Option } from "effect"
 import { isString } from "effect/Predicate"
 import { browser } from "$app/environment";
 import { dashboard } from "$lib/dashboard/stores/user.svelte";
-import { Effect, pipe, Option } from "effect";
 import type { Handle } from "@sveltejs/kit";
 
 class UncaughtError extends Data.TaggedError("UncaughtError")<{
@@ -61,17 +60,19 @@ export const handle: Handle = async ({ event, resolve }) => {
     return Effect.runPromise(
       pipe(
         Effect.succeed(dashboard.session),
-        Effect.flatMap(session => 
+        Effect.flatMap(session =>
           Option.isNone(session)
-            ? Effect.succeed(new Response("Redirect", {
+            ? Effect.succeed(
+              new Response("Redirect", {
                 status: 302,
-                headers: { Location: "/" }
-              }))
+                headers: { Location: "/" },
+              }),
+            )
             : Effect.succeed(resolve(event))
-        )
-      )
-    );
+        ),
+      ),
+    )
   }
 
-  return resolve(event);
-};
+  return resolve(event)
+}

@@ -1,15 +1,15 @@
 <script lang="ts">
 import SharpPowerIcon from "$lib/components/icons/SharpPowerIcon.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { type AptosWalletId } from "$lib/wallet/aptos"
 import { type CosmosWalletId } from "$lib/wallet/cosmos"
 import { type EvmWalletId } from "$lib/wallet/evm"
 import { RpcType } from "@unionlabs/sdk/schema"
 import type { State } from "@wagmi/core"
 import { Schema } from "effect"
+import { Option } from "effect"
 import Label from "../../Label.svelte"
 import Truncate from "../../Truncate.svelte"
-import { Option } from "effect"
-import { dashboard } from "$lib/dashboard/stores/user.svelte"
 
 type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]
@@ -115,34 +115,34 @@ let connectedWallet = $derived(
 
         <div class="flex flex-col items-center gap-2">
           <button
-            class="p-2 rounded-lg border border-zinc-800 hover:bg-zinc-800  transition-colors cursor-pointer"
+            class="p-2 rounded-lg border border-zinc-800 hover:bg-zinc-800 transition-colors cursor-pointer"
             onclick={() => onDisconnectClick()}
             aria-label="Disconnect wallet"
-        >
-          <SharpPowerIcon class="size-3 text-zinc-400 hover:text-red-500 transition-colors" />
+          >
+            <SharpPowerIcon class="size-3 text-zinc-400 hover:text-red-500 transition-colors" />
           </button>
 
           {#if Option.isSome(dashboard.user)}
-          <button
-          class="p-2 rounded-lg border border-zinc-800 hover:text-red-500 hover:bg-zinc-800 transition-colors cursor-pointer"
-          onclick={() => onDisconnectClick()}
-          aria-label="Disconnect wallet"
-        >
-        <svg
-        xmlns="http://www.w3.org/2000/svg"
-        class="size-3"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
-        <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
-      </svg>
-        </button>
-        {/if}
+            <button
+              class="p-2 rounded-lg border border-zinc-800 hover:text-red-500 hover:bg-zinc-800 transition-colors cursor-pointer"
+              onclick={() => onDisconnectClick()}
+              aria-label="Disconnect wallet"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="size-3"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </button>
+          {/if}
         </div>
       </div>
     </div>

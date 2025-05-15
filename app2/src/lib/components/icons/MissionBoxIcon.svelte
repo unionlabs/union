@@ -5,5 +5,8 @@
   viewBox="0 0 24 24"
   {...$$props}
 >
-  <path fill="currentColor" d="M3 21V3h18v18zm2-2h14V5H5z" />
-</svg> 
+  <path
+    fill="currentColor"
+    d="M3 21V3h18v18zm2-2h14V5H5z"
+  />
+</svg>

@@ -301,11 +301,13 @@ const handleSubmit = () => {
     <div class="flex-1 flex flex-col gap-4">
       <h3 class="text-lg font-semibold">Submit Transfer</h3>
       <section>
-        <Label>From</Label> <ChainComponent chain={step.intent.sourceChain} />
+        <Label>From</Label>
+        <ChainComponent chain={step.intent.sourceChain} />
       </section>
 
       <section>
-        <Label>To</Label> <ChainComponent chain={step.intent.destinationChain} />
+        <Label>To</Label>
+        <ChainComponent chain={step.intent.destinationChain} />
       </section>
       <p class="text-sm text-zinc-400">
         This will initiate the transfer on

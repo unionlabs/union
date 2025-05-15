@@ -1,10 +1,9 @@
 <script lang="ts">
-  import { dashboard } from "$lib/dashboard/stores/user.svelte";
-  import { Option } from "effect";
-  import Mission from "./Mission.svelte";
-  import Skeleton from "$lib/components/ui/Skeleton.svelte";
-  import Card from "$lib/components/ui/Card.svelte";
-
+import Card from "$lib/components/ui/Card.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { Option } from "effect"
+import Mission from "./Mission.svelte"
 </script>
 
 <div class="flex flex-col gap-4">
@@ -14,9 +13,17 @@
       <h2 class="text-lg font-semibold flex items-center gap-2">
         Active
       </h2>
-      {#if dashboard.missions.value.enhanced.filter(m => !m.completed && m.isCurrent && m.started).length > 0}
-        {#each dashboard.missions.value.enhanced.filter(m => !m.completed && m.isCurrent && m.started) as mission}
-          <Mission mission={mission} userMissions={Option.getOrNull(dashboard.missions.value.progress) ?? []} />
+      {#if dashboard.missions.value.enhanced.filter(m => !m.completed && m.isCurrent && m.started)
+        .length > 0}
+        {#each dashboard.missions.value.enhanced.filter(m =>
+        !m.completed && m.isCurrent && m.started
+      ) as
+          mission
+        }
+          <Mission
+            mission={mission}
+            userMissions={Option.getOrNull(dashboard.missions.value.progress) ?? []}
+          />
         {/each}
       {:else}
         <div class="relative w-full">
@@ -68,7 +75,10 @@
       </h2>
       {#if dashboard.missions.value.enhanced.filter(m => !m.completed && m.isFuture).length > 0}
         {#each dashboard.missions.value.enhanced.filter(m => !m.completed && m.isFuture) as mission}
-          <Mission mission={mission} userMissions={Option.getOrNull(dashboard.missions.value.progress) ?? []} />
+          <Mission
+            mission={mission}
+            userMissions={Option.getOrNull(dashboard.missions.value.progress) ?? []}
+          />
         {/each}
       {:else}
         <div class="relative w-full">
@@ -120,7 +130,10 @@
       </h2>
       {#if dashboard.missions.value.enhanced.filter(m => m.completed).length > 0}
         {#each dashboard.missions.value.enhanced.filter(m => m.completed) as mission}
-          <Mission mission={mission} userMissions={Option.getOrNull(dashboard.missions.value.progress) ?? []} />
+          <Mission
+            mission={mission}
+            userMissions={Option.getOrNull(dashboard.missions.value.progress) ?? []}
+          />
         {/each}
       {:else}
         <div class="relative w-full">
@@ -168,9 +181,13 @@
     <!-- Expired & Uncompleted Missions Card -->
     <Card class="flex flex-col gap-4 p-4 lg:p-6">
       <h2 class="text-lg font-semibold">Expired</h2>
-      {#if dashboard.missions.value.expiredUncompleted && dashboard.missions.value.expiredUncompleted.length > 0}
+      {#if dashboard.missions.value.expiredUncompleted
+        && dashboard.missions.value.expiredUncompleted.length > 0}
         {#each dashboard.missions.value.expiredUncompleted as mission}
-          <Mission mission={mission} userMissions={Option.getOrNull(dashboard.missions.value.progress) ?? []} />
+          <Mission
+            mission={mission}
+            userMissions={Option.getOrNull(dashboard.missions.value.progress) ?? []}
+          />
         {/each}
       {:else}
         <div class="relative w-full">
@@ -178,7 +195,9 @@
             <div class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center">
               <div class="text-center">
                 <div class="text-zinc-400 mb-2">No expired missions</div>
-                <div class="text-sm text-zinc-500">Missions that passed their deadline without completion will appear here.</div>
+                <div class="text-sm text-zinc-500">
+                  Missions that passed their deadline without completion will appear here.
+                </div>
               </div>
             </div>
           </div>
@@ -259,4 +278,4 @@
       </div>
     </div>
   {/if}
-</div> 
+</div>

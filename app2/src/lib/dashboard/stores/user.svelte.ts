@@ -1,22 +1,22 @@
-import type { Session, User, AuthChangeEvent } from "@supabase/supabase-js";
-import { getSupabaseClient } from "../client";
-import { Effect, Option, pipe, Fiber, Duration } from "effect";
-import { SupabaseClientError, AuthenticationError } from "../errors";
-import { extractErrorDetails } from "@unionlabs/sdk/utils";
-import { hasProviderLinked } from "../helpers";
-import { goto } from "$app/navigation";
-import { AchievementsStore } from "./achievements.svelte";
-import { ExperienceStore } from "./experiance.svelte";
-import { MissionsStore } from "./missions.svelte";
-import { RewardsStore } from "./rewards.svelte";
-import { LeaderboardStore } from "./leaderboard.svelte";
-import { WalletStore } from "./wallets.svelte";
-import { invokeTick } from "../queries/private";
+import { goto } from "$app/navigation"
+import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { Duration, Effect, Fiber, Option, pipe } from "effect"
+import { getSupabaseClient } from "../client"
+import { AuthenticationError, SupabaseClientError } from "../errors"
+import { hasProviderLinked } from "../helpers"
+import { invokeTick } from "../queries/private"
+import { AchievementsStore } from "./achievements.svelte"
+import { ExperienceStore } from "./experiance.svelte"
+import { LeaderboardStore } from "./leaderboard.svelte"
+import { MissionsStore } from "./missions.svelte"
+import { RewardsStore } from "./rewards.svelte"
+import { WalletStore } from "./wallets.svelte"
 
-export type AuthProvider = "github" | "twitter" | "discord";
-export type Providers = AuthProvider | "default" | "name";
+export type AuthProvider = "github" | "twitter" | "discord"
+export type Providers = AuthProvider | "default" | "name"
 
-const PROTECTED_PATHS = ["/dashboard"];
+const PROTECTED_PATHS = ["/dashboard"]
 
 /**
  * Effect to get the current session from Supabase
@@ -27,12 +27,11 @@ const getSession = () =>
     Effect.flatMap((client) =>
       Effect.tryPromise({
         try: () => client.auth.getSession(),
-        catch: (error) =>
-          new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+        catch: (error) => new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
       })
     ),
-    Effect.map(({ data }) => data.session)
-  );
+    Effect.map(({ data }) => data.session),
+  )
 
 /**
  * Effect to refresh the current session
@@ -43,88 +42,89 @@ const refreshSession = () =>
     Effect.flatMap((client) =>
       Effect.tryPromise({
         try: () => client.auth.refreshSession(),
-        catch: (error) =>
-          new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+        catch: (error) => new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
       })
     ),
-    Effect.map(({ data }) => data.session)
-  );
+    Effect.map(({ data }) => data.session),
+  )
 
 export class Dashboard {
-  session = $state<Option.Option<Session>>(Option.none());
-  user = $derived(Option.flatMap(this.session, (s) => Option.fromNullable(s.user)));
-  userId = $derived(Option.flatMap(this.user, (u) => Option.fromNullable(u.id)));
+  session = $state<Option.Option<Session>>(Option.none())
+  user = $derived(Option.flatMap(this.session, (s) => Option.fromNullable(s.user)))
+  userId = $derived(Option.flatMap(this.user, (u) => Option.fromNullable(u.id)))
 
   /** Achievements store instance */
-  achievements = $state<Option.Option<AchievementsStore>>(Option.none());
+  achievements = $state<Option.Option<AchievementsStore>>(Option.none())
 
   /** Experience store instance */
-  experience = $state<Option.Option<ExperienceStore>>(Option.none());
+  experience = $state<Option.Option<ExperienceStore>>(Option.none())
 
   /** Missions store instance */
-  missions = $state<Option.Option<MissionsStore>>(Option.none());
+  missions = $state<Option.Option<MissionsStore>>(Option.none())
 
   /** Rewards store instance */
-  rewards = $state<Option.Option<RewardsStore>>(Option.none());
+  rewards = $state<Option.Option<RewardsStore>>(Option.none())
 
   /** Leaderboard store instance */
-  leaderboard = $state<Option.Option<LeaderboardStore>>(Option.none());
+  leaderboard = $state<Option.Option<LeaderboardStore>>(Option.none())
 
   /** Wallet store instance */
-  wallets = $state<Option.Option<WalletStore>>(Option.none());
+  wallets = $state<Option.Option<WalletStore>>(Option.none())
 
   /**
    * Usernames from all connected providers
    * @derived Mapping of provider to username
    */
   usernames = $derived({
-    twitter: Option.flatMap(this.findIdentity("twitter"), i => 
-      Option.fromNullable(i.identity_data?.user_name)
+    twitter: Option.flatMap(
+      this.findIdentity("twitter"),
+      i => Option.fromNullable(i.identity_data?.user_name),
     ),
-    github: Option.flatMap(this.findIdentity("github"), i => 
-      Option.fromNullable(i.identity_data?.user_name)
+    github: Option.flatMap(
+      this.findIdentity("github"),
+      i => Option.fromNullable(i.identity_data?.user_name),
     ),
-    discord: Option.flatMap(this.findIdentity("discord"), i => 
-      Option.fromNullable(i.identity_data?.full_name)
+    discord: Option.flatMap(
+      this.findIdentity("discord"),
+      i => Option.fromNullable(i.identity_data?.full_name),
     ),
     name: Option.flatMap(this.session, s => Option.fromNullable(s.user?.user_metadata?.name)),
-  });
+  })
 
   /**
    * Avatar URLs from all connected providers
    * @derived Mapping of provider to avatar URL
    */
   userAvatars = $derived({
-    twitter: Option.flatMap(this.findIdentity("twitter"), i => 
-      Option.fromNullable(i.identity_data?.picture?.replace("_normal", ""))
+    twitter: Option.flatMap(
+      this.findIdentity("twitter"),
+      i => Option.fromNullable(i.identity_data?.picture?.replace("_normal", "")),
     ),
-    github: Option.flatMap(this.findIdentity("github"), i => 
-      Option.fromNullable(i.identity_data?.avatar_url)
+    github: Option.flatMap(
+      this.findIdentity("github"),
+      i => Option.fromNullable(i.identity_data?.avatar_url),
     ),
-    discord: Option.flatMap(this.findIdentity("discord"), i => 
-      Option.fromNullable(i.identity_data?.avatar_url + "?size=1024")
+    discord: Option.flatMap(
+      this.findIdentity("discord"),
+      i => Option.fromNullable(i.identity_data?.avatar_url + "?size=1024"),
     ),
-    default: Option.flatMap(this.session, s => 
+    default: Option.flatMap(this.session, s =>
       Option.fromNullable(
-        s.user?.user_metadata?.avatar_url ||
-        s.user?.user_metadata?.picture
-      )
-    ),
-  });
+        s.user?.user_metadata?.avatar_url
+          || s.user?.user_metadata?.picture,
+      )),
+  })
 
   /**
    * First connected social provider
    * @derived First provider from priority list that user has connected
    */
   firstConnectedProvider = $derived(
-    Option.flatMap(this.session, s => 
+    Option.flatMap(this.session, s =>
       Option.fromNullable(
-        ["twitter", "discord", "github"].find(p =>
-          s.user?.identities?.some(i => i.provider === p)
-        )
-      )
-    )
-  );
+        ["twitter", "discord", "github"].find(p => s.user?.identities?.some(i => i.provider === p)),
+      )),
+  )
 
   /**
    * Combined user identity information
@@ -133,36 +133,30 @@ export class Dashboard {
   identity = $derived({
     username: Option.flatMap(
       this.firstConnectedProvider,
-      (provider) => this.usernames[provider as keyof typeof this.usernames]
+      (provider) => this.usernames[provider as keyof typeof this.usernames],
     ).pipe(
-      Option.orElse(() => this.usernames.name)
+      Option.orElse(() => this.usernames.name),
     ),
     avatar: Option.flatMap(
       this.firstConnectedProvider,
-      (provider) => this.userAvatars[provider as keyof typeof this.userAvatars]
+      (provider) => this.userAvatars[provider as keyof typeof this.userAvatars],
     ).pipe(
-      Option.orElse(() => this.userAvatars.default)
+      Option.orElse(() => this.userAvatars.default),
     ),
-  });
+  })
 
   /**
    * Connected social providers
    * @derived Mapping of provider to connection status
    */
   connections = $derived({
-    github: Option.flatMap(this.session, s => 
-      Option.some(hasProviderLinked(s.user, "github"))
-    ),
-    twitter: Option.flatMap(this.session, s => 
-      Option.some(hasProviderLinked(s.user, "twitter"))
-    ),
-    discord: Option.flatMap(this.session, s => 
-      Option.some(hasProviderLinked(s.user, "discord"))
-    ),
-  });
+    github: Option.flatMap(this.session, s => Option.some(hasProviderLinked(s.user, "github"))),
+    twitter: Option.flatMap(this.session, s => Option.some(hasProviderLinked(s.user, "twitter"))),
+    discord: Option.flatMap(this.session, s => Option.some(hasProviderLinked(s.user, "discord"))),
+  })
 
   /** Tick polling fiber */
-  private tickFiber: Fiber.Fiber<never, Error> | null = null;
+  private tickFiber: Fiber.Fiber<never, Error> | null = null
 
   /**
    * Finds an identity for a specific authentication provider
@@ -171,18 +165,17 @@ export class Dashboard {
    * @private
    */
   private findIdentity(provider: AuthProvider) {
-    return Option.flatMap(this.session, s => 
+    return Option.flatMap(this.session, s =>
       Option.fromNullable(
-        s.user.identities?.find(i => i.provider === provider)
-      )
-    );
+        s.user.identities?.find(i => i.provider === provider),
+      ))
   }
 
   /**
    * Initializes the Dashboard instance and sets up authentication listeners
    */
   constructor() {
-    this.listenToAuth();
+    this.listenToAuth()
   }
 
   /**
@@ -202,21 +195,21 @@ export class Dashboard {
         ),
         Effect.tap(({ data }) =>
           Effect.sync(() => {
-            this.session = Option.fromNullable(data.session);
-            this.handleAuthChange(data.session);
+            this.session = Option.fromNullable(data.session)
+            this.handleAuthChange(data.session)
           })
         ),
         Effect.flatMap(() => getSupabaseClient()),
         Effect.flatMap((client) =>
           Effect.sync(() => {
             client.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
-              this.session = Option.fromNullable(session);
-              this.handleAuthChange(session);
-            });
+              this.session = Option.fromNullable(session)
+              this.handleAuthChange(session)
+            })
           })
-        )
-      )
-    );
+        ),
+      ),
+    )
   }
 
   /**
@@ -224,22 +217,22 @@ export class Dashboard {
    * @private
    */
   private startTickPolling() {
-    this.stopTickPolling();
+    this.stopTickPolling()
 
     this.tickFiber = Effect.runFork(
       Effect.forever(
         pipe(
           Effect.succeed(this.userId),
-          Effect.flatMap((userId) => 
+          Effect.flatMap((userId) =>
             Option.match(userId, {
               onNone: () => Effect.void,
-              onSome: (id) => Effect.map(invokeTick(id), () => void 0)
+              onSome: (id) => Effect.map(invokeTick(id), () => void 0),
             })
           ),
-          Effect.delay(Duration.minutes(4))
-        )
-      ) as Effect.Effect<never, Error, never>
-    );
+          Effect.delay(Duration.minutes(4)),
+        ),
+      ) as Effect.Effect<never, Error, never>,
+    )
   }
 
   /**
@@ -248,8 +241,8 @@ export class Dashboard {
    */
   private stopTickPolling() {
     if (this.tickFiber) {
-      Effect.runPromise(Fiber.interrupt(this.tickFiber));
-      this.tickFiber = null;
+      Effect.runPromise(Fiber.interrupt(this.tickFiber))
+      this.tickFiber = null
     }
   }
 
@@ -262,65 +255,65 @@ export class Dashboard {
     if (session?.user?.id) {
       // Create stores if they don't exist
       if (Option.isNone(this.achievements)) {
-        this.achievements = Option.some(new AchievementsStore(session.user.id));
+        this.achievements = Option.some(new AchievementsStore(session.user.id))
       }
       if (Option.isNone(this.experience)) {
-        this.experience = Option.some(new ExperienceStore(session.user.id));
+        this.experience = Option.some(new ExperienceStore(session.user.id))
       }
       if (Option.isNone(this.missions)) {
-        this.missions = Option.some(new MissionsStore(session.user.id));
+        this.missions = Option.some(new MissionsStore(session.user.id))
       }
       if (Option.isNone(this.rewards)) {
-        this.rewards = Option.some(new RewardsStore(session.user.id));
+        this.rewards = Option.some(new RewardsStore(session.user.id))
       }
       if (Option.isNone(this.leaderboard)) {
-        this.leaderboard = Option.some(new LeaderboardStore());
+        this.leaderboard = Option.some(new LeaderboardStore())
       }
       if (Option.isNone(this.wallets)) {
-        this.wallets = Option.some(new WalletStore(session.user.id));
+        this.wallets = Option.some(new WalletStore(session.user.id))
       }
       // Start tick polling when user is authenticated
-      this.startTickPolling();
+      this.startTickPolling()
     } else {
       // Clean up stores
       Option.match(this.achievements, {
         onNone: () => {},
         onSome: (store) => store.cleanup(),
-      });
-      this.achievements = Option.none();
+      })
+      this.achievements = Option.none()
 
       Option.match(this.experience, {
         onNone: () => {},
         onSome: (store) => store.cleanup(),
-      });
-      this.experience = Option.none();
+      })
+      this.experience = Option.none()
 
       Option.match(this.missions, {
         onNone: () => {},
         onSome: (store) => store.cleanup(),
-      });
-      this.missions = Option.none();
+      })
+      this.missions = Option.none()
 
       Option.match(this.rewards, {
         onNone: () => {},
         onSome: (store) => store.cleanup(),
-      });
-      this.rewards = Option.none();
+      })
+      this.rewards = Option.none()
 
       Option.match(this.leaderboard, {
         onNone: () => {},
         onSome: (store) => store.cleanup(),
-      });
-      this.leaderboard = Option.none();
+      })
+      this.leaderboard = Option.none()
 
       Option.match(this.wallets, {
         onNone: () => {},
         onSome: (store) => store.cleanup(),
-      });
-      this.wallets = Option.none();
+      })
+      this.wallets = Option.none()
 
       // Stop tick polling when user is logged out
-      this.stopTickPolling();
+      this.stopTickPolling()
     }
   }
 
@@ -334,11 +327,11 @@ export class Dashboard {
       Option.match({
         onNone: () =>
           Effect.fail(
-            new SupabaseClientError({ cause: "User not authenticated" })
+            new SupabaseClientError({ cause: "User not authenticated" }),
           ),
         onSome: Effect.succeed,
-      })
-    );
+      }),
+    )
   }
 
   /**
@@ -355,12 +348,11 @@ export class Dashboard {
             client.auth.signInWithOAuth({
               provider,
               options: {
-                redirectTo: `${window.location.origin}${window.location.pathname}`,
+                redirectTo: `${window.location.origin}/dashboard`,
                 skipBrowserRedirect: true,
               },
             }),
-          catch: (error) =>
-            new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.flatMap(({ data, error }) =>
@@ -370,10 +362,12 @@ export class Dashboard {
       ),
       Effect.tap(({ url }) =>
         Effect.sync(() => {
-          if (url) window.location.href = url;
+          if (url) {
+            window.location.href = url
+          }
         })
-      )
-    );
+      ),
+    )
   }
 
   /**
@@ -386,27 +380,26 @@ export class Dashboard {
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.auth.signOut(),
-          catch: (error) =>
-            new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.flatMap(({ error }) =>
         error
           ? Effect.fail(
-              new AuthenticationError({
-                cause: extractErrorDetails(error),
-              })
-            )
+            new AuthenticationError({
+              cause: extractErrorDetails(error),
+            }),
+          )
           : Effect.void
       ),
       Effect.tap(() =>
         Effect.sync(() => {
           if (PROTECTED_PATHS.some(path => window.location.pathname.startsWith(path))) {
-            goto('/');
+            goto("/")
           }
         })
-      )
-    );
+      ),
+    )
   }
 
   /**
@@ -422,13 +415,14 @@ export class Dashboard {
           try: () =>
             client.auth.linkIdentity({
               provider,
-              options: { 
-                redirectTo: `${window.location.origin}/auth?linking=true&returnTo=${encodeURIComponent(window.location.pathname)}`,
-                skipBrowserRedirect: true
+              options: {
+                redirectTo: `${window.location.origin}/auth?linking=true&returnTo=${
+                  encodeURIComponent(window.location.pathname)
+                }`,
+                skipBrowserRedirect: true,
               },
             }),
-          catch: (error) =>
-            new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.flatMap(({ data, error }) =>
@@ -438,10 +432,12 @@ export class Dashboard {
       ),
       Effect.tap(({ url }) =>
         Effect.sync(() => {
-          if (url) window.location.href = url;
+          if (url) {
+            window.location.href = url
+          }
         })
-      )
-    );
+      ),
+    )
   }
 
   /**
@@ -450,31 +446,30 @@ export class Dashboard {
    * @private
    */
   private refreshSession() {
-    return Effect.gen(function* (this: Dashboard) {
-      const client = yield* getSupabaseClient();
+    return Effect.gen(function*(this: Dashboard) {
+      const client = yield* getSupabaseClient()
 
       const { data: { session }, error } = yield* Effect.tryPromise({
         try: () => client.auth.refreshSession(),
-        catch: (error) =>
-          new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
-      });
+        catch: (error) => new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+      })
 
       if (error) {
         return yield* Effect.fail(
-          new AuthenticationError({ cause: extractErrorDetails(error) })
-        );
+          new AuthenticationError({ cause: extractErrorDetails(error) }),
+        )
       }
 
       // Update session and handle auth change in a single sync block
       yield* Effect.sync(() => {
         // First clear the session to trigger derived state updates
-        this.session = Option.none();
+        this.session = Option.none()
         // Then immediately set the new session with updated user data
-        this.session = Option.fromNullable(session);
+        this.session = Option.fromNullable(session)
         // Finally handle auth change
-        this.handleAuthChange(session);
-      });
-    }.bind(this));
+        this.handleAuthChange(session)
+      })
+    }.bind(this))
   }
 
   /**
@@ -483,50 +478,49 @@ export class Dashboard {
    * @returns An Effect that handles the identity unlinking process
    */
   unlinkIdentity(provider: AuthProvider) {
-    return Effect.gen(function* (this: Dashboard) {
-      const client = yield* getSupabaseClient();
+    return Effect.gen(function*(this: Dashboard) {
+      const client = yield* getSupabaseClient()
 
-      const user = Option.getOrUndefined(this.user) as User | undefined;
+      const user = Option.getOrUndefined(this.user) as User | undefined
       if (!user) {
         return yield* Effect.fail(
-          new AuthenticationError({ cause: "No user session" })
-        );
+          new AuthenticationError({ cause: "No user session" }),
+        )
       }
 
       if (!hasProviderLinked(user, provider)) {
         return yield* Effect.fail(
           new AuthenticationError({
             cause: `Provider ${provider} not linked`,
-          })
-        );
+          }),
+        )
       }
 
-      const identity = user.identities?.find((i) => i.provider === provider);
+      const identity = user.identities?.find((i) => i.provider === provider)
 
       if (!identity) {
         return yield* Effect.fail(
-          new AuthenticationError({ cause: `Provider ${provider} not found` })
-        );
+          new AuthenticationError({ cause: `Provider ${provider} not found` }),
+        )
       }
 
       const { error } = yield* Effect.tryPromise({
         try: () => client.auth.unlinkIdentity(identity),
-        catch: (error) =>
-          new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
-      });
+        catch: (error) => new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+      })
 
       if (error) {
         return yield* Effect.fail(
-          new AuthenticationError({ cause: extractErrorDetails(error) })
-        );
+          new AuthenticationError({ cause: extractErrorDetails(error) }),
+        )
       }
 
       // Refresh the session to update the state
-      yield* this.refreshSession();
+      yield* this.refreshSession()
 
       // Redirect to auth page with return URL
-      goto(`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`);
-    }.bind(this));
+      goto(`/auth?returnTo=${encodeURIComponent(window.location.pathname)}`)
+    }.bind(this))
   }
 
   /**
@@ -542,29 +536,27 @@ export class Dashboard {
             client.functions.invoke("delete-account", {
               method: "POST",
             }),
-          catch: (error) =>
-            new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new AuthenticationError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.flatMap(({ error }) =>
         error
           ? Effect.fail(
-              new AuthenticationError({
-                cause: `Failed to delete account: ${JSON.stringify(extractErrorDetails(error))}`,
-              })
-            )
+            new AuthenticationError({
+              cause: `Failed to delete account: ${JSON.stringify(extractErrorDetails(error))}`,
+            }),
+          )
           : Effect.void
       ),
       Effect.tap(() =>
         Effect.sync(() => {
           if (PROTECTED_PATHS.some(path => window.location.pathname.startsWith(path))) {
-            goto('/');
+            goto("/")
           }
         })
-      )
-    );
+      ),
+    )
   }
 }
 
-export const dashboard = new Dashboard();
-
+export const dashboard = new Dashboard()

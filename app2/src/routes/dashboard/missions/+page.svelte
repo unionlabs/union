@@ -1,9 +1,7 @@
 <script lang="ts">
-  import MissionTabs from "$lib/dashboard/components/MissionTabs.svelte";
-  import MissionStats from "$lib/dashboard/components/MissionStats.svelte";
+import MissionStats from "$lib/dashboard/components/MissionStats.svelte"
+import MissionTabs from "$lib/dashboard/components/MissionTabs.svelte"
 </script>
 
-  <MissionStats />
-  <MissionTabs />
-
-    
+<MissionStats />
+<MissionTabs />

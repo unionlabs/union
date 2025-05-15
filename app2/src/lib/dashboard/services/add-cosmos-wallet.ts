@@ -1,31 +1,32 @@
-import { Data, Effect, Option, pipe } from "effect"
-import { switchChain } from "$lib/services/transfer-ucs03-evm"
-import type { Chain, WalletClient, Hash } from "viem"
-import { signMessage } from "@wagmi/core"
-import { Siwe } from "ox"
-import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte"
-import { submitWalletVerification } from "$lib/dashboard/queries/private"
 import { getSupabaseClient } from "$lib/dashboard/client"
-import { clearLocalStorageCacheEntry } from "$lib/dashboard/services/cache"
 import { CACHE_VERSION } from "$lib/dashboard/config"
+import { SupabaseError } from "$lib/dashboard/errors"
+import { submitWalletVerification } from "$lib/dashboard/queries/private"
+import { clearLocalStorageCacheEntry } from "$lib/dashboard/services/cache"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import type { WalletStore } from "$lib/dashboard/stores/wallets.svelte"
+import { switchChain } from "$lib/services/transfer-ucs03-cosmos"
+import { cosmosStore, type CosmosWalletId } from "$lib/wallet/cosmos"
+import { Chain } from "@unionlabs/sdk/schema"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { Data, Effect, Option, pipe } from "effect"
+import type { Hash } from "viem"
 
+const allegianceMessage =
+  "I'm signing this message to prove account ownership and to pledge allegiance to zkgm."
 export class WalletVerificationError extends Data.TaggedError("WalletVerificationError")<{
   cause: unknown
   operation: "switchChain" | "sign" | "verify" | "update"
 }> {}
 
 export type AddCosmosWalletState = Data.TaggedEnum<{
-  SwitchChain: { 
+  SwitchChain: {
     chain: Chain
   }
-  Signing: { 
-    walletClient: WalletClient 
+  Signing: {
     chain: Chain
   }
-  Verifying: { 
+  Verifying: {
     address: string
     chain: Chain
     signature: Hash
@@ -63,61 +64,81 @@ const complete = (): StateResult => ({
 
 export const addCosmosWallet = (
   state: AddCosmosWalletState,
-  walletClient: WalletClient
+  selectedChains: Array<string | null>,
 ) => {
   return AddCosmosWalletState.$match(state, {
     SwitchChain: ({ chain }) => {
       return pipe(
         switchChain(chain),
-        Effect.map(() => ok(Signing({ walletClient, chain }), "Chain switched successfully")),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletVerificationError({ 
-            cause: extractErrorDetails(error), 
-            operation: "switchChain" 
-          }))
+        Effect.map(() => ok(Signing({ chain }), "Chain switched successfully")),
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletVerificationError({
+              cause: extractErrorDetails(error),
+              operation: "switchChain",
+            }),
+          )
         ),
         Effect.match({
           onFailure: (error) => fail("Failed to switch chain", error),
-          onSuccess: (result) => result
-        })
+          onSuccess: (result) => result,
+        }),
       )
     },
-    Signing: ({ walletClient, chain }) => {
-      const address = walletClient.account?.address
-      if (!address) {
-        return fail("No wallet address found")
+    Signing: ({ chain }) => {
+      const connectedWalletId = cosmosStore.connectedWallet
+
+      if (!connectedWalletId) {
+        return fail(
+          "No Cosmos wallet selected. Please connect a wallet.",
+          new WalletVerificationError({
+            cause: "No connected Cosmos wallet ID",
+            operation: "sign",
+          }),
+        )
       }
 
-      const siweMessage = Siwe.createMessage({
-        address: address as `0x${string}`,
-        version: "1" as const,
-        chainId: chain.id,
-        nonce: Siwe.generateNonce(),
-        domain: 'dashboard.union.build',
-        uri: 'https://dashboard.union.build/wallet',
-        statement: "Sign this message to verify wallet ownership."
-      })
+      const wallet = window[connectedWalletId as CosmosWalletId]
 
-      const messageToSign = siweMessage.toString()
+      if (!wallet) {
+        return fail(
+          `Selected Cosmos wallet (${connectedWalletId}) not found. Please try reconnecting.`,
+          new WalletVerificationError({
+            cause: `Wallet instance for ${connectedWalletId} not found on window`,
+            operation: "sign",
+          }),
+        )
+      }
 
       return pipe(
-        Effect.tryPromise(() => 
-          signMessage(getWagmiConfig(), {
-            account: address as `0x${string}`,
-            message: messageToSign,
-          })
+        Effect.tryPromise(async () => {
+          const walletKey = await wallet.getKey("union-testnet-9")
+          const address = walletKey.bech32Address
+          const signature = await wallet.signArbitrary(
+            "union-testnet-9",
+            walletKey.bech32Address,
+            allegianceMessage,
+          )
+          return { address, signature }
+        }),
+        Effect.map(({ address, signature }) =>
+          ok(
+            Verifying({ address, chain, signature, message: allegianceMessage }),
+            "Signature received. Verifying...",
+          )
         ),
-        Effect.map((signature) => ok(Verifying({ address, chain, signature, message: messageToSign }), "Signature received. Verifying...")),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletVerificationError({ 
-            cause: extractErrorDetails(error), 
-            operation: "sign" 
-          }))
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletVerificationError({
+              cause: extractErrorDetails(error),
+              operation: "sign",
+            }),
+          )
         ),
         Effect.match({
           onFailure: (error) => fail("Failed to sign message. Please try again.", error),
-          onSuccess: (result) => result
-        })
+          onSuccess: (result) => result,
+        }),
       )
     },
     Verifying: ({ address, chain, signature, message }) => {
@@ -126,41 +147,57 @@ export const addCosmosWallet = (
         Effect.flatMap(client => Effect.tryPromise(() => client.auth.refreshSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
-            return Effect.fail(new WalletVerificationError({ 
-              cause: "No authenticated user found", 
-              operation: "verify" 
-            }))
+            return Effect.fail(
+              new SupabaseError({
+                cause: "No authenticated user found",
+              }),
+            )
           }
           return submitWalletVerification({
             id: session.user.id,
             address,
-            chainId: `cosmos:${chain.id}`,
+            chainId: `cosmos:${chain.chain_id}`,
             message,
-            signature,
-            selectedChains: null
+            signature: JSON.stringify(signature),
+            selectedChains,
           })
+        }),
+        Effect.flatMap(response => {
+          if (Option.isNone(response)) {
+            return Effect.fail(
+              new WalletVerificationError({
+                cause: "Wallet verification failed",
+                operation: "verify",
+              }),
+            )
+          }
+          return Effect.succeed(response.value)
         }),
         Effect.flatMap(() => getSupabaseClient()),
         Effect.flatMap(client => Effect.tryPromise(() => client.auth.getSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
-            return Effect.fail(new WalletVerificationError({ 
-              cause: "No user ID found", 
-              operation: "verify" 
-            }))
+            return Effect.fail(
+              new WalletVerificationError({
+                cause: "No user ID found",
+                operation: "verify",
+              }),
+            )
           }
           return Effect.succeed(ok(Updating(), "Wallet verified. Updating data..."))
         }),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletVerificationError({ 
-            cause: extractErrorDetails(error), 
-            operation: "verify" 
-          }))
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletVerificationError({
+              cause: extractErrorDetails(error),
+              operation: "verify",
+            }),
+          )
         ),
         Effect.match({
-          onFailure: (error) => fail("Failed to verify wallet", error),
-          onSuccess: (result) => result
-        })
+          onFailure: (error) => fail("Failed to verify wallet. Please try again.", error),
+          onSuccess: (result) => result,
+        }),
       )
     },
     Updating: () => {
@@ -169,34 +206,42 @@ export const addCosmosWallet = (
         Effect.flatMap(client => Effect.tryPromise(() => client.auth.getSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
-            return Effect.fail(new WalletVerificationError({ 
-              cause: "No user ID found", 
-              operation: "update" 
-            }))
+            return Effect.fail(
+              new WalletVerificationError({
+                cause: "No user ID found",
+                operation: "update",
+              }),
+            )
           }
           return pipe(
             clearLocalStorageCacheEntry("wallets", `${CACHE_VERSION}:${session.user.id}`),
-            Effect.mapError(error => new WalletVerificationError({ 
-              cause: extractErrorDetails(error), 
-              operation: "update" 
-            })),
+            Effect.mapError(error =>
+              new WalletVerificationError({
+                cause: extractErrorDetails(error),
+                operation: "update",
+              })
+            ),
             Effect.flatMap(() => Effect.sleep("3 seconds")),
-            Effect.flatMap(() => Effect.sync(() => {
-              Option.map(dashboard.wallets, (store: WalletStore) => store.refresh())
-              return complete()
-            }))
+            Effect.flatMap(() =>
+              Effect.sync(() => {
+                Option.map(dashboard.wallets, (store: WalletStore) => store.refresh())
+                return complete()
+              })
+            ),
           )
         }),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletVerificationError({ 
-            cause: extractErrorDetails(error), 
-            operation: "update" 
-          }))
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletVerificationError({
+              cause: extractErrorDetails(error),
+              operation: "update",
+            }),
+          )
         ),
         Effect.match({
           onFailure: (error) => fail("Failed to update wallet data", error),
-          onSuccess: (result) => result
-        })
+          onSuccess: (result) => result,
+        }),
       )
     },
   })

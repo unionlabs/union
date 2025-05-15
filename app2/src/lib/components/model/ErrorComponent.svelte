@@ -266,15 +266,12 @@ const onShowDetails = () => {
             <p>Method and URL: {error.methodAndUrl}</p>
           {:else if error._tag === "ParseError"}
             <p>Actual data that was parsed:</p>
-            <pre
-              class="text-sm"
-            >
+            <pre class="text-sm">
 {JSON.stringify(
                 error.issue.actual,
                 null,
                 2,
-              )}</pre
-            >
+              )}</pre>
           {:else if error._tag === "UnknownException"}
             <p>This is an unknown exception. Full details here:</p>
             <pre class="text-sm">{JSON.stringify(error, null, 2)}</pre>
@@ -300,15 +297,12 @@ const onShowDetails = () => {
             <p>Chain: {error.chain.display_name}</p>
             <p>RPC Type: {error.type}</p>
             <p>Available RPC types:</p>
-            <pre
-              class="text-sm"
-            >
+            <pre class="text-sm">
 {JSON.stringify(
                 error.chain.rpcs.map((r) => r.type),
                 null,
                 2,
-              )}</pre
-            >
+              )}</pre>
           {/if}
         </section>
       </div>

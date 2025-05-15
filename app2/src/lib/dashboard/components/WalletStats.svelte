@@ -1,23 +1,23 @@
 <script lang="ts">
-  import { dashboard } from "$lib/dashboard/stores/user.svelte";
-  import { Option } from "effect";
-  import Card from "$lib/components/ui/Card.svelte";
-  import Skeleton from "$lib/components/ui/Skeleton.svelte";
-  import { page } from "$app/stores";
-  import { uiStore } from "$lib/stores/ui.svelte";
-  import WalletDialog from "./WalletDialog.svelte";
+import { page } from "$app/stores"
+import Card from "$lib/components/ui/Card.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import { Option } from "effect"
+import WalletDialog from "./WalletDialog.svelte"
 
-  // Get wallet statistics
-  let stats = $derived(
-    Option.flatMap(dashboard.wallets, (walletsStore) => 
-      Option.flatMap(walletsStore.wallets, (_walletsData) => 
-        Option.some(walletsStore.stats)
-      )
-    )
-  );
+// Get wallet statistics
+let stats = $derived(
+  Option.flatMap(
+    dashboard.wallets,
+    (walletsStore) =>
+      Option.flatMap(walletsStore.wallets, (_walletsData) => Option.some(walletsStore.stats)),
+  ),
+)
 
-  // Check if we're on the wallets page
-  let isOnWalletsPage = $derived($page.url.pathname === '/dashboard/wallets');
+// Check if we're on the wallets page
+let isOnWalletsPage = $derived($page.url.pathname === "/dashboard/wallets")
 </script>
 
 <Card class="flex flex-col flex-1">
@@ -25,8 +25,8 @@
     <div class="flex items-center justify-between">
       <h3 class="text-sm font-medium text-zinc-200">Wallet Stats</h3>
       {#if !isOnWalletsPage}
-        <a 
-          href="/dashboard/wallets" 
+        <a
+          href="/dashboard/wallets"
           class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded cursor-pointer"
         >
           View wallets
@@ -81,4 +81,4 @@
       </div>
     {/if}
   </div>
-</Card> 
+</Card>

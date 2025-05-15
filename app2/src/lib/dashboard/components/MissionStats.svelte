@@ -1,47 +1,60 @@
 <script lang="ts">
-  import { dashboard } from "$lib/dashboard/stores/user.svelte";
-  import { Option } from "effect";
-  import Card from "$lib/components/ui/Card.svelte";
-  import Skeleton from "$lib/components/ui/Skeleton.svelte";
-  import ProgressBar from "$lib/components/ui/ProgressBar.svelte";
-  import { page } from "$app/stores";
+import { page } from "$app/stores"
+import Card from "$lib/components/ui/Card.svelte"
+import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { Option } from "effect"
 
-  let stats = $derived(
-    Option.flatMap(dashboard.missions, (missions) => 
-      Option.flatMap(missions.available, (availableMissions) =>
-        Option.flatMap(missions.progress, (userMissions) =>
-          Option.some(missions.stats)
-        )
-      )
-    )
-  );
+let stats = $derived(
+  Option.flatMap(
+    dashboard.missions,
+    (missions) =>
+      Option.flatMap(
+        missions.available,
+        (availableMissions) =>
+          Option.flatMap(missions.progress, (userMissions) => Option.some(missions.stats)),
+      ),
+  ),
+)
 
-  // Calculate total possible XP from all missions
-  let totalXP = $derived(
-    Option.flatMap(dashboard.missions, (missions) => 
-      Option.flatMap(missions.available, (availableMissions) => 
-        Option.some(availableMissions.reduce((sum, mission) => sum + (mission.xp || 0), 0))
-      )
-    )
-  );
+// Calculate total possible XP from all missions
+let totalXP = $derived(
+  Option.flatMap(
+    dashboard.missions,
+    (missions) =>
+      Option.flatMap(
+        missions.available,
+        (availableMissions) =>
+          Option.some(availableMissions.reduce((sum, mission) => sum + (mission.xp || 0), 0)),
+      ),
+  ),
+)
 
-  // Calculate earned XP from completed missions
-  let earnedXP = $derived(
-    Option.flatMap(dashboard.missions, (missions) => 
-      Option.flatMap(missions.progress, (userMissions) => 
-        Option.flatMap(missions.available, (availableMissions) => 
-          Option.some(userMissions.reduce((sum, userMission) => {
-            const mission = availableMissions.find(m => m.id === userMission.mission_id);
-            if (!mission || userMission.progression < userMission.threshold) return sum;
-            return sum + (mission.xp || 0);
-          }, 0))
-        )
-      )
-    )
-  );
+// Calculate earned XP from completed missions
+let earnedXP = $derived(
+  Option.flatMap(
+    dashboard.missions,
+    (missions) =>
+      Option.flatMap(
+        missions.progress,
+        (userMissions) =>
+          Option.flatMap(missions.available, (availableMissions) =>
+            Option.some(userMissions.reduce((sum, userMission) => {
+              const mission = availableMissions.find(m =>
+                m.id === userMission.mission_id
+              )
+              if (!mission || userMission.progression < userMission.threshold) {
+                return sum
+              }
+              return sum + (mission.xp || 0)
+            }, 0))),
+      ),
+  ),
+)
 
-  // Check if we're on the missions page
-  let isOnMissionsPage = $derived($page.url.pathname === '/dashboard/missions');
+// Check if we're on the missions page
+let isOnMissionsPage = $derived($page.url.pathname === "/dashboard/missions")
 </script>
 
 <Card class="flex flex-col flex-1">
@@ -49,8 +62,8 @@
     <div class="flex items-center justify-between">
       <h3 class="text-sm font-medium text-zinc-200">Mission Stats</h3>
       {#if !isOnMissionsPage}
-        <a 
-          href="/dashboard/missions" 
+        <a
+          href="/dashboard/missions"
           class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded cursor-pointer"
         >
           View all
@@ -129,9 +142,7 @@
       {/if}
     </div>
     {#if !Option.isNone(dashboard.missions) && !Option.isNone(stats)}
-      <ProgressBar 
-        progress={stats.value.completionRate} 
-      />
+      <ProgressBar progress={stats.value.completionRate} />
     {/if}
   </div>
-</Card> 
+</Card>

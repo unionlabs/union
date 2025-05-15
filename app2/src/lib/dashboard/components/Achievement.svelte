@@ -1,42 +1,53 @@
 <script lang="ts">
-  import type { Achievement as AchievementType } from "../stores/achievements.svelte";
-  import type { UserAchievement } from "../stores/achievements.svelte";
-  import ProgressBar from "$lib/components/ui/ProgressBar.svelte";
-  import { mdToHTML } from "$lib/markdown";
-  import { fade } from "svelte/transition";
-  import MissionCompletedIcon from "$lib/components/icons/MissionCompletedIcon.svelte";
-  import MissionBoxIcon from "$lib/components/icons/MissionBoxIcon.svelte";
+import MissionBoxIcon from "$lib/components/icons/MissionBoxIcon.svelte"
+import MissionCompletedIcon from "$lib/components/icons/MissionCompletedIcon.svelte"
+import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
+import { mdToHTML } from "$lib/markdown"
+import { fade } from "svelte/transition"
+import type { Achievement as AchievementType } from "../stores/achievements.svelte"
+import type { UserAchievement } from "../stores/achievements.svelte"
 
-  type Props = {
-    achievement: AchievementType;
-    userAchievements: UserAchievement[];
-    isCurrent?: boolean;
-    isNext?: boolean;
-    isCompleted?: boolean;
+type Props = {
+  achievement: AchievementType
+  userAchievements: UserAchievement[]
+  isCurrent?: boolean
+  isNext?: boolean
+  isCompleted?: boolean
+}
+
+const { achievement, userAchievements, isCurrent = false, isNext = false, isCompleted = false } =
+  $props()
+
+let showXp = $state(false)
+
+let userAchievement = $derived(
+  userAchievements.find((ua: UserAchievement) => ua.achievement_id === achievement.id),
+)
+let progress = $derived(
+  userAchievement ? (userAchievement.progression / userAchievement.threshold) * 100 : 0,
+)
+let completed = $derived(
+  userAchievement && userAchievement.progression >= userAchievement.threshold,
+)
+
+$effect(() => {
+  if (completed && !showXp) {
+    showXp = true
   }
+})
 
-  const { achievement, userAchievements, isCurrent = false, isNext = false, isCompleted = false } = $props();
-
-  let showXp = $state(false);
-
-  let userAchievement = $derived(userAchievements.find((ua: UserAchievement) => ua.achievement_id === achievement.id));
-  let progress = $derived(userAchievement ? (userAchievement.progression / userAchievement.threshold) * 100 : 0);
-  let completed = $derived(userAchievement && userAchievement.progression >= userAchievement.threshold);
-
-  $effect(() => {
-    if (completed && !showXp) {
-      showXp = true;
-    }
-  });
-
-  function getStatusColor() {
-    if (completed) return "text-accent";
-    if (isNext) return "text-zinc-400";
-    return "text-accent";
+function getStatusColor() {
+  if (completed) {
+    return "text-accent"
   }
+  if (isNext) {
+    return "text-zinc-400"
+  }
+  return "text-accent"
+}
 </script>
 
-<button 
+<button
   type="button"
   class="
     flex flex-col gap-3 p-3 rounded-lg transition-all duration-300 cursor-pointer relative w-full text-left
@@ -49,7 +60,7 @@
   {#if !isNext}
     <div class="absolute -bottom-3 left-1/2 w-0.5 h-3 bg-zinc-700"></div>
   {/if}
-  
+
   <div class="flex items-center justify-between">
     <div class="flex items-center gap-1.5">
       {#if completed}
@@ -65,7 +76,9 @@
     </div>
     <div class="relative">
       <div class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {showXp ? 'scale-110 border-accent/50' : ''} transition-all duration-300 flex items-center justify-center">
-        <span class="text-[10px] lg:text-xs font-medium {showXp ? 'text-accent' : 'text-white'} transition-all duration-300">
+        <span
+          class="text-[10px] lg:text-xs font-medium {showXp ? 'text-accent' : 'text-white'} transition-all duration-300"
+        >
           {achievement.xp} XP
         </span>
       </div>
@@ -84,7 +97,7 @@
   </div>
 
   <div class="flex items-center gap-3">
-    <img 
+    <img
       src={`https://images.cdn.union.build/achievement-${achievement.id}.png`}
       alt={`${achievement.title} achievement icon`}
       class="size-12 lg:size-14 object-contain"
@@ -106,9 +119,11 @@
         {/if}
       </div>
       <div class="flex justify-between text-[10px] lg:text-xs text-zinc-400">
-        <span>Started: {new Date(userAchievement?.created_at ?? '').toLocaleDateString()}</span>
+        <span>Started: {new Date(userAchievement?.created_at ?? "").toLocaleDateString()}</span>
         {#if completed}
-          <span>Completed: {new Date(userAchievement?.achieved_at ?? '').toLocaleDateString()}</span>
+          <span>Completed: {
+              new Date(userAchievement?.achieved_at ?? "").toLocaleDateString()
+            }</span>
         {/if}
       </div>
     </div>
@@ -122,7 +137,11 @@
 
   {#if achievement.reward_achievements}
     <div class="flex flex-col gap-1.5">
-      {#each achievement.reward_achievements.map((r: any) => r.rewards).filter((r: any) => !r.cutoff || new Date(r.cutoff) > new Date()) as reward}
+      {#each achievement.reward_achievements.map((r: any) => r.rewards).filter((r: any) =>
+        !r.cutoff || new Date(r.cutoff) > new Date()
+      ) as
+        reward
+      }
         <div class="flex flex-col rounded bg-zinc-800/50 px-2 py-1 text-xs font-medium text-neutral-300">
           <div>{reward.title}</div>
           {#if reward.cutoff}
@@ -134,4 +153,4 @@
       {/each}
     </div>
   {/if}
-</button> 
+</button>

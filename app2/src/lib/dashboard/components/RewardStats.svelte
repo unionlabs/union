@@ -1,24 +1,27 @@
 <script lang="ts">
-  import { dashboard } from "$lib/dashboard/stores/user.svelte";
-  import { Option } from "effect";
-  import Card from "$lib/components/ui/Card.svelte";
-  import Skeleton from "$lib/components/ui/Skeleton.svelte";
-  import ProgressBar from "$lib/components/ui/ProgressBar.svelte";
-  import { page } from "$app/stores";
+import { page } from "$app/stores"
+import Card from "$lib/components/ui/Card.svelte"
+import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { Option } from "effect"
 
-  // Get reward statistics
-  let stats = $derived(
-    Option.flatMap(dashboard.rewards, (rewardsStore) =>
-      Option.flatMap(rewardsStore.earned, (_earnedData) => 
-        Option.flatMap(rewardsStore.availableRewards, (_availableData) => 
-          Option.some(rewardsStore.stats)
-        )
-      )
-    )
-  );
+// Get reward statistics
+let stats = $derived(
+  Option.flatMap(
+    dashboard.rewards,
+    (rewardsStore) =>
+      Option.flatMap(
+        rewardsStore.earned,
+        (_earnedData) =>
+          Option.flatMap(rewardsStore.availableRewards, (_availableData) =>
+            Option.some(rewardsStore.stats)),
+      ),
+  ),
+)
 
-  // Check if we're on the rewards page
-  let isOnRewardsPage = $derived($page.url.pathname === '/dashboard/rewards');
+// Check if we're on the rewards page
+let isOnRewardsPage = $derived($page.url.pathname === "/dashboard/rewards")
 </script>
 
 <Card class="flex flex-col flex-1">
@@ -26,8 +29,8 @@
     <div class="flex items-center justify-between">
       <h3 class="text-sm font-medium text-zinc-200">Reward Stats</h3>
       {#if !isOnRewardsPage}
-        <a 
-          href="/dashboard/rewards" 
+        <a
+          href="/dashboard/rewards"
           class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded cursor-pointer"
         >
           View all
@@ -100,12 +103,12 @@
       {/if}
     </div>
     {#if !Option.isNone(dashboard.rewards)}
-      <ProgressBar 
+      <ProgressBar
         progress={Option.match(stats, {
           onNone: () => 0,
-          onSome: (s) => s.claimRate
-        })} 
+          onSome: (s) => s.claimRate,
+        })}
       />
     {/if}
   </div>
-</Card> 
+</Card>

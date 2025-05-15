@@ -8,19 +8,19 @@ const projectIds: Record<Edition, string> = {
 }
 
 class UiStore {
-  walletModalOpen: boolean = $state(false);
-  settingsModalOpen: boolean = $state(false);
-  errorsModalOpen: boolean = $state(false);
+  walletModalOpen: boolean = $state(false)
+  settingsModalOpen: boolean = $state(false)
+  errorsModalOpen: boolean = $state(false)
 
-  showZeroBalances: boolean = $state(false);
-  showDeveloperPages: boolean = $state(false);
-  filterWhitelist: boolean = $state(true);
+  showZeroBalances: boolean = $state(false)
+  showDeveloperPages: boolean = $state(false)
+  filterWhitelist: boolean = $state(true)
 
-  edition: Edition = $state("app");
-  overrideEdition: Edition | null = $state(null);
+  edition: Edition = $state("app")
+  overrideEdition: Edition | null = $state(null)
 
-  activeEdition: Edition = $derived(this.overrideEdition ?? this.edition);
-  theme = $derived(themes[this.activeEdition]);
+  activeEdition: Edition = $derived(this.overrideEdition ?? this.edition)
+  theme = $derived(themes[this.activeEdition])
 
   appInfo = $derived({
     base64Icon,
@@ -29,40 +29,40 @@ class UiStore {
     docs: "https://docs.union.build",
     iconUrl: "https://app.union.build/images/logo.png",
     projectId: projectIds[this.activeEdition],
-  });
+  })
 
   private closeAllModals() {
-    this.walletModalOpen = false;
-    this.settingsModalOpen = false;
-    this.errorsModalOpen = false;
+    this.walletModalOpen = false
+    this.settingsModalOpen = false
+    this.errorsModalOpen = false
   }
 
-  openWalletModal() { 
-    this.closeAllModals();
-    this.walletModalOpen = true;
+  openWalletModal() {
+    this.closeAllModals()
+    this.walletModalOpen = true
   }
 
   closeWalletModal() {
-    this.walletModalOpen = false;
+    this.walletModalOpen = false
   }
 
   openSettingsModal() {
-    this.closeAllModals();
-    this.settingsModalOpen = true;
+    this.closeAllModals()
+    this.settingsModalOpen = true
   }
 
   closeSettingsModal() {
-    this.settingsModalOpen = false;
+    this.settingsModalOpen = false
   }
 
   openErrorsModal() {
-    this.errorsModalOpen = true;
+    this.errorsModalOpen = true
   }
 
   closeErrorsModal() {
-    this.closeAllModals();
-    this.errorsModalOpen = false;
+    this.closeAllModals()
+    this.errorsModalOpen = false
   }
 }
 
-export const uiStore = new UiStore();
+export const uiStore = new UiStore()
