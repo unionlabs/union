@@ -88,7 +88,6 @@ export class ExperienceStore {
   )
 
   constructor(private readonly userId: string) {
-    console.log("[dashboard] - Creating experiance store")
     this.loadUserExperience(userId)
     this.loadAvailableLevels()
     this.startPolling(userId)
