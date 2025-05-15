@@ -1,11 +1,12 @@
 import { URLS } from "$lib/constants"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
+import { documentNodeToAnnotations } from "@unionlabs/sdk/utils"
 import { Effect, Option, pipe, Schedule, Schema } from "effect"
 import type { TimeoutException, UnknownException } from "effect/Cause"
 import type { DurationInput } from "effect/Duration"
 import type { ParseError } from "effect/ParseResult"
-import type { TadaDocumentNode } from "gql.tada"
+import type { parseDocument, TadaDocumentNode } from "gql.tada"
 import { request } from "graphql-request"
 
 export type FetchDecodeError = HttpClientError | ParseError | TimeoutException
@@ -34,7 +35,13 @@ export const fetchDecodeGraphql = <S, E, D, V extends object | undefined>(
     return yield* Schema.decodeUnknown(schema)(data).pipe(
       Effect.withSpan("decode"),
     )
-  })
+  }).pipe(
+    Effect.annotateLogs({
+      ...documentNodeToAnnotations(document),
+    }),
+    Effect.tap(Effect.log("query ok")),
+    Effect.tapError(() => Effect.logError("query fail")),
+  )
 
 export const createQuery = <S>({
   url,

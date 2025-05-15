@@ -10,7 +10,13 @@
     "url": "https://github.com/unionlabs/union.git",
     "directory": "ts-sdk"
   },
-  "files": ["LICENSE", "README.md", "dist", "package.json", "src"],
+  "files": [
+    "LICENSE",
+    "README.md",
+    "dist",
+    "package.json",
+    "src"
+  ],
   "exports": {
     ".": {
       "import": "./dist/index.js",
@@ -78,6 +84,7 @@
     "vitest": "^3.0.5"
   },
   "dependencies": {
+    "@0no-co/graphql.web": "^1.1.2",
     "@aptos-labs/ts-sdk": "1.34.0",
     "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/stargate": "^0.33.1",

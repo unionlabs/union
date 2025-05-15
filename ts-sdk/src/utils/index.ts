@@ -43,3 +43,5 @@ export const verifySalt = (hex: `0x${string}`): Effect.Effect<boolean> =>
   })
 
 export const ensureHex = <T extends string>(s: T) => (isHex(s) ? s : toHex(s))
+
+export { documentNodeToAnnotations } from "./gql.js"
