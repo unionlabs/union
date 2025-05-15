@@ -242,7 +242,7 @@ export const submit = Effect.gen(function*() {
       Effect.repeat({ until: WriteCosmos.is("WriteContractComplete") }),
       Effect.andThen(({ exit }) =>
         // TODO: remove cast
-        startPolling(exit.transactionHash as TransactionHash)
+        startPolling(`0x${exit.transactionHash}` as TransactionHash)
       ),
     )
   })
