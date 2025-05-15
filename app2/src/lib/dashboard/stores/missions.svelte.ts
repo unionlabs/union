@@ -1,6 +1,6 @@
 import { Effect, Option, Fiber, Duration, pipe } from "effect";
 import { getUserMissions, getAvailableMissions } from "../queries/index";
-import type { Entity } from "../client";
+import type { Entity } from "../client.ts";
 import { extractErrorDetails } from "@unionlabs/sdk/utils";
 import { MissionError } from "../errors";
 
@@ -164,20 +164,39 @@ export class MissionsStore {
   );
 
   /**
+   * Missions that are past their end date and were not completed.
+   * @example
+   * ```ts
+   * dashboard.missions.expiredUncompleted // Get expired and not completed missions
+   * ```
+   */
+  expiredUncompleted = $derived(
+    this.enhanced.filter(m => m.isExpired && !m.completed)
+      .sort((a, b) => new Date(b.end).getTime() - new Date(a.end).getTime()) // Show most recently expired first
+  );
+
+  /**
    * Overall mission statistics and completion rates
    * @example
    * ```ts
    * dashboard.missions.stats // Get mission statistics
    * ```
    */
-  stats = $derived({
-    total: this.enhanced.length,
-    inProgress: this.active.length,
-    completed: this.completed.length,
-    upcoming: this.upcoming.length,
-    completionRate: this.enhanced.length > 0
-      ? (this.completed.length / this.enhanced.length) * 100
-      : 0,
+  stats = $derived.by(() => {
+    // Calculate the count of missions that are either currently active or already completed.
+    // This will be the denominator for "X / Y completed missions" and the completion rate.
+    const relevantCount = this.enhanced.filter(m => m.isCurrent || m.completed).length;
+    const completedCount = this.completed.length; // Number of truly completed missions.
+
+    return {
+      total: relevantCount, // Total relevant missions for the X/Y display.
+      inProgress: this.active.length,
+      completed: completedCount, // Actual completed missions (numerator).
+      upcoming: this.upcoming.length,
+      completionRate: relevantCount > 0
+        ? (completedCount / relevantCount) * 100
+        : 0,
+    };
   });
 
   constructor(private readonly userId: string) {

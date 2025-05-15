@@ -8,8 +8,12 @@
 
   // Get reward statistics
   let stats = $derived(
-    Option.flatMap(dashboard.rewards, (rewards) => 
-      Option.some(rewards.stats)
+    Option.flatMap(dashboard.rewards, (rewardsStore) =>
+      Option.flatMap(rewardsStore.earned, (_earnedData) => 
+        Option.flatMap(rewardsStore.availableRewards, (_availableData) => 
+          Option.some(rewardsStore.stats)
+        )
+      )
     )
   );
 
@@ -24,7 +28,7 @@
       {#if !isOnRewardsPage}
         <a 
           href="/dashboard/rewards" 
-          class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded"
+          class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded cursor-pointer"
         >
           View all
         </a>
@@ -56,29 +60,42 @@
         <div class="flex flex-col gap-1">
           <div class="text-xs text-zinc-500">Claimed Rewards</div>
           <div class="flex items-center gap-2">
-            <div class="text-lg font-medium">
-              {Option.isNone(stats) ? '0' : stats.value.claimed.toString()}
-            </div>
-            <div class="text-xs text-zinc-500">
-              / {Option.isNone(stats) ? '0' : stats.value.total.toString()}
-            </div>
+            {#if Option.isNone(stats)}
+              <Skeleton class="h-6 w-12" />
+              <Skeleton class="h-3 w-8" />
+            {:else}
+              <div class="text-lg font-medium">
+                {stats.value.claimed.toString()}
+              </div>
+              <div class="text-xs text-zinc-500">
+                / {stats.value.total.toString()}
+              </div>
+            {/if}
           </div>
         </div>
 
         <!-- Queued Rewards -->
         <div class="flex flex-col gap-1">
           <div class="text-xs text-zinc-500">Queued Rewards</div>
-          <div class="text-lg font-medium">
-            {Option.isNone(stats) ? '0' : stats.value.queued.toString()}
-          </div>
+          {#if Option.isNone(stats)}
+            <Skeleton class="h-6 w-12" />
+          {:else}
+            <div class="text-lg font-medium">
+              {stats.value.queued.toString()}
+            </div>
+          {/if}
         </div>
 
         <!-- Claim Rate -->
         <div class="flex flex-col gap-1">
           <div class="text-xs text-zinc-500">Claim Rate</div>
-          <div class="text-lg font-medium">
-            {Option.isNone(stats) ? '0%' : `${Math.round(stats.value.claimRate)}%`}
-          </div>
+          {#if Option.isNone(stats)}
+            <Skeleton class="h-6 w-12" />
+          {:else}
+            <div class="text-lg font-medium">
+              {`${Math.round(stats.value.claimRate)}%`}
+            </div>
+          {/if}
         </div>
       {/if}
     </div>

@@ -550,7 +550,7 @@ export class Dashboard {
         error
           ? Effect.fail(
               new AuthenticationError({
-                cause: `Failed to delete account: ${extractErrorDetails(error)}`,
+                cause: `Failed to delete account: ${JSON.stringify(extractErrorDetails(error))}`,
               })
             )
           : Effect.void

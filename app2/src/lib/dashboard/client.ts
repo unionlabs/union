@@ -6,7 +6,6 @@ import { SupabaseClientError } from "./errors";
 export type Entity<T extends keyof (Database["public"]["Tables"] & Database["public"]["Views"])> =
   (Database["public"]["Tables"] & Database["public"]["Views"])[T]["Row"];
 
-
 let client: ReturnType<typeof createClient<Database>> | null = null;
 
 export const getSupabaseClient = () =>
@@ -25,7 +24,9 @@ export const getSupabaseClient = () =>
     }
 
     client = createClient<Database>(url, anonKey, {
-      auth: { autoRefreshToken: true },
+      auth: {
+        autoRefreshToken: true,
+      },
     });
 
     return client;

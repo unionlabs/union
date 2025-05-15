@@ -41,15 +41,6 @@ export class RewardsStore {
             const isHandled = userReward?.handled ?? false;
             const requiresHandling = reward.default_requires_handling ?? false;
 
-            console.log("[reward] Processing reward:", {
-              id: reward.id,
-              title: reward.title,
-              isClaimed,
-              isQueued,
-              isHandled,
-              requiresHandling
-            });
-
             return {
               ...reward,
               claimed: isClaimed,
@@ -68,7 +59,6 @@ export class RewardsStore {
       })
     ).pipe(
       Option.getOrElse(() => {
-        console.log("[reward] No enhanced rewards available");
         return [];
       })
     )

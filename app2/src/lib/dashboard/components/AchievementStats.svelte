@@ -74,7 +74,7 @@
       {#if !isOnAchievementsPage}
         <a 
           href="/dashboard/achievements" 
-          class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded"
+          class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded cursor-pointer"
         >
           View all
         </a>
@@ -106,12 +106,17 @@
         <div class="flex flex-col gap-1">
           <div class="text-xs text-zinc-500">Achievements</div>
           <div class="flex items-center gap-2">
-            <div class="text-lg font-medium">
-              {Option.isNone(completedCount) ? '0' : completedCount.value.toString()}
-            </div>
-            <div class="text-xs text-zinc-500">
-              / {Option.isNone(totalCount) ? '0' : totalCount.value.toString()}
-            </div>
+            {#if Option.isNone(completedCount) || Option.isNone(totalCount)}
+              <Skeleton class="h-6 w-12" /> 
+              <Skeleton class="h-3 w-8" /> 
+            {:else}
+              <div class="text-lg font-medium">
+                {completedCount.value.toString()}
+              </div>
+              <div class="text-xs text-zinc-500">
+                / {totalCount.value.toString()}
+              </div>
+            {/if}
           </div>
         </div>
 
@@ -119,21 +124,30 @@
         <div class="flex flex-col gap-1">
           <div class="text-xs text-zinc-500">Total XP</div>
           <div class="flex items-center gap-2">
-            <div class="text-lg font-medium">
-              {Option.isNone(earnedXP) ? '0' : earnedXP.value.toString()}
-            </div>
-            <div class="text-xs text-zinc-500">
-              / {Option.isNone(totalXP) ? '0' : totalXP.value.toString()}
-            </div>
+            {#if Option.isNone(earnedXP) || Option.isNone(totalXP)}
+              <Skeleton class="h-6 w-12" />
+              <Skeleton class="h-3 w-8" />
+            {:else}
+              <div class="text-lg font-medium">
+                {earnedXP.value.toString()}
+              </div>
+              <div class="text-xs text-zinc-500">
+                / {totalXP.value.toString()}
+              </div>
+            {/if}
           </div>
         </div>
 
         <!-- Completion Rate -->
         <div class="flex flex-col gap-1">
           <div class="text-xs text-zinc-500">Completion Rate</div>
-          <div class="text-lg font-medium">
-            {Option.isNone(progress) ? '0%' : `${Math.round(progress.value)}%`}
-          </div>
+          {#if Option.isNone(progress)}
+            <Skeleton class="h-6 w-12" />
+          {:else}
+            <div class="text-lg font-medium">
+              {`${Math.round(progress.value)}%`}
+            </div>
+          {/if}
         </div>
       {/if}
     </div>

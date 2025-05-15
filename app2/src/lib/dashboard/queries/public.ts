@@ -2,9 +2,10 @@ import { Effect, pipe, Option } from "effect";
 import { getSupabaseClient } from "../client";
 import { SupabaseError } from "../errors";
 import { retryForever } from "./retry";
-import { withLocalStorageCacheStale } from "../cache";
+import { withLocalStorageCacheStale } from "../services/cache";
 import type { Entity } from "../client";
 import { extractErrorDetails } from "@unionlabs/sdk/utils";
+import { CACHE_VERSION, TTL, STALE } from "../config";
 
 export type Achievement = Entity<"achievements">;
 export type Level = Entity<"levels">;
@@ -12,10 +13,6 @@ export type Category = Entity<"categories">;
 export type UserExperience = Entity<"user_levels">;
 export type Mission = Entity<"missions">;
 export type Reward = Entity<"rewards">;
-
-const TTL = 5 * 60_000;
-const STALE = 15 * 60_000;
-const CACHE_VERSION = "v1";
 
 export const getChains = () =>
   withLocalStorageCacheStale(

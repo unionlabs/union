@@ -18,7 +18,7 @@
       },
       onSome: (user) => {
         const createdAt = new Date(user.created_at).getTime();
-        const oneHourAgo = Date.now() - (60 * 5 * 1000);
+        const oneHourAgo = Date.now() - (60 * 10 * 1000);
         isNewUser = createdAt > oneHourAgo;
       }
     });

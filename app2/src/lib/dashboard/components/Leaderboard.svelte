@@ -52,7 +52,6 @@
             console.log("[leaderboard] No leaderboard entries available");
           },
           onSome: (entries) => {
-            console.log("[leaderboard] Processing leaderboard entries:", entries);
             entries.forEach(async (entry) => {
               if (entry?.user_id && entry?.pfp) {
                 const isValid = await validateAndCacheImage(entry.pfp);

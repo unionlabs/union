@@ -1,9 +1,7 @@
 import type { User } from "@supabase/supabase-js";
-import type { AuthProvider } from "./authentication";
+import type { AuthProvider } from "./stores/user.svelte";
 import { Option, pipe, Effect} from "effect";
-import type { PostgrestSingleResponse, SupabaseClient } from '@supabase/supabase-js';
-import { SupabaseError, AuthenticationError } from './errors';
-import { getSupabaseClient } from './client';
+import { AuthenticationError } from './errors';
   
 
 export const hasProviderLinked = (user: User, provider: AuthProvider) =>
@@ -29,30 +27,6 @@ export const isProviderConnected = (user: User, provider: AuthProvider) =>
     Option.getOrElse(() => false)
   );
 
-export function queryEffect<A>(
-    supabaseCall: () => PromiseLike<PostgrestSingleResponse<A>>
-  ): Effect.Effect<unknown, SupabaseError, A> {
-    return Effect.tryPromise({
-      try: async () => Promise.resolve(await supabaseCall()),
-      catch: (error) => new SupabaseError({ cause: error }),
-    }).pipe(
-      Effect.flatMap(({ data, error }) =>
-        error || !data
-          ? Effect.fail(new SupabaseError({ cause: error ?? "No data returned" }))
-          : Effect.succeed(data)
-      )
-    );
-  }
-
-  export const querySupabase = Effect.gen(function* () {
-    const client = yield* getSupabaseClient();
-  
-    return <A>(
-      cb: (client: SupabaseClient) => PromiseLike<PostgrestSingleResponse<A>>
-    ): Effect.Effect<unknown, SupabaseError, A> => {
-      return queryEffect(() => cb(client));
-    };
-  });
 
 export const requireAuthenticatedUserId = (
   user: unknown
@@ -69,15 +43,4 @@ export const requireAuthenticatedUserId = (
   );
 };
 
-export const getChains = (user: unknown) =>
-    Effect.gen(function* () {
-      const userId = yield* requireAuthenticatedUserId(user);
-  
-      const runQuery = yield* querySupabase;
-      const chains = yield* runQuery((client) =>
-        client.from("chains").select("*").eq("user_id", userId)
-      );
-      
-      return chains;
-});
   
