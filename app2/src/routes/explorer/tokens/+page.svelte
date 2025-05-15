@@ -23,7 +23,9 @@ $effect(() => {
         {#if tokensStore.data.has(chain.universal_chain_id)}
           {@const chainTokens = tokensStore.getData(chain.universal_chain_id)}
           {#if Option.isSome(chainTokens)}
-            <div class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+            <div
+              class="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6"
+            >
               {#each chainTokens.value as token}
                 <TokenComponent
                   {chain}

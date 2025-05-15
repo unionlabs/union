@@ -44,7 +44,9 @@ const exportData = () => {
   <div class="p-4 overflow-y-auto flex-1 max-h-[468px]">
     {#if step.context?.message && Option.isSome(step.context.message)}
       {@const parsedMessage = JSON.parse(step.context.message.value)}
-      <pre class="text-xs rounded whitespace-pre-wrap break-all overflow-x-auto">
+      <pre
+        class="text-xs rounded whitespace-pre-wrap break-all overflow-x-auto"
+      >
             {JSON.stringify(parsedMessage, null, 2)}
           </pre>
     {:else}

@@ -15,8 +15,7 @@ import { tokenErrors, totalErrorCount } from "$lib/stores/app-errors.svelte"
   <div class="overflow-y-auto flex flex-col gap-4">
     {#if Option.isSome(chains.error)}
       <div>
-        <Label>Chain Info Service</Label>
-        <ErrorComponent error={chains.error.value} />
+        <Label>Chain Info Service</Label> <ErrorComponent error={chains.error.value} />
       </div>
     {/if}
     {#each tokenErrors() as { chainId, error }}

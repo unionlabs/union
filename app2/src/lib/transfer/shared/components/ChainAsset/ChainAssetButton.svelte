@@ -130,7 +130,9 @@ const isChainLoading: boolean = $derived(
                     )}
                   >
                   {#if validSelectedAsset}
-                    <div class="absolute inline-flex items-center justify-center w-4 h-4 rounded-full bottom-0 -end-2 bg-clip-text bg-white">
+                    <div
+                      class="absolute inline-flex items-center justify-center w-4 h-4 rounded-full bottom-0 -end-2 bg-clip-text bg-white"
+                    >
                       <img
                         class="h-4 w-4 object-fill"
                         src={selectedAsset.value.logo_uri.value}

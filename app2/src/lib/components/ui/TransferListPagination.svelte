@@ -23,7 +23,9 @@ const { data, onLive, onPrevPage, onNextPage }: Props = $props()
     >
       ←
     </button>
-    <div class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center text-sm justify-center px-4 w-[180px]">
+    <div
+      class="bg-zinc-900 border-t border-b border-zinc-800 flex items-center text-sm justify-center px-4 w-[180px]"
+    >
       {#if Option.isSome(data) && data.value.length > 0}
         <DateTimeComponent value={data.value[0].transfer_send_timestamp} />
       {/if}
