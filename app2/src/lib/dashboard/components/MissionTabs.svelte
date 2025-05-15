@@ -28,7 +28,9 @@ import Mission from "./Mission.svelte"
       {:else}
         <div class="relative w-full">
           <div class="absolute inset-0 flex items-center justify-center z-10 w-full h-full">
-            <div class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center">
+            <div
+              class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center"
+            >
               <div class="text-center">
                 <div class="text-zinc-400 mb-2">No active missions</div>
                 <div class="text-sm text-zinc-500">Check back later for new missions</div>
@@ -83,7 +85,9 @@ import Mission from "./Mission.svelte"
       {:else}
         <div class="relative w-full">
           <div class="absolute inset-0 flex items-center justify-center z-10 w-full h-full">
-            <div class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center">
+            <div
+              class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center"
+            >
               <div class="text-center">
                 <div class="text-zinc-400 mb-2">No upcoming missions</div>
                 <div class="text-sm text-zinc-500">Check back later for new missions</div>
@@ -138,7 +142,9 @@ import Mission from "./Mission.svelte"
       {:else}
         <div class="relative w-full">
           <div class="absolute inset-0 flex items-center justify-center z-10 w-full h-full">
-            <div class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center">
+            <div
+              class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center"
+            >
               <div class="text-center">
                 <div class="text-zinc-400 mb-2">No completed missions</div>
                 <div class="text-sm text-zinc-500">Complete missions to see them here</div>
@@ -192,7 +198,9 @@ import Mission from "./Mission.svelte"
       {:else}
         <div class="relative w-full">
           <div class="absolute inset-0 flex items-center justify-center z-10 w-full h-full">
-            <div class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center">
+            <div
+              class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center"
+            >
               <div class="text-center">
                 <div class="text-zinc-400 mb-2">No expired missions</div>
                 <div class="text-sm text-zinc-500">

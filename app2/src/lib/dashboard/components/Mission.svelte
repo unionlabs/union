@@ -73,7 +73,9 @@ function toggleExpand() {
     </div>
     <div class="flex items-center gap-2">
       <div class="relative">
-        <div class="px-2 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {showXp ? 'scale-110 border-accent/50' : ''} transition-all duration-300">
+        <div
+          class="px-2 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {showXp ? 'scale-110 border-accent/50' : ''} transition-all duration-300"
+        >
           <span
             class="text-[10px] lg:text-xs font-medium {showXp ? 'text-accent' : 'text-white'} transition-all duration-300"
           >
@@ -92,7 +94,9 @@ function toggleExpand() {
       class="flex flex-col gap-4"
       transition:fade
     >
-      <div class="text-xs lg:text-sm text-neutral-300 [&_a]:text-accent [&_strong]:font-bold [&_strong]:text-white">
+      <div
+        class="text-xs lg:text-sm text-neutral-300 [&_a]:text-accent [&_strong]:font-bold [&_strong]:text-white"
+      >
         {#await mdToHTML(mission.description)}
           <p>Loading description...</p>
         {:then vFile}

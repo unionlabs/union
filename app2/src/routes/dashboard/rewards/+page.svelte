@@ -127,7 +127,9 @@ $effect(() => {
               {#if reward.status !== "available"}
                 <div class="flex items-center gap-1.5">
                   <div class="relative">
-                    <div class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 hover:scale-110 hover:border-accent/50 transition-all duration-300 flex items-center justify-center">
+                    <div
+                      class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 hover:scale-110 hover:border-accent/50 transition-all duration-300 flex items-center justify-center"
+                    >
                       <span
                         class="text-[10px] lg:text-xs font-medium {status.color} transition-all duration-300"
                       >
@@ -167,9 +169,12 @@ $effect(() => {
                 {#if reward.meta}
                   <div class="flex flex-col gap-1.5">
                     <div class="text-[10px] lg:text-xs text-zinc-400">Reward Details:</div>
-                    <pre class="text-[10px] lg:text-xs text-zinc-300 bg-zinc-800/50 p-2 rounded">
+                    <pre
+                      class="text-[10px] lg:text-xs text-zinc-300 bg-zinc-800/50 p-2 rounded"
+                    >
                         {JSON.stringify(reward.meta, null, 2)}
-                      </pre>
+                      </pre
+                    >
                   </div>
                 {/if}
               </div>
