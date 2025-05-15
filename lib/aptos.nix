@@ -92,13 +92,13 @@ _: {
 
       movefmt = craneLib.buildPackage rec {
         pname = "movefmt";
-        version = "1dd781497c2a38193461cc09083c9d0d9a9485e2";
+        version = "3201309e4cce72205994e32a4d45d1447db705e5";
 
         nativeBuildInputs = [ pkgs.git ];
 
         src = builtins.fetchGit {
           url = "https://github.com/movebit/movefmt";
-          ref = "main";
+          ref = "develop";
           rev = version;
         };
 
