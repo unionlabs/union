@@ -132,7 +132,7 @@ export class ExperienceStore {
    * @private
    */
   private startPolling(userId: string) {
-    this.stopPolling() // Make sure to stop any existing poll
+    this.stopPolling()
 
     // Start polling fiber
     const self = this
