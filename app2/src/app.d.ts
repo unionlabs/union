@@ -1,7 +1,7 @@
 import type { Window as KeplrWindow } from "@keplr-wallet/types"
 import type { LeapWindow } from "@leapwallet/types"
-import type { AptosBrowserWallet } from "@unionlabs/client"
 import type { Session } from "@supabase/supabase-js"
+import type { AptosBrowserWallet } from "@unionlabs/client"
 import type { Option } from "effect"
 
 type FeaturesQuery = ReturnType<typeof enabledFeatures>

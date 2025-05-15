@@ -1,21 +1,22 @@
-import type { User } from "@supabase/supabase-js";
-import type { AuthProvider } from "./stores/user.svelte";
-import { Option, pipe, Effect} from "effect";
-import { AuthenticationError } from './errors';
-  
+import type { User } from "@supabase/supabase-js"
+import { Effect, Option, pipe } from "effect"
+import { AuthenticationError } from "./errors"
+import type { AuthProvider } from "./stores/user.svelte"
 
 export const hasProviderLinked = (user: User, provider: AuthProvider) =>
-  user.identities?.some(identity => identity.provider === provider) ?? false;
+  user.identities?.some(identity => identity.provider === provider) ?? false
 
 export const getProviderId = (user: User, provider: AuthProvider) =>
   pipe(
     user.identities,
     Option.fromNullable,
     Option.flatMap(identities =>
-      Option.fromNullable(identities.find(id => id.provider.toLowerCase() === provider.toLowerCase()))
+      Option.fromNullable(
+        identities.find(id => id.provider.toLowerCase() === provider.toLowerCase()),
+      )
     ),
-    Option.map(identity => identity.id)
-  );
+    Option.map(identity => identity.id),
+  )
 
 export const isProviderConnected = (user: User, provider: AuthProvider) =>
   pipe(
@@ -24,23 +25,20 @@ export const isProviderConnected = (user: User, provider: AuthProvider) =>
     Option.map(identities =>
       identities.some(id => id.provider.toLowerCase() === provider.toLowerCase())
     ),
-    Option.getOrElse(() => false)
-  );
-
+    Option.getOrElse(() => false),
+  )
 
 export const requireAuthenticatedUserId = (
-  user: unknown
+  user: unknown,
 ): Effect.Effect<unknown, AuthenticationError, string> => {
   return pipe(
     Option.fromNullable((user as any)?.session?.user?.id),
     Option.match({
       onNone: () =>
         Effect.fail(
-          new AuthenticationError({ cause: "User is not authenticated" })
+          new AuthenticationError({ cause: "User is not authenticated" }),
         ),
       onSome: (userId) => Effect.succeed(userId),
-    })
-  );
-};
-
-  
+    }),
+  )
+}

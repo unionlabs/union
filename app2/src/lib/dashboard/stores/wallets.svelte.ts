@@ -1,37 +1,43 @@
-import { Effect, Option, Fiber, Duration, pipe } from "effect";
-import { getWalletsByUserId, insertWalletData, removeUserWallet } from "../queries/private";
-import type { Wallet } from "../queries/private";
-import { getChains } from "../queries/public";
-import type { Entity } from "../client";
-import { extractErrorDetails } from "@unionlabs/sdk/utils";
-import { WalletError } from "../errors";
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { Duration, Effect, Fiber, Option, pipe } from "effect"
+import type { Entity } from "../client"
+import { WalletError } from "../errors"
+import { getWalletsByUserId, insertWalletData, removeUserWallet } from "../queries/private"
+import type { Wallet } from "../queries/private"
+import { getChains } from "../queries/public"
 
-const POLL_INTERVAL = 5 * 60_000;
+const POLL_INTERVAL = 5 * 60_000
 
-function getWalletCategory(chainId: string): 'evm' | 'cosmos' | 'other' {
-  if (!chainId) return 'other';
-  const lowerChainId = chainId.toLowerCase();
-  if (lowerChainId === 'evm') return 'evm';
-  if (lowerChainId.startsWith('cosmos:')) return 'cosmos';
-  return 'other'; 
+function getWalletCategory(chainId: string): "evm" | "cosmos" | "other" {
+  if (!chainId) {
+    return "other"
+  }
+  const lowerChainId = chainId.toLowerCase()
+  if (lowerChainId === "evm") {
+    return "evm"
+  }
+  if (lowerChainId.startsWith("cosmos:")) {
+    return "cosmos"
+  }
+  return "other"
 }
 
-export type Chain = Entity<"chains">;
+export type Chain = Entity<"chains">
 
 export type EnhancedWallet = Wallet & {
-  hasGrouping: boolean;
-  createdAt: Date;
-};
+  hasGrouping: boolean
+  createdAt: Date
+}
 
 export class WalletStore {
   /** User\'s wallets */
-  wallets = $state<Option.Option<Array<Wallet>>>(Option.none());
+  wallets = $state<Option.Option<Array<Wallet>>>(Option.none())
 
   /** Available chains */
-  chains = $state<Option.Option<Array<Chain>>>(Option.none());
+  chains = $state<Option.Option<Array<Chain>>>(Option.none())
 
   /** Polling fiber */
-  private pollFiber: Fiber.Fiber<never, Error> | null = null;
+  private pollFiber: Fiber.Fiber<never, Error> | null = null
 
   /**
    * Enhanced wallet data with additional computed properties
@@ -47,15 +53,15 @@ export class WalletStore {
           ...wallet,
           hasGrouping: wallet.grouping !== null,
           createdAt: new Date(wallet.created_at),
-        } as EnhancedWallet))
-      );
+        } as EnhancedWallet)),
+      )
     }).pipe(
       Option.getOrElse(() => {
-        console.log("[wallet] No enhanced wallets available");
-        return [] as Array<EnhancedWallet>;
-      })
-    )
-  );
+        console.log("[wallet] No enhanced wallets available")
+        return [] as Array<EnhancedWallet>
+      }),
+    ),
+  )
 
   /**
    * Wallets grouped by chain
@@ -66,14 +72,14 @@ export class WalletStore {
    */
   byChain = $derived(
     this.enhanced.reduce<Record<string, Array<EnhancedWallet>>>((acc, wallet) => {
-      const chain = wallet.chain_id;
+      const chain = wallet.chain_id
       if (!acc[chain]) {
-        acc[chain] = [];
+        acc[chain] = []
       }
-      acc[chain].push(wallet);
-      return acc;
-    }, {})
-  );
+      acc[chain].push(wallet)
+      return acc
+    }, {}),
+  )
 
   /**
    * Wallets with grouping
@@ -83,8 +89,8 @@ export class WalletStore {
    * \`\`\`
    */
   grouped = $derived(
-    this.enhanced.filter((w) => w.hasGrouping)
-  );
+    this.enhanced.filter((w) => w.hasGrouping),
+  )
 
   /**
    * Wallets without grouping
@@ -94,8 +100,8 @@ export class WalletStore {
    * \`\`\`
    */
   ungrouped = $derived(
-    this.enhanced.filter((w) => !w.hasGrouping)
-  );
+    this.enhanced.filter((w) => !w.hasGrouping),
+  )
 
   /**
    * Wallet statistics
@@ -106,16 +112,16 @@ export class WalletStore {
    */
   stats = $derived({
     total: this.enhanced.length,
-    evmCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === 'evm').length,
-    cosmosCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === 'cosmos').length,
-    otherCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === 'other').length,
-  });
+    evmCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === "evm").length,
+    cosmosCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === "cosmos").length,
+    otherCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === "other").length,
+  })
 
   constructor(private readonly userId: string) {
-    console.log("[wallet] Initializing WalletStore for user:", userId);
-    this.loadWallets(userId);
-    this.loadChains();
-    this.startPolling(userId);
+    console.log("[wallet] Initializing WalletStore for user:", userId)
+    this.loadWallets(userId)
+    this.loadChains()
+    this.startPolling(userId)
   }
 
   /**
@@ -128,18 +134,20 @@ export class WalletStore {
       pipe(
         getWalletsByUserId(userId),
         Effect.tap((result) => {
-          console.log("[wallet] User wallets loaded:", result);
-          this.wallets = result;
-          return Effect.void;
+          console.log("[wallet] User wallets loaded:", result)
+          this.wallets = result
+          return Effect.void
         }),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletError({ 
-            cause: extractErrorDetails(error), 
-            operation: "load" 
-          }))
-        )
-      )
-    );
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletError({
+              cause: extractErrorDetails(error),
+              operation: "load",
+            }),
+          )
+        ),
+      ),
+    )
   }
 
   /**
@@ -151,18 +159,20 @@ export class WalletStore {
       pipe(
         getChains(),
         Effect.tap((result) => {
-          console.log("[wallet] Chains loaded:", result);
-          this.chains = result;
-          return Effect.void;
+          console.log("[wallet] Chains loaded:", result)
+          this.chains = result
+          return Effect.void
         }),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletError({ 
-            cause: extractErrorDetails(error), 
-            operation: "loadChains" 
-          }))
-        )
-      )
-    );
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletError({
+              cause: extractErrorDetails(error),
+              operation: "loadChains",
+            }),
+          )
+        ),
+      ),
+    )
   }
 
   /**
@@ -171,28 +181,30 @@ export class WalletStore {
    * @private
    */
   private startPolling(userId: string) {
-    this.stopPolling(); // Make sure to stop any existing poll
+    this.stopPolling() // Make sure to stop any existing poll
 
     // Start polling fiber
-    const self = this;
+    const self = this
     this.pollFiber = Effect.runFork(
       Effect.forever(
         pipe(
           getWalletsByUserId(userId),
           Effect.tap((result) => {
-            self.wallets = result;
-            return Effect.void;
+            self.wallets = result
+            return Effect.void
           }),
-          Effect.catchAll((error) => 
-            Effect.fail(new WalletError({ 
-              cause: extractErrorDetails(error), 
-              operation: "load" 
-            }))
+          Effect.catchAll((error) =>
+            Effect.fail(
+              new WalletError({
+                cause: extractErrorDetails(error),
+                operation: "load",
+              }),
+            )
           ),
-          Effect.delay(Duration.millis(POLL_INTERVAL))
-        )
-      )
-    );
+          Effect.delay(Duration.millis(POLL_INTERVAL)),
+        ),
+      ),
+    )
   }
 
   /**
@@ -201,8 +213,8 @@ export class WalletStore {
    */
   private stopPolling() {
     if (this.pollFiber) {
-      Effect.runPromise(Fiber.interrupt(this.pollFiber));
-      this.pollFiber = null;
+      Effect.runPromise(Fiber.interrupt(this.pollFiber))
+      this.pollFiber = null
     }
   }
 
@@ -210,17 +222,17 @@ export class WalletStore {
    * Refreshes all wallet data for the current user
    */
   refresh() {
-    this.loadWallets(this.userId);
-    this.loadChains();
+    this.loadWallets(this.userId)
+    this.loadChains()
   }
 
   /**
    * Cleans up resources when the store is no longer needed
    */
   cleanup() {
-    this.stopPolling();
-    this.wallets = Option.none();
-    this.chains = Option.none();
+    this.stopPolling()
+    this.wallets = Option.none()
+    this.chains = Option.none()
   }
 
   /**
@@ -233,64 +245,72 @@ export class WalletStore {
       removeUserWallet(this.userId, address),
       Effect.flatMap((dbSuccess) => {
         if (dbSuccess) {
-          const currentWallets = Option.getOrElse(this.wallets, () => [] as Array<Wallet>);
-          this.wallets = Option.some(currentWallets.filter(wallet => wallet.address !== address));
-          
-          console.log(`[wallet] Optimistically removed ${address}. Forcing store refresh.`);
-          this.refresh();
+          const currentWallets = Option.getOrElse(this.wallets, () => [] as Array<Wallet>)
+          this.wallets = Option.some(currentWallets.filter(wallet => wallet.address !== address))
 
-          return Effect.succeed(true);
+          console.log(`[wallet] Optimistically removed ${address}. Forcing store refresh.`)
+          this.refresh()
+
+          return Effect.succeed(true)
         }
-        return Effect.succeed(false);
+        return Effect.succeed(false)
       }),
-      Effect.catchAll((error) => 
-        Effect.fail(new WalletError({ 
-          cause: extractErrorDetails(error), 
-          operation: "remove" 
-        }))
-      )
-    );
+      Effect.catchAll((error) =>
+        Effect.fail(
+          new WalletError({
+            cause: extractErrorDetails(error),
+            operation: "remove",
+          }),
+        )
+      ),
+    )
   }
 
   // Method to remove an entire wallet group by its groupingId
   removeWalletGroup(groupingId: string) {
-    if (!groupingId) return Effect.succeed(false); // Or Effect.fail if this is an error state
+    if (!groupingId) {
+      return Effect.succeed(false) // Or Effect.fail if this is an error state
+    }
 
-    const walletsInGroup = this.enhanced.filter(w => w.grouping === groupingId);
-    if (walletsInGroup.length === 0) return Effect.succeed(true); // No wallets in group, consider it success
+    const walletsInGroup = this.enhanced.filter(w => w.grouping === groupingId)
+    if (walletsInGroup.length === 0) {
+      return Effect.succeed(true) // No wallets in group, consider it success
+    }
 
-    const removalEffects = walletsInGroup.map(wallet => 
+    const removalEffects = walletsInGroup.map(wallet =>
       removeUserWallet(this.userId, wallet.address)
-    );
+    )
 
     return pipe(
       Effect.all(removalEffects, { concurrency: "inherit", discard: false }), // discard:false to get all results
       Effect.flatMap((results) => {
         // Check if all removals were successful (or handle partial success)
-        const allSucceeded = results.every(res => res); // Assuming removeUserWallet returns boolean Effect
+        const allSucceeded = results.every(res => res) // Assuming removeUserWallet returns boolean Effect
         if (allSucceeded) {
-          const currentWallets = Option.getOrElse(this.wallets, () => [] as Array<Wallet>);
+          const currentWallets = Option.getOrElse(this.wallets, () => [] as Array<Wallet>)
           this.wallets = Option.some(
-            currentWallets.filter(wallet => wallet.grouping !== groupingId)
-          );
-          console.log(`[wallet] Optimistically removed group ${groupingId}. Forcing store refresh.`);
-          this.refresh(); 
-          return Effect.succeed(true);
+            currentWallets.filter(wallet => wallet.grouping !== groupingId),
+          )
+          console.log(`[wallet] Optimistically removed group ${groupingId}. Forcing store refresh.`)
+          this.refresh()
+          return Effect.succeed(true)
         }
         // Handle partial failure if necessary, for now, let's say if not all succeed, it's a failure
-        console.error(`[wallet] Failed to remove some wallets in group ${groupingId}`);
+        console.error(`[wallet] Failed to remove some wallets in group ${groupingId}`)
         // Optionally, you could try to refresh to get the actual state from DB
-        this.refresh(); 
-        return Effect.succeed(false); // Or Effect.fail
+        this.refresh()
+        return Effect.succeed(false) // Or Effect.fail
       }),
       Effect.catchAll((error) => {
-        console.error(`[wallet] Error removing wallet group ${groupingId}:`, error);
-        this.refresh(); // Refresh to sync with DB state after error
-        return Effect.fail(new WalletError({ 
-          cause: extractErrorDetails(error),
-          operation: "remove"
-        }));
-      })
-    );
+        console.error(`[wallet] Error removing wallet group ${groupingId}:`, error)
+        this.refresh() // Refresh to sync with DB state after error
+        return Effect.fail(
+          new WalletError({
+            cause: extractErrorDetails(error),
+            operation: "remove",
+          }),
+        )
+      }),
+    )
   }
 }

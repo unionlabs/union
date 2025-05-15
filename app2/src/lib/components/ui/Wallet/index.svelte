@@ -1,11 +1,11 @@
 <script lang="ts">
 import Connection from "$lib/components/ui/Wallet/connect/connection.svelte"
-import { dashboard } from "$lib/dashboard/stores/user.svelte";
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { cosmosStore, cosmosWalletsInformation } from "$lib/wallet/cosmos/index.js"
 import { evmWalletsInformation, sepoliaStore } from "$lib/wallet/evm/index.js"
-import Modal from "../Modal.svelte"
 import { Option } from "effect"
+import Modal from "../Modal.svelte"
 
 let currentWalletType = $state("all")
 
@@ -29,7 +29,9 @@ $effect(() => {
     {#if Option.isSome(dashboard.user)}
       <p class="text-sm text-zinc-500 dark:text-zinc-400">Chose how you want to connect</p>
     {:else}
-      <p class="text-sm text-zinc-500 dark:text-zinc-400">Connect your dashboard accouunt to earn points.</p>
+      <p class="text-sm text-zinc-500 dark:text-zinc-400">
+        Connect your dashboard accouunt to earn points.
+      </p>
     {/if}
     <nav
       class="flex gap-1 mt-4 relative"
@@ -45,7 +47,8 @@ $effect(() => {
         : "66.666%"}
         style:width="33.333%"
         style:height="100%"
-      ></div>
+      >
+      </div>
       <button
         onclick={() => currentWalletType = "all"}
         class="

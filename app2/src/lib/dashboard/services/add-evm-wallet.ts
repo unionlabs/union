@@ -1,16 +1,16 @@
-import { Data, Effect, Option, pipe } from "effect"
-import { switchChain } from "$lib/services/transfer-ucs03-evm"
-import type { Chain, WalletClient, Hash } from "viem"
-import { signMessage } from "@wagmi/core"
-import { Siwe } from "ox"
-import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte"
-import { submitWalletVerification } from "$lib/dashboard/queries/private"
 import { getSupabaseClient } from "$lib/dashboard/client"
-import { clearLocalStorageCacheEntry } from "$lib/dashboard/services/cache"
 import { CACHE_VERSION } from "$lib/dashboard/config"
+import { submitWalletVerification } from "$lib/dashboard/queries/private"
+import { clearLocalStorageCacheEntry } from "$lib/dashboard/services/cache"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import type { WalletStore } from "$lib/dashboard/stores/wallets.svelte"
+import { switchChain } from "$lib/services/transfer-ucs03-evm"
+import { getWagmiConfig } from "$lib/wallet/evm/wagmi-config.svelte"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { signMessage } from "@wagmi/core"
+import { Data, Effect, Option, pipe } from "effect"
+import { Siwe } from "ox"
+import type { Chain, Hash, WalletClient } from "viem"
 
 export class WalletVerificationError extends Data.TaggedError("WalletVerificationError")<{
   cause: unknown
@@ -18,14 +18,14 @@ export class WalletVerificationError extends Data.TaggedError("WalletVerificatio
 }> {}
 
 export type AddEvmWalletState = Data.TaggedEnum<{
-  SwitchChain: { 
+  SwitchChain: {
     chain: Chain
   }
-  Signing: { 
-    walletClient: WalletClient 
+  Signing: {
+    walletClient: WalletClient
     chain: Chain
   }
-  Verifying: { 
+  Verifying: {
     address: string
     chain: Chain
     signature: Hash
@@ -63,23 +63,25 @@ const complete = (): StateResult => ({
 
 export const addEvmWallet = (
   state: AddEvmWalletState,
-  walletClient: WalletClient
+  walletClient: WalletClient,
 ) => {
   return AddEvmWalletState.$match(state, {
     SwitchChain: ({ chain }) => {
       return pipe(
         switchChain(chain),
         Effect.map(() => ok(Signing({ walletClient, chain }), "Chain switched successfully")),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletVerificationError({ 
-            cause: extractErrorDetails(error), 
-            operation: "switchChain" 
-          }))
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletVerificationError({
+              cause: extractErrorDetails(error),
+              operation: "switchChain",
+            }),
+          )
         ),
         Effect.match({
           onFailure: (error) => fail("Failed to switch chain", error),
-          onSuccess: (result) => result
-        })
+          onSuccess: (result) => result,
+        }),
       )
     },
     Signing: ({ walletClient, chain }) => {
@@ -93,31 +95,38 @@ export const addEvmWallet = (
         version: "1" as const,
         chainId: chain.id,
         nonce: Siwe.generateNonce(),
-        domain: 'dashboard.union.build',
-        uri: 'https://dashboard.union.build/wallet',
-        statement: "Sign this message to verify wallet ownership."
+        domain: "dashboard.union.build",
+        uri: "https://dashboard.union.build/wallet",
+        statement: "Sign this message to verify wallet ownership.",
       })
 
       const messageToSign = siweMessage.toString()
 
       return pipe(
-        Effect.tryPromise(() => 
+        Effect.tryPromise(() =>
           signMessage(getWagmiConfig(), {
             account: address as `0x${string}`,
             message: messageToSign,
           })
         ),
-        Effect.map((signature) => ok(Verifying({ address, chain, signature, message: messageToSign }), "Signature received. Verifying...")),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletVerificationError({ 
-            cause: extractErrorDetails(error), 
-            operation: "sign" 
-          }))
+        Effect.map((signature) =>
+          ok(
+            Verifying({ address, chain, signature, message: messageToSign }),
+            "Signature received. Verifying...",
+          )
+        ),
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletVerificationError({
+              cause: extractErrorDetails(error),
+              operation: "sign",
+            }),
+          )
         ),
         Effect.match({
           onFailure: (error) => fail("Failed to sign message. Please try again.", error),
-          onSuccess: (result) => result
-        })
+          onSuccess: (result) => result,
+        }),
       )
     },
     Verifying: ({ address, chain, signature, message }) => {
@@ -126,10 +135,12 @@ export const addEvmWallet = (
         Effect.flatMap(client => Effect.tryPromise(() => client.auth.refreshSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
-            return Effect.fail(new WalletVerificationError({ 
-              cause: "No authenticated user found", 
-              operation: "verify" 
-            }))
+            return Effect.fail(
+              new WalletVerificationError({
+                cause: "No authenticated user found",
+                operation: "verify",
+              }),
+            )
           }
           return submitWalletVerification({
             id: session.user.id,
@@ -137,30 +148,34 @@ export const addEvmWallet = (
             chainId: `evm:${chain.id}`,
             message,
             signature,
-            selectedChains: null
+            selectedChains: null,
           })
         }),
         Effect.flatMap(() => getSupabaseClient()),
         Effect.flatMap(client => Effect.tryPromise(() => client.auth.getSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
-            return Effect.fail(new WalletVerificationError({ 
-              cause: "No user ID found", 
-              operation: "verify" 
-            }))
+            return Effect.fail(
+              new WalletVerificationError({
+                cause: "No user ID found",
+                operation: "verify",
+              }),
+            )
           }
           return Effect.succeed(ok(Updating(), "Wallet verified. Updating data..."))
         }),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletVerificationError({ 
-            cause: extractErrorDetails(error), 
-            operation: "verify" 
-          }))
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletVerificationError({
+              cause: extractErrorDetails(error),
+              operation: "verify",
+            }),
+          )
         ),
         Effect.match({
           onFailure: (error) => fail("Failed to verify wallet", error),
-          onSuccess: (result) => result
-        })
+          onSuccess: (result) => result,
+        }),
       )
     },
     Updating: () => {
@@ -169,34 +184,42 @@ export const addEvmWallet = (
         Effect.flatMap(client => Effect.tryPromise(() => client.auth.getSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
-            return Effect.fail(new WalletVerificationError({ 
-              cause: "No user ID found", 
-              operation: "update" 
-            }))
+            return Effect.fail(
+              new WalletVerificationError({
+                cause: "No user ID found",
+                operation: "update",
+              }),
+            )
           }
           return pipe(
             clearLocalStorageCacheEntry("wallets", `${CACHE_VERSION}:${session.user.id}`),
-            Effect.mapError(error => new WalletVerificationError({ 
-              cause: extractErrorDetails(error), 
-              operation: "update" 
-            })),
+            Effect.mapError(error =>
+              new WalletVerificationError({
+                cause: extractErrorDetails(error),
+                operation: "update",
+              })
+            ),
             Effect.flatMap(() => Effect.sleep("3 seconds")),
-            Effect.flatMap(() => Effect.sync(() => {
-              Option.map(dashboard.wallets, (store: WalletStore) => store.refresh())
-              return complete()
-            }))
+            Effect.flatMap(() =>
+              Effect.sync(() => {
+                Option.map(dashboard.wallets, (store: WalletStore) => store.refresh())
+                return complete()
+              })
+            ),
           )
         }),
-        Effect.catchAll((error) => 
-          Effect.fail(new WalletVerificationError({ 
-            cause: extractErrorDetails(error), 
-            operation: "update" 
-          }))
+        Effect.catchAll((error) =>
+          Effect.fail(
+            new WalletVerificationError({
+              cause: extractErrorDetails(error),
+              operation: "update",
+            }),
+          )
         ),
         Effect.match({
           onFailure: (error) => fail("Failed to update wallet data", error),
-          onSuccess: (result) => result
-        })
+          onSuccess: (result) => result,
+        }),
       )
     },
   })

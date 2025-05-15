@@ -4,12 +4,18 @@
   "lineWidth": 100,
   "newLineKind": "auto",
   "useTabs": false,
+  "includes": ["**/*.{ts,tsx,js,jsx,json,svelte,html}"],
+  "excludes": ["**/node_modules", "**/dist"],
   "typescript": {
     "useTabs": false,
     "semiColons": "asi",
     "quoteProps": "consistent",
     "singleBodyPosition": "nextLine"
   },
+  "plugins": [
+    "https://plugins.dprint.dev/g-plane/markup_fmt-v0.20.0.wasm",
+    "https://plugins.dprint.dev/typescript-0.95.3.wasm"
+  ],
   "markup": {
     "svelte.scriptIndent": false,
     "astro.scriptIndent": false,

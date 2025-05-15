@@ -515,58 +515,58 @@ export type Database = {
         Row: {
           "% of TOTAL": string | null
           "100XP": string | null
-          earliest_smart_follower_votes_timestamp: string | null
-          earliest_yap_votes_timestamp: string | null
-          follower: number | null
-          lifetime_yaps: string | null
-          smart_follower: number | null
+          "earliest_smart_follower_votes_timestamp": string | null
+          "earliest_yap_votes_timestamp": string | null
+          "follower": number | null
+          "lifetime_yaps": string | null
+          "smart_follower": number | null
           "TOTAL AVAILABLE VOTES": number | null
           "TOTAL VOTES TO UNION": number | null
-          total_smart_follower_votes: number | null
-          total_votes: number | null
-          total_yap_votes: string | null
-          twitter_id: number
-          twitter_username: string | null
-          weighted_smart_follower_votes_timestamp: string | null
-          weighted_yap_votes_timestamp: string | null
+          "total_smart_follower_votes": number | null
+          "total_votes": number | null
+          "total_yap_votes": string | null
+          "twitter_id": number
+          "twitter_username": string | null
+          "weighted_smart_follower_votes_timestamp": string | null
+          "weighted_yap_votes_timestamp": string | null
           "WWS NFT": string | null
         }
         Insert: {
           "% of TOTAL"?: string | null
           "100XP"?: string | null
-          earliest_smart_follower_votes_timestamp?: string | null
-          earliest_yap_votes_timestamp?: string | null
-          follower?: number | null
-          lifetime_yaps?: string | null
-          smart_follower?: number | null
+          "earliest_smart_follower_votes_timestamp"?: string | null
+          "earliest_yap_votes_timestamp"?: string | null
+          "follower"?: number | null
+          "lifetime_yaps"?: string | null
+          "smart_follower"?: number | null
           "TOTAL AVAILABLE VOTES"?: number | null
           "TOTAL VOTES TO UNION"?: number | null
-          total_smart_follower_votes?: number | null
-          total_votes?: number | null
-          total_yap_votes?: string | null
-          twitter_id: number
-          twitter_username?: string | null
-          weighted_smart_follower_votes_timestamp?: string | null
-          weighted_yap_votes_timestamp?: string | null
+          "total_smart_follower_votes"?: number | null
+          "total_votes"?: number | null
+          "total_yap_votes"?: string | null
+          "twitter_id": number
+          "twitter_username"?: string | null
+          "weighted_smart_follower_votes_timestamp"?: string | null
+          "weighted_yap_votes_timestamp"?: string | null
           "WWS NFT"?: string | null
         }
         Update: {
           "% of TOTAL"?: string | null
           "100XP"?: string | null
-          earliest_smart_follower_votes_timestamp?: string | null
-          earliest_yap_votes_timestamp?: string | null
-          follower?: number | null
-          lifetime_yaps?: string | null
-          smart_follower?: number | null
+          "earliest_smart_follower_votes_timestamp"?: string | null
+          "earliest_yap_votes_timestamp"?: string | null
+          "follower"?: number | null
+          "lifetime_yaps"?: string | null
+          "smart_follower"?: number | null
           "TOTAL AVAILABLE VOTES"?: number | null
           "TOTAL VOTES TO UNION"?: number | null
-          total_smart_follower_votes?: number | null
-          total_votes?: number | null
-          total_yap_votes?: string | null
-          twitter_id?: number
-          twitter_username?: string | null
-          weighted_smart_follower_votes_timestamp?: string | null
-          weighted_yap_votes_timestamp?: string | null
+          "total_smart_follower_votes"?: number | null
+          "total_votes"?: number | null
+          "total_yap_votes"?: string | null
+          "twitter_id"?: number
+          "twitter_username"?: string | null
+          "weighted_smart_follower_votes_timestamp"?: string | null
+          "weighted_yap_votes_timestamp"?: string | null
           "WWS NFT"?: string | null
         }
         Relationships: []
@@ -1836,26 +1836,29 @@ export type Tables<
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
-  }
-    ? keyof (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  } ? keyof (
+      & Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+      & Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"]
+    )
     : never = never,
-> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
-  ? (Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+> = DefaultSchemaTableNameOrOptions extends { schema: keyof Database } ? (
+    & Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    & Database[DefaultSchemaTableNameOrOptions["schema"]]["Views"]
+  )[TableName] extends {
+    Row: infer R
+  } ? R
+  : never
+  : DefaultSchemaTableNameOrOptions extends keyof (
+    & DefaultSchema["Tables"]
+    & DefaultSchema["Views"]
+  ) ? (
+      & DefaultSchema["Tables"]
+      & DefaultSchema["Views"]
+    )[DefaultSchemaTableNameOrOptions] extends {
       Row: infer R
-    }
-    ? R
+    } ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
@@ -1863,22 +1866,19 @@ export type TablesInsert<
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  } ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
   ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  } ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
+      Insert: infer I
+    } ? I
     : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
@@ -1886,22 +1886,19 @@ export type TablesUpdate<
     | { schema: keyof Database },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  } ? keyof Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
     : never = never,
 > = DefaultSchemaTableNameOrOptions extends { schema: keyof Database }
   ? Database[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  } ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
     ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
+      Update: infer U
+    } ? U
     : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
@@ -1909,14 +1906,13 @@ export type Enums<
     | { schema: keyof Database },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof Database
-  }
-    ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  } ? keyof Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
     : never = never,
 > = DefaultSchemaEnumNameOrOptions extends { schema: keyof Database }
   ? Database[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
     ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
@@ -1924,14 +1920,13 @@ export type CompositeTypes<
     | { schema: keyof Database },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof Database
-  }
-    ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  } ? keyof Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
     : never = never,
 > = PublicCompositeTypeNameOrOptions extends { schema: keyof Database }
   ? Database[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
     ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  : never
 
 export const Constants = {
   public: {
@@ -1939,7 +1934,7 @@ export const Constants = {
   },
 } as const
 
-export type JoinedAchievement = Database['public']['Tables']['achievements']['Row'] & {
+export type JoinedAchievement = Database["public"]["Tables"]["achievements"]["Row"] & {
   category?: {
     title: string
   } | null

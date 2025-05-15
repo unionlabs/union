@@ -326,9 +326,7 @@ function hasBookmarks() {
       class="w-full h-full max-h-full flex flex-col"
       transition:fly={{ y: 30, duration: 300, opacity: 0 }}
     >
-      <div
-        class="border-b border-zinc-800 flex justify-between items-center h-12 flex-shrink-0 p-4"
-      >
+      <div class="border-b border-zinc-800 flex justify-between items-center h-12 flex-shrink-0 p-4">
         <div class="flex items-center h-full">
           <button
             aria-label="Back"
@@ -524,9 +522,7 @@ function hasBookmarks() {
             {#if destinationChainId && recentAddresses[destinationChainId]?.length > 0}
               <div class="space-y-2">
                 {#each recentAddresses[destinationChainId] as address}
-                  <div
-                    class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded"
-                  >
+                  <div class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded">
                     <button
                       onclick={() => useAddress(address)}
                       class="text-left flex-grow truncate text-zinc-200 hover:text-white text-sm cursor-pointer"
@@ -575,9 +571,7 @@ function hasBookmarks() {
             {#if destinationChainId && bookmarkedAddresses[destinationChainId]?.length > 0}
               <div class="space-y-2">
                 {#each bookmarkedAddresses[destinationChainId] as address}
-                  <div
-                    class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors rounded cursor-pointer"
-                  >
+                  <div class="flex items-center justify-between px-4 py-3 bg-zinc-900 hover:bg-zinc-800 transition-colors rounded cursor-pointer">
                     <button
                       onclick={() => useAddress(address)}
                       class="text-left flex-grow truncate text-zinc-200 hover:text-white cursor-pointer"

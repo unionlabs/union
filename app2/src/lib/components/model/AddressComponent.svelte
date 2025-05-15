@@ -74,7 +74,8 @@ const explorerName = $derived(chain.explorers.length > 0 ? chain.explorers[0].di
       </section>
 
       <section>
-        <Label>Chain</Label> <div>{chain.display_name}</div>
+        <Label>Chain</Label>
+        <div>{chain.display_name}</div>
       </section>
       <section>
         <Label>Display</Label>

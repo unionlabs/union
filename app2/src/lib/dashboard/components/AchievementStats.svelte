@@ -1,70 +1,91 @@
 <script lang="ts">
-  import { dashboard } from "$lib/dashboard/stores/user.svelte";
-  import { Option } from "effect";
-  import Card from "$lib/components/ui/Card.svelte";
-  import Skeleton from "$lib/components/ui/Skeleton.svelte";
-  import ProgressBar from "$lib/components/ui/ProgressBar.svelte";
-  import { page } from "$app/stores";
+import { page } from "$app/stores"
+import Card from "$lib/components/ui/Card.svelte"
+import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { Option } from "effect"
 
-  let totalXP = $derived(
-    Option.flatMap(dashboard.achievements, (achievements) => 
-      Option.flatMap(achievements.available, (availableAchievements) => 
-        Option.some(availableAchievements.reduce((sum: number, a: any) => sum + (a.xp || 0), 0))
-      )
+let totalXP = $derived(
+  Option.flatMap(
+    dashboard.achievements,
+    (achievements) =>
+      Option.flatMap(
+        achievements.available,
+        (availableAchievements) =>
+          Option.some(availableAchievements.reduce((sum: number, a: any) => sum + (a.xp || 0), 0)),
+      ),
+  ),
+)
+
+let earnedXP = $derived(
+  Option.flatMap(
+    dashboard.achievements,
+    (achievements) =>
+      Option.flatMap(
+        achievements.achieved,
+        (achievedAchievements) =>
+          Option.flatMap(achievements.available, (availableAchievements) =>
+            Option.some(achievedAchievements.reduce((sum: number, ua: any) => {
+              // Only count XP if the achievement is completed (progression >= threshold)
+              if (
+                ua.progression === undefined || ua.threshold === undefined
+                || ua.progression < ua.threshold
+              ) {
+                return sum
+              }
+              const achievement = availableAchievements.find((a: any) =>
+                a.id === ua.achievement_id
+              )
+              return sum + (achievement?.xp || 0)
+            }, 0))),
+      ),
+  ),
+)
+
+// Calculate completed achievements count - only count those that have met their threshold
+let completedCount = $derived(
+  Option.flatMap(
+    dashboard.achievements,
+    (achievements) =>
+      Option.flatMap(achievements.achieved, (achievedAchievements) =>
+        Option.some(
+          achievedAchievements.filter(ua =>
+            ua.progression !== undefined
+            && ua.threshold !== undefined
+            && ua.progression >= ua.threshold
+          ).length,
+        )),
+  ),
+)
+
+// Calculate total achievements count
+let totalCount = $derived(
+  Option.flatMap(
+    dashboard.achievements,
+    (achievements) =>
+      Option.flatMap(
+        achievements.available,
+        (availableAchievements) => Option.some(availableAchievements.length),
+      ),
+  ),
+)
+
+// Calculate completion rate based on achievement count
+let progress = $derived(
+  Option.flatMap(totalCount, (total) => {
+    if (total === 0) {
+      return Option.none()
+    }
+    return Option.flatMap(
+      completedCount,
+      (completed) => Option.some(Math.min((completed / total) * 100, 100)),
     )
-  );
+  }),
+)
 
-  let earnedXP = $derived(
-    Option.flatMap(dashboard.achievements, (achievements) => 
-      Option.flatMap(achievements.achieved, (achievedAchievements) => 
-        Option.flatMap(achievements.available, (availableAchievements) => 
-          Option.some(achievedAchievements.reduce((sum: number, ua: any) => {
-            // Only count XP if the achievement is completed (progression >= threshold)
-            if (ua.progression === undefined || ua.threshold === undefined || ua.progression < ua.threshold) {
-              return sum;
-            }
-            const achievement = availableAchievements.find((a: any) => a.id === ua.achievement_id);
-            return sum + (achievement?.xp || 0);
-          }, 0))
-        )
-      )
-    )
-  );
-
-  // Calculate completed achievements count - only count those that have met their threshold
-  let completedCount = $derived(
-    Option.flatMap(dashboard.achievements, (achievements) => 
-      Option.flatMap(achievements.achieved, (achievedAchievements) => 
-        Option.some(achievedAchievements.filter(ua => 
-          ua.progression !== undefined && 
-          ua.threshold !== undefined && 
-          ua.progression >= ua.threshold
-        ).length)
-      )
-    )
-  );
-
-  // Calculate total achievements count
-  let totalCount = $derived(
-    Option.flatMap(dashboard.achievements, (achievements) => 
-      Option.flatMap(achievements.available, (availableAchievements) => 
-        Option.some(availableAchievements.length)
-      )
-    )
-  );
-
-  // Calculate completion rate based on achievement count
-  let progress = $derived(
-    Option.flatMap(totalCount, (total) => {
-      if (total === 0) return Option.none();
-      return Option.flatMap(completedCount, (completed) => 
-        Option.some(Math.min((completed / total) * 100, 100))
-      );
-    })
-  );
-
-  // Check if we're on the achievements page
-  let isOnAchievementsPage = $derived($page.url.pathname === '/dashboard/achievements');
+// Check if we're on the achievements page
+let isOnAchievementsPage = $derived($page.url.pathname === "/dashboard/achievements")
 </script>
 
 <Card class="flex flex-col flex-1">
@@ -72,8 +93,8 @@
     <div class="flex items-center justify-between">
       <h3 class="text-sm font-medium text-zinc-200">Achievement Stats</h3>
       {#if !isOnAchievementsPage}
-        <a 
-          href="/dashboard/achievements" 
+        <a
+          href="/dashboard/achievements"
           class="text-xs text-zinc-400 hover:text-white transition-colors border border-zinc-800 hover:border-zinc-700 px-2 py-0.5 rounded cursor-pointer"
         >
           View all
@@ -107,8 +128,8 @@
           <div class="text-xs text-zinc-500">Achievements</div>
           <div class="flex items-center gap-2">
             {#if Option.isNone(completedCount) || Option.isNone(totalCount)}
-              <Skeleton class="h-6 w-12" /> 
-              <Skeleton class="h-3 w-8" /> 
+              <Skeleton class="h-6 w-12" />
+              <Skeleton class="h-3 w-8" />
             {:else}
               <div class="text-lg font-medium">
                 {completedCount.value.toString()}
@@ -152,12 +173,12 @@
       {/if}
     </div>
     {#if !Option.isNone(dashboard.achievements)}
-      <ProgressBar 
+      <ProgressBar
         progress={Option.match(progress, {
           onNone: () => 0,
-          onSome: (p) => p
-        })} 
+          onSome: (p) => p,
+        })}
       />
     {/if}
   </div>
-</Card> 
+</Card>

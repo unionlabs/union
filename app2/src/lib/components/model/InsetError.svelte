@@ -48,9 +48,7 @@ const exportData = () => {
     >
       <div class="p-4 overflow-y-auto flex-1">
         {#if errorDetails}
-          <pre
-            class="text-xs whitespace-pre-wrap break-all"
-          >
+          <pre class="text-xs whitespace-pre-wrap break-all">
 {Str.trim(JSON.stringify(errorDetails, null, 2))}
           </pre>
         {:else}
@@ -58,9 +56,7 @@ const exportData = () => {
         {/if}
       </div>
 
-      <div
-        class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925"
-      >
+      <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
         <div class="flex gap-2">
           <Button
             variant="secondary"

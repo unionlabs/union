@@ -1,65 +1,64 @@
 <script lang="ts">
-  import ProfileCard from "$lib/dashboard/components/ProfileCard.svelte";
-  import SocialConnections from "$lib/dashboard/components/SocialConnections.svelte";
-  import MissionStats from "$lib/dashboard/components/MissionStats.svelte";
-  import AchievementStats from "$lib/dashboard/components/AchievementStats.svelte";
-  import RewardStats from "$lib/dashboard/components/RewardStats.svelte";
-  import WalletStats from "$lib/dashboard/components/WalletStats.svelte";
-  import Leaderboard from "$lib/dashboard/components/Leaderboard.svelte";
-  import { dashboard } from "$lib/dashboard/stores/user.svelte";
-  import { Effect, pipe } from "effect";
+import AchievementStats from "$lib/dashboard/components/AchievementStats.svelte"
+import Leaderboard from "$lib/dashboard/components/Leaderboard.svelte"
+import MissionStats from "$lib/dashboard/components/MissionStats.svelte"
+import ProfileCard from "$lib/dashboard/components/ProfileCard.svelte"
+import RewardStats from "$lib/dashboard/components/RewardStats.svelte"
+import SocialConnections from "$lib/dashboard/components/SocialConnections.svelte"
+import WalletStats from "$lib/dashboard/components/WalletStats.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { Effect, pipe } from "effect"
 
-  let isDeleting = false;
-  let error: string | null = null;
+let isDeleting = false
+let error: string | null = null
 
-  async function handleDelete() {
-    if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-      return;
-    }
-
-    isDeleting = true;
-    error = null;
-
-    pipe(
-      dashboard.deleteAccount(),
-      Effect.catchAll((error) => {
-        console.error("Delete account error:", error);
-        return Effect.void;
-      }),
-      Effect.ensuring(Effect.sync(() => {
-        isDeleting = false;
-      })),
-      Effect.runPromise
-    );
+async function handleDelete() {
+  if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
+    return
   }
+
+  isDeleting = true
+  error = null
+
+  pipe(
+    dashboard.deleteAccount(),
+    Effect.catchAll((error) => {
+      console.error("Delete account error:", error)
+      return Effect.void
+    }),
+    Effect.ensuring(Effect.sync(() => {
+      isDeleting = false
+    })),
+    Effect.runPromise,
+  )
+}
 </script>
 
-    <div class="flex flex-col gap-4">
-        <div class="flex flex-col lg:flex-row gap-4">
-          <ProfileCard />
-          <SocialConnections />
-        </div>
-        
-        <div class="flex flex-col lg:flex-row gap-4">
-            <MissionStats />
-            <AchievementStats />
-            <RewardStats />
-        </div>
+<div class="flex flex-col gap-4">
+  <div class="flex flex-col lg:flex-row gap-4">
+    <ProfileCard />
+    <SocialConnections />
+  </div>
 
-        <WalletStats />
-        
-        <Leaderboard show={10} />
-    </div>
-    <div class="mt-4">
-      <button 
-        on:click={handleDelete}
-        disabled={isDeleting}
-        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50"
-      >
-        {isDeleting ? "Deleting..." : "Delete Account"}
-      </button>
-      {#if error}
-        <p class="text-red-500 mt-2">{error}</p>
-      {/if}
-    </div>
+  <div class="flex flex-col lg:flex-row gap-4">
+    <MissionStats />
+    <AchievementStats />
+    <RewardStats />
+  </div>
 
+  <WalletStats />
+
+  <Leaderboard show={10} />
+</div>
+<div class="mt-4">
+  <button
+    on:click={handleDelete}
+    disabled={isDeleting}
+    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50"
+  >
+    {isDeleting ? "Deleting..." : "Delete Account"}
+  </button>
+  {#if error}
+    <p class="text-red-500 mt-2">{error}</p>
+  {/if}
+</div>
