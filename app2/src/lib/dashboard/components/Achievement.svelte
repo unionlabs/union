@@ -132,9 +132,9 @@ function getStatusColor() {
     </div>
   </div>
 
-  {#if achievement.flavour}
+  {#if achievement.flavor}
     <p class="text-[10px] lg:text-xs italic text-neutral-400">
-      {achievement.flavour}
+      {achievement.flavor}
     </p>
   {/if}
 
