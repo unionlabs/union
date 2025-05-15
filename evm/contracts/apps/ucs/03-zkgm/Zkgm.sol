@@ -240,7 +240,7 @@ contract UCS03ZkgmStakeImpl is
         _getStakeNFTManager().burn(_stake.tokenId);
         address sender = address(bytes20(_stake.sender));
         (IZkgmERC20 governanceToken,) = _getGovernanceToken(channelId);
-        governanceToken.transferFrom(address(this), sender, _stake.amount);
+        governanceToken.transfer(sender, _stake.amount);
     }
 
     function _withdrawSucceeded(
@@ -253,7 +253,7 @@ contract UCS03ZkgmStakeImpl is
         if (_stake.amount < _withdrawStakeAck.amount) {
             revert ZkgmLib.ErrWithdrawStakeAmountMustBeLE();
         }
-        governanceToken.transferFrom(address(this), beneficiary, _stake.amount);
+        governanceToken.transfer(beneficiary, _stake.amount);
         if (_stake.amount < _withdrawStakeAck.amount) {
             // Mints the reward
             governanceToken.mint(
@@ -753,6 +753,7 @@ contract UCS03Zkgm is
     function stake(
         uint32 channelId,
         address beneficiary,
+        bytes calldata validator,
         uint256 amount,
         uint64 timeout
     ) public {

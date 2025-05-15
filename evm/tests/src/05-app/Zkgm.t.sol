@@ -3320,4 +3320,27 @@ contract ZkgmTests is Test {
             true
         );
     }
+
+    function test_bla() public {
+        FungibleAssetOrder memory foa = FungibleAssetOrder({
+            sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
+            receiver: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            baseToken: hex"6d756e6f",
+            baseTokenPath: 0,
+            baseTokenSymbol: "muno",
+            baseTokenName: "muno",
+            baseTokenDecimals: 6,
+            baseAmount: 100,
+            quoteToken: hex"16628cB81ffDA9B8470e16299eFa5F76bF45A579",
+            quoteAmount: 100
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_1,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrder(foa)
+        });
+        console.logBytes(ZkgmLib.encodeInstruction(inst));
+    }
 }

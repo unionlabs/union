@@ -246,9 +246,10 @@
       "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-ethereum",
       "config": {
+        "gas_multiplier": "2",
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-        "multicall_address": "0x9fd9D9528c8373D990a1380B9414bDE179007A35",
+        "multicall_address": "0x84c4c2ee43ccfd523af9f78740256e0f60d38068",
         "keyring": {
           "name": "ethereum-devnet",
           "keys": [

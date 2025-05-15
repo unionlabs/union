@@ -177,6 +177,12 @@ library ZkgmLib {
         return operand;
     }
 
+    function encodeInstruction(
+        Instruction memory inst
+    ) internal pure returns (bytes memory) {
+        return abi.encode(inst.version, inst.opcode, inst.operand);
+    }
+
     function encodeForward(
         Forward memory forward
     ) internal pure returns (bytes memory) {

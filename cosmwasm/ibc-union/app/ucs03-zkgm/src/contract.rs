@@ -48,6 +48,7 @@ pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
 pub const MM_FILL_REPLY_ID: u64 = 0xdead;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
+pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
 
 /// Instantiate `ucs03-zkgm`.
 ///
@@ -81,6 +82,10 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
 /// The salt used to instantiate the token minter (using [instantiate2_address]).
 pub fn minter_salt() -> String {
     format!("{PROTOCOL_VERSION}/{ZKGM_TOKEN_MINTER_LABEL}")
+}
+
+pub fn cw_account_salt() -> String {
+    format!("{PROTOCOL_VERSION}/{ZKGM_CW_ACCOUNT_LABEL}")
 }
 
 fn get_code_hash(deps: Deps, code_id: u64) -> StdResult<H256> {
@@ -1578,12 +1583,8 @@ fn execute_stake(
         )?));
     }
 
-    let validator = deps
-        .api
-        .addr_validate(
-            str::from_utf8(&stake.validator).map_err(|_| ContractError::InvalidValidator)?,
-        )
-        .map_err(|_| ContractError::UnableToValidateValidator)?;
+    let validator =
+        str::from_utf8(&stake.validator).map_err(|_| ContractError::InvalidValidator)?;
     let governance_token = str::from_utf8(&stake.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
     let stake_amount = u128::try_from(stake.amount).map_err(|_| ContractError::AmountOverflow)?;
@@ -1608,33 +1609,42 @@ fn execute_stake(
 
     let mut messages = Vec::new();
     let config = CONFIG.load(deps.storage)?;
+    if config.unbonding_period == 0 {
+        return Err(ContractError::InvalidUnbondingPeriod);
+    }
 
-    // Create the staking account
-    messages.push(WasmMsg::Instantiate2 {
-        admin: Some(env.contract.address.to_string()),
-        code_id: config.dummy_code_id,
-        label: format!(
-            "ucs03-staking-account:{}-{}",
-            packet.destination_channel_id, stake.token_id
-        ),
-        msg: to_json_binary(&cosmwasm_std::Empty {})?,
-        funds: vec![],
-        salt: Binary::new(calculate_stake_account_salt(
-            packet.destination_channel_id,
-            stake.token_id,
-        )),
-    });
-    messages.push(WasmMsg::Migrate {
-        contract_addr: stake_account.to_string(),
-        new_code_id: config.cw_account_code_id,
-        msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
-            cw_account::msg::InstantiateMsg {
-                owner: env.contract.address.clone(),
-            },
-        ))?,
-    });
+    // 1. Create the staking account
+    messages.push(
+        WasmMsg::Instantiate2 {
+            admin: Some(env.contract.address.to_string()),
+            code_id: config.dummy_code_id,
+            label: format!(
+                "ucs03-staking-account:{}-{}",
+                packet.destination_channel_id, stake.token_id
+            ),
+            msg: to_json_binary(&cosmwasm_std::Empty {})?,
+            funds: vec![],
+            salt: Binary::new(calculate_stake_account_salt(
+                packet.destination_channel_id,
+                stake.token_id,
+            )),
+        }
+        .into(),
+    );
+    messages.push(
+        WasmMsg::Migrate {
+            contract_addr: stake_account.to_string(),
+            new_code_id: config.cw_account_code_id,
+            msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
+                cw_account::msg::InstantiateMsg {
+                    owner: env.contract.address.clone(),
+                },
+            ))?,
+        }
+        .into(),
+    );
 
-    // Unescrow the gov tokens to the stake account.
+    // 2. Unescrow the gov tokens to the stake account.
     let minter = TOKEN_MINTER.load(deps.storage)?;
     decrease_channel_balance(
         deps,
@@ -1643,28 +1653,31 @@ fn execute_stake(
         governance_token.into(),
         stake_amount.into(),
     )?;
-    messages.push(wasm_execute(
-        minter,
-        &LocalTokenMsg::Unescrow {
+    messages.push(make_wasm_msg(
+        LocalTokenMsg::Unescrow {
             denom: governance_token.into(),
             recipient: stake_account.clone().into(),
             amount: stake_amount.into(),
         },
+        minter,
         vec![],
     )?);
 
-    // Delegate the token to the validator
-    messages.push(wasm_execute(
-        stake_account.clone(),
-        &cw_account::msg::ExecuteMsg {
-            messages: vec![StakingMsg::Delegate {
-                validator: validator.into(),
-                amount: Coin::new(stake_amount, governance_token),
-            }
-            .into()],
-        },
-        vec![],
-    )?);
+    // 3. Delegate the token to the validator
+    messages.push(
+        wasm_execute(
+            stake_account.clone(),
+            &cw_account::msg::ExecuteMsg {
+                messages: vec![StakingMsg::Delegate {
+                    validator: validator.into(),
+                    amount: Coin::new(stake_amount, governance_token),
+                }
+                .into()],
+            },
+            vec![],
+        )?
+        .into(),
+    );
 
     Ok(Response::new()
         .add_messages(messages)
@@ -1696,12 +1709,8 @@ fn execute_unstake(
         )?));
     }
 
-    let validator = deps
-        .api
-        .addr_validate(
-            str::from_utf8(&unstake.validator).map_err(|_| ContractError::InvalidValidator)?,
-        )
-        .map_err(|_| ContractError::UnableToValidateValidator)?;
+    let validator =
+        str::from_utf8(&unstake.validator).map_err(|_| ContractError::InvalidValidator)?;
     let governance_token = str::from_utf8(&unstake.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
     let stake_amount = u128::try_from(unstake.amount).map_err(|_| ContractError::AmountOverflow)?;
@@ -1714,6 +1723,9 @@ fn execute_unstake(
     )?;
 
     let config = CONFIG.load(deps.storage)?;
+    if config.unbonding_period == 0 {
+        return Err(ContractError::InvalidUnbondingPeriod);
+    }
 
     return Ok(Response::new()
         .add_message(wasm_execute(
@@ -1723,10 +1735,10 @@ fn execute_unstake(
                     // Withdraw the pending rewards because we won't earn any
                     // new reward after undelegating
                     DistributionMsg::WithdrawDelegatorReward {
-                        validator: validator.clone().into(),
+                        validator: validator.into(),
                     }
                     .into(),
-                    // Beging undelegating
+                    // Beging undelege
                     StakingMsg::Undelegate {
                         validator: validator.into(),
                         amount: Coin::new(stake_amount, governance_token),
@@ -1790,7 +1802,7 @@ fn execute_withdraw_stake(
 
     let minter = TOKEN_MINTER.load(deps.storage)?;
 
-    // The amount will be minted on the counterparty
+    // The amount will be unescrowed + minted (for additional reward) on the counterparty
     increase_channel_balance(
         deps.storage,
         packet.destination_channel_id,
@@ -2357,9 +2369,9 @@ pub struct MigrateMsg {
     token_minter_migration: Option<TokenMinterMigration>,
     // Whether to enable or disable rate limiting while migrating.
     rate_limit_disabled: bool,
-    dummy_code_id: u64,
-    cw_account_code_id: u64,
-    unbonding_period: u64,
+    dummy_code_id: Option<u64>,
+    cw_account_code_id: Option<u64>,
+    unbonding_period: Option<u64>,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -2383,9 +2395,15 @@ pub fn migrate(
         |deps, migrate_msg, _current_version| {
             CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
                 config.rate_limit_disabled = migrate_msg.rate_limit_disabled;
-                config.dummy_code_id = migrate_msg.dummy_code_id;
-                config.cw_account_code_id = migrate_msg.cw_account_code_id;
-                config.unbonding_period = migrate_msg.unbonding_period;
+                if let Some(dummy_code_id) = migrate_msg.dummy_code_id {
+                    config.dummy_code_id = dummy_code_id;
+                }
+                if let Some(cw_account_code_id) = migrate_msg.cw_account_code_id {
+                    config.cw_account_code_id = cw_account_code_id;
+                }
+                if let Some(unbonding_period) = migrate_msg.unbonding_period {
+                    config.unbonding_period = unbonding_period;
+                }
                 Ok(config)
             })?;
             if let Some(token_minter_migration) = migrate_msg.token_minter_migration {

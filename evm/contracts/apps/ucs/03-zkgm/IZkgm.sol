@@ -32,6 +32,7 @@ interface IZkgm is IZkgmStore {
     function stake(
         uint32 channelId,
         address beneficiary,
+        bytes calldata validator,
         uint256 amount,
         uint64 timeout
     ) external;

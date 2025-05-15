@@ -13,7 +13,7 @@ crate-type = ["cdylib", "rlib"]
 
 [dependencies]
 cosmwasm-schema = { workspace = true }
-cosmwasm-std    = { workspace = true, features = ["cosmwasm_1_3"] }
+cosmwasm-std    = { workspace = true, features = ["cosmwasm_1_3", "staking"] }
 cw-storage-plus = { workspace = true }
 embed-commit    = { workspace = true }
 frissitheto     = { workspace = true }
