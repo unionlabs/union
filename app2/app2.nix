@@ -18,6 +18,8 @@ _: {
         nodePackages_latest.nodejs
         pnpm_10
       ];
+      VITE_SUPABASE_URL = "https://api.dashboard.union.build";
+      VITE_SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVvcnF6cHVyeXJnZm5lY2FkYWpvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQzNzM0NDAsImV4cCI6MjA0OTk0OTQ0MH0.4xkWpfMkYgBz4nqUGkZVjQNP7NxLa4filDoJRCI3yWo";
     in
     {
       packages = {
@@ -38,6 +40,8 @@ _: {
           ];
           buildPhase = ''
             runHook preBuild
+            export VITE_SUPABASE_URL="${VITE_SUPABASE_URL}"
+            export VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY}"
             pnpm --filter=app2 prepare
             pnpm --filter=app2 build
             runHook postBuild
@@ -62,6 +66,8 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
+              export VITE_SUPABASE_URL="${VITE_SUPABASE_URL}"
+              export VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY}"
               pnpm install
               pnpm run dev -- --host
             '';
