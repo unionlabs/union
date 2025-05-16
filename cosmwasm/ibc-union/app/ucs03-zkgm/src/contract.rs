@@ -1602,7 +1602,7 @@ fn execute_stake(
         .is_ok()
     {
         return Err(ContractError::StakingAccountAlreadyExist {
-            stake,
+            stake: Box::new(stake),
             account: stake_account,
         });
     }
@@ -1727,7 +1727,7 @@ fn execute_unstake(
         return Err(ContractError::InvalidUnbondingPeriod);
     }
 
-    return Ok(Response::new()
+    Ok(Response::new()
         .add_message(wasm_execute(
             stake_account.clone(),
             &cw_account::msg::ExecuteMsg {
@@ -1763,7 +1763,7 @@ fn execute_unstake(
                 .into(),
             },
             vec![],
-        )?));
+        )?))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -1810,7 +1810,7 @@ fn execute_withdraw_stake(
         coin.amount.u128().into(),
     )?;
 
-    return Ok(Response::new()
+    Ok(Response::new()
         .add_message(wasm_execute(
             stake_account.clone(),
             &cw_account::msg::ExecuteMsg {
@@ -1832,7 +1832,7 @@ fn execute_withdraw_stake(
                 .into(),
             },
             vec![],
-        )?));
+        )?))
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
