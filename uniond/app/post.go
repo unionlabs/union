@@ -9,8 +9,8 @@ import (
 )
 
 type PostHandlerOptions struct {
-	AccountKeeper feemarketpost.AccountKeeper
-	BankKeeper feemarketpost.BankKeeper
+	AccountKeeper   feemarketpost.AccountKeeper
+	BankKeeper      feemarketpost.BankKeeper
 	FeeMarketKeeper feemarketpost.FeeMarketKeeper
 }
 
