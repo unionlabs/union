@@ -56,12 +56,32 @@ pub struct ChainEvent {
     /// The "provable height" of the event. This is the minimum height at which
     /// the effect of the IBC action that caused this event is provable in
     /// the state root of the chain identified by [`Self::chain_id`].
-    pub provable_height: Height,
+    pub provable_height: EventProvableHeight,
 
     pub ibc_spec_id: IbcSpecId,
     /// The full IBC event, encoded as JSON value. This is really [`IbcSpec::Event`],
     /// and will be interpreted based on the implementation defined by [`Self::ibc_spec_id`].
     pub event: Value,
+}
+
+#[model]
+#[derive(Copy)]
+pub enum EventProvableHeight {
+    /// This event is provable at any height >= this height.
+    ///
+    /// This is the standard behaviour for chains with fully merkleized state.
+    Min(Height),
+    /// This event is provable at *exactly* this height.
+    Exactly(Height),
+}
+
+impl EventProvableHeight {
+    pub fn height(&self) -> &Height {
+        match self {
+            EventProvableHeight::Min(height) => height,
+            EventProvableHeight::Exactly(height) => height,
+        }
+    }
 }
 
 impl ChainEvent {

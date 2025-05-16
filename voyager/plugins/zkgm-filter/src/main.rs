@@ -44,7 +44,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    data::Data,
+    data::{Data, EventProvableHeight},
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, IbcSpec},
     Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
@@ -467,7 +467,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                             counterparty_chain_id: chain_event
                                                 .counterparty_chain_id
                                                 .clone(),
-                                            provable_height: chain_event.provable_height,
+                                            provable_height: *chain_event.provable_height.height(),
                                         }),
                                     )),
                                 ))
@@ -612,7 +612,7 @@ impl Module {
 
             let batchable_event = BatchableEvent::<IbcUnion> {
                 first_seen_at,
-                provable_height,
+                provable_height: EventProvableHeight::Min(provable_height),
                 event: event.into(),
             };
 

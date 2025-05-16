@@ -1,5 +1,5 @@
 use std::{
-    collections::{HashMap, VecDeque},
+    collections::{BTreeSet, HashMap, VecDeque},
     convert,
     future::Future,
     pin::Pin,
@@ -20,13 +20,13 @@ use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{ibc::core::client::height::Height, id::ClientId, traits::Member, ErrorReporter};
 use voyager_message::{
     call::WaitForHeight,
-    data::{ChainEvent, Data},
+    data::{ChainEvent, Data, EventProvableHeight},
     filter::simple_take_filter,
     module::{PluginInfo, PluginServer},
     primitives::{ChainId, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
-use voyager_vm::{call, data, pass::PassResult, seq, BoxDynError, Op};
+use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{MakeTransactionBatchesWithUpdate, ModuleCall},
@@ -94,7 +94,7 @@ impl SpecificClientConfig {
     }
 }
 
-pub trait IbcSpecExt: IbcSpec {
+pub trait IbcSpecExt: IbcSpec + Clone {
     type BatchableEvent: TryFrom<Self::Event, Error = ()> + Eq + Member;
 
     fn proof_height(msg: &Self::Datagram) -> Height;
@@ -554,8 +554,8 @@ where
             }
         });
 
-    events.sort_by_key(|e| e.1.provable_height);
-    overdue_events.sort_by_key(|e| e.1.provable_height);
+    events.sort_by_key(|e| *e.1.provable_height.height());
+    overdue_events.sort_by_key(|e| *e.1.provable_height.height());
 
     if !overdue_events.is_empty()
         && overdue_events.len() + events.len() < client_config.min_batch_size
@@ -605,6 +605,7 @@ where
         .collect::<Vec<_>>()
 }
 
+#[allow(unstable_name_collisions)] // for Itertools::intersperse
 async fn mk_ready_ops<V: IbcSpecExt>(
     client_id: V::ClientId,
     events: Vec<(Vec<usize>, Vec<BatchableEvent<V>>)>,
@@ -617,14 +618,30 @@ where
 {
     // the height on the counterparty chain that all of the events in these batches are provable at
     // we only want to generate one update for all of these batches
-    let target_height = events
+    let (min_target_height, exact_target_heights) = events
         .iter()
         .flat_map(|x| &x.1)
         .map(|e| e.provable_height)
-        .max()
-        .expect("batch has at least one event; qed;");
+        .fold((None, BTreeSet::new()), |mut acc, elem| match elem {
+            EventProvableHeight::Min(height) => (
+                Some(acc.0.map(|h: Height| h.min(height)).unwrap_or(height)),
+                acc.1,
+            ),
+            EventProvableHeight::Exactly(height) => {
+                acc.1.insert(height);
+                acc
+            }
+        });
 
-    info!("target height of update for batch is {target_height}");
+    info!(
+        "target height of updates for batch is min {}, exact [{}]",
+        min_target_height.map_or("<none>".to_string(), |h: Height| h.to_string()),
+        exact_target_heights
+            .iter()
+            .map(|h| h.to_string())
+            .intersperse(",".to_string())
+            .collect::<String>(),
+    );
 
     debug!(%client_id, "querying client state meta for client");
 
@@ -666,20 +683,28 @@ where
 
     Ok((
         idxs.into_iter().flatten().collect::<Vec<_>>(),
-        seq([
-            call(WaitForHeight {
-                chain_id: client_state_meta.counterparty_chain_id,
-                height: target_height,
-                finalized: true,
-            }),
-            call(PluginMessage::new(
-                module.plugin_name(),
-                ModuleCall::from(MakeTransactionBatchesWithUpdate {
-                    client_id,
-                    batches: events,
+        // REVIEW: This might need to be a seq depending on what the impl of the client update plugin is
+        conc(
+            exact_target_heights
+                .into_iter()
+                .chain(min_target_height)
+                .map(|height| {
+                    seq([
+                        call(WaitForHeight {
+                            chain_id: client_state_meta.counterparty_chain_id.clone(),
+                            height,
+                            finalized: true,
+                        }),
+                        call(PluginMessage::new(
+                            module.plugin_name(),
+                            ModuleCall::from(MakeTransactionBatchesWithUpdate {
+                                client_id: client_id.clone(),
+                                batches: events.clone(),
+                            }),
+                        )),
+                    ])
                 }),
-            )),
-        ]),
+        ),
     ))
 }
 
