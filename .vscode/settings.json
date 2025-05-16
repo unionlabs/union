@@ -105,5 +105,13 @@
   "extensions.experimental.affinity": {
     "better-ts-errors.better-ts-errors": 1
   },
-  "github-actions.workflows.pinned.refresh.enabled": true
+  "github-actions.workflows.pinned.refresh.enabled": true,
+
+  /* https://marketplace.visualstudio.com/items?itemName=arrterian.nix-env-selector */
+  "nixEnvSelector.nixFile": "${workspaceFolder}/flake.nix",
+  "nixEnvSelector.useFlakes": true,
+
+  /* https://marketplace.visualstudio.com/items?itemName=dprint.dprint&ssr=false#overview */
+  "dprint.verbose": false,
+  "dprint.experimentalLsp": false
 }

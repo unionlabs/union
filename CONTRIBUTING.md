@@ -60,3 +60,14 @@ Finally, remain polite and friendly. Reviewing can feel harsh, but it is a learn
 ## Post-Merge
 
 You'll be an official contributor and mentioned in the release, as well as visible in GitHub's analytics.
+
+## Editor Configuration
+
+### Helix
+
+_No additional configuration required._
+
+### VS Code & Derivatives
+
+1. Install [Nix Environment Selector](https://marketplace.visualstudio.com/items?itemName=arrterian.nix-env-selector).
+2. Install [Dprint Code Formatter](https://marketplace.visualstudio.com/items?itemName=dprint.dprint).
