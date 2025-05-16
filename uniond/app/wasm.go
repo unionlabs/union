@@ -14,7 +14,6 @@ import (
 	servertypes "github.com/cosmos/cosmos-sdk/server/types"
 	"github.com/cosmos/cosmos-sdk/types/msgservice"
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
-	"github.com/cosmos/cosmos-sdk/x/auth/posthandler"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	distrkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
@@ -136,8 +135,12 @@ func (app *App) registerWasmModules(
 }
 
 func (app *App) setPostHandler() error {
-	postHandler, err := posthandler.NewPostHandler(
-		posthandler.HandlerOptions{},
+	postHandler, err := NewPostHandler(
+		PostHandlerOptions{
+			AccountKeeper:   app.AccountKeeper,
+			BankKeeper:      app.BankKeeper,
+			FeeMarketKeeper: &app.FeeMarketKeeper,
+		},
 	)
 	if err != nil {
 		return err
@@ -161,7 +164,7 @@ func (app *App) setAnteHandler(txConfig client.TxConfig, nodeConfig wasmtypes.No
 			WasmKeeper:             &app.WasmKeeper,
 			TXCounterStoreService:  runtime.NewKVStoreService(txCounterStoreKey),
 			CircuitKeeper:          &app.CircuitBreakerKeeper,
-			FeeMarketKeeper:        app.FeeMarketKeeper,
+			FeeMarketKeeper:        &app.FeeMarketKeeper,
 			FeeMarketBankKeeper:    app.BankKeeper,
 			FeeMarketAccountKeeper: app.AccountKeeper,
 		},
