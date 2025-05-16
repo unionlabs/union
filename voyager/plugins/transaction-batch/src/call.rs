@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use enumorph::Enumorph;
 use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::{query::PacketsByBatchHash, IbcUnion};
@@ -8,7 +10,7 @@ use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
 use voyager_message::{
     call::FetchUpdateHeaders,
-    data::IbcDatagram,
+    data::{EventProvableHeight, IbcDatagram},
     primitives::{ChainId, QueryHeight},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, MISSING_STATE_ERROR_CODE,
 };
@@ -70,67 +72,152 @@ where
             .iter()
             .flatten()
             .map(|e| e.provable_height)
-            .max()
+            .reduce(|acc, elem| match (elem, acc) {
+                (EventProvableHeight::Min(elem), EventProvableHeight::Min(acc)) => {
+                    EventProvableHeight::Min(elem.min(acc))
+                }
+                (EventProvableHeight::Exactly(elem), EventProvableHeight::Exactly(acc)) => {
+                    assert_eq!(elem, acc, "multiple exact heights in the batch");
+                    EventProvableHeight::Exactly(elem)
+                }
+                tuple => {
+                    panic!("cannot mix exact and min provable heights currently (found {tuple:?})");
+                }
+            })
             .expect("batch has at least one event; qed;");
 
         // at this point we assume that a valid update exists - we only ever enqueue this message behind the relevant WaitForHeight on the counterparty chain. to prevent explosions, we do a sanity check here.
-        if latest_height < target_height {
-            return Err(ErrorObject::owned(
-                // we treat this as a missing state error, since this message assumes the state exists.
-                MISSING_STATE_ERROR_CODE,
-                format!(
-                    "the latest height of the counterparty chain ({counterparty_chain_id}) \
-                    is {latest_height} and the latest trusted height on the client tracking \
-                    it ({client_id}) on this chain ({self_chain_id}) is {trusted_height}. \
-                    in order to create an update for this client, we need to wait for the \
-                    counterparty chain to progress to the next consensus checkpoint greater \
-                    than the required target height {target_height}",
-                    counterparty_chain_id = client_state_meta.counterparty_chain_id,
-                    trusted_height = client_state_meta.counterparty_height,
-                    client_id = self.client_id,
-                    self_chain_id = module.chain_id,
-                ),
-                Some(json!({
-                    "current_timestamp": now(),
-                })),
-            ));
+        {
+            let (EventProvableHeight::Min(target_height)
+            | EventProvableHeight::Exactly(target_height)) = target_height;
+
+            if latest_height < target_height {
+                return Err(ErrorObject::owned(
+                    // we treat this as a missing state error, since this message assumes the state exists.
+                    MISSING_STATE_ERROR_CODE,
+                    format!(
+                        "the latest height of the counterparty chain ({counterparty_chain_id}) \
+                        is {latest_height} and the latest trusted height on the client tracking \
+                        it ({client_id}) on this chain ({self_chain_id}) is {trusted_height}. \
+                        in order to create an update for this client, we need to wait for the \
+                        counterparty chain to progress to the next consensus checkpoint greater \
+                        than the required target height {target_height}",
+                        counterparty_chain_id = client_state_meta.counterparty_chain_id,
+                        trusted_height = client_state_meta.counterparty_height,
+                        client_id = self.client_id,
+                        self_chain_id = module.chain_id,
+                    ),
+                    Some(json!({
+                        "current_timestamp": now(),
+                    })),
+                ));
+            }
         }
 
-        if client_state_meta.counterparty_height >= target_height {
-            info!(
-                "client {client_id} has already been updated to a height \
-                >= the desired target height ({} >= {target_height})",
-                client_state_meta.counterparty_height,
-                client_id = self.client_id,
-            );
+        match target_height {
+            EventProvableHeight::Min(target_height) => {
+                if client_state_meta.counterparty_height >= target_height {
+                    info!(
+                        "client {client_id} has already been updated to a height \
+                        >= the desired target height ({} >= {target_height})",
+                        client_state_meta.counterparty_height,
+                        client_id = self.client_id,
+                    );
 
-            make_msgs(
-                module,
-                self.client_id,
-                self.batches,
-                None,
-                client_state_meta.clone(),
-                client_state_meta.counterparty_height,
-            )
-        } else {
-            Ok(promise(
-                [call(FetchUpdateHeaders {
-                    client_type: client_info.client_type,
-                    counterparty_chain_id: module.chain_id.clone(),
-                    chain_id: client_state_meta.counterparty_chain_id,
-                    client_id: RawClientId::new(self.client_id.clone()),
-                    update_from: client_state_meta.counterparty_height,
-                    update_to: latest_height,
-                })],
-                [],
-                PluginMessage::new(
-                    module.plugin_name(),
-                    ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
-                        client_id: self.client_id.clone(),
-                        batches: self.batches,
-                    }),
-                ),
-            ))
+                    make_msgs(
+                        module,
+                        self.client_id,
+                        self.batches,
+                        None,
+                        client_state_meta.clone(),
+                        client_state_meta.counterparty_height,
+                    )
+                } else {
+                    Ok(promise(
+                        [call(FetchUpdateHeaders {
+                            client_type: client_info.client_type,
+                            counterparty_chain_id: module.chain_id.clone(),
+                            chain_id: client_state_meta.counterparty_chain_id,
+                            client_id: RawClientId::new(self.client_id.clone()),
+                            update_from: client_state_meta.counterparty_height,
+                            update_to: latest_height,
+                        })],
+                        [],
+                        PluginMessage::new(
+                            module.plugin_name(),
+                            ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
+                                client_id: self.client_id.clone(),
+                                batches: self.batches,
+                            }),
+                        ),
+                    ))
+                }
+            }
+            EventProvableHeight::Exactly(target_height) => {
+                match client_state_meta.counterparty_height.cmp(&target_height) {
+                    Ordering::Equal => {
+                        info!(
+                            "client {client_id} has already been updated to \
+                            the desired target height ({} == {target_height})",
+                            client_state_meta.counterparty_height,
+                            client_id = self.client_id,
+                        );
+                        make_msgs(
+                            module,
+                            self.client_id,
+                            self.batches,
+                            None,
+                            client_state_meta.clone(),
+                            client_state_meta.counterparty_height,
+                        )
+                    }
+                    Ordering::Less => Ok(promise(
+                        [call(FetchUpdateHeaders {
+                            client_type: client_info.client_type,
+                            counterparty_chain_id: module.chain_id.clone(),
+                            chain_id: client_state_meta.counterparty_chain_id,
+                            client_id: RawClientId::new(self.client_id.clone()),
+                            update_from: client_state_meta.counterparty_height,
+                            update_to: latest_height,
+                        })],
+                        [],
+                        PluginMessage::new(
+                            module.plugin_name(),
+                            ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
+                                client_id: self.client_id.clone(),
+                                batches: self.batches,
+                            }),
+                        ),
+                    )),
+                    // update backwards
+                    // currently this is only supported in sui, and as such has some baked-in assumptions about the semantics of when this branch is hit
+                    Ordering::Greater => {
+                        info!(
+                            "updating client to an earlier height ({} -> {target_height})",
+                            client_state_meta.counterparty_height
+                        );
+
+                        Ok(promise(
+                            [call(FetchUpdateHeaders {
+                                client_type: client_info.client_type,
+                                counterparty_chain_id: module.chain_id.clone(),
+                                chain_id: client_state_meta.counterparty_chain_id,
+                                client_id: RawClientId::new(self.client_id.clone()),
+                                update_from: client_state_meta.counterparty_height,
+                                update_to: target_height,
+                            })],
+                            [],
+                            PluginMessage::new(
+                                module.plugin_name(),
+                                ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
+                                    client_id: self.client_id.clone(),
+                                    batches: self.batches,
+                                }),
+                            ),
+                        ))
+                    }
+                }
+            }
         }
     }
 }
