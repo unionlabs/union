@@ -157,8 +157,14 @@ export const triggerIncident = (
       }),
     catch: e => new Error(`Incident trigger error: ${e}`),
   })
-    // if anything went wrong, swallow it and return { data:{ id:"" } }
-    .pipe(Effect.orElse(() => Effect.sync(() => ({ data: { id: "" } }))))
+    .pipe(
+      Effect.catchAllCause(cause =>
+        Effect.sync(() => {
+          console.error("⚠️ triggerIncident failed:", cause)
+          return { data: { id: "" } }
+        })
+      )
+    )
 
   if (isLocal) {
     return Effect.sync(() => {
@@ -219,6 +225,12 @@ export const resolveIncident = (
     // swallow any error and return `false`
     Effect.catchAllCause(err =>
       Effect.sync(() => {
+        const message = String(err)
+        if (message.includes("Incident was already resolved")) {
+          console.info("Incident was already resolved, treating as success.")
+          return true
+        }
+
         console.error("⚠️ resolveIncident failed:", err)
         return false
       })
