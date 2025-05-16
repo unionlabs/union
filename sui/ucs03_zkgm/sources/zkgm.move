@@ -124,6 +124,8 @@ module zkgm::zkgm_relay {
     const E_ONLY_MAKER: u64 = 15;
     const E_BATCH_MISMATCH: u64 = 16;
     const E_NO_MULTIPLEX_OPERATION: u64 = 17;
+    const E_ERR_INVALID_FORWARD_INSTRUCTION: u64 = 18;
+    const E_NO_EXECUTE_OPERATION: u64 = 19;
 
     public struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
@@ -702,28 +704,28 @@ module zkgm::zkgm_relay {
         forward_packet: Forward,
         ctx: &mut TxContext
     ): (vector<u8>) {
+        abort E_NO_EXECUTE_OPERATION
+        // let zkgm_pack =
+        //     zkgm_packet::new(
+        //         salt,
+        //         update_channel_path(
+        //             path, packet::destination_channel_id(&ibc_packet)
+        //         ),
+        //         *forward::instruction(&forward_packet)
+        //     );
+        // let sent_packet =
+        //     ibc::send_packet(
+        //         ibc_store,
+        //         forward::channel_id(&forward_packet),
+        //         forward::timeout_height(&forward_packet),
+        //         forward::timeout_timestamp(&forward_packet),
+        //         zkgm_packet::encode(&zkgm_pack)
+        //     );
 
-        let zkgm_pack =
-            zkgm_packet::new(
-                salt,
-                update_channel_path(
-                    path, packet::destination_channel_id(&ibc_packet)
-                ),
-                *forward::instruction(&forward_packet)
-            );
-        let sent_packet =
-            ibc::send_packet(
-                ibc_store,
-                forward::channel_id(&forward_packet),
-                forward::timeout_height(&forward_packet),
-                forward::timeout_timestamp(&forward_packet),
-                zkgm_packet::encode(&zkgm_pack)
-            );
 
-
-        let packet_hash = commitment::commit_packet(&sent_packet);
-        add_or_update_table<vector<u8>, Packet>(&mut relay_store.in_flight_packet, packet_hash, sent_packet);
-        ACK_EMPTY
+        // let packet_hash = commitment::commit_packet(&sent_packet);
+        // add_or_update_table<vector<u8>, Packet>(&mut relay_store.in_flight_packet, packet_hash, sent_packet);
+        // ACK_EMPTY
     }
 
     fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, mut value: P) {
@@ -801,7 +803,6 @@ module zkgm::zkgm_relay {
                 relay_store,
                 sender,
                 channel_id,
-                path,
                 forward::decode(instruction::operand(&instruction), &mut decode_idx),
                 ctx
             )
@@ -862,17 +863,25 @@ module zkgm::zkgm_relay {
         relay_store: &mut RelayStore,
         sender: address,
         channel_id: u32,
-        path: u256,
         forward_packet: Forward,
         ctx: &mut TxContext
     ){
+        let instruction = forward::instruction(&forward_packet);
+        let opcode = instruction::opcode(instruction);
+
+        let is_allowed_forward = opcode == OP_MULTIPLEX || 
+                            opcode == OP_BATCH || 
+                            opcode == OP_FUNGIBLE_ASSET_ORDER;
+        if(!is_allowed_forward) {
+            abort E_ERR_INVALID_FORWARD_INSTRUCTION
+        };
         verify_internal(
             ibc_store,
             relay_store,
             sender,
             channel_id,
-            update_channel_path(path, forward::channel_id(&forward_packet)),
-            *forward::instruction(&forward_packet),
+            forward::path(&forward_packet),
+            *instruction,
             ctx
         );
     }
@@ -1236,18 +1245,6 @@ module zkgm::zkgm_relay {
         ctx: &mut TxContext
     ) {
 
-    }
-
-    fun timeout_multiplex(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        _salt: vector<u8>,
-        multiplex_packet: Multiplex,
-        ctx: &mut TxContext
-    ) {
-        abort E_NO_MULTIPLEX_OPERATION
     }
 
     // public entry fun execute(
