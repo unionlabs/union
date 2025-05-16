@@ -1738,7 +1738,6 @@ fn execute_unstake(
                         validator: validator.into(),
                     }
                     .into(),
-                    // Beging undelege
                     StakingMsg::Undelegate {
                         validator: validator.into(),
                         amount: Coin::new(stake_amount, governance_token),
