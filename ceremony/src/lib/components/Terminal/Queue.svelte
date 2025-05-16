@@ -17,6 +17,11 @@ let averages = $state<TimeResult>()
 onMount(async () => {
   terminal.setStep(8)
   terminal.updateHistory({ text: "YOU ARE IN QUEUE" })
+  terminal.updateHistory({
+    text:
+      "WARNING: The contribution phase has ended. You won't be able to requeue if you miss your slot.",
+    type: "warning",
+  })
   axiom.ingest("monitor", [{ user: user.session?.user.id, type: "mount_queue" }])
   averages = await getAverageTimes()
   await contributor.checkUserWallet(contributor.userId)
