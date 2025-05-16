@@ -3,7 +3,7 @@ use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use macros::model;
 use subset_of::SubsetOf;
-use unionlabs::ibc::core::client::height::Height;
+use voyager_message::data::EventProvableHeight;
 
 use crate::IbcSpecExt;
 
@@ -32,7 +32,7 @@ pub struct BatchableEvent<V: IbcSpecExt> {
     /// unix timestamp (in ms) of when this event was first seen by this plugin.
     pub first_seen_at: u64,
     // the 'provable height' of the event
-    pub provable_height: Height,
+    pub provable_height: EventProvableHeight,
     pub event: V::BatchableEvent,
 }
 
