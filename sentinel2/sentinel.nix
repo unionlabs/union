@@ -26,6 +26,14 @@ let
           type = types.str;
           description = "Hasura endpoint for graphql requests.";
         };
+        trigger_betterstack = mkOption {
+          type = types.bool;
+          description = "Boolean to decide if trigger betterstack or not";
+        };
+        rpcHostEndpoints = mkOption {
+          type = types.listOf types.str;
+          description = "RPC endpoints for SSL certificate control.";
+        };
         signer_account_mnemonic = mkOption {
           type = types.str;
           description = "mnemonic to send tokens to babylon users";
@@ -73,10 +81,12 @@ let
                     inherit (cfg) cycleIntervalMs;
                     inherit (cfg) signer_account_mnemonic;
                     inherit (cfg) betterstack_api_key;
+                    inherit (cfg) trigger_betterstack;
                     inherit (cfg) dbPath;
                     inherit (cfg) chainConfig;
                     inherit (cfg) signerBalances;
                     inherit (cfg) hasuraEndpoint;
+                    inherit (cfg) rpcHostEndpoints;
                   }
                 )
               }
@@ -115,7 +125,7 @@ in
       packages = {
         sentinel2 = pkgsUnstable.buildNpmPackage {
           inherit (pkgs) nodejs;
-          npmDepsHash = "sha256-36XY4SZ/KdemBCnUw3xdnJfdMJGLzFpn2EAiOSPzJBg=";
+          npmDepsHash = "sha256-+z7TlnHu4KITamsr4TK5UzTzpjYbZZRfgKROuT60ueo=";
           src = ./.;
           sourceRoot = "sentinel2";
           npmFlags = [
