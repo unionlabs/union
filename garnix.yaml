@@ -31,6 +31,7 @@ builds:
       - 'packages.aarch64-linux.generate-ssz-compliance-tests'
       - 'packages.aarch64-linux.solidity-coverage'
       - 'packages.aarch64-linux.show-solidity-coverage'
+      - 'packages.aarch64-linux.sentinel2'
       - 'packages.*.devnet-osmosis-home'
       - 'packages.*.devnet-simd-home'
       - 'packages.*.devnet-stargaze-home'
