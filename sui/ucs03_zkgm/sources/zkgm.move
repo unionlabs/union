@@ -131,12 +131,6 @@ module zkgm::zkgm_relay {
         instruction: Instruction
     }
 
-    // struct Instruction has copy, drop, store {
-    //     version: u8,
-    //     opcode: u8,
-    //     operand: vector<u8>
-    // }
-
     public struct SyscallPacket has copy, drop, store {
         version: u8,
         index: u8,
