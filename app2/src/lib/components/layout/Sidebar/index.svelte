@@ -2,6 +2,7 @@
 import { page } from "$app/state"
 import ExternalLinkIcon from "$lib/components/icons/ExternalLinkIcon.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
+import ProfileCard from "$lib/dashboard/components/SideCard.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
@@ -32,12 +33,13 @@ const updateHighlightPosition = () => {
 
     // Check all navigation items to find the best match
     const allNavItems = document.querySelectorAll("[data-path]")
-    allNavItems.forEach(item => {
+    allNavItems.forEach((item) => {
       const itemPath = item.getAttribute("data-path")
       if (
         itemPath
         && (page.url.pathname === itemPath
-          || (page.url.pathname.startsWith(`${itemPath}/`) && itemPath.length > bestMatchLength))
+          || (page.url.pathname.startsWith(`${itemPath}/`)
+            && itemPath.length > bestMatchLength))
       ) {
         bestMatch = item as HTMLElement
         bestMatchLength = itemPath.length
@@ -45,7 +47,7 @@ const updateHighlightPosition = () => {
     })
 
     if (bestMatch) {
-      const rect = bestMatch.getBoundingClientRect()
+      const rect = (bestMatch as HTMLElement).getBoundingClientRect()
       highlightElement.style.top = `${rect.top}px`
       highlightElement.style.left = `${rect.left}px`
       highlightElement.style.width = `${rect.width}px`
@@ -100,6 +102,8 @@ onMount(() => {
       {/key}
     </a>
     <div class="flex flex-col flex-1">
+      <ProfileCard />
+
       {#each navigation as section, i}
         {#if section.title !== "Developer" || uiStore.showDeveloperPages}
           <section class="border-zinc-900 p-6 last:flex-1 flex flex-col justify-end">
@@ -145,7 +149,9 @@ onMount(() => {
                               data-path={subroute.path}
                               class={cn(
                                 "relative flex items-center gap-2 px-3 py-1 rounded-lg transition-colors",
-                                isCurrentPath(subroute.path) ? "" : "dark:hover:bg-zinc-900",
+                                isCurrentPath(subroute.path)
+                                  ? ""
+                                  : "dark:hover:bg-zinc-900",
                               )}
                             >
                               {subroute.title}
