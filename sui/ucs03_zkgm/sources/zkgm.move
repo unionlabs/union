@@ -69,7 +69,6 @@ module zkgm::zkgm_relay {
     use zkgm::forward::{Self, Forward};
     use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
     use zkgm::fungible_asset_order_ack::{Self};
-    use zkgm::multiplex::{Self, Multiplex};
     use zkgm::acknowledgement::{Self};
     use zkgm::zkgm_ethabi;
     
@@ -124,6 +123,7 @@ module zkgm::zkgm_relay {
     const E_ACK_EMPTY: u64 = 14;
     const E_ONLY_MAKER: u64 = 15;
     const E_BATCH_MISMATCH: u64 = 16;
+    const E_NO_MULTIPLEX_OPERATION: u64 = 17;
 
     public struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
@@ -211,15 +211,7 @@ module zkgm::zkgm_relay {
         token: address
     }
 
-    public struct RelayStore has key {
-        id: UID,
-        in_flight_packet: Table<vector<u8>, Packet>,
-        channel_balance: Table<ChannelBalancePair, u256>,
-        token_origin: Table<address, u256>,
-        address_to_treasurycap: Table<address, TreasuryCap<FUNGIBLE_TOKEN>>,
-        // address_to_coin: Table<address, Coin<FUNGIBLE_TOKEN>>
 
-    }
 
     // Events
     #[event]
@@ -258,7 +250,14 @@ module zkgm::zkgm_relay {
         token: address,
         amount: u64
     }
-    
+
+    public struct RelayStore has key {
+        id: UID,
+        in_flight_packet: Table<vector<u8>, Packet>,
+        channel_balance: Table<ChannelBalancePair, u256>,
+        token_origin: Table<address, u256>
+    }
+
     fun init(ctx: &mut TxContext) {
         let id = object::new(ctx);
 
@@ -266,34 +265,14 @@ module zkgm::zkgm_relay {
             id: id,
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
-            token_origin: table::new(ctx),
-            address_to_treasurycap: table::new(ctx),
-            // address_to_coin: table::new(ctx)
+            token_origin: table::new(ctx)
         });
     }
-    fun get_treasury_cap_mut(relay_store: &mut RelayStore, denom_address: address): &mut TreasuryCap<FUNGIBLE_TOKEN> {
-        relay_store.address_to_treasurycap.borrow_mut(denom_address)
-    }
 
-    // fun get_coin_mut(relay_store: &mut RelayStore, denom_address: address): &mut Coin<FUNGIBLE_TOKEN> {
-    //     relay_store.address_to_coin.borrow_mut(denom_address)
-    // }
-
-
-    // public entry fun insert_pair(
-    //     relay_store: &mut RelayStore,
-    //     denom_address: address,
-    //     treasury_cap: TreasuryCap<FUNGIBLE_TOKEN>,
-    //     coin: Coin<FUNGIBLE_TOKEN>
-    // ) {
-    //     relay_store.address_to_treasurycap.add(denom_address, treasury_cap);
-    //     relay_store.address_to_coin.add(denom_address, coin);
-    // }
-
-    
     public fun is_valid_version(version_bytes: String): bool {
         version_bytes == string::utf8(VERSION)
     }
+
     public fun update_channel_path(path: u256, next_channel_id: u32): u256 {
         if (path == 0) {
             return (next_channel_id as u256)
@@ -309,7 +288,7 @@ module zkgm::zkgm_relay {
     }
 
 
-        /// Find last set (most significant bit).
+    /// Find last set (most significant bit).
     /// Returns the index of the most significant bit of `x`.
     /// If `x` is zero, returns 256.
     public fun fls(mut x: u256): u256 {
@@ -642,17 +621,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            execute_multiplex(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                relayer_msg,
-                salt,
-                multiplex::decode(instruction::operand(&instruction)),
-                ctx
-            )
+            abort E_NO_MULTIPLEX_OPERATION
         } else {
             abort E_UNKNOWN_SYSCALL
         }
@@ -766,72 +735,6 @@ module zkgm::zkgm_relay {
         }
     }
 
-    fun execute_multiplex(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        relayer_msg: vector<u8>,
-        _salt: vector<u8>,
-        multiplex_packet: Multiplex,
-        ctx: &mut TxContext
-    ): (vector<u8>) {
-        let contract_address =
-            bcs::new(*multiplex::contract_address(&multiplex_packet)).peel_address();
-
-        if (multiplex::eureka(&multiplex_packet)) {
-            // TODO: discuss this, is it ok to do?
-            // event::emit(
-            //     OnZkgmCall {
-            //         sender: *multiplex::sender(&multiplex_packet),
-            //         contract_calldata: *multiplex::contract_calldata(&multiplex_packet),
-            //         contract_address: contract_address
-            //     }
-            // );
-            return bcs::to_bytes(&ACK_SUCCESS)
-        };
-        let multiplex_ibc_packet =
-            packet::new(
-                packet::source_channel_id(&ibc_packet),
-                packet::destination_channel_id(&ibc_packet),
-                multiplex::encode_multiplex_sender_and_calldata(
-                    *multiplex::sender(&multiplex_packet),
-                    *multiplex::contract_calldata(&multiplex_packet)
-                ),
-                packet::timeout_height(&ibc_packet),
-                packet::timeout_timestamp(&ibc_packet)
-            );
-
-        // TODO: How do we return something from this? investigate
-        // event::emit(
-        //     OnIIBCModuleOnRecvPacketCall {
-        //         packet: multiplex_ibc_packet,
-        //         relayer: relayer,
-        //         relayer_msg: relayer_msg,
-        //         contract_address: multiplex_packet.contract_address
-        //     }
-        // );
-        vector::empty() // TODO: investigate
-        // Here is the original implementation in aptos
-        // let param =
-        //     copyable_any::pack<IIBCModuleOnRecvPacketParams>(
-        //         IIBCModuleOnRecvPacketParams {
-        //             packet: multiplex_ibc_packet,
-        //             relayer: relayer,
-        //             relayer_msg: relayer_msg
-        //         }
-        //     );
-
-        // engine_zkgm::dispatch(param, contract_address);
-
-        // let acknowledgement = dispatcher_zkgm::get_return_value(contract_address);
-
-        // if (vector::length(&acknowledgement) == 0) {
-        //     abort E_UNIMPLEMENTED
-        // };
-        // acknowledgement
-    }
-
     public entry fun send(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
@@ -903,16 +806,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            verify_multiplex(
-                ibc_store,
-                relay_store,
-                sender,
-                channel_id,
-                path,
-                multiplex::decode(instruction::operand(&instruction)),
-                ctx
-            )
+            abort E_NO_MULTIPLEX_OPERATION
         } else {
             abort E_UNKNOWN_SYSCALL
         };
@@ -981,18 +875,6 @@ module zkgm::zkgm_relay {
             *forward::instruction(&forward_packet),
             ctx
         );
-    }
-
-    fun verify_multiplex(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        sender: address,
-        channel_id: u32,
-        path: u256,
-        multiplex_packet: Multiplex,
-        ctx: &mut TxContext
-    ){
-
     }
 
     public entry fun acknowledge_packet(
@@ -1122,18 +1004,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            acknowledge_multiplex(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                salt,
-                multiplex::decode(instruction::operand(&instruction)),
-                success,
-                inner_ack,
-                ctx
-            )
+            abort E_NO_MULTIPLEX_OPERATION
         } else {
             abort E_UNKNOWN_SYSCALL
         }
@@ -1203,51 +1074,6 @@ module zkgm::zkgm_relay {
 
     }
 
-    fun acknowledge_multiplex(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        salt: vector<u8>,
-        multiplex_packet: Multiplex,
-        success: bool,
-        ack: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        if (success && !multiplex::eureka(&multiplex_packet)) {
-            let multiplex_ibc_packet =
-                packet::new(
-                    packet::source_channel_id(&ibc_packet),
-                    packet::destination_channel_id(&ibc_packet),
-                    multiplex::encode_multiplex_sender_and_calldata(
-                        *multiplex::contract_address(&multiplex_packet),
-                        *multiplex::contract_calldata(&multiplex_packet)
-                    ),
-                    packet::timeout_height(&ibc_packet),
-                    packet::timeout_timestamp(&ibc_packet)
-                );
-            // TODO: verify this
-            // event::emit(
-            //     OnIIBCModuleOnAcknowledgementPacketCall {
-            //         packet: multiplex_ibc_packet,
-            //         acknowledgement: ack,
-            //         relayer: relayer,
-            //         contract_address: multiplex_packet.sender
-            //     }
-            // )
-            // let param =
-            //     copyable_any::pack<IIBCModuleOnAcknowledgementPacketParams>(
-            //         IIBCModuleOnAcknowledgementPacketParams {
-            //             packet: multiplex_ibc_packet,
-            //             acknowledgement: ack,
-            //             relayer: relayer
-            //         }
-            //     );
-            // let contract_address = from_bcs::to_address(multiplex_packet.sender);
-
-            // engine_zkgm::dispatch(param, contract_address);
-        }
-    }
     public entry fun timeout_packet(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
@@ -1350,16 +1176,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            timeout_multiplex(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                salt,
-                multiplex::decode(instruction::operand(&instruction)),
-                ctx
-            )
+            abort E_NO_MULTIPLEX_OPERATION
         } else {
             abort E_UNKNOWN_SYSCALL
         }
@@ -1430,39 +1247,7 @@ module zkgm::zkgm_relay {
         multiplex_packet: Multiplex,
         ctx: &mut TxContext
     ) {
-        if (!multiplex::eureka(&multiplex_packet)) {
-            let multiplex_ibc_packet =
-                packet::new(
-                    packet::source_channel_id(&ibc_packet),
-                    packet::destination_channel_id(&ibc_packet),
-                    multiplex::encode_multiplex_sender_and_calldata(
-                        *multiplex::contract_address(&multiplex_packet),
-                        *multiplex::contract_calldata(&multiplex_packet)
-                    ),
-                    packet::timeout_height(&ibc_packet),
-                    packet::timeout_timestamp(&ibc_packet)
-                );
-            // TODO: verify this
-
-            // event::emit(
-            //     OnIIBCModuleOnTimeoutPacketCall{
-            //         packet: multiplex_ibc_packet,
-            //         relayer: relayer,
-            //         contract_address: multiplex_packet.sender
-            //     }
-            // );
-            // let param =
-            //     copyable_any::pack<IIBCModuleOnTimeoutPacketParams>(
-            //         IIBCModuleOnTimeoutPacketParams {
-            //             packet: multiplex_ibc_packet,
-            //             relayer: relayer
-            //         }
-            //     );
-            // let contract_address = from_bcs::to_address(multiplex_packet.sender);
-
-            // engine_zkgm::dispatch(param, contract_address);
-
-        }
+        abort E_NO_MULTIPLEX_OPERATION
     }
 
     // public entry fun execute(
