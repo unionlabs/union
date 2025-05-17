@@ -8,6 +8,11 @@ pub const OP_MULTIPLEX: u8 = 0x01;
 pub const OP_BATCH: u8 = 0x02;
 pub const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
 
+// Privileged instructions
+pub const OP_STAKE: u8 = 0xC1;
+pub const OP_UNSTAKE: u8 = 0xC2;
+pub const OP_WITHDRAW_STAKE: u8 = 0xC3;
+
 pub const ACK_ERR_ONLY_MAKER: &[u8] = &[0xDE, 0xAD, 0xC0, 0xDE];
 
 pub const TAG_ACK_FAILURE: U256 = U256::ZERO;
@@ -68,6 +73,31 @@ alloy::sol! {
         uint256 quote_amount;
     }
 
+    #[derive(Debug, PartialEq)]
+    struct Stake {
+        uint256 token_id;
+        bytes governance_token;
+        bytes sender;
+        bytes beneficiary;
+        bytes validator;
+        uint256 amount;
+    }
+
+    struct Unstake {
+        uint256 token_id;
+        bytes governance_token;
+        bytes sender;
+        bytes validator;
+        uint256 amount;
+    }
+
+    struct WithdrawStake {
+        uint256 token_id;
+        bytes governance_token;
+        bytes sender;
+        bytes beneficiary;
+    }
+
     #[derive(Debug)]
     struct Ack {
         uint256 tag;
@@ -82,5 +112,13 @@ alloy::sol! {
     struct FungibleAssetOrderAck {
         uint256 fill_type;
         bytes market_maker;
+    }
+
+    struct UnstakeAck {
+        uint256 completion_time;
+    }
+
+    struct WithdrawStakeAck {
+        uint256 amount;
     }
 }

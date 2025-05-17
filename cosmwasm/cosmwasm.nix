@@ -110,14 +110,16 @@ _: {
           apps = {
             ucs03 = ucs03-configs.cw20 // {
               rate_limit_disabled = true;
+              # 2 minutes
+              unbonding_period = 2 * 60;
             };
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
             # "ethereum"
-            # "trusted-mpt"
+            "trusted-mpt"
             # "bob"
-            "ethermint"
+            # "ethermint"
           ];
         }
         {
@@ -158,7 +160,10 @@ _: {
             gas_multiplier = 1.4;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20;
+            ucs03 = ucs03-configs.cw20 // {
+              # 27 days unbonding period
+              unbonding_period = 27 * 24 * 60 * 60;
+            };
           };
           bech32_prefix = "union";
           lightclients = [
@@ -448,6 +453,7 @@ _: {
       ucs03-configs = {
         cw20 = {
           path = "${ucs03-zkgm.release}";
+          cw_account_path = "${cw-account.release}";
           token_minter_path = "${cw20-token-minter.release}";
           token_minter_config = {
             cw20 = {
@@ -455,14 +461,17 @@ _: {
             };
           };
           rate_limit_disabled = false;
+          unbonding_period = 0;
         };
         osmosis_tokenfactory = {
           rate_limit_disabled = false;
           path = "${ucs03-zkgm.release}";
+          cw_account_path = "${cw-account.release}";
           token_minter_path = "${osmosis-tokenfactory-token-minter.release}";
           token_minter_config = {
             osmosis_tokenfactory = { };
           };
+          unbonding_period = 0;
         };
       };
 
@@ -708,6 +717,17 @@ _: {
 
                   echo "token minter code id: $(cat token-minter-code-id.txt)"
 
+                  PRIVATE_KEY=${private_key} \
+                  RUST_LOG=info \
+                    cosmwasm-deployer \
+                    store-code \
+                    --rpc-url ${rpc_url} \
+                    --bytecode ${apps.ucs03.cw_account_path} \
+                    --output cw-account-code-id.txt \
+                    ${mk-gas-args gas_config}
+
+                  echo "cw-account code id: $(cat cw-account-code-id.txt)"
+
                   DEPLOYER=$(
                     PRIVATE_KEY=${private_key} \
                       cosmwasm-deployer \
@@ -727,7 +747,7 @@ _: {
                     --address "$(echo "$ADDRESSES" | jq '.app."${app}"' -r)" \
                     --message "{\"token_minter_migration\":{\"new_code_id\":$(cat token-minter-code-id.txt),\"msg\":\"$(echo '{}' | base64)\"}, \"rate_limit_disabled\":${
                       if apps.ucs03.rate_limit_disabled then "true" else "false"
-                    }}" \
+                    }, \"cw_account_code_id\": $(cat cw-account-code-id.txt)}" \
                     --force \
                     --new-bytecode ${(mk-app full-app.name).release} \
                     ${mk-gas-args gas_config}
@@ -812,6 +832,8 @@ _: {
       # };
 
       ucs03-zkgm = crane.buildWasmContract "cosmwasm/ibc-union/app/ucs03-zkgm" { };
+
+      cw-account = crane.buildWasmContract "cosmwasm/cw-account" { };
 
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
@@ -1012,6 +1034,7 @@ _: {
             osmosis-tokenfactory-token-minter
             ibc-union
             multicall
+            cw-account
             ;
           cosmwasm-scripts =
             {
