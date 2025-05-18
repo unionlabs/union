@@ -12,7 +12,7 @@ import {
   writeContract,
   WriteContractError,
 } from "@unionlabs/sdk/evm"
-import { Data, Effect, Match, pipe } from "effect"
+import { Cause, Data, Effect, Match, pipe } from "effect"
 import type {
   Abi,
   Chain,
@@ -127,7 +127,27 @@ export const nextState = <
       ),
 
     TransactionReceiptComplete: () => Effect.succeed(ts),
-  })
+  }).pipe(
+    Effect.tap((to) =>
+      pipe(
+        Effect.log("fsm.transition"),
+        Effect.annotateLogs({
+          from: ts._tag,
+          to: to._tag,
+          chain: "evm",
+        }),
+      )
+    ),
+    Effect.tapErrorCause((cause) =>
+      pipe(
+        Effect.logError("fsm.transition", cause),
+        Effect.annotateLogs({
+          from: ts._tag,
+          chain: "evm",
+        }),
+      )
+    ),
+  )
 
 export const toCtaText = (orElse: string) =>
   pipe(

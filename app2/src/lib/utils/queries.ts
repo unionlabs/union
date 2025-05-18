@@ -1,47 +1,64 @@
 import { URLS } from "$lib/constants"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
-import { documentNodeToAnnotations } from "@unionlabs/sdk/utils"
-import { Effect, Option, pipe, Schedule, Schema } from "effect"
+import { operationNamesFromDocumentNode } from "@unionlabs/sdk/utils"
+import { Array as A, Effect, Option, pipe, Schedule, Schema } from "effect"
 import type { TimeoutException, UnknownException } from "effect/Cause"
 import type { DurationInput } from "effect/Duration"
 import type { ParseError } from "effect/ParseResult"
-import type { parseDocument, TadaDocumentNode } from "gql.tada"
+import type { TadaDocumentNode } from "gql.tada"
 import { request } from "graphql-request"
 
 export type FetchDecodeError = HttpClientError | ParseError | TimeoutException
 
-// Deprecated, use the one from ts-sdk
+/**
+ * @deprecated Migrate to `@unionlabs/sdk` query functions.
+ */
 export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
   Effect.gen(function*() {
     const client = yield* HttpClient.HttpClient
     const response = yield* client.get(url)
     const json = yield* response.json
     return yield* Schema.decodeUnknown(schema)(json)
-  })
+  }).pipe(
+    Effect.tap(Effect.log("request.http")),
+    Effect.tapErrorCause((cause) => Effect.logError("request.http", cause)),
+    Effect.annotateLogs({
+      url,
+    }),
+    Effect.withLogSpan("fetchDecode"),
+  )
 
-export type FetchDecodeGraphqlError = UnknownException | ParseError | TimeoutException
-
-// Deprecated, use the one from ts-sdk
+export type FetchDecodeGraphqlError = UnknownException | ParseError
+/**
+ * @deprecated Migrate to `@unionlabs/sdk` query functions.
+ */
 export const fetchDecodeGraphql = <S, E, D, V extends object | undefined>(
   schema: Schema.Schema<S, E>,
   document: TadaDocumentNode<D, V>,
   variables?: V,
-) =>
-  Effect.gen(function*() {
-    const data = yield* Effect.tryPromise(() => request(URLS().GRAPHQL, document, variables)).pipe(
-      Effect.withSpan("fetch"),
-    )
-    return yield* Schema.decodeUnknown(schema)(data).pipe(
-      Effect.withSpan("decode"),
-    )
-  }).pipe(
-    Effect.annotateLogs({
-      ...documentNodeToAnnotations(document),
-    }),
-    Effect.tap(Effect.log("query ok")),
-    Effect.tapError(() => Effect.logError("query fail")),
+): Effect.Effect<S, FetchDecodeGraphqlError, never> => {
+  const operationName = pipe(
+    document,
+    operationNamesFromDocumentNode,
+    A.head,
+    Option.getOrElse(() => "unknown"),
   )
+  const message = `request.gql.${operationName}`
+  return pipe(
+    Effect.tryPromise(() => request(URLS().GRAPHQL, document, variables)),
+    Effect.withSpan("fetch"),
+    Effect.flatMap(Schema.decodeUnknown(schema)),
+    Effect.withSpan("decode"),
+    Effect.tap(Effect.log(message)),
+    Effect.tapErrorCause((cause) => Effect.logError(message, cause)),
+    Effect.annotateLogs({
+      operationName,
+      variables,
+    }),
+    Effect.withLogSpan("fetchDecodeGraphql"),
+  )
+}
 
 export const createQuery = <S>({
   url,
@@ -94,7 +111,7 @@ export const createQueryGraphql = <S, E, D, V extends object | undefined>({
   variables: V
   refetchInterval: DurationInput
   writeData: (data: Option.Option<S>) => void
-  writeError: (error: Option.Option<FetchDecodeGraphqlError>) => void
+  writeError: (error: Option.Option<FetchDecodeGraphqlError | TimeoutException>) => void
 }) => {
   const fetcherPipeline = pipe(
     fetchDecodeGraphql(schema, document, variables).pipe(

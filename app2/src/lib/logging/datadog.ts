@@ -1,7 +1,8 @@
-import { PUBLIC_DATADOG_CLIENT_TOKEN } from "$env/static/public"
+import { PUBLIC_DATADOG_CLIENT_TOKEN, PUBLIC_GIT_REV } from "$env/static/public"
 import { ENV, SERVICE_NAME } from "$lib/constants"
+import { flattenObject } from "$lib/utils/flattenObject"
 import { datadogLogs, StatusType } from "@datadog/browser-logs"
-import { Cause, Logger, LogLevel, Match, pipe } from "effect"
+import { Array as A, Cause, HashMap, Logger, LogLevel, Match, pipe, Record as R } from "effect"
 
 const statusType: (u: LogLevel.LogLevel) => StatusType = pipe(
   Match.type<LogLevel.LogLevel>(),
@@ -12,12 +13,16 @@ const statusType: (u: LogLevel.LogLevel) => StatusType = pipe(
     Fatal: () => "critical" as const,
     Info: () => "info" as const,
     None: () => "ok" as const,
-    Trace: () => "notice" as const,
+    Trace: () => "debug" as const,
     Warning: () => "warn" as const,
   }),
 )
 
-export const init = () => {
+const init = () => {
+  if (ENV() === "DEVELOPMENT") {
+    return
+  }
+
   const config: Parameters<typeof datadogLogs.init>[0] = {
     clientToken: PUBLIC_DATADOG_CLIENT_TOKEN,
     site: "datadoghq.eu",
@@ -25,7 +30,7 @@ export const init = () => {
     service: SERVICE_NAME,
     env: ENV().toLowerCase(),
     sessionSampleRate: 100,
-    version: "unknown",
+    version: PUBLIC_GIT_REV,
     telemetrySampleRate: 0,
   }
 
@@ -41,33 +46,35 @@ export const init = () => {
 
 const DatadogLogger = pipe(
   Logger.make(
-    ({ logLevel, message, annotations, cause, context, date, fiberId, spans }) => {
+    (options) => {
+      const annotations = HashMap.isEmpty(options.annotations)
+        ? undefined
+        : Object.fromEntries(HashMap.toEntries(options.annotations))
+      // const pretty = pipe(
+      //   Cause.prettyErrors(options.cause),
+      //   (xs) => A.isNonEmptyArray(xs) ? xs : undefined,
+      // )
+
+      const message: string = String(options.message)
+      const context = {
+        ...(annotations && { annotations }),
+        // ...(pretty && { pretty }),
+      } satisfies object
+      const status: StatusType = statusType(options.logLevel)
+      const error: Error | undefined = Cause.isEmpty(options.cause)
+        ? undefined
+        : Cause.squash(options.cause) as Error
+
       const payload: Parameters<typeof datadogLogs.logger.log> = [
-        String(message),
-        {
-          ...annotations,
-        },
-        statusType(logLevel),
-        Cause.squash(cause) as Error,
+        message,
+        context,
+        status,
+        error,
       ] as const
 
-      globalThis.console.log(`[DD]`, {
-        orig: {
-          logLevel,
-          message,
-          annotations,
-          cause,
-          context,
-          date,
-          fiberId,
-          spans,
-        },
-        payload,
-      })
-
-      // datadogLogs.logger.log(...payload)
+      datadogLogs.logger.log(...payload)
     },
   ),
 )
 
-export { DatadogLogger as Logger }
+export { DatadogLogger as Logger, init }

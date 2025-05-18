@@ -5,6 +5,9 @@ _: {
       pkgsUnstable,
       ensureAtRepositoryRoot,
       lib,
+      gitShortRev,
+      lastModified,
+      lastModifiedDate,
       ...
     }:
     let
@@ -18,6 +21,10 @@ _: {
         nodePackages_latest.nodejs
         pnpm_10
       ];
+      PUBLIC_DATADOG_CLIENT_TOKEN = "pub69b8a3deb766e91a19b44cccf0c3352e";
+      PUBLIC_GIT_REV = gitShortRev;
+      PUBLIC_LAST_MODIFIED_DATE = lastModifiedDate;
+      PUBLIC_LAST_MODIFIED_EPOCH = lastModified;
     in
     {
       packages = {
@@ -28,7 +35,7 @@ _: {
             ../typescript-sdk
             ../ts-sdk
           ];
-          hash = "sha256-reGSwe4FbxYxTeOmIErlhCm+jkBK/U87sFoydmIwKwc=";
+          hash = "sha256-wydMzX2aX/1QqAwtQlWWo5+8O65NprPFLxbYDMHgE3E=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
@@ -38,6 +45,10 @@ _: {
           ];
           buildPhase = ''
             runHook preBuild
+            export PUBLIC_DATADOG_CLIENT_TOKEN="${PUBLIC_DATADOG_CLIENT_TOKEN}"
+            export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
+            export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"
+            export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
             pnpm --filter=app2 prepare
             pnpm --filter=app2 build
             runHook postBuild
@@ -62,6 +73,10 @@ _: {
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
+              export PUBLIC_DATADOG_CLIENT_TOKEN="${PUBLIC_DATADOG_CLIENT_TOKEN}"
+              export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
+              export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"
+              export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
               pnpm install
               pnpm run dev -- --host
             '';

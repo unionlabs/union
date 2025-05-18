@@ -1,31 +1,11 @@
-import { Array as A, Match as M, Option as O, pipe } from "effect"
+import { Array as A, flow, Option as O, pipe } from "effect"
 import { TadaDocumentNode } from "gql.tada"
 
-export const documentNodeToAnnotations = (doc: TadaDocumentNode<any, any, any>) =>
+/** @internal */
+export const operationNamesFromDocumentNode = <T extends TadaDocumentNode<any, any>>(doc: T) =>
   pipe(
-    M.value(doc),
-    M.when(
-      { definitions: M.defined },
-      ({ definitions }) =>
-        pipe(
-          definitions,
-          A.filter((x) => x.kind === "OperationDefinition"),
-          A.map(x => ({
-            name: x.name?.value ?? "NO_NAME",
-            op: x.operation,
-          })),
-        ),
-    ),
-    M.option,
-    O.map(a => {
-      let ops: string[] = []
-      let names: string[] = []
-
-      a.forEach(x => {
-        ops.push(x.op)
-        names.push(x.name)
-      })
-
-      return { ops, names }
-    }),
+    doc.definitions,
+    A.filter(x => x.kind === "OperationDefinition"),
+    A.map(flow((x) => x.name?.value, O.fromNullable)),
+    A.getSomes,
   )

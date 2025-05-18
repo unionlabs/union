@@ -92,7 +92,27 @@ export const nextState = (
       }),
 
     WriteContractComplete: ({ signingClient, exit }) => Effect.succeed(ts),
-  })
+  }).pipe(
+    Effect.tap((to) =>
+      pipe(
+        Effect.log("fsm.transition"),
+        Effect.annotateLogs({
+          from: ts._tag,
+          to: to._tag,
+          chain: "cosmos",
+        }),
+      )
+    ),
+    Effect.tapErrorCause((cause) =>
+      pipe(
+        Effect.logError("fsm.transition", cause),
+        Effect.annotateLogs({
+          from: ts._tag,
+          chain: "cosmos",
+        }),
+      )
+    ),
+  )
 
 export const toCtaText = (orElse: string) =>
   pipe(

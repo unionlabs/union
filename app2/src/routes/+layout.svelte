@@ -1,6 +1,7 @@
 <script lang="ts">
 import "../app.css"
 import { page } from "$app/state"
+import DevInfo from "$lib/components/DevInfo.svelte"
 import ErrorsModal from "$lib/components/ErrorsModal.svelte"
 import Header from "$lib/components/layout/Header/index.svelte"
 import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
@@ -162,3 +163,4 @@ $effect(() => {
   isOpen={uiStore.errorsModalOpen}
   onClose={() => uiStore.closeErrorsModal()}
 />
+<DevInfo />

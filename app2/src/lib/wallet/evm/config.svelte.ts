@@ -10,9 +10,10 @@ import {
   switchChain as _switchChain,
   watchAccount,
 } from "@wagmi/core"
-import { Effect, Option } from "effect"
+import { Effect, Option, pipe } from "effect"
 import type { Hex } from "viem"
 
+import { runSync } from "$lib/runtime.ts"
 import { mainnet } from "@wagmi/core/chains"
 import { type ConfiguredChainId, getWagmiConfig } from "./wagmi-config.svelte.ts"
 
@@ -77,6 +78,10 @@ class SepoliaStore {
   }
 
   connect = async (walletId: string) => {
+    const annotate = Effect.annotateLogs({
+      wallet: walletId,
+    })
+
     try {
       this.connectionStatus = "connecting"
 
@@ -97,9 +102,17 @@ class SepoliaStore {
 
       this.startWatchingAccount()
 
+      Effect.log("wallet.connect").pipe(
+        annotate,
+        runSync,
+      )
+
       return result
     } catch (error) {
-      console.error("Connection failed:", error)
+      Effect.logError("wallet.connect", error).pipe(
+        annotate,
+        runSync,
+      )
       this.connectionStatus = "disconnected"
     }
   }

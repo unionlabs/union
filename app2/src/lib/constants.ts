@@ -1,4 +1,4 @@
-export const SERVICE_NAME = "app2"
+export const SERVICE_NAME = "app"
 
 export type Environment = "PRODUCTION" | "STAGING" | "DEVELOPMENT"
 

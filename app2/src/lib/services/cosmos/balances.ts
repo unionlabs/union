@@ -59,6 +59,11 @@ const fetchCosmosCw20Balance = ({
       // I'm not entirely sure why this errors, but it is typesafe
       CosmosCw20BalanceSchema,
       `${rpcUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${base64Query}`,
+    ).pipe(
+      Effect.annotateLogs({
+        walletAddress,
+        contractAddress,
+      }),
     )
 
     return response.data.balance
@@ -94,14 +99,6 @@ export const fetchCosmosBalance = ({
     const displayAddress = yield* chain.toCosmosDisplay(walletAddress)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
-    yield* Effect.logTrace("Fetching Cosmos balance").pipe(
-      Effect.annotateLogs({
-        universalChainId: chain.universal_chain_id,
-        displayAddress,
-        decodedDenom,
-      }),
-    )
-
     const fetchBalance = decodedDenom.startsWith(`${chain.addr_prefix}1`)
       ? fetchCosmosCw20Balance({
         rpcUrl,
@@ -118,6 +115,9 @@ export const fetchCosmosBalance = ({
 
     return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))
   }).pipe(
+    Effect.annotateLogs({
+      universal_chain_id: chain.universal_chain_id,
+    }),
     Effect.scoped,
     Effect.provide(FetchHttpClient.layer),
     withTracerDisabledWhen(() => true), // important! this prevents CORS issues: https://github.com/Effect-TS/effect/issues/4568

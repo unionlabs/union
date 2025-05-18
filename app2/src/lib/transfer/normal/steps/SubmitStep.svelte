@@ -264,7 +264,11 @@ export const submit = Effect.gen(function*() {
   yield* Effect.sync(() => {
     isSubmitting = false
   })
-})
+}).pipe(
+  Effect.annotateLogs({
+    step: "submit",
+  }),
+)
 
 const handleSubmit = () => {
   error = Option.none()
@@ -278,7 +282,6 @@ const handleSubmit = () => {
     Exit.match(exit, {
       onFailure: cause => {
         const err = Cause.originalError(cause)
-        Effect.runSync(Effect.logError(cause))
         error = pipe(
           err,
           Cause.failures,
