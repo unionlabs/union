@@ -262,6 +262,7 @@ files.extend-exclude = [
 "Shacham"                 = "Shacham"
 "Snapshotter"             = "Snapshotter"
 "Solana"                  = "Solana"
+"Somes"                   = "Somes"
 "Stackblitz"              = "Stackblitz"
 "Storyblok"               = "Storyblok"
 "Subdemom"                = "Subdemom"
