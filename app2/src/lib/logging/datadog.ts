@@ -77,4 +77,4 @@ const DatadogLogger = pipe(
   ),
 )
 
-export { DatadogLogger as Logger, init }
+export { DatadogLogger as Logger, init as __init }

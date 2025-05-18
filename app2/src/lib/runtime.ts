@@ -39,12 +39,25 @@ const make = async () => {
   } as const
 }
 
-export const {
-  runFork$,
-  runFork,
-  runPromise,
-  runPromiseExit$,
-  runPromiseExit,
-  runSync,
-  runSyncExit,
-} = await make()
+type Runtime = Awaited<ReturnType<typeof make>>
+
+export let runFork$: Runtime["runFork$"]
+export let runFork: Runtime["runFork"]
+export let runPromise: Runtime["runPromise"]
+export let runPromiseExit$: Runtime["runPromiseExit$"]
+export let runPromiseExit: Runtime["runPromiseExit"]
+export let runSync: Runtime["runSync"]
+export let runSyncExit: Runtime["runSyncExit"]
+
+export const __init = async () => {
+  const runtime = await make()
+  ;({
+    runFork$,
+    runFork,
+    runPromise,
+    runPromiseExit$,
+    runPromiseExit,
+    runSync,
+    runSyncExit,
+  } = runtime)
+}
