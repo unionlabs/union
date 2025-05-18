@@ -7,11 +7,11 @@ const IS_VITEST = isNotUndefined(import.meta.vitest)
 type AppLayer = Layer.Layer<never, never, never>
 
 const make = async () => {
-  const layer = (await pipe(
+  const AppLayer = (await pipe(
     Match.value(IS_VITEST),
     Match.when(true, () => import("$lib/layers/test.js")),
     Match.when(false, () => import("$lib/layers/live.js")),
-    Match.orElseAbsurd,
+    Match.exhaustive,
   )).default satisfies AppLayer
 
   const {
@@ -21,7 +21,7 @@ const make = async () => {
     runSync,
     runSyncExit,
     runtime: _runtime,
-  } = ManagedRuntime.make(layer)
+  } = ManagedRuntime.make(AppLayer)
 
   const runtime = await _runtime()
 

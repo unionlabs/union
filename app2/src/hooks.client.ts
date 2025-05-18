@@ -12,6 +12,7 @@ class UnhandledRejection extends Data.TaggedError("UnhandledRejection")<{
 }> {}
 
 export const init: ClientInit = async () => {
+  await import("$lib/runtime")
   await import("$lib/logging/datadog.js").then(x => x.init())
 
   window.onerror = (event, source, lineno, colno, error) => {

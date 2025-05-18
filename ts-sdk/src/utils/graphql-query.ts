@@ -1,6 +1,6 @@
 import { HttpClient } from "@effect/platform"
 import { Array as A, Effect, Option as O, pipe, Schema } from "effect"
-import type { TimeoutException, UnknownException } from "effect/Cause"
+import type { UnknownException } from "effect/Cause"
 import type { ParseError } from "effect/ParseResult"
 import type { TadaDocumentNode } from "gql.tada"
 import { request } from "graphql-request"

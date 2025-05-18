@@ -11,6 +11,15 @@ export default defineConfig({
   plugins: [sveltekit(), tailwindcss()],
   build: { sourcemap: true },
   server: { allowedHosts: true },
+  esbuild: {
+    supported: {
+      /**
+       * XXX: potentially dangerous
+       * @see https://caniuse.com/mdn-javascript_operators_await_top_level
+       */
+      "top-level-await": true,
+    },
+  },
   test: {
     workspace: [
       {
