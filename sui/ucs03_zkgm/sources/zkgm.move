@@ -549,7 +549,7 @@ module zkgm::zkgm_relay {
     }
 
 
-    public entry fun register_coin<T>(
+    public entry fun register_capability<T>(
         relay_store: &mut RelayStore,
         mut capability: TreasuryCap<T>
     ) {
@@ -601,7 +601,7 @@ module zkgm::zkgm_relay {
             proof_height,
             vector[1]
         );
-        i = 0;
+        let mut i = 0;
         while (i < vector::length(&packets)) {
             let ibc_packet = *vector::borrow(&packets, i);
             let raw_zkgm_packet = packet::data(&ibc_packet);
@@ -692,6 +692,8 @@ module zkgm::zkgm_relay {
     ): vector<u8> {
         if (quote_amount != 0){
             // There can not be a scenerio where quote_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // Here, if quote_amount is not 0 then we'll need to trySafeTransferFrom.
+            // To do that, we need to have Coin<T> in `recv_packet` function.
             abort E_NOT_IMPLEMENTED
         };
         let asset_order_ack = fungible_asset_order_ack::new(
@@ -752,7 +754,7 @@ module zkgm::zkgm_relay {
                 coin::mint_and_transfer<T>(capability, fee, relayer, ctx);
             }
         } else {
-
+            // If the base token path is being unwrapped, it's going to be non-zero.
             decrease_outstanding(
                 relay_store,
                 channel_id,
@@ -862,6 +864,7 @@ module zkgm::zkgm_relay {
         forward_packet: Forward,
         ctx: &mut TxContext
     ): (vector<u8>) {
+        // TODO: Will we have this function?
         abort E_NO_EXECUTE_OPERATION
         // let zkgm_pack =
         //     zkgm_packet::new(
@@ -1308,7 +1311,6 @@ module zkgm::zkgm_relay {
                     let capability = get_treasury_cap<T>(relay_store);
                     coin::mint_and_transfer<T>(capability, order_base_amount, market_maker, ctx);
                 } else {
-
                     decrease_outstanding(
                         relay_store, 
                         packet::source_channel_id(&ibc_packet), 
@@ -1317,7 +1319,6 @@ module zkgm::zkgm_relay {
                         order_base_amount as u256
                     );
                     distribute_coin<T>(relay_store, market_maker, order_base_amount, ctx)
-                        
                 };
             } else {
                 abort E_INVALID_FILL_TYPE
