@@ -3321,7 +3321,7 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_bla() public {
+    function test_create_foa() public {
         FungibleAssetOrder memory foa = FungibleAssetOrder({
             sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
             receiver: abi.encodePacked(
@@ -3342,5 +3342,48 @@ contract ZkgmTests is Test {
             operand: ZkgmLib.encodeFungibleAssetOrder(foa)
         });
         console.logBytes(ZkgmLib.encodeInstruction(inst));
+    }
+
+    function test_create_stake() public {
+        Stake memory stake = Stake({
+            tokenId: 0,
+            governanceToken: bytes("muno"),
+            sender: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            beneficiary: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
+            amount: 10
+        });
+        console.logBytes(ZkgmLib.encodeStake(stake));
+    }
+
+    function test_create_unstake() public {
+        Unstake memory unstake = Unstake({
+            tokenId: 0,
+            governanceToken: bytes("muno"),
+            sender: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
+            amount: 10
+        });
+        console.logBytes(ZkgmLib.encodeUnstake(unstake));
+    }
+
+    function test_create_withdraw_stake() public {
+        WithdrawStake memory withdrawStake = WithdrawStake({
+            tokenId: 0,
+            governanceToken: bytes("muno"),
+            sender: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            beneficiary: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            )
+        });
+        console.logBytes(ZkgmLib.encodeWithdrawStake(withdrawStake));
     }
 }

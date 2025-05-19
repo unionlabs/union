@@ -25,7 +25,6 @@ contract ZkgmERC721 is
 
     struct ZkgmERC721Storage {
         address minter;
-        uint256 nextTokenId;
     }
 
     function _getZkgmERC721Storage()
@@ -56,13 +55,8 @@ contract ZkgmERC721 is
         $.minter = _minter;
     }
 
-    function mint(
-        address to
-    ) external onlyMinter returns (uint256) {
-        ZkgmERC721Storage storage $ = _getZkgmERC721Storage();
-        uint256 tokenId = $.nextTokenId++;
+    function mint(uint256 tokenId, address to) external onlyMinter {
         _mint(to, tokenId);
-        return tokenId;
     }
 
     function burn(

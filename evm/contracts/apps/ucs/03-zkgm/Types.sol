@@ -92,12 +92,14 @@ struct WithdrawStakeAck {
 enum ZkgmStakeState {
     // The position doesn't exist yet.
     UNDEFINED,
-    // The tokens are being staked, the position isn't earning rewards yet.
+    // The tokens are in-flight to be staked.
     STAKING,
     // The tokens are bonded and the position is being rewarded.
     STAKED,
     // The tokens are being unbonded, the position no longer earns rewards.
-    UNSTAKING
+    UNSTAKING,
+    // The tokens has been unstaked and withdrawn.
+    UNSTAKED
 }
 
 struct ZkgmStake {

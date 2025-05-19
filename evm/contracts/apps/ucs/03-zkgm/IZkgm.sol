@@ -28,21 +28,4 @@ interface IZkgm is IZkgmStore {
         uint32 channelId,
         bytes calldata unwrappedGovernanceToken
     ) external;
-
-    function stake(
-        uint32 channelId,
-        address beneficiary,
-        bytes calldata validator,
-        uint256 amount,
-        uint64 timeout
-    ) external;
-
-    function unstake(uint256 tokenId, uint64 timeout, bytes32 salt) external;
-
-    function withdrawStake(
-        uint256 tokenId,
-        address beneficiary,
-        uint64 timeout,
-        bytes32 salt
-    ) external;
 }

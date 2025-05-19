@@ -76,6 +76,11 @@ library ZkgmLib {
     error ErrWaitForUnstakingCompletion();
     error ErrNotStaked();
     error ErrWithdrawStakeAmountMustBeLE();
+    error ErrInstructionCannotBeForwarded();
+    error ErrInvalidStakeGovernanceToken();
+    error ErrInvalidStakeChannelId();
+    error ErrInvalidStakeAmount();
+    error ErrInvalidStakeValidator();
 
     function encodeFungibleAssetOrderAck(
         FungibleAssetOrderAck memory ack
@@ -379,7 +384,9 @@ library ZkgmLib {
     function isAllowedBatchInstruction(
         uint8 opcode
     ) internal pure returns (bool) {
-        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER;
+        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
+            || opcode == OP_STAKE || opcode == OP_UNSTAKE
+            || opcode == OP_WITHDRAW_STAKE;
     }
 
     function isAllowedForwardInstruction(
