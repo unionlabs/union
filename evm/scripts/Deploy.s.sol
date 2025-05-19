@@ -993,6 +993,25 @@ contract GetDeployed is VersionedScript {
             stateLensIcs23MptClient.toHexString(), proxyStateLensIcs23MptClient
         );
 
+        string memory proxyStateLensIcs23Ics23Client =
+            "proxyStateLensIcs23Ics23Client";
+        proxyStateLensIcs23Ics23Client.serialize(
+            "contract",
+            string(
+                "libs/@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol:ERC1967Proxy"
+            )
+        );
+        proxyStateLensIcs23Ics23Client = proxyStateLensIcs23Ics23Client.serialize(
+            "args",
+            abi.encode(
+                implOf(stateLensIcs23Ics23Client),
+                abi.encodeCall(StateLensIcs23Ics23Client.initialize, (manager))
+            )
+        );
+        impls.serialize(
+            stateLensIcs23Ics23Client.toHexString(), proxyStateLensIcs23Ics23Client
+        );
+
         string memory proxyUCS00 = "proxyUCS00";
         proxyUCS00.serialize(
             "contract",

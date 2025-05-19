@@ -333,7 +333,7 @@
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
           "height": 3646605,
-          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+          "commit": "2e2f466cb49e21137f6415d573e5372e8609dd96"
         },
         "state-lens/ics23/smt": {
           "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
@@ -387,7 +387,7 @@
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
           "height": 8088108,
-          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+          "commit": "2e2f466cb49e21137f6415d573e5372e8609dd96"
         },
         "state-lens/ics23/smt": {
           "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
