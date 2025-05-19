@@ -110,7 +110,7 @@ impl ProofModuleServer<IbcUnion> for Module {
         _: &Extensions,
         at: Height,
         path: StorePath,
-    ) -> RpcResult<(Value, ProofType)> {
+    ) -> RpcResult<Option<(Value, ProofType)>> {
         let key = path.key();
 
         let target_object_id = sui_verifier::calculate_dynamic_field_object_id(
@@ -171,14 +171,14 @@ impl ProofModuleServer<IbcUnion> for Module {
 
         let object: ObjectInner = bcs::from_bytes(&buf).unwrap();
 
-        Ok((
+        Ok(Some((
             into_value(StorageProof {
                 checkpoint_contents: checkpoint.checkpoint_contents,
                 transaction_effects: tx.effects.clone(),
                 object,
             }),
             ProofType::Membership,
-        ))
+        )))
     }
 }
 

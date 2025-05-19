@@ -154,6 +154,7 @@ impl StateModuleServer<IbcUnion> for Module {
     async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
         match query {
             Query::PacketByHash(_packet_by_hash) => todo!(),
+            Query::PacketsByBatchHash(_packets_by_batch_hash) => todo!(),
         }
     }
 
@@ -206,7 +207,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 // just `prefix + vector<u8>`
                 let client_state_bytes: Bytes = res[0].clone().0[1..].into();
 
-                into_value(client_state_bytes)
+                into_value(Some(client_state_bytes))
             }
             StorePath::ConsensusState(path) => {
                 let res = query
