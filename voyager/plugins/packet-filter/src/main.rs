@@ -19,7 +19,7 @@ use voyager_message::{
 };
 use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     Module::run().await
 }

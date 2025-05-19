@@ -275,6 +275,7 @@ impl Context {
         register_ibc_spec_handlers: fn(&mut IbcSpecHandlers),
         ipc_client_request_timeout: Duration,
         cache_config: crate::rpc::server::cache::Config,
+        metrics_endpoint: Option<String>,
     ) -> anyhow::Result<Self> {
         let cancellation_token = CancellationToken::new();
 
@@ -322,6 +323,7 @@ impl Context {
 
                 debug!("starting rpc server for plugin {}", plugin_info.name);
                 tokio::spawn(module_rpc_server(&plugin_info.name, server).await?);
+                debug!("started rpc server for plugin {}", plugin_info.name);
 
                 Ok((idx, plugin_config, plugin_info))
             })
@@ -340,6 +342,7 @@ impl Context {
                     tokio::spawn(plugin_child_process(
                         name.clone(),
                         plugin_config.clone(),
+                        metrics_endpoint.clone(),
                         cancellation_token.clone(),
                     ));
 
@@ -362,7 +365,7 @@ impl Context {
             )
             .await?;
 
-        module_startup(
+        modules_startup(
             module_configs.state,
             cancellation_token.clone(),
             main_rpc_server.clone(),
@@ -393,10 +396,11 @@ impl Context {
 
                 Ok(())
             },
+            metrics_endpoint.clone(),
         )
         .await?;
 
-        module_startup(
+        modules_startup(
             module_configs.proof,
             cancellation_token.clone(),
             main_rpc_server.clone(),
@@ -427,10 +431,11 @@ impl Context {
 
                 Ok(())
             },
+            metrics_endpoint.clone(),
         )
         .await?;
 
-        module_startup(
+        modules_startup(
             module_configs.consensus,
             cancellation_token.clone(),
             main_rpc_server.clone(),
@@ -467,10 +472,11 @@ impl Context {
 
                 Ok(())
             },
+            metrics_endpoint.clone(),
         )
         .await?;
 
-        module_startup(
+        modules_startup(
             module_configs.client,
             cancellation_token.clone(),
             main_rpc_server.clone(),
@@ -522,10 +528,11 @@ impl Context {
 
                 Ok(())
             },
+            metrics_endpoint.clone(),
         )
         .await?;
 
-        module_startup(
+        modules_startup(
             module_configs.client_bootstrap,
             cancellation_token.clone(),
             main_rpc_server.clone(),
@@ -572,6 +579,7 @@ impl Context {
 
                 Ok(())
             },
+            metrics_endpoint.clone(),
         )
         .await?;
 
@@ -851,6 +859,7 @@ pub struct LoadedModulesInfo {
 async fn plugin_child_process(
     plugin_name: String,
     module_config: PluginConfig,
+    metrics_endpoint: Option<String>,
     cancellation_token: CancellationToken,
 ) {
     let client_socket = ModuleRpcClient::make_socket_path(&plugin_name);
@@ -858,29 +867,25 @@ async fn plugin_child_process(
 
     debug!(%client_socket, %server_socket, "starting plugin {plugin_name}");
 
-    let mut cmd = tokio::process::Command::new(&module_config.path);
-    cmd.arg("run");
-    cmd.arg(&client_socket);
-    cmd.arg(&server_socket);
-    cmd.arg(module_config.config.to_string());
+    let mut args = vec![
+        "run".to_owned(),
+        client_socket,
+        server_socket,
+        module_config.config.to_string(),
+    ];
 
-    lazarus_pit(
-        &module_config.path,
-        &[
-            "run",
-            &client_socket,
-            &server_socket,
-            &module_config.config.to_string(),
-        ],
-        cancellation_token,
-    )
-    .await
+    if let Some(metrics_endpoint) = metrics_endpoint {
+        args.push(metrics_endpoint);
+    }
+
+    lazarus_pit(&module_config.path, args, cancellation_token).await
 }
 
 #[instrument(skip_all, fields(%module_name))]
 async fn module_child_process<Info: Serialize>(
     module_name: String,
     module_config: ModuleConfig<Info>,
+    metrics_endpoint: Option<String>,
     cancellation_token: CancellationToken,
 ) {
     let client_socket = ModuleRpcClient::make_socket_path(&module_name);
@@ -888,26 +893,28 @@ async fn module_child_process<Info: Serialize>(
 
     debug!(%client_socket, %server_socket, "starting module {module_name}");
 
-    lazarus_pit(
-        &module_config.path,
-        &[
-            "run",
-            &client_socket,
-            &server_socket,
-            &module_config.config.to_string(),
-            &serde_json::to_string(&module_config.info).unwrap(),
-        ],
-        cancellation_token,
-    )
-    .await
+    let mut args = vec![
+        "run".to_owned(),
+        client_socket,
+        server_socket,
+        module_config.config.to_string(),
+        serde_json::to_string(&module_config.info).unwrap(),
+    ];
+
+    if let Some(metrics_endpoint) = metrics_endpoint {
+        args.push(metrics_endpoint);
+    }
+
+    lazarus_pit(&module_config.path, args, cancellation_token).await
 }
 
-async fn lazarus_pit(cmd: &Path, args: &[&str], cancellation_token: CancellationToken) {
+#[instrument(skip_all)]
+async fn lazarus_pit(cmd: &Path, args: Vec<String>, cancellation_token: CancellationToken) {
     let mut attempt = 0;
 
     loop {
         let mut cmd = tokio::process::Command::new(cmd);
-        cmd.args(args);
+        cmd.args(&args);
 
         debug!(%attempt, "spawning plugin child process");
 
@@ -1109,13 +1116,14 @@ pub fn get_plugin_info(plugin_config: &PluginConfig) -> anyhow::Result<PluginInf
     Ok(serde_json::from_slice(&output.stdout).unwrap())
 }
 
-async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
+async fn modules_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
     configs: Vec<ModuleConfig<Info>>,
     cancellation_token: CancellationToken,
     main_rpc_server: Server,
     ipc_client_request_timeout: Duration,
     id_f: fn(&Info) -> String,
     mut push_f: impl FnMut(&Info, ModuleRpcClient) -> anyhow::Result<()>,
+    metrics_endpoint: Option<String>,
 ) -> anyhow::Result<()> {
     stream::iter(configs)
         .filter(|module_config| {
@@ -1159,6 +1167,7 @@ async fn module_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
             tokio::spawn(module_child_process(
                 id.clone(),
                 module_config.clone(),
+                metrics_endpoint.clone(),
                 cancellation_token.clone(),
             ));
 

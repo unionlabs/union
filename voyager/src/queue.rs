@@ -161,6 +161,7 @@ impl Voyager {
                 },
                 config.voyager.ipc_client_request_timeout,
                 config.voyager.cache,
+                Some(config.voyager.metrics_endpoint.clone()),
             )
             .await
             .context("error initializing plugins")?,

@@ -35,7 +35,7 @@ pub mod call;
 pub type StateLensClientState =
     state_lens_light_client_types::ClientState<serde_json::Map<String, serde_json::Value>>;
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     Module::run().await
 }

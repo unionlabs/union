@@ -152,7 +152,7 @@ impl Client {
 }
 
 #[derive(Debug, thiserror::Error)]
-#[error("websocket connection timed out after {}.{}s", timeout.as_secs(), timeout.subsec_nanos())]
+#[error("websocket connection timed out after {}.{:0>9}s", timeout.as_secs(), timeout.subsec_nanos())]
 pub struct ConnectionTimeoutError {
     pub timeout: Duration,
 }

@@ -22,7 +22,7 @@ use crate::call::{CheckForClientAge, ModuleCall};
 
 pub mod call;
 
-#[tokio::main(flavor = "multi_thread")]
+#[tokio::main]
 async fn main() {
     Module::run().await
 }

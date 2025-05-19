@@ -26,6 +26,8 @@ use jsonrpsee::{
     Extensions, MethodResponse, RpcModule,
 };
 use macros::model;
+use opentelemetry::KeyValue;
+use opentelemetry_otlp::WithExportConfig;
 use reth_ipc::{
     client::IpcClientBuilder,
     server::{RpcService, RpcServiceBuilder},
@@ -36,6 +38,7 @@ use serde_json::{json, value::RawValue, Value};
 use tracing::{
     debug, debug_span, error, info_span, instrument, instrument::Instrumented, trace, Instrument,
 };
+use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use unionlabs::{
     ibc::core::client::height::Height, primitives::Bytes, traits::Member, ErrorReporter,
 };
@@ -237,7 +240,8 @@ impl PluginMessage {
 #[derive(clap::Subcommand)]
 pub enum DefaultCmd {}
 
-fn init_log() {
+// set up logging and metrics
+fn init(metrics_endpoint: Option<String>) {
     enum LogFormat {
         Text,
         Json,
@@ -256,18 +260,40 @@ fn init_log() {
         }
     };
 
+    if let Some(metrics_endpoint) = metrics_endpoint {
+        let metric_exporter = opentelemetry_otlp::MetricExporter::builder()
+            .with_http()
+            .with_endpoint(&metrics_endpoint)
+            .with_protocol(opentelemetry_otlp::Protocol::HttpBinary)
+            .with_timeout(Duration::from_secs(3))
+            .build()
+            .expect("unable to build metrics exporter");
+
+        let provider = opentelemetry_sdk::metrics::SdkMeterProvider::builder()
+            .with_periodic_exporter(metric_exporter)
+            .with_resource(
+                opentelemetry_sdk::Resource::builder_empty()
+                    .with_attributes([KeyValue::new("process.name", "voyager")])
+                    .build(),
+            )
+            .build();
+
+        opentelemetry::global::set_meter_provider(provider);
+    };
+
     match format {
         LogFormat::Text => {
-            tracing_subscriber::fmt()
-                .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-                // .with_span_events(FmtSpan::CLOSE)
+            tracing_subscriber::registry()
+                .with(tracing_subscriber::fmt::layer().with_filter(EnvFilter::from_default_env()))
                 .init();
         }
         LogFormat::Json => {
-            tracing_subscriber::fmt()
-                .with_env_filter(tracing_subscriber::EnvFilter::from_default_env())
-                // .with_span_events(FmtSpan::CLOSE)
-                .json()
+            tracing_subscriber::registry()
+                .with(
+                    tracing_subscriber::fmt::layer()
+                        .json()
+                        .with_filter(EnvFilter::from_default_env()),
+                )
                 .init();
         }
     }
@@ -288,8 +314,6 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
     async fn cmd(config: Self::Config, cmd: Self::Cmd);
 
     async fn run() {
-        init_log();
-
         let app = <PluginApp<Self::Cmd> as clap::Parser>::parse();
 
         match app {
@@ -297,7 +321,10 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
                 socket,
                 voyager_socket,
                 config,
+                metrics_endpoint,
             } => {
+                init(metrics_endpoint);
+
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = Self::info(config.clone());
@@ -312,15 +339,21 @@ pub trait Plugin: PluginServer<Self::Call, Self::Callback> + Sized {
                     Self::new,
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_plugin_server", %name))
-                .await
+                .instrument(debug_span!("main", %name))
+                .await;
             }
             PluginApp::Info { config } => {
                 let info = Self::info(must_parse(&config));
 
                 print!("{}", serde_json::to_string(&info).unwrap())
             }
-            PluginApp::Cmd { cmd, config } => Self::cmd(must_parse(&config), cmd).await,
+            PluginApp::Cmd { cmd, config } => {
+                tokio::runtime::Builder::new_multi_thread()
+                    .enable_all()
+                    .build()
+                    .expect("building the tokio runtime is infallible; qed;")
+                    .block_on(Self::cmd(must_parse(&config), cmd));
+            }
         }
     }
 }
@@ -332,15 +365,16 @@ pub trait StateModule<V: IbcSpec>: StateModuleServer<V> + Sized {
     async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError>;
 
     async fn run() {
-        init_log();
-
         match <ModuleApp as clap::Parser>::parse() {
             ModuleApp::Run {
                 socket,
                 voyager_socket,
                 config,
                 info,
+                metrics_endpoint,
             } => {
+                init(metrics_endpoint);
+
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<StateModuleInfo>(&info);
@@ -369,15 +403,16 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
     async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError>;
 
     async fn run() {
-        init_log();
-
         match <ModuleApp as clap::Parser>::parse() {
             ModuleApp::Run {
                 socket,
                 voyager_socket,
                 config,
                 info,
+                metrics_endpoint,
             } => {
+                init(metrics_endpoint);
+
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ProofModuleInfo>(&info);
@@ -406,15 +441,16 @@ pub trait ConsensusModule: ConsensusModuleServer + Sized {
     async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError>;
 
     async fn run() {
-        init_log();
-
         match <ModuleApp as clap::Parser>::parse() {
             ModuleApp::Run {
                 socket,
                 voyager_socket,
                 config,
                 info,
+                metrics_endpoint,
             } => {
+                init(metrics_endpoint);
+
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ConsensusModuleInfo>(&info);
@@ -443,15 +479,16 @@ pub trait ClientModule: ClientModuleServer + Sized {
     async fn new(config: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError>;
 
     async fn run() {
-        init_log();
-
         match <ModuleApp as clap::Parser>::parse() {
             ModuleApp::Run {
                 socket,
                 voyager_socket,
                 config,
                 info,
+                metrics_endpoint,
             } => {
+                init(metrics_endpoint);
+
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ClientModuleInfo>(&info);
@@ -483,15 +520,16 @@ pub trait ClientBootstrapModule: ClientBootstrapModuleServer + Sized {
     ) -> Result<Self, BoxDynError>;
 
     async fn run() {
-        init_log();
-
         match <ModuleApp as clap::Parser>::parse() {
             ModuleApp::Run {
                 socket,
                 voyager_socket,
                 config,
                 info,
+                metrics_endpoint,
             } => {
+                init(metrics_endpoint);
+
                 let config = must_parse::<Self::Config>(&config);
 
                 let info = must_parse::<ClientBootstrapModuleInfo>(&info);
@@ -1094,6 +1132,7 @@ enum PluginApp<Cmd: clap::Subcommand> {
         socket: String,
         voyager_socket: String,
         config: String,
+        metrics_endpoint: Option<String>,
     },
     Info {
         config: String,
@@ -1113,6 +1152,7 @@ enum ModuleApp {
         voyager_socket: String,
         config: String,
         info: String,
+        metrics_endpoint: Option<String>,
     },
 }
 
@@ -1127,6 +1167,7 @@ fn must_parse<T: DeserializeOwned>(config_str: &str) -> T {
     }
 }
 
+#[instrument(skip_all, fields(%id))]
 async fn run_server<
     T,
     NewF: FnOnce(NewT) -> Fut,
@@ -1182,13 +1223,11 @@ async fn run_server<
     let server_handle = ipc_server.start(rpcs).await.unwrap();
     debug!("listening on {addr}");
 
-    tokio::spawn(
-        server_handle
-            .stopped()
-            .instrument(debug_span!("module_server", %id)),
-    )
-    .await
-    .unwrap()
+    tokio::spawn(server_handle.stopped().instrument(debug_span!("{id}")))
+        .await
+        .unwrap();
+
+    trace!("spawned server");
 }
 
 struct InjectClient<S> {
