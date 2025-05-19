@@ -14125,6 +14125,7 @@ name = "ucs03-zkgm"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "chrono",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-account",

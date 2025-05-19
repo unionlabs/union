@@ -110,8 +110,6 @@ _: {
           apps = {
             ucs03 = ucs03-configs.cw20 // {
               rate_limit_disabled = true;
-              # 2 minutes
-              unbonding_period = 2 * 60;
             };
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
@@ -160,10 +158,7 @@ _: {
             gas_multiplier = 1.4;
           };
           apps = {
-            ucs03 = ucs03-configs.cw20 // {
-              # 27 days unbonding period
-              unbonding_period = 27 * 24 * 60 * 60;
-            };
+            ucs03 = ucs03-configs.cw20;
           };
           bech32_prefix = "union";
           lightclients = [
@@ -461,7 +456,6 @@ _: {
             };
           };
           rate_limit_disabled = false;
-          unbonding_period = 0;
         };
         osmosis_tokenfactory = {
           rate_limit_disabled = false;
@@ -471,7 +465,6 @@ _: {
           token_minter_config = {
             osmosis_tokenfactory = { };
           };
-          unbonding_period = 0;
         };
       };
 

@@ -136,6 +136,4 @@ pub enum ContractError {
     InvalidGovernanceToken,
     #[error("staking position must be unique but found an already deployed staking account")]
     StakingAccountAlreadyExist { stake: Box<Stake>, account: Addr },
-    #[error("unbonding period is invalid, it must be non zero, a migration may be necessary")]
-    InvalidUnbondingPeriod,
 }

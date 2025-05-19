@@ -1,6 +1,7 @@
 use core::str;
 
 use alloy::{primitives::U256, sol_types::SolValue};
+use chrono::DateTime;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -46,6 +47,7 @@ pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 pub const FORWARD_REPLY_ID: u64 = 0xbabe;
 pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
 pub const MM_FILL_REPLY_ID: u64 = 0xdead;
+pub const UNSTAKE_REPLY_ID: u64 = 0xc0de;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
 pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
@@ -1068,6 +1070,9 @@ fn execute_forward(
     forward: Forward,
     intent: bool,
 ) -> Result<Response, ContractError> {
+    if !is_allowed_forward_instruction(forward.instruction.opcode) {
+        return Err(ContractError::InvalidForwardInstruction);
+    }
     // We cannot allow market makers to fill packets containing forward
     // instruction. This would allow them to submit of a proof and fill via the
     // protocol on destination for a fake forward.
@@ -1267,6 +1272,9 @@ fn execute_batch(
     EXECUTING_PACKET_IS_BATCH.save(deps.storage, &batch.instructions.len())?;
     let mut response = Response::new();
     for (i, instruction) in batch.instructions.into_iter().enumerate() {
+        if !is_allowed_batch_instruction(instruction.opcode) {
+            return Err(ContractError::InvalidBatchInstruction);
+        }
         let sub_response = execute_internal(
             deps.branch(),
             env.clone(),
@@ -1609,9 +1617,6 @@ fn execute_stake(
 
     let mut messages = Vec::new();
     let config = CONFIG.load(deps.storage)?;
-    if config.unbonding_period == 0 {
-        return Err(ContractError::InvalidUnbondingPeriod);
-    }
 
     // 1. Create the staking account
     messages.push(
@@ -1722,13 +1727,8 @@ fn execute_unstake(
         unstake.token_id,
     )?;
 
-    let config = CONFIG.load(deps.storage)?;
-    if config.unbonding_period == 0 {
-        return Err(ContractError::InvalidUnbondingPeriod);
-    }
-
-    Ok(Response::new()
-        .add_message(wasm_execute(
+    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+        wasm_execute(
             stake_account.clone(),
             &cw_account::msg::ExecuteMsg {
                 messages: vec![
@@ -1746,24 +1746,9 @@ fn execute_unstake(
                 ],
             },
             vec![],
-        )?)
-        .add_message(wasm_execute(
-            env.contract.address,
-            &ExecuteMsg::InternalWriteAck {
-                ack: UnstakeAck {
-                    completion_time: U256::from(
-                        env.block
-                            .time
-                            .seconds()
-                            .checked_add(config.unbonding_period)
-                            .expect("impossible"),
-                    ),
-                }
-                .abi_encode_params()
-                .into(),
-            },
-            vec![],
-        )?))
+        )?,
+        UNSTAKE_REPLY_ID,
+    )))
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -2022,6 +2007,38 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                     )?)),
             }
         }
+        UNSTAKE_REPLY_ID => match reply.result {
+            SubMsgResult::Ok(response) => {
+                let completion_time_utc_str = response
+                    .events
+                    .into_iter()
+                    .find_map(|e| {
+                        if e.ty == "unbond" {
+                            e.attributes
+                                .into_iter()
+                                .find(|a| a.key == "completion_time")
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("impossible");
+                let completion_time_utc =
+                    DateTime::parse_from_rfc3339(&completion_time_utc_str.value)
+                        .expect("impossible");
+                Ok(Response::new().add_message(wasm_execute(
+                    env.contract.address,
+                    &ExecuteMsg::InternalWriteAck {
+                        ack: UnstakeAck {
+                            completion_time: U256::from(completion_time_utc.timestamp()),
+                        }
+                        .abi_encode_params()
+                        .into(),
+                    },
+                    vec![],
+                )?))
+            }
+            SubMsgResult::Err(_) => panic!("reply_on_success with error branch, impossible"),
+        },
         // For any other reply ID, we don't know how to handle it, so we return an error.
         // This is a safety measure to ensure we don't silently ignore unexpected replies,
         // which could indicate a bug in the contract or an attempt to exploit it.
@@ -2370,7 +2387,6 @@ pub struct MigrateMsg {
     rate_limit_disabled: bool,
     dummy_code_id: Option<u64>,
     cw_account_code_id: Option<u64>,
-    unbonding_period: Option<u64>,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -2399,9 +2415,6 @@ pub fn migrate(
                 }
                 if let Some(cw_account_code_id) = migrate_msg.cw_account_code_id {
                     config.cw_account_code_id = cw_account_code_id;
-                }
-                if let Some(unbonding_period) = migrate_msg.unbonding_period {
-                    config.unbonding_period = unbonding_period;
                 }
                 Ok(config)
             })?;

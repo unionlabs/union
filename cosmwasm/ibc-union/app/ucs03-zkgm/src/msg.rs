@@ -32,8 +32,6 @@ pub struct Config {
     pub dummy_code_id: u64,
     #[serde(default)]
     pub cw_account_code_id: u64,
-    #[serde(default)]
-    pub unbonding_period: u64,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]

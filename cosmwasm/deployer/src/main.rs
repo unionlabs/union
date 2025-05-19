@@ -341,7 +341,6 @@ pub struct Ucs03Config {
     cw_account_path: PathBuf,
     token_minter_config: TokenMinterConfig,
     rate_limit_disabled: bool,
-    unbonding_period: u64,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -744,7 +743,6 @@ async fn do_main() -> Result<()> {
                                 rate_limit_disabled: ucs03_config.rate_limit_disabled,
                                 dummy_code_id: bytecode_base_code_id.get(),
                                 cw_account_code_id: cw_account_code_id.get(),
-                                unbonding_period: ucs03_config.unbonding_period,
                             },
                             minter_init_params,
                         },
