@@ -86,6 +86,7 @@ module zkgm::zkgm_relay {
     use sui::balance::{Self};
     use sui::hash::{Self};
     use zkgm::fungible_asset_order::base_amount;
+    use zkgm::fungible_asset_order_ack::market_maker;
 
     // Constants
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
@@ -1122,7 +1123,7 @@ module zkgm::zkgm_relay {
         );
     }
 
-    public entry fun acknowledge_packet(
+    public entry fun acknowledge_packet<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         packet_source_channels: vector<u32>,
@@ -1181,11 +1182,12 @@ module zkgm::zkgm_relay {
             } else {
                 let zkgm_packet = zkgm_packet::decode(packet::data(&ibc_packet));
                 let zkgm_ack = acknowledgement::decode(&acknowledgement);
-                acknowledge_internal(
+                acknowledge_internal<T>(
                     ibc_store,
                     relay_store,
                     ibc_packet,
                     relayer,
+                    zkgm_packet::path(&zkgm_packet),
                     zkgm_packet::salt(&zkgm_packet),
                     zkgm_packet::instruction(&zkgm_packet),
                     acknowledgement::tag(&zkgm_ack) == ACK_SUCCESS,
@@ -1197,11 +1199,12 @@ module zkgm::zkgm_relay {
         };
     }
 
-    fun acknowledge_internal(
+    fun acknowledge_internal<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
+        path: u256,
         salt: vector<u8>,
         instruction: Instruction,
         success: bool,
@@ -1211,12 +1214,19 @@ module zkgm::zkgm_relay {
         let version = instruction::version(&instruction);
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
             assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
-            acknowledge_fungible_asset_order(
+            let order = fungible_asset_order::decode(instruction::operand(&instruction));
+
+            acknowledge_fungible_asset_order<T>(
                 ibc_store,
                 relay_store,
                 ibc_packet,
+                relayer,
+                path,
                 salt,
-                fungible_asset_order::decode(instruction::operand(&instruction)),
+                *fungible_asset_order::sender(&order),
+                *fungible_asset_order::base_token(&order),
+                fungible_asset_order::base_token_path(&order),
+                fungible_asset_order::base_amount(&order) as u64,
                 success,
                 inner_ack,
                 ctx
@@ -1226,10 +1236,11 @@ module zkgm::zkgm_relay {
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
-            acknowledge_forward(
+            acknowledge_forward<T>(
                 ibc_store,
                 relay_store,
                 ibc_packet,
+                relayer,
                 salt,
                 forward::decode(instruction::operand(&instruction), &mut decode_idx),
                 success,
@@ -1243,30 +1254,91 @@ module zkgm::zkgm_relay {
         }
     }
 
-    fun acknowledge_fungible_asset_order(
+    fun acknowledge_fungible_asset_order<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
+        relayer: address,
+        path: u256,
         salt: vector<u8>,
-        transfer_packet: FungibleAssetOrder,
+        order_sender: vector<u8>,
+        order_base_token: vector<u8>,
+        order_base_token_path: u256,
+        order_base_amount: u64,
         success: bool,
         ack: vector<u8>,
         ctx: &mut TxContext
     ) {
-        // TODO: fill it later
+        if (success) {
+            let asset_order_ack = fungible_asset_order_ack::decode(&ack);
+            if (fungible_asset_order_ack::fill_type(&asset_order_ack) == FILL_TYPE_PROTOCOL) {
+                // The protocol filled, fee was paid to relayer.
+            } else if(
+                fungible_asset_order_ack::fill_type(&asset_order_ack) == FILL_TYPE_MARKETMAKER
+            ) {
+                let market_maker = bcs::new(*fungible_asset_order_ack::market_maker(&asset_order_ack)).peel_address();
+                
+                if (order_base_token_path != 0) {
+                    let mut capability = get_treasury_cap<T>(relay_store, order_base_token);
+                    coin::mint_and_transfer<T>(capability, order_base_amount, market_maker, ctx);
+                } else {
+                        let channel_balance_pair = ChannelBalancePair{
+                            channel: packet::source_channel_id(&ibc_packet),
+                            path: path,
+                            token: order_base_token
+                        };
+                        let channel_balance = *relay_store.channel_balance.borrow(channel_balance_pair);
+                        add_or_update_table<ChannelBalancePair, u256>(
+                            &mut relay_store.channel_balance,
+                            channel_balance_pair,
+                            (channel_balance - ((order_base_amount)as u256)) 
+                        );
+
+                        distribute_coin<T>(relay_store, market_maker, order_base_amount, ctx)
+                        
+                };
+            } else {
+                abort E_INVALID_FILL_TYPE
+            }
+        } else {
+            refund<T>(
+                ibc_store,
+                relay_store, 
+                packet::source_channel_id(&ibc_packet), 
+                path, 
+                order_sender, 
+                order_base_token, 
+                order_base_token_path, 
+                order_base_amount, 
+                ctx
+            )
+        }
     }
 
-    fun acknowledge_forward(
+
+    fun acknowledge_forward<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
+        relayer: address,
         salt: vector<u8>,
         forward_packet: Forward,
         success: bool,
         ack: vector<u8>,
         ctx: &mut TxContext
     ) {
-
+        acknowledge_internal<T>(
+            ibc_store,
+            relay_store,
+            ibc_packet,
+            relayer,
+            forward::path(&forward_packet),
+            salt,
+            *forward::instruction(&forward_packet),
+            success,
+            ack,
+            ctx
+        )
     }
 
     public entry fun timeout_packet<T>(
@@ -1445,42 +1517,5 @@ module zkgm::zkgm_relay {
             *forward::instruction(&forward_packet), 
             ctx
         )
-
     }
-
-    // public entry fun execute(
-    //     ibc_store: &mut ibc::IBCStore,
-    //     relay_store: &mut RelayStore,
-    //     source_channel: u32,
-    //     destination_channel: u32,
-    //     data: vector<u8>,
-    //     timeout_height: u64,
-    //     timeout_timestamp: u64,
-    //     relayer: address,
-    //     relayer_msg: vector<u8>,
-    //     raw_zkgm_packet: vector<u8>,
-    //     ctx: &mut TxContext
-    // ) {
-    //     let ibc_packet =
-    //         packet::new(
-    //             source_channel,
-    //             destination_channel,
-    //             data,
-    //             timeout_height,
-    //             timeout_timestamp
-    //         );
-
-    //     let zkgm_packet = decode_packet(raw_zkgm_packet);
-    //     execute_internal(
-    //         ibc_store,
-    //         relay_store,
-    //         ibc_packet,
-    //         relayer,
-    //         relayer_msg,
-    //         zkgm_packet.salt,
-    //         zkgm_packet.path,
-    //         zkgm_packet.instruction,
-    //         ctx
-    //     );
-    // }
 }
