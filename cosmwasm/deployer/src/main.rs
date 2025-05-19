@@ -139,6 +139,16 @@ enum App {
         #[arg(long)]
         output: Option<PathBuf>,
     },
+    ProxyCodeId {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     #[command(subcommand)]
     Tx(TxCmd),
 }
@@ -380,6 +390,22 @@ async fn do_main() -> Result<()> {
     let app = App::parse();
 
     match app {
+        App::ProxyCodeId {
+            rpc_url,
+            private_key,
+            gas_config,
+            output,
+        } => {
+            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
+            let bytecode_base_address = ctx
+                .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), BYTECODE_BASE)
+                .await?;
+            let code_id = ctx
+                .instantiate_code_id_of_contract(bytecode_base_address)
+                .await?
+                .unwrap();
+            write_output(output, code_id)?;
+        }
         App::Addresses {
             deployer,
             lightclient,
