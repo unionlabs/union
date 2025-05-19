@@ -28,3 +28,6 @@ voyager-vm        = { workspace = true }
 sui-verifier = { workspace = true }
 sui-light-client-types = { workspace = true }
 bcs = { workspace = true }
+move-core-types = { git = "https://github.com/mystenlabs/sui" }
+
+

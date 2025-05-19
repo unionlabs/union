@@ -25,7 +25,7 @@ serde             = { workspace = true, features = ["derive"] }
 serde_json        = { workspace = true }
 tokio             = { workspace = true }
 tracing           = { workspace = true }
-unionlabs         = { workspace = true }
+unionlabs         = { workspace = true, features = ["bcs"] }
 voyager-message   = { workspace = true }
 voyager-vm        = { workspace = true }
 sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }

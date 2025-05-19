@@ -3,6 +3,7 @@ use std::collections::VecDeque;
 use call::FetchUpdate;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
@@ -12,7 +13,7 @@ use sui_sdk::{
     SuiClient, SuiClientBuilder,
 };
 use tracing::instrument;
-use unionlabs::ibc::core::client::height::Height;
+use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     call::Call,
     data::{Data, DecodedHeaderMeta, OrderedHeaders},
@@ -20,7 +21,7 @@ use voyager_message::{
     module::{PluginInfo, PluginServer, UnexpectedChainIdError},
     primitives::{ChainId, ClientType},
     vm::{data, pass::PassResult, BoxDynError, Op, Visit},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
@@ -111,7 +112,7 @@ pub struct Config {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct MyCheckpointData {
+pub struct CheckpointData {
     pub checkpoint_summary: CertifiedCheckpointSummary,
     pub checkpoint_contents: CheckpointContents,
     pub transactions: Vec<CheckpointTransaction>,
@@ -161,25 +162,35 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ModuleCall::FetchUpdate(FetchUpdate { from, to }) => {
                 let client = reqwest::Client::new();
                 let req = format!("{}/{}.chk", self.sui_object_store_rpc_url, to);
-                let res = client.get(req).send().await.unwrap().bytes().await.unwrap();
+                let res = client
+                    .get(req)
+                    .send()
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(e).with_message("error fetching the checkpoint"),
+                            None::<()>,
+                        )
+                    })?
+                    .bytes()
+                    .await
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(e).with_message("error fetching the checkpoint"),
+                            None::<()>,
+                        )
+                    })?;
 
-                let (_, checkpoint) = bcs::from_bytes::<(
-                    u8,
-                    sui_sdk::types::full_checkpoint_content::CheckpointData,
-                )>(&res)
-                .unwrap();
-
-                let checkpoint = serde_json::to_string(&checkpoint).unwrap();
-                // TODO(aeryz): this is due to some `is_human_readable` thing in somewhere
-                // sorry for who reads this code, i'll fix it
-                let checkpoint: MyCheckpointData = serde_json::from_str(&checkpoint).unwrap();
-
-                let log = serde_json::to_string(&sui_light_client_types::header::Header {
-                    trusted_height: from,
-                    checkpoint_summary: checkpoint.checkpoint_summary.data.clone(),
-                    sign_info: checkpoint.checkpoint_summary.auth_signature.clone(),
-                })
-                .unwrap();
+                let (_, checkpoint) =
+                    bcs::from_bytes::<(u8, CheckpointData)>(&res).map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            ErrorReporter(e).with_message("checkpoint data cannot be decoded"),
+                            None::<()>,
+                        )
+                    })?;
 
                 Ok(data(OrderedHeaders {
                     headers: vec![(
@@ -191,7 +202,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             checkpoint_summary: checkpoint.checkpoint_summary.data,
                             sign_info: checkpoint.checkpoint_summary.auth_signature,
                         })
-                        .unwrap(),
+                        .expect("serde serialization works"),
                     )],
                 }))
             }

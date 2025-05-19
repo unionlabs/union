@@ -27,6 +27,6 @@ tracing         = { workspace = true }
 unionlabs       = { workspace = true }
 voyager-message = { workspace = true }
 voyager-vm      = { workspace = true }
-sui-light-client-types = { workspace = true }
+sui-light-client-types = { workspace = true, features = ["serde"] }
 
 sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }

@@ -4,7 +4,7 @@ use unionlabs_primitives::{
     Bytes, FixedBytes,
 };
 
-use crate::{digest::Digest, AccountAddress, ObjectID, ObjectRef, SuiAddress};
+use crate::{AccountAddress, ObjectID, ObjectRef, SuiAddress};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

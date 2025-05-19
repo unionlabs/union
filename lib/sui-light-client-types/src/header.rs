@@ -1,7 +1,4 @@
-use crate::{
-    checkpoint_summary::{CheckpointSummary, ExecutionDigests},
-    crypto::AuthorityStrongQuorumSignInfo,
-};
+use crate::{checkpoint_summary::CheckpointSummary, crypto::AuthorityStrongQuorumSignInfo};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

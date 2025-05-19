@@ -132,7 +132,6 @@ impl Module {
             .await
         {
             Ok(checkpoint) => {
-                // TODO(aeryz): nano or milli?
                 let timestamp = checkpoint.timestamp_ms * 1_000_000;
 
                 debug!(%timestamp, %latest_height, "latest timestamp");
@@ -302,106 +301,6 @@ impl<'a> SuiQuery<'a> {
             _ => panic!("invalid"),
         }
     }
-}
-
-#[tokio::test]
-async fn sui_test() {
-    let sui_client = SuiClientBuilder::default()
-        .build("http://127.0.0.1:9000")
-        .await
-        .unwrap();
-
-    let res = SuiQuery::new(
-        &sui_client,
-        SuiAddress::try_from(
-            hex_literal::hex!("d371c422db01bf4f92f18d781ee9712bbdb12927c1e52d343a59a22ae9f0e04c")
-                .as_slice(),
-        )
-        .unwrap()
-        .into(),
-    )
-    .await
-    .add_param(vec![1u8, 2, 3])
-    .call(
-        SuiAddress::try_from(
-            hex_literal::hex!("92b47406d3a391ba0f87dfc309d3c4d8ea40abc3c65bd8d7463f440022cad7f3")
-                .as_slice(),
-        )
-        .unwrap()
-        .into(),
-        "get_commitment",
-    )
-    .await
-    .unwrap();
-
-    // let mut ptb = ProgrammableTransactionBuilder::new();
-
-    // let object_ref = sui_client
-    //     .read_api()
-    //     .get_object_with_options(
-    //         SuiAddress::try_from(
-    //             hex_literal::hex!(
-    //                 "d371c422db01bf4f92f18d781ee9712bbdb12927c1e52d343a59a22ae9f0e04c"
-    //             )
-    //             .as_slice(),
-    //         )
-    //         .unwrap()
-    //         .into(),
-    //         sui_sdk::rpc_types::SuiObjectDataOptions {
-    //             show_type: false,
-    //             show_owner: false,
-    //             show_previous_transaction: false,
-    //             show_display: false,
-    //             show_content: false,
-    //             show_bcs: false,
-    //             show_storage_rebate: false,
-    //         },
-    //     )
-    //     .await
-    //     .unwrap()
-    //     .object_ref_if_exists()
-    //     .unwrap();
-
-    // let arguments: Vec<CallArg> = vec![
-    //     CallArg::Object(ObjectArg::SharedObject {
-    //         id: object_ref.0,
-    //         initial_shared_version: object_ref.1,
-    //         mutable: true,
-    //     }),
-    //     CallArg::Pure(bcs::to_bytes(&vec![1u8, 2, 3]).unwrap()),
-    // ];
-
-    // ptb.command(Command::move_call(
-    //     SuiAddress::try_from(
-    //         hex_literal::hex!("92b47406d3a391ba0f87dfc309d3c4d8ea40abc3c65bd8d7463f440022cad7f3")
-    //             .as_slice(),
-    //     )
-    //     .unwrap()
-    //     .into(),
-    //     Identifier::new("ibc").unwrap(),
-    //     Identifier::new("get_commitment").unwrap(),
-    //     vec![],
-    //     vec![Argument::Input(0), Argument::Input(1)],
-    // ));
-
-    // for i in arguments {
-    //     ptb.input(i).unwrap();
-    // }
-
-    // let builder = ptb.finish();
-
-    // let res = sui_client
-    //     .read_api()
-    //     .dev_inspect_transaction_block(
-    //         SuiAddress::ZERO,
-    //         TransactionKind::ProgrammableTransaction(builder),
-    //         None,
-    //         None,
-    //         None,
-    //     )
-    //     .await
-    //     .unwrap();
-    panic!("{:?}", res);
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
