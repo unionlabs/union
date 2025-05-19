@@ -691,7 +691,7 @@ module zkgm::zkgm_relay {
         quote_amount: u64
     ): vector<u8> {
         if (quote_amount != 0){
-            // There can not be a scenerio where quote_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // There can not be a scenario where quote_token == NATIVE_TOKEN_ERC_7528_ADDRESS
             // Here, if quote_amount is not 0 then we'll need to trySafeTransferFrom.
             // To do that, we need to have Coin<T> in `recv_packet` function.
             abort E_NOT_IMPLEMENTED
@@ -763,7 +763,7 @@ module zkgm::zkgm_relay {
                 (quote_amount + fee)as u256
             );
 
-            // There can not be a scenerio where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // There can not be a scenario where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
             // Here we just need to split our coins to the receiver and relayer
             if(quote_amount > 0) {
                 distribute_coin<T>(relay_store, receiver, quote_amount, ctx)
@@ -1112,7 +1112,7 @@ module zkgm::zkgm_relay {
                 *base_token, 
                 fungible_asset_order::base_amount(&order)
             );
-            // There can not be a scenerio where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // There can not be a scenario where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
             // And here if i don't do anything, the COIN will be ours anyway. We just need to 
             // merge that one
             save_coin_to_bag<T>(relay_store, coin);
