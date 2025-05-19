@@ -1,4 +1,3 @@
-import type { Edition } from "$lib/themes"
 import { Match, String as Str } from "effect"
 import type { LayoutLoad } from "./$types"
 

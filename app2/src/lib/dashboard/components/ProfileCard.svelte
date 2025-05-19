@@ -96,10 +96,10 @@ import { Effect } from "effect"
               <div class="flex justify-between text-xs items-end">
                 <div class="flex flex-col text-neutral-400">
                   {#if Option.isSome(dashboard.experience.value.current)}
-                    <span>Level {dashboard.experience.value.current.value.level}</span>
                     {#if Option.isSome(dashboard.experience.value.level)}
                       <span class="text-union-400">{dashboard.experience.value.level.value}</span>
                     {/if}
+                    <span>Level {dashboard.experience.value.current.value.level}</span>
                   {:else}
                     <Skeleton class="h-4 w-16" />
                     <Skeleton class="h-4 w-24 mt-1" />

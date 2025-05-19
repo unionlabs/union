@@ -6,32 +6,6 @@ import ProfileCard from "$lib/dashboard/components/ProfileCard.svelte"
 import RewardStats from "$lib/dashboard/components/RewardStats.svelte"
 import SocialConnections from "$lib/dashboard/components/SocialConnections.svelte"
 import WalletStats from "$lib/dashboard/components/WalletStats.svelte"
-import { dashboard } from "$lib/dashboard/stores/user.svelte"
-import { Effect, pipe } from "effect"
-
-let isDeleting = false
-let error: string | null = null
-
-async function handleDelete() {
-  if (!confirm("Are you sure you want to delete your account? This action cannot be undone.")) {
-    return
-  }
-
-  isDeleting = true
-  error = null
-
-  pipe(
-    dashboard.deleteAccount(),
-    Effect.catchAll((error) => {
-      console.error("Delete account error:", error)
-      return Effect.void
-    }),
-    Effect.ensuring(Effect.sync(() => {
-      isDeleting = false
-    })),
-    Effect.runPromise,
-  )
-}
 </script>
 
 <div class="flex flex-col gap-4">
@@ -49,16 +23,4 @@ async function handleDelete() {
   <WalletStats />
 
   <Leaderboard show={10} />
-</div>
-<div class="mt-4">
-  <button
-    on:click={handleDelete}
-    disabled={isDeleting}
-    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded disabled:opacity-50"
-  >
-    {isDeleting ? "Deleting..." : "Delete Account"}
-  </button>
-  {#if error}
-    <p class="text-red-500 mt-2">{error}</p>
-  {/if}
 </div>

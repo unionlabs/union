@@ -176,7 +176,9 @@ export class Dashboard {
    * Initializes the Dashboard instance and sets up authentication listeners
    */
   constructor() {
-    if (!browser) return
+    if (!browser) {
+      return
+    }
     this.listenToAuth()
   }
 
@@ -226,7 +228,7 @@ export class Dashboard {
         ),
         Effect.catchAll((error) => {
           return Effect.void
-        })
+        }),
       ),
     )
   }

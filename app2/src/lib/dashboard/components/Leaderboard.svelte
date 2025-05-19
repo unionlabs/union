@@ -8,8 +8,12 @@ import { generateAvatar, isValidImageUrl } from "$lib/utils/avatar"
 import { truncate } from "$lib/utils/format"
 import { Option } from "effect"
 
+type Props = {
+  show?: IntRange<1, 51>
+}
+
 /** Number of entries to show. Must be between 1 and 50 */
-const { show = 10 } = $props<{ show?: IntRange<1, 51> }>()
+const { show = 10 }: Props = $props()
 
 // Ensure show value is between 1 and 50
 let validatedShow = $derived(
