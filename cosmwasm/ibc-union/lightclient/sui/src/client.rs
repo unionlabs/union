@@ -1,7 +1,9 @@
 use blake2::{Blake2b, Digest as _};
 use cosmwasm_std::{Deps, Empty, HashFunction, StdError, BLS12_381_G2_GENERATOR};
 use depolama::{KeyCodec, Prefix, Store, ValueCodec};
-use ibc_union_light_client::{ClientCreationResult, IbcClient, IbcClientError, StateUpdate};
+use ibc_union_light_client::{
+    spec::Timestamp, ClientCreationResult, IbcClient, IbcClientError, StateUpdate,
+};
 use ibc_union_msg::lightclient::Status;
 use serde::Serialize;
 use sui_light_client_types::{
@@ -72,8 +74,8 @@ impl IbcClient for SuiLightClient {
         Ok(())
     }
 
-    fn get_timestamp(consensus_state: &Self::ConsensusState) -> u64 {
-        consensus_state.timestamp
+    fn get_timestamp(consensus_state: &Self::ConsensusState) -> Timestamp {
+        Timestamp::from_nanos(consensus_state.timestamp)
     }
 
     fn get_latest_height(client_state: &Self::ClientState) -> u64 {

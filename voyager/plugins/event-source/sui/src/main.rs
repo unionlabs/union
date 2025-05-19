@@ -390,7 +390,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     // TODO: Review this, does it need to be +1?
-                    provable_height: Height::new(height),
+                    provable_height: voyager_message::data::EventProvableHeight::Exactly(
+                        Height::new(height),
+                    ),
                     event: into_value::<FullEvent>(full_event),
                     ibc_spec_id: IbcUnion::ID,
                 }))

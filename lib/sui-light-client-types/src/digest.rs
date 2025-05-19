@@ -1,4 +1,4 @@
-use std::ops::Deref;
+use core::{fmt::Display, ops::Deref};
 
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::{encoding::Base58, Bytes, FixedBytes};
@@ -35,5 +35,11 @@ impl Deref for Digest {
 
     fn deref(&self) -> &Self::Target {
         &self.0
+    }
+}
+
+impl Display for Digest {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
