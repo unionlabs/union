@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { Effect } from "effect";
-  import { getLastGlobalSync } from "$lib/dashboard/services/cache";
-  import { Option } from "effect";
-  import { onDestroy, onMount } from "svelte";
+import { getLastGlobalSync } from "$lib/dashboard/services/cache"
+import { Effect } from "effect"
+import { Option } from "effect"
+import { onDestroy, onMount } from "svelte"
 
 let lastSyncLabel: string | null = $state(null)
 
@@ -24,5 +24,5 @@ onMount(() => {
 </script>
 
 {#if lastSyncLabel}
-<p class="text-xs text-zinc-400 -my-4 px-2 text-end">{lastSyncLabel}</p>
+  <p class="text-xs text-zinc-400 -my-4 px-2 text-end">{lastSyncLabel}</p>
 {/if}

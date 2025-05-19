@@ -1,4 +1,5 @@
 <script lang="ts">
+import DashboardErrorContainer from "$lib/components/dashboard/DashboardErrorContainer.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
 import AccountInfo from "$lib/dashboard/components/AccountInfo.svelte"
 import LastSyncLabel from "$lib/dashboard/components/LastSyncLabel.svelte"
@@ -12,6 +13,7 @@ interface Props {
 let { children }: Props = $props()
 </script>
 
+<DashboardErrorContainer />
 <Sections>
   <LastSyncLabel />
   <NewUser />

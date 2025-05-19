@@ -483,12 +483,16 @@ export class Dashboard {
 
       // Update session and handle auth change in a single sync block
       yield* Effect.sync(() => {
-        // First clear the session to trigger derived state updates
+        // Clear all derived state first
         this.session = Option.none()
-        // Then immediately set the new session with updated user data
-        this.session = Option.fromNullable(session)
-        // Finally handle auth change
-        this.handleAuthChange(session)
+
+        // Wait a few tick to ensure state is cleared
+        setTimeout(() => {
+          // Then set the new session with updated user data
+          this.session = Option.fromNullable(session)
+          // Finally handle auth change
+          this.handleAuthChange(session)
+        }, 10)
       })
     }.bind(this))
   }
@@ -515,6 +519,15 @@ export class Dashboard {
             cause: `Provider ${provider} not linked`,
           }),
         )
+      }
+
+      // Add confirmation step
+      const confirmed = yield* Effect.sync(() =>
+        confirm(`Are you sure you want to unlink your ${provider} account?`)
+      )
+
+      if (!confirmed) {
+        return yield* Effect.succeed(undefined)
       }
 
       const identity = user.identities?.find((i) => i.provider === provider)

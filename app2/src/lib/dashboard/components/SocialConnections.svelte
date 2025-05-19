@@ -1,7 +1,7 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
-import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { cn } from "$lib/utils"
 import { Option } from "effect"
 import { Effect } from "effect"
 </script>
@@ -23,13 +23,13 @@ import { Effect } from "effect"
     >
       <div class="flex items-center gap-2">
         <span
-          class="
-            w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20 {
-            Option.isSome(dashboard.connections?.github) && dashboard.connections.github.value
-            ? 'bg-green-500 animate-pulse ring-green-500 shadow-[0_0_6px_0px_rgba(34,197,94,0.6)]'
-            : 'bg-white/5 backdrop-blur-sm ring-white/20'
-            }
-          "
+          class={cn(
+            "w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20",
+            Option.isSome(dashboard.connections?.github)
+              && dashboard.connections.github.value
+              ? "bg-green-500 animate-pulse ring-green-500 shadow-[0_0_6px_0px_rgba(34,197,94,0.6)]"
+              : "bg-white/5 backdrop-blur-sm ring-white/20",
+          )}
         ></span>
         <span>GitHub</span>
       </div>
@@ -79,13 +79,13 @@ import { Effect } from "effect"
     >
       <div class="flex items-center gap-2">
         <span
-          class="
-            w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20 {
-            Option.isSome(dashboard.connections?.twitter) && dashboard.connections.twitter.value
-            ? 'bg-green-500 animate-pulse ring-green-500 shadow-[0_0_6px_0px_rgba(34,197,94,0.6)]'
-            : 'bg-white/5 backdrop-blur-sm ring-white/20'
-            }
-          "
+          class={cn(
+            "w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20",
+            Option.isSome(dashboard.connections?.twitter)
+              && dashboard.connections.twitter.value
+              ? "bg-green-500 animate-pulse ring-green-500 shadow-[0_0_6px_0px_rgba(34,197,94,0.6)]"
+              : "bg-white/5 backdrop-blur-sm ring-white/20",
+          )}
         ></span>
         <span>Twitter</span>
       </div>
@@ -135,13 +135,13 @@ import { Effect } from "effect"
     >
       <div class="flex items-center gap-2">
         <span
-          class="
-            w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20 {
-            Option.isSome(dashboard.connections?.discord) && dashboard.connections.discord.value
-            ? 'bg-green-500 animate-pulse ring-green-500 shadow-[0_0_6px_0px_rgba(34,197,94,0.6)]'
-            : 'bg-white/5 backdrop-blur-sm ring-white/20'
-            }
-          "
+          class={cn(
+            "w-1.5 h-1.5 rounded-full transition-all duration-300 ring-1 ring-opacity-20",
+            Option.isSome(dashboard.connections?.discord)
+              && dashboard.connections.discord.value
+              ? "bg-green-500 animate-pulse ring-green-500 shadow-[0_0_6px_0px_rgba(34,197,94,0.6)]"
+              : "bg-white/5 backdrop-blur-sm ring-white/20",
+          )}
         ></span>
         <span>Discord</span>
       </div>

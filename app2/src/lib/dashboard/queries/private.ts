@@ -3,8 +3,16 @@ import { Effect, Option, pipe } from "effect"
 import { getSupabaseClient } from "../client"
 import type { Entity } from "../client"
 import { CACHE_VERSION, STALE, TTL } from "../config"
-import { SupabaseError } from "../errors"
+import {
+  AchievementError,
+  LeaderboardError,
+  MissionError,
+  RewardError,
+  SupabaseError,
+  WalletError,
+} from "../errors"
 import { clearLocalStorageCacheEntry, withLocalStorageCacheStale } from "../services/cache"
+import { uiStore } from "../stores/ui"
 import { retryForever } from "./retry"
 
 export type UserAchievement = Entity<"user_achievements">
@@ -29,7 +37,10 @@ export const getUserAchievements = (userId: string) =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new AchievementError({ cause: error, operation: "load" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -43,12 +54,7 @@ export const getUserExperience = (userId: string) =>
       getSupabaseClient(),
       Effect.flatMap((client) =>
         Effect.tryPromise({
-          try: () =>
-            client
-              .from("leaderboard")
-              .select("*")
-              .eq("user_id", userId)
-              .single(),
+          try: () => client.from("leaderboard").select("*").eq("user_id", userId).single(),
           catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
@@ -69,7 +75,10 @@ export const getUserExperience = (userId: string) =>
         }
         return Option.fromNullable(data)
       }),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new LeaderboardError({ cause: error, operation: "load" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -89,7 +98,10 @@ export const getUserMissions = (userId: string) =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new MissionError({ cause: error, operation: "load" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -104,17 +116,19 @@ export const getUserRewards = (userId: string) =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>
-            client
-              .from("user_rewards_with_queue")
-              .select("*")
-              .eq("user_id", userId)
-              .order("created_at", { ascending: false }),
+            client.from("user_rewards_with_queue").select("*").eq("user_id", userId).order(
+              "created_at",
+              { ascending: false },
+            ),
           catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new RewardError({ cause: error, operation: "load" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -129,17 +143,18 @@ export const getWalletsByUserId = (userId: string) =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>
-            client
-              .from("wallets")
-              .select("*")
-              .eq("user_id", userId)
-              .order("created_at", { ascending: false }),
+            client.from("wallets").select("*").eq("user_id", userId).order("created_at", {
+              ascending: false,
+            }),
           catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new WalletError({ cause: error, operation: "load" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -148,26 +163,15 @@ export const removeUserWallet = (userId: string, address: string) =>
     getSupabaseClient(),
     Effect.flatMap((client) =>
       Effect.tryPromise({
-        try: () =>
-          client
-            .from("wallets")
-            .delete()
-            .eq("user_id", userId)
-            .eq("address", address),
+        try: () => client.from("wallets").delete().eq("user_id", userId).eq("address", address),
         catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
       })
     ),
     Effect.retry(retryForever),
     Effect.flatMap(response => {
       if (response.error) {
-        return pipe(
-          Effect.logError("Database error removing user wallet.", {
-            userId: userId,
-            address: address,
-            error: extractErrorDetails(response.error),
-          }),
-          Effect.map(() => false),
-        )
+        uiStore.showError(new WalletError({ cause: response.error, operation: "remove" }))
+        return Effect.succeed(false)
       }
 
       const walletCacheKeySuffix = `${CACHE_VERSION}:${userId}`
@@ -177,69 +181,13 @@ export const removeUserWallet = (userId: string, address: string) =>
         ),
         Effect.flatMap(() => clearLocalStorageCacheEntry("wallets", walletCacheKeySuffix)),
         Effect.map(() => true),
-        Effect.catchAll(() => {
-          return Effect.succeed(true)
-        }),
+        Effect.catchAll(() => Effect.succeed(true)),
       )
     }),
-    Effect.catchAll((pipelineError) => {
-      return pipe(
-        Effect.logError("Unhandled error in removeUserWallet pipeline.", { error: pipelineError }),
-        Effect.flatMap(() => Effect.succeed(false)),
-      )
+    Effect.catchAll((error) => {
+      uiStore.showError(new WalletError({ cause: error, operation: "remove" }))
+      return Effect.succeed(false)
     }),
-  )
-
-export const insertWalletData = (
-  data: { address: string; chain_id: string | null; user_id: string },
-) =>
-  pipe(
-    getSupabaseClient(),
-    Effect.flatMap((client) =>
-      Effect.tryPromise({
-        try: () =>
-          client
-            .from("wallets")
-            .select()
-            .eq("address", data.address)
-            .single(),
-        catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
-      })
-    ),
-    Effect.flatMap((response) => {
-      if (response.error && response.error.code !== "PGRST116") {
-        return Effect.fail(
-          new SupabaseError({ cause: extractErrorDetails(response.error as Error) }),
-        )
-      }
-
-      if (response.data) {
-        console.log("Wallet already exists")
-        return Effect.succeed(response.data)
-      }
-
-      return pipe(
-        getSupabaseClient(),
-        Effect.flatMap((client) =>
-          Effect.tryPromise({
-            try: () =>
-              client
-                .from("wallets")
-                .insert({
-                  address: data.address,
-                  chain_id: data.chain_id,
-                  user_id: data.user_id,
-                })
-                .select()
-                .single(),
-            catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
-          })
-        ),
-        Effect.map((response) => response.data),
-      )
-    }),
-    Effect.retry(retryForever),
-    Effect.catchAll(() => Effect.succeed(null)),
   )
 
 export const invokeTick = (userId: string) =>
@@ -247,15 +195,15 @@ export const invokeTick = (userId: string) =>
     getSupabaseClient(),
     Effect.flatMap((client) =>
       Effect.tryPromise({
-        try: () =>
-          client.functions.invoke("tick", {
-            body: { user_id: userId },
-          }),
+        try: () => client.functions.invoke("tick", { body: { user_id: userId } }),
         catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
       })
     ),
     Effect.retry(retryForever),
-    Effect.catchAll(() => Effect.succeed(void 0)),
+    Effect.catchAll((error) => {
+      uiStore.showError(new SupabaseError({ cause: error }))
+      return Effect.succeed(void 0)
+    }),
   )
 
 interface SubmitWalletVerificationInput {

@@ -2,7 +2,7 @@ import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { WalletError } from "../errors"
-import { getWalletsByUserId, insertWalletData, removeUserWallet } from "../queries/private"
+import { getWalletsByUserId, removeUserWallet } from "../queries/private"
 import type { Wallet } from "../queries/private"
 import { getChains } from "../queries/public"
 

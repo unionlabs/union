@@ -3,8 +3,17 @@ import { Effect, Option, pipe } from "effect"
 import { getSupabaseClient } from "../client"
 import type { Entity } from "../client"
 import { CACHE_VERSION, STALE, TTL } from "../config"
-import { SupabaseError } from "../errors"
+import {
+  AchievementError,
+  CategoryError,
+  ChainError,
+  LeaderboardError,
+  MissionError,
+  RewardError,
+  SupabaseError,
+} from "../errors"
 import { withLocalStorageCacheStale } from "../services/cache"
+import { uiStore } from "../stores/ui"
 import { retryForever } from "./retry"
 
 export type Achievement = Entity<"achievements">
@@ -30,7 +39,10 @@ export const getChains = () =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new ChainError({ cause: error, operation: "load" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -58,7 +70,10 @@ export const getAvailableAchievements = () =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new AchievementError({ cause: error, operation: "loadAvailable" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -82,7 +97,10 @@ export const getAvailableLevels = () =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new LeaderboardError({ cause: error, operation: "loadLevels" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -102,7 +120,10 @@ export const getCategories = () =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new CategoryError({ cause: error, operation: "load" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -127,7 +148,10 @@ export const getLeaderboard = () =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new LeaderboardError({ cause: error, operation: "load" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -151,7 +175,10 @@ export const getAvailableMissions = () =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new MissionError({ cause: error, operation: "loadAvailable" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
 
@@ -171,6 +198,9 @@ export const getAvailableRewards = () =>
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
-      Effect.catchAll(() => Effect.succeed(Option.none())),
+      Effect.catchAll((error) => {
+        uiStore.showError(new RewardError({ cause: error, operation: "loadAvailable" }))
+        return Effect.succeed(Option.none())
+      }),
     ),
   )
