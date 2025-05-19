@@ -270,17 +270,8 @@ module zkgm::zkgm_relay {
         in_flight_packet: Table<vector<u8>, Packet>,
         channel_balance: Table<ChannelBalancePair, u256>,
         token_origin: Table<vector<u8>, u256>,
-        bag_to_capability: ObjectBag,
         type_name_t_to_capability: ObjectBag,
         bag_to_coin: ObjectBag,
-    }
-
-    public fun bag_contains_capability(
-        relay_store: &RelayStore,
-        salt: vector<u8>
-    ): bool {
-        let capability = relay_store.bag_to_capability.contains(salt);
-        return capability
     }
 
     public fun type_name_contains_capability(
@@ -299,7 +290,6 @@ module zkgm::zkgm_relay {
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
             token_origin: table::new(ctx),
-            bag_to_capability: object_bag::new(ctx),
             type_name_t_to_capability: object_bag::new(ctx),
             bag_to_coin: object_bag::new(ctx)
         });
@@ -325,13 +315,19 @@ module zkgm::zkgm_relay {
 
     public fun reverse_channel_path(mut path: u256): u256 {
         let mut reversed_path = 0;
-        while (path != 0){
+        loop {
+            // body always runs once
             let (tail, head) = pop_channel_from_path(path);
             reversed_path = update_channel_path(reversed_path, head);
             path = tail;
+            // exit once path == 0
+            if (path == 0) {
+                break
+            }
         };
-        return reversed_path
+        reversed_path
     }
+
 
     public fun pop_channel_from_path(path: u256) : (u256, u32){
         if (path == 0) {
@@ -747,10 +743,7 @@ module zkgm::zkgm_relay {
     ): vector<u8> {
         let fee = base_amount - quote_amount;
         if (mint) {
-            if (!bag_contains_capability(relay_store, wrapped_token)) {
-                abort E_NO_TREASURY_CAPABILITY
-            };
-            let mut capability = relay_store.bag_to_capability.borrow_mut(wrapped_token);
+            let capability = get_treasury_cap<T>(relay_store);
             if (quote_amount > 0) {
                 coin::mint_and_transfer<T>(capability, quote_amount, receiver, ctx);
             };
@@ -1023,23 +1016,15 @@ module zkgm::zkgm_relay {
     }
 
     fun get_treasury_cap<T>(
-        relay_store: &mut RelayStore,
-        salt: vector<u8>
+        relay_store: &mut RelayStore
     ): &mut TreasuryCap<T> {
-        if(!bag_contains_capability(relay_store, salt) ) {
-            // It means our bag doesn't have the capability, look if type_name_t_to_capability has it
-
-            let typename_t = type_name::get<T>();
-            let key = string::from_ascii(type_name::into_string(typename_t));
-            if(!type_name_contains_capability(relay_store, key)) {
-                abort E_NO_TREASURY_CAPABILITY // We don't have capability at all.
-            };
-            // We have capability, but not the bag
-            // We need to create a new bag and add the capability to it.
-            let mut capability: TreasuryCap<T> = relay_store.type_name_t_to_capability.remove(key);
-            relay_store.bag_to_capability.add(salt, capability)
+        let typename_t = type_name::get<T>();
+        let key = string::from_ascii(type_name::into_string(typename_t));
+        if(!type_name_contains_capability(relay_store, key)) {
+            abort E_NO_TREASURY_CAPABILITY // We don't have capability.
         };
-        let mut capability = relay_store.bag_to_capability.borrow_mut(salt);
+        // We have capability
+        let capability: &mut TreasuryCap<T> = relay_store.type_name_t_to_capability.borrow_mut(key);
         return capability
     }
 
@@ -1110,7 +1095,7 @@ module zkgm::zkgm_relay {
             if(origin != base_token_path) {
                 abort E_INVALID_ASSET_ORIGIN
             };
-            let mut capability = get_treasury_cap<T>(relay_store, wrapped_token);
+            let capability = get_treasury_cap<T>(relay_store);
             coin::burn<T>(capability, coin);
         } else {
             if (base_token_path != 0) {
@@ -1319,7 +1304,7 @@ module zkgm::zkgm_relay {
                 let market_maker = bcs::new(*fungible_asset_order_ack::market_maker(&asset_order_ack)).peel_address();
                 
                 if (order_base_token_path != 0) {
-                    let mut capability = get_treasury_cap<T>(relay_store, order_base_token);
+                    let capability = get_treasury_cap<T>(relay_store);
                     coin::mint_and_transfer<T>(capability, order_base_amount, market_maker, ctx);
                 } else {
 
@@ -1516,7 +1501,7 @@ module zkgm::zkgm_relay {
         ctx: &mut TxContext
     ) {
         let sender = bcs::new(order_sender).peel_address();
-        let mut capability = get_treasury_cap<T>(relay_store, order_base_token);
+        let capability = get_treasury_cap<T>(relay_store);
         if (order_base_token_path != 0) {
             coin::mint_and_transfer<T>(capability, order_base_amount, sender, ctx);
         } else {
