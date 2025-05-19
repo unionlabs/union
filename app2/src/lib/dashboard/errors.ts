@@ -9,21 +9,29 @@ interface BaseErrorArgs {
 
 export class AuthenticationError extends Data.TaggedError("AuthenticationError")<BaseErrorArgs> {}
 
-export class ProviderLinkError extends Data.TaggedError("ProviderLinkError")<BaseErrorArgs & {
-  provider: string
-}> {}
+export class ProviderLinkError extends Data.TaggedError("ProviderLinkError")<
+  BaseErrorArgs & {
+    provider: string
+  }
+> {}
 
-export class EmailLinkError extends Data.TaggedError("EmailLinkError")<BaseErrorArgs & {
-  email: string
-}> {}
+export class EmailLinkError extends Data.TaggedError("EmailLinkError")<
+  BaseErrorArgs & {
+    email: string
+  }
+> {}
 
 export class SupabaseClientError extends Data.TaggedError("SupabaseClientError")<BaseErrorArgs> {}
 
-export class SupabaseError extends Data.TaggedError("SupabaseError")<BaseErrorArgs & {
-  error?: PostgrestError
-}> {}
+export class SupabaseError extends Data.TaggedError("SupabaseError")<
+  BaseErrorArgs & {
+    error?: PostgrestError
+  }
+> {}
 
-export class DashboardUnknownException extends Data.TaggedError("DashboardUnknownException")<BaseErrorArgs> {}
+export class DashboardUnknownException
+  extends Data.TaggedError("DashboardUnknownException")<BaseErrorArgs>
+{}
 
 export class AchievementError extends Data.TaggedError("AchievementError")<BaseErrorArgs> {}
 

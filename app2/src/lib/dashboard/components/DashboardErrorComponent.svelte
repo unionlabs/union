@@ -1,9 +1,10 @@
 <script lang="ts">
-  import BaselineCloseIcon from "$lib/components/icons/BaselineCloseIcon.svelte";
-  import SharpErrorOutlineIcon from "$lib/components/icons/SharpErrorOutlineIcon.svelte";
+import BaselineCloseIcon from "$lib/components/icons/BaselineCloseIcon.svelte"
+import SharpErrorOutlineIcon from "$lib/components/icons/SharpErrorOutlineIcon.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-  import Modal from "$lib/components/ui/Modal.svelte";
+import Modal from "$lib/components/ui/Modal.svelte"
 import type {
+  AccountError,
   AchievementError,
   AuthenticationError,
   CategoryError,
@@ -17,7 +18,6 @@ import type {
   SupabaseClientError,
   SupabaseError,
   WalletError,
-  AccountError,
 } from "$lib/dashboard/errors"
 import { Match, pipe } from "effect"
 import { slide } from "svelte/transition"
@@ -49,15 +49,19 @@ const getUserFriendlyMessage = pipe(
   Match.tags({
     AuthenticationError: (x) => x.message || "Authentication failed. Please try signing in again.",
     ProviderLinkError: (x) =>
-      x.message || `The ${x.provider} account is already linked to another user. Please use a different account.`,
-    EmailLinkError: (x) => x.message || `The email ${x.email} is already linked to another account.`,
+      x.message
+      || `The ${x.provider} account is already linked to another user. Please use a different account.`,
+    EmailLinkError: (x) =>
+      x.message || `The email ${x.email} is already linked to another account.`,
     SupabaseClientError: (x) =>
       x.message || "Unable to connect to the server. Please check your internet connection.",
     SupabaseError: (x) =>
       x.message || x.error?.message || "An error occurred while communicating with the database.",
     DashboardUnknownException: (x) => x.message || "An unknown error occurred.",
-    AchievementError: (x) => x.message || `Failed to ${x.operation} achievements. Please try again.`,
-    LeaderboardError: (x) => x.message || `Failed to ${x.operation} leaderboard data. Please try again.`,
+    AchievementError: (x) =>
+      x.message || `Failed to ${x.operation} achievements. Please try again.`,
+    LeaderboardError: (x) =>
+      x.message || `Failed to ${x.operation} leaderboard data. Please try again.`,
     MissionError: (x) => x.message || `Failed to ${x.operation} missions. Please try again.`,
     RewardError: (x) => x.message || `Failed to ${x.operation} rewards. Please try again.`,
     WalletError: (x) => x.message || `Failed to ${x.operation} wallet. Please try again.`,
@@ -114,13 +118,17 @@ const getUserFriendlyMessage = pipe(
         {#if error.cause}
           <div>
             <p class="font-semibold">Cause:</p>
-            <pre class="text-sm mt-1 whitespace-pre-wrap">{JSON.stringify(error.cause, null, 2)}</pre>
+            <pre
+              class="text-sm mt-1 whitespace-pre-wrap"
+            >{JSON.stringify(error.cause, null, 2)}</pre>
           </div>
         {/if}
         {#if error._tag === "SupabaseError" && error.error}
           <div>
             <p class="font-semibold">Database Error:</p>
-            <pre class="text-sm mt-1 whitespace-pre-wrap">{JSON.stringify(error.error, null, 2)}</pre>
+            <pre
+              class="text-sm mt-1 whitespace-pre-wrap"
+            >{JSON.stringify(error.error, null, 2)}</pre>
           </div>
         {/if}
       </div>

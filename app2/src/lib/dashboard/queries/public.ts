@@ -34,10 +34,11 @@ export const getChains = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("chains").select("*"),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadChains",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadChains",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -68,10 +69,11 @@ export const getAvailableAchievements = () =>
                 category:categories!achievements_category_fkey(id, title),
                 subcategory:categories!achievements_subcategory_fkey(id, title)
               `),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadAchievements",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadAchievements",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -98,10 +100,11 @@ export const getAvailableLevels = () =>
               .from("levels")
               .select("*")
               .order("experience_required", { ascending: true }),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadLevels",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadLevels",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -124,10 +127,11 @@ export const getCategories = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("categories").select("*"),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadCategories",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadCategories",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -155,10 +159,11 @@ export const getLeaderboard = () =>
               .select("*")
               .order("total_xp", { ascending: false })
               .limit(50),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadLeaderboard",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadLeaderboard",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -185,10 +190,11 @@ export const getAvailableMissions = () =>
               .from("missions")
               .select("*")
               .order("priority", { ascending: false }),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadMissions",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadMissions",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -211,10 +217,11 @@ export const getAvailableRewards = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("rewards").select("*"),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadRewards",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadRewards",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),

@@ -1,9 +1,9 @@
 <script lang="ts">
-import { dashboard } from "$lib/dashboard/stores/user.svelte"
-import { Effect, Option, pipe } from "effect"
 import { AccountError } from "$lib/dashboard/errors"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
-  import { errorStore } from "../stores/errors.svelte";
+import { Effect, Option, pipe } from "effect"
+import { errorStore } from "../stores/errors.svelte"
 
 let isDeleting = false
 
@@ -20,10 +20,12 @@ function handleDelete() {
           }),
           Effect.flatMap(() => dashboard.deleteAccount()),
           Effect.catchAll((error) => {
-            errorStore.showError(new AccountError({ 
-              cause: extractErrorDetails(error),
-              operation: "delete"
-            }))
+            errorStore.showError(
+              new AccountError({
+                cause: extractErrorDetails(error),
+                operation: "delete",
+              }),
+            )
             return Effect.succeed(undefined)
           }),
           Effect.ensuring(

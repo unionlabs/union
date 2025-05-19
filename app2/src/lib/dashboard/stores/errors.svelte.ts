@@ -1,4 +1,5 @@
 import type {
+  AccountError,
   AchievementError,
   AuthenticationError,
   CategoryError,
@@ -12,7 +13,6 @@ import type {
   SupabaseClientError,
   SupabaseError,
   WalletError,
-  AccountError
 } from "$lib/dashboard/errors"
 
 type DashboardError =
@@ -43,4 +43,4 @@ class ErrorStore {
   }
 }
 
-export const errorStore = new ErrorStore() 
+export const errorStore = new ErrorStore()

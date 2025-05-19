@@ -12,8 +12,8 @@ import {
   WalletError,
 } from "../errors"
 import { clearLocalStorageCacheEntry, withLocalStorageCacheStale } from "../services/cache"
-import { retryForever } from "./retry"
 import { errorStore } from "../stores/errors.svelte"
+import { retryForever } from "./retry"
 
 export type UserAchievement = Entity<"user_achievements">
 export type UserExperience = Entity<"leaderboard">
@@ -32,10 +32,11 @@ export const getUserAchievements = (userId: string) =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("user_achievements").select("*").eq("user_id", userId),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadUserAchievements",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadUserAchievements",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -58,10 +59,11 @@ export const getUserExperience = (userId: string) =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("leaderboard").select("*").eq("user_id", userId).single(),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadUserExperience",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadUserExperience",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -99,10 +101,11 @@ export const getUserMissions = (userId: string) =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("user_missions").select("*").eq("user_id", userId),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadUserMissions",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadUserMissions",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -129,10 +132,11 @@ export const getUserRewards = (userId: string) =>
               "created_at",
               { ascending: false },
             ),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadUserRewards",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadUserRewards",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -158,10 +162,11 @@ export const getWalletsByUserId = (userId: string) =>
             client.from("wallets").select("*").eq("user_id", userId).order("created_at", {
               ascending: false,
             }),
-          catch: (error) => new SupabaseError({ 
-            operation: "loadUserWallets",
-            cause: extractErrorDetails(error as Error) 
-          }),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadUserWallets",
+              cause: extractErrorDetails(error as Error),
+            }),
         })
       ),
       Effect.retry(retryForever),
@@ -179,10 +184,11 @@ export const removeUserWallet = (userId: string, address: string) =>
     Effect.flatMap((client) =>
       Effect.tryPromise({
         try: () => client.from("wallets").delete().eq("user_id", userId).eq("address", address),
-        catch: (error) => new SupabaseError({ 
-          operation: "removeWallet",
-          cause: extractErrorDetails(error as Error) 
-        }),
+        catch: (error) =>
+          new SupabaseError({
+            operation: "removeWallet",
+            cause: extractErrorDetails(error as Error),
+          }),
       })
     ),
     Effect.retry(retryForever),
@@ -214,10 +220,11 @@ export const invokeTick = (userId: string) =>
     Effect.flatMap((client) =>
       Effect.tryPromise({
         try: () => client.functions.invoke("tick", { body: { user_id: userId } }),
-        catch: (error) => new SupabaseError({ 
-          operation: "invokeTick",
-          cause: extractErrorDetails(error as Error) 
-        }),
+        catch: (error) =>
+          new SupabaseError({
+            operation: "invokeTick",
+            cause: extractErrorDetails(error as Error),
+          }),
       })
     ),
     Effect.retry(retryForever),
@@ -274,7 +281,12 @@ export const submitWalletVerification = (
           error: extractErrorDetails(error as Error),
         }),
         Effect.flatMap(() =>
-          Effect.fail(new SupabaseError({ operation: "verifyWallet", cause: extractErrorDetails(error as Error) }))
+          Effect.fail(
+            new SupabaseError({
+              operation: "verifyWallet",
+              cause: extractErrorDetails(error as Error),
+            }),
+          )
         ),
       )
     }),
