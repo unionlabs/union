@@ -24,7 +24,7 @@ let
         NATIVE_TOKEN_SYMBOL=ETH \
         forge script scripts/Deploy.s.sol:DeployDeployerAndIBC -vvv --rpc-url http://geth:8545 --broadcast ${
           pkgs.lib.optionalString (
-            pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == null)
+            pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == "")
           ) "--verify --verifier blockscout --verifier-url http://blockscout-proxy/api"
         }
     '';

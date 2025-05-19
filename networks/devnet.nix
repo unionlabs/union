@@ -65,6 +65,8 @@
               expedited_voting_period = "6s";
             };
             staking.params = {
+              epoch_length = "8";
+              jailed_validator_threshold = "10";
               unbonding_time = "2m";
             };
             slashing.params = {
@@ -268,7 +270,7 @@
           }
           # For some reason, blockscout backend segfault on non-x86 arch
           // (
-            if pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == null) then
+            if pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == "") then
               {
                 blockscout-backend = import ./services/blockscout/backend.nix {
                   inherit lib pkgs;
