@@ -758,16 +758,13 @@ module zkgm::zkgm_relay {
                 coin::mint_and_transfer<T>(capability, fee, relayer, ctx);
             }
         } else {
-            let channel_balance_pair = ChannelBalancePair{
-                channel: channel_id,
-                path: reverse_channel_path(path),
-                token: quote_token
-            };
-            let channel_balance = *relay_store.channel_balance.borrow(channel_balance_pair);
-            add_or_update_table<ChannelBalancePair, u256>(
-                &mut relay_store.channel_balance,
-                channel_balance_pair,
-                (channel_balance - ((quote_amount + fee)as u256)) 
+
+            decrease_outstanding(
+                relay_store,
+                channel_id,
+                reverse_channel_path(path), 
+                quote_token, 
+                (quote_amount + fee)as u256
             );
 
             // There can not be a scenerio where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
@@ -903,6 +900,53 @@ module zkgm::zkgm_relay {
             table.add(key, value);
         }
     }
+
+    fun decrease_outstanding(
+        relay_store: &mut RelayStore,
+        channel_id: u32,
+        path: u256,
+        token: vector<u8>,
+        amount: u256
+    ) {
+        let pair = ChannelBalancePair{
+            channel: channel_id,
+            path: path,
+            token: token
+        };
+        let channel_balance = *relay_store.channel_balance.borrow(pair);
+        if (channel_balance < amount) {
+            abort E_INVALID_AMOUNT
+        };
+        let new_balance = channel_balance - amount;
+        add_or_update_table<ChannelBalancePair, u256>(
+            &mut relay_store.channel_balance,
+            pair,
+            new_balance
+        );
+    }
+
+    fun increase_outstanding(
+        relay_store: &mut RelayStore,
+        channel_id: u32,
+        path: u256,
+        token: vector<u8>,
+        amount: u256
+    ) {
+        let pair = ChannelBalancePair{
+            channel: channel_id,
+            path: path,
+            token: token
+        };
+        let channel_balance = *relay_store.channel_balance.borrow(pair);
+        let new_balance = channel_balance + amount;
+        add_or_update_table<ChannelBalancePair, u256>(
+            &mut relay_store.channel_balance,
+            pair,
+            new_balance
+        );
+    }
+
+
 
     public entry fun send<T>(
         ibc_store: &mut ibc::IBCStore,
@@ -1072,16 +1116,12 @@ module zkgm::zkgm_relay {
             if (base_token_path != 0) {
                 abort E_INVALID_ASSET_ORIGIN
             };
-            let channel_balance_pair = ChannelBalancePair{
-                channel: channel_id,
-                path: path,
-                token: *base_token
-            };
-            let channel_balance = *relay_store.channel_balance.borrow(channel_balance_pair);
-            add_or_update_table<ChannelBalancePair, u256>(
-                &mut relay_store.channel_balance,
-                channel_balance_pair,
-                channel_balance + fungible_asset_order::base_amount(&order)
+            increase_outstanding(
+                relay_store, 
+                channel_id, 
+                path, 
+                *base_token, 
+                fungible_asset_order::base_amount(&order)
             );
             // There can not be a scenerio where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
             // And here if i don't do anything, the COIN will be ours anyway. We just need to 
@@ -1282,19 +1322,15 @@ module zkgm::zkgm_relay {
                     let mut capability = get_treasury_cap<T>(relay_store, order_base_token);
                     coin::mint_and_transfer<T>(capability, order_base_amount, market_maker, ctx);
                 } else {
-                        let channel_balance_pair = ChannelBalancePair{
-                            channel: packet::source_channel_id(&ibc_packet),
-                            path: path,
-                            token: order_base_token
-                        };
-                        let channel_balance = *relay_store.channel_balance.borrow(channel_balance_pair);
-                        add_or_update_table<ChannelBalancePair, u256>(
-                            &mut relay_store.channel_balance,
-                            channel_balance_pair,
-                            (channel_balance - ((order_base_amount)as u256)) 
-                        );
 
-                        distribute_coin<T>(relay_store, market_maker, order_base_amount, ctx)
+                    decrease_outstanding(
+                        relay_store, 
+                        packet::source_channel_id(&ibc_packet), 
+                        path, 
+                        order_base_token, 
+                        order_base_amount as u256
+                    );
+                    distribute_coin<T>(relay_store, market_maker, order_base_amount, ctx)
                         
                 };
             } else {
@@ -1484,17 +1520,14 @@ module zkgm::zkgm_relay {
         if (order_base_token_path != 0) {
             coin::mint_and_transfer<T>(capability, order_base_amount, sender, ctx);
         } else {
-            let channel_balance_pair = ChannelBalancePair{
-                channel: source_channel,
-                path: path,
-                token: order_base_token
-            };
-            let channel_balance = *relay_store.channel_balance.borrow(channel_balance_pair);
-            add_or_update_table<ChannelBalancePair, u256>(
-                &mut relay_store.channel_balance,
-                channel_balance_pair,
-                (channel_balance as u64 - order_base_amount) as u256
+            decrease_outstanding(
+                relay_store, 
+                source_channel,
+                path, 
+                order_base_token, 
+                order_base_amount as u256
             );
+            
             distribute_coin<T>(relay_store, sender, order_base_amount, ctx);
         }
     }
