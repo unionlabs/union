@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use sui_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
+    storage_proof::StorageProof,
 };
 use tracing::instrument;
 use unionlabs::{
@@ -189,7 +190,7 @@ impl ClientModuleServer for Module {
 
     #[instrument]
     async fn encode_proof(&self, _: &Extensions, proof: Value) -> RpcResult<Bytes> {
-        serde_json::from_value::<Header>(proof)
+        serde_json::from_value::<StorageProof>(proof)
             .map_err(|err| {
                 ErrorObject::owned(
                     FATAL_JSONRPC_ERROR_CODE,

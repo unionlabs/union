@@ -159,6 +159,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate { from, to }) => {
+                println!("UPDATE TO BRO: {to}");
                 let client = reqwest::Client::new();
                 let req = format!("{}/{}.chk", self.sui_object_store_rpc_url, to);
                 let res = client.get(req).send().await.unwrap().bytes().await.unwrap();
@@ -180,8 +181,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     sign_info: checkpoint.checkpoint_summary.auth_signature.clone(),
                 })
                 .unwrap();
-
-                println!("{}", log);
 
                 Ok(data(OrderedHeaders {
                     headers: vec![(

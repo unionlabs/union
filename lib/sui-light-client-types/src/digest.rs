@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use serde::{Deserialize, Serialize};
 use unionlabs_primitives::{encoding::Base58, Bytes, FixedBytes};
 
@@ -25,5 +27,13 @@ impl<'de> Deserialize<'de> for Digest {
         let bytes = Bytes::<Base58>::deserialize(deserializer)?;
 
         Ok(Self(FixedBytes::new(bytes.as_ref().try_into().unwrap())))
+    }
+}
+
+impl Deref for Digest {
+    type Target = FixedBytes<32, Base58>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
     }
 }

@@ -108,7 +108,7 @@ impl ProofModuleServer<IbcUnion> for Module {
     async fn query_ibc_proof(
         &self,
         _: &Extensions,
-        _: Height,
+        at: Height,
         path: StorePath,
     ) -> RpcResult<(Value, ProofType)> {
         let key = path.key();
@@ -150,11 +150,11 @@ impl ProofModuleServer<IbcUnion> for Module {
             .checkpoint
             .unwrap();
 
+        println!("height: {at}, num: {checkpoint_number}");
+
         let client = reqwest::Client::new();
         let req = format!("{}/{checkpoint_number}.chk", self.sui_object_store_rpc_url);
         let res = client.get(req).send().await.unwrap().bytes().await.unwrap();
-
-        println!("Res: {:?}", res);
 
         let (_, checkpoint) = bcs::from_bytes::<(u8, CheckpointData)>(&res).unwrap();
 
