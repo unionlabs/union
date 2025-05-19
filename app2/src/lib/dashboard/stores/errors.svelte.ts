@@ -12,8 +12,8 @@ import type {
   SupabaseClientError,
   SupabaseError,
   WalletError,
+  AccountError
 } from "$lib/dashboard/errors"
-import { writable } from "svelte/store"
 
 type DashboardError =
   | AuthenticationError
@@ -29,25 +29,18 @@ type DashboardError =
   | WalletError
   | ProviderLinkError
   | EmailLinkError
+  | AccountError
 
-interface UIState {
-  error: DashboardError | null
-}
+class ErrorStore {
+  current: DashboardError | null = $state(null)
 
-const createUIStore = () => {
-  const { subscribe, update } = writable<UIState>({
-    error: null,
-  })
+  showError(error: DashboardError) {
+    this.current = error
+  }
 
-  return {
-    subscribe,
-    showError: (error: DashboardError) => {
-      update(state => ({ ...state, error }))
-    },
-    clearError: () => {
-      update(state => ({ ...state, error: null }))
-    },
+  clearError() {
+    this.current = null
   }
 }
 
-export const uiStore = createUIStore()
+export const errorStore = new ErrorStore() 

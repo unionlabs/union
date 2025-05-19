@@ -1,10 +1,11 @@
 <script lang="ts">
-import { page } from "$app/stores"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { Effect, Option, pipe } from "effect"
+import { AccountError } from "$lib/dashboard/errors"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
+  import { errorStore } from "../stores/errors.svelte";
 
 let isDeleting = false
-let error: string | null = null
 
 function handleDelete() {
   const effect = pipe(
@@ -16,14 +17,15 @@ function handleDelete() {
         ? pipe(
           Effect.sync(() => {
             isDeleting = true
-            error = null
           }),
           Effect.flatMap(() => dashboard.deleteAccount()),
-          Effect.catchAll((err) =>
-            Effect.sync(() => {
-              console.error("Delete account error:", err)
-            })
-          ),
+          Effect.catchAll((error) => {
+            errorStore.showError(new AccountError({ 
+              cause: extractErrorDetails(error),
+              operation: "delete"
+            }))
+            return Effect.succeed(undefined)
+          }),
           Effect.ensuring(
             Effect.sync(() => {
               isDeleting = false
@@ -50,8 +52,5 @@ function handleDelete() {
     >
       {isDeleting ? "Deleting..." : "Delete Account"}
     </button>
-    {#if error}
-      <p class="text-red-500 mt-2">{error}</p>
-    {/if}
   </div>
 {/if}

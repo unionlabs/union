@@ -13,7 +13,7 @@ import {
   SupabaseError,
 } from "../errors"
 import { withLocalStorageCacheStale } from "../services/cache"
-import { uiStore } from "../stores/ui"
+import { errorStore } from "../stores/errors.svelte"
 import { retryForever } from "./retry"
 
 export type Achievement = Entity<"achievements">
@@ -34,13 +34,16 @@ export const getChains = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("chains").select("*"),
-          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ 
+            operation: "loadChains",
+            cause: extractErrorDetails(error as Error) 
+          }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        uiStore.showError(new ChainError({ cause: error, operation: "load" }))
+        errorStore.showError(new ChainError({ cause: error, operation: "load" }))
         return Effect.succeed(Option.none())
       }),
     ),
@@ -65,13 +68,16 @@ export const getAvailableAchievements = () =>
                 category:categories!achievements_category_fkey(id, title),
                 subcategory:categories!achievements_subcategory_fkey(id, title)
               `),
-          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ 
+            operation: "loadAchievements",
+            cause: extractErrorDetails(error as Error) 
+          }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        uiStore.showError(new AchievementError({ cause: error, operation: "loadAvailable" }))
+        errorStore.showError(new AchievementError({ cause: error, operation: "loadAvailable" }))
         return Effect.succeed(Option.none())
       }),
     ),
@@ -92,13 +98,16 @@ export const getAvailableLevels = () =>
               .from("levels")
               .select("*")
               .order("experience_required", { ascending: true }),
-          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ 
+            operation: "loadLevels",
+            cause: extractErrorDetails(error as Error) 
+          }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        uiStore.showError(new LeaderboardError({ cause: error, operation: "loadLevels" }))
+        errorStore.showError(new LeaderboardError({ cause: error, operation: "loadLevels" }))
         return Effect.succeed(Option.none())
       }),
     ),
@@ -115,13 +124,16 @@ export const getCategories = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("categories").select("*"),
-          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ 
+            operation: "loadCategories",
+            cause: extractErrorDetails(error as Error) 
+          }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        uiStore.showError(new CategoryError({ cause: error, operation: "load" }))
+        errorStore.showError(new CategoryError({ cause: error, operation: "load" }))
         return Effect.succeed(Option.none())
       }),
     ),
@@ -143,13 +155,16 @@ export const getLeaderboard = () =>
               .select("*")
               .order("total_xp", { ascending: false })
               .limit(50),
-          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ 
+            operation: "loadLeaderboard",
+            cause: extractErrorDetails(error as Error) 
+          }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        uiStore.showError(new LeaderboardError({ cause: error, operation: "load" }))
+        errorStore.showError(new LeaderboardError({ cause: error, operation: "load" }))
         return Effect.succeed(Option.none())
       }),
     ),
@@ -170,13 +185,16 @@ export const getAvailableMissions = () =>
               .from("missions")
               .select("*")
               .order("priority", { ascending: false }),
-          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ 
+            operation: "loadMissions",
+            cause: extractErrorDetails(error as Error) 
+          }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        uiStore.showError(new MissionError({ cause: error, operation: "loadAvailable" }))
+        errorStore.showError(new MissionError({ cause: error, operation: "loadAvailable" }))
         return Effect.succeed(Option.none())
       }),
     ),
@@ -193,13 +211,16 @@ export const getAvailableRewards = () =>
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("rewards").select("*"),
-          catch: (error) => new SupabaseError({ cause: extractErrorDetails(error as Error) }),
+          catch: (error) => new SupabaseError({ 
+            operation: "loadRewards",
+            cause: extractErrorDetails(error as Error) 
+          }),
         })
       ),
       Effect.retry(retryForever),
       Effect.map(({ data }) => Option.fromNullable(data)),
       Effect.catchAll((error) => {
-        uiStore.showError(new RewardError({ cause: error, operation: "loadAvailable" }))
+        errorStore.showError(new RewardError({ cause: error, operation: "loadAvailable" }))
         return Effect.succeed(Option.none())
       }),
     ),
