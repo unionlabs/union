@@ -1,11 +1,11 @@
 <script lang="ts">
 import { uiStore } from "$lib/dashboard/stores/ui"
-import DashboardErrorComponent from "./DashboardErrorComponent.svelte"
 import { fade } from "svelte/transition"
+import DashboardErrorComponent from "./DashboardErrorComponent.svelte"
 </script>
 
 {#if $uiStore.error}
-  <div 
+  <div
     class="w-full"
     transition:fade
   >
@@ -16,4 +16,4 @@ import { fade } from "svelte/transition"
       />
     </div>
   </div>
-{/if} 
+{/if}

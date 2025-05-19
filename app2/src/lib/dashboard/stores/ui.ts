@@ -11,7 +11,7 @@ import type {
   RewardError,
   SupabaseClientError,
   SupabaseError,
-  WalletError
+  WalletError,
 } from "$lib/dashboard/errors"
 import { writable } from "svelte/store"
 
@@ -36,7 +36,7 @@ interface UIState {
 
 const createUIStore = () => {
   const { subscribe, update } = writable<UIState>({
-    error: null
+    error: null,
   })
 
   return {
@@ -46,8 +46,8 @@ const createUIStore = () => {
     },
     clearError: () => {
       update(state => ({ ...state, error: null }))
-    }
+    },
   }
 }
 
-export const uiStore = createUIStore() 
+export const uiStore = createUIStore()

@@ -1,7 +1,10 @@
 <script lang="ts">
+import Button from "$lib/components/ui/Button.svelte"
 import type {
   AchievementError,
   AuthenticationError,
+  CategoryError,
+  ChainError,
   DashboardUnknownException,
   EmailLinkError,
   LeaderboardError,
@@ -11,15 +14,12 @@ import type {
   SupabaseClientError,
   SupabaseError,
   WalletError,
-  ChainError,
-  CategoryError
 } from "$lib/dashboard/errors"
 import { Match, pipe } from "effect"
-import Button from "$lib/components/ui/Button.svelte"
-import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
-import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
-import Modal from "../ui/Modal.svelte"
 import { slide } from "svelte/transition"
+import BaselineCloseIcon from "../icons/BaselineCloseIcon.svelte"
+import SharpErrorOutlineIcon from "../icons/SharpErrorOutlineIcon.svelte"
+import Modal from "../ui/Modal.svelte"
 
 interface Props {
   error:
@@ -45,36 +45,27 @@ let showDetails = $state(false)
 const getUserFriendlyMessage = pipe(
   Match.type<Props["error"]>(),
   Match.tags({
-    AuthenticationError: (x) => 
-      x.message || "Authentication failed. Please try signing in again.",
+    AuthenticationError: (x) => x.message || "Authentication failed. Please try signing in again.",
     ProviderLinkError: (x) =>
       `The ${x.provider} account is already linked to another user. Please use a different account.`,
-    EmailLinkError: (x) =>
-      `The email ${x.email} is already linked to another account.`,
-    SupabaseClientError: () => 
+    EmailLinkError: (x) => `The email ${x.email} is already linked to another account.`,
+    SupabaseClientError: () =>
       "Unable to connect to the server. Please check your internet connection.",
-    SupabaseError: (x) => 
+    SupabaseError: (x) =>
       x.error?.message ?? "An error occurred while communicating with the database.",
-    DashboardUnknownException: (x) => 
-      x.message,
-    AchievementError: (x) => 
-      `Failed to ${x.operation} achievements. Please try again.`,
-    LeaderboardError: (x) => 
-      x.operation === "loadLevels" 
+    DashboardUnknownException: (x) => x.message,
+    AchievementError: (x) => `Failed to ${x.operation} achievements. Please try again.`,
+    LeaderboardError: (x) =>
+      x.operation === "loadLevels"
         ? "Unable to load level data. Please try again."
         : "Unable to load leaderboard data. Please try again.",
-    MissionError: (x) => 
-      `Failed to ${x.operation} missions. Please try again.`,
-    RewardError: (x) => 
-      `Failed to ${x.operation} rewards. Please try again.`,
-    WalletError: (x) => 
-      `Failed to ${x.operation} wallet. Please try again.`,
-    ChainError: () =>
-      "Unable to load chain data. Please try again.",
-    CategoryError: () =>
-      "Unable to load category data. Please try again.",
+    MissionError: (x) => `Failed to ${x.operation} missions. Please try again.`,
+    RewardError: (x) => `Failed to ${x.operation} rewards. Please try again.`,
+    WalletError: (x) => `Failed to ${x.operation} wallet. Please try again.`,
+    ChainError: () => "Unable to load chain data. Please try again.",
+    CategoryError: () => "Unable to load category data. Please try again.",
   }),
-  Match.orElse(() => "An unexpected error occurred.")
+  Match.orElse(() => "An unexpected error occurred."),
 )
 </script>
 
@@ -84,7 +75,7 @@ const getUserFriendlyMessage = pipe(
       <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
       <p class="text-sm text-red-200">{getUserFriendlyMessage(error)}</p>
     </div>
-    
+
     <div class="flex gap-2 shrink-0">
       <Button
         variant="secondary"
@@ -145,4 +136,4 @@ const getUserFriendlyMessage = pipe(
       </section>
     {/if}
   </div>
-</Modal> 
+</Modal>

@@ -1,10 +1,10 @@
+import { browser } from "$app/environment"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runSync } from "$lib/runtime.js"
 import { type ClientInit } from "@sveltejs/kit"
-import { Data, Effect, identity, Match, pipe, Option } from "effect"
+import type { Handle } from "@sveltejs/kit"
+import { Data, Effect, identity, Match, Option, pipe } from "effect"
 import { isString } from "effect/Predicate"
-import { browser } from "$app/environment";
-import { dashboard } from "$lib/dashboard/stores/user.svelte";
-import type { Handle } from "@sveltejs/kit";
 
 class UncaughtError extends Data.TaggedError("UncaughtError")<{
   cause: Error | undefined
@@ -53,7 +53,7 @@ export const init: ClientInit = async () => {
   }
 }
 
-const PROTECTED_PATHS = ["/dashboard"];
+const PROTECTED_PATHS = ["/dashboard"]
 
 export const handle: Handle = async ({ event, resolve }) => {
   if (browser && PROTECTED_PATHS.some(path => event.url.pathname.startsWith(path))) {
