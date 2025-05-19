@@ -127,7 +127,7 @@ module zkgm::zkgm_relay {
     const E_UNIMPLEMENTED: u64 = 13;
     const E_ACK_EMPTY: u64 = 14;
     const E_ONLY_MAKER: u64 = 15;
-    const E_BATCH_MISMATCH: u64 = 16;
+    const E_NO_BATCH_OPERATION: u64 = 16;
     const E_NO_MULTIPLEX_OPERATION: u64 = 17;
     const E_ERR_INVALID_FORWARD_INSTRUCTION: u64 = 18;
     const E_NO_EXECUTE_OPERATION: u64 = 19;
@@ -321,13 +321,13 @@ module zkgm::zkgm_relay {
         (next_channel as u256)
     }
 
-    public fun reverse_channel_path(path: u256): u256 {
-        let reversed_path = 0;
+    public fun reverse_channel_path(mut path: u256): u256 {
+        let mut reversed_path = 0;
         while (path != 0){
             let (tail, head) = pop_channel_from_path(path);
-            reversed_path = update_channel_path(reverse_channel_path, head);
+            reversed_path = update_channel_path(reversed_path, head);
             path = tail;
-        }
+        };
         return reversed_path
     }
 
@@ -663,19 +663,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            execute_batch<T>(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                relayer_msg,
-                salt,
-                path,
-                batch::decode(instruction::operand(&instruction), &mut decode_idx),
-                ctx
-            )
+            abort E_NO_BATCH_OPERATION
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
@@ -872,45 +860,6 @@ module zkgm::zkgm_relay {
         )        
     }
 
-    fun execute_batch<T>(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        relayer_msg: vector<u8>,
-        salt: vector<u8>,
-        path: u256,
-        batch_packet: Batch,
-        ctx: &mut TxContext
-    ): (vector<u8>) {
-        let instructions = batch::instructions(&batch_packet);
-        let l = vector::length(&instructions);
-        let mut acks = vector::empty();
-        let mut i = 0;
-        while (i < l) {
-            let instruction = *vector::borrow(&instructions, i);
-            vector::push_back(
-                &mut acks,
-                execute_internal<T>(
-                    ibc_store,
-                    relay_store,
-                    ibc_packet,
-                    relayer,
-                    relayer_msg,
-                    salt,
-                    path,
-                    instruction,
-                    ctx
-                )
-            );
-            if (vector::length(vector::borrow(&acks, i)) == 0) {
-                abort E_BATCH_MUST_BE_SYNC
-            };
-        };
-        let batch_ack = batch_ack::new(acks);
-        batch_ack::encode(&batch_ack)
-    }
-
     fun execute_forward(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
@@ -1007,19 +956,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            verify_batch<T>(
-                ibc_store,
-                relay_store,
-                coin,
-                metadata,
-                sender,
-                channel_id,
-                path,
-                batch::decode(instruction::operand(&instruction), &mut decode_idx),
-                ctx
-            )
+            abort E_NO_BATCH_OPERATION
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
@@ -1150,38 +1087,6 @@ module zkgm::zkgm_relay {
             // merge that one
             save_coin_to_bag<T>(relay_store, coin);
         }   
-
-    }
-
-    fun verify_batch<T>(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        mut coin: Coin<T>,
-        metadata: &CoinMetadata<T>,
-        sender: address,
-        channel_id: u32,
-        path: u256,
-        batch_packet: Batch,
-        ctx: &mut TxContext
-    ){
-        let instructions = batch::instructions(&batch_packet);
-        let l = vector::length(&instructions);
-
-        let mut i = 0;
-        while (i < l) {
-            verify_internal<T>(
-                ibc_store,
-                relay_store,
-                coin,
-                metadata,
-                sender,
-                channel_id,
-                path,
-                *vector::borrow(&instructions, i),
-                ctx
-            );
-            i = i + 1;
-        }
 
     }
 
@@ -1317,19 +1222,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            acknowledge_batch(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                salt,
-                batch::decode(instruction::operand(&instruction), &mut decode_idx),
-                success,
-                inner_ack,
-                ctx
-            )
+            abort E_NO_BATCH_OPERATION
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
@@ -1361,44 +1254,6 @@ module zkgm::zkgm_relay {
         ctx: &mut TxContext
     ) {
         // TODO: fill it later
-    }
-
-    fun acknowledge_batch(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        salt: vector<u8>,
-        batch_packet: Batch,
-        success: bool,
-        inner_ack: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        let instructions = batch::instructions(&batch_packet);
-        let l = vector::length(&instructions);
-        let mut idx = 0x40;
-        let batch_ack = batch_ack::decode(&inner_ack, &mut idx);
-        let mut i = 0;
-        while (i < l) {
-            let mut syscall_ack = inner_ack;
-            if (success) {
-                syscall_ack = *vector::borrow(
-                    &batch_ack::acknowledgements(&batch_ack), i
-                );
-            };
-            acknowledge_internal(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                salt,
-                *vector::borrow(&instructions, i),
-                success,
-                syscall_ack,
-                ctx
-            );
-            i = i + 1;
-        }
     }
 
     fun acknowledge_forward(
@@ -1493,17 +1348,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            timeout_batch(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                salt,
-                batch::decode(instruction::operand(&instruction), &mut decode_idx),
-                ctx
-            )
+            abort E_NO_BATCH_OPERATION
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
@@ -1539,32 +1384,6 @@ module zkgm::zkgm_relay {
         ctx: &mut TxContext
     ) {
         // TODO: Fill it later
-    }
-
-    fun timeout_batch(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        packet: Packet,
-        relayer: address,
-        salt: vector<u8>,
-        batch_packet: Batch,
-        ctx: &mut TxContext
-    ) {
-        let instructions = batch::instructions(&batch_packet);
-        let l = vector::length(&instructions);
-        let mut i = 0;
-        while (i < l) {
-            timeout_internal(
-                ibc_store,
-                relay_store,
-                packet,
-                relayer,
-                salt,
-                *vector::borrow(&instructions, i),
-                ctx
-            );
-            i = i + 1;
-        }
     }
 
     fun timeout_forward(
