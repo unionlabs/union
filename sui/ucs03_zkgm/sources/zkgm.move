@@ -84,6 +84,8 @@ module zkgm::zkgm_relay {
     use sui::object_bag::{Self, ObjectBag};
     use std::type_name::{Self};
     use sui::balance::{Self};
+    use sui::hash::{Self};
+    use zkgm::fungible_asset_order::base_amount;
 
     // Constants
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
@@ -130,6 +132,8 @@ module zkgm::zkgm_relay {
     const E_ERR_INVALID_FORWARD_INSTRUCTION: u64 = 18;
     const E_NO_EXECUTE_OPERATION: u64 = 19;
     const E_NO_TREASURY_CAPABILITY: u64 = 20;
+    const E_INVALID_ASSET_DECIMAL: u64 = 21;
+    const E_INVALID_BASE_AMOUNT: u64 = 22;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
 
     public struct ZkgmPacket has copy, drop, store {
@@ -215,7 +219,7 @@ module zkgm::zkgm_relay {
 
     public struct ChannelBalancePair has copy, drop, store {
         channel: u32,
-        token: address
+        token: vector<u8>
     }
 
 
@@ -262,7 +266,7 @@ module zkgm::zkgm_relay {
         id: UID,
         in_flight_packet: Table<vector<u8>, Packet>,
         channel_balance: Table<ChannelBalancePair, u256>,
-        token_origin: Table<address, u256>,
+        token_origin: Table<vector<u8>, u256>,
         bag_to_capability: ObjectBag,
         type_name_t_to_capability: ObjectBag,
         bag_to_coin: ObjectBag,
@@ -314,6 +318,29 @@ module zkgm::zkgm_relay {
         let next_channel = (((next_channel_id as u256) << (next_hop_index * 32)) as u256)
             | path;
         (next_channel as u256)
+    }
+
+    public fun reverse_channel_path(path: u256): u256 {
+        let reversed_path = 0;
+        while (path != 0){
+            let (tail, head) = pop_channel_from_path(path);
+            reversed_path = update_channel_path(reverse_channel_path, head);
+            path = tail;
+        }
+        return reversed_path
+    }
+
+    public fun pop_channel_from_path(path: u256) : (u256, u32){
+        if (path == 0) {
+            return (0, 0)
+        };
+        let current_hop_index = ((fls(path) / 32)) as u8;
+        let clear_shift = ((8-current_hop_index) * 32) as u8;
+        return (
+            (path << clear_shift) >> clear_shift,
+            (path >> (current_hop_index * 32)) as u32
+        )
+
     }
 
 
@@ -669,16 +696,6 @@ module zkgm::zkgm_relay {
         }
     }
 
-    // TODO: Voyager need to call this after token deployment
-    // with wrapped address & value
-    public entry fun update_token_origin(
-        relay_store: &mut RelayStore,
-        token: address,
-        channel_id: u256
-    ) {
-        add_or_update_table<address, u256>(&mut relay_store.token_origin, token, channel_id);
-    }
-
     fun market_maker_fill<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
@@ -936,17 +953,115 @@ module zkgm::zkgm_relay {
         };
     }
 
-    fun verify_fungible_asset_order(
+    fun get_treasury_cap<T>(
+        relay_store: &mut RelayStore,
+        salt: vector<u8>
+    ): &mut TreasuryCap<T> {
+        if(!bag_contains_capability(relay_store, salt) ) {
+            // It means our bag doesn't have the capability, look if type_name_t_to_capability has it
+
+            let typename_t = type_name::get<T>();
+            let key = string::from_ascii(type_name::into_string(typename_t));
+            if(!type_name_contains_capability(relay_store, key)) {
+                abort E_NO_TREASURY_CAPABILITY // We don't have capability at all.
+            };
+            // We have capability, but not the bag
+            // We need to create a new bag and add the capability to it.
+            let mut capability: TreasuryCap<T> = relay_store.type_name_t_to_capability.remove(key);
+            relay_store.bag_to_capability.add(salt, capability)
+        };
+        let mut capability = relay_store.bag_to_capability.borrow_mut(salt);
+        return capability
+    }
+
+    fun save_coin_to_bag<T>(
+        relay_store: &mut RelayStore,
+        mut coin: Coin<T>
+    ) {
+        let typename_t = type_name::get<T>();
+        let key = type_name::into_string(typename_t);
+        if(relay_store.bag_to_coin.contains(string::from_ascii(key))) {
+            let mut self_coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+            coin::join(self_coin, coin)
+        } else{
+            relay_store.bag_to_coin.add(string::from_ascii(key), coin)
+        }
+    }
+
+    fun verify_fungible_asset_order<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         mut coin: Coin<T>,
+        metadata: &CoinMetadata<T>,
         sender: address,
         channel_id: u32,
         path: u256,
-        transfer_packet: FungibleAssetOrder,
+        order: FungibleAssetOrder,
         ctx: &mut TxContext
     ){
-        // TODO do metadata name decimal symbol controls
+
+        let base_token = fungible_asset_order::base_token(&order);
+        let base_amount = fungible_asset_order::base_amount(&order);
+        let token_name = fungible_asset_order::base_token_name(&order);
+        let token_symbol = fungible_asset_order::base_token_symbol(&order);
+        let token_decimals = fungible_asset_order::base_token_decimals(&order);
+
+        if (token_name != coin::get_name(metadata)) {
+            abort E_INVALID_ASSET_NAME
+        };
+
+        if (token_symbol != string::from_ascii(coin::get_symbol(metadata))) {
+            abort E_INVALID_ASSET_SYMBOL
+        };
+
+        if (token_decimals != coin::get_decimals(metadata)) {
+            abort E_INVALID_ASSET_DECIMAL
+        };
+
+        if(balance::value(coin::balance(&coin)) != base_amount as u64){
+            abort E_INVALID_BASE_AMOUNT
+        };
+
+        let origin = *relay_store.token_origin.borrow(*base_token);
+
+        let (intermediate_channel_path, destination_channel_id) =
+            pop_channel_from_path(origin);
+
+        let wrapped_token = compute_salt(
+            intermediate_channel_path,
+            channel_id,
+            *fungible_asset_order::quote_token(&order)
+        );
+
+        let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_channel_path);
+        let is_sending_back_to_same_channel = destination_channel_id == channel_id;
+        let is_unwrapping = base_token == wrapped_token;
+        let base_token_path = fungible_asset_order::base_token_path(&order);
+        if (is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping) {
+            if(origin != base_token_path) {
+                abort E_INVALID_ASSET_ORIGIN
+            };
+            let mut capability = get_treasury_cap<T>(relay_store, wrapped_token);
+            coin::burn<T>(capability, coin);
+        } else {
+            if (base_token_path != 0) {
+                abort E_INVALID_ASSET_ORIGIN
+            };
+            let channel_balance_pair = ChannelBalancePair{
+                channel: channel_id,
+                token: *base_token
+            };
+            let channel_balance = relay_store.channel_balance.borrow_mut(channel_balance_pair);
+            add_or_update_table<ChannelBalancePair, u256>(
+                &mut relay_store.channel_balance,
+                channel_balance_pair,
+                fungible_asset_order::base_amount(&order)
+            );
+            // There can not be a scenerio where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // And here if i don't do anything, the COIN will be ours anyway. We just need to 
+            // merge that one
+            save_coin_to_bag<T>(relay_store, coin);
+        }   
 
     }
 
