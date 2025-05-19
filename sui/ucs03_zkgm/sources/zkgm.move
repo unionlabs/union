@@ -134,6 +134,7 @@ module zkgm::zkgm_relay {
     const E_NO_TREASURY_CAPABILITY: u64 = 20;
     const E_INVALID_ASSET_DECIMAL: u64 = 21;
     const E_INVALID_BASE_AMOUNT: u64 = 22;
+    const E_NO_COIN_IN_BAG: u64 = 23;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
 
     public struct ZkgmPacket has copy, drop, store {
@@ -219,9 +220,9 @@ module zkgm::zkgm_relay {
 
     public struct ChannelBalancePair has copy, drop, store {
         channel: u32,
+        path: u256,
         token: vector<u8>
     }
-
 
 
     // Events
@@ -724,6 +725,23 @@ module zkgm::zkgm_relay {
         return salt
     }
 
+    public fun distribute_coin<T>(
+        relay_store: &mut RelayStore,
+        receiver: address,
+        amount: u64,
+        ctx: &mut TxContext
+    ) {
+        let typename_t = type_name::get<T>();
+        let key = type_name::into_string(typename_t);
+        if(!relay_store.bag_to_coin.contains(string::from_ascii(key))) {
+            abort E_NO_COIN_IN_BAG
+        };
+        let mut coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+
+        let transferred_coin = coin::split<T>(coin, amount, ctx);
+        transfer::public_transfer(transferred_coin, receiver);
+    }
+
     public fun protocol_fill<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
@@ -735,8 +753,10 @@ module zkgm::zkgm_relay {
         relayer: address,
         base_amount: u64,
         quote_amount: u64,
-        mint: bool
+        mint: bool,
+        ctx: &mut TxContext
     ): vector<u8> {
+        let fee = base_amount - quote_amount;
         if (mint) {
             if (!bag_contains_capability(relay_store, wrapped_token)) {
                 abort E_NO_TREASURY_CAPABILITY
@@ -749,8 +769,34 @@ module zkgm::zkgm_relay {
                 coin::mint_and_transfer<T>(capability, fee, relayer, ctx);
             }
         } else {
+            let channel_balance_pair = ChannelBalancePair{
+                channel: channel_id,
+                path: reverse_channel_path(path),
+                token: quote_token
+            };
+            let channel_balance = relay_store.channel_balance.borrow_mut(channel_balance_pair);
+            add_or_update_table<ChannelBalancePair, u256>(
+                &mut relay_store.channel_balance,
+                channel_balance_pair,
+                (quote_amount + fee) as u256
+            );
 
-        }
+            // There can not be a scenerio where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // Here we just need to split our coins to the receiver and relayer
+            if(quote_amount > 0) {
+                distribute_coin<T>(relay_store, receiver, quote_amount, ctx)
+            };
+            if(fee > 0){
+                distribute_coin<T>(relay_store, relayer, fee, ctx)
+            }
+        };
+        let asset_order_ack = fungible_asset_order_ack::new(
+            FILL_TYPE_PROTOCOL,
+            ACK_EMPTY
+        );
+        let acked_value = fungible_asset_order_ack::encode(&asset_order_ack);
+        return acked_value
+
     }
 
 
@@ -767,13 +813,13 @@ module zkgm::zkgm_relay {
     ): (vector<u8>) {
         let quote_token = fungible_asset_order::quote_token(&order);
         let receiver_vec = fungible_asset_order::receiver(&order);
-        let receiver = bcs::new(receiver_vec).peel_address();
+        let receiver = bcs::new(*receiver_vec).peel_address();
 
         // TODO: intent part will be another function
         let wrapped_token = compute_salt(
             path,
             packet::destination_channel_id(&ibc_packet),
-            fungible_asset_order::base_token(&order)
+            *fungible_asset_order::base_token(&order)
         );
         let base_amount_covers_quote_amount =
             fungible_asset_order::base_amount(&order) >= fungible_asset_order::quote_amount(&order);
@@ -1049,6 +1095,7 @@ module zkgm::zkgm_relay {
             };
             let channel_balance_pair = ChannelBalancePair{
                 channel: channel_id,
+                path: path,
                 token: *base_token
             };
             let channel_balance = relay_store.channel_balance.borrow_mut(channel_balance_pair);
@@ -1065,7 +1112,7 @@ module zkgm::zkgm_relay {
 
     }
 
-    fun verify_batch(
+    fun verify_batch<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         mut coin: Coin<T>,
