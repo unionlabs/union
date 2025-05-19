@@ -2,6 +2,7 @@ packages:
   - 'ts-sdk'
   - 'typescript-sdk'
   - 'app2'
+  - 'ceremony'
 
 # Prevent dependencies from being hoisted
 neverHoist:
