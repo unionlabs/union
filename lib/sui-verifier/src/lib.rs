@@ -95,39 +95,61 @@ pub fn verify_membership(
     let commitment_object = calculate_dynamic_field_object_id(*commitments_object.get(), &key);
 
     let Data::Move(ref object_data) = object.data;
-    let object_data: (ObjectID, Bytes, Bytes) = bcs::from_bytes(&object_data.contents).unwrap();
+    let (proven_object, proven_key, proven_value): (ObjectID, Bytes, Bytes) =
+        bcs::from_bytes(&object_data.contents).unwrap();
 
-    if commitment_object != object_data.0 {
-        panic!("mismatched object");
+    if commitment_object != proven_object {
+        return Err(Error::ObjectMismatch {
+            given: commitment_object,
+            proven: proven_object,
+        });
     }
 
     // STEP 2: check if the given `key` and the `value` belongs to the `object`
-    if key != object_data.1 {
-        panic!("key mismatch");
+    if key != proven_key {
+        return Err(Error::KeyMismatch {
+            given: key,
+            proven: proven_value,
+        });
     }
 
-    if value != object_data.2 {
-        panic!("value mismatch");
+    if value != proven_value {
+        return Err(Error::ValueMismatch {
+            given: value,
+            proven: proven_value,
+        });
     }
 
     // STEP 3: find the effect in the `effects` and compare the digest with the given `object`s digest
-    let digest = find_write_effect(&effects, commitment_object).unwrap();
+    let digest = find_write_effect(&effects, commitment_object)
+        .ok_or(Error::EffectNotFound(commitment_object))?;
 
-    if digest != object.digest() {
-        panic!("object hash mismatch");
+    {
+        let object_digest = object.digest();
+        if digest != object_digest {
+            return Err(Error::ObjectDigestMismatch {
+                given: object_digest,
+                proven: digest,
+            });
+        }
     }
 
     // STEP 4: find the effect digest in `checkpoint_contents.transactions` to verify it exists
     let CheckpointContents::V1(checkpoint_contents) = checkpoint_contents;
+    let effects_digest = effects.digest();
     let _ = checkpoint_contents
         .transactions
         .iter()
-        .find(|e| e.effects == digest)
+        .find(|e| e.effects == effects_digest)
         .expect("execution digests do not contain the given effect");
 
     // STEP 5: compare the digest of `checkpoint_contents` with the `contents_digest` which is verified previously by the client
-    if contents_digest != CheckpointContents::V1(checkpoint_contents).digest() {
-        panic!("contents digest does not match the checkpoint contents digest");
+    if contents_digest != CheckpointContents::V1(checkpoint_contents.clone()).digest() {
+        panic!(
+            "digest mismatch: {:?} {:?}",
+            contents_digest,
+            CheckpointContents::V1(checkpoint_contents).digest()
+        );
     }
 
     Ok(())

@@ -1,3 +1,4 @@
+use blake2::{Blake2b, Digest as _};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -155,6 +156,15 @@ pub enum IDOperation {
 pub enum ExecutionStatus {
     // We don't care about the failure case
     Success,
+}
+
+impl TransactionEffects {
+    pub fn digest(&self) -> Digest {
+        let mut hasher = Blake2b::<typenum::U32>::new();
+        hasher.update("TransactionEffects::");
+        bcs::serialize_into(&mut hasher, self).unwrap();
+        Digest(hasher.finalize().into())
+    }
 }
 
 #[cfg(test)]

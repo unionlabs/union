@@ -68,7 +68,7 @@ module ibc::ibc {
     use ibc::channel::{Self, Channel}; 
     use ibc::light_client::{Self, Client};
     use ibc::commitment;
-    use sui::hash;
+    use sui::hash::keccak256;
     use sui::clock;
     use sui::transfer;
     #[test_only]
@@ -359,7 +359,7 @@ module ibc::ibc {
         // Update the consensus state commitment
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
             commitment::consensus_state_commitment_key(client_id, height),
-            hash::keccak256(&consensus_state)
+            keccak256(&consensus_state)
         );
 
         event::emit(
@@ -640,7 +640,7 @@ module ibc::ibc {
     fun commit_connection(ibc_store: &mut IBCStore, connection_id: u32, connection: ConnectionEnd) {
         let key = commitment::connection_commitment_key(connection_id);
 
-        let encoded = encode_connection(connection);
+        let encoded = keccak256(&encode_connection(connection));
 
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, key, encoded);
 
@@ -650,7 +650,7 @@ module ibc::ibc {
     fun commit_channel(ibc_store: &mut IBCStore, channel_id: u32, channel: Channel) {
         let key = commitment::channel_commitment_key(channel_id);
 
-        let encoded = encode_channel(channel);
+        let encoded = keccak256(&encode_channel(channel));
 
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, key, encoded);
 
@@ -675,7 +675,7 @@ module ibc::ibc {
             height,
             proof,
             commitment::connection_commitment_key(connection_id),
-            hash::keccak256(&connection_end::encode(&counterparty_connection))
+            keccak256(&connection_end::encode(&counterparty_connection))
         )
     }
 
@@ -709,7 +709,7 @@ module ibc::ibc {
             height,
             proof,
             commitment::channel_commitment_key(channel_id),
-            hash::keccak256(&channel::encode(&channel))
+            keccak256(&channel::encode(&channel))
         )
     }
 
