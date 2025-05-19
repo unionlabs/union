@@ -658,7 +658,6 @@ module zkgm::zkgm_relay {
                 ibc_packet,
                 relayer,
                 relayer_msg,
-                salt,
                 path,
                 fungible_asset_order::decode(instruction::operand(&instruction)),
                 ctx
@@ -704,8 +703,9 @@ module zkgm::zkgm_relay {
         quote_token: vector<u8>,
         receiver: address,
         quote_amount: u64
-    ): (vector<u8>) {
+    ): vector<u8> {
         if (quote_amount != 0){
+            // There can not be a scenerio where quote_token == NATIVE_TOKEN_ERC_7528_ADDRESS
             abort E_NOT_IMPLEMENTED
         };
         let asset_order_ack = fungible_asset_order_ack::new(
@@ -805,15 +805,14 @@ module zkgm::zkgm_relay {
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
-        _relayer_msg: vector<u8>,
-        _salt: vector<u8>,
+        relayer_msg: vector<u8>,
         path: u256,
         order: FungibleAssetOrder,
         ctx: &mut TxContext
     ): (vector<u8>) {
-        let quote_token = fungible_asset_order::quote_token(&order);
-        let receiver_vec = fungible_asset_order::receiver(&order);
-        let receiver = bcs::new(*receiver_vec).peel_address();
+        let quote_token = *fungible_asset_order::quote_token(&order);
+        let receiver_vec = *fungible_asset_order::receiver(&order);
+        let receiver = bcs::new(receiver_vec).peel_address();
 
         // TODO: intent part will be another function
         let wrapped_token = compute_salt(
@@ -821,14 +820,56 @@ module zkgm::zkgm_relay {
             packet::destination_channel_id(&ibc_packet),
             *fungible_asset_order::base_token(&order)
         );
-        let base_amount_covers_quote_amount =
-            fungible_asset_order::base_amount(&order) >= fungible_asset_order::quote_amount(&order);
+        let base_amount = fungible_asset_order::base_amount(&order);
+        let quote_amount = fungible_asset_order::quote_amount(&order);
+        let base_amount_covers_quote_amount = base_amount >= quote_amount;
 
         if (wrapped_token == quote_token && base_amount_covers_quote_amount) {
             // TODO: add rate limit here later
             
-        }
-        vector::empty()
+            // Relayer already should call the register treasury_cap here and deployed the contract
+            return protocol_fill<T>(
+                ibc_store, 
+                relay_store, 
+                packet::destination_channel_id(&ibc_packet), 
+                path, 
+                wrapped_token, 
+                quote_token, 
+                receiver, 
+                relayer, 
+                base_amount as u64, 
+                quote_amount as u64, 
+                true, 
+                ctx
+            )
+        };
+        let base_token_path = fungible_asset_order::base_token_path(&order);
+
+        if (base_token_path != 0 && base_amount_covers_quote_amount) {
+            // TODO: add rate limit here later
+            return protocol_fill<T>(
+                ibc_store, 
+                relay_store, 
+                packet::destination_channel_id(&ibc_packet), 
+                path, 
+                wrapped_token, 
+                quote_token, 
+                receiver, 
+                relayer, 
+                base_amount as u64, 
+                quote_amount as u64, 
+                false, 
+                ctx
+            )
+        };
+        return market_maker_fill<T>(
+            ibc_store, 
+            relay_store, 
+            relayer_msg, 
+            quote_token, 
+            receiver, 
+            quote_amount as u64
+        )        
     }
 
     fun execute_batch<T>(
