@@ -27,6 +27,7 @@ import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.s
 import A from "$lib/components/ui/A.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times.ts"
+import { runFork, runPromise } from "$lib/runtime"
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { fromHex } from "viem"
 import type { PageData } from "./$types"
@@ -43,11 +44,11 @@ let showPacketDetails = $state(false)
 let fiber: Fiber.Fiber<any, any>
 
 onMount(() => {
-  fiber = Effect.runFork(transferByPacketHashQuery(data.packetHash))
+  fiber = runFork(transferByPacketHashQuery(data.packetHash))
   packetDetails.runEffect(packetDetailsQuery(data.packetHash))
 
   return async () => {
-    await Effect.runPromise(Fiber.interrupt(fiber))
+    await runPromise(Fiber.interrupt(fiber))
     transferDetails.data = Option.none()
     transferDetails.error = Option.none()
 

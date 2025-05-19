@@ -18,6 +18,7 @@ import TransferListItemComponent from "$lib/components/model/TransferListItemCom
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
 import WalletConnectedNoTransfers from "$lib/components/WalletConnectedNoTransfers.svelte"
+    import { runFork, runPromise } from "$lib/runtime";
 
 let transferFiber: Fiber.Fiber<any, any>
 let countFiber: Fiber.Fiber<any, any>
@@ -35,37 +36,37 @@ const fetchLive = async () => {
   if (fiberLock) return
   fiberLock = true
   if (transferFiber) {
-    await Effect.runPromise(Fiber.interrupt(transferFiber))
+    await runPromise(Fiber.interrupt(transferFiber))
   }
   if (countFiber) {
-    await Effect.runPromise(Fiber.interrupt(countFiber))
+    await runPromise(Fiber.interrupt(countFiber))
   }
   const addresses = wallets.getCanonicalByteAddressList()
   if (addresses.length > 0) {
-    transferFiber = Effect.runFork(
+    transferFiber = runFork(
       transferListLatestAddressQuery(addresses, settingsStore.pageLimit)
     )
-    // countFiber = Effect.runFork(transferCountForAddressesQuery(addresses))
+    // countFiber = runFork(transferCountForAddressesQuery(addresses))
   }
   fiberLock = false
 }
 
 onMount(() => {
   return async () => {
-    if (transferFiber) await Effect.runPromise(Fiber.interrupt(transferFiber))
-    if (countFiber) await Effect.runPromise(Fiber.interrupt(countFiber))
+    if (transferFiber) await runPromise(Fiber.interrupt(transferFiber))
+    if (countFiber) await runPromise(Fiber.interrupt(countFiber))
   }
 })
 
 const onLive = async () => {
   if (Option.isSome(transferListAddress.data) && Option.isSome(wallets.evmAddress)) {
     transferListAddress.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(transferFiber))
+    await runPromise(Fiber.interrupt(transferFiber))
     const addresses = wallets.getCanonicalByteAddressList()
-    transferFiber = Effect.runFork(
+    transferFiber = runFork(
       transferListLatestAddressQuery(addresses, settingsStore.pageLimit)
     )
-    countFiber = Effect.runFork(transferCountForAddressesQuery(addresses))
+    countFiber = runFork(transferCountForAddressesQuery(addresses))
   }
 }
 
@@ -76,8 +77,8 @@ const onPrevPage = async () => {
     const addresses = wallets.getCanonicalByteAddressList()
     if (addresses.length === 0) return
     transferListAddress.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(transferFiber))
-    transferFiber = Effect.runFork(
+    await runPromise(Fiber.interrupt(transferFiber))
+    transferFiber = runFork(
       transferListPageGtAddressQuery(firstSortOrder, addresses, settingsStore.pageLimit)
     )
   }
@@ -90,8 +91,8 @@ const onNextPage = async () => {
     const addresses = wallets.getCanonicalByteAddressList()
     if (addresses.length === 0) return
     transferListAddress.data = Option.none()
-    await Effect.runPromise(Fiber.interrupt(transferFiber))
-    transferFiber = Effect.runFork(
+    await runPromise(Fiber.interrupt(transferFiber))
+    transferFiber = runFork(
       transferListPageLtAddressQuery(lastSortOrder, addresses, settingsStore.pageLimit)
     )
   }

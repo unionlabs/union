@@ -1,3 +1,5 @@
+export const SERVICE_NAME = "app"
+
 export type Environment = "PRODUCTION" | "STAGING" | "DEVELOPMENT"
 
 export const ENV = (): Environment =>

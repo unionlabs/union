@@ -55,6 +55,9 @@ importers:
       '@cosmjs/tendermint-rpc':
         specifier: ^0.33.1
         version: 0.33.1(patch_hash=d6d84acfc406c9bb60bb24c691bf474327d6a3a3140be568a3b77e1063897c4e)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@datadog/browser-logs':
+        specifier: ^6.6.4
+        version: 6.6.4
       '@effect/platform':
         specifier: 0.80.14
         version: 0.80.14(effect@3.14.14)
@@ -519,6 +522,17 @@ packages:
   '@csstools/css-tokenizer@3.0.3':
     resolution: {integrity: sha512-UJnjoFsmxfKUdNYdWgOB0mWUypuLvAfQPH1+pyvRJs6euowbFkFC6P13w1l8mJyi3vxYMxc9kld5jZEGRQs6bw==}
     engines: {node: '>=18'}
+
+  '@datadog/browser-core@6.6.4':
+    resolution: {integrity: sha512-VpJ10Rbj0UX5i1mbZo575ZA04O6cfBNI2L3TstxZPtnT/XQtqAm0KZpazW4sAZ8IFQXNHxMYYVe43mViapP0rw==}
+
+  '@datadog/browser-logs@6.6.4':
+    resolution: {integrity: sha512-ga1PM1dLKk23W0Ad2jm/ISRopj28X4XB0gxRMjDA78qS51t75OTbNmianZOqv6qXWGFeGwsZ4dACoF7MuFWkFA==}
+    peerDependencies:
+      '@datadog/browser-rum': 6.6.4
+    peerDependenciesMeta:
+      '@datadog/browser-rum':
+        optional: true
 
   '@ecies/ciphers@0.2.3':
     resolution: {integrity: sha512-tapn6XhOueMwht3E2UzY0ZZjYokdaw9XtL9kEyjhQ/Fb9vL9xTFbOaI+fV0AWvTpYu4BNloC6getKW6NtSg4mA==}
@@ -4911,6 +4925,12 @@ snapshots:
 
   '@csstools/css-tokenizer@3.0.3':
     optional: true
+
+  '@datadog/browser-core@6.6.4': {}
+
+  '@datadog/browser-logs@6.6.4':
+    dependencies:
+      '@datadog/browser-core': 6.6.4
 
   '@ecies/ciphers@0.2.3(@noble/ciphers@1.2.1)':
     dependencies:

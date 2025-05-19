@@ -1,3 +1,4 @@
+import { runPromise, runSync } from "$lib/runtime"
 import { bech32 } from "@scure/base"
 import {
   AddressAptosDisplay,
@@ -90,7 +91,7 @@ export const isValidCanonicalForChain = (
         Effect.map(result =>
           pipe(
             Option.fromNullable(result),
-            Option.map(decoded => Effect.runSync(evmDisplayToCanonical(decoded))),
+            Option.map(decoded => runSync(evmDisplayToCanonical(decoded))),
             Option.map(canonicalResult =>
               pipe(
                 canonicalResult,
@@ -104,7 +105,7 @@ export const isValidCanonicalForChain = (
           )
         ),
         Effect.catchAll(() => Effect.succeed(false)),
-        Effect.runSync,
+        runSync,
       )
     }
 
@@ -117,7 +118,7 @@ export const isValidCanonicalForChain = (
         Effect.map(result =>
           pipe(
             Option.fromNullable(result),
-            Option.map(decoded => Effect.runSync(cosmosDisplayToCanonical(decoded))),
+            Option.map(decoded => runSync(cosmosDisplayToCanonical(decoded))),
             Option.map(canonicalResult =>
               pipe(
                 canonicalResult,
@@ -131,7 +132,7 @@ export const isValidCanonicalForChain = (
           )
         ),
         Effect.catchAll(() => Effect.succeed(false)),
-        Effect.runSync,
+        runSync,
       )
     }
 
@@ -144,7 +145,7 @@ export const isValidCanonicalForChain = (
         Effect.map(result =>
           pipe(
             Option.fromNullable(result),
-            Option.map(decoded => Effect.runSync(aptosDisplayToCanonical(decoded))),
+            Option.map(decoded => runSync(aptosDisplayToCanonical(decoded))),
             Option.map(canonicalResult =>
               pipe(
                 canonicalResult,
@@ -158,7 +159,7 @@ export const isValidCanonicalForChain = (
           )
         ),
         Effect.catchAll(() => Effect.succeed(false)),
-        Effect.runSync,
+        runSync,
       )
     }
 
@@ -177,7 +178,7 @@ export const isValidCanonicalForChain = (
 // Example
 export const runExample = async () => {
   const evmAddr = "0x3C5daAa3c96AB8fe4cFC2fB6d76193fe959A9f82" as typeof AddressEvmDisplay.Type
-  const evmResult = await Effect.runPromise(evmDisplayToCanonical(evmAddr))
+  const evmResult = await runPromise(evmDisplayToCanonical(evmAddr))
   console.log(
     "Evm:",
     Option.getOrElse(evmResult, () => "Invalid EVM address"),
@@ -185,7 +186,7 @@ export const runExample = async () => {
 
   const cosmosAddr =
     "union10z7xxj2m8q3f7j58uxmff38ws9u8m0vmne2key" as typeof AddressCosmosDisplay.Type
-  const cosmosResult = await Effect.runPromise(cosmosDisplayToCanonical(cosmosAddr))
+  const cosmosResult = await runPromise(cosmosDisplayToCanonical(cosmosAddr))
   console.log(
     "Cosmos:",
     Option.getOrElse(cosmosResult, () => "Invalid Cosmos address"),
@@ -193,13 +194,13 @@ export const runExample = async () => {
 
   const aptosAddr =
     "0x55f8fa1cd0ba02c4ec77b9ee8e6c4c3c040d717af46873be759cd5e2d4205059" as typeof AddressAptosDisplay.Type
-  const aptosResult = await Effect.runPromise(aptosDisplayToCanonical(aptosAddr))
+  const aptosResult = await runPromise(aptosDisplayToCanonical(aptosAddr))
   console.log(
     "Aptos:",
     Option.getOrElse(aptosResult, () => "Invalid Aptos address"),
   )
 
-  const isValidEvm = await Effect.runPromise(
+  const isValidEvm = await runPromise(
     isValidCanonicalForChain("0x1234567890123456789012345678901234567890", "evm"),
   )
   console.log("Is valid Evm:", isValidEvm)

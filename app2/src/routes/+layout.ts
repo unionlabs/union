@@ -1,6 +1,5 @@
 import type { Edition } from "$lib/themes"
 import { Match, String as Str } from "effect"
-import { constant } from "effect/Function"
 import type { LayoutLoad } from "./$types"
 
 export const ssr = false
@@ -10,7 +9,7 @@ export const trailingSlash = "ignore"
 export const load: LayoutLoad = ({ url }) => {
   const hostname = url.hostname
 
-  const edition = Match.value(hostname).pipe(
+  const edition: Edition = Match.value(hostname).pipe(
     Match.whenOr(
       Str.startsWith("btc."),
       Str.startsWith("staging.btc."),

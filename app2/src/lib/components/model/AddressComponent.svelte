@@ -1,6 +1,7 @@
 <script lang="ts">
 import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import { runSync } from "$lib/runtime"
 import { truncate } from "$lib/utils/format"
 import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
 import { Effect } from "effect"
@@ -27,7 +28,7 @@ const {
   ...rest
 }: Props = $props()
 
-const fullDisplayAddress = $derived(Effect.runSync(chain.getDisplayAddress(address)))
+const fullDisplayAddress = $derived(runSync(chain.getDisplayAddress(address)))
 // const fullDisplayAddress = address
 const displayAddress = $derived(
   shouldTruncate

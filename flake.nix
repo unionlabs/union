@@ -240,12 +240,18 @@
           pkgsUnstable = import inputs.nixpkgs-unstable { inherit system; };
 
           gitRev = if (builtins.hasAttr "rev" self) then self.rev else "dirty";
+          gitShortRev = self.shortRev or (self.dirtyShortRev or "dirty");
+          lastModified = if self ? lastModified then builtins.toString self.lastModified else "0";
+          lastModifiedDate = self.lastModifiedDate or "1970-01-01T00:00:00Z";
         in
         {
           _module = {
             args = {
               inherit
                 gitRev
+                gitShortRev
+                lastModified
+                lastModifiedDate
                 nixpkgs
                 dbg
                 get-flake

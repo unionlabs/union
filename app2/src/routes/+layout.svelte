@@ -1,6 +1,7 @@
 <script lang="ts">
 import "../app.css"
 import { page } from "$app/state"
+import DevInfo from "$lib/components/DevInfo.svelte"
 import ErrorsModal from "$lib/components/ErrorsModal.svelte"
 import Header from "$lib/components/layout/Header/index.svelte"
 import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
@@ -10,12 +11,12 @@ import Wallet from "$lib/components/ui/Wallet/index.svelte"
 import { ENV, MAX_MOBILE_SIZE } from "$lib/constants"
 import { chainsQuery } from "$lib/queries/chains.svelte"
 import { channelsQuery } from "$lib/queries/channels.svelte.ts"
+import { runFork$, runPromise, runSync } from "$lib/runtime"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { cn } from "$lib/utils"
 import { runExample } from "$lib/utils/convert-display.ts"
-import { runFork } from "$lib/utils/effect.svelte"
 import { interceptLogos } from "$lib/utils/intercept-logos.ts"
 import { Effect, Fiber, Option } from "effect"
 import { onMount, type Snippet } from "svelte"
@@ -32,8 +33,8 @@ onMount(() => {
   uiStore.edition = data.edition
   interceptLogos()
   runExample()
-  runFork(chainsQuery(ENV()))
-  runFork(channelsQuery())
+  runFork$(chainsQuery(ENV()))
+  runFork$(channelsQuery())
 
   keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keya"], () => {
     uiStore.overrideEdition = "app"
@@ -46,17 +47,6 @@ onMount(() => {
   keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyf"], () => {
     uiStore.filterWhitelist = !uiStore.filterWhitelist
   })
-})
-
-$effect(() => {
-  Effect.runPromise(
-    Effect.log(
-      "connected wallets",
-      wallets.evmAddress.pipe(Option.getOrElse(() => "no evm")),
-      wallets.cosmosAddress.pipe(Option.getOrElse(() => "no cosmos")),
-      wallets.aptosAddress.pipe(Option.getOrElse(() => "no aptos")),
-    ),
-  )
 })
 
 let viewportWidth = $state(0)
@@ -173,3 +163,4 @@ $effect(() => {
   isOpen={uiStore.errorsModalOpen}
   onClose={() => uiStore.closeErrorsModal()}
 />
+<DevInfo />

@@ -6,6 +6,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import Input from "$lib/components/ui/Input.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import { SwitchChainCopy } from "$lib/copy"
+import { runPromiseExit, runSync } from "$lib/runtime"
 import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { getWalletClient, NoViemChainError } from "$lib/services/evm/clients.ts"
 import type {
@@ -23,12 +24,9 @@ import type {
   OfflineSignerError,
 } from "$lib/services/transfer-ucs03-cosmos"
 import type { WaitForTransactionReceiptError } from "$lib/services/transfer-ucs03-evm"
-import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { Steps } from "$lib/transfer/normal/steps"
 import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos.ts"
 import * as WriteEvm from "$lib/transfer/shared/services/write-evm.ts"
-import type { Tail } from "$lib/types"
-import { cosmosStore } from "$lib/wallet/cosmos"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
   createViemPublicClient,
@@ -36,9 +34,8 @@ import {
   WriteContractError,
 } from "@unionlabs/sdk/evm"
 import type { CosmosAddressEncodeError, NotACosmosChainError } from "@unionlabs/sdk/schema"
-import { Array as Arr, Cause, Data, Effect, Exit, Match, Option, Predicate, Unify } from "effect"
-import { not } from "effect/Boolean"
-import { compose, constVoid, flow, pipe } from "effect/Function"
+import { Array as Arr, Cause, Data, Effect, Exit, Match, Option } from "effect"
+import { constVoid, pipe } from "effect/Function"
 import { erc20Abi, http, isHex, toHex } from "viem"
 
 // Probably something we can import from somewhere?
@@ -101,7 +98,7 @@ const approvalAmount = $derived(
     : selectedMultiplier === 1
     ? step.requiredAmount
     : customAmount && isValidCustomAmount(customAmount)
-    ? Effect.runSync(
+    ? runSync(
       Effect.try({
         try: () => {
           const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
@@ -238,23 +235,25 @@ const submit = Effect.gen(function*() {
   yield* Effect.sync(() => {
     isSubmitting = false
   })
-})
+}).pipe(
+  Effect.annotateLogs({
+    step: "approve",
+  }),
+)
 
 const handleSubmit = () => {
   error = Option.none()
   showError = false
-  Effect.runPromiseExit(submit).then(exit =>
+  runPromiseExit(submit).then(exit =>
     Exit.match(exit, {
       onFailure: cause => {
         const err = Cause.originalError(cause)
-        Effect.runSync(Effect.logError(cause))
         error = pipe(
           err,
           Cause.failures,
           xs => Array.from(xs),
           Arr.head,
         )
-        console.log("SET ERROR")
         isSubmitting = false
       },
       onSuccess: constVoid,
@@ -287,7 +286,7 @@ function getApprovalAmount() {
       if (!(customAmount && isValidCustomAmount(customAmount))) {
         return step.requiredAmount
       }
-      return Effect.runSync(
+      return runSync(
         Effect.try({
           try: () => {
             const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
@@ -321,7 +320,7 @@ function handleCustomInput(event: Event) {
 }
 
 function isValidCustomAmount(amount: string): boolean {
-  return Effect.runSync(
+  return runSync(
     Effect.gen(function*() {
       // Handle empty or invalid input
       if (!amount || amount === "." || amount === ",") {
@@ -350,7 +349,7 @@ function isValidCustomAmount(amount: string): boolean {
 }
 
 function handleBeforeInput(event: InputEvent) {
-  return Effect.runSync(
+  return runSync(
     Effect.gen(function*() {
       const { inputType, data } = event
       const { value } = event.currentTarget as HTMLInputElement

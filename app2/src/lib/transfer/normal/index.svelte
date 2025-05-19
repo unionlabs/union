@@ -2,6 +2,7 @@
 import { beforeNavigate } from "$app/navigation"
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
+import { runFork } from "$lib/runtime"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
@@ -213,7 +214,7 @@ $effect(() => {
     currentFiber = Option.none()
   })
 
-  const fiber = Effect.runFork(machineEffect as Effect.Effect<void, never, never>)
+  const fiber = runFork(machineEffect as Effect.Effect<void, never, never>)
   currentFiber = Option.some(fiber)
 
   return () => fiber?.unsafeInterruptAsFork(FiberId.none)

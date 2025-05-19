@@ -1,3 +1,4 @@
+import { runSync } from "$lib/runtime"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info"
 import { bech32AddressToHex } from "@unionlabs/client"
@@ -112,6 +113,10 @@ class CosmosStore {
   }
 
   connect = async (walletId: string) => {
+    const annotate = Effect.annotateLogs({
+      wallet: walletId,
+    })
+
     if (!walletId || (walletId !== "keplr" && walletId !== "leap")) {
       return
     }
@@ -149,8 +154,15 @@ class CosmosStore {
     try {
       await walletApi.experimentalSuggestChain(chainInfo)
       await walletApi.enable(["bbn-1"])
+      Effect.log("wallet.connect").pipe(
+        annotate,
+        runSync,
+      )
     } catch (e) {
-      console.log(e)
+      Effect.logError("wallet.connect", e).pipe(
+        annotate,
+        runSync,
+      )
       this.connectionStatus = "disconnected"
       this.saveToStorage()
       return
