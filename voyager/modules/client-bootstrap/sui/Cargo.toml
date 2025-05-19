@@ -12,18 +12,18 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cosmwasm-std                = { workspace = true }
-embed-commit                = { workspace = true }
-jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
-sui-light-client-types      = { workspace = true, features = ["serde"] }
-serde                       = { workspace = true, features = ["derive"] }
-serde_json                  = { workspace = true }
-thiserror                   = { workspace = true }
-tokio                       = { workspace = true }
-tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
-voyager-message             = { workspace = true }
-reqwest = { workspace = true }
-bcs = { workspace = true }
+bcs                    = { workspace = true }
+cosmwasm-std           = { workspace = true }
+embed-commit           = { workspace = true }
+jsonrpsee              = { workspace = true, features = ["macros", "server", "tracing"] }
+reqwest                = { workspace = true }
+serde                  = { workspace = true, features = ["derive"] }
+serde_json             = { workspace = true }
+sui-light-client-types = { workspace = true, features = ["serde"] }
+thiserror              = { workspace = true }
+tokio                  = { workspace = true }
+tracing                = { workspace = true }
+unionlabs              = { workspace = true }
+voyager-message        = { workspace = true }
 
-sui_sdk       = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }

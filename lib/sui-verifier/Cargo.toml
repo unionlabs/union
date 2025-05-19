@@ -1,20 +1,20 @@
 [package]
-name = "sui-verifier"
-version = "0.1.0"
-authors.workspace = true
-edition.workspace = true
+authors.workspace      = true
+edition.workspace      = true
 license-file.workspace = true
-publish.workspace = true
-repository.workspace = true
+name                   = "sui-verifier"
+publish.workspace      = true
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
+bcs                    = { workspace = true }
+blake2                 = "0.10.6"
 sui-light-client-types = { workspace = true, features = ["serde"] }
-unionlabs = { workspace = true }
-unionlabs-primitives = { workspace = true }
-bcs = { workspace = true }
-blake2               = "0.10.6"
-typenum              = { version = "1.17.0", default-features = false }
-thiserror = { workspace = true }
+thiserror              = { workspace = true }
+typenum                = { version = "1.17.0", default-features = false }
+unionlabs              = { workspace = true }
+unionlabs-primitives   = { workspace = true }
 
 [lints]
 workspace = true

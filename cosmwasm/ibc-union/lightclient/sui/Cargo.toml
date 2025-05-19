@@ -14,7 +14,9 @@ workspace = true
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
+bcs                    = { workspace = true }
 bincode                = { workspace = true }
+blake2                 = "0.10.6"
 cosmwasm-std           = { workspace = true, features = ["abort", "cosmwasm_2_1"] }
 depolama               = { workspace = true }
 embed-commit           = { workspace = true }
@@ -22,19 +24,17 @@ frissitheto            = { workspace = true }
 ibc-union-light-client = { workspace = true }
 ibc-union-msg          = { workspace = true }
 serde                  = { workspace = true, features = ["derive"] }
+serde_repr             = { version = "0.1.20", optional = true }
 sui-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
+sui-verifier           = { workspace = true }
 thiserror              = { workspace = true }
+typenum                = { version = "1.17.0", default-features = false }
 unionlabs              = { workspace = true, features = ["ethabi"] }
-bcs = { workspace = true }
-serde_repr = { version = "0.1.20", optional = true }
-blake2               = "0.10.6"
-typenum              = { version = "1.17.0", default-features = false }
-sui-verifier = { workspace = true }
 
 [dev-dependencies]
-hex-literal = { workspace = true }
-unionlabs-primitives = { workspace = true, features = ["base64"]}
-serde_json = { workspace = true }
+hex-literal          = { workspace = true }
+serde_json           = { workspace = true }
+unionlabs-primitives = { workspace = true, features = ["base64"] }
 
 [features]
 library = []

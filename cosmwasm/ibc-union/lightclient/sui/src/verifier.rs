@@ -21,25 +21,24 @@ impl<'a> SignatureVerification for Verifier<'a> {
             .flat_map(|x| x.0)
             .collect::<Vec<u8>>();
 
-        let aggregate_pubkey = self.deps.api.bls12_381_aggregate_g2(&pubkeys).unwrap();
+        let aggregate_pubkey = self.deps.api.bls12_381_aggregate_g2(&pubkeys)?;
 
-        let hashed_msg = self
-            .deps
-            .api
-            .bls12_381_hash_to_g1(HashFunction::Sha256, &msg, Self::BLS_DST)
-            .unwrap();
+        let hashed_msg =
+            self.deps
+                .api
+                .bls12_381_hash_to_g1(HashFunction::Sha256, &msg, Self::BLS_DST)?;
 
-        let valid = self
-            .deps
-            .api
-            .bls12_381_pairing_equality(
-                signature.0.as_ref(),
-                &Self::BLS_GENERATOR,
-                &hashed_msg,
-                &aggregate_pubkey,
-            )
-            .unwrap();
+        let valid = self.deps.api.bls12_381_pairing_equality(
+            signature.0.as_ref(),
+            &Self::BLS_GENERATOR,
+            &hashed_msg,
+            &aggregate_pubkey,
+        )?;
 
-        Ok(())
+        if valid {
+            Ok(())
+        } else {
+            Err(Error::SignatureVerification)
+        }
     }
 }

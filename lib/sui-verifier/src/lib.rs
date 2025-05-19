@@ -1,14 +1,14 @@
 use blake2::{Blake2b, Digest as _};
 use sui_light_client_types::{
-    checkpoint_summary::{CheckpointContents, CheckpointSummary, ExecutionDigests},
+    checkpoint_summary::{CheckpointContents, CheckpointSummary},
     committee::Committee,
     crypto::{
         AggregateAuthoritySignature, AuthorityPublicKeyBytes, AuthorityStrongQuorumSignInfo,
         BLS_DST,
     },
     digest::Digest,
-    object::{Data, MoveObject, ObjectInner, TypeTag},
-    transaction_effects::{EffectsObjectChange, ObjectOut, TransactionEffects},
+    object::{Data, ObjectInner, TypeTag},
+    transaction_effects::{ObjectOut, TransactionEffects},
     AppId, Intent, IntentMessage, IntentScope, IntentVersion, ObjectID,
 };
 
@@ -144,12 +144,12 @@ pub fn verify_membership(
         .expect("execution digests do not contain the given effect");
 
     // STEP 5: compare the digest of `checkpoint_contents` with the `contents_digest` which is verified previously by the client
-    if contents_digest != CheckpointContents::V1(checkpoint_contents.clone()).digest() {
-        panic!(
-            "digest mismatch: {:?} {:?}",
-            contents_digest,
-            CheckpointContents::V1(checkpoint_contents).digest()
-        );
+    let calc_contents_digest = CheckpointContents::V1(checkpoint_contents.clone()).digest();
+    if contents_digest != calc_contents_digest {
+        return Err(Error::ContentsDigestMismatch {
+            given: contents_digest,
+            proven: calc_contents_digest,
+        });
     }
 
     Ok(())
@@ -178,7 +178,6 @@ pub fn calculate_dynamic_field_object_id(parent: [u8; 32], key_bytes: &[u8]) -> 
     #[repr(u8)]
     enum HashingIntentScope {
         ChildObjectId = 0xf0,
-        RegularObjectId = 0xf1,
     }
 
     // hash(parent || len(key) || key || key_type_tag)

@@ -22,4 +22,9 @@ pub enum Error {
         "proven object's digest ({proven}) does not match the given object's digest ({given})"
     )]
     ObjectDigestMismatch { given: Digest, proven: Digest },
+
+    #[error(
+        "proven contents digest ({proven}) does not match the given contents digest ({given})"
+    )]
+    ContentsDigestMismatch { given: Digest, proven: Digest },
 }
