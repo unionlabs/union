@@ -25,16 +25,25 @@
     dprint = {
       enable = true;
       package = pkgsUnstable.dprint;
-      settings = {
-        extends = builtins.toString ./dprint.json;
-        plugins = map toString (
-          with pkgsUnstable.dprint-plugins;
-          [
-            dprint-plugin-typescript
-            g-plane-markup_fmt
-          ]
-        );
-      };
+      settings =
+        let
+          original = builtins.fromJSON (builtins.readFile ./dprint.json);
+          cleaned = builtins.removeAttrs original [
+            "includes"
+            "plugins"
+          ];
+          patchedConfig = builtins.toFile "dprint.json" (builtins.toJSON cleaned);
+        in
+        {
+          extends = builtins.toString patchedConfig;
+          plugins = map toString (
+            with pkgsUnstable.dprint-plugins;
+            [
+              dprint-plugin-typescript
+              g-plane-markup_fmt
+            ]
+          );
+        };
     };
     yamlfmt = {
       enable = true;
