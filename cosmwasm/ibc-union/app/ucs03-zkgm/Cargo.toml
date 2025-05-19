@@ -19,7 +19,7 @@ library = []
 
 [dependencies]
 alloy                       = { workspace = true, features = ["sol-types"] }
-chrono                      = { version = "0.4", default-features = false }
+chrono                      = { workspace = true }
 cosmwasm-schema             = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "staking"] }
 cw-account                  = { workspace = true }
