@@ -123,7 +123,9 @@ function getStatusColor() {
         {/if}
       </div>
       <div class="flex justify-between text-[10px] lg:text-xs text-zinc-400">
-        <span>Started: {new Date(userAchievement?.created_at ?? "").toLocaleDateString()}</span>
+        {#if userAchievement?.created_at}
+          <span>Started: {new Date(userAchievement.created_at).toLocaleDateString()}</span>
+        {/if}
         {#if completed}
           <span>Completed: {new Date(userAchievement?.achieved_at ?? "").toLocaleDateString()}</span
           >
