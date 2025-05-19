@@ -318,6 +318,17 @@ contract UCS03ZkgmStakeImpl is
         _stakingFailed(ibcPacket.sourceChannelId, _stake);
     }
 
+    function timeoutUnstake(
+        IBCPacket calldata ibcPacket,
+        Unstake calldata _unstake
+    ) public whenNotPaused {
+        ensureStakeIsFromChannel(ibcPacket.sourceChannelId, _unstake.tokenId);
+        address sender = address(bytes20(_unstake.sender));
+        _getStakeNFTManager().transferFrom(
+            address(this), sender, _unstake.tokenId
+        );
+    }
+
     function timeoutWithdrawStake(
         IBCPacket calldata ibcPacket,
         WithdrawStake calldata _withdrawStake
@@ -1680,7 +1691,12 @@ contract UCS03Zkgm is
         } else if (
             instruction.isInst(ZkgmLib.OP_UNSTAKE, ZkgmLib.INSTR_VERSION_0)
         ) {
-            // noop
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.timeoutUnstake,
+                    (ibcPacket, ZkgmLib.decodeUnstake(instruction.operand))
+                )
+            );
         } else if (
             instruction.isInst(
                 ZkgmLib.OP_WITHDRAW_STAKE, ZkgmLib.INSTR_VERSION_0
