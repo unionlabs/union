@@ -13,7 +13,7 @@ function getWalletCategory(chainId: string): "evm" | "cosmos" | "other" {
     return "other"
   }
   const lowerChainId = chainId.toLowerCase()
-  if (lowerChainId.startsWith("evm:")) {
+  if (lowerChainId.startsWith("evm")) {
     return "evm"
   }
   if (lowerChainId.startsWith("cosmos:")) {
