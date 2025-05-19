@@ -1,10 +1,7 @@
-use std::collections::BTreeMap;
-
 use blake2::{Blake2b, Digest as _};
-use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{encoding::Base58, Bytes, FixedBytes};
+use unionlabs_primitives::{Bytes, FixedBytes};
 
-use crate::{digest::Digest, AccountAddress, ObjectID, Owner, SuiAddress};
+use crate::{digest::Digest, AccountAddress, Owner};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]

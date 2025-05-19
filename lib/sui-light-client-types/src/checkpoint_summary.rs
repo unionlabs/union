@@ -1,6 +1,6 @@
 use blake2::{Blake2b, Digest as _};
 use unionlabs_primitives::{
-    encoding::{Base58, Base64, Encoding as _},
+    encoding::{Base64, Encoding as _},
     Bytes, FixedBytes,
 };
 

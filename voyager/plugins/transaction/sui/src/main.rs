@@ -5,6 +5,7 @@ use fastcrypto::{hash::HashFunction, traits::Signer};
 use ibc_union_spec::{datagram::Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
@@ -16,13 +17,16 @@ use sui_sdk::{
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
-        transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionData},
+        transaction::{CallArg, Command, ObjectArg, Transaction, TransactionData},
         Identifier,
     },
     SuiClientBuilder,
 };
-use tracing::instrument::{self, WithSubscriber};
-use unionlabs::primitives::{encoding::HexPrefixed, Bytes};
+use tracing::{debug, info, instrument};
+use unionlabs::{
+    primitives::{encoding::HexPrefixed, Bytes},
+    ErrorReporter,
+};
 use voyager_message::{
     data::Data,
     hook::SubmitTxHook,
@@ -78,13 +82,13 @@ impl Plugin for Module {
                 SuiObjectDataOptions::default().with_owner(),
             )
             .await
-            .unwrap()
+            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?
             .data
-            .unwrap()
+            .expect("ibc store object exists on chain")
             .owner
-            .unwrap()
+            .expect("owner will be present")
             .start_version()
-            .unwrap();
+            .expect("ibc store is shared, hence it has a start version");
 
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
@@ -95,8 +99,10 @@ impl Plugin for Module {
                 config.keyring.name,
                 config.keyring.keys.into_iter().map(|config| {
                     println!("{}", Bytes::<HexPrefixed>::new(config.value()));
-                    let pk =
-                        SuiKeyPair::decode(&String::from_utf8(config.value()).unwrap()).unwrap();
+                    let pk = SuiKeyPair::decode(
+                        &String::from_utf8(config.value()).expect("priv keys are utf8 strings"),
+                    )
+                    .expect("private key is valid");
 
                     let address = SuiAddress::from(&pk.public());
 
@@ -168,7 +174,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     .map(|message| {
                                         message.decode_datagram::<IbcUnion>().unwrap().unwrap()
                                     })
-                                    .collect(), // .collect::<Result<_, _>>()?,
+                                    .collect(),
                             ),
                         )
                         .into()
@@ -178,11 +184,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     (vec![idx], op)
                 })
                 .collect(),
-            // .collect::<RpcResult<_>>()?,
         })
     }
 
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::SubmitTransaction(msgs) => self
@@ -196,11 +201,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .coin_read_api()
                             .get_coins(sender, None, None, None)
                             .await
-                            .unwrap()
+                            .expect("sender is broke")
                             .data
                             .into_iter()
                             .next()
-                            .unwrap();
+                            .expect("sender has a gas token");
 
                         let gas_budget = 20_000_000;
                         let gas_price = self
@@ -208,9 +213,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .read_api()
                             .get_reference_gas_price()
                             .await
-                            .unwrap();
-
-                        println!("GAS PRICE: {}", gas_price);
+                            .map_err(|e| {
+                                ErrorObject::owned(
+                                    -1,
+                                    ErrorReporter(e)
+                                        .with_message("error fetching the reference gas price"),
+                                    None::<()>,
+                                )
+                            })?;
 
                         // create the transaction data that will be sent to the network.
                         //
@@ -223,7 +233,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         for (_, (_, module, entry_fn, arguments)) in msgs.into_iter().enumerate() {
                             let arguments = arguments
                                 .into_iter()
-                                .map(|arg| ptb.input(arg).unwrap())
+                                .map(|arg| ptb.input(arg).expect("input works"))
                                 .collect();
                             ptb.command(Command::move_call(
                                 self.ibc_handler_address,
@@ -253,11 +263,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         // use SuiKeyPair to sign the digest.
                         let sui_sig = pk.sign(&digest);
 
-                        // if you would like to verify the signature locally before submission, use this function.
-                        // if it fails to verify locally, the transaction will fail to execute in Sui.
                         sui_sig
                             .verify_secure(&intent_msg, sender, SignatureScheme::ED25519)
-                            .unwrap();
+                            .expect("sender has a valid signature");
+
+                        info!("submitting sui tx");
 
                         let transaction_response = self
                             .sui_client
@@ -271,11 +281,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 None,
                             )
                             .await
-                            .unwrap();
+                            .map_err(|e| {
+                                ErrorObject::owned(
+                                    -1,
+                                    ErrorReporter(e).with_message("error executing a tx"),
+                                    None::<()>,
+                                )
+                            })?;
 
-                        println!("{transaction_response:?}");
-
-                        // res.into_inner().transaction_failures
+                        debug!("{transaction_response:?}");
 
                         Ok(noop())
                     })
@@ -290,7 +304,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
         }
     }
 
-    // #[instrument(skip_all, fields(chain_id = %self.chain_id))]
+    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn callback(
         &self,
         _: &Extensions,

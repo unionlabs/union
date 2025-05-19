@@ -3,36 +3,29 @@ use std::fmt::Debug;
 use ibc_union_spec::{path::StorePath, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_light_client_types::{
     checkpoint_summary::CheckpointContents,
-    crypto::AuthorityStrongQuorumSignInfo,
+    digest::Digest,
     object::{Data, MoveObject, MoveObjectType, ObjectInner, StructTag, TypeTag},
     storage_proof::StorageProof,
-    transaction_effects::{TransactionEffects, TransactionEffectsV1, TransactionEffectsV2},
-    ObjectID,
+    transaction_effects::TransactionEffects,
+    Authenticator, ObjectID, Owner,
 };
 use sui_sdk::{
-    rpc_types::SuiTransactionBlockResponseOptions,
+    rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions},
     types::{
-        base_types::ObjectID as SuiObjectID,
-        effects::TransactionEvents,
-        full_checkpoint_content::{
-            CheckpointData as SuiCheckpointData, CheckpointTransaction as SuiCheckpointTransaction,
-        },
-        messages_checkpoint::{
-            CertifiedCheckpointSummary, CheckpointContents as SuiCheckpointContents,
-        },
-        object::Object,
-        transaction::Transaction,
+        base_types::ObjectID as SuiObjectID, effects::TransactionEvents,
+        messages_checkpoint::CertifiedCheckpointSummary, object::Object, transaction::Transaction,
     },
     SuiClientBuilder,
 };
 use tracing::instrument;
-use unionlabs::{ibc::core::client::height::Height, primitives::FixedBytes};
+use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     into_value,
     module::{ProofModuleInfo, ProofModuleServer},
@@ -102,13 +95,17 @@ impl Module {
     }
 }
 
+fn err<T: core::error::Error>(e: T, msg: &str) -> ErrorObject {
+    ErrorObject::owned(-1, ErrorReporter(e).with_message(msg), None::<()>)
+}
+
 #[async_trait]
 impl ProofModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query_ibc_proof(
         &self,
         _: &Extensions,
-        at: Height,
+        _: Height,
         path: StorePath,
     ) -> RpcResult<Option<(Value, ProofType)>> {
         let key = path.key();
@@ -118,14 +115,12 @@ impl ProofModuleServer<IbcUnion> for Module {
             key.get().as_slice(),
         );
 
-        println!("target object id: {}", target_object_id);
-
         let target_object = self
             .sui_client
             .read_api()
             .get_object_with_options(
                 SuiObjectID::new(*target_object_id.get()),
-                sui_sdk::rpc_types::SuiObjectDataOptions {
+                SuiObjectDataOptions {
                     show_type: false,
                     show_owner: true,
                     show_previous_transaction: true,
@@ -136,27 +131,36 @@ impl ProofModuleServer<IbcUnion> for Module {
                 },
             )
             .await
-            .unwrap()
+            .map_err(|e| err(e, "error fetching the object"))?
             .data
-            .unwrap();
+            .expect("data is fetched");
 
-        let previous_tx = target_object.previous_transaction.unwrap();
+        let previous_tx = target_object
+            .previous_transaction
+            .expect("tx info is requested");
+
         let checkpoint_number = self
             .sui_client
             .read_api()
             .get_transaction_with_options(previous_tx, SuiTransactionBlockResponseOptions::new())
             .await
-            .unwrap()
+            .map_err(|e| err(e, "error fetching the tx"))?
             .checkpoint
-            .unwrap();
-
-        println!("height: {at}, num: {checkpoint_number}");
+            .expect("checkpoint is fetched");
 
         let client = reqwest::Client::new();
         let req = format!("{}/{checkpoint_number}.chk", self.sui_object_store_rpc_url);
-        let res = client.get(req).send().await.unwrap().bytes().await.unwrap();
+        let res = client
+            .get(req)
+            .send()
+            .await
+            .map_err(|e| err(e, "error fetching the tx"))?
+            .bytes()
+            .await
+            .map_err(|e| err(e, "error fetching the tx"))?;
 
-        let (_, checkpoint) = bcs::from_bytes::<(u8, CheckpointData)>(&res).unwrap();
+        let (_, checkpoint) = bcs::from_bytes::<(u8, CheckpointData)>(&res)
+            .map_err(|e| err(e, "invalid checkpoint data"))?;
 
         let tx = checkpoint
             .transactions
@@ -164,12 +168,9 @@ impl ProofModuleServer<IbcUnion> for Module {
             .find(|tx| *tx.transaction.digest() == previous_tx)
             .unwrap();
 
-        let object: Object = target_object.try_into().unwrap();
-
-        let mut buf = vec![];
-        bcs::serialize_into(&mut buf, &object).unwrap();
-
-        let object: ObjectInner = bcs::from_bytes(&buf).unwrap();
+        let object = convert_object(target_object.try_into().expect(
+            "target object should have all the info needed to be able to make it into an object",
+        ));
 
         Ok(Some((
             into_value(StorageProof {
@@ -201,4 +202,84 @@ pub struct CheckpointTransaction {
     pub input_objects: Vec<Object>,
     /// The state of all output objects created or mutated or unwrapped by this transaction.
     pub output_objects: Vec<Object>,
+}
+
+/// convert an object into the local `ObjectInner` type
+fn convert_object(object: Object) -> ObjectInner {
+    let sui_sdk::types::object::Data::Move(object_data) = &object.data else {
+        panic!("package objects are never fetched");
+    };
+
+    ObjectInner {
+        data: Data::Move(MoveObject {
+            type_: if object_data.type_().is_gas_coin() {
+                MoveObjectType::GasCoin
+            } else if object_data.type_().is_staked_sui() {
+                MoveObjectType::StakedSui
+            } else if object_data.type_().is_coin() {
+                MoveObjectType::Coin(convert_type_tag(
+                    object_data.type_().coin_type_maybe().expect("type is coin"),
+                ))
+            } else {
+                panic!("no other possible states");
+            },
+            has_public_transfer: object_data.has_public_transfer(),
+            version: object_data.version().into(),
+            contents: object_data.contents().into(),
+        }),
+        owner: match &object.owner {
+            sui_sdk::types::object::Owner::AddressOwner(sui_address) => {
+                Owner::AddressOwner(sui_address.to_inner().into())
+            }
+            sui_sdk::types::object::Owner::ObjectOwner(sui_address) => {
+                Owner::ObjectOwner(sui_address.to_inner().into())
+            }
+            sui_sdk::types::object::Owner::Shared {
+                initial_shared_version,
+            } => Owner::Shared {
+                initial_shared_version: (*initial_shared_version).into(),
+            },
+            sui_sdk::types::object::Owner::Immutable => Owner::Immutable,
+            sui_sdk::types::object::Owner::ConsensusV2 {
+                start_version,
+                authenticator,
+            } => Owner::ConsensusV2 {
+                start_version: (*start_version).into(),
+                authenticator: Box::new(Authenticator::SingleOwner(
+                    authenticator.as_single_owner().to_inner().into(),
+                )),
+            },
+        },
+        previous_transaction: Digest(object.previous_transaction.into_inner().into()),
+        storage_rebate: object.storage_rebate,
+    }
+}
+
+fn convert_type_tag(tag: sui_sdk::types::TypeTag) -> TypeTag {
+    match tag {
+        sui_sdk::types::TypeTag::Bool => TypeTag::Bool,
+        sui_sdk::types::TypeTag::U8 => TypeTag::U8,
+        sui_sdk::types::TypeTag::U64 => TypeTag::U64,
+        sui_sdk::types::TypeTag::U128 => TypeTag::U128,
+        sui_sdk::types::TypeTag::Address => TypeTag::Address,
+        sui_sdk::types::TypeTag::Signer => TypeTag::Signer,
+        sui_sdk::types::TypeTag::Vector(type_tag) => {
+            TypeTag::Vector(Box::new(convert_type_tag(*type_tag)))
+        }
+        sui_sdk::types::TypeTag::Struct(struct_tag) => {
+            TypeTag::Struct(Box::new(convert_struct_tag(*struct_tag)))
+        }
+        sui_sdk::types::TypeTag::U16 => TypeTag::U16,
+        sui_sdk::types::TypeTag::U32 => TypeTag::U32,
+        sui_sdk::types::TypeTag::U256 => TypeTag::U256,
+    }
+}
+
+fn convert_struct_tag(tag: move_core_types::language_storage::StructTag) -> StructTag {
+    StructTag {
+        address: tag.address.into_bytes().into(),
+        module: tag.module.into_string(),
+        name: tag.name.into_string(),
+        type_params: tag.type_params.into_iter().map(convert_type_tag).collect(),
+    }
 }

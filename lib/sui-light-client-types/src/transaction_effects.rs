@@ -1,11 +1,9 @@
 use blake2::{Blake2b, Digest as _};
-use serde::{Deserialize, Serialize};
 
-use crate::{
-    checkpoint_summary::GasCostSummary, digest::Digest, ObjectID, ObjectRef, Owner, SuiAddress,
-};
+use crate::{checkpoint_summary::GasCostSummary, digest::Digest, ObjectID, ObjectRef, Owner};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum TransactionEffects {
     V1(TransactionEffectsV1),
@@ -13,7 +11,8 @@ pub enum TransactionEffects {
 }
 
 /// The response from processing a transaction or a certified transaction
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionEffectsV1 {
     /// The status of the execution
@@ -52,7 +51,8 @@ pub struct TransactionEffectsV1 {
     pub dependencies: Vec<Digest>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct TransactionEffectsV2 {
     /// The status of the execution
@@ -89,7 +89,8 @@ pub struct TransactionEffectsV2 {
     pub aux_data_digest: Option<Digest>,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct EffectsObjectChange {
     // input_state and output_state are the core fields that's required by
@@ -107,7 +108,8 @@ pub struct EffectsObjectChange {
 
 pub type VersionDigest = (u64, Digest);
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ObjectIn {
     NotExist,
@@ -115,7 +117,8 @@ pub enum ObjectIn {
     Exist((VersionDigest, Owner)),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ObjectOut {
     /// Same definition as in ObjectIn.
@@ -127,7 +130,8 @@ pub enum ObjectOut {
     PackageWrite(VersionDigest),
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum UnchangedSharedKind {
     /// Read-only shared objects from the input. We don't really need ObjectDigest
@@ -143,7 +147,8 @@ pub enum UnchangedSharedKind {
     PerEpochConfig,
 }
 
-#[derive(Copy, Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum IDOperation {
     None,
@@ -151,7 +156,8 @@ pub enum IDOperation {
     Deleted,
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum ExecutionStatus {
     // We don't care about the failure case

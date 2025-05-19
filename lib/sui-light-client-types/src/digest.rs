@@ -1,14 +1,13 @@
-use core::{fmt::Display, ops::Deref};
+use core::fmt::Display;
 
-use serde::{Deserialize, Serialize};
 use unionlabs_primitives::{encoding::Base58, Bytes, FixedBytes};
 
 #[derive(Debug, Eq, PartialEq, Copy, Clone)]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
-// TODO(aeryz): serde_as
 pub struct Digest(pub FixedBytes<32, Base58>);
 
-impl Serialize for Digest {
+#[cfg(feature = "serde")]
+impl serde::Serialize for Digest {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
         S: serde::Serializer,
@@ -19,7 +18,8 @@ impl Serialize for Digest {
     }
 }
 
-impl<'de> Deserialize<'de> for Digest {
+#[cfg(feature = "serde")]
+impl<'de> serde::Deserialize<'de> for Digest {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: serde::Deserializer<'de>,
@@ -27,14 +27,6 @@ impl<'de> Deserialize<'de> for Digest {
         let bytes = Bytes::<Base58>::deserialize(deserializer)?;
 
         Ok(Self(FixedBytes::new(bytes.as_ref().try_into().unwrap())))
-    }
-}
-
-impl Deref for Digest {
-    type Target = FixedBytes<32, Base58>;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
     }
 }
 

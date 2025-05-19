@@ -9,12 +9,13 @@ use ibc_union_spec::{
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use sui_sdk::{rpc_types::SuiTransactionBlockResponseOptions, SuiClientBuilder};
 use tracing::{info, instrument};
-use unionlabs::{ibc::core::client::height::Height, primitives::H256};
+use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
     call::{Call, WaitForHeight},
     data::{ChainEvent, Data},
@@ -124,7 +125,14 @@ impl Module {
                     .read_api()
                     .get_latest_checkpoint_sequence_number()
                     .await
-                    .unwrap();
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(e)
+                                .with_message("error fetching the latest sequence number"),
+                            None::<()>,
+                        )
+                    })?;
 
                 match latest_height.cmp(&latest_height) {
                     Ordering::Less => {
@@ -213,7 +221,13 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .read_api()
                     .get_checkpoint(sui_sdk::rpc_types::CheckpointId::SequenceNumber(height))
                     .await
-                    .unwrap()
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(e).with_message("error fetching a checkpoint"),
+                            None::<()>,
+                        )
+                    })?
                     .transactions;
 
                 let events = self
@@ -224,11 +238,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         SuiTransactionBlockResponseOptions::new().with_events(),
                     )
                     .await
-                    .unwrap()
+                    .map_err(|e| {
+                        ErrorObject::owned(
+                            -1,
+                            ErrorReporter(e).with_message("error fetching txs"),
+                            None::<()>,
+                        )
+                    })?
                     .into_iter()
                     .flat_map(|tx| {
                         tx.events
-                            .unwrap()
+                            .expect("events exist")
                             .data
                             .into_iter()
                             .map(move |events| (events, tx.digest))
