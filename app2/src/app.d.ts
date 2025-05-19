@@ -1,8 +1,6 @@
 import type { Window as KeplrWindow } from "@keplr-wallet/types"
 import type { LeapWindow } from "@leapwallet/types"
-import type { Session } from "@supabase/supabase-js"
 import type { AptosBrowserWallet } from "@unionlabs/client"
-import type { Option } from "effect"
 
 type FeaturesQuery = ReturnType<typeof enabledFeatures>
 type Features = NonNullable<FeaturesQuery["data"]>["v1_ibc_union_chains"]
@@ -18,12 +16,12 @@ interface AptosWindow {
 
 declare global {
   namespace App {
-    interface Locals {
-      session: Option.Option<Session>
-    }
-    interface PageData {
-      session: Option.Option<Session>
-    }
+    // interface Locals {
+    //   session: Option.Option<Session>
+    // }
+    // interface PageData {
+    //   session: Option.Option<Session>
+    // }
   }
 
   interface Window extends AptosWindow, KeplrWindow, LeapWindow, Browser {

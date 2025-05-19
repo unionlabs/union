@@ -1,3 +1,4 @@
+import type { Edition } from "$lib/themes"
 import { Match, String as Str } from "effect"
 import type { LayoutLoad } from "./$types"
 
@@ -22,5 +23,7 @@ export const load: LayoutLoad = ({ url }) => {
     Match.orElse(() => "app" as const),
   )
 
-  return { edition }
+  return {
+    edition,
+  }
 }
