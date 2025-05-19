@@ -601,6 +601,7 @@ module zkgm::zkgm_relay {
             proof_height,
             vector[1]
         );
+        i = 0;
         while (i < vector::length(&packets)) {
             let ibc_packet = *vector::borrow(&packets, i);
             let raw_zkgm_packet = packet::data(&ibc_packet);
@@ -630,8 +631,8 @@ module zkgm::zkgm_relay {
                 // dispatcher_zkgm::set_return_value<ZKGMProof>(
                 //     new_ucs_relay_proof(), return_value
                 // );
-            }
-
+            };
+            i = i + 1;
         };
     }
 
