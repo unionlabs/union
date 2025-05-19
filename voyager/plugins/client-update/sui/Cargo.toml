@@ -12,24 +12,24 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-embed-commit                = { workspace = true }
-enumorph                    = { workspace = true }
-sui-light-client-types      = { workspace = true, features = ["serde", "bincode"] }
-jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
-macros                      = { workspace = true }
-reqwest                     = { workspace = true, features = ["json"] }
-serde                       = { workspace = true, features = ["derive"] }
-serde_json                  = { workspace = true }
-subset-of                   = { workspace = true }
-thiserror                   = { workspace = true }
-tokio                       = { workspace = true }
-tracing                     = { workspace = true }
-unionlabs                   = { workspace = true }
-voyager-message             = { workspace = true }
-voyager-vm                  = { workspace = true }
-bcs = { workspace = true }
+bcs                    = { workspace = true }
+embed-commit           = { workspace = true }
+enumorph               = { workspace = true }
+jsonrpsee              = { workspace = true, features = ["macros", "server", "tracing"] }
+macros                 = { workspace = true }
+reqwest                = { workspace = true, features = ["json"] }
+serde                  = { workspace = true, features = ["derive"] }
+serde_json             = { workspace = true }
+subset-of              = { workspace = true }
+sui-light-client-types = { workspace = true, features = ["serde", "bincode"] }
+thiserror              = { workspace = true }
+tokio                  = { workspace = true }
+tracing                = { workspace = true }
+unionlabs              = { workspace = true }
+voyager-message        = { workspace = true }
+voyager-vm             = { workspace = true }
 
-sui_sdk       = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
 
 [dev-dependencies]
 hex-literal = { workspace = true }

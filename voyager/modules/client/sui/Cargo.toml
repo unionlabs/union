@@ -12,13 +12,13 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-embed-commit                = { workspace = true }
-jsonrpsee                   = { workspace = true, features = ["macros", "server", "tracing"] }
+embed-commit           = { workspace = true }
+jsonrpsee              = { workspace = true, features = ["macros", "server", "tracing"] }
+serde                  = { workspace = true, features = ["derive"] }
+serde_json             = { workspace = true }
 sui-light-client-types = { workspace = true, features = ["serde", "ethabi", "bincode"] }
-serde                       = { workspace = true, features = ["derive"] }
-serde_json                  = { workspace = true }
-thiserror                   = { workspace = true }
-tokio                       = { workspace = true }
-tracing                     = { workspace = true }
-unionlabs                   = { workspace = true, features = ["bincode"] }
-voyager-message             = { workspace = true }
+thiserror              = { workspace = true }
+tokio                  = { workspace = true }
+tracing                = { workspace = true }
+unionlabs              = { workspace = true, features = ["bincode"] }
+voyager-message        = { workspace = true }

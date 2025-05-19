@@ -12,22 +12,20 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
-clap              = { workspace = true, features = ["derive"] }
-embed-commit      = { workspace = true }
-ibc-union-spec    = { workspace = true, features = ["serde"] }
-jsonrpsee         = { workspace = true, features = ["macros", "server", "tracing"] }
-reqwest           = { workspace = true, features = ["json"] }
-serde             = { workspace = true, features = ["derive"] }
-serde_json        = { workspace = true }
-tokio             = { workspace = true }
-tracing           = { workspace = true }
-unionlabs         = { workspace = true }
-voyager-message   = { workspace = true }
-voyager-vm        = { workspace = true }
-sui-verifier = { workspace = true }
+bcs                    = { workspace = true }
+clap                   = { workspace = true, features = ["derive"] }
+embed-commit           = { workspace = true }
+ibc-union-spec         = { workspace = true, features = ["serde"] }
+jsonrpsee              = { workspace = true, features = ["macros", "server", "tracing"] }
+move-core-types        = { git = "https://github.com/mystenlabs/sui" }
+reqwest                = { workspace = true, features = ["json"] }
+serde                  = { workspace = true, features = ["derive"] }
+serde_json             = { workspace = true }
 sui-light-client-types = { workspace = true }
-bcs = { workspace = true }
-move-core-types = { git = "https://github.com/mystenlabs/sui" }
-
-
+sui-verifier           = { workspace = true }
+sui_sdk                = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+tokio                  = { workspace = true }
+tracing                = { workspace = true }
+unionlabs              = { workspace = true }
+voyager-message        = { workspace = true }
+voyager-vm             = { workspace = true }

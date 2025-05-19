@@ -9,7 +9,6 @@ pub struct ConsensusState {
 
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
-    use alloy::sol_types::SolValue;
     use unionlabs::impl_ethabi_via_try_from_into;
 
     use super::*;

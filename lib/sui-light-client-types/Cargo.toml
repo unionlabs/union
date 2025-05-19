@@ -16,19 +16,19 @@ alloy                = { workspace = true, features = ["sol-types"], optional = 
 bcs                  = { workspace = true }
 bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
 blake2               = "0.10.6"
-roaring = "0.10.12"
+cosmwasm-std         = { workspace = true, features = ["cosmwasm_2_1"] }
+roaring              = "0.10.12"
 serde                = { workspace = true, optional = true, features = ["derive"] }
+serde_repr           = { version = "0.1.20", optional = true }
+serde_with           = { workspace = true, features = ["macros", "json"] }
 thiserror            = { workspace = true }
 typenum              = { version = "1.17.0", default-features = false }
 unionlabs            = { workspace = true }
 unionlabs-primitives = { workspace = true, features = ["base58"] }
-cosmwasm-std = { workspace = true, features = ["cosmwasm_2_1"]}
-serde_repr = { version = "0.1.20", optional = true }
-serde_with   = { workspace = true, features = ["macros", "json"] }
 
 [dev-dependencies]
-serde_json = { workspace = true }
 hex-literal = { workspace = true }
+serde_json  = { workspace = true }
 
 [features]
 default = ["serde"]
