@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation"
 import { page } from "$app/state"
 import { createAuthError } from "$lib/dashboard/errors"
-import { uiStore } from "$lib/dashboard/stores/ui"
+  import { errorStore } from "$lib/dashboard/stores/errors.svelte";
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { Option } from "effect"
 import { onMount } from "svelte"
@@ -14,7 +14,7 @@ onMount(() => {
   const errorDescription = page.url.searchParams.get("error_description")
 
   if (error) {
-    uiStore.showError(createAuthError(error, errorDescription || undefined))
+    errorStore.showError(createAuthError(error, errorDescription || undefined))
   }
 
   // Then ensure minimum wait time
