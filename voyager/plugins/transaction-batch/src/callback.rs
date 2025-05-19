@@ -11,7 +11,7 @@ use tracing::{debug, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
     call::{SubmitTx, WaitForClientUpdate, WaitForHeightRelative, WaitForTrustedHeight},
-    data::{Data, IbcDatagram, OrderedHeaders},
+    data::{Data, EventProvableHeight, IbcDatagram, OrderedHeaders},
     primitives::{ChainId, ClientStateMeta, IbcSpec, QueryHeight},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
 };
@@ -126,13 +126,15 @@ where
         promise(
             batch.into_iter().map(|batchable_event| {
                 // this is an assert and not an error because it indicates a bug in the business logic of this plugin. if a message was manually inserted into the queue and this assert was hit, it means the message is invalid.
-                assert!(
-                    batchable_event.provable_height <= new_trusted_height,
-                    "the provable height of the event is less than the trusted height \
-                    of the client ({} <= {}, client {client_id})",
-                    batchable_event.provable_height,
-                    new_trusted_height
-                );
+                if let EventProvableHeight::Min(provable_height) = batchable_event.provable_height {
+                    assert!(
+                        provable_height <= new_trusted_height,
+                        "the provable height of the event is less than the trusted height \
+                        of the client ({:?} <= {}, client {client_id})",
+                        batchable_event.provable_height,
+                        new_trusted_height
+                    );
+                }
 
                 let origin_chain_id = client_state_meta.counterparty_chain_id.clone();
                 let target_chain_id = module_server.chain_id.clone();
@@ -141,7 +143,7 @@ where
                     %origin_chain_id,
                     %target_chain_id,
                     event = V::event_name(&batchable_event.event),
-                    provable_height = %batchable_event.provable_height,
+                    provable_height = ?batchable_event.provable_height,
                     first_seen_at = batchable_event.first_seen_at,
                     "batching event"
                 );

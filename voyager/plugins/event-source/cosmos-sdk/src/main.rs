@@ -35,7 +35,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, WaitForHeight},
-    data::{ChainEvent, Data},
+    data::{ChainEvent, Data, EventProvableHeight},
     filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
@@ -660,7 +660,7 @@ impl Module {
         event: IbcEvent,
     ) -> RpcResult<Op<VoyagerMessage>> {
         // events at height N are provable at height N+k where k<0
-        let provable_height = height.increment();
+        let provable_height = EventProvableHeight::Min(height.increment());
 
         debug!(?event, "raw event");
 

@@ -31,7 +31,7 @@ use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256, ErrorReporter};
 use voyager_message::{
     call::{Call, WaitForHeight},
-    data::{ChainEvent, Data},
+    data::{ChainEvent, Data, EventProvableHeight},
     filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
@@ -779,7 +779,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     // TODO: Review this, does it need to be +1?
-                    provable_height: self.make_height(height),
+                    provable_height: EventProvableHeight::Min(self.make_height(height)),
                     event: into_value::<FullEvent>(full_event),
                     ibc_spec_id: IbcUnion::ID,
                 }))

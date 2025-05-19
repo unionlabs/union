@@ -34,7 +34,7 @@ use unionlabs::{
 };
 use voyager_message::{
     call::{Call, WaitForHeight},
-    data::{ChainEvent, Data},
+    data::{ChainEvent, Data, EventProvableHeight},
     filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
@@ -528,7 +528,7 @@ impl Module {
     ) -> RpcResult<Op<VoyagerMessage>> {
         trace!(?event, "raw event");
 
-        let provable_height = Height::new(block_number);
+        let min_provable_height = Height::new(block_number);
 
         // TODO: Make short circuiting configurable OR always short circuit on noop events
         match event {
@@ -552,7 +552,7 @@ impl Module {
                     client_info: client_info.clone(),
                     counterparty_chain_id: ChainId::new(raw_event.counterparty_chain_id),
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -572,7 +572,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         client_id,
                     )
                     .await?;
@@ -591,7 +591,7 @@ impl Module {
                     client_info: client_info.clone(),
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -609,7 +609,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         client_id,
                     )
                     .await?;
@@ -629,7 +629,7 @@ impl Module {
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
                     ibc_spec_id: IbcUnion::ID,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     event: into_value::<FullEvent>(event),
                 }))
             }
@@ -647,7 +647,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         client_id,
                     )
                     .await?;
@@ -667,7 +667,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -686,7 +686,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         client_id,
                     )
                     .await?;
@@ -706,7 +706,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -725,7 +725,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         client_id,
                     )
                     .await?;
@@ -745,7 +745,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -757,7 +757,7 @@ impl Module {
                 let channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        QueryHeight::Specific(provable_height),
+                        QueryHeight::Specific(min_provable_height),
                         ChannelPath { channel_id },
                     )
                     .await?;
@@ -770,7 +770,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        QueryHeight::Specific(provable_height),
+                        QueryHeight::Specific(min_provable_height),
                         ConnectionPath { connection_id },
                     )
                     .await?;
@@ -782,7 +782,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         connection.client_id,
                     )
                     .await?;
@@ -803,7 +803,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -816,7 +816,7 @@ impl Module {
                 let channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        QueryHeight::Specific(provable_height),
+                        QueryHeight::Specific(min_provable_height),
                         ChannelPath { channel_id },
                     )
                     .await?;
@@ -829,7 +829,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        QueryHeight::Specific(provable_height),
+                        QueryHeight::Specific(min_provable_height),
                         ConnectionPath { connection_id },
                     )
                     .await?;
@@ -841,7 +841,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         connection.client_id,
                     )
                     .await?;
@@ -863,7 +863,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -876,7 +876,7 @@ impl Module {
                 let channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        QueryHeight::Specific(provable_height),
+                        QueryHeight::Specific(min_provable_height),
                         ChannelPath { channel_id },
                     )
                     .await?;
@@ -889,7 +889,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        QueryHeight::Specific(provable_height),
+                        QueryHeight::Specific(min_provable_height),
                         ConnectionPath { connection_id },
                     )
                     .await?;
@@ -901,7 +901,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         connection.client_id,
                     )
                     .await?;
@@ -923,7 +923,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -936,7 +936,7 @@ impl Module {
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        QueryHeight::Specific(provable_height),
+                        QueryHeight::Specific(min_provable_height),
                         ConnectionPath { connection_id },
                     )
                     .await?;
@@ -948,7 +948,7 @@ impl Module {
                 let client_state_meta = voyager_client
                     .client_state_meta::<IbcUnion>(
                         self.chain_id.clone(),
-                        provable_height.into(),
+                        min_provable_height.into(),
                         connection.client_id,
                     )
                     .await?;
@@ -956,7 +956,7 @@ impl Module {
                 let channel = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
-                        QueryHeight::Specific(provable_height),
+                        QueryHeight::Specific(min_provable_height),
                         ChannelPath { channel_id },
                     )
                     .await?;
@@ -978,7 +978,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -1018,7 +1018,7 @@ impl Module {
                             destination_channel,
                         ) = self
                             .make_packet_metadata(
-                                provable_height,
+                                min_provable_height,
                                 packet.source_channel_id,
                                 voyager_client,
                             )
@@ -1059,7 +1059,7 @@ impl Module {
                                     client_info,
                                     counterparty_chain_id,
                                     tx_hash,
-                                    provable_height,
+                                    provable_height: EventProvableHeight::Min(min_provable_height),
                                     ibc_spec_id: IbcUnion::ID,
                                     event: into_value::<FullEvent>(event),
                                 }))
@@ -1073,7 +1073,7 @@ impl Module {
             IbcEvents::BatchSend(raw_event) => {
                 let (counterparty_chain_id, client_info, source_channel, destination_channel) =
                     self.make_packet_metadata(
-                        provable_height,
+                        min_provable_height,
                         raw_event.channel_id.try_into().unwrap(),
                         voyager_client,
                     )
@@ -1093,7 +1093,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -1102,7 +1102,7 @@ impl Module {
             IbcEvents::PacketTimeout(raw_event) => {
                 let (counterparty_chain_id, client_info, source_channel, destination_channel) =
                     self.make_packet_metadata(
-                        provable_height,
+                        min_provable_height,
                         raw_event.channel_id.try_into().unwrap(),
                         voyager_client,
                     )
@@ -1136,7 +1136,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -1144,7 +1144,7 @@ impl Module {
             IbcEvents::PacketAck(raw_event) => {
                 let (counterparty_chain_id, client_info, source_channel, destination_channel) =
                     self.make_packet_metadata(
-                        provable_height,
+                        min_provable_height,
                         raw_event.channel_id.try_into().unwrap(),
                         voyager_client,
                     )
@@ -1179,7 +1179,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -1233,7 +1233,7 @@ impl Module {
             IbcEvents::WriteAck(raw_event) => {
                 let (counterparty_chain_id, client_info, destination_channel, source_channel) =
                     self.make_packet_metadata(
-                        provable_height,
+                        min_provable_height,
                         raw_event.channel_id.try_into().unwrap(),
                         voyager_client,
                     )
@@ -1289,7 +1289,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
@@ -1297,7 +1297,7 @@ impl Module {
             IbcEvents::PacketRecv(raw_event) => {
                 let (counterparty_chain_id, client_info, destination_channel, source_channel) =
                     self.make_packet_metadata(
-                        provable_height,
+                        min_provable_height,
                         raw_event.channel_id.try_into().unwrap(),
                         voyager_client,
                     )
@@ -1332,7 +1332,7 @@ impl Module {
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height,
+                    provable_height: EventProvableHeight::Min(min_provable_height),
                     ibc_spec_id: IbcUnion::ID,
                     event: into_value::<FullEvent>(event),
                 }))
