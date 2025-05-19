@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation"
 import { page } from "$app/state"
 import { createAuthError } from "$lib/dashboard/errors"
-  import { errorStore } from "$lib/dashboard/stores/errors.svelte";
+import { errorStore } from "$lib/dashboard/stores/errors.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { Option } from "effect"
 import { onMount } from "svelte"
