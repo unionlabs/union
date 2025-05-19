@@ -35,8 +35,6 @@ use voyager_message::{
 };
 use voyager_vm::BoxDynError;
 
-pub mod events;
-
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     Module::run().await
