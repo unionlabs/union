@@ -28,7 +28,7 @@ bcs                           = { workspace = true }
 hex-literal                   = { workspace = true }
 serde_json                    = { workspace = true }
 state-lens-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
-unionlabs                     = { workspace = true, features = ["test-utils"] }
+unionlabs                     = { workspace = true, features = ["test-utils", "bcs"] }
 
 [features]
 default = []

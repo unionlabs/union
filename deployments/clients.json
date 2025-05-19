@@ -27,7 +27,7 @@
     },
     "7": {
       "counterparty": "corn.21000001",
-      "client_type": "state-lens/ics23/mpt",
+      "client_type": "arbitrum",
       "refresh_rate": "500"
     },
     "10": {
@@ -116,6 +116,7 @@
     },
     "5": {
       "counterparty": "xion.xion-testnet-2",
+      "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "500"
     }
   },

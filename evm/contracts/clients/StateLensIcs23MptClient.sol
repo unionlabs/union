@@ -81,13 +81,47 @@ library StateLensIcs23MptLib {
         return keccak256(encode(clientState));
     }
 
-    function extract(
+    function extractBytes32(
         bytes calldata input,
         uint16 offset
     ) internal pure returns (bytes32 val) {
         assembly {
             val := calldataload(add(input.offset, offset))
         }
+    }
+
+    function extractUint64(
+        bytes calldata input,
+        uint16 offset
+    ) internal pure returns (uint64) {
+        bytes8 val;
+        assembly {
+            val := calldataload(add(input.offset, offset))
+        }
+        return uint64(val);
+    }
+
+    function extractL2ConsensusState(
+        bytes calldata rawL2ConsensusState,
+        uint16 timestampOffset,
+        uint16 stateRootOffset,
+        uint16 storageRootOffset
+    )
+        internal
+        pure
+        returns (uint64 l2Timestamp, bytes32 l2StateRoot, bytes32 l2StorageRoot)
+    {
+        l2Timestamp = uint64(
+            StateLensIcs23MptLib.extractUint64(
+                rawL2ConsensusState, timestampOffset
+            )
+        );
+        l2StateRoot = StateLensIcs23MptLib.extractBytes32(
+            rawL2ConsensusState, stateRootOffset
+        );
+        l2StorageRoot = StateLensIcs23MptLib.extractBytes32(
+            rawL2ConsensusState, storageRootOffset
+        );
     }
 }
 
@@ -208,19 +242,12 @@ contract StateLensIcs23MptClient is
             revert StateLensIcs23MptLib.ErrInvalidL1Proof();
         }
 
-        bytes calldata rawL2ConsensusState = header.l2ConsensusState;
-        uint64 l2Timestamp = uint64(
-            uint256(
-                StateLensIcs23MptLib.extract(
-                    rawL2ConsensusState, clientState.timestampOffset
-                )
-            )
-        );
-        bytes32 l2StateRoot = StateLensIcs23MptLib.extract(
-            rawL2ConsensusState, clientState.stateRootOffset
-        );
-        bytes32 l2StorageRoot = StateLensIcs23MptLib.extract(
-            rawL2ConsensusState, clientState.storageRootOffset
+        (uint64 l2Timestamp, bytes32 l2StateRoot, bytes32 l2StorageRoot) =
+        StateLensIcs23MptLib.extractL2ConsensusState(
+            header.l2ConsensusState,
+            clientState.timestampOffset,
+            clientState.stateRootOffset,
+            clientState.storageRootOffset
         );
 
         if (header.l2Height > clientState.l2LatestHeight) {

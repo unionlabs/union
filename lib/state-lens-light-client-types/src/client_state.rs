@@ -29,22 +29,40 @@ use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 ///
 /// ## EthAbi
 ///
-/// EthAbi encoding is supported for this structure. This is achieved by flattening the tuple of
-/// `Extra` into the tuple of `ClientState`.
+/// EthAbi encoding is supported for this structure through the [`DecodeExtra`] and
+/// [`ExtraToTokens`] traits.
 ///
-/// The standalone client state tuple:
+/// The following is an example implementation of these traits for `Extra`:
+///
+/// ```rust,ignore
+/// // decodes as (uint64,string)
+/// impl DecodeExtra for Extra {
+///     fn decode_extra(
+///         decoder: &mut alloy::dyn_abi::Decoder,
+///     ) -> Result<Self, alloy::dyn_abi::Error> {
+///         Ok(Self {
+///             a: u64::detokenize(decoder.take_word()?.into()),
+///             b: String::detokenize(decoder.decode::<PackedSeqToken>()?),
+///         })
+///     }
+/// }
+///
+///
+/// // encodes as (uint64,string)
+/// impl ExtraToTokens for Extra {
+///     fn encode_extra_to_dyn_value(self) -> Vec<DynSolValue> {
+///         vec![self.a.into(), self.b.into()]
+///     }
+/// }
+/// ```
+///
+/// With these implementations, and the standalone client state tuple:
 ///
 /// ```txt
 /// (string,uint32,uint32,uint64)
 /// ```
 ///
-/// And the tuple of `Extra`:
-///
-/// ```txt
-/// (uint64,string)
-/// ```
-///
-/// This then becomes:
+/// `ClientState<Extra>` is then encoded and decoded as if it were this tuple:
 ///
 /// ```txt
 /// (string,uint32,uint32,uint64,uint64,string)
@@ -63,12 +81,12 @@ use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 /// }
 /// ```
 ///
-/// The expected encoding of this tuple is ***unprefixed***. In solidity, `abi.encode(value)`
-/// ***MUST NOT*** be used, as this will wrap the entire structure in a single item tuple. Instead,
-/// use `abi.encode(value.l2_chain_id,value.l1_client_id, value.l2_client_id,
-/// value.l2_latest_height, value.a, value.b)`. Although this is more verbose, it results in a
-/// consistent and predictable encoding and decoding. This also enables certain optimizations in
-/// solidity, such as directly decoding the state from calldata:
+/// The encoding of this tuple is ***unprefixed***. In solidity, `abi.encode(value)` ***MUST NOT***
+/// be used, as this will wrap the entire structure in a single item tuple. Instead, use
+/// `abi.encode(value.l2_chain_id,value.l1_client_id, value.l2_client_id, value.l2_latest_height,
+/// value.a, value.b)`. Although this is more verbose, it results in a consistent and predictable
+/// encoding and decoding. This also enables certain optimizations in solidity, such as directly
+/// decoding the state from calldata:
 ///
 /// ```solidity
 /// ClientState calldata clientState;
@@ -77,12 +95,8 @@ use unionlabs::tuple::{AsTuple, Tuple, TupleAsRef};
 /// }
 /// ```
 ///
-/// In rust, `abi_encode_params` ***MUST*** be used. This has the same effect as the per-field
-/// `abi.encode` in solidity.
-///
-/// NOTE: For ethabi encoding, `Extra` must implement [`SolType`][alloy::sol_types::SolType],
-/// [`SolValue`][alloy::sol_types::SolValue], and
-/// [`SolTypeValue`][alloy::sol_types::private::SolTypeValue].
+/// In rust, `Encode<EthAbi>` ***MUST*** be used (as it uses `abi_encode_params` internally). This
+/// has the same effect as the per-field `abi.encode` in solidity.
 ///
 /// ## JSON
 ///
@@ -194,128 +208,84 @@ where
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use alloy::{
-        dyn_abi::abi::{
-            token::{PackedSeqToken, WordToken},
-            Token, TokenSeq,
-        },
-        sol_types::{
-            private::SolTypeValue,
-            sol_data::{String as SolString, Uint},
-            SolType, SolValue,
-        },
+        dyn_abi::{abi::token::PackedSeqToken, Decoder, DynSolValue},
+        sol_types::SolValue,
     };
     use ibc_union_spec::ClientId;
-    use tuple_join::{Join, Joined};
+    use unionlabs::encoding::{Decode, Encode, EthAbi};
 
     use crate::ClientState;
 
-    type ClientStateTokenTuple<'a> = (PackedSeqToken<'a>, WordToken, WordToken, WordToken);
-    type TokenOfSolValue<'a, T> = <<T as SolValue>::SolType as SolType>::Token<'a>;
+    /// Decode this type from the given decoder. This allows for dynamic decoding depending on the
+    /// values decoded.
+    pub trait DecodeExtra: Sized {
+        fn decode_extra(decoder: &mut Decoder) -> Result<Self, alloy::dyn_abi::Error>;
+    }
 
-    impl<Extra> SolType for ClientState<Extra>
-    where
-        for<'a> Extra:
-            SolValue<SolType: SolType<RustType = Extra, Token<'a>: TokenSeq<'a>>> + 'static,
-        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Clone + Token<'a>>,
-    {
-        type RustType = Self;
+    /// Encode this value into a stream of tokens. This allows for dynamic encoding depending on the
+    /// values of self.
+    pub trait ExtraToTokens: Sized {
+        fn encode_extra_to_dyn_value(self) -> Vec<DynSolValue>;
+    }
 
-        type Token<'a> = <ClientStateTokenTuple<'a> as Join<TokenOfSolValue<'a, Extra>>>::Out;
+    impl<Extra: ExtraToTokens> Encode<EthAbi> for ClientState<Extra> {
+        fn encode(self) -> Vec<u8> {
+            let mut dt = vec![
+                DynSolValue::from(self.l2_chain_id),
+                DynSolValue::from(self.l1_client_id.raw()),
+                DynSolValue::from(self.l2_client_id.raw()),
+                DynSolValue::from(self.l2_latest_height),
+            ];
 
-        const SOL_NAME: &'static str = "ClientState";
+            dt.extend(self.extra.encode_extra_to_dyn_value());
 
-        // dynamic due to containing string
-        const ENCODED_SIZE: Option<usize> = None;
-
-        // dynamic due to containing string
-        const PACKED_ENCODED_SIZE: Option<usize> = None;
-
-        fn valid_token(token: &Self::Token<'_>) -> bool {
-            // incredibly poor api, we must first validate the input in this method and then actually decode it in Self::detokenize. as such we must clone here, since we cannot .split() on a ref tuple
-            let token: Self::Token<'_> = token.clone();
-
-            let ((l2_chain_id, l1_client_id, l2_client_id, l2_latest_height), extra_tokens): (
-                ClientStateTokenTuple,
-                TokenOfSolValue<Extra>,
-            ) = token.split();
-
-            SolString::valid_token(&l2_chain_id)
-                && <Uint<32>>::valid_token(&l1_client_id)
-                && <Uint<32>>::valid_token(&l2_client_id)
-                && <Uint<64>>::valid_token(&l2_latest_height)
-                && Extra::SolType::valid_token(&extra_tokens)
-        }
-
-        fn detokenize(token: Self::Token<'_>) -> Self::RustType {
-            let ((l2_chain_id, l1_client_id, l2_client_id, l2_latest_height), extra_tokens): (
-                ClientStateTokenTuple,
-                TokenOfSolValue<Extra>,
-            ) = token.split();
-
-            Self {
-                l2_chain_id: <SolString as SolType>::detokenize(l2_chain_id),
-                l1_client_id: ClientId::from_raw(<Uint<32> as SolType>::detokenize(l1_client_id))
-                    .expect("???"),
-                l2_client_id: ClientId::from_raw(<Uint<32> as SolType>::detokenize(l2_client_id))
-                    .expect("???"),
-                l2_latest_height: <Uint<64> as SolType>::detokenize(l2_latest_height),
-                extra: <Extra::SolType as SolType>::detokenize(extra_tokens),
-            }
+            DynSolValue::Tuple(dt).abi_encode_params()
         }
     }
 
-    impl<Extra> SolTypeValue<Self> for ClientState<Extra>
-    where
-        for<'a> Extra:
-            SolValue<SolType: SolType<RustType = Extra, Token<'a>: TokenSeq<'a>>> + 'static,
-        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Clone + Token<'a>>,
-    {
-        fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
-            let cs_tuple: ClientStateTokenTuple = (
-                SolString::tokenize(&self.l2_chain_id),
-                <Uint<32>>::tokenize(&self.l1_client_id.raw()),
-                <Uint<32>>::tokenize(&self.l2_client_id.raw()),
-                <Uint<64>>::tokenize(&self.l2_latest_height),
-            );
+    impl<Extra: DecodeExtra> Decode<EthAbi> for ClientState<Extra> {
+        type Error = alloy::dyn_abi::Error;
 
-            let extra_tuple = Extra::stv_to_tokens(&self.extra);
+        fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
+            let mut decoder = Decoder::new(bytes, true);
 
-            cs_tuple.join(extra_tuple)
+            let l2_chain_id =
+                String::from_utf8(decoder.decode::<PackedSeqToken>()?.into_vec()).unwrap();
+            let l1_client_id = decoder.take_word()?;
+            let l2_client_id = decoder.take_word()?;
+            let l2_latest_height = decoder.take_word()?;
+
+            let extra = Extra::decode_extra(&mut decoder)?;
+
+            Ok(Self {
+                l2_chain_id,
+                l1_client_id: ClientId::new(
+                    u32::detokenize(l1_client_id.into()).try_into().unwrap(),
+                ),
+                l2_client_id: ClientId::new(
+                    u32::detokenize(l2_client_id.into()).try_into().unwrap(),
+                ),
+                l2_latest_height: u64::detokenize(l2_latest_height.into()),
+                extra,
+            })
         }
-
-        fn stv_abi_encode_packed_to(&self, _out: &mut Vec<u8>) {
-            todo!()
-        }
-
-        fn stv_eip712_data_word(&self) -> alloy::sol_types::Word {
-            todo!()
-        }
-    }
-
-    impl<Extra> SolValue for ClientState<Extra>
-    where
-        for<'a> Extra:
-            SolValue<SolType: SolType<RustType = Extra, Token<'a>: TokenSeq<'a>>> + 'static,
-        for<'a> ClientStateTokenTuple<'a>: Join<TokenOfSolValue<'a, Extra>, Out: Clone + Token<'a>>,
-    {
-        type SolType = Self;
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use alloy::sol_types::{
-        private::SolTypeValue,
-        sol_data::{String as SolString, Uint},
-        SolType, SolValue,
+    use alloy::{
+        dyn_abi::{abi::token::PackedSeqToken, DynSolValue},
+        sol_types::SolValue,
     };
     use unionlabs::{
-        encoding::{Bcs, Bincode, Json},
+        encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi, Json},
         test_utils::assert_codec_iso,
         tuple::AsTuple,
     };
 
     use super::*;
+    use crate::client_state::ethabi::{DecodeExtra, ExtraToTokens};
 
     #[derive(
         Debug,
@@ -332,47 +302,20 @@ mod tests {
         pub b: String,
     }
 
-    impl SolType for Extra {
-        type RustType = Self;
-
-        type Token<'a> = <(Uint<64>, SolString) as SolType>::Token<'a>;
-
-        const SOL_NAME: &'static str = "Extra";
-
-        const ENCODED_SIZE: Option<usize> = None;
-
-        const PACKED_ENCODED_SIZE: Option<usize> = None;
-
-        fn valid_token(_token: &Self::Token<'_>) -> bool {
-            true
-        }
-
-        fn detokenize((a, b): Self::Token<'_>) -> Self::RustType {
-            Self {
-                a: <Uint<64>>::detokenize(a),
-                b: SolString::detokenize(b),
-            }
+    impl DecodeExtra for Extra {
+        fn decode_extra(
+            decoder: &mut alloy::dyn_abi::Decoder,
+        ) -> Result<Self, alloy::dyn_abi::Error> {
+            Ok(Self {
+                a: u64::detokenize(decoder.take_word()?.into()),
+                b: String::detokenize(decoder.decode::<PackedSeqToken>()?),
+            })
         }
     }
 
-    impl SolValue for Extra {
-        type SolType = Self;
-    }
-
-    impl SolTypeValue<Self> for Extra {
-        fn stv_to_tokens(&self) -> <Self as SolType>::Token<'_> {
-            (
-                <Uint<64> as SolType>::tokenize(&self.a),
-                <SolString as SolType>::tokenize(&self.b),
-            )
-        }
-
-        fn stv_abi_encode_packed_to(&self, _out: &mut Vec<u8>) {
-            todo!()
-        }
-
-        fn stv_eip712_data_word(&self) -> alloy::sol_types::Word {
-            todo!()
+    impl ExtraToTokens for Extra {
+        fn encode_extra_to_dyn_value(self) -> Vec<DynSolValue> {
+            vec![self.a.into(), self.b.into()]
         }
     }
 
@@ -548,7 +491,7 @@ mod tests {
         assert_eq!(
             cs_with_extra,
             <SolClientStateWithExtra as SolValue>::abi_decode_params(
-                &cs.clone().abi_encode_params(),
+                &cs.clone().encode_as::<EthAbi>(),
                 true
             )
             .unwrap()
@@ -556,11 +499,7 @@ mod tests {
 
         assert_eq!(
             cs,
-            <ClientState<Extra> as SolValue>::abi_decode_params(
-                &cs_with_extra.abi_encode_params(),
-                true
-            )
-            .unwrap()
+            <ClientState<Extra>>::decode_as::<EthAbi>(&cs_with_extra.abi_encode_params()).unwrap()
         );
     }
 
@@ -602,17 +541,4 @@ mod tests {
 
         assert_codec_iso::<_, Bcs>(&cs);
     }
-
-    // #[test]
-    // fn test_ethabi_unit() {
-    //     let cs = ClientState {
-    //         l2_chain_id: "l2_chain_id".to_owned(),
-    //         l1_client_id: 1,
-    //         l2_client_id: 2,
-    //         l2_latest_height: 100,
-    //         extra: (),
-    //     };
-
-    //     assert_codec_iso::<_, EthAbi>(&cs);
-    // }
 }

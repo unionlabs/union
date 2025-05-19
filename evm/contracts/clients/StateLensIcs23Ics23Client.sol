@@ -28,12 +28,26 @@ struct Header {
     bytes l2ConsensusState;
 }
 
-struct ClientState {
+struct LegacyClientState {
     string l2ChainId;
     uint32 l1ClientId;
     uint32 l2ClientId;
     uint64 l2LatestHeight;
     bytes32 contractAddress;
+}
+
+struct ClientState {
+    string l2ChainId;
+    uint32 l1ClientId;
+    uint32 l2ClientId;
+    uint64 l2LatestHeight;
+    uint256 version;
+    bytes state;
+}
+
+struct ExtraV1 {
+    bytes storeKey;
+    bytes keyPrefixStorage;
 }
 
 struct ConsensusState {
@@ -48,6 +62,9 @@ library StateLensIcs23Ics23Lib {
     error ErrInvalidL1Proof();
     error ErrInvalidInitialConsensusState();
     error ErrInvalidMisbehaviour();
+    // only V1 is supported for new clients
+    error ErrUnsupportedVersion();
+    error ErrUnknownClientStateVersion(uint256 version);
 
     function encode(
         ConsensusState memory consensusState
@@ -63,8 +80,21 @@ library StateLensIcs23Ics23Lib {
             clientState.l1ClientId,
             clientState.l2ClientId,
             clientState.l2LatestHeight,
-            clientState.contractAddress
+            clientState.version,
+            clientState.state
         );
+    }
+
+    function encode(
+        ExtraV1 memory extraV1
+    ) internal pure returns (bytes memory) {
+        return abi.encode(extraV1.storeKey, extraV1.keyPrefixStorage);
+    }
+
+    function encode(
+        ExtraV1 storage extraV1
+    ) internal view returns (bytes memory) {
+        return abi.encode(extraV1.storeKey, extraV1.keyPrefixStorage);
     }
 
     function commit(
@@ -92,8 +122,10 @@ contract StateLensIcs23Ics23Client is
 
     address public immutable IBC_HANDLER;
 
-    mapping(uint32 => ClientState) private clientStates;
+    mapping(uint32 => LegacyClientState) private legacyClientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
+
+    mapping(uint32 => ClientState) private clientStates;
 
     constructor(
         address _ibcHandler
@@ -108,6 +140,30 @@ contract StateLensIcs23Ics23Client is
         __AccessManaged_init(authority);
         __UUPSUpgradeable_init();
         __Pausable_init();
+    }
+
+    function migrateClientStateToV1(
+        uint32[] calldata clientIds
+    ) public restricted {
+        for (uint256 i = 0; i < clientIds.length; i++) {
+            LegacyClientState storage legacyState =
+                legacyClientStates[clientIds[i]];
+            ClientState storage newState = clientStates[clientIds[i]];
+
+            newState.l2ChainId = legacyState.l2ChainId;
+            newState.l1ClientId = legacyState.l1ClientId;
+            newState.l2ClientId = legacyState.l2ClientId;
+            newState.l2LatestHeight = legacyState.l2LatestHeight;
+            newState.version = uint256(1);
+            newState.state = ExtraV1({
+                storeKey: IBCStoreLib.WASMD_MODULE_STORE_KEY,
+                keyPrefixStorage: abi.encodePacked(
+                    IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
+                    legacyState.contractAddress,
+                    IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX
+                )
+            }).encode();
+        }
     }
 
     function createClient(
@@ -241,18 +297,22 @@ contract StateLensIcs23Ics23Client is
         if (isFrozenImpl(clientId)) {
             revert StateLensIcs23Ics23Lib.ErrClientFrozen();
         }
-        bytes32 contractAddress = clientStates[clientId].contractAddress;
+        ClientState storage clientState = clientStates[clientId];
         bytes32 appHash = consensusStates[clientId][height].appHash;
+
+        if (clientState.version != 1) {
+            revert StateLensIcs23Ics23Lib.ErrUnknownClientStateVersion(
+                clientState.version
+            );
+        }
+        (bytes memory storeKey, bytes memory keyPrefixStorage) =
+            abi.decode(clientState.state, (bytes, bytes));
+
         return ICS23Verifier.verifyMembership(
             appHash,
             proof,
-            IBCStoreLib.WASMD_MODULE_STORE_KEY,
-            abi.encodePacked(
-                IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
-                contractAddress,
-                IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
-                path
-            ),
+            storeKey,
+            abi.encodePacked(keyPrefixStorage, path),
             value
         );
     }
@@ -266,18 +326,19 @@ contract StateLensIcs23Ics23Client is
         if (isFrozenImpl(clientId)) {
             revert StateLensIcs23Ics23Lib.ErrClientFrozen();
         }
-        bytes32 contractAddress = clientStates[clientId].contractAddress;
+        ClientState storage clientState = clientStates[clientId];
         bytes32 appHash = consensusStates[clientId][height].appHash;
+
+        if (clientState.version != 1) {
+            revert StateLensIcs23Ics23Lib.ErrUnknownClientStateVersion(
+                clientState.version
+            );
+        }
+        (bytes memory storeKey, bytes memory keyPrefixStorage) =
+            abi.decode(clientState.state, (bytes, bytes));
+
         return ICS23Verifier.verifyNonMembership(
-            appHash,
-            proof,
-            IBCStoreLib.WASMD_MODULE_STORE_KEY,
-            abi.encodePacked(
-                IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
-                contractAddress,
-                IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX,
-                path
-            )
+            appHash, proof, storeKey, abi.encodePacked(keyPrefixStorage, path)
         );
     }
 

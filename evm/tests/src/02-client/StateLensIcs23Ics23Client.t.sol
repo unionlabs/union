@@ -138,6 +138,8 @@ contract StateLensIcs23Ics23ClientTest is Test {
     MockIbcStore ibcStore;
     MockLightClient lightClient;
 
+    using StateLensIcs23Ics23Lib for *;
+
     function setUp() public {
         // Deploy and initialize the StateLensIcs23Ics23Client contract
         ibcStore = new MockIbcStore();
@@ -173,14 +175,21 @@ contract StateLensIcs23Ics23ClientTest is Test {
             l1ClientId: 2,
             l2ClientId: 3,
             l2LatestHeight: 100,
-            contractAddress: keccak256("test")
+            version: uint256(1),
+            state: ExtraV1({
+                storeKey: bytes("wasm"),
+                keyPrefixStorage: abi.encodePacked(
+                    bytes1(0x03), keccak256("test"), bytes1(0x00)
+                )
+            }).encode()
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
             clientState.l2LatestHeight,
-            keccak256("test")
+            clientState.version,
+            clientState.state
         );
 
         // Encode the consensus state
@@ -235,14 +244,21 @@ contract StateLensIcs23Ics23ClientTest is Test {
             l1ClientId: 2,
             l2ClientId: 3,
             l2LatestHeight: 0,
-            contractAddress: keccak256("test")
+            version: uint256(1),
+            state: ExtraV1({
+                storeKey: bytes("wasm"),
+                keyPrefixStorage: abi.encodePacked(
+                    bytes1(0x03), keccak256("test"), bytes1(0x00)
+                )
+            }).encode()
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
             clientState.l2LatestHeight,
-            keccak256("test")
+            clientState.version,
+            clientState.state
         );
 
         // Encode the consensus state
@@ -277,14 +293,21 @@ contract StateLensIcs23Ics23ClientTest is Test {
             l1ClientId: 2,
             l2ClientId: 3,
             l2LatestHeight: 100,
-            contractAddress: keccak256("test")
+            version: uint256(1),
+            state: ExtraV1({
+                storeKey: bytes("wasm"),
+                keyPrefixStorage: abi.encodePacked(
+                    bytes1(0x03), keccak256("test"), bytes1(0x00)
+                )
+            }).encode()
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
             clientState.l2LatestHeight,
-            keccak256("test")
+            clientState.version,
+            clientState.state
         );
 
         ConsensusState memory consensusState = ConsensusState({
@@ -357,14 +380,21 @@ contract StateLensIcs23Ics23ClientTest is Test {
             l1ClientId: 2,
             l2ClientId: 3,
             l2LatestHeight: 100,
-            contractAddress: keccak256("test")
+            version: uint256(1),
+            state: ExtraV1({
+                storeKey: bytes("wasm"),
+                keyPrefixStorage: abi.encodePacked(
+                    bytes1(0x03), keccak256("test"), bytes1(0x00)
+                )
+            }).encode()
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
             clientState.l2LatestHeight,
-            keccak256("test")
+            clientState.version,
+            clientState.state
         );
 
         ConsensusState memory consensusState = ConsensusState({
@@ -429,14 +459,21 @@ contract StateLensIcs23Ics23ClientTest is Test {
             l1ClientId: 2,
             l2ClientId: 3,
             l2LatestHeight: 100,
-            contractAddress: keccak256("test")
+            version: uint256(1),
+            state: ExtraV1({
+                storeKey: bytes("wasm"),
+                keyPrefixStorage: abi.encodePacked(
+                    bytes1(0x03), keccak256("test"), bytes1(0x00)
+                )
+            }).encode()
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
             clientState.l2LatestHeight,
-            keccak256("test")
+            clientState.version,
+            clientState.state
         );
 
         ConsensusState memory consensusState = ConsensusState({
@@ -490,14 +527,21 @@ contract StateLensIcs23Ics23ClientTest is Test {
             l1ClientId: 2,
             l2ClientId: 3,
             l2LatestHeight: 100,
-            contractAddress: keccak256("test")
+            version: uint256(1),
+            state: ExtraV1({
+                storeKey: bytes("wasm"),
+                keyPrefixStorage: abi.encodePacked(
+                    bytes1(0x03), keccak256("test"), bytes1(0x00)
+                )
+            }).encode()
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
             clientState.l2LatestHeight,
-            keccak256("test")
+            clientState.version,
+            clientState.state
         );
 
         ConsensusState memory consensusState = ConsensusState({
@@ -555,14 +599,21 @@ contract StateLensIcs23Ics23ClientTest is Test {
             l1ClientId: 2,
             l2ClientId: 3,
             l2LatestHeight: 100,
-            contractAddress: keccak256("test")
+            version: uint256(1),
+            state: ExtraV1({
+                storeKey: bytes("wasm"),
+                keyPrefixStorage: abi.encodePacked(
+                    bytes1(0x03), keccak256("test"), bytes1(0x00)
+                )
+            }).encode()
         });
         bytes memory clientStateBytes = abi.encode(
             clientState.l2ChainId,
             clientState.l1ClientId,
             clientState.l2ClientId,
             clientState.l2LatestHeight,
-            keccak256("test")
+            clientState.version,
+            clientState.state
         );
 
         ConsensusState memory consensusState = ConsensusState({

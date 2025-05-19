@@ -924,11 +924,18 @@ _: {
                   help = "The sender address that created the contract through the deployer.";
                 }
               ]
-              ++ pkgs.lib.optional dry {
-                arg = "owner_pk";
-                required = true;
-                help = "The contract owner public key to prank.";
-              };
+              ++ pkgs.lib.optionals dry [
+                {
+                  arg = "owner_pk";
+                  required = true;
+                  help = "The contract owner public key to prank.";
+                }
+                {
+                  arg = "dry_url";
+                  required = true;
+                  help = "The rpc url to use for dry running the tx.";
+                }
+              ];
             text = ''
               OUT="$(mktemp -d)"
               pushd "$OUT"
@@ -954,7 +961,8 @@ _: {
               FOUNDRY_LIBS='["libs"]' \
               FOUNDRY_PROFILE="script" \
                 forge script scripts/Deploy.s.sol:${pkgs.lib.optionalString dry "Dry"}Upgrade${protocol} -vvvvv \
-                  --rpc-url ${rpc-url} \
+                  --slow \
+                  --rpc-url ${if dry then "$argc_dry_url" else rpc-url} \
                   --broadcast "''${VERIFICATION_ARGS[@]}"
 
               rm -rf "$OUT"

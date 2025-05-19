@@ -557,6 +557,7 @@
             PROTOC = "${pkgs.protobuf}/bin/protoc";
             FOUNDRY_LIBS = ''["${self'.packages.evm-libs}"]'';
             FOUNDRY_DISABLE_NIGHTLY_WARNING = "1";
+            LD_LIBRARY_PATH = "${lib.makeLibraryPath [ pkgs.stdenv.cc.cc.lib ]}";
           };
           # https://flake.parts/options/treefmt-nix#opt-perSystem.treefmt
           treefmt = import ./treefmt.nix {

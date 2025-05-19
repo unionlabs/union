@@ -6,8 +6,11 @@ use jsonrpsee::{
 };
 use macros::model;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
-use state_lens_ics23_ics23_light_client_types::{ClientState, ConsensusState};
+use serde_json::Value;
+use state_lens_ics23_ics23_light_client_types::{
+    client_state::{Extra, ExtraV1},
+    ClientState, ConsensusState,
+};
 use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
@@ -20,7 +23,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_message::{
-    into_value,
+    ensure_null, into_value,
     module::{ClientModuleInfo, ClientModuleServer},
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
@@ -104,26 +107,34 @@ impl Module {
 
     pub fn decode_client_state(&self, client_state: &[u8]) -> RpcResult<ClientState> {
         match self.ibc_interface {
-            SupportedIbcInterface::IbcSolidity => {
-                ClientState::abi_decode_params(client_state, true).map_err(|err| {
+            SupportedIbcInterface::IbcSolidity => ClientState::decode_as::<EthAbi>(client_state)
+                .map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
                         format!("unable to decode client state: {}", ErrorReporter(err)),
                         None::<()>,
                     )
-                })
-            }
-            SupportedIbcInterface::IbcMoveAptos => {
-                <ClientState as AsTuple>::Tuple::decode_as::<Bcs>(client_state)
-                    .map(ClientState::from_tuple)
-                    .map_err(|err| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            format!("unable to decode client state: {}", ErrorReporter(err)),
-                            None::<()>,
-                        )
-                    })
-            }
+                }),
+            SupportedIbcInterface::IbcMoveAptos => <state_lens_light_client_types::ClientState<
+                ExtraV1,
+            > as AsTuple>::Tuple::decode_as::<Bcs>(
+                client_state
+            )
+            .map(<state_lens_light_client_types::ClientState<ExtraV1>>::from_tuple)
+            .map(|cs| ClientState {
+                l2_chain_id: cs.l2_chain_id,
+                l1_client_id: cs.l1_client_id,
+                l2_client_id: cs.l2_client_id,
+                l2_latest_height: cs.l2_latest_height,
+                extra: Extra::V1(cs.extra),
+            })
+            .map_err(|err| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("unable to decode client state: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            }),
         }
     }
 
@@ -184,16 +195,7 @@ impl ClientModuleServer for Module {
         client_state: Value,
         metadata: Value,
     ) -> RpcResult<Bytes> {
-        if !metadata.is_null() {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "metadata was provided, but this client type does not require \
-                metadata for client state encoding",
-                Some(json!({
-                    "provided_metadata": metadata,
-                })),
-            ));
-        }
+        ensure_null(metadata)?;
 
         serde_json::from_value::<ClientState>(client_state)
             .map_err(|err| {
@@ -204,8 +206,18 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcMoveAptos => cs.as_tuple().encode_as::<Bcs>(),
-                SupportedIbcInterface::IbcSolidity => cs.abi_encode_params(),
+                SupportedIbcInterface::IbcMoveAptos => match cs.extra {
+                    Extra::V1(versioned_extra_v1) => state_lens_light_client_types::ClientState {
+                        l2_chain_id: cs.l2_chain_id,
+                        l1_client_id: cs.l1_client_id,
+                        l2_client_id: cs.l2_client_id,
+                        l2_latest_height: cs.l2_latest_height,
+                        extra: versioned_extra_v1,
+                    }
+                    .as_tuple()
+                    .encode_as::<Bcs>(),
+                },
+                SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
             })
             .map(Into::into)
     }
