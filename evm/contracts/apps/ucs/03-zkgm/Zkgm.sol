@@ -16,6 +16,7 @@ import "solady/utils/CREATE3.sol";
 import "solady/utils/LibBit.sol";
 import "solady/utils/LibString.sol";
 import "solady/utils/LibBytes.sol";
+import "solady/utils/LibCall.sol";
 import "solady/utils/EfficientHashLib.sol";
 import "solady/utils/SafeTransferLib.sol";
 import "solady/utils/LibTransient.sol";
@@ -31,6 +32,7 @@ import "./IWETH.sol";
 import "./IZkgmable.sol";
 import "./IZkgmERC20.sol";
 import "./ZkgmERC20.sol";
+import "./ZkgmERC721.sol";
 import "./IZkgm.sol";
 import "./Lib.sol";
 
@@ -49,89 +51,79 @@ contract AbiExport {
     ) public {}
 }
 
-contract UCS03Zkgm is
-    IBCAppBase,
-    Initializable,
-    UUPSUpgradeable,
-    AccessManagedUpgradeable,
-    PausableUpgradeable,
-    TokenBucket,
-    Versioned,
-    IZkgm
-{
-    using ZkgmLib for *;
-    using LibString for *;
-    using LibBytes for *;
-    using SafeERC20 for *;
-    using Address for *;
+function passthrough(
+    address impl
+) {
+    assembly {
+        calldatacopy(0, 0, calldatasize())
+        let result := delegatecall(gas(), impl, 0, calldatasize(), 0, 0)
+        returndatacopy(0, 0, returndatasize())
+        switch result
+        case 0 { revert(0, returndatasize()) }
+        default { return(0, returndatasize()) }
+    }
+}
 
-    uint256 public constant EXEC_MIN_GAS = 50_000;
+abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
+    bytes32 internal constant STAKE_NFT_MANAGER_SALT =
+        keccak256("union.salt.zkgm.stakeNFTManager");
 
-    IIBCModulePacket public immutable IBC_HANDLER;
-    IWETH public immutable WETH;
-    ZkgmERC20 public immutable ERC20_IMPL;
-    bool public immutable RATE_LIMIT_ENABLED;
-    bytes32 public immutable NATIVE_TOKEN_NAME_HASH;
-    bytes32 public immutable NATIVE_TOKEN_SYMBOL_HASH;
-    uint8 public immutable NATIVE_TOKEN_DECIMALS;
+    string internal constant STAKE_NFT_NAME = "Zkgm Staking Position";
+    string internal constant STAKE_NFT_SYMBOL = "ZKGMSP";
 
     IIBCModulePacket private _deprecated_ibcHandler;
     mapping(bytes32 => IBCPacket) public inFlightPacket;
     mapping(address => uint256) public tokenOrigin;
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
         channelBalance;
+    mapping(uint32 => bytes) public channelGovernanceToken;
+    mapping(uint256 => ZkgmStake) public stakes;
 
-    constructor(
-        IIBCModulePacket _ibcHandler,
-        IWETH _weth,
-        ZkgmERC20 _erc20Impl,
-        bool _rateLimitEnabled,
-        string memory _nativeTokenName,
-        string memory _nativeTokenSymbol,
-        uint8 _nativeTokenDecimals
-    ) {
-        _disableInitializers();
-        IBC_HANDLER = _ibcHandler;
-        WETH = _weth;
-        ERC20_IMPL = _erc20Impl;
-        RATE_LIMIT_ENABLED = _rateLimitEnabled;
-        NATIVE_TOKEN_NAME_HASH = keccak256(bytes(_nativeTokenName));
-        NATIVE_TOKEN_SYMBOL_HASH = keccak256(bytes(_nativeTokenSymbol));
-        NATIVE_TOKEN_DECIMALS = _nativeTokenDecimals;
+    function _getGovernanceToken(
+        uint32 channelId
+    ) internal view returns (ZkgmERC20, bytes memory) {
+        bytes storage governanceToken = channelGovernanceToken[channelId];
+        if (governanceToken.length == 0) {
+            revert ZkgmLib.ErrChannelGovernanceTokenNotSet();
+        }
+        (address wrappedGovernanceToken,) =
+            _predictWrappedTokenMemory(0, channelId, governanceToken);
+        return (ZkgmERC20(wrappedGovernanceToken), governanceToken);
     }
 
-    function initialize(
-        address _authority
-    ) public initializer {
-        __AccessManaged_init(_authority);
-        __UUPSUpgradeable_init();
-        __Pausable_init();
-    }
-
-    function ibcAddress() public view virtual override returns (address) {
-        return address(IBC_HANDLER);
-    }
-
-    function send(
-        uint32 channelId,
-        uint64 timeoutHeight,
-        uint64 timeoutTimestamp,
-        bytes32 salt,
-        Instruction calldata instruction
-    ) public payable whenNotPaused {
-        _verifyInternal(channelId, 0, instruction);
-        IBC_HANDLER.sendPacket(
-            channelId,
-            timeoutHeight,
-            timeoutTimestamp,
-            ZkgmLib.encode(
-                ZkgmPacket({
-                    salt: EfficientHashLib.hash(abi.encodePacked(msg.sender, salt)),
-                    path: 0,
-                    instruction: instruction
-                })
-            )
+    function _predictStakeManagerAddress() internal view returns (ZkgmERC721) {
+        return ZkgmERC721(
+            CREATE3.predictDeterministicAddress(STAKE_NFT_MANAGER_SALT)
         );
+    }
+
+    function predictStakeManagerAddress() public view returns (ZkgmERC721) {
+        return _predictStakeManagerAddress();
+    }
+
+    function _getStakeNFTManager() internal returns (ZkgmERC721) {
+        ZkgmERC721 stakeManager = _predictStakeManagerAddress();
+        if (!ZkgmLib.isDeployed(address(stakeManager))) {
+            CREATE3.deployDeterministic(
+                abi.encodePacked(
+                    type(ERC1967Proxy).creationCode,
+                    abi.encode(
+                        new ZkgmERC721(),
+                        abi.encodeCall(
+                            ZkgmERC721.initialize,
+                            (
+                                authority(),
+                                address(this),
+                                STAKE_NFT_NAME,
+                                STAKE_NFT_SYMBOL
+                            )
+                        )
+                    )
+                ),
+                STAKE_NFT_MANAGER_SALT
+            );
+        }
+        return stakeManager;
     }
 
     // Increase the outstanding balance of a channel. This ensure that malicious
@@ -160,38 +152,298 @@ contract UCS03Zkgm is
         channelBalance[sourceChannelId][path][token] -= amount;
     }
 
+    // Predict a wrapped token address given the path/channel and counterparty
+    // address of the token. The computed address is fully deterministic w.r.t
+    // to (ucs03Address, path, channel, token).
+    function _predictWrappedToken(
+        uint256 path,
+        uint32 channel,
+        bytes calldata token
+    ) internal view returns (address, bytes32) {
+        bytes32 wrappedTokenSalt =
+            EfficientHashLib.hash(abi.encode(path, channel, token));
+        address wrappedToken =
+            CREATE3.predictDeterministicAddress(wrappedTokenSalt);
+        return (wrappedToken, wrappedTokenSalt);
+    }
+
+    function _predictWrappedTokenMemory(
+        uint256 path,
+        uint32 channel,
+        bytes memory token
+    ) internal view returns (address, bytes32) {
+        bytes32 wrappedTokenSalt =
+            EfficientHashLib.hash(abi.encode(path, channel, token));
+        address wrappedToken =
+            CREATE3.predictDeterministicAddress(wrappedTokenSalt);
+        return (wrappedToken, wrappedTokenSalt);
+    }
+}
+
+contract UCS03ZkgmStakeImpl is
+    AccessManagedUpgradeable,
+    PausableUpgradeable,
+    Versioned,
+    UCS03ZkgmStore
+{
+    IIBCModulePacket public immutable IBC_HANDLER;
+
+    constructor(
+        IIBCModulePacket _ibcHandler
+    ) {
+        IBC_HANDLER = _ibcHandler;
+    }
+
+    function _stakingSucceeded(
+        uint32 channelId,
+        Stake calldata _stake
+    ) internal {
+        ensureStakeIsFromChannel(channelId, _stake.tokenId);
+        address beneficiary = address(bytes20(_stake.beneficiary));
+        _getStakeNFTManager().transferFrom(
+            address(this), beneficiary, _stake.tokenId
+        );
+        stakes[_stake.tokenId].state = ZkgmStakeState.STAKED;
+    }
+
+    function _stakingFailed(uint32 channelId, Stake calldata _stake) internal {
+        ensureStakeIsFromChannel(channelId, _stake.tokenId);
+        _getStakeNFTManager().burn(_stake.tokenId);
+        address sender = address(bytes20(_stake.sender));
+        (IZkgmERC20 governanceToken,) = _getGovernanceToken(channelId);
+        governanceToken.transfer(sender, _stake.amount);
+    }
+
+    function _withdrawSucceeded(
+        uint32 channelId,
+        WithdrawStake calldata _withdrawStake,
+        WithdrawStakeAck calldata _withdrawStakeAck
+    ) internal {
+        ensureStakeIsFromChannel(channelId, _withdrawStake.tokenId);
+        ZkgmStake storage _stake = stakes[_withdrawStake.tokenId];
+        _stake.state = ZkgmStakeState.UNSTAKED;
+        (IZkgmERC20 governanceToken,) = _getGovernanceToken(_stake.channelId);
+        address beneficiary = address(bytes20(_withdrawStake.beneficiary));
+        governanceToken.transfer(beneficiary, _stake.amount);
+        if (_stake.amount < _withdrawStakeAck.amount) {
+            // Mints the reward
+            governanceToken.mint(
+                beneficiary, _withdrawStakeAck.amount - _stake.amount
+            );
+        } else if (_stake.amount > _withdrawStakeAck.amount) {
+            // Burn if slashing happened and rewards aren't covering it.
+            governanceToken.burn(
+                beneficiary, _stake.amount - _withdrawStakeAck.amount
+            );
+        }
+        // We do not burn the token so that it's ID can't be reused. It will stay forever locked in this contract.
+    }
+
+    function _setUnstaking(uint256 tokenId, uint256 completionTime) internal {
+        ZkgmStake storage _stake = stakes[tokenId];
+        _stake.state = ZkgmStakeState.UNSTAKING;
+        _stake.unstakingCompletion = completionTime;
+    }
+
+    function ensureStakeIsFromChannel(
+        uint32 channelId,
+        uint256 tokenId
+    ) internal {
+        if (stakes[tokenId].channelId != channelId) {
+            revert ZkgmLib.ErrInvalidStakeChannelId();
+        }
+    }
+
+    function acknowledgeStake(
+        IBCPacket calldata ibcPacket,
+        Stake calldata _stake,
+        bool successful
+    ) public whenNotPaused {
+        if (successful) {
+            _stakingSucceeded(ibcPacket.sourceChannelId, _stake);
+        } else {
+            _stakingFailed(ibcPacket.sourceChannelId, _stake);
+        }
+    }
+
+    function acknowledgeUnstake(
+        IBCPacket calldata ibcPacket,
+        Unstake calldata _unstake,
+        bool successful,
+        bytes calldata ack
+    ) public whenNotPaused {
+        ensureStakeIsFromChannel(ibcPacket.sourceChannelId, _unstake.tokenId);
+        if (successful) {
+            UnstakeAck calldata unstakeAck = ZkgmLib.decodeUnstakeAck(ack);
+            _setUnstaking(_unstake.tokenId, unstakeAck.completionTime);
+        }
+        address sender = address(bytes20(_unstake.sender));
+        _getStakeNFTManager().transferFrom(
+            address(this), sender, _unstake.tokenId
+        );
+    }
+
+    function acknowledgeWithdrawStake(
+        IBCPacket calldata ibcPacket,
+        WithdrawStake calldata _withdrawStake,
+        bool successful,
+        bytes calldata ack
+    ) public whenNotPaused {
+        if (successful) {
+            WithdrawStakeAck calldata _withdrawStakeAck =
+                ZkgmLib.decodeWithdrawStakeAck(ack);
+            _withdrawSucceeded(
+                ibcPacket.sourceChannelId, _withdrawStake, _withdrawStakeAck
+            );
+        } else {
+            _withdrawStakeFailed(ibcPacket.sourceChannelId, _withdrawStake);
+        }
+    }
+
+    function _withdrawStakeFailed(
+        uint32 channelId,
+        WithdrawStake calldata _withdrawStake
+    ) internal {
+        ensureStakeIsFromChannel(channelId, _withdrawStake.tokenId);
+        address sender = address(bytes20(_withdrawStake.sender));
+        _getStakeNFTManager().transferFrom(
+            address(this), sender, _withdrawStake.tokenId
+        );
+    }
+
+    function timeoutStake(
+        IBCPacket calldata ibcPacket,
+        Stake calldata _stake
+    ) public whenNotPaused {
+        _stakingFailed(ibcPacket.sourceChannelId, _stake);
+    }
+
+    function timeoutUnstake(
+        IBCPacket calldata ibcPacket,
+        Unstake calldata _unstake
+    ) public whenNotPaused {
+        ensureStakeIsFromChannel(ibcPacket.sourceChannelId, _unstake.tokenId);
+        address sender = address(bytes20(_unstake.sender));
+        _getStakeNFTManager().transferFrom(
+            address(this), sender, _unstake.tokenId
+        );
+    }
+
+    function timeoutWithdrawStake(
+        IBCPacket calldata ibcPacket,
+        WithdrawStake calldata _withdrawStake
+    ) public whenNotPaused {
+        _withdrawStakeFailed(ibcPacket.sourceChannelId, _withdrawStake);
+    }
+}
+
+contract UCS03ZkgmSendImpl is
+    AccessManagedUpgradeable,
+    PausableUpgradeable,
+    Versioned,
+    UCS03ZkgmStore
+{
+    using ZkgmLib for *;
+    using LibString for *;
+    using LibBytes for *;
+    using SafeERC20 for *;
+    using Address for *;
+    using LibCall for *;
+
+    IIBCModulePacket public immutable IBC_HANDLER;
+    IWETH public immutable WETH;
+    bytes32 public immutable NATIVE_TOKEN_NAME_HASH;
+    bytes32 public immutable NATIVE_TOKEN_SYMBOL_HASH;
+    uint8 public immutable NATIVE_TOKEN_DECIMALS;
+
+    constructor(
+        IIBCModulePacket _ibcHandler,
+        IWETH _weth,
+        string memory _nativeTokenName,
+        string memory _nativeTokenSymbol,
+        uint8 _nativeTokenDecimals
+    ) {
+        IBC_HANDLER = _ibcHandler;
+        WETH = _weth;
+        NATIVE_TOKEN_NAME_HASH = keccak256(bytes(_nativeTokenName));
+        NATIVE_TOKEN_SYMBOL_HASH = keccak256(bytes(_nativeTokenSymbol));
+        NATIVE_TOKEN_DECIMALS = _nativeTokenDecimals;
+    }
+
+    function send(
+        uint32 channelId,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes32 salt,
+        Instruction calldata instruction
+    ) public payable whenNotPaused {
+        _verifyInternal(channelId, 0, instruction);
+        IBC_HANDLER.sendPacket(
+            channelId,
+            timeoutHeight,
+            timeoutTimestamp,
+            ZkgmLib.encode(
+                ZkgmPacket({
+                    salt: EfficientHashLib.hash(abi.encodePacked(msg.sender, salt)),
+                    path: 0,
+                    instruction: instruction
+                })
+            )
+        );
+    }
+
     function _verifyInternal(
         uint32 channelId,
         uint256 path,
         Instruction calldata instruction
     ) internal {
-        if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        if (
+            instruction.isInst(
+                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
+            )
+        ) {
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
             _verifyFungibleAssetOrder(channelId, path, order);
-        } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_BATCH, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _verifyBatch(
                 channelId, path, ZkgmLib.decodeBatch(instruction.operand)
             );
-        } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_FORWARD, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _verifyForward(
                 channelId, ZkgmLib.decodeForward(instruction.operand)
             );
-        } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_MULTIPLEX, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _verifyMultiplex(
                 channelId, path, ZkgmLib.decodeMultiplex(instruction.operand)
+            );
+        } else if (
+            instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
+        ) {
+            _verifyStake(
+                channelId, path, ZkgmLib.decodeStake(instruction.operand)
+            );
+        } else if (
+            instruction.isInst(ZkgmLib.OP_UNSTAKE, ZkgmLib.INSTR_VERSION_0)
+        ) {
+            _verifyUnstake(
+                channelId, path, ZkgmLib.decodeUnstake(instruction.operand)
+            );
+        } else if (
+            instruction.isInst(
+                ZkgmLib.OP_WITHDRAW_STAKE, ZkgmLib.INSTR_VERSION_0
+            )
+        ) {
+            _verifyWithdrawStake(
+                channelId,
+                path,
+                ZkgmLib.decodeWithdrawStake(instruction.operand)
             );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
@@ -317,6 +569,190 @@ contract UCS03Zkgm is
         }
     }
 
+    function _mintNFT(
+        uint256 tokenId,
+        uint32 channelId,
+        bytes calldata validator,
+        uint256 amount
+    ) internal {
+        _getStakeNFTManager().mint(tokenId, address(this));
+        ZkgmStake storage _stake = stakes[tokenId];
+        _stake.state = ZkgmStakeState.STAKING;
+        _stake.channelId = channelId;
+        _stake.validator = validator;
+        _stake.amount = amount;
+        _stake.unstakingCompletion = 0;
+    }
+
+    function _verifyStake(
+        uint32 channelId,
+        uint256 path,
+        Stake calldata stake
+    ) internal {
+        if (path != 0) {
+            revert ZkgmLib.ErrInstructionCannotBeForwarded();
+        }
+        // Verify the preimage of the governance token.
+        (IZkgmERC20 governanceToken, bytes memory unwrappedGovernanceToken) =
+            _getGovernanceToken(channelId);
+        if (!stake.governanceToken.eq(unwrappedGovernanceToken)) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        // Escrow the staked amount.
+        governanceToken.transferFrom(msg.sender, address(this), stake.amount);
+        // Escrow the NFT until the stake is acknowledged.
+        _mintNFT(stake.tokenId, channelId, stake.validator, stake.amount);
+    }
+
+    function _canUnstake(
+        ZkgmStake storage _stake
+    ) internal view returns (bool) {
+        return _stake.state == ZkgmStakeState.STAKED;
+    }
+
+    function _verifyUnstake(
+        uint32 channelId,
+        uint256 path,
+        Unstake calldata unstake
+    ) internal {
+        if (path != 0) {
+            revert ZkgmLib.ErrInstructionCannotBeForwarded();
+        }
+        ZkgmStake storage _stake = stakes[unstake.tokenId];
+        if (channelId != _stake.channelId) {
+            revert ZkgmLib.ErrInvalidStakeChannelId();
+        }
+        // Verify the preimage of the governance token.
+        (IZkgmERC20 governanceToken, bytes memory unwrappedGovernanceToken) =
+            _getGovernanceToken(channelId);
+        if (!unstake.governanceToken.eq(unwrappedGovernanceToken)) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        if (!_canUnstake(_stake)) {
+            revert ZkgmLib.ErrStakeNotUnstakable();
+        }
+        if (_stake.amount != unstake.amount) {
+            revert ZkgmLib.ErrInvalidStakeAmount();
+        }
+        if (!_stake.validator.eq(unstake.validator)) {
+            revert ZkgmLib.ErrInvalidStakeValidator();
+        }
+        // Escrow the NFT.
+        _getStakeNFTManager().transferFrom(
+            msg.sender, address(this), unstake.tokenId
+        );
+    }
+
+    function _canWithdraw(
+        ZkgmStake storage _stake
+    ) internal view returns (bool) {
+        return _stake.state == ZkgmStakeState.UNSTAKING
+            && _stake.unstakingCompletion <= block.timestamp;
+    }
+
+    function _verifyWithdrawStake(
+        uint32 channelId,
+        uint256 path,
+        WithdrawStake calldata withdrawStake
+    ) internal {
+        if (path != 0) {
+            revert ZkgmLib.ErrInstructionCannotBeForwarded();
+        }
+        ZkgmStake storage _stake = stakes[withdrawStake.tokenId];
+        if (channelId != _stake.channelId) {
+            revert ZkgmLib.ErrInvalidStakeChannelId();
+        }
+        (IZkgmERC20 governanceToken, bytes memory unwrappedGovernanceToken) =
+            _getGovernanceToken(channelId);
+        if (!withdrawStake.governanceToken.eq(unwrappedGovernanceToken)) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        if (!_canWithdraw(_stake)) {
+            revert ZkgmLib.ErrStakeNotWithdrawable();
+        }
+        // Escrow the NFT.
+        _getStakeNFTManager().transferFrom(
+            msg.sender, address(this), withdrawStake.tokenId
+        );
+    }
+}
+
+contract UCS03Zkgm is
+    IBCAppBase,
+    Initializable,
+    UUPSUpgradeable,
+    AccessManagedUpgradeable,
+    PausableUpgradeable,
+    TokenBucket,
+    Versioned,
+    IZkgm,
+    UCS03ZkgmStore
+{
+    using ZkgmLib for *;
+    using LibString for *;
+    using LibBytes for *;
+    using SafeERC20 for *;
+    using Address for *;
+    using LibCall for *;
+
+    uint256 public constant EXEC_MIN_GAS = 50_000;
+
+    IIBCModulePacket public immutable IBC_HANDLER;
+    IWETH public immutable WETH;
+    ZkgmERC20 public immutable ERC20_IMPL;
+    bool public immutable RATE_LIMIT_ENABLED;
+    address public immutable SEND_IMPL;
+    address public immutable STAKE_IMPL;
+
+    constructor(
+        IIBCModulePacket _ibcHandler,
+        IWETH _weth,
+        ZkgmERC20 _erc20Impl,
+        bool _rateLimitEnabled,
+        UCS03ZkgmSendImpl _sendImpl,
+        UCS03ZkgmStakeImpl _stakeImpl
+    ) {
+        _disableInitializers();
+        IBC_HANDLER = _ibcHandler;
+        WETH = _weth;
+        ERC20_IMPL = _erc20Impl;
+        RATE_LIMIT_ENABLED = _rateLimitEnabled;
+        SEND_IMPL = address(_sendImpl);
+        STAKE_IMPL = address(_stakeImpl);
+    }
+
+    function initialize(
+        address _authority
+    ) public initializer {
+        __AccessManaged_init(_authority);
+        __UUPSUpgradeable_init();
+        __Pausable_init();
+    }
+
+    function ibcAddress() public view virtual override returns (address) {
+        return address(IBC_HANDLER);
+    }
+
+    function registerGovernanceToken(
+        uint32 channelId,
+        bytes calldata unwrappedGovernanceToken
+    ) public {
+        if (channelGovernanceToken[channelId].length != 0) {
+            revert ZkgmLib.ErrChannelGovernanceTokenAlreadySet();
+        }
+        channelGovernanceToken[channelId] = unwrappedGovernanceToken;
+    }
+
+    function send(
+        uint32 channelId,
+        uint64 timeoutHeight,
+        uint64 timeoutTimestamp,
+        bytes32 salt,
+        Instruction calldata instruction
+    ) public payable {
+        passthrough(address(SEND_IMPL));
+    }
+
     function onRecvIntentPacket(
         address caller,
         IBCPacket calldata packet,
@@ -414,19 +850,19 @@ contract UCS03Zkgm is
         Instruction calldata instruction,
         bool intent
     ) internal returns (bytes memory) {
-        if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        if (
+            instruction.isInst(
+                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
+            )
+        ) {
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
             return _executeFungibleAssetOrder(
                 caller, ibcPacket, relayer, relayerMsg, path, order, intent
             );
-        } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_BATCH, ZkgmLib.INSTR_VERSION_0)
+        ) {
             return _executeBatch(
                 caller,
                 ibcPacket,
@@ -437,10 +873,9 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeBatch(instruction.operand),
                 intent
             );
-        } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_FORWARD, ZkgmLib.INSTR_VERSION_0)
+        ) {
             return _executeForward(
                 ibcPacket,
                 relayer,
@@ -451,10 +886,9 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeForward(instruction.operand),
                 intent
             );
-        } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_MULTIPLEX, ZkgmLib.INSTR_VERSION_0)
+        ) {
             return _executeMultiplex(
                 caller,
                 ibcPacket,
@@ -484,6 +918,9 @@ contract UCS03Zkgm is
         bytes[] memory acks = new bytes[](l);
         for (uint256 i = 0; i < l; i++) {
             Instruction calldata instruction = batch.instructions[i];
+            if (!ZkgmLib.isAllowedBatchInstruction(instruction.opcode)) {
+                revert ZkgmLib.ErrInvalidBatchInstruction();
+            }
             acks[i] = _executeInternal(
                 caller,
                 ibcPacket,
@@ -518,6 +955,9 @@ contract UCS03Zkgm is
         Forward calldata forward,
         bool intent
     ) internal returns (bytes memory) {
+        if (!ZkgmLib.isAllowedForwardInstruction(forward.instruction.opcode)) {
+            revert ZkgmLib.ErrInvalidForwardInstruction();
+        }
         // We cannot allow market makers to fill packets containing forward
         // instruction. This would allow them to submit of a proof and fill via the
         // protocol on destination for a fake forward.
@@ -525,7 +965,7 @@ contract UCS03Zkgm is
         // Instead, they must first fill on destination the orders, awaits finality
         // to settle the forward, then cascade acknowledge.
         if (intent) {
-            revert ZkgmLib.ErrInvalidMarketMakerOperation();
+            return ZkgmLib.ACK_ERR_ONLYMAKER;
         }
 
         (uint256 tailPath, uint32 previousDestinationChannelId) =
@@ -641,18 +1081,6 @@ contract UCS03Zkgm is
             }
             return acknowledgement;
         }
-    }
-
-    function _predictWrappedToken(
-        uint256 path,
-        uint32 channel,
-        bytes calldata token
-    ) internal view returns (address, bytes32) {
-        bytes32 wrappedTokenSalt =
-            EfficientHashLib.hash(abi.encode(path, channel, token));
-        address wrappedToken =
-            CREATE3.predictDeterministicAddress(wrappedTokenSalt);
-        return (wrappedToken, wrappedTokenSalt);
     }
 
     function predictWrappedToken(
@@ -918,6 +1346,12 @@ contract UCS03Zkgm is
         );
     }
 
+    function _callStakeImpl(
+        bytes memory data
+    ) internal {
+        STAKE_IMPL.delegateCallContract(data);
+    }
+
     function _acknowledgeInternal(
         address caller,
         IBCPacket calldata ibcPacket,
@@ -928,10 +1362,11 @@ contract UCS03Zkgm is
         bool successful,
         bytes calldata ack
     ) internal {
-        if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        if (
+            instruction.isInst(
+                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
+            )
+        ) {
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
             _acknowledgeFungibleAssetOrder(
@@ -946,10 +1381,9 @@ contract UCS03Zkgm is
                 successful,
                 ack
             );
-        } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_BATCH, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _acknowledgeBatch(
                 caller,
                 ibcPacket,
@@ -960,10 +1394,9 @@ contract UCS03Zkgm is
                 successful,
                 ack
             );
-        } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_FORWARD, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _acknowledgeForward(
                 caller,
                 ibcPacket,
@@ -973,10 +1406,9 @@ contract UCS03Zkgm is
                 successful,
                 ack
             );
-        } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_MULTIPLEX, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _acknowledgeMultiplex(
                 caller,
                 ibcPacket,
@@ -986,6 +1418,49 @@ contract UCS03Zkgm is
                 ZkgmLib.decodeMultiplex(instruction.operand),
                 successful,
                 ack
+            );
+        } else if (
+            instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
+        ) {
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.acknowledgeStake,
+                    (
+                        ibcPacket,
+                        ZkgmLib.decodeStake(instruction.operand),
+                        successful
+                    )
+                )
+            );
+        } else if (
+            instruction.isInst(ZkgmLib.OP_UNSTAKE, ZkgmLib.INSTR_VERSION_0)
+        ) {
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.acknowledgeUnstake,
+                    (
+                        ibcPacket,
+                        ZkgmLib.decodeUnstake(instruction.operand),
+                        successful,
+                        ack
+                    )
+                )
+            );
+        } else if (
+            instruction.isInst(
+                ZkgmLib.OP_WITHDRAW_STAKE, ZkgmLib.INSTR_VERSION_0
+            )
+        ) {
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.acknowledgeWithdrawStake,
+                    (
+                        ibcPacket,
+                        ZkgmLib.decodeWithdrawStake(instruction.operand),
+                        successful,
+                        ack
+                    )
+                )
             );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
@@ -1160,10 +1635,11 @@ contract UCS03Zkgm is
         uint256 path,
         Instruction calldata instruction
     ) internal {
-        if (instruction.opcode == ZkgmLib.OP_FUNGIBLE_ASSET_ORDER) {
-            if (instruction.version != ZkgmLib.INSTR_VERSION_1) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        if (
+            instruction.isInst(
+                ZkgmLib.OP_FUNGIBLE_ASSET_ORDER, ZkgmLib.INSTR_VERSION_1
+            )
+        ) {
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
             _timeoutFungibleAssetOrder(
@@ -1174,10 +1650,9 @@ contract UCS03Zkgm is
                 order.baseTokenPath,
                 order.baseAmount
             );
-        } else if (instruction.opcode == ZkgmLib.OP_BATCH) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_BATCH, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _timeoutBatch(
                 caller,
                 ibcPacket,
@@ -1185,26 +1660,56 @@ contract UCS03Zkgm is
                 path,
                 ZkgmLib.decodeBatch(instruction.operand)
             );
-        } else if (instruction.opcode == ZkgmLib.OP_FORWARD) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_FORWARD, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _timeoutForward(
                 caller,
                 ibcPacket,
                 relayer,
                 ZkgmLib.decodeForward(instruction.operand)
             );
-        } else if (instruction.opcode == ZkgmLib.OP_MULTIPLEX) {
-            if (instruction.version > ZkgmLib.INSTR_VERSION_0) {
-                revert ZkgmLib.ErrUnsupportedVersion();
-            }
+        } else if (
+            instruction.isInst(ZkgmLib.OP_MULTIPLEX, ZkgmLib.INSTR_VERSION_0)
+        ) {
             _timeoutMultiplex(
                 caller,
                 ibcPacket,
                 relayer,
                 path,
                 ZkgmLib.decodeMultiplex(instruction.operand)
+            );
+        } else if (
+            instruction.isInst(ZkgmLib.OP_STAKE, ZkgmLib.INSTR_VERSION_0)
+        ) {
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.timeoutStake,
+                    (ibcPacket, ZkgmLib.decodeStake(instruction.operand))
+                )
+            );
+        } else if (
+            instruction.isInst(ZkgmLib.OP_UNSTAKE, ZkgmLib.INSTR_VERSION_0)
+        ) {
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.timeoutUnstake,
+                    (ibcPacket, ZkgmLib.decodeUnstake(instruction.operand))
+                )
+            );
+        } else if (
+            instruction.isInst(
+                ZkgmLib.OP_WITHDRAW_STAKE, ZkgmLib.INSTR_VERSION_0
+            )
+        ) {
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.timeoutWithdrawStake,
+                    (
+                        ibcPacket,
+                        ZkgmLib.decodeWithdrawStake(instruction.operand)
+                    )
+                )
             );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();

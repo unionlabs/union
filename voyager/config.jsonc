@@ -246,9 +246,10 @@
       "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-ethereum",
       "config": {
+        "gas_multiplier": "2",
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
-        "multicall_address": "0x9fd9D9528c8373D990a1380B9414bDE179007A35",
+        "multicall_address": "0x84c4c2ee43ccfd523af9f78740256e0f60d38068",
         "keyring": {
           "name": "ethereum-devnet",
           "keys": [
@@ -256,26 +257,6 @@
               "type": "raw",
               "name": "dev-key0",
               "key": "0x4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77"
-            },
-            {
-              "type": "raw",
-              "name": "dev-key1",
-              "key": "0xd9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9"
-            },
-            {
-              "type": "raw",
-              "name": "eth-key-2",
-              "key": "0x0a917066d306f09670e47729bfd4384f4afcac98493c65b9733870a434d71f29"
-            },
-            {
-              "type": "raw",
-              "name": "eth-key-3",
-              "key": "0xff45ae2a6c4899294e898a171e15de8a4d2557852378364f8684c6a1520ccd7d"
-            },
-            {
-              "type": "raw",
-              "name": "eth-key-4",
-              "key": "0x27ae0c7b8d7c698e41b173265490a4c64b4e39ae78599166e003f868f12140fd"
             }
           ]
         },

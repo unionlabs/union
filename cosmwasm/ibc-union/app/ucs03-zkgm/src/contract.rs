@@ -1,12 +1,14 @@
 use core::str;
 
 use alloy::{primitives::U256, sol_types::SolValue};
+use chrono::DateTime;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
-    instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, Binary,
-    CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, Env, Event, MessageInfo, QueryRequest,
-    Reply, Response, StdError, StdResult, Storage, SubMsg, SubMsgResult, Uint256, WasmMsg,
+    instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, BankMsg, Binary,
+    CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, DistributionMsg, Empty, Env, Event,
+    MessageInfo, QueryRequest, Reply, Response, StakingMsg, StdError, StdResult, Storage, SubMsg,
+    SubMsgResult, Uint256, WasmMsg,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
@@ -23,11 +25,12 @@ use unionlabs::{
 use crate::{
     com::{
         Ack, Batch, BatchAck, Forward, FungibleAssetOrder, FungibleAssetOrderAck, Instruction,
-        Multiplex, ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL,
-        FORWARD_SALT_MAGIC, INSTR_VERSION_0, INSTR_VERSION_1, OP_BATCH, OP_FORWARD,
-        OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        Multiplex, Stake, Unstake, UnstakeAck, WithdrawStake, WithdrawStakeAck, ZkgmPacket,
+        ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC,
+        INSTR_VERSION_0, INSTR_VERSION_1, OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER,
+        OP_MULTIPLEX, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
-    msg::{ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, ZkgmMsg},
+    msg::{Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, ZkgmMsg},
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE, CONFIG, EXECUTING_PACKET, EXECUTING_PACKET_IS_BATCH,
         EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET, MARKET_MAKER, TOKEN_BUCKET,
@@ -44,8 +47,10 @@ pub const TOKEN_INIT_REPLY_ID: u64 = 0xbeef;
 pub const FORWARD_REPLY_ID: u64 = 0xbabe;
 pub const MULTIPLEX_REPLY_ID: u64 = 0xface;
 pub const MM_FILL_REPLY_ID: u64 = 0xdead;
+pub const UNSTAKE_REPLY_ID: u64 = 0xc0de;
 
 pub const ZKGM_TOKEN_MINTER_LABEL: &str = "zkgm-token-minter";
+pub const ZKGM_CW_ACCOUNT_LABEL: &str = "zkgm-cw-account";
 
 /// Instantiate `ucs03-zkgm`.
 ///
@@ -79,6 +84,10 @@ pub fn init(deps: DepsMut, env: Env, msg: InitMsg) -> Result<Response, ContractE
 /// The salt used to instantiate the token minter (using [instantiate2_address]).
 pub fn minter_salt() -> String {
     format!("{PROTOCOL_VERSION}/{ZKGM_TOKEN_MINTER_LABEL}")
+}
+
+pub fn cw_account_salt() -> String {
+    format!("{PROTOCOL_VERSION}/{ZKGM_CW_ACCOUNT_LABEL}")
 }
 
 fn get_code_hash(deps: Deps, code_id: u64) -> StdResult<H256> {
@@ -966,10 +975,59 @@ fn execute_internal(
                 intent,
             )
         }
+        OP_STAKE => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let stake = Stake::abi_decode_params(&instruction.operand, true)?;
+            execute_stake(deps, env, packet, stake, intent)
+        }
+        OP_UNSTAKE => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let unstake = Unstake::abi_decode_params(&instruction.operand, true)?;
+            execute_unstake(deps, env, packet, unstake, intent)
+        }
+        OP_WITHDRAW_STAKE => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let withdraw_stake = WithdrawStake::abi_decode_params(&instruction.operand, true)?;
+            execute_withdraw_stake(deps, env, packet, withdraw_stake, intent)
+        }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
         }),
     }
+}
+
+fn calculate_stake_account_salt(channel_id: ChannelId, token_id: U256) -> Vec<u8> {
+    keccak256((channel_id.raw(), token_id.to_be_bytes_vec()).abi_encode_params())
+        .into_bytes()
+        .to_vec()
+}
+
+fn predict_stake_account(
+    deps: Deps,
+    env: Env,
+    channel_id: ChannelId,
+    token_id: U256,
+) -> Result<Addr, ContractError> {
+    let Config { dummy_code_id, .. } = CONFIG.load(deps.storage)?;
+    let code_hash = get_code_hash(deps, dummy_code_id)?;
+    let token_addr = instantiate2_address(
+        &code_hash.into_bytes(),
+        &deps.api.addr_canonicalize(env.contract.address.as_str())?,
+        &calculate_stake_account_salt(channel_id, token_id),
+    )?;
+    Ok(deps.api.addr_humanize(&token_addr)?)
 }
 
 fn predict_wrapped_token(
@@ -1012,6 +1070,9 @@ fn execute_forward(
     forward: Forward,
     intent: bool,
 ) -> Result<Response, ContractError> {
+    if !is_allowed_forward_instruction(forward.instruction.opcode) {
+        return Err(ContractError::InvalidForwardInstruction);
+    }
     // We cannot allow market makers to fill packets containing forward
     // instruction. This would allow them to submit of a proof and fill via the
     // protocol on destination for a fake forward.
@@ -1019,7 +1080,13 @@ fn execute_forward(
     // Instead, they must first fill on destination the orders, awaits finality
     // to settle the forward, then cascade acknowledge.
     if intent {
-        return Err(ContractError::InvalidMarketMakerOperation);
+        return Ok(Response::new().add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: ACK_ERR_ONLY_MAKER.into(),
+            },
+            vec![],
+        )?));
     }
 
     let (tail_path, Some(previous_destination_channel_id)) =
@@ -1205,6 +1272,9 @@ fn execute_batch(
     EXECUTING_PACKET_IS_BATCH.save(deps.storage, &batch.instructions.len())?;
     let mut response = Response::new();
     for (i, instruction) in batch.instructions.into_iter().enumerate() {
+        if !is_allowed_batch_instruction(instruction.opcode) {
+            return Err(ContractError::InvalidBatchInstruction);
+        }
         let sub_response = execute_internal(
             deps.branch(),
             env.clone(),
@@ -1502,6 +1572,254 @@ fn execute_fungible_asset_order(
         )?))
 }
 
+#[allow(clippy::too_many_arguments)]
+fn execute_stake(
+    deps: DepsMut,
+    env: Env,
+    packet: Packet,
+    stake: Stake,
+    intent: bool,
+) -> Result<Response, ContractError> {
+    // Market makers not allowed to fill staking requests.
+    if intent {
+        return Ok(Response::new().add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: ACK_ERR_ONLY_MAKER.into(),
+            },
+            vec![],
+        )?));
+    }
+
+    let validator =
+        str::from_utf8(&stake.validator).map_err(|_| ContractError::InvalidValidator)?;
+    let governance_token = str::from_utf8(&stake.governance_token)
+        .map_err(|_| ContractError::InvalidGovernanceToken)?;
+    let stake_amount = u128::try_from(stake.amount).map_err(|_| ContractError::AmountOverflow)?;
+
+    let stake_account = predict_stake_account(
+        deps.as_ref(),
+        env.clone(),
+        packet.destination_channel_id,
+        stake.token_id,
+    )?;
+
+    if deps
+        .querier
+        .query_wasm_contract_info(&stake_account)
+        .is_ok()
+    {
+        return Err(ContractError::StakingAccountAlreadyExist {
+            stake: Box::new(stake),
+            account: stake_account,
+        });
+    }
+
+    let mut messages = Vec::new();
+    let config = CONFIG.load(deps.storage)?;
+
+    // 1. Create the staking account
+    messages.push(
+        WasmMsg::Instantiate2 {
+            admin: Some(env.contract.address.to_string()),
+            code_id: config.dummy_code_id,
+            label: format!(
+                "ucs03-staking-account:{}-{}",
+                packet.destination_channel_id, stake.token_id
+            ),
+            msg: to_json_binary(&cosmwasm_std::Empty {})?,
+            funds: vec![],
+            salt: Binary::new(calculate_stake_account_salt(
+                packet.destination_channel_id,
+                stake.token_id,
+            )),
+        }
+        .into(),
+    );
+    messages.push(
+        WasmMsg::Migrate {
+            contract_addr: stake_account.to_string(),
+            new_code_id: config.cw_account_code_id,
+            msg: to_json_binary(&UpgradeMsg::<_, Empty>::Init(
+                cw_account::msg::InstantiateMsg {
+                    owner: env.contract.address.clone(),
+                },
+            ))?,
+        }
+        .into(),
+    );
+
+    // 2. Unescrow the gov tokens to the stake account.
+    let minter = TOKEN_MINTER.load(deps.storage)?;
+    decrease_channel_balance(
+        deps,
+        packet.destination_channel_id,
+        U256::ZERO,
+        governance_token.into(),
+        stake_amount.into(),
+    )?;
+    messages.push(make_wasm_msg(
+        LocalTokenMsg::Unescrow {
+            denom: governance_token.into(),
+            recipient: stake_account.clone().into(),
+            amount: stake_amount.into(),
+        },
+        minter,
+        vec![],
+    )?);
+
+    // 3. Delegate the token to the validator
+    messages.push(
+        wasm_execute(
+            stake_account.clone(),
+            &cw_account::msg::ExecuteMsg {
+                messages: vec![StakingMsg::Delegate {
+                    validator: validator.into(),
+                    amount: Coin::new(stake_amount, governance_token),
+                }
+                .into()],
+            },
+            vec![],
+        )?
+        .into(),
+    );
+
+    Ok(Response::new()
+        .add_messages(messages)
+        .add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: TAG_ACK_SUCCESS.abi_encode().into(),
+            },
+            vec![],
+        )?))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn execute_unstake(
+    deps: DepsMut,
+    env: Env,
+    packet: Packet,
+    unstake: Unstake,
+    intent: bool,
+) -> Result<Response, ContractError> {
+    // Market makers not allowed to fill unstaking requests.
+    if intent {
+        return Ok(Response::new().add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: ACK_ERR_ONLY_MAKER.into(),
+            },
+            vec![],
+        )?));
+    }
+
+    let validator =
+        str::from_utf8(&unstake.validator).map_err(|_| ContractError::InvalidValidator)?;
+    let governance_token = str::from_utf8(&unstake.governance_token)
+        .map_err(|_| ContractError::InvalidGovernanceToken)?;
+    let stake_amount = u128::try_from(unstake.amount).map_err(|_| ContractError::AmountOverflow)?;
+
+    let stake_account = predict_stake_account(
+        deps.as_ref(),
+        env.clone(),
+        packet.destination_channel_id,
+        unstake.token_id,
+    )?;
+
+    Ok(Response::new().add_submessage(SubMsg::reply_on_success(
+        wasm_execute(
+            stake_account.clone(),
+            &cw_account::msg::ExecuteMsg {
+                messages: vec![
+                    // Withdraw the pending rewards because we won't earn any
+                    // new reward after undelegating
+                    DistributionMsg::WithdrawDelegatorReward {
+                        validator: validator.into(),
+                    }
+                    .into(),
+                    StakingMsg::Undelegate {
+                        validator: validator.into(),
+                        amount: Coin::new(stake_amount, governance_token),
+                    }
+                    .into(),
+                ],
+            },
+            vec![],
+        )?,
+        UNSTAKE_REPLY_ID,
+    )))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn execute_withdraw_stake(
+    deps: DepsMut,
+    env: Env,
+    packet: Packet,
+    withdraw_stake: WithdrawStake,
+    intent: bool,
+) -> Result<Response, ContractError> {
+    // Market makers not allowed to fill unstaking requests.
+    if intent {
+        return Ok(Response::new().add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: ACK_ERR_ONLY_MAKER.into(),
+            },
+            vec![],
+        )?));
+    }
+
+    let governance_token = str::from_utf8(&withdraw_stake.governance_token)
+        .map_err(|_| ContractError::InvalidGovernanceToken)?;
+
+    let stake_account = predict_stake_account(
+        deps.as_ref(),
+        env.clone(),
+        packet.destination_channel_id,
+        withdraw_stake.token_id,
+    )?;
+
+    let coin = deps
+        .querier
+        .query_balance(stake_account.clone(), governance_token)?;
+
+    let minter = TOKEN_MINTER.load(deps.storage)?;
+
+    // The amount will be unescrowed + minted (for additional reward) on the counterparty
+    increase_channel_balance(
+        deps.storage,
+        packet.destination_channel_id,
+        U256::ZERO,
+        governance_token.to_string(),
+        coin.amount.u128().into(),
+    )?;
+
+    Ok(Response::new()
+        .add_message(wasm_execute(
+            stake_account.clone(),
+            &cw_account::msg::ExecuteMsg {
+                messages: vec![BankMsg::Send {
+                    to_address: minter.into(),
+                    amount: vec![coin.clone()],
+                }
+                .into()],
+            },
+            vec![],
+        )?)
+        .add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: WithdrawStakeAck {
+                    amount: U256::from(coin.amount.u128()),
+                }
+                .abi_encode_params()
+                .into(),
+            },
+            vec![],
+        )?))
+}
+
 #[cfg_attr(not(feature = "library"), entry_point)]
 pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, ContractError> {
     match reply.id {
@@ -1689,6 +2007,38 @@ pub fn reply(deps: DepsMut, env: Env, reply: Reply) -> Result<Response, Contract
                     )?)),
             }
         }
+        UNSTAKE_REPLY_ID => match reply.result {
+            SubMsgResult::Ok(response) => {
+                let completion_time_utc_str = response
+                    .events
+                    .into_iter()
+                    .find_map(|e| {
+                        if e.ty == "unbond" {
+                            e.attributes
+                                .into_iter()
+                                .find(|a| a.key == "completion_time")
+                        } else {
+                            None
+                        }
+                    })
+                    .expect("impossible");
+                let completion_time_utc =
+                    DateTime::parse_from_rfc3339(&completion_time_utc_str.value)
+                        .expect("impossible");
+                Ok(Response::new().add_message(wasm_execute(
+                    env.contract.address,
+                    &ExecuteMsg::InternalWriteAck {
+                        ack: UnstakeAck {
+                            completion_time: U256::from(completion_time_utc.timestamp()),
+                        }
+                        .abi_encode_params()
+                        .into(),
+                    },
+                    vec![],
+                )?))
+            }
+            SubMsgResult::Err(_) => panic!("reply_on_success with error branch, impossible"),
+        },
         // For any other reply ID, we don't know how to handle it, so we return an error.
         // This is a safety measure to ensure we don't silently ignore unexpected replies,
         // which could indicate a bug in the contract or an attempt to exploit it.
@@ -2035,6 +2385,8 @@ pub struct MigrateMsg {
     token_minter_migration: Option<TokenMinterMigration>,
     // Whether to enable or disable rate limiting while migrating.
     rate_limit_disabled: bool,
+    dummy_code_id: Option<u64>,
+    cw_account_code_id: Option<u64>,
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
@@ -2058,6 +2410,12 @@ pub fn migrate(
         |deps, migrate_msg, _current_version| {
             CONFIG.update::<_, ContractError>(deps.storage, |mut config| {
                 config.rate_limit_disabled = migrate_msg.rate_limit_disabled;
+                if let Some(dummy_code_id) = migrate_msg.dummy_code_id {
+                    config.dummy_code_id = dummy_code_id;
+                }
+                if let Some(cw_account_code_id) = migrate_msg.cw_account_code_id {
+                    config.cw_account_code_id = cw_account_code_id;
+                }
                 Ok(config)
             })?;
             if let Some(token_minter_migration) = migrate_msg.token_minter_migration {
@@ -2090,8 +2448,20 @@ fn make_wasm_msg(
 }
 
 #[cfg_attr(not(feature = "library"), entry_point)]
-pub fn query(deps: Deps, _: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
+pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractError> {
     match msg {
+        QueryMsg::PredictStakeAccount {
+            channel_id,
+            token_id,
+        } => Ok(to_json_binary(
+            predict_stake_account(
+                deps,
+                env,
+                channel_id,
+                U256::from_be_bytes(token_id.to_be_bytes()),
+            )?
+            .as_str(),
+        )?),
         QueryMsg::PredictWrappedToken {
             path,
             channel_id,

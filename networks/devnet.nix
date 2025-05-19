@@ -67,21 +67,15 @@
             staking.params = {
               epoch_length = "8";
               jailed_validator_threshold = "10";
+              unbonding_time = "2m";
             };
             slashing.params = {
               signed_blocks_window = "10";
             };
-            tokenfactory.params = {
-              denom_creation_fee = [
-                {
-                  denom = "muno";
-                  amount = "10000000";
-                }
-              ];
-            };
           };
         };
         lightClients = [
+          # self'.packages.trusted-mpt-light-client
           # self'.packages.ethereum-light-client
           # self'.packages.scroll-light-client
           # self'.packages.arbitrum-light-client
@@ -276,7 +270,7 @@
           }
           # For some reason, blockscout backend segfault on non-x86 arch
           // (
-            if pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == null) then
+            if pkgs.stdenv.isx86_64 && (builtins.getEnv "NO_BLOCKSCOUT" == "") then
               {
                 blockscout-backend = import ./services/blockscout/backend.nix {
                   inherit lib pkgs;

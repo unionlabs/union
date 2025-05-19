@@ -47,22 +47,29 @@ struct UCS03Parameters {
     uint8 nativeTokenDecimals;
 }
 
-library LIB {
+library LIB_SALT {
     string constant MULTICALL = "lib/multicall-v2";
     string constant UCS03_ZKGM_ERC20_IMPL = "lib/zkgm-erc20-v2";
 }
 
-library IBC {
+library IBC_SALT {
     string constant BASED = "ibc-is-based";
     string constant MANAGER = "manager";
 }
 
-library LightClients {
+library LIGHT_CLIENT_SALT {
     string constant COMETBLS = "lightclients/cometbls";
     string constant STATE_LENS_ICS23_MPT = "lightclients/state-lens/ics23/mpt";
     string constant STATE_LENS_ICS23_ICS23 =
         "lightclients/state-lens/ics23/ics23";
     string constant STATE_LENS_ICS23_SMT = "lightclients/state-lens/ics23/smt";
+}
+
+library LightClients {
+    string constant COMETBLS = "cometbls";
+    string constant STATE_LENS_ICS23_MPT = "state-lens/ics23/mpt";
+    string constant STATE_LENS_ICS23_ICS23 = "state-lens/ics23/ics23";
+    string constant STATE_LENS_ICS23_SMT = "state-lens/ics23/smt";
 }
 
 library Protocols {
@@ -124,7 +131,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (Multicall) {
         return Multicall(
             deploy(
-                LIB.MULTICALL,
+                LIB_SALT.MULTICALL,
                 abi.encode(
                     address(new Multicall()),
                     abi.encodeCall(Multicall.initialize, (address(manager)))
@@ -138,7 +145,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (Manager) {
         return Manager(
             deploy(
-                IBC.MANAGER,
+                IBC_SALT.MANAGER,
                 abi.encode(
                     address(new Manager()),
                     abi.encodeCall(Manager.initialize, (owner))
@@ -150,7 +157,7 @@ abstract contract UnionScript is UnionBase {
     function deployZkgmERC20() internal returns (ZkgmERC20) {
         return ZkgmERC20(
             getDeployer().deploy(
-                LIB.UCS03_ZKGM_ERC20_IMPL,
+                LIB_SALT.UCS03_ZKGM_ERC20_IMPL,
                 abi.encodePacked(type(ZkgmERC20).creationCode),
                 0
             )
@@ -162,7 +169,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (IBCHandler) {
         return IBCHandler(
             deploy(
-                IBC.BASED,
+                IBC_SALT.BASED,
                 abi.encode(
                     address(new IBCHandler()),
                     abi.encodeCall(IBCHandler.initialize, (address(manager)))
@@ -177,7 +184,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (StateLensIcs23MptClient) {
         return StateLensIcs23MptClient(
             deploy(
-                LightClients.STATE_LENS_ICS23_MPT,
+                LIGHT_CLIENT_SALT.STATE_LENS_ICS23_MPT,
                 abi.encode(
                     address(new StateLensIcs23MptClient(address(handler))),
                     abi.encodeCall(
@@ -194,7 +201,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (StateLensIcs23Ics23Client) {
         return StateLensIcs23Ics23Client(
             deploy(
-                LightClients.STATE_LENS_ICS23_ICS23,
+                LIGHT_CLIENT_SALT.STATE_LENS_ICS23_ICS23,
                 abi.encode(
                     address(new StateLensIcs23Ics23Client(address(handler))),
                     abi.encodeCall(
@@ -211,7 +218,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (StateLensIcs23SmtClient) {
         return StateLensIcs23SmtClient(
             deploy(
-                LightClients.STATE_LENS_ICS23_SMT,
+                LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT,
                 abi.encode(
                     address(new StateLensIcs23SmtClient(address(handler))),
                     abi.encodeCall(
@@ -228,7 +235,7 @@ abstract contract UnionScript is UnionBase {
     ) internal returns (CometblsClient) {
         return CometblsClient(
             deploy(
-                LightClients.COMETBLS,
+                LIGHT_CLIENT_SALT.COMETBLS,
                 abi.encode(
                     address(new CometblsClient(address(handler))),
                     abi.encodeCall(
@@ -275,9 +282,14 @@ abstract contract UnionScript is UnionBase {
                                 params.weth,
                                 zkgmERC20,
                                 params.rateLimitEnabled,
-                                params.nativeTokenName,
-                                params.nativeTokenSymbol,
-                                params.nativeTokenDecimals
+                                new UCS03ZkgmSendImpl(
+                                    handler,
+                                    params.weth,
+                                    params.nativeTokenName,
+                                    params.nativeTokenSymbol,
+                                    params.nativeTokenDecimals
+                                ),
+                                new UCS03ZkgmStakeImpl(handler)
                             )
                         ),
                         abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
@@ -445,7 +457,7 @@ contract DeployMulticall is UnionScript, VersionedScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        Manager manager = Manager(getDeployed(IBC.MANAGER));
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
 
         vm.startBroadcast(privateKey);
         deployMulticall(manager);
@@ -519,8 +531,8 @@ contract DeployStateLensIcs23MptClient is UnionScript, VersionedScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        Manager manager = Manager(getDeployed(IBC.MANAGER));
-        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
 
         vm.startBroadcast(privateKey);
         StateLensIcs23MptClient stateLensIcs23MptClient =
@@ -595,9 +607,10 @@ contract DeployUCS03 is UnionScript, VersionedScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        Manager manager = Manager(getDeployed(IBC.MANAGER));
-        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
-        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
+        ZkgmERC20 zkgmERC20 =
+            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
 
         vm.startBroadcast(privateKey);
         UCS03Zkgm zkgm =
@@ -635,8 +648,8 @@ contract DeployStateLensIcs23Ics23Client is UnionScript, VersionedScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        Manager manager = Manager(getDeployed(IBC.MANAGER));
-        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
 
         vm.startBroadcast(privateKey);
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
@@ -676,8 +689,8 @@ contract DeployStateLensIcs23SmtClient is UnionScript, VersionedScript {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
 
-        Manager manager = Manager(getDeployed(IBC.MANAGER));
-        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
 
         vm.startBroadcast(privateKey);
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
@@ -838,19 +851,19 @@ contract GetDeployed is VersionedScript {
         string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
         uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
 
-        address multicall = getDeployed(LIB.MULTICALL);
-        address zkgmERC20 = getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL);
+        address multicall = getDeployed(LIB_SALT.MULTICALL);
+        address zkgmERC20 = getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL);
 
-        address manager = getDeployed(IBC.MANAGER);
-        address handler = getDeployed(IBC.BASED);
+        address manager = getDeployed(IBC_SALT.MANAGER);
+        address handler = getDeployed(IBC_SALT.BASED);
 
-        address cometblsClient = getDeployed(LightClients.COMETBLS);
+        address cometblsClient = getDeployed(LIGHT_CLIENT_SALT.COMETBLS);
         address stateLensIcs23MptClient =
-            getDeployed(LightClients.STATE_LENS_ICS23_MPT);
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_MPT);
         address stateLensIcs23Ics23Client =
-            getDeployed(LightClients.STATE_LENS_ICS23_ICS23);
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_ICS23);
         address stateLensIcs23SmtClient =
-            getDeployed(LightClients.STATE_LENS_ICS23_SMT);
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT);
 
         address ucs00 = getDeployed(Protocols.UCS00);
         address ucs03 = getDeployed(Protocols.UCS03);
@@ -1156,8 +1169,9 @@ contract DryUpgradeUCS03 is VersionedScript {
         string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
         uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
 
-        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
-        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
+        ZkgmERC20 zkgmERC20 =
+            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
@@ -1170,11 +1184,17 @@ contract DryUpgradeUCS03 is VersionedScript {
                 weth,
                 zkgmERC20,
                 rateLimitEnabled,
-                nativeTokenName,
-                nativeTokenSymbol,
-                nativeTokenDecimals
+                new UCS03ZkgmSendImpl(
+                    handler,
+                    weth,
+                    nativeTokenName,
+                    nativeTokenSymbol,
+                    nativeTokenDecimals
+                ),
+                new UCS03ZkgmStakeImpl(handler)
             )
         );
+
         vm.prank(owner);
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
     }
@@ -1209,8 +1229,9 @@ contract UpgradeUCS03 is VersionedScript {
         string memory nativeTokenSymbol = vm.envString("NATIVE_TOKEN_SYMBOL");
         uint8 nativeTokenDecimals = uint8(vm.envUint("NATIVE_TOKEN_DECIMALS"));
 
-        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC.BASED));
-        ZkgmERC20 zkgmERC20 = ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
+        IIBCModulePacket handler = IIBCModulePacket(getDeployed(IBC_SALT.BASED));
+        ZkgmERC20 zkgmERC20 =
+            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
 
         console.log(
@@ -1224,9 +1245,14 @@ contract UpgradeUCS03 is VersionedScript {
                 weth,
                 zkgmERC20,
                 rateLimitEnabled,
-                nativeTokenName,
-                nativeTokenSymbol,
-                nativeTokenDecimals
+                new UCS03ZkgmSendImpl(
+                    handler,
+                    weth,
+                    nativeTokenName,
+                    nativeTokenSymbol,
+                    nativeTokenDecimals
+                ),
+                new UCS03ZkgmStakeImpl(handler)
             )
         );
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));
@@ -1291,7 +1317,7 @@ contract DryUpgradeIBCHandler is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        address handler = getDeployed(IBC_SALT.BASED);
         console.log(
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
         );
@@ -1324,7 +1350,7 @@ contract UpgradeIBCHandler is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        address handler = getDeployed(IBC_SALT.BASED);
         console.log(
             string(abi.encodePacked("IBCHandler: ", handler.toHexString()))
         );
@@ -1358,9 +1384,9 @@ contract DryUpgradeCometblsClient is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        address handler = getDeployed(IBC_SALT.BASED);
         CometblsClient cometblsClient =
-            CometblsClient(getDeployed(LightClients.COMETBLS));
+            CometblsClient(getDeployed(LIGHT_CLIENT_SALT.COMETBLS));
         console.log(
             string(
                 abi.encodePacked(
@@ -1397,9 +1423,9 @@ contract UpgradeCometblsClient is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        address handler = getDeployed(IBC_SALT.BASED);
         CometblsClient cometblsClient =
-            CometblsClient(getDeployed(LightClients.COMETBLS));
+            CometblsClient(getDeployed(LIGHT_CLIENT_SALT.COMETBLS));
         console.log(
             string(
                 abi.encodePacked(
@@ -1437,9 +1463,11 @@ contract UpgradeStateLensIcs23MptClient is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        address handler = getDeployed(IBC_SALT.BASED);
         StateLensIcs23MptClient stateLensIcs23MptClient =
-        StateLensIcs23MptClient(getDeployed(LightClients.STATE_LENS_ICS23_MPT));
+        StateLensIcs23MptClient(
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_MPT)
+        );
         console.log(
             string(
                 abi.encodePacked(
@@ -1481,10 +1509,10 @@ contract UpgradeStateLensIcs23Ics23Client is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        address handler = getDeployed(IBC_SALT.BASED);
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
         StateLensIcs23Ics23Client(
-            getDeployed(LightClients.STATE_LENS_ICS23_ICS23)
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_ICS23)
         );
         console.log(
             string(
@@ -1527,9 +1555,11 @@ contract UpgradeStateLensIcs23SmtClient is VersionedScript {
     }
 
     function run() public {
-        address handler = getDeployed(IBC.BASED);
+        address handler = getDeployed(IBC_SALT.BASED);
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
-        StateLensIcs23SmtClient(getDeployed(LightClients.STATE_LENS_ICS23_SMT));
+        StateLensIcs23SmtClient(
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT)
+        );
         console.log(
             string(
                 abi.encodePacked(
@@ -1573,25 +1603,29 @@ contract DeployRoles is UnionScript {
     }
 
     function getContracts() internal returns (Contracts memory) {
-        Manager manager = Manager(getDeployed(IBC.MANAGER));
-        IBCHandler handler = IBCHandler(getDeployed(IBC.BASED));
+        Manager manager = Manager(getDeployed(IBC_SALT.MANAGER));
+        IBCHandler handler = IBCHandler(getDeployed(IBC_SALT.BASED));
         CometblsClient cometblsClient =
-            CometblsClient(getDeployed(LightClients.COMETBLS));
+            CometblsClient(getDeployed(LIGHT_CLIENT_SALT.COMETBLS));
         PingPong ucs00 = PingPong(getDeployed(Protocols.UCS00));
         ZkgmERC20 ucs03Erc20Impl =
-            ZkgmERC20(getDeployed(LIB.UCS03_ZKGM_ERC20_IMPL));
+            ZkgmERC20(getDeployed(LIB_SALT.UCS03_ZKGM_ERC20_IMPL));
         UCS03Zkgm ucs03 = UCS03Zkgm(payable(getDeployed(Protocols.UCS03)));
         UCS06FundedDispatch ucs06 =
             UCS06FundedDispatch(getDeployed(Protocols.UCS06));
-        Multicall multicall = Multicall(getDeployed(LIB.MULTICALL));
+        Multicall multicall = Multicall(getDeployed(LIB_SALT.MULTICALL));
         StateLensIcs23MptClient stateLensIcs23MptClient =
-        StateLensIcs23MptClient(getDeployed(LightClients.STATE_LENS_ICS23_MPT));
+        StateLensIcs23MptClient(
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_MPT)
+        );
         StateLensIcs23Ics23Client stateLensIcs23Ics23Client =
         StateLensIcs23Ics23Client(
-            getDeployed(LightClients.STATE_LENS_ICS23_ICS23)
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_ICS23)
         );
         StateLensIcs23SmtClient stateLensIcs23SmtClient =
-        StateLensIcs23SmtClient(getDeployed(LightClients.STATE_LENS_ICS23_SMT));
+        StateLensIcs23SmtClient(
+            getDeployed(LIGHT_CLIENT_SALT.STATE_LENS_ICS23_SMT)
+        );
         return Contracts({
             manager: manager,
             multicall: multicall,

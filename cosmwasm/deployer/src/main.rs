@@ -139,6 +139,16 @@ enum App {
         #[arg(long)]
         output: Option<PathBuf>,
     },
+    ProxyCodeId {
+        #[arg(long)]
+        rpc_url: String,
+        #[arg(long, env)]
+        private_key: H256,
+        #[command(flatten)]
+        gas_config: GasFillerArgs,
+        #[arg(long)]
+        output: Option<PathBuf>,
+    },
     #[command(subcommand)]
     Tx(TxCmd),
 }
@@ -338,6 +348,7 @@ struct AppPaths {
 pub struct Ucs03Config {
     path: PathBuf,
     token_minter_path: PathBuf,
+    cw_account_path: PathBuf,
     token_minter_config: TokenMinterConfig,
     rate_limit_disabled: bool,
 }
@@ -379,6 +390,22 @@ async fn do_main() -> Result<()> {
     let app = App::parse();
 
     match app {
+        App::ProxyCodeId {
+            rpc_url,
+            private_key,
+            gas_config,
+            output,
+        } => {
+            let ctx = Deployer::new(rpc_url, private_key, &gas_config).await?;
+            let bytecode_base_address = ctx
+                .instantiate2_address(sha2(BYTECODE_BASE_BYTECODE), BYTECODE_BASE)
+                .await?;
+            let code_id = ctx
+                .instantiate_code_id_of_contract(bytecode_base_address)
+                .await?
+                .unwrap();
+            write_output(output, code_id)?;
+        }
         App::Addresses {
             deployer,
             lightclient,
@@ -684,6 +711,47 @@ async fn do_main() -> Result<()> {
                         }
                     };
 
+                    let (tx_hash, response) = ctx
+                        .tx(
+                            MsgStoreCode {
+                                sender: ctx.wallet().address().map_data(Into::into),
+                                wasm_byte_code: std::fs::read(ucs03_config.cw_account_path)?.into(),
+                                instantiate_permission: None,
+                            },
+                            "",
+                            gas_config.simulate,
+                        )
+                        .await
+                        .context("store minter code")?;
+
+                    let cw_account_code_id = response.code_id;
+
+                    info!(%tx_hash, cw_account_code_id, "cw_account stored");
+
+                    // on permissioned cosmwasm, we must specify that this code can be instantiated by the ucs03 contract
+                    if permissioned {
+                        let (tx_hash, _) = ctx
+                            .tx(
+                                MsgUpdateInstantiateConfig {
+                                    sender: ctx.wallet().address().map_data(Into::into),
+                                    code_id: cw_account_code_id,
+                                    new_instantiate_permission: Some(
+                                        AccessConfig::AnyOfAddresses {
+                                            addresses: vec![ucs03_address
+                                                .clone()
+                                                .map_data(Into::into)],
+                                        },
+                                    ),
+                                },
+                                "",
+                                gas_config.simulate,
+                            )
+                            .await
+                            .context("update instantiate perms of cw-account")?;
+
+                        info!(%tx_hash, "cw-account instantiate permissions updated");
+                    }
+
                     ctx.deploy_and_initiate(
                         std::fs::read(ucs03_config.path)?,
                         bytecode_base_code_id,
@@ -699,6 +767,8 @@ async fn do_main() -> Result<()> {
                                     ctx.wallet().address().to_string(),
                                 )],
                                 rate_limit_disabled: ucs03_config.rate_limit_disabled,
+                                dummy_code_id: bytecode_base_code_id.get(),
+                                cw_account_code_id: cw_account_code_id.get(),
                             },
                             minter_init_params,
                         },

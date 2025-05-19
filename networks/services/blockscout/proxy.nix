@@ -17,7 +17,7 @@ in
       FRONT_PROXY_PASS = "http://blockscout-frontend:3000";
     };
     ports = [
-      "80:80"
+      "81:80"
       "8080:8080"
       "8081:8081"
     ];

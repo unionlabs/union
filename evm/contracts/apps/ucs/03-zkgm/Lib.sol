@@ -24,10 +24,15 @@ library ZkgmLib {
     uint256 public constant FILL_TYPE_PROTOCOL = 0xB0CAD0;
     uint256 public constant FILL_TYPE_MARKETMAKER = 0xD1CEC45E;
 
+    // Public instructions
     uint8 public constant OP_FORWARD = 0x00;
     uint8 public constant OP_MULTIPLEX = 0x01;
     uint8 public constant OP_BATCH = 0x02;
     uint8 public constant OP_FUNGIBLE_ASSET_ORDER = 0x03;
+
+    uint8 public constant OP_STAKE = 0xC1;
+    uint8 public constant OP_UNSTAKE = 0xC2;
+    uint8 public constant OP_WITHDRAW_STAKE = 0xC3;
 
     uint8 public constant INSTR_VERSION_0 = 0x00;
     uint8 public constant INSTR_VERSION_1 = 0x01;
@@ -61,11 +66,46 @@ library ZkgmLib {
     error ErrInvalidMultiplexSender();
     error ErrInvalidForwardDestinationChannelId();
     error ErrInvalidMarketMakerOperation();
+    error ErrChannelGovernanceTokenNotSet();
+    error ErrInvalidUnwrappedGovernanceToken();
+    error ErrChannelGovernanceTokenAlreadySet();
+    error ErrNotStakeNFTOwner();
+    error ErrStakeNotWithdrawable();
+    error ErrStakeNotUnstakable();
+    error ErrStillStaked();
+    error ErrWaitForUnstakingCompletion();
+    error ErrNotStaked();
+    error ErrWithdrawStakeAmountMustBeLE();
+    error ErrInstructionCannotBeForwarded();
+    error ErrInvalidStakeGovernanceToken();
+    error ErrInvalidStakeChannelId();
+    error ErrInvalidStakeAmount();
+    error ErrInvalidStakeValidator();
 
     function encodeFungibleAssetOrderAck(
         FungibleAssetOrderAck memory ack
     ) internal pure returns (bytes memory) {
         return abi.encode(ack.fillType, ack.marketMaker);
+    }
+
+    function decodeUnstakeAck(
+        bytes calldata stream
+    ) internal pure returns (UnstakeAck calldata) {
+        UnstakeAck calldata ack;
+        assembly {
+            ack := stream.offset
+        }
+        return ack;
+    }
+
+    function decodeWithdrawStakeAck(
+        bytes calldata stream
+    ) internal pure returns (WithdrawStakeAck calldata) {
+        WithdrawStakeAck calldata ack;
+        assembly {
+            ack := stream.offset
+        }
+        return ack;
     }
 
     function decodeFungibleAssetOrderAck(
@@ -142,6 +182,12 @@ library ZkgmLib {
         return operand;
     }
 
+    function encodeInstruction(
+        Instruction memory inst
+    ) internal pure returns (bytes memory) {
+        return abi.encode(inst.version, inst.opcode, inst.operand);
+    }
+
     function encodeForward(
         Forward memory forward
     ) internal pure returns (bytes memory) {
@@ -150,6 +196,42 @@ library ZkgmLib {
             forward.timeoutHeight,
             forward.timeoutTimestamp,
             forward.instruction
+        );
+    }
+
+    function encodeStake(
+        Stake memory stake
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            stake.tokenId,
+            stake.governanceToken,
+            stake.sender,
+            stake.beneficiary,
+            stake.validator,
+            stake.amount
+        );
+    }
+
+    function encodeUnstake(
+        Unstake memory unstake
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            unstake.tokenId,
+            unstake.governanceToken,
+            unstake.sender,
+            unstake.validator,
+            unstake.amount
+        );
+    }
+
+    function encodeWithdrawStake(
+        WithdrawStake memory withdrawStake
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            withdrawStake.tokenId,
+            withdrawStake.governanceToken,
+            withdrawStake.sender,
+            withdrawStake.beneficiary
         );
     }
 
@@ -178,6 +260,36 @@ library ZkgmLib {
         bytes calldata stream
     ) internal pure returns (Multiplex calldata) {
         Multiplex calldata operand;
+        assembly {
+            operand := stream.offset
+        }
+        return operand;
+    }
+
+    function decodeStake(
+        bytes calldata stream
+    ) internal pure returns (Stake calldata) {
+        Stake calldata operand;
+        assembly {
+            operand := stream.offset
+        }
+        return operand;
+    }
+
+    function decodeUnstake(
+        bytes calldata stream
+    ) internal pure returns (Unstake calldata) {
+        Unstake calldata operand;
+        assembly {
+            operand := stream.offset
+        }
+        return operand;
+    }
+
+    function decodeWithdrawStake(
+        bytes calldata stream
+    ) internal pure returns (WithdrawStake calldata) {
+        WithdrawStake calldata operand;
         assembly {
             operand := stream.offset
         }
@@ -272,7 +384,9 @@ library ZkgmLib {
     function isAllowedBatchInstruction(
         uint8 opcode
     ) internal pure returns (bool) {
-        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER;
+        return opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
+            || opcode == OP_STAKE || opcode == OP_UNSTAKE
+            || opcode == OP_WITHDRAW_STAKE;
     }
 
     function isAllowedForwardInstruction(
@@ -395,5 +509,19 @@ library ZkgmLib {
             opcode: OP_BATCH,
             operand: encodeBatch(Batch({instructions: instructions}))
         });
+    }
+
+    function isInst(
+        Instruction calldata instruction,
+        uint8 opcode,
+        uint8 version
+    ) internal pure returns (bool) {
+        if (instruction.opcode != opcode) {
+            return false;
+        }
+        if (instruction.version != version) {
+            revert ErrUnsupportedVersion();
+        }
+        return true;
     }
 }
