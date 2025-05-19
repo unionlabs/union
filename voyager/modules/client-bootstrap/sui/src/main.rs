@@ -1,5 +1,6 @@
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
@@ -18,7 +19,7 @@ use sui_sdk::{
     SuiClient, SuiClientBuilder,
 };
 use tracing::instrument;
-use unionlabs::ibc::core::client::height::Height;
+use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
 use voyager_message::{
     ensure_null,
     module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
@@ -89,7 +90,7 @@ pub struct Config {
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
-pub struct MyCheckpointData {
+pub struct CheckpointData {
     pub checkpoint_summary: CertifiedCheckpointSummary,
     pub checkpoint_contents: CheckpointContents,
     pub transactions: Vec<CheckpointTransaction>,
@@ -111,21 +112,21 @@ impl ClientBootstrapModuleServer for Module {
             .read_api()
             .get_latest_checkpoint_sequence_number()
             .await
-            .unwrap();
+            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?;
 
         let latest_checkpoint = self
             .sui_client
             .read_api()
             .get_checkpoint(CheckpointId::SequenceNumber(latest_checkpoint_number))
             .await
-            .unwrap();
+            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?;
 
         let committee = self
             .sui_client
             .governance_api()
             .get_committee_info(Some(latest_checkpoint.epoch.into()))
             .await
-            .unwrap();
+            .map_err(|e| ErrorObject::owned(-1, ErrorReporter(e).to_string(), None::<()>))?;
 
         Ok(serde_json::to_value(ClientState::V1(ClientStateV1 {
             chain_id: self.chain_id.to_string(),
@@ -152,16 +153,29 @@ impl ClientBootstrapModuleServer for Module {
         // TODO(aeryz): imma fix it bro chill
         let client = reqwest::Client::new();
         let req = format!("{}/{}.chk", self.sui_object_store_rpc_url, height.height());
-        let res = client.get(req).send().await.unwrap().bytes().await.unwrap();
+        let res = client
+            .get(req)
+            .send()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching the checkpoint"),
+                    None::<()>,
+                )
+            })?
+            .bytes()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching the checkpoint"),
+                    None::<()>,
+                )
+            })?;
 
         let (_, checkpoint) =
-            bcs::from_bytes::<(u8, sui_sdk::types::full_checkpoint_content::CheckpointData)>(&res)
-                .unwrap();
-
-        let checkpoint = serde_json::to_string(&checkpoint).unwrap();
-        // TODO(aeryz): this is due to some `is_human_readable` thing in somewhere
-        // sorry for who reads this code, i'll fix it
-        let checkpoint: MyCheckpointData = serde_json::from_str(&checkpoint).unwrap();
+            bcs::from_bytes::<(u8, CheckpointData)>(&res).expect("can decode checkpoint data");
 
         Ok(serde_json::to_value(ConsensusState {
             timestamp: checkpoint.checkpoint_summary.data.sequence_number,
