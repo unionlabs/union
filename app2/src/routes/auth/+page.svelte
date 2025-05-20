@@ -1,7 +1,7 @@
 <script lang="ts">
 import { goto } from "$app/navigation"
 import { page } from "$app/state"
-import { createAuthError } from "$lib/dashboard/errors"
+import { mapSupabaseErrorToCustomError } from "$lib/dashboard/errors"
 import { errorStore } from "$lib/dashboard/stores/errors.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { Option } from "effect"
@@ -14,7 +14,7 @@ onMount(() => {
   const errorDescription = page.url.searchParams.get("error_description")
 
   if (error) {
-    errorStore.showError(createAuthError(error, errorDescription || undefined))
+    errorStore.showError(mapSupabaseErrorToCustomError(error, errorDescription || undefined))
   }
 
   // Then ensure minimum wait time
