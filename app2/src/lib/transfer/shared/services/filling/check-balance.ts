@@ -1,8 +1,9 @@
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { BalanceLookupError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
+import type { AddressCanonicalBytes, TokenRawDenom, UniversalChainId } from "@unionlabs/sdk/schema"
+import { ensureHex } from "@unionlabs/sdk/utils"
 import { Data, Effect, identity, Option } from "effect"
-import { isHex, toHex } from "viem"
 
 const BABY_SUB_AMOUNT = 1n * 10n ** 6n
 const BABYLON_CHAIN_ID = "babylon.bbn-1"
@@ -46,10 +47,10 @@ export const checkBalanceForIntent = (
       {} as Record<
         string,
         {
-          sender: string
+          sender: AddressCanonicalBytes
           baseToken: string
           required: bigint
-          source_universal_chain_id: string
+          source_universal_chain_id: UniversalChainId
         }
       >,
     )
@@ -62,7 +63,8 @@ export const checkBalanceForIntent = (
         return balancesStore.getBalance(
           group.source_universal_chain_id,
           group.sender,
-          isHex(group.baseToken) ? group.baseToken : toHex(group.baseToken),
+          // XXX: remove type coersion
+          ensureHex(group.baseToken) as TokenRawDenom,
         )
       }),
       balance => {
