@@ -100,22 +100,22 @@ const getUserFriendlyMessage = pipe(
     CosmosAddressEncodeError: (x) => `Failed to encode the Cosmos address ${x.address}.`,
     CosmosSwitchChainError: (x) =>
       `Failed to switch to chain ${x.chainInfo?.chainName}. Please switch manually within wallet.`,
-    CosmosWalletNotConnectedError: (x) =>
+    CosmosWalletNotConnectedError: () =>
       `Cosmos wallet not connected. Please check wallet connection.`,
     CosmosWalletNotOnWindowError: (x) => `${x.kind} not found on window. Please check wallet.`,
     CreatePublicClientError: () => "Failed to create network connection.",
     CreateViemPublicClientError: (x) => `Could not create the EVM public client: ${x.message}`,
     CreateViemWalletClientError: (x) => `Could not create the EVM wallet client: ${x.message}.`,
     CreateWalletClientError: (x) => `Could not create the wallet client: ${x.message}.`,
-    CryptoError: (x) => `Browser does not support cryptography functions.`,
-    EvmSwitchChainError: (x) => `Failed to switch chain. Please switch manually within wallet.`,
-    ExecuteContractError: (x) => `Failed to execute contract: ${x.cause.message}`,
+    CryptoError: () => `Browser does not support cryptography functions.`,
+    EvmSwitchChainError: () => `Failed to switch chain. Please switch manually within wallet.`,
+    ExecuteContractError: (x) => `Failed to execute contract: ${(x.cause as Error).message}`, // XXX: improve error type
     FetchNativeBalanceError: () => "Failed to fetch native token balance.",
-    GasPriceError: (x) => `Incorrect gas price configuration.`,
-    FromHexError: (x) => `Failed to decode hex.`,
+    GasPriceError: () => `Incorrect gas price configuration.`,
+    FromHexError: () => `Failed to decode hex.`,
     GetChainInfoError: (x) => `No info for EVM chain ${x.chainId}.`, // TODO: rename to EVM
     NoCosmosChainInfoError: (x) => `No info for Cosmos chain ${x.chain.display_name}.`,
-    FetchAptosTokenBalanceError: (x) => `Failed to fetch aptos token balance.`,
+    FetchAptosTokenBalanceError: () => `Failed to fetch aptos token balance.`,
     NoRpcError: (error) => `No ${error.type} endpoint available for ${error.chain.display_name}.`,
     NoSuchElementException: () => "An unexpected error occurred.", // TODO: remove me for more explicit errors
     NoViemChain: () => "Chain configuration not found for the selected network.",
@@ -130,12 +130,13 @@ const getUserFriendlyMessage = pipe(
     UnknownException: () => "An unexpected error occurred.",
     WaitForTransactionReceiptError: (x) =>
       `Waiting for the transaction receipt failed: ${x.message}`,
-    WriteContractError: (e) => `Failed to write to the contract: ${e.cause.cause.shortMessage}`, // TODO: needs types
+    WriteContractError: (e) =>
+      `Failed to write to the contract: ${(e.cause.cause as any).shortMessage}`, // TODO: improve error type
   }),
   Match.orElse((x) => `Unexpected error: ${x?.["_tag"]}`),
 )
 
-const writeToClipboard = () => {
+const _writeToClipboard = () => {
   navigator.clipboard.writeText(JSON.stringify(extractErrorDetails(error), null, 2))
 }
 
