@@ -63,7 +63,7 @@ export const checkBalanceForIntent = (
         return balancesStore.getBalance(
           group.source_universal_chain_id,
           group.sender,
-          // XXX: remove type coersion
+          // XXX: remove type coercion
           ensureHex(group.baseToken) as TokenRawDenom,
         )
       }),

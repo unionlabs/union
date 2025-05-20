@@ -23,7 +23,7 @@ export function isValidBech32ContractAddress(address: unknown) {
     return false
   }
   try {
-    // dosen't matter because it's a trycatch and preserves behavior
+    // doesn't matter because it's a trycatch and preserves behavior
     const { prefix: _, words } = bech32.decode(address as unknown as any)
     return true
   } catch {

@@ -27,7 +27,7 @@ const {
   ...rest
 }: Props = $props()
 
-// XXX: no type coersion
+// XXX: no type coercion
 const fullDisplayAddress = $derived(
   runSync(chain.getDisplayAddress(address as AddressCosmosCanonical)),
 )
