@@ -132,7 +132,12 @@ $effect(() => {
     let context: TransferContext
 
     while (true) {
-      const result: StateResult = yield* createContextState(currentState, transferData)
+      const result: StateResult | void = yield* createContextState(currentState, transferData)
+
+      if (!result) {
+        break
+      }
+
       statusMessage = result.message
 
       if (Option.isSome(result.error)) {
