@@ -1,20 +1,9 @@
 <script lang="ts">
 import Input from "$lib/components/ui/Input.svelte"
-import { wallets } from "$lib/stores/wallets.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
-import { Bech32FromAddressCanonicalBytesWithPrefix } from "@unionlabs/sdk/schema"
 import { Bech32 } from "@unionlabs/sdk/schema"
 import * as Address from "@unionlabs/sdk/schema/address"
-import {
-  Array as A,
-  Either as E,
-  Match,
-  Option as O,
-  ParseResult,
-  pipe,
-  Schema as S,
-  String as Str,
-} from "effect"
+import { Array as A, Either as E, Match, Option as O, ParseResult, pipe, Schema as S } from "effect"
 import { apply, constVoid, flow } from "effect/Function"
 import { onMount } from "svelte"
 import type { FormEventHandler } from "svelte/elements"
@@ -31,6 +20,7 @@ const schemaToUse = $derived(
       Match.when("evm", () => Address.ERC55),
       Match.when("cosmos", () => Bech32),
       Match.orElseAbsurd,
+      S.asSchema,
     ),
   ),
 )
