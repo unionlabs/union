@@ -21,6 +21,7 @@ import { onMount } from "svelte"
 
 // Store for the transfer details
 import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
+import RotateLeftIcon from "$lib/components/icons/RotateLeftIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
 import SharpDoubleCheckIcon from "$lib/components/icons/SharpDoubleCheckIcon.svelte"
 import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
@@ -190,12 +191,19 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                 {:else if simpleStatus._tag === "Failed"}
                   <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
                   <p class="text-babylon">Failed transfer. Will be refunded.</p>
-                {:else if simpleStatus._tag === "TimeoutSubmitted"}
-                  <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
+                {:else if simpleStatus._tag === "TimeoutPending"}
+                  <RotateLeftIcon class="size-6 text-yellow-500 self-center" />
                   <div class="flex flex-col">
-                    <p class="text-babylon">Timed out</p>
-                    <p class="text-babylon">This transfer has been refunded</p>
-                    <LongMonoWord>{simpleStatus.tx_hash}</LongMonoWord>
+                    <p class="text-babylon">Refund pending</p>
+                    <p class="text-babylon text-xs text-zinc-400">
+                      Transfer took too long
+                    </p>
+                  </div>
+                {:else if simpleStatus._tag === "TimeoutSubmitted"}
+                  <RotateLeftIcon class="size-6 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Refunded</p>
+                    <p class="text-xs text-zinc-400">Transfer took too long</p>
                   </div>
                 {:else}
                   <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
