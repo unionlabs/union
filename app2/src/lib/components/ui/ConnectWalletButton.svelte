@@ -24,7 +24,6 @@ import Button from "./Button.svelte"
       title="Cosmos"
     >
     </div>
-    <!--<div class="{Option.isSome(wallets.aptosAddress) ? 'pulse-3 bg-green-500 shadow-[0_0_2px_1px_rgba(34,197,94,0.6)]' : 'bg-zinc-800'} w-2 h-2 rounded-full transition-colors duration-200" title="Aptos"></div>!-->
   </div>
 </Button>
 
@@ -40,9 +39,5 @@ import Button from "./Button.svelte"
 .pulse-2 {
   animation: pulse 2s ease-in-out infinite;
   animation-delay: 0.3s;
-}
-.pulse-3 {
-  animation: pulse 2s ease-in-out infinite;
-  animation-delay: 0.6s;
 }
 </style>
