@@ -1,7 +1,6 @@
 import { bech32, bytes } from "@scure/base"
 import { Array as Arr, Data, Effect, Option, Schema, Schema as S } from "effect"
 import { dual, flow, pipe } from "effect/Function"
-import { URLFromSelf } from "effect/Schema"
 import type { Chain as ViemChain } from "viem"
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
