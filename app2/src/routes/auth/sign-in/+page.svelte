@@ -56,64 +56,42 @@ function handleLogin(provider: AuthProvider) {
 }
 </script>
 
-<div
-  class="min-h-screen flex flex-col items-center justify-center p-8 bg-gradient-to-br from-background/50 to-background relative overflow-hidden"
->
-  <!-- Background pattern -->
-  <div
-    class="absolute inset-0 bg-[radial-gradient(#334155_1px,transparent_1px)] [background-size:16px_16px] opacity-10"
-  >
-  </div>
-
-  <div class="relative">
-    <Card class="w-full max-w-md p-8">
-      <div class="text-center mb-8">
-        <h1 class="text-2xl font-bold mb-2">Welcome</h1>
-        <p class="text-muted-foreground">Sign in to continue to your dashboard</p>
-      </div>
-
-      <div class="space-y-3">
-        {#each providers as provider (provider.id)}
-          <Button
-            variant="secondary"
-            class="w-full flex items-center justify-center gap-3 h-12 relative {provider.disabled ? 'opacity-30 cursor-not-allowed' : ''}"
-            disabled={provider.disabled || loading}
-            onclick={() => handleLogin(provider)}
-            title={provider.disabled ? `${provider.name} is temporarily disabled` : ""}
+<div class="h-full w-full flex flex-col items-center justify-center">
+  <Card class="w-full max-w-lg p-8 shadow-lg backdrop-blur-sm bg-background/70">
+    <div class="space-y-2.5">
+      {#each providers as provider (provider.id)}
+        <Button
+          variant="secondary"
+          class="w-full flex items-center justify-center gap-3 h-11 relative hover:translate-y-[1px] transition-all {provider.disabled ? 'opacity-30 cursor-not-allowed' : ''}"
+          disabled={provider.disabled || loading}
+          onclick={() => handleLogin(provider)}
+          title={provider.disabled ? `${provider.name} is temporarily disabled` : ""}
+        >
+          <svg
+            class="w-5 h-5 {provider.iconColor} {loading ? 'opacity-70' : ''}"
+            viewBox="0 0 24 24"
           >
-            <svg
-              class="w-5 h-5 {provider.iconColor} {loading ? 'opacity-70' : ''}"
-              viewBox="0 0 24 24"
+            {@html provider.icon}
+          </svg>
+          <span class={loading ? "opacity-70" : ""}>Continue with {provider.name}</span>
+          {#if loading}
+            <div
+              class="absolute right-4 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"
             >
-              {@html provider.icon}
-            </svg>
-            <span class={loading ? "opacity-70" : ""}>Continue with {provider.name}</span>
-            {#if loading}
-              <div
-                class="absolute right-4 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"
-              >
-              </div>
-            {/if}
-          </Button>
-        {/each}
-      </div>
-    </Card>
-
-    <div class="text-center mt-6 text-sm text-muted-foreground">
-      By signing in, you agree to our
-      <a
-        href="/terms"
-        class="font-medium text-accent hover:text-accent/80 transition-colors"
-      >
-        Terms of Service
-      </a>
-      {" "}and{" "}
-      <a
-        href="/privacy-policy"
-        class="font-medium text-accent hover:text-accent/80 transition-colors"
-      >
-        Privacy Policy
-      </a>
+            </div>
+          {/if}
+        </Button>
+      {/each}
     </div>
+  </Card>
+
+  <div class="text-center mt-4 text-xs text-muted-foreground/80">
+    By signing in, you agree to our{" "}
+    <a
+      href="/privacy-policy"
+      class="font-medium text-primary hover:text-primary/80 underline underline-offset-4 decoration-primary/30 hover:decoration-primary/60 transition-all"
+    >
+      Privacy Policy
+    </a>
   </div>
 </div>
