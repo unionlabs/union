@@ -248,7 +248,7 @@ export const clearLocalStorageCacheEntry = (
 ): Effect.Effect<void, CacheError> => {
   const fullCacheKey = getCacheKey(namespace, key)
   return pipe(
-    Effect.logInfo(`Attempting to clear localStorage cache entry for key: ${fullCacheKey}`),
+    Effect.logTrace(`Attempting to clear localStorage cache entry for key: ${fullCacheKey}`),
     Effect.flatMap(() =>
       Effect.tryPromise(() => {
         localStorage.removeItem(fullCacheKey)
@@ -270,7 +270,7 @@ export const clearLocalStorageCacheEntry = (
           error,
         ),
       onSuccess: () =>
-        Effect.logInfo(
+        Effect.logTrace(
           `Successfully cleared localStorage cache entry for key: ${fullCacheKey}`,
         ),
     }),

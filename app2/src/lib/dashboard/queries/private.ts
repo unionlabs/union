@@ -200,7 +200,7 @@ export const removeUserWallet = (userId: string, address: string) =>
 
       const walletCacheKeySuffix = `${CACHE_VERSION}:${userId}`
       return pipe(
-        Effect.logInfo(
+        Effect.logTrace(
           `Database wallet removal successful for user ${userId}, address ${address}. Attempting to clear cache for namespace 'wallets', key suffix: ${walletCacheKeySuffix}`,
         ),
         Effect.flatMap(() => clearLocalStorageCacheEntry("wallets", walletCacheKeySuffix)),
