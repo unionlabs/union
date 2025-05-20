@@ -254,7 +254,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map(move |events| (events, tx.digest))
                     })
                     .filter_map(|(e, hash)| {
-                        (e.package_id.to_string() == self.ibc_handler_address).then_some((e, hash))
+                        (e.type_.address.to_string() == self.ibc_handler_address)
+                            .then_some((e, hash))
                     })
                     .map(|(e, hash)| {
                         let event = match e.type_.name.as_str() {
