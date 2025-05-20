@@ -2,8 +2,8 @@ use std::{cmp::Ordering, collections::VecDeque};
 
 use ibc_union_spec::{
     event::{
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry,
-        CreateClient, FullEvent, UpdateClient,
+        ChannelOpenInit, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, FullEvent, UpdateClient,
     },
     ClientId, IbcUnion,
 };
@@ -22,7 +22,7 @@ use voyager_message::{
     filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
-    primitives::{ChainId, ClientType, IbcSpec},
+    primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
@@ -288,6 +288,26 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                     serde_json::from_value(e.parsed_json).unwrap();
                                 events::IbcEvent::ConnectionOpenConfirm(connection_open)
                             }
+                            "ChannelOpenInit" => {
+                                let channel_open: events::ChannelOpenInit =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::ChannelOpenInit(channel_open)
+                            }
+                            "ChannelOpenTry" => {
+                                let channel_open: events::ChannelOpenTry =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::ChannelOpenTry(channel_open)
+                            }
+                            "ChannelOpenAck" => {
+                                let channel_open: events::ChannelOpenAck =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::ChannelOpenAck(channel_open)
+                            }
+                            "ChannelOpenConfirm" => {
+                                let channel_open: events::ChannelOpenConfirm =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::ChannelOpenConfirm(channel_open)
+                            }
                             e => panic!("unknown: {e}"),
                         };
 
@@ -387,6 +407,33 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         .into(),
                         event.client_id.try_into().unwrap(),
                     ),
+                    events::IbcEvent::ChannelOpenInit(event) => {
+                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(Height::new(height)),
+                                ibc_union_spec::path::ConnectionPath {
+                                    connection_id: event.connection_id.try_into().unwrap(),
+                                },
+                            )
+                            .await?;
+
+                        let client_id = connection.client_id;
+
+                        (
+                            ChannelOpenInit {
+                                port_id: event.port_id.into_bytes().into(),
+                                channel_id: event.channel_id.try_into().unwrap(),
+                                counterparty_port_id: event.counterparty_port_id.into(),
+                                connection,
+                                version: event.version,
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    }
+                    _ => panic!("unknown"),
                 };
                 ibc_union_spec::log_event(&full_event, &self.chain_id);
 
