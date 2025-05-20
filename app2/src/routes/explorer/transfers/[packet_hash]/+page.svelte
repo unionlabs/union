@@ -109,19 +109,15 @@ const simpleStatus = $derived.by(() => {
   }
 
   if (HAS_PACKET_ACK) {
-    if (transfer.success) {
-      return SimpleTransferStatus.SuccessAck()
-    } else {
-      return SimpleTransferStatus.FailedAck()
-    }
+    return transfer.success
+      ? SimpleTransferStatus.SuccessAck()
+      : SimpleTransferStatus.FailedAck()
   }
 
   if (HAS_WRITE_ACK) {
-    if (transfer.success) {
-      return SimpleTransferStatus.Success()
-    } else {
-      return SimpleTransferStatus.Failed()
-    }
+    return transfer.success
+      ? SimpleTransferStatus.Success()
+      : SimpleTransferStatus.Failed()
   }
   return SimpleTransferStatus.InProgress()
 })
@@ -183,6 +179,11 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                   <SpinnerIcon class="size-6" />
                   <p>In progress</p>
                 {:else if simpleStatus._tag === "SuccessAck"}
+                  <!--
+                    Different icon for success + ack, but same text.
+                    It is a useful detail for developers, but end-users should 
+                    not care about the difference between success and success + ack.
+                  !-->
                   <SharpDoubleCheckIcon class="size-6 text-accent" />
                   <p class="text-babylon">Received</p>
                 {:else if simpleStatus._tag === "Success"}
@@ -190,7 +191,20 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                   <p class="text-babylon">Received</p>
                 {:else if simpleStatus._tag === "Failed"}
                   <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
-                  <p class="text-babylon">Failed transfer. Will be refunded.</p>
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Failed transfer</p>
+                    <p class="text-babylon text-xs text-zinc-400">
+                      Will be refunded
+                    </p>
+                  </div>
+                {:else if simpleStatus._tag === "FailedAck"}
+                  <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Failed transfer</p>
+                    <p class="text-babylon text-xs text-zinc-400">
+                      Has been refunded
+                    </p>
+                  </div>
                 {:else if simpleStatus._tag === "TimeoutPending"}
                   <RotateLeftIcon class="size-6 text-yellow-500 self-center" />
                   <div class="flex flex-col">
@@ -208,8 +222,8 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                 {:else}
                   <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
                   <div class="flex flex-col">
-                    <p class="text-babylon">Error</p>
-                    <LongMonoWord>{simpleStatus._tag}</LongMonoWord>
+                    <p class="text-babylon">Unknown status</p>
+                    <p class="text-xs text-zinc-400">{simpleStatus._tag}</p>
                   </div>
                 {/if}
               </div>
