@@ -50,7 +50,7 @@ export const interceptLogos = () => {
     if (typeof url === "string" && url.startsWith(RAW)) {
       url = url.replace(RAW, CDN)
     }
-    return originalOpen.call(this, method, url, async, username, password)
+    return originalOpen.call(this, method, url, Boolean(async), username, password)
   }
 
   /**
