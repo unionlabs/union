@@ -45,7 +45,7 @@ const updateHighlightPosition = () => {
     })
 
     if (bestMatch) {
-      const rect = bestMatch.getBoundingClientRect()
+      const rect = (bestMatch as HTMLElement).getBoundingClientRect()
       highlightElement.style.top = `${rect.top}px`
       highlightElement.style.left = `${rect.left}px`
       highlightElement.style.width = `${rect.width}px`
@@ -100,7 +100,7 @@ onMount(() => {
       {/key}
     </a>
     <div class="flex flex-col flex-1">
-      {#each navigation as section, i}
+      {#each navigation as section}
         {#if section.title !== "Developer" || uiStore.showDeveloperPages}
           <section class="border-zinc-900 p-6 last:flex-1 flex flex-col justify-end">
             {#if section.title}
@@ -136,7 +136,7 @@ onMount(() => {
 
                   {#if item.subroutes && item.subroutes.length > 0}
                     <ul class="flex flex-col border-zinc-800 gap-1 pt-2 border-l-1 ml-5 pl-2">
-                      {#each item.subroutes as subroute, index}
+                      {#each item.subroutes as subroute}
                         {#if !subroute.editions
                   || subroute.editions.includes(uiStore.activeEdition)}
                           <li>
