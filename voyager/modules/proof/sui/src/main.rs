@@ -222,7 +222,7 @@ fn convert_object(object: Object) -> ObjectInner {
                 ))
             } else {
                 if let Some(struct_tag) = object_data.type_().other() {
-                    MoveObjectType::Other(convert_struct_tag(struct_tag))
+                    MoveObjectType::Other(convert_struct_tag(struct_tag.clone()))
                 } else {
                     panic!("no other possible states");
                 }
