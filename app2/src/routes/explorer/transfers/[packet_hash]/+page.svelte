@@ -22,6 +22,7 @@ import { onMount } from "svelte"
 // Store for the transfer details
 import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
+import SharpDoubleCheckIcon from "$lib/components/icons/SharpDoubleCheckIcon.svelte"
 import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
@@ -180,6 +181,9 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                 {#if simpleStatus._tag === "InProgress"}
                   <SpinnerIcon class="size-6" />
                   <p>In progress</p>
+                {:else if simpleStatus._tag === "SuccessAck"}
+                  <SharpDoubleCheckIcon class="size-6 text-accent" />
+                  <p class="text-babylon">Received</p>
                 {:else if simpleStatus._tag === "Success"}
                   <SharpCheckIcon class="size-6 text-accent" />
                   <p class="text-babylon">Received</p>
