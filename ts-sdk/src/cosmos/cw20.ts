@@ -82,9 +82,7 @@ export const readCw20BalanceAtHeight = (
       height,
     ).pipe(
       Effect.provide(FetchHttpClient.layer),
-      Effect.tapErrorCause((cause) =>
-        Effect.logError("Error fetching channel balance at height:", cause)
-      ),
+      Effect.tapErrorCause((cause) => Effect.logError("cosmos.readCw20BalanceAtHeight", cause)),
     )
     return resp.data.balance
   })
@@ -108,9 +106,7 @@ export const readCw20TotalSupplyAtHeight = (
       token_info: {},
     }, height).pipe(
       Effect.provide(FetchHttpClient.layer),
-      Effect.tapErrorCause((cause) =>
-        Effect.logError("Error fetching channel balance at height:", cause)
-      ),
+      Effect.tapErrorCause((cause) => Effect.logError("cosmos.readCw20TotalSupplyAtHeight", cause)),
     )
     return resp.data.total_supply
   })

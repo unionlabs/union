@@ -31,9 +31,7 @@ export const channelBalanceAtHeight = (rest: string, path: bigint, token: string
       },
     }, height).pipe(
       Effect.provide(FetchHttpClient.layer),
-      Effect.tapErrorCause((cause) =>
-        Effect.logError("Error fetching channel balance at height:", cause)
-      ),
+      Effect.tapErrorCause((cause) => Effect.logError("cosmos.channelBalanceAtHeight", cause)),
     )
     return resp.data
   })

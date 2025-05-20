@@ -60,7 +60,7 @@ export const fetchAptosBalance = ({
   return Effect.gen(function*() {
     const aptosClient = yield* getPublicClient(chain)
 
-    yield* Effect.log(
+    yield* Effect.logTrace(
       `starting aptos balance fetcher for ${chain.universal_chain_id}:${walletAddress}:${tokenAddress}`,
     )
 
