@@ -1,10 +1,10 @@
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { WalletError } from "../errors"
 import { getWalletsByUserId, removeUserWallet } from "../queries/private"
 import type { Wallet } from "../queries/private"
 import { getChains } from "../queries/public"
+import { errorStore } from "../stores/errors.svelte"
 
 const POLL_INTERVAL = 5 * 60_000
 
@@ -134,18 +134,13 @@ export class WalletStore {
       pipe(
         getWalletsByUserId(userId),
         Effect.tap((result) => {
-          console.log("[wallet] User wallets loaded:", result)
           this.wallets = result
           return Effect.void
         }),
-        Effect.catchAll((error) =>
-          Effect.fail(
-            new WalletError({
-              cause: extractErrorDetails(error),
-              operation: "load",
-            }),
-          )
-        ),
+        Effect.catchAll((error) => {
+          errorStore.showError(new WalletError({ cause: error, operation: "load" }))
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -159,18 +154,13 @@ export class WalletStore {
       pipe(
         getChains(),
         Effect.tap((result) => {
-          console.log("[wallet] Chains loaded:", result)
           this.chains = result
           return Effect.void
         }),
-        Effect.catchAll((error) =>
-          Effect.fail(
-            new WalletError({
-              cause: extractErrorDetails(error),
-              operation: "loadChains",
-            }),
-          )
-        ),
+        Effect.catchAll((error) => {
+          errorStore.showError(new WalletError({ cause: error, operation: "loadChains" }))
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -181,9 +171,8 @@ export class WalletStore {
    * @private
    */
   private startPolling(userId: string) {
-    this.stopPolling() // Make sure to stop any existing poll
+    this.stopPolling()
 
-    // Start polling fiber
     const self = this
     this.pollFiber = Effect.runFork(
       Effect.forever(
@@ -193,14 +182,10 @@ export class WalletStore {
             self.wallets = result
             return Effect.void
           }),
-          Effect.catchAll((error) =>
-            Effect.fail(
-              new WalletError({
-                cause: extractErrorDetails(error),
-                operation: "load",
-              }),
-            )
-          ),
+          Effect.catchAll((error) => {
+            errorStore.showError(new WalletError({ cause: error, operation: "load" }))
+            return Effect.succeed(Option.none())
+          }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),
         ),
       ),
@@ -247,34 +232,27 @@ export class WalletStore {
         if (dbSuccess) {
           const currentWallets = Option.getOrElse(this.wallets, () => [] as Array<Wallet>)
           this.wallets = Option.some(currentWallets.filter(wallet => wallet.address !== address))
-
-          console.log(`[wallet] Optimistically removed ${address}. Forcing store refresh.`)
           this.refresh()
-
           return Effect.succeed(true)
         }
         return Effect.succeed(false)
       }),
-      Effect.catchAll((error) =>
-        Effect.fail(
-          new WalletError({
-            cause: extractErrorDetails(error),
-            operation: "remove",
-          }),
-        )
-      ),
+      Effect.catchAll((error) => {
+        errorStore.showError(new WalletError({ cause: error, operation: "remove" }))
+        return Effect.succeed(false)
+      }),
     )
   }
 
   // Method to remove an entire wallet group by its groupingId
   removeWalletGroup(groupingId: string) {
     if (!groupingId) {
-      return Effect.succeed(false) // Or Effect.fail if this is an error state
+      return Effect.succeed(false)
     }
 
     const walletsInGroup = this.enhanced.filter(w => w.grouping === groupingId)
     if (walletsInGroup.length === 0) {
-      return Effect.succeed(true) // No wallets in group, consider it success
+      return Effect.succeed(true)
     }
 
     const removalEffects = walletsInGroup.map(wallet =>
@@ -282,34 +260,24 @@ export class WalletStore {
     )
 
     return pipe(
-      Effect.all(removalEffects, { concurrency: "inherit", discard: false }), // discard:false to get all results
+      Effect.all(removalEffects, { concurrency: "inherit", discard: false }),
       Effect.flatMap((results) => {
-        // Check if all removals were successful (or handle partial success)
-        const allSucceeded = results.every(res => res) // Assuming removeUserWallet returns boolean Effect
+        const allSucceeded = results.every(res => res)
         if (allSucceeded) {
           const currentWallets = Option.getOrElse(this.wallets, () => [] as Array<Wallet>)
           this.wallets = Option.some(
             currentWallets.filter(wallet => wallet.grouping !== groupingId),
           )
-          console.log(`[wallet] Optimistically removed group ${groupingId}. Forcing store refresh.`)
           this.refresh()
           return Effect.succeed(true)
         }
-        // Handle partial failure if necessary, for now, let's say if not all succeed, it's a failure
-        console.error(`[wallet] Failed to remove some wallets in group ${groupingId}`)
-        // Optionally, you could try to refresh to get the actual state from DB
         this.refresh()
-        return Effect.succeed(false) // Or Effect.fail
+        return Effect.succeed(false)
       }),
       Effect.catchAll((error) => {
-        console.error(`[wallet] Error removing wallet group ${groupingId}:`, error)
-        this.refresh() // Refresh to sync with DB state after error
-        return Effect.fail(
-          new WalletError({
-            cause: extractErrorDetails(error),
-            operation: "remove",
-          }),
-        )
+        this.refresh()
+        errorStore.showError(new WalletError({ cause: error, operation: "remove" }))
+        return Effect.succeed(false)
       }),
     )
   }

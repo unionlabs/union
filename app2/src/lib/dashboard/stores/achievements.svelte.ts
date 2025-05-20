@@ -1,23 +1,10 @@
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { AchievementError } from "../errors"
 import { getAvailableAchievements, getUserAchievements } from "../queries/index"
+import { errorStore } from "../stores/errors.svelte"
 
-export type Achievement = Entity<"achievements"> & {
-  category?: {
-    title: string
-  } | null
-  subcategory?: {
-    title: string
-  } | null
-  reward_achievements?: {
-    rewards: {
-      title: string | null
-      cutoff: string | null
-    }[]
-  }[]
-}
+export type Achievement = Entity<"achievements">
 
 export type UserAchievement = Entity<"user_achievements">
 
@@ -92,14 +79,10 @@ export class AchievementsStore {
           this.achieved = result
           return Effect.void
         }),
-        Effect.catchAll((error) =>
-          Effect.fail(
-            new AchievementError({
-              cause: extractErrorDetails(error),
-              operation: "load",
-            }),
-          )
-        ),
+        Effect.catchAll((error) => {
+          errorStore.showError(new AchievementError({ cause: error, operation: "load" }))
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -115,14 +98,10 @@ export class AchievementsStore {
           this.available = result
           return Effect.void
         }),
-        Effect.catchAll((error) =>
-          Effect.fail(
-            new AchievementError({
-              cause: extractErrorDetails(error),
-              operation: "loadAvailable",
-            }),
-          )
-        ),
+        Effect.catchAll((error) => {
+          errorStore.showError(new AchievementError({ cause: error, operation: "loadAvailable" }))
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -145,14 +124,10 @@ export class AchievementsStore {
             self.achieved = result
             return Effect.void
           }),
-          Effect.catchAll((error) =>
-            Effect.fail(
-              new AchievementError({
-                cause: extractErrorDetails(error),
-                operation: "load",
-              }),
-            )
-          ),
+          Effect.catchAll((error) => {
+            errorStore.showError(new AchievementError({ cause: error, operation: "load" }))
+            return Effect.succeed(Option.none())
+          }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),
         ),
       ),

@@ -1,8 +1,8 @@
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { LeaderboardError } from "../errors"
 import { getLeaderboard } from "../queries/index"
+import { errorStore } from "../stores/errors.svelte"
 
 export type UserExperience = Entity<"user_levels">
 
@@ -56,21 +56,13 @@ export class LeaderboardStore {
       pipe(
         getLeaderboard(),
         Effect.tap((result) => {
-          console.log("[leaderboard] Leaderboard loaded:", {
-            hasData: Option.isSome(result),
-            dataLength: Option.isSome(result) ? result.value.length : 0,
-          })
           this.leaderboard = result
           return Effect.void
         }),
-        Effect.catchAll((error) =>
-          Effect.fail(
-            new LeaderboardError({
-              cause: extractErrorDetails(error),
-              operation: "load",
-            }),
-          )
-        ),
+        Effect.catchAll((error) => {
+          errorStore.showError(new LeaderboardError({ cause: error, operation: "load" }))
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -80,30 +72,21 @@ export class LeaderboardStore {
    * @private
    */
   private startPolling() {
-    this.stopPolling() // Make sure to stop any existing poll
+    this.stopPolling()
 
-    // Start polling fiber
     const self = this
     this.pollFiber = Effect.runFork(
       Effect.forever(
         pipe(
           getLeaderboard(),
           Effect.tap((result) => {
-            console.log("[leaderboard] Polling update:", {
-              hasData: Option.isSome(result),
-              dataLength: Option.isSome(result) ? result.value.length : 0,
-            })
             self.leaderboard = result
             return Effect.void
           }),
-          Effect.catchAll((error) =>
-            Effect.fail(
-              new LeaderboardError({
-                cause: extractErrorDetails(error),
-                operation: "load",
-              }),
-            )
-          ),
+          Effect.catchAll((error) => {
+            errorStore.showError(new LeaderboardError({ cause: error, operation: "load" }))
+            return Effect.succeed(Option.none())
+          }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),
         ),
       ),

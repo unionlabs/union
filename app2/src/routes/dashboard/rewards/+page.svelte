@@ -165,18 +165,6 @@ $effect(() => {
                     <span>{new Date(reward.cutoff).toLocaleDateString()}</span>
                   </div>
                 {/if}
-
-                {#if reward.meta}
-                  <div class="flex flex-col gap-1.5">
-                    <div class="text-[10px] lg:text-xs text-zinc-400">Reward Details:</div>
-                    <pre
-                      class="text-[10px] lg:text-xs text-zinc-300 bg-zinc-800/50 p-2 rounded"
-                    >
-                        {JSON.stringify(reward.meta, null, 2)}
-                      </pre
-                    >
-                  </div>
-                {/if}
               </div>
             {/if}
           </Card>

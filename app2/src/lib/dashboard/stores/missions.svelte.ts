@@ -1,8 +1,8 @@
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
-import type { Entity } from "../client.ts"
+import type { Entity } from "../client"
 import { MissionError } from "../errors"
 import { getAvailableMissions, getUserMissions } from "../queries/index"
+import { errorStore } from "../stores/errors.svelte"
 
 export type Mission = Entity<"missions">
 export type UserMission = Entity<"user_missions">
@@ -176,18 +176,17 @@ export class MissionsStore {
    * ```
    */
   stats = $derived.by(() => {
-    // Calculate the count of missions that are either currently active or already completed.
-    // This will be the denominator for "X / Y completed missions" and the completion rate.
-    const relevantCount = this.enhanced.filter(m => m.isCurrent || m.completed).length
-    const completedCount = this.completed.length // Number of truly completed missions.
+    // Count all missions regardless of status
+    const totalCount = this.enhanced.length
+    const completedCount = this.completed.length
 
     return {
-      total: relevantCount, // Total relevant missions for the X/Y display.
+      total: totalCount, // Total of all missions
       inProgress: this.active.length,
-      completed: completedCount, // Actual completed missions (numerator).
+      completed: completedCount,
       upcoming: this.upcoming.length,
-      completionRate: relevantCount > 0
-        ? (completedCount / relevantCount) * 100
+      completionRate: totalCount > 0
+        ? (completedCount / totalCount) * 100
         : 0,
     }
   })
@@ -209,18 +208,13 @@ export class MissionsStore {
       pipe(
         getUserMissions(userId),
         Effect.tap((result) => {
-          console.log("[mission] User missions loaded:", result)
           this.progress = result
           return Effect.void
         }),
-        Effect.catchAll((error) =>
-          Effect.fail(
-            new MissionError({
-              cause: extractErrorDetails(error),
-              operation: "load",
-            }),
-          )
-        ),
+        Effect.catchAll((error) => {
+          errorStore.showError(new MissionError({ cause: error, operation: "load" }))
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -234,18 +228,13 @@ export class MissionsStore {
       pipe(
         getAvailableMissions(),
         Effect.tap((result) => {
-          console.log("[mission] Available missions loaded:", result)
           this.available = result
           return Effect.void
         }),
-        Effect.catchAll((error) =>
-          Effect.fail(
-            new MissionError({
-              cause: extractErrorDetails(error),
-              operation: "loadAvailable",
-            }),
-          )
-        ),
+        Effect.catchAll((error) => {
+          errorStore.showError(new MissionError({ cause: error, operation: "loadAvailable" }))
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -256,9 +245,8 @@ export class MissionsStore {
    * @private
    */
   private startPolling(userId: string) {
-    this.stopPolling() // Make sure to stop any existing poll
+    this.stopPolling()
 
-    // Start polling fiber
     const self = this
     this.pollFiber = Effect.runFork(
       Effect.forever(
@@ -268,14 +256,10 @@ export class MissionsStore {
             self.progress = result
             return Effect.void
           }),
-          Effect.catchAll((error) =>
-            Effect.fail(
-              new MissionError({
-                cause: extractErrorDetails(error),
-                operation: "load",
-              }),
-            )
-          ),
+          Effect.catchAll((error) => {
+            errorStore.showError(new MissionError({ cause: error, operation: "load" }))
+            return Effect.succeed(Option.none())
+          }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),
         ),
       ),

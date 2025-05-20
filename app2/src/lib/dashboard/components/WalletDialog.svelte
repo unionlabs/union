@@ -55,10 +55,10 @@ const headerSubtitle = $derived(
 )
 
 const evmButtonText = $derived(
-  sepoliaStore.connectionStatus === "connected" ? "EVM" : "EVM (not connected)",
+  sepoliaStore.connectionStatus === "connected" ? "EVM" : "EVM",
 )
 const cosmosButtonText = $derived(
-  cosmosStore.connectionStatus === "connected" ? "Cosmos" : "Cosmos (not connected)",
+  cosmosStore.connectionStatus === "connected" ? "Cosmos" : "Cosmos",
 )
 
 const connectedEvmWallet = $derived.by(() => {
@@ -347,14 +347,21 @@ const showSecondaryCloseButton = $derived(
               </div>
             </div>
           {:else}
-            {#if connectedEvmWallet?.icon}
-              <img
-                src={connectedEvmWallet.icon}
-                alt="{connectedEvmWallet.name ?? 'EVM Wallet'} icon"
-                class="w-7 h-7 rounded-md flex-shrink-0"
-              />
-            {/if}
-            <span class="w-full text-center text-white">{evmButtonText}</span>
+            <div class="w-full">
+              <div class="text-xs text-zinc-400 dark:text-zinc-500 mb-1">Not connected</div>
+              <div class="flex items-center gap-2">
+                {#if connectedEvmWallet?.icon}
+                  <img
+                    src={connectedEvmWallet.icon}
+                    alt="{connectedEvmWallet.name ?? 'EVM Wallet'} icon"
+                    class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1 flex-shrink-0"
+                  />
+                {/if}
+                <span class="font-semibold text-base text-zinc-900 dark:text-zinc-50 truncate">
+                  {evmButtonText}
+                </span>
+              </div>
+            </div>
           {/if}
         </button>
         <button
@@ -386,14 +393,21 @@ const showSecondaryCloseButton = $derived(
               </div>
             </div>
           {:else}
-            {#if connectedCosmosWallet?.icon}
-              <img
-                src={connectedCosmosWallet.icon}
-                alt="{connectedCosmosWallet.name ?? 'Cosmos Wallet'} icon"
-                class="w-7 h-7 rounded-md flex-shrink-0"
-              />
-            {/if}
-            <span class="w-full text-center text-white">{cosmosButtonText}</span>
+            <div class="w-full">
+              <div class="text-xs text-zinc-400 dark:text-zinc-500 mb-1">Not connected</div>
+              <div class="flex items-center gap-2">
+                {#if connectedCosmosWallet?.icon}
+                  <img
+                    src={connectedCosmosWallet.icon}
+                    alt="{connectedCosmosWallet.name ?? 'Cosmos Wallet'} icon"
+                    class="size-8 rounded-lg bg-white dark:bg-zinc-800 p-1 flex-shrink-0"
+                  />
+                {/if}
+                <span class="font-semibold text-base text-zinc-900 dark:text-zinc-50 truncate">
+                  {cosmosButtonText}
+                </span>
+              </div>
+            </div>
           {/if}
         </button>
 
@@ -472,13 +486,15 @@ const showSecondaryCloseButton = $derived(
                   <div>
                     <div class="text-sm font-medium text-white">{connectedEvmWallet.name}</div>
                     <div class="text-xs text-zinc-400 font-mono">
-                      {
-                        sepoliaStore.address
-                        ? `${sepoliaStore.address.slice(0, 6)}...${
-                          sepoliaStore.address.slice(-4)
-                        }`
-                        : "Not connected"
-                      }
+                      {#if sepoliaStore.address}
+                        {
+                          `${sepoliaStore.address.slice(0, 6)}...${
+                            sepoliaStore.address.slice(-4)
+                          }`
+                        }
+                      {:else}
+                        <span class="text-zinc-500">Not connected</span>
+                      {/if}
                     </div>
                   </div>
                 </div>
@@ -524,13 +540,15 @@ const showSecondaryCloseButton = $derived(
                   <div>
                     <div class="text-sm font-medium text-white">{connectedCosmosWallet.name}</div>
                     <div class="text-xs text-zinc-400 font-mono">
-                      {
-                        cosmosStore.address
-                        ? `${cosmosStore.address.slice(0, 6)}...${
-                          cosmosStore.address.slice(-4)
-                        }`
-                        : "Not connected"
-                      }
+                      {#if cosmosStore.address}
+                        {
+                          `${cosmosStore.address.slice(0, 6)}...${
+                            cosmosStore.address.slice(-4)
+                          }`
+                        }
+                      {:else}
+                        <span class="text-zinc-500">Not connected</span>
+                      {/if}
                     </div>
                   </div>
                 </div>
