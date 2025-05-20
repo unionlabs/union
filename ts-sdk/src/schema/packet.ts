@@ -65,7 +65,7 @@ export class PacketDetails extends S.Class<PacketDetails>("PacketDetails")({
   source_universal_chain_id: UniversalChainId,
   status: S.String,
   timeout_height: Height,
-  timeout_timestamp: S.String,
+  timeout_timestamp: S.BigInt,
   write_ack_block_hash: S.OptionFromNullOr(Hex),
   write_ack_height: S.OptionFromNullOr(Height),
   write_ack_timestamp: S.OptionFromNullOr(S.DateTimeUtc),

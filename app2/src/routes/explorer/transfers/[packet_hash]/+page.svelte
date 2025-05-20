@@ -15,21 +15,26 @@ import { chains } from "$lib/stores/chains.svelte"
 import { packetDetails } from "$lib/stores/packets.svelte"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { cosmosStore } from "$lib/wallet/cosmos"
-import { getChain, PacketHash, TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Effect, Fiber, Option, pipe, Schema, Struct } from "effect"
+import { getChain, PacketHash, TokenRawDenom, TransactionHash } from "@unionlabs/sdk/schema"
+import { Data, Effect, Fiber, Option, pipe, Schema, Struct } from "effect"
 import { onMount } from "svelte"
 
 // Store for the transfer details
+import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
+import RotateLeftIcon from "$lib/components/icons/RotateLeftIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
+import SharpDoubleCheckIcon from "$lib/components/icons/SharpDoubleCheckIcon.svelte"
 import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
 import A from "$lib/components/ui/A.svelte"
 import Button from "$lib/components/ui/Button.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times.ts"
 import { runFork, runPromise } from "$lib/runtime"
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { fromHex } from "viem"
+import Layout from "../../../+layout.svelte"
 import type { PageData } from "./$types"
 
 type Props = {
@@ -57,15 +62,65 @@ onMount(() => {
   }
 })
 
-const inProgress = $derived(
-  transferDetails.data.pipe(
-    Option.map(Struct.get("traces")),
-    Option.map(
-      traces => !traces.some(t => t.type === "WRITE_ACK" && Option.isSome(t.transaction_hash)),
-    ),
-    Option.getOrElse(() => true),
-  ),
-)
+type SimpleTransferStatus = Data.TaggedEnum<{
+  NoDetails: {}
+  TimeoutPending: {}
+  TimeoutSubmitted: {
+    tx_hash: TransactionHash
+  }
+  SuccessAck: {}
+  Success: {}
+  FailedAck: {}
+  Failed: {}
+  InProgress: {}
+}>
+export const SimpleTransferStatus = Data.taggedEnum<SimpleTransferStatus>()
+
+const simpleStatus = $derived.by(() => {
+  if (Option.isNone(transferDetails.data) || Option.isNone(packetDetails.data)) {
+    return SimpleTransferStatus.NoDetails()
+  }
+  const transfer = transferDetails.data.value
+  const packet = packetDetails.data.value
+
+  if (Option.isSome(transfer.transfer_timeout_transaction_hash)) {
+    return SimpleTransferStatus.TimeoutSubmitted({
+      tx_hash: transfer.transfer_timeout_transaction_hash.value,
+    })
+  }
+
+  const HAS_WRITE_ACK = transfer.traces.some(t =>
+    t.type === "WRITE_ACK" && Option.isSome(t.transaction_hash)
+  )
+  const HAS_PACKET_ACK = transfer.traces.some(t =>
+    t.type === "PACKET_ACK" && Option.isSome(t.transaction_hash)
+  )
+
+  // timeout_timestamp can be 0, in which there is no timeout
+  if (packet.timeout_timestamp && !HAS_WRITE_ACK) {
+    // Convert current time to nanoseconds since UNIX epoch
+    const currentNanos = BigInt(Date.now()) * 1000000n
+    // NOTE: this is assuming that the indexer is up-to-date
+    // If indexing is unhealthy for destination chain, it will incorrectly show that a
+    // timeout is pending
+    if (currentNanos >= packet.timeout_timestamp) {
+      return SimpleTransferStatus.TimeoutPending()
+    }
+  }
+
+  if (HAS_PACKET_ACK) {
+    return transfer.success
+      ? SimpleTransferStatus.SuccessAck()
+      : SimpleTransferStatus.FailedAck()
+  }
+
+  if (HAS_WRITE_ACK) {
+    return transfer.success
+      ? SimpleTransferStatus.Success()
+      : SimpleTransferStatus.Failed()
+  }
+  return SimpleTransferStatus.InProgress()
+})
 
 const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
   console.log("suggest token", chain_id, denom)
@@ -119,31 +174,59 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                   />
                 {/if}
               </div>
-              {#if !inProgress}
-                <div class="flex items-center gap-2">
-                  {#if Option.isSome(transfer.success)}
-                    {#if transfer.success.value}
-                      <SharpCheckIcon class="size-6 text-accent" />
-                      <p class="text-babylon">Received</p>
-                    {:else}
-                      <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
-                      <p class="text-babylon">Failed transfer. Will be refunded.</p>
-                    {/if}
-                  {:else}
-                    <SharpWarningIcon
-                      class="text-yellow-500 self-center"
-                      height="3rem"
-                      width="3rem"
-                    />
-                    <p class="text-babylon">Received with unknown status</p>
-                  {/if}
-                </div>
-              {:else}
-                <div class="flex items-center gap-4">
+              <div class="flex items-center gap-4">
+                {#if simpleStatus._tag === "InProgress"}
                   <SpinnerIcon class="size-6" />
                   <p>In progress</p>
-                </div>
-              {/if}
+                {:else if simpleStatus._tag === "SuccessAck"}
+                  <!--
+                    Different icon for success + ack, but same text.
+                    It is a useful detail for developers, but end-users should 
+                    not care about the difference between success and success + ack.
+                  !-->
+                  <SharpDoubleCheckIcon class="size-6 text-accent" />
+                  <p class="text-babylon">Received</p>
+                {:else if simpleStatus._tag === "Success"}
+                  <SharpCheckIcon class="size-6 text-accent" />
+                  <p class="text-babylon">Received</p>
+                {:else if simpleStatus._tag === "Failed"}
+                  <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Failed transfer</p>
+                    <p class="text-babylon text-xs text-zinc-400">
+                      Will be refunded
+                    </p>
+                  </div>
+                {:else if simpleStatus._tag === "FailedAck"}
+                  <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Failed transfer</p>
+                    <p class="text-babylon text-xs text-zinc-400">
+                      Has been refunded
+                    </p>
+                  </div>
+                {:else if simpleStatus._tag === "TimeoutPending"}
+                  <RotateLeftIcon class="size-6 text-yellow-500 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Refund pending</p>
+                    <p class="text-babylon text-xs text-zinc-400">
+                      Transfer took too long
+                    </p>
+                  </div>
+                {:else if simpleStatus._tag === "TimeoutSubmitted"}
+                  <RotateLeftIcon class="size-6 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Refunded</p>
+                    <p class="text-xs text-zinc-400">Transfer took too long</p>
+                  </div>
+                {:else}
+                  <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Unknown status</p>
+                    <p class="text-xs text-zinc-400">{simpleStatus._tag}</p>
+                  </div>
+                {/if}
+              </div>
             </div>
             <section class="flex flex-col px-4">
               <Label>From</Label>
