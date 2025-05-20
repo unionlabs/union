@@ -25,6 +25,7 @@ export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =
         hexToAscii(transfer.receiver), // It is hexing again in it.
         transfer.baseToken,
         transfer.baseAmount.toString(),
+        // @ts-ignore
         hexToAscii(transfer.quoteToken), // It is hexing again in it.
         transfer.quoteAmount.toString(),
         18446744073709551615n.toString(), // TODO: Check this value, use transfer.timeoutHeight later
@@ -35,6 +36,7 @@ export const submitTransfer = (_chain: Chain, transfer: ValidTransfer["args"]) =
 
     return yield* Effect.tryPromise({
       try: () => {
+        // @ts-ignore
         return account.signAndSubmitTransaction({ payload: walletPayload })
       },
       catch: err => new WriteContractError({ cause: err as WriteContractErrorType }),
