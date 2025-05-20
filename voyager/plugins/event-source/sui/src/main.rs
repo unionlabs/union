@@ -13,7 +13,9 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use sui_sdk::{rpc_types::SuiTransactionBlockResponseOptions, SuiClientBuilder};
+use sui_sdk::{
+    rpc_types::SuiTransactionBlockResponseOptions, types::base_types::SuiAddress, SuiClientBuilder,
+};
 use tracing::{info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_message::{
@@ -57,7 +59,7 @@ pub struct Module {
 
     pub sui_client: sui_sdk::SuiClient,
 
-    pub ibc_handler_address: String,
+    pub ibc_handler_address: SuiAddress,
 }
 
 impl Plugin for Module {
@@ -99,7 +101,7 @@ impl Plugin for Module {
 pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
-    pub ibc_handler_address: String,
+    pub ibc_handler_address: SuiAddress,
 }
 
 fn plugin_name(chain_id: &ChainId) -> String {
@@ -254,8 +256,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .map(move |events| (events, tx.digest))
                     })
                     .filter_map(|(e, hash)| {
-                        (e.type_.address.to_string() == self.ibc_handler_address)
-                            .then_some((e, hash))
+                        (e.type_.address == self.ibc_handler_address.into()).then_some((e, hash))
                     })
                     .map(|(e, hash)| {
                         let event = match e.type_.name.as_str() {
