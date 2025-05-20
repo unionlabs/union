@@ -11,16 +11,14 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
-    rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions},
-    types::{
+    rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions, SuiTypeTag}, types::{
         base_types::{ObjectID, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
-        transaction::{CallArg, Command, ObjectArg, Transaction, TransactionData},
+        transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionData, TransactionKind},
         Identifier,
-    },
-    SuiClientBuilder,
+    }, SuiClient, SuiClientBuilder
 };
 use tracing::{debug, info, instrument};
 use unionlabs::{
@@ -225,9 +223,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         // create the transaction data that will be sent to the network.
                         //
                         let msgs = process_msgs(
-                            self.ibc_handler_address,
-                            self.ibc_store,
-                            self.ibc_store_initial_seq,
+                            self,
                             msgs.clone(),
                         )
                         .await;
@@ -295,7 +291,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 )
                             })?;
 
-                        debug!("{transaction_response:?}");
+                        info!("{transaction_response:?}");
 
                         Ok(noop())
                     })
@@ -327,23 +323,21 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
 #[allow(clippy::type_complexity)]
 async fn process_msgs(
-    ibc_address: SuiAddress,
-    ibc_store: SuiAddress,
-    initial_shared_version: SequenceNumber,
+    module: &Module,
     msgs: Vec<Datagram>,
 ) -> Vec<(SuiAddress, Datagram, Identifier, Identifier, Vec<CallArg>)> {
     let mut data = vec![];
     for msg in msgs {
         let item = match msg.clone() {
             Datagram::CreateClient(data) => (
-                ibc_address,
+                module.ibc_handler_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("create_client").unwrap(),
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
-                        id: ibc_store.into(),
-                        initial_shared_version,
+                        id: module.ibc_store.into(),
+                        initial_shared_version: module.ibc_store_initial_seq,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.client_type.to_string()).unwrap()),
@@ -352,14 +346,14 @@ async fn process_msgs(
                 ],
             ),
             Datagram::UpdateClient(data) => (
-                ibc_address,
+                module.ibc_handler_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("update_client").unwrap(),
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
-                        id: ibc_store.into(),
-                        initial_shared_version,
+                        id: module.ibc_store.into(),
+                        initial_shared_version: module.ibc_store_initial_seq,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
@@ -367,14 +361,14 @@ async fn process_msgs(
                 ],
             ),
             Datagram::ConnectionOpenInit(data) => (
-                ibc_address,
+                module.ibc_handler_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("connection_open_init").unwrap(),
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
-                        id: ibc_store.into(),
-                        initial_shared_version,
+                        id: module.ibc_store.into(),
+                        initial_shared_version: module.ibc_store_initial_seq,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
@@ -382,14 +376,14 @@ async fn process_msgs(
                 ],
             ),
             Datagram::ConnectionOpenTry(data) => (
-                ibc_address,
+                module.ibc_handler_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("connection_open_try").unwrap(),
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
-                        id: ibc_store.into(),
-                        initial_shared_version,
+                        id: module.ibc_store.into(),
+                        initial_shared_version: module.ibc_store_initial_seq,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
@@ -400,14 +394,14 @@ async fn process_msgs(
                 ],
             ),
             Datagram::ConnectionOpenAck(data) => (
-                ibc_address,
+                module.ibc_handler_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("connection_open_ack").unwrap(),
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
-                        id: ibc_store.into(),
-                        initial_shared_version,
+                        id: module.ibc_store.into(),
+                        initial_shared_version: module.ibc_store_initial_seq,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
@@ -417,14 +411,14 @@ async fn process_msgs(
                 ],
             ),
             Datagram::ConnectionOpenConfirm(data) => (
-                ibc_address,
+                module.ibc_handler_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("connection_open_confirm").unwrap(),
                 vec![
                     CallArg::Object(ObjectArg::SharedObject {
-                        id: ibc_store.into(),
-                        initial_shared_version,
+                        id: module.ibc_store.into(),
+                        initial_shared_version: module.ibc_store_initial_seq,
                         mutable: true,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
@@ -449,13 +443,122 @@ async fn process_msgs(
                     Identifier::new("channel_open_init").unwrap(),
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
-                            id: ibc_store.into(),
-                            initial_shared_version,
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
                             mutable: true,
                         }),
                         CallArg::Pure(bcs::to_bytes(&data.counterparty_port_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.version).unwrap()),
+                    ],
+                )
+            },
+            Datagram::ChannelOpenTry(data) => {
+                let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
+
+                let module_info = port_id.split("::").collect::<Vec<&str>>();
+                if module_info.len() != 3 {
+                    panic!("invalid port id");
+                }
+
+                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+
+                (
+                    addr,
+                    msg,
+                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new("channel_open_try").unwrap(),
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.channel.connection_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.channel.counterparty_channel_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.channel.counterparty_port_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.channel.version).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.counterparty_version).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                    ],
+                )
+            },
+            Datagram::ChannelOpenAck(data) => {
+                let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
+                
+                let res = query
+                    .add_param(data.channel_id.raw())
+                    .call(module.ibc_handler_address.into(), "get_port_id")
+                    .await
+                    .unwrap();
+                
+                if res.len() != 1 {
+                    panic!("expected a single encoded connection end")
+                }
+
+                let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
+
+                let module_info = port_id.split("::").collect::<Vec<&str>>();
+                if module_info.len() != 3 {
+                    panic!("invalid port id");
+                }
+
+                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+                (
+                    addr,
+                    msg,
+                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new("channel_open_ack").unwrap(),
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.channel_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.counterparty_version).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.counterparty_channel_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                    ],
+                )
+            },
+            Datagram::ChannelOpenConfirm(data) => {
+                let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
+                
+                let res = query
+                    .add_param(data.channel_id.raw())
+                    .call(module.ibc_handler_address.into(), "get_port_id")
+                    .await
+                    .unwrap();
+                
+                if res.len() != 1 {
+                    panic!("expected a single encoded connection end")
+                }
+
+                let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
+
+                let module_info = port_id.split("::").collect::<Vec<&str>>();
+                if module_info.len() != 3 {
+                    panic!("invalid port id");
+                }
+
+                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+                (
+                    addr,
+                    msg,
+                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new("channel_open_confirm").unwrap(),
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.channel_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap())
                     ],
                 )
             }
@@ -465,4 +568,77 @@ async fn process_msgs(
     }
 
     data
+}
+
+
+struct SuiQuery<'a> {
+    client: &'a SuiClient,
+    params: Vec<CallArg>,
+}
+
+impl<'a> SuiQuery<'a> {
+    async fn new(client: &'a SuiClient, ibc_store_id: ObjectID) -> Self {
+        let object_ref = client
+            .read_api()
+            .get_object_with_options(ibc_store_id, SuiObjectDataOptions::new())
+            .await
+            .unwrap()
+            .object_ref_if_exists()
+            .unwrap();
+        Self {
+            client,
+            params: vec![CallArg::Object(ObjectArg::ImmOrOwnedObject(object_ref))],
+        }
+    }
+
+    fn add_param<T>(mut self, param: T) -> Self
+    where
+        T: serde::Serialize,
+    {
+        self.params
+            .push(CallArg::Pure(bcs::to_bytes(&param).unwrap()));
+        self
+    }
+
+    async fn call(
+        self,
+        package: ObjectID,
+        function: &str,
+    ) -> Result<Vec<(Vec<u8>, SuiTypeTag)>, String> {
+        let mut ptb = ProgrammableTransactionBuilder::new();
+        ptb.command(Command::move_call(
+            package,
+            Identifier::new("ibc").unwrap(),
+            Identifier::new(function).unwrap(),
+            vec![],
+            self.params
+                .iter()
+                .enumerate()
+                .map(|(i, _)| Argument::Input(i as u16))
+                .collect(),
+        ));
+
+        for arg in self.params {
+            ptb.input(arg).unwrap();
+        }
+
+        let res = self
+            .client
+            .read_api()
+            .dev_inspect_transaction_block(
+                SuiAddress::ZERO,
+                TransactionKind::ProgrammableTransaction(ptb.finish()),
+                None,
+                None,
+                None,
+            )
+            .await
+            .unwrap();
+
+        match (res.results, res.error) {
+            (Some(res), _) => Ok(res[0].clone().return_values),
+            (_, Some(err)) => Err(err),
+            _ => panic!("invalid"),
+        }
+    }
 }
