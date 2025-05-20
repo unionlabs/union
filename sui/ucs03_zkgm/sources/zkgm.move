@@ -139,6 +139,8 @@ module zkgm::zkgm_relay {
     const E_NO_COIN_IN_BAG: u64 = 23;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
 
+    public struct IbcAppWitness has drop {}
+
     public struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
         path: u256,
@@ -433,10 +435,10 @@ module zkgm::zkgm_relay {
     ) {
         ibc::channel_open_init(
             ibc_store,
-            utf8(b"&get_signer()"),
             counterparty_port_id,
             connection_id,
-            version
+            version,
+            IbcAppWitness {}
         );
 
         if (!is_valid_version(version)) {
@@ -464,14 +466,14 @@ module zkgm::zkgm_relay {
 
         ibc::channel_open_try(
             ibc_store,
-            utf8(b"&get_signer()"),
             connection_id,
             counterparty_channel_id,
             counterparty_port_id,
             version,
             counterparty_version,
             proof_init,
-            proof_height
+            proof_height,
+            IbcAppWitness {}
         );
     }
 
@@ -486,12 +488,12 @@ module zkgm::zkgm_relay {
         // Store the channel_id
         ibc::channel_open_ack(
             ibc_store,
-            utf8(b"&get_signer()"),
             channel_id,
             counterparty_version,
             counterparty_channel_id,
             proof_try,
-            proof_height
+            proof_height,
+            IbcAppWitness {}
         );
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_IBC_VERSION
@@ -506,10 +508,10 @@ module zkgm::zkgm_relay {
     )  {
         ibc::channel_open_confirm(
             ibc_store,
-            utf8(b"&get_signer()"),
             channel_id,
             proof_ack,
-            proof_height
+            proof_height,
+            IbcAppWitness {}
         );
     }
 
