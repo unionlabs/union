@@ -304,22 +304,27 @@ impl PluginServer<ModuleCall, Never> for Module {
                 .into_iter()
                 .enumerate()
                 .map(|(idx, mut op)| {
-                    SubmitTxHook::new(&self.chain_id, |submit_tx| {
-                        PluginMessage::new(
-                            self.plugin_name(),
-                            ModuleCall::SubmitMulticall(
-                                submit_tx
-                                    .datagrams
-                                    .clone()
-                                    .into_iter()
-                                    .map(|message| {
-                                        message.decode_datagram::<IbcUnion>().unwrap().unwrap()
-                                    })
-                                    .collect(),
-                            ),
-                        )
-                        .into()
-                    })
+                    SubmitTxHook::new_many(
+                        [&self.chain_id]
+                            .into_iter()
+                            .chain(&self.additional_chain_ids),
+                        |submit_tx| {
+                            PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::SubmitMulticall(
+                                    submit_tx
+                                        .datagrams
+                                        .clone()
+                                        .into_iter()
+                                        .map(|message| {
+                                            message.decode_datagram::<IbcUnion>().unwrap().unwrap()
+                                        })
+                                        .collect(),
+                                ),
+                            )
+                            .into()
+                        },
+                    )
                     .visit_op(&mut op);
 
                     (vec![idx], op)

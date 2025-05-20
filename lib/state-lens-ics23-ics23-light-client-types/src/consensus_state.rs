@@ -1,10 +1,11 @@
+use ibc_union_spec::Timestamp;
 use unionlabs::primitives::H256;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ConsensusState {
     /// Timestamp of the execution layer.
-    pub timestamp: u64,
+    pub timestamp: Timestamp,
     /// App hash of the execution layer.
     pub app_hash: H256,
 }
@@ -27,7 +28,7 @@ pub mod ethabi {
     impl From<ConsensusState> for SolConsensusState {
         fn from(value: ConsensusState) -> Self {
             Self {
-                timestamp: value.timestamp,
+                timestamp: value.timestamp.as_nanos(),
                 appHash: value.app_hash.get().into(),
             }
         }
@@ -36,7 +37,7 @@ pub mod ethabi {
     impl From<SolConsensusState> for ConsensusState {
         fn from(value: SolConsensusState) -> Self {
             Self {
-                timestamp: value.timestamp,
+                timestamp: Timestamp::from_nanos(value.timestamp),
                 app_hash: H256::new(value.appHash.0),
             }
         }

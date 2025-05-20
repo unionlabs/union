@@ -18,10 +18,12 @@ pub struct ClientState {
     /// The module that the ethermint state is stored in.
     ///
     /// For standard ethermint, this is `b"evm"`: <https://github.com/0glabs/ethermint/blob/fd8c2d25cf80e7d2d2a142e7b374f979f8f51981/x/evm/types/key.go#L24>
+    /// For sei, this is also `b"evm"`: <https://github.com/sei-protocol/sei-chain/blob/6489cfc69681f13b0e5324dcc53b74737d97b44e/x/evm/types/keys.go#L12>
     pub store_key: Bytes,
     /// The store prefix for smart contract storage values.
     ///
     /// For standard ethermint, this is `[0x2]`: <https://github.com/0glabs/ethermint/blob/fd8c2d25cf80e7d2d2a142e7b374f979f8f51981/x/evm/types/key.go#L57>
+    /// For sei, this is `[0x3]`: <https://github.com/sei-protocol/sei-chain/blob/6489cfc69681f13b0e5324dcc53b74737d97b44e/x/evm/types/keys.go#L30C2-L30C16>
     pub key_prefix_storage: Bytes,
     /// The contract address of the `IbcHandler` contract running on the ethermint EVM.
     pub ibc_contract_address: H160,
