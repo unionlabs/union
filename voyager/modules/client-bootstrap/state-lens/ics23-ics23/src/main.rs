@@ -6,10 +6,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use state_lens_ics23_ics23_light_client_types::{
-    client_state::{Extra, ExtraV1},
-    ClientState, ConsensusState,
-};
+use state_lens_ics23_ics23_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use tracing::{info, instrument};
 use unionlabs::{
     ibc::core::client::height::Height,
@@ -40,8 +37,8 @@ pub struct ClientStateConfig {
     pub host_chain_id: ChainId,
     pub l1_client_id: ClientId,
     pub l2_client_id: ClientId,
-    pub store_key: Bytes,
-    pub key_prefix_storage: Bytes,
+    #[serde(flatten)]
+    pub extra: Extra,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -142,10 +139,7 @@ impl ClientBootstrapModuleServer for Module {
             l2_chain_id: self.l2_chain_id.to_string(),
             l2_client_id: config.l2_client_id,
             l2_latest_height: height.height(),
-            extra: Extra::V1(ExtraV1 {
-                store_key: config.store_key,
-                key_prefix_storage: config.key_prefix_storage,
-            }),
+            extra: config.extra,
         }))
     }
 

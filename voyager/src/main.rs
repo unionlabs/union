@@ -564,6 +564,33 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                         .await?;
                     print_json(&response);
                 }
+                RpcCmd::IbcProof {
+                    on,
+                    ibc_spec_id,
+                    height,
+                    path,
+                    encode,
+                    ibc_interface,
+                    client_type,
+                } => {
+                    let response = voyager_client
+                        .query_ibc_proof(on, ibc_spec_id.clone(), height, path)
+                        .await?;
+
+                    if encode {
+                        let encoded = voyager_client
+                            .encode_proof(
+                                client_type.expect("guaranteed to exist by clap; qed;"),
+                                ibc_interface.expect("guaranteed to exist by clap; qed;"),
+                                ibc_spec_id,
+                                response.into_result()?.proof,
+                            )
+                            .await?;
+                        print_json(&encoded);
+                    } else {
+                        print_json(&response);
+                    }
+                }
                 RpcCmd::Plugin { name, method, args } => {
                     let response = voyager_client
                         .plugin_custom(

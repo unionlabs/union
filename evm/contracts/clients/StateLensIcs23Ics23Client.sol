@@ -50,6 +50,11 @@ struct ExtraV1 {
     bytes keyPrefixStorage;
 }
 
+struct ExtraV2 {
+    bytes storeKey;
+    bytes keyPrefixStorage;
+}
+
 struct ConsensusState {
     uint64 timestamp;
     bytes32 appHash;
@@ -95,6 +100,12 @@ library StateLensIcs23Ics23Lib {
         ExtraV1 storage extraV1
     ) internal view returns (bytes memory) {
         return abi.encode(extraV1.storeKey, extraV1.keyPrefixStorage);
+    }
+
+    function encode(
+        ExtraV2 memory extraV2
+    ) internal pure returns (bytes memory) {
+        return abi.encode(extraV2.storeKey, extraV2.keyPrefixStorage);
     }
 
     function commit(
@@ -192,6 +203,11 @@ contract StateLensIcs23Ics23Client is
         }
         if (clientState.l2LatestHeight == 0 || consensusState.timestamp == 0) {
             revert StateLensIcs23Ics23Lib.ErrInvalidInitialConsensusState();
+        }
+        if (!(clientState.version == 1 || clientState.version == 2)) {
+            revert StateLensIcs23Ics23Lib.ErrUnknownClientStateVersion(
+                clientState.version
+            );
         }
         clientStates[clientId] = clientState;
         consensusStates[clientId][clientState.l2LatestHeight] = consensusState;
@@ -300,21 +316,37 @@ contract StateLensIcs23Ics23Client is
         ClientState storage clientState = clientStates[clientId];
         bytes32 appHash = consensusStates[clientId][height].appHash;
 
-        if (clientState.version != 1) {
+        bytes memory key;
+        bytes memory storeKey;
+
+        if (clientState.version == 1) {
+            bytes memory keyPrefixStorage;
+
+            (storeKey, keyPrefixStorage) =
+                abi.decode(clientState.state, (bytes, bytes));
+
+            key = abi.encodePacked(keyPrefixStorage, path);
+        } else if (clientState.version == 2) {
+            bytes memory keyPrefixStorage;
+
+            (storeKey, keyPrefixStorage) =
+                abi.decode(clientState.state, (bytes, bytes));
+
+            bytes32 slot = keccak256(
+                abi.encodePacked(
+                    path, IBCStoreLib.IBC_UNION_EVM_COMMITMENT_SLOT
+                )
+            );
+
+            key = abi.encodePacked(keyPrefixStorage, slot);
+        } else {
             revert StateLensIcs23Ics23Lib.ErrUnknownClientStateVersion(
                 clientState.version
             );
         }
-        (bytes memory storeKey, bytes memory keyPrefixStorage) =
-            abi.decode(clientState.state, (bytes, bytes));
 
-        return ICS23Verifier.verifyMembership(
-            appHash,
-            proof,
-            storeKey,
-            abi.encodePacked(keyPrefixStorage, path),
-            value
-        );
+        return
+            ICS23Verifier.verifyMembership(appHash, proof, storeKey, key, value);
     }
 
     function verifyNonMembership(
@@ -329,17 +361,36 @@ contract StateLensIcs23Ics23Client is
         ClientState storage clientState = clientStates[clientId];
         bytes32 appHash = consensusStates[clientId][height].appHash;
 
-        if (clientState.version != 1) {
+        bytes memory key;
+        bytes memory storeKey;
+
+        if (clientState.version == 1) {
+            bytes memory keyPrefixStorage;
+
+            (storeKey, keyPrefixStorage) =
+                abi.decode(clientState.state, (bytes, bytes));
+
+            key = abi.encodePacked(keyPrefixStorage, path);
+        } else if (clientState.version == 2) {
+            bytes memory keyPrefixStorage;
+
+            (storeKey, keyPrefixStorage) =
+                abi.decode(clientState.state, (bytes, bytes));
+
+            bytes32 slot = keccak256(
+                abi.encodePacked(
+                    path, IBCStoreLib.IBC_UNION_EVM_COMMITMENT_SLOT
+                )
+            );
+
+            key = abi.encodePacked(keyPrefixStorage, slot);
+        } else {
             revert StateLensIcs23Ics23Lib.ErrUnknownClientStateVersion(
                 clientState.version
             );
         }
-        (bytes memory storeKey, bytes memory keyPrefixStorage) =
-            abi.decode(clientState.state, (bytes, bytes));
 
-        return ICS23Verifier.verifyNonMembership(
-            appHash, proof, storeKey, abi.encodePacked(keyPrefixStorage, path)
-        );
+        return ICS23Verifier.verifyNonMembership(appHash, proof, storeKey, key);
     }
 
     function getClientState(

@@ -8,8 +8,10 @@ pub type ClientState = state_lens_light_client_types::ClientState<Extra>;
     derive(serde::Serialize, serde::Deserialize),
     serde(rename_all = "snake_case")
 )]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum Extra {
     V1(ExtraV1),
+    V2(ExtraV2),
 }
 
 #[derive(Debug, Clone, PartialEq, AsTuple)]
@@ -18,7 +20,21 @@ pub enum Extra {
     derive(serde::Serialize, serde::Deserialize),
     serde(deny_unknown_fields)
 )]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ExtraV1 {
+    pub store_key: Bytes,
+    pub key_prefix_storage: Bytes,
+}
+
+/// The same structure as [`ExtraV1`], except the commitment key is calculated by "pre-hashing" the path to the evm commitment slot.
+#[derive(Debug, Clone, PartialEq, AsTuple)]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(deny_unknown_fields)
+)]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct ExtraV2 {
     pub store_key: Bytes,
     pub key_prefix_storage: Bytes,
 }
@@ -32,6 +48,7 @@ mod ethabi {
     use crate::client_state::ExtraV1;
 
     const V1_VERSION_TAG: U256 = U256::ONE;
+    const V2_VERSION_TAG: U256 = V1_VERSION_TAG.checked_add(U256::ONE).unwrap();
 
     impl DecodeExtra for Extra {
         fn decode_extra(
@@ -39,17 +56,31 @@ mod ethabi {
         ) -> Result<Self, alloy::dyn_abi::Error> {
             let version = U256::from_be_bytes((*decoder.take_word()?).into());
             let state = decoder.decode::<PackedSeqToken>()?;
-            let (store_key, key_prefix_storage) =
-                <(alloy::primitives::Bytes, alloy::primitives::Bytes)>::abi_decode_params(
-                    state.as_slice(),
-                    true,
-                )?;
 
             match version {
-                V1_VERSION_TAG => Ok(Extra::V1(ExtraV1 {
-                    store_key: store_key.into(),
-                    key_prefix_storage: key_prefix_storage.into(),
-                })),
+                V1_VERSION_TAG => {
+                    let (store_key, key_prefix_storage) =
+                        <(alloy::primitives::Bytes, alloy::primitives::Bytes)>::abi_decode_params(
+                            state.as_slice(),
+                            true,
+                        )?;
+                    Ok(Extra::V1(ExtraV1 {
+                        store_key: store_key.into(),
+                        key_prefix_storage: key_prefix_storage.into(),
+                    }))
+                }
+                V2_VERSION_TAG => {
+                    let (store_key, key_prefix_storage) =
+                        <(alloy::primitives::Bytes, alloy::primitives::Bytes)>::abi_decode_params(
+                            state.as_slice(),
+                            true,
+                        )?;
+
+                    Ok(Extra::V2(ExtraV2 {
+                        store_key: store_key.into(),
+                        key_prefix_storage: key_prefix_storage.into(),
+                    }))
+                }
                 _ => Err(alloy::dyn_abi::Error::custom(format!(
                     "invalid version: {version}"
                 ))),
@@ -65,6 +96,15 @@ mod ethabi {
                     (
                         versioned_extra_v1.store_key,
                         versioned_extra_v1.key_prefix_storage,
+                    )
+                        .abi_encode_params()
+                        .into(),
+                ],
+                Extra::V2(versioned_extra_v2) => vec![
+                    V2_VERSION_TAG.into(),
+                    (
+                        versioned_extra_v2.store_key,
+                        versioned_extra_v2.key_prefix_storage,
                     )
                         .abi_encode_params()
                         .into(),
@@ -101,7 +141,7 @@ mod tests {
             "00000000000000000000000000000000000000000000000000000000000000e0" // encoded state byte length (224, 7 slots)
                                                                                // state
             "0000000000000000000000000000000000000000000000000000000000000040" // store_key offset (64, 2 slots)
-            "0000000000000000000000000000000000000000000000000000000000000080" // key_prefix_storage offset (64, 2 slots)
+            "0000000000000000000000000000000000000000000000000000000000000080" // key_prefix_storage offset (128, 4 slots)
             "0000000000000000000000000000000000000000000000000000000000000004" // store_key length (4)
             "7761736d00000000000000000000000000000000000000000000000000000000" // store_key data
             "0000000000000000000000000000000000000000000000000000000000000022" // key_prefix_storage length (34, note that there is a trailing zero byte)
@@ -144,6 +184,72 @@ mod tests {
                     "03"
                     "bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"
                     "00"
+                )
+                .into(),
+            }),
+        };
+
+        assert_codec_iso_bytes::<_, Json>(&value, json.as_bytes());
+    }
+
+    #[test]
+    fn v2_ethabi() {
+        // TODO: UPDATE THIS WHEN A CLIENT EXISTS
+        // voyager rpc client-state 11155111 5 --height 8363356
+        let bz = hex!(
+            "00000000000000000000000000000000000000000000000000000000000000c0" // l2_chain_id offset (192, 6 slots)
+            "0000000000000000000000000000000000000000000000000000000000000001" // l1_client_id
+            "0000000000000000000000000000000000000000000000000000000000000006" // l2_client_id
+            "00000000000000000000000000000000000000000000000000000000000fa2a1" // l2_latest_height
+            "0000000000000000000000000000000000000000000000000000000000000002" // version 1
+            "0000000000000000000000000000000000000000000000000000000000000100" // encoded state offset (256, 8 slots)
+            "000000000000000000000000000000000000000000000000000000000000000a" // l2_chain_id length (10)
+            "61746c616e7469632d3200000000000000000000000000000000000000000000" // l2_chain_id data
+                                                                               // encoded state
+            "00000000000000000000000000000000000000000000000000000000000000c0" // encoded state byte length (192, 6 slots)
+                                                                               // state
+            "0000000000000000000000000000000000000000000000000000000000000040" // store_key offset (96, 3 slots)
+            "0000000000000000000000000000000000000000000000000000000000000080" // key_prefix_storage offset (160, 5)
+            "0000000000000000000000000000000000000000000000000000000000000003" // store_key length (3)
+            "65766d0000000000000000000000000000000000000000000000000000000000" // store_key data
+            "0000000000000000000000000000000000000000000000000000000000000015" // key_prefix_storage length (21)
+            "03ee4ea8d358473f0fcebf0329feed95d56e8c04d70000000000000000000000" // key_prefix_storage data
+        );
+
+        let value = state_lens_light_client_types::ClientState::<Extra> {
+            l2_chain_id: "atlantic-2".to_string(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(6),
+            l2_latest_height: 1024673,
+            extra: Extra::V2(ExtraV2 {
+                store_key: b"evm".into(),
+                key_prefix_storage: hex!(
+                    "03"
+                    "ee4ea8d358473f0fcebf0329feed95d56e8c04d7"
+                )
+                .into(),
+            }),
+        };
+
+        assert_codec_iso_bytes::<_, EthAbi>(&value, &bz);
+    }
+
+    #[test]
+    fn v2_json() {
+        // TODO: UPDATE THIS WHEN A CLIENT EXISTS
+        // voyager rpc client-state 11155111 5 --height 8363356
+        let json = r#"{"l2_chain_id":"atlantic-2","l1_client_id":1,"l2_client_id":6,"l2_latest_height":1024673,"v2":{"store_key":"0x65766d","key_prefix_storage":"0x03ee4ea8d358473f0fcebf0329feed95d56e8c04d7"}}"#;
+
+        let value = state_lens_light_client_types::ClientState::<Extra> {
+            l2_chain_id: "atlantic-2".to_string(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(6),
+            l2_latest_height: 1024673,
+            extra: Extra::V2(ExtraV2 {
+                store_key: b"evm".into(),
+                key_prefix_storage: hex!(
+                    "03"
+                    "ee4ea8d358473f0fcebf0329feed95d56e8c04d7"
                 )
                 .into(),
             }),
