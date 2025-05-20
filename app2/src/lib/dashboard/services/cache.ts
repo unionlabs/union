@@ -1,3 +1,4 @@
+import { runFork } from "$lib/runtime"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Data, Effect, Option, pipe } from "effect"
 
@@ -117,7 +118,7 @@ export function withLocalStorageCacheStale<A>(
             }
 
             if (isStale) {
-              Effect.runFork(
+              runFork(
                 pipe(
                   effect,
                   Effect.tap((result: A) => {

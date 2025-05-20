@@ -3,6 +3,7 @@ import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Modal from "$lib/components/ui/Modal.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { runPromise } from "$lib/runtime"
 import { getWagmiConnectorClient } from "$lib/services/evm/clients"
 import { chains } from "$lib/stores/chains.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
@@ -212,7 +213,7 @@ function add() {
     yield* actionEffect
   })
 
-  Effect.runPromise(program)
+  runPromise(program)
 }
 
 function reset() {

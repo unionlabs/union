@@ -2,6 +2,7 @@
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { runPromise } from "$lib/runtime"
 import { Effect, Option, pipe } from "effect"
 import type { EnhancedWallet } from "../stores/wallets.svelte"
 import WalletRowSkeleton from "./WalletRowSkeleton.svelte"
@@ -168,7 +169,7 @@ function handleRemoveSelectedWallets() {
     return walletStore.removeWallet(address)
   })
 
-  Effect.runPromise(
+  runPromise(
     pipe(
       Effect.all(removalEffects, { concurrency: 3, discard: true }),
       Effect.tap(() => {

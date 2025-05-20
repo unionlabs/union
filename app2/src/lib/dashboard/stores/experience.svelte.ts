@@ -1,3 +1,4 @@
+import { runFork, runPromise } from "$lib/runtime"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { ExperienceError } from "../errors"
@@ -85,7 +86,7 @@ export class ExperienceStore {
    * @private
    */
   private loadUserExperience(userId: string) {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getUserExperience(userId),
         Effect.tap((result) => {
@@ -111,7 +112,7 @@ export class ExperienceStore {
    * @private
    */
   private loadAvailableLevels() {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getAvailableLevels(),
         Effect.tap((result) => {
@@ -141,7 +142,7 @@ export class ExperienceStore {
     this.stopPolling()
 
     const self = this
-    this.pollFiber = Effect.runFork(
+    this.pollFiber = runFork(
       Effect.forever(
         pipe(
           getUserExperience(userId),
@@ -171,7 +172,7 @@ export class ExperienceStore {
    */
   private stopPolling() {
     if (this.pollFiber) {
-      Effect.runPromise(Fiber.interrupt(this.pollFiber))
+      runPromise(Fiber.interrupt(this.pollFiber))
       this.pollFiber = null
     }
   }

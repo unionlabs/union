@@ -1,3 +1,4 @@
+import { runFork, runPromise } from "$lib/runtime"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { WalletError } from "../errors"
@@ -108,7 +109,7 @@ export class WalletStore {
    * @private
    */
   private loadWallets(userId: string) {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getWalletsByUserId(userId),
         Effect.tap((result) => {
@@ -128,7 +129,7 @@ export class WalletStore {
    * @private
    */
   private loadChains() {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getChains(),
         Effect.tap((result) => {
@@ -152,7 +153,7 @@ export class WalletStore {
     this.stopPolling()
 
     const self = this
-    this.pollFiber = Effect.runFork(
+    this.pollFiber = runFork(
       Effect.forever(
         pipe(
           getWalletsByUserId(userId),
@@ -176,7 +177,7 @@ export class WalletStore {
    */
   private stopPolling() {
     if (this.pollFiber) {
-      Effect.runPromise(Fiber.interrupt(this.pollFiber))
+      runPromise(Fiber.interrupt(this.pollFiber))
       this.pollFiber = null
     }
   }

@@ -1,6 +1,7 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { runPromise } from "$lib/runtime"
 import { cn } from "$lib/utils"
 import { Option } from "effect"
 import { Effect } from "effect"
@@ -15,7 +16,7 @@ import { Effect } from "effect"
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
       onclick={() =>
-      Effect.runPromise(
+      runPromise(
         Option.isSome(dashboard.connections?.github) && dashboard.connections.github.value
           ? dashboard.unlinkIdentity("github")
           : dashboard.linkIdentity("github"),
@@ -71,7 +72,7 @@ import { Effect } from "effect"
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
       onclick={() =>
-      Effect.runPromise(
+      runPromise(
         Option.isSome(dashboard.connections?.twitter) && dashboard.connections.twitter.value
           ? dashboard.unlinkIdentity("twitter")
           : dashboard.linkIdentity("twitter"),
@@ -127,7 +128,7 @@ import { Effect } from "effect"
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
       onclick={() =>
-      Effect.runPromise(
+      runPromise(
         Option.isSome(dashboard.connections?.discord) && dashboard.connections.discord.value
           ? dashboard.unlinkIdentity("discord")
           : dashboard.linkIdentity("discord"),

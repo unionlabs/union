@@ -1,5 +1,6 @@
 import { browser } from "$app/environment"
 import { goto } from "$app/navigation"
+import { runFork, runPromise } from "$lib/runtime"
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
@@ -158,7 +159,7 @@ export class Dashboard {
    * @private
    */
   private listenToAuth() {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getSupabaseClient(),
         Effect.flatMap((client) =>
@@ -207,7 +208,7 @@ export class Dashboard {
   private startTickPolling() {
     this.stopTickPolling()
 
-    this.tickFiber = Effect.runFork(
+    this.tickFiber = runFork(
       Effect.forever(
         pipe(
           Effect.succeed(this.userId),
@@ -229,7 +230,7 @@ export class Dashboard {
    */
   private stopTickPolling() {
     if (this.tickFiber) {
-      Effect.runPromise(Fiber.interrupt(this.tickFiber))
+      runPromise(Fiber.interrupt(this.tickFiber))
       this.tickFiber = null
     }
   }

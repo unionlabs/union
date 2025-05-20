@@ -2,6 +2,7 @@
 import Button from "$lib/components/ui/Button.svelte"
 import Card from "$lib/components/ui/Card.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { runPromise } from "$lib/runtime"
 import { Effect } from "effect"
 
 type AuthProvider = {
@@ -45,7 +46,7 @@ function handleLogin(provider: AuthProvider) {
   }
   loading = true
 
-  Effect.runPromise(
+  runPromise(
     Effect.gen(function*() {
       yield* dashboard.login(provider.id)
     }).pipe(

@@ -1,3 +1,4 @@
+import { runFork, runPromise } from "$lib/runtime"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { AchievementError } from "../errors"
@@ -71,7 +72,7 @@ export class AchievementsStore {
    * @param userId - The ID of the user to load achievements for
    */
   private loadUserAchievements(userId: string) {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getUserAchievements(userId),
         Effect.tap((result) => {
@@ -96,7 +97,7 @@ export class AchievementsStore {
    * Loads all available achievements
    */
   private loadAvailableAchievements() {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getAvailableAchievements(),
         Effect.tap((result) => {
@@ -127,7 +128,7 @@ export class AchievementsStore {
 
     // Start polling fiber
     const self = this
-    this.pollFiber = Effect.runFork(
+    this.pollFiber = runFork(
       Effect.forever(
         pipe(
           getUserAchievements(userId),
@@ -157,7 +158,7 @@ export class AchievementsStore {
    */
   private stopPolling() {
     if (this.pollFiber) {
-      Effect.runPromise(Fiber.interrupt(this.pollFiber))
+      runPromise(Fiber.interrupt(this.pollFiber))
       this.pollFiber = null
     }
   }

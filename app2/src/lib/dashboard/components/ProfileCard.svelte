@@ -3,6 +3,7 @@ import Card from "$lib/components/ui/Card.svelte"
 import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { runPromise } from "$lib/runtime"
 import { Option } from "effect"
 import { Effect } from "effect"
 </script>
@@ -51,7 +52,7 @@ import { Effect } from "effect"
           </div>
           <button
             class="p-2 rounded-lg border border-zinc-800 hover:bg-zinc-900 transition-colors group cursor-pointer"
-            onclick={() => Effect.runPromise(dashboard.logout())}
+            onclick={() => runPromise(dashboard.logout())}
             aria-label="Logout"
           >
             <svg

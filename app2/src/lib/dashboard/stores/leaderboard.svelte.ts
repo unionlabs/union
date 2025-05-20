@@ -1,3 +1,4 @@
+import { runFork, runPromise } from "$lib/runtime"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { LeaderboardError } from "../errors"
@@ -43,7 +44,7 @@ export class LeaderboardStore {
    * @private
    */
   private loadLeaderboard() {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getLeaderboard(),
         Effect.tap((result) => {
@@ -72,7 +73,7 @@ export class LeaderboardStore {
     this.stopPolling()
 
     const self = this
-    this.pollFiber = Effect.runFork(
+    this.pollFiber = runFork(
       Effect.forever(
         pipe(
           getLeaderboard(),
@@ -102,7 +103,7 @@ export class LeaderboardStore {
    */
   private stopPolling() {
     if (this.pollFiber) {
-      Effect.runPromise(Fiber.interrupt(this.pollFiber))
+      runPromise(Fiber.interrupt(this.pollFiber))
       this.pollFiber = null
     }
   }

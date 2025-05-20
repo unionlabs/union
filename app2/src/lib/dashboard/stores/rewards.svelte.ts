@@ -1,3 +1,4 @@
+import { runFork, runPromise } from "$lib/runtime"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { RewardError } from "../errors"
@@ -134,7 +135,7 @@ export class RewardsStore {
    * @private
    */
   private loadUserRewards(userId: string) {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getUserRewards(userId),
         Effect.tap((result) => {
@@ -160,7 +161,7 @@ export class RewardsStore {
    * @private
    */
   private loadAvailableRewards() {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getAvailableRewards(),
         Effect.tap((result) => {
@@ -191,7 +192,7 @@ export class RewardsStore {
 
     // Start polling fiber
     const self = this
-    this.pollFiber = Effect.runFork(
+    this.pollFiber = runFork(
       Effect.forever(
         pipe(
           getUserRewards(userId),
@@ -221,7 +222,7 @@ export class RewardsStore {
    */
   private stopPolling() {
     if (this.pollFiber) {
-      Effect.runPromise(Fiber.interrupt(this.pollFiber))
+      runPromise(Fiber.interrupt(this.pollFiber))
       this.pollFiber = null
     }
   }
@@ -260,7 +261,7 @@ export class RewardsStore {
 
     // Update both rewards in parallel
     await Promise.all([
-      Effect.runPromise(
+      runPromise(
         pipe(
           getUserRewards(this.userId),
           Effect.tap((result) => {
@@ -269,7 +270,7 @@ export class RewardsStore {
           }),
         ),
       ),
-      Effect.runPromise(
+      runPromise(
         pipe(
           getAvailableRewards(),
           Effect.tap((result) => {

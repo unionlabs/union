@@ -1,3 +1,4 @@
+import { runFork, runPromise } from "$lib/runtime"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { MissionError } from "../errors"
@@ -142,7 +143,7 @@ export class MissionsStore {
    * @private
    */
   private loadUserMissions(userId: string) {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getUserMissions(userId),
         Effect.tap((result) => {
@@ -168,7 +169,7 @@ export class MissionsStore {
    * @private
    */
   private loadAvailableMissions() {
-    Effect.runPromise(
+    runPromise(
       pipe(
         getAvailableMissions(),
         Effect.tap((result) => {
@@ -198,7 +199,7 @@ export class MissionsStore {
     this.stopPolling()
 
     const self = this
-    this.pollFiber = Effect.runFork(
+    this.pollFiber = runFork(
       Effect.forever(
         pipe(
           getUserMissions(userId),
@@ -228,7 +229,7 @@ export class MissionsStore {
    */
   private stopPolling() {
     if (this.pollFiber) {
-      Effect.runPromise(Fiber.interrupt(this.pollFiber))
+      runPromise(Fiber.interrupt(this.pollFiber))
       this.pollFiber = null
     }
   }
