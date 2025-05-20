@@ -1,6 +1,8 @@
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
+import { RewardError } from "../errors"
 import { getAvailableRewards, getUserRewards } from "../queries/index"
+import { errorStore } from "../stores/errors.svelte"
 
 export type Reward = Entity<"rewards">
 export type UserReward = Entity<"user_rewards_with_queue">
@@ -170,6 +172,16 @@ export class RewardsStore {
           this.earned = result
           return Effect.void
         }),
+        Effect.catchAll((error) => {
+          errorStore.showError(
+            new RewardError({
+              cause: error,
+              operation: "load",
+              message: "Failed to load user rewards",
+            }),
+          )
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -186,6 +198,16 @@ export class RewardsStore {
           console.log("[reward] Available rewards loaded:", result)
           this.availableRewards = result
           return Effect.void
+        }),
+        Effect.catchAll((error) => {
+          errorStore.showError(
+            new RewardError({
+              cause: error,
+              operation: "loadAvailable",
+              message: "Failed to load available rewards",
+            }),
+          )
+          return Effect.succeed(Option.none())
         }),
       ),
     )
@@ -208,6 +230,16 @@ export class RewardsStore {
           Effect.tap((result) => {
             self.earned = result
             return Effect.void
+          }),
+          Effect.catchAll((error) => {
+            errorStore.showError(
+              new RewardError({
+                cause: error,
+                operation: "load",
+                message: "Failed to poll user rewards",
+              }),
+            )
+            return Effect.succeed(Option.none())
           }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),
         ),

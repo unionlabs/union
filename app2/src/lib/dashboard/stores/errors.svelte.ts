@@ -6,6 +6,7 @@ import type {
   ChainError,
   DashboardUnknownException,
   EmailLinkError,
+  ExperienceError,
   LeaderboardError,
   MissionError,
   ProviderLinkError,
@@ -30,6 +31,7 @@ type DashboardError =
   | ProviderLinkError
   | EmailLinkError
   | AccountError
+  | ExperienceError
 
 class ErrorStore {
   current: DashboardError | null = $state(null)

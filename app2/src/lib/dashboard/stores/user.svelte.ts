@@ -1,6 +1,7 @@
 import { browser } from "$app/environment"
 import { goto } from "$app/navigation"
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js"
+import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import { getSupabaseClient } from "../client"
 import { AuthenticationError, SupabaseError } from "../errors"
@@ -582,11 +583,14 @@ export class Dashboard {
             client.functions.invoke("delete-account", {
               method: "POST",
             }),
-          catch: (error) =>
-            new SupabaseError({
+          catch: (error) => {
+            const details = extractErrorDetails(error as Error)
+            return new SupabaseError({
               operation: "deleteAccount",
-              cause: error,
-            }),
+              cause: details,
+              message: "Unexpected error while deleting account",
+            })
+          },
         })
       ),
       Effect.flatMap(({ error }) =>
@@ -594,7 +598,8 @@ export class Dashboard {
           ? Effect.fail(
             new SupabaseError({
               operation: "deleteAccount",
-              cause: error,
+              cause: extractErrorDetails(error as Error),
+              message: "Edge function error: " + error.message,
             }),
           )
           : Effect.void
@@ -607,7 +612,13 @@ export class Dashboard {
         })
       ),
       Effect.catchAll((error) => {
-        errorStore.showError(new AuthenticationError({ cause: error, operation: "deleteAccount" }))
+        errorStore.showError(
+          new AuthenticationError({
+            cause: error,
+            operation: "deleteAccount",
+            message: error.message || "Failed to delete account",
+          }),
+        )
         return Effect.void
       }),
     )

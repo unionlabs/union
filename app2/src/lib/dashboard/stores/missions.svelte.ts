@@ -212,7 +212,13 @@ export class MissionsStore {
           return Effect.void
         }),
         Effect.catchAll((error) => {
-          errorStore.showError(new MissionError({ cause: error, operation: "load" }))
+          errorStore.showError(
+            new MissionError({
+              cause: error,
+              operation: "load",
+              message: "Failed to load user missions",
+            }),
+          )
           return Effect.succeed(Option.none())
         }),
       ),
@@ -232,7 +238,13 @@ export class MissionsStore {
           return Effect.void
         }),
         Effect.catchAll((error) => {
-          errorStore.showError(new MissionError({ cause: error, operation: "loadAvailable" }))
+          errorStore.showError(
+            new MissionError({
+              cause: error,
+              operation: "loadAvailable",
+              message: "Failed to load available missions",
+            }),
+          )
           return Effect.succeed(Option.none())
         }),
       ),
@@ -257,7 +269,13 @@ export class MissionsStore {
             return Effect.void
           }),
           Effect.catchAll((error) => {
-            errorStore.showError(new MissionError({ cause: error, operation: "load" }))
+            errorStore.showError(
+              new MissionError({
+                cause: error,
+                operation: "load",
+                message: "Failed to poll user missions",
+              }),
+            )
             return Effect.succeed(Option.none())
           }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),

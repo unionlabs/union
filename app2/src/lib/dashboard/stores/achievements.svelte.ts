@@ -80,7 +80,13 @@ export class AchievementsStore {
           return Effect.void
         }),
         Effect.catchAll((error) => {
-          errorStore.showError(new AchievementError({ cause: error, operation: "load" }))
+          errorStore.showError(
+            new AchievementError({
+              cause: error,
+              operation: "load",
+              message: "Failed to load user achievements",
+            }),
+          )
           return Effect.succeed(Option.none())
         }),
       ),
@@ -99,7 +105,13 @@ export class AchievementsStore {
           return Effect.void
         }),
         Effect.catchAll((error) => {
-          errorStore.showError(new AchievementError({ cause: error, operation: "loadAvailable" }))
+          errorStore.showError(
+            new AchievementError({
+              cause: error,
+              operation: "loadAvailable",
+              message: "Failed to load available achievements",
+            }),
+          )
           return Effect.succeed(Option.none())
         }),
       ),
@@ -125,7 +137,13 @@ export class AchievementsStore {
             return Effect.void
           }),
           Effect.catchAll((error) => {
-            errorStore.showError(new AchievementError({ cause: error, operation: "load" }))
+            errorStore.showError(
+              new AchievementError({
+                cause: error,
+                operation: "load",
+                message: "Failed to poll user achievements",
+              }),
+            )
             return Effect.succeed(Option.none())
           }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),

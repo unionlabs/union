@@ -60,7 +60,13 @@ export class LeaderboardStore {
           return Effect.void
         }),
         Effect.catchAll((error) => {
-          errorStore.showError(new LeaderboardError({ cause: error, operation: "load" }))
+          errorStore.showError(
+            new LeaderboardError({
+              cause: error,
+              operation: "load",
+              message: "Failed to load leaderboard data",
+            }),
+          )
           return Effect.succeed(Option.none())
         }),
       ),
@@ -84,7 +90,13 @@ export class LeaderboardStore {
             return Effect.void
           }),
           Effect.catchAll((error) => {
-            errorStore.showError(new LeaderboardError({ cause: error, operation: "load" }))
+            errorStore.showError(
+              new LeaderboardError({
+                cause: error,
+                operation: "load",
+                message: "Failed to poll leaderboard data",
+              }),
+            )
             return Effect.succeed(Option.none())
           }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),

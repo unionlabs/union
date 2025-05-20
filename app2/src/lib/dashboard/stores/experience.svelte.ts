@@ -1,6 +1,8 @@
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
+import { ExperienceError } from "../errors"
 import { getAvailableLevels, getUserExperience } from "../queries/index"
+import { errorStore } from "../stores/errors.svelte"
 
 export type Level = Entity<"levels">
 export type UserExperience = Entity<"user_levels">
@@ -106,6 +108,16 @@ export class ExperienceStore {
           this.current = result
           return Effect.void
         }),
+        Effect.catchAll((error) => {
+          errorStore.showError(
+            new ExperienceError({
+              cause: error,
+              operation: "load",
+              message: "Failed to load user experience data",
+            }),
+          )
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -122,6 +134,16 @@ export class ExperienceStore {
           this.levels = result
           return Effect.void
         }),
+        Effect.catchAll((error) => {
+          errorStore.showError(
+            new ExperienceError({
+              cause: error,
+              operation: "loadLevels",
+              message: "Failed to load available levels",
+            }),
+          )
+          return Effect.succeed(Option.none())
+        }),
       ),
     )
   }
@@ -134,7 +156,6 @@ export class ExperienceStore {
   private startPolling(userId: string) {
     this.stopPolling()
 
-    // Start polling fiber
     const self = this
     this.pollFiber = Effect.runFork(
       Effect.forever(
@@ -144,7 +165,17 @@ export class ExperienceStore {
             self.current = result
             return Effect.void
           }),
-          Effect.delay(Duration.millis(POLL_INTERVAL)), // Polling every 10 seconds
+          Effect.catchAll((error) => {
+            errorStore.showError(
+              new ExperienceError({
+                cause: error,
+                operation: "load",
+                message: "Failed to poll user experience data",
+              }),
+            )
+            return Effect.succeed(Option.none())
+          }),
+          Effect.delay(Duration.millis(POLL_INTERVAL)),
         ),
       ),
     )
