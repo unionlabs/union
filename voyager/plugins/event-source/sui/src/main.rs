@@ -2,7 +2,8 @@ use std::{cmp::Ordering, collections::VecDeque};
 
 use ibc_union_spec::{
     event::{
-        ChannelOpenInit, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ChannelOpenInit, ChannelOpenTry, ChannelOpenAck, ChannelOpenConfirm, 
+        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
         ConnectionOpenTry, CreateClient, FullEvent, UpdateClient,
     },
     ClientId, IbcUnion,
@@ -430,6 +431,84 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 connection,
                                 version: event.version,
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    },
+                    events::IbcEvent::ChannelOpenTry(event) => {
+                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(Height::new(height)),
+                                ibc_union_spec::path::ConnectionPath {
+                                    connection_id: event.connection_id.try_into().unwrap(),
+                                },
+                            )
+                            .await?;
+
+                        let client_id = connection.client_id;
+                        (
+                            ChannelOpenTry {
+                                port_id: event.port_id.into_bytes().into(),
+                                channel_id: event.channel_id.try_into().unwrap(),
+                                counterparty_port_id: event.counterparty_port_id.into(),
+                                counterparty_channel_id: event.counterparty_channel_id.try_into().unwrap(),
+                                connection,
+                                version: event.version,
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    },
+                    events::IbcEvent::ChannelOpenAck(event) => {
+                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(Height::new(height)),
+                                ibc_union_spec::path::ConnectionPath {
+                                    connection_id: event.connection_id.try_into().unwrap(),
+                                },
+                            )
+                            .await?;
+
+                        let client_id = connection.client_id;
+                        (
+                            ChannelOpenAck {
+                                port_id: event.port_id.into_bytes().into(),
+                                channel_id: event.channel_id.try_into().unwrap(),
+                                counterparty_port_id: event.counterparty_port_id.into(),
+                                counterparty_channel_id: event.counterparty_channel_id.try_into().unwrap(),
+                                connection,
+                                // version: event.version,
+                            }
+                            .into(),
+                            client_id,
+                        )
+                    },
+                    events::IbcEvent::ChannelOpenConfirm(event) => {
+                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(Height::new(height)),
+                                ibc_union_spec::path::ConnectionPath {
+                                    connection_id: event.connection_id.try_into().unwrap(),
+                                },
+                            )
+                            .await?;
+
+                        let client_id = connection.client_id;
+                        (
+                            ChannelOpenConfirm {
+                                port_id: event.port_id.into_bytes().into(),
+                                channel_id: event.channel_id.try_into().unwrap(),
+                                counterparty_port_id: event.counterparty_port_id.into(),
+                                counterparty_channel_id: event.counterparty_channel_id.try_into().unwrap(),
+                                connection,
+                                // version: event.version,
                             }
                             .into(),
                             client_id,
