@@ -2,6 +2,7 @@ import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { TransferDetails } from "@unionlabs/sdk/schema"
 import { Option, Schema } from "effect"
+import { NoSuchElementException } from "effect/Cause"
 import { graphql } from "gql.tada"
 
 export const transferByPacketHashQuery = (packetHash: string) =>
@@ -48,7 +49,7 @@ export const transferByPacketHashQuery = (packetHash: string) =>
     refetchInterval: "1 second",
     writeData: data => {
       if (data.pipe(Option.map(d => d.v2_transfers.length)).pipe(Option.getOrElse(() => 0)) === 0) {
-        transferDetails.error = Option.some({ _tag: "NotFound", message: "Transfer not found" })
+        transferDetails.error = Option.some(new NoSuchElementException())
       }
       transferDetails.data = data.pipe(Option.map(d => d.v2_transfers[0]))
     },

@@ -1,5 +1,6 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
+import { FetchAptosTokenBalanceError } from "$lib/services/aptos/balances"
 import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
 import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
 import type { NoViemChainError } from "$lib/services/evm/clients"
@@ -21,6 +22,7 @@ import type {
   SwitchChainError,
 } from "$lib/services/transfer/errors"
 import type { Base64EncodeError } from "$lib/utils/base64"
+import type { FromHexError } from "$lib/utils/hex"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
@@ -60,6 +62,7 @@ interface Props {
     | CreateWalletClientError
     | CryptoError
     | ExecuteContractError
+    | FromHexError
     | FetchNativeBalanceError
     | GasPriceError
     | GetChainInfoError
@@ -75,6 +78,7 @@ interface Props {
     | ReadContractError
     | SwitchChainError
     | TimeoutException
+    | FetchAptosTokenBalanceError
     | UnknownException
     | WaitForTransactionReceiptError
     | WriteContractError
@@ -108,8 +112,10 @@ const getUserFriendlyMessage = pipe(
     ExecuteContractError: (x) => `Failed to execute contract: ${x.cause.message}`,
     FetchNativeBalanceError: () => "Failed to fetch native token balance.",
     GasPriceError: (x) => `Incorrect gas price configuration.`,
+    FromHexError: (x) => `Failed to decode hex.`,
     GetChainInfoError: (x) => `No info for EVM chain ${x.chainId}.`, // TODO: rename to EVM
     NoCosmosChainInfoError: (x) => `No info for Cosmos chain ${x.chain.display_name}.`,
+    FetchAptosTokenBalanceError: (x) => `Failed to fetch aptos token balance.`,
     NoRpcError: (error) => `No ${error.type} endpoint available for ${error.chain.display_name}.`,
     NoSuchElementException: () => "An unexpected error occurred.", // TODO: remove me for more explicit errors
     NoViemChain: () => "Chain configuration not found for the selected network.",

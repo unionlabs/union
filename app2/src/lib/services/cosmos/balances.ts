@@ -22,7 +22,6 @@ export type FetchCosmosBalanceError =
   | Base64EncodeError
   | NoRpcError
   | FromHexError
-  | Error
   | HttpClientError.HttpClientError
 
 export class QueryBankBalanceError extends Data.TaggedError("QueryBankBalanceError")<{

@@ -31,7 +31,7 @@ class PacketListStore {
 
 class PacketDetailsStore {
   data = $state(Option.none<PacketDetails>())
-  error = $state(Option.none<FetchDecodeGraphqlError | { _tag: "NotFound"; message: string }>())
+  error = $state(Option.none<FetchDecodeGraphqlError>())
   fiber = $state(Option.none<Fiber.RuntimeFiber<any, never>>())
 
   async runEffect<R>(effect: Effect.Effect<R>) {
