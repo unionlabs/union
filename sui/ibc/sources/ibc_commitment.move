@@ -253,11 +253,11 @@ module ibc::commitment {
     }
 
     public fun channel_commitment_key(channel_id: u32): vector<u8> {
-        channel_path(channel_id)
+        keccak256(&channel_path(channel_id))
     }
 
     public fun packet_commitment_key(channel_id: u32, sequence: u64): vector<u8> {
-        packet_commitment_path(channel_id, sequence)
+        keccak256(&packet_commitment_path(channel_id, sequence))
     }
 
     public fun batch_packets_commitment_key(
