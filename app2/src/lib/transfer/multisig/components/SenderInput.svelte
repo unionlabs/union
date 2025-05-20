@@ -3,7 +3,10 @@ import Input from "$lib/components/ui/Input.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import { signingMode } from "$lib/transfer/signingMode.svelte.js"
-import { Bech32FromAddressCanonicalBytesWithPrefix } from "@unionlabs/sdk/schema"
+import {
+  AddressCosmosCanonical,
+  Bech32FromAddressCanonicalBytesWithPrefix,
+} from "@unionlabs/sdk/schema"
 import { Array as A, Either as E, ParseResult, pipe, Schema as S } from "effect"
 import { apply } from "effect/Function"
 import { onMount } from "svelte"
@@ -28,7 +31,8 @@ const validateAddress = (address: string) => {
       onRight: encoded => {
         messages = A.empty()
         transferData.raw.updateField("sender", address)
-        wallets.addInputAddress(encoded)
+        // XXX: improve schema transforms to be partially applicative
+        wallets.addInputAddress(encoded as AddressCosmosCanonical)
       },
     }),
   )
