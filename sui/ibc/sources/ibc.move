@@ -71,6 +71,7 @@ module ibc::ibc {
     use sui::hash::keccak256;
     use sui::clock;
     use sui::transfer;
+    use std::string;
     #[test_only]
     use sui::test_scenario;
 
@@ -654,6 +655,8 @@ module ibc::ibc {
 
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, key, encoded);
 
+        add_or_update_table<u32, Channel>(&mut ibc_store.channels, channel_id, channel);
+
     }
 
     fun encode_channel(channel: Channel): vector<u8> {
@@ -714,13 +717,15 @@ module ibc::ibc {
     }
 
 
-    public fun channel_open_init(
+    public fun channel_open_init<T: drop>(
         ibc_store: &mut IBCStore,
-        port_id: String,
         counterparty_port_id: vector<u8>,
         connection_id: u32,
-        version: String
+        version: String,
+        ibc_app_witness: T,
     ) {
+        let port_id = string::from_ascii(std::type_name::get<T>().into_string());
+
         // Ensure the connection exists and is in the OPEN state
         let connection = ibc_store.connections.borrow(connection_id);
         assert!(
@@ -733,11 +738,11 @@ module ibc::ibc {
 
         // Create a new channel and set its properties
         let mut channel = channel::new(
-                CHAN_STATE_INIT,
-                connection_id,
-                0,
-                counterparty_port_id,
-                version
+            CHAN_STATE_INIT,
+            connection_id,
+            0,
+            counterparty_port_id,
+            version
         );
 
         // Add initial sequence values for send, receive, and acknowledgment
@@ -755,39 +760,32 @@ module ibc::ibc {
             bcs::to_bytes(&1)
         );
 
-
-
-
-        // Store the new channel in the IBCStore
-        add_or_update_table<u32, Channel>(&mut ibc_store.channels,
-            channel_id,
-            channel
-        );
-
         // Emit an event for the channel initialization
         event::emit(
             ChannelOpenInit {
-                port_id: port_id,
-                counterparty_port_id: counterparty_port_id,
-                channel_id: channel_id,
-                connection_id: connection_id,
-                version: version
+                port_id,
+                counterparty_port_id,
+                channel_id,
+                connection_id,
+                version
             }
         );
 
         ibc_store.commit_channel(channel_id, channel);
     }
-    public fun channel_open_try(
+    public fun channel_open_try<T: drop>(
         ibc_store: &mut IBCStore,
-        port_id: String,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
         version: String,
         counterparty_version: String,
         proof_init: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        ibc_app_witness: T,
     ) {
+        let port_id = string::from_ascii(std::type_name::get<T>().into_string());
+
         // Ensure the connection exists and is in the OPEN state
         let connection = ibc_store.connections.borrow(connection_id);
         assert!(
@@ -843,12 +841,6 @@ module ibc::ibc {
             bcs::to_bytes(&1)
         );
     
-        // Store the new channel in the IBCStore
-        add_or_update_table<u32, Channel>(&mut ibc_store.channels,
-            channel_id,
-            channel
-        );
-
         // Emit an event for the channel open try
         event::emit(
             ChannelOpenTry {
@@ -865,15 +857,17 @@ module ibc::ibc {
         ibc_store.commit_channel(channel_id, channel);
     }
 
-    public fun channel_open_ack(
+    public fun channel_open_ack<T: drop>(
         ibc_store: &mut IBCStore,
-        port_id: String,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64,
+        ibc_app_witness: T,
     ) {
+        let port_id = string::from_ascii(std::type_name::get<T>().into_string());
+
         // Ensure the channel exists and is in the TRYOPEN state
         let channel = ibc_store.channels.borrow_mut(channel_id);
         assert!(
@@ -942,13 +936,15 @@ module ibc::ibc {
         connection_end::counterparty_connection_id(connection)
     }
 
-    public fun channel_open_confirm(
+    public fun channel_open_confirm<T: drop>(
         ibc_store: &mut IBCStore,
-        port_id: String,
         channel_id: u32,
         proof_ack: vector<u8>,
-        proof_height: u64
+        proof_height: u64,
+        ibc_app_witness: T
     ) {
+        let port_id = string::from_ascii(std::type_name::get<T>().into_string());
+
         // Ensure the channel exists and is in the TRYOPEN state
         let channel = ibc_store.channels.borrow_mut(channel_id);
         assert!(

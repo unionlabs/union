@@ -2,10 +2,11 @@
 
 [move]
 version = 3
-manifest_digest = "E2DE4FD3C4F57EF8160DAC0BF8DDBADBD4DCC323F207EF48337515AADC81136E"
-deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
+manifest_digest = "F7F21554CA7A47E02ABA0D9E0D2FF9783AE9CFE7314243507EF1A02779279568"
+deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
 dependencies = [
   { id = "Sui", name = "Sui" },
+  { id = "ibc", name = "ibc" },
 ]
 
 [[move.package]]
@@ -20,8 +21,16 @@ dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
 ]
 
+[[move.package]]
+id = "ibc"
+source = { local = "../ibc" }
+
+dependencies = [
+  { id = "Sui", name = "Sui" },
+]
+
 [move.toolchain-version]
-compiler-version = "1.37.1"
+compiler-version = "1.47.0"
 edition = "2024.beta"
 flavor = "sui"
 
