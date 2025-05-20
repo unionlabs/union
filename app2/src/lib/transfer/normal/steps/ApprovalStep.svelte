@@ -5,9 +5,7 @@ import TokenComponent from "$lib/components/model/TokenComponent.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Input from "$lib/components/ui/Input.svelte"
 import Label from "$lib/components/ui/Label.svelte"
-import { SwitchChainCopy } from "$lib/copy"
 import { runPromiseExit, runSync } from "$lib/runtime"
-import { getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
 import { getWalletClient, NoViemChainError } from "$lib/services/evm/clients.ts"
 import type {
   ConnectorClientError,
@@ -33,10 +31,16 @@ import {
   CreateViemPublicClientError,
   WriteContractError,
 } from "@unionlabs/sdk/evm"
-import type { CosmosAddressEncodeError, NotACosmosChainError } from "@unionlabs/sdk/schema"
-import { Array as Arr, Cause, Data, Effect, Exit, Match, Option } from "effect"
+import {
+  AddressCosmosCanonical,
+  type CosmosAddressEncodeError,
+  type NotACosmosChainError,
+  TokenRawDenom,
+} from "@unionlabs/sdk/schema"
+import { ensureHex } from "@unionlabs/sdk/utils"
+import { Array as Arr, Cause, Data, Effect, Exit, Match, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
-import { erc20Abi, http, isHex, toHex } from "viem"
+import { erc20Abi, http } from "viem"
 
 // Probably something we can import from somewhere?
 const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
@@ -90,27 +94,6 @@ let showCustomInput = $state(false)
 
 // Derive validation state
 const isValidAmount = $derived(showCustomInput ? isValidCustomAmount(customAmount) : true)
-
-// Derive the actual approval amount
-const approvalAmount = $derived(
-  selectedMultiplier === "max"
-    ? getMaxApprovalAmount()
-    : selectedMultiplier === 1
-    ? step.requiredAmount
-    : customAmount && isValidCustomAmount(customAmount)
-    ? runSync(
-      Effect.try({
-        try: () => {
-          const [whole = "0", fraction = ""] = customAmount.replace(",", ".").split(".")
-          const cleanWhole = whole === "0" ? "0" : whole.replace(/^0+/, "")
-          const paddedFraction = fraction.padEnd(step.intent.decimals, "0")
-          return BigInt(cleanWhole + paddedFraction)
-        },
-        catch: () => step.requiredAmount,
-      }),
-    )
-    : step.requiredAmount,
-)
 
 // Derive button state
 const isButtonEnabled = $derived.by(() => {
@@ -179,7 +162,7 @@ const submit = Effect.gen(function*() {
           address: step.token,
           abi: erc20Abi,
           functionName: "approve",
-          args: [step.intent.ucs03address, approvalAmount],
+          args: [ensureHex(step.intent.ucs03address), approvalAmount],
         })
       ),
       setEts,
@@ -193,7 +176,10 @@ const submit = Effect.gen(function*() {
   })
 
   const doCosmos = Effect.gen(function*() {
-    const sender = yield* chain.getDisplayAddress(step.intent.sender)
+    /// XXX: proper type will require discrimination at intent level
+    const sender = yield* chain.getDisplayAddress(
+      step.intent.sender as unknown as AddressCosmosCanonical,
+    )
 
     const setCts = (nextCts: typeof cts) =>
       Effect.sync(() => {
@@ -261,8 +247,10 @@ const handleSubmit = () => {
   )
 }
 
+// XXX: why not reactive
 const sourceChain = step.intent.sourceChain
-const massagedDenom = isHex(step.token) ? step.token : toHex(step.token)
+// XXX: why not reactive
+const massagedDenom = Schema.decodeSync(TokenRawDenom)(ensureHex(step.token))
 
 function getMaxApprovalAmount() {
   return Match.value(step.intent.sourceChain.rpc_type).pipe(
@@ -484,7 +472,7 @@ function handleBackClick() {
           </button>
         </div>
       {:else}
-        <div class="flex justify-between gap-4">
+        <div class="flex justify-between gap-4 align-end">
           <button
             class="bg-zinc-900 hover:bg-zinc-800 rounded-lg h-10 w-14 flex items-center justify-center cursor-pointer"
             onclick={handleBackClick}
@@ -498,6 +486,7 @@ function handleBackClick() {
               required
               disabled={!isButtonEnabled}
               autocorrect="off"
+              label="Amount"
               placeholder="Enter custom amount"
               spellcheck="false"
               autocomplete="off"
