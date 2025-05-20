@@ -20,16 +20,19 @@ import { Data, Effect, Fiber, Option, pipe, Schema, Struct } from "effect"
 import { onMount } from "svelte"
 
 // Store for the transfer details
+import LoadingSpinnerIcon from "$lib/components/icons/LoadingSpinnerIcon.svelte"
 import SharpCheckIcon from "$lib/components/icons/SharpCheckIcon.svelte"
 import SharpWarningIcon from "$lib/components/icons/SharpWarningIcon.svelte"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import PacketTracesComponent from "$lib/components/model/PacketTracesComponent.svelte"
 import A from "$lib/components/ui/A.svelte"
 import Button from "$lib/components/ui/Button.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import { finalityDelays, settlementDelays } from "$lib/constants/settlement-times.ts"
 import { runFork, runPromise } from "$lib/runtime"
 import { transferDetails } from "$lib/stores/transfer-details.svelte"
 import { fromHex } from "viem"
+import Layout from "../../../+layout.svelte"
 import type { PageData } from "./$types"
 
 type Props = {
@@ -59,7 +62,8 @@ onMount(() => {
 
 type SimpleTransferStatus = Data.TaggedEnum<{
   NoDetails: {}
-  Timeout: {
+  TimeoutPending: {}
+  TimeoutSubmitted: {
     tx_hash: TransactionHash
   }
   SuccessAck: {}
@@ -71,27 +75,47 @@ type SimpleTransferStatus = Data.TaggedEnum<{
 export const SimpleTransferStatus = Data.taggedEnum<SimpleTransferStatus>()
 
 const simpleStatus = $derived.by(() => {
-  if (Option.isNone(transferDetails.data)) {
+  if (Option.isNone(transferDetails.data) || Option.isNone(packetDetails.data)) {
     return SimpleTransferStatus.NoDetails()
   }
-  const details = transferDetails.data.value
+  const transfer = transferDetails.data.value
+  const packet = packetDetails.data.value
 
-  if (Option.isSome(details.transfer_timeout_transaction_hash)) {
-    return SimpleTransferStatus.Timeout({
-      tx_hash: details.transfer_timeout_transaction_hash.value,
+  if (Option.isSome(transfer.transfer_timeout_transaction_hash)) {
+    return SimpleTransferStatus.TimeoutSubmitted({
+      tx_hash: transfer.transfer_timeout_transaction_hash.value,
     })
   }
 
-  if (details.traces.some(t => t.type === "PACKET_ACK" && Option.isSome(t.transaction_hash))) {
-    if (details.success) {
+  const HAS_WRITE_ACK = transfer.traces.some(t =>
+    t.type === "WRITE_ACK" && Option.isSome(t.transaction_hash)
+  )
+  const HAS_PACKET_ACK = transfer.traces.some(t =>
+    t.type === "PACKET_ACK" && Option.isSome(t.transaction_hash)
+  )
+
+  // timeout_timestamp can be 0, in which there is no timeout
+  if (packet.timeout_timestamp && !HAS_WRITE_ACK) {
+    // Convert current time to nanoseconds since UNIX epoch
+    const currentNanos = BigInt(Date.now()) * 1000000n
+    // NOTE: this is assuming that the indexer is up-to-date
+    // If indexing is unhealthy for destination chain, it will incorrectly show that a
+    // timeout is pending
+    if (currentNanos >= packet.timeout_timestamp) {
+      return SimpleTransferStatus.TimeoutPending()
+    }
+  }
+
+  if (HAS_PACKET_ACK) {
+    if (transfer.success) {
       return SimpleTransferStatus.SuccessAck()
     } else {
       return SimpleTransferStatus.FailedAck()
     }
   }
 
-  if (details.traces.some(t => t.type === "WRITE_ACK" && Option.isSome(t.transaction_hash))) {
-    if (details.success) {
+  if (HAS_WRITE_ACK) {
+    if (transfer.success) {
       return SimpleTransferStatus.Success()
     } else {
       return SimpleTransferStatus.Failed()
@@ -162,6 +186,19 @@ const suggestTokenToWallet = async (chain_id: string, denom: TokenRawDenom) => {
                 {:else if simpleStatus._tag === "Failed"}
                   <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
                   <p class="text-babylon">Failed transfer. Will be refunded.</p>
+                {:else if simpleStatus._tag === "TimeoutSubmitted"}
+                  <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Timed out</p>
+                    <p class="text-babylon">This transfer has been refunded</p>
+                    <LongMonoWord>{simpleStatus.tx_hash}</LongMonoWord>
+                  </div>
+                {:else}
+                  <SharpWarningIcon class="size-6 text-yellow-500 self-center" />
+                  <div class="flex flex-col">
+                    <p class="text-babylon">Error</p>
+                    <LongMonoWord>{simpleStatus._tag}</LongMonoWord>
+                  </div>
                 {/if}
               </div>
             </div>
