@@ -3,8 +3,7 @@ import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { runSync } from "$lib/runtime"
 import { truncate } from "$lib/utils/format"
-import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
-import { Effect } from "effect"
+import type { AddressCanonicalBytes, AddressCosmosCanonical, Chain } from "@unionlabs/sdk/schema"
 import type { HTMLAttributes } from "svelte/elements"
 import A from "../ui/A.svelte"
 import Label from "../ui/Label.svelte"
@@ -28,7 +27,10 @@ const {
   ...rest
 }: Props = $props()
 
-const fullDisplayAddress = $derived(runSync(chain.getDisplayAddress(address)))
+// XXX: no type coersion
+const fullDisplayAddress = $derived(
+  runSync(chain.getDisplayAddress(address as AddressCosmosCanonical)),
+)
 // const fullDisplayAddress = address
 const displayAddress = $derived(
   shouldTruncate

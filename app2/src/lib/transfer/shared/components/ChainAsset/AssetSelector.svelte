@@ -94,10 +94,7 @@ async function toggleSearch() {
 }
 </script>
 
-<div
-  datatestid="asset-selector"
-  class="h-full flex flex-col relative"
->
+<div class="h-full flex flex-col relative">
   <div
     class="overflow-y-auto flex-grow"
     in:fade={{ duration: 300 }}
@@ -109,7 +106,7 @@ async function toggleSearch() {
         </div>
       {:else if Option.isNone(transferData.baseTokens)}
         <div>
-          {#each Array(5) as _, i}
+          {#each Array(5) as _}
             <div class="flex items-center w-full px-4 py-2 border-b border-zinc-700">
               <div class="flex-1 min-w-0">
                 <div class="mb-1">
