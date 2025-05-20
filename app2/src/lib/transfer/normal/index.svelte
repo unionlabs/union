@@ -162,26 +162,25 @@ $effect(() => {
 
     const steps: Array<Steps.Steps> = [Steps.Filling()]
 
-    const isReceiverInWallet = pipe(
-      Option.all({
-        destinationChain: transferData.destinationChain,
-        receiver: transferData.derivedReceiver,
-      }),
-      Option.flatMap(({ destinationChain, receiver }) => {
+    const checkReceiverInWallet = yield* Option.Do.pipe(
+      Option.bind("destinationChain", () => transferData.destinationChain),
+      Option.bind("receiver", () => transferData.derivedReceiver),
+      Option.bind("inWallet", ({ destinationChain, receiver }) => {
         const walletaddr = wallets.getAddressForChain(destinationChain)
         return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
       }),
-      Option.getOrElse(() => false),
+      Option.match({
+        onNone: () => Effect.void,
+        onSome: ({ inWallet, destinationChain, receiver }) =>
+          Effect.if(inWallet, {
+            onFalse: () =>
+              Effect.sync(() => {
+                steps.push(Steps.CheckReceiver({ receiver, destinationChain }))
+              }),
+            onTrue: () => Effect.void,
+          }),
+      }),
     )
-
-    if (!isReceiverInWallet) {
-      steps.push(
-        Steps.CheckReceiver({
-          receiver: transferData.derivedReceiver,
-          destinationChain: transferData.destinationChain,
-        }),
-      )
-    }
 
     if (context) {
       if (Option.isSome(context.allowances)) {

@@ -1,7 +1,8 @@
 import { runSync } from "$lib/runtime"
 import { AddressValidationError } from "$lib/services/shared"
 import { bech32AddressToHex } from "@unionlabs/client"
-import { Effect, Option } from "effect"
+import { AddressCanonicalBytes } from "@unionlabs/sdk/schema"
+import { Effect, Option, pipe, Schema } from "effect"
 import { getAddress, isHex } from "viem"
 
 export const deriveReceiverEffect = (input: string) =>
@@ -53,15 +54,21 @@ export const deriveReceiverEffect = (input: string) =>
     })
   })
 
-export const getDerivedReceiverSafe = (input: string): Option.Option<string> => {
-  const result = runSync(Effect.either(deriveReceiverEffect(input)))
-  return result._tag === "Right" ? Option.some(result.right) : Option.none()
+export const getDerivedReceiverSafe = (input: string): Option.Option<AddressCanonicalBytes> => {
+  // XXX: this should be an effect and not narrow into option
+  const program = pipe(
+    input,
+    deriveReceiverEffect,
+    Effect.flatMap(Schema.decode(AddressCanonicalBytes)),
+    Effect.option,
+  )
+  return runSync(program)
 }
 
 export function isHexMovement(
   value: unknown,
   { strict = true }: { strict?: boolean } = {},
-): boolean {
+): value is `0x${string}` {
   if (!value) {
     return false
   }

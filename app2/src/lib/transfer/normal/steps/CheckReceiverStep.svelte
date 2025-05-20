@@ -4,7 +4,7 @@ import AddressComponent from "$lib/components/model/AddressComponent.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import { Option } from "effect"
 import { onDestroy, onMount } from "svelte"
-import type { CheckReceiver } from "../steps.ts"
+import type { CheckReceiver } from "./steps"
 
 type Props = {
   stepIndex: number
@@ -15,10 +15,8 @@ type Props = {
 
 const { step, cancel, onSubmit }: Props = $props()
 
-const receiver = $derived(Option.isSome(step.receiver) ? step.receiver.value : undefined)
-const chain = $derived(
-  Option.isSome(step.destinationChain) ? step.destinationChain.value : undefined,
-)
+const receiver = $derived(step.receiver)
+const chain = $derived(step.destinationChain)
 
 let targetTime = $state(0)
 let secondsLeft = $state(0)
