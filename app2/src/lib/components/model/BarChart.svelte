@@ -3,11 +3,12 @@ import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { DailyTransfer } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
+import type { TimeoutException } from "effect/Cause"
 import { constVoid } from "effect/Function"
 
 type Props = {
   data: Option.Option<ReadonlyArray<DailyTransfer>>
-  error: Option.Option<FetchDecodeGraphqlError>
+  error: Option.Option<FetchDecodeGraphqlError | TimeoutException>
   class?: string
   onHoverChange?: (day: Option.Option<DailyTransfer>) => void
 }
