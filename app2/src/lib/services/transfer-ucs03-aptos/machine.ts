@@ -1,6 +1,5 @@
 import { runPromiseExit } from "$lib/runtime.ts"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
-import { Effect } from "effect"
 import { switchChainAptos } from "./chain.ts"
 import {
   SwitchChainState,
@@ -31,8 +30,11 @@ export async function nextState(
     SwitchChain: ({ state }) => {
       return SwitchChainState.$match(state, {
         InProgress: async () => {
+          // @ts-expect-error 2345
           const exit = await runPromiseExit(switchChainAptos(chain))
-          return TransferSubmission.SwitchChain({ state: SwitchChainState.Complete({ exit }) })
+          return TransferSubmission.SwitchChain({
+            state: SwitchChainState.Complete({ exit: exit as unknown as any }),
+          })
         },
         Complete: ({ exit }) => {
           if (exit._tag === "Failure") {
@@ -59,6 +61,7 @@ export async function nextState(
           }
           // After successful submission, move to waiting for receipt.
           return TransferSubmission.TransferReceipt({
+            // @ts-expect-error 2332
             state: TransferReceiptState.InProgress({ hash: exit.value.hash }),
           })
         },

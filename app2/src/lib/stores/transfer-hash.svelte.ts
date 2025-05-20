@@ -3,11 +3,12 @@ import { runFork, runPromise } from "$lib/runtime"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries.ts"
 import type { PacketHash } from "@unionlabs/sdk/schema"
 import { Effect, Fiber, Option } from "effect"
+import type { TimeoutException } from "effect/Cause"
 
 export class TransferHashStore {
   hash: string = $state("")
   data: Option.Option<PacketHash> = $state(Option.none())
-  error: Option.Option<FetchDecodeGraphqlError> = $state(Option.none())
+  error: Option.Option<FetchDecodeGraphqlError | TimeoutException> = $state(Option.none())
   fiber: Option.Option<Fiber.RuntimeFiber<unknown, unknown>> = $state(Option.none())
 
   startPolling = (txHash: string) => {

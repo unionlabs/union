@@ -69,6 +69,7 @@ export const fetchAptosBalance = ({
     const fetchBalance = fetchFABalance({ aptosClient, tokenAddress, walletAddress })
     const balance_request = yield* Effect.retry(fetchBalance, aptosBalanceRetrySchedule)
 
+    // @ts-expect-error 2345
     balance = BigInt(balance_request[0])
 
     return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))

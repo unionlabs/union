@@ -2,7 +2,7 @@ import { GenerateMultisigError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { isValidBech32ContractAddress } from "$lib/utils/index.ts"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
-import { Tx } from "@unionlabs/sdk/schema"
+import { AddressCosmosCanonical, Tx } from "@unionlabs/sdk/schema"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction"
 import { generateSalt } from "@unionlabs/sdk/utils"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
@@ -16,7 +16,8 @@ export const createMultisigMessage = (context: TransferContext) =>
 
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
     const sender = yield* context.intents[0].sourceChain.getDisplayAddress(
-      context.intents[0].sender,
+      // XXX: discriminate higher
+      context.intents[0].sender as AddressCosmosCanonical,
     )
     const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
     const salt = yield* generateSalt("cosmos")

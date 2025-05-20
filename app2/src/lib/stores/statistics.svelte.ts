@@ -2,10 +2,11 @@ import { runFork, runPromise } from "$lib/runtime"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
 import { Effect, Fiber, Option } from "effect"
+import type { TimeoutException } from "effect/Cause"
 
 class StatisticsStore {
   data = $state(Option.none<Statistics>())
-  error = $state(Option.none<FetchDecodeGraphqlError>())
+  error = $state(Option.none<FetchDecodeGraphqlError | TimeoutException>())
   fiber = $state(Option.none<Fiber.RuntimeFiber<any, never>>())
 
   async runEffect<R>(effect: Effect.Effect<R>) {
@@ -26,7 +27,7 @@ class StatisticsStore {
 
 class DailyTransfersStore {
   data = $state(Option.none<DailyTransfers>())
-  error = $state(Option.none<FetchDecodeGraphqlError>())
+  error = $state(Option.none<FetchDecodeGraphqlError | TimeoutException>())
   fiber = $state(Option.none<Fiber.RuntimeFiber<any, never>>())
 
   async runEffect<R>(effect: Effect.Effect<R>) {

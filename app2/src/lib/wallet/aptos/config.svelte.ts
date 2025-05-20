@@ -95,7 +95,10 @@ class AptosStore {
   updateAptosAddress = (hexAddress: Hex | undefined) => {
     if (hexAddress) {
       const aptosAddressFromHex = (address: string): typeof AddressAptosCanonical.Type => {
-        const normalized = address.startsWith("0x") ? address : `0x${address}`
+        // TODO: Replace with schema transform
+        const normalized: `0x${string}` = address.startsWith("0x")
+          ? address as `0x${string}`
+          : `0x${address}`
         return AddressAptosCanonical.make(normalized)
       }
       wallets.aptosAddress = Option.some(aptosAddressFromHex(hexAddress))

@@ -1,15 +1,15 @@
 <script lang="ts">
 import type { Snippet } from "svelte"
+import type { HTMLLabelAttributes } from "svelte/elements"
 
-// Card.svelte
-type Props = {
+interface Props extends HTMLLabelAttributes {
   children: Snippet
   class?: string
 }
 
-// Define props with default
 const { children, class: className = "", ...rest }: Props = $props()
 </script>
+
 <label
   class="uppercase text-zinc-500 text-xs font-semibold block {className}"
   {...rest}

@@ -1,6 +1,6 @@
 import { bech32, bytes } from "@scure/base"
-import { Array as Arr, Data, Effect, Option, Schema as S } from "effect"
-import { dual } from "effect/Function"
+import { Array as Arr, Data, Effect, Option, Schema, Schema as S } from "effect"
+import { dual, flow, pipe } from "effect/Function"
 import type { Chain as ViemChain } from "viem"
 import { VIEM_CHAINS } from "../constants/viem-chains.js"
 import type { AddressCosmosCanonical, AddressCosmosDisplay } from "./address.ts"
@@ -135,6 +135,18 @@ export class Chain extends S.Class<Chain>("Chain")({
       onNone: () => Effect.fail(new NoRpcError({ chain: this, type })),
       onSome: Effect.succeed,
     })
+  }
+
+  requireRpcUrlAsUrl(type: RpcProtocolType): Effect.Effect<URL, NoRpcError> {
+    return pipe(
+      this.getRpcUrl(type),
+      Option.map(flow(
+        Schema.decode(Schema.URL),
+      )),
+      Effect.flatten,
+      // XXX: don't mask error
+      Effect.mapError(() => new NoRpcError({ chain: this, type })),
+    )
   }
 
   getDisplayAddress(

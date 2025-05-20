@@ -37,6 +37,7 @@ export type TransferContext = {
   intents: Array<Intent>
   allowances: Option.Option<Array<Allowance>>
   instruction: Option.Option<Instruction>
+  // XXX: where is message fulfilled?
   message: Option.Option<string>
 }
 
@@ -80,6 +81,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
         intents: [intent],
         allowances: Option.none(),
         instruction: Option.none(),
+        message: Option.none(),
       })
     }),
     Match.when("cosmos", () => {
@@ -91,7 +93,8 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
 
       const intent: Intent = {
         sender: args.sender,
-        receiver: args.receiver.toLowerCase(),
+        // XXX: guarantee lowercase as part of schema transform
+        receiver: args.receiver.toLowerCase() as typeof args.receiver,
         baseToken: baseToken,
         baseAmount: baseAmountWithFee,
         quoteAmount: baseAmount,
@@ -108,6 +111,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
         intents: [intent],
         allowances: Option.none(),
         instruction: Option.none(),
+        message: Option.none(),
       })
     }),
     Match.orElse(() => {

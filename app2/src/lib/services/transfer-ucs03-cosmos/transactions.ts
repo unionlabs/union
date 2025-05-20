@@ -7,6 +7,9 @@ import { generateSalt } from "@unionlabs/sdk/utils"
 import { Effect } from "effect"
 import { fromHex, isHex } from "viem"
 
+/**
+ * @deprecated Replace with SDK usage
+ */
 export const submitTransfer = (transfer: ValidTransfer["args"]) => {
   const { connectedWallet } = cosmosStore
 
@@ -18,6 +21,7 @@ export const submitTransfer = (transfer: ValidTransfer["args"]) => {
     baseAmount,
     baseToken,
     quoteAmount,
+    // @ts-expect-error 2339
     quoteToken,
     receiver,
     sourceChannelId,

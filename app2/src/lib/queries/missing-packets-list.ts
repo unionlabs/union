@@ -38,15 +38,17 @@ const missingAckDoc = graphql(`
 export function missingPackets(exceedingSla: string) {
   return Effect.gen(function*() {
     console.info("Fetching missing packets...")
+    // XXX: sinful
+    type Mutable<T> = T extends ReadonlyArray<infer U> ? U[] : T
     let cursor: string | undefined
-    let found: typeof PacketList.Type = []
+    let found: Mutable<typeof PacketList.Type> = []
 
     while (true) {
       console.info("Fetching missing packets...")
       const page = yield* fetchDecodeGraphql(
         Schema.Struct({ v2_packets: PacketList }),
         missingAckDoc,
-        { sortOrder: cursor, exceedingSla: exceedingSla },
+        { sortOrder: cursor ?? null, exceedingSla: exceedingSla },
       )
       const txs = page.v2_packets
       if (txs.length === 0) {
@@ -55,7 +57,7 @@ export function missingPackets(exceedingSla: string) {
 
       found.push(...txs)
 
-      cursor = txs.at(-1).sort_order
+      cursor = txs?.at(-1)?.sort_order
     }
 
     console.info("Missing packets:", found)

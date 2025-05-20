@@ -53,10 +53,11 @@ _: {
             pnpm --filter=app2 build
             runHook postBuild
           '';
+          # TODO(ehegnes): make warning diagnostics exit non-zero
           checkPhase = ''
             pnpm --filter=app2 check
           '';
-          doCheck = false; # TODO(ehegnes): enable checks
+          doCheck = true;
           installPhase = ''
             mkdir -p $out
             cp -r ./app2/build/* $out

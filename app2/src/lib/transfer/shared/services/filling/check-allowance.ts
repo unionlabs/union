@@ -13,9 +13,10 @@ import {
   readErc20Allowance,
   ViemPublicClient,
 } from "@unionlabs/sdk/evm"
-import type { AddressCanonicalBytes, Chain } from "@unionlabs/sdk/schema"
+import type { AddressCanonicalBytes, AddressCosmosCanonical, Chain } from "@unionlabs/sdk/schema"
+import { ensureHex } from "@unionlabs/sdk/utils"
 import { Data, Effect, Match, Option } from "effect"
-import { fromHex, http, isHex } from "viem"
+import { type Address, fromHex, http, isHex } from "viem"
 
 export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
   // XXX: make branded type
@@ -52,15 +53,19 @@ export function checkAllowances(
     const tokenAddresses = [...neededMap.keys()]
 
     const allowances = yield* Match.value(chain.rpc_type).pipe(
-      Match.when("evm", () =>
-        handleEvmAllowances(tokenAddresses, sender, spender, chain).pipe(
-          Effect.mapError(err =>
-            new AllowanceCheckError({
-              message: (err as Error).message ?? "unknown message",
-              cause: err,
-            })
-          ),
-        )),
+      Match.when(
+        "evm",
+        () =>
+          handleEvmAllowances(tokenAddresses.map(ensureHex), sender, ensureHex(spender), chain)
+            .pipe(
+              Effect.mapError(err =>
+                new AllowanceCheckError({
+                  message: (err as Error).message ?? "unknown message",
+                  cause: err,
+                })
+              ),
+            ),
+      ),
       Match.when("cosmos", () =>
         handleCosmosAllowances(tokenAddresses, sender, chain).pipe(
           Effect.mapError(err =>
@@ -84,7 +89,7 @@ export function checkAllowances(
       if (allowance < requiredAmount) {
         steps.push(
           new ApprovalStep({
-            token,
+            token: ensureHex(token),
             requiredAmount,
             currentAllowance: allowance,
           }),
@@ -97,9 +102,10 @@ export function checkAllowances(
 }
 
 const handleEvmAllowances = (
-  tokenAddresses: Array<string>,
+  // XXX: make Address type more specific
+  tokenAddresses: Array<Address>,
   sender: AddressCanonicalBytes,
-  spender: string,
+  spender: Address,
   sourceChain: Chain,
 ): Effect.Effect<
   Array<{ token: string; allowance: bigint }>,
@@ -180,7 +186,8 @@ export const handleCosmosAllowances = (
       contractTokens.map(tokenAddress =>
         Effect.gen(function*() {
           const owner = yield* sourceChain
-            .toCosmosDisplay(sender)
+            // XXX: remove explicit transformers in favor of generic
+            .toCosmosDisplay(sender as AddressCosmosCanonical)
             .pipe(Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err })))
 
           const spender = sourceChain.minter_address_display

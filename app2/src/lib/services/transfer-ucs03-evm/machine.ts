@@ -108,7 +108,10 @@ export async function nextState(
             return TransferSubmission.TransferSubmit({ state: TransferSubmitState.InProgress() })
           }
           return TransferSubmission.TransferReceipt({
-            state: TransferReceiptState.InProgress({ hash: exit.value }),
+            state: TransferReceiptState.InProgress({
+              // @ts-ignore-error
+              hash: exit.value,
+            }),
           })
         },
       })

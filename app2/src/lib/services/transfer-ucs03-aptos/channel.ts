@@ -11,7 +11,9 @@ export const getChannelInfoEffect = (
   Effect.gen(function*() {
     const channel = channels.find(
       chan =>
+        // @ts-ignore
         chan.source_chain_id === source_chain_id
+        // @ts-ignore
         && chan.destination_chain_id === destination_chain_id,
     )
 
@@ -26,6 +28,7 @@ export const getChannelInfoEffect = (
     ) {
       return yield* Effect.fail(
         new ChannelValidationError({
+          // @ts-ignore
           source_chain_id,
           destination_chain_id,
           cause: "Missing required channel information",
@@ -34,6 +37,7 @@ export const getChannelInfoEffect = (
     }
 
     return new Channel({
+      // @ts-ignore
       source_chain_id,
       source_connection_id: channel.source_connection_id,
       source_channel_id: channel.source_channel_id,

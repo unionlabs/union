@@ -118,11 +118,13 @@ function setMaxAmount() {
       </button>
     </div>
   {/if}
+  <!-- XXX: label should take a snippet -->
   <Input
     id="amount"
     type="text"
     required
     disabled={!transferData.raw.asset || disabled}
+    label=""
     autocorrect="off"
     placeholder="0.00"
     spellcheck="false"
@@ -166,6 +168,8 @@ function setMaxAmount() {
 </div>
 {#if Option.isSome(transferData.sourceChain) && Option.isSome(transferData.baseToken)}
   {#if transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1"
+    // XXX: denom type should be expanded, or this is wrong
+    // @ts-expect-error 2367
     && (transferData.baseToken.value.denom === "ubbn"
       || transferData.baseToken.value.denom
         === "0x" + Array.from(new TextEncoder().encode("ubbn"))
