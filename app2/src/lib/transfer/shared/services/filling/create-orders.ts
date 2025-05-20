@@ -201,7 +201,11 @@ export function createOrdersBatch(
         )
       ),
     ).pipe(
-      Effect.tap(x => Effect.log("create order", x)),
+      Effect.annotateLogs({
+        source: first.sourceChain.rpc_type,
+        destination: first.destinationChain.rpc_type,
+      }),
+      Effect.tapErrorCause((cause) => Effect.logError("order.create", cause)),
     )
 
     const filtered = provideClients.filter((o): o is NonNullable<typeof o> => o !== null)

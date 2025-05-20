@@ -28,7 +28,7 @@ export const getPublicClient = (chain: Chain) =>
       throw new NoAptosChainError({ chain })
     }
     const rpcUrl = yield* chain.getRpcUrl("rpc")
-    yield* Effect.log("rpcUrl", rpcUrl)
+    yield* Effect.logTrace("rpcUrl", rpcUrl)
     const aptosClient = yield* Effect.try({
       try: () => {
         const config = new AptosConfig({
