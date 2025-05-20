@@ -24,10 +24,6 @@ export class ExperienceStore {
 
   /**
    * Current level progress as a percentage
-   * @example
-   * ```ts
-   * dashboard.experience.progress // Get current level progress
-   * ```
    */
   progress = $derived(
     Option.flatMap(this.current, (exp) =>
@@ -38,10 +34,6 @@ export class ExperienceStore {
 
   /**
    * Current level title based on total XP
-   * @example
-   * ```ts
-   * dashboard.experience.level // Get current level title
-   * ```
    */
   level = $derived(
     Option.flatMap(this.current, (exp) =>
@@ -60,10 +52,6 @@ export class ExperienceStore {
 
   /**
    * Next level information if available
-   * @example
-   * ```ts
-   * dashboard.experience.next // Get next level info
-   * ```
    */
   next = $derived(
     Option.flatMap(this.current, (exp) =>
@@ -78,10 +66,6 @@ export class ExperienceStore {
 
   /**
    * Maximum available level number
-   * @example
-   * ```ts
-   * dashboard.experience.max // Get max level number
-   * ```
    */
   max = $derived(
     Option.flatMap(this.levels, (levels) => Option.some(levels.length)).pipe(

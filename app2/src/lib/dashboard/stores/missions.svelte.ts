@@ -21,20 +21,12 @@ export class MissionsStore {
 
   /**
    * Missions enhanced with user progress and timing information
-   * @example
-   * ```ts
-   * dashboard.missions.enhanced // Get all missions with progress
-   * ```
    */
   enhanced = $derived(
     Option.flatMap(this.available, (missions) =>
       Option.flatMap(this.progress, (userMissions) => {
-        console.log("[mission] Computing enhanced missions:", {
-          available: missions,
-          progress: userMissions,
-        })
         const now = new Date()
-        console.log("[mission] Current time:", now.toISOString())
+
         return Option.some(
           missions.map((mission) => {
             const userMission = userMissions.find((um) => um.mission_id === mission.id)
@@ -43,19 +35,6 @@ export class MissionsStore {
             const isExpired = new Date(mission.end) <= now
             const isFuture = new Date(mission.start) > now
             const isCurrent = new Date(mission.start) <= now && new Date(mission.end) > now
-
-            console.log("[mission] Processing mission:", {
-              id: mission.id,
-              title: mission.title,
-              start: mission.start,
-              end: mission.end,
-              isExpired,
-              isFuture,
-              isCurrent,
-              hasUserMission: !!userMission,
-              progress,
-              threshold,
-            })
 
             return {
               ...mission,
@@ -75,7 +54,6 @@ export class MissionsStore {
         )
       })).pipe(
         Option.getOrElse(() => {
-          console.log("[mission] No enhanced missions available")
           return []
         }),
       ),
@@ -83,10 +61,6 @@ export class MissionsStore {
 
   /**
    * Missions that have been completed, sorted by completion date
-   * @example
-   * ```ts
-   * dashboard.missions.completed // Get completed missions
-   * ```
    */
   completed = $derived(
     this.enhanced
@@ -100,23 +74,11 @@ export class MissionsStore {
 
   /**
    * Currently active missions in progress, sorted by completion percentage
-   * @example
-   * ```ts
-   * dashboard.missions.active // Get active missions
-   * ```
    */
   active = $derived(
     this.enhanced
       .filter((m) => {
         const isActive = !m.completed && m.isCurrent && m.started
-        console.log("[mission] Checking active mission:", {
-          id: m.id,
-          title: m.title,
-          completed: m.completed,
-          isCurrent: m.isCurrent,
-          started: m.started,
-          isActive,
-        })
         return isActive
       })
       .sort((a, b) => b.percentComplete - a.percentComplete),
@@ -124,22 +86,11 @@ export class MissionsStore {
 
   /**
    * Upcoming missions sorted by start date
-   * @example
-   * ```ts
-   * dashboard.missions.upcoming // Get upcoming missions
-   * ```
    */
   upcoming = $derived(
     this.enhanced
       .filter((m) => {
         const isUpcoming = !m.completed && m.isFuture
-        console.log("[mission] Checking upcoming mission:", {
-          id: m.id,
-          title: m.title,
-          completed: m.completed,
-          isFuture: m.isFuture,
-          isUpcoming,
-        })
         return isUpcoming
       })
       .sort((a, b) => new Date(a.start).getTime() - new Date(b.start).getTime()),
@@ -147,10 +98,6 @@ export class MissionsStore {
 
   /**
    * Failed missions that expired before completion
-   * @example
-   * ```ts
-   * dashboard.missions.failed // Get failed missions
-   * ```
    */
   failed = $derived(
     this.active.filter((mission) => new Date(mission.end) <= new Date()),
@@ -158,10 +105,6 @@ export class MissionsStore {
 
   /**
    * Missions that are past their end date and were not completed.
-   * @example
-   * ```ts
-   * dashboard.missions.expiredUncompleted // Get expired and not completed missions
-   * ```
    */
   expiredUncompleted = $derived(
     this.enhanced.filter(m => m.isExpired && !m.completed)
@@ -170,10 +113,6 @@ export class MissionsStore {
 
   /**
    * Overall mission statistics and completion rates
-   * @example
-   * ```ts
-   * dashboard.missions.stats // Get mission statistics
-   * ```
    */
   stats = $derived.by(() => {
     // Count all missions regardless of status
@@ -192,7 +131,6 @@ export class MissionsStore {
   })
 
   constructor(private readonly userId: string) {
-    console.log("[mission] Initializing MissionsStore for user:", userId)
     this.loadUserMissions(userId)
     this.loadAvailableMissions()
     this.startPolling(userId)

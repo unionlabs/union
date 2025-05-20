@@ -41,10 +41,6 @@ export class WalletStore {
 
   /**
    * Enhanced wallet data with additional computed properties
-   * @example
-   * \`\`\`ts
-   * dashboard.wallets.enhanced // Get all wallets with computed properties
-   * \`\`\`
    */
   enhanced = $derived(
     Option.flatMap(this.wallets, (wallets) => {
@@ -57,7 +53,6 @@ export class WalletStore {
       )
     }).pipe(
       Option.getOrElse(() => {
-        console.log("[wallet] No enhanced wallets available")
         return [] as Array<EnhancedWallet>
       }),
     ),
@@ -65,10 +60,6 @@ export class WalletStore {
 
   /**
    * Wallets grouped by chain
-   * @example
-   * \`\`\`ts
-   * dashboard.wallets.byChain // Get wallets grouped by chain
-   * \`\`\`
    */
   byChain = $derived(
     this.enhanced.reduce<Record<string, Array<EnhancedWallet>>>((acc, wallet) => {
@@ -83,10 +74,6 @@ export class WalletStore {
 
   /**
    * Wallets with grouping
-   * @example
-   * \`\`\`ts
-   * dashboard.wallets.grouped // Get wallets that have a grouping
-   * \`\`\`
    */
   grouped = $derived(
     this.enhanced.filter((w) => w.hasGrouping),
@@ -94,10 +81,6 @@ export class WalletStore {
 
   /**
    * Wallets without grouping
-   * @example
-   * \`\`\`ts
-   * dashboard.wallets.ungrouped // Get wallets without grouping
-   * \`\`\`
    */
   ungrouped = $derived(
     this.enhanced.filter((w) => !w.hasGrouping),
@@ -105,10 +88,6 @@ export class WalletStore {
 
   /**
    * Wallet statistics
-   * @example
-   * \`\`\`ts
-   * dashboard.wallets.stats // Get wallet statistics
-   * \`\`\`
    */
   stats = $derived({
     total: this.enhanced.length,
@@ -118,7 +97,6 @@ export class WalletStore {
   })
 
   constructor(private readonly userId: string) {
-    console.log("[wallet] Initializing WalletStore for user:", userId)
     this.loadWallets(userId)
     this.loadChains()
     this.startPolling(userId)

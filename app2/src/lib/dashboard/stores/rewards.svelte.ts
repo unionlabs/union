@@ -21,27 +21,18 @@ export class RewardsStore {
 
   /**
    * Rewards enhanced with user progress and status information
-   * @example
-   * ```ts
-   * dashboard.rewards.enhanced // Get all rewards with progress
-   * ```
    */
   enhanced = $derived(
     Option.flatMap(
       this.availableRewards,
       (rewards) =>
         Option.flatMap(this.earned, (userRewards) => {
-          console.log("[reward] Computing enhanced rewards:", {
-            available: rewards,
-            earned: userRewards,
-          })
           return Option.some(
             rewards.map((reward) => {
               const userReward = userRewards.find((ur) => ur.reward_id === reward.id)
               const isClaimed = userReward?.created_at != null
               const isQueued = userReward?.enqueued_at != null
               const isHandled = userReward?.handled ?? false
-              const requiresHandling = reward.default_requires_handling ?? false
 
               return {
                 ...reward,
@@ -71,10 +62,6 @@ export class RewardsStore {
 
   /**
    * Rewards that have been claimed by the user
-   * @example
-   * ```ts
-   * dashboard.rewards.claimed // Get claimed rewards
-   * ```
    */
   claimed = $derived(
     this.enhanced
@@ -88,10 +75,6 @@ export class RewardsStore {
 
   /**
    * Rewards that are currently queued for processing
-   * @example
-   * ```ts
-   * dashboard.rewards.queued // Get queued rewards
-   * ```
    */
   queued = $derived(
     this.enhanced
@@ -105,10 +88,6 @@ export class RewardsStore {
 
   /**
    * Rewards that have been fully handled
-   * @example
-   * ```ts
-   * dashboard.rewards.handled // Get handled rewards
-   * ```
    */
   handled = $derived(
     this.enhanced
@@ -122,10 +101,6 @@ export class RewardsStore {
 
   /**
    * Rewards that are available to be claimed
-   * @example
-   * ```ts
-   * dashboard.rewards.available // Get available rewards
-   * ```
    */
   available = $derived(
     this.enhanced
@@ -135,10 +110,6 @@ export class RewardsStore {
 
   /**
    * Overall reward statistics
-   * @example
-   * ```ts
-   * dashboard.rewards.stats // Get reward statistics
-   * ```
    */
   stats = $derived({
     total: this.enhanced.length,
@@ -152,7 +123,6 @@ export class RewardsStore {
   })
 
   constructor(private readonly userId: string) {
-    console.log("[reward] Initializing RewardsStore for user:", userId)
     this.loadUserRewards(userId)
     this.loadAvailableRewards()
     this.startPolling(userId)
@@ -168,7 +138,6 @@ export class RewardsStore {
       pipe(
         getUserRewards(userId),
         Effect.tap((result) => {
-          console.log("[reward] User rewards loaded:", result)
           this.earned = result
           return Effect.void
         }),
@@ -195,7 +164,6 @@ export class RewardsStore {
       pipe(
         getAvailableRewards(),
         Effect.tap((result) => {
-          console.log("[reward] Available rewards loaded:", result)
           this.availableRewards = result
           return Effect.void
         }),

@@ -55,7 +55,7 @@ export class ExperienceError extends Data.TaggedError("ExperienceError")<BaseErr
 export function mapSupabaseErrorToCustomError(
   errorCode: string,
   errorDescription?: string,
-): Error {
+): DashboardUnknownException | ProviderLinkError | EmailLinkError {
   switch (errorCode) {
     case "provider-link-error":
       return new ProviderLinkError({
@@ -72,6 +72,10 @@ export function mapSupabaseErrorToCustomError(
         message: errorDescription || "Email is already linked to another account",
       })
     default:
-      return new Error(errorDescription || "Unknown error occurred")
+      return new DashboardUnknownException({
+        operation: "auth",
+        cause: errorDescription,
+        message: errorDescription || "Unknown error occurred",
+      })
   }
 }

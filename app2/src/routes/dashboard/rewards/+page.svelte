@@ -85,10 +85,6 @@ function getStatusBadge(status: string) {
       }
   }
 }
-
-$effect(() => {
-  console.log("rewards", rewards)
-})
 </script>
 
 <RewardStats />

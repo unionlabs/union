@@ -61,7 +61,6 @@ export class AchievementsStore {
   )
 
   constructor(private readonly userId: string) {
-    console.log("[dashboard] - Creating achievements")
     this.loadUserAchievements(userId)
     this.loadAvailableAchievements()
     this.startPolling(userId)

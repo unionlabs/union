@@ -36,7 +36,10 @@ export const requireAuthenticatedUserId = (
     Option.match({
       onNone: () =>
         Effect.fail(
-          new AuthenticationError({ cause: "User is not authenticated" }),
+          new AuthenticationError({
+            cause: "User is not authenticated",
+            operation: "requireAuth",
+          }),
         ),
       onSome: (userId) => Effect.succeed(userId),
     }),

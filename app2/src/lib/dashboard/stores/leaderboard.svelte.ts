@@ -17,10 +17,6 @@ export class LeaderboardStore {
 
   /**
    * Top 10 users by experience
-   * @example
-   * ```ts
-   * dashboard.leaderboard.top10 // Get top 10 users
-   * ```
    */
   top10 = $derived(
     Option.flatMap(this.leaderboard, (users) => Option.some(users.slice(0, 10))).pipe(
@@ -30,10 +26,6 @@ export class LeaderboardStore {
 
   /**
    * Total number of users on the leaderboard
-   * @example
-   * ```ts
-   * dashboard.leaderboard.totalUsers // Get total number of users
-   * ```
    */
   totalUsers = $derived(
     Option.flatMap(this.leaderboard, (users) => Option.some(users.length)).pipe(
@@ -42,7 +34,6 @@ export class LeaderboardStore {
   )
 
   constructor() {
-    console.log("[leaderboard] Initializing LeaderboardStore")
     this.loadLeaderboard()
     this.startPolling()
   }

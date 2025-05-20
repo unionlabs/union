@@ -21,6 +21,7 @@ export const getSupabaseClient = () =>
       return yield* Effect.fail(
         new SupabaseClientError({
           cause: "Missing Supabase URL or anonymous key",
+          operation: "init",
         }),
       )
     }
