@@ -17,12 +17,14 @@ export function debounce<T extends (...args: Array<any>) => void>(
   }
 }
 
+// XXX: remove in favor of schema validation
 export function isValidBech32ContractAddress(address: unknown) {
   if (typeof address !== "string") {
     return false
   }
   try {
-    const { prefix: _, words } = bech32.decode(address)
+    // dosen't matter because it's a trycatch and preserves behavior
+    const { prefix: _, words } = bech32.decode(address as unknown as any)
     return true
   } catch {
     return false

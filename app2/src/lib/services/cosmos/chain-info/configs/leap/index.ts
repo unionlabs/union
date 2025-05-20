@@ -38,6 +38,8 @@ export const unionLeapChainInfo: LeapExtendedInfo = {
       coinMinimalDenom: "muno",
       coinDecimals: 6,
       coinGeckoId: "union",
+      // XXX: check if structure is appropriately defined for each wallet
+      // @ts-expect-error 2353
       gasPriceStep: {
         low: 0.0025,
         average: 0.025,
@@ -89,6 +91,8 @@ export const elgafarLeapChainInfo: LeapExtendedInfo = {
       coinMinimalDenom: "ustars",
       coinDecimals: 6,
       coinGeckoId: "stargaze",
+      // XXX: check if structure is appropriately defined for each wallet
+      // @ts-expect-error 2353
       gasPriceStep: {
         low: 0.03,
         average: 0.04,
@@ -197,6 +201,8 @@ export const babylonLeapChaininfo: LeapExtendedInfo = {
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
       coinGeckoId: "",
+      // XXX: check if structure is appropriately defined for each wallet
+      // @ts-expect-error 2353
       gasPriceStep: {
         low: 0.007,
         average: 0.007,
