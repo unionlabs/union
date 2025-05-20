@@ -69,7 +69,6 @@ module zkgm::zkgm_relay {
     use zkgm::forward::{Self, Forward};
     use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
     use zkgm::fungible_asset_order_ack::{Self};
-    use zkgm::multiplex::{Self, Multiplex};
     use zkgm::acknowledgement::{Self};
     use zkgm::zkgm_ethabi;
     
@@ -82,6 +81,12 @@ module zkgm::zkgm_relay {
     use sui::clock;
     use sui::address::{to_string};
     use sui::event;
+    use sui::object_bag::{Self, ObjectBag};
+    use std::type_name::{Self};
+    use sui::balance::{Self};
+    use sui::hash::{Self};
+    use zkgm::fungible_asset_order::base_amount;
+    use zkgm::fungible_asset_order_ack::market_maker;
 
     // Constants
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
@@ -123,19 +128,22 @@ module zkgm::zkgm_relay {
     const E_UNIMPLEMENTED: u64 = 13;
     const E_ACK_EMPTY: u64 = 14;
     const E_ONLY_MAKER: u64 = 15;
-    const E_BATCH_MISMATCH: u64 = 16;
+    const E_NO_BATCH_OPERATION: u64 = 16;
+    const E_NO_MULTIPLEX_OPERATION: u64 = 17;
+    const E_ERR_INVALID_FORWARD_INSTRUCTION: u64 = 18;
+    const E_NO_EXECUTE_OPERATION: u64 = 19;
+    const E_NO_TREASURY_CAPABILITY: u64 = 20;
+    const E_NO_TREASURY_CAPABILITY_REFUND: u64 = 3333333;
+    const E_INVALID_ASSET_DECIMAL: u64 = 21;
+    const E_INVALID_BASE_AMOUNT: u64 = 22;
+    const E_NO_COIN_IN_BAG: u64 = 23;
+    const E_NOT_IMPLEMENTED: u64 = 333222111;
 
     public struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
         path: u256,
         instruction: Instruction
     }
-
-    // struct Instruction has copy, drop, store {
-    //     version: u8,
-    //     opcode: u8,
-    //     operand: vector<u8>
-    // }
 
     public struct SyscallPacket has copy, drop, store {
         version: u8,
@@ -214,18 +222,10 @@ module zkgm::zkgm_relay {
 
     public struct ChannelBalancePair has copy, drop, store {
         channel: u32,
-        token: address
+        path: u256,
+        token: vector<u8>
     }
 
-    public struct RelayStore has key {
-        id: UID,
-        in_flight_packet: Table<vector<u8>, Packet>,
-        channel_balance: Table<ChannelBalancePair, u256>,
-        token_origin: Table<address, u256>,
-        address_to_treasurycap: Table<address, TreasuryCap<FUNGIBLE_TOKEN>>,
-        // address_to_coin: Table<address, Coin<FUNGIBLE_TOKEN>>
-
-    }
 
     // Events
     #[event]
@@ -264,7 +264,24 @@ module zkgm::zkgm_relay {
         token: address,
         amount: u64
     }
-    
+
+    public struct RelayStore has key {
+        id: UID,
+        in_flight_packet: Table<vector<u8>, Packet>,
+        channel_balance: Table<ChannelBalancePair, u256>,
+        token_origin: Table<vector<u8>, u256>,
+        type_name_t_to_capability: ObjectBag,
+        bag_to_coin: ObjectBag,
+    }
+
+    public fun type_name_contains_capability(
+        relay_store: &RelayStore,
+        typename_t: string::String
+    ): bool {
+        let capability = relay_store.type_name_t_to_capability.contains(typename_t);
+        return capability
+    }
+
     fun init(ctx: &mut TxContext) {
         let id = object::new(ctx);
 
@@ -273,33 +290,15 @@ module zkgm::zkgm_relay {
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
             token_origin: table::new(ctx),
-            address_to_treasurycap: table::new(ctx),
-            // address_to_coin: table::new(ctx)
+            type_name_t_to_capability: object_bag::new(ctx),
+            bag_to_coin: object_bag::new(ctx)
         });
     }
-    fun get_treasury_cap_mut(relay_store: &mut RelayStore, denom_address: address): &mut TreasuryCap<FUNGIBLE_TOKEN> {
-        relay_store.address_to_treasurycap.borrow_mut(denom_address)
-    }
 
-    // fun get_coin_mut(relay_store: &mut RelayStore, denom_address: address): &mut Coin<FUNGIBLE_TOKEN> {
-    //     relay_store.address_to_coin.borrow_mut(denom_address)
-    // }
-
-
-    // public entry fun insert_pair(
-    //     relay_store: &mut RelayStore,
-    //     denom_address: address,
-    //     treasury_cap: TreasuryCap<FUNGIBLE_TOKEN>,
-    //     coin: Coin<FUNGIBLE_TOKEN>
-    // ) {
-    //     relay_store.address_to_treasurycap.add(denom_address, treasury_cap);
-    //     relay_store.address_to_coin.add(denom_address, coin);
-    // }
-
-    
     public fun is_valid_version(version_bytes: String): bool {
         version_bytes == string::utf8(VERSION)
     }
+
     public fun update_channel_path(path: u256, next_channel_id: u32): u256 {
         if (path == 0) {
             return (next_channel_id as u256)
@@ -314,8 +313,36 @@ module zkgm::zkgm_relay {
         (next_channel as u256)
     }
 
+    public fun reverse_channel_path(mut path: u256): u256 {
+        let mut reversed_path = 0;
+        loop {
+            // body always runs once
+            let (tail, head) = pop_channel_from_path(path);
+            reversed_path = update_channel_path(reversed_path, head);
+            path = tail;
+            // exit once path == 0
+            if (path == 0) {
+                break
+            }
+        };
+        reversed_path
+    }
 
-        /// Find last set (most significant bit).
+
+    public fun pop_channel_from_path(path: u256) : (u256, u32){
+        if (path == 0) {
+            return (0, 0)
+        };
+        let current_hop_index = ((fls(path) / 32)) as u8;
+        let clear_shift = ((8-current_hop_index) * 32) as u8;
+        return (
+            (path << clear_shift) >> clear_shift,
+            (path >> (current_hop_index * 32)) as u32
+        )
+
+    }
+
+    /// Find last set (most significant bit).
     /// Returns the index of the most significant bit of `x`.
     /// If `x` is zero, returns 256.
     public fun fls(mut x: u256): u256 {
@@ -522,7 +549,21 @@ module zkgm::zkgm_relay {
     }
 
 
-    public entry fun recv_packet(
+    public entry fun register_capability<T>(
+        relay_store: &mut RelayStore,
+        mut capability: TreasuryCap<T>
+    ) {
+        let supply = coin::supply(&mut capability);
+        if (balance::supply_value(supply) != 0 ) {
+            abort 0
+        };
+        let typename_t = type_name::get<T>();
+        let key = type_name::into_string(typename_t);
+        relay_store.type_name_t_to_capability.add(string::from_ascii(key), capability)
+    }
+
+    // Here we will basically ignore intent packet.
+    public entry fun recv_packet<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         clock: &clock::Clock,
@@ -560,13 +601,14 @@ module zkgm::zkgm_relay {
             proof_height,
             vector[1]
         );
+        let mut i = 0;
         while (i < vector::length(&packets)) {
             let ibc_packet = *vector::borrow(&packets, i);
             let raw_zkgm_packet = packet::data(&ibc_packet);
             let zkgm_packet = zkgm_packet::decode(raw_zkgm_packet);
 
             let acknowledgement =
-                execute_internal(
+                execute_internal<T>(
                     ibc_store,
                     relay_store,
                     ibc_packet,
@@ -589,13 +631,12 @@ module zkgm::zkgm_relay {
                 // dispatcher_zkgm::set_return_value<ZKGMProof>(
                 //     new_ucs_relay_proof(), return_value
                 // );
-            }
-
+            };
+            i = i + 1;
         };
     }
 
-
-    fun execute_internal(
+    fun execute_internal<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
@@ -609,31 +650,18 @@ module zkgm::zkgm_relay {
         let version = instruction::version(&instruction);
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
             assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
-            execute_fungible_asset_order(
+            execute_fungible_asset_order<T>(
                 ibc_store,
                 relay_store,
                 ibc_packet,
                 relayer,
                 relayer_msg,
-                salt,
                 path,
                 fungible_asset_order::decode(instruction::operand(&instruction)),
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            execute_batch(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                relayer_msg,
-                salt,
-                path,
-                batch::decode(instruction::operand(&instruction), &mut decode_idx),
-                ctx
-            )
+            abort E_NO_BATCH_OPERATION
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
@@ -648,85 +676,182 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            execute_multiplex(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                relayer_msg,
-                salt,
-                multiplex::decode(instruction::operand(&instruction)),
-                ctx
-            )
+            abort E_NO_MULTIPLEX_OPERATION
         } else {
             abort E_UNKNOWN_SYSCALL
         }
     }
 
-    // TODO: Voyager need to call this after token deployment
-    // with wrapped address & value
-    public entry fun update_token_origin(
-        relay_store: &mut RelayStore,
-        token: address,
-        channel_id: u256
-    ) {
-        add_or_update_table<address, u256>(&mut relay_store.token_origin, token, channel_id);
-    }
-
-    fun execute_fungible_asset_order(
+    fun market_maker_fill<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        _relayer_msg: vector<u8>,
-        _salt: vector<u8>,
-        path: u256,
-        order: FungibleAssetOrder,
-        ctx: &mut TxContext
-    ): (vector<u8>) {
-        // TODO: this function will be a problem for us
-        // investigate it later.
-        vector::empty()
+        relayer_msg: vector<u8>,
+        quote_token: vector<u8>,
+        receiver: address,
+        quote_amount: u64
+    ): vector<u8> {
+        if (quote_amount != 0){
+            // There can not be a scenario where quote_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // Here, if quote_amount is not 0 then we'll need to trySafeTransferFrom.
+            // To do that, we need to have Coin<T> in `recv_packet` function.
+            abort E_NOT_IMPLEMENTED
+        };
+        let asset_order_ack = fungible_asset_order_ack::new(
+            FILL_TYPE_MARKETMAKER,
+            relayer_msg
+        );
+        let acked_value = fungible_asset_order_ack::encode(&asset_order_ack);
+        return acked_value
     }
 
-    fun execute_batch(
+    public fun compute_salt(path: u256, channel: u32, base_token: vector<u8>): vector<u8> {
+        let mut data: vector<u8> = bcs::to_bytes(&path);
+        vector::append(&mut data, bcs::to_bytes(&channel));
+        vector::append(&mut data, base_token);
+
+        let salt: vector<u8> = hash::keccak256(&data);   
+        return salt
+    }
+
+    public fun distribute_coin<T>(
+        relay_store: &mut RelayStore,
+        receiver: address,
+        amount: u64,
+        ctx: &mut TxContext
+    ) {
+        let typename_t = type_name::get<T>();
+        let key = type_name::into_string(typename_t);
+        if(!relay_store.bag_to_coin.contains(string::from_ascii(key))) {
+            abort E_NO_COIN_IN_BAG
+        };
+        let mut coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+
+        let transferred_coin = coin::split<T>(coin, amount, ctx);
+        transfer::public_transfer(transferred_coin, receiver);
+    }
+
+    public fun protocol_fill<T>(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        channel_id: u32,
+        path: u256,
+        wrapped_token: vector<u8>,
+        quote_token: vector<u8>,
+        receiver: address,
+        relayer: address,
+        base_amount: u64,
+        quote_amount: u64,
+        mint: bool,
+        ctx: &mut TxContext
+    ): vector<u8> {
+        let fee = base_amount - quote_amount;
+        if (mint) {
+            let capability = get_treasury_cap<T>(relay_store);
+            if (quote_amount > 0) {
+                coin::mint_and_transfer<T>(capability, quote_amount, receiver, ctx);
+            };
+            if (fee > 0){
+                coin::mint_and_transfer<T>(capability, fee, relayer, ctx);
+            }
+        } else {
+            // If the base token path is being unwrapped, it's going to be non-zero.
+            decrease_outstanding(
+                relay_store,
+                channel_id,
+                reverse_channel_path(path), 
+                quote_token, 
+                (quote_amount + fee)as u256
+            );
+
+            // There can not be a scenario where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // Here we just need to split our coins to the receiver and relayer
+            if(quote_amount > 0) {
+                distribute_coin<T>(relay_store, receiver, quote_amount, ctx)
+            };
+            if(fee > 0){
+                distribute_coin<T>(relay_store, relayer, fee, ctx)
+            }
+        };
+        let asset_order_ack = fungible_asset_order_ack::new(
+            FILL_TYPE_PROTOCOL,
+            ACK_EMPTY
+        );
+        let acked_value = fungible_asset_order_ack::encode(&asset_order_ack);
+        return acked_value
+
+    }
+
+
+    fun execute_fungible_asset_order<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
-        salt: vector<u8>,
         path: u256,
-        batch_packet: Batch,
+        order: FungibleAssetOrder,
         ctx: &mut TxContext
     ): (vector<u8>) {
-        let instructions = batch::instructions(&batch_packet);
-        let l = vector::length(&instructions);
-        let mut acks = vector::empty();
-        let mut i = 0;
-        while (i < l) {
-            let instruction = *vector::borrow(&instructions, i);
-            vector::push_back(
-                &mut acks,
-                execute_internal(
-                    ibc_store,
-                    relay_store,
-                    ibc_packet,
-                    relayer,
-                    relayer_msg,
-                    salt,
-                    path,
-                    instruction,
-                    ctx
-                )
-            );
-            if (vector::length(vector::borrow(&acks, i)) == 0) {
-                abort E_BATCH_MUST_BE_SYNC
-            };
+        let quote_token = *fungible_asset_order::quote_token(&order);
+        let receiver_vec = *fungible_asset_order::receiver(&order);
+        let receiver = bcs::new(receiver_vec).peel_address();
+
+        // TODO: intent part will be another function
+        let wrapped_token = compute_salt(
+            path,
+            packet::destination_channel_id(&ibc_packet),
+            *fungible_asset_order::base_token(&order)
+        );
+        let base_amount = fungible_asset_order::base_amount(&order);
+        let quote_amount = fungible_asset_order::quote_amount(&order);
+        let base_amount_covers_quote_amount = base_amount >= quote_amount;
+
+        if (wrapped_token == quote_token && base_amount_covers_quote_amount) {
+            // TODO: add rate limit here later
+            
+            // Relayer already should call the register treasury_cap here and deployed the contract
+            return protocol_fill<T>(
+                ibc_store, 
+                relay_store, 
+                packet::destination_channel_id(&ibc_packet), 
+                path, 
+                wrapped_token, 
+                quote_token, 
+                receiver, 
+                relayer, 
+                base_amount as u64, 
+                quote_amount as u64, 
+                true, 
+                ctx
+            )
         };
-        let batch_ack = batch_ack::new(acks);
-        batch_ack::encode(&batch_ack)
+        let base_token_path = fungible_asset_order::base_token_path(&order);
+
+        if (base_token_path != 0 && base_amount_covers_quote_amount) {
+            // TODO: add rate limit here later
+            return protocol_fill<T>(
+                ibc_store, 
+                relay_store, 
+                packet::destination_channel_id(&ibc_packet), 
+                path, 
+                wrapped_token, 
+                quote_token, 
+                receiver, 
+                relayer, 
+                base_amount as u64, 
+                quote_amount as u64, 
+                false, 
+                ctx
+            )
+        };
+        return market_maker_fill<T>(
+            ibc_store, 
+            relay_store, 
+            relayer_msg, 
+            quote_token, 
+            receiver, 
+            quote_amount as u64
+        )        
     }
 
     fun execute_forward(
@@ -739,28 +864,29 @@ module zkgm::zkgm_relay {
         forward_packet: Forward,
         ctx: &mut TxContext
     ): (vector<u8>) {
+        // TODO: Will we have this function?
+        abort E_NO_EXECUTE_OPERATION
+        // let zkgm_pack =
+        //     zkgm_packet::new(
+        //         salt,
+        //         update_channel_path(
+        //             path, packet::destination_channel_id(&ibc_packet)
+        //         ),
+        //         *forward::instruction(&forward_packet)
+        //     );
+        // let sent_packet =
+        //     ibc::send_packet(
+        //         ibc_store,
+        //         forward::channel_id(&forward_packet),
+        //         forward::timeout_height(&forward_packet),
+        //         forward::timeout_timestamp(&forward_packet),
+        //         zkgm_packet::encode(&zkgm_pack)
+        //     );
 
-        let zkgm_pack =
-            zkgm_packet::new(
-                salt,
-                update_channel_path(
-                    path, packet::destination_channel_id(&ibc_packet)
-                ),
-                *forward::instruction(&forward_packet)
-            );
-        let sent_packet =
-            ibc::send_packet(
-                ibc_store,
-                forward::channel_id(&forward_packet),
-                forward::timeout_height(&forward_packet),
-                forward::timeout_timestamp(&forward_packet),
-                zkgm_packet::encode(&zkgm_pack)
-            );
 
-
-        let packet_hash = commitment::commit_packet(&sent_packet);
-        add_or_update_table<vector<u8>, Packet>(&mut relay_store.in_flight_packet, packet_hash, sent_packet);
-        ACK_EMPTY
+        // let packet_hash = commitment::commit_packet(&sent_packet);
+        // add_or_update_table<vector<u8>, Packet>(&mut relay_store.in_flight_packet, packet_hash, sent_packet);
+        // ACK_EMPTY
     }
 
     fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, mut value: P) {
@@ -772,75 +898,58 @@ module zkgm::zkgm_relay {
         }
     }
 
-    fun execute_multiplex(
-        ibc_store: &mut ibc::IBCStore,
+    fun decrease_outstanding(
         relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        relayer_msg: vector<u8>,
-        _salt: vector<u8>,
-        multiplex_packet: Multiplex,
-        ctx: &mut TxContext
-    ): (vector<u8>) {
-        let contract_address =
-            bcs::new(*multiplex::contract_address(&multiplex_packet)).peel_address();
-
-        if (multiplex::eureka(&multiplex_packet)) {
-            // TODO: discuss this, is it ok to do?
-            // event::emit(
-            //     OnZkgmCall {
-            //         sender: *multiplex::sender(&multiplex_packet),
-            //         contract_calldata: *multiplex::contract_calldata(&multiplex_packet),
-            //         contract_address: contract_address
-            //     }
-            // );
-            return bcs::to_bytes(&ACK_SUCCESS)
+        channel_id: u32,
+        path: u256,
+        token: vector<u8>,
+        amount: u256
+    ) {
+        let pair = ChannelBalancePair{
+            channel: channel_id,
+            path: path,
+            token: token
         };
-        let multiplex_ibc_packet =
-            packet::new(
-                packet::source_channel_id(&ibc_packet),
-                packet::destination_channel_id(&ibc_packet),
-                multiplex::encode_multiplex_sender_and_calldata(
-                    *multiplex::sender(&multiplex_packet),
-                    *multiplex::contract_calldata(&multiplex_packet)
-                ),
-                packet::timeout_height(&ibc_packet),
-                packet::timeout_timestamp(&ibc_packet)
-            );
-
-        // TODO: How do we return something from this? investigate
-        // event::emit(
-        //     OnIIBCModuleOnRecvPacketCall {
-        //         packet: multiplex_ibc_packet,
-        //         relayer: relayer,
-        //         relayer_msg: relayer_msg,
-        //         contract_address: multiplex_packet.contract_address
-        //     }
-        // );
-        vector::empty() // TODO: investigate
-        // Here is the original implementation in aptos
-        // let param =
-        //     copyable_any::pack<IIBCModuleOnRecvPacketParams>(
-        //         IIBCModuleOnRecvPacketParams {
-        //             packet: multiplex_ibc_packet,
-        //             relayer: relayer,
-        //             relayer_msg: relayer_msg
-        //         }
-        //     );
-
-        // engine_zkgm::dispatch(param, contract_address);
-
-        // let acknowledgement = dispatcher_zkgm::get_return_value(contract_address);
-
-        // if (vector::length(&acknowledgement) == 0) {
-        //     abort E_UNIMPLEMENTED
-        // };
-        // acknowledgement
+        let channel_balance = *relay_store.channel_balance.borrow(pair);
+        if (channel_balance < amount) {
+            abort E_INVALID_AMOUNT
+        };
+        let new_balance = channel_balance - amount;
+        add_or_update_table<ChannelBalancePair, u256>(
+            &mut relay_store.channel_balance,
+            pair,
+            new_balance
+        );
     }
 
-    public entry fun send(
+    fun increase_outstanding(
+        relay_store: &mut RelayStore,
+        channel_id: u32,
+        path: u256,
+        token: vector<u8>,
+        amount: u256
+    ) {
+        let pair = ChannelBalancePair{
+            channel: channel_id,
+            path: path,
+            token: token
+        };
+        let channel_balance = *relay_store.channel_balance.borrow(pair);
+        let new_balance = channel_balance + amount;
+        add_or_update_table<ChannelBalancePair, u256>(
+            &mut relay_store.channel_balance,
+            pair,
+            new_balance
+        );
+    }
+
+
+
+    public entry fun send<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
+        mut coin: Coin<T>,
+        metadata: &CoinMetadata<T>,
         channel_id: u32,
         timeout_height: u64,
         timeout_timestamp: u64,
@@ -852,7 +961,7 @@ module zkgm::zkgm_relay {
     ) {
         let instruction = instruction::new(version, opcode, operand);
         let sender = tx_context::sender(ctx);
-        verify_internal(ibc_store, relay_store, sender, channel_id, 0, instruction, ctx);
+        verify_internal<T>(ibc_store, relay_store, coin, metadata, sender, channel_id, 0, instruction, ctx);
 
         let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
         ibc::send_packet(
@@ -863,9 +972,11 @@ module zkgm::zkgm_relay {
             zkgm_packet::encode(&zkgm_pack)
         );
     }
-    fun verify_internal(
+    fun verify_internal<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
+        mut coin: Coin<T>,
+        metadata: &CoinMetadata<T>,
         sender: address,
         channel_id: u32,
         path: u256,
@@ -875,9 +986,11 @@ module zkgm::zkgm_relay {
         let version = instruction::version(&instruction);
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
             assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
-            verify_fungible_asset_order(
+            verify_fungible_asset_order<T>(
                 ibc_store,
                 relay_store,
+                coin,
+                metadata,
                 sender,
                 channel_id,
                 path,
@@ -885,123 +998,161 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            verify_batch(
-                ibc_store,
-                relay_store,
-                sender,
-                channel_id,
-                path,
-                batch::decode(instruction::operand(&instruction), &mut decode_idx),
-                ctx
-            )
+            abort E_NO_BATCH_OPERATION
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
-            verify_forward(
+            verify_forward<T>(
                 ibc_store,
                 relay_store,
+                coin,
+                metadata,
                 sender,
                 channel_id,
-                path,
                 forward::decode(instruction::operand(&instruction), &mut decode_idx),
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            verify_multiplex(
-                ibc_store,
-                relay_store,
-                sender,
-                channel_id,
-                path,
-                multiplex::decode(instruction::operand(&instruction)),
-                ctx
-            )
+            abort E_NO_MULTIPLEX_OPERATION
         } else {
             abort E_UNKNOWN_SYSCALL
         };
     }
 
-    fun verify_fungible_asset_order(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        sender: address,
-        channel_id: u32,
-        path: u256,
-        transfer_packet: FungibleAssetOrder,
-        ctx: &mut TxContext
-    ){
-        // let sent_token = transfer_packet.sent_token;
-        // let treasury_cap = relay_store.address_to_treasurycap.borrow_mut(sent_token);
-
-        // TODO: implement this further, can't take coin as argument because of that
-        // copy issue
-
+    fun get_treasury_cap<T>(
+        relay_store: &mut RelayStore
+    ): &mut TreasuryCap<T> {
+        let typename_t = type_name::get<T>();
+        let key = string::from_ascii(type_name::into_string(typename_t));
+        if(!type_name_contains_capability(relay_store, key)) {
+            abort E_NO_TREASURY_CAPABILITY // We don't have capability.
+        };
+        // We have capability
+        let capability: &mut TreasuryCap<T> = relay_store.type_name_t_to_capability.borrow_mut(key);
+        return capability
     }
 
-    fun verify_batch(
-        ibc_store: &mut ibc::IBCStore,
+    fun save_coin_to_bag<T>(
         relay_store: &mut RelayStore,
-        sender: address,
-        channel_id: u32,
-        path: u256,
-        batch_packet: Batch,
-        ctx: &mut TxContext
-    ){
-        let instructions = batch::instructions(&batch_packet);
-        let l = vector::length(&instructions);
-
-        let mut i = 0;
-        while (i < l) {
-            verify_internal(
-                ibc_store,
-                relay_store,
-                sender,
-                channel_id,
-                path,
-                *vector::borrow(&instructions, i),
-                ctx
-            );
-            i = i + 1;
+        mut coin: Coin<T>
+    ) {
+        let typename_t = type_name::get<T>();
+        let key = type_name::into_string(typename_t);
+        if(relay_store.bag_to_coin.contains(string::from_ascii(key))) {
+            let mut self_coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+            coin::join(self_coin, coin)
+        } else{
+            relay_store.bag_to_coin.add(string::from_ascii(key), coin)
         }
-
     }
 
-    fun verify_forward(
+    fun verify_fungible_asset_order<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
+        mut coin: Coin<T>,
+        metadata: &CoinMetadata<T>,
         sender: address,
         channel_id: u32,
         path: u256,
+        order: FungibleAssetOrder,
+        ctx: &mut TxContext
+    ){
+
+        let base_token = fungible_asset_order::base_token(&order);
+        let base_amount = fungible_asset_order::base_amount(&order);
+        let token_name = fungible_asset_order::base_token_name(&order);
+        let token_symbol = fungible_asset_order::base_token_symbol(&order);
+        let token_decimals = fungible_asset_order::base_token_decimals(&order);
+
+        if (token_name != coin::get_name(metadata)) {
+            abort E_INVALID_ASSET_NAME
+        };
+
+        if (token_symbol != string::from_ascii(coin::get_symbol(metadata))) {
+            abort E_INVALID_ASSET_SYMBOL
+        };
+
+        if (token_decimals != coin::get_decimals(metadata)) {
+            abort E_INVALID_ASSET_DECIMAL
+        };
+
+        if(balance::value(coin::balance(&coin)) != base_amount as u64){
+            abort E_INVALID_BASE_AMOUNT
+        };
+
+        let origin = *relay_store.token_origin.borrow(*base_token);
+
+        let (intermediate_channel_path, destination_channel_id) =
+            pop_channel_from_path(origin);
+
+        let wrapped_token = compute_salt(
+            intermediate_channel_path,
+            channel_id,
+            *fungible_asset_order::quote_token(&order)
+        );
+
+        let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_channel_path);
+        let is_sending_back_to_same_channel = destination_channel_id == channel_id;
+        let is_unwrapping = base_token == wrapped_token;
+        let base_token_path = fungible_asset_order::base_token_path(&order);
+        if (is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping) {
+            if(origin != base_token_path) {
+                abort E_INVALID_ASSET_ORIGIN
+            };
+            let capability = get_treasury_cap<T>(relay_store);
+            coin::burn<T>(capability, coin);
+        } else {
+            if (base_token_path != 0) {
+                abort E_INVALID_ASSET_ORIGIN
+            };
+            increase_outstanding(
+                relay_store, 
+                channel_id, 
+                path, 
+                *base_token, 
+                fungible_asset_order::base_amount(&order)
+            );
+            // There can not be a scenario where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
+            // And here if i don't do anything, the COIN will be ours anyway. We just need to 
+            // merge that one
+            save_coin_to_bag<T>(relay_store, coin);
+        }   
+
+    }
+
+    fun verify_forward<T>(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        mut coin: Coin<T>,
+        metadata: &CoinMetadata<T>,
+        sender: address,
+        channel_id: u32,
         forward_packet: Forward,
         ctx: &mut TxContext
     ){
-        verify_internal(
+        let instruction = forward::instruction(&forward_packet);
+        let opcode = instruction::opcode(instruction);
+
+        let is_allowed_forward = opcode == OP_MULTIPLEX || 
+                            opcode == OP_BATCH || 
+                            opcode == OP_FUNGIBLE_ASSET_ORDER;
+        if(!is_allowed_forward) {
+            abort E_ERR_INVALID_FORWARD_INSTRUCTION
+        };
+        verify_internal<T>(
             ibc_store,
             relay_store,
+            coin,
+            metadata,
             sender,
             channel_id,
-            update_channel_path(path, forward::channel_id(&forward_packet)),
-            *forward::instruction(&forward_packet),
+            forward::path(&forward_packet),
+            *instruction,
             ctx
         );
     }
 
-    fun verify_multiplex(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        sender: address,
-        channel_id: u32,
-        path: u256,
-        multiplex_packet: Multiplex,
-        ctx: &mut TxContext
-    ){
-
-    }
-
-    public entry fun acknowledge_packet(
+    public entry fun acknowledge_packet<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         packet_source_channels: vector<u32>,
@@ -1060,11 +1211,12 @@ module zkgm::zkgm_relay {
             } else {
                 let zkgm_packet = zkgm_packet::decode(packet::data(&ibc_packet));
                 let zkgm_ack = acknowledgement::decode(&acknowledgement);
-                acknowledge_internal(
+                acknowledge_internal<T>(
                     ibc_store,
                     relay_store,
                     ibc_packet,
                     relayer,
+                    zkgm_packet::path(&zkgm_packet),
                     zkgm_packet::salt(&zkgm_packet),
                     zkgm_packet::instruction(&zkgm_packet),
                     acknowledgement::tag(&zkgm_ack) == ACK_SUCCESS,
@@ -1076,11 +1228,12 @@ module zkgm::zkgm_relay {
         };
     }
 
-    fun acknowledge_internal(
+    fun acknowledge_internal<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
+        path: u256,
         salt: vector<u8>,
         instruction: Instruction,
         success: bool,
@@ -1090,37 +1243,33 @@ module zkgm::zkgm_relay {
         let version = instruction::version(&instruction);
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
             assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
-            acknowledge_fungible_asset_order(
+            let order = fungible_asset_order::decode(instruction::operand(&instruction));
+
+            acknowledge_fungible_asset_order<T>(
                 ibc_store,
                 relay_store,
                 ibc_packet,
+                relayer,
+                path,
                 salt,
-                fungible_asset_order::decode(instruction::operand(&instruction)),
+                *fungible_asset_order::sender(&order),
+                *fungible_asset_order::base_token(&order),
+                fungible_asset_order::base_token_path(&order),
+                fungible_asset_order::base_amount(&order) as u64,
                 success,
                 inner_ack,
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
+            abort E_NO_BATCH_OPERATION
+        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
-            acknowledge_batch(
+            acknowledge_forward<T>(
                 ibc_store,
                 relay_store,
                 ibc_packet,
                 relayer,
-                salt,
-                batch::decode(instruction::operand(&instruction), &mut decode_idx),
-                success,
-                inner_ack,
-                ctx
-            )
-        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            acknowledge_forward(
-                ibc_store,
-                relay_store,
-                ibc_packet,
                 salt,
                 forward::decode(instruction::operand(&instruction), &mut decode_idx),
                 success,
@@ -1128,133 +1277,94 @@ module zkgm::zkgm_relay {
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            acknowledge_multiplex(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                salt,
-                multiplex::decode(instruction::operand(&instruction)),
-                success,
-                inner_ack,
-                ctx
-            )
+            abort E_NO_MULTIPLEX_OPERATION
         } else {
             abort E_UNKNOWN_SYSCALL
         }
     }
 
-    fun acknowledge_fungible_asset_order(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        salt: vector<u8>,
-        transfer_packet: FungibleAssetOrder,
-        success: bool,
-        ack: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        // TODO: fill it later
-    }
-
-    fun acknowledge_batch(
+    fun acknowledge_fungible_asset_order<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
+        path: u256,
         salt: vector<u8>,
-        batch_packet: Batch,
+        order_sender: vector<u8>,
+        order_base_token: vector<u8>,
+        order_base_token_path: u256,
+        order_base_amount: u64,
         success: bool,
-        inner_ack: vector<u8>,
+        ack: vector<u8>,
         ctx: &mut TxContext
     ) {
-        let instructions = batch::instructions(&batch_packet);
-        let l = vector::length(&instructions);
-        let mut idx = 0x40;
-        let batch_ack = batch_ack::decode(&inner_ack, &mut idx);
-        let mut i = 0;
-        while (i < l) {
-            let mut syscall_ack = inner_ack;
-            if (success) {
-                syscall_ack = *vector::borrow(
-                    &batch_ack::acknowledgements(&batch_ack), i
-                );
-            };
-            acknowledge_internal(
+        if (success) {
+            let asset_order_ack = fungible_asset_order_ack::decode(&ack);
+            if (fungible_asset_order_ack::fill_type(&asset_order_ack) == FILL_TYPE_PROTOCOL) {
+                // The protocol filled, fee was paid to relayer.
+            } else if(
+                fungible_asset_order_ack::fill_type(&asset_order_ack) == FILL_TYPE_MARKETMAKER
+            ) {
+                let market_maker = bcs::new(*fungible_asset_order_ack::market_maker(&asset_order_ack)).peel_address();
+                
+                if (order_base_token_path != 0) {
+                    let capability = get_treasury_cap<T>(relay_store);
+                    coin::mint_and_transfer<T>(capability, order_base_amount, market_maker, ctx);
+                } else {
+                    decrease_outstanding(
+                        relay_store, 
+                        packet::source_channel_id(&ibc_packet), 
+                        path, 
+                        order_base_token, 
+                        order_base_amount as u256
+                    );
+                    distribute_coin<T>(relay_store, market_maker, order_base_amount, ctx)
+                };
+            } else {
+                abort E_INVALID_FILL_TYPE
+            }
+        } else {
+            refund<T>(
                 ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                salt,
-                *vector::borrow(&instructions, i),
-                success,
-                syscall_ack,
+                relay_store, 
+                packet::source_channel_id(&ibc_packet), 
+                path, 
+                order_sender, 
+                order_base_token, 
+                order_base_token_path, 
+                order_base_amount, 
                 ctx
-            );
-            i = i + 1;
+            )
         }
     }
 
-    fun acknowledge_forward(
+
+    fun acknowledge_forward<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
+        relayer: address,
         salt: vector<u8>,
         forward_packet: Forward,
         success: bool,
         ack: vector<u8>,
         ctx: &mut TxContext
     ) {
-
+        acknowledge_internal<T>(
+            ibc_store,
+            relay_store,
+            ibc_packet,
+            relayer,
+            forward::path(&forward_packet),
+            salt,
+            *forward::instruction(&forward_packet),
+            success,
+            ack,
+            ctx
+        )
     }
 
-    fun acknowledge_multiplex(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        salt: vector<u8>,
-        multiplex_packet: Multiplex,
-        success: bool,
-        ack: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        if (success && !multiplex::eureka(&multiplex_packet)) {
-            let multiplex_ibc_packet =
-                packet::new(
-                    packet::source_channel_id(&ibc_packet),
-                    packet::destination_channel_id(&ibc_packet),
-                    multiplex::encode_multiplex_sender_and_calldata(
-                        *multiplex::contract_address(&multiplex_packet),
-                        *multiplex::contract_calldata(&multiplex_packet)
-                    ),
-                    packet::timeout_height(&ibc_packet),
-                    packet::timeout_timestamp(&ibc_packet)
-                );
-            // TODO: verify this
-            // event::emit(
-            //     OnIIBCModuleOnAcknowledgementPacketCall {
-            //         packet: multiplex_ibc_packet,
-            //         acknowledgement: ack,
-            //         relayer: relayer,
-            //         contract_address: multiplex_packet.sender
-            //     }
-            // )
-            // let param =
-            //     copyable_any::pack<IIBCModuleOnAcknowledgementPacketParams>(
-            //         IIBCModuleOnAcknowledgementPacketParams {
-            //             packet: multiplex_ibc_packet,
-            //             acknowledgement: ack,
-            //             relayer: relayer
-            //         }
-            //     );
-            // let contract_address = from_bcs::to_address(multiplex_packet.sender);
-
-            // engine_zkgm::dispatch(param, contract_address);
-        }
-    }
-    public entry fun timeout_packet(
+    public entry fun timeout_packet<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         packet_source_channel: u32,
@@ -1300,210 +1410,132 @@ module zkgm::zkgm_relay {
                 );
         } else {
             let zkgm_packet = zkgm_packet::decode(&packet_data);
-            timeout_internal(
+            timeout_internal<T>(
                 ibc_store,
                 relay_store,
                 packet,
                 relayer,
-                zkgm_packet::salt(&zkgm_packet),
+                zkgm_packet::path(&zkgm_packet),
                 zkgm_packet::instruction(&zkgm_packet),
                 ctx
             )
         }
     }
 
-    fun timeout_internal(
+    fun timeout_internal<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
-        salt: vector<u8>,
+        path: u256,
         instruction: Instruction,
         ctx: &mut TxContext
     ) {
         let version = instruction::version(&instruction);
         if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
             assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
-            timeout_fungible_asset_order(
+            let order = fungible_asset_order::decode(instruction::operand(&instruction));
+            timeout_fungible_asset_order<T>(
                 ibc_store,
                 relay_store,
                 ibc_packet,
-                salt,
-                fungible_asset_order::decode(instruction::operand(&instruction)),
+                path,
+                *fungible_asset_order::sender(&order),
+                *fungible_asset_order::base_token(&order),
+                fungible_asset_order::base_token_path(&order),
+                fungible_asset_order::base_amount(&order) as u64,
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_BATCH) {
+            abort E_NO_BATCH_OPERATION
+        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
             let mut decode_idx = 0x20;
-            timeout_batch(
+            timeout_forward<T>(
                 ibc_store,
                 relay_store,
                 ibc_packet,
                 relayer,
-                salt,
-                batch::decode(instruction::operand(&instruction), &mut decode_idx),
-                ctx
-            )
-        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            timeout_forward(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                salt,
+                path,
                 forward::decode(instruction::operand(&instruction), &mut decode_idx),
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            timeout_multiplex(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer,
-                salt,
-                multiplex::decode(instruction::operand(&instruction)),
-                ctx
-            )
+            abort E_NO_MULTIPLEX_OPERATION
         } else {
             abort E_UNKNOWN_SYSCALL
         }
     }
 
-    fun timeout_fungible_asset_order(
+    fun timeout_fungible_asset_order<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         packet: Packet,
-        _salt: vector<u8>,
-        transfer_packet: FungibleAssetOrder,
+        path: u256,
+        order_sender: vector<u8>,
+        order_base_token: vector<u8>,
+        order_base_token_path: u256,
+        order_base_amount: u64,
         ctx: &mut TxContext
     ) {
-        refund(packet::source_channel_id(&packet), transfer_packet, ctx);
+        refund<T>(
+            ibc_store,
+            relay_store,
+            packet::source_channel_id(&packet), 
+            path,
+            order_sender,
+            order_base_token,
+            order_base_token_path,
+            order_base_amount,
+            ctx
+        );
     }
 
-    fun refund(
-        channel_id: u32,
-        transfer_packet: FungibleAssetOrder,
+    fun refund<T>(
+        ibc_store: &mut ibc::IBCStore,
+        relay_store: &mut RelayStore,
+        source_channel: u32,
+        path: u256,
+        order_sender: vector<u8>,
+        order_base_token: vector<u8>,
+        order_base_token_path: u256,
+        order_base_amount: u64,
         ctx: &mut TxContext
     ) {
-        // TODO: Fill it later
+        let sender = bcs::new(order_sender).peel_address();
+        let capability = get_treasury_cap<T>(relay_store);
+        if (order_base_token_path != 0) {
+            coin::mint_and_transfer<T>(capability, order_base_amount, sender, ctx);
+        } else {
+            decrease_outstanding(
+                relay_store, 
+                source_channel,
+                path, 
+                order_base_token, 
+                order_base_amount as u256
+            );
+            
+            distribute_coin<T>(relay_store, sender, order_base_amount, ctx);
+        }
     }
 
-    fun timeout_batch(
+    fun timeout_forward<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         packet: Packet,
         relayer: address,
-        salt: vector<u8>,
-        batch_packet: Batch,
-        ctx: &mut TxContext
-    ) {
-        let instructions = batch::instructions(&batch_packet);
-        let l = vector::length(&instructions);
-        let mut i = 0;
-        while (i < l) {
-            timeout_internal(
-                ibc_store,
-                relay_store,
-                packet,
-                relayer,
-                salt,
-                *vector::borrow(&instructions, i),
-                ctx
-            );
-            i = i + 1;
-        }
-    }
-
-    fun timeout_forward(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        packet: Packet,
-        _salt: vector<u8>,
+        path: u256,
         forward_packet: Forward,
         ctx: &mut TxContext
     ) {
-
+        timeout_internal<T>(
+            ibc_store, 
+            relay_store, 
+            packet, 
+            relayer, 
+            path, 
+            *forward::instruction(&forward_packet), 
+            ctx
+        )
     }
-
-    fun timeout_multiplex(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        relayer: address,
-        _salt: vector<u8>,
-        multiplex_packet: Multiplex,
-        ctx: &mut TxContext
-    ) {
-        if (!multiplex::eureka(&multiplex_packet)) {
-            let multiplex_ibc_packet =
-                packet::new(
-                    packet::source_channel_id(&ibc_packet),
-                    packet::destination_channel_id(&ibc_packet),
-                    multiplex::encode_multiplex_sender_and_calldata(
-                        *multiplex::contract_address(&multiplex_packet),
-                        *multiplex::contract_calldata(&multiplex_packet)
-                    ),
-                    packet::timeout_height(&ibc_packet),
-                    packet::timeout_timestamp(&ibc_packet)
-                );
-            // TODO: verify this
-
-            // event::emit(
-            //     OnIIBCModuleOnTimeoutPacketCall{
-            //         packet: multiplex_ibc_packet,
-            //         relayer: relayer,
-            //         contract_address: multiplex_packet.sender
-            //     }
-            // );
-            // let param =
-            //     copyable_any::pack<IIBCModuleOnTimeoutPacketParams>(
-            //         IIBCModuleOnTimeoutPacketParams {
-            //             packet: multiplex_ibc_packet,
-            //             relayer: relayer
-            //         }
-            //     );
-            // let contract_address = from_bcs::to_address(multiplex_packet.sender);
-
-            // engine_zkgm::dispatch(param, contract_address);
-
-        }
-    }
-
-    // public entry fun execute(
-    //     ibc_store: &mut ibc::IBCStore,
-    //     relay_store: &mut RelayStore,
-    //     source_channel: u32,
-    //     destination_channel: u32,
-    //     data: vector<u8>,
-    //     timeout_height: u64,
-    //     timeout_timestamp: u64,
-    //     relayer: address,
-    //     relayer_msg: vector<u8>,
-    //     raw_zkgm_packet: vector<u8>,
-    //     ctx: &mut TxContext
-    // ) {
-    //     let ibc_packet =
-    //         packet::new(
-    //             source_channel,
-    //             destination_channel,
-    //             data,
-    //             timeout_height,
-    //             timeout_timestamp
-    //         );
-
-    //     let zkgm_packet = decode_packet(raw_zkgm_packet);
-    //     execute_internal(
-    //         ibc_store,
-    //         relay_store,
-    //         ibc_packet,
-    //         relayer,
-    //         relayer_msg,
-    //         zkgm_packet.salt,
-    //         zkgm_packet.path,
-    //         zkgm_packet.instruction,
-    //         ctx
-    //     );
-    // }
 }
