@@ -1,4 +1,4 @@
-use std::{collections::VecDeque, panic::AssertUnwindSafe, sync::Arc};
+use std::{collections::VecDeque, panic::AssertUnwindSafe, str::FromStr, sync::Arc};
 
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use fastcrypto::{hash::HashFunction, traits::Signer};
@@ -52,7 +52,7 @@ async fn main() {
 pub struct Module {
     pub chain_id: ChainId,
 
-    pub ibc_handler_address: ObjectID,
+    pub ibc_handler_address: SuiAddress,
 
     pub ibc_store: SuiAddress,
 
@@ -133,7 +133,7 @@ impl Plugin for Module {
 pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
-    pub ibc_handler_address: ObjectID,
+    pub ibc_handler_address: SuiAddress,
     pub ibc_store: SuiAddress,
 
     pub keyring: KeyringConfig,
@@ -224,19 +224,25 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         // create the transaction data that will be sent to the network.
                         //
-                        let msgs =
-                            process_msgs(self.ibc_store, self.ibc_store_initial_seq, msgs.clone())
-                                .await;
+                        let msgs = process_msgs(
+                            self.ibc_handler_address,
+                            self.ibc_store,
+                            self.ibc_store_initial_seq,
+                            msgs.clone(),
+                        )
+                        .await;
 
                         let mut ptb = ProgrammableTransactionBuilder::new();
 
-                        for (_, (_, module, entry_fn, arguments)) in msgs.into_iter().enumerate() {
+                        for (_, (contract_addr, _, module, entry_fn, arguments)) in
+                            msgs.into_iter().enumerate()
+                        {
                             let arguments = arguments
                                 .into_iter()
                                 .map(|arg| ptb.input(arg).expect("input works"))
                                 .collect();
                             ptb.command(Command::move_call(
-                                self.ibc_handler_address,
+                                contract_addr.into(),
                                 module,
                                 entry_fn,
                                 vec![],
@@ -321,14 +327,16 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
 #[allow(clippy::type_complexity)]
 async fn process_msgs(
+    ibc_address: SuiAddress,
     ibc_store: SuiAddress,
     initial_shared_version: SequenceNumber,
     msgs: Vec<Datagram>,
-) -> Vec<(Datagram, Identifier, Identifier, Vec<CallArg>)> {
+) -> Vec<(SuiAddress, Datagram, Identifier, Identifier, Vec<CallArg>)> {
     let mut data = vec![];
     for msg in msgs {
         let item = match msg.clone() {
             Datagram::CreateClient(data) => (
+                ibc_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("create_client").unwrap(),
@@ -344,6 +352,7 @@ async fn process_msgs(
                 ],
             ),
             Datagram::UpdateClient(data) => (
+                ibc_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("update_client").unwrap(),
@@ -358,6 +367,7 @@ async fn process_msgs(
                 ],
             ),
             Datagram::ConnectionOpenInit(data) => (
+                ibc_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("connection_open_init").unwrap(),
@@ -372,6 +382,7 @@ async fn process_msgs(
                 ],
             ),
             Datagram::ConnectionOpenTry(data) => (
+                ibc_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("connection_open_try").unwrap(),
@@ -389,6 +400,7 @@ async fn process_msgs(
                 ],
             ),
             Datagram::ConnectionOpenAck(data) => (
+                ibc_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("connection_open_ack").unwrap(),
@@ -405,6 +417,7 @@ async fn process_msgs(
                 ],
             ),
             Datagram::ConnectionOpenConfirm(data) => (
+                ibc_address,
                 msg,
                 Identifier::new("ibc").unwrap(),
                 Identifier::new("connection_open_confirm").unwrap(),
@@ -419,6 +432,33 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                 ],
             ),
+            Datagram::ChannelOpenInit(data) => {
+                let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
+
+                let module_info = port_id.split("::").collect::<Vec<&str>>();
+                if module_info.len() != 3 {
+                    panic!("invalid port id");
+                }
+
+                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+
+                (
+                    addr,
+                    msg,
+                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new("channel_open_init").unwrap(),
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: ibc_store.into(),
+                            initial_shared_version,
+                            mutable: true,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&data.counterparty_port_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.version).unwrap()),
+                    ],
+                )
+            }
             _ => todo!(),
         };
         data.push(item);

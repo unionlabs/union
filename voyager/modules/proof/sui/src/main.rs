@@ -221,7 +221,11 @@ fn convert_object(object: Object) -> ObjectInner {
                     object_data.type_().coin_type_maybe().expect("type is coin"),
                 ))
             } else {
-                panic!("no other possible states");
+                if let Some(struct_tag) = object_data.type_().other() {
+                    MoveObjectType::Other(convert_struct_tag(struct_tag))
+                } else {
+                    panic!("no other possible states");
+                }
             },
             has_public_transfer: object_data.has_public_transfer(),
             version: object_data.version().into(),
