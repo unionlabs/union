@@ -277,7 +277,8 @@ module ibc::ibc {
         commitments: Table<vector<u8>, vector<u8>>,
         connections: Table<u32, ConnectionEnd>,
         channels: Table<u32, Channel>,
-        clients: Table<u32, Client>
+        clients: Table<u32, Client>,
+        channel_to_port: Table<u32, String>
     }
 
     fun init(ctx: &mut TxContext) {
@@ -294,6 +295,7 @@ module ibc::ibc {
             connections: table::new(ctx),
             channels: table::new(ctx),
             clients: table::new(ctx),
+            channel_to_port: table::new(ctx),
         });
     }
 
@@ -771,6 +773,8 @@ module ibc::ibc {
             }
         );
 
+        ibc_store.channel_to_port.add(channel_id, port_id);
+
         ibc_store.commit_channel(channel_id, channel);
     }
     public fun channel_open_try<T: drop>(
@@ -852,6 +856,8 @@ module ibc::ibc {
                 version
             }
         );
+
+        ibc_store.channel_to_port.add(channel_id, port_id);
 
         // Commit the updated channel to storage
         ibc_store.commit_channel(channel_id, channel);
@@ -1233,6 +1239,10 @@ module ibc::ibc {
         let client = ibc_store.clients.borrow(client_id);
 
         client.get_client_state()
+    }
+
+    public fun get_port_id(ibc_store: &IBCStore, channel_id: u32): String {
+        *ibc_store.channel_to_port.borrow(channel_id)
     }
 
     public fun get_consensus_state(ibc_store: &IBCStore, client_id: u32, height: u64): vector<u8> {
