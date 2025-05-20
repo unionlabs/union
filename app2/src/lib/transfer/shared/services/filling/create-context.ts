@@ -37,7 +37,6 @@ export type TransferContext = {
   intents: Array<Intent>
   allowances: Option.Option<Array<Allowance>>
   instruction: Option.Option<Instruction>
-  message: Option.Option<string>
 }
 
 const BABY_DECIMALS = 6n
@@ -91,7 +90,8 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
 
       const intent: Intent = {
         sender: args.sender,
-        receiver: args.receiver.toLowerCase(),
+        // XXX: guarantee lowercase as part of schema transform
+        receiver: args.receiver.toLowerCase() as typeof args.receiver,
         baseToken: baseToken,
         baseAmount: baseAmountWithFee,
         quoteAmount: baseAmount,
