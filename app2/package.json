@@ -29,6 +29,7 @@
     "@leapwallet/types": "^0.0.5",
     "@number-flow/svelte": "^0.3.7",
     "@safe-global/safe-apps-sdk": "^9.1.0",
+    "@safe-global/safe-gateway-typescript-sdk": "^3.23.1",
     "@scure/base": "^1.2.4",
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.20.7",

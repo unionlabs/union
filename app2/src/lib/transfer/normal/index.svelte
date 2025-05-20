@@ -22,7 +22,8 @@ import {
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
+import { TokenRawAmountFromSelf, TokenRawDenom } from "@unionlabs/sdk/schema"
+import { Array as Arr, Effect, Fiber, FiberId, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
 import { onMount } from "svelte"
 import { fly } from "svelte/transition"
@@ -129,10 +130,15 @@ $effect(() => {
 
   const machineEffect = Effect.gen(function*() {
     let currentState: CreateContextState = CreateContextState.Filling()
-    let context: TransferContext
+    let context: TransferContext | null = null
 
     while (true) {
-      const result: StateResult = yield* createContextState(currentState, transferData)
+      const result: StateResult | void = yield* createContextState(currentState, transferData)
+
+      if (!result) {
+        break
+      }
+
       statusMessage = result.message
 
       if (Option.isSome(result.error)) {
@@ -157,26 +163,26 @@ $effect(() => {
 
     const steps: Array<Steps.Steps> = [Steps.Filling()]
 
-    const isReceiverInWallet = pipe(
-      Option.all({
-        destinationChain: transferData.destinationChain,
-        receiver: transferData.derivedReceiver,
-      }),
-      Option.flatMap(({ destinationChain, receiver }) => {
+    // Check if receiver exists in wallet
+    yield* Option.Do.pipe(
+      Option.bind("destinationChain", () => transferData.destinationChain),
+      Option.bind("receiver", () => transferData.derivedReceiver),
+      Option.bind("inWallet", ({ destinationChain, receiver }) => {
         const walletaddr = wallets.getAddressForChain(destinationChain)
         return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
       }),
-      Option.getOrElse(() => false),
+      Option.match({
+        onNone: () => Effect.void,
+        onSome: ({ inWallet, destinationChain, receiver }) =>
+          Effect.if(inWallet, {
+            onFalse: () =>
+              Effect.sync(() => {
+                steps.push(Steps.CheckReceiver({ receiver, destinationChain }))
+              }),
+            onTrue: () => Effect.void,
+          }),
+      }),
     )
-
-    if (!isReceiverInWallet) {
-      steps.push(
-        Steps.CheckReceiver({
-          receiver: transferData.derivedReceiver,
-          destinationChain: transferData.destinationChain,
-        }),
-      )
-    }
 
     if (context) {
       if (Option.isSome(context.allowances)) {
@@ -186,11 +192,20 @@ $effect(() => {
           const allowance = allowances[i]
           const intent = context.intents[i]
 
+          // TODO: refactor with Struct.evolve and Effect.all
+          const token = yield* Schema.decode(TokenRawDenom)(allowance.token)
+          const requiredAmount = yield* Schema.decode(TokenRawAmountFromSelf)(
+            allowance.requiredAmount,
+          )
+          const currentAllowance = yield* Schema.decode(TokenRawAmountFromSelf)(
+            allowance.currentAllowance,
+          )
+
           steps.push(
             Steps.ApprovalRequired({
-              token: allowance.token,
-              requiredAmount: allowance.requiredAmount,
-              currentAllowance: allowance.currentAllowance,
+              token,
+              requiredAmount,
+              currentAllowance,
               intent,
             }),
           )

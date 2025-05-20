@@ -27,7 +27,8 @@ export type Intent = {
 }
 
 export type Allowance = {
-  token: string
+  // TODO: replace with branded type
+  token: `0x${string}`
   requiredAmount: bigint
   currentAllowance: bigint
 }

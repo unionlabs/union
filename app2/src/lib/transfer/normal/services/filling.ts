@@ -17,7 +17,7 @@ import {
 } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { createOrdersBatch } from "$lib/transfer/shared/services/filling/create-orders.ts"
 import { Data, Effect, Match, Option } from "effect"
-import { constVoid, pipe } from "effect/Function"
+import { pipe } from "effect/Function"
 
 export type StateResult = {
   nextState: Option.Option<CreateContextState>
@@ -83,12 +83,12 @@ const complete = (msg: string, context: TransferContext): StateResult => ({
 
 export const createContextState = (cts: CreateContextState, transfer: TransferData) => {
   return CreateContextState.$match(cts, {
-    Empty: constVoid,
+    Empty: () => Effect.void,
     Filling: () => {
       const state = getFillingState(transfer)
 
       return FillingState.$match(state, {
-        Empty: constVoid,
+        Empty: () => Effect.void,
         NoWallet: () => Effect.succeed(ok(Empty(), "Connect wallet")),
         SourceChainMissing: () => Effect.succeed(ok(Empty(), "Select from chain")),
         SourceWalletMissing: () => Effect.succeed(ok(Empty(), "Connect wallet")),

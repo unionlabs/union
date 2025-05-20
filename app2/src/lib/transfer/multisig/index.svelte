@@ -78,10 +78,15 @@ $effect(() => {
 
   const machineEffect = Effect.gen(function*() {
     let currentState: CreateContextState = CreateContextState.Filling()
-    let context: TransferContext
+    let context: TransferContext | null = null
 
     while (true) {
-      const result: StateResult = yield* createContextState(currentState, transferData)
+      const result: StateResult | void = yield* createContextState(currentState, transferData)
+
+      if (!result) {
+        break
+      }
+
       statusMessage = result.message
 
       if (Option.isSome(result.error)) {
@@ -104,12 +109,14 @@ $effect(() => {
       break
     }
 
-    steps = Option.some([
-      Steps.Filling(),
-      Steps.CheckMessage({
-        context,
-      }),
-    ])
+    if (context) {
+      steps = Option.some([
+        Steps.Filling(),
+        Steps.CheckMessage({
+          context,
+        }),
+      ])
+    }
     isLoading = false
     currentFiber = Option.none()
   })

@@ -38,7 +38,7 @@ let {
       : EvmWalletId)
     | null
     | undefined
-  onConnectClick: (walletIdentifier: string) => void | Promise<void>
+  onConnectClick: (walletIdentifier: string) => void | Promise<any>
   onDisconnectClick: () => void
   showDivider?: boolean
 }>()

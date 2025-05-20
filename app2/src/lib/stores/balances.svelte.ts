@@ -69,12 +69,17 @@ const boundedFibonacci$: (maxDelta: number) => Stream.Stream<number> = maxDelta 
     return Option.some([b, [b, result]])
   })
 
+export type BalancesStoreError =
+  | FetchEvmBalanceError
+  | FetchCosmosBalanceError
+  | FetchAptosBalanceError
+
 export class BalancesStore {
   data = $state(new SvelteMap<BalanceKey, RawTokenBalance>())
   errors = $state(
     new SvelteMap<
       BalanceKey,
-      Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>
+      Option.Option<BalancesStoreError>
     >(),
   )
   chainFibers = $state(new SvelteMap<ChainKey, Fiber.RuntimeFiber<void, never>>())
@@ -100,7 +105,7 @@ export class BalancesStore {
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom,
-    error: Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError>,
+    error: Option.Option<BalancesStoreError>,
   ) {
     this.errors.set(createKey(universalChainId, address, denom), error)
   }
@@ -117,7 +122,7 @@ export class BalancesStore {
     universalChainId: UniversalChainId,
     address: AddressCanonicalBytes,
     denom: TokenRawDenom,
-  ): Option.Option<FetchEvmBalanceError | FetchCosmosBalanceError | FetchAptosBalanceError> {
+  ): Option.Option<BalancesStoreError> {
     return this.errors.get(createKey(universalChainId, address, denom)) ?? Option.none()
   }
 

@@ -14,6 +14,7 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { cn } from "$lib/utils"
 import { clickOutside } from "$lib/utils/actions.ts"
+import type { AddressCanonicalBytes } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { onDestroy, onMount } from "svelte"
 import { crossfade, fade, fly } from "svelte/transition"
@@ -98,8 +99,8 @@ let manualAddress = $state("")
 let showClearConfirm = $state(false)
 let bookmarkOnAdd = $state(false)
 
-let recentAddresses: Record<string, Array<string>> = $state({})
-let bookmarkedAddresses: Record<string, Array<string>> = $state({})
+let recentAddresses: Record<string, Array<AddressCanonicalBytes>> = $state({})
+let bookmarkedAddresses: Record<string, Array<AddressCanonicalBytes>> = $state({})
 
 // Create crossfade transition
 const [send, receive] = crossfade({
@@ -139,7 +140,7 @@ onDestroy(() => {
   document.removeEventListener("keydown", handleKeydown)
 })
 
-function saveAddress(address: string, isBookmarked = false) {
+function saveAddress(address: AddressCanonicalBytes, isBookmarked = false) {
   if (!destinationChainId) {
     return
   }
@@ -179,7 +180,7 @@ function saveAddress(address: string, isBookmarked = false) {
   }
 }
 
-function toggleBookmark(address: string) {
+function toggleBookmark(address: AddressCanonicalBytes) {
   if (!destinationChainId) {
     return
   }
@@ -200,7 +201,7 @@ function toggleBookmark(address: string) {
   localStorage.setItem("bookmarkedAddresses", JSON.stringify(bookmarkedAddresses))
 }
 
-function removeAddress(address: string, type: "recent" | "bookmarked") {
+function removeAddress(address: AddressCanonicalBytes, type: "recent" | "bookmarked") {
   if (!destinationChainId) {
     return
   }
@@ -236,25 +237,25 @@ function clearAddresses(type: "recent" | "bookmarked") {
   showClearConfirm = false
 }
 
-function isBookmarked(address: string): boolean {
+function isBookmarked(address: AddressCanonicalBytes): boolean {
   if (!destinationChainId) {
     return false
   }
   return bookmarkedAddresses[destinationChainId]?.includes(address)
 }
 
-function useAddress(address: string, shouldBookmark = false) {
+function useAddress(address: AddressCanonicalBytes, shouldBookmark = false) {
   // Update the transferData receiver
   transferData.raw.updateField("receiver", address)
 
   // Always save to recent addresses
   if (shouldBookmark || bookmarkOnAdd) {
     // First add to bookmarks if requested
-    if (!bookmarkedAddresses[destinationChainId]) {
+    if (destinationChainId && !bookmarkedAddresses[destinationChainId]) {
       bookmarkedAddresses[destinationChainId] = []
     }
 
-    if (!bookmarkedAddresses[destinationChainId].includes(address)) {
+    if (destinationChainId && !bookmarkedAddresses[destinationChainId].includes(address)) {
       bookmarkedAddresses[destinationChainId].push(address)
       localStorage.setItem("bookmarkedAddresses", JSON.stringify(bookmarkedAddresses))
     }
@@ -279,11 +280,12 @@ function useConnectedWallet() {
 }
 
 function submitManualAddress() {
+  // XXX: add validation to secure types
   if (manualAddress.trim()) {
     const derivedReceiverAddr = getDerivedReceiverSafe(manualAddress)
     const derived = Option.getOrNull(derivedReceiverAddr)
     manualAddress = derived ?? manualAddress
-    useAddress(manualAddress.trim(), bookmarkOnAdd)
+    useAddress(manualAddress.trim() as unknown as any, bookmarkOnAdd)
   }
 }
 
@@ -488,7 +490,7 @@ function hasBookmarks() {
                 <span class="flex items-center gap-2">
                   <RestoreIcon class="size-5" />Recent
                 </span>
-                {#if hasRecent()}
+                {#if hasRecent() && destinationChainId}
                   <span class="px-3 py-1 -mr-1 text-xs bg-zinc-800 rounded text-white">{
                     recentAddresses[destinationChainId].length
                   }</span>
@@ -506,7 +508,7 @@ function hasBookmarks() {
                   <FilledBookmarkIcon class="size-5" /> Bookmarked
                 </span>
 
-                {#if hasBookmarks()}
+                {#if hasBookmarks() && destinationChainId}
                   <span class="px-3 py-1 -mr-1 text-xs bg-zinc-800 rounded text-white">{
                     bookmarkedAddresses[destinationChainId].length
                   }</span>
@@ -521,7 +523,8 @@ function hasBookmarks() {
             in:fly={{ x: previousView === "main" ? 20 : -20, duration: 300, opacity: 0 }}
             out:fly={{ x: previousView === "main" ? -20 : 20, duration: 300, opacity: 0 }}
           >
-            {#if destinationChainId && recentAddresses[destinationChainId]?.length > 0}
+            {#if destinationChain && destinationChainId
+            && recentAddresses[destinationChainId]?.length > 0}
               <div class="space-y-2">
                 {#each recentAddresses[destinationChainId] as address}
                   <div

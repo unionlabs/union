@@ -26,6 +26,6 @@ const containerClasses = cn("h-[600px] flex justify-center items-center", classN
   <div class="flex flex-col items-center">
     <h2 class="text-xl font-bold">{title}</h2>
     <p class="pb-4">{description}</p>
-    <ConnectWalletButton variant="primary" />
+    <ConnectWalletButton />
   </div>
 </div>

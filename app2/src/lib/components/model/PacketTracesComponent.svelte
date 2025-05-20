@@ -11,7 +11,7 @@ import TransactionHashComponent from "./TransactionHashComponent.svelte"
 
 type Props = HTMLAttributes<HTMLDivElement> & {
   packetTraces: ReadonlyArray<PacketTrace>
-  showAcks: boolean
+  showAcks?: boolean | undefined
   mode?: DisplayMode
 }
 

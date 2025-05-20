@@ -1,9 +1,9 @@
+import type { AptosWalletId } from "$lib/wallet/aptos"
+import type { CosmosWalletId } from "$lib/wallet/cosmos"
+import type { EvmWalletId } from "$lib/wallet/evm"
+import type { RpcType } from "@unionlabs/sdk/schema"
 import type { State } from "@wagmi/core"
 import type { Schema } from "effect"
-import type { RpcType } from "../../../../schema/chain.ts"
-import type { AptosWalletId } from "../../../../wallet/aptos.ts"
-import type { CosmosWalletId } from "../../../../wallet/cosmos.ts"
-import type { EvmWalletId } from "../../../../wallet/evm.ts"
 
 type Chain = Schema.Schema.Type<typeof RpcType>
 type ChainConnectStatus = State["status"]

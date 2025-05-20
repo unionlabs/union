@@ -6,7 +6,7 @@ import type {
   Tokens,
 } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
-import { type BalancesStore, balancesStore } from "./balances.svelte"
+import { type BalancesStore, balancesStore, type BalancesStoreError } from "./balances.svelte"
 import { chains } from "./chains.svelte"
 import { tokensStore } from "./tokens.svelte"
 import { wallets } from "./wallets.svelte"
@@ -14,7 +14,7 @@ import { wallets } from "./wallets.svelte"
 export type SortedTokenInfo = {
   token: { denom: TokenRawDenom }
   balance: Option.Option<TokenRawAmount>
-  error: Option.Option<unknown>
+  error: Option.Option<BalancesStoreError>
   numericValue: bigint
   decimals: number
 }

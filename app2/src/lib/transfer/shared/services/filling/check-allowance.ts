@@ -18,7 +18,8 @@ import { Data, Effect, Match, Option } from "effect"
 import { fromHex, http, isHex } from "viem"
 
 export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
-  token: string
+  // XXX: make branded type
+  token: `0x${string}`
   requiredAmount: bigint
   currentAllowance: bigint
 }> {}
