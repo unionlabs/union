@@ -473,7 +473,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await?;
+                        let channel = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(Height::new(height)),
+                                ibc_union_spec::path::ChannelPath {
+                                    channel_id: event.channel_id.try_into().unwrap(),
+                                },
+                            )
+                            .await?;
 
+                        
                         let client_id = connection.client_id;
                         (
                             ChannelOpenAck {
@@ -482,6 +492,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 counterparty_channel_id: event.counterparty_channel_id.try_into().unwrap(),
                                 connection,
+                                version: channel.version
                                 // version: event.version,
                             }
                             .into(),
@@ -499,6 +510,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 },
                             )
                             .await?;
+                        let channel = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(Height::new(height)),
+                                ibc_union_spec::path::ChannelPath {
+                                    channel_id: event.channel_id.try_into().unwrap(),
+                                },
+                            )
+                            .await?;
 
                         let client_id = connection.client_id;
                         (
@@ -508,7 +528,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 counterparty_port_id: event.counterparty_port_id.into(),
                                 counterparty_channel_id: event.counterparty_channel_id.try_into().unwrap(),
                                 connection,
-                                // version: event.version,
+                                version: channel.version,
                             }
                             .into(),
                             client_id,
