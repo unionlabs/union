@@ -1,4 +1,4 @@
-import type { OrderCreationError } from "$lib/transfer/shared/errors"
+import { OrderCreationError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import {
   CosmosChannelDestination,
@@ -20,7 +20,7 @@ import {
   createEvmToEvmFungibleAssetOrder,
 } from "@unionlabs/sdk/ucs03"
 import { Batch, type Instruction } from "@unionlabs/sdk/ucs03/instruction"
-import { Array as Arr, Effect, Match, Option, pipe, Schema } from "effect"
+import { Array as Arr, Effect, Match, Option, pipe, Predicate as P, Schema } from "effect"
 import { fromHex, http } from "viem"
 
 export function createOrdersBatch(
@@ -62,13 +62,15 @@ export function createOrdersBatch(
 
     const resolvedIntents = yield* Effect.all(newIntents, { concurrency: "unbounded" })
 
+    // XXX: discriminate order intent data at higher level
     const provideClients = yield* Match.value([
       first.sourceChain.rpc_type,
       first.destinationChain.rpc_type,
     ]).pipe(
-      Match.when(
+      Match.whenAnd(
         ["evm", "cosmos"],
         () =>
+          // @ts-expect-error 2345
           Effect.all(resolvedIntents.map(createEvmToCosmosFungibleAssetOrder)).pipe(
             Effect.provideServiceEffect(
               ViemPublicClientSource,
@@ -100,6 +102,7 @@ export function createOrdersBatch(
       Match.when(
         ["evm", "evm"],
         () =>
+          // @ts-expect-error 2345
           Effect.all(resolvedIntents.map(createEvmToEvmFungibleAssetOrder)).pipe(
             Effect.provideServiceEffect(
               ViemPublicClientSource,
@@ -131,6 +134,7 @@ export function createOrdersBatch(
       Match.when(
         ["cosmos", "evm"],
         () =>
+          // @ts-expect-error 2345
           Effect.all(resolvedIntents.map(createCosmosToEvmFungibleAssetOrder)).pipe(
             Effect.provideServiceEffect(
               CosmWasmClientSource,
@@ -162,6 +166,7 @@ export function createOrdersBatch(
       Match.when(
         ["cosmos", "cosmos"],
         () =>
+          // @ts-expect-error 2345
           Effect.all(resolvedIntents.map(createCosmosToCosmosFungibleAssetOrder)).pipe(
             Effect.provideServiceEffect(
               CosmWasmClientSource,
@@ -208,9 +213,12 @@ export function createOrdersBatch(
       Effect.tapErrorCause((cause) => Effect.logError("order.create", cause)),
     )
 
-    const filtered = provideClients.filter((o): o is NonNullable<typeof o> => o !== null)
-
-    return Option.some(new Batch({ operand: filtered }))
+    return pipe(
+      provideClients,
+      Arr.filter(P.isNotNull),
+      Option.liftPredicate(Arr.isNonEmptyArray),
+      Option.map((operand) => new Batch({ operand })),
+    )
   }).pipe(
     Effect.catchAll(error =>
       Effect.fail(
