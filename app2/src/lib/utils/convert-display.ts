@@ -85,7 +85,7 @@ export const isValidCanonicalForChain = (
     const validateEvmAddress = (): boolean => {
       return pipe(
         Effect.try({
-          try: () => Schema.decodeSync(AddressEvmDisplay)(displayAddress, { errors: "all" }),
+          try: () => Schema.decodeUnknownSync(AddressEvmDisplay)(displayAddress, { errors: "all" }),
           catch: () => null,
         }),
         Effect.map(result =>
@@ -112,7 +112,8 @@ export const isValidCanonicalForChain = (
     const validateCosmosAddress = (): boolean => {
       return pipe(
         Effect.try({
-          try: () => Schema.decodeSync(AddressCosmosDisplay)(displayAddress, { errors: "all" }),
+          try: () =>
+            Schema.decodeUnknownSync(AddressCosmosDisplay)(displayAddress, { errors: "all" }),
           catch: () => null,
         }),
         Effect.map(result =>
@@ -139,7 +140,8 @@ export const isValidCanonicalForChain = (
     const validateAptosAddress = (): boolean => {
       return pipe(
         Effect.try({
-          try: () => Schema.decodeSync(AddressAptosDisplay)(displayAddress, { errors: "all" }),
+          try: () =>
+            Schema.decodeUnknownSync(AddressAptosDisplay)(displayAddress, { errors: "all" }),
           catch: () => null,
         }),
         Effect.map(result =>
