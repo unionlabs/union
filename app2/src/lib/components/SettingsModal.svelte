@@ -3,6 +3,7 @@ import { settingsStore } from "$lib/stores/settings.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "./ui/Button.svelte"
 import Modal from "./ui/Modal.svelte"
+import Switch from "./ui/Switch.svelte"
 
 type Props = {
   isOpen: boolean
@@ -14,6 +15,7 @@ const { isOpen, onClose }: Props = $props()
 let tempPageLimit = $state(settingsStore.pageLimit)
 let tempShowQuoteTokens = $state(settingsStore.showQuoteTokens)
 let tempShowDeveloperChainDetails = $state(settingsStore.showDeveloperChainDetails)
+let tempMainnetOnly = $state(settingsStore.mainnetOnly)
 let tempShowZeroBalances = $state(uiStore.showZeroBalances)
 let tempShowDeveloperPages = $state(uiStore.showDeveloperPages)
 
@@ -21,6 +23,7 @@ function handleSave() {
   settingsStore.pageLimit = tempPageLimit
   settingsStore.showQuoteTokens = tempShowQuoteTokens
   settingsStore.showDeveloperChainDetails = tempShowDeveloperChainDetails
+  settingsStore.mainnetOnly = tempMainnetOnly
   uiStore.showZeroBalances = tempShowZeroBalances
   uiStore.showDeveloperPages = tempShowDeveloperPages
   onClose()
@@ -53,47 +56,43 @@ function handleSave() {
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempShowQuoteTokens}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Show quote tokens</span>
-      </label>
+      <Switch
+        checked={tempShowQuoteTokens}
+        label="Show quote tokens"
+        change={(value) => tempShowQuoteTokens = value}
+      />
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempShowDeveloperChainDetails}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Show developer chain details</span>
-      </label>
+      <Switch
+        checked={tempShowDeveloperChainDetails}
+        label="Show developer chain details"
+        change={(value) => tempShowDeveloperChainDetails = value}
+      />
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempShowZeroBalances}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Show zero balances</span>
-      </label>
+      <Switch
+        checked={tempMainnetOnly}
+        label="Mainnet only (explorer)"
+        change={(value) => tempMainnetOnly = value}
+      />
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempShowDeveloperPages}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Show developer pages</span>
-      </label>
+      <Switch
+        checked={tempShowZeroBalances}
+        label="Show zero balances"
+        change={(value) => tempShowZeroBalances = value}
+      />
+    </div>
+
+    <div class="space-y-2">
+      <Switch
+        checked={tempShowDeveloperPages}
+        label="Show developer pages"
+        change={(value) => tempShowDeveloperPages = value}
+      />
     </div>
 
     <div class="flex justify-start gap-2 pt-4">

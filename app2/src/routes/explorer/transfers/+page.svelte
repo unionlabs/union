@@ -18,32 +18,32 @@ import { goto } from "$app/navigation"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
+import Switch from "$lib/components/ui/Switch.svelte"
 
-onMount(() => {
+const initializeQuery = async () => {
   const pageParam = page.url.searchParams.get("page")
+  let effect: Effect.Effect<any>
 
-  const initializeQuery = async () => {
-    let effect: Effect.Effect<any>
-
-    if (pageParam) {
-      if (pageParam.startsWith("-")) {
-        // Greater-than query (prev page)
-        const sortOrder = pageParam.substring(1)
-        // @ts-ignore sorOrder is not strictly a SortOrder, but this is desired behavior
-        effect = transferListPageGtQuery(sortOrder, settingsStore.pageLimit)
-      } else {
-        // Less-than query (next page)
-        // @ts-ignore pageParam is not strictly a SortOrder, but this is desired behavior
-        effect = transferListPageLtQuery(pageParam, settingsStore.pageLimit)
-      }
+  if (pageParam) {
+    if (pageParam.startsWith("-")) {
+      // Greater-than query (prev page)
+      const sortOrder = pageParam.substring(1)
+      // @ts-ignore sorOrder is not strictly a SortOrder, but this is desired behavior
+      effect = transferListPageGtQuery(sortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly)
     } else {
-      // No page param, load latest
-      effect = transferListLatestQuery(settingsStore.pageLimit)
+      // Less-than query (next page)
+      // @ts-ignore pageParam is not strictly a SortOrder, but this is desired behavior
+      effect = transferListPageLtQuery(pageParam, settingsStore.pageLimit, settingsStore.mainnetOnly)
     }
-
-    await transferList.runEffect(effect)
+  } else {
+    // No page param, load latest
+    effect = transferListLatestQuery(settingsStore.pageLimit, settingsStore.mainnetOnly)
   }
 
+  await transferList.runEffect(effect)
+}
+
+onMount(() => {
   initializeQuery()
 
   return () => {
@@ -53,7 +53,7 @@ onMount(() => {
 
 const onLive = async () => {
   if (Option.isSome(transferList.data)) {
-    await transferList.runEffect(transferListLatestQuery(settingsStore.pageLimit))
+    await transferList.runEffect(transferListLatestQuery(settingsStore.pageLimit, settingsStore.mainnetOnly))
     // Remove page param from URL
     goto("?", { replaceState: true })
   }
@@ -63,7 +63,7 @@ const onPrevPage = async () => {
   if (Option.isSome(transferList.data)) {
     let firstSortOrder = transferList.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
-    await transferList.runEffect(transferListPageGtQuery(firstSortOrder, settingsStore.pageLimit))
+    await transferList.runEffect(transferListPageGtQuery(firstSortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly))
     // Update URL with the new page param, prefixed with '-' for greater-than queries
     goto(`?page=-${firstSortOrder}`, { replaceState: true })
   }
@@ -73,7 +73,7 @@ const onNextPage = async () => {
   if (Option.isSome(transferList.data)) {
     let lastSortOrder = transferList.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
-    await transferList.runEffect(transferListPageLtQuery(lastSortOrder, settingsStore.pageLimit))
+    await transferList.runEffect(transferListPageLtQuery(lastSortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly))
     // Update URL with the new page param (no prefix for less-than queries)
     goto(`?page=${lastSortOrder}`, { replaceState: true })
   }
@@ -81,6 +81,7 @@ const onNextPage = async () => {
 </script>
 
 <Sections>
+
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferList.error)}
       <ErrorComponent error={transferList.error.value}/>
@@ -100,10 +101,19 @@ const onNextPage = async () => {
       {/each}
     {/if}
   </Card>
-  <TransferListPagination 
-    data={transferList.data}
-    {onLive}
-    {onPrevPage}
-    {onNextPage}
-  />
+  <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+    <TransferListPagination 
+      data={transferList.data}
+      {onLive}
+      {onPrevPage}
+      {onNextPage}
+    />
+    <div class="flex items-center gap-2">
+      <Switch
+        checked={settingsStore.mainnetOnly}
+        label="Mainnet Only"
+        change={(value) => {settingsStore.mainnetOnly = value; initializeQuery()}}
+      />
+    </div>
+  </div>
 </Sections>

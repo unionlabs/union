@@ -12,6 +12,7 @@ import { ENV, MAX_MOBILE_SIZE } from "$lib/constants"
 import { chainsQuery } from "$lib/queries/chains.svelte"
 import { channelsQuery } from "$lib/queries/channels.svelte.ts"
 import { runFork$, runPromise, runSync } from "$lib/runtime"
+import { settingsStore } from "$lib/stores/settings.svelte"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
@@ -30,21 +31,24 @@ interface Props {
 let { children, data }: Props = $props()
 
 onMount(() => {
+  // Apply all edition-specific default settings
   uiStore.edition = data.edition
+  settingsStore.setEditionDefaults(data.edition)
+
   interceptLogos()
   runExample()
   runFork$(chainsQuery(ENV()))
   runFork$(channelsQuery())
 
-  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keya"], () => {
+  keyboardShortcuts.addShortcut(["ctrl", "option", "shift", "keya"], () => {
     uiStore.overrideEdition = "app"
   })
 
-  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyb"], () => {
+  keyboardShortcuts.addShortcut(["ctrl", "option", "shift", "keyb"], () => {
     uiStore.overrideEdition = "btc"
   })
 
-  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyf"], () => {
+  keyboardShortcuts.addShortcut(["ctrl", "option", "shift", "keyf"], () => {
     uiStore.filterWhitelist = !uiStore.filterWhitelist
   })
 })
@@ -71,6 +75,12 @@ $effect(() => {
   document.documentElement.style.setProperty("--color-accent", uiStore.theme.accent)
   document.documentElement.style.setProperty("--color-primary", uiStore.theme.primary)
   document.documentElement.style.setProperty("--color-background", uiStore.theme.background)
+})
+
+// Update settings when edition changes
+$effect(() => {
+  const edition = uiStore.activeEdition
+  settingsStore.setEditionDefaults(edition)
 })
 </script>
 
