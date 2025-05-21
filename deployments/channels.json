@@ -91,6 +91,10 @@
     "3": {
       "comments": "corn.21000001 channel 2",
       "tags": ["canonical"]
+    },
+    "6": {
+      "comments": "sei.1328 channel 1",
+      "tags": ["experimental"]
     }
   }
 }
