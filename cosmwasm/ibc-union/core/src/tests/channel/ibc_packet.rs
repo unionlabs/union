@@ -48,7 +48,7 @@ fn send_packet_ok() {
 
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(1),
-        timeout_height: 10,
+        timeout_height: 0,
         timeout_timestamp: Timestamp::from_nanos(1000000),
         data: vec![0, 1, 2].into(),
     };
@@ -146,7 +146,7 @@ fn send_packet_channel_does_not_exist() {
 
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(3),
-        timeout_height: 10,
+        timeout_height: 0,
         timeout_timestamp: Timestamp::from_nanos(1000000),
         data: vec![0, 1, 2].into(),
     };
@@ -158,7 +158,7 @@ fn send_packet_channel_does_not_exist() {
     )
     .is_err_and(|err| {
         match err {
-            ContractError::Std(err) => matches!(err, StdError::NotFound { .. }),
+            ContractError::Std(err) => matches!(err, StdError::GenericErr { .. }),
             _ => false,
         }
     }))
@@ -200,7 +200,7 @@ fn send_packet_module_is_not_channel_owner() {
 
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(1),
-        timeout_height: 10,
+        timeout_height: 0,
         timeout_timestamp: Timestamp::from_nanos(1000000),
         data: vec![0, 1, 2].into(),
     };
@@ -252,7 +252,7 @@ fn recv_packet_ok() {
             source_channel_id: ChannelId!(2),
             destination_channel_id: ChannelId!(1),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
+            timeout_height: 0,
             timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
         }],
         relayer_msgs: vec![vec![1].into()],
@@ -309,7 +309,7 @@ fn recv_packet_invalid_channel_state() {
             source_channel_id: ChannelId!(2),
             destination_channel_id: ChannelId!(5),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
+            timeout_height: 0,
             timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
         }],
         relayer_msgs: vec![vec![1].into()],
@@ -327,7 +327,7 @@ fn recv_packet_invalid_channel_state() {
     .is_err_and(|err| {
         match err {
             ContractError::Std(err) => {
-                matches!(err, StdError::NotFound { .. })
+                matches!(err, StdError::GenericErr { .. })
             }
             _ => false,
         }
@@ -345,6 +345,11 @@ fn recv_packet_timeout_timestamp() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(64);
+    let timeout_height = 0;
+
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -373,8 +378,8 @@ fn recv_packet_timeout_timestamp() {
             source_channel_id: ChannelId!(2),
             destination_channel_id: ChannelId!(1),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::from_nanos(100),
+            timeout_height,
+            timeout_timestamp,
         }],
         relayer_msgs: vec![vec![1].into()],
         relayer: mock_addr(RELAYER).to_string(),
@@ -384,7 +389,7 @@ fn recv_packet_timeout_timestamp() {
 
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env,
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
@@ -445,7 +450,7 @@ fn recv_packet_timeout_height() {
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
-    .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketHeight { .. }) }))
+    .is_err_and(|err| { matches!(err, ContractError::TimeoutHeightUnsupported) }))
 }
 
 #[test]
@@ -487,7 +492,7 @@ fn recv_intent_packet_ok() {
             source_channel_id: ChannelId!(2),
             destination_channel_id: ChannelId!(1),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
+            timeout_height: 0,
             timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
         }],
         market_maker_msgs: vec![vec![1, 2, 3].into()],
@@ -543,7 +548,7 @@ fn recv_intent_packet_timeout_timestamp() {
             source_channel_id: ChannelId!(2),
             destination_channel_id: ChannelId!(1),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
+            timeout_height: 0,
             timeout_timestamp: Timestamp::from_nanos(100),
         }],
         market_maker_msgs: vec![vec![1, 2, 3].into()],
@@ -613,7 +618,7 @@ fn recv_intent_packet_timeout_height() {
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::IntentPacketRecv(msg),
     )
-    .is_err_and(|err| { matches!(err, ContractError::ReceivedTimedOutPacketHeight { .. }) }))
+    .is_err_and(|err| { matches!(err, ContractError::TimeoutHeightUnsupported) }))
 }
 
 #[test]
@@ -682,7 +687,7 @@ fn acknowledge_packet_ok() {
 
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(1),
-        timeout_height: 100000,
+        timeout_height: 0,
         timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
         data: vec![1, 2, 3].into(),
     };
@@ -699,7 +704,7 @@ fn acknowledge_packet_ok() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(1),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
+            timeout_height: 0,
             timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
         }],
         acknowledgements: vec![vec![1, 2, 3].into()],
@@ -783,7 +788,7 @@ fn acknowledge_packet_tampered() {
 
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(1),
-        timeout_height: 100000,
+        timeout_height: 0,
         timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
         data: vec![1, 2, 3].into(),
     };
@@ -800,7 +805,7 @@ fn acknowledge_packet_tampered() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(1),
             data: vec![4, 1, 2, 3].into(),
-            timeout_height: 100000,
+            timeout_height: 0,
             timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
         }],
         acknowledgements: vec![vec![1, 2, 3].into()],
@@ -916,6 +921,11 @@ fn timeout_packet_timestamp_ok() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(64);
+    let timeout_height = 0;
+
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -943,13 +953,13 @@ fn timeout_packet_timestamp_ok() {
 
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(1),
-        timeout_height: 10,
-        timeout_timestamp: Timestamp::from_nanos(100),
+        timeout_height,
+        timeout_timestamp,
         data: vec![1, 2, 3].into(),
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketSend(msg),
     )
@@ -960,8 +970,8 @@ fn timeout_packet_timestamp_ok() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(1),
             data: vec![1, 2, 3].into(),
-            timeout_height: 10,
-            timeout_timestamp: Timestamp::from_nanos(100),
+            timeout_height,
+            timeout_timestamp,
         },
         proof: vec![1].into(),
         proof_height: 11,
@@ -969,7 +979,7 @@ fn timeout_packet_timestamp_ok() {
     };
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketTimeout(msg)
     )
@@ -987,6 +997,11 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(248);
+    let timeout_height = 0;
+
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -997,7 +1012,7 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
             }),
             LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
             LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
+            LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&128),
             LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
             msg => panic!("should not be called: {:?}", msg),
         }));
@@ -1014,13 +1029,13 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
 
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(1),
-        timeout_height: 10,
-        timeout_timestamp: Timestamp::from_nanos(200000),
+        timeout_height,
+        timeout_timestamp,
         data: vec![1, 2, 3].into(),
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketSend(msg),
     )
@@ -1031,8 +1046,8 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(1),
             data: vec![1, 2, 3].into(),
-            timeout_height: 10,
-            timeout_timestamp: Timestamp::from_nanos(200000),
+            timeout_height,
+            timeout_timestamp,
         },
         proof: vec![1].into(),
         proof_height: 11,
@@ -1040,155 +1055,11 @@ fn timeout_packet_timestamp_timestamp_not_reached() {
     };
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketTimeout(msg)
     )
     .is_err_and(|err| { matches!(err, ContractError::TimeoutTimestampNotReached) }))
-}
-
-#[test]
-fn timeout_packet_height_ok() {
-    let mut deps = mock_dependencies();
-    init(
-        deps.as_mut(),
-        InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
-        },
-    )
-    .expect("init is ok");
-    deps.querier
-        .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
-            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
-            msg => panic!("should not be called: {:?}", msg),
-        }));
-
-    // Create client
-    register_client(deps.as_mut()).expect("register client ok");
-    create_client(deps.as_mut()).expect("create client ok");
-    // Create connection
-    connection_open_try(deps.as_mut()).expect("connection open try is ok");
-    connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
-    // Create channel
-    channel_open_init(deps.as_mut()).expect("channel open init is ok");
-    channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
-
-    let msg = MsgSendPacket {
-        source_channel_id: ChannelId!(1),
-        timeout_height: 10,
-        timeout_timestamp: Timestamp::ZERO,
-
-        data: vec![1, 2, 3].into(),
-    };
-    execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
-    )
-    .expect("send packet ok");
-
-    let msg = MsgPacketTimeout {
-        packet: Packet {
-            source_channel_id: ChannelId!(1),
-            destination_channel_id: ChannelId!(1),
-            data: vec![1, 2, 3].into(),
-            timeout_height: 10,
-            timeout_timestamp: Timestamp::ZERO,
-        },
-        proof: vec![1].into(),
-        proof_height: 11,
-        relayer: mock_addr(RELAYER).into_string(),
-    };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketTimeout(msg)
-    )
-    .is_ok())
-}
-
-#[test]
-fn timeout_packet_height_not_reached() {
-    let mut deps = mock_dependencies();
-    init(
-        deps.as_mut(),
-        InitMsg {
-            relayers_admin: None,
-            relayers: vec![mock_addr(SENDER).to_string()],
-        },
-    )
-    .expect("init is ok");
-    deps.querier
-        .update_wasm(wasm_query_handler(|msg| match msg {
-            LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
-                counterparty_chain_id: "testchain".to_owned(),
-                events: vec![],
-                storage_writes: Default::default(),
-                client_state_bytes: None,
-            }),
-            LightClientQueryMsg::VerifyMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::VerifyNonMembership { .. } => to_json_binary(&()),
-            LightClientQueryMsg::GetTimestamp { .. } => to_json_binary(&100000),
-            LightClientQueryMsg::GetLatestHeight { .. } => to_json_binary(&1),
-            msg => panic!("should not be called: {:?}", msg),
-        }));
-
-    // Create client
-    register_client(deps.as_mut()).expect("register client ok");
-    create_client(deps.as_mut()).expect("create client ok");
-    // Create connection
-    connection_open_try(deps.as_mut()).expect("connection open try is ok");
-    connection_open_confirm(deps.as_mut()).expect("connection open confirm is ok");
-    // Create channel
-    channel_open_init(deps.as_mut()).expect("channel open init is ok");
-    channel_open_ack(deps.as_mut()).expect("channel open ack is ok");
-
-    let msg = MsgSendPacket {
-        source_channel_id: ChannelId!(1),
-        timeout_height: 10,
-        timeout_timestamp: Timestamp::ZERO,
-
-        data: vec![1, 2, 3].into(),
-    };
-    execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketSend(msg),
-    )
-    .expect("send packet ok");
-
-    let msg = MsgPacketTimeout {
-        packet: Packet {
-            source_channel_id: ChannelId!(1),
-            destination_channel_id: ChannelId!(1),
-            data: vec![1, 2, 3].into(),
-            timeout_height: 10,
-            timeout_timestamp: Timestamp::ZERO,
-        },
-        proof: vec![1].into(),
-        proof_height: 9,
-        relayer: mock_addr(RELAYER).into_string(),
-    };
-    assert!(execute(
-        deps.as_mut(),
-        mock_env(),
-        message_info(&mock_addr(SENDER), &[]),
-        ExecuteMsg::PacketTimeout(msg)
-    )
-    .is_err_and(|err| { matches!(err, ContractError::TimeoutHeightNotReached) }))
 }
 
 #[test]
@@ -1202,6 +1073,11 @@ fn write_acknowledgement_ok() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(248);
+    let timeout_height = 0;
+
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -1234,7 +1110,7 @@ fn write_acknowledgement_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenInit(msg),
     )
@@ -1250,7 +1126,7 @@ fn write_acknowledgement_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenAck(msg),
     )
@@ -1261,8 +1137,8 @@ fn write_acknowledgement_ok() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
+            timeout_height,
+            timeout_timestamp,
         }],
         relayer_msgs: vec![vec![1].into()],
         relayer: mock_addr(RELAYER).to_string(),
@@ -1271,7 +1147,7 @@ fn write_acknowledgement_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
@@ -1282,14 +1158,14 @@ fn write_acknowledgement_ok() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
+            timeout_height,
+            timeout_timestamp,
         },
         acknowledgement: vec![1].into(),
     };
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
@@ -1307,6 +1183,11 @@ fn write_acknowledgement_module_is_not_channel_owner() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(248);
+    let timeout_height = 0;
+
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -1339,7 +1220,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr("malicious"), &[]),
         ExecuteMsg::ChannelOpenInit(msg),
     )
@@ -1355,7 +1236,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr("malicious"), &[]),
         ExecuteMsg::ChannelOpenAck(msg),
     )
@@ -1366,8 +1247,8 @@ fn write_acknowledgement_module_is_not_channel_owner() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
+            timeout_height,
+            timeout_timestamp,
         }],
         relayer_msgs: vec![vec![1].into()],
         relayer: mock_addr(RELAYER).to_string(),
@@ -1376,7 +1257,7 @@ fn write_acknowledgement_module_is_not_channel_owner() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
@@ -1387,14 +1268,14 @@ fn write_acknowledgement_module_is_not_channel_owner() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
+            timeout_height,
+            timeout_timestamp,
         },
         acknowledgement: vec![1].into(),
     };
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
@@ -1496,6 +1377,11 @@ fn write_acknowledgement_already_exists() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(248);
+    let timeout_height = 0;
+
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -1528,7 +1414,7 @@ fn write_acknowledgement_already_exists() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenInit(msg),
     )
@@ -1544,7 +1430,7 @@ fn write_acknowledgement_already_exists() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenAck(msg),
     )
@@ -1555,8 +1441,8 @@ fn write_acknowledgement_already_exists() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
+            timeout_height,
+            timeout_timestamp,
         }],
         relayer_msgs: vec![vec![1].into()],
         relayer: mock_addr(RELAYER).to_string(),
@@ -1565,7 +1451,7 @@ fn write_acknowledgement_already_exists() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
@@ -1576,14 +1462,14 @@ fn write_acknowledgement_already_exists() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
+            timeout_height,
+            timeout_timestamp,
         },
         acknowledgement: vec![1].into(),
     };
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
@@ -1593,14 +1479,14 @@ fn write_acknowledgement_already_exists() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::from_nanos(2000000000000000000),
+            timeout_height,
+            timeout_timestamp,
         },
         acknowledgement: vec![1].into(),
     };
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
@@ -1618,6 +1504,10 @@ fn batch_send_ok() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(248);
+    let timeout_height = 0;
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -1650,7 +1540,7 @@ fn batch_send_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenInit(msg),
     )
@@ -1666,7 +1556,7 @@ fn batch_send_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenAck(msg),
     )
@@ -1674,26 +1564,26 @@ fn batch_send_ok() {
 
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(2),
-        timeout_height: 10,
-        timeout_timestamp: Timestamp::ZERO,
+        timeout_height,
+        timeout_timestamp,
         data: vec![1, 2, 3].into(),
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketSend(msg),
     )
     .expect("send packet is ok");
     let msg = MsgSendPacket {
         source_channel_id: ChannelId!(2),
-        timeout_height: 10,
-        timeout_timestamp: Timestamp::ZERO,
+        timeout_height,
+        timeout_timestamp,
         data: vec![4, 5, 6].into(),
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketSend(msg),
     )
@@ -1705,21 +1595,21 @@ fn batch_send_ok() {
                 source_channel_id: ChannelId!(2),
                 destination_channel_id: ChannelId!(1),
                 data: vec![4, 5, 6].into(),
-                timeout_height: 10,
-                timeout_timestamp: Timestamp::ZERO,
+                timeout_height,
+                timeout_timestamp,
             },
             Packet {
                 source_channel_id: ChannelId!(2),
                 destination_channel_id: ChannelId!(1),
                 data: vec![1, 2, 3].into(),
-                timeout_height: 10,
-                timeout_timestamp: Timestamp::ZERO,
+                timeout_height,
+                timeout_timestamp,
             },
         ],
     };
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::BatchSend(msg)
     )
@@ -1829,6 +1719,9 @@ fn batch_acks_ok() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(248);
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -1861,7 +1754,7 @@ fn batch_acks_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenInit(msg),
     )
@@ -1877,7 +1770,7 @@ fn batch_acks_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenAck(msg),
     )
@@ -1888,8 +1781,8 @@ fn batch_acks_ok() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::ZERO,
+            timeout_height: 0,
+            timeout_timestamp,
         }],
         relayer_msgs: vec![vec![1].into()],
         relayer: mock_addr(RELAYER).to_string(),
@@ -1898,7 +1791,7 @@ fn batch_acks_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
@@ -1908,14 +1801,14 @@ fn batch_acks_ok() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::ZERO,
+            timeout_height: 0,
+            timeout_timestamp,
         },
         acknowledgement: vec![1].into(),
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
@@ -1925,8 +1818,8 @@ fn batch_acks_ok() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![3, 4, 5].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::ZERO,
+            timeout_height: 0,
+            timeout_timestamp,
         }],
         relayer_msgs: vec![vec![1].into()],
         relayer: mock_addr(RELAYER).to_string(),
@@ -1935,7 +1828,7 @@ fn batch_acks_ok() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
@@ -1945,14 +1838,14 @@ fn batch_acks_ok() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![3, 4, 5].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::ZERO,
+            timeout_height: 0,
+            timeout_timestamp,
         },
         acknowledgement: vec![1].into(),
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
@@ -1964,25 +1857,25 @@ fn batch_acks_ok() {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(2),
                 data: vec![1, 2, 3].into(),
-                timeout_height: 100000,
-                timeout_timestamp: Timestamp::ZERO,
+                timeout_height: 0,
+                timeout_timestamp,
             },
             Packet {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(2),
                 data: vec![3, 4, 5].into(),
-                timeout_height: 100000,
-                timeout_timestamp: Timestamp::ZERO,
+                timeout_height: 0,
+                timeout_timestamp,
             },
         ],
         acks: vec![vec![1].into(), vec![1].into()],
     };
-    assert!(dbg!(execute(
+    assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::BatchAcks(msg)
-    ))
+    )
     .is_ok())
 }
 
@@ -2070,12 +1963,12 @@ fn batch_acks_packet_not_received() {
         ],
         acks: vec![vec![1].into(), vec![1].into()],
     };
-    assert!(dbg!(execute(
+    assert!(execute(
         deps.as_mut(),
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::BatchAcks(msg)
-    ))
+    )
     .is_err_and(|err| { matches!(err, ContractError::PacketCommitmentNotFound) }))
 }
 
@@ -2090,6 +1983,10 @@ fn batch_acks_tampered_packet() {
         },
     )
     .expect("init is ok");
+    let mut env = mock_env();
+    env.block.time = cosmwasm_std::Timestamp::from_nanos(128);
+    let timeout_timestamp = Timestamp::from_nanos(248);
+    let timeout_height = 0;
     deps.querier
         .update_wasm(wasm_query_handler(|msg| match msg {
             LightClientQueryMsg::VerifyCreation { .. } => to_json_binary(&VerifyCreationResponse {
@@ -2122,7 +2019,7 @@ fn batch_acks_tampered_packet() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenInit(msg),
     )
@@ -2138,7 +2035,7 @@ fn batch_acks_tampered_packet() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenAck(msg),
     )
@@ -2149,8 +2046,8 @@ fn batch_acks_tampered_packet() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::ZERO,
+            timeout_height,
+            timeout_timestamp,
         }],
         relayer_msgs: vec![vec![1].into()],
         relayer: mock_addr(RELAYER).to_string(),
@@ -2159,7 +2056,7 @@ fn batch_acks_tampered_packet() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
@@ -2169,14 +2066,14 @@ fn batch_acks_tampered_packet() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![1, 2, 3].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::ZERO,
+            timeout_height,
+            timeout_timestamp,
         },
         acknowledgement: vec![1].into(),
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
@@ -2186,8 +2083,8 @@ fn batch_acks_tampered_packet() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![3, 4, 5].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::ZERO,
+            timeout_height,
+            timeout_timestamp,
         }],
         relayer_msgs: vec![vec![1].into()],
         relayer: mock_addr(RELAYER).to_string(),
@@ -2196,7 +2093,7 @@ fn batch_acks_tampered_packet() {
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::PacketRecv(msg),
     )
@@ -2206,14 +2103,14 @@ fn batch_acks_tampered_packet() {
             source_channel_id: ChannelId!(1),
             destination_channel_id: ChannelId!(2),
             data: vec![3, 4, 5].into(),
-            timeout_height: 100000,
-            timeout_timestamp: Timestamp::ZERO,
+            timeout_height,
+            timeout_timestamp,
         },
         acknowledgement: vec![1].into(),
     };
     execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::WriteAcknowledgement(msg),
     )
@@ -2225,14 +2122,14 @@ fn batch_acks_tampered_packet() {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(2),
                 data: vec![10, 20, 30].into(),
-                timeout_height: 100000,
-                timeout_timestamp: Timestamp::ZERO,
+                timeout_height,
+                timeout_timestamp,
             },
             Packet {
                 source_channel_id: ChannelId!(1),
                 destination_channel_id: ChannelId!(2),
                 data: vec![30, 40, 50].into(),
-                timeout_height: 100000,
+                timeout_height,
                 timeout_timestamp: Timestamp::ZERO,
             },
         ],
@@ -2240,7 +2137,7 @@ fn batch_acks_tampered_packet() {
     };
     assert!(execute(
         deps.as_mut(),
-        mock_env(),
+        env.clone(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::BatchAcks(msg)
     )
