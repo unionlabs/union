@@ -16,8 +16,12 @@ interface AptosWindow {
 
 declare global {
   namespace App {
-    // If we use +page/layout.ts for data
-    // interface PageData {}
+    // interface Locals {
+    //   session: Option.Option<Session>
+    // }
+    // interface PageData {
+    //   session: Option.Option<Session>
+    // }
   }
 
   interface Window extends AptosWindow, KeplrWindow, LeapWindow, Browser {

@@ -11,6 +11,7 @@ class UiStore {
   walletModalOpen: boolean = $state(false)
   settingsModalOpen: boolean = $state(false)
   errorsModalOpen: boolean = $state(false)
+
   showZeroBalances: boolean = $state(false)
   showDeveloperPages: boolean = $state(false)
   filterWhitelist: boolean = $state(true)
