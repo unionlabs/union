@@ -144,6 +144,7 @@ module ibc::ibc {
     const E_CANNOT_INTENT_ORDERED: u64 = 1043;
     const E_TIMEOUT_MUST_BE_SET: u64 = 1044;
     const E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH: u64 = 1045;
+    const E_ACK_LEN_MISMATCH: u64 = 1046;
 
     #[event]
     public struct CreateClient has copy, drop, store {
@@ -1064,7 +1065,7 @@ module ibc::ibc {
         packets: vector<Packet>,
         proof: vector<u8>,
         proof_height: u64,
-        acknowledgement: vector<u8>
+        acknowledgements: vector<vector<u8>>
     ) {
         process_receive(
             ibc_store,
@@ -1073,7 +1074,7 @@ module ibc::ibc {
             proof_height,
             proof,
             false,
-            acknowledgement
+            acknowledgements
         );
     }
 
@@ -1093,10 +1094,12 @@ module ibc::ibc {
         proof_height: u64,
         proof: vector<u8>,
         intent: bool,
-        acknowledgement: vector<u8>
+        acknowledgements: vector<vector<u8>>
     ) {
         let l = vector::length(&packets);
         assert!(l > 0, E_NOT_ENOUGH_PACKETS);
+
+        assert!(l == acknowledgements.length(), E_ACK_LEN_MISMATCH);
 
         let first_packet = packets[0];
 
@@ -1178,9 +1181,11 @@ module ibc::ibc {
                 } else {
                     event::emit(RecvPacket { packet: packet });
                 };
-                if (vector::length(&acknowledgement) > 0) {
-                    inner_write_acknowledgement(ibc_store, commitment_key, acknowledgement);
-                    event::emit(WriteAcknowledgement { packet, acknowledgement });
+
+                let ack = acknowledgements[i];
+                if (vector::length(&ack) > 0) {
+                    inner_write_acknowledgement(ibc_store, commitment_key, ack);
+                    event::emit(WriteAcknowledgement { packet, acknowledgement: ack });
                 };
             };
             // let mut already_received = false;

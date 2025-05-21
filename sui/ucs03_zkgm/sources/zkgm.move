@@ -595,15 +595,8 @@ module zkgm::zkgm_relay {
             );
             i = i + 1;
         };
-        ibc::recv_packet(
-            ibc_store,
-            clock,
-            packets,
-            proof,
-            proof_height,
-            vector[1]
-        );
         let mut i = 0;
+        let mut acks = vector::empty();
         while (i < vector::length(&packets)) {
             let ibc_packet = *vector::borrow(&packets, i);
             let raw_zkgm_packet = packet::data(&ibc_packet);
@@ -622,20 +615,24 @@ module zkgm::zkgm_relay {
                     ctx
                 );
 
+            acks.push_back(acknowledgement);
+
             if (vector::length(&acknowledgement) == 0) {
                 abort E_ACK_EMPTY
             } else if (acknowledgement == ACK_ERR_ONLYMAKER) {
                 abort E_ONLY_MAKER
-            } else {
-                // TODO: what to do here?
-                let new_ack = acknowledgement::new(ACK_SUCCESS, acknowledgement);
-                let return_value = acknowledgement::encode(&new_ack);
-                // dispatcher_zkgm::set_return_value<ZKGMProof>(
-                //     new_ucs_relay_proof(), return_value
-                // );
             };
             i = i + 1;
         };
+
+        ibc::recv_packet(
+            ibc_store,
+            clock,
+            packets,
+            proof,
+            proof_height,
+            acks
+        );
     }
 
     fun execute_internal<T>(
