@@ -81,19 +81,6 @@ const onNextPage = async () => {
 </script>
 
 <Sections>
-  <div class="flex justify-between items-center mb-2">
-    <div class="flex items-center space-x-2">
-      <label class="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          bind:checked={settingsStore.mainnetOnly}
-          class="form-checkbox"
-        />
-        <span>Mainnet Only</span>
-      </label>
-    </div>
-  </div>
-
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferList.error)}
       <ErrorComponent error={transferList.error.value}/>
@@ -119,4 +106,16 @@ const onNextPage = async () => {
     {onPrevPage}
     {onNextPage}
   />
+  <div class="flex justify-between items-center mb-2">
+    <div class="flex items-center space-x-2">
+      <label class="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          bind:checked={settingsStore.mainnetOnly}
+          class="form-checkbox"
+        />
+        <span>Mainnet Only</span>
+      </label>
+    </div>
+  </div>
 </Sections>
