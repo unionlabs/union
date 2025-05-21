@@ -1,7 +1,8 @@
 use std::fmt::Debug;
 
 use ibc_union_spec::{
-    path::StorePath, query::Query, Channel, ClientId, Connection, ConnectionState, IbcUnion
+    path::StorePath, query::Query, Channel, ChannelState, ClientId, Connection, ConnectionState,
+    IbcUnion,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -186,7 +187,7 @@ impl StateModuleServer<IbcUnion> for Module {
                 }
 
                 into_value(convert_connection(
-                    ConnectionEnd::decode_as::<Bcs>(&res[0].0).unwrap(),
+                    SuiConnection::decode_as::<Bcs>(&res[0].0).unwrap(),
                 ))
             }
             StorePath::Channel(path) => {
@@ -200,8 +201,8 @@ impl StateModuleServer<IbcUnion> for Module {
                     panic!("expected a single encoded connection end")
                 }
 
-                into_value(convert_connection(
-                    Channel::decode_as::<Bcs>(&res[0].0).unwrap(),
+                into_value(convert_channel(
+                    SuiChannel::decode_as::<Bcs>(&res[0].0).unwrap(),
                 ))
             }
             StorePath::ClientState(path) => {
@@ -317,14 +318,14 @@ impl<'a> SuiQuery<'a> {
 }
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
-pub struct ConnectionEnd {
+pub struct SuiConnection {
     pub state: u8,
     pub client_id: u32,
     pub counterparty_client_id: u32,
     pub counterparty_connection_id: u32,
 }
 
-fn convert_connection(connection: ConnectionEnd) -> Connection {
+fn convert_connection(connection: SuiConnection) -> Connection {
     Connection {
         state: match connection.state {
             1 => ConnectionState::Init,
@@ -335,5 +336,34 @@ fn convert_connection(connection: ConnectionEnd) -> Connection {
         client_id: connection.client_id.try_into().unwrap(),
         counterparty_client_id: connection.counterparty_client_id.try_into().unwrap(),
         counterparty_connection_id: connection.counterparty_connection_id.try_into().ok(),
+    }
+}
+
+#[derive(Debug, serde::Serialize, serde::Deserialize)]
+struct SuiChannel {
+    pub state: u8,
+    pub connection_id: u32,
+    pub counterparty_channel_id: u32,
+    pub counterparty_port_id: Vec<u8>,
+    pub version: String,
+}
+
+fn convert_channel(channel: SuiChannel) -> Channel {
+    Channel {
+        state: match channel.state {
+            1 => ChannelState::Init,
+            2 => ChannelState::TryOpen,
+            3 => ChannelState::Open,
+            4 => ChannelState::Closed,
+            _ => panic!("channel state must be 1..=4"),
+        },
+        connection_id: channel.connection_id.try_into().unwrap(),
+        counterparty_channel_id: if channel.counterparty_channel_id == 0 {
+            None
+        } else {
+            Some(channel.counterparty_channel_id.try_into().unwrap())
+        },
+        counterparty_port_id: channel.counterparty_port_id.into(),
+        version: channel.version,
     }
 }

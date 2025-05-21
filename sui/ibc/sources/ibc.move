@@ -877,7 +877,7 @@ module ibc::ibc {
         // Ensure the channel exists and is in the TRYOPEN state
         let channel = ibc_store.channels.borrow_mut(channel_id);
         assert!(
-            channel::state(channel) == CHAN_STATE_TRYOPEN,
+            channel::state(channel) == CHAN_STATE_INIT,
             E_INVALID_CHANNEL_STATE
         );
 
@@ -1253,6 +1253,10 @@ module ibc::ibc {
 
     public fun get_connection(ibc_store: &IBCStore, connection_id: u32): ConnectionEnd {
         *ibc_store.connections.borrow(connection_id)
+    }
+
+    public fun get_channel(ibc_store: &IBCStore, channel_id: u32): Channel {
+        *ibc_store.channels.borrow(channel_id)
     }
 
     public fun set_commitment(ibc_store: &mut IBCStore,key: vector<u8>, value: vector<u8>) {
