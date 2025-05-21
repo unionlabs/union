@@ -741,7 +741,7 @@
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
           "height": 169277356,
-          "commit": "8eeecfad75748c91033df051443d6aba1c73fa71"
+          "commit": "1bdf09ddeaeaa0acc12bf9a36bbb41a1ce616f12"
         },
         "state-lens/ics23/smt": {
           "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
