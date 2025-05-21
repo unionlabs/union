@@ -14,7 +14,7 @@ export const transferPacketHashQuery = ({ submission_tx_hash }: { submission_tx_
       ),
     }),
     document: graphql(/* GraphQL */ `
-      query($submission_tx_hash: String!) {
+      query GetPacketHashBySubmissionTxHash($submission_tx_hash: String!) {
           v2_transfers(args: {
               p_transaction_hash: $submission_tx_hash
           }) {
