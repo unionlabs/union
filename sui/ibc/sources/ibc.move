@@ -145,6 +145,8 @@ module ibc::ibc {
     const E_TIMEOUT_MUST_BE_SET: u64 = 1044;
     const E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH: u64 = 1045;
     const E_ACK_LEN_MISMATCH: u64 = 1046;
+    const E_CHANNEL_NOT_FOUND: u64 = 1047;
+    const E_CONNECTION_NOT_FOUND: u64 = 1048;
 
     #[event]
     public struct CreateClient has copy, drop, store {
@@ -347,7 +349,6 @@ module ibc::ibc {
             ibc_store.commitments.contains(commitment::client_state_commitment_key(client_id)),
             E_CLIENT_NOT_FOUND
         );
-
         let client = ibc_store.clients.borrow(client_id);
 
         // Update the client and consensus states using the client message
@@ -1106,17 +1107,27 @@ module ibc::ibc {
         let source_channel = packet::source_channel_id(&first_packet);
         let destination_channel = packet::destination_channel_id(&first_packet);
 
+        if(!ibc_store.channels.contains(source_channel)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
         let channel = ibc_store.channels.borrow(source_channel);
         assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
         let connection_id = channel::connection_id(channel);
 
+        if(!ibc_store.connections.contains(connection_id)) {
+            abort E_CONNECTION_NOT_FOUND
+        };
         let connection = ibc_store.connections.borrow(connection_id);
         assert!(
             connection_end::state(connection) == CONN_STATE_OPEN,
             E_INVALID_CONNECTION_STATE
         );
         let client_id = connection_end::client_id(connection);
+
+        if(!ibc_store.clients.contains(client_id)) {
+            abort E_CLIENT_NOT_FOUND
+        };
 
         let light_client = ibc_store.clients.borrow(client_id);
         if (!intent) {
@@ -1241,26 +1252,41 @@ module ibc::ibc {
     }
 
     public fun get_client_state(ibc_store: &IBCStore, client_id: u32): vector<u8> {
+        if (!ibc_store.clients.contains(client_id)) {
+            abort E_CLIENT_NOT_FOUND
+        };
         let client = ibc_store.clients.borrow(client_id);
 
         client.get_client_state()
     }
 
     public fun get_port_id(ibc_store: &IBCStore, channel_id: u32): String {
+        if (!ibc_store.channel_to_port.contains(channel_id)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
         *ibc_store.channel_to_port.borrow(channel_id)
     }
 
     public fun get_consensus_state(ibc_store: &IBCStore, client_id: u32, height: u64): vector<u8> {
+        if (!ibc_store.clients.contains(client_id)) {
+            abort E_CLIENT_NOT_FOUND
+        };
         let client = ibc_store.clients.borrow(client_id);
 
         client.get_consensus_state(height)
     }
 
     public fun get_connection(ibc_store: &IBCStore, connection_id: u32): ConnectionEnd {
+        if (!ibc_store.connections.contains(connection_id)) {
+            abort E_CONNECTION_NOT_FOUND
+        };
         *ibc_store.connections.borrow(connection_id)
     }
 
     public fun get_channel(ibc_store: &IBCStore, channel_id: u32): Channel {
+        if (!ibc_store.channels.contains(channel_id)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
         *ibc_store.channels.borrow(channel_id)
     }
 
@@ -1294,6 +1320,9 @@ module ibc::ibc {
     ) {
         assert!(!vector::is_empty(&acknowledgement), E_ACKNOWLEDGEMENT_IS_EMPTY);
 
+        if(!ibc_store.channels.contains(packet::destination_channel_id(&packet))) {
+            abort E_CHANNEL_NOT_FOUND
+        };
         let channel = *ibc_store.channels.borrow(packet::destination_channel_id(&packet));
         assert!(channel::state(&channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
@@ -1319,11 +1348,17 @@ module ibc::ibc {
         let source_channel = packet::source_channel_id(&packet);
         let destination_channel = packet::destination_channel_id(&packet);
 
+        if(!ibc_store.channels.contains(source_channel)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
         let channel = ibc_store.channels.borrow(source_channel);
         assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
         let connection_id = channel::connection_id(channel);
 
+        if(!ibc_store.connections.contains(connection_id)) {
+            abort E_CONNECTION_NOT_FOUND
+        };
         let connection = ibc_store.connections.borrow(connection_id);
         assert!(
             connection_end::state(connection) == CONN_STATE_OPEN,
@@ -1331,6 +1366,9 @@ module ibc::ibc {
         );
         let client_id = connection_end::client_id(connection);
 
+        if(!ibc_store.clients.contains(client_id)) {
+            abort E_CLIENT_NOT_FOUND
+        };
         let light_client = ibc_store.clients.borrow(client_id);
         let proof_timestamp =
             light_client.get_timestamp_at_height(proof_height);
@@ -1384,6 +1422,9 @@ module ibc::ibc {
         let source_channel = packet::source_channel_id(&first_packet);
         let destination_channel = packet::destination_channel_id(&first_packet);
 
+        if(!ibc_store.channels.contains(source_channel)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
         let channel = ibc_store.channels.borrow(source_channel);
         assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
@@ -1408,6 +1449,9 @@ module ibc::ibc {
                 destination_channel,
                 commitment::commit_packets(&packets)
             )
+        };
+        if (!ibc_store.clients.contains(client_id)) {
+            abort E_CLIENT_NOT_FOUND
         };
         let light_client = ibc_store.clients.borrow(client_id);
 
