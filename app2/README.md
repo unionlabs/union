@@ -1,4 +1,4 @@
-# Union App V2
+# Union App
 
 ## Developing
 
