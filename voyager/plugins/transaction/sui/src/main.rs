@@ -214,7 +214,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .next()
                             .expect("sender has a gas token");
 
-                        let gas_budget = 20_000_000;
+                        let gas_budget = 200_000_000; //TODO: change it later
                         let gas_price = self
                             .sui_client
                             .read_api()
@@ -628,7 +628,8 @@ async fn process_msgs(
                         )
                     })
                     .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
-
+                
+                println!("{:?}, {:?}, {:?}, {:?}, {:?}", source_channels, dest_channels, packet_data, timeout_heights, timeout_timestamps);
                 (
                     addr,
                     msg,
@@ -641,8 +642,8 @@ async fn process_msgs(
                             mutable: true,
                         }),
                         CallArg::Object(ObjectArg::SharedObject {
-                            id: ObjectID::from_str("0xabb3475a06c67d42a3b380de38e9bc1f04557ad46a43d797a46c5425b81db09b").unwrap(),
-                            initial_shared_version: 349179545.into(),
+                            id: ObjectID::from_str("0xb246855f5fa442fd232c65128b7aeb28d2132dcf716cb4bd3494ed81a818a2a9").unwrap(),
+                            initial_shared_version: 349179544.into(),
                             mutable: true,
                         }),
                         CallArg::Object(ObjectArg::SharedObject {
@@ -650,8 +651,8 @@ async fn process_msgs(
                             initial_shared_version: 1.into(),
                             mutable: false,
                         }),
-                        CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
@@ -663,9 +664,9 @@ async fn process_msgs(
                     vec![
                         TypeTag::Struct(Box::new(
                             StructTag {
-                                address: AccountAddress::from_str("0x").unwrap(),
-                                module: MoveIdentifier::new("ibc...").unwrap(),
-                                name: MoveIdentifier::new("namebrother").unwrap(),
+                                address: AccountAddress::from_str("0x76b0a4a20519477bb4dd1dc4215cddabad5bfe92ef9f791a78507f60da07c371").unwrap(),
+                                module: MoveIdentifier::new("fungible_token").unwrap(),
+                                name: MoveIdentifier::new("FUNGIBLE_TOKEN").unwrap(),
                                 type_params: vec![]
                         }))
                     ]

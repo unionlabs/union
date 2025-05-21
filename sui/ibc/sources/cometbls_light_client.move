@@ -66,6 +66,8 @@ module ibc::light_client {
     use ibc::ethabi;
     use ibc::height::{Self, Height};
 
+    const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;
+
     public struct Client has key, store {
         id: UID,
         client_state: ClientState,
@@ -266,6 +268,9 @@ module ibc::light_client {
         client: &Client,
         height: u64,
     ): vector<u8> {
+        if (!client.consensus_states.contains(height)) {
+            abort E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE
+        };
         let consensus_state = client.consensus_states.borrow(height);
         encode_consensus_state(consensus_state)
     }
