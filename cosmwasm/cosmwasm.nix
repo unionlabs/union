@@ -342,6 +342,7 @@ _: {
             "cometbls"
             "tendermint"
             "state-lens-ics23-mpt"
+            "state-lens-ics23-ics23"
           ];
         }
         {
@@ -432,6 +433,11 @@ _: {
           name = "state-lens-ics23-smt";
           dir = "state-lens-ics23-smt";
           client-type = "state-lens/ics23/smt";
+        }
+        {
+          name = "state-lens-ics23-ics23";
+          dir = "state-lens-ics23-ics23";
+          client-type = "state-lens/ics23/ics23";
         }
       ];
 
