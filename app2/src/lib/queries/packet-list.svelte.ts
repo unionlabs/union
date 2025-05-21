@@ -24,9 +24,9 @@ export let packetListLatestQuery = (limit = LIMIT, mainnetOnly = false) =>
   `,
       [packetListItemFragment],
     ),
-    variables: { 
+    variables: {
       limit,
-      network: mainnetOnly ? "mainnet" : null
+      network: mainnetOnly ? "mainnet" : null,
     },
     refetchInterval: "1 second",
     writeData: data => {
@@ -37,7 +37,11 @@ export let packetListLatestQuery = (limit = LIMIT, mainnetOnly = false) =>
     },
   })
 
-export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT, mainnetOnly = false) =>
+export let packetListPageLtQuery = (
+  page: typeof SortOrder.Type,
+  limit = LIMIT,
+  mainnetOnly = false,
+) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_packets: PacketList }),
     document: graphql(
@@ -56,10 +60,10 @@ export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT, 
   `,
       [packetListItemFragment],
     ),
-    variables: { 
-      page, 
+    variables: {
+      page,
       limit,
-      network: mainnetOnly ? "mainnet" : null
+      network: mainnetOnly ? "mainnet" : null,
     },
     refetchInterval: "30 seconds",
     writeData: data => {
@@ -70,7 +74,11 @@ export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT, 
     },
   })
 
-export let packetListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT, mainnetOnly = false) =>
+export let packetListPageGtQuery = (
+  page: typeof SortOrder.Type,
+  limit = LIMIT,
+  mainnetOnly = false,
+) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_packets: PacketList }),
     document: graphql(
@@ -88,10 +96,10 @@ export let packetListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT, 
   `,
       [packetListItemFragment],
     ),
-    variables: { 
-      page, 
+    variables: {
+      page,
       limit,
-      network: mainnetOnly ? "mainnet" : null
+      network: mainnetOnly ? "mainnet" : null,
     },
     refetchInterval: "30 seconds",
     writeData: data => {
