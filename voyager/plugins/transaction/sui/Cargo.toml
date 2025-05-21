@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-move-core-types = { workspace = true }
+move-core-types = { git = "https://github.com/mystenlabs/sui", package = "move-core-types" }
 
 bcs                = { workspace = true }
 concurrent-keyring = { workspace = true }

@@ -8,6 +8,11 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
+use move_core_types::{
+    account_address::AccountAddress,
+    identifier::Identifier as MoveIdentifier,
+    language_storage::{StructTag, TypeTag},
+};
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
@@ -230,7 +235,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         let mut ptb = ProgrammableTransactionBuilder::new();
 
-                        for (_, (contract_addr, _, module, entry_fn, arguments)) in
+                        for (_, (contract_addr, _, module, entry_fn, arguments, type_args)) in
                             msgs.into_iter().enumerate()
                         {
                             let arguments = arguments
@@ -241,7 +246,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 contract_addr.into(),
                                 module,
                                 entry_fn,
-                                vec![],
+                                type_args,
                                 arguments,
                             ));
                         }
@@ -326,7 +331,14 @@ async fn process_msgs(
     module: &Module,
     msgs: Vec<Datagram>,
     fee_recipient: SuiAddress,
-) -> Vec<(SuiAddress, Datagram, Identifier, Identifier, Vec<CallArg>)> {
+) -> Vec<(
+    SuiAddress,
+    Datagram,
+    Identifier,
+    Identifier,
+    Vec<CallArg>,
+    Vec<TypeTag>,
+)> {
     let mut data = vec![];
     for msg in msgs {
         let item = match msg.clone() {
@@ -345,6 +357,7 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.client_state_bytes).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.consensus_state_bytes).unwrap()),
                 ],
+                vec![],
             ),
             Datagram::UpdateClient(data) => (
                 module.ibc_handler_address,
@@ -360,6 +373,7 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.client_message).unwrap()),
                 ],
+                vec![],
             ),
             Datagram::ConnectionOpenInit(data) => (
                 module.ibc_handler_address,
@@ -375,6 +389,7 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.counterparty_client_id).unwrap()),
                 ],
+                vec![],
             ),
             Datagram::ConnectionOpenTry(data) => (
                 module.ibc_handler_address,
@@ -393,6 +408,7 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                 ],
+                vec![],
             ),
             Datagram::ConnectionOpenAck(data) => (
                 module.ibc_handler_address,
@@ -410,6 +426,7 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                 ],
+                vec![],
             ),
             Datagram::ConnectionOpenConfirm(data) => (
                 module.ibc_handler_address,
@@ -426,6 +443,7 @@ async fn process_msgs(
                     CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                 ],
+                vec![],
             ),
             Datagram::ChannelOpenInit(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
@@ -452,6 +470,7 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.connection_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.version).unwrap()),
                     ],
+                    vec![],
                 )
             }
             Datagram::ChannelOpenTry(data) => {
@@ -485,6 +504,7 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.proof_init).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                     ],
+                    vec![],
                 )
             }
             Datagram::ChannelOpenAck(data) => {
@@ -525,6 +545,7 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.proof_try).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                     ],
+                    vec![],
                 )
             }
             Datagram::ChannelOpenConfirm(data) => {
@@ -563,6 +584,7 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                     ],
+                    vec![],
                 )
             }
             Datagram::PacketRecv(data) => {
@@ -638,6 +660,15 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
                     ],
+                    vec![
+                        TypeTag::Struct(Box::new(
+                            StructTag {
+                                address: AccountAddress::from_str("0x").unwrap(),
+                                module: MoveIdentifier::new("ibc...").unwrap(),
+                                name: MoveIdentifier::new("namebrother").unwrap(),
+                                type_params: vec![]
+                        }))
+                    ]
                 )
             }
             _ => todo!(),

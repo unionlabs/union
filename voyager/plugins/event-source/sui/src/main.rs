@@ -2,9 +2,9 @@ use std::{cmp::Ordering, collections::VecDeque};
 
 use ibc_union_spec::{
     event::{
-        ChannelOpenInit, ChannelOpenTry, ChannelOpenAck, ChannelOpenConfirm, 
-        ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
-        ConnectionOpenTry, CreateClient, FullEvent, UpdateClient,
+        ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
+        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, FullEvent,
+        UpdateClient,
     },
     ClientId, IbcUnion,
 };
@@ -435,7 +435,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .into(),
                             client_id,
                         )
-                    },
+                    }
                     events::IbcEvent::ChannelOpenTry(event) => {
                         let voyager_client = e.try_get::<VoyagerClient>()?;
                         let connection = voyager_client
@@ -454,14 +454,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 port_id: event.port_id.into_bytes().into(),
                                 channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id.try_into().unwrap(),
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
                                 version: event.version,
                             }
                             .into(),
                             client_id,
                         )
-                    },
+                    }
                     events::IbcEvent::ChannelOpenAck(event) => {
                         let voyager_client = e.try_get::<VoyagerClient>()?;
                         let connection = voyager_client
@@ -483,22 +486,23 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-                        
                         let client_id = connection.client_id;
                         (
                             ChannelOpenAck {
                                 port_id: event.port_id.into_bytes().into(),
                                 channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id.try_into().unwrap(),
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
-                                version: channel.version
-                                // version: event.version,
+                                version: channel.version, // version: event.version,
                             }
                             .into(),
                             client_id,
                         )
-                    },
+                    }
                     events::IbcEvent::ChannelOpenConfirm(event) => {
                         let voyager_client = e.try_get::<VoyagerClient>()?;
                         let connection = voyager_client
@@ -526,7 +530,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 port_id: event.port_id.into_bytes().into(),
                                 channel_id: event.channel_id.try_into().unwrap(),
                                 counterparty_port_id: event.counterparty_port_id.into(),
-                                counterparty_channel_id: event.counterparty_channel_id.try_into().unwrap(),
+                                counterparty_channel_id: event
+                                    .counterparty_channel_id
+                                    .try_into()
+                                    .unwrap(),
                                 connection,
                                 version: channel.version,
                             }
