@@ -22,12 +22,17 @@ unionlabs                     = { workspace = true }
 
 [dev-dependencies]
 hex-literal                               = { workspace = true }
-state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
+state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["ethabi", "serde", "bincode"] }
 unionlabs                                 = { workspace = true, features = ["test-utils"] }
 
 [features]
 default = []
 
-bincode = ["dep:bincode", "unionlabs/bincode", "ibc-union-spec/bincode"]
-ethabi  = ["dep:alloy", "unionlabs/ethabi", "state-lens-light-client-types/ethabi"]
-serde   = ["dep:serde", "ibc-union-spec/serde", "state-lens-light-client-types/serde"]
+bincode = [
+  "dep:bincode",
+  "unionlabs/bincode",
+  "state-lens-light-client-types/bincode",
+  "ibc-union-spec/bincode",
+]
+ethabi = ["dep:alloy", "unionlabs/ethabi", "state-lens-light-client-types/ethabi"]
+serde = ["dep:serde", "ibc-union-spec/serde", "state-lens-light-client-types/serde"]

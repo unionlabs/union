@@ -119,7 +119,7 @@ mod tests {
     use alloy::hex;
     use ibc_union_spec::ClientId;
     use unionlabs::{
-        encoding::{EthAbi, Json},
+        encoding::{Bincode, EthAbi, Json},
         test_utils::assert_codec_iso_bytes,
     };
 
@@ -235,16 +235,49 @@ mod tests {
     }
 
     #[test]
-    fn v2_json() {
-        // TODO: UPDATE THIS WHEN A CLIENT EXISTS
-        // voyager rpc client-state 11155111 5 --height 8363356
-        let json = r#"{"l2_chain_id":"atlantic-2","l1_client_id":1,"l2_client_id":6,"l2_latest_height":1024673,"v2":{"store_key":"0x65766d","key_prefix_storage":"0x03ee4ea8d358473f0fcebf0329feed95d56e8c04d7"}}"#;
+    fn v1_bincode() {
+        // voyager rpc client-state xion-testnet-2 5 --height 3801975
+        let bz = hex!(
+            "0a00000000000000"                           // l2_chain_id length
+            "61746c616e7469632d32"                       // l2_chain_id
+            "01000000"                                   // l1_client_id
+            "0e000000"                                   // l2_client_id
+            "9572560a00000000"                           // l2_latest_height
+            "01000000"                                   // version 1
+            "0300000000000000"                           // store_key length
+            "65766d"                                     // store_key
+            "1500000000000000"                           // key_prefix_storage length
+            "03ee4ea8d358473f0fcebf0329feed95d56e8c04d7" // key_prefix_storage
+        );
 
         let value = state_lens_light_client_types::ClientState::<Extra> {
             l2_chain_id: "atlantic-2".to_string(),
             l1_client_id: ClientId!(1),
-            l2_client_id: ClientId!(6),
-            l2_latest_height: 1024673,
+            l2_client_id: ClientId!(14),
+            l2_latest_height: 173437589,
+            extra: Extra::V2(ExtraV2 {
+                store_key: b"evm".into(),
+                key_prefix_storage: hex!(
+                    "03"
+                    "ee4ea8d358473f0fcebf0329feed95d56e8c04d7"
+                )
+                .into(),
+            }),
+        };
+
+        assert_codec_iso_bytes::<_, Bincode>(&value, &bz);
+    }
+
+    #[test]
+    fn v2_json() {
+        // voyager rpc client-state xion-testnet-2 5 --height 3801975
+        let json = r#"{"l2_chain_id":"atlantic-2","l1_client_id":1,"l2_client_id":14,"l2_latest_height":173437589,"v2":{"store_key":"0x65766d","key_prefix_storage":"0x03ee4ea8d358473f0fcebf0329feed95d56e8c04d7"}}"#;
+
+        let value = state_lens_light_client_types::ClientState::<Extra> {
+            l2_chain_id: "atlantic-2".to_string(),
+            l1_client_id: ClientId!(1),
+            l2_client_id: ClientId!(14),
+            l2_latest_height: 173437589,
             extra: Extra::V2(ExtraV2 {
                 store_key: b"evm".into(),
                 key_prefix_storage: hex!(
