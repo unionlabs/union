@@ -56,42 +56,42 @@ function handleSave() {
     </div>
 
     <div class="space-y-2">
-      <Switch 
+      <Switch
         checked={tempShowQuoteTokens}
         label="Show quote tokens"
-        on:change={(e) => tempShowQuoteTokens = e.detail}
+        change={(value) => tempShowQuoteTokens = value}
       />
     </div>
 
     <div class="space-y-2">
-      <Switch 
+      <Switch
         checked={tempShowDeveloperChainDetails}
         label="Show developer chain details"
-        on:change={(e) => tempShowDeveloperChainDetails = e.detail}
+        change={(value) => tempShowDeveloperChainDetails = value}
       />
     </div>
 
     <div class="space-y-2">
-      <Switch 
+      <Switch
         checked={tempMainnetOnly}
         label="Mainnet only (explorer)"
-        on:change={(e) => tempMainnetOnly = e.detail}
+        change={(value) => tempMainnetOnly = value}
       />
     </div>
 
     <div class="space-y-2">
-      <Switch 
+      <Switch
         checked={tempShowZeroBalances}
         label="Show zero balances"
-        on:change={(e) => tempShowZeroBalances = e.detail}
+        change={(value) => tempShowZeroBalances = value}
       />
     </div>
 
     <div class="space-y-2">
-      <Switch 
+      <Switch
         checked={tempShowDeveloperPages}
         label="Show developer pages"
-        on:change={(e) => tempShowDeveloperPages = e.detail}
+        change={(value) => tempShowDeveloperPages = value}
       />
     </div>
 

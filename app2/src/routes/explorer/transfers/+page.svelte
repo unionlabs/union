@@ -112,7 +112,7 @@ const onNextPage = async () => {
       <Switch
         checked={settingsStore.mainnetOnly}
         label="Mainnet Only"
-        on:change={(e) => {settingsStore.mainnetOnly = e.detail; initializeQuery()}}
+        change={(value) => {settingsStore.mainnetOnly = value; initializeQuery()}}
       />
     </div>
   </div>

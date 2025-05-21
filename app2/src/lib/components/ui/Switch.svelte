@@ -1,5 +1,4 @@
 <script lang="ts">
-import { createEventDispatcher } from "svelte"
 import type { HTMLButtonAttributes } from "svelte/elements"
 
 /**
@@ -12,11 +11,8 @@ type Props = HTMLButtonAttributes & {
   value?: string
   label?: string
   class?: string
+  change: (value: boolean) => void
 }
-
-const dispatch = createEventDispatcher<{
-  change: boolean
-}>()
 
 const {
   checked = false,
@@ -25,6 +21,7 @@ const {
   value = undefined,
   label = undefined,
   class: className = "",
+  change,
   ...rest
 }: Props = $props()
 
@@ -37,7 +34,6 @@ $effect(() => {
 })
 
 function handleClick(event: Event) {
-  // Prevent default behavior
   event.preventDefault()
 
   if (disabled) {
@@ -47,8 +43,7 @@ function handleClick(event: Event) {
   const newValue = !isChecked
   isChecked = newValue
 
-  // Dispatch the change event with the new value
-  dispatch("change", newValue)
+  change(newValue)
 }
 
 // Allow for custom styling while providing defaults
