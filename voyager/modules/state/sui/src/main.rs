@@ -1,7 +1,7 @@
 use std::fmt::Debug;
 
 use ibc_union_spec::{
-    path::StorePath, query::Query, ClientId, Connection, ConnectionState, IbcUnion,
+    path::StorePath, query::Query, Channel, ClientId, Connection, ConnectionState, IbcUnion
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -187,6 +187,21 @@ impl StateModuleServer<IbcUnion> for Module {
 
                 into_value(convert_connection(
                     ConnectionEnd::decode_as::<Bcs>(&res[0].0).unwrap(),
+                ))
+            }
+            StorePath::Channel(path) => {
+                let res = query
+                    .add_param(path.channel_id.raw())
+                    .call(self.ibc_contract, "get_channel")
+                    .await
+                    .unwrap();
+
+                if res.len() != 1 {
+                    panic!("expected a single encoded connection end")
+                }
+
+                into_value(convert_connection(
+                    Channel::decode_as::<Bcs>(&res[0].0).unwrap(),
                 ))
             }
             StorePath::ClientState(path) => {
