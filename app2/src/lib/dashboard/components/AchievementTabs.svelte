@@ -431,22 +431,18 @@ let sortedChains = $derived(
                 {@const availableRewards = chain.flatMap(a =>
             a.reward_achievements?.map(r => r.rewards) ?? []
           ).filter(r => {
-            if (!r || !Array.isArray(r)) {
+            if (!r) {
               return false
             }
-            return r.some(reward =>
-              !reward.cutoff || new Date(reward.cutoff) > new Date()
-            )
+            return !r.cutoff || new Date(r.cutoff) > new Date()
           })}
                 {@const earnedRewards = organizedChain.completed.flatMap(a =>
             a.reward_achievements?.map(r => r.rewards) ?? []
           ).filter(r => {
-            if (!r || !Array.isArray(r)) {
+            if (!r) {
               return false
             }
-            return r.some(reward =>
-              !reward.cutoff || new Date(reward.cutoff) > new Date()
-            )
+            return !r.cutoff || new Date(r.cutoff) > new Date()
           })}
                 <div class="flex flex-col gap-2 mt-2 pt-2 border-t border-zinc-800">
                   <!-- Chain Rewards -->
@@ -454,19 +450,17 @@ let sortedChains = $derived(
                     <div class="flex flex-col gap-1.5">
                       <div class="text-xs text-zinc-400">Available Rewards</div>
                       <div class="flex flex-wrap gap-2">
-                        {#each availableRewards as rewards}
-                          {#each rewards as reward}
-                            <div
-                              class="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800/50 text-xs font-medium text-neutral-300 hover:bg-zinc-800/80 transition-colors"
-                            >
-                              <span>{reward.title}</span>
-                              {#if reward.cutoff}
-                                <span class="text-[10px] text-zinc-400">
-                                  until {new Date(reward.cutoff).toLocaleDateString()}
-                                </span>
-                              {/if}
-                            </div>
-                          {/each}
+                        {#each availableRewards as reward}
+                          <div
+                            class="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800/50 text-xs font-medium text-neutral-300 hover:bg-zinc-800/80 transition-colors"
+                          >
+                            <span>{reward.title}</span>
+                            {#if reward.cutoff}
+                              <span class="text-[10px] text-zinc-400">
+                                until {new Date(reward.cutoff).toLocaleDateString()}
+                              </span>
+                            {/if}
+                          </div>
                         {/each}
                       </div>
                     </div>
@@ -477,19 +471,17 @@ let sortedChains = $derived(
                     <div class="flex flex-col gap-1.5">
                       <div class="text-xs text-zinc-400">Earned Rewards</div>
                       <div class="flex flex-wrap gap-2">
-                        {#each earnedRewards as rewards}
-                          {#each rewards as reward}
-                            <div
-                              class="flex items-center gap-1 px-2 py-1 rounded bg-accent/10 border border-accent/20 text-xs font-medium text-accent"
-                            >
-                              <span>{reward.title}</span>
-                              {#if reward.cutoff}
-                                <span class="text-[10px] text-accent/70">
-                                  until {new Date(reward.cutoff).toLocaleDateString()}
-                                </span>
-                              {/if}
-                            </div>
-                          {/each}
+                        {#each earnedRewards as reward}
+                          <div
+                            class="flex items-center gap-1 px-2 py-1 rounded bg-accent/10 border border-accent/20 text-xs font-medium text-accent"
+                          >
+                            <span>{reward.title}</span>
+                            {#if reward.cutoff}
+                              <span class="text-[10px] text-accent/70">
+                                until {new Date(reward.cutoff).toLocaleDateString()}
+                              </span>
+                            {/if}
+                          </div>
                         {/each}
                       </div>
                     </div>

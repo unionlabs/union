@@ -240,7 +240,7 @@ interface SubmitWalletVerificationInput {
   chainId: string
   message: string
   signature: string
-  selectedChains: Array<string | null>
+  selectedChains: Array<string | null> | null
 }
 
 export const submitWalletVerification = (

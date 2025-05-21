@@ -11,6 +11,7 @@ import type {
   ChainError,
   DashboardUnknownException,
   EmailLinkError,
+  ExperienceError,
   LeaderboardError,
   MissionError,
   ProviderLinkError,
@@ -38,6 +39,7 @@ interface Props {
     | ChainError
     | CategoryError
     | AccountError
+    | ExperienceError
   onClose?: () => void
 }
 
@@ -68,6 +70,7 @@ const getUserFriendlyMessage = pipe(
     ChainError: (x) => x.message || `Failed to ${x.operation} chain data. Please try again.`,
     CategoryError: (x) => x.message || `Failed to ${x.operation} category data. Please try again.`,
     AccountError: (x) => x.message || `Failed to ${x.operation} account. Please try again.`,
+    ExperienceError: (x) => x.message || `Failed to ${x.operation} experience. Please try again.`,
   }),
   Match.orElse(() => "An unexpected error occurred."),
 )

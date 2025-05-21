@@ -1,5 +1,4 @@
 import { browser } from "$app/environment"
-import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runSync } from "$lib/runtime.js"
 import { type ClientInit } from "@sveltejs/kit"
 import type { Handle } from "@sveltejs/kit"
@@ -56,6 +55,7 @@ export const init: ClientInit = async () => {
 const PROTECTED_PATHS = ["/dashboard"]
 
 export const handle: Handle = async ({ event, resolve }) => {
+  const dashboard = await import("$lib/dashboard/stores/user.svelte").then(x => x.dashboard)
   if (browser && PROTECTED_PATHS.some(path => event.url.pathname.startsWith(path))) {
     return Effect.runPromise(
       pipe(

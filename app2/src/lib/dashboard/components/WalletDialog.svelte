@@ -211,7 +211,7 @@ function add() {
       ),
     )
     yield* actionEffect
-  })
+  }) as Effect.Effect<void, unknown, never>
 
   runPromise(program)
 }

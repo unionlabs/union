@@ -32,48 +32,6 @@ const updateHighlightPosition = () => {
 
     // Check all navigation items to find the best match
     const allNavItems = document.querySelectorAll("[data-path]")
-    allNavItems.forEach(item => {
-      const itemPath = item.getAttribute("data-path")
-      if (
-        itemPath
-        && (page.url.pathname === itemPath
-          || (page.url.pathname.startsWith(`${itemPath}/`) && itemPath.length > bestMatchLength))
-      ) {
-        bestMatch = item as HTMLElement
-        bestMatchLength = itemPath.length
-      }
-    })
-
-    if (bestMatch) {
-      const rect = (bestMatch as HTMLElement).getBoundingClientRect()
-      highlightElement.style.top = `${rect.top}px`
-      highlightElement.style.left = `${rect.left}px`
-      highlightElement.style.width = `${rect.width}px`
-      highlightElement.style.height = `${rect.height}px`
-      highlightElement.style.opacity = "1"
-    } else {
-      highlightElement.style.opacity = "0"
-    }
-
-  // Check if current path is a subroute of the navigation item
-  // For example, /explorer/packets/123 should highlight /explorer/packets
-  if (path !== "/" && page.url.pathname.startsWith(`${path}/`)) {
-    return true
-  }
-
-  return false
-}
-
-let highlightElement: HTMLElement
-
-const updateHighlightPosition = () => {
-  if (page.url.pathname && highlightElement) {
-    // Find the best matching navigation item
-    let bestMatch: HTMLElement | null = null
-    let bestMatchLength = 0
-
-    // Check all navigation items to find the best match
-    const allNavItems = document.querySelectorAll("[data-path]")
     allNavItems.forEach((item) => {
       const itemPath = item.getAttribute("data-path")
       if (
@@ -180,7 +138,6 @@ onMount(() => {
 
                   {#if item.subroutes && item.subroutes.length > 0}
                     <ul class="flex flex-col border-zinc-800 gap-1 pt-2 border-l-1 ml-5 pl-2">
-
                       {#each item.subroutes as subroute}
                         {#if !subroute.editions
                   || subroute.editions.includes(uiStore.activeEdition)}

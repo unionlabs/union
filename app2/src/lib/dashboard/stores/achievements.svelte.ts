@@ -2,10 +2,30 @@ import { runFork, runPromise } from "$lib/runtime"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
 import type { Entity } from "../client"
 import { AchievementError } from "../errors"
-import { getAvailableAchievements, getUserAchievements } from "../queries/index"
+import {
+  type Achievement as QueryAchievement,
+  getAvailableAchievements,
+  getUserAchievements,
+} from "../queries/index"
 import { errorStore } from "../stores/errors.svelte"
 
-export type Achievement = Entity<"achievements">
+export type Achievement = QueryAchievement & {
+  category?: { title: string } | null
+  subcategory?: { title: string } | null
+  reward_achievements?: {
+    rewards: {
+      created_at: string
+      cutoff: string | null
+      default_handled: boolean
+      default_requires_handling: boolean
+      description: string | null
+      id: number
+      meta: any
+      title: string | null
+      type: number | null
+    }
+  }[]
+}
 
 export type UserAchievement = Entity<"user_achievements">
 

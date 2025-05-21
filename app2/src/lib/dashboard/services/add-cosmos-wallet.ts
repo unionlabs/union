@@ -14,24 +14,16 @@ import type { Hash } from "viem"
 
 const allegianceMessage =
   "I'm signing this message to prove account ownership and to pledge allegiance to zkgm."
+
 export class WalletVerificationError extends Data.TaggedError("WalletVerificationError")<{
   cause: unknown
   operation: "switchChain" | "sign" | "verify" | "update"
 }> {}
 
 export type AddCosmosWalletState = Data.TaggedEnum<{
-  SwitchChain: {
-    chain: Chain
-  }
-  Signing: {
-    chain: Chain
-  }
-  Verifying: {
-    address: string
-    chain: Chain
-    signature: Hash
-    message: string
-  }
+  SwitchChain: { chain: Chain }
+  Signing: { chain: Chain }
+  Verifying: { address: string; chain: Chain; signature: Hash; message: string }
   Updating: {}
 }>
 
@@ -65,48 +57,51 @@ const complete = (): StateResult => ({
 export const addCosmosWallet = (
   state: AddCosmosWalletState,
   selectedChains: Array<string | null>,
-) => {
+): Effect.Effect<StateResult, never, never> => {
   return AddCosmosWalletState.$match(state, {
-    SwitchChain: ({ chain }) => {
-      return pipe(
+    SwitchChain: ({ chain }) =>
+      pipe(
         switchChain(chain),
         Effect.map(() => ok(Signing({ chain }), "Chain switched successfully")),
         Effect.catchAll((error) =>
-          Effect.fail(
-            new WalletVerificationError({
-              cause: extractErrorDetails(error),
-              operation: "switchChain",
-            }),
+          Effect.succeed(
+            fail(
+              "Failed to switch chain",
+              new WalletVerificationError({
+                cause: extractErrorDetails(error),
+                operation: "switchChain",
+              }),
+            ),
           )
         ),
-        Effect.match({
-          onFailure: (error) => fail("Failed to switch chain", error),
-          onSuccess: (result) => result,
-        }),
-      )
-    },
+      ),
+
     Signing: ({ chain }) => {
       const connectedWalletId = cosmosStore.connectedWallet
 
       if (!connectedWalletId) {
-        return fail(
-          "No Cosmos wallet selected. Please connect a wallet.",
-          new WalletVerificationError({
-            cause: "No connected Cosmos wallet ID",
-            operation: "sign",
-          }),
+        return Effect.succeed(
+          fail(
+            "No Cosmos wallet selected. Please connect a wallet.",
+            new WalletVerificationError({
+              cause: "No connected Cosmos wallet ID",
+              operation: "sign",
+            }),
+          ),
         )
       }
 
       const wallet = window[connectedWalletId as CosmosWalletId]
 
       if (!wallet) {
-        return fail(
-          `Selected Cosmos wallet (${connectedWalletId}) not found. Please try reconnecting.`,
-          new WalletVerificationError({
-            cause: `Wallet instance for ${connectedWalletId} not found on window`,
-            operation: "sign",
-          }),
+        return Effect.succeed(
+          fail(
+            `Selected Cosmos wallet (${connectedWalletId}) not found. Please try reconnecting.`,
+            new WalletVerificationError({
+              cause: `Wallet instance for ${connectedWalletId} not found on window`,
+              operation: "sign",
+            }),
+          ),
         )
       }
 
@@ -128,31 +123,33 @@ export const addCosmosWallet = (
           )
         ),
         Effect.catchAll((error) =>
-          Effect.fail(
-            new WalletVerificationError({
-              cause: extractErrorDetails(error),
-              operation: "sign",
-            }),
+          Effect.succeed(
+            fail(
+              "Failed to sign message. Please try again.",
+              new WalletVerificationError({
+                cause: extractErrorDetails(error),
+                operation: "sign",
+              }),
+            ),
           )
         ),
-        Effect.match({
-          onFailure: (error) => fail("Failed to sign message. Please try again.", error),
-          onSuccess: (result) => result,
-        }),
       )
     },
-    Verifying: ({ address, chain, signature, message }) => {
-      return pipe(
+
+    Verifying: ({ address, chain, signature, message }) =>
+      pipe(
         getSupabaseClient(),
-        Effect.flatMap(client => Effect.tryPromise(() => client.auth.refreshSession())),
+        Effect.flatMap((client) => Effect.tryPromise(() => client.auth.refreshSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
             return Effect.fail(
               new SupabaseError({
                 cause: "No authenticated user found",
+                operation: "authVerification",
               }),
             )
           }
+
           return submitWalletVerification({
             id: session.user.id,
             address,
@@ -162,7 +159,7 @@ export const addCosmosWallet = (
             selectedChains,
           })
         }),
-        Effect.flatMap(response => {
+        Effect.flatMap((response) => {
           if (Option.isNone(response)) {
             return Effect.fail(
               new WalletVerificationError({
@@ -171,10 +168,11 @@ export const addCosmosWallet = (
               }),
             )
           }
+
           return Effect.succeed(response.value)
         }),
         Effect.flatMap(() => getSupabaseClient()),
-        Effect.flatMap(client => Effect.tryPromise(() => client.auth.getSession())),
+        Effect.flatMap((client) => Effect.tryPromise(() => client.auth.getSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
             return Effect.fail(
@@ -184,26 +182,26 @@ export const addCosmosWallet = (
               }),
             )
           }
+
           return Effect.succeed(ok(Updating(), "Wallet verified. Updating data..."))
         }),
         Effect.catchAll((error) =>
-          Effect.fail(
-            new WalletVerificationError({
-              cause: extractErrorDetails(error),
-              operation: "verify",
-            }),
+          Effect.succeed(
+            fail(
+              "Failed to verify wallet. Please try again.",
+              new WalletVerificationError({
+                cause: extractErrorDetails(error),
+                operation: "verify",
+              }),
+            ),
           )
         ),
-        Effect.match({
-          onFailure: (error) => fail("Failed to verify wallet. Please try again.", error),
-          onSuccess: (result) => result,
-        }),
-      )
-    },
-    Updating: () => {
-      return pipe(
+      ),
+
+    Updating: () =>
+      pipe(
         getSupabaseClient(),
-        Effect.flatMap(client => Effect.tryPromise(() => client.auth.getSession())),
+        Effect.flatMap((client) => Effect.tryPromise(() => client.auth.getSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
             return Effect.fail(
@@ -213,9 +211,10 @@ export const addCosmosWallet = (
               }),
             )
           }
+
           return pipe(
             clearLocalStorageCacheEntry("wallets", `${CACHE_VERSION}:${session.user.id}`),
-            Effect.mapError(error =>
+            Effect.mapError((error) =>
               new WalletVerificationError({
                 cause: extractErrorDetails(error),
                 operation: "update",
@@ -231,18 +230,16 @@ export const addCosmosWallet = (
           )
         }),
         Effect.catchAll((error) =>
-          Effect.fail(
-            new WalletVerificationError({
-              cause: extractErrorDetails(error),
-              operation: "update",
-            }),
+          Effect.succeed(
+            fail(
+              "Failed to update wallet data",
+              new WalletVerificationError({
+                cause: extractErrorDetails(error),
+                operation: "update",
+              }),
+            ),
           )
         ),
-        Effect.match({
-          onFailure: (error) => fail("Failed to update wallet data", error),
-          onSuccess: (result) => result,
-        }),
-      )
-    },
+      ),
   })
 }
