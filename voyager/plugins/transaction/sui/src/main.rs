@@ -11,16 +11,20 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
-    rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions, SuiTypeTag}, types::{
+    rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions, SuiTypeTag},
+    types::{
         base_types::{ObjectID, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
-        transaction::{Argument, CallArg, Command, ObjectArg, Transaction, TransactionData, TransactionKind},
+        transaction::{
+            Argument, CallArg, Command, ObjectArg, Transaction, TransactionData, TransactionKind,
+        },
         Identifier,
-    }, SuiClient, SuiClientBuilder
+    },
+    SuiClient, SuiClientBuilder,
 };
-use tracing::{debug, info, instrument};
+use tracing::{info, instrument};
 use unionlabs::{
     primitives::{encoding::HexPrefixed, Bytes},
     ErrorReporter,
@@ -222,11 +226,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         // create the transaction data that will be sent to the network.
                         //
-                        let msgs = process_msgs(
-                            self,
-                            msgs.clone(),
-                        )
-                        .await;
+                        let msgs = process_msgs(self, msgs.clone(), sender).await;
 
                         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -325,6 +325,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 async fn process_msgs(
     module: &Module,
     msgs: Vec<Datagram>,
+    fee_recipient: SuiAddress,
 ) -> Vec<(SuiAddress, Datagram, Identifier, Identifier, Vec<CallArg>)> {
     let mut data = vec![];
     for msg in msgs {
@@ -452,7 +453,7 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.version).unwrap()),
                     ],
                 )
-            },
+            }
             Datagram::ChannelOpenTry(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
@@ -475,7 +476,9 @@ async fn process_msgs(
                             mutable: true,
                         }),
                         CallArg::Pure(bcs::to_bytes(&data.channel.connection_id).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.channel.counterparty_channel_id).unwrap()),
+                        CallArg::Pure(
+                            bcs::to_bytes(&data.channel.counterparty_channel_id).unwrap(),
+                        ),
                         CallArg::Pure(bcs::to_bytes(&data.channel.counterparty_port_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.channel.version).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.counterparty_version).unwrap()),
@@ -483,16 +486,16 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                     ],
                 )
-            },
+            }
             Datagram::ChannelOpenAck(data) => {
                 let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
-                
+
                 let res = query
                     .add_param(data.channel_id.raw())
                     .call(module.ibc_handler_address.into(), "get_port_id")
                     .await
                     .unwrap();
-                
+
                 if res.len() != 1 {
                     panic!("expected a single encoded connection end")
                 }
@@ -523,16 +526,16 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
                     ],
                 )
-            },
+            }
             Datagram::ChannelOpenConfirm(data) => {
                 let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
-                
+
                 let res = query
                     .add_param(data.channel_id.raw())
                     .call(module.ibc_handler_address.into(), "get_port_id")
                     .await
                     .unwrap();
-                
+
                 if res.len() != 1 {
                     panic!("expected a single encoded connection end")
                 }
@@ -558,7 +561,82 @@ async fn process_msgs(
                         }),
                         CallArg::Pure(bcs::to_bytes(&data.channel_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
-                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap())
+                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                    ],
+                )
+            }
+            Datagram::PacketRecv(data) => {
+                let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
+
+                let res = query
+                    .add_param(data.packets[0].destination_channel_id.raw())
+                    .call(module.ibc_handler_address.into(), "get_port_id")
+                    .await
+                    .unwrap();
+
+                if res.len() != 1 {
+                    panic!("expected a single encoded connection end")
+                }
+
+                let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
+
+                let module_info = port_id.split("::").collect::<Vec<&str>>();
+                if module_info.len() != 3 {
+                    panic!("invalid port id");
+                }
+
+                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+
+                let (
+                    source_channels,
+                    dest_channels,
+                    packet_data,
+                    timeout_heights,
+                    timeout_timestamps,
+                ) = data
+                    .packets
+                    .iter()
+                    .map(|p| {
+                        (
+                            p.source_channel_id,
+                            p.destination_channel_id,
+                            p.data.clone(),
+                            p.timeout_height,
+                            p.timeout_timestamp,
+                        )
+                    })
+                    .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
+
+                (
+                    addr,
+                    msg,
+                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new("recv_packet").unwrap(),
+                    vec![
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: module.ibc_store.into(),
+                            initial_shared_version: module.ibc_store_initial_seq,
+                            mutable: true,
+                        }),
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: ObjectID::from_str("0xabb3475a06c67d42a3b380de38e9bc1f04557ad46a43d797a46c5425b81db09b").unwrap(),
+                            initial_shared_version: 349179545.into(),
+                            mutable: true,
+                        }),
+                        CallArg::Object(ObjectArg::SharedObject {
+                            id: ObjectID::from_str("0x6").unwrap(),
+                            initial_shared_version: 1.into(),
+                            mutable: false,
+                        }),
+                        CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
                     ],
                 )
             }
@@ -569,7 +647,6 @@ async fn process_msgs(
 
     data
 }
-
 
 struct SuiQuery<'a> {
     client: &'a SuiClient,
