@@ -36,15 +36,15 @@ onMount(() => {
   runFork$(chainsQuery(ENV()))
   runFork$(channelsQuery())
 
-  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keya"], () => {
+  keyboardShortcuts.addShortcut(["ctrl", "option", "shift", "keya"], () => {
     uiStore.overrideEdition = "app"
   })
 
-  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyb"], () => {
+  keyboardShortcuts.addShortcut(["ctrl", "option", "shift", "keyb"], () => {
     uiStore.overrideEdition = "btc"
   })
 
-  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyf"], () => {
+  keyboardShortcuts.addShortcut(["ctrl", "option", "shift", "keyf"], () => {
     uiStore.filterWhitelist = !uiStore.filterWhitelist
   })
 })
