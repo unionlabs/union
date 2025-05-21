@@ -10,7 +10,7 @@ use state_lens_ics23_ics23_light_client_types::{client_state::Extra, ClientState
 use tracing::{info, instrument};
 use unionlabs::{
     ibc::core::client::height::Height,
-    primitives::{encoding::Base64, Bytes, H256},
+    primitives::{encoding::Base64, H256},
     ErrorReporter,
 };
 use voyager_message::{
