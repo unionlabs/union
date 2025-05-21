@@ -760,6 +760,27 @@ impl VoyagerClient {
         })
     }
 
+    pub async fn decode_consensus_state<V: IbcSpec, T: DeserializeOwned>(
+        &self,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        consensus_state_bytes: Bytes,
+    ) -> RpcResult<T> {
+        let consensus_state = self
+            .0
+            .decode_consensus_state(client_type, ibc_interface, V::ID, consensus_state_bytes)
+            .await
+            .map_err(json_rpc_error_to_error_object)?;
+
+        serde_json::from_value(consensus_state).map_err(|e| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                ErrorReporter(e).with_message("error decoding client state from json value"),
+                None::<()>,
+            )
+        })
+    }
+
     pub async fn query<Q: IbcQuery>(&self, chain_id: ChainId, query: Q) -> RpcResult<Q::Value> {
         self.0
             .query(

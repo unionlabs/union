@@ -7,8 +7,8 @@ use cosmwasm_std::{
 use ibc_union_msg::{
     lightclient::QueryMsg as LightClientQueryMsg,
     msg::{
-        ExecuteMsg, MsgChannelOpenInit, MsgConnectionOpenConfirm, MsgConnectionOpenInit,
-        MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
+        ExecuteMsg, MsgChannelOpenAck, MsgChannelOpenInit, MsgConnectionOpenConfirm,
+        MsgConnectionOpenInit, MsgConnectionOpenTry, MsgCreateClient, MsgRegisterClient,
     },
 };
 use ibc_union_spec::{ClientId, ConnectionId};
@@ -128,6 +128,23 @@ fn channel_open_init(deps: DepsMut) -> Result<Response, ContractError> {
         mock_env(),
         message_info(&mock_addr(SENDER), &[]),
         ExecuteMsg::ChannelOpenInit(msg),
+    )
+}
+
+fn channel_open_ack(deps: DepsMut) -> Result<Response, ContractError> {
+    let msg = MsgChannelOpenAck {
+        channel_id: ChannelId!(1),
+        counterparty_version: VERSION.to_owned(),
+        counterparty_channel_id: ChannelId!(1),
+        proof_try: vec![1].into(),
+        proof_height: 1,
+        relayer: mock_addr(RELAYER).to_string(),
+    };
+    execute(
+        deps,
+        mock_env(),
+        message_info(&mock_addr(SENDER), &[]),
+        ExecuteMsg::ChannelOpenAck(msg),
     )
 }
 

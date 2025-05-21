@@ -1,3 +1,5 @@
+use std::collections::BTreeSet;
+
 use tracing::info;
 use voyager_primitives::{ChainId, ClientType};
 use voyager_vm::Visit;
@@ -69,13 +71,23 @@ impl<F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> Visit<VoyagerMessage> for Up
 
 /// A hook for a plugin that handles [`SubmitTx`] messages.
 pub struct SubmitTxHook<'a, F: for<'b> Fn(&'b SubmitTx) -> Call> {
-    chain_id: &'a ChainId,
+    chain_ids: BTreeSet<&'a ChainId>,
     mk_msg: F,
 }
 
 impl<'a, F: for<'b> Fn(&'b SubmitTx) -> Call> SubmitTxHook<'a, F> {
     pub fn new(chain_id: &'a ChainId, mk_msg: F) -> Self {
-        Self { chain_id, mk_msg }
+        Self {
+            chain_ids: [chain_id].into_iter().collect(),
+            mk_msg,
+        }
+    }
+
+    pub fn new_many(chain_ids: impl Iterator<Item = &'a ChainId>, mk_msg: F) -> Self {
+        Self {
+            chain_ids: chain_ids.collect(),
+            mk_msg,
+        }
     }
 }
 
@@ -103,7 +115,7 @@ impl SubmitTxHook<'_, for<'b> fn(&'b SubmitTx) -> Call> {
 impl<F: for<'b> Fn(&'b SubmitTx) -> Call> Visit<VoyagerMessage> for SubmitTxHook<'_, F> {
     fn visit_call(&mut self, c: &mut Call) {
         match c {
-            Call::SubmitTx(submit_tx) if submit_tx.chain_id == self.chain_id => {
+            Call::SubmitTx(submit_tx) if self.chain_ids.contains(&submit_tx.chain_id) => {
                 info!(
                     "hooking for transaction submission on `{}`",
                     submit_tx.chain_id
