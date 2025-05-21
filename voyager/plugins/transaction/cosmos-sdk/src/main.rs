@@ -183,6 +183,14 @@ impl Plugin for Module {
 
         let chain_id = rpc.client().status().await?.node_info.network.to_string();
 
+        if chain_id != config.chain_id.as_str() {
+            return Err(format!(
+                "incorrect chain id: expected `{}`, but found `{}`",
+                config.chain_id, chain_id
+            )
+            .into());
+        }
+
         let bech32_prefix = rpc
             .client()
             .grpc_abci_query::<_, protos::cosmos::auth::v1beta1::Bech32PrefixResponse>(
