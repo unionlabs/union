@@ -12,7 +12,7 @@
   let value: Option<string>
   ```
 
-- Never use `try {} catch {}` blocks. always use Effect. When dealing with unsafe functions from libraries, use `Effect.tryPromie(() => somePromiseFn())`
+- Never use `try {} catch {}` blocks. always use Effect. When dealing with unsafe functions from libraries, use `Effect.tryPromise(() => somePromiseFn())`
 
 - Do NOT do `Option.isSome(Option.fromNullable(T))` if `T` is already an `Option` type
 

@@ -27,9 +27,9 @@ These links are only valid if you run a local ethereum devnet on an x86 machine.
 > The addresses are different because we often redeploy without upgrading when a storage breaking update is pushed.
 > Production contracts will get solely upgraded through the proxy and have the same addresses across networks.
 
-All the deployed contracts are upgradeable proxies forwarding calls the the underlying implementation.
+All the deployed contracts are upgradeable proxies forwarding calls to the underlying implementation.
 
-We use a a special contract called deployer in order to generate deterministic addresses that don't include the initcode in the derivation, see deploy https://github.com/Vectorized/solady/blob/e6ad61c844d6392910bdd21d39a33b3d668fc987/src/utils/CREATE3.sol#L63.
+We use a special contract called deployer in order to generate deterministic addresses that don't include the initcode in the derivation, see deploy https://github.com/Vectorized/solady/blob/e6ad61c844d6392910bdd21d39a33b3d668fc987/src/utils/CREATE3.sol#L63.
 
 This deployer contract will be pre-deployed on all EVM networks where we deploy the IBC stack.
 

@@ -18,7 +18,7 @@ We evaluate the need for a PR based on:
 
 ## Working on a PR
 
-Make sure to check the ARCHITECTURE.md document to get a feel for the repository structure. It explains our build system more in-depth. If you want to run approximately the same tests as CI does, run `nix flake check`. For this, you will need to install [nix](https://zero-to-nix.com/start/install).
+Make sure to check the [ARCHITECTURE.md](./ARCHITECTURE.md) document to get a feel for the repository structure. It explains our build system more in-depth. If you want to run approximately the same tests as CI does, run `nix flake check`. For this, you will need to install [nix](https://zero-to-nix.com/start/install).
 
 > \[!IMPORTANT\]
 > Currently, only nix versions \<=2.18 or >=2.25 work reliably in our repository. If you're on macOS using an orbstack NixOS vm, be sure to create it with NixOS 24.05 as it ships with nix 2.18. NixOS 24.11 ships with nix 2.24, which breaks certain workflows in our repository.
