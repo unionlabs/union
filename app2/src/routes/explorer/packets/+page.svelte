@@ -5,7 +5,7 @@ import {
   packetListPageGtQuery,
   packetListPageLtQuery
 } from "$lib/queries/packet-list.svelte"
-import { Effect, Option, Schema } from "effect"
+import { Effect, Option } from "effect"
 import { onMount } from "svelte"
 import { packetList } from "$lib/stores/packets.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
@@ -15,55 +15,36 @@ import { chains } from "$lib/stores/chains.svelte"
 import PacketListPagination from "$lib/components/ui/PacketListPagination.svelte"
 import { page } from "$app/state"
 import { goto } from "$app/navigation"
-import { SortOrder } from "@unionlabs/sdk/schema"
 
 import { settingsStore } from "$lib/stores/settings.svelte"
 import PacketListItemComponent from "$lib/components/model/PacketListItemComponent.svelte"
 import PacketListItemComponentSkeleton from "$lib/components/model/PacketListItemComponentSkeleton.svelte"
+import Switch from "$lib/components/ui/Switch.svelte"
 
-onMount(() => {
+const initializeQuery = async () => {
   const pageParam = page.url.searchParams.get("page")
+  let effect: Effect.Effect<any>
 
-  const initializeQuery = async () => {
-    let effect: Effect.Effect<any>
-
-    if (pageParam) {
-      try {
-        if (pageParam.startsWith("-")) {
-          // Greater-than query (prev page)
-          const rawSortOrder = pageParam.substring(1)
-          // Validate that the sort order is valid
-          const parsedSortOrder = Schema.decodeSync(SortOrder)(rawSortOrder, {
-            errors: "all",
-            onExcessProperty: "ignore"
-          })
-
-          effect = packetListPageGtQuery(parsedSortOrder, settingsStore.pageLimit)
-        } else {
-          // Less-than query (next page)
-          // Validate that the sort order is valid
-          const parsedSortOrder = Schema.decodeSync(SortOrder)(pageParam, {
-            errors: "all",
-            onExcessProperty: "ignore"
-          })
-
-          effect = packetListPageLtQuery(parsedSortOrder, settingsStore.pageLimit)
-        }
-      } catch (error) {
-        console.error("Invalid sort order in URL:", error)
-        // Fall back to latest if the sort order is invalid
-        effect = packetListLatestQuery(settingsStore.pageLimit)
-        // Remove invalid page param from URL
-        goto("?", { replaceState: true })
-      }
+  if (pageParam) {
+    if (pageParam.startsWith("-")) {
+      // Greater-than query (prev page)
+      const sortOrder = pageParam.substring(1)
+      // @ts-ignore sortOrder is not strictly a SortOrder, but this is desired behavior
+      effect = packetListPageGtQuery(sortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly)
     } else {
-      // No page param, load latest
-      effect = packetListLatestQuery(settingsStore.pageLimit)
+      // Less-than query (next page)
+      // @ts-ignore pageParam is not strictly a SortOrder, but this is desired behavior
+      effect = packetListPageLtQuery(pageParam, settingsStore.pageLimit, settingsStore.mainnetOnly)
     }
-
-    await packetList.runEffect(effect)
+  } else {
+    // No page param, load latest
+    effect = packetListLatestQuery(settingsStore.pageLimit, settingsStore.mainnetOnly)
   }
 
+  await packetList.runEffect(effect)
+}
+
+onMount(() => {
   initializeQuery()
 
   return () => {
@@ -73,7 +54,7 @@ onMount(() => {
 
 const onLive = async () => {
   if (Option.isSome(packetList.data)) {
-    await packetList.runEffect(packetListLatestQuery(settingsStore.pageLimit))
+    await packetList.runEffect(packetListLatestQuery(settingsStore.pageLimit, settingsStore.mainnetOnly))
     // Remove page param from URL
     goto("?", { replaceState: true })
   }
@@ -83,20 +64,9 @@ const onPrevPage = async () => {
   if (Option.isSome(packetList.data)) {
     let firstSortOrder = packetList.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
-
-    // Validate that the sort order is valid
-    try {
-      const parsedSortOrder = Schema.decodeSync(SortOrder)(firstSortOrder, {
-        errors: "all",
-        onExcessProperty: "ignore"
-      })
-
-      await packetList.runEffect(packetListPageGtQuery(parsedSortOrder, settingsStore.pageLimit))
-      // Update URL with the new page param, prefixed with '-' for greater-than queries
-      goto(`?page=-${parsedSortOrder}`, { replaceState: true })
-    } catch (error) {
-      console.error("Invalid sort order:", error)
-    }
+    await packetList.runEffect(packetListPageGtQuery(firstSortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly))
+    // Update URL with the new page param, prefixed with '-' for greater-than queries
+    goto(`?page=-${firstSortOrder}`, { replaceState: true })
   }
 }
 
@@ -104,20 +74,9 @@ const onNextPage = async () => {
   if (Option.isSome(packetList.data)) {
     let lastSortOrder = packetList.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
-
-    // Validate that the sort order is valid
-    try {
-      const parsedSortOrder = Schema.decodeSync(SortOrder)(lastSortOrder, {
-        errors: "all",
-        onExcessProperty: "ignore"
-      })
-
-      await packetList.runEffect(packetListPageLtQuery(parsedSortOrder, settingsStore.pageLimit))
-      // Update URL with the new page param (no prefix for less-than queries)
-      goto(`?page=${parsedSortOrder}`, { replaceState: true })
-    } catch (error) {
-      console.error("Invalid sort order:", error)
-    }
+    await packetList.runEffect(packetListPageLtQuery(lastSortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly))
+    // Update URL with the new page param (no prefix for less-than queries)
+    goto(`?page=${lastSortOrder}`, { replaceState: true })
   }
 }
 </script>
@@ -142,10 +101,19 @@ const onNextPage = async () => {
       {/each}
     {/if}
   </Card>
-  <PacketListPagination 
-    data={packetList.data}
-    {onLive}
-    {onPrevPage}
-    {onNextPage}
-  />
+  <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+    <PacketListPagination 
+      data={packetList.data}
+      {onLive}
+      {onPrevPage}
+      {onNextPage}
+    />
+    <div class="flex items-center gap-2">
+      <Switch
+        checked={settingsStore.mainnetOnly}
+        label="Mainnet Only"
+        change={(value) => {settingsStore.mainnetOnly = value; initializeQuery()}}
+      />
+    </div>
+  </div>
 </Sections>

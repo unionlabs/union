@@ -8,14 +8,15 @@ import { graphql } from "gql.tada"
 
 export const LIMIT = 10
 
-export let packetListLatestQuery = (limit = LIMIT) =>
+export let packetListLatestQuery = (limit = LIMIT, mainnetOnly = false) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_packets: PacketList }),
     document: graphql(
       `
-    query PacketsLatest($limit: Int!) @cached(ttl: 1) {
+    query PacketsLatest($limit: Int!, $network: String) @cached(ttl: 1) {
       v2_packets(args: {
-        p_limit: $limit
+        p_limit: $limit,
+        p_network: $network
       }) {
       ...PacketListItem
       }
@@ -23,7 +24,10 @@ export let packetListLatestQuery = (limit = LIMIT) =>
   `,
       [packetListItemFragment],
     ),
-    variables: { limit },
+    variables: { 
+      limit,
+      network: mainnetOnly ? "mainnet" : null
+    },
     refetchInterval: "1 second",
     writeData: data => {
       packetList.data = data.pipe(Option.map(d => d.v2_packets))
@@ -33,17 +37,18 @@ export let packetListLatestQuery = (limit = LIMIT) =>
     },
   })
 
-export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
+export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT, mainnetOnly = false) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_packets: PacketList }),
     document: graphql(
       `
-    query PacketsPage($page: String!, $limit: Int!)
+    query PacketsPage($page: String!, $limit: Int!, $network: String)
     @cached(ttl: 30) {
       v2_packets(args: {
         p_limit: $limit,
-        p_sort_order: $page
-        p_comparison: "lt"
+        p_sort_order: $page,
+        p_comparison: "lt",
+        p_network: $network
       }) {
       ...PacketListItem
       }
@@ -51,7 +56,11 @@ export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) 
   `,
       [packetListItemFragment],
     ),
-    variables: { page, limit },
+    variables: { 
+      page, 
+      limit,
+      network: mainnetOnly ? "mainnet" : null
+    },
     refetchInterval: "30 seconds",
     writeData: data => {
       packetList.data = data.pipe(Option.map(d => d.v2_packets))
@@ -61,16 +70,17 @@ export let packetListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) 
     },
   })
 
-export let packetListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
+export let packetListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT, mainnetOnly = false) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_packets: PacketList }),
     document: graphql(
       `
-    query PacketsPage($page: String!, $limit: Int!) @cached(ttl: 30) {
+    query PacketsPage($page: String!, $limit: Int!, $network: String) @cached(ttl: 30) {
       v2_packets(args: {
         p_limit: $limit,
         p_sort_order: $page,
-        p_comparison: "gt"
+        p_comparison: "gt",
+        p_network: $network
       }) {
       ...PacketListItem
       }
@@ -78,7 +88,11 @@ export let packetListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT) 
   `,
       [packetListItemFragment],
     ),
-    variables: { page, limit },
+    variables: { 
+      page, 
+      limit,
+      network: mainnetOnly ? "mainnet" : null
+    },
     refetchInterval: "30 seconds",
     writeData: data => {
       packetList.data = data.pipe(Option.map(d => d.v2_packets.toReversed()))
