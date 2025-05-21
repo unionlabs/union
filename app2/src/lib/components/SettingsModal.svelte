@@ -3,6 +3,7 @@ import { settingsStore } from "$lib/stores/settings.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Button from "./ui/Button.svelte"
 import Modal from "./ui/Modal.svelte"
+import Switch from "./ui/Switch.svelte"
 
 type Props = {
   isOpen: boolean
@@ -55,58 +56,43 @@ function handleSave() {
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempShowQuoteTokens}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Show quote tokens</span>
-      </label>
+      <Switch 
+        checked={tempShowQuoteTokens}
+        label="Show quote tokens"
+        on:click={() => tempShowQuoteTokens = !tempShowQuoteTokens}
+      />
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempShowDeveloperChainDetails}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Show developer chain details</span>
-      </label>
+      <Switch 
+        checked={tempShowDeveloperChainDetails}
+        label="Show developer chain details"
+        on:click={() => tempShowDeveloperChainDetails = !tempShowDeveloperChainDetails}
+      />
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempMainnetOnly}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Mainnet only (explorer)</span>
-      </label>
+      <Switch 
+        checked={tempMainnetOnly}
+        label="Mainnet only (explorer)"
+        on:click={() => tempMainnetOnly = !tempMainnetOnly}
+      />
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempShowZeroBalances}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Show zero balances</span>
-      </label>
+      <Switch 
+        checked={tempShowZeroBalances}
+        label="Show zero balances"
+        on:click={() => tempShowZeroBalances = !tempShowZeroBalances}
+      />
     </div>
 
     <div class="space-y-2">
-      <label class="flex items-center space-x-2">
-        <input
-          type="checkbox"
-          bind:checked={tempShowDeveloperPages}
-          class="form-checkbox"
-        />
-        <span class="text-sm font-medium">Show developer pages</span>
-      </label>
+      <Switch 
+        checked={tempShowDeveloperPages}
+        label="Show developer pages"
+        on:click={() => tempShowDeveloperPages = !tempShowDeveloperPages}
+      />
     </div>
 
     <div class="flex justify-start gap-2 pt-4">

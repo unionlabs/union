@@ -18,6 +18,7 @@ import { goto } from "$app/navigation"
 import { settingsStore } from "$lib/stores/settings.svelte"
 import TransferListItemComponent from "$lib/components/model/TransferListItemComponent.svelte"
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
+import Switch from "$lib/components/ui/Switch.svelte"
 
 onMount(() => {
   const pageParam = page.url.searchParams.get("page")
@@ -81,6 +82,7 @@ const onNextPage = async () => {
 </script>
 
 <Sections>
+
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferList.error)}
       <ErrorComponent error={transferList.error.value}/>
@@ -100,22 +102,19 @@ const onNextPage = async () => {
       {/each}
     {/if}
   </Card>
-  <TransferListPagination 
-    data={transferList.data}
-    {onLive}
-    {onPrevPage}
-    {onNextPage}
-  />
-  <div class="flex justify-between items-center mb-2">
+  <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+    <TransferListPagination 
+      data={transferList.data}
+      {onLive}
+      {onPrevPage}
+      {onNextPage}
+    />
     <div class="flex items-center space-x-2">
-      <label class="flex items-center gap-2 text-sm">
-        <input
-          type="checkbox"
-          bind:checked={settingsStore.mainnetOnly}
-          class="form-checkbox"
-        />
-        <span>Mainnet Only</span>
-      </label>
+      <Switch
+        checked={settingsStore.mainnetOnly}
+        label="Mainnet Only"
+        on:click={() => settingsStore.mainnetOnly = !settingsStore.mainnetOnly}
+      />
     </div>
   </div>
 </Sections>
