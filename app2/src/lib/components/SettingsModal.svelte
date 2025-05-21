@@ -59,7 +59,7 @@ function handleSave() {
       <Switch 
         checked={tempShowQuoteTokens}
         label="Show quote tokens"
-        on:click={() => tempShowQuoteTokens = !tempShowQuoteTokens}
+        on:change={(e) => tempShowQuoteTokens = e.detail}
       />
     </div>
 
@@ -67,7 +67,7 @@ function handleSave() {
       <Switch 
         checked={tempShowDeveloperChainDetails}
         label="Show developer chain details"
-        on:click={() => tempShowDeveloperChainDetails = !tempShowDeveloperChainDetails}
+        on:change={(e) => tempShowDeveloperChainDetails = e.detail}
       />
     </div>
 
@@ -75,7 +75,7 @@ function handleSave() {
       <Switch 
         checked={tempMainnetOnly}
         label="Mainnet only (explorer)"
-        on:click={() => tempMainnetOnly = !tempMainnetOnly}
+        on:change={(e) => tempMainnetOnly = e.detail}
       />
     </div>
 
@@ -83,7 +83,7 @@ function handleSave() {
       <Switch 
         checked={tempShowZeroBalances}
         label="Show zero balances"
-        on:click={() => tempShowZeroBalances = !tempShowZeroBalances}
+        on:change={(e) => tempShowZeroBalances = e.detail}
       />
     </div>
 
@@ -91,7 +91,7 @@ function handleSave() {
       <Switch 
         checked={tempShowDeveloperPages}
         label="Show developer pages"
-        on:click={() => tempShowDeveloperPages = !tempShowDeveloperPages}
+        on:change={(e) => tempShowDeveloperPages = e.detail}
       />
     </div>
 

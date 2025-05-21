@@ -20,31 +20,30 @@ import TransferListItemComponent from "$lib/components/model/TransferListItemCom
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 import Switch from "$lib/components/ui/Switch.svelte"
 
-onMount(() => {
+const initializeQuery = async () => {
   const pageParam = page.url.searchParams.get("page")
+  let effect: Effect.Effect<any>
 
-  const initializeQuery = async () => {
-    let effect: Effect.Effect<any>
-
-    if (pageParam) {
-      if (pageParam.startsWith("-")) {
-        // Greater-than query (prev page)
-        const sortOrder = pageParam.substring(1)
-        // @ts-ignore sorOrder is not strictly a SortOrder, but this is desired behavior
-        effect = transferListPageGtQuery(sortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly)
-      } else {
-        // Less-than query (next page)
-        // @ts-ignore pageParam is not strictly a SortOrder, but this is desired behavior
-        effect = transferListPageLtQuery(pageParam, settingsStore.pageLimit, settingsStore.mainnetOnly)
-      }
+  if (pageParam) {
+    if (pageParam.startsWith("-")) {
+      // Greater-than query (prev page)
+      const sortOrder = pageParam.substring(1)
+      // @ts-ignore sorOrder is not strictly a SortOrder, but this is desired behavior
+      effect = transferListPageGtQuery(sortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly)
     } else {
-      // No page param, load latest
-      effect = transferListLatestQuery(settingsStore.pageLimit, settingsStore.mainnetOnly)
+      // Less-than query (next page)
+      // @ts-ignore pageParam is not strictly a SortOrder, but this is desired behavior
+      effect = transferListPageLtQuery(pageParam, settingsStore.pageLimit, settingsStore.mainnetOnly)
     }
-
-    await transferList.runEffect(effect)
+  } else {
+    // No page param, load latest
+    effect = transferListLatestQuery(settingsStore.pageLimit, settingsStore.mainnetOnly)
   }
 
+  await transferList.runEffect(effect)
+}
+
+onMount(() => {
   initializeQuery()
 
   return () => {
@@ -109,11 +108,11 @@ const onNextPage = async () => {
       {onPrevPage}
       {onNextPage}
     />
-    <div class="flex items-center space-x-2">
+    <div class="flex items-center gap-2">
       <Switch
         checked={settingsStore.mainnetOnly}
         label="Mainnet Only"
-        on:click={() => settingsStore.mainnetOnly = !settingsStore.mainnetOnly}
+        on:change={(e) => {settingsStore.mainnetOnly = e.detail; initializeQuery()}}
       />
     </div>
   </div>
