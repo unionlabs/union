@@ -132,6 +132,87 @@ enum cursor_ordering {
   DESC
 }
 
+input dashboard_balance_current_args {
+  p_contract_address_canonical: String
+  p_phase: String
+  p_universal_chain_id: String
+  p_wallet_addresses_canonical: jsonb
+}
+
+"""
+columns and relationships of "dashboard.balance_current_type"
+"""
+type dashboard_balance_current_type {
+  balance: String
+  balance_usd: String
+  contract_address_canonical: String
+  token: String
+  universal_chain_id: String
+  wallet_address_canonical: String
+  weighted_balance: String
+  weighted_balance_usd: String
+}
+
+"""
+Boolean expression to filter rows from the table "dashboard.balance_current_type". All fields are combined with a logical 'AND'.
+"""
+input dashboard_balance_current_type_bool_exp {
+  _and: [dashboard_balance_current_type_bool_exp!]
+  _not: dashboard_balance_current_type_bool_exp
+  _or: [dashboard_balance_current_type_bool_exp!]
+  balance: String_comparison_exp
+  balance_usd: String_comparison_exp
+  contract_address_canonical: String_comparison_exp
+  token: String_comparison_exp
+  universal_chain_id: String_comparison_exp
+  wallet_address_canonical: String_comparison_exp
+  weighted_balance: String_comparison_exp
+  weighted_balance_usd: String_comparison_exp
+}
+
+"""
+Ordering options when selecting data from "dashboard.balance_current_type".
+"""
+input dashboard_balance_current_type_order_by {
+  balance: order_by
+  balance_usd: order_by
+  contract_address_canonical: order_by
+  token: order_by
+  universal_chain_id: order_by
+  wallet_address_canonical: order_by
+  weighted_balance: order_by
+  weighted_balance_usd: order_by
+}
+
+"""
+select columns of table "dashboard.balance_current_type"
+"""
+enum dashboard_balance_current_type_select_column {
+  """column name"""
+  balance
+
+  """column name"""
+  balance_usd
+
+  """column name"""
+  contract_address_canonical
+
+  """column name"""
+  token
+
+  """column name"""
+  universal_chain_id
+
+  """column name"""
+  wallet_address_canonical
+
+  """column name"""
+  weighted_balance
+
+  """column name"""
+  weighted_balance_usd
+}
+
 """
 columns and relationships of "dashboard.count_by_chain_type"
 """
@@ -331,6 +412,31 @@ enum order_by {
 }
 
 type query_root {
+  """
+  execute function "dashboard.balance_current" which returns "dashboard.balance_current_type"
+  """
+  dashboard_balance_current(
+    """
+    input parameters for function "dashboard_balance_current"
+    """
+    args: dashboard_balance_current_args
+
+    """distinct select on columns"""
+    distinct_on: [dashboard_balance_current_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [dashboard_balance_current_type_order_by!]
+
+    """filter the rows returned"""
+    where: dashboard_balance_current_type_bool_exp
+  ): [dashboard_balance_current_type!]!
+
   """
   execute function "dashboard.transfer_count_by_chain" which returns "dashboard.count_by_chain_type"
   """
@@ -541,6 +647,31 @@ type query_root {
     """filter the rows returned"""
     where: v2_health_check_type_bool_exp
   ): [v2_health_check_type!]!
+
+  """
+  execute function "v2.instructions" which returns "v2.instruction_type"
+  """
+  v2_instructions(
+    """
+    input parameters for function "v2_instructions"
+    """
+    args: v2_instructions_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_instruction_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_instruction_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_instruction_type_bool_exp
+  ): [v2_instruction_type!]!
 
   """
   execute function "v2.packets" which returns "v2.packet_type"
@@ -840,6 +971,31 @@ type query_root {
 
 type subscription_root {
   """
+  execute function "dashboard.balance_current" which returns "dashboard.balance_current_type"
+  """
+  dashboard_balance_current(
+    """
+    input parameters for function "dashboard_balance_current"
+    """
+    args: dashboard_balance_current_args
+
+    """distinct select on columns"""
+    distinct_on: [dashboard_balance_current_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [dashboard_balance_current_type_order_by!]
+
+    """filter the rows returned"""
+    where: dashboard_balance_current_type_bool_exp
+  ): [dashboard_balance_current_type!]!
+
+  """
   execute function "dashboard.transfer_count_by_chain" which returns "dashboard.count_by_chain_type"
   """
   dashboard_transfer_count_by_chain(
@@ -1062,6 +1218,31 @@ type subscription_root {
     """filter the rows returned"""
     where: v2_health_check_type_bool_exp
   ): [v2_health_check_type!]!
+
+  """
+  execute function "v2.instructions" which returns "v2.instruction_type"
+  """
+  v2_instructions(
+    """
+    input parameters for function "v2_instructions"
+    """
+    args: v2_instructions_args
+
+    """distinct select on columns"""
+    distinct_on: [v2_instruction_type_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [v2_instruction_type_order_by!]
+
+    """filter the rows returned"""
+    where: v2_instruction_type_bool_exp
+  ): [v2_instruction_type!]!
 
   """
   execute function "v2.packets" which returns "v2.packet_type"
@@ -1729,6 +1910,7 @@ type v2_chain_type {
     where: v2_chain_features_bool_exp
   ): [v2_chain_features!]!
   logo_uri: String
+  minter_address_display: String
   rpc_type: String
 
   """An array relationship"""
@@ -1786,6 +1968,7 @@ input v2_chain_type_bool_exp {
   explorers: v2_explorers_bool_exp
   features: v2_chain_features_bool_exp
   logo_uri: String_comparison_exp
+  minter_address_display: String_comparison_exp
   rpc_type: String_comparison_exp
   rpcs: v2_rpcs_bool_exp
   status: v2_chain_status_type_bool_exp
@@ -1802,6 +1985,7 @@ input v2_chain_type_order_by {
   explorers_aggregate: v2_explorers_aggregate_order_by
   features_aggregate: v2_chain_features_aggregate_order_by
   logo_uri: order_by
+  minter_address_display: order_by
   rpc_type: order_by
   rpcs_aggregate: v2_rpcs_aggregate_order_by
   status_aggregate: v2_chain_status_type_aggregate_order_by
@@ -1824,6 +2008,9 @@ enum v2_chain_type_select_column {
 
   """column name"""
   logo_uri
+
+  """column name"""
+  minter_address_display
 
   """column name"""
   rpc_type
@@ -1893,6 +2080,7 @@ type v2_channel_type {
   destination_connection_id: Int
   destination_port_id: String
   destination_universal_chain_id: String
+  sla: String
   sort_order: String
 
   """An object relationship"""
@@ -1919,6 +2107,7 @@ input v2_channel_type_bool_exp {
   destination_connection_id: Int_comparison_exp
   destination_port_id: String_comparison_exp
   destination_universal_chain_id: String_comparison_exp
+  sla: String_comparison_exp
   sort_order: String_comparison_exp
   source_chain: v2_chains_view_bool_exp
   source_channel_id: Int_comparison_exp
@@ -1938,6 +2127,7 @@ input v2_channel_type_order_by {
   destination_connection_id: order_by
   destination_port_id: order_by
   destination_universal_chain_id: order_by
+  sla: order_by
   sort_order: order_by
   source_chain: v2_chains_view_order_by
   source_channel_id: order_by
@@ -1967,6 +2157,9 @@ enum v2_channel_type_select_column {
 
   """column name"""
   destination_universal_chain_id
+
+  """column name"""
+  sla
 
   """column name"""
   sort_order
@@ -2375,6 +2568,400 @@ enum v2_health_check_type_select_column {
 }
 
 """
+columns and relationships of "v2.instruction_type"
+"""
+type v2_instruction_type {
+  acknowledgement: String
+  channel_version: String
+  data: String
+  decoded(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  decoded_flattened(
+    """JSON select path"""
+    path: String
+  ): jsonb
+
+  """An object relationship"""
+  destination_chain: v2_chains_view
+  destination_chain_id: String
+  destination_channel_id: Int
+  destination_client_id: Int
+  destination_connection_id: Int
+  destination_port_id: String
+  destination_universal_chain_id: String
+  instruction(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  instruction_hash: String
+  instruction_index: String
+  instruction_path: String
+  instruction_type: String
+  opcode: Int
+  operand(
+    """JSON select path"""
+    path: String
+  ): jsonb
+  packet_ack_block_hash: String
+  packet_ack_height: String
+  packet_ack_maker: String
+  packet_ack_timestamp: timestamptz
+  packet_ack_transaction_hash: String
+  packet_hash: String
+  packet_recv_block_hash: String
+  packet_recv_height: String
+  packet_recv_maker: String
+  packet_recv_maker_msg: String
+  packet_recv_timestamp: timestamptz
+  packet_recv_transaction_hash: String
+  packet_send_block_hash: String
+  packet_send_height: String
+  packet_send_timestamp: timestamptz
+  packet_send_transaction_hash: String
+  packet_timeout_block_hash: String
+  packet_timeout_height: String
+  packet_timeout_maker: String
+  packet_timeout_timestamp: timestamptz
+  packet_timeout_transaction_hash: String
+  path: String
+  salt: String
+  sort_order: String
+
+  """An object relationship"""
+  source_chain: v2_chains_view
+  source_channel_id: Int
+  source_client_id: Int
+  source_connection_id: Int
+  source_port_id: String
+  source_universal_chain_id: String
+  status: String
+  success: Boolean
+  timeout_height: String
+  timeout_timestamp: String
+  version: Int
+  write_ack_block_hash: String
+  write_ack_height: String
+  write_ack_timestamp: timestamptz
+  write_ack_transaction_hash: String
+}
+
+"""
+Boolean expression to filter rows from the table "v2.instruction_type". All fields are combined with a logical 'AND'.
+"""
+input v2_instruction_type_bool_exp {
+  _and: [v2_instruction_type_bool_exp!]
+  _not: v2_instruction_type_bool_exp
+  _or: [v2_instruction_type_bool_exp!]
+  acknowledgement: String_comparison_exp
+  channel_version: String_comparison_exp
+  data: String_comparison_exp
+  decoded: jsonb_comparison_exp
+  decoded_flattened: jsonb_comparison_exp
+  destination_chain: v2_chains_view_bool_exp
+  destination_chain_id: String_comparison_exp
+  destination_channel_id: Int_comparison_exp
+  destination_client_id: Int_comparison_exp
+  destination_connection_id: Int_comparison_exp
+  destination_port_id: String_comparison_exp
+  destination_universal_chain_id: String_comparison_exp
+  instruction: jsonb_comparison_exp
+  instruction_hash: String_comparison_exp
+  instruction_index: String_comparison_exp
+  instruction_path: String_comparison_exp
+  instruction_type: String_comparison_exp
+  opcode: Int_comparison_exp
+  operand: jsonb_comparison_exp
+  packet_ack_block_hash: String_comparison_exp
+  packet_ack_height: String_comparison_exp
+  packet_ack_maker: String_comparison_exp
+  packet_ack_timestamp: timestamptz_comparison_exp
+  packet_ack_transaction_hash: String_comparison_exp
+  packet_hash: String_comparison_exp
+  packet_recv_block_hash: String_comparison_exp
+  packet_recv_height: String_comparison_exp
+  packet_recv_maker: String_comparison_exp
+  packet_recv_maker_msg: String_comparison_exp
+  packet_recv_timestamp: timestamptz_comparison_exp
+  packet_recv_transaction_hash: String_comparison_exp
+  packet_send_block_hash: String_comparison_exp
+  packet_send_height: String_comparison_exp
+  packet_send_timestamp: timestamptz_comparison_exp
+  packet_send_transaction_hash: String_comparison_exp
+  packet_timeout_block_hash: String_comparison_exp
+  packet_timeout_height: String_comparison_exp
+  packet_timeout_maker: String_comparison_exp
+  packet_timeout_timestamp: timestamptz_comparison_exp
+  packet_timeout_transaction_hash: String_comparison_exp
+  path: String_comparison_exp
+  salt: String_comparison_exp
+  sort_order: String_comparison_exp
+  source_chain: v2_chains_view_bool_exp
+  source_channel_id: Int_comparison_exp
+  source_client_id: Int_comparison_exp
+  source_connection_id: Int_comparison_exp
+  source_port_id: String_comparison_exp
+  source_universal_chain_id: String_comparison_exp
+  status: String_comparison_exp
+  success: Boolean_comparison_exp
+  timeout_height: String_comparison_exp
+  timeout_timestamp: String_comparison_exp
+  version: Int_comparison_exp
+  write_ack_block_hash: String_comparison_exp
+  write_ack_height: String_comparison_exp
+  write_ack_timestamp: timestamptz_comparison_exp
+  write_ack_transaction_hash: String_comparison_exp
+}
+
+"""Ordering options when selecting data from "v2.instruction_type"."""
+input v2_instruction_type_order_by {
+  acknowledgement: order_by
+  channel_version: order_by
+  data: order_by
+  decoded: order_by
+  decoded_flattened: order_by
+  destination_chain: v2_chains_view_order_by
+  destination_chain_id: order_by
+  destination_channel_id: order_by
+  destination_client_id: order_by
+  destination_connection_id: order_by
+  destination_port_id: order_by
+  destination_universal_chain_id: order_by
+  instruction: order_by
+  instruction_hash: order_by
+  instruction_index: order_by
+  instruction_path: order_by
+  instruction_type: order_by
+  opcode: order_by
+  operand: order_by
+  packet_ack_block_hash: order_by
+  packet_ack_height: order_by
+  packet_ack_maker: order_by
+  packet_ack_timestamp: order_by
+  packet_ack_transaction_hash: order_by
+  packet_hash: order_by
+  packet_recv_block_hash: order_by
+  packet_recv_height: order_by
+  packet_recv_maker: order_by
+  packet_recv_maker_msg: order_by
+  packet_recv_timestamp: order_by
+  packet_recv_transaction_hash: order_by
+  packet_send_block_hash: order_by
+  packet_send_height: order_by
+  packet_send_timestamp: order_by
+  packet_send_transaction_hash: order_by
+  packet_timeout_block_hash: order_by
+  packet_timeout_height: order_by
+  packet_timeout_maker: order_by
+  packet_timeout_timestamp: order_by
+  packet_timeout_transaction_hash: order_by
+  path: order_by
+  salt: order_by
+  sort_order: order_by
+  source_chain: v2_chains_view_order_by
+  source_channel_id: order_by
+  source_client_id: order_by
+  source_connection_id: order_by
+  source_port_id: order_by
+  source_universal_chain_id: order_by
+  status: order_by
+  success: order_by
+  timeout_height: order_by
+  timeout_timestamp: order_by
+  version: order_by
+  write_ack_block_hash: order_by
+  write_ack_height: order_by
+  write_ack_timestamp: order_by
+  write_ack_transaction_hash: order_by
+}
+
+"""
+select columns of table "v2.instruction_type"
+"""
+enum v2_instruction_type_select_column {
+  """column name"""
+  acknowledgement
+
+  """column name"""
+  channel_version
+
+  """column name"""
+  data
+
+  """column name"""
+  decoded
+
+  """column name"""
+  decoded_flattened
+
+  """column name"""
+  destination_chain_id
+
+  """column name"""
+  destination_channel_id
+
+  """column name"""
+  destination_client_id
+
+  """column name"""
+  destination_connection_id
+
+  """column name"""
+  destination_port_id
+
+  """column name"""
+  destination_universal_chain_id
+
+  """column name"""
+  instruction
+
+  """column name"""
+  instruction_hash
+
+  """column name"""
+  instruction_index
+
+  """column name"""
+  instruction_path
+
+  """column name"""
+  instruction_type
+
+  """column name"""
+  opcode
+
+  """column name"""
+  operand
+
+  """column name"""
+  packet_ack_block_hash
+
+  """column name"""
+  packet_ack_height
+
+  """column name"""
+  packet_ack_maker
+
+  """column name"""
+  packet_ack_timestamp
+
+  """column name"""
+  packet_ack_transaction_hash
+
+  """column name"""
+  packet_hash
+
+  """column name"""
+  packet_recv_block_hash
+
+  """column name"""
+  packet_recv_height
+
+  """column name"""
+  packet_recv_maker
+
+  """column name"""
+  packet_recv_maker_msg
+
+  """column name"""
+  packet_recv_timestamp
+
+  """column name"""
+  packet_recv_transaction_hash
+
+  """column name"""
+  packet_send_block_hash
+
+  """column name"""
+  packet_send_height
+
+  """column name"""
+  packet_send_timestamp
+
+  """column name"""
+  packet_send_transaction_hash
+
+  """column name"""
+  packet_timeout_block_hash
+
+  """column name"""
+  packet_timeout_height
+
+  """column name"""
+  packet_timeout_maker
+
+  """column name"""
+  packet_timeout_timestamp
+
+  """column name"""
+  packet_timeout_transaction_hash
+
+  """column name"""
+  path
+
+  """column name"""
+  salt
+
+  """column name"""
+  sort_order
+
+  """column name"""
+  source_channel_id
+
+  """column name"""
+  source_client_id
+
+  """column name"""
+  source_connection_id
+
+  """column name"""
+  source_port_id
+
+  """column name"""
+  source_universal_chain_id
+
+  """column name"""
+  status
+
+  """column name"""
+  success
+
+  """column name"""
+  timeout_height
+
+  """column name"""
+  timeout_timestamp
+
+  """column name"""
+  version
+
+  """column name"""
+  write_ack_block_hash
+
+  """column name"""
+  write_ack_height
+
+  """column name"""
+  write_ack_timestamp
+
+  """column name"""
+  write_ack_transaction_hash
+}
+
+input v2_instructions_args {
+  p_block_hash: String
+  p_comparison: String
+  p_limit: Int
+  p_multiplex_contract_address: String
+  p_multiplex_sender: String
+  p_network: String
+  p_packet_hash: String
+  p_sort_order: String
+  p_transaction_hash: String
+}
+
+"""
 columns and relationships of "v2.packet_type"
 """
 type v2_packet_type {
@@ -2716,7 +3303,9 @@ input v2_packets_args {
   p_block_hash: String
   p_comparison: String
   p_destination_universal_chain_id: String
+  p_exceeding_sla: String
   p_limit: Int
+  p_network: String
   p_packet_hash: String
   p_packet_send_timestamp: timestamptz
   p_sort_order: String
@@ -4091,6 +4680,7 @@ input v2_transfers_args {
   p_comparison: String
   p_destination_universal_chain_id: String
   p_limit: Int
+  p_network: String
   p_packet_hash: String
   p_sort_order: String
   p_source_universal_chain_id: String
