@@ -8,14 +8,15 @@ import { graphql } from "gql.tada"
 
 export const LIMIT = 10
 
-export let transferListLatestQuery = (limit = LIMIT) =>
+export let transferListLatestQuery = (limit = LIMIT, mainnetOnly = false) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
-    query TransferListLatest($limit: Int!) @cached(ttl: 1) {
+    query TransferListLatest($limit: Int!, $network: String) @cached(ttl: 1) {
       v2_transfers(args: {
-        p_limit: $limit
+        p_limit: $limit,
+        p_network: $network
       }) {
       ...TransferListItem
       }
@@ -23,7 +24,10 @@ export let transferListLatestQuery = (limit = LIMIT) =>
   `,
       [transferListItemFragment],
     ),
-    variables: { limit },
+    variables: {
+      limit,
+      network: mainnetOnly ? "mainnet" : null,
+    },
     refetchInterval: "1 second",
     writeData: data => {
       transferList.data = data.pipe(Option.map(d => d.v2_transfers))
@@ -33,16 +37,21 @@ export let transferListLatestQuery = (limit = LIMIT) =>
     },
   })
 
-export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
+export let transferListPageLtQuery = (
+  page: typeof SortOrder.Type,
+  limit = LIMIT,
+  mainnetOnly = false,
+) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
-    query TransferListPage($page: String!, $limit: Int!)
+    query TransferListPage($page: String!, $limit: Int!, $network: String)
     @cached(ttl: 30) {
       v2_transfers(args: {
         p_limit: $limit,
-        p_sort_order: $page
+        p_sort_order: $page,
+        p_network: $network
       }) {
       ...TransferListItem
       }
@@ -50,7 +59,11 @@ export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT
   `,
       [transferListItemFragment],
     ),
-    variables: { page, limit },
+    variables: {
+      page,
+      limit,
+      network: mainnetOnly ? "mainnet" : null,
+    },
     refetchInterval: "30 seconds",
     writeData: data => {
       transferList.data = data.pipe(Option.map(d => d.v2_transfers))
@@ -60,16 +73,21 @@ export let transferListPageLtQuery = (page: typeof SortOrder.Type, limit = LIMIT
     },
   })
 
-export let transferListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT) =>
+export let transferListPageGtQuery = (
+  page: typeof SortOrder.Type,
+  limit = LIMIT,
+  mainnetOnly = false,
+) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_transfers: TransferList }),
     document: graphql(
       `
-    query TransferListPage($page: String!, $limit: Int!) @cached(ttl: 30) {
+    query TransferListPage($page: String!, $limit: Int!, $network: String) @cached(ttl: 30) {
       v2_transfers(args: {
         p_limit: $limit,
         p_sort_order: $page,
-        p_comparison: "gt"
+        p_comparison: "gt",
+        p_network: $network
       }) {
       ...TransferListItem
       }
@@ -77,7 +95,11 @@ export let transferListPageGtQuery = (page: typeof SortOrder.Type, limit = LIMIT
   `,
       [transferListItemFragment],
     ),
-    variables: { page, limit },
+    variables: {
+      page,
+      limit,
+      network: mainnetOnly ? "mainnet" : null,
+    },
     refetchInterval: "30 seconds",
     writeData: data => {
       transferList.data = data.pipe(Option.map(d => d.v2_transfers.toReversed()))

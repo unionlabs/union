@@ -30,15 +30,15 @@ onMount(() => {
         // Greater-than query (prev page)
         const sortOrder = pageParam.substring(1)
         // @ts-ignore sorOrder is not strictly a SortOrder, but this is desired behavior
-        effect = transferListPageGtQuery(sortOrder, settingsStore.pageLimit)
+        effect = transferListPageGtQuery(sortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly)
       } else {
         // Less-than query (next page)
         // @ts-ignore pageParam is not strictly a SortOrder, but this is desired behavior
-        effect = transferListPageLtQuery(pageParam, settingsStore.pageLimit)
+        effect = transferListPageLtQuery(pageParam, settingsStore.pageLimit, settingsStore.mainnetOnly)
       }
     } else {
       // No page param, load latest
-      effect = transferListLatestQuery(settingsStore.pageLimit)
+      effect = transferListLatestQuery(settingsStore.pageLimit, settingsStore.mainnetOnly)
     }
 
     await transferList.runEffect(effect)
@@ -53,7 +53,7 @@ onMount(() => {
 
 const onLive = async () => {
   if (Option.isSome(transferList.data)) {
-    await transferList.runEffect(transferListLatestQuery(settingsStore.pageLimit))
+    await transferList.runEffect(transferListLatestQuery(settingsStore.pageLimit, settingsStore.mainnetOnly))
     // Remove page param from URL
     goto("?", { replaceState: true })
   }
@@ -63,7 +63,7 @@ const onPrevPage = async () => {
   if (Option.isSome(transferList.data)) {
     let firstSortOrder = transferList.data.value.at(0)?.sort_order
     if (!firstSortOrder) return
-    await transferList.runEffect(transferListPageGtQuery(firstSortOrder, settingsStore.pageLimit))
+    await transferList.runEffect(transferListPageGtQuery(firstSortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly))
     // Update URL with the new page param, prefixed with '-' for greater-than queries
     goto(`?page=-${firstSortOrder}`, { replaceState: true })
   }
@@ -73,7 +73,7 @@ const onNextPage = async () => {
   if (Option.isSome(transferList.data)) {
     let lastSortOrder = transferList.data.value.at(-1)?.sort_order
     if (!lastSortOrder) return
-    await transferList.runEffect(transferListPageLtQuery(lastSortOrder, settingsStore.pageLimit))
+    await transferList.runEffect(transferListPageLtQuery(lastSortOrder, settingsStore.pageLimit, settingsStore.mainnetOnly))
     // Update URL with the new page param (no prefix for less-than queries)
     goto(`?page=${lastSortOrder}`, { replaceState: true })
   }
@@ -81,6 +81,19 @@ const onNextPage = async () => {
 </script>
 
 <Sections>
+  <div class="flex justify-between items-center mb-2">
+    <div class="flex items-center space-x-2">
+      <label class="flex items-center gap-2 text-sm">
+        <input
+          type="checkbox"
+          bind:checked={settingsStore.mainnetOnly}
+          class="form-checkbox"
+        />
+        <span>Mainnet Only</span>
+      </label>
+    </div>
+  </div>
+
   <Card class="overflow-auto" divided>
     {#if Option.isSome(transferList.error)}
       <ErrorComponent error={transferList.error.value}/>
