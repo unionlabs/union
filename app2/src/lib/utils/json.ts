@@ -25,7 +25,8 @@ export const safeStringifyJSON = (x: unknown): Effect.Effect<string, ParseResult
     }
 
     return yield* pipe(
-      S.parseJson({ replacer: replacer as any }),
+      // TODO: make spacing configurable
+      S.parseJson({ replacer: replacer as any, space: 2 }),
       S.encodeUnknown,
       apply(x),
     )

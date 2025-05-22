@@ -10,7 +10,7 @@ describe("JSON Utilities", () => {
         fc.object(),
         (obj) => {
           assert.strictEqual(
-            JSON.stringify(obj),
+            JSON.stringify(obj, null, 2),
             safeStringifyJSON(obj).pipe(Effect.runSync),
           )
         },
@@ -23,7 +23,7 @@ describe("JSON Utilities", () => {
         (obj) => {
           obj.circular = obj
           assert.throw(
-            () => JSON.stringify(obj),
+            () => JSON.stringify(obj, null, 2),
           )
           assert.doesNotThrow(
             () => safeStringifyJSON(obj).pipe(Effect.runSync),
@@ -41,7 +41,7 @@ describe("JSON Utilities", () => {
       // @ts-ignore
       obj["c"] = obj
       const f = flow(safeStringifyJSON, Effect.runSync)
-      const s = `{"a":0,"b":"b","c":"<circular>"}`
+      const s = `{\n  "a": 0,\n  "b": "b",\n  "c": "<circular>"\n}`
       expect(f(obj)).toStrictEqual(s)
     })
   })
