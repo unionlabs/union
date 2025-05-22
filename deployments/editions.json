@@ -13,6 +13,9 @@
       "ethereum.17000": {
         "environment": "production"
       },
+      "sei.1328": {
+        "environment": "staging"
+      },
       "xion.xion-testnet-2": {
         "environment": "production"
       }
