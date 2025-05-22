@@ -31,9 +31,8 @@ interface Props {
 let { children, data }: Props = $props()
 
 onMount(() => {
-  // Apply all edition-specific default settings
-  uiStore.edition = data.edition
-  settingsStore.setEditionDefaults(data.edition)
+  // TODO: removal contender given static assignment in `UiStore` constructor
+  settingsStore.setEditionDefaults(uiStore.edition)
 
   interceptLogos()
   runExample()
