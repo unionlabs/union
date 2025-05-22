@@ -1,6 +1,10 @@
 use enumorph::Enumorph;
+use ibc_union_spec::Packet;
 use macros::model;
 use sui_light_client_types::U64;
+use unionlabs::ibc;
+use unionlabs::{primitives::Bytes, tuple::AsTuple};
+use serde::Deserialize;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CreateClient {
@@ -84,6 +88,30 @@ pub struct ChannelOpenConfirm {
     pub connection_id: u32,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[cfg_attr(feature = "schemars", derive(schemars::JsonSchema))]
+#[cfg_attr(
+    feature = "serde",
+    derive(serde::Serialize, serde::Deserialize),
+    serde(rename_all = "snake_case", deny_unknown_fields)
+)]
+pub struct PacketMetadata {
+    pub source_channel_id: u32,
+    pub destination_channel_id: u32,
+    pub data: Vec<u8>,
+    pub timeout_height: u64,
+    pub timeout_timestamp: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PacketSend {
+    pub channel_id: u32,
+    pub packet_hash: Bytes,
+
+    pub packet: Packet,
+}
+
+
 #[model]
 #[derive(Enumorph)]
 pub enum IbcEvent {
@@ -99,7 +127,7 @@ pub enum IbcEvent {
     ChannelOpenConfirm(ChannelOpenConfirm),
     // WriteAcknowledgement(ibc::WriteAck),
     // RecvPacket(ibc::PacketRecv),
-    // SendPacket(ibc::PacketSend),
+    PacketSend(PacketSend)
     // AcknowledgePacket(ibc::PacketAck),
     // TimeoutPacket(ibc::TimeoutPacket),
 }

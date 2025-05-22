@@ -1,12 +1,11 @@
 use std::{cmp::Ordering, collections::VecDeque};
 
+use ibc_solidity::Connection;
 use ibc_union_spec::{
     event::{
-        ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionOpenAck,
-        ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, FullEvent,
-        UpdateClient,
-    },
-    ClientId, IbcUnion,
+        ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, FullEvent, PacketMetadata, PacketSend, UpdateClient
+    }, path::{ChannelPath, ConnectionPath}, ChannelId, ClientId, IbcUnion, Packet,
+    
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -25,7 +24,7 @@ use voyager_message::{
     filter::simple_take_filter,
     into_value,
     module::{PluginInfo, PluginServer},
-    primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
+    primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
     DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
 };
 use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
@@ -260,6 +259,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         (e.type_.address == self.ibc_handler_address.into()).then_some((e, hash))
                     })
                     .map(|(e, hash)| {
+                        println!("event: {e:?}");
                         let event = match e.type_.name.as_str() {
                             "CreateClient" => {
                                 let create_client: events::CreateClient =
@@ -310,6 +310,11 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 let channel_open: events::ChannelOpenConfirm =
                                     serde_json::from_value(e.parsed_json).unwrap();
                                 events::IbcEvent::ChannelOpenConfirm(channel_open)
+                            }
+                            "PacketSend" => {
+                                let channel_open: events::PacketSend =
+                                    serde_json::from_value(e.parsed_json).unwrap();
+                                events::IbcEvent::PacketSend(channel_open)
                             }
                             e => panic!("unknown: {e}"),
                         };
@@ -540,6 +545,62 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .into(),
                             client_id,
                         )
+                    }
+                    events::IbcEvent::PacketSend(event) => {
+                        // println!("packet send event: {event:?}");
+                        panic!("packet send event: {event:?}");
+                        // let packet_metadata: events::PacketMetadata = event.packet;
+
+                        // let voyager_client = e.try_get::<VoyagerClient>()?;
+                        // let channel = voyager_client
+                        //     .query_ibc_state(
+                        //         self.chain_id.clone(),
+                        //         QueryHeight::Specific(Height::new(height)),
+                        //         ibc_union_spec::path::ChannelPath {
+                        //             channel_id: packet_metadata.source_channel_id.try_into().unwrap(),
+                        //         },
+                        //     )
+                        //     .await?;
+
+
+
+                        // let connection = voyager_client
+                        //     .query_ibc_state(
+                        //         self.chain_id.clone(),
+                        //         QueryHeight::Specific(Height::new(height)),
+                        //         ibc_union_spec::path::ConnectionPath {
+                        //             connection_id: channel.connection_id.try_into().unwrap(),
+                        //         },
+                        //     )
+                        //     .await?;
+
+                        // let client_id = connection.client_id;
+                        // // let (
+                        // //     _counterparty_chain_id,
+                        // //     _client_info,
+                        // //     source_channel,
+                        // //     destination_channel,
+                        // // ) = self
+                        // //     .make_packet_metadata(
+                        // //         Height::new(height),
+                        // //         packet_metadata.source_channel.channel_id.try_into().unwrap(),
+                        // //         e.try_get()?,
+                        // //     )
+                        // //     .await?;
+                        
+                        // (
+                        //     PacketSend {
+                        //         packet_data: event.packet_data.into(),
+                        //         packet: PacketMetadata { 
+                        //             source_channel: packet_metadata.source_channel_id.try_into().unwrap(),
+                        //             destination_channel: packet_metadata.destination_channel_id.try_into().unwrap(),
+                        //             timeout_height: packet_metadata.timeout_height,
+                        //             timeout_timestamp: packet_metadata.timeout_timestamp,
+                        //         }
+                        //     }
+                        //     .into(),
+                        //     client_id,
+                        // )
                     }
                     _ => panic!("unknown"),
                 };
