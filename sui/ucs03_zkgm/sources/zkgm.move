@@ -641,6 +641,8 @@ module zkgm::zkgm_relay {
             ibc_store,
             clock,
             packets,
+            relayer,
+            relayer_msg,
             proof,
             proof_height,
             acks
@@ -923,7 +925,7 @@ module zkgm::zkgm_relay {
         };
         if(!relay_store.channel_balance.contains(pair)) {
             abort E_CHANNEL_BALANCE_PAIR_NOT_FOUND
-        }
+        };
         let channel_balance = *relay_store.channel_balance.borrow(pair);
         if (channel_balance < amount) {
             abort E_INVALID_AMOUNT
@@ -949,7 +951,7 @@ module zkgm::zkgm_relay {
             token: token
         };
 
-        let channel_balance = 0;
+        let mut channel_balance = 0;
         if(relay_store.channel_balance.contains(pair)) {
             channel_balance = *relay_store.channel_balance.borrow(pair);
         };
@@ -1099,7 +1101,7 @@ module zkgm::zkgm_relay {
         };
 
         
-        let origin = 0;    
+        let mut origin = 0;    
         if(relay_store.token_origin.contains(*base_token)) {
             origin = *relay_store.token_origin.borrow(*base_token);
         };
@@ -1208,7 +1210,8 @@ module zkgm::zkgm_relay {
             packets,
             acknowledgements,
             proof,
-            proof_height
+            proof_height,
+            relayer
         );
 
         let mut i = 0;
