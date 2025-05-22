@@ -1019,6 +1019,9 @@ module ibc::ibc {
         data: vector<u8>
     ): packet::Packet {
         // Check if the channel exists in the store
+        if(!ibc_store.channels.contains(source_channel)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
         let channel = *ibc_store.channels.borrow(source_channel);
         assert!(channel::state(&channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
