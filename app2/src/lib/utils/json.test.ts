@@ -44,5 +44,19 @@ describe("JSON Utilities", () => {
       const s = `{\n  "a": 0,\n  "b": "b",\n  "c": "<circular>"\n}`
       expect(f(obj)).toStrictEqual(s)
     })
+
+    it("halts on circular JSON with terminal identifier", () => {
+      const obj = { a: {}, b: {}, c: {} }
+      // @ts-ignore
+      obj.a.self = obj.a // a → a
+      // @ts-ignore
+      obj.b.ref = obj // b → root → b (cycle through root)
+      // @ts-ignore
+      obj.c.deep = { loop: obj.c } // c → deep → c
+      const f = flow(safeStringifyJSON, Effect.runSync)
+      const s =
+        `{\n  "a": {\n    "self": "<circular>"\n  },\n  "b": {\n    "ref": "<circular>"\n  },\n  "c": {\n    "deep": {\n      "loop": "<circular>"\n    }\n  }\n}`
+      expect(f(obj)).toStrictEqual(s)
+    })
   })
 })
