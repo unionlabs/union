@@ -95,8 +95,8 @@ export const addEvmWallet = (
         version: "1" as const,
         chainId: chain.id,
         nonce: Siwe.generateNonce(),
-        domain: "dashboard.union.build",
-        uri: "https://dashboard.union.build/wallet",
+        domain: "app.union.build",
+        uri: "https://app.union.build/dashboard/wallets",
         statement: "Sign this message to verify wallet ownership.",
       })
 

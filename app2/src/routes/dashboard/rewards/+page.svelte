@@ -12,13 +12,13 @@ let rewards = $derived(
     onSome: (store) => {
       // Get all rewards and sort them by status priority
       const allRewards = store.enhanced
+        // Filter to only show earned (handled) and claimed rewards
+        .filter(reward => reward.status === "handled" || reward.status === "claimed")
       return allRewards.sort((a, b) => {
         // Define status priority (higher number = higher priority)
         const statusPriority: Record<string, number> = {
           handled: 4, // Fully granted rewards
-          queued: 3, // Rewards being processed
           claimed: 2, // Rewards that have been claimed but not yet processed
-          available: 1, // Rewards that can be claimed
         }
 
         // First sort by status
