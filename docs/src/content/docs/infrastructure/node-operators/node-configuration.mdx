@@ -21,11 +21,11 @@ Located in `config/client.toml`, this file is host to client settings.
 
 Update this value to ensure that your client is supplied with the correct chain ID.
 
-For the Union Testnet, this value should be `"union-testnet-9"`.
+For the Union Testnet, this value should be `"union-testnet-10"`.
 
 ```toml
 # The network chain ID
-chain-id = "union-testnet-9"
+chain-id = "union-testnet-10"
 ```
 
 ### Host/Port for the Tendermint RPC
@@ -47,7 +47,7 @@ Located in `config/app.toml`, this file is host to app settings.
 
 Located under the "Base Configuration" section of `config/app.toml`.
 
-While optional, you may wish to ensure your node receives a minimum fee when processing transactions. Whatever you choose for this value, ensure it uses the correct denom. For the Union Testnet, the correct denom is `muno`.
+The [skip-mev/feemarket](https://github.com/skip-mev/feemarket/) module sets a global gas price/fee. To ensure consistency with the rest of the network, set this to `"0muno"`.
 
 ```toml
 # The minimum gas prices a validator is willing to accept for processing a
@@ -96,7 +96,7 @@ timeout_precommit_delta = "500ms"
 # How long we wait after committing a block, before starting on the new
 # height (this gives us a chance to receive some more precommits, even
 # though we already have +2/3).
-timeout_commit = "3s"  
+timeout_commit = "5s"  
 ```
 
 ### RPC Listening Address
@@ -139,18 +139,6 @@ If you've configured a domain name for your node, this is the place to inform yo
 # example: 159.89.10.97:26656
 external_address = "example.com:26656"
 ```
-
-### Seeds
-
-Located in the `p2p` TOML table under the "P2P Configuration Options" section.
-
-Seed nodes help orchestrate initial connections to the network. For union-testnet-9, the seed nodes are:
-
-<Code
-  lang='toml'
-  code={`seeds = "${chainVersion({ chainId: 'union-testnet-9' }).seeds}"`} 
-/>
-
 
 ### Seed Mode
 
