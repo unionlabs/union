@@ -220,6 +220,7 @@ pub enum IbcProofResponse {
 }
 
 impl IbcProofResponse {
+    /// Convert this proof response to a `Result`, returning an error if `self` is [`IbcProofResponse::NotAvailable`].
     pub fn into_result(self) -> RpcResult<IbcProof> {
         match self {
             Self::Proof(proof) => Ok(proof),
