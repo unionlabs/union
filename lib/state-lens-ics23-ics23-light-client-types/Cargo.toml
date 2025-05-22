@@ -13,6 +13,7 @@ workspace = true
 
 [dependencies]
 alloy                         = { workspace = true, optional = true, features = ["sol-types"] }
+bincode                       = { workspace = true, optional = true, features = ["alloc", "derive"] }
 ibc-union-spec                = { workspace = true }
 serde                         = { workspace = true, optional = true, features = ["derive"] }
 state-lens-light-client-types = { workspace = true }
@@ -21,11 +22,17 @@ unionlabs                     = { workspace = true }
 
 [dev-dependencies]
 hex-literal                               = { workspace = true }
-state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["ethabi", "serde"] }
+state-lens-ics23-ics23-light-client-types = { workspace = true, features = ["ethabi", "serde", "bincode"] }
 unionlabs                                 = { workspace = true, features = ["test-utils"] }
 
 [features]
 default = []
 
+bincode = [
+  "dep:bincode",
+  "unionlabs/bincode",
+  "state-lens-light-client-types/bincode",
+  "ibc-union-spec/bincode",
+]
 ethabi = ["dep:alloy", "unionlabs/ethabi", "state-lens-light-client-types/ethabi"]
-serde  = ["dep:serde", "ibc-union-spec/serde", "state-lens-light-client-types/serde"]
+serde = ["dep:serde", "ibc-union-spec/serde", "state-lens-light-client-types/serde"]

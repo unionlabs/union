@@ -25,6 +25,7 @@ use unionlabs::{
 
 pub mod codec;
 pub mod deployments;
+pub mod path;
 pub mod zkgm;
 
 pub const STYLE: Styles = Styles::styled()
@@ -69,6 +70,7 @@ pub enum Cmd {
     Zkgm(zkgm::Cmd),
     #[command(visible_alias = "d", subcommand)]
     Deployments(deployments::Cmd),
+    Path(path::Cmd),
     #[command(visible_alias = "h")]
     Hex {
         /// Decode data instead of encoding it.
@@ -138,6 +140,7 @@ async fn main() -> Result<()> {
         Cmd::Codec(cmd) => cmd.run(),
         Cmd::Zkgm(cmd) => cmd.run().await,
         Cmd::Deployments(cmd) => cmd.run(),
+        Cmd::Path(cmd) => cmd.run(),
         Cmd::Hex {
             decode,
             no_prefix,

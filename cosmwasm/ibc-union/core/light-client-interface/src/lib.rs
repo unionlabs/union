@@ -137,6 +137,7 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         value: Bytes,
     ) -> Result<(), IbcClientError<Client>> {
         let client_impl = client_impl(&*self.deps.querier, &self.ibc_host, client_id)?;
+
         self.deps.querier.query_wasm_smart::<()>(
             &client_impl,
             &(QueryMsg::VerifyMembership {
@@ -149,6 +150,20 @@ impl<'a, T: IbcClient> IbcClientCtx<'a, T> {
         )?;
 
         Ok(())
+    }
+
+    pub fn status<Client: IbcClient>(
+        &self,
+        client_id: ClientId,
+    ) -> Result<Status, IbcClientError<Client>> {
+        let client_impl = client_impl(&*self.deps.querier, &self.ibc_host, client_id)?;
+
+        let status = self
+            .deps
+            .querier
+            .query_wasm_smart::<Status>(&client_impl, &(QueryMsg::GetStatus { client_id }))?;
+
+        Ok(status)
     }
 }
 

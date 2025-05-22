@@ -15,7 +15,7 @@ use state_lens_light_client_types::Header;
 use tracing::instrument;
 use unionlabs::{
     self,
-    encoding::{Bcs, DecodeAs, EncodeAs, EthAbi},
+    encoding::{Bcs, Bincode, DecodeAs, EncodeAs, EthAbi},
     ibc::core::client::height::Height,
     primitives::Bytes,
     tuple::AsTuple,
@@ -42,6 +42,7 @@ async fn main() {
 pub enum SupportedIbcInterface {
     IbcSolidity,
     IbcMoveAptos,
+    IbcCosmwasm,
 }
 
 impl TryFrom<String> for SupportedIbcInterface {
@@ -52,6 +53,7 @@ impl TryFrom<String> for SupportedIbcInterface {
         match &*value {
             IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
             IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
+            IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
         }
     }
@@ -62,6 +64,7 @@ impl SupportedIbcInterface {
         match self {
             SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
             SupportedIbcInterface::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
+            SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
         }
     }
 }
@@ -134,6 +137,14 @@ impl Module {
                     None::<()>,
                 )
             }),
+            SupportedIbcInterface::IbcCosmwasm => ClientState::decode_as::<Bincode>(client_state)
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("unable to decode client state: {}", ErrorReporter(err)),
+                        None::<()>,
+                    )
+                }),
         }
     }
 
@@ -205,18 +216,23 @@ impl ClientModuleServer for Module {
                 )
             })
             .map(|cs| match self.ibc_interface {
-                SupportedIbcInterface::IbcMoveAptos => match cs.extra {
-                    Extra::V1(versioned_extra_v1) => state_lens_light_client_types::ClientState {
-                        l2_chain_id: cs.l2_chain_id,
-                        l1_client_id: cs.l1_client_id,
-                        l2_client_id: cs.l2_client_id,
-                        l2_latest_height: cs.l2_latest_height,
-                        extra: versioned_extra_v1,
+                SupportedIbcInterface::IbcMoveAptos => {
+                    #[allow(clippy::match_single_binding)]
+                    match cs.extra {
+                        // Extra::V1(versioned_extra_v1) => state_lens_light_client_types::ClientState {
+                        //     l2_chain_id: cs.l2_chain_id,
+                        //     l1_client_id: cs.l1_client_id,
+                        //     l2_client_id: cs.l2_client_id,
+                        //     l2_latest_height: cs.l2_latest_height,
+                        //     extra: versioned_extra_v1,
+                        // }
+                        // .as_tuple()
+                        // .encode_as::<Bcs>(),
+                        _ => todo!("figure out implementation for bcs"),
                     }
-                    .as_tuple()
-                    .encode_as::<Bcs>(),
-                },
+                }
                 SupportedIbcInterface::IbcSolidity => cs.encode_as::<EthAbi>(),
+                SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<Bincode>(),
             })
             .map(Into::into)
     }
@@ -255,6 +271,7 @@ impl ClientModuleServer for Module {
             .map(|header| match self.ibc_interface {
                 SupportedIbcInterface::IbcMoveAptos => header.encode_as::<Bcs>(),
                 SupportedIbcInterface::IbcSolidity => header.encode_as::<EthAbi>(),
+                SupportedIbcInterface::IbcCosmwasm => header.encode_as::<Bincode>(),
             })
             .map(Into::into)
     }
@@ -276,6 +293,7 @@ impl ClientModuleServer for Module {
         match self.ibc_interface {
             SupportedIbcInterface::IbcSolidity => Ok(encode_merkle_proof_for_evm(proof).into()),
             SupportedIbcInterface::IbcMoveAptos => Ok(encode_merkle_proof_for_move(proof).into()),
+            SupportedIbcInterface::IbcCosmwasm => Ok(proof.encode_as::<Bincode>().into()),
         }
     }
 }

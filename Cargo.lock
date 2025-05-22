@@ -12594,10 +12594,33 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a8f112729512f8e442d81f95a8a7ddf2b7c6b8a1a6f509a95864142b30cab2d3"
 
 [[package]]
+name = "state-lens-ics23-ics23-light-client"
+version = "0.0.0"
+dependencies = [
+ "cometbls-light-client",
+ "cosmwasm-std 2.2.2",
+ "embed-commit",
+ "frissitheto",
+ "hex-literal",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ibc-union-spec",
+ "ics23",
+ "serde",
+ "serde_json",
+ "state-lens-ics23-ics23-light-client-types",
+ "state-lens-light-client-types",
+ "tendermint-light-client-types",
+ "thiserror 2.0.12",
+ "unionlabs",
+]
+
+[[package]]
 name = "state-lens-ics23-ics23-light-client-types"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "bincode 2.0.1",
  "hex-literal",
  "ibc-union-spec",
  "serde",
