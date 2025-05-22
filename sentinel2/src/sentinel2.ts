@@ -163,7 +163,7 @@ export const triggerIncident = (
           console.error("⚠️ triggerIncident failed:", cause)
           return { data: { id: "" } }
         })
-      )
+      ),
     )
 
   if (isLocal) {
