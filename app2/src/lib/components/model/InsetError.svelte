@@ -2,8 +2,9 @@
 import SharpContentCopyIcon from "$lib/components/icons/SharpContentCopyIcon.svelte"
 import SharpDownloadIcon from "$lib/components/icons/SharpDownloadIcon.svelte"
 import Button from "$lib/components/ui/Button.svelte"
+import { safeStringifyJSON } from "$lib/utils/json"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
-import { String as Str } from "effect"
+import { Effect, flow, pipe, String as Str } from "effect"
 import { fade, fly } from "svelte/transition"
 
 type Props = {
@@ -15,9 +16,19 @@ const { error, open, onClose }: Props = $props()
 
 const errorDetails = $derived.by(() => (error ? extractErrorDetails(error) : null))
 
+const stringify = flow(
+  safeStringifyJSON,
+  Effect.runSync,
+)
+
+const stringifiedErrorDetails = $derived(pipe(
+  errorDetails,
+  stringify,
+))
+
 const writeToClipboard = () => {
   if (errorDetails) {
-    navigator.clipboard.writeText(JSON.stringify(errorDetails, null, 2))
+    navigator.clipboard.writeText(stringifiedErrorDetails)
   }
 }
 
@@ -26,7 +37,7 @@ const exportData = () => {
     return
   }
   const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "")
-  const data = JSON.stringify(errorDetails, null, 2)
+  const data = stringifiedErrorDetails
   const blob = new Blob([data], { type: "application/json" })
   const url = window.URL.createObjectURL(blob)
   const anchor = document.createElement("a")
@@ -51,7 +62,7 @@ const exportData = () => {
           <pre
             class="text-xs whitespace-pre-wrap break-all"
           >
-{Str.trim(JSON.stringify(errorDetails, null, 2))}
+{stringifiedErrorDetails}
           </pre>
         {:else}
           <p class="text-zinc-300">No error info available.</p>
