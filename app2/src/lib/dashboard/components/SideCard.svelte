@@ -45,7 +45,7 @@ onDestroy(() => {
 })
 </script>
 
-{#if uiStore.activeEdition === "app"}
+{#if uiStore.edition === "app"}
   {#if Option.isSome(dashboard.user)}
     <div class="relative">
       {#if isNewUser}

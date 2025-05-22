@@ -94,7 +94,7 @@ onMount(() => {
         src="/images/union-logo.svg"
         alt="Union"
       />
-      {#key uiStore.activeEdition}
+      {#key uiStore.edition}
         <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">
           {uiStore.theme.label}
         </div>
@@ -140,7 +140,7 @@ onMount(() => {
                     <ul class="flex flex-col border-zinc-800 gap-1 pt-2 border-l-1 ml-5 pl-2">
                       {#each item.subroutes as subroute}
                         {#if !subroute.editions
-                  || subroute.editions.includes(uiStore.activeEdition)}
+                  || subroute.editions.includes(uiStore.edition)}
                           <li>
                             <a
                               href={subroute.path}

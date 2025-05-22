@@ -14,7 +14,7 @@ import { uiStore } from "$lib/stores/ui.svelte"
   />
   <meta
     property="og:image"
-    content="/{uiStore.activeEdition}-og-image.png"
+    content="/{uiStore.edition}-og-image.png"
   />
   <meta
     property="og:type"
@@ -22,7 +22,7 @@ import { uiStore } from "$lib/stores/ui.svelte"
   />
   <meta
     property="og:url"
-    content="https://{uiStore.activeEdition}.union.build"
+    content="https://{uiStore.edition}.union.build"
   />
 
   <meta
@@ -39,6 +39,6 @@ import { uiStore } from "$lib/stores/ui.svelte"
   />
   <meta
     name="twitter:image"
-    content="/{uiStore.activeEdition}-og-image.png"
+    content="/{uiStore.edition}-og-image.png"
   />
 </svelte:head>
