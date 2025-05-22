@@ -1,4 +1,5 @@
 import { uiStore } from "$lib/stores/ui.svelte.ts"
+import type { Edition } from "$lib/themes"
 import { coinbaseWallet, injected, metaMask, safe, walletConnect } from "@wagmi/connectors"
 import {
   createConfig,
@@ -36,11 +37,15 @@ export const chains = [
 ] as const
 
 export function getChainFromWagmi(chainId: number) {
-  return chains.find(chain => chain.id === chainId)
+  return chains.find((chain) => chain.id === chainId)
 }
 
-const wagmiConfig = $derived.by(() =>
-  createConfig({
+let wagmiConfig = createWagmiConfigInstance()
+
+function createWagmiConfigInstance() {
+  const edition: Edition = uiStore.edition
+
+  return createConfig({
     chains,
     cacheTime: 4_000,
     pollingInterval: 4_000,
@@ -58,7 +63,9 @@ const wagmiConfig = $derived.by(() =>
         http(`https://rpc.1.ethereum.chain.kitchen`, {
           name: "Chain Kitchen - Mainnet",
         }),
-        http(sepolia.rpcUrls.default.http.at(0), { name: "default Mainnet RPC" }),
+        http(sepolia.rpcUrls.default.http.at(0), {
+          name: "default Mainnet RPC",
+        }),
       ]),
       [sepolia.id]: fallback([
         unstable_connector(injected, {
@@ -70,7 +77,9 @@ const wagmiConfig = $derived.by(() =>
         http(`https://rpc.11155111.sepolia.chain.kitchen`, {
           name: "Chain Kitchen - Sepolia",
         }),
-        http(sepolia.rpcUrls.default.http.at(0), { name: "default Sepolia RPC" }),
+        http(sepolia.rpcUrls.default.http.at(0), {
+          name: "default Sepolia RPC",
+        }),
       ]),
       [holesky.id]: fallback([
         unstable_connector(injected, {
@@ -82,7 +91,9 @@ const wagmiConfig = $derived.by(() =>
         http(`https://rpc.17000.holesky.chain.kitchen`, {
           name: "Chain Kitchen - Holesky",
         }),
-        http(holesky.rpcUrls.default.http.at(0), { name: "default Holesky RPC" }),
+        http(holesky.rpcUrls.default.http.at(0), {
+          name: "default Holesky RPC",
+        }),
       ]),
       [berachainTestnetbArtio.id]: fallback([
         unstable_connector(injected, {
@@ -91,7 +102,9 @@ const wagmiConfig = $derived.by(() =>
           key: "unstable_connector-injected-berachain",
           name: "unstable_connector-injected-berachain",
         }),
-        http(berachainTestnetbArtio.rpcUrls.default.http.at(0), { name: "default Berachain RPC" }),
+        http(berachainTestnetbArtio.rpcUrls.default.http.at(0), {
+          name: "default Berachain RPC",
+        }),
       ]),
       [arbitrumSepolia.id]: fallback([
         unstable_connector(injected, {
@@ -100,7 +113,9 @@ const wagmiConfig = $derived.by(() =>
           key: "unstable_connector-injected-arbitrum-sepolia",
           name: "unstable_connector-injected-arbitrum-sepolia",
         }),
-        http(arbitrumSepolia.rpcUrls.default.http.at(0), { name: "default Arbitrum Sepolia RPC" }),
+        http(arbitrumSepolia.rpcUrls.default.http.at(0), {
+          name: "default Arbitrum Sepolia RPC",
+        }),
       ]),
       [scrollSepolia.id]: fallback([
         unstable_connector(injected, {
@@ -109,7 +124,9 @@ const wagmiConfig = $derived.by(() =>
           key: "unstable_connector-injected-scroll-sepolia",
           name: "unstable_connector-injected-scroll-sepolia",
         }),
-        http(scrollSepolia.rpcUrls.default.http.at(0), { name: "default Scroll Sepolia RPC" }),
+        http(scrollSepolia.rpcUrls.default.http.at(0), {
+          name: "default Scroll Sepolia RPC",
+        }),
       ]),
       [bobSepolia.id]: fallback([
         unstable_connector(injected, {
@@ -118,7 +135,9 @@ const wagmiConfig = $derived.by(() =>
           key: "unstable_connector-injected-bob-sepolia",
           name: "unstable_connector-injected-bob-sepolia",
         }),
-        http(bobSepolia.rpcUrls.default.http.at(0), { name: "default Bob Sepolia RPC" }),
+        http(bobSepolia.rpcUrls.default.http.at(0), {
+          name: "default Bob Sepolia RPC",
+        }),
       ]),
       [bob.id]: fallback([
         unstable_connector(injected, {
@@ -145,13 +164,15 @@ const wagmiConfig = $derived.by(() =>
           key: "unstable_connector-injected-corn-testnet",
           name: "unstable_connector-injected-corn-testnet",
         }),
-        http(bob.rpcUrls.default.http.at(0), { name: "default Corn Testnet RPC" }),
+        http(bob.rpcUrls.default.http.at(0), {
+          name: "default Corn Testnet RPC",
+        }),
       ]),
     },
     storage: createWagmiStorage({
       serialize,
       deserialize,
-      key: "union-wagmi",
+      key: `union-wagmi-${edition}`,
       storage: typeof window !== "undefined" ? window.localStorage : undefined,
     }),
     connectors: [
@@ -194,17 +215,10 @@ const wagmiConfig = $derived.by(() =>
       }),
     ],
   })
-)
+}
 
 export function getWagmiConfig() {
   return wagmiConfig
 }
-
-// wagmiConfig.subscribe(
-//   state => state.chainId,
-//   _chainId => {
-//     console.log("config state changed", _chainId)
-//   }
-// )
 
 export type ConfiguredChainId = (typeof chains)[number]["id"]
