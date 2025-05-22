@@ -79,7 +79,7 @@ $effect(() => {
 
 // Update settings when edition changes
 $effect(() => {
-  const edition = uiStore.activeEdition
+  const edition = uiStore.edition
   settingsStore.setEditionDefaults(edition)
 })
 </script>

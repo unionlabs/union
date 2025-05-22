@@ -206,7 +206,7 @@ const filteredChains = $derived(
     Option.map(allChains =>
       pipe(
         allChains.filter(chain =>
-          filterByEdition(chain, uiStore.activeEdition, getEnvironment().toLowerCase())
+          filterByEdition(chain, uiStore.edition, getEnvironment().toLowerCase())
         ),
         filterBySigningMode,
         chains => filterChainsByTokenAvailability(chains, uiStore.filterWhitelist),

@@ -1,10 +1,35 @@
+import { page } from "$app/state"
 import base64Icon from "$lib/config/base64.txt?raw"
 import { themes } from "$lib/themes"
-import type { Edition } from "$lib/themes"
+import type { Edition, Theme } from "$lib/themes"
+import { Match, Option, pipe, Record as R, String as Str } from "effect"
 
 const projectIds: Record<Edition, string> = {
   app: "f544d5ee6eb61962408fd456c114e9ed",
   btc: "49fe74ca5ded7142adefc69a7788d14a",
+}
+
+const getEditionFromUrl: (_: string) => Edition = Match.type<string>().pipe(
+  Match.whenOr(
+    Str.startsWith("btc."),
+    Str.startsWith("staging.btc."),
+    () => "btc" as const,
+  ),
+  Match.whenOr(
+    Str.startsWith("app."),
+    Str.startsWith("staging.app."),
+    () => "app" as const,
+  ),
+  Match.orElse(() => "app" as const),
+)
+
+type AppInfo = {
+  base64Icon: string
+  name: string
+  baseUrl: string
+  docs: string
+  iconUrl: string
+  projectId: string
 }
 
 class UiStore {
@@ -16,20 +41,34 @@ class UiStore {
   showDeveloperPages: boolean = $state(false)
   filterWhitelist: boolean = $state(true)
 
-  edition: Edition = $state("app")
+  edition: Edition
   overrideEdition: Edition | null = $state(null)
 
-  activeEdition: Edition = $derived(this.overrideEdition ?? this.edition)
-  theme = $derived(themes[this.activeEdition])
+  theme: Theme
 
-  appInfo = $derived({
-    base64Icon,
-    name: "Union",
-    baseUrl: `https://${this.activeEdition}.union.build`,
-    docs: "https://docs.union.build",
-    iconUrl: "https://app.union.build/images/logo.png",
-    projectId: projectIds[this.activeEdition],
-  })
+  appInfo: AppInfo
+
+  constructor() {
+    const overrideEdition = pipe(
+      Object.fromEntries(new URLSearchParams(globalThis.location.search)),
+      R.get("edition"),
+      // TODO: make pretty
+      Option.flatMap(Option.liftPredicate(x => ["app", "btc"].includes(x))),
+      Option.map(x => x as Edition),
+      Option.getOrUndefined,
+    )
+
+    this.edition = overrideEdition ?? getEditionFromUrl(page.url.toString())
+    this.theme = themes[this.edition]
+    this.appInfo = {
+      base64Icon,
+      name: "Union",
+      baseUrl: `https://${this.edition}.union.build`,
+      docs: "https://docs.union.build",
+      iconUrl: "https://app.union.build/images/logo.png",
+      projectId: projectIds[this.edition],
+    }
+  }
 
   private closeAllModals() {
     this.walletModalOpen = false
