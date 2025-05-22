@@ -137,6 +137,8 @@ module zkgm::zkgm_relay {
     const E_INVALID_ASSET_DECIMAL: u64 = 21;
     const E_INVALID_BASE_AMOUNT: u64 = 22;
     const E_NO_COIN_IN_BAG: u64 = 23;
+    const E_ORIGIN_NOT_FOUND: u64 = 24;
+    const E_CHANNEL_BALANCE_PAIR_NOT_FOUND: u64 = 25;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
 
     public struct IbcAppWitness has drop {}
@@ -564,6 +566,16 @@ module zkgm::zkgm_relay {
         relay_store.type_name_t_to_capability.add(string::from_ascii(key), capability)
     }
 
+    public entry fun save_token_origin(
+        relay_store: &mut RelayStore,
+        wrapped_token: vector<u8>,
+        path: u256,
+        channel_id: u32
+    ) {
+        let updated_channel_path = update_channel_path(path, channel_id);
+        relay_store.token_origin.add(wrapped_token, updated_channel_path);
+    }
+
     // Here we will basically ignore intent packet.
     public entry fun recv_packet<T>(
         ibc_store: &mut ibc::IBCStore,
@@ -909,6 +921,9 @@ module zkgm::zkgm_relay {
             path: path,
             token: token
         };
+        if(!relay_store.channel_balance.contains(pair)) {
+            abort E_CHANNEL_BALANCE_PAIR_NOT_FOUND
+        }
         let channel_balance = *relay_store.channel_balance.borrow(pair);
         if (channel_balance < amount) {
             abort E_INVALID_AMOUNT
@@ -933,7 +948,11 @@ module zkgm::zkgm_relay {
             path: path,
             token: token
         };
-        let channel_balance = *relay_store.channel_balance.borrow(pair);
+
+        let channel_balance = 0;
+        if(relay_store.channel_balance.contains(pair)) {
+            channel_balance = *relay_store.channel_balance.borrow(pair);
+        };
         let new_balance = channel_balance + amount;
         add_or_update_table<ChannelBalancePair, u256>(
             &mut relay_store.channel_balance,
@@ -1079,7 +1098,11 @@ module zkgm::zkgm_relay {
             abort E_INVALID_BASE_AMOUNT
         };
 
-        let origin = *relay_store.token_origin.borrow(*base_token);
+        
+        let origin = 0;    
+        if(relay_store.token_origin.contains(*base_token)) {
+            origin = *relay_store.token_origin.borrow(*base_token);
+        };
 
         let (intermediate_channel_path, destination_channel_id) =
             pop_channel_from_path(origin);
