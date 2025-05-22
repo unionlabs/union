@@ -66,10 +66,12 @@ module ibc::light_client {
     use ibc::ethabi;
     use ibc::height::{Self, Height};
 
+    const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;
+
     public struct Client has key, store {
         id: UID,
-        client_state: vector<u8>,
-        consensus_states: Table<u64, vector<u8>>,
+        client_state: ClientState,
+        consensus_states: Table<u64, ConsensusState>,
     }
 
     public struct ConsensusState has copy, drop, store {
@@ -105,14 +107,18 @@ module ibc::light_client {
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
-    ): Client {
+    ): (Client, vector<u8>, vector<u8>, String) {
         let mut consensus_states = table::new(ctx);
-        consensus_states.add(0, consensus_state_bytes);
-        Client {
+        let client_state = decode_client_state(client_state_bytes);
+        consensus_states.add(0, decode_consensus_state(consensus_state_bytes));
+        (Client {
             id: object::new(ctx),
-            client_state: client_state_bytes,
+            client_state: decode_client_state(client_state_bytes),
             consensus_states: consensus_states
-        }
+        },
+        client_state_bytes,
+        consensus_state_bytes,
+        client_state.chain_id)
     }
 
     public(package) fun status(
@@ -157,6 +163,26 @@ module ibc::light_client {
         }
     }
 
+    fun decode_client_state(buf: vector<u8>): ClientState {
+        let mut buf = bcs::new(buf);
+
+        let chain_id = string::utf8(buf.peel_vec_u8());
+        let trusting_period = buf.peel_u64();
+        let max_clock_drift = buf.peel_u64();
+        let frozen_height = height::decode_bcs(&mut buf); // TODO: Not sure if its correc;
+        let latest_height = height::decode_bcs(&mut buf);
+        let contract_address = buf.into_remainder_bytes();
+
+        ClientState {
+            chain_id,
+            trusting_period,
+            max_clock_drift,
+            frozen_height,
+            latest_height,
+            contract_address
+        }
+    }
+
     #[test]
     fun test_decode_consensus() {
         let buf =
@@ -195,7 +221,7 @@ module ibc::light_client {
 
     public(package) fun update_client(
         client: &Client, client_msg: vector<u8>
-    ): (vector<u8>, vector<vector<u8>>, vector<u64>) {
+    ): (vector<u8>, vector<u8>, u64) {
 
         let consensus_state = ConsensusState{
             timestamp: 0,
@@ -212,9 +238,8 @@ module ibc::light_client {
         };
 
         (encode_client_state(&client_state),
-            vector[encode_consensus_state(&consensus_state)],
-            vector[0])
-        // (vector::empty(), vector::empty(), vector::empty())
+            encode_consensus_state(&consensus_state),
+            0)
     }
 
     public(package) fun latest_height(
@@ -231,5 +256,22 @@ module ibc::light_client {
         value: vector<u8>
     ): u64 {
         0
+    }
+
+    public(package) fun get_client_state(
+        client: &Client,
+    ): vector<u8> {        
+        encode_client_state(&client.client_state)
+    }
+
+    public(package) fun get_consensus_state(
+        client: &Client,
+        height: u64,
+    ): vector<u8> {
+        if (!client.consensus_states.contains(height)) {
+            abort E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE
+        };
+        let consensus_state = client.consensus_states.borrow(height);
+        encode_consensus_state(consensus_state)
     }
 }

@@ -2,10 +2,11 @@
 
 [move]
 version = 3
-manifest_digest = "E2DE4FD3C4F57EF8160DAC0BF8DDBADBD4DCC323F207EF48337515AADC81136E"
-deps_digest = "F8BBB0CCB2491CA29A3DF03D6F92277A4F3574266507ACD77214D37ECA3F3082"
+manifest_digest = "FE004CA39D8DB842F04A983345DFD9F2393493E905F387A776C57010B3914F68"
+deps_digest = "3C4103934B1E040BB6B23F1D610B4EF9F2F1166A50A104EADCF77467C004C600"
 dependencies = [
   { id = "Sui", name = "Sui" },
+  { id = "ibc", name = "ibc" },
 ]
 
 [[move.package]]
@@ -20,8 +21,16 @@ dependencies = [
   { id = "MoveStdlib", name = "MoveStdlib" },
 ]
 
+[[move.package]]
+id = "ibc"
+source = { local = "../ibc" }
+
+dependencies = [
+  { id = "Sui", name = "Sui" },
+]
+
 [move.toolchain-version]
-compiler-version = "1.37.1"
+compiler-version = "1.47.1"
 edition = "2024.beta"
 flavor = "sui"
 
@@ -29,6 +38,6 @@ flavor = "sui"
 
 [env.testnet]
 chain-id = "4c78adac"
-original-published-id = "0x5c4676feabfd590210dc65102fb110c20a77f1d640bd615f707e7590fd6a363d"
-latest-published-id = "0x5c4676feabfd590210dc65102fb110c20a77f1d640bd615f707e7590fd6a363d"
+original-published-id = "0x3d6a10d07275f42fcbf98a99e5fc53a519c5cfe50c32f954912cf9afaf883273"
+latest-published-id = "0x3d6a10d07275f42fcbf98a99e5fc53a519c5cfe50c32f954912cf9afaf883273"
 published-version = "1"

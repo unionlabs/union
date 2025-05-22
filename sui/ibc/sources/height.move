@@ -59,7 +59,7 @@
 // TITLE.
 
 module ibc::height {
-    use ibc::bcs_utils::{Self, BcsBuf};
+    use sui::bcs::BCS;
 
     public struct Height has drop, copy, store {
         revision_number: u64,
@@ -111,12 +111,12 @@ module ibc::height {
         height.revision_height = revision_height;
     }
 
-    public fun decode_bcs(buf: &mut BcsBuf): Height {
+    public fun decode_bcs(buf: &mut BCS): Height {
         // let length = bcs_utils::peel_length_prefix(buf);
         // assert!(length == 2, 1); // TODO: Better error code here
         Height {
-            revision_number: bcs_utils::peel_u64(buf),
-            revision_height: bcs_utils::peel_u64(buf)
+            revision_number: buf.peel_u64(),
+            revision_height: buf.peel_u64()
         }
     }
 }

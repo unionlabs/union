@@ -26,6 +26,7 @@
       },
       {
         "enabled": true,
+<<<<<<< HEAD
         "path": "./target/debug/voyager-state-module-ethereum",
         "info": {
           "chain_id": "32382",
@@ -34,6 +35,17 @@
         "config": {
           "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
           "rpc_url": "http://localhost:8545"
+=======
+        "path": "./target/debug/voyager-state-module-sui",
+        "info": {
+          "chain_id": "dddd8bc9",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "http://127.0.0.1:9000",
+          "ibc_contract": "0xb644ca812080b776e4eb7e1ba5793e05602d27767f8fe853d3e5786117285006",
+          "ibc_store": "0x00a204f53ff4ae488e92e5c5117a3ad03d10331240715be25eeb2d392c5cbc1e"
+>>>>>>> 7264ab4a9e (chore(sui): tons of stuff, so tired)
         }
       }
     ],
@@ -50,12 +62,45 @@
           "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t"
         }
       },
+<<<<<<< HEAD
+=======
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-proof-module-sui",
+        "info": {
+          "chain_id": "dddd8bc9",
+          "ibc_spec_id": "ibc-union"
+        },
+        "config": {
+          "rpc_url": "http://127.0.0.1:9000"
+        }
+      }
+      // {
+      //   "enabled": true,
+      //   "path": "./target/debug/voyager-proof-module-ethereum",
+      //   "info": {
+      //     "chain_id": "32382",
+      //     "ibc_spec_id": "ibc-union"
+      //   },
+      //   "config": {
+      //     "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
+      //     "rpc_url": "http://localhost:8545"
+      //   }
+      // }
+    ],
+    "consensus": [
+>>>>>>> 7264ab4a9e (chore(sui): tons of stuff, so tired)
       {
         "enabled": true,
         "path": "./target/debug/voyager-proof-module-ethereum",
         "info": {
+<<<<<<< HEAD
           "chain_id": "32382",
           "ibc_spec_id": "ibc-union"
+=======
+          "chain_id": "dddd8bc9",
+          "consensus_type": "sui"
+>>>>>>> 7264ab4a9e (chore(sui): tons of stuff, so tired)
         },
         "config": {
           "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
@@ -151,6 +196,16 @@
           "ibc_interface": "ibc-cosmwasm",
           "ibc_spec_id": "ibc-union"
         }
+      },
+      {
+        "enabled": true,
+        "path": "./target/debug/voyager-client-module-sui",
+        "info": {
+          "client_type": "sui",
+          "consensus_type": "sui",
+          "ibc_interface": "ibc-cosmwasm",
+          "ibc_spec_id": "ibc-union"
+        }
       }
     ],
     "client_bootstrap": [
@@ -168,6 +223,7 @@
       },
       {
         "config": {
+<<<<<<< HEAD
           "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
           "rpc_url": "http://localhost:8545",
           "private_key": "0x23312AE62C46C1F05DE7A772C1DD74951009BFCD08B47946E497468DEA6D7008"
@@ -178,6 +234,18 @@
           "client_type": "trusted/evm/mpt"
         },
         "path": "./target/debug/voyager-client-bootstrap-module-trusted-mpt"
+=======
+          "rpc_url": "http://127.0.0.1:9000",
+          "ibc_store": "0x00a204f53ff4ae488e92e5c5117a3ad03d10331240715be25eeb2d392c5cbc1e",
+          "ibc_contract": "0xb644ca812080b776e4eb7e1ba5793e05602d27767f8fe853d3e5786117285006"
+        },
+        "enabled": true,
+        "info": {
+          "chain_id": "dddd8bc9",
+          "client_type": "sui"
+        },
+        "path": "./target/debug/voyager-client-bootstrap-module-sui"
+>>>>>>> 7264ab4a9e (chore(sui): tons of stuff, so tired)
       }
       // {
       //   "config": {
@@ -211,17 +279,28 @@
       "enabled": true,
       "path": "./target/debug/voyager-event-source-plugin-ethereum",
       "config": {
+<<<<<<< HEAD
         "chain_id": "32382",
         "ibc_handler_address": "0xed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5",
         "rpc_url": "http://localhost:8545"
+=======
+        "chain_id": "dddd8bc9",
+        "rpc_url": "http://127.0.0.1:9000",
+        "ibc_handler_address": "0xb644ca812080b776e4eb7e1ba5793e05602d27767f8fe853d3e5786117285006"
+>>>>>>> 7264ab4a9e (chore(sui): tons of stuff, so tired)
       }
     },
     {
       "enabled": true,
       "path": "./target/debug/voyager-transaction-plugin-cosmos-sdk",
       "config": {
+<<<<<<< HEAD
         "chain_id": "union-devnet-1",
         "ibc_host_contract_address": "union1nk3nes4ef6vcjan5tz6stf9g8p08q2kgqysx6q5exxh89zakp0msq5z79t",
+=======
+        "chain_id": "dddd8bc9",
+        "ibc_handler_address": "0x455cc5ae1145401d8f3214c489718d2156bb0c24db06c78f00e842bb9fef58c9",
+>>>>>>> 7264ab4a9e (chore(sui): tons of stuff, so tired)
         "keyring": {
           "name": "union-devnet",
           "keys": [

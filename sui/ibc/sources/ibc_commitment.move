@@ -66,6 +66,7 @@ module ibc::commitment {
     use std::bcs;
     use ibc::packet::{Self, Packet};
     use ibc::ethabi::{encode_dyn_array, encode_bytes};
+    use sui::hash::keccak256;
 
     const COMMITMENT_MAGIC: u8 = 0x01;
 
@@ -247,16 +248,16 @@ module ibc::commitment {
         consensus_state_path(channel_id, height)
     }
 
-    public fun connection_commitment_key(channel_id: u32): vector<u8> {
-        connection_path(channel_id)
+    public fun connection_commitment_key(connection_id: u32): vector<u8> {
+        keccak256(&connection_path(connection_id))
     }
 
     public fun channel_commitment_key(channel_id: u32): vector<u8> {
-        channel_path(channel_id)
+        keccak256(&channel_path(channel_id))
     }
 
     public fun packet_commitment_key(channel_id: u32, sequence: u64): vector<u8> {
-        packet_commitment_path(channel_id, sequence)
+        keccak256(&packet_commitment_path(channel_id, sequence))
     }
 
     public fun batch_packets_commitment_key(
