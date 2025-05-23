@@ -210,7 +210,7 @@ func ExampleProveCmd() *cobra.Command {
 				},
 			}
 
-			res, err := client.Prove(ctx, &req)
+			res, err := client.ProveBls12381(ctx, &req)
 			if err != nil {
 				return err
 			}

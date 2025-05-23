@@ -110,9 +110,11 @@ message PollResponse {
 
 service UnionProverAPI {
   rpc Prove(ProveRequest) returns (ProveResponse);
+  rpc ProveBls12381(ProveRequest) returns (ProveResponse);
   rpc Verify(VerifyRequest) returns (VerifyResponse);
   rpc GenerateContract(GenerateContractRequest) returns (GenerateContractResponse);
   rpc QueryStats(QueryStatsRequest) returns (QueryStatsResponse);
+  rpc QueryStatsBls12381(QueryStatsRequest) returns (QueryStatsResponse);
 
   rpc Poll(PollRequest) returns (PollResponse);
 }
