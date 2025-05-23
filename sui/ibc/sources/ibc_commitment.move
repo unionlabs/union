@@ -285,7 +285,8 @@ module ibc::commitment {
     }
 
     public fun commit_packet(packet: &Packet): vector<u8> {
-        packet::encode(packet)
+        let mut buf = vector[*packet];
+        commit_packets(&buf)        
     }
 
     public fun commit_packets(packets: &vector<Packet>): vector<u8> {
@@ -299,7 +300,7 @@ module ibc::commitment {
             }
         );
 
-        buf
+        hash::keccak256(&buf)
     }
 
     public fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
