@@ -23,6 +23,7 @@ import type {
 } from "$lib/services/transfer/errors"
 import type { Base64EncodeError } from "$lib/utils/base64"
 import type { FromHexError } from "$lib/utils/hex"
+import { safeStringifyJSON } from "$lib/utils/json"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
@@ -36,7 +37,7 @@ import type {
   NotACosmosChainError,
 } from "@unionlabs/sdk/schema"
 import { CryptoError, extractErrorDetails } from "@unionlabs/sdk/utils"
-import { Match, pipe } from "effect"
+import { Effect, flow, Match, pipe } from "effect"
 import type { NoSuchElementException, TimeoutException, UnknownException } from "effect/Cause"
 import type { ParseError } from "effect/ParseResult"
 import { slide } from "svelte/transition"
@@ -136,13 +137,24 @@ const getUserFriendlyMessage = pipe(
   Match.orElse((x) => `Unexpected error: ${x?.["_tag"]}`),
 )
 
+const stringify = flow(
+  safeStringifyJSON,
+  Effect.runSync,
+)
+
+const stringifiedError = $derived(pipe(
+  error,
+  extractErrorDetails,
+  stringify,
+))
+
 const _writeToClipboard = () => {
-  navigator.clipboard.writeText(JSON.stringify(extractErrorDetails(error), null, 2))
+  navigator.clipboard.writeText(stringifiedError)
 }
 
 const exportData = () => {
   const datetime = new Date().toISOString().replace(/-|:|\.\d+/g, "")
-  const data = JSON.stringify(extractErrorDetails(error), null, 2)
+  const data = stringifiedError
   const blob = new Blob([data], { type: "application/json" })
   const url = window.URL.createObjectURL(blob)
   const anchor = document.createElement("a")
@@ -266,49 +278,37 @@ const onShowDetails = () => {
             <p>Method and URL: {error.methodAndUrl}</p>
           {:else if error._tag === "ParseError"}
             <p>Actual data that was parsed:</p>
-            <pre
-              class="text-sm"
-            >
-{JSON.stringify(
-                error.issue.actual,
-                null,
-                2,
-              )}</pre
-            >
+            <pre class="text-sm">
+{stringify(error.issue.actual)}
+</pre>
           {:else if error._tag === "UnknownException"}
             <p>This is an unknown exception. Full details here:</p>
-            <pre class="text-sm">{JSON.stringify(error, null, 2)}</pre>
+            <pre class="text-sm">{stringify(error)}</pre>
           {:else if error._tag === "NoViemChain"}
             <p>Chain ID: {error.chain.chain_id}</p>
             <p>Universal Chain ID: {error.chain.universal_chain_id}</p>
           {:else if error._tag === "ReadContractError"}
             <p>Error cause:</p>
-            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+            <pre class="text-sm">{stringify(error.cause)}</pre>
           {:else if error._tag === "FetchNativeBalanceError"}
             <p>Error cause:</p>
-            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+            <pre class="text-sm">{stringify(error.cause)}</pre>
           {:else if error._tag === "CreatePublicClientError"}
             <p>Error cause:</p>
-            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+            <pre class="text-sm">{stringify(error.cause)}</pre>
           {:else if error._tag === "QueryBankBalanceError"}
             <p>Error cause:</p>
-            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+            <pre class="text-sm">{stringify(error.cause)}</pre>
           {:else if error._tag === "Base64EncodeError"}
             <p>Error cause:</p>
-            <pre class="text-sm">{JSON.stringify(error.cause, null, 2)}</pre>
+            <pre class="text-sm">{stringify(error.cause)}</pre>
           {:else if error._tag === "NoRpcError"}
             <p>Chain: {error.chain.display_name}</p>
             <p>RPC Type: {error.type}</p>
             <p>Available RPC types:</p>
-            <pre
-              class="text-sm"
-            >
-{JSON.stringify(
-                error.chain.rpcs.map((r) => r.type),
-                null,
-                2,
-              )}</pre
-            >
+            <pre class="text-sm">
+{stringify(error.chain.rpcs.map((r) => r.type))}
+</pre>
           {/if}
         </section>
       </div>
