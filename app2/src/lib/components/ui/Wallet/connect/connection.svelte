@@ -122,7 +122,7 @@ let connectedWallet = $derived(
             <SharpPowerIcon class="size-3 text-zinc-400 hover:text-red-500 transition-colors" />
           </button>
 
-          {#if Option.isSome(dashboard.user)}
+          <!-- {#if Option.isSome(dashboard.user)}
             <button
               class="p-2 rounded-lg border border-zinc-800 hover:text-red-500 hover:bg-zinc-800 transition-colors cursor-pointer"
               onclick={() => onDisconnectClick()}
@@ -142,7 +142,7 @@ let connectedWallet = $derived(
                 <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
               </svg>
             </button>
-          {/if}
+          {/if} -->
         </div>
       </div>
     </div>

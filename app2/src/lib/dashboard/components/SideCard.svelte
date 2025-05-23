@@ -144,7 +144,7 @@ onDestroy(() => {
     <div class="flex flex-col justify-center gap-3 px-6 py-4 border-b border-zinc-900">
       <div class="flex flex-col gap-1">
         <p class="text-sm font-semibold text-zinc-400">Earn Points</p>
-        <p class="text-xs text-zinc-500">Connect your wallet to start earning</p>
+        <p class="text-xs text-zinc-500">Create an account to start earning</p>
       </div>
       <Button
         variant="secondary"
