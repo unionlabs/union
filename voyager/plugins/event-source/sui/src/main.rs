@@ -4,7 +4,7 @@ use ibc_solidity::Connection;
 use ibc_union_spec::{
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, FullEvent, PacketMetadata, PacketSend, UpdateClient
-    }, path::{ChannelPath, ConnectionPath}, ChannelId, ClientId, IbcUnion, Packet,
+    }, path::{ChannelPath, ConnectionPath}, ChannelId, ClientId, IbcUnion, Packet, Timestamp,
     
 };
 use jsonrpsee::{
@@ -169,6 +169,86 @@ impl Module {
                 }
             },
         ]))
+    }
+
+    async fn make_packet_metadata(
+        &self,
+        event_height: Height,
+        self_channel_id: ChannelId,
+        voyager_client: &VoyagerClient,
+    ) -> RpcResult<(ChainId, ClientInfo, ChannelMetadata, ChannelMetadata)> {
+        let self_channel = voyager_client
+            .query_ibc_state(
+                self.chain_id.clone(),
+                QueryHeight::Specific(event_height),
+                ChannelPath {
+                    channel_id: self_channel_id,
+                },
+            )
+            .await?;
+
+        let self_connection_id = self_channel.connection_id;
+        let self_connection = voyager_client
+            .query_ibc_state(
+                self.chain_id.clone(),
+                QueryHeight::Specific(event_height),
+                ConnectionPath {
+                    connection_id: self_connection_id,
+                },
+            )
+            .await?;
+
+        let client_info = voyager_client
+            .client_info::<IbcUnion>(self.chain_id.clone(), self_connection.client_id)
+            .await?;
+
+        let client_state_meta = voyager_client
+            .client_state_meta::<IbcUnion>(
+                self.chain_id.clone(),
+                event_height.into(),
+                self_connection.client_id,
+            )
+            .await?;
+
+        let counterparty_latest_height = voyager_client
+            .query_latest_height(client_state_meta.counterparty_chain_id.clone(), false)
+            .await?;
+
+        let other_channel_id = self_channel.counterparty_channel_id.unwrap();
+
+        let other_channel = voyager_client
+            .query_ibc_state(
+                client_state_meta.counterparty_chain_id.clone(),
+                QueryHeight::Specific(counterparty_latest_height),
+                ChannelPath {
+                    channel_id: other_channel_id,
+                },
+            )
+            .await?;
+
+        let self_channel = ChannelMetadata {
+            channel_id: self_channel_id,
+            version: self_channel.version,
+            connection: ConnectionMetadata {
+                client_id: self_connection.client_id,
+                connection_id: self_connection_id,
+            },
+        };
+        let other_channel = ChannelMetadata {
+            channel_id: other_channel_id,
+            version: other_channel.version,
+            connection: ConnectionMetadata {
+                client_id: self_connection.counterparty_client_id,
+                connection_id: self_connection.counterparty_connection_id.unwrap(),
+            },
+        };
+
+        Ok((
+            client_state_meta.counterparty_chain_id,
+            client_info,
+            self_channel,
+            other_channel,
+        ))
     }
 }
 
@@ -547,60 +627,58 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         )
                     }
                     events::IbcEvent::PacketSend(event) => {
-                        // println!("packet send event: {event:?}");
-                        panic!("packet send event: {event:?}");
-                        // let packet_metadata: events::PacketMetadata = event.packet;
+                        let packet: events::Packet = event.packet;
 
-                        // let voyager_client = e.try_get::<VoyagerClient>()?;
-                        // let channel = voyager_client
-                        //     .query_ibc_state(
-                        //         self.chain_id.clone(),
-                        //         QueryHeight::Specific(Height::new(height)),
-                        //         ibc_union_spec::path::ChannelPath {
-                        //             channel_id: packet_metadata.source_channel_id.try_into().unwrap(),
-                        //         },
-                        //     )
-                        //     .await?;
+                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let channel = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(Height::new(height)),
+                                ibc_union_spec::path::ChannelPath {
+                                    channel_id: packet.source_channel_id.try_into().unwrap(),
+                                },
+                            )
+                            .await?;
 
 
 
-                        // let connection = voyager_client
-                        //     .query_ibc_state(
-                        //         self.chain_id.clone(),
-                        //         QueryHeight::Specific(Height::new(height)),
-                        //         ibc_union_spec::path::ConnectionPath {
-                        //             connection_id: channel.connection_id.try_into().unwrap(),
-                        //         },
-                        //     )
-                        //     .await?;
+                        let connection = voyager_client
+                            .query_ibc_state(
+                                self.chain_id.clone(),
+                                QueryHeight::Specific(Height::new(height)),
+                                ibc_union_spec::path::ConnectionPath {
+                                    connection_id: channel.connection_id.try_into().unwrap(),
+                                },
+                            )
+                            .await?;
 
-                        // let client_id = connection.client_id;
-                        // // let (
-                        // //     _counterparty_chain_id,
-                        // //     _client_info,
-                        // //     source_channel,
-                        // //     destination_channel,
-                        // // ) = self
-                        // //     .make_packet_metadata(
-                        // //         Height::new(height),
-                        // //         packet_metadata.source_channel.channel_id.try_into().unwrap(),
-                        // //         e.try_get()?,
-                        // //     )
-                        // //     .await?;
-                        
-                        // (
-                        //     PacketSend {
-                        //         packet_data: event.packet_data.into(),
-                        //         packet: PacketMetadata { 
-                        //             source_channel: packet_metadata.source_channel_id.try_into().unwrap(),
-                        //             destination_channel: packet_metadata.destination_channel_id.try_into().unwrap(),
-                        //             timeout_height: packet_metadata.timeout_height,
-                        //             timeout_timestamp: packet_metadata.timeout_timestamp,
-                        //         }
-                        //     }
-                        //     .into(),
-                        //     client_id,
-                        // )
+                        let client_id = connection.client_id;
+
+                        let (
+                            _counterparty_chain_id,
+                            _client_info,
+                            source_channel,
+                            destination_channel,
+                        ) = self
+                            .make_packet_metadata(
+                                Height::new(height),
+                                packet.source_channel_id.try_into().unwrap(),
+                                voyager_client,
+                            )
+                            .await?;
+                        (
+                            PacketSend {
+                                packet_data: event.packet_hash.into(),
+                                packet: PacketMetadata { 
+                                    source_channel,
+                                    destination_channel, 
+                                    timeout_height: packet.timeout_height.0, 
+                                    timeout_timestamp: Timestamp::from_nanos(packet.timeout_timestamp.0)
+                            }
+                            }
+                            .into(),
+                            client_id,
+                        )
                     }
                     _ => panic!("unknown"),
                 };
