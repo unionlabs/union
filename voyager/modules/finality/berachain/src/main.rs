@@ -17,7 +17,7 @@ use unionlabs::{
 use voyager_message::{
     module::{FinalityModuleInfo, FinalityModuleServer},
     primitives::{ChainId, ConsensusType, Timestamp},
-    FinalityModule, ExtensionsExt, VoyagerClient,
+    ExtensionsExt, FinalityModule, VoyagerClient,
 };
 use voyager_vm::BoxDynError;
 

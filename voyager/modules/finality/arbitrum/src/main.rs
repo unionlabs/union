@@ -16,7 +16,7 @@ use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReport
 use voyager_message::{
     module::{FinalityModuleInfo, FinalityModuleServer},
     primitives::{ChainId, ConsensusType, Timestamp},
-    FinalityModule, ExtensionsExt, VoyagerClient,
+    ExtensionsExt, FinalityModule, VoyagerClient,
 };
 use voyager_vm::BoxDynError;
 
