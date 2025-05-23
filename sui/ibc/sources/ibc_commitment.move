@@ -57,11 +57,8 @@
 // EXPRESS OR IMPLIED, INCLUDING (WITHOUT LIMITATION) WARRANTIES OF
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
-
+#[allow(implicit_const_copy)]
 module ibc::commitment {
-
-    use std::string::{Self, String, utf8};
-    use std::vector;
     use sui::hash;
     use std::bcs;
     use ibc::packet::{Self, Packet};
@@ -285,8 +282,7 @@ module ibc::commitment {
     }
 
     public fun commit_packet(packet: &Packet): vector<u8> {
-        let mut buf = vector[*packet];
-        commit_packets(&buf)        
+        commit_packets(&vector[*packet])        
     }
 
     public fun commit_packets(packets: &vector<Packet>): vector<u8> {
@@ -300,7 +296,8 @@ module ibc::commitment {
             }
         );
 
-        hash::keccak256(&buf)
+        // hash::keccak256(&buf)
+        buf
     }
 
     public fun commit_acks(acks: vector<vector<u8>>): vector<u8> {
@@ -465,4 +462,30 @@ module ibc::commitment {
     //     std::debug::print(&test);
     //     assert!(test == x"00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000036", 1000);
     // }
+    #[test]
+    fun packet_bro() {
+        std::debug::print(&commit_packet(&packet::new(
+            3,
+            5,
+            x"5B38Da6a701c568545dCfcB03FcB875f56beddC4",
+            0,
+            11122233
+        )));
+
+        
+    }
 }
+
+/*
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000001
+0000000000000000000000000000000000000000000000000000000000000020
+0000000000000000000000000000000000000000000000000000000000000003
+0000000000000000000000000000000000000000000000000000000000000005
+00000000000000000000000000000000000000000000000000000000000000a0
+0000000000000000000000000000000000000000000000000000000000000000
+0000000000000000000000000000000000000000000000000000000000a9b639
+0000000000000000000000000000000000000000000000000000000000000014
+5b38da6a701c568545dcfcb03fcb875f56beddc4000000000000000000000000
+*/
+

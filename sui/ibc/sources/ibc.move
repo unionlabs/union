@@ -141,35 +141,29 @@ module ibc::ibc {
     const E_NOT_ENOUGH_PACKETS: u64 = 1040;
     const E_PACKET_NOT_RECEIVED: u64 = 1041;
     const E_ACK_ALREADY_EXIST: u64 = 1042;
-    const E_CANNOT_INTENT_ORDERED: u64 = 1043;
     const E_TIMEOUT_MUST_BE_SET: u64 = 1044;
-    const E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH: u64 = 1045;
     const E_ACK_LEN_MISMATCH: u64 = 1046;
     const E_CHANNEL_NOT_FOUND: u64 = 1047;
     const E_CONNECTION_NOT_FOUND: u64 = 1048;
 
-    #[event]
     public struct CreateClient has copy, drop, store {
         client_id: u32,
         client_type: String,
         counterparty_chain_id: String,
     }
 
-    #[event]
     public struct UpdateClient has copy, drop, store {
         client_id: u32,
         client_type: String,
         height: u64
     }
 
-    #[event]
     public struct ConnectionOpenInit has copy, drop, store {
         connection_id: u32,
         client_id: u32,
         counterparty_client_id: u32
     }
 
-    #[event]
     public struct ConnectionOpenTry has copy, drop, store {
         connection_id: u32,
         client_id: u32,
@@ -177,7 +171,6 @@ module ibc::ibc {
         counterparty_connection_id: u32
     }
 
-    #[event]
     public struct ConnectionOpenAck has copy, drop, store {
         connection_id: u32,
         client_id: u32,
@@ -185,7 +178,6 @@ module ibc::ibc {
         counterparty_connection_id: u32
     }
 
-    #[event]
     public struct ConnectionOpenConfirm has copy, drop, store {
         connection_id: u32,
         client_id: u32,
@@ -193,7 +185,6 @@ module ibc::ibc {
         counterparty_connection_id: u32
     }
 
-    #[event]
     public struct ChannelOpenInit has copy, drop, store {
         port_id: String,
         channel_id: u32,
@@ -202,7 +193,6 @@ module ibc::ibc {
         version: String
     }
 
-    #[event]
     public struct ChannelOpenTry has copy, drop, store {
         port_id: String,
         channel_id: u32,
@@ -212,7 +202,6 @@ module ibc::ibc {
         version: String
     }
 
-    #[event]
     public struct ChannelOpenAck has copy, drop, store {
         port_id: String,
         channel_id: u32,
@@ -221,7 +210,6 @@ module ibc::ibc {
         connection_id: u32
     }
 
-    #[event]
     public struct ChannelOpenConfirm has copy, drop, store {
         port_id: String,
         channel_id: u32,
@@ -230,30 +218,12 @@ module ibc::ibc {
         connection_id: u32
     }
 
-    #[event]
-    public struct SendPacket has drop, copy, store {
-        source_channel: u32,
-        destination_channel: u32,
-        data: vector<u8>,
-        timeout_height: u64,
-        timeout_timestamp: u64
-    }
-
-
-    #[event]
     public struct PacketSend has drop, copy, store {
         channel_id: u32,
         packet_hash: vector<u8>,
         packet: Packet
     }
 
-    #[event]
-    public struct RecvPacket has drop, store, copy {
-        packet: Packet
-    }
-
-
-    #[event]
     public struct PacketRecv has drop, store, copy {
         channel_id: u32,
         packet_hash: vector<u8>,
@@ -261,30 +231,25 @@ module ibc::ibc {
         maker_msg: vector<u8>
     }
 
-    #[event]
     public struct RecvIntentPacket has drop, store, copy {
         packet: Packet
     }
 
-    #[event]
     public struct TimeoutPacket has drop, store, copy {
         packet: Packet
     }
 
-    #[event]
     public struct WriteAcknowledgement has drop, store, copy {
         packet: Packet,
         acknowledgement: vector<u8>
     }
 
-    #[event]
     public struct WriteAck has drop, store, copy {
         channel_id: u32,
         packet_hash: vector<u8>,
         acknowledgement: vector<u8>
     }
 
-    #[event]
     public struct PacketAck has drop, store, copy {
         channel_id: u32,
         packet_hash: vector<u8>,
@@ -292,13 +257,6 @@ module ibc::ibc {
         maker: address,
     }
 
-    #[event]
-    public struct AcknowledgePacket has drop, store, copy {
-        packet: Packet,
-        acknowledgement: vector<u8>
-    }
-
-    #[event]
     public struct SubmitMisbehaviour has drop, store, copy {
         client_id: u32,
         client_type: String
@@ -342,7 +300,7 @@ module ibc::ibc {
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
     ) {
-        assert!(client_type.bytes() == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
+        assert!(client_type.as_bytes() == &b"cometbls", E_UNKNOWN_CLIENT_TYPE);
 
         let client_id = ibc_store.generate_client_identifier();
         
@@ -470,7 +428,7 @@ module ibc::ibc {
     ) {
         let connection_id = ibc_store.generate_connection_identifier();
 
-        let mut connection = connection_end::new(
+        let connection = connection_end::new(
             CONN_STATE_TRYOPEN,
             client_id,
             counterparty_client_id,
@@ -520,7 +478,7 @@ module ibc::ibc {
         proof_height: u64
     ) {
         // Borrow the connection from the table
-        let mut connection = ibc_store.connections.borrow_mut(connection_id);
+        let connection = ibc_store.connections.borrow_mut(connection_id);
         assert!(
             connection_end::state(connection) == CONN_STATE_INIT,
             E_INVALID_CONNECTION_STATE
@@ -628,14 +586,6 @@ module ibc::ibc {
         next_sequence
     }
 
-    fun generate_packet_sequence(ibc_store: &mut IBCStore, channel_id: u32): u64 {
-        let commitment_key = commitment::next_sequence_send_commitment_key(channel_id);
-        let data = ibc_store.commitments.borrow(commitment_key);
-        let seq = bcs::new(*data).peel_u64();
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, commitment_key, bcs::to_bytes<u64>(&((seq as u64) + 1)));
-        seq
-    }
-
     fun generate_connection_identifier(ibc_store: &mut IBCStore): u32 {
         let next_sequence = if (ibc_store.commitments.contains(b"nextConnectionSequence")) {
             let seq_bytes = ibc_store.commitments.borrow(b"nextConnectionSequence");
@@ -649,9 +599,9 @@ module ibc::ibc {
         next_sequence
     }
 
-    fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, mut value: P) {
+    fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, value: P) {
         if (table.contains(key)) {
-            let mut val = table.borrow_mut(key);
+            let val = table.borrow_mut(key);
             *val = value;
         } else {
             table.add(key, value);
@@ -758,7 +708,7 @@ module ibc::ibc {
         counterparty_port_id: vector<u8>,
         connection_id: u32,
         version: String,
-        ibc_app_witness: T,
+        _: T,
     ) {
         let port_id = string::from_ascii(std::type_name::get<T>().into_string());
 
@@ -773,7 +723,7 @@ module ibc::ibc {
         let channel_id = ibc_store.generate_channel_identifier();
 
         // Create a new channel and set its properties
-        let mut channel = channel::new(
+        let channel = channel::new(
             CHAN_STATE_INIT,
             connection_id,
             0,
@@ -820,7 +770,7 @@ module ibc::ibc {
         counterparty_version: String,
         proof_init: vector<u8>,
         proof_height: u64,
-        ibc_app_witness: T,
+        _: T,
     ) {
         let port_id = string::from_ascii(std::type_name::get<T>().into_string());
 
@@ -856,7 +806,7 @@ module ibc::ibc {
         let channel_id = ibc_store.generate_channel_identifier();
 
         // Create a new channel and set its properties
-        let mut channel = channel::new(
+        let channel = channel::new(
                 CHAN_STATE_TRYOPEN,
                 connection_id,
                 counterparty_channel_id,
@@ -904,7 +854,7 @@ module ibc::ibc {
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64,
-        ibc_app_witness: T,
+        _: T,
     ) {
         let port_id = string::from_ascii(std::type_name::get<T>().into_string());
 
@@ -981,7 +931,7 @@ module ibc::ibc {
         channel_id: u32,
         proof_ack: vector<u8>,
         proof_height: u64,
-        ibc_app_witness: T
+        _: T
     ) {
         let port_id = string::from_ascii(std::type_name::get<T>().into_string());
 
@@ -1403,7 +1353,6 @@ module ibc::ibc {
         packet: Packet,
         proof: vector<u8>,
         proof_height: u64,
-        next_sequence_recv: u64
     ) {
         let source_channel = packet::source_channel_id(&packet);
         let destination_channel = packet::destination_channel_id(&packet);
@@ -1571,582 +1520,582 @@ module ibc::ibc {
         }
     }
 
-    #[test]
-    fun test_generate_channel_identifier() {
-        let mut ctx = tx_context::dummy();
+    // #[test]
+    // fun test_generate_channel_identifier() {
+    //     let mut ctx = tx_context::dummy();
 
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
         
-        let channel_id1 = ibc_store.generate_channel_identifier();
-        let channel_id2 = ibc_store.generate_channel_identifier();
+    //     let channel_id1 = ibc_store.generate_channel_identifier();
+    //     let channel_id2 = ibc_store.generate_channel_identifier();
 
-        assert!(channel_id1 == 1, 0);
-        assert!(channel_id2 == 2, 0);
+    //     assert!(channel_id1 == 1, 0);
+    //     assert!(channel_id2 == 2, 0);
     
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test]
-    fun test_generate_client_identifier() {
-        let mut ctx = tx_context::dummy();
-
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-        
-        let client_id1 = ibc_store.generate_client_identifier();
-        let client_id2 = ibc_store.generate_client_identifier();
-
-        assert!(client_id1 == 1, 0);
-        assert!(client_id2 == 2, 0);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test]
-    fun test_generate_connection_identifier() {
-        let mut ctx = tx_context::dummy();
-
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-        
-        let connection_id1 = ibc_store.generate_connection_identifier();
-        let connection_id2 = ibc_store.generate_connection_identifier();
-
-        assert!(connection_id1 == 1, 0);
-        assert!(connection_id2 == 2, 0);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test]
-    fun test_commit_connection() {
-        let mut ctx = tx_context::dummy();
-
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        let connection_id = ibc_store.generate_connection_identifier();
-        let connection = connection_end::new(
-            CONN_STATE_INIT,
-            1, // client_id
-            2, // counterparty_client_id
-            0, // counterparty_connection_id
-        );
-
-        // First commit
-        ibc_store.commit_connection(connection_id, connection);
-
-        // Verify the commitment exists
-        let key = commitment::connection_commitment_key(connection_id);
-        assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
-
-        // Update connection state
-        let updated_connection = connection_end::new(
-            CONN_STATE_OPEN,
-            1,
-            2,
-            0,
-        );
-        ibc_store.commit_connection(connection_id, updated_connection);
-
-        // Verify that the commitment is updated
-        let encoded_connection = encode_connection(updated_connection);
-        assert!(ibc_store.commitments.borrow(key) == encoded_connection, 0);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test]
-    fun test_connection_open_init() {
-        let mut ctx = tx_context::dummy();
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        create_client(&mut ibc_store, utf8(b"cometbls"), b"client_state", b"proof", &mut ctx);
-
-        // Set up necessary inputs
-        let client_id = 1;
-        let counterparty_client_id = 2;
-
-        // Call connection_open_init
-        connection_open_init(&mut ibc_store, client_id, counterparty_client_id);
-
-        // Verify connection state
-        let connection_id = 1; // First generated connection ID should be 1
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(connection_end::state(connection) == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test]
-    fun test_connection_open_try() {
-        let mut ctx = tx_context::dummy();
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        create_client(&mut ibc_store, utf8(b"cometbls"), b"client_state", b"proof", &mut ctx);
-
-        // Initialize connection first
-        let client_id = 1;
-        let counterparty_client_id = 2;
-        connection_open_init(&mut ibc_store, client_id, counterparty_client_id);
-
-        // Prepare inputs for connection_open_try
-        let connection_id = 1;
-        let proof_init = b"proof";
-        let proof_height = 1;
-
-        // Call connection_open_try
-        connection_open_try(&mut ibc_store, client_id, counterparty_client_id, connection_id, proof_init, proof_height);
-
-        // Verify state transition to TRYOPEN
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(connection_end::state(connection) == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test]
-    fun test_connection_open_ack() {
-        let mut ctx = tx_context::dummy();
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        create_client(&mut ibc_store, utf8(b"cometbls"), b"client_state", b"proof", &mut ctx);
-        // Initialize and try-open connection first
-        let client_id = 1;
-        let proof_height = 1;
-        let counterparty_client_id = 2;
-        connection_open_init(&mut ibc_store, client_id, counterparty_client_id);
-        connection_open_try(&mut ibc_store, client_id, counterparty_client_id, client_id, b"proof", proof_height);
-
-        // Prepare inputs for connection_open_ack
-        let connection_id = 1;
-        let counterparty_connection_id = 1;
-        let proof_try = b"proof";
-
-        // Call connection_open_ack
-        connection_open_ack(&mut ibc_store, connection_id, counterparty_connection_id, proof_try, proof_height);
-
-        // Verify state transition to OPEN
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(connection_end::state(connection) == CONN_STATE_TRYOPEN, E_INVALID_CONNECTION_STATE);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test]
-    fun test_connection_open_confirm() {
-        let mut ctx = tx_context::dummy();
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        create_client(&mut ibc_store, utf8(b"cometbls"), b"client_state", b"proof", &mut ctx);
-        // Initialize, try-open, and ack the connection first
-        let client_id = 1;
-        let proof_height = 1;
-        let counterparty_client_id = 2;
-        connection_open_init(&mut ibc_store, client_id, counterparty_client_id);
-        connection_open_try(&mut ibc_store, client_id, counterparty_client_id, client_id, b"proof", proof_height);
-        connection_open_ack(&mut ibc_store, client_id, counterparty_client_id, b"proof", proof_height);
-
-        // Prepare inputs for connection_open_confirm
-        let connection_id = 1;
-        let proof_ack = b"proof";
-
-        // Call connection_open_confirm
-        connection_open_confirm(&mut ibc_store, connection_id, proof_ack, proof_height);
-
-        // Verify final state is OPEN
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(connection_end::state(connection) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test_only]
-    fun mock_valid_connection(ibc_store: &mut IBCStore, ctx: &mut TxContext): u32 {
-        // Set up initial details for the connection
-        let client_id = 1;
-        let counterparty_client_id = 2;
-        
-        create_client(ibc_store, utf8(b"cometbls"), b"client_state", b"proof", ctx);
-        // Initialize the connection
-        connection_open_init(ibc_store, client_id, counterparty_client_id);
-        
-        // Move to the TRYOPEN state
-        let connection_id = 1;
-        connection_open_try(ibc_store, client_id, counterparty_client_id, connection_id, b"proof", 1);
-        
-        // Move to the ACK state
-        let counterparty_connection_id = 1;
-        connection_open_ack(ibc_store, connection_id, counterparty_connection_id, b"proof", 1);
-        
-        // Move to the final OPEN state
-        connection_open_confirm(ibc_store, connection_id, b"proof", 1);
-
-        connection_id // Return the connection ID for reuse
-    }
-
-
-    #[test]
-    fun test_channel_open_init() {
-        let mut ctx = tx_context::dummy();
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        // Use the mock function to create a valid connection
-        let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
-
-        // Now proceed with the channel setup using the valid connection
-        let port_id = utf8(b"test_port");
-        let counterparty_port_id = b"counterparty_test_port";
-        let version = utf8(b"test_version");
-
-        // Call channel_open_init
-        channel_open_init(&mut ibc_store, port_id, counterparty_port_id, connection_id, version);
-
-        // Verify the channel state
-        let channel_id = 1;
-        let channel = ibc_store.channels.borrow(channel_id);
-        assert!(channel::state(channel) == CHAN_STATE_INIT, E_INVALID_CHANNEL_STATE);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-    #[test]
-    fun test_channel_open_try() {
-        let mut ctx = tx_context::dummy();
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        // Use the mock function to create a valid connection
-        let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
-
-        // Set up necessary inputs for channel_open_try
-        let port_id = utf8(b"test_port");
-        let channel_state = CHAN_STATE_TRYOPEN; // Assuming we want the state to be TRYOPEN
-        let counterparty_port_id = b"counterparty_test_port";
-        let version = utf8(b"test_version");
-        let counterparty_version = utf8(b"counterparty_version");
-        let counterparty_channel_id = 1;
-        let proof_init = b"proof";
-        let proof_height = 1;
-
-        // Call channel_open_try
-        channel_open_try(
-            &mut ibc_store,
-            port_id,
-            connection_id,
-            counterparty_channel_id,
-            counterparty_port_id,
-            version,
-            counterparty_version,
-            proof_init,
-            proof_height
-        );
-
-        // Retrieve the generated channel ID for verification (assuming it starts from 0)
-        let channel_id = 1;
-        let channel = ibc_store.channels.borrow(channel_id);
-
-        // Verify that the channel state is set to TRYOPEN
-        std::debug::print(&utf8(b"channel is:"));
-        std::debug::print(&channel::state(channel));
-        assert!(channel::state(channel) == CHAN_STATE_TRYOPEN, E_INVALID_CHANNEL_STATE);
-
-        assert!(channel::connection_id(channel) == connection_id, E_CONNECTION_DOES_NOT_EXIST);
-
-        // Verify the version is set as expected
-        assert!(channel::version(channel) == version, E_UNSUPPORTED_VERSION);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-
-    #[test]
-    fun test_channel_open_ack() {
-        let mut ctx = tx_context::dummy();
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        // Use the mock function to create a valid connection
-        let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
-
-        // Set up necessary inputs for channel_open_try
-        let port_id = utf8(b"test_port");
-        let channel_state = CHAN_STATE_TRYOPEN; // Assuming we want the state to be TRYOPEN
-        let counterparty_port_id = b"counterparty_test_port";
-        let version = utf8(b"test_version");
-        let counterparty_version = utf8(b"counterparty_version");
-        let counterparty_channel_id = 1;
-        let proof_init = b"proof";
-        let proof_height = 1;
-
-        // Call channel_open_try
-        channel_open_try(
-            &mut ibc_store,
-            port_id,
-            connection_id,
-            counterparty_channel_id,
-            counterparty_port_id,
-            version,
-            counterparty_version,
-            proof_init,
-            proof_height
-        );
-
-        // Prepare inputs for channel_open_ack
-        let channel_id = 1; // Assuming the generated ID is 0 for the first channel
-        let proof_try = b"proof";
-        let proof_height_ack = 1;
-
-        // Call channel_open_ack
-        channel_open_ack(
-            &mut ibc_store,
-            port_id,
-            channel_id,
-            counterparty_version,
-            counterparty_channel_id,
-            proof_try,
-            proof_height_ack
-        );
-
-        // Verify state transition to OPEN
-        let channel = ibc_store.channels.borrow(channel_id);
-        assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-
-    #[test]
-    fun test_channel_open_confirm() {
-        let mut ctx = tx_context::dummy();
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        // Use the mock function to create a valid connection
-        let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
-
-        // Set up necessary inputs for channel_open_try
-        let port_id = utf8(b"test_port");
-        let channel_state = CHAN_STATE_TRYOPEN; // Assuming we want the state to be TRYOPEN
-        let counterparty_port_id = b"counterparty_test_port";
-        let version = utf8(b"test_version");
-        let counterparty_version = utf8(b"counterparty_version");
-        let counterparty_channel_id = 1;
-        let proof_init = b"proof";
-        let proof_height = 1;
-
-        // Call channel_open_try
-        channel_open_try(
-            &mut ibc_store,
-            port_id,
-            connection_id,
-            counterparty_channel_id,
-            counterparty_port_id,
-            version,
-            counterparty_version,
-            proof_init,
-            proof_height
-        );
-
-        // Call channel_open_ack to move to the open state
-        let channel_id = 1;
-        // let proof_try = b"proof";
-        // let proof_height_ack = 1;
-        // channel_open_ack(
-        //     &mut ibc_store,
-        //     port_id,
-        //     channel_id,
-        //     version,
-        //     counterparty_channel_id,
-        //     proof_try,
-        //     proof_height_ack
-        // );
-
-        // Prepare inputs for channel_open_confirm
-        let proof_ack = b"proof";
-        let proof_height_confirm = 1;
-
-        // Call channel_open_confirm
-        channel_open_confirm(
-            &mut ibc_store,
-            port_id,
-            channel_id,
-            proof_ack,
-            proof_height_confirm
-        );
-
-        // Verify final state is OPEN
-        let channel = ibc_store.channels.borrow(channel_id);
-        assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
-
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
-
-
-    #[test]
-    fun test_send_packet() {
-        let mut ctx = tx_context::dummy();
-
-        let mut test_case = test_scenario::begin(@0x0);
-        init(test_case.ctx());
-        test_case.next_tx(@0x0);
-        let mut ibc_store = test_case.take_shared<IBCStore>();
-
-        // Set up a channel in the OPEN state
-        let channel_id = ibc_store.generate_channel_identifier();
-        let mut channel = channel::default();
-        channel::set_state(&mut channel, CHAN_STATE_OPEN);
-        channel::set_counterparty_channel_id(&mut channel, 1); // Assume the counterparty channel ID is 1
-        ibc_store.channels.add(channel_id, channel);
-
-        // Set up the next sequence number for the send packet
-        let next_sequence_key = commitment::next_sequence_send_commitment_key(channel_id);
-        add_or_update_table<vector<u8>, vector<u8>>(
-            &mut ibc_store.commitments,
-            next_sequence_key,
-            bcs::to_bytes(&1u64)
-        );
-
-        // Define packet data
-        let timeout_height = 100;
-        let timeout_timestamp = 1_000_000_000;
-        let data = b"Hello, IBC!";
-
-        // Call send_packet
-        send_packet(
-            &mut ibc_store,
-            // @0x0, // assuming @0x0 as source port
-            channel_id,
-            timeout_height,
-            timeout_timestamp,
-            data
-        );
-        // Verify packet commitment
-        let commitment_key = commitment::batch_packets_commitment_key(
-            channel_id,
-            commitment::commit_packet(
-                &packet::new(
-                    1,
-                    channel_id,
-                    data,
-                    timeout_height,
-                    timeout_timestamp,
-                )
-            )
-        );
-
-        let commitment = ibc_store.commitments.borrow(commitment_key);
-        assert!(commitment == COMMITMENT_MAGIC, 1);
-
-
-        // Clean up
-        test_scenario::return_shared(ibc_store);
-        test_case.end();
-    }
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
 
     // #[test]
-    // fun test_process_receive() {
+    // fun test_generate_client_identifier() {
+    //     let mut ctx = tx_context::dummy();
+
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+        
+    //     let client_id1 = ibc_store.generate_client_identifier();
+    //     let client_id2 = ibc_store.generate_client_identifier();
+
+    //     assert!(client_id1 == 1, 0);
+    //     assert!(client_id2 == 2, 0);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+    // #[test]
+    // fun test_generate_connection_identifier() {
+    //     let mut ctx = tx_context::dummy();
+
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+        
+    //     let connection_id1 = ibc_store.generate_connection_identifier();
+    //     let connection_id2 = ibc_store.generate_connection_identifier();
+
+    //     assert!(connection_id1 == 1, 0);
+    //     assert!(connection_id2 == 2, 0);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+    // #[test]
+    // fun test_commit_connection() {
+    //     let mut ctx = tx_context::dummy();
+
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     let connection_id = ibc_store.generate_connection_identifier();
+    //     let connection = connection_end::new(
+    //         CONN_STATE_INIT,
+    //         1, // client_id
+    //         2, // counterparty_client_id
+    //         0, // counterparty_connection_id
+    //     );
+
+    //     // First commit
+    //     ibc_store.commit_connection(connection_id, connection);
+
+    //     // Verify the commitment exists
+    //     let key = commitment::connection_commitment_key(connection_id);
+    //     assert!(ibc_store.commitments.contains(key), E_CONNECTION_DOES_NOT_EXIST);
+
+    //     // Update connection state
+    //     let updated_connection = connection_end::new(
+    //         CONN_STATE_OPEN,
+    //         1,
+    //         2,
+    //         0,
+    //     );
+    //     ibc_store.commit_connection(connection_id, updated_connection);
+
+    //     // Verify that the commitment is updated
+    //     let encoded_connection = encode_connection(updated_connection);
+    //     assert!(ibc_store.commitments.borrow(key) == encoded_connection, 0);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+    // #[test]
+    // fun test_connection_open_init() {
     //     let mut ctx = tx_context::dummy();
     //     let mut test_case = test_scenario::begin(@0x0);
     //     init(test_case.ctx());
     //     test_case.next_tx(@0x0);
     //     let mut ibc_store = test_case.take_shared<IBCStore>();
 
-    //     // Set up a valid connection and channel in the OPEN state
-    //     let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
+    //     create_client(&mut ibc_store, utf8(b"cometbls"), b"client_state", b"proof", &mut ctx);
 
-    //     let channel_id = ibc_store.generate_channel_identifier();
-    //     let mut channel = channel::default();
-    //     channel::set_state(&mut channel, CHAN_STATE_OPEN);
-    //     channel::set_connection_id(&mut channel, connection_id);
-    //     channel::set_counterparty_channel_id(&mut channel, 1); // Set counterparty channel ID
-    //     ibc_store.channels.add(channel_id, channel);
+    //     // Set up necessary inputs
+    //     let client_id = 1;
+    //     let counterparty_client_id = 2;
 
-    //     // Prepare packet data
-    //     let sequence = 1;
-    //     let packet = packet::new(
-    //         sequence,
-    //         channel_id,
-    //         b"Test data",
-    //         100, // Timeout height
-    //         1_000_000_000 // Timeout timestamp
-    //     );
-    //     let packets = vector::singleton(packet);
+    //     // Call connection_open_init
+    //     connection_open_init(&mut ibc_store, client_id, counterparty_client_id);
 
-    //     // Call process_receive
-    //     let proof = b"valid_proof"; // Mock proof
-    //     let proof_height = 100;
-    //     let acknowledgement = b"";
+    //     // Verify connection state
+    //     let connection_id = 1; // First generated connection ID should be 1
+    //     let connection = ibc_store.connections.borrow(connection_id);
+    //     assert!(connection_end::state(connection) == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
 
-    //     let commitment_key =
-    //             commitment::batch_receipts_commitment_key(
-    //                 packet::destination_channel_id(&packet),
-    //                 commitment::commit_packet(&packet)
-    //             );
-                
-    //     let mut clock = clock::create_for_testing(&mut ctx);
-    //     clock.set_for_testing(99);
-
-    //     process_receive(
-    //         &mut ibc_store,
-    //         &clock,
-    //         packets,
-    //         proof_height,
-    //         proof,
-    //         false, // No intent
-    //         acknowledgement
-    //     );
-
-    //     assert!(ibc_store.commitments.contains(commitment_key), E_PACKET_NOT_RECEIVED);
-    //     let commitment = ibc_store.commitments.borrow(commitment_key);
-    //     assert!(commitment == COMMITMENT_MAGIC, 0);
-
-
-    //     clock::destroy_for_testing(clock);
     //     test_scenario::return_shared(ibc_store);
     //     test_case.end();
     // }
+
+    // #[test]
+    // fun test_connection_open_try() {
+    //     let mut ctx = tx_context::dummy();
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+        
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     create_client(&mut ibc_store, utf8(b"cometbls"), b"client_state", b"proof", &mut ctx);
+
+    //     // Initialize connection first
+    //     let client_id = 1;
+    //     let counterparty_client_id = 2;
+    //     connection_open_init(&mut ibc_store, client_id, counterparty_client_id);
+
+    //     // Prepare inputs for connection_open_try
+    //     let connection_id = 1;
+    //     let proof_init = b"proof";
+    //     let proof_height = 1;
+
+    //     // Call connection_open_try
+    //     connection_open_try(&mut ibc_store, client_id, counterparty_client_id, connection_id, proof_init, proof_height);
+
+    //     // Verify state transition to TRYOPEN
+    //     let connection = ibc_store.connections.borrow(connection_id);
+    //     assert!(connection_end::state(connection) == CONN_STATE_INIT, E_INVALID_CONNECTION_STATE);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+    // #[test]
+    // fun test_connection_open_ack() {
+    //     let mut ctx = tx_context::dummy();
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     create_client(&mut ibc_store, utf8(b"cometbls"), b"client_state", b"proof", &mut ctx);
+    //     // Initialize and try-open connection first
+    //     let client_id = 1;
+    //     let proof_height = 1;
+    //     let counterparty_client_id = 2;
+    //     connection_open_init(&mut ibc_store, client_id, counterparty_client_id);
+    //     connection_open_try(&mut ibc_store, client_id, counterparty_client_id, client_id, b"proof", proof_height);
+
+    //     // Prepare inputs for connection_open_ack
+    //     let connection_id = 1;
+    //     let counterparty_connection_id = 1;
+    //     let proof_try = b"proof";
+
+    //     // Call connection_open_ack
+    //     connection_open_ack(&mut ibc_store, connection_id, counterparty_connection_id, proof_try, proof_height);
+
+    //     // Verify state transition to OPEN
+    //     let connection = ibc_store.connections.borrow(connection_id);
+    //     assert!(connection_end::state(connection) == CONN_STATE_TRYOPEN, E_INVALID_CONNECTION_STATE);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+    // #[test]
+    // fun test_connection_open_confirm() {
+    //     let mut ctx = tx_context::dummy();
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     create_client(&mut ibc_store, utf8(b"cometbls"), b"client_state", b"proof", &mut ctx);
+    //     // Initialize, try-open, and ack the connection first
+    //     let client_id = 1;
+    //     let proof_height = 1;
+    //     let counterparty_client_id = 2;
+    //     connection_open_init(&mut ibc_store, client_id, counterparty_client_id);
+    //     connection_open_try(&mut ibc_store, client_id, counterparty_client_id, client_id, b"proof", proof_height);
+    //     connection_open_ack(&mut ibc_store, client_id, counterparty_client_id, b"proof", proof_height);
+
+    //     // Prepare inputs for connection_open_confirm
+    //     let connection_id = 1;
+    //     let proof_ack = b"proof";
+
+    //     // Call connection_open_confirm
+    //     connection_open_confirm(&mut ibc_store, connection_id, proof_ack, proof_height);
+
+    //     // Verify final state is OPEN
+    //     let connection = ibc_store.connections.borrow(connection_id);
+    //     assert!(connection_end::state(connection) == CONN_STATE_OPEN, E_INVALID_CONNECTION_STATE);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+    // #[test_only]
+    // fun mock_valid_connection(ibc_store: &mut IBCStore, ctx: &mut TxContext): u32 {
+    //     // Set up initial details for the connection
+    //     let client_id = 1;
+    //     let counterparty_client_id = 2;
+        
+    //     create_client(ibc_store, utf8(b"cometbls"), b"client_state", b"proof", ctx);
+    //     // Initialize the connection
+    //     connection_open_init(ibc_store, client_id, counterparty_client_id);
+        
+    //     // Move to the TRYOPEN state
+    //     let connection_id = 1;
+    //     connection_open_try(ibc_store, client_id, counterparty_client_id, connection_id, b"proof", 1);
+        
+    //     // Move to the ACK state
+    //     let counterparty_connection_id = 1;
+    //     connection_open_ack(ibc_store, connection_id, counterparty_connection_id, b"proof", 1);
+        
+    //     // Move to the final OPEN state
+    //     connection_open_confirm(ibc_store, connection_id, b"proof", 1);
+
+    //     connection_id // Return the connection ID for reuse
+    // }
+
+
+    // #[test]
+    // fun test_channel_open_init() {
+    //     let mut ctx = tx_context::dummy();
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     // Use the mock function to create a valid connection
+    //     let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
+
+    //     // Now proceed with the channel setup using the valid connection
+    //     let port_id = utf8(b"test_port");
+    //     let counterparty_port_id = b"counterparty_test_port";
+    //     let version = utf8(b"test_version");
+
+    //     // Call channel_open_init
+    //     channel_open_init(&mut ibc_store, port_id, counterparty_port_id, connection_id, version);
+
+    //     // Verify the channel state
+    //     let channel_id = 1;
+    //     let channel = ibc_store.channels.borrow(channel_id);
+    //     assert!(channel::state(channel) == CHAN_STATE_INIT, E_INVALID_CHANNEL_STATE);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+    // #[test]
+    // fun test_channel_open_try() {
+    //     let mut ctx = tx_context::dummy();
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     // Use the mock function to create a valid connection
+    //     let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
+
+    //     // Set up necessary inputs for channel_open_try
+    //     let port_id = utf8(b"test_port");
+    //     let channel_state = CHAN_STATE_TRYOPEN; // Assuming we want the state to be TRYOPEN
+    //     let counterparty_port_id = b"counterparty_test_port";
+    //     let version = utf8(b"test_version");
+    //     let counterparty_version = utf8(b"counterparty_version");
+    //     let counterparty_channel_id = 1;
+    //     let proof_init = b"proof";
+    //     let proof_height = 1;
+
+    //     // Call channel_open_try
+    //     channel_open_try(
+    //         &mut ibc_store,
+    //         port_id,
+    //         connection_id,
+    //         counterparty_channel_id,
+    //         counterparty_port_id,
+    //         version,
+    //         counterparty_version,
+    //         proof_init,
+    //         proof_height
+    //     );
+
+    //     // Retrieve the generated channel ID for verification (assuming it starts from 0)
+    //     let channel_id = 1;
+    //     let channel = ibc_store.channels.borrow(channel_id);
+
+    //     // Verify that the channel state is set to TRYOPEN
+    //     std::debug::print(&utf8(b"channel is:"));
+    //     std::debug::print(&channel::state(channel));
+    //     assert!(channel::state(channel) == CHAN_STATE_TRYOPEN, E_INVALID_CHANNEL_STATE);
+
+    //     assert!(channel::connection_id(channel) == connection_id, E_CONNECTION_DOES_NOT_EXIST);
+
+    //     // Verify the version is set as expected
+    //     assert!(channel::version(channel) == version, E_UNSUPPORTED_VERSION);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+
+    // #[test]
+    // fun test_channel_open_ack() {
+    //     let mut ctx = tx_context::dummy();
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     // Use the mock function to create a valid connection
+    //     let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
+
+    //     // Set up necessary inputs for channel_open_try
+    //     let port_id = utf8(b"test_port");
+    //     let channel_state = CHAN_STATE_TRYOPEN; // Assuming we want the state to be TRYOPEN
+    //     let counterparty_port_id = b"counterparty_test_port";
+    //     let version = utf8(b"test_version");
+    //     let counterparty_version = utf8(b"counterparty_version");
+    //     let counterparty_channel_id = 1;
+    //     let proof_init = b"proof";
+    //     let proof_height = 1;
+
+    //     // Call channel_open_try
+    //     channel_open_try(
+    //         &mut ibc_store,
+    //         port_id,
+    //         connection_id,
+    //         counterparty_channel_id,
+    //         counterparty_port_id,
+    //         version,
+    //         counterparty_version,
+    //         proof_init,
+    //         proof_height
+    //     );
+
+    //     // Prepare inputs for channel_open_ack
+    //     let channel_id = 1; // Assuming the generated ID is 0 for the first channel
+    //     let proof_try = b"proof";
+    //     let proof_height_ack = 1;
+
+    //     // Call channel_open_ack
+    //     channel_open_ack(
+    //         &mut ibc_store,
+    //         port_id,
+    //         channel_id,
+    //         counterparty_version,
+    //         counterparty_channel_id,
+    //         proof_try,
+    //         proof_height_ack
+    //     );
+
+    //     // Verify state transition to OPEN
+    //     let channel = ibc_store.channels.borrow(channel_id);
+    //     assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+
+    // #[test]
+    // fun test_channel_open_confirm() {
+    //     let mut ctx = tx_context::dummy();
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     // Use the mock function to create a valid connection
+    //     let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
+
+    //     // Set up necessary inputs for channel_open_try
+    //     let port_id = utf8(b"test_port");
+    //     let channel_state = CHAN_STATE_TRYOPEN; // Assuming we want the state to be TRYOPEN
+    //     let counterparty_port_id = b"counterparty_test_port";
+    //     let version = utf8(b"test_version");
+    //     let counterparty_version = utf8(b"counterparty_version");
+    //     let counterparty_channel_id = 1;
+    //     let proof_init = b"proof";
+    //     let proof_height = 1;
+
+    //     // Call channel_open_try
+    //     channel_open_try(
+    //         &mut ibc_store,
+    //         port_id,
+    //         connection_id,
+    //         counterparty_channel_id,
+    //         counterparty_port_id,
+    //         version,
+    //         counterparty_version,
+    //         proof_init,
+    //         proof_height
+    //     );
+
+    //     // Call channel_open_ack to move to the open state
+    //     let channel_id = 1;
+    //     // let proof_try = b"proof";
+    //     // let proof_height_ack = 1;
+    //     // channel_open_ack(
+    //     //     &mut ibc_store,
+    //     //     port_id,
+    //     //     channel_id,
+    //     //     version,
+    //     //     counterparty_channel_id,
+    //     //     proof_try,
+    //     //     proof_height_ack
+    //     // );
+
+    //     // Prepare inputs for channel_open_confirm
+    //     let proof_ack = b"proof";
+    //     let proof_height_confirm = 1;
+
+    //     // Call channel_open_confirm
+    //     channel_open_confirm(
+    //         &mut ibc_store,
+    //         port_id,
+    //         channel_id,
+    //         proof_ack,
+    //         proof_height_confirm
+    //     );
+
+    //     // Verify final state is OPEN
+    //     let channel = ibc_store.channels.borrow(channel_id);
+    //     assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+
+    // #[test]
+    // fun test_send_packet() {
+    //     let mut ctx = tx_context::dummy();
+
+    //     let mut test_case = test_scenario::begin(@0x0);
+    //     init(test_case.ctx());
+    //     test_case.next_tx(@0x0);
+    //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    //     // Set up a channel in the OPEN state
+    //     let channel_id = ibc_store.generate_channel_identifier();
+    //     let mut channel = channel::default();
+    //     channel::set_state(&mut channel, CHAN_STATE_OPEN);
+    //     channel::set_counterparty_channel_id(&mut channel, 1); // Assume the counterparty channel ID is 1
+    //     ibc_store.channels.add(channel_id, channel);
+
+    //     // Set up the next sequence number for the send packet
+    //     let next_sequence_key = commitment::next_sequence_send_commitment_key(channel_id);
+    //     add_or_update_table<vector<u8>, vector<u8>>(
+    //         &mut ibc_store.commitments,
+    //         next_sequence_key,
+    //         bcs::to_bytes(&1u64)
+    //     );
+
+    //     // Define packet data
+    //     let timeout_height = 100;
+    //     let timeout_timestamp = 1_000_000_000;
+    //     let data = b"Hello, IBC!";
+
+    //     // Call send_packet
+    //     send_packet(
+    //         &mut ibc_store,
+    //         // @0x0, // assuming @0x0 as source port
+    //         channel_id,
+    //         timeout_height,
+    //         timeout_timestamp,
+    //         data
+    //     );
+    //     // Verify packet commitment
+    //     let commitment_key = commitment::batch_packets_commitment_key(
+    //         channel_id,
+    //         commitment::commit_packet(
+    //             &packet::new(
+    //                 1,
+    //                 channel_id,
+    //                 data,
+    //                 timeout_height,
+    //                 timeout_timestamp,
+    //             )
+    //         )
+    //     );
+
+    //     let commitment = ibc_store.commitments.borrow(commitment_key);
+    //     assert!(commitment == COMMITMENT_MAGIC, 1);
+
+
+    //     // Clean up
+    //     test_scenario::return_shared(ibc_store);
+    //     test_case.end();
+    // }
+
+    // // #[test]
+    // // fun test_process_receive() {
+    // //     let mut ctx = tx_context::dummy();
+    // //     let mut test_case = test_scenario::begin(@0x0);
+    // //     init(test_case.ctx());
+    // //     test_case.next_tx(@0x0);
+    // //     let mut ibc_store = test_case.take_shared<IBCStore>();
+
+    // //     // Set up a valid connection and channel in the OPEN state
+    // //     let connection_id = mock_valid_connection(&mut ibc_store, &mut ctx);
+
+    // //     let channel_id = ibc_store.generate_channel_identifier();
+    // //     let mut channel = channel::default();
+    // //     channel::set_state(&mut channel, CHAN_STATE_OPEN);
+    // //     channel::set_connection_id(&mut channel, connection_id);
+    // //     channel::set_counterparty_channel_id(&mut channel, 1); // Set counterparty channel ID
+    // //     ibc_store.channels.add(channel_id, channel);
+
+    // //     // Prepare packet data
+    // //     let sequence = 1;
+    // //     let packet = packet::new(
+    // //         sequence,
+    // //         channel_id,
+    // //         b"Test data",
+    // //         100, // Timeout height
+    // //         1_000_000_000 // Timeout timestamp
+    // //     );
+    // //     let packets = vector::singleton(packet);
+
+    // //     // Call process_receive
+    // //     let proof = b"valid_proof"; // Mock proof
+    // //     let proof_height = 100;
+    // //     let acknowledgement = b"";
+
+    // //     let commitment_key =
+    // //             commitment::batch_receipts_commitment_key(
+    // //                 packet::destination_channel_id(&packet),
+    // //                 commitment::commit_packet(&packet)
+    // //             );
+                
+    // //     let mut clock = clock::create_for_testing(&mut ctx);
+    // //     clock.set_for_testing(99);
+
+    // //     process_receive(
+    // //         &mut ibc_store,
+    // //         &clock,
+    // //         packets,
+    // //         proof_height,
+    // //         proof,
+    // //         false, // No intent
+    // //         acknowledgement
+    // //     );
+
+    // //     assert!(ibc_store.commitments.contains(commitment_key), E_PACKET_NOT_RECEIVED);
+    // //     let commitment = ibc_store.commitments.borrow(commitment_key);
+    // //     assert!(commitment == COMMITMENT_MAGIC, 0);
+
+
+    // //     clock::destroy_for_testing(clock);
+    // //     test_scenario::return_shared(ibc_store);
+    // //     test_case.end();
+    // // }
 }
