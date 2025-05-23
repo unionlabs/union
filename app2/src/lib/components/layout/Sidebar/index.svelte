@@ -2,7 +2,7 @@
 import { page } from "$app/state"
 import ExternalLinkIcon from "$lib/components/icons/ExternalLinkIcon.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
-// import ProfileCard from "$lib/dashboard/components/SideCard.svelte"
+import ProfileCard from "$lib/dashboard/components/SideCard.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { cn } from "$lib/utils"
 import { onMount } from "svelte"
@@ -101,7 +101,7 @@ onMount(() => {
       {/key}
     </a>
     <div class="flex flex-col flex-1">
-      <!-- <ProfileCard /> -->
+      <ProfileCard />
       {#each navigation as section}
         {#if section.title !== "Developer" || uiStore.showDeveloperPages}
           <section class="border-zinc-900 p-6 last:flex-1 flex flex-col justify-end">
