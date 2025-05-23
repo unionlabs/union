@@ -59,8 +59,6 @@
 // TITLE.
 
 module ibc::packet {
-    use std::vector;
-    use sui::object::{Self, UID};
     use ibc::ethabi;
 
     public struct Packet has copy, store, drop {

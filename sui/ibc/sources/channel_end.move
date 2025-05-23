@@ -64,16 +64,6 @@ module ibc::channel {
     use std::vector;
     use ibc::ethabi;
 
-    const CHAN_STATE_UNINITIALIZED: u8 = 0;
-    const CHAN_STATE_INIT: u8 = 1;
-    const CHAN_STATE_TRYOPEN: u8 = 2;
-    const CHAN_STATE_OPEN: u8 = 3;
-    const CHAN_STATE_CLOSED: u8 = 4;
-
-    const CHAN_ORDERING_NONE: u8 = 0;
-    const CHAN_ORDERING_UNORDERED: u8 = 1;
-    const CHAN_ORDERING_ORDERED: u8 = 2;
-
     const E_PACKET_VERSION_LENGTH_EXCEEDS_MAX: u64 = 1;
 
     public struct Channel has copy, store, drop {
@@ -150,7 +140,7 @@ module ibc::channel {
         ethabi::encode_uint<u64>(&mut buf, version_length);
 
         let mut i = 32 - version_length;
-        vector::append(&mut buf, *string::bytes(&channel.version));
+        buf.append(*channel.version.as_bytes());
         while (i > 0) {
             vector::push_back(&mut buf, 0);
             i = i - 1;
