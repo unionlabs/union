@@ -6,7 +6,7 @@ const minimumLogLevel = Logger.minimumLogLevel(
   Match.value(ENV()).pipe(
     Match.when("DEVELOPMENT", () => LogLevel.Trace),
     Match.when("STAGING", () => LogLevel.Debug),
-    Match.when("PRODUCTION", () => LogLevel.Warning),
+    Match.when("PRODUCTION", () => LogLevel.Info),
     Match.exhaustive,
   ),
 )
