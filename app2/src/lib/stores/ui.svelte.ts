@@ -58,7 +58,7 @@ class UiStore {
       Option.getOrUndefined,
     )
 
-    this.edition = overrideEdition ?? getEditionFromUrl(page.url.toString())
+    this.edition = overrideEdition ?? getEditionFromUrl(globalThis.location.hostname)
     this.theme = themes[this.edition]
     this.appInfo = {
       base64Icon,
