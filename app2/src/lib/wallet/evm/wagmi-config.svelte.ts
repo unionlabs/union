@@ -27,16 +27,18 @@ import {
 } from "@wagmi/core/chains"
 
 export const chains = [
-  mainnet,
-  corn,
-  sepolia,
-  holesky,
-  berachainTestnetbArtio,
   arbitrumSepolia,
-  scrollSepolia,
-  bobSepolia,
+  berachainTestnetbArtio,
   bob,
+  bobSepolia,
+  corn,
   cornTestnet,
+  holesky,
+  mainnet,
+  scrollSepolia,
+  sei,
+  seiTestnet,
+  sepolia,
 ] as const
 
 export function getChainFromWagmi(chainId: number) {
