@@ -56,7 +56,7 @@ use crate::{
     filter::JaqInterestFilter,
     module::{
         ClientBootstrapModuleInfo, ClientBootstrapModuleServer, ClientModuleInfo,
-        ClientModuleServer, ConsensusModuleInfo, ConsensusModuleServer, PluginInfo, PluginServer,
+        ClientModuleServer, FinalityModuleInfo, FinalityModuleServer, PluginInfo, PluginServer,
         ProofModuleInfo, ProofModuleServer, StateModuleInfo, StateModuleServer,
     },
     rpc::{json_rpc_error_to_error_object, IbcProofResponse, IbcState, VoyagerRpcClient},
@@ -435,10 +435,10 @@ pub trait ProofModule<V: IbcSpec>: ProofModuleServer<V> + Sized {
 }
 
 #[allow(async_fn_in_trait)]
-pub trait ConsensusModule: ConsensusModuleServer + Sized {
+pub trait FinalityModule: FinalityModuleServer + Sized {
     type Config: DeserializeOwned + Clone;
 
-    async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError>;
+    async fn new(config: Self::Config, info: FinalityModuleInfo) -> Result<Self, BoxDynError>;
 
     async fn run() {
         match <ModuleApp as clap::Parser>::parse() {
@@ -453,7 +453,7 @@ pub trait ConsensusModule: ConsensusModuleServer + Sized {
 
                 let config = must_parse::<Self::Config>(&config);
 
-                let info = must_parse::<ConsensusModuleInfo>(&info);
+                let info = must_parse::<FinalityModuleInfo>(&info);
 
                 let name = info.id();
 
@@ -465,7 +465,7 @@ pub trait ConsensusModule: ConsensusModuleServer + Sized {
                     |(config, info)| Self::new(config, info),
                     Self::into_rpc,
                 )
-                .instrument(debug_span!("run_consensus_module_server", %name))
+                .instrument(debug_span!("run_finality_module_server", %name))
                 .await
             }
         }

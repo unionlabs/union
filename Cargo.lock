@@ -15283,155 +15283,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-consensus-module-arbitrum"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "arbitrum-client",
- "arbitrum-types",
- "embed-commit",
- "ibc-union-spec",
- "jsonrpsee",
- "serde",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-consensus-module-berachain"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "beacon-api-types",
- "berachain-light-client-types",
- "cometbft-rpc",
- "dashmap 5.5.3",
- "embed-commit",
- "enumorph",
- "futures",
- "ics23",
- "jsonrpsee",
- "macros",
- "num-bigint 0.4.6",
- "prost 0.12.6",
- "protos",
- "serde",
- "serde_json",
- "tendermint-light-client-types",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "tracing-subscriber 0.3.19",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-consensus-module-bob"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "bob-client",
- "bob-light-client-types",
- "bob-types",
- "bob-verifier",
- "embed-commit",
- "ibc-union-spec",
- "jsonrpsee",
- "serde",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-consensus-module-cometbls"
-version = "0.0.0"
-dependencies = [
- "cometbft-rpc",
- "embed-commit",
- "jsonrpsee",
- "serde",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-consensus-module-ethereum"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "beacon-api",
- "beacon-api-types",
- "embed-commit",
- "jsonrpsee",
- "moka",
- "serde",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-consensus-module-movement"
-version = "0.0.0"
-dependencies = [
- "aptos-move-ibc",
- "aptos-rest-client",
- "embed-commit",
- "jsonrpsee",
- "serde",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
-]
-
-[[package]]
-name = "voyager-consensus-module-tendermint"
-version = "0.0.0"
-dependencies = [
- "cometbft-rpc",
- "embed-commit",
- "jsonrpsee",
- "serde",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-consensus-module-trusted-evm"
-version = "0.0.0"
-dependencies = [
- "alloy",
- "embed-commit",
- "jsonrpsee",
- "serde",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
- "voyager-vm",
-]
-
-[[package]]
 name = "voyager-event-source-plugin-cosmos-sdk"
 version = "0.0.0"
 dependencies = [
@@ -15499,6 +15350,155 @@ dependencies = [
  "move-bindgen",
  "serde",
  "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-finality-module-arbitrum"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "arbitrum-client",
+ "arbitrum-types",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-finality-module-berachain"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "beacon-api-types",
+ "berachain-light-client-types",
+ "cometbft-rpc",
+ "dashmap 5.5.3",
+ "embed-commit",
+ "enumorph",
+ "futures",
+ "ics23",
+ "jsonrpsee",
+ "macros",
+ "num-bigint 0.4.6",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde_json",
+ "tendermint-light-client-types",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-finality-module-bob"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bob-client",
+ "bob-light-client-types",
+ "bob-types",
+ "bob-verifier",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee",
+ "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-finality-module-cometbls"
+version = "0.0.0"
+dependencies = [
+ "cometbft-rpc",
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-finality-module-ethereum"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "beacon-api",
+ "beacon-api-types",
+ "embed-commit",
+ "jsonrpsee",
+ "moka",
+ "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-finality-module-movement"
+version = "0.0.0"
+dependencies = [
+ "aptos-move-ibc",
+ "aptos-rest-client",
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+]
+
+[[package]]
+name = "voyager-finality-module-tendermint"
+version = "0.0.0"
+dependencies = [
+ "cometbft-rpc",
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-message",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-finality-module-trusted-evm"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
  "tokio",
  "tracing",
  "unionlabs",
