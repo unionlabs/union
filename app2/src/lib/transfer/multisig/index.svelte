@@ -148,10 +148,6 @@ function newTransfer() {
 }
 
 beforeNavigate(newTransfer)
-
-$effect(() => {
-  console.log("here", wallets.inputAddress)
-})
 </script>
 
 <Card

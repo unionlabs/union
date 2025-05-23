@@ -20,6 +20,9 @@ import {
   holesky,
   mainnet,
   scrollSepolia,
+  sei,
+  seiDevnet,
+  seiTestnet,
   sepolia,
 } from "@wagmi/core/chains"
 
@@ -167,6 +170,24 @@ function createWagmiConfigInstance() {
         http(bob.rpcUrls.default.http.at(0), {
           name: "default Corn Testnet RPC",
         }),
+      ]),
+      [sei.id]: fallback([
+        unstable_connector(injected, {
+          retryCount: 3,
+          retryDelay: 100,
+          key: "unstable_connector-injected-sei",
+          name: "unstable_connector-injected-sei",
+        }),
+        http(sei.rpcUrls.default.http.at(0), { name: "default Sei RPC" }),
+      ]),
+      [seiTestnet.id]: fallback([
+        unstable_connector(injected, {
+          retryCount: 3,
+          retryDelay: 100,
+          key: "unstable_connector-injected-sei-testnet",
+          name: "unstable_connector-injected-sei-testnet",
+        }),
+        http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
       ]),
     },
     storage: createWagmiStorage({
