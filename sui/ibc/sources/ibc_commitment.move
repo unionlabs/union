@@ -263,13 +263,13 @@ module ibc::commitment {
     public fun batch_packets_commitment_key(
         channel_id: u32, batch_hash: vector<u8>
     ): vector<u8> {
-        batch_packets_commitment_path(channel_id, batch_hash)
+        keccak256(&batch_packets_commitment_path(channel_id, batch_hash))
     }
 
     public fun batch_receipts_commitment_key(
         channel_id: u32, batch_hash: vector<u8>
     ): vector<u8> {
-        batch_receipts_commitment_path(channel_id, batch_hash)
+        keccak256(&batch_receipts_commitment_path(channel_id, batch_hash))
     }
 
     public fun next_sequence_send_commitment_key(channel_id: u32): vector<u8> {
@@ -312,7 +312,7 @@ module ibc::commitment {
                 encode_bytes(buf, item);
             }
         );
-        buf
+        merge_ack(keccak256(&buf))
     }
 
     fun merge_ack(mut ack: vector<u8>): vector<u8> {
@@ -322,7 +322,7 @@ module ibc::commitment {
     }
 
     public fun commit_ack(ack: vector<u8>): vector<u8> {
-        merge_ack(hash::keccak256(&ack))
+        commit_acks(vector[ack])
     }
     
     // #[test]
