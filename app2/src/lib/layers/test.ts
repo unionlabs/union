@@ -1,5 +1,6 @@
+import { GraphQL } from "$lib/graphql/service"
 import { Layer, Logger } from "effect"
 
-const layer = Layer.empty
-
-export default layer
+export default Layer.mergeAll(
+  GraphQL.Test,
+)
