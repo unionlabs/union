@@ -113,7 +113,6 @@ module ibc::packet {
     public fun encode(packet: &Packet): vector<u8> {
         let mut buf = vector::empty();
 
-        ethabi::encode_uint<u8>(&mut buf, 0x20);
         ethabi::encode_uint<u32>(&mut buf, packet.source_channel_id);
         ethabi::encode_uint<u32>(&mut buf, packet.destination_channel_id);
         ethabi::encode_uint<u32>(&mut buf, 5 * 0x20);
