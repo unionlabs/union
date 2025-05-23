@@ -14,10 +14,10 @@ function getWalletCategory(chainId: string): "evm" | "cosmos" | "other" {
     return "other"
   }
   const lowerChainId = chainId.toLowerCase()
-  if (lowerChainId.startsWith("evm")) {
+  if (lowerChainId === "evm" || lowerChainId.startsWith("evm:")) {
     return "evm"
   }
-  if (lowerChainId.startsWith("cosmos:")) {
+  if (lowerChainId === "cosmos" || lowerChainId.startsWith("cosmos:")) {
     return "cosmos"
   }
   return "other"
@@ -46,11 +46,13 @@ export class WalletStore {
   enhanced = $derived(
     Option.flatMap(this.wallets, (wallets) => {
       return Option.some(
-        wallets.map((wallet) => ({
-          ...wallet,
-          hasGrouping: wallet.grouping !== null,
-          createdAt: new Date(wallet.created_at),
-        } as EnhancedWallet)),
+        wallets.map(
+          (wallet) => ({
+            ...wallet,
+            hasGrouping: wallet.grouping !== null,
+            createdAt: new Date(wallet.created_at),
+          } as EnhancedWallet),
+        ),
       )
     }).pipe(
       Option.getOrElse(() => {
@@ -63,38 +65,43 @@ export class WalletStore {
    * Wallets grouped by chain
    */
   byChain = $derived(
-    this.enhanced.reduce<Record<string, Array<EnhancedWallet>>>((acc, wallet) => {
-      const chain = wallet.chain_id
-      if (!acc[chain]) {
-        acc[chain] = []
-      }
-      acc[chain].push(wallet)
-      return acc
-    }, {}),
+    this.enhanced.reduce<Record<string, Array<EnhancedWallet>>>(
+      (acc, wallet) => {
+        const chain = wallet.chain_id
+        if (!acc[chain]) {
+          acc[chain] = []
+        }
+        acc[chain].push(wallet)
+        return acc
+      },
+      {},
+    ),
   )
 
   /**
    * Wallets with grouping
    */
-  grouped = $derived(
-    this.enhanced.filter((w) => w.hasGrouping),
-  )
+  grouped = $derived(this.enhanced.filter((w) => w.hasGrouping))
 
   /**
    * Wallets without grouping
    */
-  ungrouped = $derived(
-    this.enhanced.filter((w) => !w.hasGrouping),
-  )
+  ungrouped = $derived(this.enhanced.filter((w) => !w.hasGrouping))
 
   /**
    * Wallet statistics
    */
   stats = $derived({
     total: this.enhanced.length,
-    evmCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === "evm").length,
-    cosmosCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === "cosmos").length,
-    otherCount: this.enhanced.filter(w => getWalletCategory(w.chain_id) === "other").length,
+    evmCount: this.enhanced.filter(
+      (w) => getWalletCategory(w.chain_id) === "evm",
+    ).length,
+    cosmosCount: this.enhanced.filter(
+      (w) => getWalletCategory(w.chain_id) === "cosmos",
+    ).length,
+    otherCount: this.enhanced.filter(
+      (w) => getWalletCategory(w.chain_id) === "other",
+    ).length,
   })
 
   constructor(private readonly userId: string) {
@@ -117,7 +124,9 @@ export class WalletStore {
           return Effect.void
         }),
         Effect.catchAll((error) => {
-          errorStore.showError(new WalletError({ cause: error, operation: "load" }))
+          errorStore.showError(
+            new WalletError({ cause: error, operation: "load" }),
+          )
           return Effect.succeed(Option.none())
         }),
       ),
@@ -137,7 +146,9 @@ export class WalletStore {
           return Effect.void
         }),
         Effect.catchAll((error) => {
-          errorStore.showError(new WalletError({ cause: error, operation: "loadChains" }))
+          errorStore.showError(
+            new WalletError({ cause: error, operation: "loadChains" }),
+          )
           return Effect.succeed(Option.none())
         }),
       ),
@@ -162,7 +173,9 @@ export class WalletStore {
             return Effect.void
           }),
           Effect.catchAll((error) => {
-            errorStore.showError(new WalletError({ cause: error, operation: "load" }))
+            errorStore.showError(
+              new WalletError({ cause: error, operation: "load" }),
+            )
             return Effect.succeed(Option.none())
           }),
           Effect.delay(Duration.millis(POLL_INTERVAL)),
@@ -209,15 +222,22 @@ export class WalletStore {
       removeUserWallet(this.userId, address),
       Effect.flatMap((dbSuccess) => {
         if (dbSuccess) {
-          const currentWallets = Option.getOrElse(this.wallets, () => [] as Array<Wallet>)
-          this.wallets = Option.some(currentWallets.filter(wallet => wallet.address !== address))
+          const currentWallets = Option.getOrElse(
+            this.wallets,
+            () => [] as Array<Wallet>,
+          )
+          this.wallets = Option.some(
+            currentWallets.filter((wallet) => wallet.address !== address),
+          )
           this.refresh()
           return Effect.succeed(true)
         }
         return Effect.succeed(false)
       }),
       Effect.catchAll((error) => {
-        errorStore.showError(new WalletError({ cause: error, operation: "remove" }))
+        errorStore.showError(
+          new WalletError({ cause: error, operation: "remove" }),
+        )
         return Effect.succeed(false)
       }),
     )
@@ -229,23 +249,28 @@ export class WalletStore {
       return Effect.succeed(false)
     }
 
-    const walletsInGroup = this.enhanced.filter(w => w.grouping === groupingId)
+    const walletsInGroup = this.enhanced.filter(
+      (w) => w.grouping === groupingId,
+    )
     if (walletsInGroup.length === 0) {
       return Effect.succeed(true)
     }
 
-    const removalEffects = walletsInGroup.map(wallet =>
+    const removalEffects = walletsInGroup.map((wallet) =>
       removeUserWallet(this.userId, wallet.address)
     )
 
     return pipe(
       Effect.all(removalEffects, { concurrency: "inherit", discard: false }),
       Effect.flatMap((results) => {
-        const allSucceeded = results.every(res => res)
+        const allSucceeded = results.every((res) => res)
         if (allSucceeded) {
-          const currentWallets = Option.getOrElse(this.wallets, () => [] as Array<Wallet>)
+          const currentWallets = Option.getOrElse(
+            this.wallets,
+            () => [] as Array<Wallet>,
+          )
           this.wallets = Option.some(
-            currentWallets.filter(wallet => wallet.grouping !== groupingId),
+            currentWallets.filter((wallet) => wallet.grouping !== groupingId),
           )
           this.refresh()
           return Effect.succeed(true)
@@ -255,7 +280,9 @@ export class WalletStore {
       }),
       Effect.catchAll((error) => {
         this.refresh()
-        errorStore.showError(new WalletError({ cause: error, operation: "remove" }))
+        errorStore.showError(
+          new WalletError({ cause: error, operation: "remove" }),
+        )
         return Effect.succeed(false)
       }),
     )
