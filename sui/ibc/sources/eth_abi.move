@@ -223,6 +223,7 @@ module ibc::ethabi {
     ) {
         let mut rest_buf = vector::empty();
 
+        // Holy prefix
         encode_uint($buf, 0x20);
 
         let mut i = 0;
@@ -230,7 +231,7 @@ module ibc::ethabi {
         encode_uint($buf, len);
 
         while (i < len) {
-            // encode_uint($buf, len * 32 + vector::length(&rest_buf));
+            encode_uint($buf, len * 32 + vector::length(&rest_buf));
             $encode_fn(&mut rest_buf, vector::borrow($vec, i));
             i = i + 1;
         };
