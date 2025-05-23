@@ -40,7 +40,7 @@ import {
 import { ensureHex } from "@unionlabs/sdk/utils"
 import { Array as Arr, Cause, Data, Effect, Exit, Match, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
-import { erc20Abi, http } from "viem"
+import { erc20Abi, fromHex, http } from "viem"
 
 // Probably something we can import from somewhere?
 const MAX_UINT256 = BigInt("0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff")
@@ -189,7 +189,7 @@ const submit = Effect.gen(function*() {
 
     const nextState = Effect.tap(
       Effect.suspend(() =>
-        WriteCosmos.nextState(cts, chain, sender, step.token, {
+        WriteCosmos.nextState(cts, chain, sender, fromHex(step.token, "string"), {
           increase_allowance: {
             spender: step.intent.sourceChain.minter_address_display,
             amount: approvalAmount,
