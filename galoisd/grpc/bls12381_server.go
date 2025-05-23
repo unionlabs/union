@@ -25,6 +25,7 @@ import (
 	"github.com/consensys/gnark-crypto/ecc"
 	// "github.com/consensys/gnark-crypto/ecc/bn254"
 	// "github.com/consensys/gnark-crypto/ecc/bn254/fr"
+	bn254_curve "github.com/consensys/gnark-crypto/ecc/bn254"
 	backend_opts "github.com/consensys/gnark/backend"
 	backend "github.com/consensys/gnark/backend/groth16"
 	backend_bls12381 "github.com/consensys/gnark/backend/groth16/bls12-381"
@@ -56,7 +57,7 @@ type proverServerBls12381 struct {
 
 func (*proverServerBls12381) mustEmbedUnimplementedUnionProverAPIServer() {}
 
-func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*grpc.PollResponse, error) {
+func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.PollRequest) (*grpc.PollResponse, error) {
 	req := pollReq.Request
 
 	if len(req.TrustedCommit.Validators) > lightclient.MaxVal {
@@ -201,6 +202,20 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 			return nil, fmt.Errorf("Prover failed with %s", err)
 		}
 
+		var proofCommitmentInner bn254_curve.G1Affine
+		// var commitmentPOKInner bn254_curve.G1Affine
+		switch _proof := proof.(type) {
+		case *backend_bn254.Proof:
+			if len(p.vk.PublicAndCommitmentCommitted) != 1 {
+				return nil, fmt.Errorf("Expected a single proof commitment, got: %d", len(p.vk.PublicAndCommitmentCommitted))
+			}
+			proofCommitmentInner = _proof.Commitments[0]
+			// commitmentPOKInner = _proof.CommitmentPok
+			break
+		default:
+			return nil, fmt.Errorf("Impossible: proof backend must be BLS12381 at this point")
+		}
+
 		publicWitness, err := privateWitness.Public()
 		if err != nil {
 			return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
@@ -211,13 +226,14 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 			proof,
 			backend.VerifyingKey(&p.innerVk),
 			publicWitness,
+			backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
 		)
 
 		if err != nil {
 			return nil, fmt.Errorf("Could not verify the groth16 proof %s", err)
 		}
 
-		circuitVk, err := groth16.ValueOfVerifyingKey[gadget.G1Affine, gadget.G2Affine, gadget.GTEl](backend.VerifyingKey(&p.vk))
+		circuitVk, err := groth16.ValueOfVerifyingKey[gadget.G1Affine, gadget.G2Affine, gadget.GTEl](backend.VerifyingKey(&p.innerVk))
 		if err != nil {
 			return nil, fmt.Errorf("Could not get the verifying key %s", err)
 		}
@@ -232,20 +248,30 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 			return nil, fmt.Errorf("Could not get the proof %s", err)
 		}
 
-		bls12381Witness := &bls12381gadget.Circuit[gadget.ScalarField, gadget.G1Affine, gadget.G2Affine, gadget.GTEl]{
-			InnerWitness: circuitWitness,
-			Proof:        circuitProof,
-			VerifyingKey: circuitVk,
+		commitmentHash := cometbn254.HashToField(proofCommitmentInner.Marshal())
+		bls12381Witness := &bls12381gadget.Circuit{
+			InnerWitness:   circuitWitness,
+			Proof:          circuitProof,
+			VerifyingKey:   circuitVk,
+			CommitmentHash: commitmentHash.BigInt(new(big.Int)),
+			CommitmentX:    proofCommitmentInner.X.BigInt(new(big.Int)),
+			CommitmentY:    proofCommitmentInner.Y.BigInt(new(big.Int)),
 		}
 
 		privateWitness, err = frontend.NewWitness(bls12381Witness, ecc.BLS12_381.ScalarField())
+		if err != nil {
+			return nil, fmt.Errorf("Witness err %s", err)
+		}
 
 		proof, err = backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness)
+		if err != nil {
+			return nil, fmt.Errorf("Could not prove %s", err)
+		}
 
 		var proofCommitment []byte
 		var commitmentPOK []byte
 		switch _proof := proof.(type) {
-		case *backend_bn254.Proof:
+		case *backend_bls12381.Proof:
 			if len(p.vk.PublicAndCommitmentCommitted) != 1 {
 				return nil, fmt.Errorf("Expected a single proof commitment, got: %d", len(p.vk.PublicAndCommitmentCommitted))
 			}
@@ -253,7 +279,7 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 			commitmentPOK = _proof.CommitmentPok.Marshal()
 			break
 		default:
-			return nil, fmt.Errorf("Impossible: proof backend must be BN254 at this point")
+			return nil, fmt.Errorf("Impossible: proof backend must be BLS12381 at this point")
 		}
 
 		publicInputs, err := publicWitness.MarshalBinary()
@@ -411,38 +437,38 @@ func (p *proverServer) VerifyBls12381(ctx context.Context, req *grpc.VerifyReque
 	}
 }
 
-// func (p *proverServer) QueryStats(ctx context.Context, req *grpc.QueryStatsRequest) (*grpc.QueryStatsResponse, error) {
-// 	log.Debug().Msg("Querying stats...")
+func (p *proverServerBls12381) QueryStatsBls12381(ctx context.Context, req *grpc.QueryStatsRequest) (*grpc.QueryStatsResponse, error) {
+	log.Debug().Msg("Querying stats...")
 
-// 	return &grpc.QueryStatsResponse{
-// 		VariableStats: &grpc.VariableStats{
-// 			NbInternalVariables: uint32(p.cs.GetNbInternalVariables()),
-// 			NbSecretVariables:   uint32(p.cs.GetNbSecretVariables()),
-// 			NbPublicVariables:   uint32(p.cs.GetNbPublicVariables()),
-// 			NbConstraints:       uint32(p.cs.GetNbConstraints()),
-// 			NbCoefficients:      uint32(p.cs.GetNbCoefficients()),
-// 		},
-// 		ProvingKeyStats: &grpc.ProvingKeyStats{
-// 			NbG1: uint32(p.pk.NbG1()),
-// 			NbG2: uint32(p.pk.NbG2()),
-// 		},
-// 		VerifyingKeyStats: &grpc.VerifyingKeyStats{
-// 			NbG1:            uint32(p.vk.NbG1()),
-// 			NbG2:            uint32(p.vk.NbG2()),
-// 			NbPublicWitness: uint32(p.vk.NbPublicWitness()),
-// 		},
-// 		// Deprecated
-// 		CommitmentStats: &grpc.CommitmentStats{
-// 			NbPublicCommitted:  uint32(0),
-// 			NbPrivateCommitted: uint32(0),
-// 		},
-// 	}, nil
-// }
+	return &grpc.QueryStatsResponse{
+		VariableStats: &grpc.VariableStats{
+			NbInternalVariables: uint32(p.cs.GetNbInternalVariables()),
+			NbSecretVariables:   uint32(p.cs.GetNbSecretVariables()),
+			NbPublicVariables:   uint32(p.cs.GetNbPublicVariables()),
+			NbConstraints:       uint32(p.cs.GetNbConstraints()),
+			NbCoefficients:      uint32(p.cs.GetNbCoefficients()),
+		},
+		ProvingKeyStats: &grpc.ProvingKeyStats{
+			NbG1: uint32(p.pk.NbG1()),
+			NbG2: uint32(p.pk.NbG2()),
+		},
+		VerifyingKeyStats: &grpc.VerifyingKeyStats{
+			NbG1:            uint32(p.vk.NbG1()),
+			NbG2:            uint32(p.vk.NbG2()),
+			NbPublicWitness: uint32(p.vk.NbPublicWitness()),
+		},
+		// Deprecated
+		CommitmentStats: &grpc.CommitmentStats{
+			NbPublicCommitted:  uint32(0),
+			NbPrivateCommitted: uint32(0),
+		},
+	}, nil
+}
 
 // Deprecated in favor of the Poll api
-func (p *proverServer) ProveBls12381(ctx context.Context, req *grpc.ProveRequest) (*grpc.ProveResponse, error) {
+func (p *proverServerBls12381) ProveBls12381(ctx context.Context, req *grpc.ProveRequest) (*grpc.ProveResponse, error) {
 	for true {
-		pollRes, err := p.Poll(ctx, &grpc.PollRequest{
+		pollRes, err := p.PollBls12381(ctx, &grpc.PollRequest{
 			Request: req,
 		})
 		if err != nil {
@@ -516,7 +542,8 @@ func loadOrCreateBls12381(r1csPath, pkPath, vkPath, innerR1csPath, innerPkPath, 
 		}
 	}
 
-	circuit := &bls12381gadget.Circuit[gadget.ScalarField, gadget.G1Affine, gadget.G2Affine, gadget.GTEl]{
+	circuit := &bls12381gadget.Circuit{
+		Proof:        groth16.PlaceholderProof[gadget.G1Affine, gadget.G2Affine](&csInner),
 		InnerWitness: groth16.PlaceholderWitness[gadget.ScalarField](&csInner),
 		VerifyingKey: groth16.PlaceholderVerifyingKey[gadget.G1Affine, gadget.G2Affine, gadget.GTEl](&csInner),
 	}

@@ -152,7 +152,8 @@ replace (
 replace (
 	github.com/cometbft/cometbft => github.com/unionlabs/cometbls v0.0.0-20241021101406-df0586cc2041
 	github.com/cometbft/cometbft/api => github.com/unionlabs/cometbls/api v0.0.0-20241021101406-df0586cc2041
-	github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20240723153903-9d859afe4c14
+	// github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20240723153903-9d859afe4c14
+	github.com/consensys/gnark => github.com/unionlabs/gnark v0.0.0-20250522113128-5990f961f807
 	// Fork of gnark crypto until https://github.com/ConsenSys/gnark-crypto/pull/314 is merged
 	github.com/consensys/gnark-crypto => github.com/unionlabs/gnark-crypto v0.0.0-20240720201413-c0383b2a80e9
 	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20241018173625-c2982236c557
