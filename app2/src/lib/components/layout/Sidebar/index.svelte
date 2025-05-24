@@ -23,8 +23,10 @@ const isCurrentPath = (path: string) => {
 }
 
 let highlightElement: HTMLElement
+let overflowContainer: HTMLDivElement
 
 const updateHighlightPosition = () => {
+  const yOffset = overflowContainer.scrollTop
   if (page.url.pathname && highlightElement) {
     // Find the best matching navigation item
     let bestMatch: HTMLElement | null = null
@@ -47,7 +49,7 @@ const updateHighlightPosition = () => {
 
     if (bestMatch) {
       const rect = (bestMatch as HTMLElement).getBoundingClientRect()
-      highlightElement.style.top = `${rect.top}px`
+      highlightElement.style.top = `${rect.top + yOffset}px`
       highlightElement.style.left = `${rect.left}px`
       highlightElement.style.width = `${rect.width}px`
       highlightElement.style.height = `${rect.height}px`
@@ -77,7 +79,10 @@ onMount(() => {
 })
 </script>
 
-<div class="relative h-full">
+<div
+  class="relative h-full overflow-y-auto"
+  bind:this={overflowContainer}
+>
   <div
     bind:this={highlightElement}
     class="absolute -z-10 bg-accent rounded-lg transition-all duration-300"

@@ -137,7 +137,7 @@ $effect(() => {
 >
   <aside
     class={cn(
-      "fixed left-0 bottom-0 top-0 dark:bg-zinc-950 shadow overflow-auto border-r border-zinc-900 max-h-dvh z-0",
+      "fixed left-0 bottom-0 top-0 dark:bg-zinc-950 shadow overflow-hidden border-r border-zinc-900 max-h-dvh z-0",
       fullPageSidebar ? "right-0" : "w-64",
     )}
     hidden={hideSidebar}
