@@ -38,7 +38,7 @@ use voyager_vm::{ItemId, QueueError};
 use crate::{
     context::{equivalent_chain_ids::EquivalentChainIds, ibc_spec_handler::IbcSpecHandlers},
     module::{
-        ClientBootstrapModuleInfo, ClientModuleInfo, ConsensusModuleInfo, PluginInfo,
+        ClientBootstrapModuleInfo, ClientModuleInfo, FinalityModuleInfo, PluginInfo,
         ProofModuleInfo, StateModuleInfo,
     },
     primitives::{ChainId, ClientType, IbcInterface},
@@ -67,7 +67,7 @@ pub struct Modules {
     proof_modules: HashMap<(ChainId, IbcSpecId), ModuleRpcClient>,
 
     /// map of chain id to consensus module.
-    consensus_modules: HashMap<ChainId, ModuleRpcClient>,
+    finality_modules: HashMap<ChainId, ModuleRpcClient>,
 
     client_modules: HashMap<(ClientType, IbcInterface, IbcSpecId), ModuleRpcClient>,
 
@@ -242,7 +242,7 @@ pub struct PluginConfig {
 pub struct ModulesConfig {
     pub state: Vec<ModuleConfig<StateModuleInfo>>,
     pub proof: Vec<ModuleConfig<ProofModuleInfo>>,
-    pub consensus: Vec<ModuleConfig<ConsensusModuleInfo>>,
+    pub consensus: Vec<ModuleConfig<FinalityModuleInfo>>,
     pub client: Vec<ModuleConfig<ClientModuleInfo>>,
     pub client_bootstrap: Vec<ModuleConfig<ClientBootstrapModuleInfo>>,
 }
@@ -290,7 +290,7 @@ impl Context {
             proof_modules: Default::default(),
             client_modules: Default::default(),
             client_bootstrap_modules: Default::default(),
-            consensus_modules: Default::default(),
+            finality_modules: Default::default(),
             chain_consensus_types: Default::default(),
             client_consensus_types: Default::default(),
             plugins: Default::default(),
@@ -441,7 +441,7 @@ impl Context {
             main_rpc_server.clone(),
             ipc_client_request_timeout,
             |info| info.id(),
-            |ConsensusModuleInfo {
+            |FinalityModuleInfo {
                  chain_id,
                  consensus_type,
              },
@@ -452,7 +452,7 @@ impl Context {
                     .chain([chain_id])
                 {
                     let prev = modules
-                        .consensus_modules
+                        .finality_modules
                         .insert(equivalent_chain_id.clone(), rpc_client.clone());
 
                     if prev.is_some() {
@@ -686,10 +686,10 @@ impl Modules {
             .collect();
 
         let consensus = self
-            .consensus_modules
+            .finality_modules
             .keys()
             .cloned()
-            .map(|chain_id| ConsensusModuleInfo {
+            .map(|chain_id| FinalityModuleInfo {
                 consensus_type: self.chain_consensus_types[&chain_id].clone(),
                 chain_id,
             })
@@ -746,10 +746,10 @@ impl Modules {
     pub fn chain_consensus_type<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &ChainId,
-    ) -> Result<&'a ConsensusType, ConsensusModuleNotFound> {
+    ) -> Result<&'a ConsensusType, FinalityModuleNotFound> {
         self.chain_consensus_types
             .get(chain_id)
-            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone()))
+            .ok_or_else(|| FinalityModuleNotFound(chain_id.clone()))
     }
 
     pub fn client_consensus_type<'a, 'b, 'c: 'a>(
@@ -795,15 +795,15 @@ impl Modules {
             .client())
     }
 
-    pub fn consensus_module<'a, 'b, 'c: 'a>(
+    pub fn finality_module<'a, 'b, 'c: 'a>(
         &'a self,
         chain_id: &ChainId,
-        // ) -> Result<&'a (impl jsonrpsee::core::client::ClientT + 'a), ConsensusModuleNotFound> {
-    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, ConsensusModuleNotFound> {
+        // ) -> Result<&'a (impl jsonrpsee::core::client::ClientT + 'a), FinalityModuleNotFound> {
+    ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, FinalityModuleNotFound> {
         Ok(self
-            .consensus_modules
+            .finality_modules
             .get(chain_id)
-            .ok_or_else(|| ConsensusModuleNotFound(chain_id.clone()))?
+            .ok_or_else(|| FinalityModuleNotFound(chain_id.clone()))?
             .client())
     }
 
@@ -832,7 +832,7 @@ impl Modules {
         &'a self,
         chain_id: &ChainId,
         client_type: &ClientType,
-        // ) -> Result<&'a (impl jsonrpsee::core::client::ClientT + 'a), ConsensusModuleNotFound> {
+        // ) -> Result<&'a (impl jsonrpsee::core::client::ClientT + 'a), FinalityModuleNotFound> {
     ) -> Result<&'a reconnecting_jsonrpc_ws_client::Client, ClientBootstrapModuleNotFound> {
         Ok(self
             .client_bootstrap_modules
@@ -850,7 +850,7 @@ impl Modules {
 pub struct LoadedModulesInfo {
     pub state: Vec<StateModuleInfo>,
     pub proof: Vec<ProofModuleInfo>,
-    pub consensus: Vec<ConsensusModuleInfo>,
+    pub consensus: Vec<FinalityModuleInfo>,
     pub client: Vec<ClientModuleInfo>,
     pub client_bootstrap: Vec<ClientBootstrapModuleInfo>,
 }
@@ -1034,10 +1034,10 @@ pub struct ProofModuleNotFound {
 module_error!(ProofModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("no module loaded for consensus on chain `{0}`")]
-pub struct ConsensusModuleNotFound(pub ChainId);
+#[error("no module loaded for finality on chain `{0}`")]
+pub struct FinalityModuleNotFound(pub ChainId);
 
-module_error!(ConsensusModuleNotFound);
+module_error!(FinalityModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
 #[error(

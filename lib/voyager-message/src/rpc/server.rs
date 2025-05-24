@@ -24,7 +24,7 @@ use crate::{
     context::{LoadedModulesInfo, Modules, WithId},
     into_value,
     module::{
-        ClientBootstrapModuleClient, ClientModuleClient, ConsensusModuleClient, PluginClient,
+        ClientBootstrapModuleClient, ClientModuleClient, FinalityModuleClient, PluginClient,
         RawProofModuleClient, RawStateModuleClient,
     },
     primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
@@ -323,7 +323,7 @@ impl Server {
             QueryHeight::Latest => {
                 let latest_height = self
                     .modules()?
-                    .consensus_module(chain_id)?
+                    .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(false)
                     .await
@@ -336,7 +336,7 @@ impl Server {
             QueryHeight::Finalized => {
                 let latest_height = self
                     .modules()?
-                    .consensus_module(chain_id)?
+                    .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(true)
                     .await
@@ -375,7 +375,7 @@ impl Server {
                 let latest_height = self
                     .inner
                     .modules()?
-                    .consensus_module(chain_id)?
+                    .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(finalized)
                     .await
@@ -404,7 +404,7 @@ impl Server {
                 let latest_timestamp = self
                     .inner
                     .modules()?
-                    .consensus_module(chain_id)?
+                    .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_timestamp(finalized)
                     .await

@@ -10,7 +10,7 @@ use clap::{self, Parser, Subcommand};
 use ibc_union_spec::IbcUnion;
 use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
 use voyager_message::{
-    module::{ClientModuleInfo, ConsensusModuleInfo, ProofModuleInfo, StateModuleInfo},
+    module::{ClientModuleInfo, FinalityModuleInfo, ProofModuleInfo, StateModuleInfo},
     primitives::{ChainId, ClientType, IbcInterface, IbcSpec, IbcSpecId, QueryHeight},
     RawClientId, VoyagerMessage,
 };
@@ -219,7 +219,7 @@ pub enum PluginCmd {
 pub enum ModuleCmd {
     State(StateModuleInfo),
     Proof(ProofModuleInfo),
-    Consensus(ConsensusModuleInfo),
+    Consensus(FinalityModuleInfo),
     Client(ClientModuleInfo),
 }
 

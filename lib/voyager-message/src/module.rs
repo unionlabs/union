@@ -92,7 +92,7 @@ impl ProofModuleInfo {
 
 #[model]
 #[derive(clap::Args, JsonSchema)]
-pub struct ConsensusModuleInfo {
+pub struct FinalityModuleInfo {
     #[arg(value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
     pub chain_id: ChainId,
     #[arg(value_parser(|s: &str| ok(ConsensusType::new(s.to_owned()))))]
@@ -103,7 +103,7 @@ pub struct ConsensusModuleInfo {
     // ok(ClientType::new(s.to_owned()))))] pub client_type: ClientType,
 }
 
-impl ConsensusModuleInfo {
+impl FinalityModuleInfo {
     pub fn id(&self) -> String {
         format!("consensus/{}/{}", self.chain_id, self.consensus_type)
     }
@@ -459,7 +459,7 @@ pub trait ClientModule {
 /// Client modules provide functionality for interacting with a specific chain
 /// consensus and finality.
 #[rpc(client, server, namespace = "consensus")]
-pub trait ConsensusModule {
+pub trait FinalityModule {
     /// Query the latest finalized height of this chain.
     #[method(name = "queryLatestHeight", with_extensions)]
     async fn query_latest_height(&self, finalized: bool) -> RpcResult<Height>;
@@ -470,7 +470,7 @@ pub trait ConsensusModule {
 }
 
 /// Client bootstrap modules provide the initial client and consensus states for a client. This is
-/// notably separate from the [`ConsensusModule`], since it is possible for different client types
+/// notably separate from the [`FinalityModule`], since it is possible for different client types
 /// (with different state types) to track the same consensus.
 #[rpc(client, server, namespace = "clientBootstrap")]
 pub trait ClientBootstrapModule {
