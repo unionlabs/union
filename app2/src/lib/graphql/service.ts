@@ -12,12 +12,13 @@ import {
   Layer,
   Match,
   Option as O,
+  Order,
   pipe,
   PrimaryKey,
   Schema as S,
 } from "effect"
 import type { TadaDocumentNode } from "gql.tada"
-import { type ArgumentNode, Kind } from "graphql"
+import { type ArgumentNode, type DirectiveNode, Kind } from "graphql"
 import { GraphQLClient, type Variables } from "graphql-request"
 import { ClientError } from "graphql-request"
 import { GraphQLError } from "./error"
@@ -47,12 +48,14 @@ class GraphQLCache extends Effect.Service<GraphQLCache>()("app/GraphQL/Cache", {
 
       return pipe(
         document.definitions,
-        A.filter(x => x.kind === Kind.OPERATION_DEFINITION),
-        A.map(flow((x) => x.directives, O.fromNullable)),
-        A.getSomes,
+        A.filterMap(x =>
+          x.kind === Kind.OPERATION_DEFINITION
+            ? O.fromNullable(x.directives)
+            : O.none()
+        ),
         A.flatten,
-        A.map(flow(
-          Match.value,
+        A.filterMap(pipe(
+          Match.type<DirectiveNode>(),
           Match.when(
             {
               name: { value: "cached" },
@@ -61,17 +64,15 @@ class GraphQLCache extends Effect.Service<GraphQLCache>()("app/GraphQL/Cache", {
             ({ arguments: args }) =>
               pipe(
                 args,
-                A.map(ttlFromArgumentNode),
-                A.getSomes,
+                A.filterMap(ttlFromArgumentNode),
                 A.head,
               ),
           ),
           Match.option,
         )),
-        A.map(O.flatten),
         A.getSomes,
-        // XXX: get min
-        A.head,
+        O.liftPredicate(A.isNonEmptyArray),
+        O.map(A.min(Order.number)),
         O.getOrElse(() => 0),
         (seconds) => `${seconds} seconds` as const,
       )
