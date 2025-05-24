@@ -250,12 +250,13 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 
 		commitmentHash := cometbn254.HashToField(proofCommitmentInner.Marshal())
 		bls12381Witness := &bls12381gadget.Circuit{
-			InnerWitness:   circuitWitness,
-			Proof:          circuitProof,
-			VerifyingKey:   circuitVk,
-			CommitmentHash: commitmentHash.BigInt(new(big.Int)),
-			CommitmentX:    proofCommitmentInner.X.BigInt(new(big.Int)),
-			CommitmentY:    proofCommitmentInner.Y.BigInt(new(big.Int)),
+			InnerWitness:    circuitWitness,
+			Proof:           circuitProof,
+			VerifyingKey:    circuitVk,
+			CommitmentHash:  commitmentHash.BigInt(new(big.Int)),
+			CommitmentX:     proofCommitmentInner.X.BigInt(new(big.Int)),
+			CommitmentY:     proofCommitmentInner.Y.BigInt(new(big.Int)),
+			InnerInputsHash: witness.InputsHash,
 		}
 
 		privateWitness, err = frontend.NewWitness(bls12381Witness, ecc.BLS12_381.ScalarField())
@@ -263,7 +264,7 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 			return nil, fmt.Errorf("Witness err %s", err)
 		}
 
-		proof, err = backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness)
+		proof, err = backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
 		if err != nil {
 			return nil, fmt.Errorf("Could not prove %s", err)
 		}
@@ -308,7 +309,7 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 		// Due to how gnark proves, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
 		// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment and its POK.
 		// The EVM verifier has been extended to support this two extra public inputs.
-		evmProof := append(append(proofBz[:256], proofCommitment...), commitmentPOK...)
+		evmProof := append(append(append(proofBz[:384], proofCommitment...), commitmentPOK...), proofCommitmentInner.Marshal()...)
 
 		proveRes := grpc.ProveResponse{
 			Proof: &grpc.ZeroKnowledgeProof{
