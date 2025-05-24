@@ -28,7 +28,7 @@ use voyager_message::{
     module::{ProofModuleInfo, ProofModuleServer},
     primitives::ChainId,
     rpc::ProofType,
-    ProofModule, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
+    ProofModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 

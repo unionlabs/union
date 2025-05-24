@@ -159,7 +159,7 @@ pub mod ethabi {
         const PACKED_ENCODED_SIZE: Option<usize> = <SolTuple as SolType>::PACKED_ENCODED_SIZE;
 
         fn valid_token(
-            (state, client_id, counterparty_client_id, _counterparty_connection_id): &Self::Token<
+            (state, client_id, counterparty_client_id, counterparty_connection_id): &Self::Token<
                 '_,
             >,
         ) -> bool {
@@ -168,6 +168,7 @@ pub mod ethabi {
                 && (<Uint<32>>::valid_token(client_id) && <Uint<32>>::detokenize(*client_id) > 0)
                 && (<Uint<32>>::valid_token(counterparty_client_id)
                     && <Uint<32>>::detokenize(*counterparty_client_id) > 0)
+                && <Uint<32>>::valid_token(counterparty_connection_id)
         }
 
         fn detokenize(
@@ -321,11 +322,11 @@ mod tests {
         };
 
         let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let decoded_connection = Connection::abi_decode(&ibc_solidity_bz, true).unwrap();
+        let decoded_connection = Connection::abi_decode_validate(&ibc_solidity_bz).unwrap();
         assert_eq!(connection, decoded_connection);
 
         let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let decoded_connection = Connection::abi_decode_params(&ibc_solidity_bz, true).unwrap();
+        let decoded_connection = Connection::abi_decode_params_validate(&ibc_solidity_bz).unwrap();
         assert_eq!(connection, decoded_connection);
     }
 
@@ -346,11 +347,11 @@ mod tests {
         ));
 
         let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let err = Connection::abi_decode_params(&ibc_solidity_bz, true).unwrap_err();
+        let err = Connection::abi_decode_params_validate(&ibc_solidity_bz).unwrap_err();
         assert_eq!(expected_err, err);
 
         let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let err = Connection::abi_decode(&ibc_solidity_bz, true).unwrap_err();
+        let err = Connection::abi_decode_validate(&ibc_solidity_bz).unwrap_err();
         assert_eq!(expected_err, err);
     }
 }

@@ -321,11 +321,11 @@ mod tests {
         };
 
         let ibc_solidity_bz = ibc_solidity_packet.abi_encode();
-        let decoded_packet = Packet::abi_decode(&ibc_solidity_bz, true).unwrap();
+        let decoded_packet = Packet::abi_decode_validate(&ibc_solidity_bz).unwrap();
         assert_eq!(packet, decoded_packet);
 
         let ibc_solidity_bz = ibc_solidity_packet.abi_encode_params();
-        let decoded_packet = Packet::abi_decode_params(&ibc_solidity_bz, true).unwrap();
+        let decoded_packet = Packet::abi_decode_params_validate(&ibc_solidity_bz).unwrap();
         assert_eq!(packet, decoded_packet);
     }
 
@@ -348,11 +348,11 @@ mod tests {
         ));
 
         let ibc_solidity_bz = ibc_solidity_connection.abi_encode_params();
-        let err = Packet::abi_decode_params(&ibc_solidity_bz, true).unwrap_err();
+        let err = Packet::abi_decode_params_validate(&ibc_solidity_bz).unwrap_err();
         assert_eq!(expected_err, err);
 
         let ibc_solidity_bz = ibc_solidity_connection.abi_encode();
-        let err = Packet::abi_decode(&ibc_solidity_bz, true).unwrap_err();
+        let err = Packet::abi_decode_validate(&ibc_solidity_bz).unwrap_err();
         assert_eq!(expected_err, err);
     }
 

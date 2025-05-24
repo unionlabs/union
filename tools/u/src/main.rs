@@ -79,6 +79,14 @@ pub enum Cmd {
         /// Input to decode. If not set, stdin will be read.
         input: Option<OsString>,
     },
+    Utf8 {
+        /// Use lossy decoding.
+        #[arg(long, short = 'L')]
+        lossy: bool,
+
+        /// Input to decode. If not set, stdin will be read.
+        input: Option<OsString>,
+    },
 }
 
 #[tokio::main]
@@ -133,6 +141,26 @@ async fn main() -> Result<()> {
                 println!("{}", <Bytes<HexUnprefixed>>::from(input));
             } else {
                 println!("{}", <Bytes<HexPrefixed>>::from(input));
+            }
+
+            Ok(())
+        }
+        Cmd::Utf8 { lossy, input } => {
+            let input = match input {
+                Some(input) => input.as_bytes().to_vec(),
+                None => {
+                    let mut buf = vec![];
+                    std::io::stdin().read_to_end(&mut buf)?;
+                    OsString::from_vec(buf).as_bytes().to_vec()
+                }
+            };
+
+            if lossy {
+                let s = String::from_utf8_lossy(&input);
+                std::io::stdout().write_all(s.as_bytes())?;
+            } else {
+                let s = String::from_utf8(input)?;
+                std::io::stdout().write_all(s.as_bytes())?;
             }
 
             Ok(())

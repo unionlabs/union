@@ -59,22 +59,24 @@ mod ethabi {
 
             match version {
                 V1_VERSION_TAG => {
-                    let (store_key, key_prefix_storage) =
-                        <(alloy::primitives::Bytes, alloy::primitives::Bytes)>::abi_decode_params(
-                            state.as_slice(),
-                            true,
-                        )?;
+                    let (store_key, key_prefix_storage) = <(
+                        alloy::primitives::Bytes,
+                        alloy::primitives::Bytes,
+                    )>::abi_decode_params_validate(
+                        state.as_slice()
+                    )?;
                     Ok(Extra::V1(ExtraV1 {
                         store_key: store_key.into(),
                         key_prefix_storage: key_prefix_storage.into(),
                     }))
                 }
                 V2_VERSION_TAG => {
-                    let (store_key, key_prefix_storage) =
-                        <(alloy::primitives::Bytes, alloy::primitives::Bytes)>::abi_decode_params(
-                            state.as_slice(),
-                            true,
-                        )?;
+                    let (store_key, key_prefix_storage) = <(
+                        alloy::primitives::Bytes,
+                        alloy::primitives::Bytes,
+                    )>::abi_decode_params_validate(
+                        state.as_slice()
+                    )?;
 
                     Ok(Extra::V2(ExtraV2 {
                         store_key: store_key.into(),

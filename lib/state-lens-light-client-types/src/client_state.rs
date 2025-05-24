@@ -247,7 +247,7 @@ pub mod ethabi {
         type Error = alloy::dyn_abi::Error;
 
         fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-            let mut decoder = Decoder::new(bytes, true);
+            let mut decoder = Decoder::new(bytes);
 
             let l2_chain_id =
                 String::from_utf8(decoder.decode::<PackedSeqToken>()?.into_vec()).unwrap();
@@ -490,9 +490,8 @@ mod tests {
 
         assert_eq!(
             cs_with_extra,
-            <SolClientStateWithExtra as SolValue>::abi_decode_params(
+            <SolClientStateWithExtra as SolValue>::abi_decode_params_validate(
                 &cs.clone().encode_as::<EthAbi>(),
-                true
             )
             .unwrap()
         );

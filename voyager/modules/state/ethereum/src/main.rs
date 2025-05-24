@@ -4,8 +4,10 @@ use std::sync::Arc;
 
 use alloy::{
     eips::BlockNumberOrTag,
+    network::AnyNetwork,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
     rpc::types::{TransactionInput, TransactionRequest},
+    serde::WithOtherFields,
     sol_types::{SolCall, SolValue},
 };
 use futures::{stream::FuturesUnordered, TryStreamExt};
@@ -52,7 +54,7 @@ pub struct Module {
 
     pub max_query_window: Option<u64>,
 
-    pub provider: DynProvider,
+    pub provider: DynProvider<AnyNetwork>,
 
     pub channel_cache: moka::future::Cache<ChannelId, Channel>,
     pub connection_cache: moka::future::Cache<ConnectionId, Connection>,
@@ -82,6 +84,7 @@ impl StateModule<IbcUnion> for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
+                .network::<AnyNetwork>()
                 .connect(&config.rpc_url)
                 .await?,
         );
@@ -109,8 +112,8 @@ impl Module {
         Height::new(height)
     }
 
-    fn ibc_handler(&self) -> IbcInstance<(), DynProvider> {
-        Ibc::new(self.ibc_handler_address.get().into(), self.provider.clone())
+    fn ibc_handler(&self) -> IbcInstance<DynProvider<AnyNetwork>, AnyNetwork> {
+        Ibc::new::<_, AnyNetwork>(self.ibc_handler_address.get().into(), self.provider.clone())
     }
 
     // TODO: This can definitely be cached
@@ -134,8 +137,7 @@ impl Module {
                             format!("error fetching client address: {}", ErrorReporter(err)),
                             None::<()>,
                         )
-                    })?
-                    ._0;
+                    })?;
 
                 debug!(%client_address, "fetched client address");
 
@@ -165,7 +167,7 @@ impl Module {
             .await;
 
         match client_state {
-            Ok(client_state) => Ok(Some(client_state._0.0.to_vec().into())),
+            Ok(client_state) => Ok(Some(client_state.0.to_vec().into())),
             Err(alloy::contract::Error::AbiError(_) | alloy::contract::Error::ZeroData(_, _)) => {
                 Ok(None)
             }
@@ -199,7 +201,7 @@ impl Module {
             .await;
 
         match consensus_state {
-            Ok(consensus_state) => Ok(Some(consensus_state._0.0.to_vec().into())),
+            Ok(consensus_state) => Ok(Some(consensus_state.0.to_vec().into())),
             Err(alloy::contract::Error::AbiError(_) | alloy::contract::Error::ZeroData(_, _)) => {
                 Ok(None)
             }
@@ -229,18 +231,16 @@ impl Module {
 
         let raw = ibc_handler
             .provider()
-            .call(TransactionRequest {
+            .call(WithOtherFields::new(TransactionRequest {
                 from: None,
                 to: Some(alloy::primitives::Address::from(self.ibc_handler_address).into()),
                 input: TransactionInput::new(
-                    Ibc::connectionsCall {
-                        _0: connection_id.raw(),
-                    }
-                    .abi_encode()
-                    .into(),
+                    Ibc::connectionsCall(connection_id.raw())
+                        .abi_encode()
+                        .into(),
                 ),
                 ..Default::default()
-            })
+            }))
             .block(execution_height.into())
             .await
             .map_err(|e| {
@@ -251,7 +251,7 @@ impl Module {
                 )
             })?;
 
-        let connection = Connection::abi_decode_params(&raw, true).map_err(|e| {
+        let connection = Connection::abi_decode_params_validate(&raw).map_err(|e| {
             ErrorObject::owned(
                 -1,
                 format!("error decoding channel: {}", ErrorReporter(e)),
@@ -304,18 +304,14 @@ impl Module {
 
         let raw = ibc_handler
             .provider()
-            .call(TransactionRequest {
+            .call(WithOtherFields::new(TransactionRequest {
                 from: None,
                 to: Some(alloy::primitives::Address::from(self.ibc_handler_address).into()),
                 input: TransactionInput::new(
-                    Ibc::channelsCall {
-                        _0: channel_id.raw(),
-                    }
-                    .abi_encode()
-                    .into(),
+                    Ibc::channelsCall(channel_id.raw()).abi_encode().into(),
                 ),
                 ..Default::default()
-            })
+            }))
             .block(execution_height.into())
             .await
             .map_err(|e| {
@@ -326,7 +322,7 @@ impl Module {
                 )
             })?;
 
-        let channel = Channel::abi_decode_params(&raw, true).map_err(|e| {
+        let channel = Channel::abi_decode_params_validate(&raw).map_err(|e| {
             ErrorObject::owned(
                 -1,
                 format!("error decoding channel: {}", ErrorReporter(e)),
@@ -364,8 +360,7 @@ impl Module {
                     format!("error fetching batch commitments: {}", ErrorReporter(err)),
                     None::<()>,
                 )
-            })?
-            ._0;
+            })?;
 
         if <H256>::from(raw) == <H256>::default() {
             Ok(None)
@@ -395,8 +390,7 @@ impl Module {
                     format!("error fetching batch receipts: {}", ErrorReporter(err)),
                     None::<()>,
                 )
-            })?
-            ._0;
+            })?;
 
         if <H256>::from(raw) == <H256>::default() {
             Ok(None)
@@ -656,8 +650,7 @@ impl StateModuleServer<IbcUnion> for Module {
                     format!("error fetching client info: {}", ErrorReporter(e)),
                     None::<()>,
                 )
-            })?
-            ._0;
+            })?;
 
         Ok(ClientInfo {
             client_type: ClientType::new(client_type),

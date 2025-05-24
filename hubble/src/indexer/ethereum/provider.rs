@@ -56,7 +56,9 @@ impl Provider {
                     .into_iter()
                     .map(|url| {
                         DynProvider::new(
-                            ProviderBuilder::new().network::<AnyNetwork>().on_http(url),
+                            ProviderBuilder::new()
+                                .network::<AnyNetwork>()
+                                .connect_http(url),
                         )
                     })
                     .collect(),

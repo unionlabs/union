@@ -22,7 +22,6 @@ pub async fn latest_committed_l2_block_number(
         .call()
         .block(l1_height.into())
         .await?
-        ._0
         .try_into()
         .unwrap())
 }
@@ -40,7 +39,6 @@ pub async fn output_index_of_l2_block_on_l1_block(
         .call()
         .block(l1_height.into())
         .await?
-        ._0
         .try_into()
         .unwrap())
 }
@@ -62,8 +60,7 @@ pub async fn finalized_execution_block_of_l1_height(
         .latestOutputIndex()
         .call()
         .block(l1_height.into())
-        .await?
-        ._0;
+        .await?;
     // The period until the L2 block is considered to be final.
     let finalization_period_seconds = U256::try_from(l2_finalization_period_seconds).unwrap();
     let mut finalized_output_index = latest_output_index;
@@ -72,8 +69,7 @@ pub async fn finalized_execution_block_of_l1_height(
             .getL2Output(finalized_output_index)
             .call()
             .block(l1_height.into())
-            .await?
-            ._0;
+            .await?;
         let current_output_timestamp = U256::try_from(current_output.timestamp).unwrap();
         if current_output_timestamp + finalization_period_seconds <= current_timestamp {
             break current_output;

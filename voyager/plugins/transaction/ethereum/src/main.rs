@@ -438,7 +438,7 @@ impl Module {
                 // .filler(<NonceFiller>::default())
                 // .filler(ChainIdFiller::default())
                 .wallet(EthereumWallet::new(wallet.clone()))
-                .on_provider(self.provider.clone()),
+                .connect_provider(self.provider.clone()),
         );
 
         if let Some(max_gas_price) = self.max_gas_price {
@@ -531,7 +531,6 @@ impl Module {
                             .last()
                             .expect("multicall event should be last log")
                             .data(),
-                        true,
                     )
                     .expect("unable to decode multicall result log");
 
@@ -552,7 +551,7 @@ impl Module {
                                 "evm tx",
                             );
                         } else if let Ok(known_revert) =
-                            IbcErrors::abi_decode(&result.returnData, true)
+                            IbcErrors::abi_decode_validate(&result.returnData)
                         {
                             error!(
                                 msg = %msg_name,
@@ -627,13 +626,13 @@ impl Module {
 
 #[allow(clippy::type_complexity)]
 fn process_msgs<'a>(
-    ibc_handler: &'a ibc_solidity::Ibc::IbcInstance<(), &'a DynProvider<AnyNetwork>, AnyNetwork>,
+    ibc_handler: &'a ibc_solidity::Ibc::IbcInstance<&'a DynProvider<AnyNetwork>, AnyNetwork>,
     msgs: Vec<Datagram>,
     relayer: H160,
 ) -> RpcResult<
     Vec<(
         Datagram,
-        RawCallBuilder<(), &'a &'a DynProvider<AnyNetwork>, AnyNetwork>,
+        RawCallBuilder<&'a &'a DynProvider<AnyNetwork>, AnyNetwork>,
     )>,
 > {
     trace!(?msgs);
@@ -856,7 +855,6 @@ mod tests {
                 bz.into(),
             )
             .unwrap(),
-            true,
         )
         .unwrap();
 
