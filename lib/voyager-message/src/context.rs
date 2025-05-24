@@ -1034,7 +1034,7 @@ pub struct ProofModuleNotFound {
 module_error!(ProofModuleNotFound);
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-#[error("no module loaded for consensus on chain `{0}`")]
+#[error("no module loaded for finality on chain `{0}`")]
 pub struct FinalityModuleNotFound(pub ChainId);
 
 module_error!(FinalityModuleNotFound);
