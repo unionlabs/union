@@ -65,15 +65,25 @@ function truncateGroupingId(groupingId: string | null): string {
   return `${groupingId.slice(0, 6)}...${groupingId.slice(-4)}`
 }
 
-// Helper function to group wallets for card-in-card display
+// function to deduplicate wallets
 function groupWalletsForDisplay(wallets: EnhancedWallet[]): EnhancedWallet[][] {
   if (!wallets || wallets.length === 0) {
     return []
   }
+
+  const seenAddresses = new Set<string>()
+  const dedupedWallets = wallets.filter(wallet => {
+    if (seenAddresses.has(wallet.address)) {
+      return false
+    }
+    seenAddresses.add(wallet.address)
+    return true
+  })
+
   const groups: Record<string, EnhancedWallet[]> = {}
   const ungroupedStandalone: EnhancedWallet[][] = []
 
-  wallets.forEach(wallet => {
+  dedupedWallets.forEach(wallet => {
     if (wallet.grouping) {
       if (!groups[wallet.grouping]) {
         groups[wallet.grouping] = []
@@ -83,6 +93,7 @@ function groupWalletsForDisplay(wallets: EnhancedWallet[]): EnhancedWallet[][] {
       ungroupedStandalone.push([wallet])
     }
   })
+
   // Ensure groups with multiple wallets come first, then ungrouped
   const sortedGroups = Object.values(groups).sort((a, b) => b.length - a.length)
   return [...sortedGroups, ...ungroupedStandalone]
@@ -206,7 +217,9 @@ function handleRemoveSelectedWallets() {
                     <span
                       class="font-mono text-sm text-zinc-300 truncate block"
                       title={wallet.address}
-                    >{truncateAddress(wallet.address)}</span>
+                    >
+                      {truncateAddress(wallet.address)}
+                    </span>
                   </div>
                   <label class="flex items-center cursor-pointer shrink-0">
                     <input
@@ -268,7 +281,9 @@ function handleRemoveSelectedWallets() {
                     <span
                       class="font-mono text-sm text-zinc-300 truncate block"
                       title={wallet.address}
-                    >{truncateAddress(wallet.address)}</span>
+                    >
+                      {truncateAddress(wallet.address)}
+                    </span>
                   </div>
                   <label class="flex items-center cursor-pointer shrink-0">
                     <input
@@ -325,7 +340,9 @@ function handleRemoveSelectedWallets() {
                     <span
                       class="font-mono text-sm text-zinc-300 truncate block"
                       title={wallet.address}
-                    >{truncateAddress(wallet.address)}</span>
+                    >
+                      {truncateAddress(wallet.address)}
+                    </span>
                   </div>
                   <label class="flex items-center cursor-pointer shrink-0">
                     <input
