@@ -4,7 +4,7 @@ use alloy::{
     consensus::{constants::GWEI_TO_WEI, SignableTransaction, Signed, TxEnvelope, TxLegacy},
     eips::eip2718::Encodable2718,
     hex,
-    primitives::{Bytes, PrimitiveSignature, TxKind, U256},
+    primitives::{Bytes, Signature, TxKind, U256},
 };
 use clap::Parser;
 
@@ -25,7 +25,7 @@ enum Args {
     /// Generate the signature hash of the transaction, to pass to `cast wallet sign`.
     SignatureHash,
     /// Generate raw transaction, given the signature from `cast wallet sign`.
-    RawTx { signature_hash: PrimitiveSignature },
+    RawTx { signature_hash: Signature },
 }
 
 fn main() {

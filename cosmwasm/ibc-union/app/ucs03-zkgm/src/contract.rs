@@ -249,7 +249,7 @@ pub fn execute(
             timeout_height.u64(),
             timeout_timestamp,
             salt,
-            Instruction::abi_decode_params(&instruction, true)?,
+            Instruction::abi_decode_params_validate(&instruction)?,
         ),
         ExecuteMsg::SetRateLimitOperators {
             rate_limit_operators,
@@ -364,7 +364,7 @@ fn timeout_packet(
     packet: Packet,
     relayer: Addr,
 ) -> Result<Response, ContractError> {
-    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
+    let zkgm_packet = ZkgmPacket::abi_decode_params_validate(&packet.data)?;
     // Check if this is an in-flight packet (forwarded packet)
     if is_forwarded_packet(zkgm_packet.salt.0.into()) {
         // This is a forwarded packet timeout
@@ -427,7 +427,7 @@ fn timeout_internal(
                     version: instruction.version,
                 });
             }
-            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
             refund(deps, path, packet.source_channel_id, order)
         }
         OP_BATCH => {
@@ -437,7 +437,7 @@ fn timeout_internal(
                 });
             }
             let mut response = Response::new();
-            let batch = Batch::abi_decode_params(&instruction.operand, true)?;
+            let batch = Batch::abi_decode_params_validate(&instruction.operand)?;
             for (i, instruction) in batch.instructions.into_iter().enumerate() {
                 let sub_response = timeout_internal(
                     deps.branch(),
@@ -463,7 +463,7 @@ fn timeout_internal(
                     version: instruction.version,
                 });
             }
-            let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
+            let multiplex = Multiplex::abi_decode_params_validate(&instruction.operand)?;
             timeout_multiplex(deps, caller, packet, relayer, path, multiplex)
         }
         _ => Err(ContractError::UnknownOpcode {
@@ -530,7 +530,7 @@ fn acknowledge_packet(
     relayer: Addr,
     ack: Bytes,
 ) -> Result<Response, ContractError> {
-    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
+    let zkgm_packet = ZkgmPacket::abi_decode_params_validate(&packet.data)?;
     // Check if this is an in-flight packet (forwarded packet)
     if is_forwarded_packet(zkgm_packet.salt.0.into()) {
         // This is a forwarded packet acknowledgement
@@ -554,7 +554,7 @@ fn acknowledge_packet(
             )?));
         }
     }
-    let ack = Ack::abi_decode_params(&ack, true)?;
+    let ack = Ack::abi_decode_params_validate(&ack)?;
     acknowledge_internal(
         deps,
         env,
@@ -595,9 +595,9 @@ fn acknowledge_internal(
                     version: instruction.version,
                 });
             }
-            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
             let order_ack = if successful {
-                Some(FungibleAssetOrderAck::abi_decode_params(&ack, true)?)
+                Some(FungibleAssetOrderAck::abi_decode_params_validate(&ack)?)
             } else {
                 None
             };
@@ -612,9 +612,9 @@ fn acknowledge_internal(
                 });
             }
             let mut response = Response::new();
-            let batch = Batch::abi_decode_params(&instruction.operand, true)?;
+            let batch = Batch::abi_decode_params_validate(&instruction.operand)?;
             let batch_ack = if successful {
-                Some(BatchAck::abi_decode_params(&ack, true)?)
+                Some(BatchAck::abi_decode_params_validate(&ack)?)
             } else {
                 None
             };
@@ -648,7 +648,7 @@ fn acknowledge_internal(
                     version: instruction.version,
                 });
             }
-            let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
+            let multiplex = Multiplex::abi_decode_params_validate(&instruction.operand)?;
             acknowledge_multiplex(
                 deps, caller, packet, relayer, path, multiplex, successful, ack,
             )
@@ -853,7 +853,7 @@ fn execute_packet(
     intent: bool,
 ) -> Result<Response, ContractError> {
     let mut funds = Coins::try_from(info.funds.clone()).expect("impossible");
-    let zkgm_packet = ZkgmPacket::abi_decode_params(&packet.data, true)?;
+    let zkgm_packet = ZkgmPacket::abi_decode_params_validate(&packet.data)?;
     execute_internal(
         deps.branch(),
         env,
@@ -898,7 +898,7 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
-            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
             execute_fungible_asset_order(
                 deps,
                 env,
@@ -920,7 +920,7 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
-            let batch = Batch::abi_decode_params(&instruction.operand, true)?;
+            let batch = Batch::abi_decode_params_validate(&instruction.operand)?;
             execute_batch(
                 deps,
                 env,
@@ -942,7 +942,7 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
-            let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
+            let multiplex = Multiplex::abi_decode_params_validate(&instruction.operand)?;
             execute_multiplex(
                 deps,
                 env,
@@ -961,7 +961,7 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
-            let forward = Forward::abi_decode_params(&instruction.operand, true)?;
+            let forward = Forward::abi_decode_params_validate(&instruction.operand)?;
             execute_forward(
                 deps,
                 env,
@@ -981,7 +981,7 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
-            let stake = Stake::abi_decode_params(&instruction.operand, true)?;
+            let stake = Stake::abi_decode_params_validate(&instruction.operand)?;
             execute_stake(deps, env, packet, stake, intent)
         }
         OP_UNSTAKE => {
@@ -990,7 +990,7 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
-            let unstake = Unstake::abi_decode_params(&instruction.operand, true)?;
+            let unstake = Unstake::abi_decode_params_validate(&instruction.operand)?;
             execute_unstake(deps, env, packet, unstake, intent)
         }
         OP_WITHDRAW_STAKE => {
@@ -999,7 +999,7 @@ fn execute_internal(
                     version: instruction.version,
                 });
             }
-            let withdraw_stake = WithdrawStake::abi_decode_params(&instruction.operand, true)?;
+            let withdraw_stake = WithdrawStake::abi_decode_params_validate(&instruction.operand)?;
             execute_withdraw_stake(deps, env, packet, withdraw_stake, intent)
         }
         _ => Err(ContractError::UnknownOpcode {
@@ -2065,7 +2065,7 @@ pub fn verify_internal(
                     version: instruction.version,
                 });
             }
-            let order = FungibleAssetOrder::abi_decode_params(&instruction.operand, true)?;
+            let order = FungibleAssetOrder::abi_decode_params_validate(&instruction.operand)?;
             verify_fungible_asset_order(deps, info, funds, channel_id, path, &order, response)
         }
         OP_BATCH => {
@@ -2074,7 +2074,7 @@ pub fn verify_internal(
                     version: instruction.version,
                 });
             }
-            let batch = Batch::abi_decode_params(&instruction.operand, true)?;
+            let batch = Batch::abi_decode_params_validate(&instruction.operand)?;
             verify_batch(deps, info, funds, channel_id, path, &batch, response)
         }
         OP_FORWARD => {
@@ -2083,7 +2083,7 @@ pub fn verify_internal(
                     version: instruction.version,
                 });
             }
-            let forward = Forward::abi_decode_params(&instruction.operand, true)?;
+            let forward = Forward::abi_decode_params_validate(&instruction.operand)?;
             verify_forward(deps, info, funds, channel_id, &forward, response)
         }
         OP_MULTIPLEX => {
@@ -2092,7 +2092,7 @@ pub fn verify_internal(
                     version: instruction.version,
                 });
             }
-            let multiplex = Multiplex::abi_decode_params(&instruction.operand, true)?;
+            let multiplex = Multiplex::abi_decode_params_validate(&instruction.operand)?;
             verify_multiplex(&multiplex, info.sender, response)
         }
         _ => Err(ContractError::UnknownOpcode {

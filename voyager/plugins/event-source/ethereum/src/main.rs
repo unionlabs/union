@@ -394,7 +394,7 @@ impl Module {
                 .into();
 
             info_span!("tx_hash", %tx_hash).in_scope(|| {
-                match Ibc::IbcEvents::decode_log(&log.inner, true) {
+                match Ibc::IbcEvents::decode_log(&log.inner) {
                     Ok(event) => {
                         trace!(?event, "found IbcHandler event");
 

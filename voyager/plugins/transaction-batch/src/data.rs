@@ -10,8 +10,11 @@ use crate::IbcSpecExt;
 #[model]
 #[derive(Enumorph, SubsetOf)]
 pub enum ModuleData {
-    BatchEventsClassicc(EventBatch<IbcClassic>),
+    #[serde(alias = "batch_events_classicc")] // lol whoops
+    BatchEventsClassic(EventBatch<IbcClassic>),
     BatchEventsUnion(EventBatch<IbcUnion>),
+    ProofUnavailableClassic(ProofUnavailable<IbcClassic>),
+    ProofUnavailableUnion(ProofUnavailable<IbcUnion>),
 }
 
 #[model]
@@ -114,4 +117,16 @@ impl TryFrom<ibc_union_spec::event::FullEvent> for EventUnion {
             _ => Err(()),
         }
     }
+}
+
+/// A proof was not available for the contained event at it's provable height.
+#[model]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct ProofUnavailable<V: IbcSpecExt> {
+    /// The client that will need an update to send these messages through.
+    ///
+    /// This is the counterparty client of the source event.
+    pub client_id: V::ClientId,
+    /// The on-chain event that will need to be turned into a message to send to this chain.
+    pub event: BatchableEvent<V>,
 }

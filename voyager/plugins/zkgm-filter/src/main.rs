@@ -703,7 +703,7 @@ pub fn is_successful_protocol_fill(event: &WriteAck) -> bool {
 }
 
 fn is_successful_protocol_fill_ack(acknowledgement: &[u8]) -> bool {
-    let Ok(ack) = Ack::abi_decode_params(acknowledgement, true) else {
+    let Ok(ack) = Ack::abi_decode_params_validate(acknowledgement) else {
         // not a zkgm ack
         return false;
     };
@@ -715,11 +715,12 @@ fn is_successful_protocol_fill_ack(acknowledgement: &[u8]) -> bool {
         return false;
     }
 
-    let ack = match FungibleAssetOrderAck::abi_decode_params(&ack.inner_ack, true) {
+    let ack = match FungibleAssetOrderAck::abi_decode_params_validate(&ack.inner_ack) {
         Ok(ack) => ack,
-        Err(_) => match BatchAck::abi_decode_params(&ack.inner_ack, true) {
+        Err(_) => match BatchAck::abi_decode_params_validate(&ack.inner_ack) {
             Ok(BatchAck { acknowledgements }) if acknowledgements.len() == 1 => {
-                let Ok(ack) = FungibleAssetOrderAck::abi_decode_params(&acknowledgements[0], true)
+                let Ok(ack) =
+                    FungibleAssetOrderAck::abi_decode_params_validate(&acknowledgements[0])
                 else {
                     return false;
                 };
@@ -807,7 +808,7 @@ fn valid_checksum(salt: unionlabs::primitives::FixedBytes<32>) -> bool {
 }
 
 fn valid_checksum_eth(tx_input: &[u8]) -> bool {
-    let send_call = match sendCall::abi_decode(tx_input, true) {
+    let send_call = match sendCall::abi_decode_validate(tx_input) {
         Ok(ok) => ok,
         Err(err) => {
             warn!(

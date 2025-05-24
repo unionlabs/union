@@ -316,7 +316,7 @@ macro_rules! impl_ethabi_via_try_from_into {
             type Error = $crate::TryFromEthAbiBytesError<<$T as TryFrom<$EthAbi>>::Error>;
 
             fn decode(bytes: &[u8]) -> Result<Self, Self::Error> {
-                <$EthAbi as $crate::alloy_sol_types::SolValue>::abi_decode_params(bytes, false)
+                <$EthAbi as $crate::alloy_sol_types::SolValue>::abi_decode_params_validate(bytes)
                     .map_err($crate::TryFromEthAbiBytesError::Decode)
                     .and_then(|abi| {
                         abi.try_into()

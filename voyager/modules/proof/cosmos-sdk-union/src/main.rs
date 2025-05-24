@@ -31,7 +31,7 @@ use voyager_message::{
     module::{ProofModuleInfo, ProofModuleServer},
     primitives::ChainId,
     rpc::ProofType,
-    ProofModule, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
+    ProofModule, FATAL_JSONRPC_ERROR_CODE,
 };
 use voyager_vm::BoxDynError;
 
@@ -150,16 +150,12 @@ impl ProofModuleServer<IbcUnion> for Module {
             .await
             .map_err(rpc_error("error querying ibc proof", None))?;
 
-        let proofs = query_result
-            .response
-            .proof_ops
-            .ok_or_else(|| {
-                ErrorObject::owned(
-                    MISSING_STATE_ERROR_CODE,
-                    "proofOps must be present on abci query when called with prove = true",
-                    None::<()>,
-                )
-            })?
+        // if this field is none, the proof is not available at this height
+        let Some(proofs) = query_result.response.proof_ops else {
+            return Ok(None);
+        };
+
+        let proofs = proofs
             .ops
             .into_iter()
             .map(|op| {

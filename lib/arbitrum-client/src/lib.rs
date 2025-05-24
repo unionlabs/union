@@ -61,7 +61,7 @@ pub async fn finalized_l2_block_of_l1_height(
         .try_into()
         .unwrap();
 
-    let event: NodeCreated = NodeCreated::decode_log(&event.inner, true)?.data;
+    let event: NodeCreated = NodeCreated::decode_log(&event.inner)?.data;
 
     trace!(next_node_num, "{event:?}");
 

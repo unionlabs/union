@@ -40,6 +40,7 @@ pub mod data;
 
 #[derive(Debug, Clone)]
 pub struct Module {
+    // The destination chain (i.e. where the messages will be sent to)
     pub chain_id: ChainId,
     pub client_configs: ClientConfigs,
 }
@@ -357,10 +358,12 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                 cb.call(e.try_get()?, self, datas).await
             }
             ModuleCallback::MakeBatchTransactionV1(cb) => {
-                cb.call(e.try_get()?, self.chain_id.clone(), datas).await
+                cb.call(self, e.try_get()?, self.chain_id.clone(), datas)
+                    .await
             }
             ModuleCallback::MakeBatchTransactionUnion(cb) => {
-                cb.call(e.try_get()?, self.chain_id.clone(), datas).await
+                cb.call(self, e.try_get()?, self.chain_id.clone(), datas)
+                    .await
             }
         }
     }
@@ -442,7 +445,7 @@ impl Module {
                     }
                     Err(msg) => {
                         match msg.as_plugin::<ModuleData>(self.plugin_name()) {
-                            Ok(ModuleData::BatchEventsClassicc(message)) => {
+                            Ok(ModuleData::BatchEventsClassic(message)) => {
                                 trace!(
                                     client_id = %message.client_id,
                                     events.len = %message.events.len(),
@@ -466,6 +469,11 @@ impl Module {
                                     .or_default()
                                     .extend(message.events.into_iter().map(|event| (idx, event)));
                             }
+
+                            Ok(msg) => {
+                                error!("unexpected message: {msg:?}");
+                            }
+
                             Err(msg) => {
                                 error!("unexpected message: {msg:?}");
                             }

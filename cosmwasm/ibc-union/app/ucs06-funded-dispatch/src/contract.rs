@@ -67,7 +67,7 @@ fn internal_execute(
     message: Bytes,
     intent: bool,
 ) -> Result<Response, ContractError> {
-    let params = FundedDispatchParameters::abi_decode_params(&message, true)?;
+    let params = FundedDispatchParameters::abi_decode_params_validate(&message)?;
     if EXECUTING_PARAMS.exists(deps.storage) {
         return Err(ContractError::ForbiddenReentrancy);
     }

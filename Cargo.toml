@@ -385,9 +385,9 @@ ucs04         = { path = "lib/ucs04", default-features = false }
 
 tendermint-rpc = { git = "https://github.com/unionlabs/tendermint-rs", branch = "v0.39.1-bn254", default-features = false }
 
-alloy            = { version = "0.12.6", default-features = false }
-alloy-primitives = { version = "0.8.23", default-features = false }
-alloy-sol-types  = { version = "0.8.23", default-features = true }
+alloy            = { version = "1.0.7", default-features = false }
+alloy-primitives = { version = "1.1.2", default-features = false }
+alloy-sol-types  = { version = "1.1.2", default-features = true }
 
 anyhow    = { version = "1" }
 itertools = { version = "0.13" }

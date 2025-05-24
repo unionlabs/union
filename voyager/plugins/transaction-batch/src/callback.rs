@@ -1,5 +1,6 @@
 use std::collections::VecDeque;
 
+use either::Either;
 use enumorph::Enumorph;
 use futures::{stream::FuturesOrdered, TryFutureExt, TryStreamExt};
 use ibc_classic_spec::IbcClassic;
@@ -7,10 +8,14 @@ use ibc_union_spec::IbcUnion;
 use itertools::Itertools;
 use jsonrpsee::core::RpcResult;
 use macros::model;
-use tracing::{debug, instrument, warn};
+use subset_of::{SubsetOf, Superset};
+use tracing::{debug, info, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
 use voyager_message::{
-    call::{SubmitTx, WaitForClientUpdate, WaitForHeightRelative, WaitForTrustedHeight},
+    call::{
+        FetchUpdateHeaders, SubmitTx, WaitForClientUpdate, WaitForHeightRelative,
+        WaitForTrustedHeight,
+    },
     data::{Data, EventProvableHeight, IbcDatagram, OrderedHeaders},
     primitives::{ChainId, ClientStateMeta, IbcSpec, QueryHeight},
     PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
@@ -19,7 +24,7 @@ use voyager_vm::{call, conc, noop, promise, seq, Op};
 
 use crate::{
     call::{MakeMsg, MakeTransactionBatchesWithUpdate, ModuleCall},
-    data::BatchableEvent,
+    data::{BatchableEvent, ModuleData, ProofUnavailable},
     IbcSpecExt, Module,
 };
 
@@ -125,8 +130,8 @@ where
     let mk_batch_promise = |batch: Vec<BatchableEvent<_>>, updates: Option<OrderedHeaders>| {
         promise(
             batch.into_iter().map(|batchable_event| {
-                // this is an assert and not an error because it indicates a bug in the business logic of this plugin. if a message was manually inserted into the queue and this assert was hit, it means the message is invalid.
                 if let EventProvableHeight::Min(provable_height) = batchable_event.provable_height {
+                    // this is an assert and not an error because it indicates a bug in the business logic of this plugin. if a message was manually inserted into the queue and this assert was hit, it means the message is invalid.
                     assert!(
                         provable_height <= new_trusted_height,
                         "the provable height of the event is less than the trusted height \
@@ -225,10 +230,15 @@ pub struct MakeBatchTransaction<V: IbcSpecExt> {
     pub updates: Option<OrderedHeaders>,
 }
 
-impl<V: IbcSpecExt> MakeBatchTransaction<V> {
+impl<V: IbcSpecExt> MakeBatchTransaction<V>
+where
+    ProofUnavailable<V>: SubsetOf<ModuleData>,
+    ModuleCallback: From<MakeIbcMessagesFromUpdate<V>>,
+{
     #[instrument(skip_all, fields(ibc_spec_id = %V::ID, %chain_id, datas_len = datas.len()))]
     pub async fn call(
         self,
+        module_server: &Module,
         voyager_client: &VoyagerClient,
         chain_id: ChainId,
         datas: VecDeque<Data>,
@@ -237,16 +247,22 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
             warn!("no IBC messages in queue! this likely means that all of the IBC messages that were queued to be sent were already sent to the destination chain");
         }
 
-        let mut msgs = datas
+        let (msgs, events_no_proof_available) = datas
             .into_iter()
-            .map(|d| {
-                IbcDatagram::try_from(d)
-                    .unwrap()
-                    .decode_datagram::<V>()
-                    .unwrap()
-                    .unwrap()
-            })
-            .peekable();
+            .partition_map::<Vec<_>, Vec<_>, _, _, _>(|d| {
+                d.try_into_sub::<IbcDatagram>()
+                    .map(|d| Either::Left(d.decode_datagram::<V>().unwrap().unwrap()))
+                    .unwrap_or_else(|d| {
+                        Either::Right(
+                            d.as_plugin::<ModuleData>(module_server.plugin_name())
+                                .unwrap()
+                                .try_into_sub::<ProofUnavailable<V>>()
+                                .unwrap(),
+                        )
+                    })
+            });
+
+        let mut msgs = msgs.into_iter().peekable();
 
         // TODO: We may need to sort packet messages when we support ordered channels
         // msgs.sort_unstable_by(|a, b| match (a, b) {
@@ -265,8 +281,51 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
             .client_info::<V>(chain_id.clone(), self.client_id.clone())
             .await?;
 
-        match self.updates {
-            Some(updates) => Ok(call(SubmitTx {
+        let events_no_proof_available_msg = if !events_no_proof_available.is_empty() {
+            info!(
+                count = events_no_proof_available.len(),
+                "found events with no proof available"
+            );
+
+            let latest_height = voyager_client
+                .query_latest_height(module_server.chain_id.clone(), true)
+                .await?;
+
+            let client_state_meta = voyager_client
+                .client_state_meta::<V>(
+                    module_server.chain_id.clone(),
+                    QueryHeight::Latest,
+                    self.client_id.clone(),
+                )
+                .await?;
+
+            Some(promise(
+                [call(FetchUpdateHeaders {
+                    client_type: client_info.client_type.clone(),
+                    counterparty_chain_id: module_server.chain_id.clone(),
+                    chain_id: module_server.chain_id.clone(),
+                    client_id: RawClientId::new(self.client_id.clone()),
+                    update_from: client_state_meta.counterparty_height,
+                    update_to: latest_height,
+                })],
+                [],
+                PluginMessage::new(
+                    module_server.plugin_name(),
+                    ModuleCallback::from(MakeIbcMessagesFromUpdate::<V> {
+                        client_id: self.client_id.clone(),
+                        batches: vec![events_no_proof_available
+                            .into_iter()
+                            .map(|e| e.event)
+                            .collect()],
+                    }),
+                ),
+            ))
+        } else {
+            None
+        };
+
+        let msg = match self.updates {
+            Some(updates) => call(SubmitTx {
                 chain_id: chain_id.clone(),
                 datagrams: updates
                     .headers
@@ -289,17 +348,17 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                     .chain(msgs)
                     .map(|e| IbcDatagram::new::<V>(e))
                     .collect::<Vec<_>>(),
-            })),
+            }),
             None => {
                 if msgs.len() == 0 {
-                    Ok(noop())
+                    noop()
                 } else {
                     // TODO: We can probably relax this in the future if we want to reuse this module to work with all IBC messages
                     // NOTE: We assume that all of the IBC messages were generated against the same consensus height
                     let required_consensus_height =
                         V::proof_height(msgs.peek().expect("msgs is non-empty; qed;"));
 
-                    Ok(seq([
+                    seq([
                         call(WaitForClientUpdate {
                             chain_id: chain_id.clone(),
                             client_id: RawClientId::new(self.client_id.clone()),
@@ -310,9 +369,11 @@ impl<V: IbcSpecExt> MakeBatchTransaction<V> {
                             chain_id,
                             datagrams: msgs.map(IbcDatagram::new::<V>).collect::<Vec<_>>(),
                         }),
-                    ]))
+                    ])
                 }
             }
-        }
+        };
+
+        Ok(conc(events_no_proof_available_msg.into_iter().chain([msg])))
     }
 }
