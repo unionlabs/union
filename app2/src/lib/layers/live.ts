@@ -1,4 +1,5 @@
 import { ENV } from "$lib/constants"
+import { GraphQL } from "$lib/graphql/service"
 import * as Datadog from "$lib/logging/datadog"
 import { Context, Layer, Logger, LogLevel, Match } from "effect"
 
@@ -12,6 +13,7 @@ const minimumLogLevel = Logger.minimumLogLevel(
 )
 
 export default Layer.mergeAll(
+  GraphQL.Default,
   Logger.replace(
     Logger.defaultLogger,
     Logger.zip(

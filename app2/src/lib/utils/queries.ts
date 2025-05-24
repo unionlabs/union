@@ -1,13 +1,14 @@
-import { URLS } from "$lib/constants"
+import type { GraphQLError } from "$lib/graphql/error"
+import { GraphQL, GraphQLRequest } from "$lib/graphql/service"
+import type { Persistence } from "@effect/experimental"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
-import { operationNamesFromDocumentNode } from "@unionlabs/sdk/utils"
-import { Array as A, Effect, Option, pipe, Schedule, Schema } from "effect"
-import type { TimeoutException, UnknownException } from "effect/Cause"
+import { Effect, Option, pipe, Schedule, Schema } from "effect"
+import type { TimeoutException } from "effect/Cause"
 import type { DurationInput } from "effect/Duration"
 import type { ParseError } from "effect/ParseResult"
 import type { TadaDocumentNode } from "gql.tada"
-import { request } from "graphql-request"
+import { type Variables } from "graphql-request"
 
 export type FetchDecodeError = HttpClientError | ParseError | TimeoutException
 
@@ -16,7 +17,10 @@ export type FetchDecodeError = HttpClientError | ParseError | TimeoutException
  */
 export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
   Effect.gen(function*() {
-    const client = yield* HttpClient.HttpClient
+    const client = (yield* HttpClient.HttpClient).pipe(
+      // important! this prevents CORS issues: https://github.com/Effect-TS/effect/issues/4568
+      HttpClient.withTracerDisabledWhen(() => true),
+    )
     const response = yield* client.get(url)
     const json = yield* response.json
     return yield* Schema.decodeUnknown(schema)(json)
@@ -29,36 +33,25 @@ export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
     Effect.withLogSpan("fetchDecode"),
   )
 
-export type FetchDecodeGraphqlError = UnknownException | ParseError
+export type FetchDecodeGraphqlError = GraphQLError | Persistence.PersistenceError | ParseError
 /**
+ * TODO: Adjust calling convention to be `GraphQL` dependency injeciton.
  * @deprecated Migrate to `@unionlabs/sdk` query functions.
  */
-export const fetchDecodeGraphql = <S, E, D, V extends object | undefined>(
+export const fetchDecodeGraphql = <S, E, D, V extends Variables = Variables>(
   schema: Schema.Schema<S, E>,
   document: TadaDocumentNode<D, V>,
   variables?: V,
-): Effect.Effect<S, FetchDecodeGraphqlError, never> => {
-  const operationName = pipe(
-    document,
-    operationNamesFromDocumentNode,
-    A.head,
-    Option.getOrElse(() => "unknown"),
+): Effect.Effect<S, FetchDecodeGraphqlError, GraphQL> =>
+  Effect.andThen(
+    GraphQL,
+    ({ fetch }) =>
+      pipe(
+        fetch(new GraphQLRequest({ document, variables })),
+        Effect.flatMap((x) => Schema.decodeUnknown(schema)(x)),
+        Effect.withLogSpan("decode"),
+      ),
   )
-  const message = `request.gql.${operationName}`
-  return pipe(
-    Effect.tryPromise(() => request(URLS().GRAPHQL, document, variables)),
-    Effect.withSpan("fetch"),
-    Effect.flatMap(Schema.decodeUnknown(schema)),
-    Effect.withSpan("decode"),
-    Effect.tap(Effect.log(message)),
-    Effect.tapErrorCause((cause) => Effect.logError(message, cause)),
-    Effect.annotateLogs({
-      operationName,
-      variables,
-    }),
-    Effect.withLogSpan("fetchDecodeGraphql"),
-  )
-}
 
 export const createQuery = <S>({
   url,
@@ -98,7 +91,7 @@ export const createQuery = <S>({
   return program
 }
 
-export const createQueryGraphql = <S, E, D, V extends object | undefined>({
+export const createQueryGraphql = <S, E, D, V extends Variables = Variables>({
   schema,
   document,
   variables,

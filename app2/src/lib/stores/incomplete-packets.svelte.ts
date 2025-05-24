@@ -1,16 +1,15 @@
-import { runFork, runPromise } from "$lib/runtime"
+import { type AppContext, runFork, runPromise } from "$lib/runtime"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { PacketCount, PacketList } from "@unionlabs/sdk/schema"
 import { Effect, Fiber, Option } from "effect"
-import type { TimeoutException, UnknownException } from "effect/Cause"
-import type { ParseError } from "effect/ParseResult"
+import type { TimeoutException } from "effect/Cause"
 
 class IncompletePacketsListStore {
   data = $state(Option.none<typeof PacketList.Type>())
-  error = $state(Option.none<FetchDecodeGraphqlError | ParseError | UnknownException>())
-  fiber = $state(Option.none<Fiber.RuntimeFiber<any, ParseError | UnknownException>>())
+  error = $state(Option.none<FetchDecodeGraphqlError>())
+  fiber = $state(Option.none<Fiber.RuntimeFiber<any, FetchDecodeGraphqlError>>())
 
-  async runEffect<A>(effect: Effect.Effect<A, ParseError | UnknownException>) {
+  async runEffect<A>(effect: Effect.Effect<A, FetchDecodeGraphqlError, AppContext>) {
     this.data = Option.none()
     await this.interruptFiber()
     const fiber = runFork(effect)

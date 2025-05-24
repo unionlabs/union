@@ -122,5 +122,4 @@ export const fetchCosmosBalance = ({
     }),
     Effect.scoped,
     Effect.provide(FetchHttpClient.layer),
-    withTracerDisabledWhen(() => true), // important! this prevents CORS issues: https://github.com/Effect-TS/effect/issues/4568
   )

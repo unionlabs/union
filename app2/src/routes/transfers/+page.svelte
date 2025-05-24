@@ -18,7 +18,7 @@ import TransferListItemComponent from "$lib/components/model/TransferListItemCom
 import TransferListItemComponentSkeleton from "$lib/components/model/TransferListItemComponentSkeleton.svelte"
 import TransferListPagination from "$lib/components/ui/TransferListPagination.svelte"
 import WalletConnectedNoTransfers from "$lib/components/WalletConnectedNoTransfers.svelte"
-    import { runFork, runPromise } from "$lib/runtime";
+import { runFork, runPromise } from "$lib/runtime";
 
 let transferFiber: Fiber.Fiber<any, any>
 let countFiber: Fiber.Fiber<any, any>

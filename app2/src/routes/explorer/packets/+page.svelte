@@ -20,10 +20,12 @@ import { settingsStore } from "$lib/stores/settings.svelte"
 import PacketListItemComponent from "$lib/components/model/PacketListItemComponent.svelte"
 import PacketListItemComponentSkeleton from "$lib/components/model/PacketListItemComponentSkeleton.svelte"
 import Switch from "$lib/components/ui/Switch.svelte"
+    import type { AppContext } from "$lib/runtime";
 
 const initializeQuery = async () => {
   const pageParam = page.url.searchParams.get("page")
-  let effect: Effect.Effect<any>
+  // XXX: no mutable effects
+  let effect: Effect.Effect<any, never, AppContext>
 
   if (pageParam) {
     if (pageParam.startsWith("-")) {
