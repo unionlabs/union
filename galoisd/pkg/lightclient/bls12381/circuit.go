@@ -13,12 +13,13 @@ import (
 )
 
 type Circuit struct {
-	Proof          groth16.Proof[sw_bn254.G1Affine, sw_bn254.G2Affine]
-	VerifyingKey   groth16.VerifyingKey[sw_bn254.G1Affine, sw_bn254.G2Affine, sw_bn254.GTEl]
-	InnerWitness   groth16.Witness[sw_bn254.ScalarField]
-	CommitmentHash frontend.Variable `gnark:",public"`
-	CommitmentX    frontend.Variable `gnark:",public"`
-	CommitmentY    frontend.Variable `gnark:",public"`
+	Proof           groth16.Proof[sw_bn254.G1Affine, sw_bn254.G2Affine]
+	VerifyingKey    groth16.VerifyingKey[sw_bn254.G1Affine, sw_bn254.G2Affine, sw_bn254.GTEl]
+	InnerWitness    groth16.Witness[sw_bn254.ScalarField]
+	CommitmentHash  frontend.Variable `gnark:",public"`
+	CommitmentX     frontend.Variable `gnark:",public"`
+	CommitmentY     frontend.Variable `gnark:",public"`
+	InnerInputsHash frontend.Variable `gnark:",public"`
 	// OptimizedInnerWitness frontend.Variable `gnark:",public"`
 	// VkHash frontend.Variable `gnark:",public"`
 }
@@ -41,6 +42,11 @@ func (c *Circuit) Define(api frontend.API) error {
 	f, _ := sw_emulated.New[emulated.BN254Fp, emulated.BN254Fr](api, sw_emulated.GetCurveParams[emulated.BN254Fp]())
 
 	f.AssertIsEqual(&c.Proof.Commitments[0].G1El, &commitment)
+
+	scalarApi, _ := emulated.NewField[emulated.BN254Fr](api)
+
+	innerInputsHash := scalarApi.FromBits(api.ToBinary(c.InnerInputsHash)...)
+	scalarApi.AssertIsEqual(&c.InnerWitness.Public[0], innerInputsHash)
 
 	return verifier.AssertProof(c.VerifyingKey, c.Proof, c.InnerWitness, groth16.WithCommitmentHash(c.CommitmentHash))
 }

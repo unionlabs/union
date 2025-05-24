@@ -6504,6 +6504,7 @@ dependencies = [
 name = "gnark-key-parser"
 version = "0.0.0"
 dependencies = [
+ "ark-bls12-381 0.4.0",
  "ark-bn254",
  "ark-ff 0.4.2",
  "ark-serialize 0.4.2",
