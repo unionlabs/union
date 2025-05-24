@@ -119,8 +119,6 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
       Effect.gen(function*() {
         const { document, variables } = options
 
-        console.log({ document, variables })
-
         const fetch = Effect.tryPromise({
           try: (signal) =>
             client.request<D, any>({
@@ -173,22 +171,17 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
       variables?: V
     }) =>
       pipe(
-        Effect.log(`getting ${operationNamesFromDocumentNode(options.document)}`),
-        Effect.andThen(() =>
-          pipe(
-            cache.get(
-              new GraphQLRequest(
-                {
-                  document: options.document,
-                  variables: options.variables,
-                },
-                { disableValidation: true },
-              ),
-            ),
-            // XXX: override result type
-            Effect.map(x => x as D),
-          )
+        cache.get(
+          new GraphQLRequest(
+            {
+              document: options.document,
+              variables: options.variables,
+            },
+            { disableValidation: true },
+          ),
         ),
+        // XXX: override result type
+        Effect.map(x => x as D),
       )
 
     return {

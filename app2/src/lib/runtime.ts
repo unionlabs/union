@@ -1,12 +1,13 @@
 import { runForkWithRuntime, runPromiseExitWithRuntime } from "$lib/utils/effect.svelte.js"
 import type { GraphqlQuery } from "@aptos-labs/ts-sdk"
-import { Layer, ManagedRuntime, Match, pipe } from "effect"
+import { Effect, Layer, ManagedRuntime, Match, pipe } from "effect"
 import { isNotUndefined } from "effect/Predicate"
 import type { GraphQL } from "./graphql/service"
 
 const IS_VITEST = isNotUndefined(import.meta.vitest)
 
 type AppLayer = Layer.Layer<GraphQL, never, never>
+export type AppContext = Layer.Layer.Success<AppLayer>
 
 const make = async () => {
   const AppLayer = (await pipe(

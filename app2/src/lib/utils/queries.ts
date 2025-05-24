@@ -4,7 +4,7 @@ import type { Persistence } from "@effect/experimental"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import { Effect, Option, pipe, Schedule, Schema } from "effect"
-import type { TimeoutException, UnknownException } from "effect/Cause"
+import type { TimeoutException } from "effect/Cause"
 import type { DurationInput } from "effect/Duration"
 import type { ParseError } from "effect/ParseResult"
 import type { TadaDocumentNode } from "gql.tada"
@@ -17,7 +17,10 @@ export type FetchDecodeError = HttpClientError | ParseError | TimeoutException
  */
 export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
   Effect.gen(function*() {
-    const client = yield* HttpClient.HttpClient
+    const client = (yield* HttpClient.HttpClient).pipe(
+      // important! this prevents CORS issues: https://github.com/Effect-TS/effect/issues/4568
+      HttpClient.withTracerDisabledWhen(() => true),
+    )
     const response = yield* client.get(url)
     const json = yield* response.json
     return yield* Schema.decodeUnknown(schema)(json)
@@ -45,7 +48,8 @@ export const fetchDecodeGraphql = <S, E, D, V extends Variables = Variables>(
     ({ fetch }) =>
       pipe(
         fetch(new GraphQLRequest({ document, variables })),
-        Effect.flatMap(Schema.decodeUnknown(schema)),
+        Effect.flatMap((x) => Schema.decodeUnknown(schema)(x)),
+        Effect.withLogSpan("decode"),
       ),
   )
 
