@@ -25,7 +25,7 @@ use unionlabs::{
     cosmwasm::wasm::msg_update_instantiate_config::response::MsgUpdateInstantiateConfigResponse,
     encoding::{Decode, EncodeAs, Proto},
     google::protobuf::any::{Any, RawAny, TryFromAnyError},
-    primitives::H256,
+    primitives::{encoding::HexUnprefixed, H256},
     prost::{self, Message},
     ErrorReporter, Msg, TypeUrl,
 };
@@ -68,14 +68,15 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
             memo = %memo.as_ref()
         )
     )]
+    #[allow(clippy::type_complexity)] // coward
     pub async fn tx<M: Msg>(
         &self,
         msg: M,
         // TODO: Extract these out into an Options struct?
         memo: impl AsRef<str>,
         simulate: bool,
-    ) -> Result<(H256, M::Response), TxError<M::Response>> {
-        let (tx_hash, result) = self.broadcast_tx_commit([Any(msg)], memo, simulate).await?;
+    ) -> Result<(H256<HexUnprefixed>, M::Response), TxError<M::Response>> {
+        let result = self.broadcast_tx_commit([Any(msg)], memo, simulate).await?;
 
         let mut response = <abci::v1beta1::TxMsgData as Message>::decode(
             &*result.tx_result.data.unwrap_or_default(),
@@ -83,7 +84,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
         .map_err(TxError::TxMsgDataDecode)?;
 
         Ok((
-            tx_hash,
+            result.hash,
             <Any<M::Response>>::try_from(
                 response
                     .msg_responses
@@ -108,7 +109,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
         messages: impl IntoIterator<Item: Into<RawAny>> + Clone,
         memo: impl AsRef<str>,
         simulate: bool,
-    ) -> Result<(H256, TxResponse), BroadcastTxCommitError> {
+    ) -> Result<TxResponse, BroadcastTxCommitError> {
         let account = self
             .account_info(self.wallet.address())
             .await?
@@ -167,7 +168,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
 
         if let Ok(tx) = self.rpc.client().tx(tx_hash, false).await {
             debug!(%tx_hash, "tx already included");
-            return Ok((tx_hash, tx));
+            return Ok(tx);
         }
 
         let response = self.rpc.client().broadcast_tx_sync(&tx_raw_bytes).await?;
@@ -206,7 +207,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
 
             match tx_inclusion {
                 Ok(tx) => match tx.tx_result.code {
-                    Code::Ok => break Ok((tx_hash, tx)),
+                    Code::Ok => break Ok(tx),
                     Code::Err(error_code) => {
                         return Err(BroadcastTxCommitError::TxFailed {
                             codespace: response.codespace,
@@ -236,7 +237,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
         &self,
         messages: impl IntoIterator<Item: Into<RawAny>> + Clone,
         memo: impl AsRef<str>,
-    ) -> Result<(TxBody, AuthInfo, GasInfo), SimulateTxError> {
+    ) -> Result<(TxBody, AuthInfo, GasInfo), BroadcastTxCommitError> {
         use protos::cosmos::tx;
 
         let account = self
@@ -275,7 +276,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
             )
             .await?
             .into_result()?
-            .ok_or(SimulateTxError::NoResponse)?;
+            .ok_or(BroadcastTxCommitError::NoResponse)?;
 
         Ok((
             tx_body,
@@ -321,7 +322,7 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
     pub async fn account_info<T: Clone + AsRef<[u8]>>(
         &self,
         account: Bech32<T>,
-    ) -> Result<Option<BaseAccount>, FetchAccountInfoError> {
+    ) -> Result<Option<BaseAccount>, BroadcastTxCommitError> {
         debug!(%account, "fetching account");
 
         let account = self
@@ -338,8 +339,9 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
             .await?
             .into_result()
             .map_err(|e| match (e.error_code.get(), e.codespace.as_str()) {
+                // TODO: What is this error?
                 (22, "sdk") => Ok(None),
-                _ => Err(FetchAccountInfoError::Query(e)),
+                _ => Err(BroadcastTxCommitError::Query(e)),
             })
             .or_else(|e| e)?
             .map(|response| {
@@ -361,12 +363,14 @@ impl<W: WalletT, Q: RpcT, G: GasFillerT> TxClient<W, Q, G> {
 
 #[derive(Debug, thiserror::Error)]
 pub enum BroadcastTxCommitError {
-    #[error("error fetching account info")]
-    FetchAccountInfo(#[from] FetchAccountInfoError),
-    #[error("error simulating tx")]
-    SimulateTx(#[from] SimulateTxError),
+    #[error("tx simulation returned an empty response")]
+    NoResponse,
     #[error("jsonrpc error")]
     JsonRpc(#[from] JsonRpcError),
+    #[error("grpc abci query error")]
+    Query(#[from] GrpcAbciQueryError),
+    #[error("error decoding account")]
+    AccountDecode(#[from] TryFromAnyError<BaseAccount>),
     #[error("tx failed: code={error_code}, codespace={codespace}, log={log}")]
     TxFailed {
         codespace: String,
@@ -385,9 +389,7 @@ pub enum BroadcastTxCommitError {
 impl BroadcastTxCommitError {
     pub fn as_json_rpc_error(&self) -> Option<&JsonRpcError> {
         match self {
-            BroadcastTxCommitError::FetchAccountInfo(FetchAccountInfoError::JsonRpc(error))
-            | BroadcastTxCommitError::SimulateTx(SimulateTxError::JsonRpc(error))
-            | BroadcastTxCommitError::JsonRpc(error)
+            BroadcastTxCommitError::JsonRpc(error)
             | BroadcastTxCommitError::Inclusion { error, .. } => Some(error),
             _ => None,
         }
@@ -395,35 +397,10 @@ impl BroadcastTxCommitError {
 
     pub fn as_grpc_abci_query_error(&self) -> Option<&GrpcAbciQueryError> {
         match self {
-            BroadcastTxCommitError::FetchAccountInfo(FetchAccountInfoError::Query(error))
-            | BroadcastTxCommitError::SimulateTx(SimulateTxError::Query(error)) => Some(error),
+            BroadcastTxCommitError::Query(error) => Some(error),
             _ => None,
         }
     }
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum SimulateTxError {
-    #[error("error fetching account info")]
-    FetchAccountInfo(#[from] FetchAccountInfoError),
-    #[error("grpc abci query error")]
-    Query(#[from] GrpcAbciQueryError),
-    #[error("jsonrpc error")]
-    JsonRpc(#[from] JsonRpcError),
-    #[error("tx simulation returned an empty response")]
-    NoResponse,
-}
-
-#[derive(Debug, thiserror::Error)]
-pub enum FetchAccountInfoError {
-    // #[error("account {0} not found")]
-    // AccountNotFound(Bech32<Bytes>),
-    #[error("grpc abci query error")]
-    Query(#[from] GrpcAbciQueryError),
-    #[error("error decoding account")]
-    Decode(#[from] TryFromAnyError<BaseAccount>),
-    #[error("jsonrpc error")]
-    JsonRpc(#[from] JsonRpcError),
 }
 
 #[derive(Debug, thiserror::Error)]

@@ -207,12 +207,7 @@ async fn poll_loop(pool: Pool, chain: Chain, batch_size: usize) {
                                 i += 1;
                             }
                             // this will be displayed to users, print the hash in the same way that cosmos sdk does
-                            Ok(tx_hash) => {
-                                break tx_hash
-                                    .into_encoding::<HexUnprefixed>()
-                                    .to_string()
-                                    .to_uppercase()
-                            }
+                            Ok(tx_hash) => break tx_hash.to_string().to_uppercase(),
                         };
                     };
 
@@ -486,7 +481,7 @@ impl ChainClient {
             requests.len = %requests.len()
         )
     )]
-    async fn send(&self, requests: &Vec<SendRequest>) -> anyhow::Result<H256> {
+    async fn send(&self, requests: &Vec<SendRequest>) -> anyhow::Result<H256<HexUnprefixed>> {
         let agg_reqs = requests.aggregate_by_denom();
 
         let msg = protos::cosmos::bank::v1beta1::MsgMultiSend {
@@ -518,19 +513,19 @@ impl ChainClient {
             value: msg.encode_to_vec(),
         };
 
-        let (tx_hash, res) = self
+        let res = self
             .cosmos_ctx
             .broadcast_tx_commit([msg], self.chain.memo.clone(), true)
             .await?;
 
         info!(
             ?requests,
-            %tx_hash,
+            tx_hash = %res.hash,
             gas_used = %res.tx_result.gas_used,
             "submitted multisend"
         );
 
-        Ok(tx_hash)
+        Ok(res.hash)
     }
 }
 

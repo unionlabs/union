@@ -15,7 +15,7 @@ use cosmos_client::{
     gas::{any, feemarket, fixed, osmosis_eip1559_feemarket, GasFillerT},
     rpc::{Rpc, RpcT},
     wallet::{LocalSigner, WalletT},
-    BroadcastTxCommitError, FetchAccountInfoError, SimulateTxError, TxClient,
+    BroadcastTxCommitError, TxClient,
 };
 use ibc_union::ContractErrorKind;
 use jsonrpsee::{
@@ -41,6 +41,7 @@ use unionlabs::{
 use voyager_message::{
     data::Data,
     hook::SubmitTxHook,
+    into_value,
     module::{PluginInfo, PluginServer},
     primitives::ChainId,
     vm::{call, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
@@ -378,16 +379,16 @@ impl Module {
                         )
                         .await
                     {
-                        Ok((tx_hash, tx_response)) => {
+                        Ok(tx_response) => {
                             info!(
-                                %tx_hash,
+                                tx_hash = %tx_response.hash,
                                 gas_used = %tx_response.tx_result.gas_used,
                                 batch.size = %batch_size,
                                 "submitted cosmos transaction"
                             );
 
                             for msg in msg_names {
-                                info!(%tx_hash, %msg, "cosmos tx");
+                                info!(tx_hash = %tx_response.hash, %msg, "cosmos msg");
                             }
 
                             Ok(())
@@ -493,13 +494,19 @@ impl PluginServer<ModuleCall, Never> for Module {
                 let batch_submission_result = self.do_send_transaction(msgs.clone()).await;
 
                 match batch_submission_result {
-                    None => return Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
-                    Some(Ok(())) => return Ok(noop()),
+                    None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
+                    Some(Ok(())) => {
+                        for (idx, msg) in msgs.into_iter().enumerate() {
+                            info!(
+                                msg = msg.name(),
+                                %idx,
+                                data = %into_value(&msg),
+                                "cosmos tx",
+                            );
+                        }
+                        Ok(noop())
+                    }
                     Some(Err(err)) => {
-                        // dbg!(&err);
-
-                        // let mut split_msgs = false;
-
                         match err {
                             _ if let Some(err) = err.as_json_rpc_error() => {
                                 return Err(ErrorObject::owned(
@@ -509,20 +516,11 @@ impl PluginServer<ModuleCall, Never> for Module {
                                 ))
                             }
 
-                            BroadcastTxCommitError::FetchAccountInfo(
-                                FetchAccountInfoError::Query(GrpcAbciQueryError {
-                                    error_code,
-                                    codespace,
-                                    log,
-                                }),
-                            )
-                            | BroadcastTxCommitError::SimulateTx(SimulateTxError::Query(
-                                GrpcAbciQueryError {
-                                    error_code,
-                                    codespace,
-                                    log,
-                                },
-                            ))
+                            BroadcastTxCommitError::Query(GrpcAbciQueryError {
+                                error_code,
+                                codespace,
+                                log,
+                            })
                             | BroadcastTxCommitError::TxFailed {
                                 codespace,
                                 error_code,
@@ -537,28 +535,21 @@ impl PluginServer<ModuleCall, Never> for Module {
                                 ));
                             }
 
-                            BroadcastTxCommitError::FetchAccountInfo(
-                                FetchAccountInfoError::Query(GrpcAbciQueryError {
-                                    error_code,
-                                    codespace,
-                                    log,
-                                }),
-                            )
-                            | BroadcastTxCommitError::SimulateTx(SimulateTxError::Query(
-                                GrpcAbciQueryError {
-                                    error_code,
-                                    codespace,
-                                    log,
-                                },
-                            ))
+                            BroadcastTxCommitError::Query(GrpcAbciQueryError {
+                                error_code,
+                                codespace,
+                                log,
+                            })
                             | BroadcastTxCommitError::TxFailed {
                                 codespace,
                                 error_code,
                                 log,
                             } => {
+                                info!(%log, "error submitting cosmos tx");
+
                                 if let Some((msg_idx, log)) = parse_msg_idx_from_log(&log) {
                                     let _span = info_span!("cosmos msg failed", msg_idx).entered();
-                                    info!(%log);
+                                    info!(%log, "tx log");
 
                                     match self.fatal_errors.get(&(codespace.clone(), error_code)) {
                                         // no msg
@@ -578,7 +569,6 @@ impl PluginServer<ModuleCall, Never> for Module {
                                                 ContractErrorKind::ReceivedTimedOutPacketTimestamp => {
                                                     info!("packet timed out (timestamp)");
                                                 }
-                                                // ContractErrorKind::PacketNotReceived => {}
                                                 ContractErrorKind::AlreadyAcknowledged => {
                                                     info!("packet already acknowledged");
                                                 }
@@ -587,42 +577,37 @@ impl PluginServer<ModuleCall, Never> for Module {
                                                 }
                                                 _ => {
                                                     warn!("ibc-union error ({err}): {log}");
-                                                    // split_msgs = true;
                                                 }
                                             },
                                             None => {
                                                 warn!("error submitting transaction ({codespace}, {error_code}): {log}");
-                                                // split_msgs = true;
                                             }
                                         },
                                     }
 
-                                    // if !split_msgs {
-                                    //     msgs.remove(msg_idx);
-
-                                    //     if msgs.is_empty() {
-                                    //         Ok(noop())
-                                    //     } else {
-                                    //         Ok(call(PluginMessage::new(
-                                    //             self.plugin_name(),
-                                    //             ModuleCall::SubmitTransaction(msgs),
-                                    //         )))
-                                    //     }
-                                    // } else
                                     if msgs.len() == 1 {
-                                        warn!("cosmos msg failed");
+                                        warn!(msg = %into_value(msgs.pop().unwrap()), "cosmos msg failed");
 
                                         Ok(noop())
                                     } else {
-                                        // Ok(seq(msgs.into_iter().map(|msg| {
-                                        //     call(PluginMessage::new(
-                                        //         self.plugin_name(),
-                                        //         ModuleCall::SubmitTransaction(vec![msg]),
-                                        //     ))
-                                        // })))
-                                        msgs.remove(msg_idx);
+                                        let failed_msg = msgs.remove(msg_idx);
+
+                                        if matches!(
+                                            failed_msg,
+                                            IbcMessage::IbcV1(
+                                                ibc_classic_spec::Datagram::UpdateClient(_)
+                                            ) | IbcMessage::IbcUnion(
+                                                ibc_union_spec::datagram::Datagram::UpdateClient(_)
+                                            )
+                                        ) {
+                                            warn!("update client failed, this may cause other messages to fail as well");
+                                        }
+
+                                        warn!(msg = %into_value(failed_msg), "dropping failed msg");
 
                                         if msgs.is_empty() {
+                                            info!("no messages to submit after dropping failed messages");
+
                                             Ok(noop())
                                         } else {
                                             Ok(call(PluginMessage::new(
@@ -639,7 +624,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                     warn!("unable to parse message index from tx failure ({codespace}, {error_code}): {log}");
 
                                     if msgs.len() == 1 {
-                                        warn!("cosmos msg failed");
+                                        warn!(msg = %into_value(msgs.pop().unwrap()), "cosmos msg failed");
                                         Ok(noop())
                                     } else {
                                         Ok(seq(msgs.into_iter().map(|msg| {

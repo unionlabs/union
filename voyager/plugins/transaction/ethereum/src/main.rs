@@ -29,7 +29,7 @@ use jsonrpsee::{
     Extensions, MethodsError,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::{json, map::IntoValues, Value};
 use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
     never::Never,
@@ -547,7 +547,7 @@ impl Module {
                             info!(
                                 msg = msg_name,
                                 %idx,
-                                data = %serde_json::to_string(&msg).unwrap(),
+                                data = %into_value(&msg),
                                 "evm tx",
                             );
                         } else if let Ok(known_revert) =
@@ -558,7 +558,7 @@ impl Module {
                                 %idx,
                                 revert = ?known_revert,
                                 well_known = true,
-                                data = %serde_json::to_string(&msg).unwrap(),
+                                data = %into_value(&msg),
                                 "evm message failed",
                             );
                         } else if result.returnData.is_empty() {
@@ -567,7 +567,7 @@ impl Module {
                                 %idx,
                                 revert = %result.returnData,
                                 well_known = false,
-                                data = %serde_json::to_string(&msg).unwrap(),
+                                data = %into_value(&msg),
                                 "evm message failed with 0x revert, likely an ABI issue",
                             );
                         } else {
@@ -576,7 +576,7 @@ impl Module {
                                 %idx,
                                 revert = %result.returnData,
                                 well_known = false,
-                                data = %serde_json::to_string(&msg).unwrap(),
+                                data = %into_value(&msg),
                                 "evm message failed",
                             );
                         }
