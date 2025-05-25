@@ -11539,6 +11539,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "rustfmt-sort"
+version = "0.0.0"
+dependencies = [
+ "quote",
+ "syn 1.0.109",
+]
+
+[[package]]
 name = "rustix"
 version = "0.38.44"
 source = "registry+https://github.com/rust-lang/crates.io-index"

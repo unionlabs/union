@@ -116,6 +116,7 @@ members = [
   "tools/parse-wasm-client-type",
   "tools/tidy",
   "tools/move-bindgen",
+  "tools/rustfmt-sort",
 
   "lib/move-bindgen-derive",
 
@@ -232,7 +233,7 @@ members = [
   "lib/consensus-primitives",
   "lib/solidity-slot",
   "tools/u",
-  "lib/chain-kitchen",
+  "lib/chain-kitchen", 
 ]
 
 [workspace.package]
