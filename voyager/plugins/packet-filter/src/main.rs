@@ -8,11 +8,12 @@ use jsonrpsee::{
 use regex::Regex;
 use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
-use tracing::{instrument, trace};
+use tracing::{debug, instrument, trace};
 use unionlabs::never::Never;
 use voyager_message::{
     data::Data,
     filter::simple_take_filter,
+    into_value,
     module::{PluginInfo, PluginServer},
     primitives::IbcSpec,
     DefaultCmd, Plugin, VoyagerMessage,
@@ -283,7 +284,7 @@ impl Module {
 
         // Filter::from(&filter)
 
-        // if no filters are provided, then none all events for that specific IBC message type will be filtered out (i.e we express interest here). to do this, we return `false`, since in the context that this will be called in expresses whether or not the event matched one of the "filter in" regex filters.
+        // if no filters are provided, then no events for that specific IBC message type will be filtered out (i.e we express interest here). to do this, we return `false`, since the context that this will be called in expresses whether or not the event matched one of the "filter in" regex filters.
         let packet_filter = ["false".to_owned()]
             .into_iter()
             .chain(self.packet_event_filters.iter().map(|x| x.to_jaq()))
@@ -363,7 +364,10 @@ impl PluginServer<Never, Never> for Module {
         _: &Extensions,
         msgs: Vec<Op<VoyagerMessage>>,
     ) -> RpcResult<PassResult<VoyagerMessage>> {
-        trace!("dropping {} messages", msgs.len());
+        debug!("dropping {} messages", msgs.len());
+        for msg in msgs {
+            trace!(msg = %into_value(msg), "dropped message");
+        }
 
         Ok(PassResult::default())
     }

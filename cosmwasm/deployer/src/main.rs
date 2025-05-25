@@ -1010,9 +1010,9 @@ async fn do_main() -> Result<()> {
             if messages.peek().is_none() {
                 info!("all contracts already migrated");
             } else {
-                let (tx_hash, _) = ctx.broadcast_tx_commit(messages, "", true).await?;
+                let result = ctx.broadcast_tx_commit(messages, "", true).await?;
 
-                info!(%tx_hash, "admin migrated to {new_admin}");
+                info!(tx_hash = %result.hash, "admin migrated to {new_admin}");
             }
         }
         App::StoreCode {
