@@ -29,7 +29,7 @@ use jsonrpsee::{
     Extensions, MethodsError,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, map::IntoValues, Value};
+use serde_json::{json, Value};
 use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 use unionlabs::{
     never::Never,
