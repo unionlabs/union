@@ -53,6 +53,7 @@
     "build": "pnpm build-esm && pnpm build-annotate",
     "build-annotate": "babel dist/ --plugins annotate-pure-calls --out-dir dist/ --source-maps",
     "build-esm": "tsc -b tsconfig.build.json",
+    "lint": "eslint src",
     "check": "tsc -b tsconfig.json",
     "check:examples": "tsc -p tsconfig.examples.json",
     "check:circular": "dpdm -T src",
@@ -72,9 +73,11 @@
     "@effect/build-utils": "^0.7.7",
     "@effect/platform": "0.82.4",
     "@types/node": "^22.13.1",
+    "@unionlabs/eslint-config": "workspace:*",
     "babel-plugin-annotate-pure-calls": "^0.5.0",
     "dpdm": "^3.14.0",
     "effect": "3.15.2",
+    "eslint": "^9.24.0",
     "vitest": "^3.0.5"
   },
   "dependencies": {

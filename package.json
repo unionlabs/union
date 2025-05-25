@@ -4,6 +4,8 @@
   "devDependencies": {
     "@effect/language-service": "~0.16.6",
     "@effect/vitest": "~0.22.2",
+    "eslint": "^9.24.0",
+    "eslint-formatter-unix": "8.40.0",
     "typescript": "~5.8.2",
     "viem": "^2.26.2",
     "vite": "~6.3.1",

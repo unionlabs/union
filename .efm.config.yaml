@@ -1,0 +1,27 @@
+version: 2
+# log-file: ./efm.log.txt
+# log-level: 10
+lint-debounce: 1s
+
+tools:
+  eslint-lint: &eslint-lint
+    lint-command: 'eslint_d --format unix --stdin --stdin-filename "${INPUT}"'
+    lint-stdin: true
+    lint-ignore-exit-code: true
+    lint-formats:
+      - '%f:%l:%c: %m [%trror]'
+      - '%f:%l:%c: %m [%tarning]'
+    root-markers:
+      - 'eslint.config.ts'
+
+languages:
+  javascript:
+    - !!merge <<: *eslint-lint
+  javascriptreact:
+    - !!merge <<: *eslint-lint
+  typescript:
+    - !!merge <<: *eslint-lint
+  typescriptreact:
+    - !!merge <<: *eslint-lint
+  svelte:
+    - !!merge <<: *eslint-lint
