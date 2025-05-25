@@ -177,7 +177,7 @@ const onShowDetails = () => {
   <div class="p-4 rounded bg-zinc-925 border-2 border-red-500 overflow-hidden flex flex-col">
     {#if onClose}
       <div class="flex flex-row mb-2">
-        <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
+        <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4 height-[1.5em] self-start" />
         <div class="grow"></div>
         <Button
           class="self-end p-0 h-4"
@@ -195,7 +195,7 @@ const onShowDetails = () => {
       {#if !onClose}
         <SharpErrorOutlineIcon class="text-red-500 size-4 min-w-4" />
       {/if}
-      <p>{getUserFriendlyMessage(error)}</p>
+      <p style="word-break: break-word">{getUserFriendlyMessage(error)}</p>
       <div class="grow"></div>
       <Tooltip delay={"quick"}>
         {#snippet trigger()}
