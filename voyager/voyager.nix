@@ -4,9 +4,14 @@
     {
       pkgs,
       crane,
+      self',
+      config,
+      dbg,
+      ensureAtRepositoryRoot,
       ...
     }:
     let
+
       voy-modules-list = builtins.filter (
         member:
         (pkgs.lib.hasPrefix "voyager/modules" member) || (pkgs.lib.hasPrefix "voyager/plugins" member)
@@ -17,43 +22,61 @@
           SQLX_OFFLINE = "1";
         };
       };
+
+      schema = (import ../tools/json-schema-to-nixos-module-options/convertSchema.nix) {
+        inherit
+          self'
+          config
+          pkgs
+          ensureAtRepositoryRoot
+          ;
+        name = "voyager";
+        buildSchema = pkgs.runCommand "voyager-schema" { buildInputs = [ self'.packages.voyager ]; } ''
+          voyager config schema > $out
+        '';
+        schemaPath = "voyager/configSchema.nix";
+      };
     in
     {
-      packages = voyager // {
-        voyager-modules-plugins-names = builtins.toFile "voyager-modules-plugins-names.json" (
-          builtins.toJSON (
-            map (
-              p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name
-            ) voy-modules-list
-          )
-        );
-        voyager-modules-plugins =
-          let
-            builder =
-              release:
-              pkgs.symlinkJoin {
-                name = "voyager-modules-plugins";
-                paths = pkgs.lib.mapAttrsToList (_: path: if release then path.release else path) (
-                  builtins.foldl' (
-                    acc: p:
-                    acc
-                    // (crane.buildWorkspaceMember p {
-                      postInstall = ''
-                        strip $out/bin/*
-                      '';
-                    })
-                  ) { } voy-modules-list
-                );
-                postBuild = ''
-                  rm $out/lib -r
-                '';
-              };
-          in
-          (builder false)
-          // {
-            release = builder true;
-          };
-      };
+      packages =
+        voyager
+        // schema.packages
+        // {
+          voyager-modules-plugins-names = builtins.toFile "voyager-modules-plugins-names.json" (
+            builtins.toJSON (
+              map (
+                p: (builtins.fromTOML (builtins.readFile "${../.}/${p}/Cargo.toml")).package.name
+              ) voy-modules-list
+            )
+          );
+          voyager-modules-plugins =
+            let
+              builder =
+                release:
+                pkgs.symlinkJoin {
+                  name = "voyager-modules-plugins";
+                  paths = pkgs.lib.mapAttrsToList (_: path: if release then path.release else path) (
+                    builtins.foldl' (
+                      acc: p:
+                      acc
+                      // (crane.buildWorkspaceMember p {
+                        postInstall = ''
+                          strip $out/bin/*
+                        '';
+                      })
+                    ) { } voy-modules-list
+                  );
+                  postBuild = ''
+                    rm $out/lib -r
+                  '';
+                };
+            in
+            (builder false)
+            // {
+              release = builder true;
+            };
+        };
+      inherit (schema) checks;
     };
 
   flake.nixosModules.voyager =
@@ -133,103 +156,103 @@
                     };
                   };
                 };
-                equivalent_chain_ids = mkOption {
-                  type = types.listOf (types.listOf types.str);
-                  default = [ ];
-                };
-                voyager =
-                  let
-                    durationType = types.submodule {
-                      options = {
-                        secs = mkOption { type = types.int; };
-                        nanos = mkOption { type = types.int; };
-                      };
-                    };
-                    cacheType = types.submodule {
-                      options = {
-                        capacity = mkOption { type = types.int; };
-                        time_to_live = mkOption { type = types.int; };
-                        time_to_idle = mkOption { type = types.int; };
-                      };
-                    };
-                  in
-                  mkOption {
-                    type = types.submodule {
-                      options = {
-                        num_workers = mkOption {
-                          type = types.int;
-                        };
-                        rest_laddr = mkOption {
-                          type = types.nullOr types.str;
-                          default = null;
-                          example = "0.0.0.0:7177";
-                        };
-                        rpc_laddr = mkOption {
-                          type = types.nullOr types.str;
-                          default = null;
-                          example = "0.0.0.0:7178";
-                        };
-                        metrics_endpoint = mkOption {
-                          type = types.nullOr types.str;
-                          default = null;
-                          example = "0.0.0.0:4318";
-                        };
-                        queue = mkOption {
-                          type = types.submodule {
-                            options = {
-                              database_url = mkOption {
-                                type = types.str;
-                                default = "postgres://voyager:voyager@localhost/voyager";
-                              };
-                              max_connections = mkOption {
-                                type = types.int;
-                              };
-                              min_connections = mkOption {
-                                type = types.int;
-                              };
-                              idle_timeout = mkOption {
-                                type = types.nullOr durationType;
-                                default = null;
-                              };
-                              optimize_batch_limit = mkOption {
-                                type = types.nullOr types.int;
-                                default = null;
-                              };
-                              max_lifetime = mkOption {
-                                type = types.nullOr durationType;
-                                default = null;
-                              };
-                              retryable_error_expo_backoff_max = mkOption {
-                                type = types.nullOr types.float;
-                                default = null;
-                              };
-                              retryable_error_expo_backoff_multiplier = mkOption {
-                                type = types.nullOr types.float;
-                                default = null;
-                              };
-                            };
-                          };
-                        };
-                        optimizer_delay_milliseconds = mkOption {
-                          type = types.nullOr types.int;
-                          default = null;
-                        };
-                        ipc_client_request_timeout = mkOption {
-                          type = durationType;
-                        };
-                        cache = mkOption {
-                          type = types.submodule {
-                            options = {
-                              state = mkOption { type = cacheType; };
-                            };
-                          };
-                        };
-                      };
-                    };
-                  };
-                modules = mkOption { type = types.attrs; };
-                plugins = mkOption { type = types.listOf types.attrs; };
-              };
+                # equivalent_chain_ids = mkOption {
+                #   type = types.listOf (types.listOf types.str);
+                #   default = [ ];
+                # };
+                # voyager =
+                #   let
+                #     durationType = types.submodule {
+                #       options = {
+                #         secs = mkOption { type = types.int; };
+                #         nanos = mkOption { type = types.int; };
+                #       };
+                #     };
+                #     cacheType = types.submodule {
+                #       options = {
+                #         capacity = mkOption { type = types.int; };
+                #         time_to_live = mkOption { type = types.int; };
+                #         time_to_idle = mkOption { type = types.int; };
+                #       };
+                #     };
+                #   in
+                #   mkOption {
+                #     type = types.submodule {
+                #       options = {
+                #         num_workers = mkOption {
+                #           type = types.int;
+                #         };
+                #         rest_laddr = mkOption {
+                #           type = types.nullOr types.str;
+                #           default = null;
+                #           example = "0.0.0.0:7177";
+                #         };
+                #         rpc_laddr = mkOption {
+                #           type = types.nullOr types.str;
+                #           default = null;
+                #           example = "0.0.0.0:7178";
+                #         };
+                #         metrics_endpoint = mkOption {
+                #           type = types.nullOr types.str;
+                #           default = null;
+                #           example = "0.0.0.0:4318";
+                #         };
+                #         queue = mkOption {
+                #           type = types.submodule {
+                #             options = {
+                #               database_url = mkOption {
+                #                 type = types.str;
+                #                 default = "postgres://voyager:voyager@localhost/voyager";
+                #               };
+                #               max_connections = mkOption {
+                #                 type = types.int;
+                #               };
+                #               min_connections = mkOption {
+                #                 type = types.int;
+                #               };
+                #               idle_timeout = mkOption {
+                #                 type = types.nullOr durationType;
+                #                 default = null;
+                #               };
+                #               optimize_batch_limit = mkOption {
+                #                 type = types.nullOr types.int;
+                #                 default = null;
+                #               };
+                #               max_lifetime = mkOption {
+                #                 type = types.nullOr durationType;
+                #                 default = null;
+                #               };
+                #               retryable_error_expo_backoff_max = mkOption {
+                #                 type = types.nullOr types.float;
+                #                 default = null;
+                #               };
+                #               retryable_error_expo_backoff_multiplier = mkOption {
+                #                 type = types.nullOr types.float;
+                #                 default = null;
+                #               };
+                #             };
+                #           };
+                #         };
+                #         optimizer_delay_milliseconds = mkOption {
+                #           type = types.nullOr types.int;
+                #           default = null;
+                #         };
+                #         ipc_client_request_timeout = mkOption {
+                #           type = durationType;
+                #         };
+                #         cache = mkOption {
+                #           type = types.submodule {
+                #             options = {
+                #               state = mkOption { type = cacheType; };
+                #             };
+                #           };
+                #         };
+                #       };
+                #     };
+                #   };
+                # modules = mkOption { type = types.attrs; };
+                # plugins = mkOption { type = types.listOf types.attrs; };
+              } // ((import ./configSchema.nix) { inherit (pkgs.lib) types mkOption; });
             }
           );
         };

@@ -233,6 +233,7 @@ members = [
   "lib/solidity-slot",
   "tools/u",
   "lib/chain-kitchen",
+  "tools/json-schema-to-nixos-module-options",
 ]
 
 [workspace.package]
