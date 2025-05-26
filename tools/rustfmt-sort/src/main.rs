@@ -1,17 +1,27 @@
-use std::{env, fs};
+use std::fs;
 
+use clap::Parser;
 use quote::ToTokens;
 use syn::{visit_mut::VisitMut, Item};
 
-fn main() {
-    let mut file =
-        syn::parse_file(&fs::read_to_string(env::args().nth(1).unwrap()).unwrap()).unwrap();
+#[derive(Parser, Debug)]
+#[command(name = "rustfmt-sort", about = "Sort Rust items in a file")]
+struct Args {
+    #[arg(value_name = "FILE")]
+    file: String,
+}
+
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args = Args::parse();
+
+    let content = fs::read_to_string(&args.file)?;
+    let mut file = syn::parse_file(&content)?;
 
     SortItemsVisitor.visit_file_mut(&mut file);
 
     let out = file.into_token_stream().to_string();
 
-    println!("{out}");
+    Ok(())
 }
 
 struct SortItemsVisitor;

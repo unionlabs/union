@@ -11542,6 +11542,8 @@ dependencies = [
 name = "rustfmt-sort"
 version = "0.0.0"
 dependencies = [
+ "clap 4.5.35",
+ "embed-commit",
  "quote",
  "syn 1.0.109",
 ]
