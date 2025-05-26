@@ -193,7 +193,7 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
     GraphQLCache.Default,
     Persistence.layerResultKeyValueStore.pipe(
       Layer.provide(
-        KeyValueStore.layerStorage(() => globalThis.sessionStorage),
+        KeyValueStore.layerStorage(() => globalThis.localStorage),
       ),
     ),
   ],
