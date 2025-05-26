@@ -11542,6 +11542,7 @@ dependencies = [
 name = "rustfmt-sort"
 version = "0.0.0"
 dependencies = [
+ "embed-commit",
  "quote",
  "syn 2.0.100",
 ]

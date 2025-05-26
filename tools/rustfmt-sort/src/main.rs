@@ -12,8 +12,6 @@ fn main() {
     let out = file.into_token_stream().to_string();
     
     println!("{out}");
-
-    println!("{out}");
 }
 
 struct SortItemsVisitor;
