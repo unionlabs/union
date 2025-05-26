@@ -11545,7 +11545,7 @@ dependencies = [
  "clap 4.5.35",
  "embed-commit",
  "quote",
- "syn 1.0.109",
+ "syn 2.0.100",
 ]
 
 [[package]]
