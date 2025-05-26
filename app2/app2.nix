@@ -90,6 +90,22 @@ _: {
             '';
           };
         };
+        app2-check-watch = {
+          type = "app";
+          program = pkgs.writeShellApplication {
+            name = "app-check-watch";
+            runtimeInputs = deps;
+            text = ''
+              ${ensureAtRepositoryRoot}
+              cd app2/
+              export PUBLIC_DATADOG_CLIENT_TOKEN="${PUBLIC_DATADOG_CLIENT_TOKEN}"
+              export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
+              export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"
+              export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
+              pnpm run check --watch --threshold warning
+            '';
+          };
+        };
         app2-fetch-schema = {
           type = "app";
           program = pkgs.writeShellApplication {
