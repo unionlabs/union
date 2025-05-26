@@ -22,7 +22,7 @@ export class KeyboardShortcuts {
   private handleKeyDown = (event: KeyboardEvent) => {
     const pressedKeys = new Set<string>()
 
-    if (event.metaKey) {
+    if (event.metaKey || event.key === "Meta") {
       pressedKeys.add("cmd")
     }
     if (event.ctrlKey) {
