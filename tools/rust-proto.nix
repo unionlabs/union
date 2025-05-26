@@ -388,8 +388,6 @@
           for i in $(find . -name "*.rs" -type f); do
             echo "[SORT] $i"
             rustfmt-sort "$i"
-            echo "[FORMAT AGAIN] $i"
-            rustfmt --config-path=${../rustfmt.toml} --config normalize_comments=true --edition "2021" "$i"
           done
 
           taplo format --config=${../taplo.toml} ./Cargo.toml

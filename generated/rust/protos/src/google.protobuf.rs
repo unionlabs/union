@@ -1450,6 +1450,7 @@ impl ::prost::Name for Any {
 /// encoded in JSON format as "3s", while 3 seconds and 1 nanosecond should
 /// be expressed in JSON format as "3.000000001s", and 3 seconds and 1
 /// microsecond should be expressed in JSON format as "3.000001s".
+///
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Duration {
@@ -1565,6 +1566,7 @@ impl ::prost::Name for Duration {
 /// the Joda Time's [`ISODateTimeFormat.dateTime()`](
 /// <http://www.joda.org/joda-time/apidocs/org/joda/time/format/ISODateTimeFormat.html#dateTime%2D%2D>
 /// ) to obtain a formatter capable of generating timestamps in this format.
+///
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Timestamp {
@@ -2111,6 +2113,7 @@ pub struct Api {
     /// `google.feature.v1`. For major versions 0 and 1, the suffix can
     /// be omitted. Zero major versions must only be used for
     /// experimental, non-GA interfaces.
+    ///
     #[prost(string, tag = "4")]
     pub version: ::prost::alloc::string::String,
     /// Source context for the protocol buffer service represented by this

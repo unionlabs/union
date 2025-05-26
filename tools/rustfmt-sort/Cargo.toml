@@ -12,7 +12,5 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-clap         = { workspace = true, default-features = false, features = ["derive", "std"] }
-embed-commit = { workspace = true }
-syn          = { workspace = true, features = ["full", "parsing", "visit-mut", "extra-traits", "printing"] }
-quote        = "1.0.40"
+syn = { version = "*", features = ["full", "visit-mut", "extra-traits", "printing"] }
+quote = "1.0.40"
