@@ -7862,6 +7862,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "json-schema-to-nixos-module-options"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "schemars",
+ "serde_json",
+]
+
+[[package]]
 name = "jsonrpsee"
 version = "0.24.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
