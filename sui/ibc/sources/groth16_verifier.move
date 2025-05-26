@@ -1,25 +1,30 @@
-
-
 module ibc::groth16_verifier {
-    use sui::bls12381::{Self, G1, G2, GT};
+    use sui::bls12381::{Self, G1, G2, GT, g1_from_bytes, scalar_from_bytes, g1_multi_scalar_multiplication, g1_add, g2_from_bytes, pairing, gt_add, g1_to_uncompressed_g1};
     use sui::group_ops::Element;
-
+    use sui::hash::keccak256;
+    use sui::bcs;
+    
     use std::string::String;
+    use std::hash::sha2_256;
 
-    const ALPHA_G1: vector<u8> = x"9550842cc4eccd283a3f7b666a97fd4f8b2503f3675416b41f93d9b31500ccf2827d9e9a533065b0dace3143d5eacf97";
-    const BETA_G2: vector<u8> = x"8fcb83ae46c8984f1aa5a929e4acd703123022c48c461996e864709092a617ed676be02dac6f153deb18c1b0b2934fce01ecfa883a35d24350d5e370278f01c8629d3baff42dc9e66972436bc125202d2adf27a3f38ec3c7ef7c33d369755c2f";
-    const GAMMA_G2: vector<u8> = x"8e18e6d5ce0b15090fd6fa2894fd16164156b8528b16d37990b1366266f68337356302e9d3bac34f6c8c3ec4028c177f062b45901802e28ef77442111777f0030947239066bdae0bf3a7b59da18fe032394eb2016709a930eb8eaf2cac34e69d";
-    const DELTA_G2: vector<u8> = x"8e20df7a6c6b3e3689ae8507f3f3d480edd9b6934cb7993cfcd55d1f9a634baa965b0fd0ec6047180102ab1c7e150b2d182f80f8ee0f4eb58635a52af2035850307b6a57d094995e8d9e65f3de547a034da8890cea5cab9879d01d49e614aae2";
-    const PEDERSEN_G: vector<u8> = x"8d8bef59ac1cd2723d11e2c95029ad0ead271446343d408dd0cb49b9e091eb5770c9322fba788c65089c915d8c69be4d0d6838e6ef6f7e806879a31524069759b1a9306b1b4d0ff0fbf57509e7bff7ff14b6f45ebc1e2efb58338f885c1ac9d2";
-    const PEDERSEN_G_ROOT_SIGMA_NEG: vector<u8> = x"969ef80fc24c1ea885059845feb1b518764f23cb08696511b7a90b1fba55c521b286a6a5ab16aaa14ea82d38afc133801339c86ec4a2831c7338ff26010c0b90c7e10cd95cd258178d3e6c5dbbba38dbc09039e888181e5ed35158373b47f4a5";
+    const ALPHA_G1: vector<u8> = x"83f0a72972b0ca87eb501643b3f9fff3cc4cc7f6d5f9e8938c6d2917c20e363ebdd7af5d8c26b8eebe3f094c55e0c8fd";
+    const BETA_G2: vector<u8> = x"b2bef6a85e656156574eae9d064f5d25b55f29bbb56843e156ca40e7d8b895a2f44f3790a3165a16663e716ccd783ece036581b7b630b120c3896b8b0557cf9abfbdf7cde9522f708f2e0194bb3caeddd19166bc05a5b0f4b4cf07b792e1771a";
+    const GAMMA_G2: vector<u8> = x"a7e02035b5677de6874f1a1c7a91b11f78a9649022263b224ba4b40fc25448194b0bb7b1bafb56473c37a1d3a10369580e222aed4f5a6159737542f1e747dea28a6227d48a87f732277d41d2c28edbb3201a7d2563ba720f433e987accacf3a4";
+    const DELTA_G2: vector<u8> = x"b04c99bc7505d2e74ea73439f1f01e135a93e2d7b9d7434b6fa0fc78d8dbf8e923af9b17fb6f6b3ca8e93e02de3d05410c8daf977ff30dfcd90a17e53444429a74572bf20fcd6fe06398692029f98fa84ae9b41d2d9fed7bdd7976609ed0339e";
+    const PEDERSEN_G: vector<u8> = x"b3f9df9fc7270749e80778ee302627c8d14d9d5f36e120cc072d6149da382b87adde19386e1808eff14e20d5a506b3960f71412d1a20a5111f29d434f7c62bced572b6a3729757155f179448859ba5aca4003a85f1edba0e8e401055d2edf332";
+    const PEDERSEN_G_ROOT_SIGMA_NEG: vector<u8> = x"af5339ce8765aae53e984ac66961647cdac360dca861126022f301d6284cdc916f02fa4e8d798e612da398500f87394e00676e5e302bc2a33885a3837d1cfaa6ab09a62af4b69a3c088a889f86f04df731d8468585500d7dfbe805fd2afe5ef7";
     const GAMMA_ABC_G1: vector<vector<u8>> = vector[
-            x"81e28d6aeac1d94bed921578f4cd727cfecc34b03a689ce1ee78656986cab73e0c6583c87d77a94423a8951cd1eaf3fe",
-            x"a191abf1aa358b72efe748bac3406c117543401d945fa91285a8ff329b5f30188f2ce2e8f335b857be7aa101e90d72fc",
-            x"b726a5c9ee9cc1ce72de18090b128baf3fd23771070b5c619e088110b1043b075c3a52217c52304eabd3af697738253c",
-            x"8d7a503024d249fc24e947d424df71b8f2ed34f2d26985e7b8b226a168098bf4ce35effdf1e733c62dcd040504e44936",
-            x"94b5d76c6de68b70f34d6dd6abfe3fff7a9d90b6b51847b791cf78079d8f317b7f75a234f192fe368515685cf6fd108c",
+            x"a6f130ba9b6351a11d5f3867a3aa4e9578a8cf04fe7c92a01a2db435079d5dd03e490eab5fb2435d82e6631d77418c40",
+            x"b2795395724ac078433e7e56ded961b7cfb60070de10e25ba68377b238836c892292c06150020fd4cf52b5779089f7d1",
+            x"b6401e59059d00dd046c53099b1c3bdd40283a1ac40cafbc8a62b0d5fd3ac9e3a46785fb42a29d42be1e75401ee34e49",
+            x"948d7e21eaed2f66457e3b9b4813748ccea380a274c64cce794c82d4e5051af3f0723c3114d5d77ab2ea566f665cb869",
+            x"b7505858582e13bfca0b43e1c7453af1049b429fd06fd0817441ca5a4f17790f008fab611b2e7ae92314e86d5b326356",
+            x"810bc91efb1d0b1dcc7cd95f1ffc847e8c5881c0ba10084a52e7f825414298eab27ea06b1fed631896af2b33c0da3745",
     ];
 
+    const PRIME_R_MINUS_ONE: vector<u8> = x"000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430";
+    const HMAC_O: vector<u8> = x"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
+    const HMAC_I: vector<u8> = x"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
     const G1_SIZE: u64 = 48;
     const G2_SIZE: u64 = 96;
 
@@ -32,26 +37,138 @@ module ibc::groth16_verifier {
     public struct ZKP has drop {
         proof: Proof,
         proof_commitment: Element<G1>,
-        proof_commitment_pok: Element<G1>
+        proof_commitment_pok: Element<G1>,
+        inner_commitment: vector<u8>
     }
 
     public fun verify_zkp(
-        _chain_id: &String,
-        _trusted_validators_hash: &vector<u8>,
-        _light_header_hash: vector<u8>,
+        // chain_id: &String,
+        // trusted_validators_hash: &vector<u8>,
+        // light_header_hash: vector<u8>,
+        mut inputs_hash: vector<u8>,
         zkp: &ZKP
     ): bool {
+
+        // let mut inputs_hash: vector<u8> = vector::empty();
+        // let mut i = 0;
+        // while (i < 32 - chain_id.length()) {
+        //     inputs_hash.push_back(0);
+        //     i = i + 1;
+        // };
+        // inputs_hash.append(*chain_id.bytes());
+        // inputs_hash.append(light_header_hash);
+        // inputs_hash.append(*trusted_validators_hash);
+
+        // let mut inputs_hash = sha2_256(inputs_hash);
+        // let mut first_elem = inputs_hash.borrow_mut(0);
+
+        // *first_elem = 0;
+
+        let inputs_hash = scalar_from_bytes(&inputs_hash);
+
+        let mut inner_commitment_hash = bcs::to_bytes(&hash_commitment_bytes(zkp.inner_commitment));
+        inner_commitment_hash.reverse();
+        let inner_commitment_hash = scalar_from_bytes(&inner_commitment_hash);
+
+        let inner_commitment_x = scalar_from_bytes(&vector_slice(&zkp.inner_commitment, 0, 32));
+        let inner_commitment_y = scalar_from_bytes(&vector_slice(&zkp.inner_commitment, 32, 64));
+
+        let alpha_g1 = g1_from_bytes(&ALPHA_G1);
+        let beta_g2 = g2_from_bytes(&BETA_G2);
+        let gamma_g2 = g2_from_bytes(&GAMMA_G2);
+        let delta_g2 = g2_from_bytes(&DELTA_G2);
+
+        let gamma_abc_1 = g1_from_bytes(&GAMMA_ABC_G1[0]);
+        let gamma_abc_2 = g1_from_bytes(&GAMMA_ABC_G1[1]);
+        let gamma_abc_3 = g1_from_bytes(&GAMMA_ABC_G1[2]);
+        let gamma_abc_4 = g1_from_bytes(&GAMMA_ABC_G1[3]);
+        let gamma_abc_5 = g1_from_bytes(&GAMMA_ABC_G1[4]);
+        let gamma_abc_6 = g1_from_bytes(&GAMMA_ABC_G1[5]);
+
+        let mut commitment_hash = bcs::to_bytes(&hash_commitment(&zkp.proof_commitment));
+        commitment_hash.reverse();
+        let commitment_hash = scalar_from_bytes(&commitment_hash);
+
+        let gamma = g1_add(
+            &g1_add(&gamma_abc_1, &zkp.proof_commitment),
+            &g1_multi_scalar_multiplication(&vector[inner_commitment_x], &vector[gamma_abc_2])
+        );
+            
+        let gamma = g1_add(
+            &gamma,
+            &g1_multi_scalar_multiplication(&vector[inner_commitment_y], &vector[gamma_abc_3])
+        );
+        let gamma = g1_add(
+            &gamma,
+            &g1_multi_scalar_multiplication(&vector[inner_commitment_hash], &vector[gamma_abc_4])
+        );
+        let gamma = g1_add(
+            &gamma,
+            &g1_multi_scalar_multiplication(&vector[inputs_hash], &vector[gamma_abc_5])
+        );
+        let gamma = g1_add(
+            &gamma,
+            &g1_multi_scalar_multiplication(&vector[commitment_hash], &vector[gamma_abc_6])
+        );
+
+        let res = gt_add(
+            &pairing(&zkp.proof.a, &zkp.proof.b),
+            &gt_add(
+                &pairing(&gamma, &gamma_g2),
+                &gt_add(
+                    &pairing(&zkp.proof.c, &delta_g2),
+                    &pairing(&alpha_g1, &beta_g2),
+                )
+            )
+        );
+
+        std::debug::print(&sui::group_ops::equal(&res, &bls12381::gt_identity()));
+
+        let pedersen_g = g2_from_bytes(&PEDERSEN_G);
+        let pedersen_g_root_sigma_neg = g2_from_bytes(&PEDERSEN_G_ROOT_SIGMA_NEG);
+        
+        let res = gt_add(
+            &pairing(&zkp.proof_commitment, &pedersen_g),
+            &pairing(&zkp.proof_commitment_pok, &pedersen_g_root_sigma_neg)
+        );
+
+        std::debug::print(&sui::group_ops::equal(&res, &bls12381::gt_identity()));
+
+        // calculate inputs hash
+        // calculate inner commitment hash
+        // strip commitment X
+        // strip commitment Y
+        // 
+        // sum inner commitment hash + commitment x + commitment Y + inner inputs hash + commitment
+        // pair proof
+
         false
     }
 
-    // public fun parse_zkp(buf: vector<u8>): ZKP {
-    //     let cursor = 0;
-    //     let a = bls12381::g1_from_bytes(buf.slice())
-    // }
+    fun hmac_keccak(message: &vector<u8>): vector<u8> {
+        let mut inner = HMAC_I;
+        inner.append(*message);
+        let mut outer = HMAC_O;
+        outer.append(keccak256(&inner));
 
-    #[test]
-    fun import_values() {
-        let alpha_g1 = bls12381::g1_from_bytes(&ALPHA_G1);
+        keccak256(&outer)
+    }
+
+    fun hash_commitment_bytes(mut buffer: vector<u8>): u256 {
+        let mut hmac = hmac_keccak(&buffer);
+        hmac.reverse();
+
+        let prime_r_minus_one = bcs::new(PRIME_R_MINUS_ONE).peel_u256();
+        let hmac = bcs::new(hmac).peel_u256();
+
+        (hmac % prime_r_minus_one) + 1
+    }
+
+    fun hash_commitment(commitment: &Element<G1>): u256 {
+        let uncompr = g1_to_uncompressed_g1(commitment);
+        let buffer = *uncompr.bytes(); // TODO(aeryz): check if this matches the uncompressed serialization in aptos
+
+        hash_commitment_bytes(buffer)
     }
 
     fun vector_slice(v: &vector<u8>, start: u64, end: u64): vector<u8> {
@@ -66,31 +183,38 @@ module ibc::groth16_verifier {
 
     #[test]
     fun test_proof() {
-        let proof = x"8abaa32ccf06fc56e41d26352bd618030c9d935f666cbebe004225b89150d2cf63ee17ecf8a5d1b06c1789d85ff0e26096fe4fda3ed397d42861ea88b35ade85b17ba2d9a48b366d350ee15d7fccb7bd6eba66eeeb6386bae0cc8d2b9b402287066dbed8b29e882f441f5a2eb1d97e9b10554166758e9e8ec4f3dfeaa81734634cf1c1a839411d51c7e2f23705184842b6c240f87fb8d0dd347f747a62c691fe210cfadc157c2522d07966d22cc3b8c3846305054aca0b1111cc17fe97860807852eae54d8b50eb8328ec6d36b644e7a444c9b05e4debaabeef5792fd6e8addd61ee6a7a9b5a6606bbb8e9e111c8c75f8739cece24438683aa3d8802bb60a481203823a5d324afb9e7aebfccfb1a326f431f4d55a739b15c4e76c2aa89d0cab0";
-        // let uncompr_proof = x"0ABAA32CCF06FC56E41D26352BD618030C9D935F666CBEBE004225B89150D2CF63EE17ECF8A5D1B06C1789D85FF0E26009380699CC97F99A4E2CB17803BC231F6286F2192EC7D25C1960C754911B7BD7A060A0AE3061BEC04F4D6C586E605B6E16FE4FDA3ED397D42861EA88B35ADE85B17BA2D9A48B366D350EE15D7FCCB7BD6EBA66EEEB6386BAE0CC8D2B9B402287066DBED8B29E882F441F5A2EB1D97E9B10554166758E9E8EC4F3DFEAA81734634CF1C1A839411D51C7E2F237051848420625690BBA6AD16C33EE4081FD7200FA739D9AE1AA5EE08E707B77FE3E22566019AECDBB5F0C8773B284CC4A76DF7807159044C10952F04D131A541E4C30B54FF08151C492F16433CDC2AD14EAAB450BD68733AD80762FB34D682CFF7526CED416C240F87FB8D0DD347F747A62C691FE210CFADC157C2522D07966D22CC3B8C3846305054ACA0B1111CC17FE9786080716811320243E94D5A45E38D0C2FFF90D06FCC9DF9F1A06AC76A5E1765A4A1F3B89F9D63967344CA9EB0B893DBBA51BF8052EAE54D8B50EB8328EC6D36B644E7A444C9B05E4DEBAABEEF5792FD6E8ADDD61EE6A7A9B5A6606BBB8E9E111C8C75F08B615AB56E7209CBC352C9AC7EA0205D79B4AF84EAE80707983E20F69C8E9E300694AA9A240E9775B26BB76448E58AF0739CECE24438683AA3D8802BB60A481203823A5D324AFB9E7AEBFCCFB1A326F431F4D55A739B15C4E76C2AA89D0CAB0041DD466F09F7FA6111A51D5E61F4334EE89CBE4B9FF4CA1C40972B051473702D717D8F3E7A30D9A2A76228291C55F46";
+        let proof = x"b144aa93e381f277543dcfa70a76699e6364edce4753d94dc0c04459d5b9181e8a1ed877b6214f48fd702fa5883991a48affbd1498cbb108b6553eb2856059fb6d661b0e7995d26284124a270f242ba48bc0e9f8cfd405866f4db9dc8e8dc43513ec94ce81a28f200e87897ca481762126162865f0b3b8e753dd2d6eb2ae83e46f452296696c5ce24a757a606b45f46d81f4b955fdcc359bc0a7dcc058bab3f724d82ebcaafb486929a9d1522fb63a6723d3cc2f3f13bb8a373e15e413657409ae0d4bd8d1644c3746067bfea806d36276bd9e4ed327b66c9a175040ad99f2db84dee6c3dddd4287f4ba0d7c0daccdc4a6671308c58da252c183f56c67e1e4c0372d62fd1c8deec6390c6b9110b4b481c9c9cf94ded988965847fbd12482721f2256d03f891426c7b1b3e3592f37e255bf4a7f19a4a31873eacca2846ee0405d009f7443bbfdeb50bca4a90140951ae124afb082359270cd0d181e9c46f17ff8";
+        // let uncompr_proof = x"";
     
         let mut cursor = 0;
 
-        let a = bls12381::g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
+        let a = g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
         cursor = cursor + G1_SIZE;
 
-        let b = bls12381::g2_from_bytes(&vector_slice(&proof, cursor, cursor + G2_SIZE));
+        let b = g2_from_bytes(&vector_slice(&proof, cursor, cursor + G2_SIZE));
         cursor = cursor + G2_SIZE;
 
-        let c = bls12381::g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
+        let c = g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
         cursor = cursor + G1_SIZE;    
 
-        let poc = bls12381::g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
+        let poc = g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
         cursor = cursor + G1_SIZE;
 
-        let pok = bls12381::g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
+        let pok = g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
         cursor = cursor + G1_SIZE;
+
+        let inner_commitment = vector_slice(&proof, cursor, cursor + 64);
 
         let zkp = ZKP {
             proof: Proof { a, b, c},
             proof_commitment: poc,
-            proof_commitment_pok: pok
+            proof_commitment_pok: pok,
+            inner_commitment
         };
+
+        let inputs_hash = x"0031653718e0758d702469a49c2e34e068ef363f778489a866d2b41887fe4ae6";
+
+        verify_zkp(inputs_hash, &zkp);
 
         
     }
