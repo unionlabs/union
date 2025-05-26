@@ -66,14 +66,23 @@ module zkgm::forward {
     use std::vector;
 
     struct Forward has copy, drop, store {
-        channel_id: u32,
+        path: u256,
         timeout_height: u64,
         timeout_timestamp: u64,
         instruction: Instruction
     }
 
-    public fun channel_id(forward: &Forward): u32 {
-        forward.channel_id
+    public fun new(
+        path: u256,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        instruction: Instruction
+    ): Forward {
+        Forward { path, timeout_height, timeout_timestamp, instruction }
+    }
+
+    public fun path(forward: &Forward): u256 {
+        forward.path
     }
 
     public fun timeout_height(forward: &Forward): u64 {
@@ -90,18 +99,17 @@ module zkgm::forward {
 
     public fun encode(forward: &Forward): vector<u8> {
         let buf = vector::empty<u8>();
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
-        zkgm_ethabi::encode_uint<u32>(&mut buf, forward.channel_id);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, forward.path);
         zkgm_ethabi::encode_uint<u64>(&mut buf, forward.timeout_height);
         zkgm_ethabi::encode_uint<u64>(&mut buf, forward.timeout_timestamp);
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x80);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
         let ins_buf = instruction::encode(&forward.instruction);
         vector::append(&mut buf, ins_buf);
         buf
     }
 
     public fun decode(buf: &vector<u8>, index: &mut u64): Forward {
-        let channel_id = zkgm_ethabi::decode_uint(buf, index);
+        let path = zkgm_ethabi::decode_uint(buf, index);
         let timeout_height = zkgm_ethabi::decode_uint(buf, index);
         let timeout_timestamp = zkgm_ethabi::decode_uint(buf, index);
         *index = *index + 0x20;
@@ -114,7 +122,7 @@ module zkgm::forward {
         let instruction = instruction::new(version, opcode, operand);
 
         Forward {
-            channel_id: (channel_id as u32),
+            path,
             timeout_height: (timeout_height as u64),
             timeout_timestamp: (timeout_timestamp as u64),
             instruction: instruction
