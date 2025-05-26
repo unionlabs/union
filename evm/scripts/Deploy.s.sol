@@ -279,17 +279,20 @@ abstract contract UnionScript is UnionBase {
                         address(
                             new UCS03Zkgm(
                                 handler,
-                                params.weth,
-                                zkgmERC20,
-                                params.rateLimitEnabled,
                                 new UCS03ZkgmSendImpl(
                                     handler,
                                     params.weth,
+                                    zkgmERC20,
                                     params.nativeTokenName,
                                     params.nativeTokenSymbol,
                                     params.nativeTokenDecimals
                                 ),
-                                new UCS03ZkgmStakeImpl(handler)
+                                new UCS03ZkgmStakeImpl(handler),
+                                new UCS03ZkgmFungibleAssetOrderImpl(
+                                    params.weth,
+                                    zkgmERC20,
+                                    params.rateLimitEnabled
+                                )
                             )
                         ),
                         abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
@@ -1230,17 +1233,18 @@ contract DryUpgradeUCS03 is VersionedScript {
         address newImplementation = address(
             new UCS03Zkgm(
                 handler,
-                weth,
-                zkgmERC20,
-                rateLimitEnabled,
                 new UCS03ZkgmSendImpl(
                     handler,
                     weth,
+                    zkgmERC20,
                     nativeTokenName,
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmStakeImpl(handler)
+                new UCS03ZkgmStakeImpl(handler),
+                new UCS03ZkgmFungibleAssetOrderImpl(
+                    weth, zkgmERC20, rateLimitEnabled
+                )
             )
         );
 
@@ -1291,17 +1295,18 @@ contract UpgradeUCS03 is VersionedScript {
         address newImplementation = address(
             new UCS03Zkgm(
                 handler,
-                weth,
-                zkgmERC20,
-                rateLimitEnabled,
                 new UCS03ZkgmSendImpl(
                     handler,
                     weth,
+                    zkgmERC20,
                     nativeTokenName,
                     nativeTokenSymbol,
                     nativeTokenDecimals
                 ),
-                new UCS03ZkgmStakeImpl(handler)
+                new UCS03ZkgmStakeImpl(handler),
+                new UCS03ZkgmFungibleAssetOrderImpl(
+                    weth, zkgmERC20, rateLimitEnabled
+                )
             )
         );
         ucs03.upgradeToAndCall(newImplementation, new bytes(0));

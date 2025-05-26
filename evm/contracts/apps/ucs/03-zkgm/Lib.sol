@@ -24,6 +24,15 @@ library ZkgmLib {
     uint256 public constant FILL_TYPE_PROTOCOL = 0xB0CAD0;
     uint256 public constant FILL_TYPE_MARKETMAKER = 0xD1CEC45E;
 
+    uint8 public constant FUNGIBLE_ASSET_METADATA_TYPE_IMAGE = 0x00;
+    uint8 public constant FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE = 0x01;
+    uint8 public constant FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP = 0x02;
+
+    address public constant FUNGIBLE_ASSET_METADATA_ZKGM_ADMIN =
+        0xC0dEeEeEeEEEEEeeeeEEEeEeEeeeeEeeEeEEeeee;
+    bytes32 public constant FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1 =
+        0xC0DEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE;
+
     // Public instructions
     uint8 public constant OP_FORWARD = 0x00;
     uint8 public constant OP_MULTIPLEX = 0x01;
@@ -36,6 +45,7 @@ library ZkgmLib {
 
     uint8 public constant INSTR_VERSION_0 = 0x00;
     uint8 public constant INSTR_VERSION_1 = 0x01;
+    uint8 public constant INSTR_VERSION_2 = 0x02;
 
     bytes32 public constant FORWARD_SALT_MAGIC =
         0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
@@ -46,7 +56,6 @@ library ZkgmLib {
     string public constant IBC_VERSION_STR = "ucs03-zkgm-0";
     bytes32 public constant IBC_VERSION = keccak256(bytes(IBC_VERSION_STR));
 
-    error ErrUnsupportedVersion();
     error ErrAsyncMultiplexUnsupported();
     error ErrBatchMustBeSync();
     error ErrUnknownOpcode();
@@ -81,11 +90,26 @@ library ZkgmLib {
     error ErrInvalidStakeChannelId();
     error ErrInvalidStakeAmount();
     error ErrInvalidStakeValidator();
+    error ErrCannotDeploy();
+    error ErrInvalidMetadataType();
+    error ErrInvalidMetadataImage();
+    error ErrMustBeUnwrap();
+    error ErrMustBeWrap();
 
     function encodeFungibleAssetOrderAck(
         FungibleAssetOrderAck memory ack
     ) internal pure returns (bytes memory) {
         return abi.encode(ack.fillType, ack.marketMaker);
+    }
+
+    function decodeFungibleAssetMetadata(
+        bytes calldata stream
+    ) internal pure returns (FungibleAssetMetadata calldata) {
+        FungibleAssetMetadata calldata meta;
+        assembly {
+            meta := stream.offset
+        }
+        return meta;
     }
 
     function decodeUnstakeAck(
@@ -313,10 +337,41 @@ library ZkgmLib {
         );
     }
 
+    function encodeFungibleAssetOrderV2(
+        FungibleAssetOrderV2 memory order
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            order.sender,
+            order.receiver,
+            order.baseToken,
+            order.baseAmount,
+            order.metadataType,
+            order.metadata,
+            order.quoteToken,
+            order.quoteAmount
+        );
+    }
+
+    function encodeFungibleAssetMetadata(
+        FungibleAssetMetadata memory meta
+    ) internal pure returns (bytes memory) {
+        return abi.encode(meta.implementation, meta.initializer);
+    }
+
     function decodeFungibleAssetOrder(
         bytes calldata stream
     ) internal pure returns (FungibleAssetOrder calldata) {
         FungibleAssetOrder calldata operand;
+        assembly {
+            operand := stream.offset
+        }
+        return operand;
+    }
+
+    function decodeFungibleAssetOrderV2(
+        bytes calldata stream
+    ) internal pure returns (FungibleAssetOrderV2 calldata) {
+        FungibleAssetOrderV2 calldata operand;
         assembly {
             operand := stream.offset
         }
@@ -516,12 +571,6 @@ library ZkgmLib {
         uint8 opcode,
         uint8 version
     ) internal pure returns (bool) {
-        if (instruction.opcode != opcode) {
-            return false;
-        }
-        if (instruction.version != version) {
-            revert ErrUnsupportedVersion();
-        }
-        return true;
+        return instruction.opcode == opcode && instruction.version == version;
     }
 }
