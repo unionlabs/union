@@ -22,7 +22,21 @@ interface IZkgm is IZkgmStore {
         uint256 path,
         uint32 channel,
         bytes calldata token
-    ) external view returns (address, bytes32);
+    ) external returns (address, bytes32);
+
+    function predictWrappedTokenV2(
+        uint256 path,
+        uint32 channel,
+        bytes calldata token,
+        FungibleAssetMetadata calldata metadata
+    ) external returns (address, bytes32);
+
+    function predictWrappedTokenFromMetadataImageV2(
+        uint256 path,
+        uint32 channel,
+        bytes calldata token,
+        bytes32 metadataHash
+    ) external returns (address, bytes32);
 
     function registerGovernanceToken(
         uint32 channelId,

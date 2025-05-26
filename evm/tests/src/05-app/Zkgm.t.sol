@@ -22,15 +22,16 @@ import "../../../contracts/apps/Base.sol";
 contract TestZkgm is UCS03Zkgm {
     constructor(
         IIBCModulePacket _ibcHandler,
-        IWETH _weth
+        IWETH _weth,
+        ZkgmERC20 _erc20Impl
     )
         UCS03Zkgm(
             _ibcHandler,
-            _weth,
-            new ZkgmERC20(),
-            true,
-            new UCS03ZkgmSendImpl(_ibcHandler, _weth, "Ether", "ETH", 18),
-            new UCS03ZkgmStakeImpl(_ibcHandler)
+            new UCS03ZkgmSendImpl(
+                _ibcHandler, _weth, _erc20Impl, "Ether", "ETH", 18
+            ),
+            new UCS03ZkgmStakeImpl(_ibcHandler),
+            new UCS03ZkgmFungibleAssetOrderImpl(_weth, _erc20Impl, true)
         )
     {}
 
@@ -77,6 +78,18 @@ contract TestZkgm is UCS03Zkgm {
         _increaseOutstanding(sourceChannelId, path, token, amount);
     }
 
+    function doIncreaseOutstandingV2(
+        uint32 sourceChannelId,
+        uint256 path,
+        address token,
+        bytes32 metadataImage,
+        uint256 amount
+    ) public {
+        _increaseOutstandingV2(
+            sourceChannelId, path, token, metadataImage, amount
+        );
+    }
+
     function doDecreaseOutstanding(
         uint32 sourceChannelId,
         uint256 path,
@@ -84,6 +97,18 @@ contract TestZkgm is UCS03Zkgm {
         uint256 amount
     ) public {
         _decreaseOutstanding(sourceChannelId, path, token, amount);
+    }
+
+    function doDecreaseOutstandingV2(
+        uint32 sourceChannelId,
+        uint256 path,
+        address token,
+        bytes32 metadataImage,
+        uint256 amount
+    ) public {
+        _decreaseOutstandingV2(
+            sourceChannelId, path, token, metadataImage, amount
+        );
     }
 
     function doSetBucketConfig(
@@ -293,6 +318,7 @@ contract ZkgmTests is Test {
     TestMultiplexTarget multiplexTarget;
     TestIBCHandler handler;
     TestERC20 erc20;
+    ZkgmERC20 erc20Impl;
     TestWETH weth;
     TestZkgm zkgm;
 
@@ -313,7 +339,8 @@ contract ZkgmTests is Test {
         weth = new TestWETH();
         erc20 = new TestERC20("Test", "T", 18);
         handler = new TestIBCHandler();
-        TestZkgm implementation = new TestZkgm(handler, weth);
+        erc20Impl = new ZkgmERC20();
+        TestZkgm implementation = new TestZkgm(handler, weth, erc20Impl);
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeCall(UCS03Zkgm.initialize, (address(this)))
@@ -327,19 +354,22 @@ contract ZkgmTests is Test {
     function test_proxyInitialization_ok(
         address wethAddress,
         address handlerAddress,
+        address erc20ImplAddress,
         address authorityAddress
     ) public {
         vm.assume(handlerAddress != address(0));
         vm.assume(authorityAddress != address(0));
-        TestZkgm implementation =
-            new TestZkgm(IIBCModulePacket(handlerAddress), IWETH(wethAddress));
+        TestZkgm implementation = new TestZkgm(
+            IIBCModulePacket(handlerAddress),
+            IWETH(wethAddress),
+            ZkgmERC20(erc20ImplAddress)
+        );
         ERC1967Proxy proxy = new ERC1967Proxy(
             address(implementation),
             abi.encodeCall(UCS03Zkgm.initialize, (authorityAddress))
         );
         TestZkgm _zkgm = TestZkgm(payable(address(proxy)));
         assertEq(address(_zkgm.IBC_HANDLER()), handlerAddress);
-        assertEq(address(_zkgm.WETH()), wethAddress);
         assertEq(_zkgm.authority(), authorityAddress);
     }
 
@@ -948,34 +978,6 @@ contract ZkgmTests is Test {
         );
     }
 
-    function test_verify_forward_invalidVersion(
-        uint32 channelId,
-        uint8 version
-    ) public {
-        vm.assume(version != ZkgmLib.INSTR_VERSION_0);
-        vm.expectRevert(ZkgmLib.ErrUnsupportedVersion.selector);
-        zkgm.send(
-            channelId,
-            0,
-            type(uint64).max,
-            bytes32(0),
-            Instruction({
-                version: version,
-                opcode: ZkgmLib.OP_FORWARD,
-                operand: ZkgmLib.encodeForward(
-                    Forward({
-                        path: ZkgmLib.updateChannelPath(
-                            ZkgmLib.updateChannelPath(0, 10), 1
-                        ),
-                        timeoutHeight: type(uint64).max,
-                        timeoutTimestamp: 0,
-                        instruction: dummyMultiplex
-                    })
-                )
-            })
-        );
-    }
-
     function test_verify_forward_invalidInstruction(
         uint32 channelId
     ) public {
@@ -1181,6 +1183,89 @@ contract ZkgmTests is Test {
                         baseAmount: quoteAmount,
                         quoteToken: abi.encodePacked(baseToken),
                         quoteAmount: baseAmount
+                    })
+                )
+            })
+        );
+    }
+
+    function _metadataImage(
+        TokenMeta memory baseTokenMeta
+    ) internal returns (bytes32) {
+        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+            implementation: abi.encodePacked(erc20Impl),
+            initializer: abi.encodeCall(
+                ZkgmERC20.initialize,
+                (
+                    zkgm.authority(),
+                    address(zkgm),
+                    baseTokenMeta.name,
+                    baseTokenMeta.symbol,
+                    baseTokenMeta.decimals
+                )
+            )
+        });
+        return
+            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+    }
+
+    function test_verify_order_v2_transfer_wrapped_burn_ok(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        bytes32 salt,
+        bytes memory sender,
+        address receiver,
+        bytes memory baseToken,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount,
+        uint256 quoteAmount
+    ) public {
+        {
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(receiver != address(0));
+            vm.assume(0 < quoteAmount && quoteAmount <= baseAmount);
+        }
+        handler.setChannel(destinationChannelId, sourceChannelId);
+        address quoteToken = test_onRecvPacket_transferNative_newWrapped_v2(
+            caller,
+            sourceChannelId,
+            destinationChannelId,
+            relayer,
+            relayerMsg,
+            0,
+            salt,
+            sender,
+            receiver,
+            baseToken,
+            baseTokenMeta,
+            baseAmount
+        );
+        vm.expectEmit();
+        emit IERC20.Transfer(receiver, address(0), quoteAmount);
+        bytes32 metadataImage = _metadataImage(baseTokenMeta);
+        vm.prank(receiver);
+        zkgm.send(
+            destinationChannelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_2,
+                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                operand: ZkgmLib.encodeFungibleAssetOrderV2(
+                    FungibleAssetOrderV2({
+                        sender: abi.encodePacked(receiver),
+                        receiver: sender,
+                        baseToken: abi.encodePacked(quoteToken),
+                        metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
+                        metadata: abi.encodePacked(metadataImage),
+                        baseAmount: quoteAmount,
+                        quoteToken: abi.encodePacked(baseToken),
+                        quoteAmount: quoteAmount
                     })
                 )
             })
@@ -1997,6 +2082,33 @@ contract ZkgmTests is Test {
         );
     }
 
+    function expectOnRecvOrderProtocolFillSuccessV2(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 path,
+        bytes32 salt,
+        address relayer,
+        bytes memory relayerMsg,
+        FungibleAssetOrderV2 memory order
+    ) internal {
+        expectOnRecvTransferSuccessCustomAckV2(
+            caller,
+            sourceChannelId,
+            destinationChannelId,
+            path,
+            salt,
+            relayer,
+            relayerMsg,
+            order,
+            FungibleAssetOrderAck({
+                fillType: ZkgmLib.FILL_TYPE_PROTOCOL,
+                marketMaker: ZkgmLib.ACK_EMPTY
+            }),
+            false
+        );
+    }
+
     function expectOnRecvOrderMarketMakerFillSuccess(
         address caller,
         uint32 sourceChannelId,
@@ -2051,7 +2163,7 @@ contract ZkgmTests is Test {
         );
     }
 
-    function buildOrderPacket(
+    function buildOrderPacketV2(
         uint32 sourceChannelId,
         uint32 destinationChannelId,
         uint256 path,
@@ -2077,6 +2189,32 @@ contract ZkgmTests is Test {
         });
     }
 
+    function buildOrderPacketV2(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 path,
+        bytes32 salt,
+        FungibleAssetOrderV2 memory order
+    ) internal returns (IBCPacket memory) {
+        return IBCPacket({
+            sourceChannelId: sourceChannelId,
+            destinationChannelId: destinationChannelId,
+            data: ZkgmLib.encode(
+                ZkgmPacket({
+                    salt: salt,
+                    path: path,
+                    instruction: Instruction({
+                        version: ZkgmLib.INSTR_VERSION_2,
+                        opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                        operand: ZkgmLib.encodeFungibleAssetOrderV2(order)
+                    })
+                })
+            ),
+            timeoutHeight: 0,
+            timeoutTimestamp: type(uint64).max
+        });
+    }
+
     function expectOnRecvTransferSuccessCustomAck(
         address caller,
         uint32 sourceChannelId,
@@ -2091,7 +2229,31 @@ contract ZkgmTests is Test {
     ) internal {
         expectAckSuccess(
             caller,
-            buildOrderPacket(
+            buildOrderPacketV2(
+                sourceChannelId, destinationChannelId, path, salt, order
+            ),
+            relayer,
+            relayerMsg,
+            ZkgmLib.encodeFungibleAssetOrderAck(expectedAck),
+            intent
+        );
+    }
+
+    function expectOnRecvTransferSuccessCustomAckV2(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 path,
+        bytes32 salt,
+        address relayer,
+        bytes memory relayerMsg,
+        FungibleAssetOrderV2 memory order,
+        FungibleAssetOrderAck memory expectedAck,
+        bool intent
+    ) internal {
+        expectAckSuccess(
+            caller,
+            buildOrderPacketV2(
                 sourceChannelId, destinationChannelId, path, salt, order
             ),
             relayer,
@@ -2156,10 +2318,81 @@ contract ZkgmTests is Test {
         }
     }
 
+    function _metadata(
+        TokenMeta memory tokenMeta
+    ) internal returns (FungibleAssetMetadata memory) {
+        return FungibleAssetMetadata({
+            implementation: abi.encodePacked(erc20Impl),
+            initializer: abi.encodeCall(
+                ZkgmERC20.initialize,
+                (
+                    zkgm.authority(),
+                    address(zkgm),
+                    tokenMeta.name,
+                    tokenMeta.symbol,
+                    tokenMeta.decimals
+                )
+            )
+        });
+    }
+
     struct TokenMeta {
         string symbol;
         string name;
         uint8 decimals;
+    }
+
+    function test_onRecvPacket_transferNative_v2_wrap_ok(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        // NOTE: we use u192 to avoid having the channel path being full (max u256)
+        // as we need to append the destination channel in the test (leave a u32
+        // slot in the u256).
+        uint192 path,
+        bytes32 salt,
+        bytes memory sender,
+        bytes memory baseToken,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount
+    ) public {
+        {
+            vm.assume(sourceChannelId != 0);
+            vm.assume(destinationChannelId != 0);
+        }
+        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        (address quoteToken,) = zkgm.predictWrappedTokenV2(
+            path, destinationChannelId, baseToken, metadata
+        );
+        {
+            if (baseAmount > 0) {
+                zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+            }
+        }
+        {
+            FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: baseToken,
+                baseAmount: baseAmount,
+                metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: baseAmount
+            });
+            expectOnRecvOrderProtocolFillSuccessV2(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                path,
+                salt,
+                relayer,
+                relayerMsg,
+                order
+            );
+        }
     }
 
     function test_onRecvPacket_transferNative_newWrapped(
@@ -2201,6 +2434,62 @@ contract ZkgmTests is Test {
                 quoteAmount: baseAmount
             });
             expectOnRecvOrderProtocolFillSuccess(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                path,
+                salt,
+                relayer,
+                relayerMsg,
+                order
+            );
+        }
+        assertTrue(ZkgmLib.isDeployed(quoteToken));
+        assertEq(
+            AccessManagedUpgradeable(quoteToken).authority(), address(this)
+        );
+        return quoteToken;
+    }
+
+    function test_onRecvPacket_transferNative_newWrapped_v2(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        bytes memory sender,
+        address receiver,
+        bytes memory baseToken,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount
+    ) public returns (address) {
+        {
+            vm.assume(receiver != address(0));
+            vm.assume(sourceChannelId != 0);
+            vm.assume(destinationChannelId != 0);
+        }
+        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        (address quoteToken,) = zkgm.predictWrappedTokenV2(
+            path, destinationChannelId, baseToken, metadata
+        );
+        assertFalse(ZkgmLib.isDeployed(quoteToken));
+        if (baseAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+        }
+        {
+            FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+                sender: sender,
+                receiver: abi.encodePacked(receiver),
+                baseToken: baseToken,
+                baseAmount: baseAmount,
+                metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: baseAmount
+            });
+            expectOnRecvOrderProtocolFillSuccessV2(
                 caller,
                 sourceChannelId,
                 destinationChannelId,
@@ -2400,6 +2689,33 @@ contract ZkgmTests is Test {
         assertEq(zkgm.channelBalance(sourceChannelId, path, token), 0);
     }
 
+    function test_increaseOutstanding_decreaseOutstanding_v2_iso(
+        uint32 sourceChannelId,
+        uint256 path,
+        address token,
+        bytes32 metadataImage,
+        uint256 amount
+    ) public {
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, token, metadataImage),
+            0
+        );
+        zkgm.doIncreaseOutstandingV2(
+            sourceChannelId, path, token, metadataImage, amount
+        );
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, token, metadataImage),
+            amount
+        );
+        zkgm.doDecreaseOutstandingV2(
+            sourceChannelId, path, token, metadataImage, amount
+        );
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, token, metadataImage),
+            0
+        );
+    }
+
     function test_onRecvPacket_transferNative_unwrap_ok(
         address caller,
         uint32 sourceChannelId,
@@ -2516,6 +2832,71 @@ contract ZkgmTests is Test {
             );
         }
         assertEq(zkgm.channelBalance(destinationChannelId, path, quoteToken), 0);
+    }
+
+    function test_onRecvPacket_transferNative_v2_unwrap_decreaseOutstanding(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes32 salt,
+        bytes memory sender,
+        bytes memory baseToken,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount
+    ) public {
+        {
+            vm.assume(path != 0);
+            vm.assume(sourceChannelId != 0);
+            vm.assume(destinationChannelId != 0);
+        }
+        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        bytes32 metadataImage =
+            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+        // Fake an increase of outstanding balance as if we transferred out.
+        erc20.mint(address(zkgm), baseAmount);
+        address quoteToken = address(erc20);
+        zkgm.doIncreaseOutstandingV2(
+            destinationChannelId,
+            ZkgmLib.reverseChannelPath(path),
+            quoteToken,
+            metadataImage,
+            baseAmount
+        );
+        if (baseAmount > 0) {
+            zkgm.doSetBucketConfig(quoteToken, baseAmount, 1, false);
+        }
+
+        {
+            FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+                sender: sender,
+                receiver: abi.encodePacked(address(this)),
+                baseToken: baseToken,
+                baseAmount: baseAmount,
+                metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
+                metadata: abi.encodePacked(metadataImage),
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: baseAmount
+            });
+            expectOnRecvOrderProtocolFillSuccessV2(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                path,
+                salt,
+                relayer,
+                relayerMsg,
+                order
+            );
+        }
+        assertEq(
+            zkgm.channelBalanceV2(
+                destinationChannelId, path, quoteToken, metadataImage
+            ),
+            0
+        );
     }
 
     function test_onRecvPacket_transferNative_unwrap_channel_noOutstanding(

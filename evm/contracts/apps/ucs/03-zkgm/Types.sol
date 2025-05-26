@@ -43,6 +43,22 @@ struct FungibleAssetOrder {
     uint256 quoteAmount;
 }
 
+struct FungibleAssetOrderV2 {
+    bytes sender;
+    bytes receiver;
+    bytes baseToken;
+    uint256 baseAmount;
+    uint8 metadataType;
+    bytes metadata;
+    bytes quoteToken;
+    uint256 quoteAmount;
+}
+
+struct FungibleAssetMetadata {
+    bytes implementation;
+    bytes initializer;
+}
+
 struct Stake {
     uint256 tokenId;
     bytes governanceToken;
