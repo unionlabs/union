@@ -20,7 +20,7 @@ const providers: Array<AuthProvider> = [
     icon:
       `<path fill="currentColor" d="m17.687 3.063l-4.996 5.711l-4.32-5.711H2.112l7.477 9.776l-7.086 8.099h3.034l5.469-6.25l4.78 6.25h6.102l-7.794-10.304l6.625-7.571zm-1.064 16.06L5.654 4.782h1.803l10.846 14.34z"/>`,
     iconColor: "text-white",
-    disabled: true,
+    disabled: false,
   },
   {
     id: "github",
@@ -68,7 +68,6 @@ function handleLogin(provider: AuthProvider) {
           class="w-full flex items-center justify-center gap-3 h-11 relative hover:translate-y-[1px] transition-all {provider.disabled ? 'opacity-30 cursor-not-allowed' : ''}"
           disabled={provider.disabled || loading}
           onclick={() => handleLogin(provider)}
-          title={provider.disabled ? `${provider.name} is temporarily disabled` : ""}
         >
           <svg
             class="w-5 h-5 {provider.iconColor} {loading ? 'opacity-70' : ''}"
@@ -77,7 +76,7 @@ function handleLogin(provider: AuthProvider) {
             {@html provider.icon}
           </svg>
           <span class={loading ? "opacity-70" : ""}>
-            {#if provider.id === "twitter" && provider.disabled}
+            {#if provider.disabled}
               Outage, check back later
             {:else}
               Continue with {provider.name}
