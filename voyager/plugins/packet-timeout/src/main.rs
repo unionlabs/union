@@ -17,16 +17,20 @@ use tracing::{debug, info, instrument, warn};
 use unionlabs::{
     self, ibc::core::client::height::Height, never::Never, traits::Member, ErrorReporter,
 };
-use voyager_message::{
-    call::{SubmitTx, WaitForTrustedHeight, WaitForTrustedTimestamp},
-    data::{Data, IbcDatagram},
-    module::{PluginInfo, PluginServer},
+use voyager_sdk::{
+    anyhow,
+    message::{
+        call::{SubmitTx, WaitForTrustedHeight, WaitForTrustedTimestamp},
+        data::{Data, IbcDatagram},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::ProofType,
-    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE,
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    types::{ProofType, RawClientId},
+    vm::{call, conc, noop, pass::PassResult, seq, Op},
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, noop, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::call::{MakeMsgTimeout, ModuleCall, WaitForTimeoutOrReceipt};
 
@@ -49,7 +53,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         Ok(Module::new(config))
     }
 
@@ -163,7 +167,7 @@ impl PluginServer<ModuleCall, Never> for Module {
 
     #[instrument(skip_all, fields())]
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
-        let voyager_client = e.try_get::<VoyagerClient>()?;
+        let voyager_client = e.voyager_client()?;
 
         match msg {
             ModuleCall::WaitForTimeoutOrReceipt(call) => {

@@ -31,4 +31,4 @@ serde_json           = { workspace = true }
 thiserror            = { workspace = true }
 throbber-widgets-tui = "0.6"
 tokio                = { workspace = true, features = ["full"] }
-tokio-util           = { version = "0.7", features = ["codec"] }
+tokio-util           = { workspace = true, features = ["codec"] }

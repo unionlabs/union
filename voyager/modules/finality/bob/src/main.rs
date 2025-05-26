@@ -14,12 +14,13 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
-use voyager_message::{
-    module::{FinalityModuleInfo, FinalityModuleServer},
+use voyager_sdk::{
+    anyhow,
+    plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    ExtensionsExt, FinalityModule, VoyagerClient,
+    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
+    ExtensionsExt,
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -60,7 +61,7 @@ pub struct Config {
 impl FinalityModule for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: FinalityModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
         let l1_provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
@@ -98,7 +99,7 @@ impl FinalityModuleServer for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id, finalized))]
     async fn query_latest_height(&self, e: &Extensions, finalized: bool) -> RpcResult<Height> {
         if finalized {
-            let voyager_client = e.try_get::<VoyagerClient>()?;
+            let voyager_client = e.voyager_client()?;
 
             let l1_latest_height = voyager_client
                 .query_latest_height(self.l1_chain_id.clone(), true)
@@ -139,7 +140,7 @@ impl FinalityModuleServer for Module {
         finalized: bool,
     ) -> RpcResult<Timestamp> {
         if finalized {
-            let voyager_client = e.try_get::<VoyagerClient>()?;
+            let voyager_client = e.voyager_client()?;
 
             let l1_latest_height = voyager_client
                 .query_latest_height(self.l1_chain_id.clone(), true)

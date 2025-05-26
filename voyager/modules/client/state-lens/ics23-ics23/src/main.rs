@@ -22,15 +22,15 @@ use unionlabs::{
     union::ics23,
     ErrorReporter,
 };
-use voyager_message::{
+use voyager_sdk::{
+    anyhow::{self, anyhow},
     ensure_null, into_value,
-    module::{ClientModuleInfo, ClientModuleServer},
+    plugin::ClientModule,
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
     },
-    ClientModule, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{types::ClientModuleInfo, ClientModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -87,11 +87,12 @@ pub struct Config {}
 impl ClientModule for Module {
     type Config = Config;
 
-    async fn new(_: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(_: Self::Config, info: ClientModuleInfo) -> anyhow::Result<Self> {
         info.ensure_client_type(ClientType::STATE_LENS_ICS23_ICS23)?;
         info.ensure_consensus_type(ConsensusType::TENDERMINT)?;
         Ok(Self {
-            ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())?,
+            ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())
+                .map_err(|e| anyhow!(e))?,
         })
     }
 }

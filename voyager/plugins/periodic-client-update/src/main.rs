@@ -7,16 +7,21 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{error, info, instrument};
 use unionlabs::never::Never;
-use voyager_message::{
-    call::{FetchUpdateHeaders, WaitForTrustedHeight},
-    callback::AggregateSubmitTxFromOrderedHeaders,
-    data::Data,
-    into_value,
-    module::{PluginInfo, PluginServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    message::{
+        call::{FetchUpdateHeaders, WaitForTrustedHeight},
+        callback::AggregateSubmitTxFromOrderedHeaders,
+        data::Data,
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, IbcSpecId, QueryHeight},
-    ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    types::RawClientId,
+    vm::{call, conc, defer, now, pass::PassResult, promise, seq, Op},
+    ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, defer, now, pass::PassResult, promise, seq, BoxDynError, Op};
 
 use crate::call::{CheckForClientAge, ModuleCall};
 
@@ -40,7 +45,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = Cmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         Ok(Module::new(config))
     }
 
@@ -198,8 +203,14 @@ impl PluginServer<ModuleCall, Never> for Module {
                 client_id,
                 max_age,
             }) => {
-                self.check_for_client_age(e.try_get()?, chain_id, ibc_spec_id, client_id, max_age)
-                    .await
+                self.check_for_client_age(
+                    e.voyager_client()?,
+                    chain_id,
+                    ibc_spec_id,
+                    client_id,
+                    max_age,
+                )
+                .await
             }
         }
     }

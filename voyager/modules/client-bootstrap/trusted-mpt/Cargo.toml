@@ -22,8 +22,8 @@ tokio                          = { workspace = true }
 tracing                        = { workspace = true }
 trusted-mpt-light-client-types = { workspace = true, features = ["serde"] }
 unionlabs                      = { workspace = true }
-voyager-message                = { workspace = true }
-voyager-vm                     = { workspace = true }
+voyager-sdk                    = { workspace = true }
+
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }

@@ -29,16 +29,21 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, never::Never, primitives::H256, ErrorReporter};
-use voyager_message::{
-    call::{Call, WaitForHeight},
-    data::{ChainEvent, Data, EventProvableHeight},
-    filter::simple_take_filter,
+use voyager_sdk::{
+    anyhow,
+    hook::simple_take_filter,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, WaitForHeight},
+        data::{ChainEvent, Data, EventProvableHeight},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
-    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    vm::{call, conc, data, pass::PassResult, seq, Op},
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::call::{FetchBlocks, FetchTransactions, MakeFullEvent, ModuleCall};
 
@@ -76,7 +81,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse()?);
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;
@@ -637,7 +642,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             .make_packet_metadata(
                                 self.make_height(height),
                                 event.packet.destination_channel_id.try_into().unwrap(),
-                                e.try_get()?,
+                                e.voyager_client()?,
                             )
                             .await?;
 
@@ -670,7 +675,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             .make_packet_metadata(
                                 self.make_height(height),
                                 event.packet.destination_channel_id.try_into().unwrap(),
-                                e.try_get()?,
+                                e.voyager_client()?,
                             )
                             .await?;
 
@@ -703,7 +708,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             .make_packet_metadata(
                                 self.make_height(height),
                                 event.source_channel_id.try_into().unwrap(),
-                                e.try_get()?,
+                                e.voyager_client()?,
                             )
                             .await?;
 
@@ -735,7 +740,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             .make_packet_metadata(
                                 self.make_height(height),
                                 event.packet.source_channel_id.try_into().unwrap(),
-                                e.try_get()?,
+                                e.voyager_client()?,
                             )
                             .await?;
 
@@ -761,7 +766,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     events::IbcEvent::TimeoutPacket(_) => todo!(),
                 };
 
-                let voyager_client = e.try_get::<VoyagerClient>()?;
+                let voyager_client = e.voyager_client()?;
 
                 ibc_union_spec::log_event(&full_event, &self.chain_id);
 

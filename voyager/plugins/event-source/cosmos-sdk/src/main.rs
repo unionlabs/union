@@ -33,16 +33,21 @@ use unionlabs::{
     primitives::H256,
     ErrorReporter, WasmClientType,
 };
-use voyager_message::{
-    call::{Call, WaitForHeight},
-    data::{ChainEvent, Data, EventProvableHeight},
-    filter::simple_take_filter,
+use voyager_sdk::{
+    anyhow,
+    hook::simple_take_filter,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, WaitForHeight},
+        data::{ChainEvent, Data, EventProvableHeight},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
-    ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    vm::{call, conc, data, noop, pass::PassResult, seq, Op},
+    ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlock, FetchBlocks, MakeChainEvent, ModuleCall},
@@ -118,7 +123,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = Cmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network;
@@ -340,8 +345,7 @@ impl PluginServer<ModuleCall, Never> for Module {
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchBlocks(FetchBlocks { height }) => {
-                self.fetch_blocks(e.try_get::<VoyagerClient>()?, height)
-                    .await
+                self.fetch_blocks(e.voyager_client()?, height).await
             }
             ModuleCall::FetchBlock(FetchBlock {
                 already_seen_events,
@@ -352,7 +356,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 tx_hash,
                 event,
             }) => {
-                self.make_chain_event(e.try_get::<VoyagerClient>()?, height, tx_hash, event)
+                self.make_chain_event(e.voyager_client()?, height, tx_hash, event)
                     .await
             }
         }

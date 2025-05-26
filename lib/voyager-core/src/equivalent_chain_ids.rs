@@ -2,10 +2,9 @@ use std::{collections::HashSet, sync::OnceLock};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
+use voyager_primitives::ChainId;
 
-use crate::primitives::ChainId;
-
-/// [`ChainId`] to consider equivalent.
+/// [`ChainId`]s to consider equivalent.
 ///
 /// Some chains expose multiple chain IDs due to requirements of certain components used in the
 /// chain (for example, different execution environments running in the same chain may have

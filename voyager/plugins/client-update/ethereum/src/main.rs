@@ -24,16 +24,22 @@ use unionlabs::{
     primitives::{H160, H256},
     ErrorReporter,
 };
-use voyager_message::{
-    call::{Call, FetchUpdateHeaders, WaitForTimestamp},
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
+use voyager_sdk::{
+    anyhow::{self, bail},
     hook::UpdateHook,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, FetchUpdateHeaders, WaitForTimestamp},
+        data::{Data, DecodedHeaderMeta, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType, Timestamp},
-    DefaultCmd, Plugin, PluginMessage, RawClientId, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    types::RawClientId,
+    vm::{self, call, defer, now, pass::PassResult, seq, Op, Visit},
+    DefaultCmd,
 };
-use voyager_vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit};
 
 use crate::call::{FetchUpdate, ModuleCall};
 
@@ -133,7 +139,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 // .layer(CacheLayer::new(config.max_cache_size))
@@ -144,11 +150,11 @@ impl Plugin for Module {
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         if chain_id != config.chain_id {
-            return Err(format!(
+            bail!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
+                config.chain_id,
+                chain_id
+            );
         }
 
         let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url);
@@ -162,11 +168,11 @@ impl Plugin for Module {
         })?;
 
         if spec.preset_base != config.chain_spec {
-            return Err(format!(
+            bail!(
                 "incorrect chain spec: expected `{}`, but found `{}`",
-                config.chain_spec, spec.preset_base
-            )
-            .into());
+                config.chain_spec,
+                spec.preset_base
+            );
         }
 
         Ok(Self {
@@ -331,7 +337,7 @@ impl Module {
     ) -> RpcResult<Op<VoyagerMessage>> {
         if update_from_block_number == update_to_block_number {
             info!("update is for the same height, noop");
-            return Ok(voyager_vm::data(OrderedHeaders { headers: vec![] }));
+            return Ok(vm::data(OrderedHeaders { headers: vec![] }));
         }
 
         let finality_update: LightClientUpdateData = self
@@ -565,7 +571,7 @@ impl Module {
                 ),
                 finalized: false,
             }),
-            voyager_vm::data(OrderedHeaders {
+            vm::data(OrderedHeaders {
                 headers: headers
                     .into_iter()
                     .map(|header| {

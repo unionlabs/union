@@ -34,5 +34,4 @@ thiserror        = { workspace = true }
 tokio            = { workspace = true }
 tracing          = { workspace = true }
 unionlabs        = { workspace = true, features = ["bincode"] }
-voyager-message  = { workspace = true }
-voyager-vm       = { workspace = true }
+voyager-sdk      = { workspace = true }

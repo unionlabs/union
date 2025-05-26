@@ -4,7 +4,7 @@ use ibc_union_spec::IbcUnion;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use unionlabs::ErrorReporter;
-use voyager_message::{data::IbcDatagram, FATAL_JSONRPC_ERROR_CODE};
+use voyager_sdk::{message::data::IbcDatagram, rpc::FATAL_JSONRPC_ERROR_CODE};
 
 #[model]
 #[derive(Enumorph)]

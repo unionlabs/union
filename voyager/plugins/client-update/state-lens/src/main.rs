@@ -14,19 +14,23 @@ use serde::{Deserialize, Serialize};
 use state_lens_light_client_types::Header;
 use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, never::Never};
-use voyager_message::{
-    call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
-    callback::AggregateSubmitTxFromOrderedHeaders,
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
-    filter::simple_take_filter,
+use voyager_sdk::{
+    anyhow,
+    hook::simple_take_filter,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
+        callback::AggregateSubmitTxFromOrderedHeaders,
+        data::{Data, DecodedHeaderMeta, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    rpc::ProofType,
-    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
-    FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE,
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE, MISSING_STATE_ERROR_CODE},
+    types::{ProofType, RawClientId},
+    vm::{call, conc, data, pass::PassResult, promise, seq, Op, Visit},
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
 
 use crate::call::{FetchUpdate, ModuleCall};
 
@@ -59,7 +63,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         Ok(Self {
             state_lens_client_type: config.state_lens_client_type,
         })
@@ -338,7 +342,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 update_to,
             }) => {
                 self.fetch_update(
-                    ext.try_get::<VoyagerClient>()?,
+                    ext.voyager_client()?,
                     chain_id,
                     counterparty_chain_id,
                     client_id,
@@ -354,7 +358,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 update_from: _,
                 update_to,
             }) => {
-                let voyager_client = ext.try_get::<VoyagerClient>()?;
+                let voyager_client = ext.voyager_client()?;
 
                 // the client on the counterparty that is tracking the L1
                 let l1_client_state_meta = voyager_client

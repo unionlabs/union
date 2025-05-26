@@ -3,11 +3,13 @@ use enumorph::Enumorph;
 use macros::model;
 use subset_of::SubsetOf;
 use unionlabs::ibc::core::client::height::Height;
-use voyager_message::{
-    data::{DecodedHeaderMeta, OrderedHeaders},
-    VoyagerMessage,
+use voyager_sdk::{
+    message::{
+        data::{DecodedHeaderMeta, OrderedHeaders},
+        VoyagerMessage,
+    },
+    vm::{data, Op},
 };
-use voyager_vm::{data, Op};
 
 use crate::{data::ProveResponse, Module};
 

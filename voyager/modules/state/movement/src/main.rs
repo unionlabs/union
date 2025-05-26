@@ -26,13 +26,12 @@ use unionlabs::{
     primitives::{Bytes, H256},
     ErrorReporter,
 };
-use voyager_message::{
-    into_value,
-    module::{StateModuleInfo, StateModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface, Timestamp},
-    StateModule,
+    rpc::{types::StateModuleInfo, StateModuleServer},
 };
-use voyager_vm::BoxDynError;
 
 pub mod events;
 
@@ -62,7 +61,7 @@ pub struct Module {
 impl StateModule<IbcUnion> for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: StateModuleInfo) -> anyhow::Result<Self> {
         let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse()?);
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;

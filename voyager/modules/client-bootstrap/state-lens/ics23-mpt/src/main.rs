@@ -10,13 +10,15 @@ use state_lens_ics23_mpt_light_client::client::extract_consensus_state;
 use state_lens_ics23_mpt_light_client_types::{client_state::Extra, ClientState};
 use tracing::{info, instrument};
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
-use voyager_message::{
-    into_value,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, QueryHeight},
-    ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{
+        types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE,
+    },
+    ExtensionsExt,
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -54,10 +56,7 @@ pub struct Config {}
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        Config {}: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(Config {}: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         info.ensure_client_type(ClientType::STATE_LENS_ICS23_MPT)?;
         info.ensure_chain_id(info.chain_id.as_str())?;
 
@@ -119,7 +118,7 @@ impl ClientBootstrapModuleServer for Module {
             )
         })?;
 
-        let voyager_client = ext.try_get::<VoyagerClient>()?;
+        let voyager_client = ext.voyager_client()?;
 
         let l1_client_meta = voyager_client
             .client_state_meta::<IbcUnion>(

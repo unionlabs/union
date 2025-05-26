@@ -13853,9 +13853,9 @@ dependencies = [
 
 [[package]]
 name = "tokio-util"
-version = "0.7.14"
+version = "0.7.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b9590b93e6fcc1739458317cccd391ad3955e2bde8913edf6f95f9e65a8f034"
+checksum = "66a539a9ad6d5d281510d5bd368c973d636c02dbf8a67300bfb6b950696ad7df"
 dependencies = [
  "bytes",
  "futures-core",
@@ -14900,7 +14900,47 @@ dependencies = [
  "tracing-futures",
  "tracing-subscriber 0.3.19",
  "unionlabs",
+ "voyager-client",
+ "voyager-core",
  "voyager-message",
+ "voyager-plugin",
+ "voyager-primitives",
+ "voyager-rpc",
+ "voyager-types",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-client"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.35",
+ "enumorph",
+ "futures",
+ "indexmap 2.9.0",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "moka",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "opentelemetry_sdk",
+ "reconnecting-jsonrpc-ws-client",
+ "reth-ipc",
+ "schemars",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "unionlabs",
+ "voyager-primitives",
+ "voyager-rpc",
+ "voyager-types",
  "voyager-vm",
 ]
 
@@ -14919,8 +14959,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -14940,8 +14979,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -14959,8 +14997,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -14979,8 +15016,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15001,8 +15037,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15021,7 +15056,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15042,8 +15077,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15064,8 +15098,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15086,8 +15119,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15106,8 +15138,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15124,8 +15155,7 @@ dependencies = [
  "tracing",
  "trusted-mpt-light-client-types",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15141,8 +15171,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15158,8 +15187,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15183,8 +15211,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15199,8 +15226,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15217,8 +15243,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15234,7 +15259,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15256,8 +15281,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15283,8 +15307,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15309,8 +15332,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15326,8 +15348,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15343,8 +15364,7 @@ dependencies = [
  "tracing",
  "trusted-mpt-light-client-types",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15365,8 +15385,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15397,8 +15416,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15422,8 +15440,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15446,8 +15463,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15469,8 +15485,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15491,8 +15506,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15515,8 +15529,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15538,8 +15551,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15559,8 +15571,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15584,7 +15595,45 @@ dependencies = [
  "tracing",
  "trusted-mpt-light-client-types",
  "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-core"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "axum 0.6.20",
+ "derive_builder",
+ "futures",
+ "indexmap 2.9.0",
+ "itertools 0.13.0",
+ "jaq-core",
+ "jaq-interpret",
+ "jaq-std",
+ "jaq-syn",
+ "jsonrpsee",
+ "moka",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "opentelemetry_sdk",
+ "pin-utils",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
+ "tower 0.4.13",
+ "tower-http",
+ "tracing",
+ "unionlabs",
  "voyager-message",
+ "voyager-plugin",
+ "voyager-plugin-protocol",
+ "voyager-primitives",
+ "voyager-rpc",
+ "voyager-types",
  "voyager-vm",
 ]
 
@@ -15614,8 +15663,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15634,8 +15682,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15659,8 +15706,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15677,8 +15723,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15707,8 +15752,7 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15727,8 +15771,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15743,8 +15786,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15761,8 +15803,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15778,7 +15819,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15793,8 +15834,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15808,12 +15848,44 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
 name = "voyager-message"
+version = "0.0.0"
+dependencies = [
+ "enumorph",
+ "futures",
+ "macros",
+ "schemars",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "tracing",
+ "unionlabs",
+ "voyager-primitives",
+ "voyager-types",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-periodic-client-update-plugin"
+version = "0.0.0"
+dependencies = [
+ "clap 4.5.35",
+ "embed-commit",
+ "jsonrpsee",
+ "macros",
+ "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-plugin"
 version = "0.0.0"
 dependencies = [
  "anyhow",
@@ -15822,10 +15894,6 @@ dependencies = [
  "futures",
  "indexmap 2.9.0",
  "itertools 0.13.0",
- "jaq-core",
- "jaq-interpret",
- "jaq-std",
- "jaq-syn",
  "jsonrpsee",
  "macros",
  "moka",
@@ -15844,23 +15912,12 @@ dependencies = [
  "tracing",
  "tracing-subscriber 0.3.19",
  "unionlabs",
- "voyager-primitives",
- "voyager-vm",
-]
-
-[[package]]
-name = "voyager-periodic-client-update-plugin"
-version = "0.0.0"
-dependencies = [
- "clap 4.5.35",
- "embed-commit",
- "jsonrpsee",
- "macros",
- "serde",
- "tokio",
- "tracing",
- "unionlabs",
+ "voyager-client",
  "voyager-message",
+ "voyager-plugin-protocol",
+ "voyager-primitives",
+ "voyager-rpc",
+ "voyager-types",
  "voyager-vm",
 ]
 
@@ -15882,8 +15939,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15900,8 +15956,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15918,7 +15973,30 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-plugin-protocol"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "futures",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "reconnecting-jsonrpc-ws-client",
+ "reth-ipc",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "unionlabs",
+ "voyager-client",
  "voyager-message",
+ "voyager-rpc",
+ "voyager-types",
  "voyager-vm",
 ]
 
@@ -15943,8 +16021,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -15969,9 +16046,8 @@ dependencies = [
  "tracing",
  "ucs03-zkgm",
  "unionlabs",
- "voyager-message",
  "voyager-plugin-transaction-batch",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16004,8 +16080,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16025,8 +16100,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16043,8 +16117,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16064,8 +16137,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16085,7 +16157,60 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-rpc"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.35",
+ "enumorph",
+ "futures",
+ "indexmap 2.9.0",
+ "itertools 0.13.0",
+ "jsonrpsee",
+ "macros",
+ "moka",
+ "opentelemetry",
+ "opentelemetry-otlp",
+ "opentelemetry_sdk",
+ "reconnecting-jsonrpc-ws-client",
+ "reth-ipc",
+ "schemars",
+ "serde",
+ "serde_json",
+ "subset-of",
+ "thiserror 2.0.12",
+ "tokio",
+ "tokio-util",
+ "tracing",
+ "tracing-subscriber 0.3.19",
+ "unionlabs",
  "voyager-message",
+ "voyager-primitives",
+ "voyager-types",
+ "voyager-vm",
+]
+
+[[package]]
+name = "voyager-sdk"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.35",
+ "jsonrpsee",
+ "serde",
+ "serde_json",
+ "tracing",
+ "unionlabs",
+ "voyager-client",
+ "voyager-message",
+ "voyager-plugin",
+ "voyager-primitives",
+ "voyager-rpc",
+ "voyager-types",
  "voyager-vm",
 ]
 
@@ -16107,8 +16232,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16131,8 +16255,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16151,8 +16274,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16177,8 +16299,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16201,8 +16322,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16232,8 +16352,7 @@ dependencies = [
  "tonic 0.10.2",
  "tracing",
  "unionlabs",
- "voyager-message",
- "voyager-vm",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -16257,7 +16376,20 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-types"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "unionlabs",
+ "voyager-primitives",
  "voyager-vm",
 ]
 

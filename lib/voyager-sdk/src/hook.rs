@@ -1,14 +1,12 @@
 use std::collections::BTreeSet;
 
 use tracing::info;
-use voyager_primitives::{ChainId, ClientType};
-use voyager_vm::Visit;
-
-use crate::{
+use voyager_message::{
     call::{Call, FetchUpdateHeaders, SubmitTx},
-    filter::simple_take_filter,
     VoyagerMessage,
 };
+use voyager_primitives::{ChainId, ClientType};
+use voyager_vm::Visit;
 
 /// A hook for a plugin that handles [`FetchUpdateHeaders`] messages.
 pub struct UpdateHook<'a, F: for<'b> Fn(&'b FetchUpdateHeaders) -> Call> {
@@ -126,4 +124,9 @@ impl<F: for<'b> Fn(&'b SubmitTx) -> Call> Visit<VoyagerMessage> for SubmitTxHook
             _ => {}
         }
     }
+}
+
+/// For simple filters that either take the item they're interested in or express no interest (i.e. they never just copy an item). This wraps the provided filter (which is expected to return a bool) in an expression maps that maps false to null.
+pub fn simple_take_filter(inner_filter: String) -> String {
+    format!(r#"if {inner_filter} then true else null end"#)
 }

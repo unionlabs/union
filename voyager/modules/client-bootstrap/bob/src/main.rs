@@ -18,13 +18,14 @@ use unionlabs::{
     primitives::{H160, U256},
     ErrorReporter,
 };
-use voyager_message::{
-    into_value,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    ClientBootstrapModule, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{
+        types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE,
+    },
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -68,10 +69,7 @@ impl Module {}
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .network::<AnyNetwork>()

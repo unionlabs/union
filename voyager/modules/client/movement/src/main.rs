@@ -15,13 +15,13 @@ use unionlabs::{
     primitives::Bytes,
     ErrorReporter,
 };
-use voyager_message::{
-    module::{ClientModuleInfo, ClientModuleServer},
+use voyager_sdk::{
+    anyhow,
+    plugin::ClientModule,
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
     },
-    vm::BoxDynError,
-    ClientModule, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{types::ClientModuleInfo, ClientModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -42,7 +42,7 @@ type SelfClientState = movement_light_client_types::client_state::ClientState;
 impl ClientModule for Module {
     type Config = Config;
 
-    async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> anyhow::Result<Self> {
         info.ensure_client_type(ClientType::MOVEMENT)?;
         info.ensure_consensus_type(ConsensusType::MOVEMENT)?;
         info.ensure_ibc_interface(IbcInterface::IBC_COSMWASM)?;

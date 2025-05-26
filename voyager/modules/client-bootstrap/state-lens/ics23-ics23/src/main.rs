@@ -13,13 +13,15 @@ use unionlabs::{
     primitives::{encoding::Base64, H256},
     ErrorReporter,
 };
-use voyager_message::{
-    into_value,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientStateMeta, QueryHeight},
-    ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{
+        types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE,
+    },
+    ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -48,10 +50,7 @@ pub struct Config {}
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        Config {}: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(Config {}: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         Ok(Self {
             l2_chain_id: info.chain_id,
         })
@@ -131,7 +130,7 @@ impl ClientBootstrapModuleServer for Module {
         })?;
 
         let (_l1_client_meta, _l2_client_meta) = self
-            .fetch_and_verify_config(e.try_get::<VoyagerClient>()?, &config)
+            .fetch_and_verify_config(e.voyager_client()?, &config)
             .await?;
 
         Ok(into_value(ClientState {
@@ -162,7 +161,7 @@ impl ClientBootstrapModuleServer for Module {
             )
         })?;
 
-        let voyager_client = ext.try_get::<VoyagerClient>()?;
+        let voyager_client = ext.voyager_client()?;
 
         let (l1_client_meta, _l2_client_meta) = self
             .fetch_and_verify_config(voyager_client, &config)

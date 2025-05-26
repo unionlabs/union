@@ -4,19 +4,20 @@ use anyhow::anyhow;
 use jaq_interpret::{Ctx, Filter, FilterT, ParseCtx, RcIter, Val};
 use tracing::{error, instrument, trace};
 use unionlabs::ErrorReporter;
+use voyager_rpc::types::PluginInfo;
 use voyager_vm::{
     filter::{FilterResult, Interest, InterestFilter},
     Op,
 };
 
-use crate::{module::PluginInfo, VoyagerMessage};
+use crate::VoyagerMessage;
 
 #[derive(Debug, Clone)]
-pub struct JaqInterestFilter {
+pub struct InterestFilters {
     pub filters: Vec<(Filter, String)>,
 }
 
-impl JaqInterestFilter {
+impl InterestFilters {
     pub fn new(filters: Vec<PluginInfo>) -> anyhow::Result<Self> {
         Ok(Self {
             filters: filters
@@ -76,7 +77,7 @@ pub fn make_filter(
     Ok((filter, name))
 }
 
-impl InterestFilter<VoyagerMessage> for JaqInterestFilter {
+impl InterestFilter<VoyagerMessage> for InterestFilters {
     fn check_interest<'a>(&'a self, op: &Op<VoyagerMessage>) -> FilterResult<'a> {
         let msg_json = Val::from(serde_json::to_value(op.clone()).unwrap());
 
@@ -183,9 +184,4 @@ pub enum JaqFilterResult<'a> {
     NoInterest,
     Copy(&'a str),
     Take(&'a str),
-}
-
-/// For simple filters that either take the item they're interested in or express no interest (i.e. they never just copy an item). This wraps the provided filter (which is expected to return a bool) in an expression maps that maps false to null.
-pub fn simple_take_filter(inner_filter: String) -> String {
-    format!(r#"if {inner_filter} then true else null end"#)
 }

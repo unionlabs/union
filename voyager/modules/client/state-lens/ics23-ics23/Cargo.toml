@@ -27,5 +27,4 @@ tokio                                     = { workspace = true }
 tracing                                   = { workspace = true }
 tracing-subscriber                        = { workspace = true }
 unionlabs                                 = { workspace = true, features = ["bcs"] }
-voyager-message                           = { workspace = true }
-voyager-vm                                = { workspace = true }
+voyager-sdk                               = { workspace = true }

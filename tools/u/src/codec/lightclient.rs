@@ -75,14 +75,16 @@ impl LightClientCodecCmdArgs {
         };
 
         Ok(match (self.input_format, self.from_encoding) {
-            (Some(Format::Base64), _) => BASE64_STANDARD.decode(input.as_os_str().as_bytes())?,
+            (Some(Format::Base64), _) => {
+                BASE64_STANDARD.decode(input.as_os_str().as_bytes().trim_ascii())?
+            }
             (Some(Format::Utf8), _) | (None, AllEncodings::Json) => {
                 String::from_utf8(input.as_os_str().as_bytes().to_vec())?.into_bytes()
             }
             (Some(Format::Raw), _) => input.as_os_str().as_bytes().to_vec(),
             (Some(Format::Hex) | None, _) => {
                 let data = input.as_os_str().as_bytes();
-                hex::decode(data.strip_prefix(b"0x").unwrap_or(data))?
+                hex::decode(data.trim_ascii().strip_prefix(b"0x").unwrap_or(data))?
             }
         })
     }

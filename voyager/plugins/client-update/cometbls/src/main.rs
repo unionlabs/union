@@ -28,16 +28,19 @@ use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace};
 use unionlabs::{bounded::BoundedI64, ibc::core::client::height::Height};
-use voyager_message::{
-    call::{Call, WaitForHeight},
-    data::Data,
+use voyager_sdk::{
+    anyhow::{self, bail},
     hook::UpdateHook,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, WaitForHeight},
+        data::Data,
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
-};
-use voyager_vm::{
-    call, data, defer, noop, now, pass::PassResult, promise, seq, void, BoxDynError, Op, Visit,
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    vm::{call, data, defer, noop, now, pass::PassResult, promise, seq, void, Op, Visit},
+    DefaultCmd,
 };
 
 use crate::{
@@ -82,7 +85,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = cometbft_client
@@ -93,11 +96,11 @@ impl Plugin for Module {
             .to_string();
 
         if chain_id != config.chain_id.as_str() {
-            return Err(format!(
+            bail!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
+                config.chain_id,
+                chain_id
+            );
         }
 
         let chain_revision = chain_id

@@ -19,12 +19,12 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
-use voyager_message::{
-    module::{FinalityModuleInfo, FinalityModuleServer},
+use voyager_sdk::{
+    anyhow::{self, bail},
+    plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    FinalityModule,
+    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -209,7 +209,7 @@ impl Module {
 impl FinalityModule for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: FinalityModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
@@ -230,11 +230,11 @@ impl FinalityModule for Module {
             .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
 
         if spec.preset_base != config.chain_spec {
-            return Err(format!(
+            bail!(
                 "incorrect chain spec: expected `{}`, but found `{}`",
-                config.chain_spec, spec.preset_base
-            )
-            .into());
+                config.chain_spec,
+                spec.preset_base
+            );
         }
 
         Ok(Self {

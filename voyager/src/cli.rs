@@ -9,11 +9,9 @@ use anyhow::{anyhow, Context};
 use clap::{self, Parser, Subcommand};
 use ibc_union_spec::IbcUnion;
 use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
-use voyager_message::{
-    module::{ClientModuleInfo, FinalityModuleInfo, ProofModuleInfo, StateModuleInfo},
-    primitives::{ChainId, ClientType, IbcInterface, IbcSpec, IbcSpecId, QueryHeight},
-    RawClientId, VoyagerMessage,
-};
+use voyager_message::VoyagerMessage;
+use voyager_primitives::{ChainId, ClientType, IbcInterface, IbcSpec, IbcSpecId, QueryHeight};
+use voyager_types::RawClientId;
 use voyager_vm::{BoxDynError, Op};
 
 use crate::config::Config;
@@ -118,8 +116,6 @@ pub enum Command {
     Queue(QueueCmd),
     #[command(subcommand)]
     Plugin(PluginCmd),
-    #[command(subcommand)]
-    Module(ModuleCmd),
     /// Call into the JSON-RPC of a running voyager instance.
     Rpc {
         #[arg(long, short = 'r', global = true)]
@@ -213,14 +209,6 @@ pub enum PluginCmd {
     },
     /// List all available plugins.
     List,
-}
-
-#[derive(Debug, Subcommand)]
-pub enum ModuleCmd {
-    State(StateModuleInfo),
-    Proof(ProofModuleInfo),
-    Consensus(FinalityModuleInfo),
-    Client(ClientModuleInfo),
 }
 
 #[derive(Debug, Subcommand)]
@@ -433,6 +421,8 @@ pub enum MsgCmd {
         enqueue: bool,
         #[arg(long, global = true)]
         rest_url: Option<String>,
+        #[arg(long, global = true)]
+        rpc_url: Option<String>,
     },
     UpdateClient {
         #[arg(long, value_parser(|s: &str| ok(ChainId::new(s.to_owned()))))]
@@ -455,6 +445,8 @@ pub enum MsgCmd {
         enqueue: bool,
         #[arg(long, global = true)]
         rest_url: Option<String>,
+        #[arg(long, global = true)]
+        rpc_url: Option<String>,
     },
 }
 

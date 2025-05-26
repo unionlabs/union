@@ -12,13 +12,12 @@ use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{H160, H256},
 };
-use voyager_message::{
-    ensure_null, into_value,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, ensure_null, into_value,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Timestamp},
-    ClientBootstrapModule,
+    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -55,10 +54,7 @@ pub struct Config {
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))

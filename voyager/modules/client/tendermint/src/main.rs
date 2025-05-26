@@ -15,15 +15,15 @@ use unionlabs::{
     primitives::Bytes,
     ErrorReporter,
 };
-use voyager_message::{
-    module::{ClientModuleInfo, ClientModuleServer},
+use voyager_sdk::{
+    anyhow::{self, anyhow},
+    plugin::ClientModule,
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
         Timestamp,
     },
-    ClientModule, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{types::ClientModuleInfo, ClientModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -78,13 +78,14 @@ pub struct Config {}
 impl ClientModule for Module {
     type Config = Config;
 
-    async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(Config {}: Self::Config, info: ClientModuleInfo) -> anyhow::Result<Self> {
         info.ensure_client_type(ClientType::TENDERMINT)?;
         info.ensure_consensus_type(ConsensusType::TENDERMINT)?;
 
         // TODO: Verify the rest of the fields
         Ok(Self {
-            ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())?,
+            ibc_interface: SupportedIbcInterface::try_from(info.ibc_interface.to_string())
+                .map_err(|e| anyhow!("{e}"))?,
         })
     }
 }

@@ -30,18 +30,23 @@ use serde_json::Value;
 use tikv_jemallocator::Jemalloc;
 use tracing::info;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
+use voyager_client::VoyagerClient;
+use voyager_core::{
+    context::ModulesConfig,
+    default_metrics_endpoint, default_rest_laddr, default_rpc_laddr,
+    equivalent_chain_ids::EquivalentChainIds,
+    filter::{make_filter, run_filter, JaqFilterResult},
+    get_plugin_info,
+    ibc_spec_handlers::IbcSpecHandler,
+    Engine,
+};
 use voyager_message::{
     call::{FetchBlocks, FetchUpdateHeaders},
     callback::AggregateSubmitTxFromOrderedHeaders,
-    context::{
-        equivalent_chain_ids::EquivalentChainIds, get_plugin_info,
-        ibc_spec_handler::IbcSpecHandler, Context, ModulesConfig,
-    },
-    filter::{make_filter, run_filter, JaqFilterResult},
-    primitives::{IbcSpec, QueryHeight},
-    rpc::{server::cache, IbcState, VoyagerRpcClient},
     VoyagerMessage,
 };
+use voyager_primitives::{IbcSpec, QueryHeight};
+use voyager_rpc::{types::IbcStateResponse, VoyagerRpcClient};
 use voyager_vm::{call, promise, Op, Queue};
 
 #[global_allocator]
@@ -49,14 +54,11 @@ static GLOBAL: Jemalloc = Jemalloc;
 
 use crate::{
     cli::{
-        get_voyager_config, App, Command, ConfigCmd, LogFormat, ModuleCmd, MsgCmd, PluginCmd,
-        QueueCmd, RpcCmd,
+        get_voyager_config, App, Command, ConfigCmd, LogFormat, MsgCmd, PluginCmd, QueueCmd, RpcCmd,
     },
-    config::{
-        default_metrics_endpoint, default_rest_laddr, default_rpc_laddr, Config, VoyagerConfig,
-    },
-    queue::{QueueConfig, Voyager},
-    utils::make_msg_create_client,
+    config::{Config, VoyagerConfig},
+    queue::{QueueConfig, QueueImpl},
+    // utils::make_msg_create_client,
 };
 
 #[cfg(windows)]
@@ -65,7 +67,6 @@ compile_error!(
     not been tested on windows."
 );
 
-pub mod api;
 pub mod cli;
 pub mod config;
 pub mod metrics;
@@ -174,7 +175,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                     }),
                     optimizer_delay_milliseconds: 100,
                     ipc_client_request_timeout: Duration::new(60, 0),
-                    cache: voyager_message::rpc::server::cache::Config::default(),
+                    cache: voyager_core::cache::Config::default(),
                 },
             }),
             ConfigCmd::Schema => print_json(
@@ -190,11 +191,26 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
 
             metrics::init(&config.voyager.metrics_endpoint);
 
-            let voyager = Voyager::new(config).await?;
+            let voyager = Engine::builder()
+                .with_equivalent_chain_ids(config.equivalent_chain_ids)
+                .with_plugins(config.plugins)
+                .with_modules(config.modules)
+                .with_ipc_client_request_timeout(config.voyager.ipc_client_request_timeout)
+                .with_cache_config(config.voyager.cache)
+                .with_metrics_endpoint(config.voyager.metrics_endpoint)
+                .with_num_workers(config.voyager.num_workers.into())
+                .with_rest_laddr(config.voyager.rest_laddr)
+                .with_rpc_laddr(config.voyager.rpc_laddr)
+                .with_optimizer_delay_milliseconds(config.voyager.optimizer_delay_milliseconds)
+                .with_queue::<QueueImpl>(config.voyager.queue)
+                .register_ibc_spec_handler::<IbcUnion>()
+                .register_ibc_spec_handler::<IbcClassic>()
+                .build()
+                .await?;
 
             info!("starting relay service");
 
-            voyager.run().await?;
+            voyager.run().await;
         }
         Command::Plugin(cmd) => match cmd {
             PluginCmd::Interest {
@@ -266,12 +282,6 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
 
                 print_json(&list);
             }
-        },
-        Command::Module(cmd) => match cmd {
-            ModuleCmd::State(_) => todo!(),
-            ModuleCmd::Proof(_) => todo!(),
-            ModuleCmd::Consensus(_) => todo!(),
-            ModuleCmd::Client(_) => todo!(),
         },
         Command::Queue(cli_msg) => {
             let db = || {
@@ -478,13 +488,13 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                                 )
                                 .await?;
 
-                            print_json(&IbcState {
+                            print_json(&IbcStateResponse {
                                 height: ibc_state.height,
                                 state: Some(decoded),
                             });
                         }
                         (state, _) => {
-                            print_json(&IbcState {
+                            print_json(&IbcStateResponse {
                                 height: ibc_state.height,
                                 state,
                             });
@@ -532,13 +542,13 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                                 )
                                 .await?;
 
-                            print_json(&IbcState {
+                            print_json(&IbcStateResponse {
                                 height: ibc_state.height,
                                 state: Some(decoded),
                             });
                         }
                         (state, _) => {
-                            print_json(&IbcState {
+                            print_json(&IbcStateResponse {
                                 height: ibc_state.height,
                                 state,
                             });
@@ -606,7 +616,6 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
             }
         }
         Command::Msg(msg) => match msg {
-            // TODO: Do this all with rpc calls instead of spinning up a full voyager instance
             MsgCmd::CreateClient {
                 on,
                 tracking,
@@ -617,6 +626,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 metadata,
                 enqueue,
                 rest_url,
+                rpc_url,
                 client_state_config,
                 consensus_state_config,
                 config,
@@ -632,29 +642,12 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                     consensus_state_config
                 };
 
-                let rest_url = get_rest_url(rest_url);
+                let voyager_client = VoyagerClient::new(
+                    jsonrpsee::http_client::HttpClient::builder().build(get_rpc_url(rpc_url))?,
+                );
 
-                let voyager_config = get_voyager_config()?;
-
-                let ctx = Context::new(
-                    voyager_config.plugins,
-                    voyager_config.modules,
-                    voyager_config.equivalent_chain_ids,
-                    |h| {
-                        h.register::<IbcClassic>();
-                        h.register::<IbcUnion>();
-                    },
-                    Duration::new(60, 0),
-                    cache::Config::default(),
-                    Some(voyager_config.voyager.metrics_endpoint.clone()),
-                )
-                .await?;
-
-                // weird race condition in Context::new that i don't feel like debugging right now
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-                let op = make_msg_create_client(
-                    &ctx,
+                let op = utils::make_msg_create_client(
+                    &voyager_client,
                     tracking,
                     height,
                     on,
@@ -668,12 +661,11 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 .await?;
 
                 if enqueue {
-                    send_enqueue(&rest_url, op).await?;
+                    send_enqueue(&get_rest_url(rest_url), op).await?;
                 } else {
                     print_json(&op);
                 }
             }
-            // TODO: Do this all with rpc calls instead of spinning up a full voyager instance
             MsgCmd::UpdateClient {
                 on,
                 client_id,
@@ -681,45 +673,33 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 update_to,
                 enqueue,
                 rest_url,
+                rpc_url,
             } => {
-                let rest_url = get_rest_url(rest_url);
+                let voyager_client = VoyagerClient::new(
+                    jsonrpsee::http_client::HttpClient::builder().build(get_rpc_url(rpc_url))?,
+                );
 
-                let voyager_config = get_voyager_config()?;
+                let client_info = voyager_client
+                    .client_info_raw(on.clone(), ibc_spec_id.clone(), client_id.clone())
+                    .await?;
 
-                let ctx = Context::new(
-                    voyager_config.plugins,
-                    voyager_config.modules,
-                    voyager_config.equivalent_chain_ids,
-                    |h| {
-                        h.register::<IbcClassic>();
-                        h.register::<IbcUnion>();
-                    },
-                    Duration::new(60, 0),
-                    cache::Config::default(),
-                    Some(voyager_config.voyager.metrics_endpoint.clone()),
-                )
-                .await?;
-
-                // weird race condition in Context::new that i don't feel like debugging right now
-                tokio::time::sleep(std::time::Duration::from_secs(1)).await;
-
-                let client_info = ctx
-                    .rpc_server
-                    .client_info(&on, &ibc_spec_id, client_id.clone())
-                    .await?
-                    .ok_or(anyhow!("client info not found"))?;
-
-                let client_state_meta = ctx
-                    .rpc_server
-                    .client_state_meta(&on, &ibc_spec_id, QueryHeight::Latest, client_id.clone())
-                    .await?
-                    .ok_or(anyhow!("client info not found"))?;
+                let client_state_meta = voyager_client
+                    .client_state_meta_raw(
+                        on.clone(),
+                        ibc_spec_id.clone(),
+                        QueryHeight::Latest,
+                        client_id.clone(),
+                    )
+                    .await?;
 
                 let update_to = match update_to {
                     Some(update_to) => update_to,
                     None => {
-                        ctx.rpc_server
-                            .query_latest_height(&client_state_meta.counterparty_chain_id, true)
+                        voyager_client
+                            .query_latest_height(
+                                client_state_meta.counterparty_chain_id.clone(),
+                                true,
+                            )
                             .await?
                     }
                 };
@@ -742,7 +722,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 );
 
                 if enqueue {
-                    send_enqueue(&rest_url, op).await?;
+                    send_enqueue(&get_rest_url(rest_url), op).await?;
                 } else {
                     print_json(&op);
                 }
@@ -771,26 +751,22 @@ fn print_json<T: Serialize>(t: &T) {
     );
 }
 
-// TODO: Extract all logic here to a plugin
+// // TODO: Extract all logic here to a plugin
 pub mod utils {
     use anyhow::bail;
     use ibc_classic_spec::IbcClassic;
     use ibc_union_spec::IbcUnion;
+    use jsonrpsee::core::client::ClientT;
     use serde_json::Value;
     use tracing::trace;
-    use voyager_message::{
-        call::SubmitTx,
-        context::Context,
-        data::IbcDatagram,
-        module::{ClientBootstrapModuleClient, ClientModuleClient},
-        primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight},
-        VoyagerMessage,
-    };
+    use voyager_client::VoyagerClient;
+    use voyager_message::{call::SubmitTx, data::IbcDatagram, VoyagerMessage};
+    use voyager_primitives::{ChainId, ClientType, IbcInterface, IbcSpecId, QueryHeight};
     use voyager_vm::{call, Op};
 
     #[allow(clippy::too_many_arguments)]
-    pub(crate) async fn make_msg_create_client(
-        ctx: &Context,
+    pub(crate) async fn make_msg_create_client<C: ClientT + Send + Sync>(
+        voyager_client: &VoyagerClient<C>,
         counterparty_chain_id: ChainId,
         height: QueryHeight,
         chain_id: ChainId,
@@ -806,24 +782,40 @@ pub mod utils {
             bail!("cannot create a client at a non-finalized height")
         }
 
-        let height = ctx
-            .rpc_server
-            .query_height(&counterparty_chain_id, height)
-            .await?;
+        let height = match height {
+            QueryHeight::Latest => {
+                voyager_client
+                    .query_latest_height(counterparty_chain_id.clone(), false)
+                    .await?
+            }
+            QueryHeight::Finalized => {
+                voyager_client
+                    .query_latest_height(counterparty_chain_id.clone(), true)
+                    .await?
+            }
+            QueryHeight::Specific(height) => height,
+        };
 
-        let counterparty_client_bootstrap_module = ctx
-            .rpc_server
-            .modules()?
-            .client_bootstrap_module(&counterparty_chain_id, &client_type)?;
-
-        let self_client_state = counterparty_client_bootstrap_module
-            .self_client_state(height, client_state_config)
-            .await?;
+        let self_client_state = voyager_client
+            .self_client_state(
+                counterparty_chain_id.clone(),
+                client_type.clone(),
+                QueryHeight::Specific(height),
+                client_state_config,
+            )
+            .await?
+            .state;
         trace!(%self_client_state);
 
-        let self_consensus_state = counterparty_client_bootstrap_module
-            .self_consensus_state(height, consensus_state_config)
-            .await?;
+        let self_consensus_state = voyager_client
+            .self_consensus_state(
+                counterparty_chain_id.clone(),
+                client_type.clone(),
+                QueryHeight::Specific(height),
+                consensus_state_config,
+            )
+            .await?
+            .state;
         trace!(%self_consensus_state);
 
         // let consensus_type = ctx
@@ -846,22 +838,26 @@ pub mod utils {
         //     ));
         // }
 
-        let client_module =
-            ctx.rpc_server
-                .modules()?
-                .client_module(&client_type, &ibc_interface, &ibc_spec_id)?;
-
         Ok(call(SubmitTx {
             chain_id,
             datagrams: vec![match ibc_spec_id.as_str() {
                 IbcSpecId::CLASSIC => IbcDatagram::new::<IbcClassic>(
                     ibc_classic_spec::Datagram::from(ibc_classic_spec::MsgCreateClientData {
                         msg: unionlabs::ibc::core::client::msg_create_client::MsgCreateClient {
-                            client_state: client_module
-                                .encode_client_state(self_client_state, metadata)
+                            client_state: voyager_client
+                                .encode_client_state::<IbcClassic>(
+                                    client_type.clone(),
+                                    ibc_interface.clone(),
+                                    self_client_state,
+                                    metadata,
+                                )
                                 .await?,
-                            consensus_state: client_module
-                                .encode_consensus_state(self_consensus_state)
+                            consensus_state: voyager_client
+                                .encode_consensus_state::<IbcClassic>(
+                                    client_type.clone(),
+                                    ibc_interface.clone(),
+                                    self_consensus_state,
+                                )
                                 .await?,
                         },
                         client_type: client_type.clone(),
@@ -870,12 +866,21 @@ pub mod utils {
                 IbcSpecId::UNION => {
                     IbcDatagram::new::<IbcUnion>(ibc_union_spec::datagram::Datagram::from(
                         ibc_union_spec::datagram::MsgCreateClient {
-                            client_type,
-                            client_state_bytes: client_module
-                                .encode_client_state(self_client_state, metadata)
+                            client_type: client_type.clone(),
+                            client_state_bytes: voyager_client
+                                .encode_client_state::<IbcUnion>(
+                                    client_type.clone(),
+                                    ibc_interface.clone(),
+                                    self_client_state,
+                                    metadata,
+                                )
                                 .await?,
-                            consensus_state_bytes: client_module
-                                .encode_consensus_state(self_consensus_state)
+                            consensus_state_bytes: voyager_client
+                                .encode_consensus_state::<IbcUnion>(
+                                    client_type.clone(),
+                                    ibc_interface.clone(),
+                                    self_consensus_state,
+                                )
                                 .await?,
                         },
                     ))

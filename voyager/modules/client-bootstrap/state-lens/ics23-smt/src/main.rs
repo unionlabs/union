@@ -10,13 +10,15 @@ use serde_json::Value;
 use state_lens_ics23_smt_light_client_types::{client_state::Extra, ClientState, ConsensusState};
 use tracing::instrument;
 use unionlabs::{aptos::account::AccountAddress, ibc::core::client::height::Height, ErrorReporter};
-use voyager_message::{
-    into_value,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, QueryHeight},
-    ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{
+        types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE,
+    },
+    ExtensionsExt,
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -43,10 +45,7 @@ pub struct Config {}
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        Config {}: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(Config {}: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         Ok(Self {
             l2_chain_id: info.chain_id,
         })
@@ -92,7 +91,7 @@ impl ClientBootstrapModuleServer for Module {
         height: Height,
         config: Value,
     ) -> RpcResult<Value> {
-        let voy_client = ext.try_get::<VoyagerClient>()?;
+        let voy_client = ext.voyager_client()?;
         let state = voy_client
             .self_consensus_state(
                 self.l2_chain_id.clone(),

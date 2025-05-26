@@ -14,12 +14,13 @@ use unionlabs::{
     ibc::core::client::height::Height,
     primitives::H160,
 };
-use voyager_message::{
-    module::{FinalityModuleInfo, FinalityModuleServer},
+use voyager_sdk::{
+    anyhow,
+    plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    ExtensionsExt, FinalityModule, VoyagerClient,
+    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
+    ExtensionsExt,
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -49,7 +50,7 @@ pub struct Config {
 impl FinalityModule for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: FinalityModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
         let tm_client = cometbft_rpc::Client::new(config.comet_ws_url).await?;
 
         let eth_provider = DynProvider::new(ProviderBuilder::new().connect(&config.rpc_url).await?);
@@ -75,7 +76,8 @@ impl FinalityModuleServer for Module {
     /// Query the latest finalized height of this chain.
     #[instrument(skip_all, fields(chain_id = %self.l2_chain_id))]
     async fn query_latest_height(&self, ext: &Extensions, finalized: bool) -> RpcResult<Height> {
-        let voy_client = ext.try_get::<VoyagerClient>()?;
+        let voy_client = ext.voyager_client()?;
+
         if finalized {
             let l1_height = voy_client
                 .query_latest_height(self.l1_chain_id.clone(), finalized)

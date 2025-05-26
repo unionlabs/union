@@ -11,16 +11,20 @@ use macros::model;
 use subset_of::{SubsetOf, Superset};
 use tracing::{debug, info, instrument, warn};
 use unionlabs::ibc::core::client::height::Height;
-use voyager_message::{
-    call::{
-        FetchUpdateHeaders, SubmitTx, WaitForClientUpdate, WaitForHeightRelative,
-        WaitForTrustedHeight,
+use voyager_sdk::{
+    message::{
+        call::{
+            FetchUpdateHeaders, SubmitTx, WaitForClientUpdate, WaitForHeightRelative,
+            WaitForTrustedHeight,
+        },
+        data::{Data, EventProvableHeight, IbcDatagram, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
     },
-    data::{Data, EventProvableHeight, IbcDatagram, OrderedHeaders},
     primitives::{ChainId, ClientStateMeta, IbcSpec, QueryHeight},
-    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
+    types::RawClientId,
+    vm::{call, conc, noop, promise, seq, Op},
+    VoyagerClient,
 };
-use voyager_vm::{call, conc, noop, promise, seq, Op};
 
 use crate::{
     call::{MakeMsg, MakeTransactionBatchesWithUpdate, ModuleCall},

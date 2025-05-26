@@ -17,15 +17,20 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{info, instrument};
 use unionlabs::{never::Never, traits::Member};
-use voyager_message::{
-    call::SubmitTx,
-    data::{Data, IbcDatagram},
-    filter::simple_take_filter,
-    module::{PluginInfo, PluginServer},
+use voyager_sdk::{
+    anyhow,
+    hook::simple_take_filter,
+    message::{
+        call::SubmitTx,
+        data::{Data, IbcDatagram},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, IbcSpec},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    vm::{call, data, pass::PassResult, Op},
+    DefaultCmd,
 };
-use voyager_vm::{call, data, pass::PassResult, BoxDynError, Op};
 
 use crate::data::{BatchAck, BatchSend, ModuleData};
 
@@ -62,7 +67,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         Ok(Module::new(config))
     }
 

@@ -16,5 +16,5 @@ arc-swap   = "1.7.1"
 jsonrpsee  = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 thiserror  = { workspace = true }
 tokio      = { workspace = true, features = ["rt"] }
-tokio-util = "0.7.12"
+tokio-util = { workspace = true }
 tracing    = { workspace = true }

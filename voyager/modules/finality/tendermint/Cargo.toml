@@ -12,13 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-cometbft-rpc    = { workspace = true }
-embed-commit    = { workspace = true }
-jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
-serde           = { workspace = true, features = ["derive"] }
-thiserror       = { workspace = true }
-tokio           = { workspace = true }
-tracing         = { workspace = true }
-unionlabs       = { workspace = true }
-voyager-message = { workspace = true }
-voyager-vm      = { workspace = true }
+cometbft-rpc = { workspace = true }
+embed-commit = { workspace = true }
+jsonrpsee    = { workspace = true, features = ["macros", "server", "tracing"] }
+serde        = { workspace = true, features = ["derive"] }
+thiserror    = { workspace = true }
+tokio        = { workspace = true }
+tracing      = { workspace = true }
+unionlabs    = { workspace = true }
+voyager-sdk  = { workspace = true }

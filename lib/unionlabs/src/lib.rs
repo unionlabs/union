@@ -153,6 +153,7 @@ pub enum WasmClientType {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
+#[doc(hidden)]
 pub enum ClientType {
     Wasm(WasmClientType),
     Tendermint,

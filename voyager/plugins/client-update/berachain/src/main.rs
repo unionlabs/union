@@ -19,16 +19,22 @@ use unionlabs::{
     primitives::H160,
     ErrorReporter,
 };
-use voyager_message::{
-    call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
+use voyager_sdk::{
+    anyhow::{self, bail},
     hook::UpdateHook,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, FetchUpdateHeaders, WaitForTrustedHeight},
+        data::{Data, DecodedHeaderMeta, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpecId},
-    DefaultCmd, Plugin, PluginMessage, RawClientId, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    types::RawClientId,
+    vm::{call, conc, data, pass::PassResult, seq, Op, Visit},
+    DefaultCmd,
 };
-use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op, Visit};
 
 use crate::call::{FetchUpdate, ModuleCall};
 
@@ -67,18 +73,18 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let eth_provider =
             DynProvider::new(ProviderBuilder::new().connect(&config.eth_rpc_url).await?);
 
         let chain_id = ChainId::new(eth_provider.get_chain_id().await?.to_string());
 
         if chain_id != config.l2_chain_id {
-            return Err(format!(
+            bail!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.l2_chain_id, chain_id
-            )
-            .into());
+                config.l2_chain_id,
+                chain_id
+            );
         }
 
         let tm_client = cometbft_rpc::Client::new(config.comet_rpc_url).await?;

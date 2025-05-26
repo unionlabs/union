@@ -1,7 +1,5 @@
 use super::{Ssz, BYTES_PER_LENGTH_OFFSET, MAX_LENGTH_VALUE};
 
-pub mod impls;
-
 /// Allow for encoding an ordered series of distinct or indistinct objects as SSZ bytes.
 ///
 /// **You must call `finalize(..)` after the final `append(..)` call** to ensure the bytes are

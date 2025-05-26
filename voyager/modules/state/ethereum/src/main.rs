@@ -34,13 +34,12 @@ use unionlabs::{
     primitives::{Bytes, H160, H256},
     ErrorReporter,
 };
-use voyager_message::{
-    into_value,
-    module::{StateModuleInfo, StateModuleServer},
+use voyager_sdk::{
+    self, anyhow, into_value,
+    plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    StateModule, MISSING_STATE_ERROR_CODE,
+    rpc::{types::StateModuleInfo, StateModuleServer, MISSING_STATE_ERROR_CODE},
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -80,7 +79,7 @@ pub struct Config {
 impl StateModule<IbcUnion> for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: StateModuleInfo) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))

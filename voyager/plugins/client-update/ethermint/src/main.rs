@@ -13,15 +13,20 @@ use unionlabs::{
     never::Never,
     primitives::{encoding::HexUnprefixed, H160},
 };
-use voyager_message::{
-    call::Call,
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
+use voyager_sdk::{
+    anyhow::{self, bail},
     hook::UpdateHook,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::Call,
+        data::{Data, DecodedHeaderMeta, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    vm::{data, pass::PassResult, Op, Visit},
+    DefaultCmd,
 };
-use voyager_vm::{data, pass::PassResult, BoxDynError, Op, Visit};
 
 use crate::call::{FetchUpdate, ModuleCall};
 
@@ -55,17 +60,17 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network.to_string();
 
         if chain_id != config.chain_id.as_str() {
-            return Err(format!(
+            bail!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
+                config.chain_id,
+                chain_id
+            );
         }
 
         let chain_revision = chain_id

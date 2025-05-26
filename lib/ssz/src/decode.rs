@@ -6,7 +6,6 @@ use super::{Ssz, UnionSelector, BYTES_PER_LENGTH_OFFSET, MAX_UNION_SELECTOR};
 
 type SmallVec8<T> = SmallVec<[T; 8]>;
 
-pub mod impls;
 use std::fmt::Debug;
 
 /// Partial variant of `std::iter::FromIterator`.
