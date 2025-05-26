@@ -231,4 +231,100 @@ export const chainLogoMap = new Map([
       dark: "/logos/chains/dark/CORN.svg",
     },
   ],
+  [
+    "sei.pacific-1",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.pacific-1",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.pacific-1",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.atlantic-2",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.atlantic-2",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.atlantic-2",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.1328",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.1328",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.1328",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.1329",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.1329",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
+  [
+    "sei.1329",
+    {
+      color: "/logos/chains/color/SEI.svg",
+      light: "/logos/chains/light/SEI.svg",
+      dark: "/logos/chains/dark/SEI.svg",
+    },
+  ],
 ])
