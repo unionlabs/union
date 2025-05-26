@@ -1,5 +1,6 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
+import type { GraphQLError } from "$lib/graphql/error"
 import { FetchAptosTokenBalanceError } from "$lib/services/aptos/balances"
 import type { QueryBankBalanceError } from "$lib/services/cosmos/balances"
 import type { FetchNativeBalanceError, ReadContractError } from "$lib/services/evm/balances"
@@ -24,6 +25,7 @@ import type {
 import type { Base64EncodeError } from "$lib/utils/base64"
 import type { FromHexError } from "$lib/utils/hex"
 import { safeStringifyJSON } from "$lib/utils/json"
+import type { PersistenceError } from "@effect/experimental/Persistence"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
@@ -63,13 +65,16 @@ interface Props {
     | CreateWalletClientError
     | CryptoError
     | ExecuteContractError
-    | FromHexError
+    | FetchAptosTokenBalanceError
     | FetchNativeBalanceError
+    | FromHexError
     | GasPriceError
     | GetChainInfoError
+    | GraphQLError
     | HttpClientError
     | NoCosmosChainInfoError
     | NoRpcError
+    | PersistenceError
     | NoSuchElementException
     | NoViemChainError
     | NotACosmosChainError
@@ -79,7 +84,6 @@ interface Props {
     | ReadContractError
     | SwitchChainError
     | TimeoutException
-    | FetchAptosTokenBalanceError
     | UnknownException
     | WaitForTransactionReceiptError
     | WriteContractError
@@ -113,6 +117,7 @@ const getUserFriendlyMessage = pipe(
     ExecuteContractError: (x) => `Failed to execute contract: ${(x.cause as Error).message}`, // XXX: improve error type
     FetchNativeBalanceError: () => "Failed to fetch native token balance.",
     GasPriceError: () => `Incorrect gas price configuration.`,
+    GraphQLError: (x) => `Failed to query: ${x.message}`,
     FromHexError: () => `Failed to decode hex.`,
     GetChainInfoError: (x) => `No info for EVM chain ${x.chainId}.`, // TODO: rename to EVM
     NoCosmosChainInfoError: (x) => `No info for Cosmos chain ${x.chain.display_name}.`,
@@ -126,6 +131,7 @@ const getUserFriendlyMessage = pipe(
     QueryBankBalanceError: () => "Failed to query bank balance from the network.",
     ReadContractError: () => "Failed to read contract data from the network.",
     RequestError: () => "Unable to connect to the server. Please check your internet connection.",
+    PersistenceError: () => `Failed to read persistent cache. Please clear application storage.`,
     ResponseError: () => "The server encountered an error processing your request.",
     TimeoutException: () => "The request timed out because it took too long. Please try again.",
     UnknownException: () => "An unexpected error occurred.",
@@ -142,9 +148,13 @@ const stringify = flow(
   Effect.runSync,
 )
 
-const stringifiedError = $derived(pipe(
+const extractedError = $derived(pipe(
   error,
   extractErrorDetails,
+))
+
+const stringifiedError = $derived(pipe(
+  extractedError,
   stringify,
 ))
 
@@ -309,6 +319,8 @@ const onShowDetails = () => {
             <pre class="text-sm">
 {stringify(error.chain.rpcs.map((r) => r.type))}
 </pre>
+          {:else}
+            <pre>{stringifiedError}</pre>
           {/if}
         </section>
       </div>

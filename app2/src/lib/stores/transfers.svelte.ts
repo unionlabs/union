@@ -1,4 +1,4 @@
-import { runFork, runPromise } from "$lib/runtime"
+import { type AppContext, runFork, runPromise } from "$lib/runtime"
 import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { TransferCount, TransferList } from "@unionlabs/sdk/schema"
 import { Effect, Fiber, Option } from "effect"
@@ -9,7 +9,7 @@ class TransferListStore {
   error = $state(Option.none<FetchDecodeGraphqlError | TimeoutException>())
   fiber = $state(Option.none<Fiber.RuntimeFiber<any, never>>())
 
-  async runEffect<R>(effect: Effect.Effect<R>) {
+  async runEffect<A>(effect: Effect.Effect<A, never, AppContext>) {
     this.data = Option.none()
     await this.interruptFiber()
     const fiber = runFork(effect)

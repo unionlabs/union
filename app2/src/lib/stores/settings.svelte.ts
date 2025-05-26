@@ -13,6 +13,7 @@ class SettingsStore {
   showQuoteTokens: boolean = $state(false)
   showDeveloperChainDetails: boolean = $state(false)
   mainnetOnly: boolean = $state(false)
+  // TODO: maybe override gql url
 
   setEditionDefaults(edition: string) {
     if (editionDefaults[edition]) {
