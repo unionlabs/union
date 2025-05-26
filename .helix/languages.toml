@@ -8,7 +8,7 @@ expr = "import (builtins.getFlake (builtins.toString ./.)).inputs.nixpkgs { }"
 args             = ["--stdio"]
 command          = "astro-ls"
 config           = { "typescript" = { "tsdk" = "./site/node_modules/typescript/lib" }, "environment" = "node" }
-language-servers = [ "eslint" ]
+language-servers = ["eslint"]
 
 [language-server.biome]
 args    = ["lsp-proxy"]
@@ -119,17 +119,17 @@ language-servers = [{ name = "vscode-json-language-server", except-features = ["
 name             = "json"
 
 [[language]]
-auto-format      = true
-file-types       = ["svelte"]
-formatter        = { command = "treefmt", args = ["--stdin", ".svelte"] }
+auto-format = true
+file-types = ["svelte"]
+formatter = { command = "treefmt", args = ["--stdin", ".svelte"] }
 language-servers = [
   "svelteserver",
   "tailwindcss-ls",
   { name = "efm-langserver", except-features = ["format"] },
 ]
-name             = "svelte"
-roots            = ["svelte.config.js"]
-scope            = "source.svelte"
+name = "svelte"
+roots = ["svelte.config.js"]
+scope = "source.svelte"
 
 [[language]]
 comment-token    = "#"
