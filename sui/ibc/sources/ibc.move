@@ -1093,7 +1093,7 @@ module ibc::ibc {
         packet
     }
 
-        /// Function to send a packet through an open channel
+    /// Function to send a packet through an open channel
     public fun recv_packet(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
@@ -1144,13 +1144,12 @@ module ibc::ibc {
 
         let first_packet = packets[0];
 
-        let source_channel = packet::source_channel_id(&first_packet);
         let destination_channel = packet::destination_channel_id(&first_packet);
 
-        if(!ibc_store.channels.contains(source_channel)) {
+        if(!ibc_store.channels.contains(destination_channel)) {
             abort E_CHANNEL_NOT_FOUND
         };
-        let channel = ibc_store.channels.borrow(source_channel);
+        let channel = ibc_store.channels.borrow(destination_channel);
         assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
 
         let connection_id = channel::connection_id(channel);
