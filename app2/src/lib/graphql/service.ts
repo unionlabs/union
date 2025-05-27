@@ -9,6 +9,7 @@ import {
   Exit,
   flow,
   Hash,
+  identity,
   Layer,
   Match,
   Option as O,
@@ -167,23 +168,35 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
         }),
     })
 
-    const fetchCached = <D, V extends Variables = Variables>(options: {
-      document: TadaDocumentNode<D, V>
-      variables?: V
-    }) =>
-      pipe(
-        cache.get(
-          new GraphQLRequest(
-            {
-              document: options.document,
-              variables: options.variables,
-            },
-            { disableValidation: true },
+    const fetchCached = Effect.fn("fetchCached")(
+      function*<D, V extends Variables = Variables>(options: {
+        document: TadaDocumentNode<D, V>
+        variables?: V
+      }) {
+        const { document, variables } = options
+
+        const request = new GraphQLRequest(
+          { document, variables },
+          { disableValidation: true },
+        )
+
+        const liveFetch = fetch<D, any>({ document, variables })
+        const invalidate = cache.invalidate(request)
+
+        // attempt cache invalidation before ultimatetly querying live endpoint
+        const recover = invalidate.pipe(
+          Effect.andThen(() => liveFetch),
+          Effect.catchTag("PersistenceError", () => liveFetch),
+        )
+
+        return identity<D>(
+          yield* pipe(
+            cache.get(request),
+            Effect.catchTag("PersistenceError", () => recover),
           ),
-        ),
-        // XXX: override result type
-        Effect.map(x => x as D),
-      )
+        )
+      },
+    )
 
     return {
       fetch: fetchCached,

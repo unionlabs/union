@@ -25,7 +25,6 @@ import type {
 import type { Base64EncodeError } from "$lib/utils/base64"
 import type { FromHexError } from "$lib/utils/hex"
 import { safeStringifyJSON } from "$lib/utils/json"
-import type { PersistenceError } from "@effect/experimental/Persistence"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
@@ -74,7 +73,6 @@ interface Props {
     | HttpClientError
     | NoCosmosChainInfoError
     | NoRpcError
-    | PersistenceError
     | NoSuchElementException
     | NoViemChainError
     | NotACosmosChainError
@@ -131,7 +129,6 @@ const getUserFriendlyMessage = pipe(
     QueryBankBalanceError: () => "Failed to query bank balance from the network.",
     ReadContractError: () => "Failed to read contract data from the network.",
     RequestError: () => "Unable to connect to the server. Please check your internet connection.",
-    PersistenceError: () => `Failed to read persistent cache. Please clear application storage.`,
     ResponseError: () => "The server encountered an error processing your request.",
     TimeoutException: () => "The request timed out because it took too long. Please try again.",
     UnknownException: () => "An unexpected error occurred.",
