@@ -431,12 +431,15 @@ module zkgm::zkgm_relay {
 
     public entry fun channel_open_init(
         ibc_store: &mut ibc::IBCStore,
+        _: &mut RelayStore,
+        port_id: String,
         counterparty_port_id: vector<u8>,
         connection_id: u32, 
         version: String
     ) {
         ibc::channel_open_init(
             ibc_store,
+            port_id,
             counterparty_port_id,
             connection_id,
             version,
@@ -450,6 +453,8 @@ module zkgm::zkgm_relay {
     }
     public entry fun channel_open_try(
         ibc_store: &mut ibc::IBCStore,
+        _: &mut RelayStore,
+        port_id: String,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -468,6 +473,7 @@ module zkgm::zkgm_relay {
 
         ibc::channel_open_try(
             ibc_store,
+            port_id,
             connection_id,
             counterparty_channel_id,
             counterparty_port_id,
@@ -481,6 +487,8 @@ module zkgm::zkgm_relay {
 
     public entry fun channel_open_ack(
         ibc_store: &mut ibc::IBCStore,
+        _: &mut RelayStore,
+        port_id: String,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
@@ -490,6 +498,7 @@ module zkgm::zkgm_relay {
         // Store the channel_id
         ibc::channel_open_ack(
             ibc_store,
+            port_id,
             channel_id,
             counterparty_version,
             counterparty_channel_id,
@@ -504,12 +513,15 @@ module zkgm::zkgm_relay {
 
     public entry fun channel_open_confirm(
         ibc_store: &mut ibc::IBCStore,
+        _: &mut RelayStore,
+        port_id: String,
         channel_id: u32, 
         proof_ack: vector<u8>, 
         proof_height: u64
     )  {
         ibc::channel_open_confirm(
             ibc_store,
+            port_id,
             channel_id,
             proof_ack,
             proof_height,
@@ -1399,7 +1411,6 @@ module zkgm::zkgm_relay {
         packet_timeout_timestamp: u64,
         proof: vector<u8>,
         proof_height: u64,
-        next_sequence_receive: u64,
         relayer: address,
         ctx: &mut TxContext
     ) {
@@ -1416,8 +1427,7 @@ module zkgm::zkgm_relay {
             ibc_store,
             packet,
             proof,
-            proof_height,
-            next_sequence_receive
+            proof_height
         );
 
         let packet_hash = commitment::commit_packet(&packet);
