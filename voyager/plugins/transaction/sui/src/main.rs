@@ -448,7 +448,7 @@ async fn process_msgs(
             Datagram::ChannelOpenInit(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
-                // original_adres::upgrade_cap_adres::store_object_id
+                // original_adres::MODULE_NAME::upgrade_cap_adres::store_object_id
                 let module_info = parse_port(&port_id);
 
                 let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = module
@@ -476,7 +476,7 @@ async fn process_msgs(
                 (
                     addr,
                     msg,
-                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new(module_info.module_name).unwrap(),
                     Identifier::new("channel_open_init").unwrap(),
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
@@ -779,20 +779,22 @@ impl<'a> SuiQuery<'a> {
 
 pub struct ModuleInfo {
     pub original_address: SuiAddress,
+    pub module_name: String,
     pub upgrade_cap_address: SuiAddress,
     pub stores: Vec<SuiAddress>,
 }
 
 pub fn parse_port(port_id: &str) -> ModuleInfo {
     let module_info = port_id.split("::").collect::<Vec<&str>>();
-    if module_info.len() < 3 {
+    if module_info.len() < 4 {
         panic!("invalid port id");
     }
 
     ModuleInfo {
         original_address: module_info[0].parse().unwrap(),
-        upgrade_cap_address: module_info[1].parse().unwrap(),
-        stores: module_info[2..]
+        module_name: module_info[1].to_string(),
+        upgrade_cap_address: module_info[2].parse().unwrap(),
+        stores: module_info[3..]
             .into_iter()
             .map(|s| s.parse().unwrap())
             .collect(),

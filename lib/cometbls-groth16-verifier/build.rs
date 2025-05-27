@@ -6,7 +6,7 @@ use std::{
     path::Path,
 };
 
-use gnark_key_parser::VerifyingKey;
+use gnark_key_parser::bn254::VerifyingKey;
 use substrate_bn::{G1, G2};
 
 pub const FQ_SIZE: usize = 32;
