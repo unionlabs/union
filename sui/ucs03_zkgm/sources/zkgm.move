@@ -431,7 +431,6 @@ module zkgm::zkgm_relay {
 
     public entry fun channel_open_init(
         ibc_store: &mut ibc::IBCStore,
-        _: &mut RelayStore,
         port_id: String,
         counterparty_port_id: vector<u8>,
         connection_id: u32, 
@@ -453,7 +452,6 @@ module zkgm::zkgm_relay {
     }
     public entry fun channel_open_try(
         ibc_store: &mut ibc::IBCStore,
-        _: &mut RelayStore,
         port_id: String,
         connection_id: u32,
         counterparty_channel_id: u32,
@@ -487,7 +485,6 @@ module zkgm::zkgm_relay {
 
     public entry fun channel_open_ack(
         ibc_store: &mut ibc::IBCStore,
-        _: &mut RelayStore,
         port_id: String,
         channel_id: u32,
         counterparty_version: String,
@@ -513,7 +510,6 @@ module zkgm::zkgm_relay {
 
     public entry fun channel_open_confirm(
         ibc_store: &mut ibc::IBCStore,
-        _: &mut RelayStore,
         port_id: String,
         channel_id: u32, 
         proof_ack: vector<u8>, 
