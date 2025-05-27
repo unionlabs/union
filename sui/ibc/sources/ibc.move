@@ -702,15 +702,59 @@ module ibc::ibc {
         )
     }
 
+    fun deconstruct_port_id(mut port_id: String): (address, String) {
+        if (port_id.substring(0, 2) == utf8(b"0x")) {
+            port_id = port_id.substring(2, port_id.length());
+        };
+
+        let mut parts = vector::empty();
+        while (true) {
+            let split = utf8(b"::");
+            let first = port_id.index_of(&split);            
+            // invalid port
+            assert!(first != 0, 1);
+            if (first == port_id.length()) {
+                break
+            };
+            let lhs = port_id.substring(0, first);
+            let rhs = port_id.substring(first + 2, port_id.length());
+            parts.push_back(lhs);
+            port_id = rhs;
+        };
+
+        assert!(parts.length() >= 4, 1);
+
+        let a = sui::address::from_ascii_bytes(parts[0].bytes());
+
+        (a, parts[1])
+    }
+
+    fun validate_port<T: drop>(
+        port_id: String,
+        _: T,
+    ) {
+        // TODO(aeryz): assert T's typename is IbcAppWitness
+        
+        let caller_t = std::type_name::get<T>();
+        let caller_addr = caller_t.get_address();
+        let caller_module = caller_t.get_module();
+
+        let (port_address, port_module) = deconstruct_port_id(port_id);
+
+        // ensure the port info matches the caller
+        assert!(port_address.to_ascii_string() == caller_addr, 1);
+        assert!(port_module.to_ascii() == caller_module, 2);
+    }
 
     public fun channel_open_init<T: drop>(
         ibc_store: &mut IBCStore,
+        port_id: String,
         counterparty_port_id: vector<u8>,
         connection_id: u32,
         version: String,
-        _: T,
+        witness: T,
     ) {
-        let port_id = string::from_ascii(std::type_name::get<T>().into_string());
+        validate_port(port_id, witness);
 
         // Ensure the connection exists and is in the OPEN state
         let connection = ibc_store.connections.borrow(connection_id);
@@ -763,6 +807,7 @@ module ibc::ibc {
     }
     public fun channel_open_try<T: drop>(
         ibc_store: &mut IBCStore,
+        port_id: String,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -770,9 +815,9 @@ module ibc::ibc {
         counterparty_version: String,
         proof_init: vector<u8>,
         proof_height: u64,
-        _: T,
+        witness: T,
     ) {
-        let port_id = string::from_ascii(std::type_name::get<T>().into_string());
+        validate_port(port_id, witness);
 
         // Ensure the connection exists and is in the OPEN state
         let connection = ibc_store.connections.borrow(connection_id);
@@ -849,14 +894,15 @@ module ibc::ibc {
 
     public fun channel_open_ack<T: drop>(
         ibc_store: &mut IBCStore,
+        port_id: String,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
         proof_try: vector<u8>,
         proof_height: u64,
-        _: T,
+        witness: T,
     ) {
-        let port_id = string::from_ascii(std::type_name::get<T>().into_string());
+        validate_port(port_id, witness);
 
         // Ensure the channel exists and is in the TRYOPEN state
         let channel = ibc_store.channels.borrow_mut(channel_id);
@@ -928,12 +974,13 @@ module ibc::ibc {
 
     public fun channel_open_confirm<T: drop>(
         ibc_store: &mut IBCStore,
+        port_id: String,
         channel_id: u32,
         proof_ack: vector<u8>,
         proof_height: u64,
-        _: T
+        witness: T
     ) {
-        let port_id = string::from_ascii(std::type_name::get<T>().into_string());
+        validate_port(port_id, witness);
 
         // Ensure the channel exists and is in the TRYOPEN state
         let channel = ibc_store.channels.borrow_mut(channel_id);
