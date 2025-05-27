@@ -12,26 +12,14 @@
   "babylon.bbn-test-5": {
     "3": {
       "comments": "corn.21000001 channel 1",
-      "sla": {
-        "forward": "PT20M",
-        "reverse": "PT45M"
-      },
       "tags": ["canonical"]
     },
     "4": {
       "comments": "xion.xion-testnet-2 channel 2",
-      "sla": {
-        "forward": "PT20M",
-        "reverse": "PT45M"
-      },
       "tags": ["canonical"]
     },
     "5": {
       "comments": "osmosis.osmo-test-5 channel 3, official channel but with no relaying guarantees",
-      "sla": {
-        "forward": "PT5M",
-        "reverse": "PT10M"
-      },
       "tags": ["development"]
     }
   },
