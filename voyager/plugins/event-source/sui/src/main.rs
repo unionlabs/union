@@ -3,9 +3,12 @@ use std::{cmp::Ordering, collections::VecDeque};
 use ibc_solidity::Connection;
 use ibc_union_spec::{
     event::{
-        ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry, ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit, ConnectionOpenTry, CreateClient, FullEvent, PacketMetadata, PacketSend, UpdateClient
-    }, path::{ChannelPath, ConnectionPath}, ChannelId, ClientId, IbcUnion, Packet, Timestamp,
-    
+        ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
+        ConnectionMetadata, ConnectionOpenAck, ConnectionOpenConfirm, ConnectionOpenInit,
+        ConnectionOpenTry, CreateClient, FullEvent, PacketMetadata, PacketSend, UpdateClient,
+    },
+    path::{ChannelPath, ConnectionPath},
+    ChannelId, ClientId, IbcUnion, Packet, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -640,8 +643,6 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             )
                             .await?;
 
-
-
                         let connection = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -668,13 +669,15 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await?;
                         (
                             PacketSend {
-                                packet_data: event.packet_hash.into(),
-                                packet: PacketMetadata { 
+                                packet_data: event.packet.data.into(),
+                                packet: PacketMetadata {
                                     source_channel,
-                                    destination_channel, 
-                                    timeout_height: packet.timeout_height.0, 
-                                    timeout_timestamp: Timestamp::from_nanos(packet.timeout_timestamp.0)
-                            }
+                                    destination_channel,
+                                    timeout_height: packet.timeout_height.0,
+                                    timeout_timestamp: Timestamp::from_nanos(
+                                        packet.timeout_timestamp.0,
+                                    ),
+                                },
                             }
                             .into(),
                             client_id,
