@@ -714,6 +714,8 @@ module ibc::ibc {
             // invalid port
             assert!(first != 0, 1);
             if (first == port_id.length()) {
+                // last one
+                parts.push_back(port_id);
                 break
             };
             let lhs = port_id.substring(0, first);
@@ -721,6 +723,8 @@ module ibc::ibc {
             parts.push_back(lhs);
             port_id = rhs;
         };
+
+        std::debug::print(&parts);
 
         assert!(parts.length() >= 4, 1);
 
