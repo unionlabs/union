@@ -448,33 +448,10 @@ async fn process_msgs(
             Datagram::ChannelOpenInit(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
-                // original_adres::MODULE_NAME::upgrade_cap_adres::store_object_id
-                let module_info = parse_port(&port_id);
-
-                let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = module
-                    .sui_client
-                    .read_api()
-                    .get_object_with_options(
-                        module_info.upgrade_cap_address.into(),
-                        SuiObjectDataOptions::new().with_content(),
-                    )
-                    .await
-                    .unwrap()
-                    .into_object()
-                    .unwrap()
-                    .content
-                    .unwrap()
-                    .try_into_move()
-                    .unwrap()
-                    .fields
-                    .field_value("package")
-                    .unwrap()
-                else {
-                    panic!("no brother no");
-                };
+                let module_info = parse_port(&module.sui_client, &port_id).await;
 
                 (
-                    addr,
+                    module_info.latest_address,
                     msg,
                     Identifier::new(module_info.module_name).unwrap(),
                     Identifier::new("channel_open_init").unwrap(),
@@ -494,17 +471,12 @@ async fn process_msgs(
             Datagram::ChannelOpenTry(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
-                let module_info = port_id.split("::").collect::<Vec<&str>>();
-                if module_info.len() != 3 {
-                    panic!("invalid port id");
-                }
-
-                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+                let module_info = parse_port(&module.sui_client, &port_id).await;
 
                 (
-                    addr,
+                    module_info.latest_address,
                     msg,
-                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new(module_info.module_name).unwrap(),
                     Identifier::new("channel_open_try").unwrap(),
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
@@ -540,16 +512,12 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info = port_id.split("::").collect::<Vec<&str>>();
-                if module_info.len() != 3 {
-                    panic!("invalid port id");
-                }
+                let module_info = parse_port(&module.sui_client, &port_id).await;
 
-                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
                 (
-                    addr,
+                    module_info.latest_address,
                     msg,
-                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new(module_info.module_name).unwrap(),
                     Identifier::new("channel_open_ack").unwrap(),
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
@@ -581,16 +549,11 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info = port_id.split("::").collect::<Vec<&str>>();
-                if module_info.len() != 3 {
-                    panic!("invalid port id");
-                }
-
-                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+                let module_info = parse_port(&module.sui_client, &port_id).await;
                 (
-                    addr,
+                    module_info.latest_address,
                     msg,
-                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new(module_info.module_name).unwrap(),
                     Identifier::new("channel_open_confirm").unwrap(),
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
@@ -620,12 +583,7 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info = port_id.split("::").collect::<Vec<&str>>();
-                if module_info.len() != 3 {
-                    panic!("invalid port id");
-                }
-
-                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+                let module_info = parse_port(&module.sui_client, &port_id).await;
 
                 let (
                     source_channels,
@@ -655,10 +613,27 @@ async fn process_msgs(
                     timeout_heights,
                     timeout_timestamps
                 );
+
+                let store_initial_seq = module
+                    .sui_client
+                    .read_api()
+                    .get_object_with_options(
+                        module_info.stores[0].into(),
+                        SuiObjectDataOptions::new().with_owner(),
+                    )
+                    .await
+                    .unwrap()
+                    .data
+                    .expect("object exists on chain")
+                    .owner
+                    .expect("owner will be present")
+                    .start_version()
+                    .expect("object is shared, hence it has a start version");
+
                 (
-                    addr,
+                    module_info.latest_address,
                     msg,
-                    Identifier::new(module_info[1]).unwrap(),
+                    Identifier::new(module_info.module_name).unwrap(),
                     Identifier::new("recv_packet").unwrap(),
                     vec![
                         CallArg::Object(ObjectArg::SharedObject {
@@ -667,8 +642,8 @@ async fn process_msgs(
                             mutable: true,
                         }),
                         CallArg::Object(ObjectArg::SharedObject {
-                            id: ObjectID::from_str("0xb246855f5fa442fd232c65128b7aeb28d2132dcf716cb4bd3494ed81a818a2a9").unwrap(),
-                            initial_shared_version: 349179544.into(),
+                            id: module_info.stores[0].into(),
+                            initial_shared_version: store_initial_seq,
                             mutable: true,
                         }),
                         CallArg::Object(ObjectArg::SharedObject {
@@ -686,15 +661,15 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
                     ],
-                    vec![
-                        TypeTag::Struct(Box::new(
-                            StructTag {
-                                address: AccountAddress::from_str("0x76b0a4a20519477bb4dd1dc4215cddabad5bfe92ef9f791a78507f60da07c371").unwrap(),
-                                module: MoveIdentifier::new("fungible_token").unwrap(),
-                                name: MoveIdentifier::new("FUNGIBLE_TOKEN").unwrap(),
-                                type_params: vec![]
-                        }))
-                    ]
+                    vec![TypeTag::Struct(Box::new(StructTag {
+                        address: AccountAddress::from_str(
+                            "0x76b0a4a20519477bb4dd1dc4215cddabad5bfe92ef9f791a78507f60da07c371",
+                        )
+                        .unwrap(),
+                        module: MoveIdentifier::new("fungible_token").unwrap(),
+                        name: MoveIdentifier::new("FUNGIBLE_TOKEN").unwrap(),
+                        type_params: vec![],
+                    }))],
                 )
             }
             _ => todo!(),
@@ -779,21 +754,44 @@ impl<'a> SuiQuery<'a> {
 
 pub struct ModuleInfo {
     pub original_address: SuiAddress,
+    pub latest_address: SuiAddress,
     pub module_name: String,
-    pub upgrade_cap_address: SuiAddress,
     pub stores: Vec<SuiAddress>,
 }
 
-pub fn parse_port(port_id: &str) -> ModuleInfo {
+pub async fn parse_port(sui_client: &SuiClient, port_id: &str) -> ModuleInfo {
     let module_info = port_id.split("::").collect::<Vec<&str>>();
     if module_info.len() < 4 {
         panic!("invalid port id");
     }
 
+    let upgrade_cap_address: SuiAddress = module_info[2].parse().unwrap();
+
+    let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = sui_client
+        .read_api()
+        .get_object_with_options(
+            upgrade_cap_address.into(),
+            SuiObjectDataOptions::new().with_content(),
+        )
+        .await
+        .unwrap()
+        .into_object()
+        .unwrap()
+        .content
+        .unwrap()
+        .try_into_move()
+        .unwrap()
+        .fields
+        .field_value("package")
+        .unwrap()
+    else {
+        panic!("no brother no");
+    };
+
     ModuleInfo {
         original_address: module_info[0].parse().unwrap(),
+        latest_address: addr,
         module_name: module_info[1].to_string(),
-        upgrade_cap_address: module_info[2].parse().unwrap(),
         stores: module_info[3..]
             .into_iter()
             .map(|s| s.parse().unwrap())
