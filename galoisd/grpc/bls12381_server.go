@@ -80,152 +80,13 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 	proveKey := sha256.Sum256(reqJson)
 
 	prove := func() (*grpc.ProveResponse, error) {
-
-		log.Debug().Msg("Marshaling trusted validators...")
-		trustedValidators, trustedValidatorsRoot, err := MarshalValidators(req.TrustedCommit.Validators)
-		if err != nil {
-			return nil, fmt.Errorf("Could not marshal trusted validators %s", err)
-		}
-
-		log.Debug().Msg("Aggregating trusted signature...")
-		trustedAggregatedSignature, err := AggregateSignatures(req.TrustedCommit.Signatures)
-		if err != nil {
-			return nil, fmt.Errorf("Could not aggregate trusted signature %s", err)
-		}
-
-		log.Debug().Msg("Marshaling untrusted validators...")
-		untrustedValidators, _, err := MarshalValidators(req.UntrustedCommit.Validators)
-		if err != nil {
-			return nil, fmt.Errorf("Could not marshal untrusted validators %s", err)
-		}
-
-		log.Debug().Msg("Aggregating untrusted signature...")
-		untrustedAggregatedSignature, err := AggregateSignatures(req.UntrustedCommit.Signatures)
-		if err != nil {
-			return nil, fmt.Errorf("Could not aggregate untrusted signature %s", err)
-		}
-
-		trustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
-			Sig:           gadget.NewG2Affine(trustedAggregatedSignature),
-			Validators:    trustedValidators,
-			NbOfVal:       len(req.TrustedCommit.Validators),
-			NbOfSignature: len(req.TrustedCommit.Signatures),
-			Bitmap:        new(big.Int).SetBytes(req.TrustedCommit.Bitmap),
-		}
-
-		untrustedInput := lcgadget.TendermintNonAdjacentLightClientInput{
-			Sig:           gadget.NewG2Affine(untrustedAggregatedSignature),
-			Validators:    untrustedValidators,
-			NbOfVal:       len(req.UntrustedCommit.Validators),
-			NbOfSignature: len(req.UntrustedCommit.Signatures),
-			Bitmap:        new(big.Int).SetBytes(req.UntrustedCommit.Bitmap),
-		}
-
-		uncons := func(b []byte) lightclient.UnconsHash {
-			return lightclient.UnconsHash{
-				Head: b[0],
-				Tail: b[1:],
-			}
-		}
-
-		getInputsHash := func(chainID string, h *types.Header, trustedValidatorsHash []byte) []byte {
-			buff := []byte{}
-			var padded [32]byte
-			writeI64 := func(x int64) {
-				big.NewInt(x).FillBytes(padded[:])
-				buff = append(buff, padded[:]...)
-			}
-			writeMiMCHash := func(b []byte) {
-				big.NewInt(0).SetBytes(b).FillBytes(padded[:])
-				buff = append(buff, padded[:]...)
-			}
-			writeHash := func(b []byte) {
-				buff = append(buff, b...)
-			}
-			writeMiMCHash([]byte(chainID))
-			writeI64(h.Height)
-			writeI64(h.Time.Unix())
-			writeI64(int64(h.Time.Nanosecond()))
-			writeMiMCHash(h.ValidatorsHash)
-			writeMiMCHash(h.NextValidatorsHash)
-			writeHash(h.AppHash)
-			writeMiMCHash(trustedValidatorsHash)
-			hash := sha256.Sum256(buff)
-			return hash[1:]
-		}
-
-		inputsHash := getInputsHash(req.Vote.ChainID, req.UntrustedHeader, trustedValidatorsRoot)
-
-		log.Debug().Hex("request_hash", proveKey[:]).Hex("inputs_hash", inputsHash).Send()
-
-		witness := lcgadget.Circuit{
-			DomainSeparationTag: []byte(cometbn254.CometblsSigDST),
-			TrustedInput:        trustedInput,
-			TrustedValRoot:      trustedValidatorsRoot,
-			UntrustedInput:      untrustedInput,
-			Vote: lightclient.BlockVote{
-				BlockPartSetHeaderTotal: req.Vote.BlockID.PartSetHeader.Total,
-				BlockPartSetHeaderHash:  uncons(req.Vote.BlockID.PartSetHeader.Hash),
-				Round:                   req.Vote.Round,
-			},
-			Header: lightclient.BlockHeader{
-				VersionBlock:                req.UntrustedHeader.Version.Block,
-				VersionApp:                  req.UntrustedHeader.Version.App,
-				ChainID:                     []byte(req.UntrustedHeader.ChainID),
-				Height:                      req.UntrustedHeader.Height,
-				TimeSecs:                    req.UntrustedHeader.Time.Unix(),
-				TimeNanos:                   req.UntrustedHeader.Time.Nanosecond(),
-				LastBlockHash:               req.UntrustedHeader.LastBlockId.Hash,
-				LastBlockPartSetHeaderTotal: req.UntrustedHeader.LastBlockId.PartSetHeader.Total,
-				LastBlockPartSetHeaderHash:  uncons(req.UntrustedHeader.LastBlockId.PartSetHeader.Hash),
-				LastCommitHash:              uncons(req.UntrustedHeader.LastCommitHash),
-				DataHash:                    uncons(req.UntrustedHeader.DataHash),
-				ValidatorsHash:              req.UntrustedHeader.ValidatorsHash,
-				NextValidatorsHash:          req.UntrustedHeader.NextValidatorsHash,
-				ConsensusHash:               uncons(req.UntrustedHeader.ConsensusHash),
-				AppHash:                     uncons(req.UntrustedHeader.AppHash),
-				LastResultsHash:             uncons(req.UntrustedHeader.LastResultsHash),
-				EvidenceHash:                uncons(req.UntrustedHeader.EvidenceHash),
-				ProposerAddress:             uncons(req.UntrustedHeader.ProposerAddress),
-			},
-			InputsHash: inputsHash,
-		}
-
-		privateWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField())
-		if err != nil {
-			return nil, fmt.Errorf("Could not create witness %s", err)
-		}
-
-		log.Debug().Hex("request_hash", proveKey[:]).Msg("proving")
-		proof, err := backend.Prove(constraint.R1CS(&p.innerCs), backend.ProvingKey(&p.innerPk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
-		if err != nil {
-			return nil, fmt.Errorf("Prover failed with %s", err)
-		}
-
-		var proofCommitmentInner bn254_curve.G1Affine
-		// var commitmentPOKInner bn254_curve.G1Affine
-		switch _proof := proof.(type) {
-		case *backend_bn254.Proof:
-			if len(p.vk.PublicAndCommitmentCommitted) != 1 {
-				return nil, fmt.Errorf("Expected a single proof commitment, got: %d", len(p.vk.PublicAndCommitmentCommitted))
-			}
-			proofCommitmentInner = _proof.Commitments[0]
-			// commitmentPOKInner = _proof.CommitmentPok
-			break
-		default:
-			return nil, fmt.Errorf("Impossible: proof backend must be BLS12381 at this point")
-		}
-
-		publicWitness, err := privateWitness.Public()
-		if err != nil {
-			return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
-		}
+		innerProof, err := Prove(req, &p.innerCs, &p.innerPk, &p.innerVk)
 
 		// TODO(aeryz): this is probably not necessary, but could be a nice assertion idk
 		err = backend.Verify(
-			proof,
+			innerProof.Proof,
 			backend.VerifyingKey(&p.innerVk),
-			publicWitness,
+			innerProof.PublicWitness,
 			backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
 		)
 
@@ -238,33 +99,33 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 			return nil, fmt.Errorf("Could not get the verifying key %s", err)
 		}
 
-		circuitWitness, err := groth16.ValueOfWitness[gadget.ScalarField](publicWitness)
+		circuitWitness, err := groth16.ValueOfWitness[gadget.ScalarField](innerProof.PublicWitness)
 		if err != nil {
 			return nil, fmt.Errorf("Could not get the witness %s", err)
 		}
 
-		circuitProof, err := groth16.ValueOfProof[gadget.G1Affine, gadget.G2Affine](proof)
+		circuitProof, err := groth16.ValueOfProof[gadget.G1Affine, gadget.G2Affine](innerProof.Proof)
 		if err != nil {
 			return nil, fmt.Errorf("Could not get the proof %s", err)
 		}
 
-		commitmentHash := cometbn254.HashToField(proofCommitmentInner.Marshal())
+		commitmentHash := cometbn254.HashToField(innerProof.ProofCommitment.Marshal())
 		bls12381Witness := &bls12381gadget.Circuit{
 			InnerWitness:    circuitWitness,
 			Proof:           circuitProof,
 			VerifyingKey:    circuitVk,
 			CommitmentHash:  commitmentHash.BigInt(new(big.Int)),
-			CommitmentX:     proofCommitmentInner.X.BigInt(new(big.Int)),
-			CommitmentY:     proofCommitmentInner.Y.BigInt(new(big.Int)),
-			InnerInputsHash: witness.InputsHash,
+			CommitmentX:     innerProof.ProofCommitment.X.BigInt(new(big.Int)),
+			CommitmentY:     innerProof.ProofCommitment.Y.BigInt(new(big.Int)),
+			InnerInputsHash: innerProof.InputsHash,
 		}
 
-		privateWitness, err = frontend.NewWitness(bls12381Witness, ecc.BLS12_381.ScalarField())
+		privateWitness, err := frontend.NewWitness(bls12381Witness, ecc.BLS12_381.ScalarField())
 		if err != nil {
 			return nil, fmt.Errorf("Witness err %s", err)
 		}
 
-		proof, err = backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
+		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
 		if err != nil {
 			return nil, fmt.Errorf("Could not prove %s", err)
 		}
@@ -281,6 +142,11 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 			break
 		default:
 			return nil, fmt.Errorf("Impossible: proof backend must be BLS12381 at this point")
+		}
+
+		publicWitness, err := privateWitness.Public()
+		if err != nil {
+			return nil, fmt.Errorf("Could not extract public inputs from witness %s", err)
 		}
 
 		publicInputs, err := publicWitness.MarshalBinary()
@@ -309,7 +175,7 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 		// Due to how gnark proves, we not only need the ZKP A/B/C points, but also a commitment hash and proof commitment.
 		// The proof is an uncompressed proof serialized by gnark, we extract A(G1)/B(G2)/C(G1) and then append the commitment and its POK.
 		// The EVM verifier has been extended to support this two extra public inputs.
-		evmProof := append(append(append(proofBz[:384], proofCommitment...), commitmentPOK...), proofCommitmentInner.Marshal()...)
+		evmProof := append(append(append(proofBz[:384], proofCommitment...), commitmentPOK...), innerProof.ProofCommitment.Marshal()...)
 
 		proveRes := grpc.ProveResponse{
 			Proof: &grpc.ZeroKnowledgeProof{
@@ -318,7 +184,7 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 				PublicInputs:      publicInputs,
 				EvmProof:          evmProof,
 			},
-			TrustedValidatorSetRoot: trustedValidatorsRoot,
+			TrustedValidatorSetRoot: innerProof.TrustedValidatorsRoot,
 		}
 
 		return &proveRes, nil
