@@ -669,7 +669,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             .await?;
                         (
                             PacketSend {
-                                packet_data: event.packet.data.into(),
+                                packet_data: packet.data.into(),
                                 packet: PacketMetadata {
                                     source_channel,
                                     destination_channel,
