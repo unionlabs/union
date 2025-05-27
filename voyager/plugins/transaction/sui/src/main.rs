@@ -16,7 +16,7 @@ use move_core_types::{
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
-    rpc_types::{SuiObjectDataOptions, SuiTransactionBlockResponseOptions, SuiTypeTag},
+    rpc_types::{SuiData, SuiObjectDataOptions, SuiTransactionBlockResponseOptions, SuiTypeTag},
     types::{
         base_types::{ObjectID, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
@@ -448,12 +448,30 @@ async fn process_msgs(
             Datagram::ChannelOpenInit(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
-                let module_info = port_id.split("::").collect::<Vec<&str>>();
-                if module_info.len() != 3 {
-                    panic!("invalid port id");
-                }
+                // original_adres::upgrade_cap_adres::store_object_id
+                let module_info = parse_port(&port_id);
 
-                let addr = SuiAddress::from_str(module_info[0]).expect("module string is correct");
+                let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = module
+                    .sui_client
+                    .read_api()
+                    .get_object_with_options(
+                        module_info.upgrade_cap_address.into(),
+                        SuiObjectDataOptions::new().with_content(),
+                    )
+                    .await
+                    .unwrap()
+                    .into_object()
+                    .unwrap()
+                    .content
+                    .unwrap()
+                    .try_into_move()
+                    .unwrap()
+                    .fields
+                    .field_value("package")
+                    .unwrap()
+                else {
+                    panic!("no brother no");
+                };
 
                 (
                     addr,
@@ -628,8 +646,15 @@ async fn process_msgs(
                         )
                     })
                     .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
-                
-                println!("{:?}, {:?}, {:?}, {:?}, {:?}", source_channels, dest_channels, packet_data, timeout_heights, timeout_timestamps);
+
+                println!(
+                    "{:?}, {:?}, {:?}, {:?}, {:?}",
+                    source_channels,
+                    dest_channels,
+                    packet_data,
+                    timeout_heights,
+                    timeout_timestamps
+                );
                 (
                     addr,
                     msg,
@@ -749,5 +774,27 @@ impl<'a> SuiQuery<'a> {
             (_, Some(err)) => Err(err),
             _ => panic!("invalid"),
         }
+    }
+}
+
+pub struct ModuleInfo {
+    pub original_address: SuiAddress,
+    pub upgrade_cap_address: SuiAddress,
+    pub stores: Vec<SuiAddress>,
+}
+
+pub fn parse_port(port_id: &str) -> ModuleInfo {
+    let module_info = port_id.split("::").collect::<Vec<&str>>();
+    if module_info.len() < 3 {
+        panic!("invalid port id");
+    }
+
+    ModuleInfo {
+        original_address: module_info[0].parse().unwrap(),
+        upgrade_cap_address: module_info[1].parse().unwrap(),
+        stores: module_info[2..]
+            .into_iter()
+            .map(|s| s.parse().unwrap())
+            .collect(),
     }
 }
