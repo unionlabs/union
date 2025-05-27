@@ -587,7 +587,7 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
+                let module_info: ModuleInfo = parse_port(&module.sui_client, &port_id).await;
 
                 let (
                     source_channels,
@@ -655,8 +655,8 @@ async fn process_msgs(
                             initial_shared_version: 1.into(),
                             mutable: false,
                         }),
-                        CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&source_channels).unwrap()),
+                        CallArg::Pure(bcs::to_bytes(&dest_channels).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&packet_data).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&timeout_heights).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&timeout_timestamps).unwrap()),
@@ -667,7 +667,7 @@ async fn process_msgs(
                     ],
                     vec![TypeTag::Struct(Box::new(StructTag {
                         address: AccountAddress::from_str(
-                            "0x76b0a4a20519477bb4dd1dc4215cddabad5bfe92ef9f791a78507f60da07c371",
+                            "0xacc51178ffc547cdfa36a8ab4a6ae3823edaa8f07ff9177d9d520aad080b28fd",
                         )
                         .unwrap(),
                         module: MoveIdentifier::new("fungible_token").unwrap(),
