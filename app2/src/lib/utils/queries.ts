@@ -1,6 +1,5 @@
 import type { GraphQLError } from "$lib/graphql/error"
 import { GraphQL, GraphQLRequest } from "$lib/graphql/service"
-import type { Persistence } from "@effect/experimental"
 import { FetchHttpClient, HttpClient } from "@effect/platform"
 import type { HttpClientError } from "@effect/platform/HttpClientError"
 import { Effect, Option, pipe, Schedule, Schema } from "effect"
@@ -33,7 +32,7 @@ export const fetchDecode = <S>(schema: Schema.Schema<S>, url: string) =>
     Effect.withLogSpan("fetchDecode"),
   )
 
-export type FetchDecodeGraphqlError = GraphQLError | Persistence.PersistenceError | ParseError
+export type FetchDecodeGraphqlError = GraphQLError | ParseError
 /**
  * TODO: Adjust calling convention to be `GraphQL` dependency injeciton.
  * @deprecated Migrate to `@unionlabs/sdk` query functions.
