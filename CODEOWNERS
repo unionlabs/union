@@ -7,5 +7,6 @@
 /.github/ @PoisonPhang
 /voyager/ @benluelo
 /galoisd/ @hussein-aitlahcen
-/app/ @cor @benluelo @swepool
-/site/ @cor
+/app/ @cor @benluelo @swepool @ehegnes
+/app2/ @cor @benluelo @swepool @ehegnes
+/site/ @cor @swepool @ehegnes
