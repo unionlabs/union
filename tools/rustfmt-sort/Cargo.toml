@@ -1,5 +1,5 @@
 [package]
-name = "rustfmt-sort"
+name    = "rustfmt-sort"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -13,5 +13,5 @@ workspace = true
 
 [dependencies]
 embed-commit = { workspace = true }
-syn          = { workspace = true, features = ["full", "parsing", "visit-mut", "extra-traits", "printing"] }
 quote        = "1.0.40"
+syn          = { workspace = true, features = ["full", "parsing", "visit-mut", "extra-traits", "printing"] }

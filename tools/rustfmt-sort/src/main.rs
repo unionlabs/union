@@ -10,7 +10,7 @@ fn main() {
     SortItemsVisitor.visit_file_mut(&mut file);
 
     let out = file.into_token_stream().to_string();
-    
+
     println!("{out}");
 }
 
