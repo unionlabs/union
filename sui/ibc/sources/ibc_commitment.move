@@ -156,7 +156,7 @@ module ibc::commitment {
 
     // Generate the path for channel
     public fun batch_packets_commitment_path(
-        channel_id: u32, batchHash: vector<u8>
+        _: u32, batchHash: vector<u8>
     ): vector<u8> {
         let mut path_vec = vector::empty<u8>();
 

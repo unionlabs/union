@@ -63,11 +63,6 @@ module ibc::ibc {
     use std::string::{String, utf8};
     use sui::table::{Self, Table};
     use sui::object::{Self, UID};
-    use ibc::packet::{Self, Packet};
-    use ibc::connection_end::{Self, ConnectionEnd};
-    use ibc::channel::{Self, Channel}; 
-    use ibc::light_client::{Self, Client};
-    use ibc::commitment;
     use sui::hash::keccak256;
     use sui::clock;
     use sui::transfer;
@@ -75,9 +70,17 @@ module ibc::ibc {
     #[test_only]
     use sui::test_scenario;
 
+    use ibc::packet::{Self, Packet};
+    use ibc::connection_end::{Self, ConnectionEnd};
+    use ibc::channel::{Self, Channel}; 
+    use ibc::light_client::{Self, Client};
+    use ibc::commitment;
+    use ibc::create_lens_client_event;
+
     use std::debug;
     use sui::bcs;
     use sui::event;
+
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
     const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
     const COMMITMENT_NULL: vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
@@ -150,6 +153,13 @@ module ibc::ibc {
         client_id: u32,
         client_type: String,
         counterparty_chain_id: String,
+    }
+
+    public struct CreateLensClient has copy, drop, store {
+        client_id: u32,
+        l2_chain_id: String,
+        l1_client_id: u32,
+        l2_client_id: u32
     }
 
     public struct UpdateClient has copy, drop, store {
@@ -271,17 +281,15 @@ module ibc::ibc {
         connections: Table<u32, ConnectionEnd>,
         channels: Table<u32, Channel>,
         clients: Table<u32, Client>,
-        channel_to_port: Table<u32, String>
+        channel_to_port: Table<u32, String>,
+        next_client_sequence: u32,
+        next_channel_sequence: u32,
+        next_connection_sequence: u32
     }
 
     fun init(ctx: &mut TxContext) {
-        // transfer::transfer(CreatorCapability {
-        //     id: object::new(ctx),
-        // }, tx_context::sender(ctx))
-        let id = object::new(ctx);
-
         transfer::share_object(IBCStore {
-            id: id,
+            id: object::new(ctx),
             client_impls: table::new(ctx),
             client_registry: table::new(ctx),
             commitments: table::new(ctx),
@@ -289,10 +297,17 @@ module ibc::ibc {
             channels: table::new(ctx),
             clients: table::new(ctx),
             channel_to_port: table::new(ctx),
+            next_client_sequence: 1,
+            next_channel_sequence: 1,
+            next_connection_sequence: 1
         });
     }
 
     /// Create a client with an initial client and consensus state
+    ///
+    /// `client_type`: type of the client (only "cometbls" is supported for now)
+    /// `client_state_bytes`: the initial client state bytes with the client-defined encoding
+    /// `consensus_state_bytes`: the initial consensus state bytes with the client-defined encoding
     public entry fun create_client(
         ibc_store: &mut IBCStore,
         client_type: String, 
@@ -304,12 +319,24 @@ module ibc::ibc {
 
         let client_id = ibc_store.generate_client_identifier();
         
-        let (client, client_state_bytes, consensus_state_bytes, counterparty_chain_id) = light_client::create_client(
+        let (client, client_state_bytes, consensus_state_bytes, counterparty_chain_id, mut lens_client_event) = light_client::create_client(
             client_id,
             client_state_bytes,
             consensus_state_bytes,
             ctx,
         );
+
+        if (lens_client_event.is_some()) {
+            let lens_client_event = lens_client_event.extract();
+            event::emit(
+                CreateLensClient {
+                    client_id: lens_client_event.client_id(),
+                    l2_chain_id: lens_client_event.l2_chain_id(),
+                    l1_client_id: lens_client_event.l1_client_id(),
+                    l2_client_id: lens_client_event.l2_client_id()
+                }
+            );
+        };
 
         assert!(client.status() == 0, E_CLIENT_NOT_ACTIVE);
 
@@ -318,6 +345,7 @@ module ibc::ibc {
         let latest_height = client.latest_height();
 
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, commitment::consensus_state_commitment_key(client_id, latest_height), consensus_state_bytes);
+
         ibc_store.clients.add(client_id, client);
 
         event::emit(
@@ -329,6 +357,10 @@ module ibc::ibc {
         )
     }
 
+    /// Update a client with the `client_message`
+    ///
+    /// `client_id`: the id of the client to be updated
+    /// `client_message`: the client-defined update message
     public entry fun update_client(
         ibc_store: &mut IBCStore,
         client_id: u32,
@@ -366,6 +398,10 @@ module ibc::ibc {
         );
     }
 
+    /// Submit a misbehaviour to the client to freeze it in an event of misbehaviour
+    ///
+    /// `client_id`: the id of the client
+    /// `misbehaviour`: client-defined misbehaviour
     public entry fun submit_misbehaviour(
         ibc_store: &mut IBCStore,
         client_id: u32,
@@ -390,6 +426,11 @@ module ibc::ibc {
         );
     }    
 
+    /// Initiate the connection handshake using client at `client_id`. The next call is `connection_open_try`
+    /// to advance the connection handshake.
+    ///
+    /// `client_id`: the id of the client which will be used for verification in for this connection
+    /// `counterparty_client_id`: the id of the client on the counterparty chain
     public entry fun connection_open_init(
         ibc_store: &mut IBCStore,
         client_id: u32,
@@ -409,6 +450,8 @@ module ibc::ibc {
 
         ibc_store.commit_connection(connection_id, connection);
 
+        add_or_update_table(&mut ibc_store.connections, connection_id, connection);
+
         event::emit(
             ConnectionOpenInit {
                 connection_id,
@@ -418,6 +461,14 @@ module ibc::ibc {
         )
     }
 
+    /// Run the second step of the connection handshake. The next call is `connection_open_ack` on the counterparty to
+    /// progress the handshake.
+    ///
+    /// `counterparty_client_id`: the id of the client running on the counterparty chain
+    /// `counterparty_connection_id`: the id of the connection that is generated during the init phase on the counterparty
+    /// `client_id`: the id of the client running on this chain
+    /// `proof_init`: the proof of the `ConnectionEnd` commitment on the counterparty
+    /// `proof_height`: the height when this proof is generated
     public entry fun connection_open_try(
         ibc_store: &mut IBCStore,
         counterparty_client_id: u32,
@@ -456,7 +507,11 @@ module ibc::ibc {
 
         assert!(res == 0, res);
 
-        // Emit an event for the connection try event
+        // Commit the updated connection
+        ibc_store.commit_connection(connection_id, connection);
+
+        add_or_update_table(&mut ibc_store.connections, connection_id, connection);
+
         event::emit(
             ConnectionOpenTry {
                 connection_id,
@@ -466,10 +521,15 @@ module ibc::ibc {
             }
         );
 
-        // Commit the updated connection to storage
-        ibc_store.commit_connection(connection_id, connection);
     }
 
+    /// Run the third step of the connection handshake. The connection will be open after this call on this end.
+    /// `connection_open_confirm` is still needed to be run on the counterparty.
+    ///
+    /// `connection_id`: the id of the connection that is generated during the init phase
+    /// `counterparty_connection_id`: the id of the connection that is generated during the try phase on the counterparty
+    /// `proof_try`: the proof of the `ConnectionEnd` commitment on the counterparty
+    /// `proof_height`: the height when this proof is generated
     public entry fun connection_open_ack(
         ibc_store: &mut IBCStore,
         connection_id: u32,
@@ -477,23 +537,24 @@ module ibc::ibc {
         proof_try: vector<u8>,
         proof_height: u64
     ) {
-        // Borrow the connection from the table
         let connection = ibc_store.connections.borrow_mut(connection_id);
+
+        // assert that this connection is at the `INIT` phase
         assert!(
-            connection_end::state(connection) == CONN_STATE_INIT,
+            connection.state() == CONN_STATE_INIT,
             E_INVALID_CONNECTION_STATE
         );
 
         // Create the expected connection state to verify against the proof
         let expected_connection = connection_end::new(
             CONN_STATE_TRYOPEN,
-            connection_end::counterparty_client_id(connection),
-            connection_end::client_id(connection),
+            connection.counterparty_client_id(),
+            connection.client_id(),
             connection_id
         );
 
         // Verify the connection state using the provided proof and expected state
-        let client = ibc_store.clients.borrow(connection_end::client_id(connection));
+        let client = ibc_store.clients.borrow(connection.client_id());
 
         let res = verify_connection_state(
             client,
@@ -505,10 +566,9 @@ module ibc::ibc {
         assert!(res == 0, res);
 
         // Update the connection state to TRYOPEN and set the counterparty connection ID
-        connection_end::set_state(connection, CONN_STATE_OPEN);
-        connection_end::set_counterparty_connection_id(connection, counterparty_connection_id);
+        connection.set_state(CONN_STATE_OPEN);
+        connection.set_counterparty_connection_id(counterparty_connection_id);
 
-        // Emit an event for connection acknowledgment
         event::emit(
             ConnectionOpenAck {
                 connection_id,
@@ -522,6 +582,11 @@ module ibc::ibc {
         ibc_store.commit_connection(connection_id, *connection);
     }
 
+    /// Run the final step of the connection handshake. The connection will be fully open on both ends after this.
+    ///
+    /// `connection_id`: the id of the connection that is generated during the try phase
+    /// `proof_ack`: the proof of the `ConnectionEnd` commitment on the counterparty
+    /// `proof_height`: the height when this proof is generated
     public entry fun connection_open_confirm(
         ibc_store: &mut IBCStore,
         connection_id: u32,
@@ -572,33 +637,159 @@ module ibc::ibc {
         ibc_store.commit_connection(connection_id, *connection);
     }
 
+    /// Open a channel between two apps on the previously connected chains.
+    ///
+    /// `port_id`: The unique identifier for the app who will own this channel. The format of the
+    /// port is `INITIAL_APP_ADDRESS::MODULE_NAME::UPDATE_CAP_ADDRESS::STORE_NAME`. Check our
+    /// docs for in depth explanation.
+    ///
+    /// `counterparty_port_id`: The port id of the app running on the counterparty chain.
+    /// `connection_id`: The id of the connection where this channel will be based on.
+    /// `version`: The app-defined version.
+    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
+    /// The name MUST be `IbcAppWitness`.
+    public fun channel_open_init<T: drop>(
+        ibc_store: &mut IBCStore,
+        port_id: String,
+        counterparty_port_id: vector<u8>,
+        connection_id: u32,
+        version: String,
+        witness: T,
+    ) {
+        // Make sure that the `port_id` confirms the witness.
+        validate_port(port_id, witness);
+
+        // Ensure the connection exists and is in the OPEN state
+        let connection = ibc_store.connections.borrow(connection_id);
+        assert!(
+            connection_end::state(connection) == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+
+        // Generate a new channel ID
+        let channel_id = ibc_store.generate_channel_identifier();
+
+        // Create a new channel and set its properties
+        let channel = channel::new(
+            CHAN_STATE_INIT,
+            connection_id,
+            0,
+            counterparty_port_id,
+            version
+        );
+
+        ibc_store.channel_to_port.add(channel_id, port_id);
+
+        ibc_store.commit_channel(channel_id, channel);
+
+        ibc_store.channels.add(channel_id, channel);
+
+        event::emit(
+            ChannelOpenInit {
+                port_id,
+                counterparty_port_id,
+                channel_id,
+                connection_id,
+                version
+            }
+        );
+
+    }
+    public fun channel_open_try<T: drop>(
+        ibc_store: &mut IBCStore,
+        port_id: String,
+        connection_id: u32,
+        counterparty_channel_id: u32,
+        counterparty_port_id: vector<u8>,
+        version: String,
+        counterparty_version: String,
+        proof_init: vector<u8>,
+        proof_height: u64,
+        witness: T,
+    ) {
+        validate_port(port_id, witness);
+
+        // Ensure the connection exists and is in the OPEN state
+        let connection = ibc_store.connections.borrow(connection_id);
+        assert!(
+            connection_end::state(connection) == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+        let client_id = connection_end::client_id(connection);
+
+        // Construct the expected channel state to verify against the proof
+        let expected_channel = channel::new(
+            CHAN_STATE_INIT,
+            get_counterparty_connection(ibc_store, connection_id),
+            counterparty_channel_id,
+            counterparty_port_id,
+            counterparty_version
+        );
+
+        let light_client = ibc_store.clients.borrow(client_id);
+        // Verify the channel state using the provided proof and expected state
+        let verification_result = verify_channel_state(
+            light_client,
+            proof_height,
+            proof_init,
+            counterparty_channel_id,
+            expected_channel
+        );
+        assert!(verification_result == 0, verification_result);
+
+        // Generate a new channel ID
+        let channel_id = ibc_store.generate_channel_identifier();
+
+        // Create a new channel and set its properties
+        let channel = channel::new(
+                CHAN_STATE_TRYOPEN,
+                connection_id,
+                counterparty_channel_id,
+                counterparty_port_id,
+                version
+        );
+
+        ibc_store.channel_to_port.add(channel_id, port_id);
+
+        // Commit the updated channel to storage
+        ibc_store.commit_channel(channel_id, channel);
+
+        event::emit(
+            ChannelOpenTry {
+                port_id,
+                channel_id,
+                counterparty_port_id,
+                counterparty_channel_id,
+                connection_id,
+                version
+            }
+        );
+    }
+
 
     // Function to generate a client identifier
     fun generate_client_identifier(ibc_store: &mut IBCStore): u32 {
-        let next_sequence = if (ibc_store.commitments.contains(b"nextClientSequence")) {
-            let seq_bytes = ibc_store.commitments.borrow(b"nextClientSequence");
-            bcs::new(*seq_bytes).peel_u32()
-        } else {
-            1u32
-        };
-
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, b"nextClientSequence", bcs::to_bytes<u64>(&((next_sequence as u64) + 1)));
-        next_sequence
+        let seq = ibc_store.next_client_sequence;
+        ibc_store.next_client_sequence = ibc_store.next_client_sequence + 1;
+        seq
     }
 
     fun generate_connection_identifier(ibc_store: &mut IBCStore): u32 {
-        let next_sequence = if (ibc_store.commitments.contains(b"nextConnectionSequence")) {
-            let seq_bytes = ibc_store.commitments.borrow(b"nextConnectionSequence");
-            bcs::new(*seq_bytes).peel_u32()
-        } else {
-            1u32
-        };
-
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, b"nextConnectionSequence", bcs::to_bytes<u64>(&((next_sequence as u64) + 1)));
-        
-        next_sequence
+        let seq = ibc_store.next_connection_sequence;
+        ibc_store.next_connection_sequence = ibc_store.next_connection_sequence + 1;
+        seq
     }
 
+    fun generate_channel_identifier(ibc_store: &mut IBCStore): u32 {
+        let seq = ibc_store.next_channel_sequence;
+        ibc_store.next_channel_sequence = ibc_store.next_channel_sequence + 1;
+        seq
+    }
+
+    // TODO(aeryz): update should only be allowed for:
+    // - client state,
+    // - connection end
+    // - channnel end commitments, the rest should abort in `update`
     fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, value: P) {
         if (table.contains(key)) {
             let val = table.borrow_mut(key);
@@ -608,49 +799,20 @@ module ibc::ibc {
         }
     }
 
-    fun generate_channel_identifier(ibc_store: &mut IBCStore): u32 {
-        // Check if 'nextChannelSequence' exists in commitments; if not, initialize to 0
-        let next_sequence = if (ibc_store.commitments.contains(b"nextChannelSequence")) {
-            let seq_bytes = ibc_store.commitments.borrow(b"nextChannelSequence");
-            bcs::new(*seq_bytes).peel_u32()
-        } else {
-            1u32
-        };
-        
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, b"nextChannelSequence", bcs::to_bytes<u64>(&((next_sequence as u64) + 1)));
-        
-        // Return the current sequence as the channel identifier
-        next_sequence
-    }
-
-
     fun commit_connection(ibc_store: &mut IBCStore, connection_id: u32, connection: ConnectionEnd) {
         let key = commitment::connection_commitment_key(connection_id);
 
-        let encoded = keccak256(&encode_connection(connection));
+        let encoded = keccak256(&connection.encode());
 
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, key, encoded);
-
-        add_or_update_table<u32, ConnectionEnd>(&mut ibc_store.connections, connection_id, connection);
     }
 
     fun commit_channel(ibc_store: &mut IBCStore, channel_id: u32, channel: Channel) {
         let key = commitment::channel_commitment_key(channel_id);
 
-        let encoded = keccak256(&encode_channel(channel));
+        let encoded = keccak256(&channel.encode());
 
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments, key, encoded);
-
-        add_or_update_table<u32, Channel>(&mut ibc_store.channels, channel_id, channel);
-
-    }
-
-    fun encode_channel(channel: Channel): vector<u8> {
-        channel::encode(&channel)
-    }
-
-    fun encode_connection(connection: ConnectionEnd): vector<u8> {
-        connection_end::encode(&connection)
     }
 
     fun verify_connection_state(
@@ -748,152 +910,6 @@ module ibc::ibc {
         // ensure the port info matches the caller
         assert!(port_address.to_ascii_string() == caller_addr, 1);
         assert!(port_module.to_ascii() == caller_module, 2);
-    }
-
-    public fun channel_open_init<T: drop>(
-        ibc_store: &mut IBCStore,
-        port_id: String,
-        counterparty_port_id: vector<u8>,
-        connection_id: u32,
-        version: String,
-        witness: T,
-    ) {
-        validate_port(port_id, witness);
-
-        // Ensure the connection exists and is in the OPEN state
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(
-            connection_end::state(connection) == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
-        );
-
-        // Generate a new channel ID
-        let channel_id = ibc_store.generate_channel_identifier();
-
-        // Create a new channel and set its properties
-        let channel = channel::new(
-            CHAN_STATE_INIT,
-            connection_id,
-            0,
-            counterparty_port_id,
-            version
-        );
-
-        // Add initial sequence values for send, receive, and acknowledgment
-
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
-            commitment::next_sequence_send_commitment_key(channel_id),
-            bcs::to_bytes(&1)
-        );
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
-            commitment::next_sequence_recv_commitment_key(channel_id),
-            bcs::to_bytes(&1)
-        );
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
-            commitment::next_sequence_ack_commitment_key(channel_id),
-            bcs::to_bytes(&1)
-        );
-
-        // Emit an event for the channel initialization
-        event::emit(
-            ChannelOpenInit {
-                port_id,
-                counterparty_port_id,
-                channel_id,
-                connection_id,
-                version
-            }
-        );
-
-        ibc_store.channel_to_port.add(channel_id, port_id);
-
-        ibc_store.commit_channel(channel_id, channel);
-    }
-    public fun channel_open_try<T: drop>(
-        ibc_store: &mut IBCStore,
-        port_id: String,
-        connection_id: u32,
-        counterparty_channel_id: u32,
-        counterparty_port_id: vector<u8>,
-        version: String,
-        counterparty_version: String,
-        proof_init: vector<u8>,
-        proof_height: u64,
-        witness: T,
-    ) {
-        validate_port(port_id, witness);
-
-        // Ensure the connection exists and is in the OPEN state
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(
-            connection_end::state(connection) == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
-        );
-        let client_id = connection_end::client_id(connection);
-
-        // Construct the expected channel state to verify against the proof
-        let expected_channel = channel::new(
-            CHAN_STATE_INIT,
-            get_counterparty_connection(ibc_store, connection_id),
-            counterparty_channel_id,
-            counterparty_port_id,
-            counterparty_version
-        );
-
-        let light_client = ibc_store.clients.borrow(client_id);
-        // Verify the channel state using the provided proof and expected state
-        let verification_result = verify_channel_state(
-            light_client,
-            proof_height,
-            proof_init,
-            counterparty_channel_id,
-            expected_channel
-        );
-        assert!(verification_result == 0, verification_result);
-
-        // Generate a new channel ID
-        let channel_id = ibc_store.generate_channel_identifier();
-
-        // Create a new channel and set its properties
-        let channel = channel::new(
-                CHAN_STATE_TRYOPEN,
-                connection_id,
-                counterparty_channel_id,
-                counterparty_port_id,
-                version
-        );
-
-        // Add initial sequence values for send, receive, and acknowledgment
-
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
-            commitment::next_sequence_send_commitment_key(channel_id),
-            bcs::to_bytes(&1)
-        );
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
-            commitment::next_sequence_recv_commitment_key(channel_id),
-            bcs::to_bytes(&1)
-        );
-        add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
-            commitment::next_sequence_ack_commitment_key(channel_id),
-            bcs::to_bytes(&1)
-        );
-    
-        // Emit an event for the channel open try
-        event::emit(
-            ChannelOpenTry {
-                port_id,
-                channel_id,
-                counterparty_port_id,
-                counterparty_channel_id,
-                connection_id,
-                version
-            }
-        );
-
-        ibc_store.channel_to_port.add(channel_id, port_id);
-
-        // Commit the updated channel to storage
-        ibc_store.commit_channel(channel_id, channel);
     }
 
     public fun channel_open_ack<T: drop>(
@@ -1051,6 +1067,8 @@ module ibc::ibc {
         timeout_timestamp: u64,
         data: vector<u8>
     ): packet::Packet {
+        // TODO(aeryz): Take T and authenticate
+
         // Check if the channel exists in the store
         if(!ibc_store.channels.contains(source_channel)) {
             abort E_CHANNEL_NOT_FOUND
