@@ -2,12 +2,9 @@ import { Context, Data, Effect } from "effect"
 import {
   type Account,
   type Chain,
-  createPublicClient,
   type CreatePublicClientErrorType,
   createWalletClient,
   type CreateWalletClientErrorType,
-  type PublicClient,
-  type PublicClientConfig,
   type ReadContractErrorType,
   type WalletClient,
   type WalletClientConfig,
@@ -32,7 +29,7 @@ export class SuiPublicClientDestination extends Context.Tag("SuiPublicClientDest
  */
 export class SuiPublicClient extends Context.Tag("SuiPublicClient")<
   SuiPublicClient,
-  { readonly client: PublicClient }
+  { readonly client: SuiClient }
 >() {}
 
 /**
@@ -65,7 +62,7 @@ export class CreateViemWalletClientError extends Data.TaggedError("CreateViemWal
 
 export const createSuiPublicClient = (
   parameters: SuiClientOptions,
-): Effect.Effect<PublicClient, CreateSuiPublicClientError> =>
+): Effect.Effect<SuiPublicClient, CreateSuiPublicClientError> =>
   Effect.try({
     try: () => new SuiClient(parameters),
     catch: err =>
