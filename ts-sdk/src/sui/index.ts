@@ -1,4 +1,3 @@
-export * as abi from "./abi/index.js"
 export * from "./channel-balance.js"
 export * from "./channel.js"
 export * from "./client.js"
