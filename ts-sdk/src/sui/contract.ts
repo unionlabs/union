@@ -30,7 +30,6 @@ export const readContract = <T>(
 ) =>
   Effect.tryPromise({
     try: async () => {
-      console.info("so is tx undefined?", tx)
       // build a dummy Tx that does the desired Move call
       tx.moveCall({
         target: `${packageId}::${module}::${fn}`,
