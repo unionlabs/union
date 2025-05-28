@@ -155,7 +155,7 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
       })
 
     const cache = yield* PersistedCache.make({
-      storeId: "graphql",
+      storeId: "graphql:",
       lookup: (x: GraphQLRequest) =>
         fetch({
           document: x.document,
@@ -193,6 +193,14 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
         return identity<D>(
           yield* pipe(
             cache.get(request),
+            Effect.tapError((e) =>
+              Effect.gen(function*() {
+                if (e._tag !== "PersistenceError") {
+                  return
+                }
+                console.log({ ...e })
+              })
+            ),
             Effect.catchTag("PersistenceError", () => recover),
           ),
         )
