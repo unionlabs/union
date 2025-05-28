@@ -59,12 +59,14 @@
 // TITLE.
 
 module ibc::light_client {
+    use std::option::{Self, Option};
     use std::string::{Self, String};
     use sui::table::{Self, Table};
     use sui::object::{Self, UID};
     use sui::bcs;
     use ibc::ethabi;
     use ibc::height::{Self, Height};
+    use ibc::create_lens_client_event::CreateLensClientEvent;
 
     const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;
 
@@ -107,7 +109,7 @@ module ibc::light_client {
         client_state_bytes: vector<u8>,
         consensus_state_bytes: vector<u8>,
         ctx: &mut TxContext,
-    ): (Client, vector<u8>, vector<u8>, String) {
+    ): (Client, vector<u8>, vector<u8>, String, Option<CreateLensClientEvent>) {
         let mut consensus_states = table::new(ctx);
         let client_state = decode_client_state(client_state_bytes);
         consensus_states.add(0, decode_consensus_state(consensus_state_bytes));
@@ -118,7 +120,8 @@ module ibc::light_client {
         },
         client_state_bytes,
         consensus_state_bytes,
-        client_state.chain_id)
+        client_state.chain_id,
+        option::none())
     }
 
     public(package) fun status(
