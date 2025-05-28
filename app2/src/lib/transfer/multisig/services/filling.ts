@@ -85,7 +85,10 @@ const complete = (msg: string, context: TransferContext): StateResult => ({
   error: Option.none(),
 })
 
-export const createContextState = (cts: CreateContextState, transfer: TransferData) => {
+export const createContextState = (
+  cts: CreateContextState,
+  transfer: TransferData,
+) => {
   return CreateContextState.$match(cts, {
     Empty: () => Effect.void,
     Filling: () => {
@@ -103,7 +106,7 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
         EmptyAmount: () => Effect.succeed(ok(Empty(), "Enter amount")),
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
-        Ready: args => Effect.succeed(ok(Validation({ args }), "Validating...")),
+        Ready: (args) => Effect.succeed(ok(Validation({ args }), "Validating...")),
       })
     },
 
@@ -123,7 +126,9 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
       }
 
       const context = contextOpt.value
-      return Effect.succeed(ok(CheckBalance({ context }), "Checking receiver..."))
+      return Effect.succeed(
+        ok(CheckBalance({ context }), "Checking receiver..."),
+      )
     },
 
     CheckBalance: ({ context }) => {
@@ -131,9 +136,13 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
         Effect.flatMap((result: BalanceCheckResult) =>
           Match.type<BalanceCheckResult>().pipe(
             Match.tag("HasEnough", () =>
-              Effect.succeed(ok(CheckAllowance({ context }), "Checking allowance..."))),
-            Match.tag("InsufficientFunds", () =>
-              Effect.succeed(ok(Empty(), "Insufficient balance"))),
+              Effect.succeed(
+                ok(CheckAllowance({ context }), "Checking allowance..."),
+              )),
+            Match.tag(
+              "InsufficientFunds",
+              () => Effect.succeed(ok(Empty(), "Insufficient balance")),
+            ),
             Match.exhaustive,
           )(result)
         ),
@@ -142,22 +151,20 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
 
     CheckAllowance: ({ context }) => {
       return checkAllowances(context).pipe(
-        Effect.map(allowancesOpt => {
+        Effect.map((allowancesOpt) => {
           const allowances = Option.getOrElse(allowancesOpt, () => [])
-
-          const baseTokens = context.intents.map(c => c.baseToken)
-          const relevantAllowances = allowances.filter(a => baseTokens.includes(a.token))
 
           const updatedContext = {
             ...context,
-            allowances: relevantAllowances.length > 0
-              ? Option.some(relevantAllowances)
-              : Option.none(),
+            allowances: allowances.length > 0 ? Option.some(allowances) : Option.none(),
           }
 
-          return ok(CheckReceiver({ context: updatedContext }), "Checking receiver...")
+          return ok(
+            CheckReceiver({ context: updatedContext }),
+            "Checking receiver...",
+          )
         }),
-        Effect.catchAll(error => Effect.succeed(fail("Allowance check failed", error))),
+        Effect.catchAll((error) => Effect.succeed(fail("Allowance check failed", error))),
       )
     },
 
@@ -168,7 +175,7 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
 
     CreateOrders: ({ context }) =>
       createOrdersBatch(context).pipe(
-        Effect.flatMap(batchOpt => {
+        Effect.flatMap((batchOpt) => {
           if (Option.isNone(batchOpt)) {
             return Effect.succeed(
               fail(
@@ -186,23 +193,28 @@ export const createContextState = (cts: CreateContextState, transfer: TransferDa
           }
 
           return Effect.succeed(
-            ok(CreateMessage({ context: updatedContext }), "Creating message..."),
+            ok(
+              CreateMessage({ context: updatedContext }),
+              "Creating message...",
+            ),
           )
         }),
-        Effect.catchAll(error => Effect.succeed(fail("Order creation failed", error))),
+        Effect.catchAll((error) => Effect.succeed(fail("Order creation failed", error))),
       ),
 
     CreateMessage: ({ context }) =>
       createMultisigMessage(context).pipe(
-        Effect.flatMap(message => {
+        Effect.flatMap((message) => {
           const updatedContext: TransferContext = {
             ...context,
             message: Option.some(message),
           }
 
-          return Effect.succeed(ok(CreateSteps({ context: updatedContext }), "Final steps..."))
+          return Effect.succeed(
+            ok(CreateSteps({ context: updatedContext }), "Final steps..."),
+          )
         }),
-        Effect.catchAll(error => Effect.succeed(fail("Message creation failed", error))),
+        Effect.catchAll((error) => Effect.succeed(fail("Message creation failed", error))),
       ),
 
     CreateSteps: ({ context }) => {
