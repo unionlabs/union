@@ -31,7 +31,6 @@ export const predictQuoteToken = (baseToken: Hex) =>
       tx.pure('vector<u8>', hexToBytes(converted_base_token))
     ]
 
-    yield* Effect.log("Predicting quote token for base token:", baseToken)
 
     const result = yield* readContract(
       client,
@@ -43,7 +42,6 @@ export const predictQuoteToken = (baseToken: Hex) =>
       function_arguments,
       tx
     )
-
     const rawBytes = result[0].returnValues[0] as number[]; // extract the vector<u8>
     const wrapped_token = rawBytes[0] as Hex
 
