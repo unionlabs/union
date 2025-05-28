@@ -12,9 +12,6 @@ function hexToBytes(hex: string): number[] {
   return h.match(/.{1,2}/g)!.map(b => parseInt(b, 16));
 }
 
-function bytesToHex(bs: number[]): `0x${string}` {
-  return "0x" + bs.map(b => b.toString(16).padStart(2, "0")).join("");
-}
 
 export const predictQuoteToken = (baseToken: Hex) =>
   Effect.gen(function*() {
@@ -48,7 +45,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
     )
 
     const rawBytes = result[0].returnValues[0] as number[]; // extract the vector<u8>
-    const wrapped_token = bytesToHex(rawBytes[0] as Hex)
+    const wrapped_token = rawBytes[0] as Hex
 
     return wrapped_token
   })
