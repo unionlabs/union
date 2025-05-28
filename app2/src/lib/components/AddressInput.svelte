@@ -110,9 +110,9 @@ const onInput: FormEventHandler<HTMLInputElement> = event =>
   validateAddress(event.currentTarget.value)
 
 onMount(() => {
-  // if (receiver) {
-  //   validateAddress(receiver)
-  // }
+  if (O.isSome(props.address)) {
+    validateAddress(props.address.value)
+  }
 })
 </script>
 
