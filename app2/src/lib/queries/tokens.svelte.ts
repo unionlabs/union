@@ -14,7 +14,7 @@ export const tokensQuery = (universalChainId: UniversalChainId) =>
         whitelist: Schema.Array(Schema.Struct({ denom: TokenRawDenom })),
       }),
       document: graphql(`
-        query TokensForChain($universal_chain_id: String!) @cached(ttl: 60) {
+        query TokensForChain($universal_chain_id: String!) @cached(ttl: 3600) {
           whitelist: v2_tokens(args: {p_whitelist: true, p_universal_chain_id: $universal_chain_id}, order_by: {rank: asc_nulls_last}) {
             denom
           }
