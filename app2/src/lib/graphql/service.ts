@@ -7,8 +7,8 @@ import {
   Duration,
   Effect,
   Exit,
-  flow,
   Hash,
+  HashMap,
   identity,
   Layer,
   Match,
@@ -19,7 +19,7 @@ import {
   Schema as S,
 } from "effect"
 import type { TadaDocumentNode } from "gql.tada"
-import { type ArgumentNode, type DirectiveNode, Kind } from "graphql"
+import { type ArgumentNode, type DirectiveNode, Kind, print } from "graphql"
 import { GraphQLClient, type Variables } from "graphql-request"
 import { ClientError } from "graphql-request"
 import { GraphQLError } from "./error"
@@ -97,12 +97,13 @@ export class GraphQLRequest extends S.TaggedRequest<GraphQLRequest>()("GraphQLRe
   },
 }) {
   [PrimaryKey.symbol]() {
+    const structure = {
+      document: print(this.document),
+      variables: this.variables,
+    }
     return pipe(
-      {
-        document: this.document,
-        variables: this.variables,
-      },
-      Hash.structure,
+      HashMap.fromIterable(Object.entries(structure)).toString(),
+      Hash.string,
       (hash) => `${this._tag}:${hash}`,
     )
   }
