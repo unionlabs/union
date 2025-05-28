@@ -82,6 +82,7 @@
     "@cosmjs/cosmwasm-stargate": "^0.33.1",
     "@cosmjs/stargate": "^0.33.1",
     "@cosmjs/tendermint-rpc": "^0.33.1",
+    "@pythnetwork/hermes-client": "^2.0.0",
     "@scure/base": "1.2.4",
     "crc": "^4.3.2",
     "gql.tada": "^1.8.10",
