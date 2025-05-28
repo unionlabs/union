@@ -918,7 +918,24 @@ module zkgm::zkgm_relay {
             table.add(key, value);
         }
     }
-
+    public fun channel_balance(
+        relay_store: &mut RelayStore,
+        channel_id: u32,
+        path: u256,
+        token: vector<u8>
+    ): u256 {
+        let pair = ChannelBalancePair{
+            channel: channel_id,
+            path: path,
+            token: token
+        };
+        event::emit(pair);
+        if(!relay_store.channel_balance.contains(pair)) {
+            abort E_CHANNEL_BALANCE_PAIR_NOT_FOUND
+        };
+        *relay_store.channel_balance.borrow(pair)
+    }
+    
     fun decrease_outstanding(
         relay_store: &mut RelayStore,
         channel_id: u32,
@@ -931,6 +948,7 @@ module zkgm::zkgm_relay {
             path: path,
             token: token
         };
+        event::emit(pair);
         if(!relay_store.channel_balance.contains(pair)) {
             abort E_CHANNEL_BALANCE_PAIR_NOT_FOUND
         };
@@ -969,6 +987,8 @@ module zkgm::zkgm_relay {
             pair,
             new_balance
         );
+        
+        event::emit(pair);
     }
 
 
