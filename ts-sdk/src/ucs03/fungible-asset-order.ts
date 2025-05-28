@@ -2,11 +2,8 @@ import { Effect, Option, pipe, Schema as S } from "effect"
 import * as Either from "effect/Either"
 import { type Address, type Hex, toHex } from "viem"
 import { AptosPublicClient } from "../aptos/client.js"
-import { SuiPublicClient } from "../sui/client.js"
 import { readFaTokenInfo } from "../aptos/fa.js"
-import { readCoinMetadata } from "../sui/sui_coin.js"
 import { predictQuoteToken as predictAptosQuoteToken } from "../aptos/quote-token.js"
-import { predictQuoteToken as predictSuiQuoteToken } from "../sui/quote-token.js"
 import { CosmWasmClientContext, CosmWasmClientSource } from "../cosmos/client.js"
 import { readCw20TokenInfo } from "../cosmos/cw20.js"
 import { predictQuoteToken as predictCosmosQuoteToken } from "../cosmos/quote-token.js"
@@ -18,6 +15,9 @@ import { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import { UniversalChainId } from "../schema/chain.js"
 import { ChannelId } from "../schema/channel.js"
 import { TokenRawDenom } from "../schema/token.js"
+import { SuiPublicClient } from "../sui/client.js"
+import { predictQuoteToken as predictSuiQuoteToken } from "../sui/quote-token.js"
+import { readCoinMetadata } from "../sui/sui_coin.js"
 import { ensureHex } from "../utils/index.js"
 import { FungibleAssetOrder } from "./instruction.js"
 
@@ -400,7 +400,6 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
     })
   })
 
-  
 /**
  * Creates a fungible asset order from Sui to Cosmos
  */
@@ -441,7 +440,6 @@ export const createSuiToCosmosFungibleAssetOrder = (intent: {
     })
   })
 
-  
 /**
  * Creates a fungible asset order from  Cosmos to Sui
  */
@@ -468,7 +466,8 @@ export const createCosmosToSuiFungibleAssetOrder = (intent: {
 
     const quoteTokenVec = yield* predictSuiQuoteToken(toHex(intent.baseToken))
 
-    const quoteToken = "0x" + quoteTokenVec.map(b => b.toString(16).padStart(2, "0")).join("") as Hex; 
+    const quoteToken = "0x"
+      + quoteTokenVec.map(b => b.toString(16).padStart(2, "0")).join("") as Hex
 
     yield* Effect.log(
       "quote token from sui is",
@@ -493,4 +492,3 @@ export const createCosmosToSuiFungibleAssetOrder = (intent: {
       ],
     })
   })
-
