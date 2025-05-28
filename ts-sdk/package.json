@@ -16,6 +16,7 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
+    "./*": "./src/*.js",
     "./ucs03": {
       "import": "./dist/ucs03/index.js",
       "types": "./dist/ucs03/index.d.ts"
@@ -84,6 +85,7 @@
     "@cosmjs/stargate": "^0.33.1",
     "@cosmjs/tendermint-rpc": "^0.33.1",
     "@mysten/sui": "^1.30.1",
+    "@pythnetwork/hermes-client": "^2.0.0",
     "@scure/base": "1.2.4",
     "crc": "^4.3.2",
     "gql.tada": "^1.8.10",

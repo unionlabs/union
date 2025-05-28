@@ -1,12 +1,13 @@
 import { runForkWithRuntime, runPromiseExitWithRuntime } from "$lib/utils/effect.svelte.js"
-import type { GraphqlQuery } from "@aptos-labs/ts-sdk"
-import { Effect, Layer, ManagedRuntime, Match, pipe } from "effect"
+import type { PriceOracle } from "@unionlabs/sdk/PriceOracle"
+import { Layer, ManagedRuntime, Match, pipe } from "effect"
 import { isNotUndefined } from "effect/Predicate"
 import type { GraphQL } from "./graphql/service"
 
 const IS_VITEST = isNotUndefined(import.meta.vitest)
 
-type AppLayer = Layer.Layer<GraphQL, never, never>
+// TOOD: determine how to handle error channel due to dynamic imports in services
+type AppLayer = Layer.Layer<GraphQL | PriceOracle, never, never>
 export type AppContext = Layer.Layer.Success<AppLayer>
 
 const make = async () => {
@@ -15,7 +16,8 @@ const make = async () => {
     Match.when(true, () => import("$lib/layers/test.js")),
     Match.when(false, () => import("$lib/layers/live.js")),
     Match.exhaustive,
-  )).default satisfies AppLayer
+  )).default as AppLayer satisfies AppLayer
+  // XXX: ^ remove cast after handling layer construction errors
 
   const {
     runFork,
