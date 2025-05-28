@@ -1,4 +1,5 @@
 <script lang="ts">
+import AddressInput from "$lib/components/AddressInput.svelte"
 import FilledBookmarkIcon from "$lib/components/icons/FilledBookmarkIcon.svelte"
 import OutlinedBookmarkIcon from "$lib/components/icons/OutlinedBookmarkIcon.svelte"
 import RestoreIcon from "$lib/components/icons/RestoreIcon.svelte"
@@ -15,7 +16,7 @@ import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { cn } from "$lib/utils"
 import { clickOutside } from "$lib/utils/actions.ts"
 import type { AddressCanonicalBytes } from "@unionlabs/sdk/schema"
-import { Option } from "effect"
+import { Array as A, Option } from "effect"
 import { onDestroy, onMount } from "svelte"
 import { crossfade, fade, fly } from "svelte/transition"
 
@@ -25,6 +26,8 @@ type Props = {
 }
 
 let { open, close }: Props = $props()
+
+let errors: string[] = $state([])
 
 $effect(() => {
   if (open) {
@@ -423,26 +426,29 @@ function hasBookmarks() {
             <div>
               <div class="flex flex-col gap-2">
                 <div class="flex flex-col gap-2 h-10">
-                  <input
-                    type="text"
-                    bind:value={manualAddress}
-                    placeholder="Enter receiver address"
-                    class={cn(
-                      "w-full p-2 py-5 rounded-md bg-zinc-800 text-zinc-200 h-full text-center",
-                      "focus:outline-none focus:ring-1 focus:ring-accent",
-                    )}
+                  <AddressInput
+                    chain={transferData.destinationChain}
+                    type="receiver"
+                    address={undefined}
+                    onValid={(address) => {
+                      manualAddress = address
+                      errors = []
+                    }}
+                    onError={(xs) => {
+                      errors = xs
+                    }}
                   />
                   <div class="flex flex-1 gap-2 w-full">
                     <Button
                       class="h-10 flex-1"
-                      disabled={!manualAddress.trim()}
+                      disabled={!manualAddress.trim() || A.isNonEmptyArray(errors)}
                       onclick={submitManualAddress}
                     >
                       Use
                     </Button>
                     <Button
                       class="h-10 px-2"
-                      disabled={!manualAddress.trim()}
+                      disabled={!manualAddress.trim() || A.isNonEmptyArray(errors)}
                       onclick={toggleBookmarkOnAdd}
                       aria-label={bookmarkOnAdd
                       ? "Remove bookmark on add"
@@ -455,6 +461,16 @@ function hasBookmarks() {
                       {/if}
                     </Button>
                   </div>
+
+                  {#if A.isNonEmptyReadonlyArray(errors)}
+                    <ul>
+                      {#each errors as message}
+                        <li class="text-red-500 text-xs uppercase">
+                          {message}
+                        </li>
+                      {/each}
+                    </ul>
+                  {/if}
                 </div>
                 {#if bookmarkOnAdd}
                   <div class="text-xs text-zinc-400">Address will be bookmarked when added</div>

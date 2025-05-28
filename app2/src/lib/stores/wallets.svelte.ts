@@ -5,7 +5,7 @@ import type {
   AddressEvmCanonical,
   Chain,
 } from "@unionlabs/sdk/schema"
-import { Option } from "effect"
+import { Match, Option } from "effect"
 
 class WalletsStore {
   evmAddress: Option.Option<typeof AddressEvmCanonical.Type> = $state(Option.none())
@@ -45,16 +45,12 @@ class WalletsStore {
   }
 
   getAddressForChain(chain: Chain): Option.Option<AddressCanonicalBytes> {
-    switch (chain.rpc_type) {
-      case "cosmos":
-        return this.cosmosAddress
-      case "evm":
-        return this.evmAddress
-      case "aptos":
-        return this.aptosAddress
-      default:
-        return Option.none()
-    }
+    return Match.value(chain.rpc_type).pipe(
+      Match.when("evm", () => this.evmAddress),
+      Match.when("cosmos", () => this.cosmosAddress),
+      Match.when("aptos", () => this.aptosAddress),
+      Match.exhaustive,
+    )
   }
 }
 
