@@ -3,7 +3,6 @@ import { type Base64EncodeError, toBase64 } from "$lib/utils/base64"
 import { type FromHexError, fromHexString } from "$lib/utils/hex"
 import { fetchDecode } from "$lib/utils/queries"
 import { FetchHttpClient, type HttpClientError } from "@effect/platform"
-import { withTracerDisabledWhen } from "@effect/platform/HttpClient"
 import type { Chain, NoRpcError } from "@unionlabs/sdk/schema"
 import {
   type AddressCosmosCanonical,
@@ -23,7 +22,9 @@ export type FetchCosmosBalanceError =
   | FromHexError
   | HttpClientError.HttpClientError
 
-export class QueryBankBalanceError extends Data.TaggedError("QueryBankBalanceError")<{
+export class QueryBankBalanceError extends Data.TaggedError(
+  "QueryBankBalanceError",
+)<{
   cause: unknown
 }> {}
 
@@ -53,12 +54,17 @@ const fetchCosmosCw20Balance = ({
 
     const base64Query = yield* toBase64(queryJson)
 
+    const fullUrl = new URL(
+      `/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${base64Query}`,
+      rpcUrl,
+    ).toString()
+
     const response = yield* fetchDecode(
       // I'm not entirely sure why this errors, but it is typesafe
       // XXX: refine schema transforms; migrate to sdk
       // @ts-expect-error 2345
       CosmosCw20BalanceSchema,
-      `${rpcUrl}/cosmwasm/wasm/v1/contract/${contractAddress}/smart/${base64Query}`,
+      fullUrl,
     ).pipe(
       Effect.annotateLogs({
         walletAddress,
@@ -78,13 +84,20 @@ const fetchCosmosBankBalance = ({
   walletAddress: AddressCosmosDisplay
   denom: string
 }) =>
-  fetchDecode(
-    // I'm not entirely sure why this errors, but it is typesafe
-    // XXX: refine schema transforms; migrate to sdk
-    // @ts-expect-error 2345
-    CosmosBankBalanceSchema,
-    `${rpcUrl}/cosmos/bank/v1beta1/balances/${walletAddress}/by_denom?denom=${denom}`,
-  ).pipe(Effect.map(response => response.balance.amount))
+  Effect.gen(function*() {
+    const fullUrl = new URL(
+      `/cosmos/bank/v1beta1/balances/${walletAddress}/by_denom?denom=${denom}`,
+      rpcUrl,
+    ).toString()
+
+    return yield* fetchDecode(
+      // I'm not entirely sure why this errors, but it is typesafe
+      // XXX: refine schema transforms; migrate to sdk
+      // @ts-expect-error 2345
+      CosmosBankBalanceSchema,
+      fullUrl,
+    ).pipe(Effect.map((response) => response.balance.amount))
+  })
 
 // Core function to fetch a single Cosmos balance
 export const fetchCosmosBalance = ({
@@ -105,7 +118,9 @@ export const fetchCosmosBalance = ({
       ? fetchCosmosCw20Balance({
         rpcUrl,
         walletAddress: displayAddress,
-        contractAddress: AddressCosmosDisplay.make(decodedDenom as `${string}1${string}`),
+        contractAddress: AddressCosmosDisplay.make(
+          decodedDenom as `${string}1${string}`,
+        ),
       })
       : fetchCosmosBankBalance({
         rpcUrl,
@@ -113,7 +128,10 @@ export const fetchCosmosBalance = ({
         denom: decodedDenom,
       })
 
-    let balance = yield* Effect.retry(fetchBalance, cosmosBalanceRetrySchedule)
+    const balance = yield* Effect.retry(
+      fetchBalance,
+      cosmosBalanceRetrySchedule,
+    )
 
     return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))
   }).pipe(
