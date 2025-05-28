@@ -1,9 +1,6 @@
 import { Effect, Data } from "effect"
 import { SuiPublicClient } from "./client.js"
-import { readContract } from "./contract.js"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-
-export type Hex = `0x${string}`
 
 /**
  * Interface for FA token metadata

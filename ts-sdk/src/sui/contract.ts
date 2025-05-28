@@ -41,7 +41,6 @@ export const readContract = <T>(
         transactionBlock: tx,
         sender,
       })
-      // unwrap your return value however you like
       return result.results // result as unknown as T
     },
     catch: e => new readContractError({cause: extractErrorDetails(e as Error)}),
