@@ -55,6 +55,65 @@ export const readCoinBalances = (contractAddress: string, address: string) =>
       return totalBalance
     })
 
+  
+  export const getAllCoins = (address: string) =>
+    Effect.gen(function*() {
+      const client = (yield* SuiPublicClient).client
+      let params = {
+        owner: address,
+      };
+  
+      const coins = yield * Effect.tryPromise({
+        try: async () => {
+          const result = await client.getAllCoins(params);
+          return result.data
+        },
+        catch: error => new Error(`Failed to read FA balance: ${error}`)
+      })
+      return coins;
+    })
+    
+    
+  export const getAllCoinsUnique = (address: string) =>
+    Effect.gen(function*() {
+      const client = (yield* SuiPublicClient).client;
+  
+      const params = {
+        owner: address,
+      };
+  
+      const coins = yield* Effect.tryPromise({
+        try: async () => {
+          const result = await client.getAllCoins(params);
+          return result.data;
+        },
+        catch: error => new Error(`Failed to read FA balance: ${error}`),
+      });
+  
+      // Group by coinType and sum balances
+      const coinMap: Record<string, bigint> = {};
+  
+      for (const coin of coins) {
+        const coinType = coin.coinType;
+        const balance = BigInt(coin.balance);
+  
+        if (!coinMap[coinType]) {
+          coinMap[coinType] = balance;
+        } else {
+          coinMap[coinType] += balance;
+        }
+      }
+  
+      // Convert to array of objects
+      const result = Object.entries(coinMap).map(([coinType, totalBalance]) => ({
+        coinType,
+        balance: totalBalance.toString(), // or keep as BigInt if preferred
+      }));
+  
+      return result;
+    });
+          
+        
 // export const readFaName = (contractAddress: string) =>
 //   Effect.gen(function*() {
 //     const client = (yield* AptosPublicClient).client
