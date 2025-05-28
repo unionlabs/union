@@ -42,15 +42,26 @@ describe("Bech32", () => {
     assert.isTrue(Either.isLeft(S.decodeUnknownEither(Bech32)(s)))
   })
 
-  it("Bech32FromAddressCanonicalBytesWithPrefix", () => {
-    const addr = "0x52a648ef2157fd3bafa90bbac510b9a4870fdf36"
-    const transform = Bech32FromAddressCanonicalBytesWithPrefix("bbn").pipe(
-      S.compose(HexFromString),
-      S.compose(AddressCosmosZkgm),
-    )
+  describe("Bech32FromAddressCanonicalBytesWithPrefix", () => {
+    it("happy", () => {
+      const addr = "0x52a648ef2157fd3bafa90bbac510b9a4870fdf36"
+      const transform = Bech32FromAddressCanonicalBytesWithPrefix("bbn").pipe(
+        S.compose(HexFromString),
+        S.compose(AddressCosmosZkgm),
+      )
 
-    const result = S.decodeUnknownSync(transform)(addr)
+      const result = S.decodeUnknownSync(transform)(addr)
 
-    assert.isTrue(isHex(result))
+      assert.isTrue(isHex(result))
+    })
+    it.fails("guarantees given HRP matches", () => {
+      const addr = "bbn122ny3mep2l7nhtafpwav2y9e5jrslhekrn8frh"
+      const transform = Bech32FromAddressCanonicalBytesWithPrefix("osmosis")
+
+      const result = S.encodeUnknownSync(transform)(addr)
+      console.log(result)
+
+      assert.isTrue(isHex(result))
+    })
   })
 })

@@ -1,13 +1,15 @@
 <script lang="ts">
+import AddressInput from "$lib/components/AddressInput.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Input from "$lib/components/ui/Input.svelte"
+import { wallets } from "$lib/stores/wallets.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import { Match, Option } from "effect"
-import ReceiverInput from "../components/ReceiverInput.svelte"
+import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
+import { Array as A, Match, Option } from "effect"
 import SenderInput from "../components/SenderInput.svelte"
 
 type Props = {
@@ -26,6 +28,11 @@ const {
 }: Props = $props()
 
 let isModalOpen = $state(false)
+let receiverErrors: string[] = $state([])
+let senderErrors: string[] = $state([])
+let _errors = $derived(
+  A.isEmptyArray(senderErrors) && A.isEmptyArray(receiverErrors),
+)
 
 const uiStatus = $derived.by(() => {
   return Option.match(errors, {
@@ -63,10 +70,53 @@ const isButtonEnabled = $derived.by(() => !loading)
 
 <div class="min-w-full flex flex-col grow">
   <div class="flex flex-col gap-4 p-4">
-    <SenderInput />
+    <AddressInput
+      label="sender"
+      type="sender"
+      chain={transferData.sourceChain}
+      address={transferData.raw.sender}
+      onValid={(address, encoded) => {
+        transferData.raw.updateField("sender", address)
+        wallets.addInputAddress(encoded as AddressCosmosCanonical)
+        senderErrors = []
+      }}
+      onError={(xs) => {
+        senderErrors = xs
+      }}
+    />
+    {#if A.isNonEmptyReadonlyArray(senderErrors)}
+      <ul>
+        {#each senderErrors as message}
+          <li class="text-red-500 text-xs uppercase">
+            {message}
+          </li>
+        {/each}
+      </ul>
+    {/if}
     <ChainAsset type="source" />
     <ChainAsset type="destination" />
-    <ReceiverInput />
+    <AddressInput
+      label="receiver"
+      chain={transferData.destinationChain}
+      address={transferData.raw.receiver}
+      type="receiver"
+      onValid={(address) => {
+        transferData.raw.updateField("receiver", address)
+        receiverErrors = []
+      }}
+      onError={(xs) => {
+        receiverErrors = xs
+      }}
+    />
+    {#if A.isNonEmptyReadonlyArray(receiverErrors)}
+      <ul>
+        {#each receiverErrors as message}
+          <li class="text-red-500 text-xs uppercase">
+            {message}
+          </li>
+        {/each}
+      </ul>
+    {/if}
     <Amount type="source" />
   </div>
 

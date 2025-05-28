@@ -26,8 +26,12 @@ export class Bech32DecodeError extends S.TaggedClass<Bech32DecodeError>()("Bech3
 }) {}
 
 export const Bech32FromAddressCanonicalBytesWithPrefix = (
-  // TODO(ehegnes): also validate HRP
   prefix: HRP,
+  options: {
+    validateHrp: boolean
+  } = {
+    validateHrp: true,
+  },
 ) =>
   S.transformOrFail(AddressCanonicalBytes, Bech32, {
     strict: true,
@@ -50,7 +54,17 @@ export const Bech32FromAddressCanonicalBytesWithPrefix = (
         catch: cause => new Bech32DecodeError({ message: (cause as Error).message }),
       }).pipe(
         // TODO: convert to try; pull out fn
-        Effect.map(decoded => {
+        Effect.flatMap(decoded => {
+          if (options?.validateHrp) {
+            if (decoded.prefix !== prefix) {
+              return Effect.fail(
+                new Bech32DecodeError({
+                  message:
+                    `Given prefix "${decoded.prefix}" does not match requirement "${prefix}"`,
+                }),
+              )
+            }
+          }
           const canonicalAddress = bech32.fromWords(decoded.words)
           const bytes = new Uint8Array(canonicalAddress)
           const bytesToCanonicalHex = (bytes: Uint8Array): Hex =>
@@ -59,7 +73,7 @@ export const Bech32FromAddressCanonicalBytesWithPrefix = (
               arr => arr.reduce((str, byte) => str + byte.toString(16).padStart(2, "0"), "0x"),
               hex => hex as Hex,
             )
-          return AddressCanonicalBytes.make(bytesToCanonicalHex(bytes))
+          return Effect.succeed(AddressCanonicalBytes.make(bytesToCanonicalHex(bytes)))
         }),
         Effect.mapError(e => new ParseResult.Type(ast, toI, e.message)),
       )

@@ -163,26 +163,28 @@ $effect(() => {
 
     const steps: Array<Steps.Steps> = [Steps.Filling()]
 
-    // Check if receiver exists in wallet
-    yield* Option.Do.pipe(
-      Option.bind("destinationChain", () => transferData.destinationChain),
-      Option.bind("receiver", () => transferData.derivedReceiver),
-      Option.bind("inWallet", ({ destinationChain, receiver }) => {
-        const walletaddr = wallets.getAddressForChain(destinationChain)
-        return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
-      }),
-      Option.match({
-        onNone: () => Effect.void,
-        onSome: ({ inWallet, destinationChain, receiver }) =>
-          Effect.if(inWallet, {
-            onFalse: () =>
-              Effect.sync(() => {
-                steps.push(Steps.CheckReceiver({ receiver, destinationChain }))
-              }),
-            onTrue: () => Effect.void,
-          }),
-      }),
-    )
+    /**
+     * Check if receiver is in connected wallet.
+     * Always show step if no receiver wallet is connected.
+     */
+    yield* Option.gen(function*() {
+      const {
+        destinationChain,
+        receiver,
+      } = yield* Option.all({
+        destinationChain: transferData.destinationChain,
+        receiver: transferData.derivedReceiver,
+      })
+      const inWallet = pipe(
+        wallets.getAddressForChain(destinationChain),
+        Option.map(x => x.toLowerCase() === receiver.toLowerCase()),
+        Option.getOrElse(() => false),
+      )
+
+      if (!inWallet) {
+        steps.push(Steps.CheckReceiver({ receiver, destinationChain }))
+      }
+    })
 
     if (context) {
       if (Option.isSome(context.allowances)) {
