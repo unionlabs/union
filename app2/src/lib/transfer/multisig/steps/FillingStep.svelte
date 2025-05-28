@@ -65,7 +65,9 @@ const uiStatus = $derived.by(() => {
   })
 })
 
-const isButtonEnabled = $derived.by(() => !loading)
+const isButtonEnabled = $derived.by(() =>
+  !loading && A.isEmptyArray(senderErrors) && A.isEmptyArray(receiverErrors)
+)
 </script>
 
 <div class="min-w-full flex flex-col grow">
