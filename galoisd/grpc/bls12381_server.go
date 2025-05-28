@@ -4,13 +4,13 @@ import (
 	"bufio"
 	"bytes"
 	context "context"
+	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/json"
 	"fmt"
 	grpc "galois/grpc/api/v3"
 	"galois/pkg/lightclient"
 	bls12381gadget "galois/pkg/lightclient/bls12381"
-	lcgadget "galois/pkg/lightclient/nonadjacent"
 	// "io"
 	"math/big"
 	"os"
@@ -18,14 +18,9 @@ import (
 	"sync/atomic"
 	"time"
 
-	types "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	cometbn254 "github.com/cometbft/cometbft/crypto/bn254"
-	// ce "github.com/cometbft/cometbft/crypto/encoding"
-	// "github.com/cometbft/cometbft/crypto/merkle"
 	"github.com/consensys/gnark-crypto/ecc"
-	// "github.com/consensys/gnark-crypto/ecc/bn254"
-	// "github.com/consensys/gnark-crypto/ecc/bn254/fr"
-	bn254_curve "github.com/consensys/gnark-crypto/ecc/bn254"
+	"github.com/consensys/gnark-crypto/ecc/bls12-381/fr"
 	backend_opts "github.com/consensys/gnark/backend"
 	backend "github.com/consensys/gnark/backend/groth16"
 	backend_bls12381 "github.com/consensys/gnark/backend/groth16/bls12-381"
@@ -36,9 +31,8 @@ import (
 	"github.com/consensys/gnark/frontend"
 	"github.com/consensys/gnark/frontend/cs/r1cs"
 	gadget "github.com/consensys/gnark/std/algebra/emulated/sw_bn254"
-
 	"github.com/consensys/gnark/std/recursion/groth16"
-
+	"github.com/holiman/uint256"
 	"github.com/rs/zerolog/log"
 )
 
@@ -53,6 +47,49 @@ type proverServerBls12381 struct {
 	maxJobs uint32
 	nbJobs  atomic.Uint32
 	results sync.Map
+}
+
+type bls12381HashToField struct {
+	data []byte
+}
+
+func (c *bls12381HashToField) Write(p []byte) (n int, err error) {
+	c.data = append(c.data, p...)
+	return len(p), nil
+}
+
+func (c *bls12381HashToField) Sum(b []byte) []byte {
+	hmac := hmac.New(cometbn254.Hash, []byte(cometbn254.CometblsHMACKey))
+	hmac.Write(c.data)
+	modMinusOne := new(big.Int).Sub(fr.Modulus(), big.NewInt(1))
+	num := new(big.Int).SetBytes(hmac.Sum(nil))
+	num.Mod(num, modMinusOne)
+	num.Add(num, big.NewInt(1))
+	val, overflow := uint256.FromBig(num)
+	if overflow {
+		panic("impossible; qed;")
+	}
+	valBytes := val.Bytes32()
+	var e fr.Element
+	err := e.SetBytesCanonical(valBytes[:])
+	if err != nil {
+		panic("impossible; qed;")
+	}
+
+	eB := e.Bytes()
+	return append(b, eB[:]...)
+}
+
+func (c *bls12381HashToField) Reset() {
+	c.data = []byte{}
+}
+
+func (c *bls12381HashToField) Size() int {
+	return fr.Bytes
+}
+
+func (c *bls12381HashToField) BlockSize() int {
+	return fr.Bytes
 }
 
 func (*proverServerBls12381) mustEmbedUnimplementedUnionProverAPIServer() {}
@@ -81,18 +118,6 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 
 	prove := func() (*grpc.ProveResponse, error) {
 		innerProof, err := Prove(req, &p.innerCs, &p.innerPk, &p.innerVk)
-
-		// TODO(aeryz): this is probably not necessary, but could be a nice assertion idk
-		err = backend.Verify(
-			innerProof.Proof,
-			backend.VerifyingKey(&p.innerVk),
-			innerProof.PublicWitness,
-			backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
-		)
-
-		if err != nil {
-			return nil, fmt.Errorf("Could not verify the groth16 proof %s", err)
-		}
 
 		circuitVk, err := groth16.ValueOfVerifyingKey[gadget.G1Affine, gadget.G2Affine, gadget.GTEl](backend.VerifyingKey(&p.innerVk))
 		if err != nil {
@@ -261,49 +286,6 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 	}, nil
 }
 
-func (p *proverServer) VerifyBls12381(ctx context.Context, req *grpc.VerifyRequest) (*grpc.VerifyResponse, error) {
-	log.Debug().Msg("Verifying...")
-
-	var proof backend_bn254.Proof
-	_, err := proof.ReadFrom(bytes.NewReader(req.Proof.CompressedContent))
-	if err != nil {
-		return nil, fmt.Errorf("Failed to read compressed proof: %w", err)
-	}
-
-	witness := lcgadget.Circuit{
-		InputsHash: req.InputsHash,
-	}
-
-	publicWitness, err := frontend.NewWitness(&witness, ecc.BN254.ScalarField(), frontend.PublicOnly())
-	if err != nil {
-		return nil, fmt.Errorf("Unable to create private witness: %w", err)
-	}
-
-	reqJson, err := json.Marshal(req)
-	if err != nil {
-		return nil, err
-	}
-
-	err = backend.Verify(
-		backend.Proof(&proof),
-		backend.VerifyingKey(&p.vk),
-		publicWitness,
-		backend_opts.WithVerifierHashToFieldFunction(&cometblsHashToField{}),
-	)
-
-	if err != nil {
-		log.Error().RawJSON("request", reqJson).Hex("inputs_hash", req.InputsHash).Str("action", "verify").Err(err).Send()
-		return &grpc.VerifyResponse{
-			Valid: false,
-		}, nil
-	} else {
-		log.Info().RawJSON("request", reqJson).Hex("inputs_hash", req.InputsHash).Str("action", "verify").Send()
-		return &grpc.VerifyResponse{
-			Valid: true,
-		}, nil
-	}
-}
-
 func (p *proverServerBls12381) QueryStatsBls12381(ctx context.Context, req *grpc.QueryStatsRequest) (*grpc.QueryStatsResponse, error) {
 	log.Debug().Msg("Querying stats...")
 
@@ -330,27 +312,6 @@ func (p *proverServerBls12381) QueryStatsBls12381(ctx context.Context, req *grpc
 			NbPrivateCommitted: uint32(0),
 		},
 	}, nil
-}
-
-// Deprecated in favor of the Poll api
-func (p *proverServerBls12381) ProveBls12381(ctx context.Context, req *grpc.ProveRequest) (*grpc.ProveResponse, error) {
-	for true {
-		pollRes, err := p.PollBls12381(ctx, &grpc.PollRequest{
-			Request: req,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("%v", err)
-		}
-		if done := pollRes.GetDone(); done != nil {
-			return done.Response, nil
-		}
-		if failed := pollRes.GetFailed(); failed != nil {
-			return nil, fmt.Errorf("%v", failed.Message)
-		}
-		time.Sleep(1 * time.Second)
-	}
-
-	panic("impossible; qed;")
 }
 
 func loadOrCreateBls12381(r1csPath, pkPath, vkPath, innerR1csPath, innerPkPath, innerVkPath string) (cs_bls12381.R1CS, backend_bls12381.ProvingKey, backend_bls12381.VerifyingKey, cs_bn254.R1CS, backend_bn254.ProvingKey, backend_bn254.VerifyingKey, error) {
