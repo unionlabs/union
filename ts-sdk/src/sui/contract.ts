@@ -58,10 +58,10 @@ export const writeContract = (
   fn: string,
   typeArgs: string[],
   args: any[],
+  tx: Transaction,
 ) =>
   Effect.tryPromise({
     try: async () => {
-      const tx = new Transaction()
       tx.moveCall({
         target: `${packageId}::${module}::${fn}`,
         typeArguments: typeArgs,
