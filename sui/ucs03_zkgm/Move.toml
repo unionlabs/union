@@ -5,7 +5,6 @@ name    = "zkgm"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
 ibc = { local = "../ibc" }
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
@@ -19,8 +18,8 @@ ibc = { local = "../ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc  = "_"
-zkgm = "_"
+ibc  = "0x77a5973bb2296c956f1ad6ac0d0bffa0a2fb769b442b1fa8bb193f5c2dddc2b9"
+zkgm = "0x0"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
