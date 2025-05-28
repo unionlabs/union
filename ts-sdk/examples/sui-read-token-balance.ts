@@ -20,8 +20,7 @@ Effect.runPromiseExit(
     
     const token_address = "0xb152050bf26f6e49ad4367de0cc409d99408c4d92edf442d36bb005a08de32c8::fungible_token::FUNGIBLE_TOKEN";
     const user_address = "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779";
-    const is_native = false;
-    const result = yield* readCoinBalances(token_address, user_address, is_native).pipe(
+    const result = yield* readCoinBalances(token_address, user_address).pipe(
       Effect.provideService(SuiPublicClient, { client: publicClient }),
       Effect.tapErrorCause(cause => Effect.logError("Predict failed with cause", cause)),
       Effect.catchAllCause(cause =>
@@ -42,8 +41,7 @@ Effect.runPromiseExit(
     
     const token_address = "0xb152050bf26f6e49ad4367de0cc409d99408c4d92edf442d36bb005a08de32c8::fungible_token::FUNGIBLE_TOKEN";
     const user_address = "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779";
-    const is_native = false;
-    const result = yield* readTotalCoinBalance(token_address, user_address, is_native).pipe(
+    const result = yield* readTotalCoinBalance(token_address, user_address).pipe(
       Effect.provideService(SuiPublicClient, { client: publicClient }),
       Effect.tapErrorCause(cause => Effect.logError("Predict failed with cause", cause)),
       Effect.catchAllCause(cause =>
@@ -62,10 +60,9 @@ Effect.runPromiseExit(
     }
     const publicClient = yield* createSuiPublicClient(config)
     
-    const token_address = "0x2::sui::SUI";
+    const token_address = "0x2::sui::SUI"; //native
     const user_address = "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779";
-    const is_native = true;
-    const result = yield* readTotalCoinBalance(token_address, user_address, is_native).pipe(
+    const result = yield* readTotalCoinBalance(token_address, user_address).pipe(
       Effect.provideService(SuiPublicClient, { client: publicClient }),
       Effect.tapErrorCause(cause => Effect.logError("Predict failed with cause", cause)),
       Effect.catchAllCause(cause =>
