@@ -1,3 +1,4 @@
+import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
 import { Context, Data, Effect } from "effect"
 import {
   type Account,
@@ -11,10 +12,9 @@ import {
   type WriteContractErrorType,
 } from "viem"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import { SuiClient, SuiClientOptions } from '@mysten/sui/client';
 
 export class SuiPublicClientSource extends Context.Tag("SuiPublicClientSource")<
-SuiPublicClientSource,
+  SuiPublicClientSource,
   { readonly client: SuiClient }
 >() {}
 

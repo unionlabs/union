@@ -1,6 +1,6 @@
-import { Effect, Data } from "effect"
 import type { SuiClient } from "@mysten/sui/client"
 import { Transaction } from "@mysten/sui/transactions"
+import { Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 /**
@@ -26,7 +26,7 @@ export const readContract = <T>(
   fn: string,
   typeArgs: string[],
   args: any[],
-  tx: Transaction
+  tx: Transaction,
 ) =>
   Effect.tryPromise({
     try: async () => {
@@ -43,7 +43,7 @@ export const readContract = <T>(
       })
       return result.results // result as unknown as T
     },
-    catch: e => new readContractError({cause: extractErrorDetails(e as Error)}),
+    catch: e => new readContractError({ cause: extractErrorDetails(e as Error) }),
   }).pipe(
     // optional: e.g. timeout & retry like your Aptos wrapper
     Effect.timeout("10 seconds"),
@@ -74,4 +74,5 @@ export const writeContract = (
       })
       return res
     },
-    catch: e => new ExecuteContractError({cause: extractErrorDetails(e as Error)}),  })
+    catch: e => new ExecuteContractError({ cause: extractErrorDetails(e as Error) }),
+  })
