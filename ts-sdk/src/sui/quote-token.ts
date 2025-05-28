@@ -2,7 +2,6 @@ import { Effect } from "effect"
 import { SuiChannelDestination } from "./channel.js"
 import { SuiPublicClientDestination } from "./client.js"
 import { readContract } from "./contract.js"
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 import { Transaction } from "@mysten/sui/transactions"
 
 export type Hex = `0x${string}`
@@ -19,16 +18,14 @@ function bytesToHex(bs: number[]): `0x${string}` {
 
 export const predictQuoteToken = (baseToken: Hex) =>
   Effect.gen(function*() {
-    yield* Effect.log(`Predicting quote token for base token: ${baseToken}`)
     const client = (yield* SuiPublicClientDestination).client
     const config = yield* SuiChannelDestination
-    yield* Effect.log("AFTER Fetching client and config:")
+    yield* Effect.log(`Predicting quote token for base token: ${baseToken} at channel: ${config.channelId} on ZKGM Address: ${config.ucs03address}`)
 
     const contract_address = config.ucs03address
     const module_id = "zkgm_relay"
     const function_name = "compute_salt"
     const converted_base_token = baseToken
-    const keypair = new Ed25519Keypair();
 
     const tx = new Transaction()
     const function_arguments = [
@@ -41,7 +38,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
 
     const result = yield* readContract(
       client,
-      "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779",
+      "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779", // TODO: 
       contract_address,
       module_id,
       function_name,
@@ -50,9 +47,8 @@ export const predictQuoteToken = (baseToken: Hex) =>
       tx
     )
 
-
-    console.info("Result from readContract:", result[0].returnValues[0] as string)
-    const wrapped_token = result[0] as Hex
+    const rawBytes = result[0].returnValues[0] as number[]; // extract the vector<u8>
+    const wrapped_token = bytesToHex(rawBytes[0] as Hex)
 
     return wrapped_token
   })
