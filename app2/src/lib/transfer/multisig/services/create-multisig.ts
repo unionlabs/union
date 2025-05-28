@@ -8,12 +8,10 @@ import { generateSalt } from "@unionlabs/sdk/utils"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 import { Effect, Option, pipe } from "effect"
 import * as S from "effect/Schema"
-import { encodeAbiParameters } from "viem"
+import { encodeAbiParameters, fromHex } from "viem"
 
 export const createMultisigMessage = (context: TransferContext) =>
   Effect.gen(function*() {
-    console.log("[generateMultisigTx] intent:", JSON.parse(JSON.stringify(context)))
-
     const txToJson = S.encodeUnknown(S.parseJson(Tx))
     const sender = yield* context.intents[0].sourceChain.getDisplayAddress(
       // XXX: discriminate higher
@@ -21,22 +19,17 @@ export const createMultisigMessage = (context: TransferContext) =>
     )
     const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow().toString()
     const salt = yield* generateSalt("cosmos")
-    console.log("[generateMultisigTx] generated salt:", salt)
 
     const allowanceMsgs = pipe(
       context.allowances,
-      Option.map(allowances =>
-        allowances.flatMap(allowance => {
-          console.log("[allowance] token:", allowance.token)
-          return context.intents.flatMap(intent => {
-            console.log("[context] sourceChainId:", intent.sourceChainId)
-            console.log("[context] sender:", intent.sender)
-
+      Option.map((allowances) =>
+        allowances.flatMap((allowance) => {
+          return context.intents.flatMap((intent) => {
             return [
               {
                 "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
                 sender,
-                "contract": allowance.token,
+                "contract": fromHex(allowance.token, "string"),
                 "msg": {
                   increase_allowance: {
                     spender: intent.sourceChain.minter_address_display,
@@ -54,21 +47,14 @@ export const createMultisigMessage = (context: TransferContext) =>
 
     const instructionMsgs = pipe(
       context.instruction,
-      Option.map(instruction => {
-        console.log("[instruction] opcode:", instruction.opcode)
-        return context.intents.map(intent => {
-          console.log("[context] ucs03address:", intent.ucs03address)
-          console.log("[context] baseToken:", intent.baseToken)
-          console.log("[context] baseAmount:", intent.baseAmount)
+      Option.map((instruction) => {
+        return context.intents.map((intent) => {
           const isNative = !isValidBech32ContractAddress(intent.baseToken)
           const encodedInstruction = encodeAbiParameters(instructionAbi, [
             instruction.version,
             instruction.opcode,
             encodeAbi(instruction),
           ])
-
-          console.log("[isNative] ", isNative)
-          console.log("[instruction] encodedAbi:", encodedInstruction)
 
           return {
             "@type": "/cosmwasm.wasm.v1.MsgExecuteContract",
@@ -98,8 +84,6 @@ export const createMultisigMessage = (context: TransferContext) =>
     )
 
     const allMsgs = [...allowanceMsgs, ...instructionMsgs]
-    console.log("[generateMultisigTx] allMsgs count:", allMsgs.length)
-    console.dir(allMsgs)
 
     const encoded = txToJson({
       body: {
@@ -109,7 +93,7 @@ export const createMultisigMessage = (context: TransferContext) =>
 
     return yield* encoded
   }).pipe(
-    Effect.catchAll(cause => {
+    Effect.catchAll((cause) => {
       console.error("[generateMultisigTx] Fiber failure:", cause)
 
       return Effect.fail(
