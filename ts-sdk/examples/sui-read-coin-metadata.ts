@@ -26,6 +26,7 @@ Effect.runPromiseExit(
       ),
     )
     for (const { coinType, balance } of uniqueCoins) {
+      console.info(`Coin Type: ${coinType}, Balance: ${balance}`)
       const metadata = yield* readCoinMetadata(coinType).pipe(
         Effect.provideService(SuiPublicClient, { client: publicClient }),
         Effect.catchAllCause(cause =>
