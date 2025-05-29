@@ -55,8 +55,8 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
         to: UniversalChainId,
       ) => Effect.Effect<{
         ratio: number
-        source: PricingSource
-        destination: PricingSource
+        source: PriceSource
+        destination: PriceSource
       }, PriceError>
     >(),
   }),
