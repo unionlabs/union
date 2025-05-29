@@ -1,11 +1,9 @@
+import { Transaction } from "@mysten/sui/transactions"
 import { Effect } from "effect"
 import { encodeAbiParameters } from "viem"
 import { AptosChannelSource } from "../aptos/channel.js"
 import { AptosWalletClient } from "../aptos/client.js"
-import { SuiChannelSource } from "../sui/channel.js"
-import { SuiWalletClient } from "../sui/client.js"
 import { writeContract as writeContractAptos } from "../aptos/contract.js"
-import { writeContract as writeContractSui } from "../sui/contract.js"
 import { CosmosChannelSource } from "../cosmos/channel.js"
 import { SigningCosmWasmClientContext } from "../cosmos/client.js"
 import { executeContract } from "../cosmos/contract.js"
@@ -14,11 +12,13 @@ import { ucs03abi } from "../evm/abi/ucs03.js"
 import { EvmChannelSource } from "../evm/channel.js"
 import { ViemWalletClient } from "../evm/client.js"
 import { writeContract as writeContractEvm } from "../evm/contract.js"
+import { SuiChannelSource } from "../sui/channel.js"
+import { SuiWalletClient } from "../sui/client.js"
+import { writeContract as writeContractSui } from "../sui/contract.js"
+import { SuiFungibleAssetOrderDetails } from "../sui/fungible_asset_order_details.js"
 import { generateSalt } from "../utils/index.js"
 import { getTimeoutInNanoseconds24HoursFromNow } from "../utils/timeout.js"
 import { encodeAbi, FungibleAssetOrder, type Instruction } from "./instruction.js"
-import { Transaction } from '@mysten/sui/transactions';
-import { SuiFungibleAssetOrderDetails } from "../sui/fungible_asset_order_details.js"
 
 export const sendInstructionEvm = (instruction: Instruction) =>
   Effect.gen(function*() {
@@ -110,7 +110,6 @@ export const sendInstructionAptos = (instruction: Instruction) =>
     )
   })
 
-
 // turn a hex string like "0xdeadbeef" into a number[] of bytes
 function hexToBytes(hex: string): number[] {
   const h = hex.startsWith("0x") ? hex.slice(2) : hex
@@ -128,7 +127,7 @@ export const sendInstructionSui = (fungibleAssetOrder: FungibleAssetOrder) =>
     const module_name = "zkgm_relay"
     const function_name = "send"
     const tx = new Transaction()
-    
+
     const function_arguments = [
       tx.object(details.ibc_store),
       tx.object(details.relay_store),
@@ -137,10 +136,10 @@ export const sendInstructionSui = (fungibleAssetOrder: FungibleAssetOrder) =>
       tx.pure.u32(sourceConfig.channelId),
       tx.pure.u64(0),
       tx.pure.u64(timeoutTimestamp),
-      tx.pure.vector('u8', hexToBytes(salt)),
+      tx.pure.vector("u8", hexToBytes(salt)),
       tx.pure.u8(1),
       tx.pure.u8(3),
-      tx.pure.vector('u8', hexToBytes(encodeAbi(fungibleAssetOrder)))
+      tx.pure.vector("u8", hexToBytes(encodeAbi(fungibleAssetOrder))),
     ]
 
     return yield* writeContractSui(
@@ -151,7 +150,6 @@ export const sendInstructionSui = (fungibleAssetOrder: FungibleAssetOrder) =>
       function_name,
       [details.typename_t], // type arguments
       function_arguments,
-      tx
+      tx,
     )
   })
-  

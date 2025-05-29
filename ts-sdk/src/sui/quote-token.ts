@@ -13,9 +13,8 @@ function hexToBytes(hex: string): number[] {
 }
 
 function bytesToHex(bytes: number[]): `0x${string}` {
-  return '0x' + bytes.map(b => b.toString(16).padStart(2, '0')).join('')
+  return "0x" + bytes.map(b => b.toString(16).padStart(2, "0")).join("")
 }
-
 
 export const predictQuoteToken = (baseToken: Hex) =>
   Effect.gen(function*() {
@@ -47,9 +46,8 @@ export const predictQuoteToken = (baseToken: Hex) =>
       function_arguments,
       tx,
     )
-    const [rawBytes /*, _typeTag*/] =
-    result[0].returnValues[0] as [number[], string]
+    const [rawBytes /*, _typeTag*/] = result[0].returnValues[0] as [number[], string]
     const wrapped_token = bytesToHex(rawBytes.slice(1))
-    
+
     return wrapped_token
   })
