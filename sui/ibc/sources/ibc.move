@@ -1130,7 +1130,8 @@ module ibc::ibc {
         )
     }
 
-    fun deconstruct_port_id(mut port_id: String): (address, String) {
+    // module_address::module_name::store_1::store_2::..::store_n
+    fun deconstruct_port_id(mut port_id: String): std::ascii::String {
         if (port_id.substring(0, 2) == utf8(b"0x")) {
             port_id = port_id.substring(2, port_id.length());
         };
@@ -1152,30 +1153,25 @@ module ibc::ibc {
             port_id = rhs;
         };
 
-        std::debug::print(&parts);
+        assert!(parts.length() >= 3, 1);
 
-        assert!(parts.length() >= 4, 1);
+        let mut a = sui::address::from_ascii_bytes(parts[0].bytes()).to_ascii_string();
+        a.append(parts[1].to_ascii());
 
-        let a = sui::address::from_ascii_bytes(parts[0].bytes());
-
-        (a, parts[1])
+        a
     }
 
     fun validate_port<T: drop>(
         port_id: String,
         _: T,
-    ) {
-        // TODO(aeryz): assert T's typename is IbcAppWitness
-        
+    ) {       
         let caller_t = std::type_name::get<T>();
-        let caller_addr = caller_t.get_address();
-        let caller_module = caller_t.get_module();
 
-        let (port_address, port_module) = deconstruct_port_id(port_id);
-
+        let mut addr_module = deconstruct_port_id(port_id);
+        addr_module.append(std::ascii::string(b"IbcAppWitness"));
+        
         // ensure the port info matches the caller
-        assert!(port_address.to_ascii_string() == caller_addr, 1);
-        assert!(port_module.to_ascii() == caller_module, 2);
+        assert!(addr_module == std::type_name::get<T>().into_string(), 1)
     }
 
     public fun get_counterparty_connection(
