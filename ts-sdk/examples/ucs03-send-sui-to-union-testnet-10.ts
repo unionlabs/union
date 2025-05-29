@@ -103,7 +103,7 @@ Effect.runPromiseExit(
       }))
     )
     
-    yield* sendInstructionSui(transfer).pipe(
+    const returned = yield* sendInstructionSui(transfer).pipe(
       Effect.provideService(SuiWalletClient, { client: publicClient, signer: keypair }),
       Effect.provideService(SuiChannelSource, {
         ucs03address: SOURCE_UCS03_ADDRESS,
@@ -113,7 +113,7 @@ Effect.runPromiseExit(
         typename_t: "0xd32f121aec92e5179398e21ab9beb366d854b6f985bb326266228271c3697c95::fungible_token::FUNGIBLE_TOKEN",
         ibc_store: "0x97a40c1954f94607c473a03e67890a566e7b8d75e562a2f93ab468ece12b34e3",
         relay_store: "0x79f9dcae544c9ba9272e9b0eebb0e8f0abe4fd5c5971d2f87929584b050a48b2",
-        coin: "0xca7fb93d690a8ce20764421c378eb42daada699af8bba22eca2b54539619c390",
+        coin: "0x929ede1bef34a18d5cd7b69196eb2bcac980d1e940b66dc81f6f2d5ee7ebc547",
         metadata: "0x2d0cd827c09c8e9a36ce4f8b23ff45ff82d204bb975982b7dbbefe24f6c475a5"
       }),
       Effect.catchAllCause(cause =>
@@ -121,5 +121,6 @@ Effect.runPromiseExit(
           console.error("cause is:", cause);
       }))
     )
+    return returned
   }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
