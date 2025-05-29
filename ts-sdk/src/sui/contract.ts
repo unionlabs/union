@@ -2,6 +2,7 @@ import type { SuiClient } from "@mysten/sui/client"
 import { Transaction } from "@mysten/sui/transactions"
 import { Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
+import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 /**
  * Error type for Aptos contract query failures
@@ -52,7 +53,7 @@ export const readContract = <T>(
 
 export const writeContract = (
   client: SuiClient,
-  signer: { address: string; signAndExecute: any },
+  signer: Ed25519Keypair,
   packageId: string,
   module: string,
   fn: string,
