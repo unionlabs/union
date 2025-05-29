@@ -48,9 +48,9 @@ const TRANSFERS = [
   {
     sender: AddressCosmosZkgm.make(toHex("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2")),
     receiver: "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779",
-    baseToken: "union1tksllvfmfw9ajys27zlzx69wj5j0022ayhrwmql97nkefmhrqm4q4akuhq",
-    baseAmount: 11n,
-    quoteAmount: 11n
+    baseToken: "muno",
+    baseAmount: 321n,
+    quoteAmount: 321n
   }
 ] as const
 
@@ -122,23 +122,5 @@ Effect.runPromiseExit(
             channelId: 2,
           }),
       )
-    // yield* sendInstructionSui(transfer).pipe(
-    //   Effect.provideService(SuiWalletClient, { client: publicClient, signer: keypair }),
-    //   Effect.provideService(SuiChannelSource, {
-    //     ucs03address: SOURCE_UCS03_ADDRESS,
-    //     channelId: 2,
-    //   }),
-    //   Effect.provideService(SuiFungibleAssetOrderDetails, {
-    //     typename_t: "0xd32f121aec92e5179398e21ab9beb366d854b6f985bb326266228271c3697c95::fungible_token::FUNGIBLE_TOKEN",
-    //     ibc_store: "0x97a40c1954f94607c473a03e67890a566e7b8d75e562a2f93ab468ece12b34e3",
-    //     relay_store: "0x79f9dcae544c9ba9272e9b0eebb0e8f0abe4fd5c5971d2f87929584b050a48b2",
-    //     coin: "0xca7fb93d690a8ce20764421c378eb42daada699af8bba22eca2b54539619c390",
-    //     metadata: "0x2d0cd827c09c8e9a36ce4f8b23ff45ff82d204bb975982b7dbbefe24f6c475a5"
-    //   }),
-    //   Effect.catchAllCause(cause =>
-    //     Effect.sync(() => {
-    //       console.error("cause is:", cause);
-    //   }))
-    // )
   }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
