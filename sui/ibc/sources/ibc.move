@@ -83,8 +83,8 @@ module ibc::ibc {
     use sui::event;
 
     const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
-    const COMMITMENT_MAGIC: vector<u8> = x"0100000000000000000000000000000000000000000000000000000000000000";
-    const COMMITMENT_NULL: vector<u8> = x"0000000000000000000000000000000000000000000000000000000000000000";
+    const COMMITMENT_MAGIC: vector<u8>     = x"0100000000000000000000000000000000000000000000000000000000000000";
+    const COMMITMENT_MAGIC_ACK: vector<u8> = x"0200000000000000000000000000000000000000000000000000000000000000";
 
     const CLIENT_TYPE_COMETBLS: vector<u8> = b"cometbls";
 
@@ -151,7 +151,8 @@ module ibc::ibc {
     const E_CONNECTION_NOT_FOUND: u64 = 1048;
     const E_TIMEOUT_HEIGHT_NOT_SUPPORTED: u64 = 1049;
     const E_PACKET_ALREADY_SENT: u64 = 1050;
-    const E_BATCH_SAME_ONLY: u64 = 1051;
+    const E_BATCH_SAME_CHANNEL_ONLY: u64 = 1051;
+    const E_PACKET_ALREADY_ACKNOWLEDGED: u64 = 1061;
 
     public struct CreateClient has copy, drop, store {
         client_id: u32,
@@ -1194,6 +1195,16 @@ module ibc::ibc {
         }
     }
 
+    fun set_packet_acknowledged(ibc_store: &mut IBCStore, commitment_key: vector<u8>) {
+        assert!(ibc_store.commitments.contains(commitment_key), E_PACKET_COMMITMENT_NOT_FOUND);
+
+        let commitment = ibc_store.commitments.borrow_mut(commitment_key);
+        assert!(commitment != COMMITMENT_MAGIC_ACK, E_PACKET_ALREADY_ACKNOWLEDGED);
+        assert!(commitment == COMMITMENT_MAGIC, E_PACKET_COMMITMENT_NOT_FOUND);
+
+        *commitment = COMMITMENT_MAGIC_ACK;
+    }
+
     fun process_receive(
         ibc_store: &mut IBCStore,
         clock: &clock::Clock,
@@ -1247,7 +1258,7 @@ module ibc::ibc {
         while (i < l) {
             let packet = packets[i];
 
-            assert!(packet.destination_channel_id() == destination_channel, E_BATCH_SAME_ONLY);
+            assert!(packet.destination_channel_id() == destination_channel, E_BATCH_SAME_CHANNEL_ONLY);
 
             let current_timestamp = clock::timestamp_ms(clock) * 1_000_000; 
 
@@ -1298,6 +1309,114 @@ module ibc::ibc {
                     );
                 };
             };
+            i = i + 1;
+        }
+    }
+
+    public fun write_acknowledgement<T: drop>(
+        ibc_store: &mut IBCStore,
+        packet: packet::Packet,
+        acknowledgement: vector<u8>,
+        witness: T,
+    ) {
+        assert!(!acknowledgement.is_empty(), E_ACKNOWLEDGEMENT_IS_EMPTY);
+
+        if(!ibc_store.channels.contains(packet.destination_channel_id())) {
+            abort E_CHANNEL_NOT_FOUND
+        };
+
+        let channel = *ibc_store.channels.borrow(packet.destination_channel_id());
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+        let port_id = *ibc_store.channel_to_port.borrow(packet.destination_channel_id());
+        validate_port(port_id, witness);
+
+        let packet_hash = commitment::commit_packet(&packet);
+
+        let commitment_key =
+            commitment::batch_receipts_commitment_key(
+                packet_hash
+            );
+
+        inner_write_acknowledgement(ibc_store, commitment_key, acknowledgement);
+
+        event::emit(
+            WriteAck{
+                channel_id: packet.destination_channel_id(),
+                packet_hash,
+                acknowledgement,
+            }
+        )
+    }
+
+    public fun acknowledge_packet<T: drop>(
+        ibc_store: &mut IBCStore,
+        packets: vector<packet::Packet>,
+        acknowledgements: vector<vector<u8>>,
+        proof: vector<u8>,
+        proof_height: u64,
+        relayer: address,
+        witness: T
+    )  {
+        let l = vector::length(&packets);
+        assert!(l > 0, E_NOT_ENOUGH_PACKETS);
+
+        let source_channel = packets[0].source_channel_id();
+
+        let port_id = *ibc_store.channel_to_port.borrow(source_channel);
+        validate_port(port_id, witness);
+
+        if(!ibc_store.channels.contains(source_channel)) {
+            abort E_CHANNEL_NOT_FOUND
+        };
+        let channel = ibc_store.channels.borrow(source_channel);
+        assert!(channel.state() == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
+
+        let destination_channel = packets[0].destination_channel_id();
+
+        let client_id = ibc_store.connections.borrow(channel.connection_id()).client_id();
+
+        if (!ibc_store.clients.contains(client_id)) {
+            abort E_CLIENT_NOT_FOUND
+        };
+
+        let commitment_key = commitment::batch_receipts_commitment_key(
+            commitment::commit_packets(&packets)
+        );
+        let light_client = ibc_store.clients.borrow(client_id);
+        let err =
+            verify_commitment(
+                light_client,
+                proof_height,
+                proof,
+                commitment_key,
+                commitment::commit_acks(acknowledgements)
+            );
+
+        assert!(err == 0, err);
+
+        let mut i = 0;
+        while (i < l) {
+            let packet = packets[i];
+
+            assert!(packet.source_channel_id() == source_channel, E_BATCH_SAME_CHANNEL_ONLY);
+
+            let packet_hash = commitment::commit_packet(&packet);
+            let commitment_key =
+                commitment::batch_packets_commitment_key(
+                    packet_hash
+                );
+            set_packet_acknowledged(ibc_store, commitment_key);
+            
+            event::emit(
+                PacketAck {
+                    channel_id: source_channel,
+                    packet_hash,
+                    acknowledgement: acknowledgements[i],
+                    maker: relayer
+                }
+            );
+
             i = i + 1;
         }
     }
@@ -1356,37 +1475,6 @@ module ibc::ibc {
 
         ibc_store.commitments.add(commitment_key, commitment::commit_ack(acknowledgement));
     }
-
-    public fun write_acknowledgement(
-        ibc_store: &mut IBCStore,
-        packet: packet::Packet, acknowledgement: vector<u8>
-    ) {
-        assert!(!vector::is_empty(&acknowledgement), E_ACKNOWLEDGEMENT_IS_EMPTY);
-
-        if(!ibc_store.channels.contains(packet::destination_channel_id(&packet))) {
-            abort E_CHANNEL_NOT_FOUND
-        };
-        let channel = *ibc_store.channels.borrow(packet::destination_channel_id(&packet));
-        assert!(channel::state(&channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
-
-        let packet_hash = commitment::commit_packet(&packet);
-
-        let commitment_key =
-            commitment::batch_receipts_commitment_key(
-                packet_hash
-            );
-
-        inner_write_acknowledgement(ibc_store, commitment_key, acknowledgement);
-
-        event::emit(
-            WriteAck{
-                channel_id: packet::destination_channel_id(&packet),
-                packet_hash: packet_hash,
-                acknowledgement: acknowledgement,
-            }
-        )
-    }
-
 
     public fun timeout_packet(
         ibc_store: &mut IBCStore,
@@ -1454,108 +1542,6 @@ module ibc::ibc {
         ibc_store.commitments.remove(commitment_key);
 
         event::emit(TimeoutPacket { packet });
-    }
-
-    public fun acknowledge_packet(
-        ibc_store: &mut IBCStore,
-        packets: vector<packet::Packet>,
-        acknowledgements: vector<vector<u8>>,
-        proof: vector<u8>,
-        proof_height: u64,
-        relayer: address
-    )  {
-        let l = vector::length(&packets);
-        assert!(l > 0, E_NOT_ENOUGH_PACKETS);
-
-        let first_packet = packets[0];
-
-        let source_channel = packet::source_channel_id(&first_packet);
-        let destination_channel = packet::destination_channel_id(&first_packet);
-
-        if(!ibc_store.channels.contains(source_channel)) {
-            abort E_CHANNEL_NOT_FOUND
-        };
-        let channel = ibc_store.channels.borrow(source_channel);
-        assert!(channel::state(channel) == CHAN_STATE_OPEN, E_INVALID_CHANNEL_STATE);
-
-        let connection_id = channel::connection_id(channel);
-
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(
-            connection_end::state(connection) == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
-        );
-        let client_id = connection_end::client_id(connection);
-
-
-        let commitment_key;
-        if (l == 1) {
-            commitment_key = commitment::batch_receipts_commitment_key(
-                commitment::commit_packet(&first_packet)
-            )
-        } else {
-            commitment_key = commitment::batch_receipts_commitment_key(
-                commitment::commit_packets(&packets)
-            )
-        };
-        if (!ibc_store.clients.contains(client_id)) {
-            abort E_CLIENT_NOT_FOUND
-        };
-        let light_client = ibc_store.clients.borrow(client_id);
-
-        let err =
-            verify_commitment(
-                light_client,
-                proof_height,
-                proof,
-                commitment_key,
-                commitment::commit_acks(acknowledgements)
-            );
-
-        if (err != 0) {
-            abort err
-        };
-
-        let mut i = 0;
-        while (i < l) {
-            let packet = packets[i];
-            let packet_hash = commitment::commit_packet(&packet);
-            let commitment_key =
-                commitment::batch_packets_commitment_key(
-                    packet_hash
-                );
-
-            ibc_store.commitments.remove(commitment_key);
-            
-            let acknowledgement = *vector::borrow(&acknowledgements, i);
-
-            // TODO: verify if its all good
-            // onAcknowledgementPacket(...)
-            // if (ordering == CHAN_ORDERING_ORDERED) {
-            //     let commitment_key = commitment::next_sequence_ack_commitment_key(source_channel);
-            //     let expected_ack_sequence = bcs::new(*ibc_store.commitments.borrow(commitment_key)).peel_u64();
-
-            //     if (expected_ack_sequence != packet::sequence(&packet)) {
-            //         abort E_PACKET_SEQUENCE_ACK_SEQUENCE_MISMATCH
-            //     };
-                
-            //     add_or_update_table<vector<u8>, vector<u8>>(
-            //         &mut ibc_store.commitments,
-            //         commitment_key,
-            //         bcs::to_bytes<u64>(&(expected_ack_sequence + 1))
-            //     );
-            // };
-            event::emit(
-                PacketAck {
-                    channel_id: source_channel,
-                    packet_hash: packet_hash,
-                    acknowledgement: acknowledgement,
-                    maker: relayer
-                }
-            );
-
-            i = i + 1;
-        }
     }
 
     // #[test]
