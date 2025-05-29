@@ -3,16 +3,14 @@ import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.sve
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import { runPromiseExit$, runSync } from "$lib/runtime"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
+import FeeDetails from "$lib/transfer/shared/components/FeeDetails.svelte"
 import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import { Effect, identity, Match, Option } from "effect"
-import { onMount } from "svelte"
+import { Match, Option } from "effect"
 
 type Props = {
   onContinue: () => void
@@ -83,6 +81,7 @@ const isButtonEnabled = $derived.by(() => !loading)
     </button>
     <ChainAsset type="destination" />
     <Amount type="source" />
+    <FeeDetails />
   </div>
 
   <div class="grow"></div>
