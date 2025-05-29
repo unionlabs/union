@@ -149,38 +149,6 @@ module ibc::channel {
         buf
     }
 
-    // TODO: Do we need this?
-    // public fun decode(buf: vector<u8>): Option<Channel> {
-    //     let mut index = 0;
-
-    //     let state = (ethabi::decode_uint(&buf, &mut index) as u8);
-    //     let ordering = (ethabi::decode_uint(&buf, &mut index) as u8);
-    //     let connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
-    //     let counterparty_connection_id = (ethabi::decode_uint(&buf, &mut index) as u32);
-
-    //     let mut i = index;
-    //     while (i < index + 32) {
-    //         let char = *vector::borrow(&buf, i);
-
-    //         if (char == 0) { break };
-
-    //         i = i + 1;
-    //     };
-
-    //     let version = ethabi::vector_slice(&buf, index, i);
-
-    //     option::some(
-    //         new(
-    //             state,
-    //             ordering,
-    //             connection_id,
-    //             counterparty_connection_id,
-    //             version
-    //         )
-    //     )
-    // }
-
-    // Constructor
     public fun new(
         state: u8,
         connection_id: u32,
@@ -199,7 +167,6 @@ module ibc::channel {
         }
     }
 
-    // Default function
     public fun default(): Channel {
         new(0, 0, 0, vector::empty(), string::utf8(b""))
     }
