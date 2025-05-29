@@ -1,4 +1,5 @@
 import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Context, Data, Effect } from "effect"
 import {
   type Account,
@@ -12,7 +13,6 @@ import {
   type WriteContractErrorType,
 } from "viem"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 export class SuiPublicClientSource extends Context.Tag("SuiPublicClientSource")<
   SuiPublicClientSource,
@@ -74,7 +74,7 @@ export const createSuiPublicClient = (
 // the constructor function
 export const createSuiWalletClient = (
   options: SuiClientOptions,
-  signer: Ed25519Keypair
+  signer: Ed25519Keypair,
 ): Effect.Effect<SuiWalletClient, CreateSuiWalletClientError> =>
   Effect.try({
     try: () => ({
@@ -85,4 +85,4 @@ export const createSuiWalletClient = (
       new CreateSuiWalletClientError({
         cause: extractErrorDetails(err as CreateWalletClientErrorType),
       }),
-  });
+  })

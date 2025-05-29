@@ -1,8 +1,8 @@
 import type { SuiClient } from "@mysten/sui/client"
+import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import { Data, Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
-import { Ed25519Keypair } from '@mysten/sui/keypairs/ed25519';
 
 /**
  * Error type for Aptos contract query failures
