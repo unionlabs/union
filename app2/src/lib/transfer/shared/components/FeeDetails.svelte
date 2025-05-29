@@ -7,30 +7,30 @@ import { pipe } from "effect"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 
+let { open, onToggle } = $props()
 let loading = $state(false)
 let calculating = $state(false)
-let isExpanded = $state(false)
 
 function toggleExpanded() {
-  if (!loading) {
-    isExpanded = !isExpanded
+  if (!loading && onToggle) {
+    onToggle(!open)
   }
 }
 
 const feeConfig = {
-  baseFees: {
+  baseFees: { //From graphql
     packetSend: 21000,
     lightClientL1: 150000,
     lightClientL0: 500000,
     packetReceive: 80000,
   },
-  unitPrice: 10, // ubbn per computation unit
-  decimals: 6, // BABY token decimals
-  feeMultiplier: 0.20,
-  batchDivideNumber: 2,
-  gasTokenDecimals: 6,
-  gasTokenSymbol: "BABY",
-  usdPrice: 0.13,
+  unitPrice: 10, //gasPrice from chain 
+  decimals: 6, // BABY token decimals (in rep)
+  feeMultiplier: 0.20, //Union hardcoded fee
+  batchDivideNumber: 2, //Api?
+  gasTokenDecimals: 6, //Token data
+  gasTokenSymbol: "BABY", //Token data
+  usdPrice: 0.13, //Gas price from service
 }
 
 const applyGasPrice = (gasUnits: number) => gasUnits * feeConfig.unitPrice
@@ -124,10 +124,10 @@ const feeBreakdownItems = $derived([
 
 </script>
 
-<div class="w-full overflow-hidden">
+<div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
   <button
-    class="w-full p-3 flex items-center justify-between bg-zinc-900 transition-colors text-left {isExpanded ? 'rounded-t-md' : 'rounded-md'} {loading ? 'cursor-default' : 'hover:bg-zinc-800 cursor-pointer'}"
+    class="w-full p-3 flex items-center justify-between bg-zinc-900 transition-colors text-left {open ? 'rounded-t-md' : 'rounded-md'} {loading ? 'cursor-default' : 'hover:bg-zinc-800 cursor-pointer'}"
     onclick={toggleExpanded}
     disabled={loading}
   >
@@ -145,13 +145,13 @@ const feeBreakdownItems = $derived([
     </div>
     {#if !loading}
       <SharpChevronDownIcon 
-        class="size-5 text-zinc-400 transition-transform duration-200 {isExpanded ? 'rotate-180' : ''}"
+        class="size-5 text-zinc-400 transition-transform duration-200 {open ? 'rotate-180' : ''}"
       />
     {/if}
   </button>
 
   <!-- Expandable content -->
-  {#if isExpanded}
+  {#if open}
     <div 
       class="bg-zinc-900 rounded-b-md overflow-hidden border-t border-zinc-800"
       transition:slide={{ duration: 250 }}
@@ -303,7 +303,7 @@ const feeBreakdownItems = $derived([
       </div>
 
       <!-- Route visualization -->
-      <!-- <div class="border-t border-zinc-800 px-4 py-3">
+      <div class="border-t border-zinc-800 px-4 py-3">
         <div class="flex items-center justify-between text-xs mb-3">
           <span class="text-zinc-400 font-medium">Route</span>
           <span class="text-zinc-400">ETA 4m</span>
@@ -321,7 +321,7 @@ const feeBreakdownItems = $derived([
             <span class="text-xs font-bold text-white">₿</span>
           </div>
         </div>
-      </div> -->
+      </div>
     </div>
   {/if}
 </div> 
