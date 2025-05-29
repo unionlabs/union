@@ -1,8 +1,8 @@
 import { describe, it } from "@effect/vitest"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
-import { TokenRepresentation } from "@unionlabs/sdk/schema/token"
-import { Arbitrary, Effect, FastCheck as fc, Layer, Logger, Struct } from "effect"
+import { Effect, Layer, Logger } from "effect"
 import { PriceOracle } from "../src/PriceOracle.js"
+import { IN_NIX_BUILD } from "./utils.js"
 
 const LoggerTest = Logger.replace(Logger.defaultLogger, Logger.prettyLoggerDefault)
 
@@ -22,7 +22,7 @@ describe("Pricing", () => {
   it.layer(Layer.mergeAll(PriceOracle.Pyth, LoggerTest))(
     "Pyth",
     (it) =>
-      it.effect("scratchpad", () =>
+      it.effect.skipIf(IN_NIX_BUILD)("scratchpad", () =>
         Effect.gen(function*() {
           const id = UniversalChainId.make("ethereum.11155111")
           const pricing = yield* PriceOracle
