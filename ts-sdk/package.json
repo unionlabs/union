@@ -10,13 +10,7 @@
     "url": "https://github.com/unionlabs/union.git",
     "directory": "ts-sdk"
   },
-  "files": [
-    "LICENSE",
-    "README.md",
-    "dist",
-    "package.json",
-    "src"
-  ],
+  "files": ["LICENSE", "README.md", "dist", "package.json", "src"],
   "exports": {
     ".": {
       "import": "./dist/index.js",
