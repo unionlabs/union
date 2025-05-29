@@ -16,6 +16,7 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
+    "./*": "./src/*.js",
     "./ucs03": {
       "import": "./dist/ucs03/index.js",
       "types": "./dist/ucs03/index.d.ts"
