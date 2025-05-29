@@ -1,6 +1,5 @@
-// @generated
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ClientState {
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
@@ -20,15 +19,8 @@ pub struct ClientState {
     pub latest_height:
         ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
 }
-impl ::prost::Name for ClientState {
-    const NAME: &'static str = "ClientState";
-    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
-    }
-}
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ConsensusState {
     /// timestamp that corresponds to the block height in which the ConsensusState
     /// was stored.
@@ -42,30 +34,19 @@ pub struct ConsensusState {
     #[prost(bytes = "vec", tag = "3")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
 }
-impl ::prost::Name for ConsensusState {
-    const NAME: &'static str = "ConsensusState";
-    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
-    }
-}
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Misbehaviour {
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct Header {
     #[prost(message, optional, tag = "1")]
-    pub header_a: ::core::option::Option<Header>,
+    pub signed_header: ::core::option::Option<LightHeader>,
     #[prost(message, optional, tag = "2")]
-    pub header_b: ::core::option::Option<Header>,
-}
-impl ::prost::Name for Misbehaviour {
-    const NAME: &'static str = "Misbehaviour";
-    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
-    }
+    pub trusted_height:
+        ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
+    #[prost(bytes = "vec", tag = "3")]
+    pub zero_knowledge_proof: ::prost::alloc::vec::Vec<u8>,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct LightHeader {
     #[prost(int64, tag = "1")]
     pub height: i64,
@@ -79,23 +60,27 @@ pub struct LightHeader {
     #[prost(bytes = "vec", tag = "5")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
 }
-impl ::prost::Name for LightHeader {
-    const NAME: &'static str = "LightHeader";
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct Misbehaviour {
+    #[prost(message, optional, tag = "1")]
+    pub header_a: ::core::option::Option<Header>,
+    #[prost(message, optional, tag = "2")]
+    pub header_b: ::core::option::Option<Header>,
+}
+impl ::prost::Name for ClientState {
+    const NAME: &'static str = "ClientState";
     const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
     }
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Header {
-    #[prost(message, optional, tag = "1")]
-    pub signed_header: ::core::option::Option<LightHeader>,
-    #[prost(message, optional, tag = "2")]
-    pub trusted_height:
-        ::core::option::Option<super::super::super::super::super::ibc::core::client::v1::Height>,
-    #[prost(bytes = "vec", tag = "3")]
-    pub zero_knowledge_proof: ::prost::alloc::vec::Vec<u8>,
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for Header {
     const NAME: &'static str = "Header";
@@ -104,4 +89,17 @@ impl ::prost::Name for Header {
         ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for LightHeader {
+    const NAME: &'static str = "LightHeader";
+    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for Misbehaviour {
+    const NAME: &'static str = "Misbehaviour";
+    const PACKAGE: &'static str = "union.ibc.lightclients.cometbls.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ibc.lightclients.cometbls.v1.{}", Self::NAME)
+    }
+}

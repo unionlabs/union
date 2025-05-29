@@ -1,19 +1,11 @@
-// @generated
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GetBlockResultsRequest {
     #[prost(int64, tag = "1")]
     pub height: i64,
 }
-impl ::prost::Name for GetBlockResultsRequest {
-    const NAME: &'static str = "GetBlockResultsRequest";
-    const PACKAGE: &'static str = "tendermint.services.block_results.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tendermint.services.block_results.v1.{}", Self::NAME)
-    }
-}
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GetBlockResultsResponse {
     #[prost(int64, tag = "1")]
     pub height: i64,
@@ -29,6 +21,13 @@ pub struct GetBlockResultsResponse {
     #[prost(bytes = "vec", tag = "6")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for GetBlockResultsRequest {
+    const NAME: &'static str = "GetBlockResultsRequest";
+    const PACKAGE: &'static str = "tendermint.services.block_results.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.services.block_results.v1.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for GetBlockResultsResponse {
     const NAME: &'static str = "GetBlockResultsResponse";
     const PACKAGE: &'static str = "tendermint.services.block_results.v1";
@@ -36,4 +35,3 @@ impl ::prost::Name for GetBlockResultsResponse {
         ::prost::alloc::format!("tendermint.services.block_results.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

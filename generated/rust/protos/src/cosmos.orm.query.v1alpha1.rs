@@ -1,7 +1,6 @@
-// @generated
 /// GetRequest is the Query/Get request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GetRequest {
     /// message_name is the fully-qualified message name of the ORM table being queried.
     #[prost(string, tag = "1")]
@@ -17,32 +16,26 @@ pub struct GetRequest {
     #[prost(message, repeated, tag = "3")]
     pub values: ::prost::alloc::vec::Vec<IndexValue>,
 }
-impl ::prost::Name for GetRequest {
-    const NAME: &'static str = "GetRequest";
-    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
-    }
-}
 /// GetResponse is the Query/Get response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GetResponse {
     /// result is the result of the get query. If no value is found, the gRPC
     /// status code NOT_FOUND will be returned.
     #[prost(message, optional, tag = "1")]
     pub result: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
 }
-impl ::prost::Name for GetResponse {
-    const NAME: &'static str = "GetResponse";
-    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
-    }
+/// IndexValue represents the value of a field in an ORM index expression.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct IndexValue {
+    /// value specifies the index value
+    #[prost(oneof = "index_value::Value", tags = "1, 2, 3, 4, 5, 6, 7, 8")]
+    pub value: ::core::option::Option<index_value::Value>,
 }
 /// ListRequest is the Query/List request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ListRequest {
     /// message_name is the fully-qualified message name of the ORM table being queried.
     #[prost(string, tag = "1")]
@@ -60,71 +53,9 @@ pub struct ListRequest {
     #[prost(oneof = "list_request::Query", tags = "3, 4")]
     pub query: ::core::option::Option<list_request::Query>,
 }
-/// Nested message and enum types in `ListRequest`.
-pub mod list_request {
-    /// Prefix specifies the arguments to a prefix query.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Prefix {
-        /// values specifies the index values for the prefix query.
-        /// It is valid to special a partial prefix with fewer values than
-        /// the number of fields in the index.
-        #[prost(message, repeated, tag = "1")]
-        pub values: ::prost::alloc::vec::Vec<super::IndexValue>,
-    }
-    impl ::prost::Name for Prefix {
-        const NAME: &'static str = "Prefix";
-        const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
-        fn full_name() -> ::prost::alloc::string::String {
-            ::prost::alloc::format!("cosmos.orm.query.v1alpha1.ListRequest.{}", Self::NAME)
-        }
-    }
-    /// Range specifies the arguments to a range query.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
-    pub struct Range {
-        /// start specifies the starting index values for the range query.
-        /// It is valid to provide fewer values than the number of fields in the
-        /// index.
-        #[prost(message, repeated, tag = "1")]
-        pub start: ::prost::alloc::vec::Vec<super::IndexValue>,
-        /// end specifies the inclusive ending index values for the range query.
-        /// It is valid to provide fewer values than the number of fields in the
-        /// index.
-        #[prost(message, repeated, tag = "2")]
-        pub end: ::prost::alloc::vec::Vec<super::IndexValue>,
-    }
-    impl ::prost::Name for Range {
-        const NAME: &'static str = "Range";
-        const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
-        fn full_name() -> ::prost::alloc::string::String {
-            ::prost::alloc::format!("cosmos.orm.query.v1alpha1.ListRequest.{}", Self::NAME)
-        }
-    }
-    /// query is the query expression corresponding to the provided index. If
-    /// neither prefix nor range is specified, the query will list all the fields
-    /// in the index.
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Query {
-        /// prefix defines a prefix query.
-        #[prost(message, tag = "3")]
-        Prefix(Prefix),
-        /// range defines a range query.
-        #[prost(message, tag = "4")]
-        Range(Range),
-    }
-}
-impl ::prost::Name for ListRequest {
-    const NAME: &'static str = "ListRequest";
-    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
-    }
-}
 /// ListResponse is the Query/List response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ListResponse {
     /// results are the results of the query.
     #[prost(message, repeated, tag = "1")]
@@ -133,26 +64,11 @@ pub struct ListResponse {
     #[prost(message, optional, tag = "5")]
     pub pagination: ::core::option::Option<super::super::super::base::query::v1beta1::PageResponse>,
 }
-impl ::prost::Name for ListResponse {
-    const NAME: &'static str = "ListResponse";
-    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
-    }
-}
-/// IndexValue represents the value of a field in an ORM index expression.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct IndexValue {
-    /// value specifies the index value
-    #[prost(oneof = "index_value::Value", tags = "1, 2, 3, 4, 5, 6, 7, 8")]
-    pub value: ::core::option::Option<index_value::Value>,
-}
 /// Nested message and enum types in `IndexValue`.
 pub mod index_value {
     /// value specifies the index value
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, :: prost :: Oneof)]
     pub enum Value {
         /// uint specifies a value for an uint32, fixed32, uint64, or fixed64
         /// index field.
@@ -182,6 +98,75 @@ pub mod index_value {
         Duration(super::super::super::super::super::google::protobuf::Duration),
     }
 }
+/// Nested message and enum types in `ListRequest`.
+pub mod list_request {
+    /// Prefix specifies the arguments to a prefix query.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, :: prost :: Message)]
+    pub struct Prefix {
+        /// values specifies the index values for the prefix query.
+        /// It is valid to special a partial prefix with fewer values than
+        /// the number of fields in the index.
+        #[prost(message, repeated, tag = "1")]
+        pub values: ::prost::alloc::vec::Vec<super::IndexValue>,
+    }
+    /// Range specifies the arguments to a range query.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, :: prost :: Message)]
+    pub struct Range {
+        /// start specifies the starting index values for the range query.
+        /// It is valid to provide fewer values than the number of fields in the
+        /// index.
+        #[prost(message, repeated, tag = "1")]
+        pub start: ::prost::alloc::vec::Vec<super::IndexValue>,
+        /// end specifies the inclusive ending index values for the range query.
+        /// It is valid to provide fewer values than the number of fields in the
+        /// index.
+        #[prost(message, repeated, tag = "2")]
+        pub end: ::prost::alloc::vec::Vec<super::IndexValue>,
+    }
+    /// query is the query expression corresponding to the provided index. If
+    /// neither prefix nor range is specified, the query will list all the fields
+    /// in the index.
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, :: prost :: Oneof)]
+    pub enum Query {
+        /// prefix defines a prefix query.
+        #[prost(message, tag = "3")]
+        Prefix(Prefix),
+        /// range defines a range query.
+        #[prost(message, tag = "4")]
+        Range(Range),
+    }
+    impl ::prost::Name for Prefix {
+        const NAME: &'static str = "Prefix";
+        const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!("cosmos.orm.query.v1alpha1.ListRequest.{}", Self::NAME)
+        }
+    }
+    impl ::prost::Name for Range {
+        const NAME: &'static str = "Range";
+        const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+        fn full_name() -> ::prost::alloc::string::String {
+            ::prost::alloc::format!("cosmos.orm.query.v1alpha1.ListRequest.{}", Self::NAME)
+        }
+    }
+}
+impl ::prost::Name for GetRequest {
+    const NAME: &'static str = "GetRequest";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for GetResponse {
+    const NAME: &'static str = "GetResponse";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for IndexValue {
     const NAME: &'static str = "IndexValue";
     const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
@@ -189,4 +174,17 @@ impl ::prost::Name for IndexValue {
         ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for ListRequest {
+    const NAME: &'static str = "ListRequest";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ListResponse {
+    const NAME: &'static str = "ListResponse";
+    const PACKAGE: &'static str = "cosmos.orm.query.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.query.v1alpha1.{}", Self::NAME)
+    }
+}

@@ -1,7 +1,6 @@
-// @generated
 /// Module is the config object of the group module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Module {
     /// max_execution_period defines the max duration after a proposal's voting period ends that members can send a MsgExec
     /// to execute the proposal.
@@ -20,4 +19,3 @@ impl ::prost::Name for Module {
         ::prost::alloc::format!("cosmos.group.module.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

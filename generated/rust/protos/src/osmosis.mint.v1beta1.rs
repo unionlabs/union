@@ -1,42 +1,8 @@
-// @generated
-/// Minter represents the minting state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Minter {
-    /// epoch_provisions represent rewards for the current epoch.
-    #[prost(string, tag = "1")]
-    pub epoch_provisions: ::prost::alloc::string::String,
-}
-impl ::prost::Name for Minter {
-    const NAME: &'static str = "Minter";
-    const PACKAGE: &'static str = "osmosis.mint.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
-    }
-}
-/// WeightedAddress represents an address with a weight assigned to it.
-/// The weight is used to determine the proportion of the total minted
-/// tokens to be minted to the address.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct WeightedAddress {
-    #[prost(string, tag = "1")]
-    pub address: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub weight: ::prost::alloc::string::String,
-}
-impl ::prost::Name for WeightedAddress {
-    const NAME: &'static str = "WeightedAddress";
-    const PACKAGE: &'static str = "osmosis.mint.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
-    }
-}
 /// DistributionProportions defines the distribution proportions of the minted
 /// denom. In other words, defines which stakeholders will receive the minted
 /// denoms and how much.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct DistributionProportions {
     /// staking defines the proportion of the minted mint_denom that is to be
     /// allocated as staking rewards.
@@ -55,16 +21,32 @@ pub struct DistributionProportions {
     #[prost(string, tag = "4")]
     pub community_pool: ::prost::alloc::string::String,
 }
-impl ::prost::Name for DistributionProportions {
-    const NAME: &'static str = "DistributionProportions";
-    const PACKAGE: &'static str = "osmosis.mint.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
-    }
+/// GenesisState defines the mint module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GenesisState {
+    /// minter is an abstraction for holding current rewards information.
+    #[prost(message, optional, tag = "1")]
+    pub minter: ::core::option::Option<Minter>,
+    /// params defines all the parameters of the mint module.
+    #[prost(message, optional, tag = "2")]
+    pub params: ::core::option::Option<Params>,
+    /// reduction_started_epoch is the first epoch in which the reduction of mint
+    /// begins.
+    #[prost(int64, tag = "3")]
+    pub reduction_started_epoch: i64,
+}
+/// Minter represents the minting state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct Minter {
+    /// epoch_provisions represent rewards for the current epoch.
+    #[prost(string, tag = "1")]
+    pub epoch_provisions: ::prost::alloc::string::String,
 }
 /// Params holds parameters for the x/mint module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Params {
     /// mint_denom is the denom of the coin to mint.
     #[prost(string, tag = "1")]
@@ -99,27 +81,49 @@ pub struct Params {
     #[prost(int64, tag = "8")]
     pub minting_rewards_distribution_start_epoch: i64,
 }
-impl ::prost::Name for Params {
-    const NAME: &'static str = "Params";
+/// QueryEpochProvisionsRequest is the request type for the
+/// Query/EpochProvisions RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryEpochProvisionsRequest {}
+/// QueryEpochProvisionsResponse is the response type for the
+/// Query/EpochProvisions RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryEpochProvisionsResponse {
+    /// epoch_provisions is the current minting per epoch provisions value.
+    #[prost(bytes = "vec", tag = "1")]
+    pub epoch_provisions: ::prost::alloc::vec::Vec<u8>,
+}
+/// QueryParamsRequest is the request type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryParamsRequest {}
+/// QueryParamsResponse is the response type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryParamsResponse {
+    /// params defines the parameters of the module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+}
+/// WeightedAddress represents an address with a weight assigned to it.
+/// The weight is used to determine the proportion of the total minted
+/// tokens to be minted to the address.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct WeightedAddress {
+    #[prost(string, tag = "1")]
+    pub address: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub weight: ::prost::alloc::string::String,
+}
+impl ::prost::Name for DistributionProportions {
+    const NAME: &'static str = "DistributionProportions";
     const PACKAGE: &'static str = "osmosis.mint.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
     }
-}
-/// GenesisState defines the mint module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// minter is an abstraction for holding current rewards information.
-    #[prost(message, optional, tag = "1")]
-    pub minter: ::core::option::Option<Minter>,
-    /// params defines all the parameters of the mint module.
-    #[prost(message, optional, tag = "2")]
-    pub params: ::core::option::Option<Params>,
-    /// reduction_started_epoch is the first epoch in which the reduction of mint
-    /// begins.
-    #[prost(int64, tag = "3")]
-    pub reduction_started_epoch: i64,
 }
 impl ::prost::Name for GenesisState {
     const NAME: &'static str = "GenesisState";
@@ -128,52 +132,26 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
     }
 }
-/// QueryParamsRequest is the request type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsRequest {}
-impl ::prost::Name for QueryParamsRequest {
-    const NAME: &'static str = "QueryParamsRequest";
+impl ::prost::Name for Minter {
+    const NAME: &'static str = "Minter";
     const PACKAGE: &'static str = "osmosis.mint.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
     }
 }
-/// QueryParamsResponse is the response type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryParamsResponse {
-    /// params defines the parameters of the module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for QueryParamsResponse {
-    const NAME: &'static str = "QueryParamsResponse";
+impl ::prost::Name for Params {
+    const NAME: &'static str = "Params";
     const PACKAGE: &'static str = "osmosis.mint.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
     }
 }
-/// QueryEpochProvisionsRequest is the request type for the
-/// Query/EpochProvisions RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryEpochProvisionsRequest {}
 impl ::prost::Name for QueryEpochProvisionsRequest {
     const NAME: &'static str = "QueryEpochProvisionsRequest";
     const PACKAGE: &'static str = "osmosis.mint.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
     }
-}
-/// QueryEpochProvisionsResponse is the response type for the
-/// Query/EpochProvisions RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryEpochProvisionsResponse {
-    /// epoch_provisions is the current minting per epoch provisions value.
-    #[prost(bytes = "vec", tag = "1")]
-    pub epoch_provisions: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for QueryEpochProvisionsResponse {
     const NAME: &'static str = "QueryEpochProvisionsResponse";
@@ -182,4 +160,24 @@ impl ::prost::Name for QueryEpochProvisionsResponse {
         ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for QueryParamsRequest {
+    const NAME: &'static str = "QueryParamsRequest";
+    const PACKAGE: &'static str = "osmosis.mint.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for QueryParamsResponse {
+    const NAME: &'static str = "QueryParamsResponse";
+    const PACKAGE: &'static str = "osmosis.mint.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for WeightedAddress {
+    const NAME: &'static str = "WeightedAddress";
+    const PACKAGE: &'static str = "osmosis.mint.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("osmosis.mint.v1beta1.{}", Self::NAME)
+    }
+}

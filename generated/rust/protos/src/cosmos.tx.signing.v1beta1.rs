@@ -1,42 +1,8 @@
-// @generated
-/// SignatureDescriptors wraps multiple SignatureDescriptor's.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SignatureDescriptors {
-    /// signatures are the signature descriptors
-    #[prost(message, repeated, tag = "1")]
-    pub signatures: ::prost::alloc::vec::Vec<SignatureDescriptor>,
-}
-impl ::prost::Name for SignatureDescriptors {
-    const NAME: &'static str = "SignatureDescriptors";
-    const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.tx.signing.v1beta1.{}", Self::NAME)
-    }
-}
-/// SignatureDescriptor is a convenience type which represents the full data for
-/// a signature including the public key of the signer, signing modes and the
-/// signature itself. It is primarily used for coordinating signatures between
-/// clients.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SignatureDescriptor {
-    /// public_key is the public key of the signer
-    #[prost(message, optional, tag = "1")]
-    pub public_key: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
-    #[prost(message, optional, tag = "2")]
-    pub data: ::core::option::Option<signature_descriptor::Data>,
-    /// sequence is the sequence of the account, which describes the
-    /// number of committed transactions signed by a given address. It is used to prevent
-    /// replay attacks.
-    #[prost(uint64, tag = "3")]
-    pub sequence: u64,
-}
 /// Nested message and enum types in `SignatureDescriptor`.
 pub mod signature_descriptor {
     /// Data represents signature data
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, :: prost :: Message)]
     pub struct Data {
         /// sum is the oneof that specifies whether this represents single or multi-signature data
         #[prost(oneof = "data::Sum", tags = "1, 2")]
@@ -44,30 +10,9 @@ pub mod signature_descriptor {
     }
     /// Nested message and enum types in `Data`.
     pub mod data {
-        /// Single is the signature data for a single signer
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
-        pub struct Single {
-            /// mode is the signing mode of the single signer
-            #[prost(enumeration = "super::super::SignMode", tag = "1")]
-            pub mode: i32,
-            /// signature is the raw signature bytes
-            #[prost(bytes = "vec", tag = "2")]
-            pub signature: ::prost::alloc::vec::Vec<u8>,
-        }
-        impl ::prost::Name for Single {
-            const NAME: &'static str = "Single";
-            const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
-            fn full_name() -> ::prost::alloc::string::String {
-                ::prost::alloc::format!(
-                    "cosmos.tx.signing.v1beta1.SignatureDescriptor.Data.{}",
-                    Self::NAME
-                )
-            }
-        }
         /// Multi is the signature data for a multisig public key
         #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Message)]
+        #[derive(Clone, PartialEq, :: prost :: Message)]
         pub struct Multi {
             /// bitarray specifies which keys within the multisig are signing
             #[prost(message, optional, tag = "1")]
@@ -77,6 +22,28 @@ pub mod signature_descriptor {
             /// signatures is the signatures of the multi-signature
             #[prost(message, repeated, tag = "2")]
             pub signatures: ::prost::alloc::vec::Vec<super::Data>,
+        }
+        /// Single is the signature data for a single signer
+        #[allow(clippy::derive_partial_eq_without_eq)]
+        #[derive(Clone, PartialEq, :: prost :: Message)]
+        pub struct Single {
+            /// mode is the signing mode of the single signer
+            #[prost(enumeration = "super::super::SignMode", tag = "1")]
+            pub mode: i32,
+            /// signature is the raw signature bytes
+            #[prost(bytes = "vec", tag = "2")]
+            pub signature: ::prost::alloc::vec::Vec<u8>,
+        }
+        /// sum is the oneof that specifies whether this represents single or multi-signature data
+        #[allow(clippy::derive_partial_eq_without_eq)]
+        #[derive(Clone, PartialEq, :: prost :: Oneof)]
+        pub enum Sum {
+            /// single represents a single signer
+            #[prost(message, tag = "1")]
+            Single(Single),
+            /// multi represents a multisig signer
+            #[prost(message, tag = "2")]
+            Multi(Multi),
         }
         impl ::prost::Name for Multi {
             const NAME: &'static str = "Multi";
@@ -88,16 +55,15 @@ pub mod signature_descriptor {
                 )
             }
         }
-        /// sum is the oneof that specifies whether this represents single or multi-signature data
-        #[allow(clippy::derive_partial_eq_without_eq)]
-        #[derive(Clone, PartialEq, ::prost::Oneof)]
-        pub enum Sum {
-            /// single represents a single signer
-            #[prost(message, tag = "1")]
-            Single(Single),
-            /// multi represents a multisig signer
-            #[prost(message, tag = "2")]
-            Multi(Multi),
+        impl ::prost::Name for Single {
+            const NAME: &'static str = "Single";
+            const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
+            fn full_name() -> ::prost::alloc::string::String {
+                ::prost::alloc::format!(
+                    "cosmos.tx.signing.v1beta1.SignatureDescriptor.Data.{}",
+                    Self::NAME
+                )
+            }
         }
     }
     impl ::prost::Name for Data {
@@ -111,13 +77,6 @@ pub mod signature_descriptor {
         }
     }
 }
-impl ::prost::Name for SignatureDescriptor {
-    const NAME: &'static str = "SignatureDescriptor";
-    const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.tx.signing.v1beta1.{}", Self::NAME)
-    }
-}
 /// SignMode represents a signing mode with its own security guarantees.
 ///
 /// This enum should be considered a registry of all known sign modes
@@ -126,7 +85,7 @@ impl ::prost::Name for SignatureDescriptor {
 /// encouraged to open a small PR against this file to add a new case
 /// to this SignMode enum describing their sign mode so that different
 /// apps have a consistent version of this enum.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, :: prost :: Enumeration)]
 #[repr(i32)]
 pub enum SignMode {
     /// SIGN_MODE_UNSPECIFIED specifies an unknown signing mode and will be
@@ -162,6 +121,46 @@ pub enum SignMode {
     /// Since: cosmos-sdk 0.45.2
     Eip191 = 191,
 }
+/// SignatureDescriptor is a convenience type which represents the full data for
+/// a signature including the public key of the signer, signing modes and the
+/// signature itself. It is primarily used for coordinating signatures between
+/// clients.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct SignatureDescriptor {
+    /// public_key is the public key of the signer
+    #[prost(message, optional, tag = "1")]
+    pub public_key: ::core::option::Option<super::super::super::super::google::protobuf::Any>,
+    #[prost(message, optional, tag = "2")]
+    pub data: ::core::option::Option<signature_descriptor::Data>,
+    /// sequence is the sequence of the account, which describes the
+    /// number of committed transactions signed by a given address. It is used to prevent
+    /// replay attacks.
+    #[prost(uint64, tag = "3")]
+    pub sequence: u64,
+}
+/// SignatureDescriptors wraps multiple SignatureDescriptor's.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct SignatureDescriptors {
+    /// signatures are the signature descriptors
+    #[prost(message, repeated, tag = "1")]
+    pub signatures: ::prost::alloc::vec::Vec<SignatureDescriptor>,
+}
+impl ::prost::Name for SignatureDescriptor {
+    const NAME: &'static str = "SignatureDescriptor";
+    const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.tx.signing.v1beta1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for SignatureDescriptors {
+    const NAME: &'static str = "SignatureDescriptors";
+    const PACKAGE: &'static str = "cosmos.tx.signing.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.tx.signing.v1beta1.{}", Self::NAME)
+    }
+}
 impl SignMode {
     /// String value of the enum field names used in the ProtoBuf definition.
     ///
@@ -190,4 +189,3 @@ impl SignMode {
         }
     }
 }
-// @@protoc_insertion_point(module)

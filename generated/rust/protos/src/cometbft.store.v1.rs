@@ -1,7 +1,6 @@
-// @generated
 /// BlockStoreState represents the state of the block store.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct BlockStoreState {
     #[prost(int64, tag = "1")]
     pub base: i64,
@@ -15,4 +14,3 @@ impl ::prost::Name for BlockStoreState {
         ::prost::alloc::format!("cometbft.store.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

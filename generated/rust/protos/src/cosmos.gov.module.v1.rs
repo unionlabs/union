@@ -1,7 +1,6 @@
-// @generated
 /// Module is the config object of the gov module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Module {
     /// max_metadata_len defines the maximum proposal metadata length.
     /// Defaults to 255 if not explicitly set.
@@ -18,4 +17,3 @@ impl ::prost::Name for Module {
         ::prost::alloc::format!("cosmos.gov.module.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

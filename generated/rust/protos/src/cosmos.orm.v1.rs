@@ -1,30 +1,6 @@
-// @generated
-/// TableDescriptor describes an ORM table.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct TableDescriptor {
-    /// primary_key defines the primary key for the table.
-    #[prost(message, optional, tag = "1")]
-    pub primary_key: ::core::option::Option<PrimaryKeyDescriptor>,
-    /// index defines one or more secondary indexes.
-    #[prost(message, repeated, tag = "2")]
-    pub index: ::prost::alloc::vec::Vec<SecondaryIndexDescriptor>,
-    /// id is a non-zero integer ID that must be unique within the
-    /// tables and singletons in this file. It may be deprecated in the future when this
-    /// can be auto-generated.
-    #[prost(uint32, tag = "3")]
-    pub id: u32,
-}
-impl ::prost::Name for TableDescriptor {
-    const NAME: &'static str = "TableDescriptor";
-    const PACKAGE: &'static str = "cosmos.orm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.orm.v1.{}", Self::NAME)
-    }
-}
 /// PrimaryKeyDescriptor describes a table primary key.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct PrimaryKeyDescriptor {
     /// fields is a comma-separated list of fields in the primary key. Spaces are
     /// not allowed. Supported field types, their encodings, and any applicable constraints
@@ -67,16 +43,9 @@ pub struct PrimaryKeyDescriptor {
     #[prost(bool, tag = "2")]
     pub auto_increment: bool,
 }
-impl ::prost::Name for PrimaryKeyDescriptor {
-    const NAME: &'static str = "PrimaryKeyDescriptor";
-    const PACKAGE: &'static str = "cosmos.orm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.orm.v1.{}", Self::NAME)
-    }
-}
 /// PrimaryKeyDescriptor describes a table secondary index.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct SecondaryIndexDescriptor {
     /// fields is a comma-separated list of fields in the index. The supported
     /// field types are the same as those for PrimaryKeyDescriptor.fields.
@@ -98,22 +67,45 @@ pub struct SecondaryIndexDescriptor {
     #[prost(bool, tag = "3")]
     pub unique: bool,
 }
-impl ::prost::Name for SecondaryIndexDescriptor {
-    const NAME: &'static str = "SecondaryIndexDescriptor";
-    const PACKAGE: &'static str = "cosmos.orm.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.orm.v1.{}", Self::NAME)
-    }
-}
 /// TableDescriptor describes an ORM singleton table which has at most one instance.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct SingletonDescriptor {
     /// id is a non-zero integer ID that must be unique within the
     /// tables and singletons in this file. It may be deprecated in the future when this
     /// can be auto-generated.
     #[prost(uint32, tag = "1")]
     pub id: u32,
+}
+/// TableDescriptor describes an ORM table.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct TableDescriptor {
+    /// primary_key defines the primary key for the table.
+    #[prost(message, optional, tag = "1")]
+    pub primary_key: ::core::option::Option<PrimaryKeyDescriptor>,
+    /// index defines one or more secondary indexes.
+    #[prost(message, repeated, tag = "2")]
+    pub index: ::prost::alloc::vec::Vec<SecondaryIndexDescriptor>,
+    /// id is a non-zero integer ID that must be unique within the
+    /// tables and singletons in this file. It may be deprecated in the future when this
+    /// can be auto-generated.
+    #[prost(uint32, tag = "3")]
+    pub id: u32,
+}
+impl ::prost::Name for PrimaryKeyDescriptor {
+    const NAME: &'static str = "PrimaryKeyDescriptor";
+    const PACKAGE: &'static str = "cosmos.orm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for SecondaryIndexDescriptor {
+    const NAME: &'static str = "SecondaryIndexDescriptor";
+    const PACKAGE: &'static str = "cosmos.orm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.v1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for SingletonDescriptor {
     const NAME: &'static str = "SingletonDescriptor";
@@ -122,4 +114,10 @@ impl ::prost::Name for SingletonDescriptor {
         ::prost::alloc::format!("cosmos.orm.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for TableDescriptor {
+    const NAME: &'static str = "TableDescriptor";
+    const PACKAGE: &'static str = "cosmos.orm.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.v1.{}", Self::NAME)
+    }
+}

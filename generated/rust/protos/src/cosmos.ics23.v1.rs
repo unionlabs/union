@@ -1,4 +1,55 @@
-// @generated
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct CompressedBatchProof {
+    #[prost(message, repeated, tag = "1")]
+    pub entries: ::prost::alloc::vec::Vec<CompressedBatchEntry>,
+    #[prost(message, repeated, tag = "2")]
+    pub lookup_inners: ::prost::alloc::vec::Vec<InnerOp>,
+}
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct CompressedExistenceProof {
+    #[prost(bytes = "vec", tag = "1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "2")]
+    pub value: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "3")]
+    pub leaf: ::core::option::Option<LeafOp>,
+    /// these are indexes into the lookup_inners table in CompressedBatchProof
+    #[prost(int32, repeated, tag = "4")]
+    pub path: ::prost::alloc::vec::Vec<i32>,
+}
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct CompressedNonExistenceProof {
+    /// TODO: remove this as unnecessary??? we prove a range
+    #[prost(bytes = "vec", tag = "1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub left: ::core::option::Option<CompressedExistenceProof>,
+    #[prost(message, optional, tag = "3")]
+    pub right: ::core::option::Option<CompressedExistenceProof>,
+}
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, :: prost :: Enumeration)]
+#[repr(i32)]
+pub enum HashOp {
+    /// NO_HASH is the default if no data passed. Note this is an illegal argument some places.
+    NoHash = 0,
+    Sha256 = 1,
+    Sha512 = 2,
+    Keccak256 = 3,
+    Ripemd160 = 4,
+    /// ripemd160(sha256(x))
+    Bitcoin = 5,
+    Sha512256 = 6,
+    Blake2b512 = 7,
+    Blake2s256 = 8,
+    Blake3 = 9,
+}
 /// *
 /// ExistenceProof takes a key and a value and a set of steps to perform on it.
 /// The result of peforming all these steps will provide a "root hash", which can
@@ -21,7 +72,7 @@
 /// length-prefix the data before hashing it.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ExistenceProof {
     #[prost(bytes = "vec", tag = "1")]
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
@@ -36,65 +87,36 @@ pub struct ExistenceProof {
     #[cfg_attr(feature = "serde", serde(default))]
     pub path: ::prost::alloc::vec::Vec<InnerOp>,
 }
-impl ::prost::Name for ExistenceProof {
-    const NAME: &'static str = "ExistenceProof";
-    const PACKAGE: &'static str = "cosmos.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
-    }
-}
-/// NonExistenceProof takes a proof of two neighbors, one left of the desired key,
-/// one right of the desired key. If both proofs are valid AND they are neighbors,
-/// then there is no valid proof for the given key.
+/// *
+/// InnerOp represents a merkle-proof step that is not a leaf.
+/// It represents concatenating two children and hashing them to provide the next result.
+///
+/// The result of the previous step is passed in, so the signature of this op is:
+/// innerOp(child) -> output
+///
+/// The result of applying InnerOp should be:
+/// output = op.hash(op.prefix || child || op.suffix)
+///
+/// where the || operator is concatenation of binary data,
+/// and child is the result of hashing all the tree below this step.
+///
+/// Any special data, like prepending child with the length, or prepending the entire operation with
+/// some value to differentiate from leaf nodes, should be included in prefix and suffix.
+/// If either of prefix or suffix is empty, we just treat it as an empty string
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NonExistenceProof {
-    /// TODO: remove this as unnecessary??? we prove a range
-    #[prost(bytes = "vec", tag = "1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "2")]
-    pub left: ::core::option::Option<ExistenceProof>,
-    #[prost(message, optional, tag = "3")]
-    pub right: ::core::option::Option<ExistenceProof>,
-}
-impl ::prost::Name for NonExistenceProof {
-    const NAME: &'static str = "NonExistenceProof";
-    const PACKAGE: &'static str = "cosmos.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
-    }
-}
-/// CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CommitmentProof {
-    #[prost(oneof = "commitment_proof::Proof", tags = "1, 2, 3, 4")]
-    pub proof: ::core::option::Option<commitment_proof::Proof>,
-}
-/// Nested message and enum types in `CommitmentProof`.
-pub mod commitment_proof {
-    #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Proof {
-        #[prost(message, tag = "1")]
-        Exist(super::ExistenceProof),
-        #[prost(message, tag = "2")]
-        Nonexist(super::NonExistenceProof),
-        #[prost(message, tag = "3")]
-        Batch(super::BatchProof),
-        #[prost(message, tag = "4")]
-        Compressed(super::CompressedBatchProof),
-    }
-}
-impl ::prost::Name for CommitmentProof {
-    const NAME: &'static str = "CommitmentProof";
-    const PACKAGE: &'static str = "cosmos.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
-    }
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct InnerOp {
+    #[prost(enumeration = "HashOp", tag = "1")]
+    pub hash: i32,
+    #[prost(bytes = "vec", tag = "2")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub prefix: ::prost::alloc::vec::Vec<u8>,
+    #[prost(bytes = "vec", tag = "3")]
+    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
+    #[cfg_attr(feature = "serde", serde(default))]
+    pub suffix: ::prost::alloc::vec::Vec<u8>,
 }
 /// *
 /// LeafOp represents the raw key-value data we wish to prove, and
@@ -113,7 +135,7 @@ impl ::prost::Name for CommitmentProof {
 /// output = hash(prefix || length(hkey) || hkey || length(hvalue) || hvalue)
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct LeafOp {
     #[prost(enumeration = "HashOp", tag = "1")]
     #[cfg_attr(feature = "serde", serde(default))]
@@ -134,50 +156,33 @@ pub struct LeafOp {
     #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
 }
-impl ::prost::Name for LeafOp {
-    const NAME: &'static str = "LeafOp";
-    const PACKAGE: &'static str = "cosmos.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
-    }
-}
 /// *
-/// InnerOp represents a merkle-proof step that is not a leaf.
-/// It represents concatenating two children and hashing them to provide the next result.
-///
-/// The result of the previous step is passed in, so the signature of this op is:
-/// innerOp(child) -> output
-///
-/// The result of applying InnerOp should be:
-/// output = op.hash(op.prefix || child || op.suffix)
-///
-/// where the || operator is concatenation of binary data,
-/// and child is the result of hashing all the tree below this step.
-///
-/// Any special data, like prepending child with the length, or prepending the entire operation with
-/// some value to differentiate from leaf nodes, should be included in prefix and suffix.
-/// If either of prefix or suffix is empty, we just treat it as an empty string
+/// LengthOp defines how to process the key and value of the LeafOp
+/// to include length information. After encoding the length with the given
+/// algorithm, the length will be prepended to the key and value bytes.
+/// (Each one with it's own encoded length)
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct InnerOp {
-    #[prost(enumeration = "HashOp", tag = "1")]
-    pub hash: i32,
-    #[prost(bytes = "vec", tag = "2")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
-    #[cfg_attr(feature = "serde", serde(default))]
-    pub prefix: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "3")]
-    #[cfg_attr(feature = "serde", serde(with = "::serde_utils::base64"))]
-    #[cfg_attr(feature = "serde", serde(default))]
-    pub suffix: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for InnerOp {
-    const NAME: &'static str = "InnerOp";
-    const PACKAGE: &'static str = "cosmos.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
-    }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, :: prost :: Enumeration)]
+#[repr(i32)]
+pub enum LengthOp {
+    /// NO_PREFIX don't include any length info
+    NoPrefix = 0,
+    /// VAR_PROTO uses protobuf (and go-amino) varint encoding of the length
+    VarProto = 1,
+    /// VAR_RLP uses rlp int encoding of the length
+    VarRlp = 2,
+    /// FIXED32_BIG uses big-endian encoding of the length as a 32 bit integer
+    Fixed32Big = 3,
+    /// FIXED32_LITTLE uses little-endian encoding of the length as a 32 bit integer
+    Fixed32Little = 4,
+    /// FIXED64_BIG uses big-endian encoding of the length as a 64 bit integer
+    Fixed64Big = 5,
+    /// FIXED64_LITTLE uses little-endian encoding of the length as a 64 bit integer
+    Fixed64Little = 6,
+    /// REQUIRE_32_BYTES is like NONE, but will fail if the input is not exactly 32 bytes (sha256 output)
+    Require32Bytes = 7,
+    /// REQUIRE_64_BYTES is like NONE, but will fail if the input is not exactly 64 bytes (sha512 output)
+    Require64Bytes = 8,
 }
 /// *
 /// ProofSpec defines what the expected parameters are for a given proof type.
@@ -192,7 +197,7 @@ impl ::prost::Name for InnerOp {
 /// tree format server uses. But not in code, rather a configuration object.
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ProofSpec {
     /// any field in the ExistenceProof must be the same as in this spec.
     /// except Prefix, which is just the first bytes of prefix (spec can be longer)
@@ -201,7 +206,6 @@ pub struct ProofSpec {
     #[prost(message, optional, tag = "2")]
     pub inner_spec: ::core::option::Option<InnerSpec>,
     /// max_depth (if > 0) is the maximum number of InnerOps allowed (mainly for fixed-depth tries)
-    /// the max_depth is interpreted as 128 if set to 0
     #[prost(int32, tag = "3")]
     #[cfg_attr(feature = "serde", serde(default))]
     pub max_depth: i32,
@@ -216,12 +220,21 @@ pub struct ProofSpec {
     #[cfg_attr(feature = "serde", serde(default))]
     pub prehash_key_before_comparison: bool,
 }
-impl ::prost::Name for ProofSpec {
-    const NAME: &'static str = "ProofSpec";
-    const PACKAGE: &'static str = "cosmos.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
-    }
+/// BatchProof is a group of multiple proof types than can be compressed
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct BatchProof {
+    #[prost(message, repeated, tag = "1")]
+    pub entries: ::prost::alloc::vec::Vec<BatchEntry>,
+}
+/// CommitmentProof is either an ExistenceProof or a NonExistenceProof, or a Batch of such messages
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct CommitmentProof {
+    #[prost(oneof = "commitment_proof::Proof", tags = "1, 2, 3, 4")]
+    pub proof: ::core::option::Option<commitment_proof::Proof>,
 }
 /// InnerSpec contains all store-specific structure info to determine if two proofs from a
 /// given store are neighbors.
@@ -233,7 +246,7 @@ impl ::prost::Name for ProofSpec {
 /// isLeftNeighbor(spec: InnerSpec, left: InnerOp, right: InnerOp)
 #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct InnerSpec {
     /// Child order is the ordering of the children node, must count from 0
     /// iavl tree is \[0, 1\] (left then right)
@@ -244,7 +257,6 @@ pub struct InnerSpec {
     pub child_size: i32,
     #[prost(int32, tag = "3")]
     pub min_prefix_length: i32,
-    /// the max prefix length must be less than the minimum prefix length + child size
     #[prost(int32, tag = "4")]
     pub max_prefix_length: i32,
     /// empty child is the prehash image that is used when one child is nil (eg. 20 bytes of 0)
@@ -256,47 +268,76 @@ pub struct InnerSpec {
     #[prost(enumeration = "HashOp", tag = "6")]
     pub hash: i32,
 }
-impl ::prost::Name for InnerSpec {
-    const NAME: &'static str = "InnerSpec";
-    const PACKAGE: &'static str = "cosmos.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
-    }
-}
-/// BatchProof is a group of multiple proof types than can be compressed
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct BatchProof {
-    #[prost(message, repeated, tag = "1")]
-    pub entries: ::prost::alloc::vec::Vec<BatchEntry>,
-}
-impl ::prost::Name for BatchProof {
-    const NAME: &'static str = "BatchProof";
-    const PACKAGE: &'static str = "cosmos.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
-    }
-}
-/// Use BatchEntry not CommitmentProof, to avoid recursion
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct BatchEntry {
-    #[prost(oneof = "batch_entry::Proof", tags = "1, 2")]
-    pub proof: ::core::option::Option<batch_entry::Proof>,
-}
 /// Nested message and enum types in `BatchEntry`.
 pub mod batch_entry {
     #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    #[derive(Clone, PartialEq, :: prost :: Oneof)]
     pub enum Proof {
         #[prost(message, tag = "1")]
         Exist(super::ExistenceProof),
         #[prost(message, tag = "2")]
         Nonexist(super::NonExistenceProof),
     }
+}
+/// Nested message and enum types in `CommitmentProof`.
+pub mod commitment_proof {
+    #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, :: prost :: Oneof)]
+    pub enum Proof {
+        #[prost(message, tag = "1")]
+        Exist(super::ExistenceProof),
+        #[prost(message, tag = "2")]
+        Nonexist(super::NonExistenceProof),
+        #[prost(message, tag = "3")]
+        Batch(super::BatchProof),
+        #[prost(message, tag = "4")]
+        Compressed(super::CompressedBatchProof),
+    }
+}
+/// Nested message and enum types in `CompressedBatchEntry`.
+pub mod compressed_batch_entry {
+    #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, :: prost :: Oneof)]
+    pub enum Proof {
+        #[prost(message, tag = "1")]
+        Exist(super::CompressedExistenceProof),
+        #[prost(message, tag = "2")]
+        Nonexist(super::CompressedNonExistenceProof),
+    }
+}
+/// NonExistenceProof takes a proof of two neighbors, one left of the desired key,
+/// one right of the desired key. If both proofs are valid AND they are neighbors,
+/// then there is no valid proof for the given key.
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct NonExistenceProof {
+    /// TODO: remove this as unnecessary??? we prove a range
+    #[prost(bytes = "vec", tag = "1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub left: ::core::option::Option<ExistenceProof>,
+    #[prost(message, optional, tag = "3")]
+    pub right: ::core::option::Option<ExistenceProof>,
+}
+/// Use BatchEntry not CommitmentProof, to avoid recursion
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct BatchEntry {
+    #[prost(oneof = "batch_entry::Proof", tags = "1, 2")]
+    pub proof: ::core::option::Option<batch_entry::Proof>,
+}
+/// Use BatchEntry not CommitmentProof, to avoid recursion
+#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct CompressedBatchEntry {
+    #[prost(oneof = "compressed_batch_entry::Proof", tags = "1, 2")]
+    pub proof: ::core::option::Option<compressed_batch_entry::Proof>,
 }
 impl ::prost::Name for BatchEntry {
     const NAME: &'static str = "BatchEntry";
@@ -305,40 +346,18 @@ impl ::prost::Name for BatchEntry {
         ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
     }
 }
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CompressedBatchProof {
-    #[prost(message, repeated, tag = "1")]
-    pub entries: ::prost::alloc::vec::Vec<CompressedBatchEntry>,
-    #[prost(message, repeated, tag = "2")]
-    pub lookup_inners: ::prost::alloc::vec::Vec<InnerOp>,
-}
-impl ::prost::Name for CompressedBatchProof {
-    const NAME: &'static str = "CompressedBatchProof";
+impl ::prost::Name for BatchProof {
+    const NAME: &'static str = "BatchProof";
     const PACKAGE: &'static str = "cosmos.ics23.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
     }
 }
-/// Use BatchEntry not CommitmentProof, to avoid recursion
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CompressedBatchEntry {
-    #[prost(oneof = "compressed_batch_entry::Proof", tags = "1, 2")]
-    pub proof: ::core::option::Option<compressed_batch_entry::Proof>,
-}
-/// Nested message and enum types in `CompressedBatchEntry`.
-pub mod compressed_batch_entry {
-    #[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Proof {
-        #[prost(message, tag = "1")]
-        Exist(super::CompressedExistenceProof),
-        #[prost(message, tag = "2")]
-        Nonexist(super::CompressedNonExistenceProof),
+impl ::prost::Name for CommitmentProof {
+    const NAME: &'static str = "CommitmentProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
     }
 }
 impl ::prost::Name for CompressedBatchEntry {
@@ -348,19 +367,12 @@ impl ::prost::Name for CompressedBatchEntry {
         ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
     }
 }
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CompressedExistenceProof {
-    #[prost(bytes = "vec", tag = "1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(bytes = "vec", tag = "2")]
-    pub value: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "3")]
-    pub leaf: ::core::option::Option<LeafOp>,
-    /// these are indexes into the lookup_inners table in CompressedBatchProof
-    #[prost(int32, repeated, tag = "4")]
-    pub path: ::prost::alloc::vec::Vec<i32>,
+impl ::prost::Name for CompressedBatchProof {
+    const NAME: &'static str = "CompressedBatchProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for CompressedExistenceProof {
     const NAME: &'static str = "CompressedExistenceProof";
@@ -369,18 +381,6 @@ impl ::prost::Name for CompressedExistenceProof {
         ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
     }
 }
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CompressedNonExistenceProof {
-    /// TODO: remove this as unnecessary??? we prove a range
-    #[prost(bytes = "vec", tag = "1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "2")]
-    pub left: ::core::option::Option<CompressedExistenceProof>,
-    #[prost(message, optional, tag = "3")]
-    pub right: ::core::option::Option<CompressedExistenceProof>,
-}
 impl ::prost::Name for CompressedNonExistenceProof {
     const NAME: &'static str = "CompressedNonExistenceProof";
     const PACKAGE: &'static str = "cosmos.ics23.v1";
@@ -388,22 +388,47 @@ impl ::prost::Name for CompressedNonExistenceProof {
         ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
     }
 }
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum HashOp {
-    /// NO_HASH is the default if no data passed. Note this is an illegal argument some places.
-    NoHash = 0,
-    Sha256 = 1,
-    Sha512 = 2,
-    Keccak256 = 3,
-    Ripemd160 = 4,
-    /// ripemd160(sha256(x))
-    Bitcoin = 5,
-    Sha512256 = 6,
-    Blake2b512 = 7,
-    Blake2s256 = 8,
-    Blake3 = 9,
+impl ::prost::Name for ExistenceProof {
+    const NAME: &'static str = "ExistenceProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for InnerOp {
+    const NAME: &'static str = "InnerOp";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for InnerSpec {
+    const NAME: &'static str = "InnerSpec";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for LeafOp {
+    const NAME: &'static str = "LeafOp";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for NonExistenceProof {
+    const NAME: &'static str = "NonExistenceProof";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ProofSpec {
+    const NAME: &'static str = "ProofSpec";
+    const PACKAGE: &'static str = "cosmos.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.ics23.v1.{}", Self::NAME)
+    }
 }
 impl HashOp {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -441,34 +466,6 @@ impl HashOp {
         }
     }
 }
-/// *
-/// LengthOp defines how to process the key and value of the LeafOp
-/// to include length information. After encoding the length with the given
-/// algorithm, the length will be prepended to the key and value bytes.
-/// (Each one with it's own encoded length)
-#[cfg_attr(feature = "serde", derive(::serde::Serialize, ::serde::Deserialize))]
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum LengthOp {
-    /// NO_PREFIX don't include any length info
-    NoPrefix = 0,
-    /// VAR_PROTO uses protobuf (and go-amino) varint encoding of the length
-    VarProto = 1,
-    /// VAR_RLP uses rlp int encoding of the length
-    VarRlp = 2,
-    /// FIXED32_BIG uses big-endian encoding of the length as a 32 bit integer
-    Fixed32Big = 3,
-    /// FIXED32_LITTLE uses little-endian encoding of the length as a 32 bit integer
-    Fixed32Little = 4,
-    /// FIXED64_BIG uses big-endian encoding of the length as a 64 bit integer
-    Fixed64Big = 5,
-    /// FIXED64_LITTLE uses little-endian encoding of the length as a 64 bit integer
-    Fixed64Little = 6,
-    /// REQUIRE_32_BYTES is like NONE, but will fail if the input is not exactly 32 bytes (sha256 output)
-    Require32Bytes = 7,
-    /// REQUIRE_64_BYTES is like NONE, but will fail if the input is not exactly 64 bytes (sha512 output)
-    Require64Bytes = 8,
-}
 impl LengthOp {
     /// String value of the enum field names used in the ProtoBuf definition.
     ///
@@ -503,4 +500,3 @@ impl LengthOp {
         }
     }
 }
-// @@protoc_insertion_point(module)

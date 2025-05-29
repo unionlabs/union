@@ -1,7 +1,6 @@
-// @generated
 /// ResponseBroadcastTx is a response of broadcasting the transaction.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ResponseBroadcastTx {
     #[prost(message, optional, tag = "1")]
     pub check_tx: ::core::option::Option<super::super::super::abci::v1beta3::ResponseCheckTx>,
@@ -15,4 +14,3 @@ impl ::prost::Name for ResponseBroadcastTx {
         ::prost::alloc::format!("cometbft.rpc.grpc.v1beta3.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

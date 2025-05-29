@@ -1,7 +1,6 @@
-// @generated
 /// ClientState defines the 09-localhost client state
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ClientState {
     /// the latest block height
     #[prost(message, optional, tag = "1")]
@@ -14,4 +13,3 @@ impl ::prost::Name for ClientState {
         ::prost::alloc::format!("ibc.lightclients.localhost.v2.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

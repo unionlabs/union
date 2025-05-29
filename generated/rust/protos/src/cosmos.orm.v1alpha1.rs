@@ -1,7 +1,6 @@
-// @generated
 /// ModuleSchemaDescriptor describe's a module's ORM schema.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ModuleSchemaDescriptor {
     #[prost(message, repeated, tag = "1")]
     pub schema_file: ::prost::alloc::vec::Vec<module_schema_descriptor::FileEntry>,
@@ -14,7 +13,7 @@ pub struct ModuleSchemaDescriptor {
 pub mod module_schema_descriptor {
     /// FileEntry describes an ORM file used in a module.
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, :: prost :: Message)]
     pub struct FileEntry {
         /// id is a prefix that will be varint encoded and prepended to all the
         /// table keys specified in the file's tables.
@@ -39,15 +38,8 @@ pub mod module_schema_descriptor {
         }
     }
 }
-impl ::prost::Name for ModuleSchemaDescriptor {
-    const NAME: &'static str = "ModuleSchemaDescriptor";
-    const PACKAGE: &'static str = "cosmos.orm.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.orm.v1alpha1.{}", Self::NAME)
-    }
-}
 /// StorageType
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, :: prost :: Enumeration)]
 #[repr(i32)]
 pub enum StorageType {
     /// STORAGE_TYPE_DEFAULT_UNSPECIFIED indicates the persistent storage where all
@@ -63,6 +55,13 @@ pub enum StorageType {
     /// will by default be ignored when importing and exporting a module's
     /// state from JSON.
     Transient = 2,
+}
+impl ::prost::Name for ModuleSchemaDescriptor {
+    const NAME: &'static str = "ModuleSchemaDescriptor";
+    const PACKAGE: &'static str = "cosmos.orm.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.orm.v1alpha1.{}", Self::NAME)
+    }
 }
 impl StorageType {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -86,4 +85,3 @@ impl StorageType {
         }
     }
 }
-// @@protoc_insertion_point(module)

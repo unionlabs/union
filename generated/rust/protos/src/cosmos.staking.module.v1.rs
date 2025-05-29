@@ -1,7 +1,6 @@
-// @generated
 /// Module is the config object of the staking module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Module {
     /// hooks_order specifies the order of staking hooks and should be a list
     /// of module names which provide a staking hooks instance. If no order is
@@ -25,4 +24,3 @@ impl ::prost::Name for Module {
         ::prost::alloc::format!("cosmos.staking.module.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

@@ -1,7 +1,72 @@
-// @generated
+/// Config represents the configuration for a Cosmos SDK ABCI app.
+/// It is intended that all state machine logic including the version of
+/// baseapp and tx handlers (and possibly even Tendermint) that an app needs
+/// can be described in a config object. For compatibility, the framework should
+/// allow a mixture of declarative and imperative app wiring, however, apps
+/// that strive for the maximum ease of maintainability should be able to describe
+/// their state machine with a config object alone.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct Config {
+    /// modules are the module configurations for the app.
+    #[prost(message, repeated, tag = "1")]
+    pub modules: ::prost::alloc::vec::Vec<ModuleConfig>,
+    /// golang_bindings specifies explicit interface to implementation type bindings which
+    /// depinject uses to resolve interface inputs to provider functions.  The scope of this
+    /// field's configuration is global (not module specific).
+    #[prost(message, repeated, tag = "2")]
+    pub golang_bindings: ::prost::alloc::vec::Vec<GolangBinding>,
+}
+/// GolangBinding is an explicit interface type to implementing type binding for dependency injection.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GolangBinding {
+    /// interface_type is the interface type which will be bound to a specific implementation type
+    #[prost(string, tag = "1")]
+    pub interface_type: ::prost::alloc::string::String,
+    /// implementation is the implementing type which will be supplied when an input of type interface is requested
+    #[prost(string, tag = "2")]
+    pub implementation: ::prost::alloc::string::String,
+}
+/// MigrateFromInfo is information on a module version that a newer module
+/// can migrate from.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct MigrateFromInfo {
+    /// module is the fully-qualified protobuf name of the module config object
+    /// for the previous module version, ex: "cosmos.group.module.v1.Module".
+    #[prost(string, tag = "1")]
+    pub module: ::prost::alloc::string::String,
+}
+/// ModuleConfig is a module configuration for an app.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ModuleConfig {
+    /// name is the unique name of the module within the app. It should be a name
+    /// that persists between different versions of a module so that modules
+    /// can be smoothly upgraded to new versions.
+    ///
+    /// For example, for the module cosmos.bank.module.v1.Module, we may chose
+    /// to simply name the module "bank" in the app. When we upgrade to
+    /// cosmos.bank.module.v2.Module, the app-specific name "bank" stays the same
+    /// and the framework knows that the v2 module should receive all the same state
+    /// that the v1 module had. Note: modules should provide info on which versions
+    /// they can migrate from in the ModuleDescriptor.can_migration_from field.
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    /// config is the config object for the module. Module config messages should
+    /// define a ModuleDescriptor using the cosmos.app.v1alpha1.is_module extension.
+    #[prost(message, optional, tag = "2")]
+    pub config: ::core::option::Option<super::super::super::google::protobuf::Any>,
+    /// golang_bindings specifies explicit interface to implementation type bindings which
+    /// depinject uses to resolve interface inputs to provider functions.  The scope of this
+    /// field's configuration is module specific.
+    #[prost(message, repeated, tag = "3")]
+    pub golang_bindings: ::prost::alloc::vec::Vec<GolangBinding>,
+}
 /// ModuleDescriptor describes an app module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ModuleDescriptor {
     /// go_import names the package that should be imported by an app to load the
     /// module in the runtime module registry. It is required to make debugging
@@ -24,16 +89,9 @@ pub struct ModuleDescriptor {
     #[prost(message, repeated, tag = "3")]
     pub can_migrate_from: ::prost::alloc::vec::Vec<MigrateFromInfo>,
 }
-impl ::prost::Name for ModuleDescriptor {
-    const NAME: &'static str = "ModuleDescriptor";
-    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
-    }
-}
 /// PackageReference is a reference to a protobuf package used by a module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct PackageReference {
     /// name is the fully-qualified name of the package.
     #[prost(string, tag = "1")]
@@ -76,48 +134,17 @@ pub struct PackageReference {
     #[prost(uint32, tag = "2")]
     pub revision: u32,
 }
-impl ::prost::Name for PackageReference {
-    const NAME: &'static str = "PackageReference";
-    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
-    }
-}
-/// MigrateFromInfo is information on a module version that a newer module
-/// can migrate from.
+/// QueryConfigRequest is the Query/Config request type.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MigrateFromInfo {
-    /// module is the fully-qualified protobuf name of the module config object
-    /// for the previous module version, ex: "cosmos.group.module.v1.Module".
-    #[prost(string, tag = "1")]
-    pub module: ::prost::alloc::string::String,
-}
-impl ::prost::Name for MigrateFromInfo {
-    const NAME: &'static str = "MigrateFromInfo";
-    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
-    }
-}
-/// Config represents the configuration for a Cosmos SDK ABCI app.
-/// It is intended that all state machine logic including the version of
-/// baseapp and tx handlers (and possibly even Tendermint) that an app needs
-/// can be described in a config object. For compatibility, the framework should
-/// allow a mixture of declarative and imperative app wiring, however, apps
-/// that strive for the maximum ease of maintainability should be able to describe
-/// their state machine with a config object alone.
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryConfigRequest {}
+/// QueryConfigRequest is the Query/Config response type.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Config {
-    /// modules are the module configurations for the app.
-    #[prost(message, repeated, tag = "1")]
-    pub modules: ::prost::alloc::vec::Vec<ModuleConfig>,
-    /// golang_bindings specifies explicit interface to implementation type bindings which
-    /// depinject uses to resolve interface inputs to provider functions.  The scope of this
-    /// field's configuration is global (not module specific).
-    #[prost(message, repeated, tag = "2")]
-    pub golang_bindings: ::prost::alloc::vec::Vec<GolangBinding>,
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryConfigResponse {
+    /// config is the current app config.
+    #[prost(message, optional, tag = "1")]
+    pub config: ::core::option::Option<Config>,
 }
 impl ::prost::Name for Config {
     const NAME: &'static str = "Config";
@@ -126,31 +153,19 @@ impl ::prost::Name for Config {
         ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
     }
 }
-/// ModuleConfig is a module configuration for an app.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ModuleConfig {
-    /// name is the unique name of the module within the app. It should be a name
-    /// that persists between different versions of a module so that modules
-    /// can be smoothly upgraded to new versions.
-    ///
-    /// For example, for the module cosmos.bank.module.v1.Module, we may chose
-    /// to simply name the module "bank" in the app. When we upgrade to
-    /// cosmos.bank.module.v2.Module, the app-specific name "bank" stays the same
-    /// and the framework knows that the v2 module should receive all the same state
-    /// that the v1 module had. Note: modules should provide info on which versions
-    /// they can migrate from in the ModuleDescriptor.can_migration_from field.
-    #[prost(string, tag = "1")]
-    pub name: ::prost::alloc::string::String,
-    /// config is the config object for the module. Module config messages should
-    /// define a ModuleDescriptor using the cosmos.app.v1alpha1.is_module extension.
-    #[prost(message, optional, tag = "2")]
-    pub config: ::core::option::Option<super::super::super::google::protobuf::Any>,
-    /// golang_bindings specifies explicit interface to implementation type bindings which
-    /// depinject uses to resolve interface inputs to provider functions.  The scope of this
-    /// field's configuration is module specific.
-    #[prost(message, repeated, tag = "3")]
-    pub golang_bindings: ::prost::alloc::vec::Vec<GolangBinding>,
+impl ::prost::Name for GolangBinding {
+    const NAME: &'static str = "GolangBinding";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for MigrateFromInfo {
+    const NAME: &'static str = "MigrateFromInfo";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for ModuleConfig {
     const NAME: &'static str = "ModuleConfig";
@@ -159,42 +174,26 @@ impl ::prost::Name for ModuleConfig {
         ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
     }
 }
-/// GolangBinding is an explicit interface type to implementing type binding for dependency injection.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GolangBinding {
-    /// interface_type is the interface type which will be bound to a specific implementation type
-    #[prost(string, tag = "1")]
-    pub interface_type: ::prost::alloc::string::String,
-    /// implementation is the implementing type which will be supplied when an input of type interface is requested
-    #[prost(string, tag = "2")]
-    pub implementation: ::prost::alloc::string::String,
-}
-impl ::prost::Name for GolangBinding {
-    const NAME: &'static str = "GolangBinding";
+impl ::prost::Name for ModuleDescriptor {
+    const NAME: &'static str = "ModuleDescriptor";
     const PACKAGE: &'static str = "cosmos.app.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
     }
 }
-/// QueryConfigRequest is the Query/Config request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConfigRequest {}
+impl ::prost::Name for PackageReference {
+    const NAME: &'static str = "PackageReference";
+    const PACKAGE: &'static str = "cosmos.app.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for QueryConfigRequest {
     const NAME: &'static str = "QueryConfigRequest";
     const PACKAGE: &'static str = "cosmos.app.v1alpha1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
     }
-}
-/// QueryConfigRequest is the Query/Config response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryConfigResponse {
-    /// config is the current app config.
-    #[prost(message, optional, tag = "1")]
-    pub config: ::core::option::Option<Config>,
 }
 impl ::prost::Name for QueryConfigResponse {
     const NAME: &'static str = "QueryConfigResponse";
@@ -203,4 +202,3 @@ impl ::prost::Name for QueryConfigResponse {
         ::prost::alloc::format!("cosmos.app.v1alpha1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
