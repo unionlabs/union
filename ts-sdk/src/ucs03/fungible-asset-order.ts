@@ -457,17 +457,13 @@ export const createCosmosToSuiFungibleAssetOrder = (intent: {
       ? {
         symbol: "muno",
         name: "muno",
-        decimals: 0,
+        decimals: 6,
       }
       : yield* readCw20TokenInfo(intent.baseToken).pipe(
         Effect.provideService(CosmWasmClientContext, { client: sourceClient }),
       )
 
-    const quoteTokenVec = yield* predictSuiQuoteToken(toHex(intent.baseToken))
-
-    const quoteToken = "0x"
-      + quoteTokenVec.map(b => b.toString(16).padStart(2, "0")).join("") as Hex
-
+    const quoteToken = yield* predictSuiQuoteToken(toHex(intent.baseToken))
     yield* Effect.log(
       "quote token from sui is",
       quoteToken,

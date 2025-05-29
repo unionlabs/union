@@ -12,6 +12,11 @@ function hexToBytes(hex: string): number[] {
   return h.match(/.{1,2}/g)!.map(b => parseInt(b, 16))
 }
 
+function bytesToHex(bytes: number[]): `0x${string}` {
+  return '0x' + bytes.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+
 export const predictQuoteToken = (baseToken: Hex) =>
   Effect.gen(function*() {
     const client = (yield* SuiPublicClientDestination).client
@@ -34,7 +39,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
 
     const result = yield* readContract(
       client,
-      "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779", // TODO:
+      "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779", // TODO: don't know about this
       contract_address,
       module_id,
       function_name,
@@ -42,34 +47,9 @@ export const predictQuoteToken = (baseToken: Hex) =>
       function_arguments,
       tx,
     )
-    const rawBytes = result[0].returnValues[0] as number[] // extract the vector<u8>
-    const wrapped_token = rawBytes[0] as Hex
-
+    const [rawBytes /*, _typeTag*/] =
+    result[0].returnValues[0] as [number[], string]
+    const wrapped_token = bytesToHex(rawBytes.slice(1))
+    
     return wrapped_token
   })
-
-/*
-  import { bcs } from '@mysten/sui/bcs';
-
-tx.moveCall({
-	target: '0x2::foo::bar',
-	arguments: [
-		// using vector and option methods
-		tx.pure.vector('u8', [1, 2, 3]),
-		tx.pure.option('u8', 1),
-		tx.pure.option('u8', null),
-
-		// Using pure with type arguments
-		tx.pure('vector<u8>', [1, 2, 3]),
-		tx.pure('option<u8>', 1),
-		tx.pure('option<u8>', null),
-		tx.pure('vector<option<u8>>', [1, null, 2]),
-
-		// Using bcs.serialize
-		tx.pure(bcs.vector(bcs.U8).serialize([1, 2, 3])),
-		tx.pure(bcs.option(bcs.U8).serialize(1)),
-		tx.pure(bcs.option(bcs.U8).serialize(null)),
-		tx.pure(bcs.vector(bcs.option(bcs.U8)).serialize([1, null, 2])),
-	],
-});
-*/
