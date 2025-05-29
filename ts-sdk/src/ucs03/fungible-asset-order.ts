@@ -419,8 +419,7 @@ export const createSuiToCosmosFungibleAssetOrder = (intent: {
 
     console.info("Token Metadata:", tokenMeta)
     const baseToken = intent.baseTokenType.split("::")[0]
-    console.info("baseToken:", baseToken)
-    const quoteToken = yield* predictCosmosQuoteToken(toHex(baseToken))
+    const quoteToken = yield* predictCosmosQuoteToken(baseToken)
 
     return yield* S.decode(FungibleAssetOrder)({
       _tag: "FungibleAssetOrder",

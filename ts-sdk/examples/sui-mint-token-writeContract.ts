@@ -20,14 +20,14 @@ Effect.runPromiseExit(
 
     const keypair = Ed25519Keypair.deriveKeypair(MNEMONIC);
 
-    const pkg = "0xacc51178ffc547cdfa36a8ab4a6ae3823edaa8f07ff9177d9d520aad080b28fd";
+    const pkg = "0xd32f121aec92e5179398e21ab9beb366d854b6f985bb326266228271c3697c95";
     const module = "fungible_token"
     const function_name = "mint"
 
     const tx = new Transaction()
     const function_arguments = [
-      tx.object("0x634d588b8da56aec3256a09092425fcff6fdb2146b495c54773fa497c29fd8fd"),
-      tx.pure.u64(4444),
+      tx.object("0xa030755da2b5fed0a54c8eb7ef5383ac2ad9991d79e47fb9de7af77507124159"),
+      tx.pure.u64(100),
       tx.pure.address("0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779"),
     ]
     
