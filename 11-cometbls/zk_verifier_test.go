@@ -21,7 +21,7 @@ func TestVerifier(t *testing.T) {
 	err = zkp.Verify(
 
 		trustedValHash,
-		LightHeader{
+		ProverLightHeader{
 			ChainId:            "union-devnet-1337",
 			Height:             3405691582,
 			Time:               time.Unix(1710783278, 499600406),
