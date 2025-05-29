@@ -12,8 +12,14 @@ import { crossfade, fade, fly } from "svelte/transition"
 
 type Props = {
   type: "source" | "destination"
+  isOpen: (b: boolean) => void
 }
-const { type }: Props = $props()
+let { type, isOpen }: Props = $props()
+
+$effect(() => {
+  console.log('in chain asset', open)
+})
+
 let open = $state(false)
 let page: 1 | 2 = $state(1)
 let previousPage: 1 | 2 = $state(1)
@@ -24,6 +30,7 @@ function back() {
     page = 1
   } else {
     open = false
+    isOpen(false)
   }
 }
 
@@ -40,11 +47,13 @@ function onAssetSelected() {
   previousPage = page
   page = 1
   open = false
+  isOpen(false)
 }
 
 function handleKeydown(event: KeyboardEvent) {
   if (event.key === "Escape" && open) {
     open = false
+    isOpen(false)
   }
 }
 
@@ -70,6 +79,11 @@ $effect(() => {
     }
   }
 })
+
+function handleClick() {
+  open = true
+  isOpen(true)
+}
 </script>
 {#if open}
   <div
@@ -151,5 +165,5 @@ $effect(() => {
 <!-- Chain Asset Button -->
 <ChainAssetButton
   {type}
-  onClick={() => open = true}
+  onClick={handleClick}
 />
