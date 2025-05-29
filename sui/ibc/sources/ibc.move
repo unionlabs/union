@@ -637,12 +637,10 @@ module ibc::ibc {
         ibc_store.commit_connection(connection_id, *connection);
     }
 
-    /// Open a channel between two apps on the previously connected chains.
+    /// Initiate a channel opening between two apps on the previously connected chains.
     ///
-    /// `port_id`: The unique identifier for the app who will own this channel. The format of the
-    /// port is `INITIAL_APP_ADDRESS::MODULE_NAME::UPDATE_CAP_ADDRESS::STORE_NAME`. Check our
-    /// docs for in depth explanation.
-    ///
+    /// `port_id`: The unique identifier of the app who will own this channel. The port must have the same
+    /// address as the `witness` struct.
     /// `counterparty_port_id`: The port id of the app running on the counterparty chain.
     /// `connection_id`: The id of the connection where this channel will be based on.
     /// `version`: The app-defined version.
@@ -695,6 +693,20 @@ module ibc::ibc {
         );
 
     }
+
+    /// Run the second step of a channel handshake to open a channel between two apps on the previously connected chains.
+    ///
+    /// `port_id`: The unique identifier of the app who will own this channel. The port must have the same
+    /// address as the `witness` struct.
+    /// `connection_id`: The id of the connection where this channel will be based on.
+    /// `counterparty_channel_id`: The id of the channel initiated on the counterparty chain.
+    /// `counterparty_port_id`: The port id of the app running on the counterparty chain.
+    /// `version`: The app-defined version.
+    /// `counterparty_version`: The app-defined version that is used in the counterparty chain.
+    /// `proof_init`: The proof of the channel end on the counterparty chain.
+    /// `proof_height`: The height at where this proof is verifyable.
+    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
+    /// The name MUST be `IbcAppWitness`.
     public fun channel_open_try<T: drop>(
         ibc_store: &mut IBCStore,
         port_id: String,
@@ -712,30 +724,29 @@ module ibc::ibc {
         // Ensure the connection exists and is in the OPEN state
         let connection = ibc_store.connections.borrow(connection_id);
         assert!(
-            connection_end::state(connection) == CONN_STATE_OPEN,
+            connection.state() == CONN_STATE_OPEN,
             E_INVALID_CONNECTION_STATE
         );
-        let client_id = connection_end::client_id(connection);
 
         // Construct the expected channel state to verify against the proof
         let expected_channel = channel::new(
             CHAN_STATE_INIT,
-            get_counterparty_connection(ibc_store, connection_id),
-            counterparty_channel_id,
-            counterparty_port_id,
+            connection.counterparty_connection_id(),
+            0,
+            *port_id.bytes(),
             counterparty_version
         );
 
-        let light_client = ibc_store.clients.borrow(client_id);
+        let light_client = ibc_store.clients.borrow(connection.client_id());
         // Verify the channel state using the provided proof and expected state
-        let verification_result = verify_channel_state(
+        let res = verify_channel_state(
             light_client,
             proof_height,
             proof_init,
             counterparty_channel_id,
             expected_channel
         );
-        assert!(verification_result == 0, verification_result);
+        assert!(res == 0, res);
 
         // Generate a new channel ID
         let channel_id = ibc_store.generate_channel_identifier();
@@ -749,10 +760,12 @@ module ibc::ibc {
                 version
         );
 
+        // Commit the created channel to the storage
         ibc_store.channel_to_port.add(channel_id, port_id);
 
-        // Commit the updated channel to storage
         ibc_store.commit_channel(channel_id, channel);
+
+        ibc_store.channels.add(channel_id, channel);
 
         event::emit(
             ChannelOpenTry {
@@ -764,6 +777,162 @@ module ibc::ibc {
                 version
             }
         );
+    }
+
+    /// Run the third step of a channel handshake to open a channel between two apps on the previously connected chains.
+    /// This runs after the `channel_open_init`, and `channel_open_confirm` should be run on the counterparty for the channel
+    /// to be fully open.
+    ///
+    /// `port_id`: The unique identifier of the app who will own this channel. The port must have the same
+    /// address as the `witness` struct.
+    /// `channel_id`: The id of the channel that is created on the `try` phase.
+    /// `counterparty_version`: The app-defined version that is used in the counterparty chain.
+    /// `proof_try`: The proof of the channel end on the counterparty chain.
+    /// `proof_height`: The height at where this proof is verifyable.
+    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
+    /// The name MUST be `IbcAppWitness`.
+    public fun channel_open_ack<T: drop>(
+        ibc_store: &mut IBCStore,
+        port_id: String,
+        channel_id: u32,
+        counterparty_version: String,
+        counterparty_channel_id: u32,
+        proof_try: vector<u8>,
+        proof_height: u64,
+        witness: T,
+    ) {
+        validate_port(port_id, witness);
+
+        // Ensure the channel exists and is in the INIT state
+        let channel = ibc_store.channels.borrow_mut(channel_id);
+        assert!(
+            channel.state() == CHAN_STATE_INIT,
+            E_INVALID_CHANNEL_STATE
+        );
+
+        // Ensure the associated connection is in the OPEN state
+        let connection_id = channel.connection_id();
+        let connection = ibc_store.connections.borrow(connection_id);
+        assert!(
+            connection.state() == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+
+        // Construct the expected channel state to verify against the proof
+        let expected_channel =
+            channel::new(
+                CHAN_STATE_TRYOPEN,
+                connection.counterparty_connection_id(),
+                channel_id,
+                *port_id.bytes(),
+                counterparty_version
+            );
+
+        // Verify the channel state using the provided proof and expected state
+        let light_client = ibc_store.clients.borrow(connection.client_id());
+        let verification_result = verify_channel_state(
+            light_client,
+            proof_height,
+            proof_try,
+            counterparty_channel_id,
+            expected_channel
+        );
+        assert!(verification_result == 0, verification_result);
+
+        // Update the channel state to OPEN and set the counterparty channel ID
+        channel.set_state(CHAN_STATE_OPEN);
+        channel.set_counterparty_channel_id(counterparty_channel_id);
+        channel.set_version(counterparty_version);
+
+        // Emit an event for the channel open acknowledgment
+        event::emit(
+            ChannelOpenAck {
+                port_id,
+                channel_id,
+                counterparty_channel_id,
+                counterparty_port_id: *channel.counterparty_port_id(),
+                connection_id
+            }
+        );
+
+        // Commit the updated channel to storage
+        ibc_store.commit_channel(channel_id, *channel);
+    }
+
+    /// Run the final step of a channel handshake to open a channel between two apps on the previously connected chains.
+    /// The channel will be open in both ends after this call.
+    ///
+    /// `port_id`: The unique identifier of the app who will own this channel. The port must have the same
+    /// address as the `witness` struct.
+    /// `channel_id`: The id of the channel that is created on the `try` phase.
+    /// `proof_ack`: The proof of the channel end on the counterparty chain.
+    /// `proof_height`: The height at where this proof is verifyable.
+    /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
+    /// The name MUST be `IbcAppWitness`.
+    public fun channel_open_confirm<T: drop>(
+        ibc_store: &mut IBCStore,
+        port_id: String,
+        channel_id: u32,
+        proof_ack: vector<u8>,
+        proof_height: u64,
+        witness: T
+    ) {
+        validate_port(port_id, witness);
+
+        // Ensure the channel exists and is in the TRYOPEN state
+        let channel = ibc_store.channels.borrow_mut(channel_id);
+        assert!(
+            channel.state() == CHAN_STATE_TRYOPEN,
+            E_INVALID_CHANNEL_STATE
+        );
+
+        // Ensure the associated connection is in the OPEN state
+        let connection_id = channel::connection_id(channel);
+        let connection = ibc_store.connections.borrow(connection_id);
+        assert!(
+            connection.state() == CONN_STATE_OPEN,
+            E_INVALID_CONNECTION_STATE
+        );
+
+        let connection = ibc_store.connections.borrow(connection_id);
+
+        // Construct the expected channel state in the OPEN state to verify against the proof
+        let expected_channel =
+            channel::new(
+                CHAN_STATE_OPEN,
+                connection.counterparty_connection_id(),
+                channel_id,
+                *port_id.bytes(),
+                *channel.version()
+            );
+
+        // Verify the channel state using the provided proof and expected state
+        let light_client = ibc_store.clients.borrow(connection.client_id());
+        let verification_result = verify_channel_state(
+            light_client,
+            proof_height,
+            proof_ack,
+            channel.counterparty_channel_id(),
+            expected_channel
+        );
+        assert!(verification_result == 0, verification_result);
+
+        // Update the channel state to OPEN
+        channel.set_state(CHAN_STATE_OPEN);
+
+        // Emit an event for the channel open confirmation
+        event::emit(
+            ChannelOpenConfirm {
+                port_id,
+                channel_id,
+                counterparty_channel_id: channel.counterparty_channel_id(),
+                counterparty_port_id: *channel.counterparty_port_id(),
+                connection_id: channel.connection_id()
+            }
+        );
+
+        // Commit the final state of the channel to storage
+        ibc_store.commit_channel(channel_id, *channel);
     }
 
 
@@ -912,151 +1081,12 @@ module ibc::ibc {
         assert!(port_module.to_ascii() == caller_module, 2);
     }
 
-    public fun channel_open_ack<T: drop>(
-        ibc_store: &mut IBCStore,
-        port_id: String,
-        channel_id: u32,
-        counterparty_version: String,
-        counterparty_channel_id: u32,
-        proof_try: vector<u8>,
-        proof_height: u64,
-        witness: T,
-    ) {
-        validate_port(port_id, witness);
-
-        // Ensure the channel exists and is in the TRYOPEN state
-        let channel = ibc_store.channels.borrow_mut(channel_id);
-        assert!(
-            channel::state(channel) == CHAN_STATE_INIT,
-            E_INVALID_CHANNEL_STATE
-        );
-
-        // Ensure the associated connection is in the OPEN state
-        let connection_id = channel::connection_id(channel);
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(
-            connection_end::state(connection) == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
-        );
-
-        let connection = ibc_store.connections.borrow(connection_id);
-        
-
-        // Construct the expected channel state to verify against the proof
-        let expected_channel =
-            channel::new(
-                CHAN_STATE_TRYOPEN,
-                connection_end::counterparty_connection_id(connection),
-                channel_id,
-                bcs::to_bytes(&port_id),
-                counterparty_version
-            );
-
-        // Verify the channel state using the provided proof and expected state
-        let client_id = connection_end::client_id(connection);
-        let light_client = ibc_store.clients.borrow(client_id);
-        let verification_result = verify_channel_state(
-            light_client,
-            proof_height,
-            proof_try,
-            counterparty_channel_id,
-            expected_channel
-        );
-        assert!(verification_result == 0, verification_result);
-
-        // Update the channel state to OPEN and set the counterparty channel ID
-        channel::set_state(channel, CHAN_STATE_OPEN);
-        channel::set_counterparty_channel_id(channel, counterparty_channel_id);
-        channel::set_version(channel, counterparty_version);
-
-        // Emit an event for the channel open acknowledgment
-        event::emit(
-            ChannelOpenAck {
-                port_id: port_id,
-                channel_id: channel_id,
-                counterparty_channel_id: counterparty_channel_id,
-                counterparty_port_id: *channel::counterparty_port_id(channel),
-                connection_id: connection_id
-            }
-        );
-
-        // Commit the updated channel to storage
-        ibc_store.commit_channel(channel_id, *channel);
-    }
-
     public fun get_counterparty_connection(
         ibc_store: &mut IBCStore,
         connection_id: u32
     ): u32 {
         let connection = ibc_store.connections.borrow(connection_id);
         connection_end::counterparty_connection_id(connection)
-    }
-
-    public fun channel_open_confirm<T: drop>(
-        ibc_store: &mut IBCStore,
-        port_id: String,
-        channel_id: u32,
-        proof_ack: vector<u8>,
-        proof_height: u64,
-        witness: T
-    ) {
-        validate_port(port_id, witness);
-
-        // Ensure the channel exists and is in the TRYOPEN state
-        let channel = ibc_store.channels.borrow_mut(channel_id);
-        assert!(
-            channel::state(channel) == CHAN_STATE_TRYOPEN,
-            E_INVALID_CHANNEL_STATE
-        );
-
-        // Ensure the associated connection is in the OPEN state
-        let connection_id = channel::connection_id(channel);
-        let connection = ibc_store.connections.borrow(connection_id);
-        assert!(
-            connection_end::state(connection) == CONN_STATE_OPEN,
-            E_INVALID_CONNECTION_STATE
-        );
-
-        let connection = ibc_store.connections.borrow(connection_id);
-
-        // Construct the expected channel state in the OPEN state to verify against the proof
-        let expected_channel =
-            channel::new(
-                CHAN_STATE_OPEN,
-                connection_end::counterparty_connection_id(connection),
-                channel_id,
-                *channel::counterparty_port_id(channel),
-                *channel::version(channel)
-            );
-
-        // Verify the channel state using the provided proof and expected state
-        let client_id = connection_end::client_id(connection);
-        let light_client = ibc_store.clients.borrow(client_id);
-        let verification_result = verify_channel_state(
-            light_client,
-            proof_height,
-            proof_ack,
-            channel::counterparty_channel_id(channel),
-            expected_channel
-        );
-        assert!(verification_result == 0, verification_result);
-
-        // Update the channel state to OPEN
-        channel::set_state(channel, CHAN_STATE_OPEN);
-
-        // Emit an event for the channel open confirmation
-        event::emit(
-            ChannelOpenConfirm {
-                port_id,
-                channel_id,
-                counterparty_channel_id: channel::counterparty_channel_id(channel),
-                counterparty_port_id: *channel::counterparty_port_id(channel),
-                connection_id: channel::connection_id(channel)
-            }
-        );
-
-        // Commit the final state of the channel to storage
-        ibc_store.commit_channel(channel_id, *channel);
     }
 
     /// Function to send a packet through an open channel
