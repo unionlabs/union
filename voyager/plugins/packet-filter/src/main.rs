@@ -10,15 +10,17 @@ use serde::{Deserialize, Serialize};
 use serde_with::{serde_as, DisplayFromStr};
 use tracing::{debug, instrument, trace};
 use unionlabs::never::Never;
-use voyager_message::{
-    data::Data,
-    filter::simple_take_filter,
+use voyager_sdk::{
+    anyhow,
+    hook::simple_take_filter,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{data::Data, VoyagerMessage},
+    plugin::Plugin,
     primitives::IbcSpec,
-    DefaultCmd, Plugin, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    vm::{pass::PassResult, Op},
+    DefaultCmd,
 };
-use voyager_vm::{pass::PassResult, BoxDynError, Op};
 
 #[tokio::main]
 async fn main() {
@@ -47,7 +49,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         Ok(Module::new(config))
     }
 

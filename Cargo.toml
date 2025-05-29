@@ -38,7 +38,6 @@ members = [
   "lib/macros",
   "lib/pg-queue",
   "lib/poseidon-rs",
-  "lib/voyager-vm",
   "lib/subset-of-derive",
   "lib/scroll-api",
   "lib/scroll-codec",
@@ -55,11 +54,10 @@ members = [
   "lib/unionlabs-primitives",
   "lib/unionlabs-encoding",
   "lib/zktrie-rs",
-  "lib/voyager-message",
-  "lib/voyager-primitives",
   "lib/galois-rpc",
   "lib/cosmos-sdk-event",
   "lib/frissitheto",
+
 
   # "lib/near/near-ibc",
   # "lib/near/near-light-client",
@@ -122,6 +120,12 @@ members = [
   "unionvisor",
 
   "voyager",
+
+  "lib/voyager-message",
+  "lib/voyager-vm",
+  "lib/voyager-rpc",
+  "lib/voyager-core",
+  "lib/voyager-primitives",
 
   "voyager/modules/state/cosmos-sdk",
   "voyager/modules/state/cosmos-sdk-union",
@@ -234,6 +238,11 @@ members = [
   "tools/u",
   "lib/chain-kitchen",
   "tools/json-schema-to-nixos-module-options",
+  "lib/voyager-types",
+  "lib/voyager-client",
+  "lib/voyager-plugin",
+  "lib/voyager-sdk",
+  "lib/voyager-plugin-protocol",
 ]
 
 [workspace.package]
@@ -367,9 +376,16 @@ zktrie               = { path = "lib/zktrie-rs", default-features = false }
 
 galois-rpc = { path = "lib/galois-rpc", default-features = false }
 
-voyager-message    = { path = "lib/voyager-message", default-features = false }
-voyager-primitives = { path = "lib/voyager-primitives", default-features = false }
-voyager-vm         = { path = "lib/voyager-vm", default-features = false }
+voyager-client          = { path = "lib/voyager-client", default-features = false }
+voyager-core            = { path = "lib/voyager-core", default-features = false }
+voyager-message         = { path = "lib/voyager-message", default-features = false }
+voyager-plugin          = { path = "lib/voyager-plugin", default-features = false }
+voyager-plugin-protocol = { path = "lib/voyager-plugin-protocol", default-features = false }
+voyager-primitives      = { path = "lib/voyager-primitives", default-features = false }
+voyager-rpc             = { path = "lib/voyager-rpc", default-features = false }
+voyager-sdk             = { path = "lib/voyager-sdk", default-features = false }
+voyager-types           = { path = "lib/voyager-types", default-features = false }
+voyager-vm              = { path = "lib/voyager-vm", default-features = false }
 
 embed-commit = { path = "lib/embed-commit", default-features = false }
 
@@ -448,6 +464,7 @@ subtle-encoding          = { version = "0.5.1", default-features = false }
 thiserror                = { version = "2.0.0", default-features = false }
 time                     = { version = "0.3.36", default-features = false }                       # Pinning to 0.3.36 here since they introduced a new trait in the minor version of semver..
 tokio                    = { version = "1.33.0", default-features = false }
+tokio-util               = { version = "0.7.15", default-features = false }
 toml                     = { version = "0.8.8", default-features = false }
 tonic                    = { version = "0.10", default-features = false }
 tracing                  = { version = "0.1.40", default-features = false }

@@ -15,11 +15,11 @@ use unionlabs::{
     primitives::H160,
     ErrorReporter,
 };
-use voyager_message::{
-    module::{FinalityModuleInfo, FinalityModuleServer},
+use voyager_sdk::{
+    anyhow,
+    plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    vm::BoxDynError,
-    FinalityModule,
+    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -54,7 +54,7 @@ pub struct Module {
 impl FinalityModule for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: FinalityModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;

@@ -36,14 +36,15 @@ use unionlabs::{
     primitives::{H160, H256, U256},
     ErrorReporter,
 };
-use voyager_message::{
-    data::Data,
+use voyager_sdk::{
+    anyhow::{self, bail},
     hook::SubmitTxHook,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{data::Data, PluginMessage, VoyagerMessage},
+    plugin::Plugin,
     primitives::ChainId,
-    vm::{call, defer, now, pass::PassResult, seq, BoxDynError, Op, Visit},
-    Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    vm::{call, defer, now, pass::PassResult, seq, Op, Visit},
 };
 
 use crate::{
@@ -142,7 +143,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = Cmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
@@ -155,11 +156,11 @@ impl Plugin for Module {
         let chain_id = ChainId::new(raw_chain_id.to_string());
 
         if chain_id != config.chain_id {
-            return Err(format!(
+            bail!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
+                config.chain_id,
+                chain_id
+            );
         }
 
         Ok(Self(Arc::new(ModuleInner {

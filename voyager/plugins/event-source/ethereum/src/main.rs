@@ -32,16 +32,21 @@ use unionlabs::{
     primitives::{H160, H256},
     ErrorReporter,
 };
-use voyager_message::{
-    call::{Call, WaitForHeight},
-    data::{ChainEvent, Data, EventProvableHeight},
-    filter::simple_take_filter,
+use voyager_sdk::{
+    anyhow,
+    hook::simple_take_filter,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, WaitForHeight},
+        data::{ChainEvent, Data, EventProvableHeight},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientInfo, IbcSpec, QueryHeight},
-    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    vm::{call, conc, data, noop, pass::PassResult, seq, Op},
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, data, noop, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::call::{FetchBlocks, FetchGetLogs, IbcEvents, MakeFullEvent, ModuleCall};
 
@@ -98,7 +103,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         Module::new(config).await
     }
 
@@ -128,7 +133,7 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
-    pub async fn new(config: Config) -> Result<Self, BoxDynError> {
+    pub async fn new(config: Config) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
@@ -272,8 +277,7 @@ impl PluginServer<ModuleCall, Never> for Module {
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchBlocks(FetchBlocks { block_number }) => {
-                self.fetch_blocks(e.try_get::<VoyagerClient>()?, block_number)
-                    .await
+                self.fetch_blocks(e.voyager_client()?, block_number).await
             }
             ModuleCall::FetchGetLogs(FetchGetLogs { block_number }) => {
                 self.fetch_get_logs(block_number).await
@@ -283,7 +287,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 tx_hash,
                 event,
             }) => {
-                self.make_full_event(e.try_get::<VoyagerClient>()?, block_number, tx_hash, event)
+                self.make_full_event(e.voyager_client()?, block_number, tx_hash, event)
                     .await
             }
         }

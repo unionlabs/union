@@ -1,7 +1,7 @@
 use enumorph::Enumorph;
 use macros::model;
 use unionlabs::ibc::core::client::height::Height;
-use voyager_message::{primitives::ChainId, RawClientId};
+use voyager_sdk::{primitives::ChainId, types::RawClientId};
 
 #[model]
 #[derive(Enumorph)]

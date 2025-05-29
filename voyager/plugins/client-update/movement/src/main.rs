@@ -18,14 +18,22 @@ use unionlabs::{
     never::Never,
     primitives::H160,
 };
-use voyager_message::{
-    call::Call,
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
+use voyager_sdk::{
+    anyhow,
     hook::UpdateHook,
-    module::{PluginInfo, PluginServer, UnexpectedChainIdError},
+    message::{
+        call::Call,
+        data::{Data, DecodedHeaderMeta, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType},
-    vm::{data, pass::PassResult, BoxDynError, Op, Visit},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    rpc::{
+        types::{PluginInfo, UnexpectedChainIdError},
+        PluginServer,
+    },
+    vm::{data, pass::PassResult, Op, Visit},
+    DefaultCmd,
 };
 
 use crate::call::ModuleCall;
@@ -68,7 +76,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id.to_string();

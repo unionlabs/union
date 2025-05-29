@@ -1,7 +1,7 @@
 use enumorph::Enumorph;
 use ibc_union_spec::event::PacketSend;
 use macros::model;
-use voyager_message::primitives::ChainId;
+use voyager_sdk::primitives::ChainId;
 
 #[model]
 #[derive(Enumorph)]

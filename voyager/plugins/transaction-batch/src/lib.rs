@@ -18,15 +18,21 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{debug, error, info, instrument, trace, warn};
 use unionlabs::{ibc::core::client::height::Height, id::ClientId, traits::Member, ErrorReporter};
-use voyager_message::{
-    call::WaitForHeight,
-    data::{ChainEvent, Data, EventProvableHeight},
-    filter::simple_take_filter,
-    module::{PluginInfo, PluginServer},
+use voyager_sdk::{
+    anyhow,
+    hook::simple_take_filter,
+    message::{
+        call::WaitForHeight,
+        data::{ChainEvent, Data, EventProvableHeight},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    types::RawClientId,
+    vm::{call, conc, data, pass::PassResult, seq, Op},
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{MakeTransactionBatchesWithUpdate, ModuleCall},
@@ -186,7 +192,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         Ok(Module::new(config))
     }
 
@@ -329,14 +335,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
     #[instrument(skip_all)]
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
-        let voyager_client = e.try_get::<VoyagerClient>()?;
+        let voyager_client = e.voyager_client()?;
 
         match msg {
             ModuleCall::MakeTransactionBatchesWithUpdateClassic(mk) => {
-                mk.call(self, e.try_get()?).await
+                mk.call(self, e.voyager_client()?).await
             }
             ModuleCall::MakeTransactionBatchesWithUpdateUnion(mk) => {
-                mk.call(self, e.try_get()?).await
+                mk.call(self, e.voyager_client()?).await
             }
             ModuleCall::MakeMsgClassic(mk) => mk.call(voyager_client).await,
             ModuleCall::MakeMsgUnion(mk) => mk.call(voyager_client).await,
@@ -352,17 +358,17 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     ) -> RpcResult<Op<VoyagerMessage>> {
         match cb {
             ModuleCallback::MakeIbcMessagesFromUpdateClassic(cb) => {
-                cb.call(e.try_get()?, self, datas).await
+                cb.call(e.voyager_client()?, self, datas).await
             }
             ModuleCallback::MakeIbcMessagesFromUpdateUnion(cb) => {
-                cb.call(e.try_get()?, self, datas).await
+                cb.call(e.voyager_client()?, self, datas).await
             }
             ModuleCallback::MakeBatchTransactionV1(cb) => {
-                cb.call(self, e.try_get()?, self.chain_id.clone(), datas)
+                cb.call(self, e.voyager_client()?, self.chain_id.clone(), datas)
                     .await
             }
             ModuleCallback::MakeBatchTransactionUnion(cb) => {
-                cb.call(self, e.try_get()?, self.chain_id.clone(), datas)
+                cb.call(self, e.voyager_client()?, self.chain_id.clone(), datas)
                     .await
             }
         }
@@ -492,7 +498,7 @@ impl Module {
                 .flat_map(|(client_id, events)| split_ready(client_id, events, self))
                 .partition_map::<Vec<_>, Vec<_>, _, _, _>(convert::identity);
 
-            let voyager_client = e.try_get::<VoyagerClient>()?;
+            let voyager_client = e.voyager_client()?;
 
             let (ready_v1_errored, ready_v1) = ready_v1
                 .into_iter()

@@ -17,14 +17,13 @@ use unionlabs::{
     primitives::{H160, U256},
     ErrorReporter,
 };
-use voyager_message::{
-    into_value,
-    module::{ProofModuleInfo, ProofModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::ProofModule,
     primitives::ChainId,
-    rpc::ProofType,
-    ProofModule,
+    rpc::{types::ProofModuleInfo, ProofModuleServer},
+    types::ProofType,
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -56,7 +55,7 @@ pub struct Config {
 impl ProofModule<IbcUnion> for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ProofModuleInfo) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 // .layer(CacheLayer::new(config.max_cache_size))

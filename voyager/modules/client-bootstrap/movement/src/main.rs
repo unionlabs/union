@@ -16,12 +16,11 @@ use unionlabs::{
     ibc::core::client::height::Height,
     primitives::{FixedBytes, H160, U256},
 };
-use voyager_message::{
-    ensure_null,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, ensure_null,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Timestamp},
-    vm::BoxDynError,
-    ClientBootstrapModule,
+    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -58,10 +57,7 @@ pub struct Module {
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         let aptos_client = aptos_rest_client::Client::new(config.aptos_rest_api.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;

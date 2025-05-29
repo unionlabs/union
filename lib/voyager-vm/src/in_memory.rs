@@ -46,11 +46,14 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         })
     }
 
-    fn enqueue<'a>(
+    fn enqueue<'a, Filter>(
         &'a self,
         op: Op<T>,
-        filter: &'a T::Filter,
-    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a {
+        filter: &'a Filter,
+    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a
+    where
+        Filter: InterestFilter<T>,
+    {
         debug!(?op, "enqueueing new item");
 
         let mut optimizer_queue = self.optimizer_queue.lock().expect("mutex is poisoned");
@@ -99,15 +102,16 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         })
     }
 
-    async fn process<'a, F, Fut, R>(
+    async fn process<'a, F, Fut, R, Filter>(
         &'a self,
-        filter: &'a T::Filter,
+        filter: &'a Filter,
         f: F,
     ) -> Result<Option<R>, Self::Error>
     where
         F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
         Fut: Future<Output = (R, Result<Vec<Op<T>>, QueueError>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
+        Filter: InterestFilter<T>,
     {
         let op = {
             let mut queue = self.ready.lock().expect("mutex is poisoned");
@@ -204,12 +208,16 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
     }
 
     #[allow(clippy::manual_async_fn)]
-    fn optimize<'a, O: Pass<T>>(
+    fn optimize<'a, O, Filter>(
         &'a self,
         tag: &'a str,
-        filter: &'a T::Filter,
+        filter: &'a Filter,
         optimizer: &'a O,
-    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a {
+    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + 'a
+    where
+        O: Pass<T>,
+        Filter: InterestFilter<T>,
+    {
         async move {
             let tagged_optimizer_queue = {
                 let mut optimizer_queue = self.optimizer_queue.lock().expect("poisoned");

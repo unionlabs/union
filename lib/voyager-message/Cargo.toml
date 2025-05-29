@@ -12,36 +12,18 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-anyhow                         = { workspace = true }
-clap                           = { workspace = true, features = ["derive"] }
-enumorph                       = { workspace = true }
-futures                        = { workspace = true }
-indexmap                       = "2.9.0"
-itertools                      = { workspace = true }
-jaq-core                       = "1.5.1"
-jaq-interpret                  = "1.5.0"
-jaq-std                        = "1.6.0"
-jaq-syn                        = "1.6.0"
-jsonrpsee                      = { workspace = true, features = ["server", "client", "async-client", "macros", "tracing"] }
-macros                         = { workspace = true }
-moka                           = { version = "0.12.10", features = ["future"] }
-opentelemetry                  = { workspace = true }
-opentelemetry-otlp             = { workspace = true, features = ["http-json", "metrics", "reqwest-blocking-client"] }
-opentelemetry_sdk              = { workspace = true }
-reconnecting-jsonrpc-ws-client = { workspace = true }
-reth-ipc                       = { git = "https://github.com/paradigmxyz/reth" }
-schemars                       = { workspace = true }
-serde                          = { workspace = true, features = ["derive"] }
-serde_json                     = { workspace = true }
-subset-of                      = { workspace = true }
-thiserror                      = { workspace = true }
-tokio                          = { workspace = true, features = ["time", "process", "fs"] }
-tokio-util                     = "0.7.11"
-tracing                        = { workspace = true }
-tracing-subscriber             = { workspace = true, features = ["json", "env-filter"] }
-unionlabs                      = { workspace = true, features = ["ethabi"] }
-voyager-primitives             = { workspace = true, features = ["schemars", "serde"] }
-voyager-vm                     = { workspace = true }
+enumorph           = { workspace = true }
+futures            = { workspace = true }
+macros             = { workspace = true }
+schemars           = { workspace = true }
+serde              = { workspace = true, features = ["derive"] }
+serde_json         = { workspace = true }
+subset-of          = { workspace = true }
+tracing            = { workspace = true }
+unionlabs          = { workspace = true, features = ["ethabi"] }
+voyager-primitives = { workspace = true, features = ["schemars", "serde"] }
+voyager-types      = { workspace = true }
+voyager-vm         = { workspace = true }
 
 [features]
 default = []

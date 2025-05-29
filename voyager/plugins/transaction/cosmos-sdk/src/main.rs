@@ -38,14 +38,16 @@ use unionlabs::{
     primitives::{Bytes, H160, H256},
     ErrorReporter,
 };
-use voyager_message::{
-    data::Data,
+use voyager_sdk::{
+    anyhow::{self, anyhow, bail},
     hook::SubmitTxHook,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{data::Data, PluginMessage, VoyagerMessage},
+    plugin::Plugin,
     primitives::ChainId,
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
     vm::{call, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    DefaultCmd,
 };
 
 use crate::call::{IbcMessage, ModuleCall};
@@ -179,17 +181,17 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let rpc = Rpc::new(config.rpc_url.clone()).await?;
 
         let chain_id = rpc.client().status().await?.node_info.network.to_string();
 
         if chain_id != config.chain_id.as_str() {
-            return Err(format!(
+            bail!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
+                config.chain_id,
+                chain_id
+            );
         }
 
         let bech32_prefix = rpc
@@ -224,7 +226,8 @@ impl Plugin for Module {
             gas_config: config
                 .gas_config
                 .into_gas_filler(config.rpc_url.clone())
-                .await?,
+                .await
+                .map_err(|e| anyhow!(e))?,
             bech32_prefix,
             fatal_errors: config
                 .fatal_errors

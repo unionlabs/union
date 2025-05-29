@@ -12,12 +12,12 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
-use voyager_message::{
-    module::{FinalityModuleInfo, FinalityModuleServer},
+use voyager_sdk::{
+    anyhow,
+    plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    FinalityModule,
+    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -49,7 +49,7 @@ pub struct Config {
 impl FinalityModule for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: FinalityModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))

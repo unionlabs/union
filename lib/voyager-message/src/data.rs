@@ -4,13 +4,9 @@ use serde::de::DeserializeOwned;
 use serde_json::Value;
 use subset_of::SubsetOf;
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, traits::Member};
-use voyager_primitives::IbcSpecId;
+use voyager_primitives::{ChainId, ClientInfo, IbcSpec, IbcSpecId};
 
-use crate::{
-    into_value,
-    primitives::{ChainId, ClientInfo, IbcSpec},
-    PluginMessage,
-};
+use crate::PluginMessage;
 
 #[model]
 #[derive(Enumorph, SubsetOf)]
@@ -115,7 +111,7 @@ impl IbcDatagram {
     pub fn new<V: IbcSpec>(datagram: impl Into<V::Datagram>) -> Self {
         Self {
             ibc_spec_id: V::ID,
-            datagram: into_value(datagram.into()),
+            datagram: serde_json::to_value(datagram.into()).unwrap(),
         }
     }
 }

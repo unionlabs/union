@@ -20,14 +20,15 @@ use unionlabs::{
     primitives::{Bytes, H160},
     result_unwrap, ErrorReporter,
 };
-use voyager_message::{
-    ensure_null,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, ensure_null,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    rpc::json_rpc_error_to_error_object,
-    ClientBootstrapModule,
+    rpc::{
+        json_rpc_error_to_error_object, types::ClientBootstrapModuleInfo,
+        ClientBootstrapModuleServer,
+    },
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -58,10 +59,7 @@ pub struct Config {
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         let cometbft_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = cometbft_client

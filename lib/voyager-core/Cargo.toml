@@ -1,0 +1,50 @@
+[package]
+name    = "voyager-core"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+anyhow                  = { workspace = true }
+axum                    = { workspace = true, features = ["macros", "tokio", "json"] }
+derive_builder          = "0.20.2"
+futures                 = { workspace = true }
+indexmap                = "2.9.0"
+itertools               = { workspace = true }
+jaq-core                = "1.5.1"
+jaq-interpret           = "1.5.0"
+jaq-std                 = "1.6.0"
+jaq-syn                 = "1.6.0"
+jsonrpsee               = { workspace = true }
+moka                    = { version = "0.12.10", features = ["future"] }
+opentelemetry           = { workspace = true }
+opentelemetry-otlp      = { workspace = true, features = ["http-json", "metrics", "reqwest-blocking-client"] }
+opentelemetry_sdk       = { workspace = true }
+pin-utils               = "0.1.0"
+schemars                = { workspace = true }
+serde                   = { workspace = true, features = ["derive"] }
+serde_json              = { workspace = true }
+thiserror               = { workspace = true }
+tokio                   = { workspace = true, features = ["time", "process", "fs"] }
+tokio-util              = { workspace = true }
+tower                   = "0.4.13"
+tower-http              = { version = "0.6.2", features = ["cors"] }
+tracing                 = { workspace = true }
+unionlabs               = { workspace = true }
+voyager-message         = { workspace = true }
+voyager-plugin          = { workspace = true }
+voyager-plugin-protocol = { workspace = true }
+voyager-primitives      = { workspace = true, features = ["schemars", "serde"] }
+voyager-rpc             = { workspace = true }
+voyager-types           = { workspace = true }
+voyager-vm              = { workspace = true }
+
+[features]
+default = []

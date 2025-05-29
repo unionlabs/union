@@ -12,19 +12,18 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-either          = { workspace = true }
-embed-commit    = { workspace = true }
-enumorph        = { workspace = true }
-futures         = { workspace = true }
-ibc-union-spec  = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
-itertools       = { workspace = true }
-jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
-macros          = { workspace = true }
-serde           = { workspace = true, features = ["derive"] }
-serde_json      = { workspace = true }
-subset-of       = { workspace = true }
-tokio           = { workspace = true }
-tracing         = { workspace = true }
-unionlabs       = { workspace = true }
-voyager-message = { workspace = true }
-voyager-vm      = { workspace = true }
+either         = { workspace = true }
+embed-commit   = { workspace = true }
+enumorph       = { workspace = true }
+futures        = { workspace = true }
+ibc-union-spec = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
+itertools      = { workspace = true }
+jsonrpsee      = { workspace = true, features = ["macros", "server", "tracing"] }
+macros         = { workspace = true }
+serde          = { workspace = true, features = ["derive"] }
+serde_json     = { workspace = true }
+subset-of      = { workspace = true }
+tokio          = { workspace = true }
+tracing        = { workspace = true }
+unionlabs      = { workspace = true }
+voyager-sdk    = { workspace = true }

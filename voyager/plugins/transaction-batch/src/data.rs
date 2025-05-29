@@ -3,7 +3,7 @@ use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use macros::model;
 use subset_of::SubsetOf;
-use voyager_message::data::EventProvableHeight;
+use voyager_sdk::message::data::EventProvableHeight;
 
 use crate::IbcSpecExt;
 

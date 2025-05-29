@@ -1,67 +1,59 @@
-use std::{future::Future, time::Duration};
+use std::{future::Future, marker::PhantomData, time::Duration};
 
-use futures::{stream, FutureExt, Stream, StreamExt};
+use futures::{stream::try_unfold, FutureExt, Stream, TryStreamExt};
 use tokio::time::sleep;
 
-use crate::{BoxDynError, Context, Queue, QueueMessage};
+use crate::{filter::InterestFilter, process, BoxDynError, HandlerFactory, Queue, QueueMessage};
 
-pub struct Engine<'a, T: QueueMessage, Q: Queue<T>> {
-    store: &'a T::Context,
+pub struct Engine<'a, T, Q, H, F> {
+    handler: H,
     queue: &'a Q,
-    optimizer: &'a T::Filter,
+    filter: &'a F,
+    __t: PhantomData<fn() -> T>,
 }
 
-impl<'a, T: QueueMessage, Q: Queue<T>> Engine<'a, T, Q> {
-    pub fn new(store: &'a T::Context, queue: &'a Q, filter: &'a T::Filter) -> Self {
+impl<'a, T, Q, H, F> Engine<'a, T, Q, H, F>
+where
+    T: QueueMessage,
+    Q: Queue<T>,
+    H: HandlerFactory<T>,
+    F: InterestFilter<T>,
+{
+    pub fn new(handler_factory: H, queue: &'a Q, filter: &'a F) -> Self {
         Self {
-            store,
+            handler: handler_factory,
             queue,
-            optimizer: filter,
+            filter,
+            __t: PhantomData,
         }
     }
 
-    pub fn run(self) -> impl Stream<Item = Result<T::Data, BoxDynError>> + Send + use<'a, T, Q> {
-        futures::stream::try_unfold(self, |this| async move {
-            sleep(Duration::from_millis(10)).await;
-            let res = this.step().await;
-            res.map(move |x| x.map(|x| (x, this)))
+    pub fn run(
+        self,
+    ) -> impl Stream<Item = Result<T::Data, BoxDynError>> + Send + use<'a, T, Q, H, F> {
+        try_unfold(self, async |this| {
+            this.step().await.map(move |x| Some((x, this)))
         })
-        .flat_map(|x| stream::iter(x.transpose()))
+        .try_filter_map(async |e| Ok(e))
     }
 
     pub(crate) fn step<'b>(
         &'b self,
-    ) -> impl Future<Output = Result<Option<Option<T::Data>>, BoxDynError>> + use<'a, 'b, T, Q> + Send
+    ) -> impl Future<Output = Result<Option<T::Data>, BoxDynError>> + use<'a, 'b, T, Q, H, F> + Send
     {
         // yield back to the runtime and throttle a bit, prevents 100% cpu usage while still allowing for a fast spin-loop
         sleep(Duration::from_millis(10)).then(|()| {
             self.queue
-                .process::<_, _, Option<T::Data>>(self.optimizer, |op, id| {
-                    op.clone()
-                        .process(Context::new(id, self.store), 0)
+                .process::<_, _, Option<T::Data>, _>(self.filter, async |op, id| {
+                    process(op, &self.handler.make_handler(id), 0)
                         .map(|res| match res {
                             Ok(op) => (None, Ok(op.into_iter().collect())),
-                            // Err(QueueError::Fatal(fatal)) => {
-                            //     let full_err = ErrorReporter(&*fatal);
-                            //     error!(error = %full_err, "fatal error");
-                            //     (None, Err(full_err.to_string()))
-                            // }
-                            // Err(QueueError::Unprocessable(unprocessable)) => {
-                            //     let full_err = ErrorReporter(&*unprocessable);
-                            //     info!(error = %full_err, "unprocessable message");
-                            //     (None, Err(full_err.to_string()))
-                            // }
-                            // Err(QueueError::Retry(retry)) => {
-                            //     // TODO: Add some backoff logic here based on `full_err`?
-                            //     let full_err = ErrorReporter(&*retry);
-                            //     warn!(error = %full_err, "retryable error");
-                            //     (None, Ok(vec![seq([defer(now() + 3), op])]))
-                            // }
                             Err(err) => (None, Err(err)),
                         })
+                        .await
                 })
                 .map(|data| match data {
-                    Ok(data) => Ok(Some(data.flatten())),
+                    Ok(data) => Ok(data.flatten()),
                     Err(err) => Err(err.into()),
                 })
         })

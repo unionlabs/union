@@ -12,13 +12,12 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-clap            = { workspace = true, features = ["derive", "error-context", "help", "env"] }
-embed-commit    = { workspace = true }
-jsonrpsee       = { workspace = true, features = ["macros", "server", "tracing"] }
-macros          = { workspace = true }
-serde           = { workspace = true, features = ["derive"] }
-tokio           = { workspace = true }
-tracing         = { workspace = true }
-unionlabs       = { workspace = true }
-voyager-message = { workspace = true }
-voyager-vm      = { workspace = true }
+clap         = { workspace = true, features = ["derive", "error-context", "help", "env"] }
+embed-commit = { workspace = true }
+jsonrpsee    = { workspace = true, features = ["macros", "server", "tracing"] }
+macros       = { workspace = true }
+serde        = { workspace = true, features = ["derive"] }
+tokio        = { workspace = true }
+tracing      = { workspace = true }
+unionlabs    = { workspace = true }
+voyager-sdk  = { workspace = true }

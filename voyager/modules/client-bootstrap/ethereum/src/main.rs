@@ -19,13 +19,13 @@ use unionlabs::{
     primitives::{H160, H256},
     ErrorReporter,
 };
-use voyager_message::{
+use voyager_sdk::{
+    anyhow::{self, bail},
     ensure_null, into_value,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, Timestamp},
-    ClientBootstrapModule,
+    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -120,10 +120,7 @@ impl Module {
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
@@ -141,11 +138,11 @@ impl ClientBootstrapModule for Module {
         let spec = beacon_api_client.spec().await.unwrap();
 
         if spec.preset_base != config.chain_spec {
-            return Err(format!(
+            bail!(
                 "incorrect chain spec: expected `{}`, but found `{}`",
-                config.chain_spec, spec.preset_base
-            )
-            .into());
+                config.chain_spec,
+                spec.preset_base
+            );
         }
 
         Ok(Self {

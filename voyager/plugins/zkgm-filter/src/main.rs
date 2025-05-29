@@ -43,14 +43,18 @@ use unionlabs::{
     traits::Member,
     ErrorReporter,
 };
-use voyager_message::{
-    data::{Data, EventProvableHeight},
-    module::{PluginInfo, PluginServer},
-    primitives::{ChainId, IbcSpec},
-    Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
-};
 use voyager_plugin_transaction_batch::data::{BatchableEvent, EventBatch};
-use voyager_vm::{call, data, noop, pass::PassResult, BoxDynError, Op};
+use voyager_sdk::{
+    anyhow::{self, bail},
+    message::{
+        data::{Data, EventProvableHeight},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
+    primitives::{ChainId, IbcSpec},
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    vm::{call, data, noop, pass::PassResult, Op},
+};
 
 use crate::{
     call::{CheckSendPacket, ModuleCall},
@@ -67,7 +71,7 @@ pub mod call {
     use ibc_union_spec::event::PacketSend;
     use macros::model;
     use unionlabs::{ibc::core::client::height::Height, primitives::H256};
-    use voyager_message::primitives::ChainId;
+    use voyager_sdk::primitives::ChainId;
 
     #[model]
     #[derive(Enumorph)]
@@ -140,7 +144,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = Cmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let mut providers = BTreeMap::new();
 
         let db = PgPoolOptions::new().connect(&config.db_url).await?;
@@ -176,11 +180,10 @@ impl Plugin for Module {
                     let expected_chain_id = client.status().await?.node_info.network;
 
                     if chain_id.as_str() != expected_chain_id {
-                        return Err(format!(
+                        bail!(
                             "expected chain id {chain_id} for rpc endpoint \
                             {rpc_url} but found {expected_chain_id}"
-                        )
-                        .into());
+                        );
                     }
 
                     providers.insert(chain_id, ChainProvider::Cosmos { client });
@@ -192,11 +195,10 @@ impl Plugin for Module {
                     let raw_chain_id = provider.get_chain_id().await?;
 
                     if chain_id.as_str() != raw_chain_id.to_string() {
-                        return Err(format!(
+                        bail!(
                             "expected chain id {chain_id} for rpc endpoint \
                             {rpc_url} but found {raw_chain_id}"
-                        )
-                        .into());
+                        );
                     }
 
                     providers.insert(chain_id, ChainProvider::Evm { provider });

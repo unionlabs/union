@@ -1,11 +1,8 @@
 // #![warn(clippy::unwrap_used)]
 
-use std::{
-    fmt::Debug,
-    sync::{Arc, OnceLock},
-};
+use std::sync::{Arc, OnceLock};
 
-use anyhow::{anyhow, Context};
+use anyhow::{anyhow, Context as _};
 use futures::TryFutureExt;
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -15,292 +12,56 @@ use jsonrpsee::{
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
-use voyager_primitives::{ConsensusStateMeta, IbcSpecId, Timestamp};
+use voyager_plugin_protocol::WithId;
+use voyager_primitives::{
+    ChainId, ClientInfo, ClientStateMeta, ClientType, ConsensusStateMeta, IbcInterface, IbcSpec,
+    IbcSpecId, IbcStorePathKey, QueryHeight, Timestamp,
+};
+use voyager_rpc::{
+    json_rpc_error_to_error_object,
+    types::{
+        IbcProofResponse, IbcStateResponse, InfoResponse, SelfClientStateResponse,
+        SelfConsensusStateResponse,
+    },
+    ClientBootstrapModuleClient, ClientModuleClient, FinalityModuleClient, PluginClient,
+    RawProofModuleClient, RawStateModuleClient, VoyagerRpcServer, FATAL_JSONRPC_ERROR_CODE,
+};
+use voyager_types::{IbcProof, RawClientId};
 use voyager_vm::ItemId;
 
-// use valuable::Valuable;
-// use voyager_primitives::IbcStoreFormat;
 use crate::{
-    context::{LoadedModulesInfo, Modules, WithId},
-    into_value,
-    module::{
-        ClientBootstrapModuleClient, ClientModuleClient, FinalityModuleClient, PluginClient,
-        RawProofModuleClient, RawStateModuleClient,
-    },
-    primitives::{ChainId, ClientInfo, ClientStateMeta, ClientType, IbcInterface, QueryHeight},
-    rpc::{
-        json_rpc_error_to_error_object,
-        server::cache::{ClientInfoRequest, StateRequest},
-        IbcProof, IbcProofResponse, IbcState, SelfClientState, SelfConsensusState,
-        VoyagerRpcServer,
-    },
-    ExtensionsExt, IbcSpec, IbcStorePathKey, RawClientId, FATAL_JSONRPC_ERROR_CODE,
+    cache::{ClientInfoRequest, StateRequest},
+    context::Context,
 };
 
-pub mod cache {
-    use std::{future::Future, time::Duration};
-
-    use futures::TryFutureExt;
-    use jsonrpsee::core::RpcResult;
-    use moka::policy::EvictionPolicy;
-    use opentelemetry::KeyValue;
-    use schemars::JsonSchema;
-    use serde::{de::DeserializeOwned, Deserialize, Serialize};
-    use serde_json::Value;
-    use tracing::trace;
-    use unionlabs::ibc::core::client::height::Height;
-    use voyager_primitives::{ChainId, ClientInfo, IbcSpec, IbcSpecId, IbcStorePathKey};
-
-    use crate::RawClientId;
-
-    #[derive(Debug, Clone)]
-    pub struct Cache {
-        state_cache: moka::future::Cache<StateRequest, Value>,
-        state_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
-        state_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
-        state_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
-
-        client_info_cache: moka::future::Cache<ClientInfoRequest, ClientInfo>,
-        client_info_cache_size_metric: opentelemetry::metrics::Gauge<u64>,
-        client_info_cache_hit_counter_metric: opentelemetry::metrics::Counter<u64>,
-        client_info_cache_miss_counter_metric: opentelemetry::metrics::Counter<u64>,
-        // proof_cache: moka::future::Cache,
-    }
-
-    impl Cache {
-        #[allow(clippy::new_without_default)]
-        pub fn new(config: Config) -> Self {
-            Self {
-                state_cache: moka::future::CacheBuilder::new(config.state.capacity)
-                    // .expire_after()
-                    .time_to_live(Duration::from_secs(config.state.time_to_live))
-                    .time_to_idle(Duration::from_secs(config.state.time_to_idle))
-                    .eviction_policy(EvictionPolicy::lru())
-                    .build(),
-                state_cache_size_metric: opentelemetry::global::meter("voyager")
-                    .u64_gauge("cache.state.size")
-                    .build(),
-                state_cache_hit_counter_metric: opentelemetry::global::meter("voyager")
-                    .u64_counter("cache.state.hit")
-                    .build(),
-                state_cache_miss_counter_metric: opentelemetry::global::meter("voyager")
-                    .u64_counter("cache.state.miss")
-                    .build(),
-                client_info_cache: moka::future::CacheBuilder::new(config.state.capacity)
-                    // never expire, this state is assumed to be immutable
-                    .time_to_live(Duration::from_secs(60 * 60 * 24 * 365 * 1000))
-                    .time_to_idle(Duration::from_secs(60 * 60 * 24 * 365 * 1000))
-                    .eviction_policy(EvictionPolicy::lru())
-                    .build(),
-                client_info_cache_size_metric: opentelemetry::global::meter("voyager")
-                    .u64_gauge("cache.client_info.size")
-                    .build(),
-                client_info_cache_hit_counter_metric: opentelemetry::global::meter("voyager")
-                    .u64_counter("cache.client_info.hit")
-                    .build(),
-                client_info_cache_miss_counter_metric: opentelemetry::global::meter("voyager")
-                    .u64_counter("cache.client_info.miss")
-                    .build(),
-            }
-        }
-
-        pub async fn state<T: Serialize + DeserializeOwned>(
-            &self,
-            state_request: StateRequest,
-            fut: impl Future<Output = RpcResult<Option<T>>>,
-        ) -> RpcResult<Option<T>> {
-            let attributes = &[KeyValue::new(
-                "chain_id",
-                state_request.chain_id.to_string(),
-            )];
-
-            self.state_cache_size_metric
-                .record(self.state_cache.entry_count(), attributes);
-
-            if let Some(state) = self.state_cache.get(&state_request).await {
-                self.state_cache_hit_counter_metric.add(1, attributes);
-
-                return Ok(Some(serde_json::from_value(state).expect(
-                    "infallible; only valid values are inserted into the cache; qed;",
-                )));
-            };
-
-            self.state_cache_miss_counter_metric.add(1, attributes);
-
-            let init = fut
-                .map_ok(|state| {
-                    serde_json::to_value(state).expect("serialization is infallible; qed;")
-                })
-                .await?;
-
-            if init.is_null() {
-                Ok(None)
-            } else {
-                let entry = self.state_cache.entry(state_request).or_insert(init).await;
-
-                let value = entry.into_value();
-
-                trace!(%value, "cached value");
-
-                Ok(serde_json::from_value(value)
-                    .expect("infallible; only valid values are inserted into the cache; qed;"))
-            }
-        }
-
-        pub async fn client_info(
-            &self,
-            client_info_request: ClientInfoRequest,
-            fut: impl Future<Output = RpcResult<Option<ClientInfo>>>,
-        ) -> RpcResult<Option<ClientInfo>> {
-            let attributes = &[KeyValue::new(
-                "chain_id",
-                client_info_request.chain_id.to_string(),
-            )];
-
-            self.client_info_cache_size_metric
-                .record(self.client_info_cache.entry_count(), attributes);
-
-            if let Some(client_info) = self.client_info_cache.get(&client_info_request).await {
-                self.client_info_cache_hit_counter_metric.add(1, attributes);
-
-                return Ok(Some(client_info));
-            };
-
-            self.client_info_cache_miss_counter_metric
-                .add(1, attributes);
-
-            match fut.await? {
-                Some(init) => {
-                    let entry = self
-                        .client_info_cache
-                        .entry(client_info_request)
-                        .or_insert(init)
-                        .await;
-
-                    let client_info = entry.into_value();
-
-                    trace!(
-                        %client_info.client_type,
-                        %client_info.ibc_interface,
-                        %client_info.metadata,
-                        "cached value"
-                    );
-
-                    Ok(Some(client_info))
-                }
-                None => Ok(None),
-            }
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
-    pub struct Config {
-        pub state: CacheConfig,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]
-    pub struct CacheConfig {
-        pub capacity: u64,
-        pub time_to_live: u64,
-        pub time_to_idle: u64,
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub struct StateRequest {
-        chain_id: ChainId,
-        ibc_spec_id: IbcSpecId,
-        height: u64,
-        path: Value,
-    }
-
-    impl StateRequest {
-        pub fn new<P: IbcStorePathKey>(
-            chain_id: ChainId,
-            height: Height,
-            path: <P::Spec as IbcSpec>::StorePath,
-        ) -> Self {
-            Self {
-                chain_id,
-                ibc_spec_id: P::Spec::ID,
-                height: height.height(),
-                path: serde_json::to_value(path).expect("serialization is infallible; qed;"),
-            }
-        }
-
-        pub fn new_raw(
-            chain_id: ChainId,
-            ibc_spec_id: IbcSpecId,
-            height: Height,
-            path: Value,
-        ) -> Self {
-            Self {
-                chain_id,
-                ibc_spec_id,
-                height: height.height(),
-                path,
-            }
-        }
-    }
-
-    #[derive(Debug, Clone, PartialEq, Eq, Hash)]
-    pub struct ClientInfoRequest {
-        chain_id: ChainId,
-        ibc_spec_id: IbcSpecId,
-        client_id: RawClientId,
-    }
-
-    impl ClientInfoRequest {
-        pub fn new<V: IbcSpec>(chain_id: ChainId, client_id: V::ClientId) -> Self {
-            Self {
-                chain_id,
-                ibc_spec_id: V::ID,
-                client_id: RawClientId::new(client_id),
-            }
-        }
-
-        pub fn new_raw(chain_id: ChainId, ibc_spec_id: IbcSpecId, client_id: RawClientId) -> Self {
-            Self {
-                chain_id,
-                ibc_spec_id,
-                client_id,
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct Server {
-    inner: Arc<ServerInner>,
+    context: Arc<OnceLock<Context>>,
+    cache: crate::cache::Cache,
     item_id: Option<ItemId>,
 }
 
-#[derive(Debug, Clone)]
-pub struct ServerInner {
-    modules: OnceLock<Arc<Modules>>,
-    cache: cache::Cache,
-}
+#[derive(Clone)]
+pub struct ServerInner {}
 
 impl Server {
-    #[allow(clippy::new_without_default)]
-    pub fn new(cache_config: cache::Config) -> Self {
+    pub fn new(cache: crate::cache::Cache, context: Arc<OnceLock<Context>>) -> Self {
         Server {
-            inner: Arc::new(ServerInner {
-                modules: OnceLock::new(),
-                cache: cache::Cache::new(cache_config),
-            }),
+            context,
+            cache,
             item_id: None,
         }
     }
 
-    pub fn start(&self, modules: Arc<Modules>) {
-        let was_not_already_started = self.inner.modules.set(modules).is_ok();
-
-        assert!(was_not_already_started, "server has already been started");
+    pub fn id(&self) -> Option<ItemId> {
+        self.item_id
     }
 
+    // REVIEW: Don't clone here?
     pub fn with_id(&self, item_id: Option<ItemId>) -> Server {
         Server {
-            inner: self.inner.clone(),
+            context: self.context.clone(),
+            cache: self.cache.clone(),
             item_id,
         }
     }
@@ -312,9 +73,11 @@ impl Server {
         }
     }
 
-    /// Returns the contained modules, if they have been loaded.
-    pub fn modules(&self) -> RpcResult<&Modules> {
-        self.inner.modules()
+    /// Returns the contained context, if it has been loaded.
+    pub fn context(&self) -> RpcResult<&Context> {
+        self.context
+            .get()
+            .ok_or_else(|| ErrorObject::owned(-2, "server has not started", None::<()>))
     }
 
     #[instrument(skip_all, fields(%height, %chain_id))]
@@ -322,7 +85,7 @@ impl Server {
         match height {
             QueryHeight::Latest => {
                 let latest_height = self
-                    .modules()?
+                    .context()?
                     .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(false)
@@ -335,7 +98,7 @@ impl Server {
             }
             QueryHeight::Finalized => {
                 let latest_height = self
-                    .modules()?
+                    .context()?
                     .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(true)
@@ -351,16 +114,6 @@ impl Server {
     }
 }
 
-impl ServerInner {
-    /// Returns the contained modules, if they have been loaded.
-    fn modules(&self) -> RpcResult<&Modules> {
-        self.modules
-            .get()
-            .map(|x| &**x)
-            .ok_or_else(|| ErrorObject::owned(-2, "server has not started", None::<()>))
-    }
-}
-
 impl Server {
     #[instrument(skip_all, fields(%chain_id, finalized))]
     pub async fn query_latest_height(
@@ -373,8 +126,7 @@ impl Server {
                 trace!("querying latest height");
 
                 let latest_height = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_height(finalized)
@@ -402,8 +154,7 @@ impl Server {
                 trace!("querying latest timestamp");
 
                 let latest_timestamp = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .finality_module(chain_id)?
                     .with_id(self.item_id)
                     .query_latest_timestamp(finalized)
@@ -420,7 +171,7 @@ impl Server {
             .await
     }
 
-    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, client_id = %client_id.0))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, client_id = %client_id.as_raw()))]
     pub async fn client_info(
         &self,
         chain_id: &ChainId,
@@ -429,7 +180,7 @@ impl Server {
     ) -> RpcResult<Option<ClientInfo>> {
         self.span()
             .in_scope(|| {
-                self.inner.cache.client_info(
+                self.cache.client_info(
                     ClientInfoRequest::new_raw(
                         chain_id.clone(),
                         ibc_spec_id.clone(),
@@ -439,8 +190,7 @@ impl Server {
                         trace!("fetching client info");
 
                         let client_info = self
-                            .inner
-                            .modules()?
+                            .context()?
                             .state_module(chain_id, ibc_spec_id)?
                             .with_id(self.item_id)
                             .client_info_raw(client_id.clone())
@@ -467,7 +217,7 @@ impl Server {
             .await
     }
 
-    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.0))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.as_raw()))]
     pub async fn client_state_meta(
         &self,
         chain_id: &ChainId,
@@ -481,7 +231,7 @@ impl Server {
 
                 let height = self.query_height(chain_id, at).await?;
 
-                let modules = self.inner.modules()?;
+                let context = self.context()?;
 
                 let client_info = self
                     .client_info(chain_id, ibc_spec_id, client_id.clone())
@@ -496,7 +246,7 @@ impl Server {
                 };
 
                 let ibc_spec_handler = self
-                    .modules()?
+                    .context()?
                     .ibc_spec_handlers
                     .handlers
                     .get(ibc_spec_id)
@@ -537,7 +287,7 @@ impl Server {
                     })
                     .map_err(|e| fatal_error(&*e))?;
 
-                let meta = modules
+                let meta = context
                     .client_module(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -561,7 +311,7 @@ impl Server {
             .await
     }
 
-    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.0))]
+    #[instrument(skip_all, fields(%chain_id, %ibc_spec_id, height = %at, client_id = %client_id.as_raw()))]
     pub async fn consensus_state_meta(
         &self,
         chain_id: &ChainId,
@@ -576,7 +326,7 @@ impl Server {
 
                 let height = self.query_height(chain_id, at).await?;
 
-                let modules = self.inner.modules()?;
+                let context = self.context()?;
 
                 let Some(client_info) = self
                     .client_info(chain_id, ibc_spec_id, client_id.clone())
@@ -590,7 +340,7 @@ impl Server {
                 };
 
                 let ibc_spec_handler = self
-                    .modules()?
+                    .context()?
                     .ibc_spec_handlers
                     .handlers
                     .get(ibc_spec_id)
@@ -643,7 +393,7 @@ impl Server {
                     return Ok(None);
                 };
 
-                let meta = modules
+                let meta = context
                     .client_module(
                         &client_info.client_type,
                         &client_info.ibc_interface,
@@ -678,13 +428,12 @@ impl Server {
                 trace!("query");
 
                 let state_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .state_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
                 let value = state_module
-                    .query_raw(into_value(query.clone()))
+                    .query_raw(serde_json::to_value(query.clone()).unwrap())
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
@@ -703,7 +452,7 @@ impl Server {
         ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
-    ) -> RpcResult<IbcState<Value>> {
+    ) -> RpcResult<IbcStateResponse<Value>> {
         self.span()
             .in_scope(|| async {
                 trace!("fetching ibc state");
@@ -711,13 +460,11 @@ impl Server {
                 let height = self.query_height(&chain_id, height).await?;
 
                 let state_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .state_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
                 let state = self
-                    .inner
                     .cache
                     .state::<Value>(
                         StateRequest::new_raw(
@@ -727,7 +474,10 @@ impl Server {
                             path.clone(),
                         ),
                         state_module
-                            .query_ibc_state_raw(height, into_value(path.clone()))
+                            .query_ibc_state_raw(
+                                height,
+                                serde_json::to_value(path.clone()).unwrap(),
+                            )
                             .map_ok(|state| {
                                 // TODO: Use valuable here
                                 trace!(%state, "fetched ibc state");
@@ -742,7 +492,7 @@ impl Server {
                     )
                     .await?;
 
-                Ok(IbcState { height, state })
+                Ok(IbcStateResponse { height, state })
             })
             .await
     }
@@ -762,8 +512,7 @@ impl Server {
                 debug!("fetching ibc proof");
 
                 let proof_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .proof_module(&chain_id, &ibc_spec_id)?
                     .with_id(self.item_id);
 
@@ -773,7 +522,7 @@ impl Server {
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                debug!(result = %into_value(&res), "fetched ibc proof");
+                debug!(result = %serde_json::to_value(&res).unwrap(), "fetched ibc proof");
 
                 Ok(
                     res.map_or(IbcProofResponse::NotAvailable, |(proof, proof_type)| {
@@ -794,24 +543,25 @@ impl Server {
         chain_id: &ChainId,
         height: Height,
         path: <P::Spec as IbcSpec>::StorePath,
-    ) -> RpcResult<IbcState<P::Value>> {
+    ) -> RpcResult<IbcStateResponse<P::Value>> {
         self.span()
             .in_scope(|| async {
                 trace!("fetching ibc state");
 
                 let state_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .state_module(chain_id, &P::Spec::ID)?
                     .with_id(self.item_id);
 
                 let state = self
-                    .inner
                     .cache
                     .state::<P::Value>(
                         StateRequest::new::<P>(chain_id.clone(), height, path.clone()),
                         state_module
-                            .query_ibc_state_raw(height, into_value(path.clone()))
+                            .query_ibc_state_raw(
+                                height,
+                                serde_json::to_value(path.clone()).unwrap(),
+                            )
                             .map_ok(|state| {
                                 // TODO: Use valuable here
                                 trace!(%state, "fetched ibc state");
@@ -822,7 +572,7 @@ impl Server {
                     )
                     .await?;
 
-                Ok(IbcState { height, state })
+                Ok(IbcStateResponse { height, state })
             })
             .await
     }
@@ -833,7 +583,7 @@ impl Server {
             %chain_id,
             ibc_spec_id = %P::Spec::ID,
             %height,
-            path = %into_value(path.clone())
+            path = %serde_json::to_value(path.clone()).unwrap()
         )
     )]
     pub async fn query_ibc_proof<P: IbcStorePathKey>(
@@ -847,18 +597,17 @@ impl Server {
                 trace!("fetching ibc state");
 
                 let proof_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .proof_module(chain_id, &P::Spec::ID)?
                     .with_id(self.item_id);
 
                 let res = proof_module
-                    .query_ibc_proof_raw(height, into_value(path.clone()))
+                    .query_ibc_proof_raw(height, serde_json::to_value(path.clone()).unwrap())
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
                 // TODO: Use valuable here
-                debug!(result = %into_value(&res), "fetched ibc proof");
+                debug!(result = %serde_json::to_value(&res).unwrap(), "fetched ibc proof");
 
                 Ok(
                     res.map_or(IbcProofResponse::NotAvailable, |(proof, proof_type)| {
@@ -880,14 +629,13 @@ impl Server {
         client_type: ClientType,
         height: Height,
         config: Value,
-    ) -> RpcResult<SelfClientState> {
+    ) -> RpcResult<SelfClientStateResponse> {
         self.span()
             .in_scope(|| async {
                 trace!("querying self client state");
 
                 let client_bootstrap_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .client_bootstrap_module(&chain_id, &client_type)?
                     .with_id(self.item_id);
 
@@ -899,7 +647,7 @@ impl Server {
                 // TODO: Use valuable here
                 trace!(%state, "fetched self client state");
 
-                Ok(SelfClientState { height, state })
+                Ok(SelfClientStateResponse { height, state })
             })
             .await
     }
@@ -911,14 +659,13 @@ impl Server {
         client_type: ClientType,
         height: QueryHeight,
         config: Value,
-    ) -> RpcResult<SelfConsensusState> {
+    ) -> RpcResult<SelfConsensusStateResponse> {
         self.span()
             .in_scope(|| async {
                 trace!("querying self consensus state");
 
                 let client_bootstrap_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .client_bootstrap_module(&chain_id, &client_type)?
                     .with_id(self.item_id);
 
@@ -932,7 +679,7 @@ impl Server {
                 // TODO: Use valuable here
                 trace!(%state, "fetched self consensus state");
 
-                Ok(SelfConsensusState { height, state })
+                Ok(SelfConsensusStateResponse { height, state })
             })
             .await
     }
@@ -951,8 +698,7 @@ impl Server {
                 trace!("encoding proof");
 
                 let client_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id);
 
@@ -982,8 +728,7 @@ impl Server {
                 trace!("encoding header");
 
                 let client_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id);
 
@@ -1013,8 +758,7 @@ impl Server {
                 trace!("decoding client state meta");
 
                 let client_module = self
-                    .inner
-                    .modules()?
+                    .context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id);
 
@@ -1044,8 +788,7 @@ impl Server {
     ) -> RpcResult<Value> {
         self.span()
             .in_scope(|| async {
-                self.inner
-                    .modules()?
+                self.context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id)
                     .decode_client_state(client_state)
@@ -1065,11 +808,51 @@ impl Server {
     ) -> RpcResult<Value> {
         self.span()
             .in_scope(|| async {
-                self.inner
-                    .modules()?
+                self.context()?
                     .client_module(client_type, ibc_interface, ibc_spec_id)?
                     .with_id(self.item_id)
                     .decode_consensus_state(consensus_state)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)
+            })
+            .await
+    }
+
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id))]
+    pub async fn encode_client_state(
+        &self,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
+        ibc_spec_id: &IbcSpecId,
+        client_state: Value,
+        metadata: Value,
+    ) -> RpcResult<Bytes> {
+        self.span()
+            .in_scope(|| async {
+                self.context()?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
+                    .with_id(self.item_id)
+                    .encode_client_state(client_state, metadata)
+                    .await
+                    .map_err(json_rpc_error_to_error_object)
+            })
+            .await
+    }
+
+    #[instrument(skip_all, fields(%client_type, %ibc_interface, %ibc_spec_id))]
+    pub async fn encode_consensus_state(
+        &self,
+        client_type: &ClientType,
+        ibc_interface: &IbcInterface,
+        ibc_spec_id: &IbcSpecId,
+        consensus_state: Value,
+    ) -> RpcResult<Bytes> {
+        self.span()
+            .in_scope(|| async {
+                self.context()?
+                    .client_module(client_type, ibc_interface, ibc_spec_id)?
+                    .with_id(self.item_id)
+                    .encode_consensus_state(consensus_state)
                     .await
                     .map_err(json_rpc_error_to_error_object)
             })
@@ -1080,8 +863,8 @@ impl Server {
 /// rpc impl
 #[async_trait]
 impl VoyagerRpcServer for Server {
-    async fn info(&self, _: &Extensions) -> RpcResult<LoadedModulesInfo> {
-        Ok(self.modules()?.info())
+    async fn info(&self, _: &Extensions) -> RpcResult<InfoResponse> {
+        Ok(self.context()?.info())
     }
 
     async fn equivalent_chain_ids(
@@ -1090,8 +873,7 @@ impl VoyagerRpcServer for Server {
         chain_id: ChainId,
     ) -> RpcResult<Vec<ChainId>> {
         Ok(self
-            .inner
-            .modules()?
+            .context()?
             .equivalent_chain_ids()
             .equivalents(&chain_id)
             .cloned()
@@ -1188,7 +970,7 @@ impl VoyagerRpcServer for Server {
         ibc_spec_id: IbcSpecId,
         height: QueryHeight,
         path: Value,
-    ) -> RpcResult<IbcState<Value>> {
+    ) -> RpcResult<IbcStateResponse<Value>> {
         self.with_id(e.try_get().ok().cloned())
             .query_ibc_state_raw(chain_id, ibc_spec_id, height, path)
             .await
@@ -1223,7 +1005,7 @@ impl VoyagerRpcServer for Server {
         client_type: ClientType,
         height: QueryHeight,
         config: Value,
-    ) -> RpcResult<SelfClientState> {
+    ) -> RpcResult<SelfClientStateResponse> {
         let item_id = e.try_get().ok().cloned();
         let this = self.with_id(item_id);
 
@@ -1240,7 +1022,7 @@ impl VoyagerRpcServer for Server {
         client_type: ClientType,
         height: QueryHeight,
         config: Value,
-    ) -> RpcResult<SelfConsensusState> {
+    ) -> RpcResult<SelfConsensusStateResponse> {
         self.with_id(e.try_get().ok().cloned())
             .self_consensus_state(chain_id, client_type, height, config)
             .await
@@ -1317,6 +1099,39 @@ impl VoyagerRpcServer for Server {
             .await
     }
 
+    async fn encode_client_state(
+        &self,
+        e: &Extensions,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_spec_id: IbcSpecId,
+        client_state: Value,
+        metadata: Value,
+    ) -> RpcResult<Bytes> {
+        self.with_id(e.try_get().ok().cloned())
+            .encode_client_state(
+                &client_type,
+                &ibc_interface,
+                &ibc_spec_id,
+                client_state,
+                metadata,
+            )
+            .await
+    }
+
+    async fn encode_consensus_state(
+        &self,
+        e: &Extensions,
+        client_type: ClientType,
+        ibc_interface: IbcInterface,
+        ibc_spec_id: IbcSpecId,
+        consensus_state: Value,
+    ) -> RpcResult<Bytes> {
+        self.with_id(e.try_get().ok().cloned())
+            .encode_consensus_state(&client_type, &ibc_interface, &ibc_spec_id, consensus_state)
+            .await
+    }
+
     #[instrument(skip_all, fields(%plugin, %method))]
     async fn plugin_custom(
         &self,
@@ -1329,7 +1144,7 @@ impl VoyagerRpcServer for Server {
 
         PluginClient::<Value, Value>::custom(
             self.with_id(e.try_get().ok().cloned())
-                .modules()?
+                .context()?
                 .plugin(&plugin)?,
             method,
             params,
@@ -1345,4 +1160,26 @@ pub(crate) fn fatal_error(t: impl core::error::Error) -> ErrorObjectOwned {
         ErrorReporter(t).to_string(),
         None::<()>,
     )
+}
+
+trait ExtensionsExt {
+    /// Retrieve a value from this [`Extensions`], returning an [`RpcResult`] for more
+    /// convenient handling in rpc server implementations.
+    fn try_get<T: Send + Sync + 'static>(&self) -> RpcResult<&T>;
+}
+
+impl ExtensionsExt for Extensions {
+    fn try_get<T: Send + Sync + 'static>(&self) -> RpcResult<&T> {
+        match self.get() {
+            Some(t) => Ok(t),
+            None => Err(ErrorObject::owned(
+                -1,
+                format!(
+                    "failed to retrieve value of type {} from extensions",
+                    std::any::type_name::<T>(),
+                ),
+                None::<()>,
+            )),
+        }
+    }
 }

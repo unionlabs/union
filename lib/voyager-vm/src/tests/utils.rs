@@ -4,7 +4,7 @@ use enumorph::Enumorph;
 use macros::model;
 use subset_of::SubsetOf;
 
-use crate::{call, data, noop, CallT, CallbackT, Context, Op, QueueError, QueueMessage};
+use crate::{call, data, noop, Handler, Op, QueueError, QueueMessage};
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum SimpleMessage {}
@@ -12,16 +12,12 @@ pub enum SimpleMessage {}
 impl QueueMessage for SimpleMessage {
     type Data = SimpleData;
     type Call = SimpleCall;
-    type Callback = SimpleAggregate;
-
-    type Filter = ();
-
-    type Context = ();
+    type Callback = SimpleCallback;
 }
 
-impl CallT<SimpleMessage> for SimpleCall {
-    async fn process(self, _: Context<&()>) -> Result<Op<SimpleMessage>, QueueError> {
-        Ok(match self {
+impl Handler<SimpleMessage> for () {
+    async fn call(&self, call: SimpleCall) -> Result<Op<SimpleMessage>, QueueError> {
+        Ok(match call {
             SimpleCall::A(FetchA {}) => data(DataA {}),
             SimpleCall::B(FetchB {}) => data(DataB {}),
             SimpleCall::C(FetchC {}) => data(DataC {}),
@@ -33,16 +29,14 @@ impl CallT<SimpleMessage> for SimpleCall {
             }
         })
     }
-}
 
-impl CallbackT<SimpleMessage> for SimpleAggregate {
-    async fn process(
-        self,
-        _: Context<&()>,
+    async fn callback(
+        &self,
+        callback: SimpleCallback,
         data: VecDeque<SimpleData>,
     ) -> Result<Op<SimpleMessage>, QueueError> {
-        Ok(match self {
-            Self::BuildPrintAbc(BuildPrintAbc {}) => {
+        Ok(match callback {
+            SimpleCallback::BuildPrintAbc(BuildPrintAbc {}) => {
                 let mut data = data.into_iter().collect();
 
                 let op = call(PrintAbc {
@@ -108,11 +102,8 @@ pub struct PrintAbc {
 }
 
 #[model]
-pub struct SimpleWait {}
-
-#[model]
 #[derive(Enumorph)]
-pub enum SimpleAggregate {
+pub enum SimpleCallback {
     BuildPrintAbc(BuildPrintAbc),
 }
 

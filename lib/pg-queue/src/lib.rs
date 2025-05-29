@@ -295,10 +295,10 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         })
     }
 
-    async fn enqueue<'a>(
+    async fn enqueue<'a, Filter: InterestFilter<T>>(
         &'a self,
         op: Op<T>,
-        filter: &'a T::Filter,
+        filter: &'a Filter,
     ) -> Result<EnqueueResult, Self::Error> {
         trace!("enqueue");
 
@@ -370,15 +370,16 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     }
 
     #[instrument(skip_all)]
-    async fn process<'a, F, Fut, R>(
+    async fn process<'a, F, Fut, R, Filter>(
         &'a self,
-        filter: &'a T::Filter,
+        filter: &'a Filter,
         f: F,
     ) -> Result<Option<R>, Self::Error>
     where
         F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
         Fut: Future<Output = (R, Result<Vec<Op<T>>, QueueError>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
+        Filter: InterestFilter<T>,
     {
         trace!("process");
 
@@ -435,12 +436,16 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
     }
 
     #[instrument(skip_all, fields(%tag))]
-    async fn optimize<'a, O: Pass<T>>(
+    async fn optimize<'a, O, Filter>(
         &'a self,
         tag: &'a str,
-        filter: &'a T::Filter,
+        filter: &'a Filter,
         optimizer: &'a O,
-    ) -> Result<(), Either<Self::Error, O::Error>> {
+    ) -> Result<(), Either<Self::Error, O::Error>>
+    where
+        O: Pass<T>,
+        Filter: InterestFilter<T>,
+    {
         trace!(%tag, "optimize");
 
         let mut tx = self.client.begin().await.map_err(Either::Left)?;
@@ -632,19 +637,21 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         attempt = record.attempt
     )
 )]
-async fn process_item<'a, T: QueueMessage, F, Fut, R>(
+async fn process_item<'a, T, F, Fut, R, Filter>(
     metrics: &Metrics,
     tx: &mut Transaction<'static, Postgres>,
     record: QueueRecord,
     f: F,
-    filter: &'a T::Filter,
+    filter: &'a Filter,
     retryable_error_expo_backoff_max: f64,
     retryable_error_expo_backoff_multiplier: f64,
 ) -> Result<Option<R>, sqlx::Error>
 where
+    T: QueueMessage,
     F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
     Fut: Future<Output = (R, Result<Vec<Op<T>>, QueueError>)> + Send + Captures<'a>,
     R: Send + Sync + 'static,
+    Filter: InterestFilter<T>,
 {
     trace!(%record.item);
 

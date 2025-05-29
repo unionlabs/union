@@ -26,8 +26,8 @@ state-lens-ics23-smt-light-client-types = { workspace = true, features = ["serde
 tokio                                   = { workspace = true }
 tracing                                 = { workspace = true }
 unionlabs                               = { workspace = true }
-voyager-message                         = { workspace = true }
-voyager-vm                              = { workspace = true }
+voyager-sdk                             = { workspace = true }
+
 
 [dev-dependencies]
 tokio = { workspace = true, features = ["full"] }

@@ -13,13 +13,15 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
-use voyager_message::{
-    into_value,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType, QueryHeight},
-    ClientBootstrapModule, ExtensionsExt, VoyagerClient, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{
+        types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer, FATAL_JSONRPC_ERROR_CODE,
+    },
+    ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -103,10 +105,7 @@ impl Module {
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
@@ -148,7 +147,7 @@ impl ClientBootstrapModuleServer for Module {
         })?;
 
         self.ensure_l1_client_counterparty_chain_id(
-            e.try_get()?,
+            e.voyager_client()?,
             &config.host_chain_id,
             config.l1_client_id,
         )
@@ -185,7 +184,7 @@ impl ClientBootstrapModuleServer for Module {
         })?;
 
         self.ensure_l1_client_counterparty_chain_id(
-            e.try_get()?,
+            e.voyager_client()?,
             &config.host_chain_id,
             config.l1_client_id,
         )

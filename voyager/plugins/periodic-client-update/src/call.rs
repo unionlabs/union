@@ -1,9 +1,9 @@
 use macros::model;
-use voyager_message::{
+use voyager_sdk::{
     primitives::{ChainId, IbcSpecId},
-    RawClientId,
+    types::RawClientId,
+    vm::BoxDynError,
 };
-use voyager_vm::BoxDynError;
 
 #[model]
 pub enum ModuleCall {

@@ -33,13 +33,12 @@ use unionlabs::{
     primitives::{encoding::HexUnprefixed, Bytes, H256, H64},
     ErrorReporter, WasmClientType,
 };
-use voyager_message::{
-    into_value,
-    module::{StateModuleInfo, StateModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    StateModule, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
-use voyager_vm::BoxDynError;
 
 const IBC_STORE_PATH: &str = "store/ibc/key";
 
@@ -79,7 +78,7 @@ fn default_max_drift() -> u64 {
 impl StateModule<IbcClassic> for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: StateModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: StateModuleInfo) -> anyhow::Result<Self> {
         let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
 
         let chain_id = tm_client.status().await?.node_info.network;

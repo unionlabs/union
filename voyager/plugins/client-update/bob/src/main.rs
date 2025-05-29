@@ -29,17 +29,23 @@ use unionlabs::{
     primitives::{H160, H256, U256},
     ErrorReporter,
 };
-use voyager_message::{
-    call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
-    callback::AggregateSubmitTxFromOrderedHeaders,
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
+use voyager_sdk::{
+    anyhow,
     hook::UpdateHook,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, FetchUpdateHeaders, WaitForHeightRelative, WaitForTrustedHeight},
+        callback::AggregateSubmitTxFromOrderedHeaders,
+        data::{Data, DecodedHeaderMeta, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType, IbcSpec, QueryHeight},
-    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, RawClientId, VoyagerClient, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    types::RawClientId,
+    vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit},
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, data, pass::PassResult, promise, seq, BoxDynError, Op, Visit};
 
 use crate::call::{FetchUpdate, ModuleCall};
 
@@ -171,7 +177,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let l1_provider =
             DynProvider::new(ProviderBuilder::new().connect(&config.l1_rpc_url).await?);
 
@@ -258,7 +264,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 client_id,
             }) => self
                 .fetch_update(
-                    e.try_get()?,
+                    e.voyager_client()?,
                     from_height,
                     to_height,
                     counterparty_chain_id,
@@ -277,7 +283,12 @@ impl PluginServer<ModuleCall, Never> for Module {
                 counterparty_chain_id,
                 client_id,
             }) => self
-                .fetch_l2_update(e.try_get()?, update_from, counterparty_chain_id, client_id)
+                .fetch_l2_update(
+                    e.voyager_client()?,
+                    update_from,
+                    counterparty_chain_id,
+                    client_id,
+                )
                 .await
                 .map_err(|e| {
                     ErrorObject::owned(

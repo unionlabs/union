@@ -20,16 +20,21 @@ use unionlabs::{
     primitives::{H160, H256, H512},
     ErrorReporter,
 };
-use voyager_message::{
-    call::Call,
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
+use voyager_sdk::{
+    anyhow::{self, bail},
     hook::UpdateHook,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::Call,
+        data::{Data, DecodedHeaderMeta, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType, Timestamp},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    vm::{self, pass::PassResult, BoxDynError, Op, Visit},
+    DefaultCmd,
 };
-use voyager_vm::{pass::PassResult, BoxDynError, Op, Visit};
 
 use crate::call::{FetchUpdate, ModuleCall};
 
@@ -127,7 +132,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 // .layer(CacheLayer::new(config.max_cache_size))
@@ -138,11 +143,11 @@ impl Plugin for Module {
         let chain_id = ChainId::new(provider.get_chain_id().await?.to_string());
 
         if chain_id != config.chain_id {
-            return Err(format!(
+            bail!(
                 "incorrect chain id: expected `{}`, but found `{}`",
-                config.chain_id, chain_id
-            )
-            .into());
+                config.chain_id,
+                chain_id
+            );
         }
 
         Ok(Self {
@@ -258,7 +263,7 @@ impl Module {
     ) -> Result<Op<VoyagerMessage>, BoxDynError> {
         if update_from_block_number == update_to_block_number {
             info!("update is for the same height, noop");
-            return Ok(voyager_vm::data(OrderedHeaders { headers: vec![] }));
+            return Ok(vm::data(OrderedHeaders { headers: vec![] }));
         }
 
         let header = self
@@ -286,7 +291,7 @@ impl Module {
             },
         );
 
-        Ok(voyager_vm::data(OrderedHeaders {
+        Ok(vm::data(OrderedHeaders {
             headers: vec![(
                 DecodedHeaderMeta {
                     height: update_to_block_number,

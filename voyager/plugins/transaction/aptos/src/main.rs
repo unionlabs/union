@@ -20,15 +20,16 @@ use serde::{Deserialize, Serialize};
 use sha3::Digest;
 use tracing::instrument;
 use unionlabs::{never::Never, primitives::H256};
-use voyager_message::{
-    data::Data,
+use voyager_sdk::{
+    anyhow,
     hook::SubmitTxHook,
-    module::{PluginInfo, PluginServer},
+    message::{data::Data, PluginMessage, VoyagerMessage},
+    plugin::Plugin,
     primitives::ChainId,
-    vm::{call, noop, pass::PassResult, Op, Visit},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    vm::{self, call, noop, pass::PassResult, Op, Visit},
+    DefaultCmd,
 };
-use voyager_vm::BoxDynError;
 
 use crate::call::ModuleCall;
 
@@ -57,7 +58,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let aptos_client = aptos_rest_client::Client::new(config.rpc_url.parse().unwrap());
 
         let chain_id = aptos_client.get_index().await?.inner().chain_id;
@@ -228,7 +229,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                 entry_fn,
                                 400000,
                                 100,
-                                voyager_vm::now() + 100,
+                                vm::now() + 100,
                                 self.chain_id.as_str().parse().unwrap(),
                             );
 

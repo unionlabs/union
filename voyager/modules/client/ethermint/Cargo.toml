@@ -22,5 +22,4 @@ tendermint-light-client-types = { workspace = true, features = ["serde", "ethabi
 tokio                         = { workspace = true }
 tracing                       = { workspace = true }
 unionlabs                     = { workspace = true, features = ["bincode"] }
-voyager-message               = { workspace = true }
-voyager-vm                    = { workspace = true }
+voyager-sdk                   = { workspace = true }

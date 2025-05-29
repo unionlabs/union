@@ -1,12 +1,12 @@
-use std::{
-    net::{IpAddr, Ipv4Addr, SocketAddr},
-    time::Duration,
-};
+use std::{net::SocketAddr, time::Duration};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use voyager_message::context::{
-    equivalent_chain_ids::EquivalentChainIds, ModulesConfig, PluginConfig,
+use voyager_core::{
+    context::{ModulesConfig, PluginConfig},
+    default_ipc_client_request_timeout, default_metrics_endpoint,
+    default_optimizer_delay_milliseconds, default_rest_laddr, default_rpc_laddr,
+    equivalent_chain_ids::EquivalentChainIds,
 };
 
 use crate::queue::QueueConfig;
@@ -41,34 +41,5 @@ pub struct VoyagerConfig {
     pub optimizer_delay_milliseconds: u64,
     #[serde(default = "default_ipc_client_request_timeout")]
     pub ipc_client_request_timeout: Duration,
-    pub cache: voyager_message::rpc::server::cache::Config,
-}
-
-#[must_use]
-#[inline]
-pub const fn default_rest_laddr() -> SocketAddr {
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 7177)
-}
-
-#[must_use]
-#[inline]
-pub const fn default_rpc_laddr() -> SocketAddr {
-    SocketAddr::new(IpAddr::V4(Ipv4Addr::new(0, 0, 0, 0)), 7178)
-}
-
-#[must_use]
-pub fn default_metrics_endpoint() -> String {
-    "http://localhost:4318".to_owned()
-}
-
-#[must_use]
-#[inline]
-pub const fn default_optimizer_delay_milliseconds() -> u64 {
-    100
-}
-
-#[must_use]
-#[inline]
-pub const fn default_ipc_client_request_timeout() -> Duration {
-    Duration::new(60, 0)
+    pub cache: voyager_core::cache::Config,
 }

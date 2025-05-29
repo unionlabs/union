@@ -9,7 +9,6 @@ use std::{
     error::Error,
     fmt::Debug,
     future::Future,
-    ops::Deref,
     pin::Pin,
     time::{Duration, SystemTime, UNIX_EPOCH},
 };
@@ -19,10 +18,7 @@ use itertools::Itertools;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use tracing::{debug, error, info, trace, warn};
-use unionlabs::{
-    bounded::{BoundedI64, BoundedIntError},
-    never::Never,
-};
+use unionlabs::bounded::{BoundedI64, BoundedIntError};
 
 use crate::{filter::InterestFilter, pass::Pass};
 
@@ -46,31 +42,37 @@ pub trait Queue<T: QueueMessage>: Debug + Clone + Send + Sync + Sized + 'static 
     /// Enqueue an item into the queue, running a pure optimization pass on the item before enqueueing it.
     ///
     /// All items will be enqueued to be optimized, unless marked as ready by `filter`.
-    fn enqueue<'a>(
+    fn enqueue<'a, Filter>(
         &'a self,
         item: Op<T>,
-        filter: &'a T::Filter,
-    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a;
+        filter: &'a Filter,
+    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a
+    where
+        Filter: InterestFilter<T>;
 
     /// Process the item at the front of the queue, if there is one. New items will be pre-processed by `filter` before being reenqueued.
     ///
     /// All items will be enqueued to be optimized, unless marked as ready by `filter`.
-    fn process<'a, F, Fut, R>(
+    fn process<'a, F, Fut, R, Filter>(
         &'a self,
-        filter: &'a T::Filter,
+        filter: &'a Filter,
         f: F,
     ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + Captures<'a>
     where
         F: (FnOnce(Op<T>, ItemId) -> Fut) + Send + Captures<'a>,
         Fut: Future<Output = (R, Result<Vec<Op<T>>, QueueError>)> + Send + Captures<'a>,
-        R: Send + Sync + 'static;
+        R: Send + Sync + 'static,
+        Filter: InterestFilter<T>;
 
-    fn optimize<'a, O: Pass<T>>(
+    fn optimize<'a, O, Filter>(
         &'a self,
         tag: &'a str,
-        filter: &'a T::Filter,
+        filter: &'a Filter,
         optimizer: &'a O,
-    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a;
+    ) -> impl Future<Output = Result<(), Either<Self::Error, O::Error>>> + Send + 'a
+    where
+        O: Pass<T>,
+        Filter: InterestFilter<T>;
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
@@ -192,160 +194,159 @@ pub trait OpT =
 // NOTE: Extra bounds are just for ease of use for derives
 pub trait QueueMessage: Debug + Clone + PartialEq + Sized + 'static {
     type Data: OpT;
-    type Call: CallT<Self> + OpT;
-    type Callback: CallbackT<Self> + OpT;
-
-    type Filter: InterestFilter<Self>;
-
-    type Context: ContextT;
+    type Call: OpT;
+    type Callback: OpT;
 }
 
-pub trait ContextT: Send + Sync {}
+pub trait HandlerFactory<T: QueueMessage>: Send + Sync {
+    type Handler: Handler<T>;
 
-impl ContextT for () {}
-
-pub struct Context<T> {
-    id: ItemId,
-    inner: T,
+    fn make_handler(&self, item_id: ItemId) -> Self::Handler;
 }
 
-impl<T> Deref for Context<T> {
-    type Target = T;
+pub trait Handler<T: QueueMessage>: Send + Sync {
+    fn call(&self, call: T::Call) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 
-    fn deref(&self) -> &Self::Target {
-        &self.inner
-    }
+    fn callback(
+        &self,
+        callback: T::Callback,
+        datas: VecDeque<T::Data>,
+    ) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
 }
 
-impl<T> Context<T> {
-    pub fn new(id: ItemId, inner: T) -> Self {
-        Self { id, inner }
+impl<H: Handler<T>, T: QueueMessage> Handler<T> for &H {
+    async fn call(&self, call: T::Call) -> Result<Op<T>, QueueError> {
+        (*self).call(call).await
     }
 
-    pub fn id(&self) -> ItemId {
-        self.id
+    async fn callback(
+        &self,
+        callback: T::Callback,
+        datas: VecDeque<T::Data>,
+    ) -> Result<Op<T>, QueueError> {
+        (*self).callback(callback, datas).await
     }
 }
 
 pub type BoxDynError = Box<dyn Error + Send + Sync + 'static>;
 
-impl<T: QueueMessage> Op<T> {
-    // NOTE: Box is required bc recursion
-    #[allow(clippy::type_complexity)]
-    pub fn process<'a>(
-        self,
-        store: Context<&'a T::Context>,
-        depth: usize,
-    ) -> Pin<Box<dyn Future<Output = Result<Option<Op<T>>, QueueError>> + Send + 'a>> {
-        trace!(%depth, "handling message");
+// NOTE: Box is required bc recursion
+#[allow(clippy::type_complexity)]
+pub fn process<'a, T: QueueMessage, H: Handler<T>>(
+    op: Op<T>,
+    handler: &'a H,
+    depth: usize,
+) -> Pin<Box<dyn Future<Output = Result<Option<Op<T>>, QueueError>> + Send + 'a>> {
+    trace!(%depth, "handling message");
 
-        let fut = async move {
-            match self {
-                Op::Data(data) => {
-                    // TODO: Use valuable here
-                    info!(
-                        data = %serde_json::to_string(&data).expect("serialization is infallible; qed;"),
-                        "received data outside of an aggregation"
+    let fut = async move {
+        match op {
+            Op::Data(data) => {
+                // TODO: Use valuable here
+                info!(
+                    data = %serde_json::to_string(&data).expect("serialization is infallible; qed;"),
+                    "received data outside of an aggregation"
+                );
+                Ok(None)
+            }
+
+            Op::Call(call) => handler.call(call).await.map(Some),
+            Op::Defer { until: seconds } => {
+                // if we haven't hit the time yet, requeue the defer op
+                let current_ts_seconds = now();
+                if current_ts_seconds < seconds {
+                    trace!(
+                        %current_ts_seconds,
+                        %seconds,
+                        delta = %seconds - current_ts_seconds,
+                        "defer timestamp not hit yet"
                     );
+
+                    // TODO: Make the time configurable?
+                    sleep(Duration::from_millis(10)).await;
+
+                    Ok(Some(defer(seconds)))
+                } else {
                     Ok(None)
                 }
+            }
+            Op::Seq(mut queue) => match queue.pop_front() {
+                Some(op) => {
+                    let op = process(op, handler, depth + 1).await?;
 
-                Op::Call(call) => call.process(store).await.map(Some),
-                Op::Defer { until: seconds } => {
-                    // if we haven't hit the time yet, requeue the defer op
-                    let current_ts_seconds = now();
-                    if current_ts_seconds < seconds {
-                        trace!(
-                            %current_ts_seconds,
-                            %seconds,
-                            delta = %seconds - current_ts_seconds,
-                            "defer timestamp not hit yet"
-                        );
-
-                        // TODO: Make the time configurable?
-                        sleep(Duration::from_millis(10)).await;
-
-                        Ok(Some(defer(seconds)))
-                    } else {
-                        Ok(None)
+                    if let Some(op) = op {
+                        queue.push_front(op);
                     }
+
+                    Ok(Some(seq(queue)))
                 }
-                Op::Seq(mut queue) => match queue.pop_front() {
-                    Some(op) => {
-                        let op = op.process(store, depth + 1).await?;
+                None => Ok(None),
+            },
+            Op::Conc(mut queue) => match queue.pop_front() {
+                Some(op) => {
+                    let op = process(op, handler, depth + 1).await?;
 
-                        if let Some(op) = op {
-                            queue.push_front(op);
-                        }
-
-                        Ok(Some(seq(queue)))
+                    if let Some(op) = op {
+                        queue.push_back(op);
                     }
-                    None => Ok(None),
-                },
-                Op::Conc(mut queue) => match queue.pop_front() {
-                    Some(op) => {
-                        let op = op.process(store, depth + 1).await?;
 
-                        if let Some(op) = op {
-                            queue.push_back(op);
+                    Ok(Some(conc(queue)))
+                }
+                None => Ok(None),
+            },
+            Op::Promise(Promise {
+                mut queue,
+                mut data,
+                receiver,
+            }) => {
+                if let Some(op) = queue.pop_front() {
+                    match op {
+                        Op::Data(d) => {
+                            data.push_back(d);
                         }
+                        op => {
+                            let op = process(op, handler, depth + 1).await?;
 
-                        Ok(Some(conc(queue)))
-                    }
-                    None => Ok(None),
-                },
-                Op::Promise(Promise {
-                    mut queue,
-                    mut data,
-                    receiver,
-                }) => {
-                    if let Some(op) = queue.pop_front() {
-                        match op {
-                            Op::Data(d) => {
-                                data.push_back(d);
-                            }
-                            op => {
-                                let op = op.process(store, depth + 1).await?;
-
-                                if let Some(op) = op {
-                                    match op {
-                                        Op::Data(d) => {
-                                            data.push_back(d);
-                                        }
-                                        m => {
-                                            queue.push_back(m);
-                                        }
+                            if let Some(op) = op {
+                                match op {
+                                    Op::Data(d) => {
+                                        data.push_back(d);
+                                    }
+                                    m => {
+                                        queue.push_back(m);
                                     }
                                 }
                             }
                         }
-
-                        Ok(Some(promise(queue, data, receiver)))
-                    } else {
-                        // queue is empty, handle op
-                        receiver.process(store, data).await.map(Some)
                     }
+
+                    Ok(Some(promise(queue, data, receiver)))
+                } else {
+                    // queue is empty, handle op
+                    handler.callback(receiver, data).await.map(Some)
                 }
-                Op::Void(op) => {
-                    // TODO: distribute across seq/conc
-                    Ok(op.process(store, depth + 1).await?.map(|op| match op {
-                        Op::Data(data) => {
-                            debug!(
-                                data = %serde_json::to_string(&data).expect("serialization is infallible; qed;"),
-                                "voiding data"
-                            );
-                            noop()
-                        }
-                        op => void(op),
-                    }))
-                }
-                Op::Noop => Ok(None),
             }
-        };
+            Op::Void(op) => {
+                // TODO: distribute across seq/conc
+                Ok(process(*op, handler, depth + 1).await?.map(|op| match op {
+                    Op::Data(data) => {
+                        debug!(
+                            data = %serde_json::to_string(&data).expect("serialization is infallible; qed;"),
+                            "voiding data"
+                        );
+                        noop()
+                    }
+                    op => void(op),
+                }))
+            }
+            Op::Noop => Ok(None),
+        }
+    };
 
-        Box::pin(fut)
-    }
+    Box::pin(fut)
+}
 
+impl<T: QueueMessage> Op<T> {
     pub fn normalize(self) -> Vec<Op<T>> {
         pub fn go<T: QueueMessage>(op: Op<T>) -> Vec<Op<T>> {
             match op {
@@ -475,27 +476,6 @@ impl QueueError {
 
     pub fn retry(e: impl std::error::Error + Send + Sync + 'static) -> Self {
         Self::Retry(Box::new(e))
-    }
-}
-
-pub trait CallT<T: QueueMessage> {
-    fn process(
-        self,
-        store: Context<&T::Context>,
-    ) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
-}
-
-pub trait CallbackT<T: QueueMessage> {
-    fn process(
-        self,
-        ctx: Context<&T::Context>,
-        data: VecDeque<T::Data>,
-    ) -> impl Future<Output = Result<Op<T>, QueueError>> + Send;
-}
-
-impl<T: QueueMessage> CallT<T> for Never {
-    async fn process(self, _: Context<&T::Context>) -> Result<Op<T>, QueueError> {
-        match self {}
     }
 }
 

@@ -8,13 +8,18 @@ use macros::model;
 use serde_json::json;
 use tracing::{debug, info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
-use voyager_message::{
-    call::FetchUpdateHeaders,
-    data::{EventProvableHeight, IbcDatagram},
+use voyager_sdk::{
+    message::{
+        call::FetchUpdateHeaders,
+        data::{EventProvableHeight, IbcDatagram},
+        PluginMessage, VoyagerMessage,
+    },
     primitives::{ChainId, QueryHeight},
-    PluginMessage, RawClientId, VoyagerClient, VoyagerMessage, MISSING_STATE_ERROR_CODE,
+    rpc::MISSING_STATE_ERROR_CODE,
+    types::RawClientId,
+    vm::{data, now, promise, Op},
+    VoyagerClient,
 };
-use voyager_vm::{data, now, promise, Op};
 
 use crate::{
     call,

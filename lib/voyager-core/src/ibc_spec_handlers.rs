@@ -3,9 +3,9 @@ use std::collections::HashMap;
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use serde_json::Value;
 use unionlabs::primitives::Bytes;
-use voyager_primitives::IbcSpecId;
-
-use crate::{into_value, primitives::IbcSpec, RawClientId, FATAL_JSONRPC_ERROR_CODE};
+use voyager_primitives::{IbcSpec, IbcSpecId};
+use voyager_rpc::FATAL_JSONRPC_ERROR_CODE;
+use voyager_types::RawClientId;
 
 pub struct IbcSpecHandlers {
     pub(crate) handlers: HashMap<IbcSpecId, IbcSpecHandler>,
@@ -45,21 +45,26 @@ impl IbcSpecHandler {
     pub const fn new<T: IbcSpec>() -> Self {
         Self {
             client_state_path: |client_id| {
-                Ok(into_value(T::client_state_path(serde_json::from_value(
-                    client_id.0,
-                )?)))
+                Ok(
+                    serde_json::to_value(T::client_state_path(serde_json::from_value(
+                        client_id.into_raw(),
+                    )?))
+                    .unwrap(),
+                )
             },
             consensus_state_path: |client_id, height| {
-                Ok(into_value(T::consensus_state_path(
-                    serde_json::from_value(client_id.0)?,
+                Ok(serde_json::to_value(T::consensus_state_path(
+                    serde_json::from_value(client_id.into_raw())?,
                     height.parse()?,
-                )))
+                ))
+                .unwrap())
             },
             msg_update_client: |client_id, client_message| {
-                Ok(into_value(T::update_client_datagram(
-                    serde_json::from_value(client_id.0)?,
+                Ok(serde_json::to_value(T::update_client_datagram(
+                    serde_json::from_value(client_id.into_raw())?,
                     client_message,
-                )))
+                ))
+                .unwrap())
             },
         }
     }
