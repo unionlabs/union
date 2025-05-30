@@ -177,7 +177,7 @@ members = [
   "voyager/modules/finality/movement",
   "voyager/modules/finality/tendermint",
   "voyager/modules/finality/trusted-evm",
-  "voyager/modules/consensus/sui",
+  "voyager/modules/finality/sui",
 
   # "voyager/plugins/client-update/bob",
   "voyager/plugins/client-update/arbitrum",

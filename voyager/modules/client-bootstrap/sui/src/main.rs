@@ -20,12 +20,11 @@ use sui_sdk::{
 };
 use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
-use voyager_message::{
-    ensure_null,
-    module::{ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
+use voyager_sdk::{
+    anyhow, ensure_null,
+    plugin::ClientBootstrapModule,
     primitives::{ChainId, ClientType},
-    vm::BoxDynError,
-    ClientBootstrapModule,
+    rpc::{types::ClientBootstrapModuleInfo, ClientBootstrapModuleServer},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -52,10 +51,7 @@ pub struct Module {
 impl ClientBootstrapModule for Module {
     type Config = Config;
 
-    async fn new(
-        config: Self::Config,
-        info: ClientBootstrapModuleInfo,
-    ) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ClientBootstrapModuleInfo) -> anyhow::Result<Self> {
         let sui_client = SuiClientBuilder::default().build(&config.rpc_url).await?;
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
