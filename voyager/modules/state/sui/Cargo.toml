@@ -28,5 +28,5 @@ sui_sdk         = { git = "https://github.com/mystenlabs/sui", package = "sui-sd
 tokio           = { workspace = true }
 tracing         = { workspace = true }
 unionlabs       = { workspace = true, features = ["bcs"] }
-voyager-message = { workspace = true }
+voyager-sdk = { workspace = true }
 voyager-vm      = { workspace = true }
