@@ -5,8 +5,6 @@
     closure_returning_async_block // TODO: Make this workspace-wide
 )]
 #![allow(
-    // required due to return_position_impl_trait_in_trait false positives
-    clippy::manual_async_fn,
     clippy::single_match_else,
     clippy::module_name_repetitions,
     clippy::missing_panics_doc,
@@ -58,7 +56,6 @@ use crate::{
     },
     config::{Config, VoyagerConfig},
     queue::{QueueConfig, QueueImpl},
-    // utils::make_msg_create_client,
 };
 
 #[cfg(windows)]

@@ -6,7 +6,6 @@ use futures::Future;
 use pg_queue::{PgQueue, PgQueueConfig};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use tracing::{error, trace};
 use voyager_message::VoyagerMessage;
 use voyager_vm::{
     filter::InterestFilter, in_memory::InMemoryQueue, pass::Pass, Captures, EnqueueResult, ItemId,
@@ -37,70 +36,56 @@ impl Queue<VoyagerMessage> for QueueImpl {
     type Error = AnyQueueError;
     type Config = QueueConfig;
 
-    fn new(cfg: Self::Config) -> impl Future<Output = Result<Self, Self::Error>> {
-        async move {
-            Ok(match cfg {
-                QueueConfig::InMemory => Self::InMemory(
-                    InMemoryQueue::new(())
-                        .await
-                        .map_err(AnyQueueError::InMemory)?,
-                ),
-                QueueConfig::PgQueue(cfg) => {
-                    Self::PgQueue(PgQueue::new(cfg).await.map_err(AnyQueueError::PgQueue)?)
-                }
-            })
+    async fn new(cfg: Self::Config) -> Result<Self, Self::Error> {
+        match cfg {
+            QueueConfig::InMemory => InMemoryQueue::new(())
+                .await
+                .map_err(AnyQueueError::InMemory)
+                .map(Self::InMemory),
+            QueueConfig::PgQueue(cfg) => PgQueue::new(cfg)
+                .await
+                .map_err(AnyQueueError::PgQueue)
+                .map(Self::PgQueue),
         }
     }
 
-    fn enqueue<'a, Filter: InterestFilter<VoyagerMessage>>(
+    async fn enqueue<'a, Filter: InterestFilter<VoyagerMessage>>(
         &'a self,
         item: Op<VoyagerMessage>,
         filter: &'a Filter,
-    ) -> impl Future<Output = Result<EnqueueResult, Self::Error>> + Send + 'a {
-        async move {
-            let res = match self {
-                QueueImpl::InMemory(queue) => queue
-                    .enqueue(item, filter)
-                    .await
-                    .map_err(AnyQueueError::InMemory)?,
-                QueueImpl::PgQueue(queue) => queue
-                    .enqueue(item, filter)
-                    .await
-                    .map_err(AnyQueueError::PgQueue)?,
-            };
-
-            trace!("queued");
-
-            Ok(res)
+    ) -> Result<EnqueueResult, Self::Error> {
+        match self {
+            QueueImpl::InMemory(queue) => queue
+                .enqueue(item, filter)
+                .await
+                .map_err(AnyQueueError::InMemory),
+            QueueImpl::PgQueue(queue) => queue
+                .enqueue(item, filter)
+                .await
+                .map_err(AnyQueueError::PgQueue),
         }
     }
 
-    fn process<'a, F, Fut, R, Filter: InterestFilter<VoyagerMessage>>(
+    async fn process<'a, F, Fut, R, Filter: InterestFilter<VoyagerMessage>>(
         &'a self,
         filter: &'a Filter,
         f: F,
-    ) -> impl Future<Output = Result<Option<R>, Self::Error>> + Send + Captures<'a>
+    ) -> Result<Option<R>, Self::Error>
     where
         F: (FnOnce(Op<VoyagerMessage>, ItemId) -> Fut) + Send + Captures<'a>,
         Fut:
             Future<Output = (R, Result<Vec<Op<VoyagerMessage>>, QueueError>)> + Send + Captures<'a>,
         R: Send + Sync + 'static,
     {
-        async move {
-            let res = match self {
-                QueueImpl::InMemory(queue) => queue
-                    .process(filter, f)
-                    .await
-                    .map_err(AnyQueueError::InMemory),
-                QueueImpl::PgQueue(queue) => queue
-                    .process(filter, f)
-                    .await
-                    .map_err(AnyQueueError::PgQueue),
-            };
-
-            trace!("processed");
-
-            res
+        match self {
+            QueueImpl::InMemory(queue) => queue
+                .process(filter, f)
+                .await
+                .map_err(AnyQueueError::InMemory),
+            QueueImpl::PgQueue(queue) => queue
+                .process(filter, f)
+                .await
+                .map_err(AnyQueueError::PgQueue),
         }
     }
 

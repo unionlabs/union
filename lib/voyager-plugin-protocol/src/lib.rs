@@ -9,6 +9,14 @@
 //! ## Worker
 //!
 //! The workers are managed by the coordinator. Their only responsibility is to respond to the messages from the coordinator.
+//!
+//! # Boot Sequence
+//!
+//! 1. Coordinator starts a server listening on [`coordinator_socket_path`], and creates a [`WorkerClient`] that will connect to [`worker_socket_path`].
+//! 2. Coordinator spawns the worker, passing [`coordinator_socket_path`] and [`worker_socket_path`] as arguments.
+//! 3. Worker starts it's server, listening on [`worker_socket_path`].
+//! 4. Worker creates a client connecting to [`coordinator_socket_path`].
+//! 5. Coordinator client now connects to the booted worker.
 
 use std::{
     borrow::Cow,
@@ -79,16 +87,12 @@ pub async fn coordinator_server(
 ///
 /// This will listen to messages from the coordinator on `coordinator_socket`, and send messages to the coordinator on `worker_socket`.
 #[instrument(skip_all, fields(%id))]
-pub async fn worker_server<
-    T,
-    Fut: Future<Output = anyhow::Result<T>>,
-    IntoRpcF: FnOnce(T) -> RpcModule<T>,
->(
+pub async fn worker_server<T>(
     id: String,
     coordinator_socket: String,
     worker_socket: String,
-    fut: Fut,
-    into_rpc: IntoRpcF,
+    fut: impl Future<Output = anyhow::Result<T>>,
+    into_rpc: impl FnOnce(T) -> RpcModule<T>,
 ) {
     let worker_server = match fut.await {
         Ok(ctx) => ctx,
@@ -98,12 +102,16 @@ pub async fn worker_server<
         }
     };
 
-    let voyager_client = ArcClient(Arc::new(
-        IpcClientBuilder::default()
-            .build(&coordinator_socket)
-            .await
-            .unwrap(),
-    ));
+    let voyager_client = match IpcClientBuilder::default().build(&coordinator_socket).await {
+        Ok(voyager_client) => ArcClient(Arc::new(voyager_client)),
+        Err(err) => {
+            trace!(
+                error = %ErrorReporter(err),
+                "unable to connect to coordinator"
+            );
+            std::process::exit(STARTUP_ERROR_EXIT_CODE as i32);
+        }
+    };
 
     trace!("connected to voyager socket");
 
