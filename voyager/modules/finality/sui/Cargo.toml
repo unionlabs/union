@@ -1,5 +1,5 @@
 [package]
-name    = "voyager-consensus-module-sui"
+name    = "voyager-finality-module-sui"
 version = "0.0.0"
 
 authors      = { workspace = true }
@@ -19,6 +19,5 @@ thiserror       = { workspace = true }
 tokio           = { workspace = true }
 tracing         = { workspace = true }
 unionlabs       = { workspace = true }
-voyager-message = { workspace = true }
-
+voyager-sdk = { workspace = true }
 sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }

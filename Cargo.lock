@@ -18211,7 +18211,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -18408,7 +18408,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -18652,21 +18652,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "voyager-consensus-module-sui"
-version = "0.0.0"
-dependencies = [
- "embed-commit",
- "jsonrpsee",
- "serde",
- "sui-sdk",
- "thiserror 2.0.12",
- "tokio",
- "tracing",
- "unionlabs",
- "voyager-message",
-]
-
-[[package]]
 name = "voyager-core"
 version = "0.0.0"
 dependencies = [
@@ -18882,6 +18867,21 @@ dependencies = [
  "embed-commit",
  "jsonrpsee",
  "serde",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-finality-module-sui"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "jsonrpsee",
+ "serde",
+ "sui-sdk",
  "thiserror 2.0.12",
  "tokio",
  "tracing",

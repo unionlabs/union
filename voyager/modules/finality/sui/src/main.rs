@@ -11,11 +11,11 @@ use unionlabs::{
     ibc::core::client::height::Height,
     ErrorReporter,
 };
-use voyager_message::{
-    module::{ConsensusModuleInfo, ConsensusModuleServer},
+use voyager_sdk::{
+    anyhow,
+    plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
-    vm::BoxDynError,
-    ConsensusModule,
+    rpc::{types::FinalityModuleInfo, FinalityModuleServer},
 };
 
 #[derive(Debug, serde::Serialize, serde::Deserialize)]
@@ -37,10 +37,10 @@ pub struct Module {
     pub sui_client: sui_sdk::SuiClient,
 }
 
-impl ConsensusModule for Module {
+impl FinalityModule for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: ConsensusModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
         let sui_client = SuiClientBuilder::default().build(&config.rpc_url).await?;
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
@@ -71,7 +71,7 @@ pub enum ModuleInitError {
 }
 
 #[async_trait]
-impl ConsensusModuleServer for Module {
+impl FinalityModuleServer for Module {
     /// Query the latest finalized height of this chain.
     async fn query_latest_height(&self, _: &Extensions, _finalized: bool) -> RpcResult<Height> {
         match self
