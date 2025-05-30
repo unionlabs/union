@@ -156,7 +156,7 @@ module zkgm::zkgm_relay {
         packet: vector<u8>
     }
 
-    #[event]
+    
     public struct OnZkgmCall has copy, drop, store {
         sender: vector<u8>,
         contract_calldata: vector<u8>,
@@ -174,7 +174,7 @@ module zkgm::zkgm_relay {
         relayer_msg: vector<u8>
     }
 
-    #[event]
+    
     public struct OnIIBCModuleOnRecvPacketCall has copy, drop, store {
         packet: Packet,
         relayer: address,
@@ -189,7 +189,7 @@ module zkgm::zkgm_relay {
     }
 
 
-    #[event]
+    
     public struct OnIIBCModuleOnAcknowledgementPacketCall has copy, drop, store {
         packet: Packet,
         acknowledgement: vector<u8>,
@@ -202,7 +202,7 @@ module zkgm::zkgm_relay {
         relayer: address
     }
 
-    #[event]
+    
     public struct OnIIBCModuleOnTimeoutPacketCall has copy, drop, store {
         packet: Packet,
         relayer: address,
@@ -233,14 +233,14 @@ module zkgm::zkgm_relay {
 
 
     // Events
-    #[event]
+    
     public struct DenomCreated has copy, drop, store {
         channel_id: u32,
         denom: String,
         token: address
     }
 
-    #[event]
+    
     public struct Received has copy, drop, store {
         channel_id: u32,
         sender: vector<u8>,
@@ -250,7 +250,7 @@ module zkgm::zkgm_relay {
         amount: u64
     }
 
-    #[event]
+    
     public struct Sent has copy, drop, store {
         channel_id: u32,
         sender: vector<u8>,
@@ -260,7 +260,7 @@ module zkgm::zkgm_relay {
         amount: u64
     }
 
-    #[event]
+    
     public struct Refunded has copy, drop, store {
         channel_id: u32,
         sender: vector<u8>,
