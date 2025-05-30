@@ -6,7 +6,7 @@ import type { GraphQL } from "./graphql/service"
 
 const IS_VITEST = isNotUndefined(import.meta.vitest)
 
-// TOOD: determine how to handle error channel due to dynamic imports in services
+// TODO: determine how to handle error channel due to dynamic imports in services
 type AppLayer = Layer.Layer<GraphQL | PriceOracle, never, never>
 export type AppContext = Layer.Layer.Success<AppLayer>
 

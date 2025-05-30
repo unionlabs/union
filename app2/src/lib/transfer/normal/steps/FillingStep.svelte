@@ -93,7 +93,10 @@ const isButtonEnabled = $derived.by(() => !loading)
 
 <div class="min-w-full flex flex-col grow">
   <div class="flex flex-col gap-4 p-4">
-    <ChainAsset type="source" isOpen={(v) => handleChainAssetOpen(v)} />
+    <ChainAsset
+      type="source"
+      isOpen={(v) => handleChainAssetOpen(v)}
+    />
     <button
       class="group flex items-center gap-2 -mt-3 -mb-4 text-zinc-800 group-hover:text-zinc-600 transition-colors cursor-pointer"
       onclick={transferData.flipTransfer}
@@ -106,10 +109,16 @@ const isButtonEnabled = $derived.by(() => !loading)
       </div>
       <span class="flex-1 h-px bg-zinc-800 group-hover:bg-zinc-700 transition-colors"></span>
     </button>
-    <ChainAsset type="destination" isOpen={(v) => handleChainAssetOpen(v)}/>
+    <ChainAsset
+      type="destination"
+      isOpen={(v) => handleChainAssetOpen(v)}
+    />
     <Amount type="source" />
     <div class="grow"></div>
-    <FeeDetails open={feeDetailsOpen} onToggle={(newOpen: boolean) => feeDetailsOpen = newOpen}/>
+    <FeeDetails
+      open={feeDetailsOpen}
+      onToggle={(newOpen: boolean) => feeDetailsOpen = newOpen}
+    />
   </div>
 
   <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
