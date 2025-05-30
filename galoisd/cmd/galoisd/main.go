@@ -11,6 +11,7 @@ import (
 func main() {
 	var rootCmd = &cobra.Command{Use: "galoisd"}
 	rootCmd.AddCommand(cmd.ServeCmd())
+	rootCmd.AddCommand(cmd.ServeBls12381Cmd())
 	rootCmd.AddCommand(cmd.GenContract())
 	rootCmd.AddCommand(cmd.ExampleProveCmd())
 	rootCmd.AddCommand(cmd.ExampleVerifyCmd())

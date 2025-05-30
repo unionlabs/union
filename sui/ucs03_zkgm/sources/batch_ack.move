@@ -61,8 +61,6 @@
 module zkgm::batch_ack {
     use zkgm::zkgm_ethabi;
 
-    use std::vector;
-
     public struct BatchAck has copy, drop, store {
         acknowledgements: vector<vector<u8>>
     }
@@ -218,7 +216,7 @@ module zkgm::batch_ack {
         let mut decode_idx = 0x40;
         let output5 =
             x"000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000000";
-        let mut outer_arr = vector::empty();
+        let outer_arr = vector::empty();
 
         let ack_data5 = BatchAck { acknowledgements: outer_arr };
         let ack_bytes5 = encode(&ack_data5);

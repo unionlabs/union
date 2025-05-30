@@ -61,8 +61,6 @@
 module zkgm::instruction {
     use zkgm::zkgm_ethabi;
 
-    use std::vector;
-
     public struct Instruction has copy, drop, store {
         version: u8,
         opcode: u8,

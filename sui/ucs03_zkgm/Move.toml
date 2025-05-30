@@ -1,12 +1,11 @@
 [package]
-edition = "2024.beta"   # edition = "legacy" to use legacy (pre-2024) Move
-name    = "ucs03-relay"
+edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
+name    = "zkgm"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
 [dependencies]
-Sui = { git = "https://github.com/MystenLabs/sui.git", subdir = "crates/sui-framework/packages/sui-framework", rev = "framework/testnet" }
-ibc = { local = "../sui-ibc" }
+ibc = { local = "../ibc" }
 # For remote import, use the `{ git = "...", subdir = "...", rev = "..." }`.
 # Revision can be a branch, a tag, and a commit hash.
 # MyRemotePackage = { git = "https://some.remote/host.git", subdir = "remote/path", rev = "main" }
@@ -19,8 +18,9 @@ ibc = { local = "../sui-ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc  = "_"
-zkgm = "_"
+decimals = "_"
+ibc      = "_"
+zkgm     = "_"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
@@ -32,8 +32,10 @@ zkgm = "_"
 # Local = { local = "../path/to/dev-build" }
 
 [dev-addresses]
-ibc  = "0x22222"
-zkgm = "0x4444444444444"
+decimals = "0x20"
+ibc      = "0x22222"
+zkgm     = "0x4444444444444"
+
 # The dev-addresses section allows overwriting named addresses for the `--test`
 # and `--dev` modes.
 # alice = "0xB0B"

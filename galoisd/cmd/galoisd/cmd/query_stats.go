@@ -16,7 +16,7 @@ func QueryStats() *cobra.Command {
 		Use:   "query-stats [uri]",
 		Args:  cobra.ExactArgs(1),
 		RunE: MakeCobra(func(ctx context.Context, client provergrpc.UnionProverAPIClient, cmd *cobra.Command, args []string) error {
-			res, err := client.QueryStats(ctx, &provergrpc.QueryStatsRequest{})
+			res, err := client.QueryStatsBls12381(ctx, &provergrpc.QueryStatsRequest{})
 			if err != nil {
 				log.Fatal(err)
 			}

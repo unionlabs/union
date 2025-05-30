@@ -61,39 +61,31 @@
 module zkgm::zkgm_relay {
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
-    use zkgm::fungible_token::{Self, FUNGIBLE_TOKEN};
-    use zkgm::batch::{Self, Batch};
-    use zkgm::batch_ack::{Self};
     use zkgm::instruction::{Self, Instruction};
     use zkgm::zkgm_packet::{Self};
     use zkgm::forward::{Self, Forward};
     use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
     use zkgm::fungible_asset_order_ack::{Self};
     use zkgm::acknowledgement::{Self};
-    use zkgm::zkgm_ethabi;
+    use sui::clock::Clock;
     
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 
-    use std::string::{Self, String, utf8};
+    use std::string::{Self, String};
     use sui::table::{Self, Table};
     use ibc::commitment;
     use sui::bcs;
     use sui::clock;
-    use sui::address::{to_string};
     use sui::event;
     use sui::object_bag::{Self, ObjectBag};
     use std::type_name::{Self};
     use sui::balance::{Self};
     use sui::hash::{Self};
-    use zkgm::fungible_asset_order::base_amount;
-    use zkgm::fungible_asset_order_ack::market_maker;
 
     // Constants
-    const IBC_APP_SEED: vector<u8> = b"union-ibc-app-v1";
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
     const ACK_SUCCESS: u256 = 1;
     const ACK_FAILURE: u256 = 0;
-    const ACK_LENGTH: u64 = 1;
     const INSTR_VERSION_0: u8 = 0x00;
     const INSTR_VERSION_1: u8 = 0x01;
 
@@ -102,10 +94,6 @@ module zkgm::zkgm_relay {
     const OP_BATCH: u8 = 0x02;
     const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
 
-    const SYSCALL_FORWARD: u8 = 0x00;
-    const SYSCALL_MULTIPLEX: u8 = 0x01;
-    const SYSCALL_BATCH: u8 = 0x02;
-    const SYSCALL_FUNGIBLE_ASSET_TRANSFER: u8 = 0x03;
     const FILL_TYPE_PROTOCOL: u256 = 0xB0CAD0;
     const FILL_TYPE_MARKETMAKER: u256 = 0xD1CEC45E;
     const ACK_EMPTY: vector<u8> = x"";
@@ -113,7 +101,6 @@ module zkgm::zkgm_relay {
 
     // Errors
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
-    const E_UNAUTHORIZED: u64 = 1;
     const E_INVALID_HOPS: u64 = 2;
     const E_INVALID_IBC_VERSION: u64 = 3;
     const E_INFINITE_GAME: u64 = 4;
@@ -123,9 +110,7 @@ module zkgm::zkgm_relay {
     const E_INVALID_ASSET_SYMBOL: u64 = 8;
     const E_INVALID_ASSET_ORIGIN: u64 = 9;
     const E_INVALID_AMOUNT: u64 = 10;
-    const E_BATCH_MUST_BE_SYNC: u64 = 11;
     const E_INVALID_FILL_TYPE: u64 = 12;
-    const E_UNIMPLEMENTED: u64 = 13;
     const E_ACK_EMPTY: u64 = 14;
     const E_ONLY_MAKER: u64 = 15;
     const E_NO_BATCH_OPERATION: u64 = 16;
@@ -133,136 +118,18 @@ module zkgm::zkgm_relay {
     const E_ERR_INVALID_FORWARD_INSTRUCTION: u64 = 18;
     const E_NO_EXECUTE_OPERATION: u64 = 19;
     const E_NO_TREASURY_CAPABILITY: u64 = 20;
-    const E_NO_TREASURY_CAPABILITY_REFUND: u64 = 3333333;
     const E_INVALID_ASSET_DECIMAL: u64 = 21;
     const E_INVALID_BASE_AMOUNT: u64 = 22;
     const E_NO_COIN_IN_BAG: u64 = 23;
+    const E_CHANNEL_BALANCE_PAIR_NOT_FOUND: u64 = 25;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
 
-    public struct ZkgmPacket has copy, drop, store {
-        salt: vector<u8>,
-        path: u256,
-        instruction: Instruction
-    }
-
-    public struct SyscallPacket has copy, drop, store {
-        version: u8,
-        index: u8,
-        packet: vector<u8>
-    }
-
-    #[event]
-    public struct OnZkgmCall has copy, drop, store {
-        sender: vector<u8>,
-        contract_calldata: vector<u8>,
-        contract_address: vector<u8>
-    }
-
-    public struct OnZkgmParams has copy, drop, store {
-        sender: vector<u8>,
-        contract_calldata: vector<u8>
-    }
-
-    public struct IIBCModuleOnRecvPacketParams has copy, drop, store {
-        packet: Packet,
-        relayer: address,
-        relayer_msg: vector<u8>
-    }
-
-    #[event]
-    public struct OnIIBCModuleOnRecvPacketCall has copy, drop, store {
-        packet: Packet,
-        relayer: address,
-        relayer_msg: vector<u8>,
-        contract_address: vector<u8>
-    }
-
-    public struct IIBCModuleOnAcknowledgementPacketParams has copy, drop, store {
-        packet: Packet,
-        acknowledgement: vector<u8>,
-        relayer: address
-    }
-
-
-    #[event]
-    public struct OnIIBCModuleOnAcknowledgementPacketCall has copy, drop, store {
-        packet: Packet,
-        acknowledgement: vector<u8>,
-        relayer: address,
-        contract_address: vector<u8>
-    }
-
-    public struct IIBCModuleOnTimeoutPacketParams has copy, drop, store {
-        packet: Packet,
-        relayer: address
-    }
-
-    #[event]
-    public struct OnIIBCModuleOnTimeoutPacketCall has copy, drop, store {
-        packet: Packet,
-        relayer: address,
-        contract_address: vector<u8>
-    }
-
-
-
-    public struct Acknowledgement has copy, drop, store {
-        tag: u256,
-        inner_ack: vector<u8>
-    }
-
-    public struct BatchAcknowledgement has copy, drop, store {
-        acknowledgements: vector<vector<u8>>
-    }
-
-    public struct AssetTransferAcknowledgement has copy, drop, store {
-        fill_type: u256,
-        market_maker: vector<u8>
-    }
+    public struct IbcAppWitness has drop {}
 
     public struct ChannelBalancePair has copy, drop, store {
         channel: u32,
         path: u256,
         token: vector<u8>
-    }
-
-
-    // Events
-    #[event]
-    public struct DenomCreated has copy, drop, store {
-        channel_id: u32,
-        denom: String,
-        token: address
-    }
-
-    #[event]
-    public struct Received has copy, drop, store {
-        channel_id: u32,
-        sender: vector<u8>,
-        receiver: vector<u8>,
-        denom: String,
-        token: address,
-        amount: u64
-    }
-
-    #[event]
-    public struct Sent has copy, drop, store {
-        channel_id: u32,
-        sender: vector<u8>,
-        receiver: vector<u8>,
-        denom: String,
-        token: address,
-        amount: u64
-    }
-
-    #[event]
-    public struct Refunded has copy, drop, store {
-        channel_id: u32,
-        sender: vector<u8>,
-        receiver: vector<u8>,
-        denom: String,
-        token: address,
-        amount: u64
     }
 
     public struct RelayStore has key {
@@ -412,8 +279,8 @@ module zkgm::zkgm_relay {
         };
 
         // Convert String to vector<u8>
-        let s_bytes: vector<u8> = *string::bytes(&s);
-        let prefix_bytes: vector<u8> = *string::bytes(&prefix);
+        let s_bytes: vector<u8> = *std::string::as_bytes(&s);
+        let prefix_bytes: vector<u8> = *std::string::as_bytes(&prefix);
 
         let mut i = 0;
         while (i < prefix_len) {
@@ -427,16 +294,18 @@ module zkgm::zkgm_relay {
 
     public entry fun channel_open_init(
         ibc_store: &mut ibc::IBCStore,
+        port_id: String,
         counterparty_port_id: vector<u8>,
         connection_id: u32, 
         version: String
     ) {
         ibc::channel_open_init(
             ibc_store,
-            utf8(b"&get_signer()"),
+            port_id,
             counterparty_port_id,
             connection_id,
-            version
+            version,
+            IbcAppWitness {}
         );
 
         if (!is_valid_version(version)) {
@@ -446,6 +315,7 @@ module zkgm::zkgm_relay {
     }
     public entry fun channel_open_try(
         ibc_store: &mut ibc::IBCStore,
+        port_id: String,
         connection_id: u32,
         counterparty_channel_id: u32,
         counterparty_port_id: vector<u8>,
@@ -464,19 +334,21 @@ module zkgm::zkgm_relay {
 
         ibc::channel_open_try(
             ibc_store,
-            utf8(b"&get_signer()"),
+            port_id,
             connection_id,
             counterparty_channel_id,
             counterparty_port_id,
             version,
             counterparty_version,
             proof_init,
-            proof_height
+            proof_height,
+            IbcAppWitness {}
         );
     }
 
     public entry fun channel_open_ack(
         ibc_store: &mut ibc::IBCStore,
+        port_id: String,
         channel_id: u32,
         counterparty_version: String,
         counterparty_channel_id: u32,
@@ -486,12 +358,13 @@ module zkgm::zkgm_relay {
         // Store the channel_id
         ibc::channel_open_ack(
             ibc_store,
-            utf8(b"&get_signer()"),
+            port_id,
             channel_id,
             counterparty_version,
             counterparty_channel_id,
             proof_try,
-            proof_height
+            proof_height,
+            IbcAppWitness {}
         );
         if (!is_valid_version(counterparty_version)) {
             abort E_INVALID_IBC_VERSION
@@ -500,16 +373,18 @@ module zkgm::zkgm_relay {
 
     public entry fun channel_open_confirm(
         ibc_store: &mut ibc::IBCStore,
+        port_id: String,
         channel_id: u32, 
         proof_ack: vector<u8>, 
         proof_height: u64
     )  {
         ibc::channel_open_confirm(
             ibc_store,
-            utf8(b"&get_signer()"),
+            port_id,
             channel_id,
             proof_ack,
-            proof_height
+            proof_height,
+            IbcAppWitness {}
         );
     }
 
@@ -533,7 +408,7 @@ module zkgm::zkgm_relay {
         let s_len = string::length(&s);
 
         // Get the bytes of the string and create a new trimmed vector
-        let s_bytes = string::bytes(&s);
+        let s_bytes = std::string::as_bytes(&s);
         let mut trimmed_bytes = vector::empty<u8>();
 
         // Manually copy elements starting from prefix_len to s_len
@@ -560,6 +435,16 @@ module zkgm::zkgm_relay {
         let typename_t = type_name::get<T>();
         let key = type_name::into_string(typename_t);
         relay_store.type_name_t_to_capability.add(string::from_ascii(key), capability)
+    }
+
+    public entry fun save_token_origin(
+        relay_store: &mut RelayStore,
+        wrapped_token: vector<u8>,
+        path: u256,
+        channel_id: u32
+    ) {
+        let updated_channel_path = update_channel_path(path, channel_id);
+        relay_store.token_origin.add(wrapped_token, updated_channel_path);
     }
 
     // Here we will basically ignore intent packet.
@@ -593,15 +478,8 @@ module zkgm::zkgm_relay {
             );
             i = i + 1;
         };
-        ibc::recv_packet(
-            ibc_store,
-            clock,
-            packets,
-            proof,
-            proof_height,
-            vector[1]
-        );
         let mut i = 0;
+        let mut acks = vector::empty();
         while (i < vector::length(&packets)) {
             let ibc_packet = *vector::borrow(&packets, i);
             let raw_zkgm_packet = packet::data(&ibc_packet);
@@ -620,20 +498,27 @@ module zkgm::zkgm_relay {
                     ctx
                 );
 
+            acks.push_back(acknowledgement);
+
             if (vector::length(&acknowledgement) == 0) {
                 abort E_ACK_EMPTY
             } else if (acknowledgement == ACK_ERR_ONLYMAKER) {
                 abort E_ONLY_MAKER
-            } else {
-                // TODO: what to do here?
-                let new_ack = acknowledgement::new(ACK_SUCCESS, acknowledgement);
-                let return_value = acknowledgement::encode(&new_ack);
-                // dispatcher_zkgm::set_return_value<ZKGMProof>(
-                //     new_ucs_relay_proof(), return_value
-                // );
             };
             i = i + 1;
         };
+
+        ibc::recv_packet(
+            ibc_store,
+            clock,
+            packets,
+            relayer,
+            relayer_msg,
+            proof,
+            proof_height,
+            acks,
+            IbcAppWitness {}
+        );
     }
 
     fun execute_internal<T>(
@@ -642,7 +527,7 @@ module zkgm::zkgm_relay {
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
-        salt: vector<u8>,
+        _salt: vector<u8>,
         path: u256,
         instruction: Instruction,
         ctx: &mut TxContext
@@ -664,17 +549,7 @@ module zkgm::zkgm_relay {
             abort E_NO_BATCH_OPERATION
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            execute_forward(
-                ibc_store,
-                relay_store,
-                ibc_packet,
-                relayer_msg,
-                salt,
-                path,
-                forward::decode(instruction::operand(&instruction), &mut decode_idx),
-                ctx
-            )
+            abort E_NO_EXECUTE_OPERATION
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
             abort E_NO_MULTIPLEX_OPERATION
         } else {
@@ -682,12 +557,12 @@ module zkgm::zkgm_relay {
         }
     }
 
-    fun market_maker_fill<T>(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
+    fun market_maker_fill(
+        _ibc_store: &mut ibc::IBCStore,
+        _relay_store: &mut RelayStore,
         relayer_msg: vector<u8>,
-        quote_token: vector<u8>,
-        receiver: address,
+        _quote_token: vector<u8>,
+        _receiver: address,
         quote_amount: u64
     ): vector<u8> {
         if (quote_amount != 0){
@@ -724,18 +599,18 @@ module zkgm::zkgm_relay {
         if(!relay_store.bag_to_coin.contains(string::from_ascii(key))) {
             abort E_NO_COIN_IN_BAG
         };
-        let mut coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+        let coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
 
         let transferred_coin = coin::split<T>(coin, amount, ctx);
         transfer::public_transfer(transferred_coin, receiver);
     }
 
     public fun protocol_fill<T>(
-        ibc_store: &mut ibc::IBCStore,
+        _ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         channel_id: u32,
         path: u256,
-        wrapped_token: vector<u8>,
+        _wrapped_token: vector<u8>,
         quote_token: vector<u8>,
         receiver: address,
         relayer: address,
@@ -844,7 +719,7 @@ module zkgm::zkgm_relay {
                 ctx
             )
         };
-        return market_maker_fill<T>(
+        return market_maker_fill(
             ibc_store, 
             relay_store, 
             relayer_msg, 
@@ -854,50 +729,32 @@ module zkgm::zkgm_relay {
         )        
     }
 
-    fun execute_forward(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
-        ibc_packet: Packet,
-        _relayer_msg: vector<u8>,
-        salt: vector<u8>,
-        path: u256,
-        forward_packet: Forward,
-        ctx: &mut TxContext
-    ): (vector<u8>) {
-        // TODO: Will we have this function?
-        abort E_NO_EXECUTE_OPERATION
-        // let zkgm_pack =
-        //     zkgm_packet::new(
-        //         salt,
-        //         update_channel_path(
-        //             path, packet::destination_channel_id(&ibc_packet)
-        //         ),
-        //         *forward::instruction(&forward_packet)
-        //     );
-        // let sent_packet =
-        //     ibc::send_packet(
-        //         ibc_store,
-        //         forward::channel_id(&forward_packet),
-        //         forward::timeout_height(&forward_packet),
-        //         forward::timeout_timestamp(&forward_packet),
-        //         zkgm_packet::encode(&zkgm_pack)
-        //     );
-
-
-        // let packet_hash = commitment::commit_packet(&sent_packet);
-        // add_or_update_table<vector<u8>, Packet>(&mut relay_store.in_flight_packet, packet_hash, sent_packet);
-        // ACK_EMPTY
-    }
-
-    fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, mut value: P) {
+    fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, value: P) {
         if (table.contains(key)) {
-            let mut val = table.borrow_mut(key);
+            let val = table.borrow_mut(key);
             *val = value;
         } else {
             table.add(key, value);
         }
     }
-
+    public fun channel_balance(
+        relay_store: &mut RelayStore,
+        channel_id: u32,
+        path: u256,
+        token: vector<u8>
+    ): u256 {
+        let pair = ChannelBalancePair{
+            channel: channel_id,
+            path: path,
+            token: token
+        };
+        event::emit(pair);
+        if(!relay_store.channel_balance.contains(pair)) {
+            abort E_CHANNEL_BALANCE_PAIR_NOT_FOUND
+        };
+        *relay_store.channel_balance.borrow(pair)
+    }
+    
     fun decrease_outstanding(
         relay_store: &mut RelayStore,
         channel_id: u32,
@@ -909,6 +766,10 @@ module zkgm::zkgm_relay {
             channel: channel_id,
             path: path,
             token: token
+        };
+        event::emit(pair);
+        if(!relay_store.channel_balance.contains(pair)) {
+            abort E_CHANNEL_BALANCE_PAIR_NOT_FOUND
         };
         let channel_balance = *relay_store.channel_balance.borrow(pair);
         if (channel_balance < amount) {
@@ -934,13 +795,19 @@ module zkgm::zkgm_relay {
             path: path,
             token: token
         };
-        let channel_balance = *relay_store.channel_balance.borrow(pair);
+
+        let mut channel_balance = 0;
+        if(relay_store.channel_balance.contains(pair)) {
+            channel_balance = *relay_store.channel_balance.borrow(pair);
+        };
         let new_balance = channel_balance + amount;
         add_or_update_table<ChannelBalancePair, u256>(
             &mut relay_store.channel_balance,
             pair,
             new_balance
         );
+        
+        event::emit(pair);
     }
 
 
@@ -948,7 +815,8 @@ module zkgm::zkgm_relay {
     public entry fun send<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        mut coin: Coin<T>,
+        clock: &Clock,
+        coin: Coin<T>,
         metadata: &CoinMetadata<T>,
         channel_id: u32,
         timeout_height: u64,
@@ -966,16 +834,18 @@ module zkgm::zkgm_relay {
         let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
         ibc::send_packet(
             ibc_store,
+            clock,
             channel_id,
             timeout_height,
             timeout_timestamp,
-            zkgm_packet::encode(&zkgm_pack)
+            zkgm_packet::encode(&zkgm_pack),
+            IbcAppWitness {}
         );
     }
     fun verify_internal<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        mut coin: Coin<T>,
+        coin: Coin<T>,
         metadata: &CoinMetadata<T>,
         sender: address,
         channel_id: u32,
@@ -1034,12 +904,12 @@ module zkgm::zkgm_relay {
 
     fun save_coin_to_bag<T>(
         relay_store: &mut RelayStore,
-        mut coin: Coin<T>
+        coin: Coin<T>
     ) {
         let typename_t = type_name::get<T>();
         let key = type_name::into_string(typename_t);
         if(relay_store.bag_to_coin.contains(string::from_ascii(key))) {
-            let mut self_coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+            let self_coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
             coin::join(self_coin, coin)
         } else{
             relay_store.bag_to_coin.add(string::from_ascii(key), coin)
@@ -1047,15 +917,15 @@ module zkgm::zkgm_relay {
     }
 
     fun verify_fungible_asset_order<T>(
-        ibc_store: &mut ibc::IBCStore,
+        _ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        mut coin: Coin<T>,
+        coin: Coin<T>,
         metadata: &CoinMetadata<T>,
-        sender: address,
+        _sender: address,
         channel_id: u32,
         path: u256,
         order: FungibleAssetOrder,
-        ctx: &mut TxContext
+        _ctx: &mut TxContext
     ){
 
         let base_token = fungible_asset_order::base_token(&order);
@@ -1080,7 +950,11 @@ module zkgm::zkgm_relay {
             abort E_INVALID_BASE_AMOUNT
         };
 
-        let origin = *relay_store.token_origin.borrow(*base_token);
+        
+        let mut origin = 0;    
+        if(relay_store.token_origin.contains(*base_token)) {
+            origin = *relay_store.token_origin.borrow(*base_token);
+        };
 
         let (intermediate_channel_path, destination_channel_id) =
             pop_channel_from_path(origin);
@@ -1123,7 +997,7 @@ module zkgm::zkgm_relay {
     fun verify_forward<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
-        mut coin: Coin<T>,
+        coin: Coin<T>,
         metadata: &CoinMetadata<T>,
         sender: address,
         channel_id: u32,
@@ -1186,7 +1060,9 @@ module zkgm::zkgm_relay {
             packets,
             acknowledgements,
             proof,
-            proof_height
+            proof_height,
+            relayer,
+            IbcAppWitness {}
         );
 
         let mut i = 0;
@@ -1201,7 +1077,8 @@ module zkgm::zkgm_relay {
                     ibc::write_acknowledgement(
                         ibc_store,
                         *parent,
-                        acknowledgement
+                        acknowledgement,
+                        IbcAppWitness {}
                     );
                     add_or_update_table<vector<u8>, Packet>(
                         &mut relay_store.in_flight_packet,
@@ -1287,9 +1164,9 @@ module zkgm::zkgm_relay {
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         ibc_packet: Packet,
-        relayer: address,
+        _relayer: address,
         path: u256,
-        salt: vector<u8>,
+        _salt: vector<u8>,
         order_sender: vector<u8>,
         order_base_token: vector<u8>,
         order_base_token_path: u256,
@@ -1374,7 +1251,6 @@ module zkgm::zkgm_relay {
         packet_timeout_timestamp: u64,
         proof: vector<u8>,
         proof_height: u64,
-        next_sequence_receive: u64,
         relayer: address,
         ctx: &mut TxContext
     ) {
@@ -1391,18 +1267,16 @@ module zkgm::zkgm_relay {
             ibc_store,
             packet,
             proof,
-            proof_height,
-            next_sequence_receive
+            proof_height
         );
 
         let packet_hash = commitment::commit_packet(&packet);
 
         let parent = relay_store.in_flight_packet.borrow(packet_hash);
-        let parent = relay_store.in_flight_packet.borrow(packet_hash);
         if (packet::timeout_timestamp(parent) != 0 ||
             packet::timeout_height(parent) != 0) {
                 let ack = acknowledgement::new(ACK_FAILURE, ACK_EMPTY);
-                ibc::write_acknowledgement(ibc_store, *parent, acknowledgement::encode(&ack));
+                ibc::write_acknowledgement(ibc_store, *parent, acknowledgement::encode(&ack), IbcAppWitness {});
                 add_or_update_table<vector<u8>, Packet>(
                     &mut relay_store.in_flight_packet,
                     packet_hash,
@@ -1492,7 +1366,7 @@ module zkgm::zkgm_relay {
     }
 
     fun refund<T>(
-        ibc_store: &mut ibc::IBCStore,
+        _ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
         source_channel: u32,
         path: u256,

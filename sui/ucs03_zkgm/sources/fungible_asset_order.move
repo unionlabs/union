@@ -61,8 +61,7 @@
 module zkgm::fungible_asset_order {
     use zkgm::zkgm_ethabi;
 
-    use std::string::{Self, String};
-    use std::vector;
+    use std::string::{String};
 
     public struct FungibleAssetOrder has copy, drop, store {
         sender: vector<u8>,
@@ -218,8 +217,8 @@ module zkgm::fungible_asset_order {
             receiver: b"BBBB",
             base_token: b"CCCC",
             base_amount: 100,
-            base_token_symbol: string::utf8(b"hello"),
-            base_token_name: string::utf8(b"world"),
+            base_token_symbol: std::string::utf8(b"hello"),
+            base_token_name: std::string::utf8(b"world"),
             base_token_decimals: 18,
             base_token_path: 0,
             quote_token: b"DEADBEEF",

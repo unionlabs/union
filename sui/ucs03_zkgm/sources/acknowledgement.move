@@ -61,8 +61,6 @@
 module zkgm::acknowledgement {
     use zkgm::zkgm_ethabi;
 
-    use std::vector;
-
     public struct Acknowledgement has copy, drop, store {
         tag: u256,
         inner_ack: vector<u8>
