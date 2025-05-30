@@ -1,3 +1,12 @@
+use alloy_primitives::{ruint::ParseError, U256};
+use cosmwasm_std::{Addr, Instantiate2AddressError, StdError};
+use frissitheto::UpgradeError;
+use ibc_union_spec::ChannelId;
+use thiserror::Error;
+use unionlabs::primitives::Bytes;
+
+use crate::com::Stake;
+
 pub mod com;
 pub mod contract;
 pub mod msg;
@@ -5,13 +14,6 @@ mod state;
 #[cfg(test)]
 mod tests;
 pub mod token_bucket;
-use alloy::primitives::{ruint::ParseError, U256};
-use com::Stake;
-use cosmwasm_std::{Addr, Instantiate2AddressError, StdError};
-use frissitheto::UpgradeError;
-use ibc_union_spec::ChannelId;
-use thiserror::Error;
-use unionlabs::primitives::Bytes;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
@@ -26,7 +28,7 @@ pub enum ContractError {
     #[error("invalid operation, sender must be self")]
     OnlySelf,
     #[error(transparent)]
-    Alloy(#[from] alloy::sol_types::Error),
+    Alloy(#[from] alloy_sol_types::Error),
     #[error("invalid zkgm instruction version: {version}")]
     UnsupportedVersion { version: u8 },
     #[error("unknown zkgm instruction opcode: {opcode}")]

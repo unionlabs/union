@@ -521,7 +521,6 @@ impl ValueCodec<InverseSyncCommittee> for SyncCommitteeStore {
 mod tests {
     use std::sync::LazyLock;
 
-    use alloy::hex;
     use beacon_api_types::{altair::SyncCommittee, electra};
     use cosmwasm_std::{
         testing::{mock_dependencies, mock_env},
@@ -532,6 +531,7 @@ mod tests {
         SyncCommitteePeriodChangeUpdate, WithinSyncCommitteePeriodUpdate,
     };
     use ethereum_sync_protocol::utils::compute_timestamp_at_slot;
+    use hex_literal::hex;
     use unionlabs::primitives::H160;
 
     use super::*;

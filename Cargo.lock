@@ -178,7 +178,6 @@ dependencies = [
  "alloy-contract",
  "alloy-core",
  "alloy-eips",
- "alloy-genesis",
  "alloy-network",
  "alloy-provider",
  "alloy-pubsub",
@@ -272,7 +271,6 @@ dependencies = [
  "alloy-dyn-abi",
  "alloy-json-abi",
  "alloy-primitives",
- "alloy-rlp",
  "alloy-sol-types",
 ]
 
@@ -346,19 +344,6 @@ dependencies = [
  "either",
  "serde",
  "sha2 0.10.8",
-]
-
-[[package]]
-name = "alloy-genesis"
-version = "1.0.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2b81b2dfd278d58af8bfde8753fa4685407ba8fbad8bc88a2bb0e065eed48478"
-dependencies = [
- "alloy-eips",
- "alloy-primitives",
- "alloy-serde",
- "alloy-trie",
- "serde",
 ]
 
 [[package]]
@@ -1513,7 +1498,8 @@ dependencies = [
 name = "arbitrum-types"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
+ "hex-literal",
  "solidity-slot",
  "unionlabs-primitives",
 ]
@@ -2986,7 +2972,7 @@ dependencies = [
 name = "bob-verifier"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "bob-light-client-types",
  "evm-storage-verifier",
  "hex",
@@ -4795,7 +4781,8 @@ dependencies = [
 name = "cw20-token-minter"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-primitives",
+ "alloy-sol-types",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
@@ -5649,7 +5636,7 @@ dependencies = [
 name = "ethereum-light-client"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "ark-bls12-381 0.5.0",
  "ark-ec 0.5.0",
  "ark-serialize 0.5.0",
@@ -7200,16 +7187,18 @@ name = "ibc-solidity"
 version = "0.0.0"
 dependencies = [
  "alloy",
+ "ibc-union-spec",
  "schemars",
  "serde",
+ "thiserror 2.0.12",
 ]
 
 [[package]]
 name = "ibc-union"
 version = "0.0.0"
 dependencies = [
- "alloy",
- "bincode 2.0.1",
+ "alloy-primitives",
+ "alloy-sol-types",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-orch",
@@ -7267,7 +7256,6 @@ dependencies = [
  "alloy-sol-types",
  "bincode 2.0.1",
  "enumorph",
- "ibc-solidity",
  "ibc-union-spec",
  "num-traits",
  "schemars",
@@ -9936,7 +9924,7 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.35",
  "embed-commit",
- "unionlabs",
+ "wasm-client-type",
 ]
 
 [[package]]
@@ -11838,7 +11826,7 @@ dependencies = [
 name = "scroll-codec"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "hex-literal",
  "sha3 0.10.8",
  "thiserror 2.0.12",
@@ -14445,7 +14433,8 @@ dependencies = [
 name = "ucs03-zkgm"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-primitives",
+ "alloy-sol-types",
  "chrono",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
@@ -14456,7 +14445,6 @@ dependencies = [
  "cw20-base",
  "cw20-token-minter",
  "embed-commit",
- "ethabi",
  "frissitheto",
  "hex",
  "hex-literal",
@@ -14497,7 +14485,8 @@ dependencies = [
 name = "ucs06-funded-dispatch"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-primitives",
+ "alloy-sol-types",
  "cosmwasm-schema 2.2.2",
  "cosmwasm-std 2.2.2",
  "cw-storage-plus 2.0.0",
@@ -14625,7 +14614,6 @@ checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 name = "unionlabs"
 version = "0.0.0"
 dependencies = [
- "alloy",
  "base64 0.21.7",
  "bcs 0.1.6",
  "bincode 2.0.1",
@@ -14643,7 +14631,6 @@ dependencies = [
  "macros",
  "near-primitives-core",
  "near-sdk",
- "paste",
  "prost 0.12.6",
  "protos",
  "rand 0.8.5",
@@ -14664,7 +14651,6 @@ dependencies = [
  "typenum",
  "unionlabs-encoding",
  "unionlabs-primitives",
- "wasmparser 0.113.3",
 ]
 
 [[package]]
@@ -15205,7 +15191,7 @@ dependencies = [
 name = "voyager-client-module-cometbls"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "ark-bn254",
  "ark-serialize 0.4.2",
  "bcs 0.1.6",
@@ -15277,7 +15263,7 @@ dependencies = [
 name = "voyager-client-module-state-lens-ics23-ics23"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "embed-commit",
  "futures",
  "jsonrpsee",
@@ -15299,7 +15285,7 @@ dependencies = [
 name = "voyager-client-module-state-lens-ics23-mpt"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "beacon-api-types",
  "embed-commit",
  "enumorph",
@@ -15325,7 +15311,7 @@ dependencies = [
 name = "voyager-client-module-state-lens-ics23-smt"
 version = "0.0.0"
 dependencies = [
- "alloy",
+ "alloy-sol-types",
  "embed-commit",
  "enumorph",
  "ethereum-light-client-types",
@@ -15675,6 +15661,7 @@ dependencies = [
  "tracing",
  "unionlabs",
  "voyager-sdk",
+ "wasm-client-type",
 ]
 
 [[package]]
@@ -16079,7 +16066,6 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.35",
  "cometbft-rpc",
- "dashmap 5.5.3",
  "embed-commit",
  "ibc-classic-spec",
  "jsonrpsee",
@@ -16231,7 +16217,6 @@ version = "0.0.0"
 dependencies = [
  "clap 4.5.35",
  "cometbft-rpc",
- "dashmap 5.5.3",
  "embed-commit",
  "ibc-classic-spec",
  "jsonrpsee",
@@ -16546,6 +16531,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "1a05d73b933a847d6cccdda8f838a22ff101ad9bf93e33684f39c1f5f0eece3d"
 dependencies = [
  "unicode-ident",
+]
+
+[[package]]
+name = "wasm-client-type"
+version = "0.0.0"
+dependencies = [
+ "paste",
+ "serde",
+ "thiserror 2.0.12",
+ "wasmparser 0.113.3",
 ]
 
 [[package]]

@@ -133,21 +133,27 @@
                 (fs.unions (lib.flatten [ (mkRootPaths extraIncludes) ]))
                 # ...and include rust source of workspace deps
                 (
-                  fs.intersection (fs.unions (mkRootPaths workspaceMembers)) (
-                    fs.fileFilter (file: (builtins.any file.hasExt [ "rs" ])) ../../.
-                  )
+                  fs.difference
+                    (fs.intersection (fs.unions (mkRootPaths workspaceMembers)) (
+                      fs.fileFilter (file: (builtins.any file.hasExt [ "rs" ])) ../../.
+                    ))
+                    (
+                      if dontRemoveDevDeps then
+                        fs.unions [ ]
+                      else
+                        (fs.unions (
+                          (map fs.maybeMissing (mkRootPaths (map (member: "${member}/tests") workspaceMembers)))
+                          ++ (map fs.maybeMissing (mkRootPaths (map (member: "${member}/examples") workspaceMembers)))
+                        ))
+                    )
                 );
           };
         in
         pkgs.stdenv.mkDerivation {
           name = "clean-workspace-source";
           src = filteredSrc;
-          buildInputs = [
-            pkgs.tree
-          ];
+          buildInputs = [ ];
           buildPhase = ''
-            tree .
-
             cp ${cargoLock} ./Cargo.lock
             cp ${cargoToml} ./Cargo.toml
 
@@ -253,9 +259,9 @@
       #
       # note that to make this easier, we define all local dependencies as workspace dependencies.
       #
-      # sig :: [string] ->  [string]
+      # sig :: [string] -> bool -> [string]
       getMemberDeps =
-        dirs:
+        dirs: dontRemoveDevDeps:
         let
           go =
             dir': foundSoFar:
@@ -265,8 +271,7 @@
             lib.pipe
               (
                 dirCargoToml.dependencies
-                # TODO: Remove dev-dependencies?
-                // dirCargoToml.dev-dependencies or { }
+                // (lib.optionalAttrs dontRemoveDevDeps dirCargoToml.dev-dependencies or { })
                 // dirCargoToml.build-dependencies or { }
               )
               [
@@ -295,13 +300,15 @@
 
       # gets all the dependencies for a crate, recursively.
       #
-      # sig :: [string] ->  attrs
+      # sig :: [string] -> bool -> [string]
       getAllDeps =
-        dirs:
-        lib.pipe (getMemberDeps dirs) [
+        dirs: dontRemoveDevDeps:
+        lib.pipe (getMemberDeps dirs dontRemoveDevDeps) [
           (map (
             path:
-            ((crateCargoToml path).dependencies or { }) // ((crateCargoToml path).build-dependencies or { })
+            ((crateCargoToml path).dependencies or { })
+            // (lib.optionalAttrs dontRemoveDevDeps (crateCargoToml path).dev-dependencies or { })
+            // ((crateCargoToml path).build-dependencies or { })
           ))
           (builtins.foldl' lib.recursiveUpdate { })
         ];
@@ -414,12 +421,12 @@
 
           cargoBuild = craneLib.overrideToolchain cargoBuildRustToolchain';
 
-          memberDepsForCrate = getMemberDeps crateDirsFromRoot';
+          memberDepsForCrate = getMemberDeps crateDirsFromRoot' dontRemoveDevDeps;
           memberDepsForCrateCargoTomls = readMemberCargoTomls memberDepsForCrate;
 
           patchedCargoLock = cleanCargoLock (map (dir: (crateCargoToml dir).package.name) crateDirsFromRoot');
 
-          allDepsForCrate = getAllDeps memberDepsForCrate;
+          allDepsForCrate = getAllDeps memberDepsForCrate dontRemoveDevDeps;
 
           patchedCargoToml = {
             workspace = workspaceCargoToml.workspace // {
@@ -729,7 +736,16 @@
 
       # these are incredibly useful for debugging
       packages = {
-        # cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "cosmwasm-deployer" ]);
+        # cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "ibc-union" ]);
+        # cleanCargoLock = writeTOML "Cargo.lock" (
+        #   cleanCargoLock (
+        #     builtins.attrNames (
+        #       ((crateCargoToml "cosmwasm/ibc-union/core").dependencies or { })
+        #       // ((crateCargoToml "cosmwasm/ibc-union/core").build-dependencies or { })
+        #       // (lib.optionalAttrs false (crateCargoToml "cosmwasm/ibc-union/core").dev-dependencies or { })
+        #     )
+        #   )
+        # );
         # getAllDeps = dbg (getAllDeps [ "cosmwasm/ibc-union/core" ]);
         # getDependency = dbg (
         #   getCargoLockPackageEntry "static_assertions 1.1.0 (registry+https://github.com/rust-lang/crates.io-index)"

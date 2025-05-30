@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy                       = { workspace = true, features = ["sol-types"] }
+alloy-sol-types             = { workspace = true }
 ark-bn254                   = { version = "0.4", default-features = false, features = ["curve"] }
 ark-serialize               = "0.4.2"
 cometbls-light-client-types = { workspace = true, features = ["proto", "ethabi", "serde", "bincode"] }

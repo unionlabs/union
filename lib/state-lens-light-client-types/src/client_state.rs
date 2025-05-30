@@ -205,6 +205,7 @@ where
     }
 }
 
+// avert your eyes, here be dragons
 #[cfg(feature = "ethabi")]
 pub mod ethabi {
     use alloy::{

@@ -1,7 +1,7 @@
 use std::ffi::OsString;
 
 use clap::Parser;
-use unionlabs::{parse_wasm_client_type, WasmClientType};
+use wasm_client_type::{extract_from_wasm, WasmClientType};
 
 #[derive(Parser)]
 #[command(arg_required_else_help = true)]
@@ -16,7 +16,7 @@ fn main() {
 
     let bz = std::fs::read(args.file_path).unwrap();
 
-    match (parse_wasm_client_type(bz), args.expected_client_type) {
+    match (extract_from_wasm(bz), args.expected_client_type) {
         (Ok(Some(ty)), Some(expected)) => assert_eq!(ty, expected),
         (Ok(Some(ty)), None) => println!("{ty}"),
         (Ok(None), _) => panic!("file does not contain a wasm client type"),

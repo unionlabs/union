@@ -83,7 +83,7 @@ macro_rules! id {
         #[macro_export]
         macro_rules! $T {
             ($raw:expr) => {
-                <$T>::new(unionlabs::option_unwrap!(core::num::NonZeroU32::new($raw)))
+                <$T>::new(core::num::NonZeroU32::new($raw).unwrap())
             };
         }
     };

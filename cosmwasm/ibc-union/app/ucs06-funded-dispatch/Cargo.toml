@@ -18,18 +18,19 @@ crate-type = ["cdylib", "rlib"]
 library = []
 
 [dependencies]
-alloy                 = { workspace = true, features = ["sol-types"] }
-cosmwasm-schema       = { workspace = true }
-cosmwasm-std          = { workspace = true, features = ["cosmwasm_1_2"] }
-cw-storage-plus       = { workspace = true }
-cw20                  = "2.0.0"
-embed-commit          = { workspace = true }
-ethabi                = { workspace = true }
-frissitheto           = { workspace = true }
-ibc-union-msg         = { workspace = true }
-ibc-union-spec        = { workspace = true, features = ["serde", "ethabi"] }
-serde                 = { workspace = true, features = ["derive"] }
-serde-json-wasm       = "1.0"
-serde-utils.workspace = true
-thiserror             = { workspace = true }
-unionlabs             = { workspace = true, features = ["ethabi", "schemars"] }
+alloy-primitives = { workspace = true }
+alloy-sol-types  = { workspace = true }
+cosmwasm-schema  = { workspace = true }
+cosmwasm-std     = { workspace = true, features = ["cosmwasm_1_2"] }
+cw-storage-plus  = { workspace = true }
+cw20             = "2.0.0"
+embed-commit     = { workspace = true }
+ethabi           = { workspace = true }
+frissitheto      = { workspace = true }
+ibc-union-msg    = { workspace = true }
+ibc-union-spec   = { workspace = true, features = ["serde", "ethabi"] }
+serde            = { workspace = true, features = ["derive"] }
+serde-json-wasm  = "1.0"
+serde-utils      = { workspace = true }
+thiserror        = { workspace = true }
+unionlabs        = { workspace = true, features = ["ethabi", "schemars"] }

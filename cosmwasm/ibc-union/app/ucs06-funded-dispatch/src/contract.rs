@@ -1,4 +1,4 @@
-use alloy::sol_types::SolValue;
+use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{

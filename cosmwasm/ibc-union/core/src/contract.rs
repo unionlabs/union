@@ -1,6 +1,6 @@
 use std::{collections::BTreeSet, num::NonZeroU32};
 
-use alloy::sol_types::SolValue;
+use alloy_sol_types::SolValue;
 #[cfg(not(feature = "library"))]
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
@@ -471,9 +471,9 @@ pub fn execute(
                 env,
                 info,
                 packets,
-                relayer_msgs.into_iter().map(Into::into).collect(),
+                relayer_msgs.into_iter().collect(),
                 relayer,
-                proof.into(),
+                proof,
                 proof_height,
                 false,
             )
@@ -526,9 +526,9 @@ pub fn execute(
                 env,
                 info,
                 packets,
-                market_maker_msgs.into_iter().map(Into::into).collect(),
+                market_maker_msgs.into_iter().collect(),
                 market_maker,
-                empty_proof.into(),
+                empty_proof,
                 0,
                 true,
             )
@@ -1733,9 +1733,9 @@ fn process_receive(
     env: Env,
     info: MessageInfo,
     packets: Vec<Packet>,
-    relayer_msgs: Vec<alloy::primitives::Bytes>,
+    relayer_msgs: Vec<Bytes>,
     relayer: String,
-    proof: alloy::primitives::Bytes,
+    proof: Bytes,
     proof_height: u64,
     intent: bool,
 ) -> Result<Response, ContractError> {
@@ -2226,7 +2226,7 @@ fn make_verify_creation_event(client_id: ClientId, event: VerifyCreationResponse
 
 #[cfg(test)]
 mod tests {
-    use alloy::hex;
+    use hex_literal::hex;
 
     use super::*;
 
