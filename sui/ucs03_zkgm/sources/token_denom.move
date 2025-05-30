@@ -58,105 +58,38 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::fungible_token{
-    //import library
-    use sui::table::{Self, Table};
-    use std::option;
-    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
-    use sui::transfer;
-    use sui::tx_context::{Self, TxContext};
-    use std::string;
-    use std::ascii;
-    
+module zkgm::fungible_token {
+    use sui::coin::{Self};
 
     // one time witness
     public struct FUNGIBLE_TOKEN has drop {}
 
-
-    //init function, first args is one-time-witness(OTW)
-    fun init(witness: FUNGIBLE_TOKEN, /*decimals: u8,*/ ctx: &mut TxContext){
-        let (treasury_cap, metadata) = coin::create_currency<FUNGIBLE_TOKEN>(
-            witness,
-            2, // TODO: Decimals should be hardcoded. Its a problem..
-            b"",
-            b"",
-            b"",
-            option::none(),
-            ctx);
+    fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
+        let (treasury_cap, metadata) =
+            coin::create_currency<FUNGIBLE_TOKEN>(
+                witness,
+                (@decimals.to_u256()) as u8,
+                b"muno",
+                b"muno",
+                b"zkgm token created by voyager",
+                option::none(),
+                ctx
+            );
 
         transfer::public_share_object(metadata);
         transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
-        // let treasury_cap_object_id = transfer::receiving_object_id(treasury_cap);
     }
-
-
-    // mint the fingible tokens.
-    public entry fun mint(treasury_cap: &mut TreasuryCap<FUNGIBLE_TOKEN>, amount: u64, recipient: address, ctx: &mut TxContext){
-        //call sui framework coin module to mint this fungible token
-        //coin <FUNGIBLE_TOKEN> represent tokens we publish.
-        coin::mint_and_transfer(treasury_cap, amount, recipient, ctx)
-    }
-    
-    //burn the fungible tokens.
-    public entry fun burn (treasury_cap: &mut TreasuryCap<FUNGIBLE_TOKEN>, coin: Coin<FUNGIBLE_TOKEN>){
-        //call sui framework coin module to burn this fungible token
-        //coin <FUNGIBLE_TOKEN> represent tokens we publish.
-        coin::burn(treasury_cap, coin);
-    }
-
-    // Transfer a specific amount of FUNGIBLE_TOKEN from one account to another
-    public entry fun transfer_with_split(
-        from: &mut Coin<FUNGIBLE_TOKEN>,
-        to: address,
-        amount: u64,
-        ctx: &mut TxContext,
-    ) {
-        let transferred_coin = coin::split(from, amount, ctx);
-        transfer::public_transfer(transferred_coin, to);
-    }    // Transfer a specific amount of FUNGIBLE_TOKEN from one account to another
-
-    //join two coin object to one.
-    public entry fun join(self: &mut Coin<FUNGIBLE_TOKEN>, coin: Coin<FUNGIBLE_TOKEN>){
-        coin::join(self, coin);
-    }
-    // // split one coin object to two 
-    // public entry fun split (self: &mut Coin<FUNGIBLE_TOKEN>, amount: u64, recipient: address, ctx: &mut TxContext){
-    //     let new_coin_object = coin::split(self, amount, ctx);
-
-    //     // coin::split is not an rntry function, it has return object type Coin<T>, so in this function need to transfer return object to owner.
-    //     transfer::public_transfer(new_coin_object, recipient);
-    // }
-
-    public entry fun update_with_metadata(
-        treasury_cap: &mut TreasuryCap<FUNGIBLE_TOKEN>,
-        metadata: &mut CoinMetadata<FUNGIBLE_TOKEN>,
-        mut name: option::Option<string::String>,
-        mut symbol: option::Option<ascii::String>,
-        mut description: option::Option<string::String>,
-        mut icon_uri: option::Option<ascii::String>,
-    ) {
-        if(name.is_some()){
-            coin::update_name(treasury_cap, metadata, option::extract(&mut name));
-        };
-        if(symbol.is_some()){
-            coin::update_symbol(treasury_cap, metadata, option::extract(&mut symbol));
-        };
-        if(description.is_some()){
-            coin::update_description(treasury_cap, metadata, option::extract(&mut description));
-        };
-        if(icon_uri.is_some()){
-            coin::update_icon_url(treasury_cap, metadata, option::extract(&mut icon_uri));
-        };
-    }
-
-    // Transfer the entire balance of FUNGIBLE_TOKEN from one account to another
-    public entry fun transfer(
-        from: Coin<FUNGIBLE_TOKEN>,
-        to: address,
-        ctx: &mut TxContext,
-    ) {
-        // Transfer the 'from' coin to the 'to' address
-        transfer::public_transfer(from, to);
-    }
-
 }
+
+/*
+
+D: 0xAAAABBBB
+0000010020232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b020401f804a11ceb0b060000000a01000e020e1e032c27045308055b5607b101d1010882036006e203380a9a04050c9f042b000a010d020602070212021302140001020001020701000003000c01000103030c0100010504020006050700000b000100010c010601000211030400030808090102040e0b01010c040f0e01010c05100c030001050307040a050d02080007080400020b020108000b030108000105010f010805010b01010900010800070900020a020a020a020b01010805070804020b030109000b02010900010b0201080001090001060804010b03010800020900050c436f696e4d657461646174610e46554e4749424c455f544f4b454e064f7074696f6e0b5472656173757279436170095478436f6e746578740355726c076164647265737304636f696e0f6372656174655f63757272656e63790b64756d6d795f6669656c640e66756e6769626c655f746f6b656e04696e6974046e6f6e65066f7074696f6e137075626c69635f73686172655f6f626a6563740f7075626c69635f7472616e736665720673656e64657207746f5f75323536087472616e736665720a74785f636f6e746578740375726c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002052
+000000000000000000000000000000000000000000000000000000000aaaabbbb
+0a0205046d756e6f0a020b0a4d554e4f20544f4b454e00020109010000000002140b00070011023307010701070238000a0138010c020c030b0238020b030b012e11063803020002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020101020000010000232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b01548762d87d8ccd4c0e3eda2065a2e2cb483a6a6e7c19d0823787571d4fcc3e5c310ed014000000002020814b410fef1581e6c9e966fea2354de6b3cebabe924462a559d10deca09245232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590be803000000000000e0972d000000000000
+
+D: 0xCCCCDDDDEEEEFFFF
+
+0000010020232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b020401f804a11ceb0b060000000a01000e020e1e032c27045308055b5607b101d1010882036006e203380a9a04050c9f042b000a010d020602070212021302140001020001020701000003000c01000103030c0100010504020006050700000b000100010c010601000211030400030808090102040e0b01010c040f0e01010c05100c030001050307040a050d02080007080400020b020108000b030108000105010f010805010b01010900010800070900020a020a020a020b01010805070804020b030109000b02010900010b0201080001090001060804010b03010800020900050c436f696e4d657461646174610e46554e4749424c455f544f4b454e064f7074696f6e0b5472656173757279436170095478436f6e746578740355726c076164647265737304636f696e0f6372656174655f63757272656e63790b64756d6d795f6669656c640e66756e6769626c655f746f6b656e04696e6974046e6f6e65066f7074696f6e137075626c69635f73686172655f6f626a6563740f7075626c69635f7472616e736665720673656e64657207746f5f75323536087472616e736665720a74785f636f6e746578740375726c000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000002052000000000000000000000000000000000000000000000000000000000aaaabbbb0a0205046d756e6f0a020b0a4d554e4f20544f4b454e00020109010000000002140b00070011023307010701070238000a0138010c020c030b0238020b030b012e11063803020002000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020101020000010000232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b01548762d87d8ccd4c0e3eda2065a2e2cb483a6a6e7c19d0823787571d4fcc3e5c310ed014000000002020814b410fef1581e6c9e966fea2354de6b3cebabe924462a559d10deca09245232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590be803000000000000e0972d000000000000
+
+*/

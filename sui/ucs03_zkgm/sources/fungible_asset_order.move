@@ -62,7 +62,6 @@ module zkgm::fungible_asset_order {
     use zkgm::zkgm_ethabi;
 
     use std::string::{Self, String};
-    use std::vector;
 
     public struct FungibleAssetOrder has copy, drop, store {
         sender: vector<u8>,

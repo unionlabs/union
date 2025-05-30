@@ -62,8 +62,6 @@ module zkgm::forward {
     use zkgm::zkgm_ethabi;
     use zkgm::instruction::{Self, Instruction};
 
-    use std::vector;
-
     public struct Forward has copy, drop, store {
         path: u256,
         timeout_height: u64,
