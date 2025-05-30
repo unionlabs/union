@@ -26,14 +26,13 @@ use sui_sdk::{
 };
 use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
-use voyager_message::{
-    into_value,
-    module::{ProofModuleInfo, ProofModuleServer},
+use voyager_sdk::{
+    anyhow, into_value,
+    plugin::ProofModule,
     primitives::ChainId,
-    rpc::ProofType,
-    ProofModule,
+    rpc::{types::ProofModuleInfo, ProofModuleServer},
+    types::ProofType,
 };
-use voyager_vm::BoxDynError;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -62,7 +61,7 @@ pub struct Module {
 impl ProofModule<IbcUnion> for Module {
     type Config = Config;
 
-    async fn new(config: Self::Config, info: ProofModuleInfo) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config, info: ProofModuleInfo) -> anyhow::Result<Self> {
         let sui_client = SuiClientBuilder::default().build(&config.rpc_url).await?;
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
@@ -244,14 +243,12 @@ fn convert_object(object: Object) -> ObjectInner {
                 initial_shared_version: (*initial_shared_version).into(),
             },
             sui_sdk::types::object::Owner::Immutable => Owner::Immutable,
-            sui_sdk::types::object::Owner::ConsensusV2 {
+            sui_sdk::types::object::Owner::ConsensusAddressOwner {
                 start_version,
-                authenticator,
+                owner,
             } => Owner::ConsensusV2 {
                 start_version: (*start_version).into(),
-                authenticator: Box::new(Authenticator::SingleOwner(
-                    authenticator.as_single_owner().to_inner().into(),
-                )),
+                authenticator: Box::new(Authenticator::SingleOwner(owner.to_inner().into())),
             },
         },
         previous_transaction: Digest(object.previous_transaction.into_inner().into()),
@@ -279,7 +276,7 @@ fn convert_type_tag(tag: sui_sdk::types::TypeTag) -> TypeTag {
     }
 }
 
-fn convert_struct_tag(tag: move_core_types::language_storage::StructTag) -> StructTag {
+fn convert_struct_tag(tag: move_core_types_sui::language_storage::StructTag) -> StructTag {
     StructTag {
         address: tag.address.into_bytes().into(),
         module: tag.module.into_string(),

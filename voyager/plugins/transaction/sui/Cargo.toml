@@ -32,5 +32,5 @@ tokio               = { workspace = true }
 tracing             = { workspace = true }
 ucs03-zkgm          = { workspace = true, features = ["library"] }
 unionlabs           = { workspace = true }
-voyager-message     = { workspace = true }
+voyager-sdk         = { workspace = true }
 voyager-vm          = { workspace = true }

@@ -13,7 +13,7 @@ use jsonrpsee::{
     types::ErrorObject,
     Extensions,
 };
-use move_core_types::{
+use move_core_types_sui::{
     account_address::AccountAddress,
     ident_str,
     identifier::Identifier as MoveIdentifier,
@@ -22,7 +22,7 @@ use move_core_types::{
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
 use shared_crypto::intent::{Intent, IntentMessage};
-use sui_json_rpc_api::MoveUtilsClient;
+// use sui_json_rpc_api::MoveUtilsClient;
 use sui_sdk::{
     rpc_types::{
         ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
@@ -44,22 +44,19 @@ use sui_sdk::{
 use tracing::{info, instrument};
 use ucs03_zkgm::com::{FungibleAssetOrder, ZkgmPacket};
 use unionlabs::{
-    encoding::{DecodeAs, EthAbi},
-    primitives::{
-        encoding::{HexPrefixed, HexUnprefixed},
-        Bytes, U256,
-    },
+    primitives::{encoding::HexPrefixed, Bytes, U256},
     ErrorReporter,
 };
-use voyager_message::{
-    data::Data,
+use voyager_sdk::{
+    anyhow,
     hook::SubmitTxHook,
-    module::{PluginInfo, PluginServer},
+    message::{data::Data, PluginMessage, VoyagerMessage},
+    plugin::Plugin,
     primitives::ChainId,
+    rpc::{types::PluginInfo, PluginServer},
     vm::{call, noop, pass::PassResult, Op, Visit},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage,
+    DefaultCmd,
 };
-use voyager_vm::BoxDynError;
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
 
@@ -117,7 +114,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let sui_client = SuiClientBuilder::default().build(&config.rpc_url).await?;
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
@@ -677,12 +674,11 @@ async fn register_token_if_zkgm(
     module_info: &ModuleInfo,
     store_initial_seq: SequenceNumber,
 ) {
-    let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data, true) else {
+    let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data) else {
         return;
     };
 
-    let Ok(fao) = FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand, true)
-    else {
+    let Ok(fao) = FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand) else {
         return;
     };
 
