@@ -8,6 +8,7 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
 import type { Channel, Token } from "@unionlabs/sdk/schema"
+import type { Fees } from "@unionlabs/sdk/schema/fee"
 import { Array as A, Effect, Either, Match, Option, pipe } from "effect"
 import { type Address, fromHex, type Hex } from "viem"
 
@@ -111,6 +112,13 @@ export class TransferData {
       ),
     ),
   )
+
+  // TODO: make schema for indexed element
+  fees = $derived<Option.Option<A.NonEmptyReadonlyArray<Fees[0]>>>(pipe(
+    this.channel,
+    Option.map(x => x.fees),
+    Option.flatMap((x) => Option.liftPredicate(x, (x) => A.isNonEmptyReadonlyArray(x))),
+  ))
 
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(
