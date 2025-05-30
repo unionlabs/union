@@ -22,7 +22,7 @@ serde                = { workspace = true, optional = true, features = ["derive"
 serde_repr           = { version = "0.1.20", optional = true }
 serde_with           = { workspace = true, features = ["macros", "json"] }
 thiserror            = { workspace = true }
-typenum              = { version = "1.17.0", default-features = false }
+typenum              = { workspace = true }
 unionlabs            = { workspace = true }
 unionlabs-primitives = { workspace = true, features = ["base58"] }
 

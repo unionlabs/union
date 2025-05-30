@@ -1,9 +1,8 @@
 use enumorph::Enumorph;
 use macros::model;
-use sui_light_client_types::U64;
-use unionlabs::ibc;
-use unionlabs::{primitives::Bytes, tuple::AsTuple};
 use serde::Deserialize;
+use sui_light_client_types::U64;
+use unionlabs::{ibc, primitives::Bytes, tuple::AsTuple};
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CreateClient {
@@ -95,7 +94,6 @@ pub struct Packet {
     pub timeout_timestamp: U64,
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct PacketSend {
     pub channel_id: u32,
@@ -103,7 +101,6 @@ pub struct PacketSend {
 
     pub packet: Packet,
 }
-
 
 #[model]
 #[derive(Enumorph)]
@@ -120,7 +117,6 @@ pub enum IbcEvent {
     ChannelOpenConfirm(ChannelOpenConfirm),
     // WriteAcknowledgement(ibc::WriteAck),
     // RecvPacket(ibc::PacketRecv),
-    PacketSend(PacketSend)
-    // AcknowledgePacket(ibc::PacketAck),
-    // TimeoutPacket(ibc::TimeoutPacket),
+    PacketSend(PacketSend), // AcknowledgePacket(ibc::PacketAck),
+                            // TimeoutPacket(ibc::TimeoutPacket),
 }
