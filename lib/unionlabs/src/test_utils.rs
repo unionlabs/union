@@ -3,6 +3,8 @@ use core::{
     str::FromStr,
 };
 
+use unionlabs_primitives::Bytes;
+
 use crate::encoding::{Decode, DecodeAs, Encode, EncodeAs, Encoding, Proto};
 
 #[track_caller]
@@ -52,5 +54,5 @@ where
 {
     assert_eq!(T::decode_as::<E>(bz).unwrap(), t.clone());
 
-    assert_eq!(t.clone().encode_as::<E>(), bz);
+    assert_eq!(<Bytes>::from(t.clone().encode_as::<E>()), <Bytes>::from(bz));
 }

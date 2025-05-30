@@ -15,6 +15,7 @@ macro_rules! wrapper_enum {
         #[serde(rename_all = "snake_case")]
         $(#[$meta])*
         #[cfg_attr(feature = "schemars", derive(::schemars::JsonSchema))]
+        #[repr(i32)]
         pub enum $Enum {
             $(
                 $(#[$inner_meta])*

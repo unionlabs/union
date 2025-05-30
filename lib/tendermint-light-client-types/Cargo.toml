@@ -29,5 +29,6 @@ serde   = ["dep:serde"]
 
 [dev-dependencies]
 hex-literal                   = { workspace = true }
+ics23                         = { workspace = true }
 tendermint-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde", "proto"] }
 unionlabs                     = { workspace = true, features = ["test-utils"] }
