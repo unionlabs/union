@@ -33,3 +33,4 @@ fastcrypto    = { git = "https://github.com/MystenLabs/fastcrypto", rev = "69d49
 hex-literal   = { workspace = true }
 shared-crypto = { git = "https://github.com/MystenLabs/sui" }
 sui_sdk       = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+sui_json_rpc_api       = { git = "https://github.com/mystenlabs/sui", package = "sui-json-rpc-api" }

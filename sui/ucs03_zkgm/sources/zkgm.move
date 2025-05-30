@@ -71,6 +71,7 @@ module zkgm::zkgm_relay {
     use zkgm::fungible_asset_order_ack::{Self};
     use zkgm::acknowledgement::{Self};
     use zkgm::zkgm_ethabi;
+    use sui::clock::Clock;
     
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 
@@ -653,7 +654,8 @@ module zkgm::zkgm_relay {
             relayer_msg,
             proof,
             proof_height,
-            acks
+            acks,
+            IbcAppWitness {}
         );
     }
 
@@ -996,6 +998,7 @@ module zkgm::zkgm_relay {
     public entry fun send<T>(
         ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
+        clock: &Clock,
         mut coin: Coin<T>,
         metadata: &CoinMetadata<T>,
         channel_id: u32,
@@ -1014,10 +1017,12 @@ module zkgm::zkgm_relay {
         let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
         ibc::send_packet(
             ibc_store,
+            clock,
             channel_id,
             timeout_height,
             timeout_timestamp,
-            zkgm_packet::encode(&zkgm_pack)
+            zkgm_packet::encode(&zkgm_pack),
+            IbcAppWitness {}
         );
     }
     fun verify_internal<T>(
@@ -1239,7 +1244,8 @@ module zkgm::zkgm_relay {
             acknowledgements,
             proof,
             proof_height,
-            relayer
+            relayer,
+            IbcAppWitness {}
         );
 
         let mut i = 0;
@@ -1254,7 +1260,8 @@ module zkgm::zkgm_relay {
                     ibc::write_acknowledgement(
                         ibc_store,
                         *parent,
-                        acknowledgement
+                        acknowledgement,
+                        IbcAppWitness {}
                     );
                     add_or_update_table<vector<u8>, Packet>(
                         &mut relay_store.in_flight_packet,
@@ -1453,7 +1460,7 @@ module zkgm::zkgm_relay {
         if (packet::timeout_timestamp(parent) != 0 ||
             packet::timeout_height(parent) != 0) {
                 let ack = acknowledgement::new(ACK_FAILURE, ACK_EMPTY);
-                ibc::write_acknowledgement(ibc_store, *parent, acknowledgement::encode(&ack));
+                ibc::write_acknowledgement(ibc_store, *parent, acknowledgement::encode(&ack), IbcAppWitness {});
                 add_or_update_table<vector<u8>, Packet>(
                     &mut relay_store.in_flight_packet,
                     packet_hash,
