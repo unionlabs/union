@@ -1,0 +1,38 @@
+{
+  "name": "@unionlabs/eslint-config",
+  "version": "1.9.9",
+  "type": "module",
+  "license": "MIT",
+  "author": "@unionlabs",
+  "description": "Union ESLint Configuration",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/unionlabs/union.git",
+    "directory": "eslint-config-union"
+  },
+  "main": "src/index.ts",
+  "peerDependencies": {
+    "eslint": "^9.24.0",
+    "eslint-plugin-svelte": "^3.5.1",
+    "typescript": ">=5.8.2"
+  },
+  "peerDependenciesMeta": {
+    "@sveltejs/kit": {
+      "optional": true
+    },
+    "eslint-plugin-svelte": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@sveltejs/kit": "^2",
+    "eslint": "^9.27.0",
+    "eslint-plugin-svelte": "^3.9.0",
+    "globals": "^16.0.0",
+    "typescript": ">=5.8.2"
+  },
+  "dependencies": {
+    "@eslint/js": "^9.27.0",
+    "typescript-eslint": "^8.32.1"
+  }
+}

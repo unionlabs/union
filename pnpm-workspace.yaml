@@ -2,6 +2,7 @@ packages:
   - 'ts-sdk'
   - 'typescript-sdk'
   - 'app2'
+  - 'eslint-config-union'
 
 # Prevent dependencies from being hoisted
 neverHoist:
