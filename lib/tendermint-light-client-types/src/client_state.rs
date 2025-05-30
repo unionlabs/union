@@ -51,12 +51,13 @@ pub mod proto {
                 trusting_period: Some(value.trusting_period.into()),
                 unbonding_period: Some(value.unbonding_period.into()),
                 max_clock_drift: Some(value.max_clock_drift.into()),
-                frozen_height: value.frozen_height.map(Into::into),
+                frozen_height: Some(value.frozen_height.unwrap_or_default().into()),
                 latest_height: Some(value.latest_height.into()),
                 proof_specs: value.proof_specs.into_iter().map(Into::into).collect(),
                 upgrade_path: value.upgrade_path,
-                allow_update_after_expiry: Default::default(),
-                allow_update_after_misbehaviour: Default::default(),
+                // these are default true: https://github.com/cosmos/ibc-go/blob/main/docs/architecture/adr-026-ibc-client-recovery-mechanisms.md#decision
+                allow_update_after_expiry: true,
+                allow_update_after_misbehaviour: true,
             }
         }
     }
@@ -97,7 +98,7 @@ pub mod proto {
                 max_clock_drift: required!(value.max_clock_drift)?
                     .try_into()
                     .map_err(Error::TrustingPeriod)?,
-                frozen_height: value.frozen_height.map(Into::into),
+                frozen_height: Some(value.frozen_height.unwrap_or_default().into()),
                 latest_height: required!(value.latest_height)?.into(),
                 proof_specs: value
                     .proof_specs
@@ -117,13 +118,16 @@ pub mod proto {
 mod tests {
     use std::num::NonZeroU64;
 
+    use hex_literal::hex;
+    use ics23::ibc_api::SDK_SPECS;
     use unionlabs::{
         cosmos::ics23::{
             hash_op::HashOp, inner_spec::InnerSpec, leaf_op::LeafOp, length_op::LengthOp,
         },
         encoding::{Bincode, Json, Proto},
+        google::protobuf::any::Any,
         primitives::Bytes,
-        test_utils::assert_codec_iso,
+        test_utils::{assert_codec_iso, assert_codec_iso_bytes},
     };
 
     use super::*;
@@ -179,5 +183,185 @@ mod tests {
     #[test]
     fn proto_iso() {
         assert_codec_iso::<_, Proto>(&mk_client_state());
+    }
+
+    #[test]
+    fn bincode_bytes_iso() {
+        // voyager rpc client-state union-testnet-10 6 --height 1206751
+        let bz = hex!(
+            "0a00000000000000" "62626e2d746573742d35" // chain_id
+            "0100000000000000" "0300000000000000" // trust_level
+            "0030e25c622e00000000000000000000" // trusting_period
+            "00c0afd6913600000000000000000000" // unbonding_period
+            "0070c9b28b0000000000000000000000" // max_clock_drift
+            "00" // frozen_height
+            "01" "0500000000000000" "19bf100000000000" // latest_height
+
+            "0200000000000000" // proof_specs
+
+            // leaf_spec
+            "01000000" // hash
+            "00000000" // prehash_key
+            "01000000" // prehash_value
+            "01000000" // length
+            "0100000000000000" "00" // prefix
+            // inner_spec
+            "0200000000000000" "0000000000000000" "0100000000000000" // child_order
+            "2100000000000000" // child_size
+            "0400000000000000" // min_prefix_length
+            "0c00000000000000" // max_prefix_length
+            "0000000000000000" // empty_child
+            "01000000" // hash
+            "00" // max_depth
+            "00" // min_depth
+            "00" // prehash_key_before_comparison
+
+            // leaf_spec
+            "01000000" // hash
+            "00000000" // prehash_key
+            "01000000" // prehash_value
+            "01000000" // length
+            "0100000000000000" "00" // prefix
+            // inner_spec
+            "0200000000000000" "0000000000000000" "0100000000000000" // child_order
+            "2000000000000000" // child_size
+            "0100000000000000" // min_prefix_length
+            "0100000000000000" // max_prefix_length
+            "0000000000000000" // empty_child
+            "01000000" // hash
+            "00" // max_depth
+            "00" // min_depth
+            "00" // prehash_key_before_comparison
+
+            "0200000000000000" // upgrade_path
+            "0700000000000000" "75706772616465"
+            "1000000000000000" "75706772616465644942435374617465"
+            "bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4" // contract_address
+        );
+
+        assert_codec_iso_bytes::<_, Bincode>(
+            &ClientState {
+                chain_id: "bbn-test-5".to_string(),
+                trust_level: Fraction {
+                    numerator: 1,
+                    denominator: NonZeroU64::new(3).unwrap(),
+                },
+                trusting_period: Duration::new(51000, 0).unwrap(),
+                unbonding_period: Duration::new(60000, 0).unwrap(),
+                max_clock_drift: Duration::new(600, 0).unwrap(),
+                frozen_height: None,
+                latest_height: Height::new_with_revision(5, 1097497),
+                proof_specs: SDK_SPECS.to_vec(),
+                upgrade_path: ["upgrade".to_owned(), "upgradedIBCState".to_owned()].to_vec(),
+                contract_address: hex!(
+                    "bcf923a74d8b8914e0235d28c6b59e62b547af5ce366c6aafcb006bce7bb3ba4"
+                )
+                .into(),
+            },
+            &bz,
+        );
+    }
+
+    #[test]
+    fn proto_bytes_iso() {
+        // voyager rpc client-state xion-testnet-2 "07-tendermint-1" --ibc-spec-id ibc-classic --height 4083948
+        // ibc-classic wraps all states in Any
+        // format below is (field number, field value)
+        let bz = hex!(
+            // type_url
+            "0a" "2b" "2f6962632e6c69676874636c69656e74732e74656e6465726d696e742e76312e436c69656e745374617465"
+            // value
+            "12" "7f"
+
+            "0a" "07" "6772616e642d31" // chain_id
+
+            "12" "04"                  // trust_level
+                "08" "02"              // numerator
+                "10" "03"              // denominator
+
+            "1a" "04"                  // trusting_period
+                "08" "80ea49"          // seconds
+                                       // nanos (omitted)
+
+            "22" "04"                  // unbonding_period
+                "08" "80df6e"          // seconds
+                                       // nanos (omitted)
+
+            "2a" "02"                  // max_clock_drift
+                "08" "28"              // seconds
+                                       // nanos (omitted)
+
+            "32" "00"                  // frozen_height (empty struct, NOT omitted!)
+
+            "3a" "07"                  // latest_height
+                "08" "01"              // revision_number
+                "10" "f4d28c0c"        // revision_height
+
+            "42" "19"                   // proof_specs
+                "0a" "09"               // leaf_spec
+                    "08" "01"           // hash
+                                        // prehash_key (omitted)
+                    "18" "01"           // prehash_value
+                    "20" "01"           // length
+                    "2a" "01" "00"      // prefix
+
+                "12" "0c"               // inner_spec
+                    "0a" "02" "00" "01" // child_order
+                    "10" "21"           // child_size
+                    "18" "04"           // min_prefix_length
+                    "20" "0c"           // max_prefix_length
+                                        // empty_child (omitted)
+                    "30" "01"           // hash
+                                        // max_depth (omitted)
+                                        // min_depth (omitted)
+                                        // prehash_key_before_comparison (omitted)
+            "42" "19"
+                "0a" "09"               // leaf_spec
+                    "08" "01"           // hash
+                                        // prehash_key (omitted)
+                    "18" "01"           // prehash_value
+                    "20" "01"           // length
+                    "2a" "01" "00"      // prefix
+
+                "12" "0c"               // inner_spec
+                    "0a" "02" "00" "01" // child_order
+                    "10" "20"           // child_size
+                    "18" "01"           // min_prefix_length
+                    "20" "01"           // max_prefix_length
+                                        // empty_child (omitted)
+                    "30" "01"           // hash
+                                        // max_depth (omitted)
+                                        // min_depth (omitted)
+                                        // prehash_key_before_comparison (omitted)
+
+            // upgrade_path
+            "4a" "07" "75706772616465"
+            "4a" "10" "75706772616465644942435374617465"
+
+            "50" "01" // allow_update_after_expiry
+            "58" "01" // allow_update_after_misbehaviour
+        );
+
+        assert_codec_iso_bytes::<_, Proto>(
+            &Any(ClientState {
+                chain_id: "grand-1".to_string(),
+                trust_level: Fraction {
+                    numerator: 2,
+                    denominator: NonZeroU64::new(3).unwrap(),
+                },
+                trusting_period: Duration::new(1209600, 0).unwrap(),
+                unbonding_period: Duration::new(1814400, 0).unwrap(),
+                max_clock_drift: Duration::new(40, 0).unwrap(),
+                frozen_height: Some(Height::default()),
+                latest_height: Height::new_with_revision(1, 25373044),
+                proof_specs: SDK_SPECS.to_vec(),
+                upgrade_path: ["upgrade".to_owned(), "upgradedIBCState".to_owned()].to_vec(),
+                contract_address: hex!(
+                    "0000000000000000000000000000000000000000000000000000000000000000"
+                )
+                .into(),
+            }),
+            &bz,
+        );
     }
 }

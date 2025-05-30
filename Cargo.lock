@@ -13408,6 +13408,7 @@ dependencies = [
  "bincode 2.0.1",
  "cometbft-types",
  "hex-literal",
+ "ics23",
  "protos",
  "serde",
  "tendermint-light-client-types",
