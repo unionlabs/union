@@ -111,7 +111,7 @@
         bundle-union-1 = mkBundle {
           name = "union-1";
           versions = uniondBundleVersions.complete;
-          genesis = ../networks/genesis/union-testnet-9/genesis.json;
+          genesis = ../networks/genesis/union-testnet-10/genesis.json;
           meta = {
             binary_name = "uniond";
             versions_directory = "versions";
@@ -136,7 +136,7 @@
           name = "union-1-next";
           versions = uniondBundleVersions.complete;
           nextVersion = "v1.1.0";
-          genesis = ../networks/genesis/union-testnet-9/genesis.json;
+          genesis = ../networks/genesis/union-testnet-10/genesis.json;
           meta = {
             binary_name = "uniond";
             versions_directory = "versions";
