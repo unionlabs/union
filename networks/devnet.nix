@@ -229,11 +229,15 @@
             --poll-interval 1000 \
             -- \
             $$params \
-            --rpc.laddr tcp://0.0.0.0:26657 \
-            --api.enable true \
-            --rpc.unsafe \
             --api.address tcp://0.0.0.0:1317 \
-            --grpc.address 0.0.0.0:9090
+            --api.enable true \
+            --api.rpc-max-body-bytes 100000000 \
+            --grpc.address 0.0.0.0:9090 \
+            --log_level rpc-server:warn,x/wasm:debug,*:info \
+            --minimum-gas-prices     "0muno" \
+            --rpc.laddr tcp://0.0.0.0:26657 \
+            --rpc.pprof_laddr        0.0.0.0:6060 \
+            --rpc.unsafe 
         '';
       };
 
