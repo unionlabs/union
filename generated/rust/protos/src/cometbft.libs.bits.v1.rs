@@ -1,7 +1,6 @@
-// @generated
 /// BitArray is an array of bits.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct BitArray {
     #[prost(int64, tag = "1")]
     pub bits: i64,
@@ -15,4 +14,3 @@ impl ::prost::Name for BitArray {
         ::prost::alloc::format!("cometbft.libs.bits.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

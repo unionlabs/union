@@ -1,9 +1,8 @@
-// @generated
 /// FungibleTokenPacketData defines a struct for the packet payload
 /// See FungibleTokenPacketData spec:
 /// <https://github.com/cosmos/ibc/tree/master/spec/app/ics-020-fungible-token-transfer#data-structures>
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct FungibleTokenPacketData {
     /// the token denomination to be transferred
     #[prost(string, tag = "1")]
@@ -28,4 +27,3 @@ impl ::prost::Name for FungibleTokenPacketData {
         ::prost::alloc::format!("ibc.applications.transfer.v2.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

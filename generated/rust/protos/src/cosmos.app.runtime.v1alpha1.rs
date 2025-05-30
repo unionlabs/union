@@ -1,7 +1,6 @@
-// @generated
 /// Module is the config object for the runtime module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Module {
     /// app_name is the name of the app.
     #[prost(string, tag = "1")]
@@ -51,17 +50,10 @@ pub struct Module {
     #[prost(string, repeated, tag = "10")]
     pub pre_blockers: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
-impl ::prost::Name for Module {
-    const NAME: &'static str = "Module";
-    const PACKAGE: &'static str = "cosmos.app.runtime.v1alpha1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.app.runtime.v1alpha1.{}", Self::NAME)
-    }
-}
 /// StoreKeyConfig may be supplied to override the default module store key, which
 /// is the module name.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct StoreKeyConfig {
     /// name of the module to override the store key of
     #[prost(string, tag = "1")]
@@ -70,6 +62,13 @@ pub struct StoreKeyConfig {
     #[prost(string, tag = "2")]
     pub kv_store_key: ::prost::alloc::string::String,
 }
+impl ::prost::Name for Module {
+    const NAME: &'static str = "Module";
+    const PACKAGE: &'static str = "cosmos.app.runtime.v1alpha1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.app.runtime.v1alpha1.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for StoreKeyConfig {
     const NAME: &'static str = "StoreKeyConfig";
     const PACKAGE: &'static str = "cosmos.app.runtime.v1alpha1";
@@ -77,4 +76,3 @@ impl ::prost::Name for StoreKeyConfig {
         ::prost::alloc::format!("cosmos.app.runtime.v1alpha1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

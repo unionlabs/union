@@ -1,7 +1,6 @@
-// @generated
 /// Module is the config object of the crisis module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Module {
     /// fee_collector_name is the name of the FeeCollector ModuleAccount.
     #[prost(string, tag = "1")]
@@ -17,4 +16,3 @@ impl ::prost::Name for Module {
         ::prost::alloc::format!("cosmos.crisis.module.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

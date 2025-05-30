@@ -1,11 +1,64 @@
-// @generated
+/// ConsumerGenesisState defines shared genesis information between provider and
+/// consumer
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ConsumerGenesisState {
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<ConsumerParams>,
+    #[prost(message, optional, tag = "2")]
+    pub provider: ::core::option::Option<ProviderInfo>,
+    /// True for new chain, false for chain restart.
+    /// This is needed and always set to true; otherwise, new_chain in the consumer
+    /// genesis state will default to false
+    #[prost(bool, tag = "3")]
+    pub new_chain: bool,
+    /// Flag indicating whether the consumer CCV module starts in pre-CCV state
+    #[prost(bool, tag = "4")]
+    pub pre_ccv: bool,
+    /// The ID of the connection end on the consumer chain on top of which the
+    /// CCV channel will be established. If connection_id == "", a new client of
+    /// the provider chain and a new connection on top of this client are created.
+    /// The new client is initialized using client_state and consensus_state.
+    #[prost(string, tag = "5")]
+    pub connection_id: ::prost::alloc::string::String,
+}
+/// ConsumerPacketData contains a consumer packet data and a type tag
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ConsumerPacketData {
+    #[prost(enumeration = "ConsumerPacketDataType", tag = "1")]
+    pub r#type: i32,
+    #[prost(oneof = "consumer_packet_data::Data", tags = "2, 3")]
+    pub data: ::core::option::Option<consumer_packet_data::Data>,
+}
+/// ConsumerPacketData contains a consumer packet data and a type tag
+/// that is compatible with ICS v1 and v2 over the wire. It is not used for internal storage.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ConsumerPacketDataV1 {
+    #[prost(enumeration = "ConsumerPacketDataType", tag = "1")]
+    pub r#type: i32,
+    #[prost(oneof = "consumer_packet_data_v1::Data", tags = "2, 3")]
+    pub data: ::core::option::Option<consumer_packet_data_v1::Data>,
+}
+/// ConsumerPacketType indicates interchain security specific packet types.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, :: prost :: Enumeration)]
+#[repr(i32)]
+pub enum ConsumerPacketDataType {
+    /// UNSPECIFIED packet type
+    ConsumerPacketTypeUnspecified = 0,
+    /// Slash packet
+    ConsumerPacketTypeSlash = 1,
+    /// VSCMatured packet
+    ConsumerPacketTypeVscm = 2,
+}
 /// ConsumerParams defines the parameters for CCV consumer module.
 ///
 /// Note this type is referenced in both the consumer and provider CCV modules,
 /// and persisted on the provider, see MakeConsumerGenesis and
 /// SetConsumerGenesis.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ConsumerParams {
     /// TODO: Remove enabled flag and find a better way to setup integration tests
     /// See: <https://github.com/cosmos/interchain-security/issues/339>
@@ -67,48 +120,54 @@ pub struct ConsumerParams {
     #[prost(string, tag = "14")]
     pub consumer_id: ::prost::alloc::string::String,
 }
-impl ::prost::Name for ConsumerParams {
-    const NAME: &'static str = "ConsumerParams";
-    const PACKAGE: &'static str = "interchain_security.ccv.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
+/// InfractionType indicates the infraction type a validator committed.
+/// Note ccv.InfractionType to maintain compatibility between ICS versions
+/// using different versions of the cosmos-sdk and ibc-go modules.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, :: prost :: Enumeration)]
+#[repr(i32)]
+pub enum InfractionType {
+    /// UNSPECIFIED defines an empty infraction type.
+    Unspecified = 0,
+    /// DOUBLE_SIGN defines a validator that double-signs a block.
+    DoubleSign = 1,
+    /// DOWNTIME defines a validator that missed signing too many blocks.
+    Downtime = 2,
+}
+/// Nested message and enum types in `ConsumerPacketDataV1`.
+pub mod consumer_packet_data_v1 {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, :: prost :: Oneof)]
+    pub enum Data {
+        #[prost(message, tag = "2")]
+        SlashPacketData(super::SlashPacketDataV1),
+        #[prost(message, tag = "3")]
+        VscMaturedPacketData(super::VscMaturedPacketData),
     }
 }
-/// ConsumerGenesisState defines shared genesis information between provider and
-/// consumer
+/// Nested message and enum types in `ConsumerPacketData`.
+pub mod consumer_packet_data {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, :: prost :: Oneof)]
+    pub enum Data {
+        #[prost(message, tag = "2")]
+        SlashPacketData(super::SlashPacketData),
+        #[prost(message, tag = "3")]
+        VscMaturedPacketData(super::VscMaturedPacketData),
+    }
+}
+/// Note this type is used during IBC handshake methods for both the consumer and provider
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsumerGenesisState {
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<ConsumerParams>,
-    #[prost(message, optional, tag = "2")]
-    pub provider: ::core::option::Option<ProviderInfo>,
-    /// True for new chain, false for chain restart.
-    /// This is needed and always set to true; otherwise, new_chain in the consumer
-    /// genesis state will default to false
-    #[prost(bool, tag = "3")]
-    pub new_chain: bool,
-    /// Flag indicating whether the consumer CCV module starts in pre-CCV state
-    #[prost(bool, tag = "4")]
-    pub pre_ccv: bool,
-    /// The ID of the connection end on the consumer chain on top of which the
-    /// CCV channel will be established. If connection_id == "", a new client of
-    /// the provider chain and a new connection on top of this client are created.
-    /// The new client is initialized using client_state and consensus_state.
-    #[prost(string, tag = "5")]
-    pub connection_id: ::prost::alloc::string::String,
-}
-impl ::prost::Name for ConsumerGenesisState {
-    const NAME: &'static str = "ConsumerGenesisState";
-    const PACKAGE: &'static str = "interchain_security.ccv.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
-    }
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct HandshakeMetadata {
+    #[prost(string, tag = "1")]
+    pub provider_fee_pool_addr: ::prost::alloc::string::String,
+    #[prost(string, tag = "2")]
+    pub version: ::prost::alloc::string::String,
 }
 /// ProviderInfo defines all information a consumer needs from a provider
 /// Shared data type between provider and consumer
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ProviderInfo {
     /// The client state for the provider client filled in on new chain, nil on restart.
     /// If connection_id != "", then client_state is ignored.
@@ -126,20 +185,13 @@ pub struct ProviderInfo {
     pub initial_val_set:
         ::prost::alloc::vec::Vec<super::super::super::tendermint::abci::ValidatorUpdate>,
 }
-impl ::prost::Name for ProviderInfo {
-    const NAME: &'static str = "ProviderInfo";
-    const PACKAGE: &'static str = "interchain_security.ccv.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
-    }
-}
 /// This packet is sent from provider chain to consumer chain if the validator
 /// set for consumer chain changes (due to new bonding/unbonding messages or
 /// slashing events) A VSCMatured packet from consumer chain will be sent
 /// asynchronously once unbonding period is over, and this will function as
 /// `UnbondingOver` message for this packet.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ValidatorSetChangePacketData {
     #[prost(message, repeated, tag = "1")]
     pub validator_updates:
@@ -151,34 +203,34 @@ pub struct ValidatorSetChangePacketData {
     #[prost(string, repeated, tag = "3")]
     pub slash_acks: ::prost::alloc::vec::Vec<::prost::alloc::string::String>,
 }
-impl ::prost::Name for ValidatorSetChangePacketData {
-    const NAME: &'static str = "ValidatorSetChangePacketData";
-    const PACKAGE: &'static str = "interchain_security.ccv.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
-    }
+/// This packet is sent from the consumer chain to the provider chain
+/// It is backward compatible with the ICS v1 and v2 version of the packet.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct SlashPacketDataV1 {
+    #[prost(message, optional, tag = "1")]
+    pub validator: ::core::option::Option<super::super::super::tendermint::abci::Validator>,
+    /// map to the infraction block height on the provider
+    #[prost(uint64, tag = "2")]
+    pub valset_update_id: u64,
+    /// tell if the slashing is for a downtime or a double-signing infraction
+    #[prost(enumeration = "InfractionType", tag = "3")]
+    pub infraction: i32,
 }
 /// This packet is sent from the consumer chain to the provider chain
 /// to notify that a VSC packet reached maturity on the consumer chain.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct VscMaturedPacketData {
     /// the id of the VSC packet that reached maturity
     #[prost(uint64, tag = "1")]
     pub valset_update_id: u64,
 }
-impl ::prost::Name for VscMaturedPacketData {
-    const NAME: &'static str = "VSCMaturedPacketData";
-    const PACKAGE: &'static str = "interchain_security.ccv.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
-    }
-}
 /// This packet is sent from the consumer chain to the provider chain
 /// to request the slashing of a validator as a result of an infraction
 /// committed on the consumer chain.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct SlashPacketData {
     #[prost(message, optional, tag = "1")]
     pub validator: ::core::option::Option<super::super::super::tendermint::abci::Validator>,
@@ -192,31 +244,11 @@ pub struct SlashPacketData {
     )]
     pub infraction: i32,
 }
-impl ::prost::Name for SlashPacketData {
-    const NAME: &'static str = "SlashPacketData";
+impl ::prost::Name for ConsumerGenesisState {
+    const NAME: &'static str = "ConsumerGenesisState";
     const PACKAGE: &'static str = "interchain_security.ccv.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
-    }
-}
-/// ConsumerPacketData contains a consumer packet data and a type tag
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsumerPacketData {
-    #[prost(enumeration = "ConsumerPacketDataType", tag = "1")]
-    pub r#type: i32,
-    #[prost(oneof = "consumer_packet_data::Data", tags = "2, 3")]
-    pub data: ::core::option::Option<consumer_packet_data::Data>,
-}
-/// Nested message and enum types in `ConsumerPacketData`.
-pub mod consumer_packet_data {
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Data {
-        #[prost(message, tag = "2")]
-        SlashPacketData(super::SlashPacketData),
-        #[prost(message, tag = "3")]
-        VscMaturedPacketData(super::VscMaturedPacketData),
     }
 }
 impl ::prost::Name for ConsumerPacketData {
@@ -226,14 +258,19 @@ impl ::prost::Name for ConsumerPacketData {
         ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
     }
 }
-/// Note this type is used during IBC handshake methods for both the consumer and provider
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct HandshakeMetadata {
-    #[prost(string, tag = "1")]
-    pub provider_fee_pool_addr: ::prost::alloc::string::String,
-    #[prost(string, tag = "2")]
-    pub version: ::prost::alloc::string::String,
+impl ::prost::Name for ConsumerPacketDataV1 {
+    const NAME: &'static str = "ConsumerPacketDataV1";
+    const PACKAGE: &'static str = "interchain_security.ccv.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ConsumerParams {
+    const NAME: &'static str = "ConsumerParams";
+    const PACKAGE: &'static str = "interchain_security.ccv.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for HandshakeMetadata {
     const NAME: &'static str = "HandshakeMetadata";
@@ -242,47 +279,19 @@ impl ::prost::Name for HandshakeMetadata {
         ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
     }
 }
-/// ConsumerPacketData contains a consumer packet data and a type tag
-/// that is compatible with ICS v1 and v2 over the wire. It is not used for internal storage.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsumerPacketDataV1 {
-    #[prost(enumeration = "ConsumerPacketDataType", tag = "1")]
-    pub r#type: i32,
-    #[prost(oneof = "consumer_packet_data_v1::Data", tags = "2, 3")]
-    pub data: ::core::option::Option<consumer_packet_data_v1::Data>,
-}
-/// Nested message and enum types in `ConsumerPacketDataV1`.
-pub mod consumer_packet_data_v1 {
-    #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Oneof)]
-    pub enum Data {
-        #[prost(message, tag = "2")]
-        SlashPacketData(super::SlashPacketDataV1),
-        #[prost(message, tag = "3")]
-        VscMaturedPacketData(super::VscMaturedPacketData),
-    }
-}
-impl ::prost::Name for ConsumerPacketDataV1 {
-    const NAME: &'static str = "ConsumerPacketDataV1";
+impl ::prost::Name for ProviderInfo {
+    const NAME: &'static str = "ProviderInfo";
     const PACKAGE: &'static str = "interchain_security.ccv.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
     }
 }
-/// This packet is sent from the consumer chain to the provider chain
-/// It is backward compatible with the ICS v1 and v2 version of the packet.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct SlashPacketDataV1 {
-    #[prost(message, optional, tag = "1")]
-    pub validator: ::core::option::Option<super::super::super::tendermint::abci::Validator>,
-    /// map to the infraction block height on the provider
-    #[prost(uint64, tag = "2")]
-    pub valset_update_id: u64,
-    /// tell if the slashing is for a downtime or a double-signing infraction
-    #[prost(enumeration = "InfractionType", tag = "3")]
-    pub infraction: i32,
+impl ::prost::Name for SlashPacketData {
+    const NAME: &'static str = "SlashPacketData";
+    const PACKAGE: &'static str = "interchain_security.ccv.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for SlashPacketDataV1 {
     const NAME: &'static str = "SlashPacketDataV1";
@@ -291,16 +300,19 @@ impl ::prost::Name for SlashPacketDataV1 {
         ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
     }
 }
-/// ConsumerPacketType indicates interchain security specific packet types.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum ConsumerPacketDataType {
-    /// UNSPECIFIED packet type
-    ConsumerPacketTypeUnspecified = 0,
-    /// Slash packet
-    ConsumerPacketTypeSlash = 1,
-    /// VSCMatured packet
-    ConsumerPacketTypeVscm = 2,
+impl ::prost::Name for ValidatorSetChangePacketData {
+    const NAME: &'static str = "ValidatorSetChangePacketData";
+    const PACKAGE: &'static str = "interchain_security.ccv.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for VscMaturedPacketData {
+    const NAME: &'static str = "VSCMaturedPacketData";
+    const PACKAGE: &'static str = "interchain_security.ccv.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("interchain_security.ccv.v1.{}", Self::NAME)
+    }
 }
 impl ConsumerPacketDataType {
     /// String value of the enum field names used in the ProtoBuf definition.
@@ -326,19 +338,6 @@ impl ConsumerPacketDataType {
         }
     }
 }
-/// InfractionType indicates the infraction type a validator committed.
-/// Note ccv.InfractionType to maintain compatibility between ICS versions
-/// using different versions of the cosmos-sdk and ibc-go modules.
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-#[repr(i32)]
-pub enum InfractionType {
-    /// UNSPECIFIED defines an empty infraction type.
-    Unspecified = 0,
-    /// DOUBLE_SIGN defines a validator that double-signs a block.
-    DoubleSign = 1,
-    /// DOWNTIME defines a validator that missed signing too many blocks.
-    Downtime = 2,
-}
 impl InfractionType {
     /// String value of the enum field names used in the ProtoBuf definition.
     ///
@@ -361,4 +360,3 @@ impl InfractionType {
         }
     }
 }
-// @@protoc_insertion_point(module)

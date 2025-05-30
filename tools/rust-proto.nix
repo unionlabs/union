@@ -348,6 +348,8 @@
           protoc-gen-tonic
           config.treefmt.build.programs.rustfmt
           pkgs.taplo
+          self'.packages.rustfmt-sort
+          pkgs.moreutils
         ] ++ (if pkgs.stdenv.isDarwin then [ pkgs.libiconv ] else [ ]);
         buildPhase = ''
           mkdir $out
@@ -382,6 +384,12 @@
           for i in $(find . -name "*.rs" -type f); do
             echo "[FORMAT] $i"
             rustfmt --config-path=${../rustfmt.toml} --config normalize_comments=true --edition "2021" "$i"
+
+            echo "[SORT] $i"
+            rustfmt-sort "$i" | sponge "$i"
+
+            echo "[FORMAT AGAIN] $i"
+            rustfmt --config-path=${../rustfmt.toml} --config normalize_doc_attributes=true --edition "2021" "$i"
           done
 
           taplo format --config=${../taplo.toml} ./Cargo.toml

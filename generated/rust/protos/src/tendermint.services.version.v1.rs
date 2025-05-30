@@ -1,16 +1,8 @@
-// @generated
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GetVersionRequest {}
-impl ::prost::Name for GetVersionRequest {
-    const NAME: &'static str = "GetVersionRequest";
-    const PACKAGE: &'static str = "tendermint.services.version.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("tendermint.services.version.v1.{}", Self::NAME)
-    }
-}
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GetVersionResponse {
     /// The semantic version of the node software.
     #[prost(string, tag = "1")]
@@ -25,6 +17,13 @@ pub struct GetVersionResponse {
     #[prost(uint64, tag = "4")]
     pub block: u64,
 }
+impl ::prost::Name for GetVersionRequest {
+    const NAME: &'static str = "GetVersionRequest";
+    const PACKAGE: &'static str = "tendermint.services.version.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("tendermint.services.version.v1.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for GetVersionResponse {
     const NAME: &'static str = "GetVersionResponse";
     const PACKAGE: &'static str = "tendermint.services.version.v1";
@@ -32,4 +31,3 @@ impl ::prost::Name for GetVersionResponse {
         ::prost::alloc::format!("tendermint.services.version.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

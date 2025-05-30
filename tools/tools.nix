@@ -25,6 +25,7 @@ _: {
           })
           u
           ;
+        inherit (crane.buildWorkspaceMember "tools/rustfmt-sort" { }) rustfmt-sort;
 
         ignite-cli = pkgs.buildGoModule {
           name = "ignite-cli";

@@ -1,7 +1,6 @@
-// @generated
 /// Module is the config object of the bank module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Module {
     /// blocked_module_accounts_override configures exceptional module accounts which should be blocked from receiving
     /// funds. If left empty it defaults to the list of account names supplied in the auth module configuration as
@@ -25,4 +24,3 @@ impl ::prost::Name for Module {
         ::prost::alloc::format!("cosmos.bank.module.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

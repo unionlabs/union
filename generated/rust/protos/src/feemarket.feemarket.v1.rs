@@ -1,8 +1,65 @@
-// @generated
+/// GasPriceRequest is the request type for the Query/GasPrice RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GasPriceRequest {
+    /// denom we are querying gas price in
+    #[prost(string, tag = "1")]
+    pub denom: ::prost::alloc::string::String,
+}
+/// GasPriceRequest is the request type for the Query/GasPrices RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GasPricesRequest {}
+/// GasPriceResponse is the response type for the Query/GasPrice RPC method.
+/// Returns a gas price in specified denom.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GasPriceResponse {
+    #[prost(message, optional, tag = "1")]
+    pub price: ::core::option::Option<super::super::super::cosmos::base::v1beta1::DecCoin>,
+}
+/// GasPricesResponse is the response type for the Query/GasPrices RPC method.
+/// Returns a gas price in all available denoms.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GasPricesResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub prices: ::prost::alloc::vec::Vec<super::super::super::cosmos::base::v1beta1::DecCoin>,
+}
+/// GenesisState defines the feemarket module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GenesisState {
+    /// Params are the parameters for the feemarket module. These parameters
+    /// can be utilized to implement both the base EIP-1559 fee market and
+    /// and the AIMD EIP-1559 fee market.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+    /// State contains the current state of the AIMD fee market.
+    #[prost(message, optional, tag = "2")]
+    pub state: ::core::option::Option<State>,
+}
+/// MsgParams defines the Msg/Params request type. It contains the
+/// new parameters for the feemarket module.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct MsgParams {
+    /// Params defines the new parameters for the feemarket module.
+    #[prost(message, optional, tag = "1")]
+    pub params: ::core::option::Option<Params>,
+    /// Authority defines the authority that is updating the feemarket module
+    /// parameters.
+    #[prost(string, tag = "2")]
+    pub authority: ::prost::alloc::string::String,
+}
+/// MsgParamsResponse defines the Msg/Params response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct MsgParamsResponse {}
 /// Params contains the required set of parameters for the EIP1559 fee market
 /// plugin implementation.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Params {
     /// Alpha is the amount we additively increase the learning rate
     /// when it is above or below the target +/- threshold.
@@ -58,38 +115,22 @@ pub struct Params {
     #[prost(bool, tag = "12")]
     pub distribute_fees: bool,
 }
-impl ::prost::Name for Params {
-    const NAME: &'static str = "Params";
-    const PACKAGE: &'static str = "feemarket.feemarket.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
-    }
-}
-/// GenesisState defines the feemarket module's genesis state.
+/// ParamsRequest is the request type for the Query/Params RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    /// Params are the parameters for the feemarket module. These parameters
-    /// can be utilized to implement both the base EIP-1559 fee market and
-    /// and the AIMD EIP-1559 fee market.
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ParamsRequest {}
+/// ParamsResponse is the response type for the Query/Params RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ParamsResponse {
     #[prost(message, optional, tag = "1")]
     pub params: ::core::option::Option<Params>,
-    /// State contains the current state of the AIMD fee market.
-    #[prost(message, optional, tag = "2")]
-    pub state: ::core::option::Option<State>,
-}
-impl ::prost::Name for GenesisState {
-    const NAME: &'static str = "GenesisState";
-    const PACKAGE: &'static str = "feemarket.feemarket.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
-    }
 }
 /// State is utilized to track the current state of the fee market. This includes
 /// the current base fee, learning rate, and block utilization within the
 /// specified AIMD window.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct State {
     /// BaseGasPrice is the current base fee. This is denominated in the fee per
     /// gas unit.
@@ -107,70 +148,16 @@ pub struct State {
     #[prost(uint64, tag = "4")]
     pub index: u64,
 }
-impl ::prost::Name for State {
-    const NAME: &'static str = "State";
-    const PACKAGE: &'static str = "feemarket.feemarket.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
-    }
-}
-/// ParamsRequest is the request type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ParamsRequest {}
-impl ::prost::Name for ParamsRequest {
-    const NAME: &'static str = "ParamsRequest";
-    const PACKAGE: &'static str = "feemarket.feemarket.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
-    }
-}
-/// ParamsResponse is the response type for the Query/Params RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ParamsResponse {
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-}
-impl ::prost::Name for ParamsResponse {
-    const NAME: &'static str = "ParamsResponse";
-    const PACKAGE: &'static str = "feemarket.feemarket.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
-    }
-}
 /// StateRequest is the request type for the Query/State RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct StateRequest {}
-impl ::prost::Name for StateRequest {
-    const NAME: &'static str = "StateRequest";
-    const PACKAGE: &'static str = "feemarket.feemarket.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
-    }
-}
 /// StateResponse is the response type for the Query/State RPC method.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct StateResponse {
     #[prost(message, optional, tag = "1")]
     pub state: ::core::option::Option<State>,
-}
-impl ::prost::Name for StateResponse {
-    const NAME: &'static str = "StateResponse";
-    const PACKAGE: &'static str = "feemarket.feemarket.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
-    }
-}
-/// GasPriceRequest is the request type for the Query/GasPrice RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GasPriceRequest {
-    /// denom we are querying gas price in
-    #[prost(string, tag = "1")]
-    pub denom: ::prost::alloc::string::String,
 }
 impl ::prost::Name for GasPriceRequest {
     const NAME: &'static str = "GasPriceRequest";
@@ -179,14 +166,6 @@ impl ::prost::Name for GasPriceRequest {
         ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
     }
 }
-/// GasPriceResponse is the response type for the Query/GasPrice RPC method.
-/// Returns a gas price in specified denom.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GasPriceResponse {
-    #[prost(message, optional, tag = "1")]
-    pub price: ::core::option::Option<super::super::super::cosmos::base::v1beta1::DecCoin>,
-}
 impl ::prost::Name for GasPriceResponse {
     const NAME: &'static str = "GasPriceResponse";
     const PACKAGE: &'static str = "feemarket.feemarket.v1";
@@ -194,24 +173,12 @@ impl ::prost::Name for GasPriceResponse {
         ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
     }
 }
-/// GasPriceRequest is the request type for the Query/GasPrices RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GasPricesRequest {}
 impl ::prost::Name for GasPricesRequest {
     const NAME: &'static str = "GasPricesRequest";
     const PACKAGE: &'static str = "feemarket.feemarket.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
     }
-}
-/// GasPricesResponse is the response type for the Query/GasPrices RPC method.
-/// Returns a gas price in all available denoms.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GasPricesResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub prices: ::prost::alloc::vec::Vec<super::super::super::cosmos::base::v1beta1::DecCoin>,
 }
 impl ::prost::Name for GasPricesResponse {
     const NAME: &'static str = "GasPricesResponse";
@@ -220,18 +187,12 @@ impl ::prost::Name for GasPricesResponse {
         ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
     }
 }
-/// MsgParams defines the Msg/Params request type. It contains the
-/// new parameters for the feemarket module.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgParams {
-    /// Params defines the new parameters for the feemarket module.
-    #[prost(message, optional, tag = "1")]
-    pub params: ::core::option::Option<Params>,
-    /// Authority defines the authority that is updating the feemarket module
-    /// parameters.
-    #[prost(string, tag = "2")]
-    pub authority: ::prost::alloc::string::String,
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
+    const PACKAGE: &'static str = "feemarket.feemarket.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for MsgParams {
     const NAME: &'static str = "MsgParams";
@@ -240,10 +201,6 @@ impl ::prost::Name for MsgParams {
         ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
     }
 }
-/// MsgParamsResponse defines the Msg/Params response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgParamsResponse {}
 impl ::prost::Name for MsgParamsResponse {
     const NAME: &'static str = "MsgParamsResponse";
     const PACKAGE: &'static str = "feemarket.feemarket.v1";
@@ -251,4 +208,45 @@ impl ::prost::Name for MsgParamsResponse {
         ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for Params {
+    const NAME: &'static str = "Params";
+    const PACKAGE: &'static str = "feemarket.feemarket.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ParamsRequest {
+    const NAME: &'static str = "ParamsRequest";
+    const PACKAGE: &'static str = "feemarket.feemarket.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ParamsResponse {
+    const NAME: &'static str = "ParamsResponse";
+    const PACKAGE: &'static str = "feemarket.feemarket.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for State {
+    const NAME: &'static str = "State";
+    const PACKAGE: &'static str = "feemarket.feemarket.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for StateRequest {
+    const NAME: &'static str = "StateRequest";
+    const PACKAGE: &'static str = "feemarket.feemarket.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for StateResponse {
+    const NAME: &'static str = "StateResponse";
+    const PACKAGE: &'static str = "feemarket.feemarket.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("feemarket.feemarket.v1.{}", Self::NAME)
+    }
+}

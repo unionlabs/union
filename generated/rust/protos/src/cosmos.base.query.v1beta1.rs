@@ -1,4 +1,3 @@
-// @generated
 /// PageRequest is to be embedded in gRPC request messages for efficient
 /// pagination. Ex:
 ///
@@ -7,7 +6,7 @@
 ///           PageRequest pagination = 2;
 ///   }
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct PageRequest {
     /// key is a value returned in PageResponse.next_key to begin
     /// querying the next page most efficiently. Only one of offset or key
@@ -35,13 +34,6 @@ pub struct PageRequest {
     #[prost(bool, tag = "5")]
     pub reverse: bool,
 }
-impl ::prost::Name for PageRequest {
-    const NAME: &'static str = "PageRequest";
-    const PACKAGE: &'static str = "cosmos.base.query.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.base.query.v1beta1.{}", Self::NAME)
-    }
-}
 /// PageResponse is to be embedded in gRPC response messages where the
 /// corresponding request message has used PageRequest.
 ///
@@ -50,7 +42,7 @@ impl ::prost::Name for PageRequest {
 ///           PageResponse page = 2;
 ///   }
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct PageResponse {
     /// next_key is the key to be passed to PageRequest.key to
     /// query the next page most efficiently. It will be empty if
@@ -62,6 +54,13 @@ pub struct PageResponse {
     #[prost(uint64, tag = "2")]
     pub total: u64,
 }
+impl ::prost::Name for PageRequest {
+    const NAME: &'static str = "PageRequest";
+    const PACKAGE: &'static str = "cosmos.base.query.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.base.query.v1beta1.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for PageResponse {
     const NAME: &'static str = "PageResponse";
     const PACKAGE: &'static str = "cosmos.base.query.v1beta1";
@@ -69,4 +68,3 @@ impl ::prost::Name for PageResponse {
         ::prost::alloc::format!("cosmos.base.query.v1beta1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

@@ -1,7 +1,6 @@
-// @generated
 /// ===================== MsgCreateConcentratedPool
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct MsgCreateConcentratedPool {
     #[prost(string, tag = "1")]
     pub sender: ::prost::alloc::string::String,
@@ -14,6 +13,13 @@ pub struct MsgCreateConcentratedPool {
     #[prost(string, tag = "5")]
     pub spread_factor: ::prost::alloc::string::String,
 }
+/// Returns a unique poolID to identify the pool with.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct MsgCreateConcentratedPoolResponse {
+    #[prost(uint64, tag = "1")]
+    pub pool_id: u64,
+}
 impl ::prost::Name for MsgCreateConcentratedPool {
     const NAME: &'static str = "MsgCreateConcentratedPool";
     const PACKAGE: &'static str = "osmosis.concentratedliquidity.poolmodel.concentrated.v1beta1";
@@ -23,13 +29,6 @@ impl ::prost::Name for MsgCreateConcentratedPool {
             Self::NAME
         )
     }
-}
-/// Returns a unique poolID to identify the pool with.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct MsgCreateConcentratedPoolResponse {
-    #[prost(uint64, tag = "1")]
-    pub pool_id: u64,
 }
 impl ::prost::Name for MsgCreateConcentratedPoolResponse {
     const NAME: &'static str = "MsgCreateConcentratedPoolResponse";
@@ -41,4 +40,3 @@ impl ::prost::Name for MsgCreateConcentratedPoolResponse {
         )
     }
 }
-// @@protoc_insertion_point(module)

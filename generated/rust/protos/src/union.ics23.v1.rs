@@ -1,4 +1,3 @@
-// @generated
 /// *
 /// ExistenceProof takes a key and a value and a set of steps to perform on it.
 /// The result of peforming all these steps will provide a "root hash", which can
@@ -20,7 +19,7 @@
 /// in the ProofSpec is valuable to prevent this mutability. And why all trees should
 /// length-prefix the data before hashing it.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ExistenceProof {
     #[prost(bytes = "vec", tag = "1")]
     pub key: ::prost::alloc::vec::Vec<u8>,
@@ -30,34 +29,6 @@ pub struct ExistenceProof {
     pub leaf_prefix: ::prost::alloc::vec::Vec<u8>,
     #[prost(message, repeated, tag = "4")]
     pub path: ::prost::alloc::vec::Vec<InnerOp>,
-}
-impl ::prost::Name for ExistenceProof {
-    const NAME: &'static str = "ExistenceProof";
-    const PACKAGE: &'static str = "union.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("union.ics23.v1.{}", Self::NAME)
-    }
-}
-/// NonExistenceProof takes a proof of two neighbors, one 3left of the desired key,
-/// one right of the desired key. If both proofs are valid AND they are neighbors,
-/// then there is no valid proof for the given key.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct NonExistenceProof {
-    /// TODO: remove this as unnecessary??? we prove a range
-    #[prost(bytes = "vec", tag = "1")]
-    pub key: ::prost::alloc::vec::Vec<u8>,
-    #[prost(message, optional, tag = "2")]
-    pub left: ::core::option::Option<ExistenceProof>,
-    #[prost(message, optional, tag = "3")]
-    pub right: ::core::option::Option<ExistenceProof>,
-}
-impl ::prost::Name for NonExistenceProof {
-    const NAME: &'static str = "NonExistenceProof";
-    const PACKAGE: &'static str = "union.ics23.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("union.ics23.v1.{}", Self::NAME)
-    }
 }
 /// *
 /// InnerOp represents a merkle-proof step that is not a leaf.
@@ -76,12 +47,33 @@ impl ::prost::Name for NonExistenceProof {
 /// some value to differentiate from leaf nodes, should be included in prefix and suffix.
 /// If either of prefix or suffix is empty, we just treat it as an empty string
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct InnerOp {
     #[prost(bytes = "vec", tag = "1")]
     pub prefix: ::prost::alloc::vec::Vec<u8>,
     #[prost(bytes = "vec", tag = "2")]
     pub suffix: ::prost::alloc::vec::Vec<u8>,
+}
+/// NonExistenceProof takes a proof of two neighbors, one 3left of the desired key,
+/// one right of the desired key. If both proofs are valid AND they are neighbors,
+/// then there is no valid proof for the given key.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct NonExistenceProof {
+    /// TODO: remove this as unnecessary??? we prove a range
+    #[prost(bytes = "vec", tag = "1")]
+    pub key: ::prost::alloc::vec::Vec<u8>,
+    #[prost(message, optional, tag = "2")]
+    pub left: ::core::option::Option<ExistenceProof>,
+    #[prost(message, optional, tag = "3")]
+    pub right: ::core::option::Option<ExistenceProof>,
+}
+impl ::prost::Name for ExistenceProof {
+    const NAME: &'static str = "ExistenceProof";
+    const PACKAGE: &'static str = "union.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ics23.v1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for InnerOp {
     const NAME: &'static str = "InnerOp";
@@ -90,4 +82,10 @@ impl ::prost::Name for InnerOp {
         ::prost::alloc::format!("union.ics23.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for NonExistenceProof {
+    const NAME: &'static str = "NonExistenceProof";
+    const PACKAGE: &'static str = "union.ics23.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("union.ics23.v1.{}", Self::NAME)
+    }
+}

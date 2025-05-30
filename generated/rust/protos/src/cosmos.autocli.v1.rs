@@ -1,7 +1,47 @@
-// @generated
+/// AppOptionsRequest is the RemoteInfoService/AppOptions request type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct AppOptionsRequest {}
+/// AppOptionsResponse is the RemoteInfoService/AppOptions response type.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct AppOptionsResponse {
+    /// module_options is a map of module name to autocli module options.
+    #[prost(map = "string, message", tag = "1")]
+    pub module_options: ::std::collections::HashMap<::prost::alloc::string::String, ModuleOptions>,
+}
+/// FlagOptions are options for flags generated from rpc request fields.
+/// By default, all request fields are configured as flags based on the
+/// kebab-case name of the field. Fields can be turned into positional arguments
+/// instead by using RpcCommandOptions.positional_args.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct FlagOptions {
+    /// name is an alternate name to use for the field flag.
+    #[prost(string, tag = "1")]
+    pub name: ::prost::alloc::string::String,
+    /// shorthand is a one-letter abbreviated flag.
+    #[prost(string, tag = "2")]
+    pub shorthand: ::prost::alloc::string::String,
+    /// usage is the help message.
+    #[prost(string, tag = "3")]
+    pub usage: ::prost::alloc::string::String,
+    /// default_value is the default value as text.
+    #[prost(string, tag = "4")]
+    pub default_value: ::prost::alloc::string::String,
+    /// deprecated is the usage text to show if this flag is deprecated.
+    #[prost(string, tag = "6")]
+    pub deprecated: ::prost::alloc::string::String,
+    /// shorthand_deprecated is the usage text to show if the shorthand of this flag is deprecated.
+    #[prost(string, tag = "7")]
+    pub shorthand_deprecated: ::prost::alloc::string::String,
+    /// hidden hides the flag from help/usage text
+    #[prost(bool, tag = "8")]
+    pub hidden: bool,
+}
 /// ModuleOptions describes the CLI options for a Cosmos SDK module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ModuleOptions {
     /// tx describes the tx commands for the module.
     #[prost(message, optional, tag = "1")]
@@ -10,53 +50,28 @@ pub struct ModuleOptions {
     #[prost(message, optional, tag = "2")]
     pub query: ::core::option::Option<ServiceCommandDescriptor>,
 }
-impl ::prost::Name for ModuleOptions {
-    const NAME: &'static str = "ModuleOptions";
-    const PACKAGE: &'static str = "cosmos.autocli.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
-    }
-}
-/// ServiceCommandDescriptor describes a CLI command based on a protobuf service.
+/// PositionalArgDescriptor describes a positional argument.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ServiceCommandDescriptor {
-    /// service is the fully qualified name of the protobuf service to build
-    /// the command from. It can be left empty if sub_commands are used instead
-    /// which may be the case if a module provides multiple tx and/or query services.
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct PositionalArgDescriptor {
+    /// proto_field specifies the proto field to use as the positional arg. Any
+    /// fields used as positional args will not have a flag generated.
     #[prost(string, tag = "1")]
-    pub service: ::prost::alloc::string::String,
-    /// rpc_command_options are options for commands generated from rpc methods.
-    /// If no options are specified for a given rpc method on the service, a
-    /// command will be generated for that method with the default options.
-    #[prost(message, repeated, tag = "2")]
-    pub rpc_command_options: ::prost::alloc::vec::Vec<RpcCommandOptions>,
-    /// sub_commands is a map of optional sub-commands for this command based on
-    /// different protobuf services. The map key is used as the name of the
-    /// sub-command.
-    #[prost(map = "string, message", tag = "3")]
-    pub sub_commands:
-        ::std::collections::HashMap<::prost::alloc::string::String, ServiceCommandDescriptor>,
-    /// enhance_custom_commands specifies whether to skip the service when generating commands, if a custom command already
-    /// exists, or enhance the existing command. If set to true, the custom command will be enhanced with the services from
-    /// gRPC. otherwise when a custom command exists, no commands will be generated for the service.
-    #[prost(bool, tag = "4")]
-    pub enhance_custom_command: bool,
-    /// short is an optional parameter used to override the short description of the auto generated command.
-    #[prost(string, tag = "5")]
-    pub short: ::prost::alloc::string::String,
-}
-impl ::prost::Name for ServiceCommandDescriptor {
-    const NAME: &'static str = "ServiceCommandDescriptor";
-    const PACKAGE: &'static str = "cosmos.autocli.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
-    }
+    pub proto_field: ::prost::alloc::string::String,
+    /// varargs makes a positional parameter a varargs parameter. This can only be
+    /// applied to last positional parameter and the proto_field must a repeated
+    /// field.
+    #[prost(bool, tag = "2")]
+    pub varargs: bool,
+    /// optional makes the last positional parameter optional.
+    /// Note: It is mutually exclusive with varargs.
+    #[prost(bool, tag = "3")]
+    pub optional: bool,
 }
 /// RpcCommandOptions specifies options for commands generated from protobuf
 /// rpc methods.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct RpcCommandOptions {
     /// rpc_method is short name of the protobuf rpc method that this command is
     /// generated from.
@@ -106,92 +121,41 @@ pub struct RpcCommandOptions {
     #[prost(bool, tag = "12")]
     pub skip: bool,
 }
-impl ::prost::Name for RpcCommandOptions {
-    const NAME: &'static str = "RpcCommandOptions";
-    const PACKAGE: &'static str = "cosmos.autocli.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
-    }
-}
-/// FlagOptions are options for flags generated from rpc request fields.
-/// By default, all request fields are configured as flags based on the
-/// kebab-case name of the field. Fields can be turned into positional arguments
-/// instead by using RpcCommandOptions.positional_args.
+/// ServiceCommandDescriptor describes a CLI command based on a protobuf service.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct FlagOptions {
-    /// name is an alternate name to use for the field flag.
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ServiceCommandDescriptor {
+    /// service is the fully qualified name of the protobuf service to build
+    /// the command from. It can be left empty if sub_commands are used instead
+    /// which may be the case if a module provides multiple tx and/or query services.
     #[prost(string, tag = "1")]
-    pub name: ::prost::alloc::string::String,
-    /// shorthand is a one-letter abbreviated flag.
-    #[prost(string, tag = "2")]
-    pub shorthand: ::prost::alloc::string::String,
-    /// usage is the help message.
-    #[prost(string, tag = "3")]
-    pub usage: ::prost::alloc::string::String,
-    /// default_value is the default value as text.
-    #[prost(string, tag = "4")]
-    pub default_value: ::prost::alloc::string::String,
-    /// deprecated is the usage text to show if this flag is deprecated.
-    #[prost(string, tag = "6")]
-    pub deprecated: ::prost::alloc::string::String,
-    /// shorthand_deprecated is the usage text to show if the shorthand of this flag is deprecated.
-    #[prost(string, tag = "7")]
-    pub shorthand_deprecated: ::prost::alloc::string::String,
-    /// hidden hides the flag from help/usage text
-    #[prost(bool, tag = "8")]
-    pub hidden: bool,
+    pub service: ::prost::alloc::string::String,
+    /// rpc_command_options are options for commands generated from rpc methods.
+    /// If no options are specified for a given rpc method on the service, a
+    /// command will be generated for that method with the default options.
+    #[prost(message, repeated, tag = "2")]
+    pub rpc_command_options: ::prost::alloc::vec::Vec<RpcCommandOptions>,
+    /// sub_commands is a map of optional sub-commands for this command based on
+    /// different protobuf services. The map key is used as the name of the
+    /// sub-command.
+    #[prost(map = "string, message", tag = "3")]
+    pub sub_commands:
+        ::std::collections::HashMap<::prost::alloc::string::String, ServiceCommandDescriptor>,
+    /// enhance_custom_commands specifies whether to skip the service when generating commands, if a custom command already
+    /// exists, or enhance the existing command. If set to true, the custom command will be enhanced with the services from
+    /// gRPC. otherwise when a custom command exists, no commands will be generated for the service.
+    #[prost(bool, tag = "4")]
+    pub enhance_custom_command: bool,
+    /// short is an optional parameter used to override the short description of the auto generated command.
+    #[prost(string, tag = "5")]
+    pub short: ::prost::alloc::string::String,
 }
-impl ::prost::Name for FlagOptions {
-    const NAME: &'static str = "FlagOptions";
-    const PACKAGE: &'static str = "cosmos.autocli.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
-    }
-}
-/// PositionalArgDescriptor describes a positional argument.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct PositionalArgDescriptor {
-    /// proto_field specifies the proto field to use as the positional arg. Any
-    /// fields used as positional args will not have a flag generated.
-    #[prost(string, tag = "1")]
-    pub proto_field: ::prost::alloc::string::String,
-    /// varargs makes a positional parameter a varargs parameter. This can only be
-    /// applied to last positional parameter and the proto_field must a repeated
-    /// field.
-    #[prost(bool, tag = "2")]
-    pub varargs: bool,
-    /// optional makes the last positional parameter optional.
-    /// Note: It is mutually exclusive with varargs.
-    #[prost(bool, tag = "3")]
-    pub optional: bool,
-}
-impl ::prost::Name for PositionalArgDescriptor {
-    const NAME: &'static str = "PositionalArgDescriptor";
-    const PACKAGE: &'static str = "cosmos.autocli.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
-    }
-}
-/// AppOptionsRequest is the RemoteInfoService/AppOptions request type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AppOptionsRequest {}
 impl ::prost::Name for AppOptionsRequest {
     const NAME: &'static str = "AppOptionsRequest";
     const PACKAGE: &'static str = "cosmos.autocli.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
     }
-}
-/// AppOptionsResponse is the RemoteInfoService/AppOptions response type.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct AppOptionsResponse {
-    /// module_options is a map of module name to autocli module options.
-    #[prost(map = "string, message", tag = "1")]
-    pub module_options: ::std::collections::HashMap<::prost::alloc::string::String, ModuleOptions>,
 }
 impl ::prost::Name for AppOptionsResponse {
     const NAME: &'static str = "AppOptionsResponse";
@@ -200,4 +164,38 @@ impl ::prost::Name for AppOptionsResponse {
         ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for FlagOptions {
+    const NAME: &'static str = "FlagOptions";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ModuleOptions {
+    const NAME: &'static str = "ModuleOptions";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for PositionalArgDescriptor {
+    const NAME: &'static str = "PositionalArgDescriptor";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for RpcCommandOptions {
+    const NAME: &'static str = "RpcCommandOptions";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ServiceCommandDescriptor {
+    const NAME: &'static str = "ServiceCommandDescriptor";
+    const PACKAGE: &'static str = "cosmos.autocli.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cosmos.autocli.v1.{}", Self::NAME)
+    }
+}

@@ -1,9 +1,8 @@
-// @generated
 /// ABCIResponses retains the responses
 /// of the various ABCI calls during block processing.
 /// It is persisted to disk for each height before calling Commit.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct AbciResponses {
     #[prost(message, repeated, tag = "1")]
     pub deliver_txs: ::prost::alloc::vec::Vec<super::super::abci::v1beta2::ResponseDeliverTx>,
@@ -12,48 +11,27 @@ pub struct AbciResponses {
     #[prost(message, optional, tag = "3")]
     pub begin_block: ::core::option::Option<super::super::abci::v1beta2::ResponseBeginBlock>,
 }
-impl ::prost::Name for AbciResponses {
-    const NAME: &'static str = "ABCIResponses";
-    const PACKAGE: &'static str = "cometbft.state.v1beta2";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.state.v1beta2.{}", Self::NAME)
-    }
-}
-/// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsensusParamsInfo {
-    #[prost(message, optional, tag = "1")]
-    pub consensus_params: ::core::option::Option<super::super::types::v1beta2::ConsensusParams>,
-    #[prost(int64, tag = "2")]
-    pub last_height_changed: i64,
-}
-impl ::prost::Name for ConsensusParamsInfo {
-    const NAME: &'static str = "ConsensusParamsInfo";
-    const PACKAGE: &'static str = "cometbft.state.v1beta2";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.state.v1beta2.{}", Self::NAME)
-    }
-}
 /// ABCIResponsesInfo retains the responses of the ABCI calls during block processing.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct AbciResponsesInfo {
     #[prost(message, optional, tag = "1")]
     pub abci_responses: ::core::option::Option<AbciResponses>,
     #[prost(int64, tag = "2")]
     pub height: i64,
 }
-impl ::prost::Name for AbciResponsesInfo {
-    const NAME: &'static str = "ABCIResponsesInfo";
-    const PACKAGE: &'static str = "cometbft.state.v1beta2";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.state.v1beta2.{}", Self::NAME)
-    }
+/// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ConsensusParamsInfo {
+    #[prost(message, optional, tag = "1")]
+    pub consensus_params: ::core::option::Option<super::super::types::v1beta2::ConsensusParams>,
+    #[prost(int64, tag = "2")]
+    pub last_height_changed: i64,
 }
 /// State represents the state of the blockchain.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct State {
     #[prost(message, optional, tag = "1")]
     pub version: ::core::option::Option<super::v1beta1::Version>,
@@ -96,6 +74,27 @@ pub struct State {
     #[prost(bytes = "vec", tag = "13")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for AbciResponses {
+    const NAME: &'static str = "ABCIResponses";
+    const PACKAGE: &'static str = "cometbft.state.v1beta2";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.state.v1beta2.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for AbciResponsesInfo {
+    const NAME: &'static str = "ABCIResponsesInfo";
+    const PACKAGE: &'static str = "cometbft.state.v1beta2";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.state.v1beta2.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ConsensusParamsInfo {
+    const NAME: &'static str = "ConsensusParamsInfo";
+    const PACKAGE: &'static str = "cometbft.state.v1beta2";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.state.v1beta2.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for State {
     const NAME: &'static str = "State";
     const PACKAGE: &'static str = "cometbft.state.v1beta2";
@@ -103,4 +102,3 @@ impl ::prost::Name for State {
         ::prost::alloc::format!("cometbft.state.v1beta2.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

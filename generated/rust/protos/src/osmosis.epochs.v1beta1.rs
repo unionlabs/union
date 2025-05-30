@@ -1,8 +1,28 @@
-// @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryCurrentEpochRequest {
+    #[prost(string, tag = "1")]
+    pub identifier: ::prost::alloc::string::String,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryCurrentEpochResponse {
+    #[prost(int64, tag = "1")]
+    pub current_epoch: i64,
+}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryEpochsInfoRequest {}
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryEpochsInfoResponse {
+    #[prost(message, repeated, tag = "1")]
+    pub epochs: ::prost::alloc::vec::Vec<EpochInfo>,
+}
 /// EpochInfo is a struct that describes the data going into
 /// a timer defined by the x/epochs module.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct EpochInfo {
     /// identifier is a unique reference to this particular timer.
     #[prost(string, tag = "1")]
@@ -53,19 +73,19 @@ pub struct EpochInfo {
     #[prost(int64, tag = "8")]
     pub current_epoch_start_height: i64,
 }
+/// GenesisState defines the epochs module's genesis state.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GenesisState {
+    #[prost(message, repeated, tag = "1")]
+    pub epochs: ::prost::alloc::vec::Vec<EpochInfo>,
+}
 impl ::prost::Name for EpochInfo {
     const NAME: &'static str = "EpochInfo";
     const PACKAGE: &'static str = "osmosis.epochs.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
     }
-}
-/// GenesisState defines the epochs module's genesis state.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisState {
-    #[prost(message, repeated, tag = "1")]
-    pub epochs: ::prost::alloc::vec::Vec<EpochInfo>,
 }
 impl ::prost::Name for GenesisState {
     const NAME: &'static str = "GenesisState";
@@ -74,47 +94,12 @@ impl ::prost::Name for GenesisState {
         ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
     }
 }
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryEpochsInfoRequest {}
-impl ::prost::Name for QueryEpochsInfoRequest {
-    const NAME: &'static str = "QueryEpochsInfoRequest";
-    const PACKAGE: &'static str = "osmosis.epochs.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryEpochsInfoResponse {
-    #[prost(message, repeated, tag = "1")]
-    pub epochs: ::prost::alloc::vec::Vec<EpochInfo>,
-}
-impl ::prost::Name for QueryEpochsInfoResponse {
-    const NAME: &'static str = "QueryEpochsInfoResponse";
-    const PACKAGE: &'static str = "osmosis.epochs.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCurrentEpochRequest {
-    #[prost(string, tag = "1")]
-    pub identifier: ::prost::alloc::string::String,
-}
 impl ::prost::Name for QueryCurrentEpochRequest {
     const NAME: &'static str = "QueryCurrentEpochRequest";
     const PACKAGE: &'static str = "osmosis.epochs.v1beta1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
     }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryCurrentEpochResponse {
-    #[prost(int64, tag = "1")]
-    pub current_epoch: i64,
 }
 impl ::prost::Name for QueryCurrentEpochResponse {
     const NAME: &'static str = "QueryCurrentEpochResponse";
@@ -123,4 +108,17 @@ impl ::prost::Name for QueryCurrentEpochResponse {
         ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for QueryEpochsInfoRequest {
+    const NAME: &'static str = "QueryEpochsInfoRequest";
+    const PACKAGE: &'static str = "osmosis.epochs.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for QueryEpochsInfoResponse {
+    const NAME: &'static str = "QueryEpochsInfoResponse";
+    const PACKAGE: &'static str = "osmosis.epochs.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("osmosis.epochs.v1beta1.{}", Self::NAME)
+    }
+}

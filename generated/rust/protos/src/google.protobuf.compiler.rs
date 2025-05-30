@@ -1,29 +1,6 @@
-// @generated
-/// The version number of protocol compiler.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Version {
-    #[prost(int32, optional, tag = "1")]
-    pub major: ::core::option::Option<i32>,
-    #[prost(int32, optional, tag = "2")]
-    pub minor: ::core::option::Option<i32>,
-    #[prost(int32, optional, tag = "3")]
-    pub patch: ::core::option::Option<i32>,
-    /// A suffix for alpha, beta or rc release, e.g., "alpha-1", "rc2". It should
-    /// be empty for mainline stable releases.
-    #[prost(string, optional, tag = "4")]
-    pub suffix: ::core::option::Option<::prost::alloc::string::String>,
-}
-impl ::prost::Name for Version {
-    const NAME: &'static str = "Version";
-    const PACKAGE: &'static str = "google.protobuf.compiler";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("google.protobuf.compiler.{}", Self::NAME)
-    }
-}
 /// An encoded CodeGeneratorRequest is written to the plugin's stdin.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct CodeGeneratorRequest {
     /// The .proto files that were explicitly listed on the command-line.  The
     /// code generator should generate code only for these files.  Each file's
@@ -53,39 +30,11 @@ pub struct CodeGeneratorRequest {
     #[prost(message, optional, tag = "3")]
     pub compiler_version: ::core::option::Option<Version>,
 }
-impl ::prost::Name for CodeGeneratorRequest {
-    const NAME: &'static str = "CodeGeneratorRequest";
-    const PACKAGE: &'static str = "google.protobuf.compiler";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("google.protobuf.compiler.{}", Self::NAME)
-    }
-}
-/// The plugin writes an encoded CodeGeneratorResponse to stdout.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct CodeGeneratorResponse {
-    /// Error message.  If non-empty, code generation failed.  The plugin process
-    /// should exit with status code zero even if it reports an error in this way.
-    ///
-    /// This should be used to indicate errors in .proto files which prevent the
-    /// code generator from generating correct code.  Errors which indicate a
-    /// problem in protoc itself -- such as the input CodeGeneratorRequest being
-    /// unparseable -- should be reported by writing a message to stderr and
-    /// exiting with a non-zero status code.
-    #[prost(string, optional, tag = "1")]
-    pub error: ::core::option::Option<::prost::alloc::string::String>,
-    /// A bitmask of supported features that the code generator supports.
-    /// This is a bitwise "or" of values from the Feature enum.
-    #[prost(uint64, optional, tag = "2")]
-    pub supported_features: ::core::option::Option<u64>,
-    #[prost(message, repeated, tag = "15")]
-    pub file: ::prost::alloc::vec::Vec<code_generator_response::File>,
-}
 /// Nested message and enum types in `CodeGeneratorResponse`.
 pub mod code_generator_response {
     /// Represents a single generated file.
     #[allow(clippy::derive_partial_eq_without_eq)]
-    #[derive(Clone, PartialEq, ::prost::Message)]
+    #[derive(Clone, PartialEq, :: prost :: Message)]
     pub struct File {
         /// The file name, relative to the output directory.  The name must not
         /// contain "." or ".." components and must be relative, not be absolute (so,
@@ -148,6 +97,13 @@ pub mod code_generator_response {
         #[prost(message, optional, tag = "16")]
         pub generated_code_info: ::core::option::Option<super::super::GeneratedCodeInfo>,
     }
+    /// Sync with code_generator.h.
+    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, :: prost :: Enumeration)]
+    #[repr(i32)]
+    pub enum Feature {
+        None = 0,
+        Proto3Optional = 1,
+    }
     impl ::prost::Name for File {
         const NAME: &'static str = "File";
         const PACKAGE: &'static str = "google.protobuf.compiler";
@@ -157,13 +113,6 @@ pub mod code_generator_response {
                 Self::NAME
             )
         }
-    }
-    /// Sync with code_generator.h.
-    #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord, ::prost::Enumeration)]
-    #[repr(i32)]
-    pub enum Feature {
-        None = 0,
-        Proto3Optional = 1,
     }
     impl Feature {
         /// String value of the enum field names used in the ProtoBuf definition.
@@ -186,6 +135,49 @@ pub mod code_generator_response {
         }
     }
 }
+/// The plugin writes an encoded CodeGeneratorResponse to stdout.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct CodeGeneratorResponse {
+    /// Error message.  If non-empty, code generation failed.  The plugin process
+    /// should exit with status code zero even if it reports an error in this way.
+    ///
+    /// This should be used to indicate errors in .proto files which prevent the
+    /// code generator from generating correct code.  Errors which indicate a
+    /// problem in protoc itself -- such as the input CodeGeneratorRequest being
+    /// unparseable -- should be reported by writing a message to stderr and
+    /// exiting with a non-zero status code.
+    #[prost(string, optional, tag = "1")]
+    pub error: ::core::option::Option<::prost::alloc::string::String>,
+    /// A bitmask of supported features that the code generator supports.
+    /// This is a bitwise "or" of values from the Feature enum.
+    #[prost(uint64, optional, tag = "2")]
+    pub supported_features: ::core::option::Option<u64>,
+    #[prost(message, repeated, tag = "15")]
+    pub file: ::prost::alloc::vec::Vec<code_generator_response::File>,
+}
+/// The version number of protocol compiler.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct Version {
+    #[prost(int32, optional, tag = "1")]
+    pub major: ::core::option::Option<i32>,
+    #[prost(int32, optional, tag = "2")]
+    pub minor: ::core::option::Option<i32>,
+    #[prost(int32, optional, tag = "3")]
+    pub patch: ::core::option::Option<i32>,
+    /// A suffix for alpha, beta or rc release, e.g., "alpha-1", "rc2". It should
+    /// be empty for mainline stable releases.
+    #[prost(string, optional, tag = "4")]
+    pub suffix: ::core::option::Option<::prost::alloc::string::String>,
+}
+impl ::prost::Name for CodeGeneratorRequest {
+    const NAME: &'static str = "CodeGeneratorRequest";
+    const PACKAGE: &'static str = "google.protobuf.compiler";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("google.protobuf.compiler.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for CodeGeneratorResponse {
     const NAME: &'static str = "CodeGeneratorResponse";
     const PACKAGE: &'static str = "google.protobuf.compiler";
@@ -193,4 +185,10 @@ impl ::prost::Name for CodeGeneratorResponse {
         ::prost::alloc::format!("google.protobuf.compiler.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for Version {
+    const NAME: &'static str = "Version";
+    const PACKAGE: &'static str = "google.protobuf.compiler";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("google.protobuf.compiler.{}", Self::NAME)
+    }
+}

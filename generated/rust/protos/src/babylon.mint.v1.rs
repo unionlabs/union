@@ -1,22 +1,22 @@
-// @generated
 /// GenesisState defines the mint module's genesis state.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct GenesisState {
     /// BondDenom is the denomination of the token that should be minted.
     #[prost(string, tag = "2")]
     pub bond_denom: ::prost::alloc::string::String,
 }
-impl ::prost::Name for GenesisState {
-    const NAME: &'static str = "GenesisState";
-    const PACKAGE: &'static str = "babylon.mint.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
-    }
+/// GenesisTime contains the timestamp of the genesis block.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct GenesisTime {
+    /// GenesisTime is the timestamp of the genesis block.
+    #[prost(message, optional, tag = "1")]
+    pub genesis_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 /// Minter represents the mint state.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Minter {
     /// InflationRate is the rate at which new tokens should be minted for the
     /// current year. For example if InflationRate=0.1, then 10% of the total
@@ -35,20 +35,54 @@ pub struct Minter {
     #[prost(string, tag = "5")]
     pub bond_denom: ::prost::alloc::string::String,
 }
-impl ::prost::Name for Minter {
-    const NAME: &'static str = "Minter";
+/// QueryAnnualProvisionsRequest is the request type for the
+/// Query/AnnualProvisions RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryAnnualProvisionsRequest {}
+/// QueryAnnualProvisionsResponse is the response type for the
+/// Query/AnnualProvisions RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryAnnualProvisionsResponse {
+    /// AnnualProvisions is the current annual provisions.
+    #[prost(bytes = "vec", tag = "1")]
+    pub annual_provisions: ::prost::alloc::vec::Vec<u8>,
+}
+/// QueryGenesisTimeRequest is the request type for the Query/GenesisTime RPC
+/// method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryGenesisTimeRequest {}
+/// QueryGenesisTimeResponse is the response type for the Query/GenesisTime RPC
+/// method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryGenesisTimeResponse {
+    /// GenesisTime is the timestamp associated with the first block.
+    #[prost(message, optional, tag = "1")]
+    pub genesis_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
+}
+/// QueryInflationRateRequest is the request type for the Query/InflationRate RPC
+/// method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryInflationRateRequest {}
+/// QueryInflationRateResponse is the response type for the Query/InflationRate
+/// RPC method.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct QueryInflationRateResponse {
+    /// InflationRate is the current inflation rate.
+    #[prost(bytes = "vec", tag = "1")]
+    pub inflation_rate: ::prost::alloc::vec::Vec<u8>,
+}
+impl ::prost::Name for GenesisState {
+    const NAME: &'static str = "GenesisState";
     const PACKAGE: &'static str = "babylon.mint.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
     }
-}
-/// GenesisTime contains the timestamp of the genesis block.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct GenesisTime {
-    /// GenesisTime is the timestamp of the genesis block.
-    #[prost(message, optional, tag = "1")]
-    pub genesis_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for GenesisTime {
     const NAME: &'static str = "GenesisTime";
@@ -57,54 +91,19 @@ impl ::prost::Name for GenesisTime {
         ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
     }
 }
-/// QueryInflationRateRequest is the request type for the Query/InflationRate RPC
-/// method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryInflationRateRequest {}
-impl ::prost::Name for QueryInflationRateRequest {
-    const NAME: &'static str = "QueryInflationRateRequest";
+impl ::prost::Name for Minter {
+    const NAME: &'static str = "Minter";
     const PACKAGE: &'static str = "babylon.mint.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
     }
 }
-/// QueryInflationRateResponse is the response type for the Query/InflationRate
-/// RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryInflationRateResponse {
-    /// InflationRate is the current inflation rate.
-    #[prost(bytes = "vec", tag = "1")]
-    pub inflation_rate: ::prost::alloc::vec::Vec<u8>,
-}
-impl ::prost::Name for QueryInflationRateResponse {
-    const NAME: &'static str = "QueryInflationRateResponse";
-    const PACKAGE: &'static str = "babylon.mint.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
-    }
-}
-/// QueryAnnualProvisionsRequest is the request type for the
-/// Query/AnnualProvisions RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryAnnualProvisionsRequest {}
 impl ::prost::Name for QueryAnnualProvisionsRequest {
     const NAME: &'static str = "QueryAnnualProvisionsRequest";
     const PACKAGE: &'static str = "babylon.mint.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
     }
-}
-/// QueryAnnualProvisionsResponse is the response type for the
-/// Query/AnnualProvisions RPC method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryAnnualProvisionsResponse {
-    /// AnnualProvisions is the current annual provisions.
-    #[prost(bytes = "vec", tag = "1")]
-    pub annual_provisions: ::prost::alloc::vec::Vec<u8>,
 }
 impl ::prost::Name for QueryAnnualProvisionsResponse {
     const NAME: &'static str = "QueryAnnualProvisionsResponse";
@@ -113,26 +112,12 @@ impl ::prost::Name for QueryAnnualProvisionsResponse {
         ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
     }
 }
-/// QueryGenesisTimeRequest is the request type for the Query/GenesisTime RPC
-/// method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGenesisTimeRequest {}
 impl ::prost::Name for QueryGenesisTimeRequest {
     const NAME: &'static str = "QueryGenesisTimeRequest";
     const PACKAGE: &'static str = "babylon.mint.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
     }
-}
-/// QueryGenesisTimeResponse is the response type for the Query/GenesisTime RPC
-/// method.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct QueryGenesisTimeResponse {
-    /// GenesisTime is the timestamp associated with the first block.
-    #[prost(message, optional, tag = "1")]
-    pub genesis_time: ::core::option::Option<super::super::super::google::protobuf::Timestamp>,
 }
 impl ::prost::Name for QueryGenesisTimeResponse {
     const NAME: &'static str = "QueryGenesisTimeResponse";
@@ -141,4 +126,17 @@ impl ::prost::Name for QueryGenesisTimeResponse {
         ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for QueryInflationRateRequest {
+    const NAME: &'static str = "QueryInflationRateRequest";
+    const PACKAGE: &'static str = "babylon.mint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for QueryInflationRateResponse {
+    const NAME: &'static str = "QueryInflationRateResponse";
+    const PACKAGE: &'static str = "babylon.mint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("babylon.mint.v1.{}", Self::NAME)
+    }
+}

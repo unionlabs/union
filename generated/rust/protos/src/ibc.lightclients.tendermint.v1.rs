@@ -1,8 +1,7 @@
-// @generated
 /// ClientState from Tendermint tracks the current validator set, latest height,
 /// and a possible frozen height.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ClientState {
     #[prost(string, tag = "1")]
     pub chain_id: ::prost::alloc::string::String,
@@ -49,16 +48,9 @@ pub struct ClientState {
     #[prost(bool, tag = "11")]
     pub allow_update_after_misbehaviour: bool,
 }
-impl ::prost::Name for ClientState {
-    const NAME: &'static str = "ClientState";
-    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
-    }
-}
 /// ConsensusState defines the consensus state from Tendermint.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct ConsensusState {
     /// timestamp that corresponds to the block height in which the ConsensusState
     /// was stored.
@@ -70,33 +62,15 @@ pub struct ConsensusState {
     #[prost(bytes = "vec", tag = "3")]
     pub next_validators_hash: ::prost::alloc::vec::Vec<u8>,
 }
-impl ::prost::Name for ConsensusState {
-    const NAME: &'static str = "ConsensusState";
-    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
-    }
-}
-/// Misbehaviour is a wrapper over two conflicting Headers
-/// that implements Misbehaviour interface expected by ICS-02
+/// Fraction defines the protobuf message type for tmmath.Fraction that only
+/// supports positive values.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Misbehaviour {
-    /// ClientID is deprecated
-    #[deprecated]
-    #[prost(string, tag = "1")]
-    pub client_id: ::prost::alloc::string::String,
-    #[prost(message, optional, tag = "2")]
-    pub header_1: ::core::option::Option<Header>,
-    #[prost(message, optional, tag = "3")]
-    pub header_2: ::core::option::Option<Header>,
-}
-impl ::prost::Name for Misbehaviour {
-    const NAME: &'static str = "Misbehaviour";
-    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
-    }
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct Fraction {
+    #[prost(uint64, tag = "1")]
+    pub numerator: u64,
+    #[prost(uint64, tag = "2")]
+    pub denominator: u64,
 }
 /// Header defines the Tendermint client consensus Header.
 /// It encapsulates all the information necessary to update from a trusted
@@ -111,7 +85,7 @@ impl ::prost::Name for Misbehaviour {
 /// hash to TrustedConsensusState.NextValidatorsHash since that is the last
 /// trusted validator set at the TrustedHeight.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Header {
     #[prost(message, optional, tag = "1")]
     pub signed_header:
@@ -125,22 +99,33 @@ pub struct Header {
     pub trusted_validators:
         ::core::option::Option<super::super::super::super::cometbft::types::v1::ValidatorSet>,
 }
-impl ::prost::Name for Header {
-    const NAME: &'static str = "Header";
+/// Misbehaviour is a wrapper over two conflicting Headers
+/// that implements Misbehaviour interface expected by ICS-02
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct Misbehaviour {
+    /// ClientID is deprecated
+    #[deprecated]
+    #[prost(string, tag = "1")]
+    pub client_id: ::prost::alloc::string::String,
+    #[prost(message, optional, tag = "2")]
+    pub header_1: ::core::option::Option<Header>,
+    #[prost(message, optional, tag = "3")]
+    pub header_2: ::core::option::Option<Header>,
+}
+impl ::prost::Name for ClientState {
+    const NAME: &'static str = "ClientState";
     const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
     fn full_name() -> ::prost::alloc::string::String {
         ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
     }
 }
-/// Fraction defines the protobuf message type for tmmath.Fraction that only
-/// supports positive values.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Fraction {
-    #[prost(uint64, tag = "1")]
-    pub numerator: u64,
-    #[prost(uint64, tag = "2")]
-    pub denominator: u64,
+impl ::prost::Name for ConsensusState {
+    const NAME: &'static str = "ConsensusState";
+    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
+    }
 }
 impl ::prost::Name for Fraction {
     const NAME: &'static str = "Fraction";
@@ -149,4 +134,17 @@ impl ::prost::Name for Fraction {
         ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
+impl ::prost::Name for Header {
+    const NAME: &'static str = "Header";
+    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for Misbehaviour {
+    const NAME: &'static str = "Misbehaviour";
+    const PACKAGE: &'static str = "ibc.lightclients.tendermint.v1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("ibc.lightclients.tendermint.v1.{}", Self::NAME)
+    }
+}

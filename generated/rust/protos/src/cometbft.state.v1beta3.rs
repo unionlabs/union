@@ -1,80 +1,6 @@
-// @generated
-/// LegacyABCIResponses retains the responses
-/// of the legacy ABCI calls during block processing.
-/// Note ReponseDeliverTx is renamed to ExecTxResult but they are semantically the same
-/// Kept for backwards compatibility for versions prior to v0.38
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct LegacyAbciResponses {
-    #[prost(message, repeated, tag = "1")]
-    pub deliver_txs: ::prost::alloc::vec::Vec<super::super::abci::v1beta3::ExecTxResult>,
-    #[prost(message, optional, tag = "2")]
-    pub end_block: ::core::option::Option<ResponseEndBlock>,
-    #[prost(message, optional, tag = "3")]
-    pub begin_block: ::core::option::Option<ResponseBeginBlock>,
-}
-impl ::prost::Name for LegacyAbciResponses {
-    const NAME: &'static str = "LegacyABCIResponses";
-    const PACKAGE: &'static str = "cometbft.state.v1beta3";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
-    }
-}
-/// ResponseBeginBlock is kept for backward compatibility for versions prior to v0.38,
-/// as it was then defined in the cometbft.abci packages.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponseBeginBlock {
-    #[prost(message, repeated, tag = "1")]
-    pub events: ::prost::alloc::vec::Vec<super::super::abci::v1beta2::Event>,
-}
-impl ::prost::Name for ResponseBeginBlock {
-    const NAME: &'static str = "ResponseBeginBlock";
-    const PACKAGE: &'static str = "cometbft.state.v1beta3";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
-    }
-}
-/// ResponseEndBlock is kept for backward compatibility for versions prior to v0.38,
-/// its earlier revisions were defined in the cometbft.abci packages.
-/// It uses an updated definition for the consensus_param_updates field to keep the
-/// generated data types interoperable with the latest protocol.
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ResponseEndBlock {
-    #[prost(message, repeated, tag = "1")]
-    pub validator_updates: ::prost::alloc::vec::Vec<super::super::abci::v1beta1::ValidatorUpdate>,
-    #[prost(message, optional, tag = "2")]
-    pub consensus_param_updates: ::core::option::Option<super::super::types::v1::ConsensusParams>,
-    #[prost(message, repeated, tag = "3")]
-    pub events: ::prost::alloc::vec::Vec<super::super::abci::v1beta2::Event>,
-}
-impl ::prost::Name for ResponseEndBlock {
-    const NAME: &'static str = "ResponseEndBlock";
-    const PACKAGE: &'static str = "cometbft.state.v1beta3";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
-    }
-}
-/// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct ConsensusParamsInfo {
-    #[prost(message, optional, tag = "1")]
-    pub consensus_params: ::core::option::Option<super::super::types::v1::ConsensusParams>,
-    #[prost(int64, tag = "2")]
-    pub last_height_changed: i64,
-}
-impl ::prost::Name for ConsensusParamsInfo {
-    const NAME: &'static str = "ConsensusParamsInfo";
-    const PACKAGE: &'static str = "cometbft.state.v1beta3";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
-    }
-}
 /// ABCIResponsesInfo retains the responses of the ABCI calls during block processing.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct AbciResponsesInfo {
     /// Retains the responses of the legacy ABCI calls during block processing.
     #[prost(message, optional, tag = "1")]
@@ -85,16 +11,54 @@ pub struct AbciResponsesInfo {
     pub response_finalize_block:
         ::core::option::Option<super::super::abci::v1beta3::ResponseFinalizeBlock>,
 }
-impl ::prost::Name for AbciResponsesInfo {
-    const NAME: &'static str = "ABCIResponsesInfo";
-    const PACKAGE: &'static str = "cometbft.state.v1beta3";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
-    }
+/// ConsensusParamsInfo represents the latest consensus params, or the last height it changed
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ConsensusParamsInfo {
+    #[prost(message, optional, tag = "1")]
+    pub consensus_params: ::core::option::Option<super::super::types::v1::ConsensusParams>,
+    #[prost(int64, tag = "2")]
+    pub last_height_changed: i64,
+}
+/// LegacyABCIResponses retains the responses
+/// of the legacy ABCI calls during block processing.
+/// Note ReponseDeliverTx is renamed to ExecTxResult but they are semantically the same
+/// Kept for backwards compatibility for versions prior to v0.38
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct LegacyAbciResponses {
+    #[prost(message, repeated, tag = "1")]
+    pub deliver_txs: ::prost::alloc::vec::Vec<super::super::abci::v1beta3::ExecTxResult>,
+    #[prost(message, optional, tag = "2")]
+    pub end_block: ::core::option::Option<ResponseEndBlock>,
+    #[prost(message, optional, tag = "3")]
+    pub begin_block: ::core::option::Option<ResponseBeginBlock>,
+}
+/// ResponseBeginBlock is kept for backward compatibility for versions prior to v0.38,
+/// as it was then defined in the cometbft.abci packages.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ResponseBeginBlock {
+    #[prost(message, repeated, tag = "1")]
+    pub events: ::prost::alloc::vec::Vec<super::super::abci::v1beta2::Event>,
+}
+/// ResponseEndBlock is kept for backward compatibility for versions prior to v0.38,
+/// its earlier revisions were defined in the cometbft.abci packages.
+/// It uses an updated definition for the consensus_param_updates field to keep the
+/// generated data types interoperable with the latest protocol.
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct ResponseEndBlock {
+    #[prost(message, repeated, tag = "1")]
+    pub validator_updates: ::prost::alloc::vec::Vec<super::super::abci::v1beta1::ValidatorUpdate>,
+    #[prost(message, optional, tag = "2")]
+    pub consensus_param_updates: ::core::option::Option<super::super::types::v1::ConsensusParams>,
+    #[prost(message, repeated, tag = "3")]
+    pub events: ::prost::alloc::vec::Vec<super::super::abci::v1beta2::Event>,
 }
 /// State represents the state of the blockchain.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct State {
     #[prost(message, optional, tag = "1")]
     pub version: ::core::option::Option<super::v1beta1::Version>,
@@ -137,6 +101,41 @@ pub struct State {
     #[prost(bytes = "vec", tag = "13")]
     pub app_hash: ::prost::alloc::vec::Vec<u8>,
 }
+impl ::prost::Name for AbciResponsesInfo {
+    const NAME: &'static str = "ABCIResponsesInfo";
+    const PACKAGE: &'static str = "cometbft.state.v1beta3";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ConsensusParamsInfo {
+    const NAME: &'static str = "ConsensusParamsInfo";
+    const PACKAGE: &'static str = "cometbft.state.v1beta3";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for LegacyAbciResponses {
+    const NAME: &'static str = "LegacyABCIResponses";
+    const PACKAGE: &'static str = "cometbft.state.v1beta3";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ResponseBeginBlock {
+    const NAME: &'static str = "ResponseBeginBlock";
+    const PACKAGE: &'static str = "cometbft.state.v1beta3";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for ResponseEndBlock {
+    const NAME: &'static str = "ResponseEndBlock";
+    const PACKAGE: &'static str = "cometbft.state.v1beta3";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for State {
     const NAME: &'static str = "State";
     const PACKAGE: &'static str = "cometbft.state.v1beta3";
@@ -144,4 +143,3 @@ impl ::prost::Name for State {
         ::prost::alloc::format!("cometbft.state.v1beta3.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)

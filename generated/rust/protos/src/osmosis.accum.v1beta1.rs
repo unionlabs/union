@@ -1,36 +1,21 @@
-// @generated
+#[allow(clippy::derive_partial_eq_without_eq)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
+pub struct Options {}
 /// AccumulatorContent is the state-entry for the global accumulator.
 /// It contains the name of the global accumulator and the total value of
 /// shares belonging to it from all positions.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct AccumulatorContent {
     #[prost(message, repeated, tag = "1")]
     pub accum_value: ::prost::alloc::vec::Vec<super::super::super::cosmos::base::v1beta1::DecCoin>,
     #[prost(string, tag = "2")]
     pub total_shares: ::prost::alloc::string::String,
 }
-impl ::prost::Name for AccumulatorContent {
-    const NAME: &'static str = "AccumulatorContent";
-    const PACKAGE: &'static str = "osmosis.accum.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("osmosis.accum.v1beta1.{}", Self::NAME)
-    }
-}
-#[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
-pub struct Options {}
-impl ::prost::Name for Options {
-    const NAME: &'static str = "Options";
-    const PACKAGE: &'static str = "osmosis.accum.v1beta1";
-    fn full_name() -> ::prost::alloc::string::String {
-        ::prost::alloc::format!("osmosis.accum.v1beta1.{}", Self::NAME)
-    }
-}
 /// Record corresponds to an individual position value belonging to the
 /// global accumulator.
 #[allow(clippy::derive_partial_eq_without_eq)]
-#[derive(Clone, PartialEq, ::prost::Message)]
+#[derive(Clone, PartialEq, :: prost :: Message)]
 pub struct Record {
     /// num_shares is the number of shares belonging to the position associated
     /// with this record.
@@ -67,6 +52,20 @@ pub struct Record {
     #[prost(message, optional, tag = "4")]
     pub options: ::core::option::Option<Options>,
 }
+impl ::prost::Name for AccumulatorContent {
+    const NAME: &'static str = "AccumulatorContent";
+    const PACKAGE: &'static str = "osmosis.accum.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("osmosis.accum.v1beta1.{}", Self::NAME)
+    }
+}
+impl ::prost::Name for Options {
+    const NAME: &'static str = "Options";
+    const PACKAGE: &'static str = "osmosis.accum.v1beta1";
+    fn full_name() -> ::prost::alloc::string::String {
+        ::prost::alloc::format!("osmosis.accum.v1beta1.{}", Self::NAME)
+    }
+}
 impl ::prost::Name for Record {
     const NAME: &'static str = "Record";
     const PACKAGE: &'static str = "osmosis.accum.v1beta1";
@@ -74,4 +73,3 @@ impl ::prost::Name for Record {
         ::prost::alloc::format!("osmosis.accum.v1beta1.{}", Self::NAME)
     }
 }
-// @@protoc_insertion_point(module)
