@@ -34,3 +34,5 @@ hex-literal   = { workspace = true }
 shared-crypto = { git = "https://github.com/MystenLabs/sui" }
 sui_sdk       = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
 sui_json_rpc_api       = { git = "https://github.com/mystenlabs/sui", package = "sui-json-rpc-api" }
+ucs03-zkgm = { workspace = true, features = [ "library" ] }
+alloy = { workspace = true, features = [ "sol-types" ] }

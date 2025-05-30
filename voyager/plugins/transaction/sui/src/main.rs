@@ -3,10 +3,11 @@ use std::{
     time::Duration,
 };
 
+use alloy::sol_types::SolValue;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use fastcrypto::{hash::HashFunction, traits::Signer};
 use hex_literal::hex;
-use ibc_union_spec::{datagram::Datagram, IbcUnion};
+use ibc_union_spec::{datagram::Datagram, ChannelId, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -19,6 +20,7 @@ use move_core_types::{
     language_storage::{StructTag, TypeTag},
 };
 use serde::{Deserialize, Serialize};
+use sha3::{Digest, Keccak256};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_json_rpc_api::MoveUtilsClient;
 use sui_sdk::{
@@ -40,10 +42,12 @@ use sui_sdk::{
     SuiClient, SuiClientBuilder,
 };
 use tracing::{info, instrument};
+use ucs03_zkgm::com::{FungibleAssetOrder, ZkgmPacket};
 use unionlabs::{
+    encoding::{DecodeAs, EthAbi},
     primitives::{
         encoding::{HexPrefixed, HexUnprefixed},
-        Bytes,
+        Bytes, U256,
     },
     ErrorReporter,
 };
@@ -537,8 +541,6 @@ async fn process_msgs(
                 )
             }
             Datagram::PacketRecv(data) => {
-                register_token_if_zkgm(&module, pk, &data.packets[0]);
-
                 let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
 
                 let res = query
@@ -554,6 +556,31 @@ async fn process_msgs(
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
                 let module_info: ModuleInfo = parse_port(&module.sui_client, &port_id).await;
+
+                let store_initial_seq = module
+                    .sui_client
+                    .read_api()
+                    .get_object_with_options(
+                        module_info.stores[0].into(),
+                        SuiObjectDataOptions::new().with_owner(),
+                    )
+                    .await
+                    .unwrap()
+                    .data
+                    .expect("object exists on chain")
+                    .owner
+                    .expect("owner will be present")
+                    .start_version()
+                    .expect("object is shared, hence it has a start version");
+
+                register_token_if_zkgm(
+                    &module,
+                    pk,
+                    &data.packets[0],
+                    &module_info,
+                    store_initial_seq,
+                )
+                .await;
 
                 let (
                     source_channels,
@@ -583,22 +610,6 @@ async fn process_msgs(
                     timeout_heights,
                     timeout_timestamps
                 );
-
-                let store_initial_seq = module
-                    .sui_client
-                    .read_api()
-                    .get_object_with_options(
-                        module_info.stores[0].into(),
-                        SuiObjectDataOptions::new().with_owner(),
-                    )
-                    .await
-                    .unwrap()
-                    .data
-                    .expect("object exists on chain")
-                    .owner
-                    .expect("owner will be present")
-                    .start_version()
-                    .expect("object is shared, hence it has a start version");
 
                 (
                     module_info.latest_address,
@@ -650,11 +661,41 @@ async fn process_msgs(
     data
 }
 
+fn predict_wrapped_denom(path: U256, channel: ChannelId, base_token: Vec<u8>) -> Vec<u8> {
+    let mut buf = vec![];
+    bcs::serialize_into(&mut buf, &path).expect("works");
+    bcs::serialize_into(&mut buf, &channel.raw()).expect("works");
+    buf.extend_from_slice(&base_token);
+
+    Keccak256::new().chain_update(buf).finalize().to_vec()
+}
+
 async fn register_token_if_zkgm(
     module: &Module,
     pk: &Arc<SuiKeyPair>,
-    packets: &ibc_union_spec::Packet,
+    packet: &ibc_union_spec::Packet,
+    module_info: &ModuleInfo,
+    store_initial_seq: SequenceNumber,
 ) {
+    let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data, true) else {
+        return;
+    };
+
+    let Ok(fao) = FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand, true)
+    else {
+        return;
+    };
+
+    let wrapped_token = predict_wrapped_denom(
+        fao.base_token_path.into(),
+        packet.destination_channel_id,
+        fao.base_token.to_vec(),
+    );
+
+    if fao.quote_token != wrapped_token {
+        return;
+    }
+
     let mut bytecode = TOKEN_BYTECODE[0].to_vec();
     bytecode.extend_from_slice(&hex!(
         "0000000000000000000000000000000000000000000000000000000000000001"
@@ -686,7 +727,7 @@ async fn register_token_if_zkgm(
     let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
 
     tokio::time::sleep(Duration::from_secs(1)).await;
-    let address = module
+    let (treasury_ref, coin_t) = module
         .sui_client
         .read_api()
         .get_transaction_with_options(
@@ -698,30 +739,44 @@ async fn register_token_if_zkgm(
         .object_changes
         .unwrap()
         .into_iter()
-        .find(|o| match o {
+        .find_map(|o| match &o {
             ObjectChange::Created {
-                object_type: StructTag { name, .. },
+                object_type: StructTag {
+                    name, type_params, ..
+                },
                 ..
-            } => *name == ident_str!("TreasuryCap").into(),
-            _ => false,
+            } => {
+                if name.as_ident_str() == ident_str!("TreasuryCap") {
+                    Some((o.object_ref(), type_params[0].clone()))
+                } else {
+                    None
+                }
+            }
+            _ => None,
         })
-        .unwrap()
-        .object_id();
+        .unwrap();
 
     let mut ptb = ProgrammableTransactionBuilder::new();
 
-    ptb.input(CallArg::Object(ObjectArg::SharedObject {
-        id: module.ibc_store.into(),
-        initial_shared_version: module.ibc_store_initial_seq,
-        mutable: true,
-    }));
-    ptb.input(CallArg::Object(ObjectArg::SharedObject {
-        id: module_info.stores[0].into(),
-        initial_shared_version: store_initial_seq,
-        mutable: true,
-    }));
+    let arguments = [
+        ptb.input(CallArg::Object(ObjectArg::SharedObject {
+            id: module_info.stores[0].into(),
+            initial_shared_version: store_initial_seq,
+            mutable: true,
+        }))
+        .unwrap(),
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
+            .unwrap(),
+    ]
+    .to_vec();
 
-    panic!("treasury cap: {address}");
+    ptb.command(Command::move_call(
+        module_info.latest_address.into(),
+        Identifier::new(module_info.module_name.clone()).unwrap(),
+        ident_str!("register_capability").into(),
+        vec![coin_t],
+        arguments,
+    ));
 }
 
 struct SuiQuery<'a> {
