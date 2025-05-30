@@ -884,7 +884,7 @@ pub async fn parse_port(sui_client: &SuiClient, port_id: &str) -> ModuleInfo {
         .field_value("package")
         .unwrap()
     else {
-        panic!("no brother no");
+        panic!("this can't be the case");
     };
 
     ModuleInfo {

@@ -28,7 +28,7 @@ serde_repr             = { version = "0.1.20", optional = true }
 sui-light-client-types = { workspace = true, features = ["bincode", "ethabi", "serde"] }
 sui-verifier           = { workspace = true }
 thiserror              = { workspace = true }
-typenum                = { version = "1.17.0", default-features = false }
+typenum                = { workspace = true }
 unionlabs              = { workspace = true, features = ["ethabi"] }
 
 [dev-dependencies]

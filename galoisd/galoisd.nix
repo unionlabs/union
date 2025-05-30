@@ -40,7 +40,7 @@
           {
             name = "libgalois";
             src = ./.;
-            vendorHash = "sha256-lGqoOkJnTvCdIonLwDDqz9ozDDJwB4wyJXlCgvt4arE=";
+            vendorHash = "sha256-iPGjBvb4Yj+Nzsx2l2MayQ+L0tItOilRqtCRnszOyLA=";
             tags = [ "library" ];
             doCheck = false;
           }

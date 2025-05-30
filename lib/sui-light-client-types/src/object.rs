@@ -92,20 +92,3 @@ pub enum TypeTag {
     U32,
     U256,
 }
-
-#[cfg(test)]
-mod tests {
-    use std::str::FromStr;
-
-    use unionlabs_primitives::encoding::{Base64, HexPrefixed};
-
-    use super::*;
-    #[test]
-    fn object() {
-        let bcs_bytes = Bytes::<Base64>::from_str("OEFp/jw2aT/lQdeNUyaKpj307NdfpvLogPgIZZvXeedAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAATsKdGhpcy1jaGFpbgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoAwAAAAAAAA==").unwrap();
-
-        let decoded: (SuiAddress, Vec<u8>, Vec<u8>) = bcs::from_bytes(&bcs_bytes).unwrap();
-
-        panic!("{decoded:?}");
-    }
-}
