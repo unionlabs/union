@@ -204,8 +204,6 @@ pub mod ethabi {
 
 #[cfg(test)]
 mod tests {
-    use alloy_sol_types::SolValue;
-
     use super::*;
 
     // NOTE: Explicit type annotations are intentional, to ensure the intended impls are called

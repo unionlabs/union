@@ -133,21 +133,27 @@
                 (fs.unions (lib.flatten [ (mkRootPaths extraIncludes) ]))
                 # ...and include rust source of workspace deps
                 (
-                  fs.intersection (fs.unions (mkRootPaths workspaceMembers)) (
-                    fs.fileFilter (file: (builtins.any file.hasExt [ "rs" ])) ../../.
-                  )
+                  fs.difference
+                    (fs.intersection (fs.unions (mkRootPaths workspaceMembers)) (
+                      fs.fileFilter (file: (builtins.any file.hasExt [ "rs" ])) ../../.
+                    ))
+                    (
+                      if dontRemoveDevDeps then
+                        fs.unions [ ]
+                      else
+                        (fs.unions (
+                          (map fs.maybeMissing (mkRootPaths (map (member: "${member}/tests") workspaceMembers)))
+                          ++ (map fs.maybeMissing (mkRootPaths (map (member: "${member}/examples") workspaceMembers)))
+                        ))
+                    )
                 );
           };
         in
         pkgs.stdenv.mkDerivation {
           name = "clean-workspace-source";
           src = filteredSrc;
-          buildInputs = [
-            pkgs.tree
-          ];
+          buildInputs = [ ];
           buildPhase = ''
-            tree .
-
             cp ${cargoLock} ./Cargo.lock
             cp ${cargoToml} ./Cargo.toml
 
@@ -730,7 +736,7 @@
 
       # these are incredibly useful for debugging
       packages = {
-        cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "ibc-union" ]);
+        # cleanCargoLock = writeTOML "Cargo.lock" (cleanCargoLock [ "ibc-union" ]);
         # cleanCargoLock = writeTOML "Cargo.lock" (
         #   cleanCargoLock (
         #     builtins.attrNames (
