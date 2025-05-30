@@ -2,10 +2,10 @@
 import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
 import SharpGasIcon from "$lib/components/icons/SharpGasIcon.svelte"
 import SharpInfoIcon from "$lib/components/icons/SharpInfoIcon.svelte"
-import { slide } from "svelte/transition"
-import { pipe } from "effect"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import { pipe } from "effect"
+import { slide } from "svelte/transition"
 
 let { open, onToggle } = $props()
 let loading = $state(false)
@@ -18,19 +18,19 @@ function toggleExpanded() {
 }
 
 const feeConfig = {
-  baseFees: { //From graphql
+  baseFees: { // From graphql
     packetSend: 21000,
     lightClientL1: 150000,
     lightClientL0: 500000,
     packetReceive: 80000,
   },
-  unitPrice: 10, //gasPrice from chain 
+  unitPrice: 10, // gasPrice from chain
   decimals: 6, // BABY token decimals (in rep)
-  feeMultiplier: 0.20, //Union hardcoded fee
-  batchDivideNumber: 2, //Api?
-  gasTokenDecimals: 6, //Token data
-  gasTokenSymbol: "BABY", //Token data
-  usdPrice: 0.13, //Gas price from service
+  feeMultiplier: 0.20, // Union hardcoded fee
+  batchDivideNumber: 2, // Api?
+  gasTokenDecimals: 6, // Token data
+  gasTokenSymbol: "BABY", // Token data
+  usdPrice: 0.13, // Gas price from service
 }
 
 const applyGasPrice = (gasUnits: number) => gasUnits * feeConfig.unitPrice
@@ -38,90 +38,94 @@ const applyFeeMultiplier = (ubbnAmount: number) => ubbnAmount * (1 + feeConfig.f
 const applyBatchDivision = (ubbnAmount: number) => ubbnAmount / feeConfig.batchDivideNumber
 const formatToDisplay = (ubbnAmount: number) => {
   const babyAmount = ubbnAmount / Math.pow(10, feeConfig.decimals)
-  if (babyAmount < 0.001) return babyAmount.toFixed(6)
-  if (babyAmount < 1) return babyAmount.toFixed(4) 
-  if (babyAmount < 100) return babyAmount.toFixed(3)
+  if (babyAmount < 0.001) {
+    return babyAmount.toFixed(6)
+  }
+  if (babyAmount < 1) {
+    return babyAmount.toFixed(4)
+  }
+  if (babyAmount < 100) {
+    return babyAmount.toFixed(3)
+  }
   return babyAmount.toFixed(2)
 }
-const calculateTotalFee = () => 
-  pipe(feeConfig.baseFees.packetSend, applyGasPrice, applyFeeMultiplier) +
-  pipe(feeConfig.baseFees.lightClientL1, applyGasPrice, applyFeeMultiplier, applyBatchDivision) +
-  pipe(feeConfig.baseFees.lightClientL0, applyGasPrice, applyFeeMultiplier, applyBatchDivision) +
-  pipe(feeConfig.baseFees.packetReceive, applyGasPrice, applyFeeMultiplier)
-  
+const calculateTotalFee = () =>
+  pipe(feeConfig.baseFees.packetSend, applyGasPrice, applyFeeMultiplier)
+  + pipe(feeConfig.baseFees.lightClientL1, applyGasPrice, applyFeeMultiplier, applyBatchDivision)
+  + pipe(feeConfig.baseFees.lightClientL0, applyGasPrice, applyFeeMultiplier, applyBatchDivision)
+  + pipe(feeConfig.baseFees.packetReceive, applyGasPrice, applyFeeMultiplier)
 
 const displayFees = $derived({
   packetSend: pipe(
     feeConfig.baseFees.packetSend,
     applyGasPrice,
     applyFeeMultiplier,
-    formatToDisplay
+    formatToDisplay,
   ),
   lightClientL1: pipe(
     feeConfig.baseFees.lightClientL1,
     applyGasPrice,
     applyFeeMultiplier,
     applyBatchDivision,
-    formatToDisplay
+    formatToDisplay,
   ),
   lightClientL0: pipe(
     feeConfig.baseFees.lightClientL0,
     applyGasPrice,
     applyFeeMultiplier,
     applyBatchDivision,
-    formatToDisplay
+    formatToDisplay,
   ),
   packetReceive: pipe(
     feeConfig.baseFees.packetReceive,
     applyGasPrice,
     applyFeeMultiplier,
-    formatToDisplay
+    formatToDisplay,
   ),
   total: pipe(
     calculateTotalFee(),
-    formatToDisplay
+    formatToDisplay,
   ),
   totalUsd: pipe(
     calculateTotalFee(),
     formatToDisplay,
     (amount) => parseFloat(amount),
     (amount) => amount * feeConfig.usdPrice,
-    (amount) => amount.toFixed(2)
+    (amount) => amount.toFixed(2),
   ),
 })
 
 // Fee breakdown items for iteration
 const feeBreakdownItems = $derived([
-  { 
-    label: 'Packet Send', 
+  {
+    label: "Packet Send",
     amount: displayFees.packetSend,
     baseFee: feeConfig.baseFees.packetSend,
     isBatched: false,
-    description: 'Fee for sending the packet to the destination chain'
+    description: "Fee for sending the packet to the destination chain",
   },
-  { 
-    label: 'Light Client (L1)', 
+  {
+    label: "Light Client (L1)",
     amount: displayFees.lightClientL1,
     baseFee: feeConfig.baseFees.lightClientL1,
     isBatched: true,
-    description: 'L1 light client update fee (shared across batch)'
+    description: "L1 light client update fee (shared across batch)",
   },
-  { 
-    label: 'Light Client (L0)', 
+  {
+    label: "Light Client (L0)",
     amount: displayFees.lightClientL0,
     baseFee: feeConfig.baseFees.lightClientL0,
     isBatched: true,
-    description: 'L0 light client update fee (shared across batch)'
+    description: "L0 light client update fee (shared across batch)",
   },
-  { 
-    label: 'Packet Receive', 
+  {
+    label: "Packet Receive",
     amount: displayFees.packetReceive,
     baseFee: feeConfig.baseFees.packetReceive,
     isBatched: false,
-    description: 'Fee for receiving the packet on the destination chain'
+    description: "Fee for receiving the packet on the destination chain",
   },
 ])
-
 </script>
 
 <div class="w-full overflow-hidden mt-auto">
@@ -144,7 +148,7 @@ const feeBreakdownItems = $derived([
       {/if}
     </div>
     {#if !loading}
-      <SharpChevronDownIcon 
+      <SharpChevronDownIcon
         class="size-5 text-zinc-400 transition-transform duration-200 {open ? 'rotate-180' : ''}"
       />
     {/if}
@@ -152,7 +156,7 @@ const feeBreakdownItems = $derived([
 
   <!-- Expandable content -->
   {#if open}
-    <div 
+    <div
       class="bg-zinc-900 rounded-b-md overflow-hidden border-t border-zinc-800"
       transition:slide={{ duration: 250 }}
     >
@@ -165,73 +169,138 @@ const feeBreakdownItems = $derived([
                 {#snippet trigger()}
                   <div class="flex items-center gap-1 cursor-help group transition-colors">
                     <span class="text-zinc-300 group-hover:text-zinc-200">{item.label}</span>
-                    <SharpInfoIcon class="size-3.5 text-zinc-500 group-hover:text-zinc-400 transition-colors" />
+                    <SharpInfoIcon
+                      class="size-3.5 text-zinc-500 group-hover:text-zinc-400 transition-colors"
+                    />
                   </div>
                 {/snippet}
-                
+
                 {#snippet content()}
                   <div class="text-sm">
                     <div class="font-semibold text-white mb-2">{item.label}</div>
                     <div class="text-zinc-300 mb-4">{item.description}</div>
-                    
+
                     <div class="text-xs font-mono space-y-4">
                       <!-- Input Parameters -->
                       <div>
-                        <div class="text-zinc-400 text-xs mb-2 uppercase tracking-wide">Input Parameters</div>
+                        <div class="text-zinc-400 text-xs mb-2 uppercase tracking-wide">
+                          Input Parameters
+                        </div>
                         <div class="border border-zinc-700 rounded">
                           <div class="grid grid-cols-2 border-b border-zinc-700 bg-zinc-900/50">
                             <div class="px-3 py-2 text-zinc-400 font-medium">Parameter</div>
-                            <div class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700">Value</div>
+                            <div
+                              class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700"
+                            >
+                              Value
+                            </div>
                           </div>
                           <div class="grid grid-cols-2 border-b border-zinc-700">
                             <div class="px-3 py-2 text-zinc-300">Gas cost</div>
-                            <div class="px-3 py-2 text-white border-l border-zinc-700">{item.baseFee.toLocaleString()}</div>
+                            <div class="px-3 py-2 text-white border-l border-zinc-700">
+                              {item.baseFee.toLocaleString()}
+                            </div>
                           </div>
                           <div class="grid grid-cols-2">
                             <div class="px-3 py-2 text-zinc-300">Gas price</div>
-                            <div class="px-3 py-2 text-white border-l border-zinc-700">{feeConfig.unitPrice.toLocaleString()} ubbn</div>
+                            <div class="px-3 py-2 text-white border-l border-zinc-700">
+                              {feeConfig.unitPrice.toLocaleString()} ubbn
+                            </div>
                           </div>
                         </div>
                       </div>
 
                       <!-- Calculation Steps -->
                       <div>
-                        <div class="text-zinc-400 text-xs mb-2 uppercase tracking-wide">Calculation Steps</div>
+                        <div class="text-zinc-400 text-xs mb-2 uppercase tracking-wide">
+                          Calculation Steps
+                        </div>
                         <div class="border border-zinc-700 rounded">
                           <div class="grid grid-cols-3 border-b border-zinc-700 bg-zinc-900/50">
                             <div class="px-3 py-2 text-zinc-400 font-medium">Step</div>
-                            <div class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700">Operation</div>
-                            <div class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700">Result</div>
+                            <div
+                              class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700"
+                            >
+                              Operation
+                            </div>
+                            <div
+                              class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700"
+                            >
+                              Result
+                            </div>
                           </div>
-                          
+
                           <div class="grid grid-cols-3 border-b border-zinc-700">
                             <div class="px-3 py-2 text-zinc-300">Base fee</div>
-                            <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">{item.baseFee.toLocaleString()} × {feeConfig.unitPrice.toLocaleString()}</div>
-                            <div class="px-3 py-2 text-white border-l border-zinc-700">{(item.baseFee * feeConfig.unitPrice).toLocaleString()} ubbn</div>
+                            <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
+                              {item.baseFee.toLocaleString()} × {
+                                feeConfig.unitPrice.toLocaleString()
+                              }
+                            </div>
+                            <div class="px-3 py-2 text-white border-l border-zinc-700">
+                              {
+                                (item.baseFee * feeConfig.unitPrice)
+                                .toLocaleString()
+                              } ubbn
+                            </div>
                           </div>
-                          
-                          <div class="grid grid-cols-3 {item.isBatched ? 'border-b border-zinc-700' : ''}">
+
+                          <div
+                            class="grid grid-cols-3 {item.isBatched ? 'border-b border-zinc-700' : ''}"
+                          >
                             <div class="px-3 py-2 text-zinc-300">Protocol fee</div>
-                            <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">+ {Math.round(feeConfig.feeMultiplier * 100)}%</div>
-                            <div class="px-3 py-2 text-white border-l border-zinc-700">+{(item.baseFee * feeConfig.unitPrice * feeConfig.feeMultiplier).toLocaleString()} ubbn</div>
+                            <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
+                              + {Math.round(feeConfig.feeMultiplier * 100)}%
+                            </div>
+                            <div class="px-3 py-2 text-white border-l border-zinc-700">
+                              +{
+                                (item.baseFee * feeConfig.unitPrice
+                                * feeConfig.feeMultiplier).toLocaleString()
+                              } ubbn
+                            </div>
                           </div>
-                          
+
                           {#if item.isBatched}
                             <div class="grid grid-cols-3 border-b border-zinc-700">
                               <div class="px-3 py-2 text-green-300">Batch savings</div>
-                              <div class="px-3 py-2 text-green-300 border-l border-zinc-700">÷ {feeConfig.batchDivideNumber}</div>
-                              <div class="px-3 py-2 text-green-400 border-l border-zinc-700">-{(((item.baseFee * feeConfig.unitPrice * (1 + feeConfig.feeMultiplier)) - (item.baseFee * feeConfig.unitPrice * (1 + feeConfig.feeMultiplier)) / feeConfig.batchDivideNumber)).toLocaleString()} ubbn</div>
+                              <div class="px-3 py-2 text-green-300 border-l border-zinc-700">
+                                ÷ {feeConfig.batchDivideNumber}
+                              </div>
+                              <div class="px-3 py-2 text-green-400 border-l border-zinc-700">
+                                -{
+                                  ((item.baseFee * feeConfig.unitPrice
+                                  * (1 + feeConfig.feeMultiplier))
+                                  - (item.baseFee * feeConfig.unitPrice
+                                      * (1 + feeConfig.feeMultiplier))
+                                    / feeConfig.batchDivideNumber)
+                                  .toLocaleString()
+                                } ubbn
+                              </div>
                             </div>
                           {/if}
-                          
+
                           <div class="grid grid-cols-3 bg-zinc-800/50 border-t border-zinc-700">
                             <div class="px-3 py-2 text-white font-semibold">Total</div>
-                            <div class="px-3 py-2 text-zinc-300 border-l border-zinc-700 font-medium"></div>
-                            <div class="px-3 py-2 text-white font-semibold border-l border-zinc-700">
+                            <div
+                              class="px-3 py-2 text-zinc-300 border-l border-zinc-700 font-medium"
+                            >
+                            </div>
+                            <div
+                              class="px-3 py-2 text-white font-semibold border-l border-zinc-700"
+                            >
                               {#if item.isBatched}
-                                {(((item.baseFee * feeConfig.unitPrice * (1 + feeConfig.feeMultiplier)) / feeConfig.batchDivideNumber)).toLocaleString()} ubbn
+                                {
+                                  ((item.baseFee * feeConfig.unitPrice
+                                  * (1 + feeConfig.feeMultiplier))
+                                  / feeConfig.batchDivideNumber)
+                                  .toLocaleString()
+                                } ubbn
                               {:else}
-                                {(item.baseFee * feeConfig.unitPrice * (1 + feeConfig.feeMultiplier)).toLocaleString()} ubbn
+                                {
+                                  (item.baseFee * feeConfig.unitPrice
+                                  * (1 + feeConfig.feeMultiplier))
+                                  .toLocaleString()
+                                } ubbn
                               {/if}
                             </div>
                           </div>
@@ -240,35 +309,69 @@ const feeBreakdownItems = $derived([
 
                       <!-- Unit Conversion -->
                       <div>
-                        <div class="text-zinc-400 text-xs mb-2 uppercase tracking-wide">Unit Conversion</div>
+                        <div class="text-zinc-400 text-xs mb-2 uppercase tracking-wide">
+                          Unit Conversion
+                        </div>
                         <div class="border border-zinc-700 rounded">
                           <div class="grid grid-cols-3 border-b border-zinc-700 bg-zinc-900/50">
                             <div class="px-3 py-2 text-zinc-400 font-medium">Amount (ubbn)</div>
-                            <div class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700">Operation</div>
-                            <div class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700">Result</div>
+                            <div
+                              class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700"
+                            >
+                              Operation
+                            </div>
+                            <div
+                              class="px-3 py-2 text-zinc-400 font-medium border-l border-zinc-700"
+                            >
+                              Result
+                            </div>
                           </div>
                           <div class="grid grid-cols-3">
                             <div class="px-3 py-2 text-zinc-300">
                               {#if item.isBatched}
-                                {(((item.baseFee * feeConfig.unitPrice * (1 + feeConfig.feeMultiplier)) / feeConfig.batchDivideNumber)).toLocaleString()}
+                                {
+                                  ((item.baseFee * feeConfig.unitPrice
+                                  * (1 + feeConfig.feeMultiplier))
+                                  / feeConfig.batchDivideNumber)
+                                  .toLocaleString()
+                                }
                               {:else}
-                                {(item.baseFee * feeConfig.unitPrice * (1 + feeConfig.feeMultiplier)).toLocaleString()}
+                                {
+                                  (item.baseFee * feeConfig.unitPrice
+                                  * (1 + feeConfig.feeMultiplier))
+                                  .toLocaleString()
+                                }
                               {/if}
                             </div>
-                            <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">÷ 10^{feeConfig.decimals}</div>
-                            <div class="px-3 py-2 text-white border-l border-zinc-700">{item.amount} {feeConfig.gasTokenSymbol}</div>
+                            <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
+                              ÷ 10^{feeConfig.decimals}
+                            </div>
+                            <div class="px-3 py-2 text-white border-l border-zinc-700">
+                              {item.amount} {feeConfig.gasTokenSymbol}
+                            </div>
                           </div>
                         </div>
                       </div>
 
                       <!-- Final Amount with USD -->
                       <div>
-                        <div class="text-zinc-400 text-xs mb-1.5 uppercase tracking-wide">Final Amount</div>
+                        <div class="text-zinc-400 text-xs mb-1.5 uppercase tracking-wide">
+                          Final Amount
+                        </div>
                         <div class="border-2 border-zinc-600 rounded-lg bg-zinc-900/30">
                           <div class="px-3 py-2 text-center">
-                            <div class="text-sm font-bold text-white mb-0.5">{item.amount} {feeConfig.gasTokenSymbol}</div>
-                            <div class="text-xs text-zinc-400">≈ ${(parseFloat(item.amount) * feeConfig.usdPrice).toFixed(4)} USD</div>
-                            <div class="text-xs text-zinc-500">@ ${feeConfig.usdPrice} per {feeConfig.gasTokenSymbol}</div>
+                            <div class="text-sm font-bold text-white mb-0.5">
+                              {item.amount} {feeConfig.gasTokenSymbol}
+                            </div>
+                            <div class="text-xs text-zinc-400">
+                              ≈ ${
+                                (parseFloat(item.amount) * feeConfig.usdPrice)
+                                .toFixed(4)
+                              } USD
+                            </div>
+                            <div class="text-xs text-zinc-500">
+                              @ ${feeConfig.usdPrice} per {feeConfig.gasTokenSymbol}
+                            </div>
                           </div>
                         </div>
                       </div>
@@ -285,7 +388,7 @@ const feeBreakdownItems = $derived([
           </div>
         {/each}
       </div>
-      
+
       <!-- Total fee -->
       <div class="border-t border-zinc-800 px-4 py-3">
         <div class="flex items-center justify-between text-xs">
@@ -324,4 +427,4 @@ const feeBreakdownItems = $derived([
       </div>
     </div>
   {/if}
-</div> 
+</div>
