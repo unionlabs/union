@@ -61,8 +61,6 @@
 module zkgm::fungible_asset_order_ack {
     use zkgm::zkgm_ethabi;
 
-    use std::vector;
-
     public struct FungibleAssetOrderAck has copy, drop, store {
         fill_type: u256,
         market_maker: vector<u8>

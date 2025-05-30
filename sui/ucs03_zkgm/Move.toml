@@ -18,8 +18,9 @@ ibc = { local = "../ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc  = "0xc6a0d84dbfa690fcd65af1ca1b1772e82f22c567fcf08e686ad3fd8f0bbc0d80"
-zkgm = "0x0"
+ibc  = "_"
+zkgm = "_"
+decimals    = "_"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
@@ -33,6 +34,8 @@ zkgm = "0x0"
 [dev-addresses]
 ibc  = "0x22222"
 zkgm = "0x4444444444444"
+decimals    = "0x20"
+
 # The dev-addresses section allows overwriting named addresses for the `--test`
 # and `--dev` modes.
 # alice = "0xB0B"
