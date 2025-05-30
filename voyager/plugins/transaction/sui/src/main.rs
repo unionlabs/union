@@ -1,7 +1,11 @@
-use std::{collections::VecDeque, panic::AssertUnwindSafe, str::FromStr, sync::Arc};
+use std::{
+    collections::VecDeque, fmt::Debug, panic::AssertUnwindSafe, str::FromStr, sync::Arc,
+    time::Duration,
+};
 
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use fastcrypto::{hash::HashFunction, traits::Signer};
+use hex_literal::hex;
 use ibc_union_spec::{datagram::Datagram, IbcUnion};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -10,20 +14,26 @@ use jsonrpsee::{
 };
 use move_core_types::{
     account_address::AccountAddress,
+    ident_str,
     identifier::Identifier as MoveIdentifier,
     language_storage::{StructTag, TypeTag},
 };
 use serde::{Deserialize, Serialize};
 use shared_crypto::intent::{Intent, IntentMessage};
+use sui_json_rpc_api::MoveUtilsClient;
 use sui_sdk::{
-    rpc_types::{SuiData, SuiObjectDataOptions, SuiTransactionBlockResponseOptions, SuiTypeTag},
+    rpc_types::{
+        ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
+        SuiTransactionBlockResponseOptions, SuiTypeTag,
+    },
     types::{
         base_types::{ObjectID, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
         transaction::{
-            Argument, CallArg, Command, ObjectArg, Transaction, TransactionData, TransactionKind,
+            Argument, CallArg, Command, ObjectArg, ProgrammableTransaction, Transaction,
+            TransactionData, TransactionKind,
         },
         Identifier,
     },
@@ -31,7 +41,10 @@ use sui_sdk::{
 };
 use tracing::{info, instrument};
 use unionlabs::{
-    primitives::{encoding::HexPrefixed, Bytes},
+    primitives::{
+        encoding::{HexPrefixed, HexUnprefixed},
+        Bytes,
+    },
     ErrorReporter,
 };
 use voyager_message::{
@@ -50,8 +63,31 @@ pub mod call;
 pub mod callback;
 pub mod data;
 
+const TOKEN_BYTECODE: [&[u8]; 2] = [
+    hex!("a11ceb0b060000000a01000e020e1e032c27045308055b5607b101d1010882036006e2034b0aad04050cb2042b000a010d020602070212021302140001020001020701000003000c01000103030c0100010504020006050700000b000100010c010601000211030400030808090102040e0b01010c040f0e01010c05100c030001050307040a050d02080007080400020b020108000b030108000105010f010805010b01010900010800070900020a020a020a020b01010805070804020b030109000b02010900010b0201080001090001060804010b03010800020900050c436f696e4d657461646174610e46554e4749424c455f544f4b454e064f7074696f6e0b5472656173757279436170095478436f6e746578740355726c076164647265737304636f696e0f6372656174655f63757272656e63790b64756d6d795f6669656c640e66756e6769626c655f746f6b656e04696e6974046e6f6e65066f7074696f6e137075626c69635f73686172655f6f626a6563740f7075626c69635f7472616e736665720673656e64657207746f5f75323536087472616e736665720a74785f636f6e746578740375726c0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000020520").as_slice(),
+    hex!("0a0205046d756e6f0a021e1d7a6b676d20746f6b656e206372656174656420627920766f796167657200020109010000000002140b00070011023307010701070238000a0138010c020c030b0238020b030b012e110638030200").as_slice()
+];
+
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
+    // let sui_client = SuiClientBuilder::default()
+    //     .build("https://fullnode.testnet.sui.io")
+    //     .await
+    //     .unwrap();
+
+    // let res = sui_client
+    //     .http()
+    //     .get_normalized_move_function(
+    //         ObjectID::from_str(
+    //             "0xf02e69bb76b03820e27ddb2908f8dace2efa3d69924ee1842ddbf3df1287b917",
+    //         )
+    //         .unwrap(),
+    //         "zkgm_relay".into(),
+    //         "recv_packet".into(),
+    //     )
+    //     .await
+    //     .unwrap();
+
     Module::run().await
 }
 
@@ -203,35 +239,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     let sender = SuiAddress::from(&pk.public());
                     let msgs = msgs.clone();
                     AssertUnwindSafe(async move {
-                        let gas_coin = self
-                            .sui_client
-                            .coin_read_api()
-                            .get_coins(sender, None, None, None)
-                            .await
-                            .expect("sender is broke")
-                            .data
-                            .into_iter()
-                            .next()
-                            .expect("sender has a gas token");
-
-                        let gas_budget = 200_000_000; //TODO: change it later
-                        let gas_price = self
-                            .sui_client
-                            .read_api()
-                            .get_reference_gas_price()
-                            .await
-                            .map_err(|e| {
-                                ErrorObject::owned(
-                                    -1,
-                                    ErrorReporter(e)
-                                        .with_message("error fetching the reference gas price"),
-                                    None::<()>,
-                                )
-                            })?;
-
-                        // create the transaction data that will be sent to the network.
-                        //
-                        let msgs = process_msgs(self, msgs.clone(), sender).await;
+                        let msgs = process_msgs(self, pk, msgs, sender).await;
 
                         let mut ptb = ProgrammableTransactionBuilder::new();
 
@@ -252,52 +260,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         }
 
                         let builder = ptb.finish();
-
-                        let tx_data = TransactionData::new_programmable(
-                            sender,
-                            vec![gas_coin.object_ref()],
-                            builder,
-                            gas_budget,
-                            gas_price,
-                        );
-
-                        let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
-                        let raw_tx = bcs::to_bytes(&intent_msg).expect("bcs should not fail");
-                        let mut hasher = DefaultHash::default();
-                        hasher.update(raw_tx.clone());
-                        let digest = hasher.finalize().digest;
-
-                        // use SuiKeyPair to sign the digest.
-                        let sui_sig = pk.sign(&digest);
-
-                        sui_sig
-                            .verify_secure(&intent_msg, sender, SignatureScheme::ED25519)
-                            .expect("sender has a valid signature");
-
-                        info!("submitting sui tx");
-
-                        let transaction_response = self
-                            .sui_client
-                            .quorum_driver_api()
-                            .execute_transaction_block(
-                                Transaction::from_generic_sig_data(
-                                    intent_msg.value,
-                                    vec![GenericSignature::Signature(sui_sig)],
-                                ),
-                                SuiTransactionBlockResponseOptions::default(),
-                                None,
-                            )
-                            .await
-                            .map_err(|e| {
-                                ErrorObject::owned(
-                                    -1,
-                                    ErrorReporter(e).with_message("error executing a tx"),
-                                    None::<()>,
-                                )
-                            })?;
-
-                        info!("{transaction_response:?}");
-
+                        let _ = send_transactions(self, pk, builder).await?;
                         Ok(noop())
                     })
                 })
@@ -329,6 +292,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 #[allow(clippy::type_complexity)]
 async fn process_msgs(
     module: &Module,
+    pk: &Arc<SuiKeyPair>,
     msgs: Vec<Datagram>,
     fee_recipient: SuiAddress,
 ) -> Vec<(
@@ -573,6 +537,8 @@ async fn process_msgs(
                 )
             }
             Datagram::PacketRecv(data) => {
+                register_token_if_zkgm(&module, pk, &data.packets[0]);
+
                 let query = SuiQuery::new(&module.sui_client, module.ibc_store.into()).await;
 
                 let res = query
@@ -682,6 +648,80 @@ async fn process_msgs(
     }
 
     data
+}
+
+async fn register_token_if_zkgm(
+    module: &Module,
+    pk: &Arc<SuiKeyPair>,
+    packets: &ibc_union_spec::Packet,
+) {
+    let mut bytecode = TOKEN_BYTECODE[0].to_vec();
+    bytecode.extend_from_slice(&hex!(
+        "0000000000000000000000000000000000000000000000000000000000000001"
+    ));
+    bytecode.extend_from_slice(TOKEN_BYTECODE[1]);
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let res = ptb.command(Command::Publish(
+        vec![bytecode],
+        vec![
+            ObjectID::from_str(
+                "0x0000000000000000000000000000000000000000000000000000000000000001",
+            )
+            .unwrap(),
+            ObjectID::from_str(
+                "0x0000000000000000000000000000000000000000000000000000000000000002",
+            )
+            .unwrap(),
+        ],
+    ));
+    let arg = ptb
+        .input(CallArg::Pure(
+            bcs::to_bytes(&SuiAddress::from(&pk.public())).unwrap(),
+        ))
+        .unwrap();
+    let _ = ptb.command(Command::TransferObjects(vec![res], arg));
+
+    let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
+
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    let address = module
+        .sui_client
+        .read_api()
+        .get_transaction_with_options(
+            transaction_response.digest,
+            SuiTransactionBlockResponseOptions::new().with_object_changes(),
+        )
+        .await
+        .unwrap()
+        .object_changes
+        .unwrap()
+        .into_iter()
+        .find(|o| match o {
+            ObjectChange::Created {
+                object_type: StructTag { name, .. },
+                ..
+            } => *name == ident_str!("TreasuryCap").into(),
+            _ => false,
+        })
+        .unwrap()
+        .object_id();
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: module.ibc_store.into(),
+        initial_shared_version: module.ibc_store_initial_seq,
+        mutable: true,
+    }));
+    ptb.input(CallArg::Object(ObjectArg::SharedObject {
+        id: module_info.stores[0].into(),
+        initial_shared_version: store_initial_seq,
+        mutable: true,
+    }));
+
+    panic!("treasury cap: {address}");
 }
 
 struct SuiQuery<'a> {
@@ -801,4 +841,81 @@ pub async fn parse_port(sui_client: &SuiClient, port_id: &str) -> ModuleInfo {
             .map(|s| s.parse().unwrap())
             .collect(),
     }
+}
+
+pub async fn send_transactions(
+    module: &Module,
+    pk: &Arc<SuiKeyPair>,
+    ptb: ProgrammableTransaction,
+) -> RpcResult<SuiTransactionBlockResponse> {
+    let sender = SuiAddress::from(&pk.public());
+    let gas_coin = module
+        .sui_client
+        .coin_read_api()
+        .get_coins(sender, None, None, None)
+        .await
+        .expect("sender is broke")
+        .data
+        .into_iter()
+        .next()
+        .expect("sender has a gas token");
+
+    let gas_budget = 200_000_000; //TODO: change it later
+    let gas_price = module
+        .sui_client
+        .read_api()
+        .get_reference_gas_price()
+        .await
+        .map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                ErrorReporter(e).with_message("error fetching the reference gas price"),
+                None::<()>,
+            )
+        })?;
+
+    let tx_data = TransactionData::new_programmable(
+        sender,
+        vec![gas_coin.object_ref()],
+        ptb,
+        gas_budget,
+        gas_price,
+    );
+
+    let intent_msg = IntentMessage::new(Intent::sui_transaction(), tx_data);
+    let raw_tx = bcs::to_bytes(&intent_msg).expect("bcs should not fail");
+    let mut hasher = DefaultHash::default();
+    hasher.update(raw_tx.clone());
+    let digest = hasher.finalize().digest;
+
+    // use SuiKeyPair to sign the digest.
+    let sui_sig = pk.sign(&digest);
+
+    sui_sig
+        .verify_secure(&intent_msg, sender, SignatureScheme::ED25519)
+        .expect("sender has a valid signature");
+
+    info!("submitting sui tx");
+
+    let transaction_response = module
+        .sui_client
+        .quorum_driver_api()
+        .execute_transaction_block(
+            Transaction::from_generic_sig_data(
+                intent_msg.value,
+                vec![GenericSignature::Signature(sui_sig)],
+            ),
+            SuiTransactionBlockResponseOptions::default(),
+            None,
+        )
+        .await
+        .map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                ErrorReporter(e).with_message("error executing a tx"),
+                None::<()>,
+            )
+        })?;
+
+    Ok(transaction_response)
 }
