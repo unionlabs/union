@@ -16,7 +16,7 @@ either         = { workspace = true }
 embed-commit   = { workspace = true }
 enumorph       = { workspace = true }
 futures        = { workspace = true }
-ibc-union-spec = { workspace = true, features = ["serde", "ethabi", "ibc-solidity-compat"] }
+ibc-union-spec = { workspace = true, features = ["serde", "ethabi"] }
 itertools      = { workspace = true }
 jsonrpsee      = { workspace = true, features = ["macros", "server", "tracing"] }
 macros         = { workspace = true }

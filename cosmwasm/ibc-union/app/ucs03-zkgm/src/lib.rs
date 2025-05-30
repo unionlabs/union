@@ -1,3 +1,12 @@
+use alloy_primitives::{ruint::ParseError, U256};
+use cosmwasm_std::{Addr, Instantiate2AddressError, StdError};
+use frissitheto::UpgradeError;
+use ibc_union_spec::ChannelId;
+use thiserror::Error;
+use unionlabs::primitives::Bytes;
+
+use crate::com::Stake;
+
 pub mod com;
 pub mod contract;
 pub mod msg;
@@ -5,12 +14,6 @@ mod state;
 #[cfg(test)]
 mod tests;
 pub mod token_bucket;
-use alloy_primitives::{ruint::ParseError, U256};
-use cosmwasm_std::StdError;
-use frissitheto::UpgradeError;
-use ibc_union_spec::ChannelId;
-use thiserror::Error;
-use unionlabs::primitives::Bytes;
 
 #[derive(Error, Debug, PartialEq)]
 pub enum ContractError {
