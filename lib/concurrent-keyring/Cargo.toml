@@ -25,5 +25,5 @@ unionlabs       = { workspace = true, features = ["default"] }
 
 [dev-dependencies]
 hex-literal        = { workspace = true }
-tracing-subscriber = "0.3.18"
+tracing-subscriber = "0.3.19"
 unionlabs          = { workspace = true, features = ["default", "test-utils"] }

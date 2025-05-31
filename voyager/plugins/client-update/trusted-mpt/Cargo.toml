@@ -16,7 +16,7 @@ alloy                          = { workspace = true, features = ["rpc", "rpc-typ
 beacon-api                     = { workspace = true }
 beacon-api-types               = { workspace = true, features = ["serde"] }
 bitvec                         = { workspace = true }
-ed25519-dalek                  = { version = "2.1.0" }
+ed25519-dalek                  = { version = "2.1.1" }
 embed-commit                   = { workspace = true }
 enumorph                       = { workspace = true }
 ethereum-light-client-types    = { workspace = true, features = ["serde"] }
