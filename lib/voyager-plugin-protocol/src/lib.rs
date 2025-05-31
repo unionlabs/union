@@ -30,7 +30,6 @@ use std::{
 use futures::FutureExt;
 use jsonrpsee::{
     core::{
-        async_trait,
         client::{BatchResponse, ClientT},
         params::BatchRequestBuilder,
         traits::ToRpcParams,
@@ -47,10 +46,7 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::value::RawValue;
 use tokio::time::sleep;
 use tokio_util::sync::CancellationToken;
-use tracing::{
-    debug, debug_span, error, info, info_span, instrument, instrument::Instrumented, trace,
-    Instrument,
-};
+use tracing::{debug, debug_span, error, info, info_span, instrument, trace, Instrument};
 use unionlabs::{ethereum::slot::keccak256, primitives::encoding::HexUnprefixed, ErrorReporter};
 use voyager_client::VoyagerClient;
 use voyager_rpc::VoyagerRpcServer;
@@ -242,56 +238,88 @@ pub fn coordinator_socket_path(name: &str) -> String {
 /// An [`RpcServiceT`] layer to extract the [`ItemId`] threaded by an [`IdThreadClient`].
 ///
 /// The extracted item id, if any, is inserted into the request extensions, and the inner request is forwarded to `S`.
+#[derive(Clone)]
 pub struct ExtractItemIdService<S> {
     service: S,
 }
 
-impl<'a, S: RpcServiceT<'a>> RpcServiceT<'a> for ExtractItemIdService<S> {
-    type Future = futures::future::Either<Instrumented<S::Future>, S::Future>;
+impl<S> RpcServiceT for ExtractItemIdService<S>
+where
+    S: RpcServiceT + Send + Sync + Clone + 'static,
+{
+    type MethodResponse = S::MethodResponse;
+    type NotificationResponse = S::NotificationResponse;
+    type BatchResponse = S::BatchResponse;
 
-    fn call(&self, mut request: jsonrpsee::types::Request<'a>) -> Self::Future {
-        if let Some(params) = request.params.take() {
-            match serde_json::from_str(params.get()) {
-                Ok(ParamsWithItemId { item_id, params }) => {
-                    let mut request = jsonrpsee::types::Request {
-                        params: params.map(|rv| Cow::Owned(rv.into_owned())),
-                        ..request
-                    };
+    fn call<'a>(
+        &self,
+        mut request: jsonrpsee::types::Request<'a>,
+    ) -> impl Future<Output = Self::MethodResponse> + 'a {
+        let service = self.service.clone();
 
-                    request.extensions.insert(item_id);
+        async move {
+            if let Some(params) = request.params.take() {
+                match serde_json::from_str(params.get()) {
+                    Ok(ParamsWithItemId { item_id, params }) => {
+                        let mut request = jsonrpsee::types::Request {
+                            params: params.map(|rv| Cow::Owned(rv.into_owned())),
+                            ..request
+                        };
 
-                    return self
-                        .service
-                        .call(request)
-                        .instrument(info_span!("item_id", item_id = item_id.raw()))
-                        .left_future();
+                        request.extensions.insert(item_id);
+
+                        return service
+                            .call(request)
+                            .instrument(info_span!("item_id", item_id = item_id.raw()))
+                            .await;
+                    }
+                    Err(_) => {
+                        request.params = Some(params);
+                    }
                 }
-                Err(_) => {
-                    request.params = Some(params);
-                }
-            }
-        };
+            };
 
-        self.service.call(request).right_future()
+            service.call(request).await
+        }
+    }
+
+    fn batch<'a>(
+        &self,
+        requests: jsonrpsee::core::middleware::Batch<'a>,
+    ) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
+        self.service.batch(requests)
+    }
+
+    fn notification<'a>(
+        &self,
+        n: jsonrpsee::core::middleware::Notification<'a>,
+    ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
+        self.service.notification(n)
     }
 }
 
 /// An [`RpcServiceT`] layer to inject a [`VoyagerClient`] into the request extensions.
 ///
 /// If there is an item id present in the request extensions (likely extracted via [`ExtractItemIdService`]), this will also thread the id in the voyager client with [`IdThreadClient`].
+#[derive(Clone)]
 struct InjectVoyagerClientService<S, C> {
     client: C,
     service: S,
 }
 
-impl<'a, S, C> RpcServiceT<'a> for InjectVoyagerClientService<S, C>
+impl<S, C> RpcServiceT for InjectVoyagerClientService<S, C>
 where
-    S: RpcServiceT<'a> + Send + Sync,
+    S: RpcServiceT + Send + Sync + Clone + 'static,
     C: ClientT + Clone + Send + Sync + 'static,
 {
-    type Future = futures::future::Either<Instrumented<S::Future>, S::Future>;
+    type MethodResponse = S::MethodResponse;
+    type NotificationResponse = S::NotificationResponse;
+    type BatchResponse = S::BatchResponse;
 
-    fn call(&self, mut request: jsonrpsee::types::Request<'a>) -> Self::Future {
+    fn call<'a>(
+        &self,
+        mut request: jsonrpsee::types::Request<'a>,
+    ) -> impl Future<Output = Self::MethodResponse> + 'a {
         let item_id = request.extensions.get::<ItemId>().cloned();
 
         request
@@ -301,50 +329,100 @@ where
                 item_id,
             }));
 
-        self.service.call(request).right_future()
+        self.service.call(request)
+    }
+
+    fn batch<'a>(
+        &self,
+        mut requests: jsonrpsee::core::middleware::Batch<'a>,
+    ) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
+        let item_id = requests.extensions().get::<ItemId>().cloned();
+
+        requests
+            .extensions_mut()
+            .insert(VoyagerClient::new(IdThreadClient {
+                client: self.client.clone(),
+                item_id,
+            }));
+
+        self.service.batch(requests)
+    }
+
+    fn notification<'a>(
+        &self,
+        mut n: jsonrpsee::core::middleware::Notification<'a>,
+    ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
+        let item_id = n.extensions().get::<ItemId>().cloned();
+
+        n.extensions_mut()
+            .insert(VoyagerClient::new(IdThreadClient {
+                client: self.client.clone(),
+                item_id,
+            }));
+
+        self.service.notification(n)
     }
 }
 
 /// An [`RpcServiceT`] layer to provide error context about the current worker.
 ///
 /// This allows for "tracing" errors across many cross-worker calls.
+#[derive(Clone)]
 struct ErrorContextService<S> {
     service: S,
     id: String,
 }
 
-impl<'a, S: RpcServiceT<'a> + Send + Sync> RpcServiceT<'a> for ErrorContextService<S> {
-    type Future = futures::future::Map<
-        S::Future,
-        Box<dyn Fn(MethodResponse) -> MethodResponse + Send + Sync>,
-    >;
+impl<S> RpcServiceT for ErrorContextService<S>
+where
+    S: RpcServiceT<MethodResponse = MethodResponse> + Send + Sync + Clone + 'static,
+{
+    type MethodResponse = S::MethodResponse;
+    type NotificationResponse = S::NotificationResponse;
+    type BatchResponse = S::BatchResponse;
 
-    fn call(&self, request: jsonrpsee::types::Request<'a>) -> Self::Future {
+    fn call<'a>(
+        &self,
+        request: jsonrpsee::types::Request<'a>,
+    ) -> impl Future<Output = Self::MethodResponse> + Send + 'a {
         let id = self.id.clone();
-        self.service
-            .call(request)
-            .map(Box::new(move |method_response| {
-                if method_response.is_error() {
-                    let result = method_response.into_result();
 
-                    let response = serde_json::from_str::<Response<()>>(&result).unwrap();
+        self.service.call(request).map(move |method_response| {
+            if method_response.is_error() {
+                let result = method_response.as_json();
 
-                    let ResponsePayload::Error(error) = response.payload else {
-                        panic!();
-                    };
+                let response = serde_json::from_str::<Response<()>>(result.get()).unwrap();
 
-                    let error = ErrorObject::owned(
-                        error.code(),
-                        format!("error in {}: {}", id, error.message()),
-                        error.data(),
-                    )
-                    .into_owned();
+                let ResponsePayload::Error(error) = response.payload else {
+                    panic!();
+                };
 
-                    MethodResponse::error(response.id, error)
-                } else {
-                    method_response
-                }
-            }))
+                let error = ErrorObject::owned(
+                    error.code(),
+                    format!("error in {}: {}", id, error.message()),
+                    error.data(),
+                )
+                .into_owned();
+
+                MethodResponse::error(response.id, error)
+            } else {
+                method_response
+            }
+        })
+    }
+
+    fn batch<'a>(
+        &self,
+        requests: jsonrpsee::core::middleware::Batch<'a>,
+    ) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
+        self.service.batch(requests)
+    }
+
+    fn notification<'a>(
+        &self,
+        n: jsonrpsee::core::middleware::Notification<'a>,
+    ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
+        self.service.notification(n)
     }
 }
 
@@ -394,7 +472,6 @@ where
 
 impl<T: ClientT + Send + Sync> WithId for T where for<'a> &'a Self: ClientT {}
 
-#[async_trait]
 impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
     async fn notification<Params>(
         &self,
@@ -577,7 +654,6 @@ delegate_client_impl!({C: ClientT + Send + Sync} &ArcClient<C>: |this| this.0);
 #[macro_export]
 macro_rules! delegate_client_impl {
     ($({$($generics:tt)+})? $T:ty: |$binding:ident| $expr:expr) => {
-        #[async_trait]
         impl $(<$($generics)+>)? jsonrpsee::core::client::ClientT for $T {
             async fn notification<Params>(
                 &self,
@@ -610,10 +686,10 @@ macro_rules! delegate_client_impl {
                 ($expr).request(method, params).await
             }
 
-            async fn batch_request<'a, R>(
+            fn batch_request<'a, R>(
                 &self,
                 batch: jsonrpsee::core::params::BatchRequestBuilder<'a>,
-            ) -> Result<jsonrpsee::core::client::BatchResponse<'a, R>, jsonrpsee::core::client::Error>
+            ) -> impl Future<Output = Result<jsonrpsee::core::client::BatchResponse<'a, R>, jsonrpsee::core::client::Error>> + Send
             where
                 R: serde::de::DeserializeOwned + Debug + 'a,
             {
@@ -621,7 +697,7 @@ macro_rules! delegate_client_impl {
                 use jsonrpsee::core::client::ClientT;
 
                 let $binding = self;
-                ($expr).batch_request(batch).await
+                ($expr).batch_request(batch)
             }
         }
     };

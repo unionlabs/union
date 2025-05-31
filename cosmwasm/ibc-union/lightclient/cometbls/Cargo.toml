@@ -34,7 +34,7 @@ unionlabs                   = { workspace = true, features = ["ethabi"] }
 [dev-dependencies]
 base64      = { workspace = true }
 hex-literal = { workspace = true }
-lazy_static = "1.4.0"
+lazy_static = "1.5.0"
 serde_json  = { workspace = true }
 
 

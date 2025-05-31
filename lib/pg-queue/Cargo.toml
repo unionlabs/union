@@ -12,7 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-futures-util  = "0.3.30"
+futures-util  = "0.3.31"
 itertools     = { workspace = true }
 opentelemetry = { workspace = true }
 schemars      = { workspace = true, features = ["derive"] }

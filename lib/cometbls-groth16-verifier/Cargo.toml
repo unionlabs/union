@@ -16,7 +16,7 @@ test-include = ["lib/cometbls-groth16-verifier/verifying_key.bin"]
 
 [dependencies]
 ark-ff                      = { version = "0.4.2", default-features = false }
-byteorder                   = { version = "1.4", default-features = false }
+byteorder                   = { version = "1.5", default-features = false }
 cometbls-light-client-types = { workspace = true }
 hex-literal                 = { workspace = true }
 sha2                        = { workspace = true }

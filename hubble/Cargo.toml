@@ -32,23 +32,23 @@ hex                = { workspace = true }
 itertools          = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lazy_static        = { workspace = true }
-prometheus         = { version = "0.13.3", features = ["process"] }
+prometheus         = { version = "0.13.4", features = ["process"] }
 reqwest            = { workspace = true, features = ["json", "blocking"] }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
 sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
-tempfile           = "3.19.1"
+tempfile           = "3.20.0"
 thiserror          = { workspace = true }
 time               = { workspace = true, features = ["serde"] }
 tokio              = { workspace = true, features = ["full"] }
 tonic              = { workspace = true, features = ["transport", "tls", "tls-roots", "tls-webpki-roots"] }
 tracing            = { workspace = true }
-tracing-error      = { version = "0.2.0" }
+tracing-error      = { version = "0.2.1" }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json", "tracing-log"] }
 unionlabs          = { workspace = true, features = ["ethabi"] }
-url                = { version = "2.4.1", features = ["serde"] }
-valuable           = { version = "0.1.0", features = ["derive"] }
+url                = { version = "2.5.4", features = ["serde"] }
+valuable           = { version = "0.1.1", features = ["derive"] }
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.5"

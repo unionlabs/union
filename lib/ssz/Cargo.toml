@@ -14,13 +14,13 @@ repository = { workspace = true }
 workspace = true
 
 [dependencies]
-derivative           = "2.1.1"
+derivative           = "2.2.0"
 itertools            = { workspace = true }
 lazy_static          = { workspace = true }
 serde                = { workspace = true, features = ["derive"] }               # TODO: Feature gate this
 serde-utils          = { workspace = true }
 sha2                 = { workspace = true }
-smallvec             = { version = "1.6.1", features = ["const_generics"] }
+smallvec             = { version = "1.15.0", features = ["const_generics"] }
 ssz-derive           = { workspace = true }
 thiserror            = { workspace = true }
 typenum              = { workspace = true, features = ["const-generics"] }

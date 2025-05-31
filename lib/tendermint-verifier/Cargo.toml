@@ -26,5 +26,5 @@ thiserror                     = { workspace = true }
 unionlabs                     = { workspace = true }
 
 [dev-dependencies]
-ed25519-dalek = { version = "2.1.0", features = ["batch"] }
+ed25519-dalek = { version = "2.1.1", features = ["batch"] }
 serde_json    = { workspace = true }

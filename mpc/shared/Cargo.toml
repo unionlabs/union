@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 hex        = { workspace = true, features = ["alloc"] }
-postgrest  = "1.0"
+postgrest  = "1.6"
 reqwest    = { workspace = true, features = ["json"] }
 serde      = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

@@ -20,7 +20,7 @@ derive_more              = { workspace = true, features = ["display"] }
 either                   = { workspace = true }
 frame-support-procedural = { workspace = true }
 hex                      = { workspace = true }
-k256                     = { version = "0.13.1", default-features = false, features = ["schnorr", "alloc"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
+k256                     = { version = "0.13.4", default-features = false, features = ["schnorr", "alloc"] } # needs to be brought in explicitly since bip32 doesn't expose k256/schnorr
 macros                   = { workspace = true }
 prost                    = { workspace = true, features = ["std"] }
 protos                   = { workspace = true, features = ["proto_full", "serde"] }
@@ -45,7 +45,7 @@ bs58                 = { workspace = true }
 near-primitives-core = { version = "0.21", optional = true }
 near-sdk             = { workspace = true, optional = true }
 schemars             = { workspace = true, features = ["derive"], optional = true }
-serde_bytes          = "0.11.6"
+serde_bytes          = "0.11.17"
 solidity-slot        = { workspace = true }
 unionlabs-encoding   = { workspace = true, features = ["proto", "json"] }
 unionlabs-primitives = { workspace = true, features = ["generic-array-compat", "serde", "base64", "base58"] }

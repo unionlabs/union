@@ -28,6 +28,6 @@ mod tests {
     #[test]
     fn test_temp_dir_with() {
         let dir = temp_dir_with(&["test_temp_dir_with"]);
-        std::fs::File::open(dir.into_path().join("test_temp_dir_with").join("foo.bar")).unwrap();
+        std::fs::File::open(dir.keep().join("test_temp_dir_with").join("foo.bar")).unwrap();
     }
 }

@@ -287,7 +287,7 @@ mod tests {
     /// which it cannot provide.
     fn test_run_and_upgrade() {
         let tmp = testdata::temp_dir_with(&["test_run"]);
-        let root = tmp.into_path().join("test_run");
+        let root = tmp.keep().join("test_run");
         let bundle = Bundle::new(root.join("bundle")).unwrap();
         let symlinker = Symlinker::new(root.clone(), bundle);
 
@@ -316,7 +316,7 @@ mod tests {
     #[traced_test]
     fn test_run_and_upgrade_restart() {
         let tmp = testdata::temp_dir_with(&["test_run"]);
-        let root = tmp.into_path().join("test_run");
+        let root = tmp.keep().join("test_run");
         let bundle = Bundle::new(root.join("bundle")).unwrap();
         let symlinker = Symlinker::new(root.clone(), bundle);
 
@@ -345,7 +345,7 @@ mod tests {
     #[traced_test]
     fn test_backup() {
         let tmp = testdata::temp_dir_with(&["test_backup", "bundle"]);
-        let tmp = tmp.into_path();
+        let tmp = tmp.keep();
         let root = tmp.join("test_backup");
         let bundle = Bundle::new(tmp.join("bundle")).unwrap();
         let symlinker = Symlinker::new(root.clone(), bundle);
@@ -366,7 +366,7 @@ mod tests {
     #[traced_test]
     fn test_early_exit() {
         let tmp_dir = testdata::temp_dir_with(&["test_early_exit"]);
-        let root = tmp_dir.into_path().join("test_early_exit");
+        let root = tmp_dir.keep().join("test_early_exit");
         let bundle = Bundle::new(root.join("bundle")).expect("should be able to create a bundle");
         let symlinker = Symlinker::new(root.clone(), bundle);
 

@@ -8,7 +8,6 @@ use std::{
 use ::serde::de::DeserializeOwned;
 use jsonrpsee::{
     core::{
-        async_trait,
         client::{BatchResponse, ClientT},
         params::BatchRequestBuilder,
         traits::ToRpcParams,
@@ -343,7 +342,6 @@ enum ClientInner {
     Ws(reconnecting_jsonrpc_ws_client::Client),
 }
 
-#[async_trait]
 impl ClientT for ClientInner {
     async fn notification<Params>(&self, method: &str, params: Params) -> Result<(), JsonRpcError>
     where

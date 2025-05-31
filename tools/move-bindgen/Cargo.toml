@@ -18,9 +18,9 @@ bcs                 = { workspace = true }
 embed-commit        = { workspace = true }
 move-bindgen-derive = { workspace = true }
 move-core-types     = { workspace = true }
-prettyplease        = "0.2.22"
+prettyplease        = "0.2.33"
 proc-macro2         = "*"
-quote               = "1.0.35"
+quote               = { workspace = true }
 serde               = { workspace = true, features = ["derive"] }
 serde_json          = { workspace = true }
 syn                 = { workspace = true, features = ["clone-impls", "parsing", "printing", "proc-macro", "derive", "extra-traits"] }

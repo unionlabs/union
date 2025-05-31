@@ -136,7 +136,7 @@ mod tests {
     #[test]
     fn test_swap() {
         let tmp = testdata::temp_dir_with(&["test_swap"]);
-        let root = tmp.into_path().join("test_swap");
+        let root = tmp.keep().join("test_swap");
         let bundle = Bundle::new(root.join("bundle")).unwrap();
         let symlinker = Symlinker::new(root, bundle);
 

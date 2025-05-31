@@ -15,7 +15,7 @@ workspace = true
 alloy                            = { workspace = true, features = ["contract", "network", "providers", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 clap                             = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 cometbft-rpc                     = { workspace = true }
-crc                              = "3.2.1"
+crc                              = "3.3.0"
 embed-commit                     = { workspace = true }
 enumorph                         = { workspace = true }
 futures                          = { workspace = true }
