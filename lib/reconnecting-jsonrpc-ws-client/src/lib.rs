@@ -3,7 +3,6 @@ use std::{fmt::Debug, future::Future, sync::Arc, time::Duration};
 
 use arc_swap::ArcSwapOption;
 use jsonrpsee::core::{
-    async_trait,
     client::{BatchResponse, ClientT},
     params::BatchRequestBuilder,
     traits::ToRpcParams,
@@ -57,26 +56,12 @@ impl Client {
                                     let client: &jsonrpsee::core::client::Client = client;
 
                                     tokio::select! {
-                                        _ = client.on_disconnect() => {
+                                        reason = client.on_disconnect() => {
                                             debug!("client disconnected");
 
                                             maybe_client.store(None);
 
-                                            let reason = tokio::time::timeout(
-                                                Duration::from_secs(1),
-                                                client.disconnect_reason()
-                                            )
-                                            .await
-                                            .ok();
-
-                                            match reason {
-                                                Some(reason) => {
-                                                    debug!("disconnect reason: {reason:?}");
-                                                }
-                                                None => {
-                                                    debug!("unable to retrieve disconnect reason");
-                                                }
-                                            }
+                                            debug!("disconnect reason: {reason:?}");
 
                                             // reconnect(
                                             //     &maybe_client,
@@ -165,7 +150,6 @@ pub struct ConnectionTimeoutError {
 //     }
 // }
 
-#[async_trait]
 impl ClientT for Client {
     async fn notification<Params>(
         &self,
@@ -229,7 +213,6 @@ impl ClientT for Client {
     }
 }
 
-#[async_trait]
 impl ClientT for &Client {
     async fn notification<Params>(
         &self,

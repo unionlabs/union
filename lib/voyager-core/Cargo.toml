@@ -34,7 +34,7 @@ serde_json              = { workspace = true }
 thiserror               = { workspace = true }
 tokio                   = { workspace = true, features = ["time", "process", "fs"] }
 tokio-util              = { workspace = true }
-tower                   = "0.4.13"
+tower                   = "0.5"
 tower-http              = { version = "0.6.4", features = ["cors"] }
 tracing                 = { workspace = true }
 unionlabs               = { workspace = true }
