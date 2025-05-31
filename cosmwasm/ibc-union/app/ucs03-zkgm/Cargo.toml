@@ -30,7 +30,7 @@ frissitheto                 = { workspace = true }
 ibc-union-msg               = { workspace = true }
 ibc-union-spec              = { workspace = true, features = ["serde", "ethabi"] }
 serde                       = { workspace = true, features = ["derive"] }
-serde-json-wasm             = "1.0"
+serde-json-wasm             = { workspace = true }
 serde-utils                 = { workspace = true }
 thiserror                   = { workspace = true }
 token-factory-api           = { workspace = true }

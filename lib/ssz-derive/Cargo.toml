@@ -18,7 +18,7 @@ proc-macro = true
 
 [dependencies]
 proc-macro2 = "1.0.23"
-quote       = "1.0.7"
+quote       = { workspace = true }
 syn         = { workspace = true, default-features = true }
 
 [dev-dependencies]

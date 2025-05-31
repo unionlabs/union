@@ -1,6 +1,5 @@
 use std::fmt::{Display, Formatter};
 
-use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::{stream::FuturesOrdered, Stream};
 use sqlx::Postgres;
@@ -19,7 +18,6 @@ pub struct DummyBlock {
     content: Option<String>,
 }
 
-#[async_trait]
 impl BlockHandle for DummyBlock {
     fn reference(&self) -> BlockReference {
         self.reference.clone()
@@ -132,7 +130,6 @@ impl Display for DummyContext {
     }
 }
 
-#[async_trait]
 impl FetcherClient for DummyFetcherClient {
     type BlockHandle = DummyBlock;
     type Context = DummyContext;

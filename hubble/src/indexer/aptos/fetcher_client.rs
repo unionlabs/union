@@ -5,7 +5,6 @@ use aptos_rest_client::{
     error::RestError,
     Transaction,
 };
-use axum::async_trait;
 use color_eyre::Result;
 use reqwest::StatusCode;
 use tokio::task::JoinSet;
@@ -167,7 +166,9 @@ impl AptosFetcherClient {
                 .await
             {
                 Ok(result) => result.response.inner().clone(),
-                Err(RestError::Http(StatusCode::PAYLOAD_TOO_LARGE, _)) => {
+                Err(RestError::Http(status_code, _))
+                    if status_code.as_u16() == StatusCode::PAYLOAD_TOO_LARGE.as_u16() =>
+                {
                     self.fetch_transactions_one_by_one(
                         block,
                         chunk_start_inclusive,
@@ -232,7 +233,6 @@ impl AptosFetcherClient {
     }
 }
 
-#[async_trait]
 impl FetcherClient for AptosFetcherClient {
     type BlockHandle = AptosBlockHandle;
     type Context = AptosContext;

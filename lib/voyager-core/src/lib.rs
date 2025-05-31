@@ -156,6 +156,8 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
                 AssertUnwindSafe(async {
                     debug!("checking for new messages");
 
+                    let queue_rx = queue_rx.await;
+
                     pin_utils::pin_mut!(queue_rx);
 
                     while let Some(op) = queue_rx.next().await {
@@ -1322,7 +1324,7 @@ async fn modules_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
 }
 
 pub mod api {
-    use std::net::SocketAddr;
+    use std::{future::IntoFuture, net::SocketAddr};
 
     use axum::{
         extract::State,
@@ -1334,10 +1336,11 @@ pub mod api {
         channel::mpsc::{unbounded, UnboundedReceiver, UnboundedSender},
         SinkExt,
     };
+    use tokio::net::TcpListener;
     use voyager_message::VoyagerMessage;
     use voyager_vm::Op;
 
-    pub fn run(laddr: &SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
+    pub async fn run(laddr: &SocketAddr) -> UnboundedReceiver<Op<VoyagerMessage>> {
         let (queue_tx, queue_rx) = unbounded::<Op<VoyagerMessage>>();
 
         let app = axum::Router::new()
@@ -1345,7 +1348,7 @@ pub mod api {
             .route("/health", get(async || StatusCode::OK))
             .with_state(queue_tx.clone());
 
-        tokio::spawn(axum::Server::bind(laddr).serve(app.into_make_service()));
+        tokio::spawn(axum::serve(TcpListener::bind(laddr).await.unwrap(), app).into_future());
 
         queue_rx
     }

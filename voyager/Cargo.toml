@@ -32,7 +32,7 @@ opentelemetry_sdk  = { workspace = true }
 pg-queue           = { workspace = true }
 pin-utils          = "0.1.0"
 prometheus         = "0.13.4"
-reqwest            = { workspace = true, features = ["tokio-rustls", "json"] }
+reqwest            = { workspace = true, features = ["rustls-tls", "json"] }
 schemars           = { workspace = true }
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }

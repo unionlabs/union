@@ -1,6 +1,5 @@
-use std::{fmt::Display, ops::Range};
+use std::{fmt::Display, future::Future, ops::Range};
 
-use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
 use sqlx::Postgres;
@@ -126,22 +125,22 @@ impl Display for BlockSelection {
     }
 }
 
-#[async_trait]
+// #[async_trait]
 pub trait FetcherClient: Display + Send + Sync + Clone + Sized + 'static {
     type BlockHandle: BlockHandle;
     type Context: Display + Send + Sync + Clone + 'static;
 
-    async fn create(
+    fn create(
         pg_pool: sqlx::PgPool,
         join_set: &mut JoinSet<Result<(), IndexerError>>,
         context: Self::Context,
-    ) -> Result<Self, IndexerError>;
+    ) -> impl Future<Output = Result<Self, IndexerError>> + Send;
 
-    async fn fetch_single(
+    fn fetch_single(
         &self,
         selection: BlockSelection,
         mode: FetchMode,
-    ) -> Result<Self::BlockHandle, IndexerError>;
+    ) -> impl Future<Output = Result<Self::BlockHandle, IndexerError>> + Send;
 }
 
 #[derive(Clone, Debug)]
@@ -171,7 +170,7 @@ impl Display for BlockReference {
     }
 }
 
-#[async_trait]
+// #[async_trait]
 pub trait BlockHandle: Send + Sync + Sized {
     fn reference(&self) -> BlockReference;
     fn fetch_range(
@@ -179,6 +178,12 @@ pub trait BlockHandle: Send + Sync + Sized {
         range: BlockRange,
         mode: FetchMode,
     ) -> Result<impl Stream<Item = Result<Self, IndexerError>> + Send, IndexerError>;
-    async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError>;
-    async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError>;
+    fn insert(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> impl Future<Output = Result<(), IndexerError>> + Send;
+    fn update(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> impl Future<Output = Result<(), IndexerError>> + Send;
 }

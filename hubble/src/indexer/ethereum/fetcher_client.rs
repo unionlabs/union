@@ -6,7 +6,6 @@ use alloy::{
     primitives::{Address, BloomInput, FixedBytes},
     rpc::types::{BlockTransactionsKind, Filter, Log},
 };
-use axum::async_trait;
 use color_eyre::eyre::Report;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
@@ -252,7 +251,6 @@ impl EthFetcherClient {
     }
 }
 
-#[async_trait]
 impl FetcherClient for EthFetcherClient {
     type BlockHandle = EthBlockHandle;
     type Context = EthContext;

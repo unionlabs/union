@@ -14,10 +14,6 @@ workspace = true
 [lib]
 crate-type = ["cdylib", "rlib"]
 
-[features]
-cw-orch-interface = ["dep:cw-orch", "ibc-union-msg/cw-orch-interface"]
-library           = []
-
 [dependencies]
 alloy-primitives = { workspace = true }
 alloy-sol-types  = { workspace = true }
@@ -32,10 +28,14 @@ hex              = { workspace = true }
 ibc-union-msg    = { workspace = true }
 ibc-union-spec   = { workspace = true, features = ["ethabi", "serde", "bincode"] }
 serde            = { workspace = true, features = ["derive"] }
-serde-json-wasm  = "1.0"
-strum            = { version = "0.26.3", features = ["derive"] }
+serde-json-wasm  = { workspace = true }
+strum            = { workspace = true, features = ["derive"] }
 thiserror        = { workspace = true }
 unionlabs        = { workspace = true, features = ["ethabi", "bincode"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
+
+[features]
+cw-orch-interface = ["dep:cw-orch", "ibc-union-msg/cw-orch-interface"]
+library           = []

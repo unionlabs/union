@@ -21,7 +21,7 @@ crate-type = ["cdylib", "rlib"]
 alloy-sol-types             = { workspace = true }
 ark-bls12-381               = { version = "0.5.0" }
 ark-ec                      = { version = "0.5.0" }
-ark-serialize               = { version = "0.5.0" }
+ark-serialize               = { workspace = true }
 beacon-api-types            = { workspace = true }
 bincode                     = { workspace = true }
 cosmwasm-std                = { workspace = true, features = ["abort", "cosmwasm_2_1"] }

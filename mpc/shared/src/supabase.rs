@@ -44,7 +44,7 @@ impl SupabaseMPCApi {
     pub fn new(project_url: String, api_key: String, jwt: String) -> Self {
         let client = Postgrest::new(format!("{project_url}/rest/v1"))
             .insert_header(API_KEY, &api_key)
-            .insert_header(AUTHORIZATION, format!("Bearer {}", &jwt));
+            .insert_header(AUTHORIZATION.as_str(), format!("Bearer {}", &jwt));
         Self {
             project_url,
             jwt,
@@ -153,7 +153,9 @@ impl SupabaseMPCApi {
         {
             // Conflict means we already have an entry.
             // If network drops or something we must allow this to happen.
-            if e.status() == Some(StatusCode::CONFLICT) {
+            if e.status()
+                .is_some_and(|s| s.as_u16() == StatusCode::CONFLICT)
+            {
                 return Ok(());
             } else {
                 return Err(e.into());

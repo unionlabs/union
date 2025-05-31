@@ -1,6 +1,5 @@
 use std::{error::Error, fmt::Display};
 
-use axum::async_trait;
 use color_eyre::{
     eyre::{eyre, Report},
     Result,
@@ -528,7 +527,6 @@ fn replace_escape_chars(val: &mut serde_json::Value) {
     }
 }
 
-#[async_trait]
 impl FetcherClient for TmFetcherClient {
     type BlockHandle = TmBlockHandle;
     type Context = TmContext;

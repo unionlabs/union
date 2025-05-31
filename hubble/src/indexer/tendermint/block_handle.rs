@@ -1,6 +1,5 @@
 use std::collections::{HashMap, HashSet};
 
-use axum::async_trait;
 use color_eyre::eyre::{eyre, Report};
 use cometbft_rpc::{
     rpc_types::{BlockMeta, BlockResponse, CommitResponse},
@@ -272,7 +271,6 @@ fn wasm_contract_address(reference: &BlockReference, event_data: &Value) -> Opti
     None
 }
 
-#[async_trait]
 impl BlockHandle for TmBlockHandle {
     fn reference(&self) -> BlockReference {
         self.reference.clone()

@@ -150,10 +150,12 @@ where
 
                     let self_clone = self.clone();
                     let fetcher_client_clone = fetcher_client.clone();
-                    join_set.spawn(
-                        async move { self_clone.run_fixer(fetcher_client_clone).await }
-                            .instrument(info_span!("fixer")),
-                    );
+                    join_set.spawn(async move {
+                        self_clone
+                            .run_fixer(fetcher_client_clone)
+                            .instrument(info_span!("fixer"))
+                            .await
+                    });
 
                     if let EndOfRunResult::Exit = self
                         .handle_end_of_run(&mut join_set, fetcher_client)

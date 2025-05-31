@@ -47,10 +47,12 @@ async fn main() -> color_eyre::eyre::Result<()> {
             let app = Router::new()
                 .route("/metrics", get(metrics::handler))
                 .route("/healthz", get(healthz::handler));
-            axum::Server::bind(&addr)
-                .serve(app.into_make_service())
-                .await
-                .map_err(Into::into)
+            axum::serve(
+                tokio::net::TcpListener::bind(addr).await?,
+                app.into_make_service(),
+            )
+            .await
+            .map_err(Into::into)
         });
     }
     args.indexers.clone().into_iter().for_each(|indexer| {

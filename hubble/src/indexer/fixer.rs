@@ -1,4 +1,4 @@
-use std::cmp::min;
+use std::{cmp::min, future::Future};
 
 use color_eyre::eyre::Report;
 use tokio::time::sleep;
@@ -20,25 +20,30 @@ enum FixerLoopResult {
 }
 
 impl<T: FetcherClient> Indexer<T> {
-    pub async fn run_fixer(&self, fetcher_client: T) -> Result<(), IndexerError> {
-        loop {
-            match self.run_fixer_loop(&fetcher_client).await {
-                Ok(FixerLoopResult::RunAgain) => {
-                    debug!("run again");
-                }
-                Ok(FixerLoopResult::TryAgainLater) => {
-                    debug!(
-                        "try again later (sleep {}s)",
-                        self.finalizer_config.retry_later_sleep.as_secs()
-                    );
-                    sleep(self.finalizer_config.retry_later_sleep).await;
-                }
-                Err(error) => {
-                    warn!(
-                        "error in finalizer loop: {error} => try again later (sleep {}s)",
-                        self.finalizer_config.retry_later_sleep.as_secs()
-                    );
-                    sleep(self.finalizer_config.retry_later_sleep).await;
+    pub fn run_fixer(
+        &self,
+        fetcher_client: T,
+    ) -> impl Future<Output = Result<(), IndexerError>> + Send + use<'_, T> {
+        async move {
+            loop {
+                match self.run_fixer_loop(&fetcher_client).await {
+                    Ok(FixerLoopResult::RunAgain) => {
+                        debug!("run again");
+                    }
+                    Ok(FixerLoopResult::TryAgainLater) => {
+                        debug!(
+                            "try again later (sleep {}s)",
+                            self.finalizer_config.retry_later_sleep.as_secs()
+                        );
+                        sleep(self.finalizer_config.retry_later_sleep).await;
+                    }
+                    Err(error) => {
+                        warn!(
+                            "error in finalizer loop: {error} => try again later (sleep {}s)",
+                            self.finalizer_config.retry_later_sleep.as_secs()
+                        );
+                        sleep(self.finalizer_config.retry_later_sleep).await;
+                    }
                 }
             }
         }

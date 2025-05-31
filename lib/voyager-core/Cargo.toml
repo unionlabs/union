@@ -13,7 +13,7 @@ workspace = true
 
 [dependencies]
 anyhow                  = { workspace = true }
-axum                    = { workspace = true, features = ["macros", "tokio", "json"] }
+axum                    = { workspace = true, features = ["macros", "tokio", "json", "http2"] }
 derive_builder          = "0.20.2"
 futures                 = { workspace = true }
 indexmap                = "2.9.0"
@@ -23,7 +23,7 @@ jaq-interpret           = "1.5.0"
 jaq-std                 = "1.6.0"
 jaq-syn                 = "1.6.0"
 jsonrpsee               = { workspace = true }
-moka                    = { version = "0.12.10", features = ["future"] }
+moka                    = { workspace = true, features = ["future"] }
 opentelemetry           = { workspace = true }
 opentelemetry-otlp      = { workspace = true, features = ["http-json", "metrics", "reqwest-blocking-client"] }
 opentelemetry_sdk       = { workspace = true }

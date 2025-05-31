@@ -20,7 +20,7 @@ path = "src/main.rs"
 [dependencies]
 alloy              = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest"] }
 aptos-rest-client  = { workspace = true }
-axum               = { workspace = true, features = ["macros", "tokio"] }
+axum               = { workspace = true, features = ["macros", "tokio", "http2"] }
 backon             = "0.4.4"
 base64             = { workspace = true }
 clap               = { workspace = true, features = ["derive", "env", "error-context"] }

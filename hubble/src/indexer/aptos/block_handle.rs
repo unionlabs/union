@@ -4,7 +4,6 @@ use aptos_rest_client::{
     aptos_api_types::{Block, TransactionPayload},
     Transaction,
 };
-use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::{stream::FuturesOrdered, Stream};
 use itertools::Itertools;
@@ -54,7 +53,7 @@ pub struct AptosBlockHandle {
     pub provider_id: RpcProviderId,
 }
 
-#[async_trait]
+// #[async_trait]
 impl BlockHandle for AptosBlockHandle {
     fn reference(&self) -> BlockReference {
         self.reference.clone()

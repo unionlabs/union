@@ -1,5 +1,4 @@
 use alloy::network::AnyRpcBlock;
-use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::{stream::FuturesOrdered, Stream};
 use serde::{Deserialize, Serialize};
@@ -71,7 +70,6 @@ impl EthBlockHandle {
     }
 }
 
-#[async_trait]
 impl BlockHandle for EthBlockHandle {
     fn reference(&self) -> BlockReference {
         self.reference.clone()

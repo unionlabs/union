@@ -13,8 +13,8 @@ workspace = true
 
 [dependencies]
 ark-bls12-377 = { version = "0.4", default-features = false, features = ["curve"] }
-ark-bn254     = { version = "0.4", default-features = false, features = ["curve"] }
-ark-ff        = { version = "0.4", default-features = false }
+ark-bn254     = { workspace = true, features = ["curve"] }
+ark-ff        = { workspace = true }
 num-bigint    = { workspace = true }
 sha3          = { workspace = true }
 thiserror     = { workspace = true }
