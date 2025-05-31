@@ -19,7 +19,7 @@ library = []
 
 [dependencies]
 cosmwasm-schema = { version = "1.5" }
-cosmwasm-std    = { version = "1.5.4", features = ["stargate"] }
+cosmwasm-std    = { version = "1.5.11", features = ["stargate"] }
 cw-storage-plus = { version = "1.2" }
 ethabi          = { workspace = true }
 thiserror       = { workspace = true }

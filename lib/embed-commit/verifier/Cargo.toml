@@ -8,7 +8,7 @@ workspace = true
 
 [dependencies]
 anyhow       = { workspace = true }
-bytemuck     = "1.22.0"
+bytemuck     = "1.23.0"
 clap         = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 elf          = "0.7.4"
 embed-commit = { workspace = true }

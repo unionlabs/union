@@ -19,6 +19,6 @@ serde-utils = { workspace = true }
 unionlabs   = { workspace = true }
 
 [dev-dependencies]
-serde_json         = "1.0.114"
+serde_json         = "1.0.140"
 tokio              = { workspace = true, features = ["macros"] }
-tracing-subscriber = "0.3.18"
+tracing-subscriber = "0.3.19"

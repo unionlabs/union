@@ -353,7 +353,7 @@ mod tests {
     #[test]
     fn test_init_disallow_dirty_no_error() {
         let tmp = testdata::temp_dir_with(&["home", "bundle"]);
-        let root = tmp.into_path();
+        let root = tmp.keep();
         let state = InitCmd {
             bundle: root.join("bundle"),
             moniker: "test_init_moniker".to_owned(),
@@ -369,7 +369,7 @@ mod tests {
     #[test]
     fn test_init_errors_if_dirty() {
         let tmp = testdata::temp_dir_with(&["home", "bundle"]);
-        let root = tmp.into_path();
+        let root = tmp.keep();
         let _ = InitCmd {
             bundle: root.join("bundle"),
             moniker: "test_init_moniker".to_owned(),

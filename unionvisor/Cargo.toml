@@ -26,5 +26,5 @@ tracing            = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["json", "tracing-log"] }
 
 [dev-dependencies]
-tempfile     = "3.5.0"
-tracing-test = "0.2.4"
+tempfile     = "3.20.0"
+tracing-test = "0.2.5"
