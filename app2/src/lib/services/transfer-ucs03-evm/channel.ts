@@ -22,7 +22,6 @@ export const getChannelInfoEffect = (
       || channel.source_connection_id === null
       || channel.source_channel_id === null
       || !channel.source_port_id
-      || !A.isArray(channel.fees)
       || channel.destination_connection_id === null
       || channel.destination_channel_id === null
       || !channel.destination_port_id

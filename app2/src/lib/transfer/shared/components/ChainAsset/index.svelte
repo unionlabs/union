@@ -16,10 +16,6 @@ type Props = {
 }
 let { type, isOpen }: Props = $props()
 
-$effect(() => {
-  console.log("in chain asset", open)
-})
-
 let open = $state(false)
 let page: 1 | 2 = $state(1)
 let previousPage: 1 | 2 = $state(1)
