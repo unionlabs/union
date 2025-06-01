@@ -25,7 +25,7 @@ const feeConfig = {
     lightClientL0: 500000,
     packetReceive: 80000,
   },
-  unitPrice: 10, // gasPrice from chain
+  gasPrice: 10, // gasPrice from chain
   decimals: 6, // BABY token decimals (in rep)
   feeMultiplier: 0.20, // Union hardcoded fee
   batchDivideNumber: 2, // Api?
@@ -34,7 +34,7 @@ const feeConfig = {
   usdPrice: 0.13, // Gas price from service
 }
 
-const applyGasPrice = (gasUnits: number) => gasUnits * feeConfig.unitPrice
+const applyGasPrice = (gasUnits: number) => gasUnits * feeConfig.gasPrice
 const applyFeeMultiplier = (ubbnAmount: number) => ubbnAmount * (1 + feeConfig.feeMultiplier)
 const applyBatchDivision = (ubbnAmount: number) => ubbnAmount / feeConfig.batchDivideNumber
 const formatToDisplay = (ubbnAmount: number) => {
@@ -129,7 +129,7 @@ const feeBreakdownItems = $derived([
 ])
 
 $effect(() => {
-  console.log(O.getOrNull(O.map(transferData.channel, (x) => x.fees)))
+  console.log("fees", transferData.fees)
 })
 </script>
 
@@ -212,7 +212,7 @@ $effect(() => {
                             <div class="grid grid-cols-2">
                               <div class="px-3 py-2 text-zinc-300">Gas price</div>
                               <div class="px-3 py-2 text-white border-l border-zinc-700">
-                                {feeConfig.unitPrice.toLocaleString()} ubbn
+                                {feeConfig.gasPrice.toLocaleString()} ubbn
                               </div>
                             </div>
                           </div>
@@ -242,12 +242,12 @@ $effect(() => {
                               <div class="px-3 py-2 text-zinc-300">Base fee</div>
                               <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
                                 {item.baseFee.toLocaleString()} × {
-                                  feeConfig.unitPrice.toLocaleString()
+                                  feeConfig.gasPrice.toLocaleString()
                                 }
                               </div>
                               <div class="px-3 py-2 text-white border-l border-zinc-700">
                                 {
-                                  (item.baseFee * feeConfig.unitPrice)
+                                  (item.baseFee * feeConfig.gasPrice)
                                   .toLocaleString()
                                 } ubbn
                               </div>
@@ -262,7 +262,7 @@ $effect(() => {
                               </div>
                               <div class="px-3 py-2 text-white border-l border-zinc-700">
                                 +{
-                                  (item.baseFee * feeConfig.unitPrice
+                                  (item.baseFee * feeConfig.gasPrice
                                   * feeConfig.feeMultiplier).toLocaleString()
                                 } ubbn
                               </div>
@@ -276,9 +276,9 @@ $effect(() => {
                                 </div>
                                 <div class="px-3 py-2 text-green-400 border-l border-zinc-700">
                                   -{
-                                    ((item.baseFee * feeConfig.unitPrice
+                                    ((item.baseFee * feeConfig.gasPrice
                                     * (1 + feeConfig.feeMultiplier))
-                                    - (item.baseFee * feeConfig.unitPrice
+                                    - (item.baseFee * feeConfig.gasPrice
                                         * (1 + feeConfig.feeMultiplier))
                                       / feeConfig.batchDivideNumber)
                                     .toLocaleString()
@@ -298,14 +298,14 @@ $effect(() => {
                               >
                                 {#if item.isBatched}
                                   {
-                                    ((item.baseFee * feeConfig.unitPrice
+                                    ((item.baseFee * feeConfig.gasPrice
                                     * (1 + feeConfig.feeMultiplier))
                                     / feeConfig.batchDivideNumber)
                                     .toLocaleString()
                                   } ubbn
                                 {:else}
                                   {
-                                    (item.baseFee * feeConfig.unitPrice
+                                    (item.baseFee * feeConfig.gasPrice
                                     * (1 + feeConfig.feeMultiplier))
                                     .toLocaleString()
                                   } ubbn
@@ -338,14 +338,14 @@ $effect(() => {
                               <div class="px-3 py-2 text-zinc-300">
                                 {#if item.isBatched}
                                   {
-                                    ((item.baseFee * feeConfig.unitPrice
+                                    ((item.baseFee * feeConfig.gasPrice
                                     * (1 + feeConfig.feeMultiplier))
                                     / feeConfig.batchDivideNumber)
                                     .toLocaleString()
                                   }
                                 {:else}
                                   {
-                                    (item.baseFee * feeConfig.unitPrice
+                                    (item.baseFee * feeConfig.gasPrice
                                     * (1 + feeConfig.feeMultiplier))
                                     .toLocaleString()
                                   }

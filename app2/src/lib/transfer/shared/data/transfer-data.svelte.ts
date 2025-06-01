@@ -143,12 +143,7 @@ export class TransferData {
     ),
   )
 
-  // TODO: make schema for indexed element
-  fees = $derived<Option.Option<A.NonEmptyReadonlyArray<Fees[0]>>>(pipe(
-    this.channel,
-    Option.map(x => x.fees),
-    Option.flatMap((x) => Option.liftPredicate(x, (x) => A.isNonEmptyReadonlyArray(x))),
-  ))
+  fees = $derived<Option.Option<Fees>>(Option.map(this.channel, x => x.fees))
 
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(
