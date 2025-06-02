@@ -260,6 +260,8 @@ export const babylonTestnetLeapChaininfo: LeapExtendedInfo = {
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
       coinGeckoId: "",
+      // XXX: check if structure is appropriately defined for each wallet
+      // @ts-expect-error 2353
       gasPriceStep: {
         low: 0.007,
         average: 0.007,
