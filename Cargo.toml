@@ -18,7 +18,7 @@ members = [
   "e2e/ensure-blocks",
 
   "generated/rust/protos",
-  "generated/rust/aptos-move-ibc",
+  # "generated/rust/aptos-move-ibc",
 
   "hubble",
 
@@ -100,10 +100,10 @@ members = [
   "cosmwasm/ibc-union/lightclient/ethereum",
   "cosmwasm/ibc-union/lightclient/ethermint",
   "cosmwasm/ibc-union/lightclient/tendermint",
-  "cosmwasm/ibc-union/lightclient/movement",
+  # "cosmwasm/ibc-union/lightclient/movement",
   "cosmwasm/ibc-union/lightclient/trusted-mpt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt",
-  "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
+  # "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-ics23",
   "cosmwasm/ibc-union/lightclient/sui",
 
@@ -115,7 +115,7 @@ members = [
   "tools/build-evm-deployer-tx",
   "tools/parse-wasm-client-type",
   "tools/tidy",
-  "tools/move-bindgen",
+  # "tools/move-bindgen",
   "tools/rustfmt-sort",
 
   "lib/move-bindgen-derive",
@@ -174,7 +174,7 @@ members = [
   "voyager/modules/finality/berachain",
   "voyager/modules/finality/cometbls",
   "voyager/modules/finality/ethereum",
-  "voyager/modules/finality/movement",
+  # "voyager/modules/finality/movement",
   "voyager/modules/finality/tendermint",
   "voyager/modules/finality/trusted-evm",
   "voyager/modules/finality/sui",
@@ -211,7 +211,7 @@ members = [
 
   "drip",
 
-  "lib/aptos-verifier",
+  # "lib/aptos-verifier",
 
   "lib/reconnecting-jsonrpc-ws-client",
   "lib/voyager-primitives",
@@ -284,8 +284,9 @@ lto       = "thin"
 opt-level = 3
 
 [workspace.dependencies]
-aptos-move-ibc     = { path = "generated/rust/aptos-move-ibc", default-features = false }
-aptos-verifier     = { path = "lib/aptos-verifier", default-features = false }
+# aptos-move-ibc     = { path = "generated/rust/aptos-move-ibc", default-features = false }
+# aptos-verifier     = { path = "lib/aptos-verifier", default-features = false }
+
 cometbft-rpc       = { path = "lib/cometbft-rpc", default-features = false }
 cometbft-types     = { path = "lib/cometbft-types", default-features = false }
 concurrent-keyring = { path = "lib/concurrent-keyring", default-features = false }
@@ -359,12 +360,12 @@ osmosis-tokenfactory-token-minter = { path = "cosmwasm/osmosis-tokenfactory-toke
 ucs03-zkgm                        = { path = "cosmwasm/ibc-union/app/ucs03-zkgm", default-features = false }
 ucs03-zkgm-token-minter-api       = { path = "cosmwasm/ucs03-zkgm-token-minter-api", default-features = false }
 
-gnark-key-parser               = { path = "lib/gnark-key-parser", default-features = false }
-gnark-mimc                     = { path = "lib/gnark-mimc", default-features = false }
-ics23                          = { path = "lib/ics23", default-features = false }
-macros                         = { path = "lib/macros", default-features = false }
-move-bindgen                   = { path = "tools/move-bindgen", default-features = false }
-move-bindgen-derive            = { path = "lib/move-bindgen-derive", default-features = false }
+gnark-key-parser = { path = "lib/gnark-key-parser", default-features = false }
+gnark-mimc       = { path = "lib/gnark-mimc", default-features = false }
+ics23            = { path = "lib/ics23", default-features = false }
+macros           = { path = "lib/macros", default-features = false }
+# move-bindgen                   = { path = "tools/move-bindgen", default-features = false }
+# move-bindgen-derive            = { path = "lib/move-bindgen-derive", default-features = false }
 mpc-shared                     = { path = "mpc/shared", default-features = false }
 pg-queue                       = { path = "lib/pg-queue", default-features = false }
 poseidon-rs                    = { path = "lib/poseidon-rs", default-features = false }
@@ -428,9 +429,11 @@ anyhow    = { version = "1" }
 itertools = { version = "0.13" }
 syn       = { version = "2", default-features = false }
 
-aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
-aptos-rest-client        = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
-aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
+# aptos-crypto             = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
+# aptos-rest-client        = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
+# aptos-types              = { git = "https://github.com/unionlabs/aptos-core" }                     # https://github.com/aptos-labs/aptos-core/pull/12636
+# move-core-types          = { git = "https://github.com/unionlabs/aptos-core" }
+
 axum                     = { version = "0.6.20", default-features = false }
 base64                   = { version = "0.21", default-features = false }
 bcs                      = { version = "0.1.6", default-features = false }
@@ -459,7 +462,6 @@ hex                      = { version = "0.4.3", default-features = false }
 hex-literal              = { version = "0.4.1", default-features = false }
 jsonrpsee                = { version = "0.25.1", default-features = false }
 lazy_static              = { version = "1.5.0", default-features = false }
-move-core-types          = { git = "https://github.com/unionlabs/aptos-core" }
 near-sdk                 = { version = "5.14.0", default-features = false }
 num-bigint               = { version = "0.4", default-features = false }
 opentelemetry            = { version = "0.29.1", default-features = false }
@@ -496,6 +498,6 @@ typenum            = { version = "1.18.0", default-features = false }
 serde-json-wasm = { git = "https://github.com/benluelo/serde-json-wasm", branch = "impl-collect-str" }
 # parity-secp256k1 = { git = "https://github.com/paritytech/rust-secp256k1" }
 
-# https://aptos.dev/en/build/sdks/rust-sdk
-merlin       = { git = "https://github.com/aptos-labs/merlin" }
-x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }
+# # https://aptos.dev/en/build/sdks/rust-sdk
+# merlin       = { git = "https://github.com/aptos-labs/merlin" }
+# x25519-dalek = { git = "https://github.com/aptos-labs/x25519-dalek", branch = "zeroize_v1" }

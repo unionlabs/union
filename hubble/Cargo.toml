@@ -18,8 +18,8 @@ name = "hubble"
 path = "src/main.rs"
 
 [dependencies]
+# aptos-rest-client  = { workspace = true }
 alloy              = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest"] }
-aptos-rest-client  = { workspace = true }
 axum               = { workspace = true, features = ["macros", "tokio"] }
 backon             = "0.4.4"
 base64             = { workspace = true }
