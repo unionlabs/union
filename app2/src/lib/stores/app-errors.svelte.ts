@@ -1,6 +1,7 @@
 import { chains } from "$lib/stores/chains.svelte"
 import { tokensStore } from "$lib/stores/tokens.svelte"
 import { Array as A, Option, pipe } from "effect"
+import { channels } from "./channels.svelte"
 
 // Get all token errors from the store
 const _tokenErrors = $derived(
@@ -15,6 +16,13 @@ const _tokenErrors = $derived(
 )
 export const tokenErrors = () => _tokenErrors
 
-const _totalErrorCount = $derived((Option.isSome(chains.error) ? 1 : 0) + _tokenErrors.length)
+const _totalErrorCount = $derived(pipe(
+  A.fromIterable([
+    chains.error,
+    channels.error,
+  ]),
+  A.getSomes,
+  A.length,
+))
 
 export const totalErrorCount = () => _totalErrorCount

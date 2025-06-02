@@ -1,17 +1,19 @@
-import { xionKeplrChainInfo } from "$lib/services/cosmos/chain-info/configs/keplr"
-import { xionLeapChainInfo } from "$lib/services/cosmos/chain-info/configs/leap"
 import {
   babylonMainnetKeplrChaininfo,
-  babylonMainnetLeapChainInfo,
   babylonTestnetKeplrChaininfo,
-  babylonTestnetLeapChaininfo,
   elgafarKeplrChainInfo,
-  elgafarLeapChainInfo,
   strideKeplrChainInfo,
-  strideLeapChainInfo,
   unionKeplrChainInfo,
+  xionKeplrChainInfo,
+} from "$lib/services/cosmos/chain-info/configs/keplr"
+import {
+  babylonMainnetLeapChainInfo,
+  babylonTestnetLeapChaininfo,
+  elgafarLeapChainInfo,
+  strideLeapChainInfo,
   unionLeapChainInfo,
-} from "$lib/wallet/cosmos/chain-info.ts"
+  xionLeapChainInfo,
+} from "$lib/services/cosmos/chain-info/configs/leap"
 import type { ChainInfo as KeplrChainInfo } from "@keplr-wallet/types"
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 

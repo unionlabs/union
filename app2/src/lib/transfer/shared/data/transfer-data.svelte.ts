@@ -8,6 +8,7 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
 import type { Channel, Token } from "@unionlabs/sdk/schema"
+import type { Fees } from "@unionlabs/sdk/schema/fee"
 import { Array as A, Effect, Either, Match, Option, pipe } from "effect"
 import { type Address, fromHex, type Hex } from "viem"
 
@@ -111,6 +112,8 @@ export class TransferData {
       ),
     ),
   )
+
+  fees = $derived<Option.Option<Fees>>(Option.map(this.channel, x => x.fees))
 
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(

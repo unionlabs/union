@@ -123,6 +123,131 @@ input String_comparison_exp {
   _similar: String
 }
 
+"""
+columns and relationships of "config.channel_fee_bi"
+"""
+type config_channel_fee_bi {
+  action: String
+  fee: numeric
+}
+
+"""
+order by aggregate values of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_aggregate_order_by {
+  avg: config_channel_fee_bi_avg_order_by
+  count: order_by
+  max: config_channel_fee_bi_max_order_by
+  min: config_channel_fee_bi_min_order_by
+  stddev: config_channel_fee_bi_stddev_order_by
+  stddev_pop: config_channel_fee_bi_stddev_pop_order_by
+  stddev_samp: config_channel_fee_bi_stddev_samp_order_by
+  sum: config_channel_fee_bi_sum_order_by
+  var_pop: config_channel_fee_bi_var_pop_order_by
+  var_samp: config_channel_fee_bi_var_samp_order_by
+  variance: config_channel_fee_bi_variance_order_by
+}
+
+"""
+order by avg() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_avg_order_by {
+  fee: order_by
+}
+
+"""
+Boolean expression to filter rows from the table "config.channel_fee_bi". All fields are combined with a logical 'AND'.
+"""
+input config_channel_fee_bi_bool_exp {
+  _and: [config_channel_fee_bi_bool_exp!]
+  _not: config_channel_fee_bi_bool_exp
+  _or: [config_channel_fee_bi_bool_exp!]
+  action: String_comparison_exp
+  fee: numeric_comparison_exp
+}
+
+"""
+order by max() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_max_order_by {
+  action: order_by
+  fee: order_by
+}
+
+"""
+order by min() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_min_order_by {
+  action: order_by
+  fee: order_by
+}
+
+"""Ordering options when selecting data from "config.channel_fee_bi"."""
+input config_channel_fee_bi_order_by {
+  action: order_by
+  fee: order_by
+}
+
+"""
+select columns of table "config.channel_fee_bi"
+"""
+enum config_channel_fee_bi_select_column {
+  """column name"""
+  action
+
+  """column name"""
+  fee
+}
+
+"""
+order by stddev() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_stddev_order_by {
+  fee: order_by
+}
+
+"""
+order by stddev_pop() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_stddev_pop_order_by {
+  fee: order_by
+}
+
+"""
+order by stddev_samp() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_stddev_samp_order_by {
+  fee: order_by
+}
+
+"""
+order by sum() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_sum_order_by {
+  fee: order_by
+}
+
+"""
+order by var_pop() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_var_pop_order_by {
+  fee: order_by
+}
+
+"""
+order by var_samp() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_var_samp_order_by {
+  fee: order_by
+}
+
+"""
+order by variance() on columns of table "config.channel_fee_bi"
+"""
+input config_channel_fee_bi_variance_order_by {
+  fee: order_by
+}
+
 """ordering argument of a cursor"""
 enum cursor_ordering {
   """ascending ordering of the cursor"""
@@ -388,6 +513,23 @@ input latency_percentiles_scalar_comparison_exp {
 """mutation root"""
 type mutation_root {
   drip_drop: drip_dropMutation
+}
+
+scalar numeric
+
+"""
+Boolean expression to compare columns of type "numeric". All fields are combined with logical 'AND'.
+"""
+input numeric_comparison_exp {
+  _eq: numeric
+  _gt: numeric
+  _gte: numeric
+  _in: [numeric!]
+  _is_null: Boolean
+  _lt: numeric
+  _lte: numeric
+  _neq: numeric
+  _nin: [numeric!]
 }
 
 """column ordering options"""
@@ -2080,6 +2222,24 @@ type v2_channel_type {
   destination_connection_id: Int
   destination_port_id: String
   destination_universal_chain_id: String
+
+  """An array relationship"""
+  fees(
+    """distinct select on columns"""
+    distinct_on: [config_channel_fee_bi_select_column!]
+
+    """limit the number of rows returned"""
+    limit: Int
+
+    """skip the first n rows. Use only with order_by"""
+    offset: Int
+
+    """sort the rows by one or more columns"""
+    order_by: [config_channel_fee_bi_order_by!]
+
+    """filter the rows returned"""
+    where: config_channel_fee_bi_bool_exp
+  ): [config_channel_fee_bi!]!
   sla: String
   sort_order: String
 
@@ -2107,6 +2267,7 @@ input v2_channel_type_bool_exp {
   destination_connection_id: Int_comparison_exp
   destination_port_id: String_comparison_exp
   destination_universal_chain_id: String_comparison_exp
+  fees: config_channel_fee_bi_bool_exp
   sla: String_comparison_exp
   sort_order: String_comparison_exp
   source_chain: v2_chains_view_bool_exp
@@ -2127,6 +2288,7 @@ input v2_channel_type_order_by {
   destination_connection_id: order_by
   destination_port_id: order_by
   destination_universal_chain_id: order_by
+  fees_aggregate: config_channel_fee_bi_aggregate_order_by
   sla: order_by
   sort_order: order_by
   source_chain: v2_chains_view_order_by

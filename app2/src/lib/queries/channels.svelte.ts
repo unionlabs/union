@@ -14,6 +14,10 @@ export const channelsQuery = () =>
               destination_client_id
               destination_connection_id
               destination_port_id
+              fees {
+                action
+                fee
+              }
               destination_universal_chain_id
               sort_order
               source_channel_id

@@ -1,5 +1,6 @@
 <script lang="ts">
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+import { runSync } from "$lib/runtime"
 import { chains } from "$lib/stores/chains.svelte.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
@@ -8,7 +9,7 @@ import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { cn } from "$lib/utils"
 import type { Chain, Token, TokenWrapping } from "@unionlabs/sdk/schema"
-import { Match, Option, pipe, Tuple } from "effect"
+import { Effect, Match, Option, pipe, Tuple } from "effect"
 
 type Props = {
   type: "source" | "destination"
@@ -103,13 +104,20 @@ const getChainStatus = (chain: Chain, hasBucket: boolean) => {
         hasBucket,
         hasRoute: true,
       })),
-      Match.when("destination", () => ({
-        isSelected: transferData.raw.destination === chain.chain_id,
-        isSourceChain,
-        isDisabled: isSourceChain || !isValidRoute(chain) || !hasBucket,
-        hasBucket,
-        hasRoute: isValidRoute(chain),
-      })),
+      Match.when("destination", () => {
+        const isDisabled = isSourceChain || !isValidRoute(chain) || !hasBucket
+        runSync(pipe(
+          Effect.logTrace(`${chain.chain_id} ${isDisabled ? "disabled" : "enabled"}`),
+          Effect.annotateLogs({ isSourceChain, isValidRoute: isValidRoute(chain), hasBucket }),
+        ))
+        return ({
+          isSelected: transferData.raw.destination === chain.chain_id,
+          isSourceChain,
+          isDisabled,
+          hasBucket,
+          hasRoute: isValidRoute(chain),
+        })
+      }),
       Match.exhaustive,
     ),
   )
