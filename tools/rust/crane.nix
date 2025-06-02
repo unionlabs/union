@@ -493,6 +493,19 @@
                   cargoLockParsedList = [
                     patchedCargoLock
                   ];
+                  overrideVendorGitCheckout =
+                    ps: drv:
+                    if lib.any (p: (lib.hasInfix "zhiburt/tabled" p.source)) ps then
+                      drv.overrideAttrs (_old: {
+                        postPatch = ''
+                          # broken symlink or something idk
+                          # https://github.com/ipetkov/crane/issues/802
+                          rm tabled/examples/show/LICENSE
+                        '';
+                      })
+                    else
+                      # Nothing to change, leave the derivations as is
+                      drv;
                 };
 
                 PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
