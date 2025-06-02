@@ -62,11 +62,26 @@ module ibc::light_client {
     use std::option::{Self, Option};
     use std::string::{Self, String};
     use sui::table::{Self, Table};
+    use sui::clock;
     use sui::object::{Self, UID};
-    use sui::bcs;
+    use sui::bcs::{Self, BCS};
     use ibc::ethabi;
     use ibc::height::{Self, Height};
     use ibc::create_lens_client_event::CreateLensClientEvent;
+    use ibc::ics23;
+    use ibc::groth16_verifier::{Self, ZKP};
+
+    const E_INVALID_CLIENT_STATE: u64 = 35100;
+    const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
+    const E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT: u64 = 35102;
+    const E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT: u64 = 35103;
+    const E_HEADER_EXCEEDED_TRUSTING_PERIOD: u64 = 35104;
+    const E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT: u64 = 35105;
+    const E_VALIDATORS_HASH_MISMATCH: u64 = 35106;
+    const E_INVALID_ZKP: u64 = 35107;
+    const E_FROZEN_CLIENT: u64 = 35108;
+    const E_INVALID_MISBEHAVIOUR: u64 = 35109;
+    const E_UNIMPLEMENTED: u64 = 35199;
 
     const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;
 
@@ -74,6 +89,25 @@ module ibc::light_client {
         id: UID,
         client_state: ClientState,
         consensus_states: Table<u64, ConsensusState>,
+    }
+
+    public struct Timestamp has drop, copy {
+        seconds: u64,
+        nanos: u32
+    }
+
+    public struct LightHeader has drop, copy {
+        height: u64,
+        time: Timestamp,
+        validators_hash: vector<u8>,
+        next_validators_hash: vector<u8>,
+        app_hash: vector<u8>
+    }
+
+    public struct Header has drop {
+        signed_header: LightHeader,
+        trusted_height: Height,
+        zero_knowledge_proof: ZKP
     }
 
     public struct ConsensusState has copy, drop, store {
@@ -222,27 +256,107 @@ module ibc::light_client {
         buf
     }
 
+    public(package) fun verify_header(
+        client: &Client, clock: &clock::Clock, header: &Header, consensus_state: &ConsensusState
+    ) {
+        assert!(consensus_state.timestamp != 0, E_CONSENSUS_STATE_TIMESTAMP_ZERO);
+
+        let untrusted_height_number = header.signed_header.height;
+        let trusted_height_number = height::get_revision_height(&header.trusted_height);
+
+        assert!(
+            untrusted_height_number > trusted_height_number,
+            E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT
+        );
+
+        let trusted_timestamp = consensus_state.timestamp;
+        let untrusted_timestamp =
+            header.signed_header.time.seconds * 1_000_000_000
+                + (header.signed_header.time.nanos as u64);
+        assert!(
+            untrusted_timestamp > trusted_timestamp,
+            E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT
+        );
+
+        let current_time = clock::timestamp_ms(clock) * 1_000_000;
+        assert!(
+            untrusted_timestamp < current_time + client.client_state.trusting_period,
+            E_HEADER_EXCEEDED_TRUSTING_PERIOD
+        );
+
+        assert!(
+            untrusted_timestamp < current_time + client.client_state.max_clock_drift,
+            E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT
+        );
+
+        if (untrusted_height_number == trusted_height_number + 1) {
+            assert!(
+                header.signed_header.validators_hash
+                    == consensus_state.next_validators_hash,
+                E_VALIDATORS_HASH_MISMATCH
+            );
+        };
+
+        // assert!(
+        //     groth16_verifier::verify_zkp(
+        //         &state.client_state.chain_id,
+        //         &consensus_state.next_validators_hash,
+        //         light_header_as_input_hash(&header.signed_header),
+        //         &header.zero_knowledge_proof
+        //     ),
+        //     E_INVALID_ZKP
+        // );
+    }
+
+
     public(package) fun update_client(
-        client: &Client, client_msg: vector<u8>
+        client: &mut Client, clock: &clock::Clock, client_msg: vector<u8>
     ): (vector<u8>, vector<u8>, u64) {
+        // TODO(aeryz): handle consensus state exist case
+        let header = decode_header(client_msg);
 
-        let consensus_state = ConsensusState{
-            timestamp: 0,
-            app_hash: MerkleRoot{hash: vector::empty()},
-            next_validators_hash: vector::empty()
-        };
-        let client_state = ClientState {
-            chain_id: string::utf8(b"this-chain"),
-            trusting_period: 0,
-            max_clock_drift: 0,
-            frozen_height: height::default(),
-            latest_height: height::new(0, 1000),
-            contract_address: vector::empty()
+        assert!(client.client_state.frozen_height.is_zero(), E_FROZEN_CLIENT);
+
+        let consensus_state = client.consensus_states.borrow(height::get_revision_height(&header.trusted_height));
+
+        client.verify_header(clock, &header, consensus_state);
+
+        let untrusted_height_number = header.signed_header.height;
+        let untrusted_timestamp =
+            header.signed_header.time.seconds * 1_000_000_000
+                + (header.signed_header.time.nanos as u64);
+
+        if (untrusted_height_number
+            > height::get_revision_height(&client.client_state.latest_height)) {
+            client.client_state.latest_height = height::new(0, untrusted_height_number);
         };
 
-        (encode_client_state(&client_state),
-            encode_consensus_state(&consensus_state),
-            0)
+        let new_height = height::get_revision_height(&client.client_state.latest_height);
+
+        let new_consensus_state = ConsensusState {
+            timestamp: untrusted_timestamp,
+            app_hash: MerkleRoot { hash: header.signed_header.app_hash },
+            next_validators_hash: header.signed_header.next_validators_hash
+        };
+
+        client.consensus_states.add(new_height, new_consensus_state);
+
+        (
+            encode_client_state(&client.client_state),
+            encode_consensus_state(&new_consensus_state),
+            new_height
+        )
+
+        // assert!(
+        //     groth16_verifier::verify_zkp(
+        //         &state.client_state.chain_id,
+        //         &consensus_state.next_validators_hash,
+        //         light_header_as_input_hash(&header.signed_header),
+        //         &header.zero_knowledge_proof
+        //     ),
+        //     E_INVALID_ZKP
+        // );
+
     }
 
     public(package) fun latest_height(
@@ -258,6 +372,20 @@ module ibc::light_client {
         key: vector<u8>,
         value: vector<u8>
     ): u64 {
+        let consensus_state = client.consensus_states.borrow(height);
+
+        let mut path = vector<u8>[0x03];
+        path.append(client.client_state.contract_address);
+        path.append(key);
+
+        ics23::verify_membership(
+            ics23::decode_membership_proof(proof),
+            consensus_state.app_hash.hash,
+            b"wasm", // HARDCODED PREFIX
+            path,
+            value
+        );
+
         0
     }
 
@@ -276,5 +404,34 @@ module ibc::light_client {
         };
         let consensus_state = client.consensus_states.borrow(height);
         encode_consensus_state(consensus_state)
+    }
+
+    fun decode_header(buf: vector<u8>): Header {
+        let mut buf = bcs::new(buf);
+        peel_header(&mut buf)
+    }
+
+    fun peel_header(buf: &mut BCS): Header {
+        let height = buf.peel_u64();
+
+        let time = Timestamp {
+            seconds: buf.peel_u64(),
+            nanos: buf.peel_u32()
+        };
+
+        let signed_header = LightHeader {
+            height,
+            time,
+            validators_hash: buf.peel_address().to_bytes(),
+            next_validators_hash: buf.peel_address().to_bytes(),
+            app_hash: buf.peel_address().to_bytes()
+        };
+
+        let trusted_height = height::decode_bcs(buf);
+
+        let proof_bz = buf.peel_vec_u8();
+        let zero_knowledge_proof = groth16_verifier::parse_zkp(proof_bz);
+
+        Header { signed_header, trusted_height, zero_knowledge_proof }
     }
 }
