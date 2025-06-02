@@ -53,6 +53,7 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::ChainId,
     rpc::{types::PluginInfo, PluginServer},
+    serde_json::{self, json},
     vm::{call, noop, pass::PassResult, Op, Visit},
     DefaultCmd,
 };
@@ -80,6 +81,8 @@ pub struct Module {
     pub ibc_handler_address: SuiAddress,
 
     pub ibc_store: SuiAddress,
+
+    pub graphql_url: String,
 
     pub sui_client: sui_sdk::SuiClient,
 
@@ -119,6 +122,7 @@ impl Plugin for Module {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             sui_client,
+            graphql_url: config.graphql_url,
             ibc_store_initial_seq,
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
@@ -158,6 +162,7 @@ impl Plugin for Module {
 pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
+    pub graphql_url: String,
     pub ibc_handler_address: SuiAddress,
     pub ibc_store: SuiAddress,
 
@@ -394,7 +399,7 @@ async fn process_msgs(
             Datagram::ChannelOpenInit(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
 
                 (
                     module_info.latest_address,
@@ -418,7 +423,7 @@ async fn process_msgs(
             Datagram::ChannelOpenTry(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
 
                 (
                     module_info.latest_address,
@@ -460,8 +465,7 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
-
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
                 (
                     module_info.latest_address,
                     msg,
@@ -498,7 +502,7 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
                 (
                     module_info.latest_address,
                     msg,
@@ -533,7 +537,7 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info: ModuleInfo = parse_port(&module.sui_client, &port_id).await;
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
 
                 let store_initial_seq = module
                     .sui_client
@@ -835,43 +839,42 @@ pub struct ModuleInfo {
     pub stores: Vec<SuiAddress>,
 }
 
-pub async fn parse_port(_: &SuiClient, port_id: &str) -> ModuleInfo {
+// original_address::module_name::store_address
+// TODO(aeryz): we can also choose to include store_name here
+pub async fn parse_port(graphql_url: &str, port_id: &str) -> ModuleInfo {
     let module_info = port_id.split("::").collect::<Vec<&str>>();
     if module_info.len() < 4 {
         panic!("invalid port id");
     }
 
-    // let upgrade_cap_address: SuiAddress = module_info[2].parse().unwrap();
+    let original_address = module_info[0].parse().unwrap();
 
-    // let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = sui_client
-    //     .read_api()
-    //     .get_object_with_options(
-    //         upgrade_cap_address.into(),
-    //         SuiObjectDataOptions::new().with_content(),
-    //     )
-    //     .await
-    //     .unwrap()
-    //     .into_object()
-    //     .unwrap()
-    //     .content
-    //     .unwrap()
-    //     .try_into_move()
-    //     .unwrap()
-    //     .fields
-    //     .field_value("package")
-    //     .unwrap()
-    // else {
-    //     panic!("this can't be the case");
-    // };
+    let query = json!({
+        "query": "query ($address: SuiAddress) { latestPackage(address: $address) { address } }",
+        "variables": { "address": original_address }
+    });
 
-    // TODO(aeryz): the latest address has to be fetched using graphql
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(graphql_url)
+        .header("Content-Type", "application/json")
+        .body(query.to_string())
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+
+    let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
+    let latest_address =
+        SuiAddress::from_str(v["data"]["latestPackage"]["address"].as_str().unwrap()).unwrap();
 
     ModuleInfo {
-        original_address: module_info[0].parse().unwrap(),
-        // TODO(aeryz): change this
-        latest_address: module_info[0].parse().unwrap(),
+        original_address,
+        latest_address,
         module_name: module_info[1].to_string(),
-        stores: module_info[3..]
+        stores: module_info[2..]
             .iter()
             .map(|s| s.parse().unwrap())
             .collect(),
