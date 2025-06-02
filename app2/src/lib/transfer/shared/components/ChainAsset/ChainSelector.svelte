@@ -1,9 +1,7 @@
 <script lang="ts">
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
-import { chains } from "$lib/stores/chains.svelte.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
-import type { Edition } from "$lib/themes"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte"
 import { cn } from "$lib/utils"
@@ -40,44 +38,6 @@ const updateSelectedChain = (chain: Chain) => {
   onSelect()
 }
 
-const getEnvironment = (): "PRODUCTION" | "STAGING" | "DEVELOPMENT" => {
-  return pipe(
-    Match.value(window.location.hostname).pipe(
-      Match.when(
-        hostname => hostname === "btc.union.build" || hostname === "app.union.build",
-        () => "PRODUCTION" as const,
-      ),
-      Match.when(
-        hostname =>
-          hostname === "staging.btc.union.build" || hostname === "staging.app.union.build",
-        () => "STAGING" as const,
-      ),
-      Match.orElse(() => "DEVELOPMENT" as const),
-    ),
-  )
-}
-
-function filterByEdition(chain: Chain, editionName: Edition, environment: string): boolean {
-  return pipe(
-    Option.fromNullable(chain.editions),
-    Option.match({
-      onNone: () => false,
-      onSome: editions =>
-        editions.some((edition: { name: string; environment: string }) => {
-          if (edition.name !== editionName) {
-            return false
-          }
-
-          return Match.value(edition.environment).pipe(
-            Match.when("development", () => environment === "development"),
-            Match.when("staging", () => environment === "development" || environment === "staging"),
-            Match.when("production", () => true),
-            Match.orElse(() => false),
-          )
-        }),
-    }),
-  )
-}
 const filterBySigningMode = (chains: Array<Chain>) =>
   signingMode.mode === "multi" && type === "source"
     ? chains.filter(chain => chain.rpc_type === "cosmos")
@@ -202,12 +162,11 @@ const filterChainsByTokenAvailability = (
 
 const filteredChains = $derived(
   pipe(
-    chains.data,
+    // Now use transferData.filteredChains which already includes edition filtering
+    transferData.filteredChains,
     Option.map(allChains =>
       pipe(
-        allChains.filter(chain =>
-          filterByEdition(chain, uiStore.edition, getEnvironment().toLowerCase())
-        ),
+        allChains,
         filterBySigningMode,
         chains => filterChainsByTokenAvailability(chains, uiStore.filterWhitelist),
       )
