@@ -139,9 +139,9 @@ _: {
             "trusted-mpt"
             "ethermint"
             "tendermint-bls"
-            "movement"
+            # "movement"
             "state-lens-ics23-mpt"
-            "state-lens-ics23-smt"
+            # "state-lens-ics23-smt"
           ];
         }
         {
@@ -166,9 +166,9 @@ _: {
             "trusted-mpt"
             "ethermint"
             "tendermint-bls"
-            "movement"
+            # "movement"
             "state-lens-ics23-mpt"
-            "state-lens-ics23-smt"
+            # "state-lens-ics23-smt"
           ];
         }
         {
@@ -314,7 +314,7 @@ _: {
             "cometbls"
             "tendermint"
             "state-lens-ics23-mpt"
-            "state-lens-ics23-smt"
+            # "state-lens-ics23-smt"
           ];
         }
         {
@@ -416,21 +416,21 @@ _: {
           client-type = "tendermint";
           features = [ "bls" ];
         }
-        {
-          name = "movement";
-          dir = "movement";
-          client-type = "movement";
-        }
+        # {
+        #   name = "movement";
+        #   dir = "movement";
+        #   client-type = "movement";
+        # }
         {
           name = "state-lens-ics23-mpt";
           dir = "state-lens-ics23-mpt";
           client-type = "state-lens/ics23/mpt";
         }
-        {
-          name = "state-lens-ics23-smt";
-          dir = "state-lens-ics23-smt";
-          client-type = "state-lens/ics23/smt";
-        }
+        # {
+        #   name = "state-lens-ics23-smt";
+        #   dir = "state-lens-ics23-smt";
+        #   client-type = "state-lens/ics23/smt";
+        # }
         {
           name = "state-lens-ics23-ics23";
           dir = "state-lens-ics23-ics23";

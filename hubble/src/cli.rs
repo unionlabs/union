@@ -66,8 +66,8 @@ pub enum IndexerConfig {
     Ethereum(indexer::ethereum::config::Config),
     #[serde(rename = "tendermint")]
     Tendermint(indexer::tendermint::config::Config),
-    #[serde(rename = "aptos")]
-    Aptos(indexer::aptos::config::Config),
+    // #[serde(rename = "aptos")]
+    // Aptos(indexer::aptos::config::Config),
 }
 
 impl IndexerConfig {
@@ -76,7 +76,7 @@ impl IndexerConfig {
             Self::Dummy(cfg) => &cfg.indexer_id,
             Self::Ethereum(cfg) => &cfg.indexer_id,
             Self::Tendermint(cfg) => &cfg.indexer_id,
-            Self::Aptos(cfg) => &cfg.indexer_id,
+            // Self::Aptos(cfg) => &cfg.indexer_id,
         }
     }
 }
@@ -112,15 +112,14 @@ impl IndexerConfig {
                     .index()
                     .instrument(indexer_span)
                     .await
-            }
-            Self::Aptos(cfg) => {
-                cfg.build(db)
-                    .instrument(initializer_span)
-                    .await?
-                    .index()
-                    .instrument(indexer_span)
-                    .await
-            }
+            } // Self::Aptos(cfg) => {
+              //     cfg.build(db)
+              //         .instrument(initializer_span)
+              //         .await?
+              //         .index()
+              //         .instrument(indexer_span)
+              //         .await
+              // }
         }
     }
 }

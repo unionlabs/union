@@ -1,6 +1,5 @@
 use color_eyre::eyre::Report;
 use sqlx::PgPool;
-use unionlabs::aptos::block_info::BlockHeight;
 
 use super::dummy::{DummyContext, DummyFetcherClient};
 use crate::indexer::{api::IndexerId, FinalizerConfig, Indexer};
@@ -8,7 +7,7 @@ use crate::indexer::{api::IndexerId, FinalizerConfig, Indexer};
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub indexer_id: IndexerId,
-    pub start_height: BlockHeight,
+    pub start_height: u64,
     pub finalizer: FinalizerConfig,
 }
 
