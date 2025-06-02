@@ -114,10 +114,7 @@ _: {
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
-            # "ethereum"
-            "trusted-mpt"
-            # "bob"
-            # "ethermint"
+            "sui"
           ];
         }
         {
@@ -438,6 +435,11 @@ _: {
           name = "state-lens-ics23-ics23";
           dir = "state-lens-ics23-ics23";
           client-type = "state-lens/ics23/ics23";
+        }
+        {
+          name = "sui";
+          dir = "sui";
+          client-type = "sui";
         }
       ];
 

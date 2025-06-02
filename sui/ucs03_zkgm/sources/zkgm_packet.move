@@ -62,8 +62,6 @@ module zkgm::zkgm_packet {
     use zkgm::zkgm_ethabi;
     use zkgm::instruction::{Self, Instruction};
 
-    use std::vector;
-
     public struct ZkgmPacket has copy, drop, store {
         salt: vector<u8>,
         path: u256,

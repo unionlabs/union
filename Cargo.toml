@@ -89,6 +89,7 @@ members = [
   "lib/state-lens-ics23-mpt-light-client-types",
   "lib/state-lens-ics23-ics23-light-client-types",
   "lib/state-lens-ics23-smt-light-client-types",
+  "lib/sui-light-client-types",
 
   "cosmwasm/deployer",
 
@@ -104,6 +105,7 @@ members = [
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-smt",
   "cosmwasm/ibc-union/lightclient/state-lens-ics23-ics23",
+  "cosmwasm/ibc-union/lightclient/sui",
 
   # these will all be re enabled and updated once ethereum-light-client is updated
   # "cosmwasm/ibc-union/lightclient/scroll",
@@ -131,37 +133,41 @@ members = [
   "voyager/modules/state/cosmos-sdk",
   "voyager/modules/state/cosmos-sdk-union",
   "voyager/modules/state/ethereum",
-  "voyager/modules/state/movement",
+  # "voyager/modules/state/movement",
+  "voyager/modules/state/sui",
 
   "voyager/modules/proof/cosmos-sdk",
   "voyager/modules/proof/cosmos-sdk-union",
   "voyager/modules/proof/ethermint",
   "voyager/modules/proof/ethereum",
-  "voyager/modules/proof/movement",
+  # "voyager/modules/proof/movement",
+  "voyager/modules/proof/sui",
 
   "voyager/modules/client/bob",
   "voyager/modules/client/arbitrum",
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
-  "voyager/modules/client/movement",
+  # "voyager/modules/client/movement",
   "voyager/modules/client/tendermint",
   "voyager/modules/client/ethermint",
   "voyager/modules/client/state-lens/ics23-mpt",
   "voyager/modules/client/state-lens/ics23-ics23",
   "voyager/modules/client/state-lens/ics23-smt",
+  "voyager/modules/client/sui",
   "voyager/modules/client/trusted-mpt",
 
   "voyager/modules/client-bootstrap/bob",
   "voyager/modules/client-bootstrap/arbitrum",
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
-  "voyager/modules/client-bootstrap/movement",
+  # "voyager/modules/client-bootstrap/movement",
   "voyager/modules/client-bootstrap/tendermint",
   "voyager/modules/client-bootstrap/ethermint",
   "voyager/modules/client-bootstrap/trusted-mpt",
   "voyager/modules/client-bootstrap/state-lens/ics23-mpt",
   "voyager/modules/client-bootstrap/state-lens/ics23-smt",
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
+  "voyager/modules/client-bootstrap/sui",
 
   "voyager/modules/finality/bob",
   "voyager/modules/finality/arbitrum",
@@ -171,27 +177,31 @@ members = [
   "voyager/modules/finality/movement",
   "voyager/modules/finality/tendermint",
   "voyager/modules/finality/trusted-evm",
+  "voyager/modules/finality/sui",
 
   "voyager/plugins/client-update/bob",
   "voyager/plugins/client-update/arbitrum",
   "voyager/plugins/client-update/berachain",
   "voyager/plugins/client-update/cometbls",
   "voyager/plugins/client-update/ethereum",
-  "voyager/plugins/client-update/movement",
+  # "voyager/plugins/client-update/movement",
   "voyager/plugins/client-update/tendermint",
   "voyager/plugins/client-update/ethermint",
   "voyager/plugins/client-update/state-lens",
+  "voyager/plugins/client-update/sui",
   "voyager/plugins/client-update/trusted-mpt",
 
   "voyager/plugins/periodic-client-update",
 
   "voyager/plugins/event-source/cosmos-sdk",
   "voyager/plugins/event-source/ethereum",
-  "voyager/plugins/event-source/movement",
+  # "voyager/plugins/event-source/movement",
+  "voyager/plugins/event-source/sui",
 
   "voyager/plugins/transaction/cosmos-sdk",
   "voyager/plugins/transaction/ethereum",
-  "voyager/plugins/transaction/aptos",
+  # "voyager/plugins/transaction/aptos",
+  "voyager/plugins/transaction/sui",
 
   "voyager/plugins/packet-filter",
   "voyager/plugins/packet-batch",
@@ -245,6 +255,7 @@ members = [
   "lib/voyager-sdk",
   "lib/voyager-plugin-protocol",
   "lib/wasm-client-type",
+  "lib/sui-verifier",
 ]
 
 [workspace.package]
@@ -288,7 +299,11 @@ fork-schedules   = { path = "lib/fork-schedules", default-features = false }
 
 depolama = { path = "lib/depolama", default-features = false }
 
+move-core-types-sui           = { package = "move-core-types", git = "https://github.com/mystenlabs/sui", default-features = false }
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
+sui-light-client-types        = { path = "lib/sui-light-client-types", default-features = false }
+sui-sdk                       = { git = "https://github.com/mystenlabs/sui", default-features = false }
+sui-verifier                  = { path = "lib/sui-verifier", default-features = false }
 
 bob-light-client-types = { path = "lib/bob-light-client-types", default-features = false }
 bob-verifier           = { path = "lib/bob-verifier", default-features = false }
