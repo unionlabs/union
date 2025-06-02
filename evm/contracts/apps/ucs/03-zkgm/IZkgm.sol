@@ -40,6 +40,6 @@ interface IZkgm is IZkgmStore {
 
     function registerGovernanceToken(
         uint32 channelId,
-        bytes calldata unwrappedGovernanceToken
+        GovernanceToken calldata governanceToken
     ) external;
 }

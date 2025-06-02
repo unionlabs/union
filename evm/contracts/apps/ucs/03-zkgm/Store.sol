@@ -55,7 +55,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
     mapping(address => uint256) public tokenOrigin;
     mapping(uint32 => mapping(uint256 => mapping(address => uint256))) public
         channelBalance;
-    mapping(uint32 => bytes) public channelGovernanceToken;
+    mapping(uint32 => GovernanceToken) public channelGovernanceToken;
     mapping(uint256 => ZkgmStake) public stakes;
     mapping(address => bytes32) public metadataImageOf;
     mapping(
@@ -68,13 +68,21 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
     function _getGovernanceToken(
         uint32 channelId
     ) internal view returns (ZkgmERC20, bytes memory) {
-        bytes storage governanceToken = channelGovernanceToken[channelId];
-        if (governanceToken.length == 0) {
+        GovernanceToken memory governanceToken =
+            channelGovernanceToken[channelId];
+        if (governanceToken.unwrappedToken.length == 0) {
             revert ZkgmLib.ErrChannelGovernanceTokenNotSet();
         }
-        (address wrappedGovernanceToken,) =
-            _predictWrappedTokenMemory(0, channelId, governanceToken);
-        return (ZkgmERC20(wrappedGovernanceToken), governanceToken);
+        (address wrappedGovernanceToken,,) =
+        _predictWrappedTokenFromMetadataImageV2(
+            0,
+            channelId,
+            governanceToken.unwrappedToken,
+            governanceToken.metadataImage,
+            false
+        );
+        return
+            (ZkgmERC20(wrappedGovernanceToken), governanceToken.unwrappedToken);
     }
 
     function _predictStakeManagerAddress() internal view returns (ZkgmERC721) {
@@ -176,17 +184,17 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
     function _predictWrappedTokenFromMetadataImageV2(
         uint256 path,
         uint32 channel,
-        bytes calldata token,
+        bytes memory token,
         bytes32 metadataImage,
         bool checkV1
-    ) internal returns (address, bytes32, bool) {
+    ) internal view returns (address, bytes32, bool) {
         if (checkV1) {
             if (
                 metadataImage
                     == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
             ) {
                 (address quoteTokenV1, bytes32 saltV1) =
-                    _predictWrappedToken(path, channel, token);
+                    _predictWrappedTokenMemory(path, channel, token);
                 return (quoteTokenV1, saltV1, true);
             }
         }

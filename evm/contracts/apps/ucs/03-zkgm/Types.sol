@@ -130,3 +130,8 @@ struct ZkgmStake {
     // Time at which unbonding will complete (allows the NFT to be burnt in exchange for withdrawal).
     uint256 unstakingCompletion;
 }
+
+struct GovernanceToken {
+    bytes unwrappedToken;
+    bytes32 metadataImage;
+}

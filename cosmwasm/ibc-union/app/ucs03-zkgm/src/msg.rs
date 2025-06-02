@@ -166,6 +166,16 @@ pub enum QueryMsg {
         /// Base token denom
         token: Bytes,
     },
+    /// Calculate the wrapped token denom using metadata image (V2)
+    PredictWrappedTokenV2 {
+        path: String,
+        /// Destination channel id
+        channel_id: ChannelId,
+        /// Base token denom
+        token: Bytes,
+        /// Metadata image (hash)
+        metadata_image: H256,
+    },
     GetMinter {},
     GetTokenBucket {
         denom: String,
