@@ -1,6 +1,7 @@
 import { runSync } from "$lib/runtime"
+import { unionKeplrChainInfo } from "$lib/services/cosmos/chain-info/configs/keplr"
+import { unionLeapChainInfo } from "$lib/services/cosmos/chain-info/configs/leap"
 import { wallets } from "$lib/stores/wallets.svelte"
-import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info"
 import { bech32AddressToHex } from "@unionlabs/client"
 import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
 import { Effect, Option } from "effect"
@@ -40,13 +41,18 @@ class CosmosStore {
   address = $state<string | undefined>(undefined)
   rawAddress = $state<Uint8Array | undefined>(undefined)
   connectedWallet = $state<CosmosWalletId | undefined>(undefined)
-  connectionStatus = $state<"disconnected" | "connecting" | "connected">("disconnected")
+  connectionStatus = $state<"disconnected" | "connecting" | "connected">(
+    "disconnected",
+  )
 
   constructor() {
     this.loadFromStorage()
 
     if (this.connectedWallet && this.connectionStatus === "connected") {
-      console.log("Attempting to auto-reconnect to Cosmos wallet:", this.connectedWallet)
+      console.log(
+        "Attempting to auto-reconnect to Cosmos wallet:",
+        this.connectedWallet,
+      )
       setTimeout(() => {
         this.reconnect(this.connectedWallet as CosmosWalletId)
       }, 1000)
@@ -60,7 +66,9 @@ class CosmosStore {
         const hexAddress = bech32AddressToHex({ address })
         return AddressCosmosCanonical.make(hexAddress)
       }
-      wallets.cosmosAddress = Option.some(cosmosAddressFromBech32(bech32Address))
+      wallets.cosmosAddress = Option.some(
+        cosmosAddressFromBech32(bech32Address),
+      )
     } else {
       wallets.cosmosAddress = Option.none()
     }
@@ -75,7 +83,9 @@ class CosmosStore {
 
         this.chain = parsedData.chain || "cosmos"
         this.address = parsedData.address
-        this.rawAddress = parsedData.rawAddress ? new Uint8Array(parsedData.rawAddress) : undefined
+        this.rawAddress = parsedData.rawAddress
+          ? new Uint8Array(parsedData.rawAddress)
+          : undefined
         this.connectedWallet = parsedData.connectedWallet
         this.connectionStatus = parsedData.connectionStatus || "disconnected"
 
@@ -128,7 +138,9 @@ class CosmosStore {
 
     const walletApi = window[cosmosWalletId]
     if (!walletApi) {
-      const walletInfo = cosmosWalletsInformation.find(wallet => wallet.id === cosmosWalletId)
+      const walletInfo = cosmosWalletsInformation.find(
+        (wallet) => wallet.id === cosmosWalletId,
+      )
       if (walletInfo) {
         const { deepLink, download } = walletInfo
         window.open(deepLink || download, "_blank", "noopener noreferrer")
@@ -154,15 +166,9 @@ class CosmosStore {
     try {
       await walletApi.experimentalSuggestChain(chainInfo)
       await walletApi.enable(["bbn-1"])
-      Effect.log("wallet.connect").pipe(
-        annotate,
-        runSync,
-      )
+      Effect.log("wallet.connect").pipe(annotate, runSync)
     } catch (e) {
-      Effect.logError("wallet.connect", e).pipe(
-        annotate,
-        runSync,
-      )
+      Effect.logError("wallet.connect", e).pipe(annotate, runSync)
       this.connectionStatus = "disconnected"
       this.saveToStorage()
       return
