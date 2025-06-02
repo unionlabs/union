@@ -12,7 +12,10 @@ import { GasPrice } from "@cosmjs/stargate"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { Effect, Option } from "effect"
 
-export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId) =>
+export const getCosmWasmClient = (
+  chain: Chain,
+  connectedWallet: CosmosWalletId,
+) =>
   Effect.gen(function*() {
     if (!chain.rpcs) {
       return yield* new CosmWasmError({ cause: "No RPCs available for chain" })
@@ -20,11 +23,15 @@ export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId)
 
     const offlineSigner = yield* getCosmosOfflineSigner(chain)
     const gasPriceInfo = yield* getGasPriceForChain(chain, connectedWallet)
-    const gasPrice = GasPrice.fromString(`${gasPriceInfo.amount}${gasPriceInfo.denom}`)
+    const gasPrice = GasPrice.fromString(
+      `${gasPriceInfo.amount}${gasPriceInfo.denom}`,
+    )
 
     const maybeRpcUrl = chain.getRpcUrl("rpc")
     if (Option.isNone(maybeRpcUrl)) {
-      return yield* new CosmWasmError({ cause: "No RPC URL of type 'rpc' available for chain" })
+      return yield* new CosmWasmError({
+        cause: "No RPC URL of type 'rpc' available for chain",
+      })
     }
 
     const rpcUrl = maybeRpcUrl.value.toString()
@@ -34,7 +41,7 @@ export const getCosmWasmClient = (chain: Chain, connectedWallet: CosmosWalletId)
         SigningCosmWasmClient.connectWithSigner(rpcUrl, offlineSigner, {
           gasPrice,
         }),
-      catch: err => new CosmWasmError({ cause: String(err) }),
+      catch: (err) => new CosmWasmError({ cause: String(err) }),
     })
   })
 
@@ -46,9 +53,13 @@ export const getCosmosPublicClient = (
       const rpcString = typeof rpc === "string" ? rpc : rpc.toString()
       return CosmWasmClient.connect(rpcString)
     },
-    catch: err =>
+    catch: (err) =>
       new CosmWasmError({
-        cause: `Failed to create CosmWasm client with RPC ${rpc}: ${String(err)}`,
+        cause: `Failed to create CosmWasm client with RPC ${rpc}: ${
+          String(
+            err,
+          )
+        }`,
       }),
   })
 
