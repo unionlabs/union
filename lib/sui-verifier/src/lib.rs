@@ -159,22 +159,16 @@ pub fn verify_membership(
 fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<Digest> {
     match effects {
         TransactionEffects::V1(_) => None,
-        TransactionEffects::V2(effects) => {
-            let effect = effects.changed_objects.iter().find(|eff| {
-                eff.0 == object && matches!(eff.1.output_state, ObjectOut::ObjectWrite(..))
-            })?;
-
-            effects.changed_objects.iter().find_map(|eff| {
-                if eff.0 == object {
-                    match eff.1.output_state {
-                        ObjectOut::ObjectWrite(write) => Some(write.0),
-                        _ => None,
-                    }
-                } else {
-                    None
+        TransactionEffects::V2(effects) => effects.changed_objects.iter().find_map(|eff| {
+            if eff.0 == object {
+                match &eff.1.output_state {
+                    ObjectOut::ObjectWrite(write) => Some(write.0.clone()),
+                    _ => None,
                 }
-            })
-        }
+            } else {
+                None
+            }
+        }),
     }
 }
 

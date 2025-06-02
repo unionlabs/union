@@ -1055,7 +1055,7 @@ module ibc::ibc {
     // TODO(aeryz): update should only be allowed for:
     // - client state,
     // - connection end
-    // - channnel end commitments, the rest should abort in `update`
+    // - channel end commitments, the rest should abort in `update`
     fun add_or_update_table<T: drop + store + copy, P: drop + store>(table: &mut Table<T, P>, key: T, value: P) {
         if (table.contains(key)) {
             let val = table.borrow_mut(key);

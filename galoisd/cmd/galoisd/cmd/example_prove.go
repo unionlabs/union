@@ -27,10 +27,6 @@ import (
 	provergrpc "galois/grpc/api/v3"
 )
 
-const (
-	flagBls12381 = "bls12381"
-)
-
 func marshalValidators(validators []*tmtypes.SimpleValidator) ([]byte, error) {
 	merkleTree := make([][]byte, len(validators))
 	for i, val := range validators {
@@ -214,13 +210,7 @@ func ExampleProveCmd() *cobra.Command {
 				},
 			}
 
-			var res *provergrpc.ProveResponse
-			if cmd.Flag(flagBls12381) != nil {
-				res, err = client.ProveBls12381(ctx, &req)
-			} else {
-				res, err = client.Prove(ctx, &req)
-			}
-
+			res, err := client.Prove(ctx, &req)
 			if err != nil {
 				return err
 			}

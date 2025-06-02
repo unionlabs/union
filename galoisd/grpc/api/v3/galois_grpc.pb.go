@@ -19,13 +19,11 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	UnionProverAPI_Prove_FullMethodName              = "/union.galois.api.v3.UnionProverAPI/Prove"
-	UnionProverAPI_ProveBls12381_FullMethodName      = "/union.galois.api.v3.UnionProverAPI/ProveBls12381"
-	UnionProverAPI_Verify_FullMethodName             = "/union.galois.api.v3.UnionProverAPI/Verify"
-	UnionProverAPI_GenerateContract_FullMethodName   = "/union.galois.api.v3.UnionProverAPI/GenerateContract"
-	UnionProverAPI_QueryStats_FullMethodName         = "/union.galois.api.v3.UnionProverAPI/QueryStats"
-	UnionProverAPI_QueryStatsBls12381_FullMethodName = "/union.galois.api.v3.UnionProverAPI/QueryStatsBls12381"
-	UnionProverAPI_Poll_FullMethodName               = "/union.galois.api.v3.UnionProverAPI/Poll"
+	UnionProverAPI_Prove_FullMethodName            = "/union.galois.api.v3.UnionProverAPI/Prove"
+	UnionProverAPI_Verify_FullMethodName           = "/union.galois.api.v3.UnionProverAPI/Verify"
+	UnionProverAPI_GenerateContract_FullMethodName = "/union.galois.api.v3.UnionProverAPI/GenerateContract"
+	UnionProverAPI_QueryStats_FullMethodName       = "/union.galois.api.v3.UnionProverAPI/QueryStats"
+	UnionProverAPI_Poll_FullMethodName             = "/union.galois.api.v3.UnionProverAPI/Poll"
 )
 
 // UnionProverAPIClient is the client API for UnionProverAPI service.
@@ -33,11 +31,9 @@ const (
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type UnionProverAPIClient interface {
 	Prove(ctx context.Context, in *ProveRequest, opts ...grpc.CallOption) (*ProveResponse, error)
-	ProveBls12381(ctx context.Context, in *ProveRequest, opts ...grpc.CallOption) (*ProveResponse, error)
 	Verify(ctx context.Context, in *VerifyRequest, opts ...grpc.CallOption) (*VerifyResponse, error)
 	GenerateContract(ctx context.Context, in *GenerateContractRequest, opts ...grpc.CallOption) (*GenerateContractResponse, error)
 	QueryStats(ctx context.Context, in *QueryStatsRequest, opts ...grpc.CallOption) (*QueryStatsResponse, error)
-	QueryStatsBls12381(ctx context.Context, in *QueryStatsRequest, opts ...grpc.CallOption) (*QueryStatsResponse, error)
 	Poll(ctx context.Context, in *PollRequest, opts ...grpc.CallOption) (*PollResponse, error)
 }
 
@@ -52,15 +48,6 @@ func NewUnionProverAPIClient(cc grpc.ClientConnInterface) UnionProverAPIClient {
 func (c *unionProverAPIClient) Prove(ctx context.Context, in *ProveRequest, opts ...grpc.CallOption) (*ProveResponse, error) {
 	out := new(ProveResponse)
 	err := c.cc.Invoke(ctx, UnionProverAPI_Prove_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *unionProverAPIClient) ProveBls12381(ctx context.Context, in *ProveRequest, opts ...grpc.CallOption) (*ProveResponse, error) {
-	out := new(ProveResponse)
-	err := c.cc.Invoke(ctx, UnionProverAPI_ProveBls12381_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,15 +81,6 @@ func (c *unionProverAPIClient) QueryStats(ctx context.Context, in *QueryStatsReq
 	return out, nil
 }
 
-func (c *unionProverAPIClient) QueryStatsBls12381(ctx context.Context, in *QueryStatsRequest, opts ...grpc.CallOption) (*QueryStatsResponse, error) {
-	out := new(QueryStatsResponse)
-	err := c.cc.Invoke(ctx, UnionProverAPI_QueryStatsBls12381_FullMethodName, in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 func (c *unionProverAPIClient) Poll(ctx context.Context, in *PollRequest, opts ...grpc.CallOption) (*PollResponse, error) {
 	out := new(PollResponse)
 	err := c.cc.Invoke(ctx, UnionProverAPI_Poll_FullMethodName, in, out, opts...)
@@ -117,11 +95,9 @@ func (c *unionProverAPIClient) Poll(ctx context.Context, in *PollRequest, opts .
 // for forward compatibility
 type UnionProverAPIServer interface {
 	Prove(context.Context, *ProveRequest) (*ProveResponse, error)
-	ProveBls12381(context.Context, *ProveRequest) (*ProveResponse, error)
 	Verify(context.Context, *VerifyRequest) (*VerifyResponse, error)
 	GenerateContract(context.Context, *GenerateContractRequest) (*GenerateContractResponse, error)
 	QueryStats(context.Context, *QueryStatsRequest) (*QueryStatsResponse, error)
-	QueryStatsBls12381(context.Context, *QueryStatsRequest) (*QueryStatsResponse, error)
 	Poll(context.Context, *PollRequest) (*PollResponse, error)
 	mustEmbedUnimplementedUnionProverAPIServer()
 }
@@ -133,9 +109,6 @@ type UnimplementedUnionProverAPIServer struct {
 func (UnimplementedUnionProverAPIServer) Prove(context.Context, *ProveRequest) (*ProveResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Prove not implemented")
 }
-func (UnimplementedUnionProverAPIServer) ProveBls12381(context.Context, *ProveRequest) (*ProveResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ProveBls12381 not implemented")
-}
 func (UnimplementedUnionProverAPIServer) Verify(context.Context, *VerifyRequest) (*VerifyResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Verify not implemented")
 }
@@ -144,9 +117,6 @@ func (UnimplementedUnionProverAPIServer) GenerateContract(context.Context, *Gene
 }
 func (UnimplementedUnionProverAPIServer) QueryStats(context.Context, *QueryStatsRequest) (*QueryStatsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method QueryStats not implemented")
-}
-func (UnimplementedUnionProverAPIServer) QueryStatsBls12381(context.Context, *QueryStatsRequest) (*QueryStatsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method QueryStatsBls12381 not implemented")
 }
 func (UnimplementedUnionProverAPIServer) Poll(context.Context, *PollRequest) (*PollResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Poll not implemented")
@@ -178,24 +148,6 @@ func _UnionProverAPI_Prove_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(UnionProverAPIServer).Prove(ctx, req.(*ProveRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _UnionProverAPI_ProveBls12381_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProveRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UnionProverAPIServer).ProveBls12381(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UnionProverAPI_ProveBls12381_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UnionProverAPIServer).ProveBls12381(ctx, req.(*ProveRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -254,24 +206,6 @@ func _UnionProverAPI_QueryStats_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _UnionProverAPI_QueryStatsBls12381_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(QueryStatsRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(UnionProverAPIServer).QueryStatsBls12381(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: UnionProverAPI_QueryStatsBls12381_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(UnionProverAPIServer).QueryStatsBls12381(ctx, req.(*QueryStatsRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 func _UnionProverAPI_Poll_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(PollRequest)
 	if err := dec(in); err != nil {
@@ -302,10 +236,6 @@ var UnionProverAPI_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _UnionProverAPI_Prove_Handler,
 		},
 		{
-			MethodName: "ProveBls12381",
-			Handler:    _UnionProverAPI_ProveBls12381_Handler,
-		},
-		{
 			MethodName: "Verify",
 			Handler:    _UnionProverAPI_Verify_Handler,
 		},
@@ -316,10 +246,6 @@ var UnionProverAPI_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "QueryStats",
 			Handler:    _UnionProverAPI_QueryStats_Handler,
-		},
-		{
-			MethodName: "QueryStatsBls12381",
-			Handler:    _UnionProverAPI_QueryStatsBls12381_Handler,
 		},
 		{
 			MethodName: "Poll",

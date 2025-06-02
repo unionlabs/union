@@ -94,7 +94,7 @@ func (c *bls12381HashToField) BlockSize() int {
 
 func (*proverServerBls12381) mustEmbedUnimplementedUnionProverAPIServer() {}
 
-func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.PollRequest) (*grpc.PollResponse, error) {
+func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollRequest) (*grpc.PollResponse, error) {
 	req := pollReq.Request
 
 	if len(req.TrustedCommit.Validators) > lightclient.MaxVal {
@@ -286,7 +286,7 @@ func (p *proverServerBls12381) PollBls12381(ctx context.Context, pollReq *grpc.P
 	}, nil
 }
 
-func (p *proverServerBls12381) QueryStatsBls12381(ctx context.Context, req *grpc.QueryStatsRequest) (*grpc.QueryStatsResponse, error) {
+func (p *proverServerBls12381) QueryStats(ctx context.Context, req *grpc.QueryStatsRequest) (*grpc.QueryStatsResponse, error) {
 	log.Debug().Msg("Querying stats...")
 
 	return &grpc.QueryStatsResponse{
@@ -421,6 +421,26 @@ func loadOrCreateBls12381(r1csPath, pkPath, vkPath, innerR1csPath, innerPkPath, 
 		Msg("verifying_key")
 
 	return cs, pk, vk, csInner, pkInner, vkInner, nil
+}
+
+func (p *proverServerBls12381) Prove(ctx context.Context, req *grpc.ProveRequest) (*grpc.ProveResponse, error) {
+	for true {
+		pollRes, err := p.Poll(ctx, &grpc.PollRequest{
+			Request: req,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("%v", err)
+		}
+		if done := pollRes.GetDone(); done != nil {
+			return done.Response, nil
+		}
+		if failed := pollRes.GetFailed(); failed != nil {
+			return nil, fmt.Errorf("%v", failed.Message)
+		}
+		time.Sleep(1 * time.Second)
+	}
+
+	panic("impossible; qed;")
 }
 
 func NewProverServerBls12381(maxJobs uint32, r1csPath, pkPath, vkPath, innerR1csPath, innerPkPath, innerVkPath string) (*proverServerBls12381, error) {
