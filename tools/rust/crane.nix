@@ -500,6 +500,7 @@
                         postPatch = ''
                           # broken symlink or something idk
                           # https://github.com/ipetkov/crane/issues/802
+                          # https://github.com/zhiburt/tabled/issues/538
                           rm tabled/examples/show/LICENSE
                         '';
                       })
@@ -642,7 +643,7 @@
 
       checks =
         let
-          cargoWorkspaceAttrs = {
+          cargoWorkspaceAttrs = rec {
             pname = "cargo-workspace";
             version = "0.0.0";
             src = cargoWorkspaceSrc;
@@ -668,6 +669,23 @@
             nativeBuildInputs = [
               pkgs.clang
             ];
+            cargoVendorDir = craneLib.vendorCargoDeps {
+              inherit src;
+              overrideVendorGitCheckout =
+                ps: drv:
+                if lib.any (p: (lib.hasInfix "zhiburt/tabled" p.source)) ps then
+                  drv.overrideAttrs (_old: {
+                    postPatch = ''
+                      # broken symlink or something idk
+                      # https://github.com/ipetkov/crane/issues/802
+                      # https://github.com/zhiburt/tabled/issues/538
+                      rm tabled/examples/show/LICENSE
+                    '';
+                  })
+                else
+                  # Nothing to change, leave the derivations as is
+                  drv;
+            };
           };
           cargoArtifacts = craneLib.buildDepsOnly cargoWorkspaceAttrs;
         in
