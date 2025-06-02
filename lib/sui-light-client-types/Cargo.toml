@@ -28,6 +28,7 @@ unionlabs-primitives = { workspace = true, features = ["base58"] }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
+serde       = { workspace = true }
 serde_json  = { workspace = true }
 
 [features]

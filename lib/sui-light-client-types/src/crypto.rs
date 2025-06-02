@@ -45,9 +45,9 @@ impl<'de> serde::Deserialize<'de> for SuiBitmap {
         D: serde::Deserializer<'de>,
     {
         let bytes: Vec<u8> = Vec::<u8>::deserialize(deserializer)?;
-        Ok(Self::deserialize_from_bytes(&bytes).map_err(|e| {
+        Self::deserialize_from_bytes(&bytes).map_err(|e| {
             serde::de::Error::custom(format!("byte deserialization failed, cause by: {:?}", e))
-        })?)
+        })
     }
 }
 
@@ -87,8 +87,8 @@ impl<Context> bincode::Decode<Context> for SuiBitmap {
     ) -> Result<Self, bincode::error::DecodeError> {
         let bytes = Vec::<u8>::decode(decoder)?;
 
-        Ok(Self::deserialize_from_bytes(&bytes)
-            .map_err(|e| bincode::error::DecodeError::OtherString(e.to_string()))?)
+        Self::deserialize_from_bytes(&bytes)
+            .map_err(|e| bincode::error::DecodeError::OtherString(e.to_string()))
     }
 }
 

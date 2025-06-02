@@ -6,8 +6,8 @@ use crate::{checkpoint_summary::GasCostSummary, digest::Digest, ObjectID, Object
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub enum TransactionEffects {
-    V1(TransactionEffectsV1),
-    V2(TransactionEffectsV2),
+    V1(Box<TransactionEffectsV1>),
+    V2(Box<TransactionEffectsV2>),
 }
 
 /// The response from processing a transaction or a certified transaction
@@ -165,6 +165,7 @@ pub enum ExecutionStatus {
 }
 
 impl TransactionEffects {
+    #[cfg(feature = "serde")]
     pub fn digest(&self) -> Digest {
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("TransactionEffects::");
@@ -175,21 +176,7 @@ impl TransactionEffects {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use blake2::{Blake2b, Digest as _};
-    use hex_literal::hex;
-    use unionlabs_primitives::{encoding::Base58, Bytes, FixedBytes};
-
     use super::*;
-    use crate::U64;
-
-    fn digest<T: Serialize>(effects: &T) -> Bytes<Base58> {
-        let mut hasher = Blake2b::<typenum::U32>::new();
-        hasher.update("TransactionEffects::");
-        bcs::serialize_into(&mut hasher, effects).unwrap();
-        Bytes::new(hasher.finalize().to_vec())
-    }
 
     #[test]
     fn effects_digest() {
@@ -261,8 +248,9 @@ mod tests {
         .unwrap();
 
         assert_eq!(
-            Bytes::<Base58>::from_str("Fm3buiyN4vxDhnLiwvwDCJ1ZiohH3QCsVGiPCpC96RdR").unwrap(),
-            digest(&TransactionEffects::V2(effect))
+            serde_json::from_str::<Digest>("\"Fm3buiyN4vxDhnLiwvwDCJ1ZiohH3QCsVGiPCpC96RdR\"")
+                .unwrap(),
+            TransactionEffects::V2(Box::new(effect)).digest()
         );
     }
 }

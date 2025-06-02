@@ -6,13 +6,12 @@ use ibc_union_spec::{
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_sdk::{
-    rpc_types::{CheckpointId, SuiObjectDataOptions, SuiTypeTag},
+    rpc_types::{SuiObjectDataOptions, SuiTypeTag},
     types::{
         base_types::{ObjectID, SuiAddress},
         programmable_transaction_builder::ProgrammableTransactionBuilder,
@@ -21,17 +20,16 @@ use sui_sdk::{
     },
     SuiClient, SuiClientBuilder,
 };
-use tracing::{debug, instrument, trace};
+use tracing::instrument;
 use unionlabs::{
     encoding::{Bcs, DecodeAs as _},
     ibc::core::client::height::Height,
     primitives::Bytes,
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
-    primitives::{ChainId, ClientInfo, ClientType, IbcInterface, Timestamp},
+    primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
     rpc::{types::StateModuleInfo, StateModuleServer},
 };
 
@@ -69,7 +67,7 @@ impl StateModule<IbcUnion> for Module {
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
 
-        info.ensure_chain_id(chain_id.to_string())?;
+        info.ensure_chain_id(&chain_id)?;
 
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),

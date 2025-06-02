@@ -16,17 +16,14 @@ impl<'a> SignatureVerification for Verifier<'a> {
         msg: &[u8],
         signature: &sui_light_client_types::crypto::AggregateAuthoritySignature,
     ) -> Result<(), Self::Error> {
-        let pubkeys = public_keys
-            .into_iter()
-            .flat_map(|x| x.0)
-            .collect::<Vec<u8>>();
+        let pubkeys = public_keys.iter().flat_map(|x| x.0).collect::<Vec<u8>>();
 
         let aggregate_pubkey = self.deps.api.bls12_381_aggregate_g2(&pubkeys)?;
 
         let hashed_msg =
             self.deps
                 .api
-                .bls12_381_hash_to_g1(HashFunction::Sha256, &msg, Self::BLS_DST)?;
+                .bls12_381_hash_to_g1(HashFunction::Sha256, msg, Self::BLS_DST)?;
 
         let valid = self.deps.api.bls12_381_pairing_equality(
             signature.0.as_ref(),

@@ -45,7 +45,7 @@ impl FinalityModule for Module {
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
 
-        info.ensure_chain_id(chain_id.to_string())?;
+        info.ensure_chain_id(&chain_id)?;
         info.ensure_consensus_type(ConsensusType::SUI)?;
 
         Ok(Self {

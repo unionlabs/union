@@ -103,6 +103,7 @@ impl CheckpointContents {
         inner
     }
 
+    #[cfg(feature = "serde")]
     pub fn digest(&self) -> Digest {
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("CheckpointContents::");

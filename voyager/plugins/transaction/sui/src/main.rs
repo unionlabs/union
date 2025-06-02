@@ -24,7 +24,7 @@ use sha3::{Digest, Keccak256};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
     rpc_types::{
-        ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,
+        ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponse,
         SuiTransactionBlockResponseOptions, SuiTypeTag,
     },
     types::{
@@ -225,8 +225,8 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                         let mut ptb = ProgrammableTransactionBuilder::new();
 
-                        for (_, (contract_addr, _, module, entry_fn, arguments, type_args)) in
-                            msgs.into_iter().enumerate()
+                        for (contract_addr, _, module, entry_fn, arguments, type_args) in
+                            msgs.into_iter()
                         {
                             let arguments = arguments
                                 .into_iter()
@@ -552,7 +552,7 @@ async fn process_msgs(
                     .expect("object is shared, hence it has a start version");
 
                 register_token_if_zkgm(
-                    &module,
+                    module,
                     pk,
                     &data.packets[0],
                     &module_info,
@@ -835,7 +835,7 @@ pub struct ModuleInfo {
     pub stores: Vec<SuiAddress>,
 }
 
-pub async fn parse_port(sui_client: &SuiClient, port_id: &str) -> ModuleInfo {
+pub async fn parse_port(_: &SuiClient, port_id: &str) -> ModuleInfo {
     let module_info = port_id.split("::").collect::<Vec<&str>>();
     if module_info.len() < 4 {
         panic!("invalid port id");
@@ -868,10 +868,11 @@ pub async fn parse_port(sui_client: &SuiClient, port_id: &str) -> ModuleInfo {
 
     ModuleInfo {
         original_address: module_info[0].parse().unwrap(),
-        latest_address: todo!(),
+        // TODO(aeryz): change this
+        latest_address: module_info[0].parse().unwrap(),
         module_name: module_info[1].to_string(),
         stores: module_info[3..]
-            .into_iter()
+            .iter()
             .map(|s| s.parse().unwrap())
             .collect(),
     }

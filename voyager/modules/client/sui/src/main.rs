@@ -4,7 +4,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
+use serde_json::Value;
 use sui_light_client_types::{
     client_state::ClientState, consensus_state::ConsensusState, header::Header,
     storage_proof::StorageProof,

@@ -648,7 +648,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                                 self.chain_id.clone(),
                                 QueryHeight::Specific(Height::new(height)),
                                 ibc_union_spec::path::ConnectionPath {
-                                    connection_id: channel.connection_id.try_into().unwrap(),
+                                    connection_id: channel.connection_id,
                                 },
                             )
                             .await?;

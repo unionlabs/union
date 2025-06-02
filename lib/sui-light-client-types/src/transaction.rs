@@ -15,6 +15,7 @@ pub enum TransactionData {
 }
 
 impl TransactionData {
+    #[cfg(feature = "serde")]
     pub fn digest(&self) -> Bytes<Base58> {
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("TransactionData::");

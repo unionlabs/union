@@ -14,6 +14,7 @@ pub struct ObjectInner {
 }
 
 impl ObjectInner {
+    #[cfg(feature = "serde")]
     pub fn digest(&self) -> Digest {
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("Object::");

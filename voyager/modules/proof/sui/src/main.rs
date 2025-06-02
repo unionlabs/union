@@ -66,7 +66,7 @@ impl ProofModule<IbcUnion> for Module {
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
 
-        info.ensure_chain_id(chain_id.to_string())?;
+        info.ensure_chain_id(&chain_id)?;
 
         Ok(Self {
             chain_id: ChainId::new(chain_id.to_string()),
@@ -227,12 +227,10 @@ fn convert_object(object: Object) -> ObjectInner {
                 MoveObjectType::Coin(convert_type_tag(
                     object_data.type_().coin_type_maybe().expect("type is coin"),
                 ))
+            } else if let Some(struct_tag) = object_data.type_().other() {
+                MoveObjectType::Other(convert_struct_tag(struct_tag.clone()))
             } else {
-                if let Some(struct_tag) = object_data.type_().other() {
-                    MoveObjectType::Other(convert_struct_tag(struct_tag.clone()))
-                } else {
-                    panic!("no other possible states");
-                }
+                panic!("no other possible states");
             },
             has_public_transfer: object_data.has_public_transfer(),
             version: object_data.version().into(),
