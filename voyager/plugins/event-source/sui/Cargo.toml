@@ -12,6 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+anyhow                 = { workspace = true }
 bcs                    = { workspace = true }
 clap                   = { workspace = true, features = ["derive"] }
 embed-commit           = { workspace = true }
@@ -23,10 +24,8 @@ macros                 = { workspace = true }
 serde                  = { workspace = true, features = ["derive"] }
 serde_json             = { workspace = true }
 sui-light-client-types = { workspace = true, features = ["serde"] }
+sui-sdk                = { workspace = true }
 tokio                  = { workspace = true }
 tracing                = { workspace = true }
 unionlabs              = { workspace = true }
-voyager-message        = { workspace = true }
-voyager-vm             = { workspace = true }
-
-sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }
+voyager-sdk            = { workspace = true }

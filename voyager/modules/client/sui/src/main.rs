@@ -18,7 +18,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow,
+    anyhow, ensure_null,
     plugin::ClientModule,
     primitives::{
         ChainId, ClientStateMeta, ClientType, ConsensusStateMeta, ConsensusType, IbcInterface,
@@ -130,16 +130,7 @@ impl ClientModuleServer for Module {
         client_state: Value,
         metadata: Value,
     ) -> RpcResult<Bytes> {
-        if !metadata.is_null() {
-            return Err(ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "metadata was provided, but this client type does not require \
-                metadata for client state encoding",
-                Some(json!({
-                    "provided_metadata": metadata,
-                })),
-            ));
-        }
+        ensure_null(metadata)?;
 
         serde_json::from_value::<ClientState>(client_state)
             .map_err(|err| {

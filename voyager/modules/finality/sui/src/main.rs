@@ -58,7 +58,7 @@ impl FinalityModule for Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    /// The RPC endpoint for aptos.
+    /// The RPC endpoint for sui.
     pub rpc_url: String,
 }
 

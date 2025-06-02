@@ -20,10 +20,9 @@ reqwest                = { workspace = true }
 serde                  = { workspace = true, features = ["derive"] }
 serde_json             = { workspace = true }
 sui-light-client-types = { workspace = true, features = ["serde"] }
+sui-sdk                = { workspace = true }
 thiserror              = { workspace = true }
 tokio                  = { workspace = true }
 tracing                = { workspace = true }
 unionlabs              = { workspace = true }
 voyager-sdk            = { workspace = true }
-
-sui_sdk = { git = "https://github.com/mystenlabs/sui", package = "sui-sdk" }

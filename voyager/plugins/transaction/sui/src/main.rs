@@ -71,24 +71,6 @@ const TOKEN_BYTECODE: [&[u8]; 2] = [
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
-    // let sui_client = SuiClientBuilder::default()
-    //     .build("https://fullnode.testnet.sui.io")
-    //     .await
-    //     .unwrap();
-
-    // let res = sui_client
-    //     .http()
-    //     .get_normalized_move_function(
-    //         ObjectID::from_str(
-    //             "0xf02e69bb76b03820e27ddb2908f8dace2efa3d69924ee1842ddbf3df1287b917",
-    //         )
-    //         .unwrap(),
-    //         "zkgm_relay".into(),
-    //         "recv_packet".into(),
-    //     )
-    //     .await
-    //     .unwrap();
-
     Module::run().await
 }
 
@@ -693,9 +675,9 @@ async fn register_token_if_zkgm(
     }
 
     let mut bytecode = TOKEN_BYTECODE[0].to_vec();
-    bytecode.extend_from_slice(&hex!(
-        "0000000000000000000000000000000000000000000000000000000000000001"
-    ));
+    // 31 because it will be followed by a u8 (decimals)
+    bytecode.extend_from_slice(&[0; 31]);
+    bytecode.extend_from_slice(&fao.base_token_decimals.to_be_bytes());
     bytecode.extend_from_slice(TOKEN_BYTECODE[1]);
 
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -860,32 +842,34 @@ pub async fn parse_port(sui_client: &SuiClient, port_id: &str) -> ModuleInfo {
         panic!("invalid port id");
     }
 
-    let upgrade_cap_address: SuiAddress = module_info[2].parse().unwrap();
+    // let upgrade_cap_address: SuiAddress = module_info[2].parse().unwrap();
 
-    let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = sui_client
-        .read_api()
-        .get_object_with_options(
-            upgrade_cap_address.into(),
-            SuiObjectDataOptions::new().with_content(),
-        )
-        .await
-        .unwrap()
-        .into_object()
-        .unwrap()
-        .content
-        .unwrap()
-        .try_into_move()
-        .unwrap()
-        .fields
-        .field_value("package")
-        .unwrap()
-    else {
-        panic!("this can't be the case");
-    };
+    // let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = sui_client
+    //     .read_api()
+    //     .get_object_with_options(
+    //         upgrade_cap_address.into(),
+    //         SuiObjectDataOptions::new().with_content(),
+    //     )
+    //     .await
+    //     .unwrap()
+    //     .into_object()
+    //     .unwrap()
+    //     .content
+    //     .unwrap()
+    //     .try_into_move()
+    //     .unwrap()
+    //     .fields
+    //     .field_value("package")
+    //     .unwrap()
+    // else {
+    //     panic!("this can't be the case");
+    // };
+
+    // TODO(aeryz): the latest address has to be fetched using graphql
 
     ModuleInfo {
         original_address: module_info[0].parse().unwrap(),
-        latest_address: addr,
+        latest_address: todo!(),
         module_name: module_info[1].to_string(),
         stores: module_info[3..]
             .into_iter()

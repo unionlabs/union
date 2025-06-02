@@ -712,7 +712,7 @@ module ibc::ibc {
     /// `version`: The app-defined version.
     /// `counterparty_version`: The app-defined version that is used in the counterparty chain.
     /// `proof_init`: The proof of the channel end on the counterparty chain.
-    /// `proof_height`: The height at where this proof is verifyable.
+    /// `proof_height`: The height at where this proof is verifiable.
     /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
     /// The name MUST be `IbcAppWitness`.
     public fun channel_open_try<T: drop>(
@@ -796,7 +796,7 @@ module ibc::ibc {
     /// `channel_id`: The id of the channel that is created on the `try` phase.
     /// `counterparty_version`: The app-defined version that is used in the counterparty chain.
     /// `proof_try`: The proof of the channel end on the counterparty chain.
-    /// `proof_height`: The height at where this proof is verifyable.
+    /// `proof_height`: The height at where this proof is verifiable.
     /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
     /// The name MUST be `IbcAppWitness`.
     public fun channel_open_ack<T: drop>(
@@ -874,7 +874,7 @@ module ibc::ibc {
     /// address as the `witness` struct.
     /// `channel_id`: The id of the channel that is created on the `try` phase.
     /// `proof_ack`: The proof of the channel end on the counterparty chain.
-    /// `proof_height`: The height at where this proof is verifyable.
+    /// `proof_height`: The height at where this proof is verifiable.
     /// `witness`: A struct where only the app WILL be able to get an instance of, for authentication.
     /// The name MUST be `IbcAppWitness`.
     public fun channel_open_confirm<T: drop>(

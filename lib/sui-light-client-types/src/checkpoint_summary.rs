@@ -164,7 +164,6 @@ impl<'de> ::serde::Deserialize<'de> for GenericSignature {
             struct GenericSignature(Vec<u8>);
 
             let data = GenericSignature::deserialize(deserializer)?;
-            // Self::from_bytes(&data.0).map_err(|e| Error::custom(e.to_string()))
             Ok(Self::Signature(Bytes::new(data.0)))
         }
     }

@@ -22,7 +22,7 @@ hex-literal         = { workspace = true }
 ibc-union-spec      = { workspace = true, features = ["serde"] }
 jsonrpsee           = { workspace = true, features = ["macros", "server", "tracing"] }
 macros              = { workspace = true }
-move-core-types-sui = { package = "move-core-types", git = "https://github.com/mystenlabs/sui" }
+move-core-types-sui = { workspace = true }
 serde               = { workspace = true, features = ["derive"] }
 sha3                = { workspace = true }
 shared-crypto       = { git = "https://github.com/MystenLabs/sui" }
@@ -33,4 +33,3 @@ tracing             = { workspace = true }
 ucs03-zkgm          = { workspace = true, features = ["library"] }
 unionlabs           = { workspace = true }
 voyager-sdk         = { workspace = true }
-voyager-vm          = { workspace = true }

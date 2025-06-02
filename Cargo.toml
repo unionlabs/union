@@ -143,7 +143,7 @@ members = [
   # "voyager/modules/proof/movement",
   "voyager/modules/proof/sui",
 
-  # "voyager/modules/client/bob",
+  "voyager/modules/client/bob",
   "voyager/modules/client/arbitrum",
   "voyager/modules/client/cometbls",
   "voyager/modules/client/ethereum",
@@ -156,7 +156,7 @@ members = [
   "voyager/modules/client/sui",
   "voyager/modules/client/trusted-mpt",
 
-  # "voyager/modules/client-bootstrap/bob",
+  "voyager/modules/client-bootstrap/bob",
   "voyager/modules/client-bootstrap/arbitrum",
   "voyager/modules/client-bootstrap/cometbls",
   "voyager/modules/client-bootstrap/ethereum",
@@ -179,7 +179,7 @@ members = [
   "voyager/modules/finality/trusted-evm",
   "voyager/modules/finality/sui",
 
-  # "voyager/plugins/client-update/bob",
+  "voyager/plugins/client-update/bob",
   "voyager/plugins/client-update/arbitrum",
   "voyager/plugins/client-update/berachain",
   "voyager/plugins/client-update/cometbls",
@@ -299,8 +299,10 @@ fork-schedules   = { path = "lib/fork-schedules", default-features = false }
 
 depolama = { path = "lib/depolama", default-features = false }
 
+move-core-types-sui           = { package = "move-core-types", git = "https://github.com/mystenlabs/sui", default-features = false }
 state-lens-light-client-types = { path = "lib/state-lens-light-client-types", default-features = false }
 sui-light-client-types        = { path = "lib/sui-light-client-types", default-features = false }
+sui-sdk                       = { git = "https://github.com/mystenlabs/sui", default-features = false }
 sui-verifier                  = { path = "lib/sui-verifier", default-features = false }
 
 bob-light-client-types = { path = "lib/bob-light-client-types", default-features = false }

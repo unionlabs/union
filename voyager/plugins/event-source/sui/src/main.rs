@@ -1,6 +1,5 @@
 use std::{cmp::Ordering, collections::VecDeque};
 
-use ibc_solidity::Connection;
 use ibc_union_spec::{
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
@@ -8,7 +7,7 @@ use ibc_union_spec::{
         ConnectionOpenTry, CreateClient, FullEvent, PacketMetadata, PacketSend, UpdateClient,
     },
     path::{ChannelPath, ConnectionPath},
-    ChannelId, ClientId, IbcUnion, Packet, Timestamp,
+    ChannelId, ClientId, IbcUnion, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -21,16 +20,20 @@ use sui_sdk::{
 };
 use tracing::{info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
-use voyager_message::{
-    call::{Call, WaitForHeight},
-    data::{ChainEvent, Data},
-    filter::simple_take_filter,
+use voyager_sdk::{
+    hook::simple_take_filter,
     into_value,
-    module::{PluginInfo, PluginServer},
+    message::{
+        call::{Call, WaitForHeight},
+        data::{ChainEvent, Data, EventProvableHeight},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
-    DefaultCmd, ExtensionsExt, Plugin, PluginMessage, VoyagerClient, VoyagerMessage,
+    rpc::{types::PluginInfo, PluginServer},
+    vm::{call, conc, data, pass::PassResult, seq, Op},
+    DefaultCmd, ExtensionsExt, VoyagerClient,
 };
-use voyager_vm::{call, conc, data, pass::PassResult, seq, BoxDynError, Op};
 
 use crate::{
     call::{FetchBlocks, FetchTransactions, MakeFullEvent, ModuleCall},
@@ -72,7 +75,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let sui_client = SuiClientBuilder::default().build(&config.rpc_url).await?;
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;
@@ -118,26 +121,21 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
-    async fn fetch_blocks(&self, height: u64) -> RpcResult<Op<VoyagerMessage>> {
+    async fn fetch_blocks(
+        &self,
+        voyager_client: &VoyagerClient,
+        height: u64,
+    ) -> RpcResult<Op<VoyagerMessage>> {
         Ok(conc([
             call(PluginMessage::new(
                 self.plugin_name(),
                 ModuleCall::from(FetchTransactions { height }),
             )),
             {
-                let latest_height = self
-                    .sui_client
-                    .read_api()
-                    .get_latest_checkpoint_sequence_number()
-                    .await
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            ErrorReporter(e)
-                                .with_message("error fetching the latest sequence number"),
-                            None::<()>,
-                        )
-                    })?;
+                let latest_height = voyager_client
+                    .query_latest_height(self.chain_id.clone(), true)
+                    .await?
+                    .height();
 
                 match latest_height.cmp(&latest_height) {
                     Ordering::Less => {
@@ -297,7 +295,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::FetchBlocks(FetchBlocks { height }) => self.fetch_blocks(height).await,
+            ModuleCall::FetchBlocks(FetchBlocks { height }) => {
+                self.fetch_blocks(e.voyager_client()?, height).await
+            }
             ModuleCall::FetchTransactions(FetchTransactions { height }) => {
                 info!("fetching block height {height}");
 
@@ -499,7 +499,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         event.client_id.try_into().unwrap(),
                     ),
                     events::IbcEvent::ChannelOpenInit(event) => {
-                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let voyager_client = e.voyager_client()?;
                         let connection = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -525,7 +525,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         )
                     }
                     events::IbcEvent::ChannelOpenTry(event) => {
-                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let voyager_client = e.voyager_client()?;
                         let connection = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -554,7 +554,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         )
                     }
                     events::IbcEvent::ChannelOpenAck(event) => {
-                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let voyager_client = e.voyager_client()?;
                         let connection = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -592,7 +592,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                         )
                     }
                     events::IbcEvent::ChannelOpenConfirm(event) => {
-                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let voyager_client = e.voyager_client()?;
                         let connection = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -632,7 +632,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     events::IbcEvent::PacketSend(event) => {
                         let packet: events::Packet = event.packet;
 
-                        let voyager_client = e.try_get::<VoyagerClient>()?;
+                        let voyager_client = e.voyager_client()?;
                         let channel = voyager_client
                             .query_ibc_state(
                                 self.chain_id.clone(),
@@ -683,11 +683,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             client_id,
                         )
                     }
-                    _ => panic!("unknown"),
                 };
                 ibc_union_spec::log_event(&full_event, &self.chain_id);
 
-                let voyager_client = e.try_get::<VoyagerClient>()?;
+                let voyager_client = e.voyager_client()?;
 
                 let client_info = voyager_client
                     .client_info::<IbcUnion>(self.chain_id.clone(), client_id)
@@ -706,10 +705,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     client_info,
                     counterparty_chain_id: client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    // TODO: Review this, does it need to be +1?
-                    provable_height: voyager_message::data::EventProvableHeight::Exactly(
-                        Height::new(height),
-                    ),
+                    provable_height: EventProvableHeight::Exactly(Height::new(height)),
                     event: into_value::<FullEvent>(full_event),
                     ibc_spec_id: IbcUnion::ID,
                 }))

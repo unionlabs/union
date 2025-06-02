@@ -75,7 +75,6 @@ impl StateModule<IbcUnion> for Module {
             chain_id: ChainId::new(chain_id.to_string()),
             sui_client,
             rpc_url: config.rpc_url,
-            // TODO(aeryz): can't we derive or get this from `ibc_contract`?
             ibc_store: config.ibc_store,
             ibc_contract: config.ibc_contract,
         })
@@ -88,61 +87,6 @@ pub struct Config {
     pub rpc_url: String,
     pub ibc_store: ObjectID,
     pub ibc_contract: ObjectID,
-}
-
-impl Module {
-    #[must_use]
-    pub fn make_height(&self, height: u64) -> Height {
-        Height::new(height)
-    }
-
-    /// Query the latest finalized height of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    pub async fn query_latest_height(&self, _: &Extensions) -> RpcResult<Height> {
-        match self
-            .sui_client
-            .read_api()
-            .get_latest_checkpoint_sequence_number()
-            .await
-        {
-            Ok(height) => {
-                trace!(height, "latest height");
-
-                Ok(self.make_height(height))
-            }
-            Err(err) => Err(ErrorObject::owned(
-                -1,
-                ErrorReporter(err).to_string(),
-                None::<()>,
-            )),
-        }
-    }
-
-    /// Query the latest finalized timestamp of this chain.
-    #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    pub async fn query_latest_timestamp(&self, e: &Extensions) -> RpcResult<Timestamp> {
-        let latest_height = self.query_latest_height(e).await?;
-
-        match self
-            .sui_client
-            .read_api()
-            .get_checkpoint(CheckpointId::SequenceNumber(latest_height.height()))
-            .await
-        {
-            Ok(checkpoint) => {
-                let timestamp = checkpoint.timestamp_ms * 1_000_000;
-
-                debug!(%timestamp, %latest_height, "latest timestamp");
-
-                Ok(Timestamp::from_nanos(timestamp))
-            }
-            Err(err) => Err(ErrorObject::owned(
-                -1,
-                ErrorReporter(err).to_string(),
-                None::<()>,
-            )),
-        }
-    }
 }
 
 #[async_trait]

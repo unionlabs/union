@@ -29,4 +29,3 @@ tokio          = { workspace = true }
 tracing        = { workspace = true }
 unionlabs      = { workspace = true, features = ["bcs"] }
 voyager-sdk    = { workspace = true }
-voyager-vm     = { workspace = true }

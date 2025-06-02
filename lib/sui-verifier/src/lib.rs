@@ -164,11 +164,16 @@ fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<D
                 eff.0 == object && matches!(eff.1.output_state, ObjectOut::ObjectWrite(..))
             })?;
 
-            let ObjectOut::ObjectWrite(write) = &effect.1.output_state else {
-                panic!("wut?");
-            };
-
-            Some(write.0)
+            effects.changed_objects.iter().find_map(|eff| {
+                if eff.0 == object {
+                    match eff.1.output_state {
+                        ObjectOut::ObjectWrite(write) => Some(write.0),
+                        _ => None,
+                    }
+                } else {
+                    None
+                }
+            })
         }
     }
 }

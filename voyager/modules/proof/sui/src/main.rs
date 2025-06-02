@@ -30,7 +30,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{types::ProofModuleInfo, ProofModuleServer},
+    rpc::{types::ProofModuleInfo, ProofModuleServer, FATAL_JSONRPC_ERROR_CODE},
     types::ProofType,
 };
 
@@ -104,7 +104,7 @@ impl ProofModuleServer<IbcUnion> for Module {
     async fn query_ibc_proof(
         &self,
         _: &Extensions,
-        _: Height,
+        height: Height,
         path: StorePath,
     ) -> RpcResult<Option<(Value, ProofType)>> {
         let key = path.key();
@@ -146,6 +146,14 @@ impl ProofModuleServer<IbcUnion> for Module {
             .map_err(|e| err(e, "error fetching the tx"))?
             .checkpoint
             .expect("checkpoint is fetched");
+
+        if height.height() != checkpoint_number {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!("the proof height {height} must match the height of the transaction {checkpoint_number} where the object is modified"),
+                None::<()>,
+            ));
+        }
 
         let client = reqwest::Client::new();
         let req = format!("{}/{checkpoint_number}.chk", self.sui_object_store_rpc_url);
