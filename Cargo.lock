@@ -19320,6 +19320,7 @@ dependencies = [
  "jsonrpsee 0.25.1",
  "macros",
  "move-core-types",
+ "reqwest 0.11.27",
  "serde",
  "sha3",
  "shared-crypto",
