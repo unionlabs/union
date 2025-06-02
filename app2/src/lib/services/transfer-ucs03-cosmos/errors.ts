@@ -1,15 +1,20 @@
-import type { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import type { Chain } from "@unionlabs/sdk/schema/chain"
 import { Data } from "effect"
+import type { Effect } from "effect"
+import type { getCosmosChainInfo } from "../cosmos/chain-info"
 
-export class CosmosSwitchChainError extends Data.TaggedError("CosmosSwitchChainError")<{
+export class CosmosSwitchChainError extends Data.TaggedError(
+  "CosmosSwitchChainError",
+)<{
   cause: unknown
   chainId: string
   phase: "enable" | "suggest"
-  chainInfo: ReturnType<typeof getCosmosChainInfo>
+  chainInfo: Effect.Effect.Success<ReturnType<typeof getCosmosChainInfo>>
 }> {}
 
-export class NoCosmosChainInfoError extends Data.TaggedError("NoCosmosChainInfoError")<{
+export class NoCosmosChainInfoError extends Data.TaggedError(
+  "NoCosmosChainInfoError",
+)<{
   chain: Chain
 }> {}
 
@@ -28,7 +33,9 @@ export class CosmosWalletNotConnectedError extends Data.TaggedError(
   cause: string
 }> {}
 
-export class CosmosWalletNotOnWindowError extends Data.TaggedError("CosmosWalletNotOnWindowError")<{
+export class CosmosWalletNotOnWindowError extends Data.TaggedError(
+  "CosmosWalletNotOnWindowError",
+)<{
   kind: string
 }> {}
 
