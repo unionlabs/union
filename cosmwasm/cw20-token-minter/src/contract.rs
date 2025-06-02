@@ -91,6 +91,43 @@ pub fn execute(
 
     let response = match msg {
         ExecuteMsg::Wrapped(msg) => match msg {
+            WrappedTokenMsg::CreateDenomV2 {
+                subdenom,
+                path,
+                channel_id,
+                token,
+                implementation,
+                initializer,
+            } => {
+                let (admin, code_id) =
+                    <(String, u64)>::abi_decode_params_validate(implementation.as_ref()).unwrap();
+                let metadata_image = calculate_metadata_image(implementation, initializer.clone());
+                Response::new()
+                    .add_message(WasmMsg::Instantiate2 {
+                        admin: Some(env.contract.address.to_string()),
+                        code_id: config.dummy_code_id,
+                        label: subdenom.clone(),
+                        msg: to_json_binary(&cosmwasm_std::Empty {})?,
+                        funds: vec![],
+                        salt: Binary::new(calculate_salt_v2(
+                            U256::from_be_bytes::<{ U256::BYTES }>(
+                                path.as_slice().try_into().expect("correctly encoded; qed"),
+                            ),
+                            channel_id,
+                            token.to_vec(),
+                            metadata_image,
+                        )),
+                    })
+                    .add_message(WasmMsg::Migrate {
+                        contract_addr: subdenom.clone(),
+                        new_code_id: code_id,
+                        msg: initializer,
+                    })
+                    .add_message(WasmMsg::UpdateAdmin {
+                        contract_addr: subdenom,
+                        admin: admin.into(),
+                    })
+            }
             WrappedTokenMsg::CreateDenom {
                 metadata,
                 subdenom,
@@ -283,6 +320,29 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, Error> {
                 wrapped_token: deps.api.addr_humanize(&token_addr)?.to_string(),
             })?)
         }
+        QueryMsg::PredictWrappedTokenV2 {
+            path,
+            channel_id,
+            token,
+            metadata_image,
+        } => {
+            let Config { dummy_code_id, .. } = CONFIG.load(deps.storage)?;
+            let code_hash = get_code_hash(deps, dummy_code_id)?;
+            let token_addr = instantiate2_address(
+                &code_hash.into_bytes(),
+                &deps.api.addr_canonicalize(env.contract.address.as_str())?,
+                &calculate_salt_v2(
+                    path.parse::<U256>().map_err(Error::U256Parse)?,
+                    channel_id,
+                    token.to_vec(),
+                    metadata_image,
+                ),
+            )?;
+
+            Ok(to_json_binary(&PredictWrappedTokenResponse {
+                wrapped_token: deps.api.addr_humanize(&token_addr)?.to_string(),
+            })?)
+        }
         QueryMsg::Metadata { denom } => match query_token_info(deps, &denom) {
             Ok(TokenInfoResponse {
                 name,
@@ -346,6 +406,29 @@ fn calculate_salt(path: U256, channel_id: ChannelId, token: Vec<u8>) -> Vec<u8> 
     keccak256((path, channel_id.raw(), token.to_vec()).abi_encode_params())
         .into_bytes()
         .to_vec()
+}
+
+fn calculate_salt_v2(
+    path: U256,
+    channel_id: ChannelId,
+    token: Vec<u8>,
+    metadata_image: H256,
+) -> Vec<u8> {
+    keccak256(
+        (
+            path,
+            channel_id.raw(),
+            token.to_vec(),
+            U256::from_be_bytes(*metadata_image.get()),
+        )
+            .abi_encode_params(),
+    )
+    .into_bytes()
+    .to_vec()
+}
+
+fn calculate_metadata_image(implementation: Binary, initializer: Binary) -> H256 {
+    keccak256((implementation.to_vec(), initializer.to_vec()).abi_encode_params())
 }
 
 fn restrict_name(name: String) -> String {

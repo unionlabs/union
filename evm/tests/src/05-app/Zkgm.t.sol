@@ -3725,6 +3725,83 @@ contract ZkgmTests is Test {
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
 
+    function test_create_foa_v2_preimage() public {
+        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+            implementation: abi.encodePacked(
+                0x999709eB04e8A30C7aceD9fd920f7e04EE6B97bA
+            ),
+            initializer: abi.encodeCall(
+                ZkgmERC20.initialize,
+                (
+                    address(0x6C1D11bE06908656D16EBFf5667F1C45372B7c89),
+                    address(0x05FD55C1AbE31D3ED09A76216cA8F0372f4B2eC5),
+                    "Uno",
+                    "U",
+                    6
+                )
+            )
+        });
+        FungibleAssetOrderV2 memory foa = FungibleAssetOrderV2({
+            sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
+            receiver: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            baseToken: hex"6d756e6f",
+            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            baseAmount: 100,
+            quoteToken: hex"49aCf968c7E8807B39e980b2a924E97C8ead3a22",
+            quoteAmount: 100
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrderV2(foa)
+        });
+        console.log("Initializer");
+        console.logBytes(metadata.initializer);
+        console.log("Instruction");
+        console.logBytes(ZkgmLib.encodeInstruction(inst));
+    }
+
+    function test_create_foa_v2_image() public {
+        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+            implementation: abi.encodePacked(
+                0x999709eB04e8A30C7aceD9fd920f7e04EE6B97bA
+            ),
+            initializer: abi.encodeCall(
+                ZkgmERC20.initialize,
+                (
+                    address(0x6C1D11bE06908656D16EBFf5667F1C45372B7c89),
+                    address(0x05FD55C1AbE31D3ED09A76216cA8F0372f4B2eC5),
+                    "Uno",
+                    "U",
+                    6
+                )
+            )
+        });
+        bytes32 image = EfficientHashLib.hash(abi.encode(metadata.implementation, metadata.initializer));
+        FungibleAssetOrderV2 memory foa = FungibleAssetOrderV2({
+            sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
+            receiver: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            baseToken: hex"6d756e6f",
+            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE,
+            metadata: abi.encodePacked(image),
+            baseAmount: 100,
+            quoteToken: hex"49aCf968c7E8807B39e980b2a924E97C8ead3a22",
+            quoteAmount: 100
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrderV2(foa)
+        });
+        console.log("Instruction");
+        console.logBytes(ZkgmLib.encodeInstruction(inst));
+    }
+
     function test_create_stake() public {
         Stake memory stake = Stake({
             tokenId: 0,

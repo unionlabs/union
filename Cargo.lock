@@ -15528,6 +15528,7 @@ dependencies = [
  "enumorph",
  "ibc-union-spec",
  "token-factory-api",
+ "unionlabs",
 ]
 
 [[package]]
