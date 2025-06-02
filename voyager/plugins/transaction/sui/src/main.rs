@@ -22,7 +22,6 @@ use move_core_types_sui::{
 use serde::{Deserialize, Serialize};
 use sha3::{Digest, Keccak256};
 use shared_crypto::intent::{Intent, IntentMessage};
-// use sui_json_rpc_api::MoveUtilsClient;
 use sui_sdk::{
     rpc_types::{
         ObjectChange, SuiData, SuiObjectDataOptions, SuiTransactionBlockResponse,

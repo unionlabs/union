@@ -14,14 +14,22 @@ use sui_sdk::{
 };
 use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, ErrorReporter};
-use voyager_message::{
-    call::Call,
-    data::{Data, DecodedHeaderMeta, OrderedHeaders},
+use voyager_sdk::{
+    anyhow,
     hook::UpdateHook,
-    module::{PluginInfo, PluginServer, UnexpectedChainIdError},
+    message::{
+        call::Call,
+        data::{Data, DecodedHeaderMeta, OrderedHeaders},
+        PluginMessage, VoyagerMessage,
+    },
+    plugin::Plugin,
     primitives::{ChainId, ClientType},
-    vm::{data, pass::PassResult, BoxDynError, Op, Visit},
-    DefaultCmd, Plugin, PluginMessage, VoyagerMessage, FATAL_JSONRPC_ERROR_CODE,
+    rpc::{
+        types::{PluginInfo, UnexpectedChainIdError},
+        PluginServer, FATAL_JSONRPC_ERROR_CODE,
+    },
+    vm::{data, pass::PassResult, Op, Visit},
+    DefaultCmd,
 };
 
 use crate::{call::ModuleCall, callback::ModuleCallback};
@@ -54,7 +62,7 @@ impl Plugin for Module {
     type Config = Config;
     type Cmd = DefaultCmd;
 
-    async fn new(config: Self::Config) -> Result<Self, BoxDynError> {
+    async fn new(config: Self::Config) -> anyhow::Result<Self> {
         let sui_client = SuiClientBuilder::default().build(&config.rpc_url).await?;
 
         let chain_id = sui_client.read_api().get_chain_identifier().await?;

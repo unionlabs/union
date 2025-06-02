@@ -18773,7 +18773,7 @@ dependencies = [
  "tokio",
  "tracing",
  "unionlabs",
- "voyager-message",
+ "voyager-sdk",
 ]
 
 [[package]]
@@ -19610,7 +19610,6 @@ dependencies = [
  "serde",
  "sha3 0.10.8",
  "shared-crypto",
- "sui-json-rpc-api",
  "sui-sdk",
  "tokio",
  "tracing",

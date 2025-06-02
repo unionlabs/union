@@ -27,7 +27,7 @@ thiserror              = { workspace = true }
 tokio                  = { workspace = true }
 tracing                = { workspace = true }
 unionlabs              = { workspace = true }
-voyager-message        = { workspace = true }
+voyager-sdk            = { workspace = true }
 
 [dev-dependencies]
 hex-literal = { workspace = true }
