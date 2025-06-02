@@ -371,6 +371,7 @@ module ibc::ibc {
     /// `client_message`: the client-defined update message
     public entry fun update_client(
         ibc_store: &mut IBCStore,
+        clock: &clock::Clock,
         client_id: u32,
         client_message: vector<u8>
     ) {
@@ -379,11 +380,11 @@ module ibc::ibc {
             ibc_store.commitments.contains(commitment::client_state_commitment_key(client_id)),
             E_CLIENT_NOT_FOUND
         );
-        let client = ibc_store.clients.borrow(client_id);
+        let mut client = ibc_store.clients.borrow_mut(client_id);
 
         // Update the client and consensus states using the client message
         let (client_state, consensus_state, height) =
-            client.update_client(client_message);
+            client.update_client(clock, client_message);
 
         // Update the client state commitment
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
