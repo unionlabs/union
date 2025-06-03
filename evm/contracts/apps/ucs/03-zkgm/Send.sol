@@ -280,19 +280,15 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
                     == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
             ) {
                 _increaseOutstanding(
-                    channelId, path, address(baseToken), order.baseAmount
+                    channelId, path, baseToken, order.baseAmount
                 );
             } else {
                 _increaseOutstandingV2(
-                    channelId,
-                    path,
-                    address(baseToken),
-                    metadataImage,
-                    order.baseAmount
+                    channelId, path, baseToken, metadataImage, order.baseAmount
                 );
             }
             if (
-                address(baseToken) == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
+                baseToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS
                     && msg.value >= order.baseAmount
             ) {
                 // Use the deposit as a mechanism to consume the order amount from the msg.value.
