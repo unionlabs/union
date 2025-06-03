@@ -18,7 +18,6 @@ export class ExecuteContractError extends Data.TaggedError("ExecuteContractError
   cause: unknown
 }> {}
 
-// TODO: add comments
 export const readContract = <T>(
   client: SuiClient,
   sender: string,
@@ -31,7 +30,6 @@ export const readContract = <T>(
 ) =>
   Effect.tryPromise({
     try: async () => {
-      // build a dummy Tx that does the desired Move call
       tx.moveCall({
         target: `${packageId}::${module}::${fn}`,
         typeArguments: typeArgs,

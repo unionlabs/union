@@ -50,8 +50,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
       throw new Error("No return value from compute_salt")
     }
     const [rawBytes /*, _typeTag*/] = result[0].returnValues[0] as [number[], string]
-    const wrapped_token = bytesToHex(rawBytes.slice(1))
 
-    return wrapped_token
+    return bytesToHex(rawBytes.slice(1))
       
   })
