@@ -7,4 +7,5 @@ export const EXTERNAL_FAUCETS = {
   "Xion Testnet": "https://faucet.xion.burnt.com/",
   "Hoodscan": "https://faucet.hoodscan.io/ ",
   "Circle": "https://faucet.circle.com/",
+  "Sei Testnet": "https://www.docs.sei.io/learn/faucet",
 } as Record<string, string>
