@@ -3,16 +3,15 @@ import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.sve
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import { runPromiseExit$, runSync } from "$lib/runtime"
+import { runPromiseExit$ } from "$lib/runtime"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
 import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import { Effect, identity, Match, Option } from "effect"
-import { onMount } from "svelte"
+import * as PriceOracle from "@unionlabs/sdk/PriceOracle"
+import { Cause, Effect, Exit, Match, Option, pipe } from "effect"
 
 type Props = {
   onContinue: () => void
@@ -31,6 +30,38 @@ const {
 
 let isErrorModalOpen = $state(false)
 let isReceiverOpen = $state(false)
+
+const eff = Effect.gen(function*() {
+  const oracle = yield* PriceOracle.PriceOracle
+  const { universal_chain_id: id } = yield* transferData.sourceChain.pipe(
+    Effect.mapError(() => new Error("no source chain selected")),
+  )
+  return yield* oracle.of(id)
+})
+
+const fakePrice = runPromiseExit$(eff)
+
+const fakePriceDisplay = $derived(pipe(
+  fakePrice.current,
+  Option.map(Exit.match({
+    onFailure: Cause.prettyErrors,
+    onSuccess: (x) => JSON.stringify(x, null, 2),
+  })),
+  Option.getOrElse(() => "Loading price..."),
+))
+
+const realPrice = runPromiseExit$(
+  Effect.provide(eff, PriceOracle.PriceOracle.Pyth),
+)
+
+const realPriceDisplay = $derived(pipe(
+  realPrice.current,
+  Option.map(Exit.match({
+    onFailure: Cause.prettyErrors,
+    onSuccess: (x) => JSON.stringify(x, null, 2),
+  })),
+  Option.getOrElse(() => "Loading price..."),
+))
 
 const uiStatus = $derived.by(() => {
   return Option.match(transferErrors, {
@@ -84,6 +115,14 @@ const isButtonEnabled = $derived.by(() => !loading)
     <ChainAsset type="destination" />
     <Amount type="source" />
   </div>
+
+  <pre class="p-4 whitespace-pre-wrap">
+<b>[TEST] Source Price</b>
+{fakePriceDisplay}</pre>
+
+  <pre class="p-4 whitespace-pre-wrap">
+<b>[PYTH] Source Price</b>
+{realPriceDisplay}</pre>
 
   <div class="grow"></div>
 
