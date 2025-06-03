@@ -2119,7 +2119,7 @@ fn execute_fungible_asset_order_v2(
 
                 // For new assets: Deploy wrapped token contract and mint quote amount to receiver
                 if !HASH_TO_FOREIGN_TOKEN.has(deps.storage, wrapped_denom.clone()) {
-                    return Err(ContractError::Unimplemented);
+                    return Err(ContractError::WrappedTokenNotDeployed);
                 }
 
                 // Mint the quote amount to the receiver

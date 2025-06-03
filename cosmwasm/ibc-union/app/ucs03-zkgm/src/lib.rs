@@ -73,8 +73,6 @@ pub enum ContractError {
         "the multiplex target contract address can't be validated, make sure the bech prefix matches the current chain"
     )]
     UnableToValidateMultiplexTarget,
-    #[error("feature is not yet implemented")]
-    Unimplemented,
     #[error("contract creation event not found during handling `reply`")]
     ContractCreationEventNotFound,
     #[error("{0:?}")]
