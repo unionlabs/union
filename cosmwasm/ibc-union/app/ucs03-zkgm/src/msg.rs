@@ -191,7 +191,7 @@ pub enum QueryMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct PredictWrappedTokenResponse {
-    pub wrapped_token: Bytes,
+    pub wrapped_token: String,
 }
 
 #[cfg(test)]
