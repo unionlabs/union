@@ -1,4 +1,4 @@
-import { Layer } from "effect"
+import { Effect, Layer } from "effect"
 import * as GasPrice from "./service.js"
 
 /**
@@ -8,7 +8,7 @@ import * as GasPrice from "./service.js"
 export const layerGasPrice = (): Layer.Layer<GasPrice.GasPrice, never, never> =>
   Layer.effect(
     GasPrice.GasPrice,
-    make(),
+    void 0 as unknown as Effect.Effect<GasPrice.GasPrice.Service>,
   )
 
 /**

@@ -95,6 +95,7 @@ _: {
           program = pkgs.writeShellApplication {
             name = "app-check-watch";
             runtimeInputs = deps;
+            # TODO: decrease threshold to "warning"
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
@@ -102,7 +103,7 @@ _: {
               export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
               export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"
               export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
-              pnpm run check --watch --threshold warning
+              pnpm run check --watch --threshold error
             '';
           };
         };

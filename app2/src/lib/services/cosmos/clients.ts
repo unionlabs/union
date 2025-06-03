@@ -14,7 +14,6 @@ import { Effect, Option } from "effect"
 
 export const getCosmWasmClient = (
   chain: Chain,
-  connectedWallet: CosmosWalletId,
 ) =>
   Effect.gen(function*() {
     if (!chain.rpcs) {
@@ -22,7 +21,7 @@ export const getCosmWasmClient = (
     }
 
     const offlineSigner = yield* getCosmosOfflineSigner(chain)
-    const gasPriceInfo = yield* getGasPriceForChain(chain, connectedWallet)
+    const gasPriceInfo = yield* getGasPriceForChain(chain)
     const gasPrice = GasPrice.fromString(
       `${gasPriceInfo.amount}${gasPriceInfo.denom}`,
     )

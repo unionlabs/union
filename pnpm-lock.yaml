@@ -40,6 +40,9 @@ importers:
       '@aptos-labs/ts-sdk':
         specifier: 1.38.0
         version: 1.38.0(axios@1.9.0)(got@14.4.6)
+      '@chain-registry/types':
+        specifier: ^0.50.144
+        version: 0.50.144
       '@cosmjs/amino':
         specifier: ^0.33.1
         version: 0.33.1(patch_hash=009a0401b33075fe62c3f766de38d9cb6305fe29be495b1e624b366c270cd9a4)
@@ -485,6 +488,9 @@ packages:
   '@babel/types@7.27.0':
     resolution: {integrity: sha512-H45s8fVLYjbhFH62dIJ3WtmJ6RSPt/3DRO0ZcT2SUiYiQyz3BLVb9ADEnLl91m74aQPS3AzzeajZHYOalWe3bg==}
     engines: {node: '>=6.9.0'}
+
+  '@chain-registry/types@0.50.144':
+    resolution: {integrity: sha512-zB8Wwkb7NO2N/+XrJJn7MuxKgoE6q1KODU6xO1KnRfDvpWTHu7wSJXuUyHdyK2jVTQzvzR48qdzT6B3J5KdU0w==}
 
   '@coinbase/wallet-sdk@3.9.3':
     resolution: {integrity: sha512-N/A2DRIf0Y3PHc1XAMvbBUu4zisna6qAdqABMZwBMNEfWrXpAwx16pZGkYCLGE+Rvv1edbcB2LYDRnACNcmCiw==}
@@ -5064,6 +5070,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.25.9
       '@babel/helper-validator-identifier': 7.25.9
+
+  '@chain-registry/types@0.50.144': {}
 
   '@coinbase/wallet-sdk@3.9.3':
     dependencies:
