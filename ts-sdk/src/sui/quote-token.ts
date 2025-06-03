@@ -37,7 +37,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
 
     const result = yield* readContract(
       client,
-      "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779", // TODO: don't know about this
+      "0x835e6a7d0e415c0f1791ae61241f59e1dd9d669d59369cd056f02b3275f68779",
       contract_address,
       module_id,
       function_name,
