@@ -3,6 +3,7 @@ import type { NoViemChainError } from "$lib/services/evm/clients"
 import { getPublicClient } from "$lib/services/evm/clients"
 import type { CreatePublicClientError } from "$lib/services/transfer"
 import { type FromHexError, fromHexString } from "$lib/utils/hex"
+import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import type { AddressEvmCanonical, Chain } from "@unionlabs/sdk/schema"
 import { RawTokenBalance, TokenRawAmount, type TokenRawDenom } from "@unionlabs/sdk/schema"
 import { Data, Effect, Option, Schema } from "effect"
@@ -18,7 +19,9 @@ export type FetchEvmBalanceError =
   | FetchNativeBalanceError
   | CreatePublicClientError
 
-export class FetchNativeBalanceError extends Data.TaggedError("FetchNativeBalanceError")<{
+export class FetchNativeBalanceError extends Data.TaggedError(
+  "FetchNativeBalanceError",
+)<{
   cause: GetBalanceErrorType
 }> {}
 export class ReadContractError extends Data.TaggedError("ReadContractError")<{
@@ -41,7 +44,7 @@ const fetchEvmGasBalance = ({
 }) =>
   Effect.tryPromise({
     try: () => client.getBalance({ address: walletAddress }),
-    catch: err => new FetchNativeBalanceError({ cause: err as GetBalanceErrorType }),
+    catch: (err) => new FetchNativeBalanceError({ cause: err as GetBalanceErrorType }),
   })
 
 const fetchEvmErc20Balance = ({
@@ -61,7 +64,7 @@ const fetchEvmErc20Balance = ({
         functionName: "balanceOf",
         args: [walletAddress],
       }),
-    catch: err => new ReadContractError({ cause: err as ReadContractErrorType }),
+    catch: (err) => new ReadContractError({ cause: err as ReadContractErrorType }),
   })
 
 // Core function to fetch a single Evm balance
@@ -79,7 +82,11 @@ export const fetchEvmBalance = ({
     const client = yield* getPublicClient(chain)
     const decodedDenom = yield* fromHexString(tokenAddress)
 
-    const fetchBalance = decodedDenom === "native"
+    // Check if it's a native/gas token
+    const isGasToken = decodedDenom === "native"
+      || GAS_DENOMS[chain.universal_chain_id].address === tokenAddress
+
+    const fetchBalance = isGasToken
       ? fetchEvmGasBalance({ client, walletAddress })
       : fetchEvmErc20Balance({ client, tokenAddress, walletAddress })
 
