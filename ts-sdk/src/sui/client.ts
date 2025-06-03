@@ -41,13 +41,17 @@ export class SuiWriteContractError extends Data.TaggedError("SuiWriteContractErr
   cause: unknown
 }> {}
 
-export class SuiCreateWalletClientErrorType extends Data.TaggedError("SuiCreateWalletClientErrorType")<{
-  cause: unknown
-}> {}
+export class SuiCreateWalletClientErrorType
+  extends Data.TaggedError("SuiCreateWalletClientErrorType")<{
+    cause: unknown
+  }>
+{}
 
-export class SuiCreatePublicClientErrorType extends Data.TaggedError("SuiCreatePublicClientErrorType")<{
-  cause: unknown
-}> {}
+export class SuiCreatePublicClientErrorType
+  extends Data.TaggedError("SuiCreatePublicClientErrorType")<{
+    cause: unknown
+  }>
+{}
 
 export class CreateSuiPublicClientError extends Data.TaggedError("CreateSuiPublicClientError")<{
   cause: SuiCreatePublicClientErrorType
