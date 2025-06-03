@@ -1,13 +1,19 @@
 #![warn(clippy::pedantic)]
 
+use std::{collections::HashMap, fmt::Display, path::PathBuf, str::FromStr};
+
 use anyhow::{bail, Result};
+use beacon_api_types::chain_spec::PresetBaseKind;
+use chain_kitchen::{Endpoint, Protocol};
 use clap::Parser;
 use cliclack::{input, intro, log, outro, select};
-use ucs04::{Family, Id, UniversalChainId};
+use heck::ToKebabCase;
+use ucs04::{is_well_known, well_known, Family, Id, UniversalChainId};
 use voyager_core::context::ModuleConfig;
+use voyager_primitives::{ChainId, ConsensusType};
 use voyager_rpc::types::FinalityModuleInfo;
 
-const SUPPORTED_FAMILIES: &[Family] = &[
+pub const SUPPORTED_FAMILIES: &[Family] = &[
     Family::Babylon,
     Family::Bob,
     Family::Corn,
@@ -17,6 +23,12 @@ const SUPPORTED_FAMILIES: &[Family] = &[
     Family::Union,
     Family::Xion,
 ];
+
+pub mod keys {
+    pub const RPC_URL: &str = "rpc_url";
+    pub const BEACON_RPC_URL: &str = "beacon_rpc_url";
+    pub const CHAIN_SPEC: &str = "chain_spec";
+}
 
 #[derive(Parser)]
 enum Args {
@@ -66,16 +78,63 @@ fn build_chain_pair(a: &UniversalChainId<'_>, b: &UniversalChainId<'_>) -> Resul
     use Family::*;
 
     match (a.parts(), b.parts()) {
-        (_, (Aptos, _)) | (Aptos, _) => bail!("aptos is not currently supported"),
-        (_, (Movement, _)) | (Movement, _) => bail!("movement is not currently supported"),
-        (_, (Scroll, _)) | (Scroll, _) => bail!("scroll is not currently supported"),
-        (_, (Arbitrum, _)) | (Arbitrum, _) => bail!("arbitrum is not currently supported"),
-        (_, (Berachain, _)) | (Berachain, _) => bail!("berachain is not currently supported"),
-        (_, (Stargaze, _)) | (Stargaze, _) => bail!("stargaze is not currently supported"),
-        ((Babylon, a_id), (Sepolia, b_id)) | ((Sepolia, b_id), (Babylon, a_id)) => {
-            finality_module(Babylon);
+        ((Babylon, babylon), (Ethereum, ethereum)) | ((Ethereum, ethereum), (Babylon, babylon)) => {
+            let babylon = UniversalChainId::new(Babylon, babylon);
+            let ethereum = UniversalChainId::new(Ethereum, ethereum);
+
+            let mut context = Context::new(
+                input("plugins base path").interact()?,
+                [
+                    is_well_known(&babylon).then_some((
+                        (keys::RPC_URL, babylon.clone()),
+                        Endpoint::from_ucs04(&babylon, Protocol::RPC),
+                    )),
+                    is_well_known(&ethereum).then_some((
+                        (keys::RPC_URL, ethereum.clone()),
+                        Endpoint::from_ucs04(&ethereum, Protocol::RPC),
+                    )),
+                    is_well_known(&ethereum).then_some((
+                        (keys::BEACON_RPC_URL, ethereum.clone()),
+                        Endpoint::from_ucs04(&ethereum, Protocol::BEACON),
+                    )),
+                ]
+                .into_iter()
+                .flatten(),
+            );
+
+            let chain_spec_key = (keys::CHAIN_SPEC, ethereum.clone());
+            if [
+                well_known::ETHEREUM_1,
+                well_known::ETHEREUM_11155111,
+                well_known::ETHEREUM_17000,
+            ]
+            .iter()
+            .any(|wk| &ethereum == wk)
+            {
+                context
+                    .defaults
+                    .insert(chain_spec_key, PresetBaseKind::Mainnet.to_string());
+            } else {
+                context.read_value_select(
+                    "chain spec",
+                    &[
+                        (PresetBaseKind::Mainnet, "mainnet", "mainnet"),
+                        (PresetBaseKind::Minimal, "minimal", "minimal"),
+                    ],
+                    chain_spec_key,
+                )?;
+            }
+
+            let fm = context.finality_module(&babylon)?;
+
+            dbg!(fm);
+
+            let fm = context.finality_module(&ethereum)?;
+
+            dbg!(fm);
+
+            Ok(())
         }
-        _ => todo!(),
         // (Babylon, Bob) => todo!(),
         // (Babylon, Corn) => todo!(),
         // (Babylon, Ethereum) => todo!(),
@@ -156,12 +215,150 @@ fn build_chain_pair(a: &UniversalChainId<'_>, b: &UniversalChainId<'_>) -> Resul
         // (Xion, Stride) => todo!(),
         // (Xion, Union) => todo!(),
         // (Xion, Xion) => todo!(),
+        ((a, _), (b, _)) => bail!("{a}<->{b} is not currently supported"),
     }
 }
 
-fn finality_module(family: Family) -> Result<ModuleConfig<FinalityModuleInfo>> {
-    match family {
-        Family::Babylon => voyagerfinality,
+macro_rules! module_config {
+    (
+        $this:ident {
+            info: $info:expr,
+            config: $path:ident::Config $init:tt,
+        }
+    ) => {
+        ModuleConfig {
+            path: $this.make_path(stringify!($path).to_kebab_case()),
+            info: $info,
+            config: serde_json::to_value($path::Config $init).unwrap(),
+            enabled: true,
+        }
+    };
+}
+
+struct Context<'a> {
+    defaults: HashMap<(&'static str, UniversalChainId<'a>), String>,
+    base_path: String,
+}
+
+impl<'a> Context<'a> {
+    fn new(
+        base_path: String,
+        defaults: impl IntoIterator<Item = ((&'static str, UniversalChainId<'a>), impl Display)>,
+    ) -> Self {
+        Self {
+            defaults: defaults
+                .into_iter()
+                .map(|(k, v)| (k, v.to_string()))
+                .collect(),
+            base_path,
+        }
+    }
+
+    fn with_chain(&mut self) {
+        self.defaults.extend([
+            is_well_known(&babylon).then_some((
+                (keys::RPC_URL, babylon.clone()),
+                Endpoint::from_ucs04(&babylon, Protocol::RPC),
+            )),
+            is_well_known(&ethereum).then_some((
+                (keys::RPC_URL, ethereum.clone()),
+                Endpoint::from_ucs04(&ethereum, Protocol::RPC),
+            )),
+            is_well_known(&ethereum).then_some((
+                (keys::BEACON_RPC_URL, ethereum.clone()),
+                Endpoint::from_ucs04(&ethereum, Protocol::BEACON),
+            )),
+        ]);
+    }
+
+    fn make_path(&self, path: impl Display) -> PathBuf {
+        format!("{}/{path}", self.base_path).into()
+    }
+
+    #[track_caller]
+    fn read_value<T: Display + FromStr>(
+        &mut self,
+        title: &str,
+        key: (&'static str, UniversalChainId<'a>),
+    ) -> Result<T> {
+        let mut i = input(title);
+        if let Some(default) = self.defaults.get(&key) {
+            i = i.default_input(default);
+        }
+        let res = i.interact::<T>()?;
+
+        self.defaults.insert(key, res.to_string());
+
+        Ok(res)
+    }
+
+    #[track_caller]
+    fn read_value_select<T: Clone + Eq + Display + FromStr>(
+        &mut self,
+        title: &str,
+        items: &[(T, impl Display, impl Display)],
+        key: (&'static str, UniversalChainId<'a>),
+    ) -> Result<T> {
+        let mut s = select::<T>(title).items(items).filter_mode();
+        if let Some(default) = self.defaults.get(&key) {
+            s = s.initial_value(default.parse().ok().unwrap());
+        }
+        let res = s.interact()?;
+
+        self.defaults.insert(key, res.to_string());
+
+        Ok(res)
+    }
+
+    fn finality_module(
+        &mut self,
+        id: &UniversalChainId<'a>,
+    ) -> Result<ModuleConfig<FinalityModuleInfo>> {
+        Ok(match id.family() {
+            Family::Babylon | Family::Osmosis | Family::Sei => module_config!(self {
+                info: FinalityModuleInfo {
+                    chain_id: ChainId::new(id.id().to_string()),
+                    consensus_type: ConsensusType::new(ConsensusType::TENDERMINT),
+                },
+                config: voyager_finality_module_tendermint::Config {
+                    rpc_url: self.read_value(
+                        &format!("{id} finality rpc url"),
+                        (keys::RPC_URL, id.clone())
+                    )?,
+                },
+            }),
+            Family::Arbitrum => todo!(),
+            Family::Berachain => todo!(),
+            Family::Bob => todo!(),
+            Family::Corn => todo!(),
+            Family::Ethereum => module_config!(self {
+                info: FinalityModuleInfo {
+                    chain_id: ChainId::new(id.id().to_string()),
+                    consensus_type: ConsensusType::new(ConsensusType::ETHEREUM),
+                },
+                config: voyager_finality_module_ethereum::Config {
+                    rpc_url: self.read_value(
+                        &format!("{id} finality rpc url"),
+                        (keys::RPC_URL, id.clone())
+                    )?,
+                    beacon_rpc_url: self.read_value(
+                        &format!("{id} finality beacon rpc url"),
+                        (keys::BEACON_RPC_URL, id.clone())
+                    )?,
+                    chain_spec: self.defaults[&(keys::CHAIN_SPEC, id.clone())]
+                        .parse()
+                        .unwrap(),
+                    max_cache_size: 1000
+                },
+            }),
+            Family::Movement => todo!(),
+            Family::Scroll => todo!(),
+            Family::Stargaze => todo!(),
+            Family::Stride => todo!(),
+            Family::Union => todo!(),
+            Family::Xion => todo!(),
+            family => bail!("{family} is not currently supported"),
+        })
     }
 }
 

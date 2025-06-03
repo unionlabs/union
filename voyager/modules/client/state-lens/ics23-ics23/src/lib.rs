@@ -32,11 +32,6 @@ use voyager_sdk::{
     rpc::{types::ClientModuleInfo, ClientModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    Module::run().await
-}
-
 #[derive(Debug, Clone, PartialEq, Copy, Serialize, Deserialize)]
 #[serde(try_from = "String", into = "String")]
 pub enum SupportedIbcInterface {

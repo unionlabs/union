@@ -3858,9 +3858,13 @@ name = "create-voyager-config"
 version = "0.0.0"
 dependencies = [
  "anyhow",
+ "beacon-api-types",
+ "chain-kitchen",
  "clap 4.5.39",
  "cliclack 0.3.6",
  "embed-commit",
+ "heck 0.5.0",
+ "serde_json",
  "ucs04",
  "voyager-client-module-arbitrum",
  "voyager-client-module-bob",
@@ -3874,6 +3878,13 @@ dependencies = [
  "voyager-client-module-tendermint",
  "voyager-config",
  "voyager-core",
+ "voyager-finality-module-arbitrum",
+ "voyager-finality-module-bob",
+ "voyager-finality-module-cometbls",
+ "voyager-finality-module-ethereum",
+ "voyager-finality-module-sui",
+ "voyager-finality-module-tendermint",
+ "voyager-primitives",
  "voyager-rpc",
 ]
 

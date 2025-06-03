@@ -19,7 +19,7 @@ extern crate alloc;
 include!(concat!(env!("OUT_DIR"), "/out.rs"));
 
 /// A representation of a universal chain id.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(
     feature = "serde",
     derive(serde::Serialize, serde::Deserialize),
@@ -155,7 +155,7 @@ pub enum UniversalChainIdParseError {
 /// The `<chain_id>` portion of a universal chain id.
 ///
 /// This is a thin wrapper around [`str`], and as such will most often be behind some form of indirection (usually either a ref (`&Id`) for borrowed or `Box<Id>` for owned).
-#[derive(Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[repr(transparent)]
 pub struct Id(str);
 

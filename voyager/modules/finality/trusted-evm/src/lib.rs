@@ -19,11 +19,6 @@ use voyager_sdk::{
     rpc::{types::FinalityModuleInfo, FinalityModuleServer},
 };
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    Module::run().await
-}
-
 #[derive(Debug, Clone)]
 pub struct Module {
     pub chain_id: ChainId,
