@@ -417,7 +417,7 @@ export const createSuiToCosmosFungibleAssetOrder = (intent: {
       Effect.provideService(SuiPublicClient, { client: sourceClient }),
     )
 
-    if(!tokenMeta) {
+    if (!tokenMeta) {
       return Effect.fail(new Error(`Token metadata not found for ${intent.baseTokenType}`))
     }
     const baseToken = intent.baseTokenType.split("::")[0]

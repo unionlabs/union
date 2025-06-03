@@ -52,5 +52,4 @@ export const predictQuoteToken = (baseToken: Hex) =>
     const [rawBytes /*, _typeTag*/] = result[0].returnValues[0] as [number[], string]
 
     return bytesToHex(rawBytes.slice(1))
-      
   })
