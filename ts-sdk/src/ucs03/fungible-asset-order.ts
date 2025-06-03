@@ -417,7 +417,9 @@ export const createSuiToCosmosFungibleAssetOrder = (intent: {
       Effect.provideService(SuiPublicClient, { client: sourceClient }),
     )
 
-    console.info("Token Metadata:", tokenMeta)
+    if(!tokenMeta) {
+      return Effect.fail(new Error(`Token metadata not found for ${intent.baseTokenType}`))
+    }
     const baseToken = intent.baseTokenType.split("::")[0]
     const quoteToken = yield* predictCosmosQuoteToken(baseToken)
 
@@ -475,14 +477,14 @@ export const createCosmosToSuiFungibleAssetOrder = (intent: {
       _tag: "FungibleAssetOrder",
       operand: [
         intent.sender,
-        intent.receiver,
+        intent.receiver as Address,
         ensureHex(intent.baseToken),
         intent.baseAmount,
         tokenMeta.symbol,
         tokenMeta.name,
         tokenMeta.decimals,
         0n, // channel if unwrapping
-        quoteToken,
+        quoteToken as Hex,
         intent.quoteAmount,
       ],
     })

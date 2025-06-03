@@ -3,7 +3,6 @@ import { Effect } from "effect"
 import { SuiChannelDestination } from "./channel.js"
 import { SuiPublicClientDestination } from "./client.js"
 import { readContract } from "./contract.js"
-
 export type Hex = `0x${string}`
 
 // turn a hex string like "0xdeadbeef" into a number[] of bytes
@@ -12,7 +11,7 @@ function hexToBytes(hex: string): number[] {
   return h.match(/.{1,2}/g)!.map(b => parseInt(b, 16))
 }
 
-function bytesToHex(bytes: number[]): `0x${string}` {
+function bytesToHex(bytes: number[]) {
   return "0x" + bytes.map(b => b.toString(16).padStart(2, "0")).join("")
 }
 
@@ -32,7 +31,7 @@ export const predictQuoteToken = (baseToken: Hex) =>
     const tx = new Transaction()
     const function_arguments = [
       tx.pure.u256(0),
-      tx.pure.u32(config.channelId.toString()),
+      tx.pure.u32(config.channelId),
       tx.pure("vector<u8>", hexToBytes(converted_base_token)),
     ]
 
@@ -46,8 +45,13 @@ export const predictQuoteToken = (baseToken: Hex) =>
       function_arguments,
       tx,
     )
+
+    if (!result || result.length === 0 || !result[0].returnValues || !result[0].returnValues[0]) {
+      throw new Error("No return value from compute_salt")
+    }
     const [rawBytes /*, _typeTag*/] = result[0].returnValues[0] as [number[], string]
     const wrapped_token = bytesToHex(rawBytes.slice(1))
 
     return wrapped_token
+      
   })

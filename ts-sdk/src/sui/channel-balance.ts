@@ -41,6 +41,9 @@ export const channelBalance = (path: number, token: Hex, relayStore: Hex) =>
       function_arguments,
       tx,
     )
+    if (!result || result.length === 0 || !result[0].returnValues || !result[0].returnValues[0]) {
+      throw new Error("No return value from channel_balance")
+    }
     const [bytesArray] = result[0].returnValues[0] as [number[], string]
     const data = new Uint8Array(bytesArray)
     const decoded = bcs.U256.parse(data)
