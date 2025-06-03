@@ -4,7 +4,11 @@ import SharpGasIcon from "$lib/components/icons/SharpGasIcon.svelte"
 import SharpInfoIcon from "$lib/components/icons/SharpInfoIcon.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import { Option as O, pipe } from "effect"
+import { GasPriceMap } from "$lib/gasprice"
+import { GasPrice } from "$lib/gasprice/service"
+import { runPromiseExit, runPromiseExit$, runSync } from "$lib/runtime"
+import type { Chain } from "@unionlabs/sdk/schema/chain"
+import { Effect, Exit, Option as O, pipe } from "effect"
 import { slide } from "svelte/transition"
 import { transferData } from "../data/transfer-data.svelte"
 
@@ -33,6 +37,19 @@ const feeConfig = {
   gasTokenSymbol: "BABY", // Token data
   usdPrice: 0.13, // Gas price from service
 }
+
+// const sourceGasPrice = runPromiseExit$(
+//   Effect.gen(function*() {
+//     const chain = yield* transferData.sourceChain
+//     console.log("SOURCE CHAIN", chain.rpc_type)
+//     // const gasPrice = yield* GasPrice.pipe(
+//     //   GasPriceMap.provide(chain),
+//     // )
+//     const gasPrice = yield* GasPriceMap.get(chain)
+//     const result = yield* gasPrice.of
+//     return result
+//   }).pipe(Effect.scoped),
+// )
 
 const applyGasPrice = (gasUnits: number) => gasUnits * feeConfig.gasPrice
 const applyFeeMultiplier = (ubbnAmount: number) => ubbnAmount * (1 + feeConfig.feeMultiplier)
@@ -128,8 +145,24 @@ const feeBreakdownItems = $derived([
   },
 ])
 
+const gasForChain = Effect.fn((chain: Chain) =>
+  pipe(
+    GasPrice,
+    Effect.andThen(({ of }) => of),
+    GasPriceMap.provide(chain),
+  )
+)
+
+const gasPrices = $derived(runPromiseExit$(pipe(
+  Effect.all({
+    source: Effect.transposeMapOption(transferData.sourceChain, gasForChain),
+    destination: Effect.transposeMapOption(transferData.destinationChain, gasForChain),
+  }, { concurrency: 2 }),
+)))
+
 $effect(() => {
-  console.log("fees", transferData.fees)
+  console.log("FEES:", transferData.fees)
+  console.log("GAS PRICES:", JSON.stringify(gasPrices.current, null, 2))
 })
 </script>
 
