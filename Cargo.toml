@@ -112,6 +112,7 @@ members = [
   # "cosmwasm/ibc-union/lightclient/linea",
 
   "tools/devnet-utils",
+  "tools/create-voyager-config",
   "tools/build-evm-deployer-tx",
   "tools/parse-wasm-client-type",
   "tools/tidy",

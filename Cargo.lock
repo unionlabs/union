@@ -3028,6 +3028,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cliclack"
+version = "0.3.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "57c420bdc04c123a2df04d9c5a07289195f00007af6e45ab18f55e56dc7e04b8"
+dependencies = [
+ "console",
+ "indicatif",
+ "once_cell",
+ "strsim 0.11.1",
+ "textwrap 0.16.2",
+ "zeroize",
+]
+
+[[package]]
 name = "clipboard-win"
 version = "5.4.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3837,6 +3851,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a97769d94ddab943e4510d138150169a2758b5ef3eb191a9ee688de3e23ef7b3"
 dependencies = [
  "cfg-if",
+]
+
+[[package]]
+name = "create-voyager-config"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap 4.5.39",
+ "cliclack 0.3.6",
+ "embed-commit",
+ "ucs04",
 ]
 
 [[package]]
@@ -4711,7 +4736,7 @@ dependencies = [
 name = "devnet-compose"
 version = "0.0.0"
 dependencies = [
- "cliclack",
+ "cliclack 0.2.5",
  "console",
  "embed-commit",
  "itertools 0.13.0",

@@ -60,6 +60,11 @@ fn main() {
             }}
         }}
 
+        impl Family {{
+            /// All known UCS04 chain families.
+            pub const ALL: &'static [Self] = &[{all}];
+        }}
+
         /// Error returned by [`Family::from_str`].
         #[derive(Debug, PartialEq, thiserror::Error)]
         #[error("unknown universal chain id family {{0:?}}")]
@@ -76,6 +81,10 @@ fn main() {
                 family,
                 family.to_pascal_case()
             ))
+            .collect::<String>(),
+        all = universal_chain_ids
+            .keys()
+            .map(|family| format!("Self::{},", family.to_pascal_case()))
             .collect::<String>()
     );
 
