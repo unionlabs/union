@@ -1139,6 +1139,35 @@ contract GetDeployed is VersionedScript {
         implUCS00 = implUCS00.serialize("args", bytes(hex""));
         impls.serialize(implOf(ucs00).toHexString(), implUCS00);
 
+        string memory implUCS03Send = "implUCS03Send";
+        implUCS03Send.serialize(
+            "contract",
+            string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03ZkgmSendImpl")
+        );
+        implUCS03Send = implUCS03Send.serialize(
+            "args",
+            abi.encode(
+                handler,
+                weth,
+                nativeTokenName,
+                nativeTokenSymbol,
+                nativeTokenDecimals
+            )
+        );
+        impls.serialize(
+            UCS03Zkgm(payable(ucs03)).SEND_IMPL().toHexString(), implUCS03Send
+        );
+
+        string memory implUCS03Stake = "implUCS03Stake";
+        implUCS03Stake.serialize(
+            "contract",
+            string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03ZkgmStakeImpl")
+        );
+        implUCS03Stake = implUCS03Stake.serialize("args", abi.encode(handler));
+        impls.serialize(
+            UCS03Zkgm(payable(ucs03)).STAKE_IMPL().toHexString(), implUCS03Stake
+        );
+
         string memory implUCS03 = "implUCS03";
         implUCS03.serialize(
             "contract", string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03Zkgm")
@@ -1150,9 +1179,8 @@ contract GetDeployed is VersionedScript {
                 weth,
                 zkgmERC20,
                 rateLimitEnabled,
-                nativeTokenName,
-                nativeTokenSymbol,
-                nativeTokenDecimals
+                UCS03Zkgm(payable(ucs03)).SEND_IMPL(),
+                UCS03Zkgm(payable(ucs03)).STAKE_IMPL()
             )
         );
         impls = impls.serialize(implOf(ucs03).toHexString(), implUCS03);
