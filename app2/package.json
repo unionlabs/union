@@ -17,6 +17,7 @@
   },
   "devDependencies": {
     "@aptos-labs/ts-sdk": "1.38.0",
+    "@chain-registry/types": "^0.50.144",
     "@cosmjs/amino": "^0.33.1",
     "@cosmjs/cosmwasm-stargate": "0.33.1",
     "@cosmjs/proto-signing": "^0.33.1",

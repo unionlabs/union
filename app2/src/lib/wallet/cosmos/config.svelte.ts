@@ -1,10 +1,14 @@
+import { unionTestnet } from "$lib/config/wallets/info"
 import { runSync } from "$lib/runtime"
-import { unionKeplrChainInfo } from "$lib/services/cosmos/chain-info/configs/keplr"
-import { unionLeapChainInfo } from "$lib/services/cosmos/chain-info/configs/leap"
+import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
+import {
+  KeplrChainInfoFromInternal,
+  LeapChainInfoFromInternal,
+} from "$lib/services/cosmos/chain-info/transform"
 import { wallets } from "$lib/stores/wallets.svelte"
 import { bech32AddressToHex } from "@unionlabs/client"
 import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
-import { Effect, Option } from "effect"
+import { Effect, Option, Schema as S } from "effect"
 
 export const cosmosWalletsInformation = [
   {
@@ -151,8 +155,8 @@ class CosmosStore {
     }
 
     const chainInfoMap = {
-      keplr: unionKeplrChainInfo,
-      leap: unionLeapChainInfo,
+      keplr: S.decodeSync(KeplrChainInfoFromInternal)(unionTestnet)[0],
+      leap: S.decodeSync(LeapChainInfoFromInternal)(unionTestnet)[0],
     }
 
     const chainInfo = chainInfoMap[cosmosWalletId]
@@ -184,8 +188,6 @@ class CosmosStore {
     this.updateCosmosAddress(account?.bech32Address)
 
     this.saveToStorage()
-
-    Effect.sleep(2_000)
   }
 
   reconnect = async (walletId: CosmosWalletId) => {
@@ -202,8 +204,8 @@ class CosmosStore {
     }
 
     const chainInfoMap = {
-      keplr: unionKeplrChainInfo,
-      leap: unionLeapChainInfo,
+      keplr: S.decodeSync(KeplrChainInfoFromInternal)(unionTestnet)[0],
+      leap: S.decodeSync(LeapChainInfoFromInternal)(unionTestnet)[0],
     }
 
     const chainInfo = chainInfoMap[walletId]

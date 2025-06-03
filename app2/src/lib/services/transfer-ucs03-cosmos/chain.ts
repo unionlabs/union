@@ -59,9 +59,10 @@ export const switchChain = (chain: Chain) =>
         }),
     })
 
+    // XXX: why
     yield* Effect.sleep("1.5 seconds")
 
-    const signingClient = yield* getCosmWasmClient(chain, connectedWallet)
+    const signingClient = yield* getCosmWasmClient(chain)
 
     return yield* Effect.succeed<SwitchChainSuccess>({
       success: true,

@@ -1,51 +1,23 @@
-import { keplrChainInfoMap, leapChainInfoMap } from "$lib/services/cosmos/chain-info/configs"
 import { GasPriceError, GetChainInfoError } from "$lib/services/transfer-ucs03-cosmos"
-import { cosmosStore } from "$lib/wallet/cosmos"
-import type { CosmosWalletId } from "$lib/wallet/cosmos"
 import type { ChainInfo as KeplrChainInfo, FeeCurrency } from "@keplr-wallet/types"
 import type { ChainInfo as LeapChainInfo } from "@leapwallet/types"
 import type { Chain } from "@unionlabs/sdk/schema"
-import { Effect } from "effect"
+import { Effect, Record as R } from "effect"
+import { chainInfoMap } from "./config"
+import type { InternalChainInfo } from "./internal-chain-info"
 
 export const getCosmosChainInfo = (
   chain: Chain,
-  connectedWallet?: CosmosWalletId,
-): Effect.Effect<KeplrChainInfo | LeapChainInfo, GetChainInfoError, never> =>
+): Effect.Effect<InternalChainInfo, GetChainInfoError, never> =>
   Effect.gen(function*() {
-    if (!chain?.chain_id) {
-      yield* Effect.fail(
+    const chainInfo = yield* R.get(chainInfoMap, chain.chain_id).pipe(
+      Effect.mapError(() =>
         new GetChainInfoError({
-          cause: "Invalid chain: missing chain_id",
-        }),
-      )
-      return null as never
-    }
-
-    const walletToUse = connectedWallet || cosmosStore.connectedWallet
-
-    if (!walletToUse) {
-      yield* Effect.fail(
-        new GetChainInfoError({
-          cause: "No wallet connected",
+          cause: `Chain with ID ${chain.chain_id} is not configured.`,
           chainId: chain.chain_id,
-        }),
-      )
-      return null as never
-    }
-
-    const chainInfoMap = walletToUse === "leap" ? leapChainInfoMap : keplrChainInfoMap
-
-    const chainInfo = chainInfoMap[chain.chain_id]
-
-    if (!chainInfo) {
-      yield* Effect.fail(
-        new GetChainInfoError({
-          cause: `Chain info not found`,
-          chainId: chain.chain_id,
-        }),
-      )
-      return null as never
-    }
+        })
+      ),
+    )
 
     return chainInfo
   })
@@ -89,14 +61,13 @@ export const getHighGasPriceStep = (
 
 export const getGasPriceForChain = (
   chain: Chain,
-  connectedWallet?: CosmosWalletId,
 ): Effect.Effect<
   { amount: number; denom: string },
   GetChainInfoError | GasPriceError,
   never
 > =>
   Effect.gen(function*() {
-    const chainInfo = yield* getCosmosChainInfo(chain, connectedWallet)
+    const chainInfo = yield* getCosmosChainInfo(chain)
     const gasPriceStep = yield* getHighGasPriceStep(chainInfo)
 
     return {
@@ -108,10 +79,9 @@ export const getGasPriceForChain = (
 export const isNativeToken = (
   token: string,
   chain: Chain,
-  connectedWallet?: CosmosWalletId,
 ): Effect.Effect<boolean, GetChainInfoError, never> =>
   Effect.gen(function*() {
-    const chainInfo = yield* getCosmosChainInfo(chain, connectedWallet)
+    const chainInfo = yield* getCosmosChainInfo(chain)
 
     if (Array.isArray(chainInfo.feeCurrencies)) {
       for (const feeCurrency of chainInfo.feeCurrencies) {
