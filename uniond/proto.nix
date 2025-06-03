@@ -25,7 +25,7 @@ _: {
               owner = "cosmos";
               repo = "cosmos-proto";
               rev = "v1.0.0-beta.5";
-              sha256 = "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=";
+              hash = "sha256-kFm1ChSmm5pU9oJqKmWq4KfO/hxgxzvcSzr66oTulos=";
             };
             doCheck = false;
 
@@ -39,13 +39,28 @@ _: {
               owner = "cosmos";
               repo = "gogoproto";
               rev = "34f37065b54523d08d7b637c78333d444f350e21";
-              sha256 = "sha256-oaGwDFbz/xgL7hDtvdh/mIcRIGBdp+/xuKeuBE2ZpqY=";
+              hash = "sha256-oaGwDFbz/xgL7hDtvdh/mIcRIGBdp+/xuKeuBE2ZpqY=";
             };
             nativeBuildInputs = with pkgs; [ protobuf ];
             doCheck = false;
 
             vendorHash = "sha256-nfeqVsPMQz7EL+qWxFzRukCE3YqXErhS9urRaJo44Fg=";
           };
+
+          poa = pkgs.fetchFromGitHub {
+            owner = "unionlabs";
+            repo = "poa";
+            rev = "2fd246e706c1d0926fc958978e99c5455b7cb330";
+            hash = "sha256-CRTnzQJXaA0FZKjAibEdJisSvY5rVBmtTURfwOdSTSs=";
+          };
+
+          feemarket = pkgs.fetchFromGitHub {
+            owner = "unionlabs";
+            repo = "feemarket";
+            rev = "41d27c4c3661780367a2db414095e79665fa47ec";
+            hash = "sha256-fpntV6A47+StBGA9NPUKVjXrdU1i4el3Rv8FwobKNgs=";
+          };
+          
           generate-uniond-proto = pkgs.stdenv.mkDerivation {
             name = "generate-uniond-proto";
             pname = "generate-uniond-proto";
@@ -67,8 +82,7 @@ _: {
               mkdir $out/openapi
 
               mkdir -p cosmos-sdk/proto/cosmos
-              cp --no-preserve=mode -RL ${proto.cosmossdk}/proto/* ./cosmos-sdk/proto
-              cp --no-preserve=mode -RL ${proto.cosmossdk}/x/*/proto/cosmos/* ./cosmos-sdk/proto/cosmos/
+              cp --no-preserve=mode -RL ${proto.cosmossdk}/proto/* cosmos-sdk/proto
 
               find ${proto.uniond} -type f -regex ".*proto" | \
               while read -r file; do
@@ -84,12 +98,69 @@ _: {
                   -I"${proto.ibc-go}/proto" \
                   -I"${proto.ics23}/proto" \
                   -I"${proto.cometbls}/proto" \
+                  -I"${poa}/proto" \
+                  -I"${feemarket}/proto" \
                   --gocosmos_out $out \
                   --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
                   --openapi_out=$out/openapi$relpath \
                   "$file"
                   echo "Done generating for $file"
               done
+
+              find ${poa}/proto -type f -regex ".*proto" | \
+              while read -r file; do
+                if [[ $file == *"strangelove_ventures/poa/module/v1/module.proto" ]]; then
+                  continue
+                fi
+
+                relpath="$(sed 's#/nix/store/.*-uniond/proto##' <<< $file)"
+                echo "Generating protobuf for $file"
+                mkdir -p "$out/openapi$relpath"
+                protoc \
+                  -I"${proto.uniond}" \
+                  -I"${proto.gogoproto}" \
+                  -I"${proto.googleapis}" \
+                  -I"$(pwd)/cosmos-sdk/proto" \
+                  -I"${proto.cosmosproto}/proto" \
+                  -I"${proto.ibc-go}/proto" \
+                  -I"${proto.ics23}/proto" \
+                  -I"${proto.cometbls}/proto" \
+                  -I"${poa}/proto" \
+                  -I"${feemarket}/proto" \
+                  --gocosmos_out $out \
+                  --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
+                  --openapi_out=$out/openapi$relpath \
+                  "$file"
+                  echo "Done generating for $file"
+                done
+
+              find ${feemarket}/proto -type f -regex ".*proto" | \
+              while read -r file; do
+                if [[ $file == *"feemarket/feemarket/module/v1/module.proto" ]]; then
+                  continue
+                fi
+
+                relpath="$(sed 's#/nix/store/.*-uniond/proto##' <<< $file)"
+                echo "Generating protobuf for $file"
+                mkdir -p "$out/openapi$relpath"
+                protoc \
+                  -I"${proto.uniond}" \
+                  -I"${proto.gogoproto}" \
+                  -I"${proto.googleapis}" \
+                  -I"$(pwd)/cosmos-sdk/proto" \
+                  -I"${proto.cosmosproto}/proto" \
+                  -I"${proto.ibc-go}/proto" \
+                  -I"${proto.ics23}/proto" \
+                  -I"${proto.cometbls}/proto" \
+                  -I"${poa}/proto" \
+                  -I"${feemarket}/proto" \
+                  --gocosmos_out $out \
+                  --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
+                  --openapi_out=$out/openapi$relpath \
+                  "$file"
+                  echo "Done generating for $file"
+                done
+                
 
               echo "Generating Cosmos SDK OpenAPI"
               echo "$LINENO"
@@ -137,12 +208,19 @@ _: {
                   -I"$(pwd)/cosmos-sdk/proto" \
                   -I"${proto.cosmosproto}/proto" \
                   -I"${proto.cometbls}/proto" \
+                  -I"${poa}/proto" \
+                  -I"${feemarket}/proto" \
                   --openapi_out=$out/openapi$query_file \
                   "$query_file"
                 fi
               done
 
+              rm -r $out/openapi/build/uniond/cosmos-sdk/proto/cosmos/nft
+
               specs=$(find $out/openapi -path -prune -o -name '*.yaml' -print0 | xargs -0 -n1 | sort | uniq)
+
+              echo "SPECS:"
+              echo "$specs"
 
               yq 'reduce inputs.paths as $s (.; .paths += $s)' ./docs/openapi-base.yaml $specs > openapi_combined.yaml
               yq -s '.[0].paths * .[1].paths | { paths: . }' openapi_combined.yaml ./docs/openapi-overwrites.json > paths.yaml
@@ -178,10 +256,8 @@ _: {
                 echo "Generating go code based on ./uniond/proto"
                 echo "Moving patched go sources to correct directories"
                 cp --no-preserve=mode -RL ${generate-uniond-proto}/openapi_combined.yaml ./docs/static/openapi.yml
-                cp --no-preserve=mode -RL ${generate-uniond-proto}/union/x/* ./x/
-                cp --no-preserve=mode -RL ${generate-uniond-proto}/union/staking/* ./x/staking
 
-                echo "Done! Generated .pb.go files are added to ./uniond/x"
+                echo "Done!"
               '';
             }
           );
