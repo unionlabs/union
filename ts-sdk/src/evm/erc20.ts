@@ -3,14 +3,30 @@ import { type Address, erc20Abi } from "viem"
 import { ViemPublicClient, ViemWalletClient } from "./client.js"
 import { readContract } from "./contract.js"
 import { writeContract } from "./contract.js"
+import { GAS_DENOMS } from "../constants/gas-denoms.js"
+import { UniversalChainId } from "../schema/index.js"
 
 /**
  * Read ERC20 token metadata (name, symbol, decimals)
  * @param tokenAddress The address of the ERC20 token
+ * @param chainId The Universal chain ID to check for gas denomination
  * @returns An Effect that resolves to the token metadata
  */
-export const readErc20Meta = (tokenAddress: Address) =>
+export const readErc20Meta = (tokenAddress: Address, chainId: UniversalChainId) =>
   Effect.gen(function*() {
+    // Check if this is a gas denomination token for the specific chain
+    const gasTokenMeta = GAS_DENOMS[chainId]
+    
+    if (gasTokenMeta && gasTokenMeta.address.toLowerCase() === tokenAddress.toLowerCase()) {
+      // Return the metadata from GAS_DENOMS
+      return {
+        name: gasTokenMeta.name,
+        symbol: gasTokenMeta.symbol,
+        decimals: gasTokenMeta.decimals
+      }
+    }
+    
+    // For regular ERC20 tokens, read from contract
     const name = yield* readErc20Name(tokenAddress)
     const symbol = yield* readErc20Symbol(tokenAddress)
     const decimals = yield* readErc20Decimals(tokenAddress)
