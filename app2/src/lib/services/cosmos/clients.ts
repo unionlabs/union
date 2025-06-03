@@ -6,7 +6,7 @@ import {
   CosmWasmError,
 } from "$lib/services/transfer-ucs03-cosmos"
 import { getCosmosOfflineSigner } from "$lib/services/transfer-ucs03-cosmos/offline-signer.ts"
-import { cosmosStore, type CosmosWalletId } from "$lib/wallet/cosmos"
+import { cosmosStore } from "$lib/wallet/cosmos"
 import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { GasPrice } from "@cosmjs/stargate"
 import type { Chain } from "@unionlabs/sdk/schema"

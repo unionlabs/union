@@ -1,4 +1,5 @@
 import { ENV } from "$lib/constants"
+import { GasPriceMap } from "$lib/gasprice"
 import { GraphQL } from "$lib/graphql/service"
 import * as Datadog from "$lib/logging/datadog"
 import { PriceOracle } from "@unionlabs/sdk/PriceOracle"
@@ -15,6 +16,7 @@ const minimumLogLevel = Logger.minimumLogLevel(
 
 export default Layer.mergeAll(
   GraphQL.Default,
+  GasPriceMap.Default,
   PriceOracle.Test, // TODO: replace with live service
   Logger.replace(
     Logger.defaultLogger,
