@@ -133,7 +133,7 @@ const getUserFriendlyMessage = pipe(
     TimeoutException: () => "The request timed out because it took too long. Please try again.",
     UnknownException: () => "An unexpected error occurred.",
     WaitForTransactionReceiptError: (x) =>
-      `Waiting for the transaction receipt failed: ${x.message}`,
+      `Waiting for the transaction receipt failed: ${(x.cause as any)?.shortMessage}`,
     WriteContractError: (e) =>
       `Failed to write to the contract: ${(e.cause.cause as any).shortMessage}`, // TODO: improve error type
   }),
