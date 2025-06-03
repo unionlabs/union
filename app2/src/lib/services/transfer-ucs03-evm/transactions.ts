@@ -20,7 +20,10 @@ export const submitTransfer = (chain: Chain, transfer: ValidTransfer["args"]) =>
     const salt = yield* generateSalt("evm")
 
     const client = yield* getPublicClient(chain)
-    const onchainBaseTokenMeta = yield* readErc20Meta(transfer.baseToken).pipe(
+    const onchainBaseTokenMeta = yield* readErc20Meta(
+      transfer.baseToken,
+      transfer.sourceChain.universal_chain_id,
+    ).pipe(
       Effect.provideService(ViemPublicClient, { client }),
     )
 
