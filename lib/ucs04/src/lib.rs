@@ -88,6 +88,12 @@ impl<'a> UniversalChainId<'a> {
     pub fn id(&self) -> &Id {
         &self.id
     }
+
+    /// Deconstruct this universal chain id into it's family and id.
+    #[must_use]
+    pub fn parts(&self) -> (Family, &Id) {
+        (self.family(), self.id())
+    }
 }
 
 impl UniversalChainId<'static> {

@@ -130,6 +130,7 @@ members = [
   "lib/voyager-rpc",
   "lib/voyager-core",
   "lib/voyager-primitives",
+  "lib/voyager-config",
 
   "voyager/modules/state/cosmos-sdk",
   "voyager/modules/state/cosmos-sdk-union",
@@ -396,6 +397,7 @@ zktrie               = { path = "lib/zktrie-rs", default-features = false }
 galois-rpc = { path = "lib/galois-rpc", default-features = false }
 
 voyager-client          = { path = "lib/voyager-client", default-features = false }
+voyager-config          = { path = "lib/voyager-config", default-features = false }
 voyager-core            = { path = "lib/voyager-core", default-features = false }
 voyager-message         = { path = "lib/voyager-message", default-features = false }
 voyager-plugin          = { path = "lib/voyager-plugin", default-features = false }
@@ -415,6 +417,18 @@ state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/sta
 solidity-slot    = { path = "lib/solidity-slot", default-features = false }
 ucs04            = { path = "lib/ucs04", default-features = false }
 wasm-client-type = { path = "lib/wasm-client-type", default-features = false }
+
+voyager-client-module-arbitrum               = { path = "voyager/modules/client/arbitrum", default-features = false }
+voyager-client-module-bob                    = { path = "voyager/modules/client/bob", default-features = false }
+voyager-client-module-cometbls               = { path = "voyager/modules/client/cometbls", default-features = false }
+voyager-client-module-ethereum               = { path = "voyager/modules/client/ethereum", default-features = false }
+voyager-client-module-ethermint              = { path = "voyager/modules/client/ethermint", default-features = false }
+voyager-client-module-state-lens-ics23-ics23 = { path = "voyager/modules/client/state-lens/ics23-ics23", default-features = false }
+voyager-client-module-state-lens-ics23-mpt   = { path = "voyager/modules/client/state-lens/ics23-mpt", default-features = false }
+voyager-client-module-state-lens-ics23-smt   = { path = "voyager/modules/client/state-lens/ics23-smt", default-features = false }
+voyager-client-module-sui                    = { path = "voyager/modules/client/sui", default-features = false }
+voyager-client-module-tendermint             = { path = "voyager/modules/client/tendermint", default-features = false }
+voyager-client-module-trusted-mpt            = { path = "voyager/modules/client/trusted-mpt", default-features = false }
 
 # =====================
 # external dependencies

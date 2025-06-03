@@ -50,11 +50,12 @@ use voyager_vm::{call, promise, Op, Queue};
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
 
+use voyager_config::{Config, VoyagerConfig};
+
 use crate::{
     cli::{
         get_voyager_config, App, Command, ConfigCmd, LogFormat, MsgCmd, PluginCmd, QueueCmd, RpcCmd,
     },
-    config::{Config, VoyagerConfig},
     queue::{QueueConfig, QueueImpl},
 };
 
@@ -180,7 +181,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                     s.option_nullable = true;
                     s.option_add_null_type = false;
                 }))
-                .into_root_schema_for::<Config>(),
+                .into_root_schema_for::<Config<QueueConfig>>(),
             ),
         },
         Command::Start => {

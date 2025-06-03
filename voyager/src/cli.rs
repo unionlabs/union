@@ -9,12 +9,13 @@ use anyhow::{anyhow, Context};
 use clap::{self, Parser, Subcommand};
 use ibc_union_spec::IbcUnion;
 use unionlabs::{self, bounded::BoundedI64, ibc::core::client::height::Height, result_unwrap};
+use voyager_config::Config;
 use voyager_message::VoyagerMessage;
 use voyager_primitives::{ChainId, ClientType, IbcInterface, IbcSpec, IbcSpecId, QueryHeight};
 use voyager_types::RawClientId;
 use voyager_vm::{BoxDynError, Op};
 
-use crate::config::Config;
+use crate::queue::QueueConfig;
 
 #[derive(Debug, Parser)]
 #[command(arg_required_else_help = true)]
@@ -48,7 +49,7 @@ pub struct App {
     pub command: Command,
 }
 
-pub fn get_voyager_config(config_file_path: Option<&OsStr>) -> anyhow::Result<Config> {
+pub fn get_voyager_config(config_file_path: Option<&OsStr>) -> anyhow::Result<Config<QueueConfig>> {
     match config_file_path {
         Some(config_file_path) => {
             let config_file_path = PathBuf::from(config_file_path);
@@ -61,13 +62,14 @@ pub fn get_voyager_config(config_file_path: Option<&OsStr>) -> anyhow::Result<Co
                     )
                 })
                 .and_then(|s| match ext.map(OsStr::as_encoded_bytes) {
-                    Some(b"jsonc") => serde_jsonc::from_str::<Config>(&s).with_context(|| {
-                        format!(
-                            "unable to parse the config file at `{}`",
-                            config_file_path.to_string_lossy()
-                        )
-                    }),
-                    _ => serde_json::from_str::<Config>(&s).with_context(|| {
+                    Some(b"jsonc") => serde_jsonc::from_str::<Config<QueueConfig>>(&s)
+                        .with_context(|| {
+                            format!(
+                                "unable to parse the config file at `{}`",
+                                config_file_path.to_string_lossy()
+                            )
+                        }),
+                    _ => serde_json::from_str::<Config<QueueConfig>>(&s).with_context(|| {
                         format!(
                             "unable to parse the config file at `{}`",
                             config_file_path.to_string_lossy()

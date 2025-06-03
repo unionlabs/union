@@ -13,7 +13,21 @@ workspace = true
 
 [dependencies]
 anyhow.workspace = true
-clap         = { workspace = true, features = ["derive", "env", "error-context", "help"] }
-cliclack     = "0.3.6"
-embed-commit = { workspace = true }
-ucs04        = { workspace = true }
+clap             = { workspace = true, features = ["derive", "env", "error-context", "help"] }
+cliclack         = "0.3.6"
+embed-commit     = { workspace = true }
+ucs04            = { workspace = true }
+voyager-config   = { workspace = true }
+voyager-core     = { workspace = true }
+voyager-rpc      = { workspace = true }
+
+voyager-client-module-arbitrum               = { workspace = true }
+voyager-client-module-bob                    = { workspace = true }
+voyager-client-module-cometbls               = { workspace = true }
+voyager-client-module-ethereum               = { workspace = true }
+voyager-client-module-ethermint              = { workspace = true }
+voyager-client-module-state-lens-ics23-ics23 = { workspace = true }
+voyager-client-module-state-lens-ics23-mpt   = { workspace = true }
+voyager-client-module-state-lens-ics23-smt   = { workspace = true }
+voyager-client-module-sui                    = { workspace = true }
+voyager-client-module-tendermint             = { workspace = true }

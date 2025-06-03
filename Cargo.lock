@@ -3862,6 +3862,19 @@ dependencies = [
  "cliclack 0.3.6",
  "embed-commit",
  "ucs04",
+ "voyager-client-module-arbitrum",
+ "voyager-client-module-bob",
+ "voyager-client-module-cometbls",
+ "voyager-client-module-ethereum",
+ "voyager-client-module-ethermint",
+ "voyager-client-module-state-lens-ics23-ics23",
+ "voyager-client-module-state-lens-ics23-mpt",
+ "voyager-client-module-state-lens-ics23-smt",
+ "voyager-client-module-sui",
+ "voyager-client-module-tendermint",
+ "voyager-config",
+ "voyager-core",
+ "voyager-rpc",
 ]
 
 [[package]]
@@ -15960,6 +15973,7 @@ dependencies = [
  "tracing-subscriber",
  "unionlabs",
  "voyager-client",
+ "voyager-config",
  "voyager-core",
  "voyager-message",
  "voyager-plugin",
@@ -16656,6 +16670,20 @@ dependencies = [
  "trusted-mpt-light-client-types",
  "unionlabs",
  "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-config"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "schemars",
+ "serde",
+ "serde_json",
+ "thiserror 2.0.12",
+ "unionlabs",
+ "voyager-core",
+ "voyager-types",
 ]
 
 [[package]]

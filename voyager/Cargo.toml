@@ -48,6 +48,7 @@ tracing-futures    = { version = "0.2.5", features = ["futures-03"] }
 tracing-subscriber = { workspace = true, features = ["env-filter", "json"] }
 unionlabs          = { workspace = true, features = ["ethabi"] }
 voyager-client     = { workspace = true }
+voyager-config     = { workspace = true }
 voyager-core       = { workspace = true }
 voyager-message    = { workspace = true }
 voyager-plugin     = { workspace = true }
