@@ -466,7 +466,8 @@ export const createCosmosToSuiFungibleAssetOrder = (intent: {
       )
 
     const quoteToken = yield* predictSuiQuoteToken(toHex(intent.baseToken))
-    yield* Effect.log(
+
+    yield* Effect.logTrace(
       "quote token from sui is",
       quoteToken,
       " for base token ",

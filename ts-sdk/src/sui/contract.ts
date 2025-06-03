@@ -5,9 +5,6 @@ import { Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
 import { SuiReadContractError, SuiWriteContractError } from "./client.js"
 
-
-
-
 export const readContract = <T>(
   client: SuiClient,
   sender: string,
