@@ -63,7 +63,7 @@ export const getQuoteToken = (
         try: () =>
           client.readContract({
             address: channel.destination_port_id,
-            abi: ucs03ZkgmAbi,
+            abi: ucs03abi,
             functionName: "predictWrappedToken",
             args: [0n, channel.destination_channel_id, base_token],
           }) as Promise<[Address, string]>,
