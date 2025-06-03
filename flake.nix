@@ -507,6 +507,8 @@
                 nixd
                 procs
                 emmet-language-server
+                efm-langserver
+                eslint_d
                 nodePackages_latest.nodejs
                 nodePackages_latest.graphqurl
                 nodePackages_latest.svelte-language-server
