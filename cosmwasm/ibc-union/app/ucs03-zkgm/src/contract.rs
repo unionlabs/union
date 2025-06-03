@@ -3260,7 +3260,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 token,
             )?;
             Ok(to_json_binary(&PredictWrappedTokenResponse {
-                wrapped_token: token.as_bytes().into(),
+                wrapped_token: token,
             })?)
         }
         QueryMsg::PredictWrappedTokenV2 {
@@ -3279,7 +3279,7 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 metadata_image,
             )?;
             Ok(to_json_binary(&PredictWrappedTokenResponse {
-                wrapped_token: token.as_bytes().into(),
+                wrapped_token: token,
             })?)
         }
         QueryMsg::GetMinter {} => {
