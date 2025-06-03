@@ -1847,11 +1847,11 @@ const mainEffect = Effect.gen(function*(_) {
 
   yield* Effect.all(
     [
-      // runIbcChecksForever,
+      runIbcChecksForever,
       escrowSupplyControlLoop,
-      // fundBabylonAccounts,
-      // checkBalances,
-      // checkSSLCertificates,
+      fundBabylonAccounts,
+      checkBalances,
+      checkSSLCertificates,
     ],
     {
       concurrency: "unbounded",
