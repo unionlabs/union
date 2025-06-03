@@ -1,4 +1,4 @@
-use alloy::primitives::U256;
+use alloy_primitives::U256;
 use unionlabs::primitives::H256;
 
 pub const INSTR_VERSION_0: u8 = 0x00;
