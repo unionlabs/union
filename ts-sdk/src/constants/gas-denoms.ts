@@ -10,7 +10,7 @@ interface GasDenomMetadata {
 
 const ETH_METADATA = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
-  name: "Ethereum",
+  name: "Ether",
   symbol: "ETH",
   decimals: 18
 } as const;
