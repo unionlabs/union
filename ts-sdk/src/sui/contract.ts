@@ -1,22 +1,12 @@
 import type { SuiClient } from "@mysten/sui/client"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
-import { Data, Effect } from "effect"
+import { Effect } from "effect"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
+import { SuiReadContractError, SuiWriteContractError } from "./client.js"
 
-/**
- * Error type for Aptos contract query failures
- */
-export class readContractError extends Data.TaggedError("readContractError")<{
-  cause: unknown
-}> {}
 
-/**
- * Error type for Aptos contract execution failures
- */
-export class ExecuteContractError extends Data.TaggedError("ExecuteContractError")<{
-  cause: unknown
-}> {}
+
 
 export const readContract = <T>(
   client: SuiClient,
@@ -42,7 +32,7 @@ export const readContract = <T>(
       })
       return result.results // result as unknown as T
     },
-    catch: e => new readContractError({ cause: extractErrorDetails(e as Error) }),
+    catch: e => new SuiReadContractError({ cause: extractErrorDetails(e as Error) }),
   }).pipe(
     // optional: e.g. timeout & retry like your Aptos wrapper
     Effect.timeout("10 seconds"),
@@ -73,5 +63,5 @@ export const writeContract = (
       })
       return res
     },
-    catch: e => new ExecuteContractError({ cause: extractErrorDetails(e as Error) }),
+    catch: e => new SuiWriteContractError({ cause: extractErrorDetails(e as Error) }),
   })

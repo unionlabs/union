@@ -13,7 +13,7 @@ export interface FaTokenInfo {
   symbol: string
 }
 
-export class ReadCoinError extends Data.TaggedError("ReadContractError")<{
+export class ReadCoinError extends Data.TaggedError("ReadCoinError")<{
   cause: unknown
 }> {}
 
