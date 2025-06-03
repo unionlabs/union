@@ -1,12 +1,6 @@
 import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Context, Data, Effect } from "effect"
-import {
-  type CreatePublicClientErrorType,
-  type CreateWalletClientErrorType,
-  type ReadContractErrorType,
-  type WriteContractErrorType,
-} from "viem"
 import { extractErrorDetails } from "../utils/extract-error-details.js"
 
 export class SuiPublicClientSource extends Context.Tag("SuiPublicClientSource")<
@@ -39,20 +33,28 @@ export class SuiWalletClient extends Context.Tag("SuiWalletClient")<
   }
 >() {}
 
-export class ReadContractError extends Data.TaggedError("ReadContractError")<{
-  cause: ReadContractErrorType
+export class SuiReadContractError extends Data.TaggedError("SuiReadContractError")<{
+  cause: unknown
 }> {}
 
-export class WriteContractError extends Data.TaggedError("WriteContractError")<{
-  cause: WriteContractErrorType
+export class SuiWriteContractError extends Data.TaggedError("SuiWriteContractError")<{
+  cause: unknown
+}> {}
+
+export class SuiCreateWalletClientErrorType extends Data.TaggedError("SuiCreateWalletClientErrorType")<{
+  cause: unknown
+}> {}
+
+export class SuiCreatePublicClientErrorType extends Data.TaggedError("SuiCreatePublicClientErrorType")<{
+  cause: unknown
 }> {}
 
 export class CreateSuiPublicClientError extends Data.TaggedError("CreateSuiPublicClientError")<{
-  cause: CreatePublicClientErrorType
+  cause: SuiCreatePublicClientErrorType
 }> {}
 
 export class CreateSuiWalletClientError extends Data.TaggedError("CreateSuiWalletClientError")<{
-  cause: CreateWalletClientErrorType
+  cause: SuiCreateWalletClientErrorType
 }> {}
 
 export const createSuiPublicClient = (
@@ -62,7 +64,7 @@ export const createSuiPublicClient = (
     try: () => new SuiClient(parameters),
     catch: err =>
       new CreateSuiPublicClientError({
-        cause: extractErrorDetails(err as CreatePublicClientErrorType),
+        cause: extractErrorDetails(err as SuiCreatePublicClientErrorType),
       }),
   })
 
@@ -77,6 +79,6 @@ export const createSuiWalletClient = (
     }),
     catch: (err) =>
       new CreateSuiWalletClientError({
-        cause: extractErrorDetails(err as CreateWalletClientErrorType),
+        cause: extractErrorDetails(err as SuiCreateWalletClientErrorType),
       }),
   })
