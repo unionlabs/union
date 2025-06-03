@@ -278,7 +278,7 @@ export function clearSupplyIncident(db: BetterSqlite3Database, key: string) {
 
 export function getPendingSupply(
   db: BetterSqlite3Database,
-  key: string
+  key: string,
 ): boolean {
   const row = db
     .prepare(`SELECT 1 FROM pending_supply_mismatch WHERE key = ?`)
@@ -288,7 +288,7 @@ export function getPendingSupply(
 
 export function markPendingSupply(
   db: BetterSqlite3Database,
-  key: string
+  key: string,
 ) {
   db
     .prepare(`
@@ -301,11 +301,10 @@ export function markPendingSupply(
 
 export function clearPendingSupply(
   db: BetterSqlite3Database,
-  key: string
+  key: string,
 ) {
   db.prepare(`DELETE FROM pending_supply_mismatch WHERE key = ?`).run(key)
 }
-
 
 export function isFunded(db: BetterSqlite3Database, txHash: string) {
   const row = db.prepare(`SELECT 1 FROM funded_txs WHERE transaction_hash = ?`).get(txHash)
@@ -867,11 +866,11 @@ const escrowSupplyControlLoop = Effect.repeat(
 
         const supplyKey = `${srcChain}:${dstChain}:${token.denom}`
         const existingSupplyIncident = getSupplyIncident(db, supplyKey)
-        
+
         const wasPending = getPendingSupply(db, supplyKey)
 
         if (srcChannelBal < totalSupply) {
-          if(!wasPending) {
+          if (!wasPending) {
             markPendingSupply(db, supplyKey)
 
             const logEffect = Effect.annotateLogs({
@@ -909,7 +908,7 @@ const escrowSupplyControlLoop = Effect.repeat(
             }
 
             clearPendingSupply(db, supplyKey)
-  
+
             const logEffect = Effect.annotateLogs({
               sourceChain: srcChain,
               destinationChain: dstChain,
@@ -928,7 +927,7 @@ const escrowSupplyControlLoop = Effect.repeat(
               denom: token.denom,
             })(Effect.logInfo(`SUPPLY_RECOVERED_CLEARED_PENDING @ ${supplyKey}`))
             Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-          }        
+          }
           if (existingSupplyIncident) {
             const didResolve = yield* resolveIncident(
               existingSupplyIncident,
@@ -1835,7 +1834,6 @@ const mainEffect = Effect.gen(function*(_) {
       inserted_at INTEGER
     )
   `).run()
-
 
   db.prepare(`
     CREATE TABLE IF NOT EXISTS aggregate_incidents (
