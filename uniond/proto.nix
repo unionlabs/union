@@ -60,7 +60,7 @@ _: {
             rev = "41d27c4c3661780367a2db414095e79665fa47ec";
             hash = "sha256-fpntV6A47+StBGA9NPUKVjXrdU1i4el3Rv8FwobKNgs=";
           };
-          
+
           generate-uniond-proto = pkgs.stdenv.mkDerivation {
             name = "generate-uniond-proto";
             pname = "generate-uniond-proto";
