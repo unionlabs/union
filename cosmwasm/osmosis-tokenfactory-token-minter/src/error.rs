@@ -29,4 +29,15 @@ pub enum Error {
 
     #[error("empty name or symbol in metadata")]
     EmptyNameOrSymbol,
+
+    #[error("alloy solidity parsing error: {0}")]
+    Alloy(#[from] alloy::sol_types::Error),
+
+    #[error(
+        "wrapped token metadata is invalid, it must be a valid tokenfactory metadata json string"
+    )]
+    CouldNotDecodeMetadata,
+
+    #[error("tokenfactory minter expects the implementation field of foa v2 to be a constant 'tokenfactory' string")]
+    UnexpectedImplementation,
 }
