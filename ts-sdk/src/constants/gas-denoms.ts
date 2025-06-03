@@ -24,8 +24,8 @@ const SEI_METADATA = {
 
 const CORN_METADATA = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
-  name: "Corn",
-  symbol: "CORN",
+  name: "Bitcorn",
+  symbol: "BTCN",
   decimals: 18,
 } as const
 
