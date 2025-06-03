@@ -1,5 +1,4 @@
 <script lang="ts">
-import { ucs03ZkgmAbi } from "$lib/abi/ucs03.ts"
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
@@ -28,6 +27,7 @@ import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
 import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos.ts"
 import * as WriteEvm from "$lib/transfer/shared/services/write-evm.ts"
 import { isValidBech32ContractAddress } from "$lib/utils"
+import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
   createViemPublicClient,
@@ -36,6 +36,7 @@ import {
   CreateViemWalletClientError,
   WriteContractError,
 } from "@unionlabs/sdk/evm"
+import { ucs03abi } from "@unionlabs/sdk/evm/abi"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import type {
   CosmosAddressEncodeError,
@@ -159,13 +160,15 @@ export const submit = Effect.gen(function*() {
         ets = nextEts
       })
 
+    const isNative = GAS_DENOMS[step.intent.sourceChainId].address === step.intent.baseToken
+
     const nextState = Effect.tap(
       Effect.suspend(() =>
         WriteEvm.nextState(ets, viemChain, publicClient, walletClient, {
           chain: viemChain,
           account: connectorClient.account,
           address: step.intent.channel.source_port_id,
-          abi: ucs03ZkgmAbi,
+          abi: ucs03abi,
           functionName: "send",
           args: [
             step.intent.channel.source_channel_id,
@@ -178,6 +181,7 @@ export const submit = Effect.gen(function*() {
               operand: encodeAbi(step.instruction),
             },
           ],
+          ...(isNative ? { value: step.intent.baseAmount } : {}),
         })
       ),
       setEts,
