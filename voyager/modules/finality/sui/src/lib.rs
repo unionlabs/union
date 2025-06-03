@@ -25,11 +25,6 @@ struct StateProofResponse {
     tx_proof: TransactionInfoWithProof,
 }
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    Module::run().await
-}
-
 #[derive(Clone)]
 pub struct Module {
     pub chain_id: ChainId,
