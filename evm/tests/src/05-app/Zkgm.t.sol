@@ -3725,7 +3725,7 @@ contract ZkgmTests is Test {
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
 
-    function test_create_foa_v2_preimage() public {
+    function test_create_foa_v2_preimage_evm() public {
         FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
             implementation: abi.encodePacked(
                 0x999709eB04e8A30C7aceD9fd920f7e04EE6B97bA
@@ -3764,7 +3764,7 @@ contract ZkgmTests is Test {
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
 
-    function test_create_foa_v2_image() public {
+    function test_create_foa_v2_image_evm() public {
         FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
             implementation: abi.encodePacked(
                 0x999709eB04e8A30C7aceD9fd920f7e04EE6B97bA
@@ -3780,7 +3780,9 @@ contract ZkgmTests is Test {
                 )
             )
         });
-        bytes32 image = EfficientHashLib.hash(abi.encode(metadata.implementation, metadata.initializer));
+        bytes32 image = EfficientHashLib.hash(
+            abi.encode(metadata.implementation, metadata.initializer)
+        );
         FungibleAssetOrderV2 memory foa = FungibleAssetOrderV2({
             sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
             receiver: abi.encodePacked(
@@ -3800,6 +3802,87 @@ contract ZkgmTests is Test {
         });
         console.log("Instruction");
         console.logBytes(ZkgmLib.encodeInstruction(inst));
+    }
+
+    function test_create_foa_v2_preimage_cosmwasm() public {
+        // Admin of the CW20-compatible token
+        string memory admin = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
+        // CW20 code id
+        uint64 codeId = 5;
+        // Note on cosmwasm the minter must be the zkgm cw20 minter
+        string memory initMsg =
+            "{\"init\":{\"name\":\"Uno\",\"symbol\":\"UNO\",\"decimals\":6,\"initial_balances\":[],\"mint\":{\"minter\":\"union1sctpgdvs23pxv43zclww5jdzghsfuph9rkstjegx35wjkvzv6wtqpq7xxg\",\"cap\":null},\"marketing\":null}}";
+        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+            implementation: abi.encode(admin, codeId),
+            initializer: bytes(initMsg)
+        });
+        FungibleAssetOrderV2 memory foa = FungibleAssetOrderV2({
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
+            receiver: abi.encodePacked(
+                "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+            ),
+            baseToken: hex"49aCf968c7E8807B39e980b2a924E97C8ead3a22",
+            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            baseAmount: 10,
+            quoteToken: bytes(
+                "union1uyxeud073ttss4stt92hvt4wgzzyrssqata8058305km6xp7vzgs85kpst"
+            ),
+            quoteAmount: 10
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrderV2(foa)
+        });
+        console.log("Initializer");
+        console.logBytes(metadata.initializer);
+        console.log("Instruction");
+        console.log(inst.version);
+        console.log(inst.opcode);
+        console.logBytes(inst.operand);
+    }
+
+    function test_create_foa_v2_image_cosmwasm() public {
+        // Admin of the CW20-compatible token
+        string memory admin = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2";
+        // CW20 code id
+        uint64 codeId = 5;
+        // Note on cosmwasm the minter must be the zkgm cw20 minter
+        string memory initMsg =
+            "{\"init\":{\"name\":\"Uno\",\"symbol\":\"UNO\",\"decimals\":6,\"initial_balances\":[],\"mint\":{\"minter\":\"union1sctpgdvs23pxv43zclww5jdzghsfuph9rkstjegx35wjkvzv6wtqpq7xxg\",\"cap\":null},\"marketing\":null}}";
+        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+            implementation: abi.encode(admin, codeId),
+            initializer: bytes(initMsg)
+        });
+        bytes32 image = EfficientHashLib.hash(
+            abi.encode(metadata.implementation, metadata.initializer)
+        );
+        console.log("Image:");
+        console.logBytes32(image);
+        FungibleAssetOrderV2 memory foa = FungibleAssetOrderV2({
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
+            receiver: abi.encodePacked(
+                "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+            ),
+            baseToken: hex"49aCf968c7E8807B39e980b2a924E97C8ead3a22",
+            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE,
+            metadata: abi.encodePacked(image),
+            baseAmount: 10,
+            quoteToken: bytes(
+                "union1uyxeud073ttss4stt92hvt4wgzzyrssqata8058305km6xp7vzgs85kpst"
+            ),
+            quoteAmount: 10
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrderV2(foa)
+        });
+        console.log("Instruction");
+        console.log(inst.version);
+        console.log(inst.opcode);
+        console.logBytes(inst.operand);
     }
 
     function test_create_stake() public {
