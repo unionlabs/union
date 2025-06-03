@@ -995,11 +995,7 @@ fn refund_v2(
                         .map_err(|_| ContractError::InvalidMetadataType)
                 } else {
                     // For PREIMAGE type, compute the hash
-                    let metadata =
-                        FungibleAssetMetadata::abi_decode_params_validate(&order.metadata)?;
-                    let metadata_bytes = metadata.abi_encode_params();
-                    let metadata_image = keccak256(metadata_bytes);
-                    Ok(metadata_image)
+                    Ok(keccak256(order.metadata))
                 }?;
 
                 // Check if this is a V1 token (for backward compatibility)
@@ -1091,20 +1087,14 @@ fn acknowledge_fungible_asset_order_v2(
                         FUNGIBLE_ASSET_METADATA_TYPE_IMAGE
                         | FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE => {
                             // If the token is native to this chain, decrease the channel balance and unescrow
-                            let metadata_image = if order.metadata_type
-                                == FUNGIBLE_ASSET_METADATA_TYPE_IMAGE
-                            {
-                                H256::try_from(order.metadata.0.as_ref())
-                                    .map_err(|_| ContractError::InvalidMetadataType)
-                            } else {
-                                // For PREIMAGE type, compute the hash
-                                let metadata = FungibleAssetMetadata::abi_decode_params_validate(
-                                    &order.metadata,
-                                )?;
-                                let metadata_bytes = metadata.abi_encode_params();
-                                let metadata_image = keccak256(metadata_bytes);
-                                Ok(metadata_image)
-                            }?;
+                            let metadata_image =
+                                if order.metadata_type == FUNGIBLE_ASSET_METADATA_TYPE_IMAGE {
+                                    H256::try_from(order.metadata.0.as_ref())
+                                        .map_err(|_| ContractError::InvalidMetadataType)
+                                } else {
+                                    // For PREIMAGE type, compute the hash
+                                    Ok(keccak256(order.metadata))
+                                }?;
 
                             // Check if this is a V1 token (for backward compatibility)
                             let is_v1 = metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;

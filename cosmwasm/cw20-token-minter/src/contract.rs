@@ -125,7 +125,7 @@ pub fn execute(
                     })
                     .add_message(WasmMsg::UpdateAdmin {
                         contract_addr: subdenom,
-                        admin: admin.into(),
+                        admin,
                     })
             }
             WrappedTokenMsg::CreateDenom {
