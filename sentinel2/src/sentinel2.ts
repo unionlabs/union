@@ -276,6 +276,37 @@ export function clearSupplyIncident(db: BetterSqlite3Database, key: string) {
   db.prepare(`DELETE FROM supply_incidents WHERE key = ?`).run(key)
 }
 
+export function getPendingSupply(
+  db: BetterSqlite3Database,
+  key: string
+): boolean {
+  const row = db
+    .prepare(`SELECT 1 FROM pending_supply_mismatch WHERE key = ?`)
+    .get(key)
+  return !!row
+}
+
+export function markPendingSupply(
+  db: BetterSqlite3Database,
+  key: string
+) {
+  db
+    .prepare(`
+      INSERT OR REPLACE INTO pending_supply_mismatch
+        (key, inserted_at)
+      VALUES (?, strftime('%s','now')*1000)
+    `)
+    .run(key)
+}
+
+export function clearPendingSupply(
+  db: BetterSqlite3Database,
+  key: string
+) {
+  db.prepare(`DELETE FROM pending_supply_mismatch WHERE key = ?`).run(key)
+}
+
+
 export function isFunded(db: BetterSqlite3Database, txHash: string) {
   const row = db.prepare(`SELECT 1 FROM funded_txs WHERE transaction_hash = ?`).get(txHash)
   return !!row
@@ -836,47 +867,68 @@ const escrowSupplyControlLoop = Effect.repeat(
 
         const supplyKey = `${srcChain}:${dstChain}:${token.denom}`
         const existingSupplyIncident = getSupplyIncident(db, supplyKey)
+        
+        const wasPending = getPendingSupply(db, supplyKey)
 
         if (srcChannelBal < totalSupply) {
-          if (!existingSupplyIncident) {
-            const inc = yield* triggerIncident(
-              `SUPPLY_ERROR @ ${supplyKey}`,
-              JSON.stringify({
-                issueType: "TOTAL_SUPPLY_GT_CHANNEL_BALANCE",
-                sourceChain: srcChain,
-                destinationChain: dstChain,
-                denom: token.denom,
-                unwrappedDenom: token.wrapping[0]?.unwrapped_denom,
-                sourceChannelId,
-                sourceChannelBal: srcChannelBal.toString(),
-                totalSupply: totalSupply.toString(),
-              }),
-              config.betterstack_api_key,
-              config.trigger_betterstack,
-              "SENTINEL@union.build",
-              "TOTAL_SUPPLY_GT_CHANNEL_BALANCE",
-              "Union",
-              config.isLocal,
-            )
-            if (inc.data.id) {
-              markSupplyIncident(db, supplyKey, inc.data.id)
+          if(!wasPending) {
+            markPendingSupply(db, supplyKey)
+
+            const logEffect = Effect.annotateLogs({
+              sourceChain: srcChain,
+              destinationChain: dstChain,
+              denom: token.denom,
+              sourceChannelBal: srcChannelBal.toString(),
+              totalSupply: totalSupply.toString(),
+            })(Effect.logInfo(`SUPPLY_FIRST_FAILURE_PENDING @ ${supplyKey}`))
+            Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+          } else {
+            if (!existingSupplyIncident) {
+              const inc = yield* triggerIncident(
+                `SUPPLY_ERROR @ ${supplyKey}`,
+                JSON.stringify({
+                  issueType: "TOTAL_SUPPLY_GT_CHANNEL_BALANCE",
+                  sourceChain: srcChain,
+                  destinationChain: dstChain,
+                  denom: token.denom,
+                  unwrappedDenom: token.wrapping[0]?.unwrapped_denom,
+                  sourceChannelId,
+                  sourceChannelBal: srcChannelBal.toString(),
+                  totalSupply: totalSupply.toString(),
+                }),
+                config.betterstack_api_key,
+                config.trigger_betterstack,
+                "SENTINEL@union.build",
+                "TOTAL_SUPPLY_GT_CHANNEL_BALANCE",
+                "Union",
+                config.isLocal,
+              )
+              if (inc.data.id) {
+                markSupplyIncident(db, supplyKey, inc.data.id)
+              }
             }
+
+            clearPendingSupply(db, supplyKey)
+  
+            const logEffect = Effect.annotateLogs({
+              sourceChain: srcChain,
+              destinationChain: dstChain,
+              denom: token.denom,
+              sourceChannelBal: srcChannelBal.toString(),
+              totalSupply: totalSupply.toString(),
+            })(Effect.logError(`SUPPLY_SECOND_FAILURE_TRIGGER @ ${supplyKey}`))
+            Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
           }
-
-          const logEffect = Effect.annotateLogs({
-            issueType: "TOTAL SUPPLY IS HIGHER THAN SOURCE CHANNEL BALANCE",
-            sourceChain: `${srcChain}`,
-            destinationChain: `${dstChain}`,
-            denom: `${token.denom}`,
-            unwrappedDenom: `${token.wrapping[0]?.unwrapped_denom}`,
-            sourceChannelId: `${sourceChannelId}`,
-            sourceChannelBal: `${srcChannelBal}`,
-            totalSupply: `${totalSupply}`,
-            destinationChannelId: `${dstChannel}`,
-          })(Effect.logError(`SUPPLY_ERROR`))
-
-          Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
         } else {
+          if (wasPending) {
+            clearPendingSupply(db, supplyKey)
+            const logEffect = Effect.annotateLogs({
+              sourceChain: srcChain,
+              destinationChain: dstChain,
+              denom: token.denom,
+            })(Effect.logInfo(`SUPPLY_RECOVERED_CLEARED_PENDING @ ${supplyKey}`))
+            Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
+          }        
           if (existingSupplyIncident) {
             const didResolve = yield* resolveIncident(
               existingSupplyIncident,
@@ -1778,6 +1830,14 @@ const mainEffect = Effect.gen(function*(_) {
   `).run()
 
   db.prepare(`
+    CREATE TABLE IF NOT EXISTS pending_supply_mismatch (
+      key         TEXT PRIMARY KEY,
+      inserted_at INTEGER
+    )
+  `).run()
+
+
+  db.prepare(`
     CREATE TABLE IF NOT EXISTS aggregate_incidents (
       key            TEXT PRIMARY KEY,  -- e.g. "chainId:tokenAddr"
       incident_id    TEXT NOT NULL,
@@ -1789,11 +1849,11 @@ const mainEffect = Effect.gen(function*(_) {
 
   yield* Effect.all(
     [
-      runIbcChecksForever,
+      // runIbcChecksForever,
       escrowSupplyControlLoop,
-      fundBabylonAccounts,
-      checkBalances,
-      checkSSLCertificates,
+      // fundBabylonAccounts,
+      // checkBalances,
+      // checkSSLCertificates,
     ],
     {
       concurrency: "unbounded",
