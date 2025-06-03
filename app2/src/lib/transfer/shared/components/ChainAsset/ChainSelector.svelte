@@ -1,5 +1,6 @@
 <script lang="ts">
 import { chainLogoMap } from "$lib/constants/chain-logos.ts"
+import { DISABLED_CHAINS } from "$lib/constants/disabled-chains.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
@@ -53,20 +54,22 @@ const isValidRoute = (chain: Chain) =>
 
 const getChainStatus = (chain: Chain, hasBucket: boolean) => {
   const isSourceChain = type === "destination" && transferData.raw.source === chain.chain_id
+  const isDisabledChain = chain.universal_chain_id
+    && DISABLED_CHAINS.includes(chain.universal_chain_id)
 
   return pipe(
     Match.value(type).pipe(
       Match.when("source", () => ({
         isSelected: transferData.raw.source === chain.chain_id,
         isSourceChain: false,
-        isDisabled: false,
+        isDisabled: isDisabledChain,
         hasBucket,
         hasRoute: true,
       })),
       Match.when("destination", () => ({
         isSelected: transferData.raw.destination === chain.chain_id,
         isSourceChain,
-        isDisabled: isSourceChain || !isValidRoute(chain) || !hasBucket,
+        isDisabled: isSourceChain || !isValidRoute(chain) || !hasBucket || isDisabledChain,
         hasBucket,
         hasRoute: isValidRoute(chain),
       })),
@@ -169,6 +172,28 @@ const filteredChains = $derived(
         allChains,
         filterBySigningMode,
         chains => filterChainsByTokenAvailability(chains, uiStore.filterWhitelist),
+        chainWithAvailability => {
+          // Sort so disabled chains appear last for both source and destination
+          return chainWithAvailability.sort((a, b) => {
+            const [chainA] = a
+            const [chainB] = b
+            const isDisabledA = chainA.universal_chain_id
+              && DISABLED_CHAINS.includes(chainA.universal_chain_id)
+            const isDisabledB = chainB.universal_chain_id
+              && DISABLED_CHAINS.includes(chainB.universal_chain_id)
+
+            // If one is disabled and the other isn't, disabled goes last
+            if (isDisabledA && !isDisabledB) {
+              return 1
+            }
+            if (!isDisabledA && isDisabledB) {
+              return -1
+            }
+
+            // If both have same disabled status, maintain original order
+            return 0
+          })
+        },
       )
     ),
   ),
@@ -189,7 +214,7 @@ const filteredChains = $derived(
 
           <button
             class={cn(
-              "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors",
+              "flex flex-col items-center gap-2 justify-start px-2 py-4 rounded-md transition-colors min-h-[120px]",
               status.isSelected
                 ? "bg-zinc-900 hover:bg-zinc-800 ring-1 ring-accent"
                 : status.isDisabled
@@ -210,16 +235,20 @@ const filteredChains = $derived(
 
             <span class="text-xs text-center truncate w-fit">{chain.display_name}</span>
 
-            {#if status.isSourceChain}
-              <span class="text-xs text-sky-400 -mt-2">source chain</span>
-            {/if}
-            {#if type === "destination" && !status.hasRoute && !status.isSourceChain}
-              <span class="text-xs text-yellow-400 -mt-2">no route</span>
-            {/if}
-            {#if type === "destination" && !status.hasBucket && status.hasRoute
-            && !status.isSourceChain}
-              <span class="text-xs text-yellow-400 -mt-2">not whitelisted</span>
-            {/if}
+            <!-- Status labels container with consistent height -->
+            <div class="text-xs -mt-2 h-4 flex items-center">
+              {#if status.isSourceChain}
+                <span class="text-sky-400">source chain</span>
+              {:else if chain.universal_chain_id
+              && DISABLED_CHAINS.includes(chain.universal_chain_id)}
+                <span class="text-yellow-400">disabled</span>
+              {:else if type === "destination" && !status.hasRoute && !status.isSourceChain}
+                <span class="text-yellow-400">no route</span>
+              {:else if type === "destination" && !status.hasBucket && status.hasRoute
+              && !status.isSourceChain}
+                <span class="text-yellow-400">not whitelisted</span>
+              {/if}
+            </div>
           </button>
         {/each}
       </div>
