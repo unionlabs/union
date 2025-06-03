@@ -1,4 +1,5 @@
-import { Effect } from "effect"
+import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
+import { Arbitrary, Effect, FastCheck as fc } from "effect"
 import { erc20Abi, type PublicClient } from "viem"
 import { beforeEach, describe, expect, it, vi } from "vitest"
 import { ViemPublicClient } from "../../src/evm/client.js"
@@ -114,10 +115,12 @@ describe("ERC20 Module", () => {
       mockClient.readContract.mockResolvedValueOnce("Test Token") // name
       mockClient.readContract.mockResolvedValueOnce("TKN") // symbol
       mockClient.readContract.mockResolvedValueOnce(18) // decimals
+      const ArbitraryUniversalChainId = Arbitrary.make(UniversalChainId)
+      const universalChainId = fc.sample(ArbitraryUniversalChainId, 1)[0]
 
       // Execute
       const result = await Effect.runPromise(
-        readErc20Meta(testTokenAddress).pipe(
+        readErc20Meta(testTokenAddress, universalChainId).pipe(
           Effect.provideService(ViemPublicClient, mockViemPublicClient),
         ),
       )
