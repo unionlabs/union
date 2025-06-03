@@ -204,9 +204,9 @@ _: {
       #
       # weth                  : ucs03 - address of the WETH equivalent on this chain
       # rate-limit-enabled    : ucs03 - whether rate limiting is enabled for ucs03-zkgm
-      # native-token-name     : ucs03 - name of the native token on the chain, default to Ether
-      # native-token-symbol   : ucs03 - symbol of the native token on the chain, default to ETH
-      # native-token-decimals : ucs03 - number of decimal places for the native token, default to 18
+      # native-token-name     : ucs03 - name of the native token on the chain
+      # native-token-symbol   : ucs03 - symbol of the native token on the chain
+      # native-token-decimals : ucs03 - number of decimal places for the native token
       #
       # verify                : whether this chain supports verification. defaults to true, if true then the
       #                         following args are also read:
@@ -224,6 +224,10 @@ _: {
           private-key = "0x${builtins.readFile ./../networks/genesis/devnet-eth/dev-key0.prv}";
           weth = "0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF";
           rate-limit-enabled = "false";
+
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
 
           verify = pkgs.stdenv.isx86_64;
           verifier = "blockscout";
@@ -257,6 +261,10 @@ _: {
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
           rate-limit-enabled = "false";
 
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
+
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
@@ -269,6 +277,10 @@ _: {
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x94373a4919b3240d86ea41593d5eba789fef3848";
           rate-limit-enabled = "false";
+
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
@@ -299,6 +311,10 @@ _: {
           weth = "0x4200000000000000000000000000000000000006";
           rate-limit-enabled = "false";
 
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
+
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
@@ -328,6 +344,10 @@ _: {
           weth = "0xDc78B593dD44914C326D1ed37501EAd48c4C5628";
           rate-limit-enabled = "false";
 
+          native-token-name = "Sei";
+          native-token-symbol = "SEI";
+          native-token-decimals = 18;
+
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
@@ -349,6 +369,10 @@ _: {
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2";
 
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
+
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
@@ -360,6 +384,10 @@ _: {
           rpc-url = "https://rpc.gobob.xyz";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x4200000000000000000000000000000000000006";
+
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
 
           verifier = "etherscan";
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
