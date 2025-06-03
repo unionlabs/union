@@ -15,6 +15,9 @@ import { AddressCosmosZkgm, AddressEvmZkgm } from "../schema/address.js"
 import { UniversalChainId } from "../schema/chain.js"
 import { ChannelId } from "../schema/channel.js"
 import { TokenRawDenom } from "../schema/token.js"
+import { SuiPublicClient } from "../sui/client.js"
+import { predictQuoteToken as predictSuiQuoteToken } from "../sui/quote-token.js"
+import { readCoinMetadata } from "../sui/sui_coin.js"
 import { ensureHex } from "../utils/index.js"
 import { FungibleAssetOrder } from "./instruction.js"
 
@@ -392,6 +395,97 @@ export const createAptosToCosmosFungibleAssetOrder = (intent: {
         tokenMeta.decimals,
         0n, // channel if unwrapping
         quoteToken,
+        intent.quoteAmount,
+      ],
+    })
+  })
+
+/**
+ * Creates a fungible asset order from Sui to Cosmos
+ */
+export const createSuiToCosmosFungibleAssetOrder = (intent: {
+  sender: string
+  receiver: AddressCosmosZkgm
+  baseTokenType: string // It is the Sui coin type, not a raw denom
+  baseAmount: bigint
+  quoteAmount: bigint
+}) =>
+  Effect.gen(function*() {
+    yield* guardAgainstZeroAmount(intent)
+    const sourceClient = (yield* SuiPublicClient).client
+    const tokenMeta = yield* readCoinMetadata(intent.baseTokenType).pipe(
+      Effect.provideService(SuiPublicClient, { client: sourceClient }),
+    )
+
+    if (!tokenMeta) {
+      return Effect.fail(new Error(`Token metadata not found for ${intent.baseTokenType}`))
+    }
+    const baseToken = intent.baseTokenType.split("::")[0]
+    const quoteToken = yield* predictCosmosQuoteToken(baseToken)
+
+    return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
+      operand: [
+        // @ts-expect-error
+        intent.sender,
+        intent.receiver,
+        ensureHex(baseToken),
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken,
+        intent.quoteAmount,
+      ],
+    })
+  })
+
+/**
+ * Creates a fungible asset order from  Cosmos to Sui
+ */
+export const createCosmosToSuiFungibleAssetOrder = (intent: {
+  sender: AddressCosmosZkgm
+  receiver: string
+  baseToken: string
+  baseAmount: bigint
+  quoteAmount: bigint
+}) =>
+  Effect.gen(function*() {
+    yield* guardAgainstZeroAmount(intent)
+    const sourceClient = (yield* CosmWasmClientSource).client
+    // HACK: special cased for muno for now
+    const tokenMeta = intent.baseToken === "muno"
+      ? {
+        symbol: "muno",
+        name: "muno",
+        decimals: 6,
+      }
+      : yield* readCw20TokenInfo(intent.baseToken).pipe(
+        Effect.provideService(CosmWasmClientContext, { client: sourceClient }),
+      )
+
+    const quoteToken = yield* predictSuiQuoteToken(toHex(intent.baseToken))
+
+    yield* Effect.logTrace(
+      "quote token from sui is",
+      quoteToken,
+      " for base token ",
+      intent.baseToken,
+    )
+
+    return yield* S.decode(FungibleAssetOrder)({
+      _tag: "FungibleAssetOrder",
+      operand: [
+        intent.sender,
+        intent.receiver as Address,
+        ensureHex(intent.baseToken),
+        intent.baseAmount,
+        tokenMeta.symbol,
+        tokenMeta.name,
+        tokenMeta.decimals,
+        0n, // channel if unwrapping
+        quoteToken as Hex,
         intent.quoteAmount,
       ],
     })

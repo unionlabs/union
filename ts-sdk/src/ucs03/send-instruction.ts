@@ -1,3 +1,4 @@
+import { Transaction } from "@mysten/sui/transactions"
 import { Effect } from "effect"
 import { encodeAbiParameters } from "viem"
 import { AptosChannelSource } from "../aptos/channel.js"
@@ -11,9 +12,13 @@ import { ucs03abi } from "../evm/abi/ucs03.js"
 import { EvmChannelSource } from "../evm/channel.js"
 import { ViemWalletClient } from "../evm/client.js"
 import { writeContract as writeContractEvm } from "../evm/contract.js"
+import { SuiChannelSource } from "../sui/channel.js"
+import { SuiWalletClient } from "../sui/client.js"
+import { writeContract as writeContractSui } from "../sui/contract.js"
+import { SuiFungibleAssetOrderDetails } from "../sui/fungible_asset_order_details.js"
 import { generateSalt } from "../utils/index.js"
 import { getTimeoutInNanoseconds24HoursFromNow } from "../utils/timeout.js"
-import { encodeAbi, type Instruction } from "./instruction.js"
+import { encodeAbi, FungibleAssetOrder, type Instruction } from "./instruction.js"
 
 export const sendInstructionEvm = (instruction: Instruction) =>
   Effect.gen(function*() {
@@ -102,5 +107,49 @@ export const sendInstructionAptos = (instruction: Instruction) =>
       function_name,
       [], // type arguments
       function_arguments,
+    )
+  })
+
+// turn a hex string like "0xdeadbeef" into a number[] of bytes
+function hexToBytes(hex: string): number[] {
+  const h = hex.startsWith("0x") ? hex.slice(2) : hex
+  return h.match(/.{1,2}/g)!.map(b => parseInt(b, 16))
+}
+
+export const sendInstructionSui = (fungibleAssetOrder: FungibleAssetOrder) =>
+  Effect.gen(function*() {
+    const walletClient = yield* SuiWalletClient
+    const sourceConfig = yield* SuiChannelSource
+    const details = yield* SuiFungibleAssetOrderDetails
+    const timeoutTimestamp = getTimeoutInNanoseconds24HoursFromNow()
+    const salt = yield* generateSalt("evm")
+
+    const module_name = "zkgm_relay"
+    const function_name = "send"
+    const tx = new Transaction()
+
+    const function_arguments = [
+      tx.object(details.ibc_store),
+      tx.object(details.relay_store),
+      tx.object(details.coin),
+      tx.object(details.metadata),
+      tx.pure.u32(sourceConfig.channelId),
+      tx.pure.u64(0),
+      tx.pure.u64(timeoutTimestamp),
+      tx.pure.vector("u8", hexToBytes(salt)),
+      tx.pure.u8(1),
+      tx.pure.u8(3),
+      tx.pure.vector("u8", hexToBytes(encodeAbi(fungibleAssetOrder))),
+    ]
+
+    return yield* writeContractSui(
+      walletClient.client,
+      walletClient.signer,
+      sourceConfig.ucs03address,
+      module_name,
+      function_name,
+      [details.typename_t], // type arguments
+      function_arguments,
+      tx,
     )
   })
