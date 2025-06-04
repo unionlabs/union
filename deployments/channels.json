@@ -71,6 +71,12 @@
       "tags": ["canonical"]
     }
   },
+  "sei.1328": {
+    "2": {
+      "comments": "corn.21000001 channel 3",
+      "tags": ["canonical"]
+    }
+  },
   "xion.xion-testnet-2": {
     "1": {
       "comments": "ethereum.17000 channel 4",
