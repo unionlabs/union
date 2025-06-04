@@ -3866,6 +3866,7 @@ dependencies = [
  "heck 0.5.0",
  "serde_json",
  "ucs04",
+ "unionlabs-primitives",
  "voyager-client-module-arbitrum",
  "voyager-client-module-bob",
  "voyager-client-module-cometbls",

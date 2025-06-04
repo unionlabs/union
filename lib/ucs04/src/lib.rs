@@ -99,13 +99,25 @@ impl<'a> UniversalChainId<'a> {
 impl UniversalChainId<'static> {
     /// Construct a new (owned) [`UniversalChainId`].
     ///
-    /// See [`UniversalChainId::new`] if you have a ref [`Id`].
+    /// See [`UniversalChainId::new`] if you have `&`[`Id`].
     #[must_use]
     pub const fn new_owned(family: Family, id: Box<Id>) -> Self {
         Self {
             family,
             id: Cow::Owned(id),
         }
+    }
+}
+
+impl<'b> PartialEq<&UniversalChainId<'b>> for UniversalChainId<'_> {
+    fn eq(&self, other: &&UniversalChainId<'b>) -> bool {
+        self == (*other)
+    }
+}
+
+impl<'b> PartialEq<UniversalChainId<'b>> for &UniversalChainId<'_> {
+    fn eq(&self, other: &UniversalChainId<'b>) -> bool {
+        (*self) == other
     }
 }
 

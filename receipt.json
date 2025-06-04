@@ -1,0 +1,10 @@
+{
+  "ethereum.1": {
+    "chain_spec": "mainnet",
+    "beacon_rpc_url": "https://beacon.1.ethereum.chain.kitchen",
+    "rpc_url": "https://rpc.1.ethereum.chain.kitchen"
+  },
+  "babylon.bbn-1": {
+    "rpc_url": "https://rpc.bbn-1.babylon.chain.kitchen"
+  }
+}

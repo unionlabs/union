@@ -6,9 +6,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use tracing::{error, instrument, trace};
-use unionlabs::{
-    bech32::Bech32, ibc::core::client::height::Height, primitives::H256, traits::Member,
-};
+use unionlabs::{ibc::core::client::height::Height, traits::Member};
 use voyager_sdk::{
     anyhow,
     plugin::FinalityModule,
@@ -22,16 +20,12 @@ pub struct Module {
 
     pub cometbft_client: cometbft_rpc::Client,
     pub chain_revision: u64,
-
-    pub ibc_host_contract_address: H256,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
     pub rpc_url: String,
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
 
 impl FinalityModule for Module {
@@ -62,10 +56,6 @@ impl FinalityModule for Module {
             cometbft_client: tm_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
-            ibc_host_contract_address: config
-                .ibc_host_contract_address
-                .map(|a| *a.data())
-                .unwrap_or_default(),
         })
     }
 }

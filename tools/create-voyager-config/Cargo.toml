@@ -12,19 +12,20 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-anyhow             = { workspace = true }
-beacon-api-types   = { workspace = true }
-chain-kitchen      = { workspace = true }
-clap               = { workspace = true, features = ["derive", "env", "error-context", "help"] }
-cliclack           = "0.3.6"
-embed-commit       = { workspace = true }
-heck               = "0.5.0"
-serde_json         = { workspace = true }
-ucs04              = { workspace = true }
-voyager-config     = { workspace = true }
-voyager-core       = { workspace = true }
-voyager-primitives = { workspace = true }
-voyager-rpc        = { workspace = true }
+anyhow               = { workspace = true }
+beacon-api-types     = { workspace = true }
+chain-kitchen        = { workspace = true }
+clap                 = { workspace = true, features = ["derive", "env", "error-context", "help"] }
+cliclack             = "0.3.6"
+embed-commit         = { workspace = true }
+heck                 = "0.5.0"
+serde_json           = { workspace = true }
+ucs04                = { workspace = true }
+unionlabs-primitives = { workspace = true }
+voyager-config       = { workspace = true }
+voyager-core         = { workspace = true }
+voyager-primitives   = { workspace = true }
+voyager-rpc          = { workspace = true }
 
 voyager-client-module-arbitrum               = { workspace = true }
 voyager-client-module-bob                    = { workspace = true }
