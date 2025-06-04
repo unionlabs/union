@@ -28,8 +28,6 @@ library ZkgmLib {
     uint8 public constant FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE = 0x01;
     uint8 public constant FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP = 0x02;
 
-    address public constant FUNGIBLE_ASSET_METADATA_ZKGM_ADMIN =
-        0xC0dEeEeEeEEEEEeeeeEEEeEeEeeeeEeeEeEEeeee;
     bytes32 public constant FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1 =
         0xC0DEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE;
 
@@ -39,9 +37,9 @@ library ZkgmLib {
     uint8 public constant OP_BATCH = 0x02;
     uint8 public constant OP_FUNGIBLE_ASSET_ORDER = 0x03;
 
-    uint8 public constant OP_STAKE = 0xC1;
-    uint8 public constant OP_UNSTAKE = 0xC2;
-    uint8 public constant OP_WITHDRAW_STAKE = 0xC3;
+    uint8 public constant OP_STAKE = 0x04;
+    uint8 public constant OP_UNSTAKE = 0x05;
+    uint8 public constant OP_WITHDRAW_STAKE = 0x06;
 
     uint8 public constant INSTR_VERSION_0 = 0x00;
     uint8 public constant INSTR_VERSION_1 = 0x01;
