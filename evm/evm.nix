@@ -256,7 +256,7 @@ _: {
           chain-id = "11155111";
 
           name = "sepolia";
-          rpc-url = "https://eth-sepolia.g.alchemy.com/v2/daqIOE3zftkyQP_TKtb8XchSMCtc1_6D";
+          rpc-url = "https://sepolia.gateway.tenderly.co";
           private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
           weth = "0x7b79995e5f793a07bc00c21412e50ecae098e7f9";
           rate-limit-enabled = "false";
