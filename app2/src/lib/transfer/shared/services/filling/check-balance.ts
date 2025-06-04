@@ -64,7 +64,7 @@ export const checkBalanceForIntent = (
         ensureHex(group.baseToken) as TokenRawDenom,
       )
 
-      if (!Option.isSome(balance)) {
+      if (Option.isNone(balance)) {
         const chainForToken = context.intents.find(intent =>
           intent.sender === group.sender
           && intent.baseToken === group.baseToken
@@ -88,7 +88,7 @@ export const checkBalanceForIntent = (
         }
       }
 
-      if (!Option.isSome(balance)) {
+      if (Option.isNone(balance)) {
         return yield* Effect.fail(
           new BalanceLookupError({
             cause: "No balance found",
