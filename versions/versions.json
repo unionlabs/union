@@ -30,12 +30,12 @@
     "seeds": "c2bf0d5b2ad3a1df0f4e9cc32debffa239c0af90@testnet.seed.poisonphang.com:26656"
   },
   "union-1": {
-    "versions": ["v1.0.0"],
+    "versions": ["v1.0.0", "v1.1.0"],
     "current": "v1.0.0",
     "seeds": ""
   },
   "union-testnet-10": {
-    "versions": ["v1.0.0"],
+    "versions": ["v1.0.0", "v1.1.0"],
     "current": "v1.0.0",
     "seeds": ""
   }
