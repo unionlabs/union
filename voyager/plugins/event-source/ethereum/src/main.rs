@@ -885,11 +885,6 @@ impl Module {
                     )
                     .await?;
 
-                if channel.state != ChannelState::Init {
-                    info!(state = %channel.state, "channel state is not init");
-                    return Ok(noop());
-                }
-
                 let connection = voyager_client
                     .query_ibc_state(
                         self.chain_id.clone(),
