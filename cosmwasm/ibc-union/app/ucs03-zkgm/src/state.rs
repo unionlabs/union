@@ -21,6 +21,14 @@ pub const TOKEN_ORIGIN: Map<String, Uint256> = Map::new("token_origin");
 /// The path is used to track tokens across multiple hops, matching the Solidity implementation.
 pub const CHANNEL_BALANCE: Map<(u32, Vec<u8>, String), Uint256> = Map::new("channel_balance_v2");
 
+/// Tracks the balance of V2 tokens escrowed for each (channel, path, denom, metadata_image) combination.
+#[allow(clippy::type_complexity)]
+pub const CHANNEL_BALANCE_V2: Map<(u32, (Vec<u8>, String, Vec<u8>)), Uint256> =
+    Map::new("channel_balance_v2");
+
+/// Maps wrapped token denoms to their metadata image hash.
+pub const METADATA_IMAGE_OF: Map<String, Vec<u8>> = Map::new("metadata_image_of");
+
 /// Temporarily stores the packet being executed to prevent reentrancy attacks.
 /// This is cleared after execution is complete.
 pub const EXECUTING_PACKET: Item<Packet> = Item::new("executing_packet");

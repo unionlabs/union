@@ -906,11 +906,11 @@ struct TestState {
 }
 
 impl TestState {
-    fn balance_of(&self, token: &Bytes, address: Addr) -> u128 {
+    fn balance_of(&self, token: impl Into<String>, address: Addr) -> u128 {
         self.app
             .wrap()
             .query_wasm_smart::<cw20::BalanceResponse>(
-                std::str::from_utf8(token).unwrap(),
+                token,
                 &cw20_base::msg::QueryMsg::Balance {
                     address: address.to_string(),
                 },
@@ -1058,7 +1058,7 @@ struct IncomingOrderBuilder {
 
 #[allow(dead_code)]
 impl IncomingOrderBuilder {
-    fn new(quote_token: Bytes) -> Self {
+    fn new(quote_token: String) -> Self {
         // host
         let caller = Addr::unchecked("union12qdvmw22n72mem0ysff3nlyj2c76cuy4x60lua");
         let relayer = Addr::unchecked("union1ml67yhc5kp8qrxssfnqz8pxqvjyln5fus654vk");
@@ -1090,7 +1090,7 @@ impl IncomingOrderBuilder {
             base_token_decimals,
             base_token_path,
             base_amount,
-            quote_token,
+            quote_token: quote_token.as_bytes().to_vec().into(),
             quote_amount,
             sender,
             receiver,
@@ -1209,9 +1209,9 @@ fn test_recv_packet_native_new_wrapped() {
         )
         .unwrap()
         .wrapped_token;
-    let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
+    let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
-    let (order, msg, packet) = IncomingOrderBuilder::new(quote_token)
+    let (order, msg, packet) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1293,9 +1293,9 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
         )
         .unwrap()
         .wrapped_token;
-    let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
+    let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
-    let (order, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
+    let (order, msg, _) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1324,7 +1324,7 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
         )
         .unwrap();
     assert_eq!(
-        st.balance_of(&quote_token, order.receiver),
+        st.balance_of(&quote_token_addr, order.receiver),
         order.quote_amount
     );
 }
@@ -1443,7 +1443,7 @@ fn test_recv_packet_native_new_wrapped_origin_set() {
             wasm_execute(st.zkgm.clone(), &msg, vec![]).unwrap().into(),
         )
         .unwrap();
-    let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
+    let quote_token_addr = Addr::unchecked(quote_token);
     let token_origin = TOKEN_ORIGIN
         .load(
             st.app.contract_storage(&st.zkgm).as_ref(),
@@ -1476,9 +1476,9 @@ fn test_recv_packet_native_base_dont_cover_quote_only_maker() {
         )
         .unwrap()
         .wrapped_token;
-    let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
+    let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
-    let (_, msg, _) = IncomingOrderBuilder::new(quote_token)
+    let (_, msg, _) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1507,10 +1507,9 @@ fn test_recv_packet_native_to_native_only_maker() {
     let path = U256::ZERO;
     let destination_channel_id = ChannelId!(10);
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
-    let quote_token = Bytes::from(b"muno");
-    let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
+    let quote_token_addr = Addr::unchecked("muno");
     assert!(st.app.contract_data(&quote_token_addr).is_err());
-    let (_, msg, _) = IncomingOrderBuilder::new(quote_token)
+    let (_, msg, _) = IncomingOrderBuilder::new(quote_token_addr.into())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1536,10 +1535,9 @@ fn test_recv_packet_native_quote_maker_fill_ok() {
     let path = U256::ZERO;
     let destination_channel_id = ChannelId!(10);
     let base_token = Bytes::from(hex_literal::hex!("DEAFBABE"));
-    let quote_token = Bytes::from(b"muno");
-    let quote_token_addr = Addr::unchecked(std::str::from_utf8(&quote_token).unwrap());
+    let quote_token_addr = Addr::unchecked("muno");
     assert!(st.app.contract_data(&quote_token_addr).is_err());
-    let (order, msg, _) = IncomingOrderBuilder::new(quote_token)
+    let (order, msg, _) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1630,7 +1628,7 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
         )
         .unwrap();
 
-    let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
+    let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.to_string())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1665,16 +1663,10 @@ fn test_recv_packet_native_unwrap_wrapped_token_ok() {
     );
 
     // balance is reduced to 1000
-    assert_eq!(
-        st.balance_of(&wrapped_token.as_bytes().into(), st.minter.clone()),
-        1000
-    );
+    assert_eq!(st.balance_of(&wrapped_token, st.minter.clone()), 1000);
 
     // receiver's balance is now 0xCAFEBABE
-    assert_eq!(
-        st.balance_of(&wrapped_token.as_bytes().into(), order.receiver),
-        0xCAFEBABE
-    );
+    assert_eq!(st.balance_of(&wrapped_token, order.receiver), 0xCAFEBABE);
 
     let channel_balance = CHANNEL_BALANCE
         .load(
@@ -1739,7 +1731,7 @@ fn test_recv_packet_native_unwrap_native_token_ok() {
         )
         .unwrap();
 
-    let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
+    let (order, msg, packet) = IncomingOrderBuilder::new(wrapped_token.to_string())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1837,7 +1829,7 @@ fn test_recv_packet_native_unwrap_channel_no_outstanding() {
     )
     .unwrap();
 
-    let (_, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
+    let (_, msg, packet) = IncomingOrderBuilder::new(wrapped_token.to_string())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)
@@ -1918,7 +1910,7 @@ fn test_recv_packet_native_unwrap_path_no_outstanding() {
     )
     .unwrap();
 
-    let (_, msg, packet) = IncomingOrderBuilder::new(wrapped_token.as_bytes().into())
+    let (_, msg, packet) = IncomingOrderBuilder::new(wrapped_token.to_string())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
         .with_path(path)

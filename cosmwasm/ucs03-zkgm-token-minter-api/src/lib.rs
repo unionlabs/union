@@ -2,6 +2,7 @@ use cosmwasm_schema::cw_serde;
 use cosmwasm_std::{Addr, Binary, Uint128};
 use enumorph::Enumorph;
 use ibc_union_spec::ChannelId;
+use unionlabs::primitives::H256;
 
 #[cw_serde]
 pub enum TokenMinterInitMsg {
@@ -84,6 +85,32 @@ pub enum WrappedTokenMsg {
         /// just arbitrary bytes
         token: Binary,
     },
+    /// Create a new denom
+    ///
+    /// - CW20: This should be a predetermined address that can be deterministically calculated. The admin
+    /// of the token contract MUST be the given `zkgm_admin`.
+    /// - Native: The denom is expected to be the denom of the token. The given decimal is expected to be set in `denom_units`
+    /// right after the first `DenomUnit` which always have a `0` exponent.
+    CreateDenomV2 {
+        /// The full denom that is defined by the underlying minter. Note that this will always
+        /// be the output of `PredictWrappedToken` query.
+        subdenom: String,
+        /// The ZKGM path that is sent by the origin chain
+        path: Binary,
+        /// The destination(this chain) channel id
+        channel_id: ChannelId,
+        /// The original token denomination. Different chains can have different denoms, so this is
+        /// just arbitrary bytes
+        token: Binary,
+        /// Custom implementation:
+        /// - CW20: abi encoded (admin, code_id)
+        /// - Native: abi encoded (denom, metadata)
+        implementation: Binary,
+        /// Custom initialization message:
+        /// - CW20: frissitheto init message
+        /// - Native: empty
+        initializer: Binary,
+    },
     /// Mint tokens
     ///
     /// - CW20 & Native: Nothing fancy, just mint the tokens to the given address. `denom` is defined by the `PredictWrappedToken` query.
@@ -122,6 +149,12 @@ pub enum QueryMsg {
         path: String,
         channel_id: ChannelId,
         token: Binary,
+    },
+    PredictWrappedTokenV2 {
+        path: String,
+        channel_id: ChannelId,
+        token: Binary,
+        metadata_image: H256,
     },
 }
 
