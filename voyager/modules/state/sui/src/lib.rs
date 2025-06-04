@@ -33,11 +33,6 @@ use voyager_sdk::{
     rpc::{types::StateModuleInfo, StateModuleServer},
 };
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    Module::run().await
-}
-
 #[derive(clap::Subcommand)]
 pub enum Cmd {
     ChainId,

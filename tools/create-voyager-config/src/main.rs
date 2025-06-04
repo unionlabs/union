@@ -28,7 +28,7 @@ use ucs04::{
 };
 use unionlabs_primitives::H160;
 use voyager_core::context::{ModuleConfig, ModulesConfig};
-use voyager_primitives::{ChainId, ConsensusType};
+use voyager_primitives::{ChainId, ConsensusType, IbcSpecId};
 use voyager_rpc::types::FinalityModuleInfo;
 
 pub const SUPPORTED_FAMILIES: &[Family] = &[
@@ -52,6 +52,7 @@ pub mod keys {
     pub const L1_CONTRACT_ADDRESS: &str = "l1_contract_address";
     pub const L2_ORACLE_ADDRESS: &str = "l2_oracle_address";
     pub const L1_CHAIN_ID: &str = "l1_chain_id";
+    pub const IBC_HOST_CONTRACT_ADDRESS: &str = "ibc_host_contract_address";
 }
 
 #[derive(Parser)]
@@ -522,22 +523,27 @@ impl<'a> Context<'a> {
     fn state_module(
         &mut self,
         id: &UniversalChainId<'a>,
+        ibc_spec_id: IbcSpecId,
     ) -> Result<ModuleConfig<FinalityModuleInfo>> {
-        Ok(match id.family() {
-            Babylon | Osmosis | Sei | Stargaze | Stride | Xion => module_config!(self {
-                info: FinalityModuleInfo {
-                    chain_id: ChainId::new(id.id().to_string()),
-                    consensus_type: ConsensusType::new(ConsensusType::TENDERMINT),
-                },
-                config: voyager_finality_module_tendermint::Config {
-                    rpc_url: self.read_value(
-                        &format!("{id} finality rpc url"),
-                        id,
-                        keys::COSMOS_RPC_URL
-                    )?,
-                },
-            }),
-            Bob => {
+        Ok(match (id.family(), ibc_spec_id.as_str()) {
+            (Babylon | Osmosis | Stargaze | Stride | Xion, IbcSpecId::UNION) => {
+                module_config!(self {
+                    info: FinalityModuleInfo {
+                        chain_id: ChainId::new(id.id().to_string()),
+                        consensus_type: ConsensusType::new(ConsensusType::TENDERMINT),
+                    },
+                    config: voyager_state_module_cosmos_sdk_union::Config {
+                        rpc_url: self.read_value(
+                            &format!("{id} finality rpc url"),
+                            id,
+                            keys::COSMOS_RPC_URL
+                        )?,
+                        ibc_host_contract_address: self
+                            .get_required_default(id, keys::IBC_HOST_CONTRACT_ADDRESS)?,
+                    },
+                })
+            }
+            (Bob, IbcSpecId::UNION) => {
                 let l1_chain_id =
                     self.get_required_default::<UniversalChainId>(id, keys::L1_CHAIN_ID);
 

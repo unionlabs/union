@@ -258,6 +258,7 @@ members = [
   "lib/voyager-plugin-protocol",
   "lib/wasm-client-type",
   "lib/sui-verifier",
+  "lib/deployments",
 ]
 
 [workspace.package]
@@ -417,6 +418,7 @@ state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/sta
 chain-kitchen    = { path = "lib/chain-kitchen", default-features = false }
 solidity-slot    = { path = "lib/solidity-slot", default-features = false }
 ucs04            = { path = "lib/ucs04", default-features = false }
+deployments            = { path = "lib/deployments", default-features = false }
 wasm-client-type = { path = "lib/wasm-client-type", default-features = false }
 
 voyager-client-module-arbitrum               = { path = "voyager/modules/client/arbitrum", default-features = false }
@@ -438,6 +440,11 @@ voyager-finality-module-ethereum    = { path = "voyager/modules/finality/ethereu
 voyager-finality-module-sui         = { path = "voyager/modules/finality/sui", default-features = false }
 voyager-finality-module-tendermint  = { path = "voyager/modules/finality/tendermint", default-features = false }
 voyager-finality-module-trusted-mpt = { path = "voyager/modules/finality/trusted-mpt", default-features = false }
+
+voyager-state-module-cosmos-sdk       = { path = "voyager/modules/state/cosmos-sdk", default-features = false }
+voyager-state-module-cosmos-sdk-union = { path = "voyager/modules/state/cosmos-sdk-union", default-features = false }
+voyager-state-module-ethereum         = { path = "voyager/modules/state/ethereum", default-features = false }
+voyager-state-module-sui              = { path = "voyager/modules/state/sui", default-features = false }
 
 # =====================
 # external dependencies

@@ -40,11 +40,6 @@ use voyager_sdk::{
 
 const IBC_STORE_PATH: &str = "store/ibc/key";
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    <Module as StateModule<IbcClassic>>::run().await;
-}
-
 #[derive(clap::Subcommand)]
 pub enum Cmd {
     ChainId,

@@ -44,3 +44,8 @@ voyager-finality-module-cometbls   = { workspace = true }
 voyager-finality-module-ethereum   = { workspace = true }
 voyager-finality-module-sui        = { workspace = true }
 voyager-finality-module-tendermint = { workspace = true }
+
+voyager-state-module-cosmos-sdk       = { workspace = true }
+voyager-state-module-cosmos-sdk-union = { workspace = true }
+voyager-state-module-ethereum         = { workspace = true }
+voyager-state-module-sui              = { workspace = true }

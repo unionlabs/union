@@ -3887,6 +3887,10 @@ dependencies = [
  "voyager-finality-module-tendermint",
  "voyager-primitives",
  "voyager-rpc",
+ "voyager-state-module-cosmos-sdk",
+ "voyager-state-module-cosmos-sdk-union",
+ "voyager-state-module-ethereum",
+ "voyager-state-module-sui",
 ]
 
 [[package]]
@@ -4558,6 +4562,17 @@ dependencies = [
  "schemafy",
  "serde",
  "serde_json",
+]
+
+[[package]]
+name = "deployments"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "ucs04",
+ "unionlabs-primitives",
+ "voyager-primitives",
 ]
 
 [[package]]
@@ -15480,6 +15495,7 @@ dependencies = [
  "clap 4.5.39",
  "cometbft-rpc",
  "cometbls-light-client-types",
+ "deployments",
  "derive_more 0.99.20",
  "embed-commit",
  "ethereum-light-client-types",

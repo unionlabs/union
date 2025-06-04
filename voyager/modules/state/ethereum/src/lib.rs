@@ -41,11 +41,6 @@ use voyager_sdk::{
     rpc::{types::StateModuleInfo, StateModuleServer, MISSING_STATE_ERROR_CODE},
 };
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    Module::run().await
-}
-
 pub struct Module {
     pub chain_id: ChainId,
 

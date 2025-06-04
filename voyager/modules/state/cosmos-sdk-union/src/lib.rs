@@ -37,11 +37,6 @@ use voyager_sdk::{
     rpc::{types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
 
-#[tokio::main(flavor = "multi_thread")]
-async fn main() {
-    <Module as StateModule<IbcUnion>>::run().await;
-}
-
 #[derive(clap::Subcommand)]
 pub enum Cmd {
     ChainId,
