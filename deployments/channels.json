@@ -75,6 +75,10 @@
     "2": {
       "comments": "corn.21000001 channel 3",
       "tags": ["canonical"]
+    },
+    "3": {
+      "comments": "union.union-testnet-10 channel 16",
+      "tags": ["canonical"]
     }
   },
   "xion.xion-testnet-2": {
