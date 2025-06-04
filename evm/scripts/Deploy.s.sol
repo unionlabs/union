@@ -1180,10 +1180,10 @@ contract GetDeployed is VersionedScript {
             )
         );
         implUCS03FOA = implUCS03FOA.serialize(
-            "args", abi.encode(handler, weth, rateLimitEnabled)
+            "args", abi.encode(weth, zkgmERC20, rateLimitEnabled)
         );
         impls.serialize(
-            UCS03Zkgm(payable(ucs03)).STAKE_IMPL().toHexString(), implUCS03FOA
+            UCS03Zkgm(payable(ucs03)).FOA_IMPL().toHexString(), implUCS03FOA
         );
 
         string memory implUCS03 = "implUCS03";
