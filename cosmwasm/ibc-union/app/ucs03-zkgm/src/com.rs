@@ -10,10 +10,9 @@ pub const OP_MULTIPLEX: u8 = 0x01;
 pub const OP_BATCH: u8 = 0x02;
 pub const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
 
-// Privileged instructions
-pub const OP_STAKE: u8 = 0xC1;
-pub const OP_UNSTAKE: u8 = 0xC2;
-pub const OP_WITHDRAW_STAKE: u8 = 0xC3;
+pub const OP_STAKE: u8 = 0x04;
+pub const OP_UNSTAKE: u8 = 0x05;
+pub const OP_WITHDRAW_STAKE: u8 = 0x06;
 
 pub const ACK_ERR_ONLY_MAKER: &[u8] = &[0xDE, 0xAD, 0xC0, 0xDE];
 
