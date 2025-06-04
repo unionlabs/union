@@ -1145,13 +1145,14 @@ contract GetDeployed is VersionedScript {
         string memory implUCS03Send = "implUCS03Send";
         implUCS03Send.serialize(
             "contract",
-            string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03ZkgmSendImpl")
+            string("contracts/apps/ucs/03-zkgm/Send.sol:UCS03ZkgmSendImpl")
         );
         implUCS03Send = implUCS03Send.serialize(
             "args",
             abi.encode(
                 handler,
                 weth,
+                zkgmERC20,
                 nativeTokenName,
                 nativeTokenSymbol,
                 nativeTokenDecimals
@@ -1164,11 +1165,25 @@ contract GetDeployed is VersionedScript {
         string memory implUCS03Stake = "implUCS03Stake";
         implUCS03Stake.serialize(
             "contract",
-            string("contracts/apps/ucs/03-zkgm/Zkgm.sol:UCS03ZkgmStakeImpl")
+            string("contracts/apps/ucs/03-zkgm/Stake.sol:UCS03ZkgmStakeImpl")
         );
         implUCS03Stake = implUCS03Stake.serialize("args", abi.encode(handler));
         impls.serialize(
             UCS03Zkgm(payable(ucs03)).STAKE_IMPL().toHexString(), implUCS03Stake
+        );
+
+        string memory implUCS03FOA = "implUCS03FOA";
+        implUCS03FOA.serialize(
+            "contract",
+            string(
+                "contracts/apps/ucs/03-zkgm/FungibleAssetOrder.sol:UCS03ZkgmFungibleAssetOrderImpl"
+            )
+        );
+        implUCS03FOA = implUCS03FOA.serialize(
+            "args", abi.encode(handler, weth, rateLimitEnabled)
+        );
+        impls.serialize(
+            UCS03Zkgm(payable(ucs03)).STAKE_IMPL().toHexString(), implUCS03FOA
         );
 
         string memory implUCS03 = "implUCS03";
@@ -1179,11 +1194,9 @@ contract GetDeployed is VersionedScript {
             "args",
             abi.encode(
                 handler,
-                weth,
-                zkgmERC20,
-                rateLimitEnabled,
                 UCS03Zkgm(payable(ucs03)).SEND_IMPL(),
-                UCS03Zkgm(payable(ucs03)).STAKE_IMPL()
+                UCS03Zkgm(payable(ucs03)).STAKE_IMPL(),
+                UCS03Zkgm(payable(ucs03)).FOA_IMPL()
             )
         );
         impls = impls.serialize(implOf(ucs03).toHexString(), implUCS03);
