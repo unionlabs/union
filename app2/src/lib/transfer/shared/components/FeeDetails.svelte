@@ -6,9 +6,11 @@ import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { GasPriceMap } from "$lib/gasprice"
 import { GasPrice } from "$lib/gasprice/service"
-import { runPromiseExit, runPromiseExit$, runSync } from "$lib/runtime"
+import { runPromiseExit$, runSync } from "$lib/runtime"
+import { cn } from "$lib/utils"
+import { PriceOracle } from "@unionlabs/sdk/PriceOracle"
 import type { Chain } from "@unionlabs/sdk/schema/chain"
-import { Effect, Exit, Option as O, pipe } from "effect"
+import { Array as A, Cause, Effect, Exit, Option as O, pipe, Predicate, Unify } from "effect"
 import { slide } from "svelte/transition"
 import { transferData } from "../data/transfer-data.svelte"
 
@@ -151,24 +153,76 @@ const gasForChain = Effect.fn((chain: Chain) =>
   )
 )
 
-const gasPrices = runPromiseExit$(Effect.fn(() =>
+const gasPrices = runPromiseExit$(() =>
   pipe(
     Effect.all({
       source: Effect.transposeMapOption(transferData.sourceChain, gasForChain),
       destination: Effect.transposeMapOption(transferData.destinationChain, gasForChain),
     }, { concurrency: 2 }),
     Effect.delay("1 second"),
+  ), { onInterrupt: "none" })
+
+const usdOfChainGas = Effect.fn((chain: Chain) =>
+  pipe(
+    PriceOracle,
+    Effect.andThen((oracle) => oracle.of(chain.universal_chain_id)),
   )
-))
+)
+
+const usdPrices = runPromiseExit$(() =>
+  pipe(
+    Effect.all({
+      source: Effect.transposeMapOption(transferData.sourceChain, usdOfChainGas),
+      destination: Effect.transposeMapOption(transferData.destinationChain, usdOfChainGas),
+    }, { concurrency: 2 }),
+  )
+)
 
 const loading = $derived(pipe(
   O.all([gasPrices.current]),
   O.isNone,
 ))
 
-const calculating = $derived(pipe(
-  O.all([gasPrices.current]),
-  O.isNone,
+const calculating = false
+
+const errors = $derived.by(() => {
+  // TODO: extract to helper
+  const extractError = <E>(x: O.Option<Exit.Exit<any, E>>) =>
+    pipe(
+      x,
+      O.flatMap(Exit.causeOption),
+    )
+  return pipe(
+    [
+      extractError(gasPrices.current),
+      extractError(usdPrices.current),
+    ] as const,
+    A.getSomes,
+    Unify.unify,
+    A.map(Cause.squash),
+    A.map(x => (x as any)?.message),
+    A.filter(Predicate.isNotUndefined),
+  )
+})
+
+const gasDisplay = $derived(pipe(
+  gasPrices.current,
+  // TODO: extract to helper
+  O.flatMap(Exit.match({
+    onSuccess: O.some,
+    onFailure: O.none,
+  })),
+  O.getOrNull,
+))
+
+const usdDisplay = $derived(pipe(
+  usdPrices.current,
+  // TODO: extract to helper
+  O.flatMap(Exit.match({
+    onSuccess: O.some,
+    onFailure: O.none,
+  })),
+  O.getOrNull,
 ))
 
 $effect(() => {
@@ -178,11 +232,25 @@ $effect(() => {
 </script>
 
 <!-- NOTE: presently only **BOB -> BABYLON** and **BABYLON -> BOB** -->
-<pre>{JSON.stringify(gasPrices.current, null, 2)}</pre>
+<div>
+  <ul class="text-red-500">
+    {#each errors as error}
+      <li>{error}</li>
+    {/each}
+  </ul>
+  <b>GAS:</b>
+  <pre class="w-[350px] overflow-scroll">{JSON.stringify(gasDisplay, null, 2)}</pre>
+  <b>USD:</b>
+  <pre class="w-[350px] overflow-scroll">{JSON.stringify(usdDisplay, null, 2)}</pre>
+</div>
 <div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
   <button
-    class="w-full p-3 flex items-center justify-between bg-zinc-900 transition-colors text-left {open ? 'rounded-t-md' : 'rounded-md'} {loading ? 'cursor-default' : 'hover:bg-zinc-800 cursor-pointer'}"
+    class={cn(
+      "w-full p-3 flex items-center justify-between bg-zinc-900 transition-colors text-left",
+      open ? "rounded-t-md" : "rounded-md",
+      loading ? "cursor-default" : "hover:bg-zinc-800 cursor-pointer",
+    )}
     onclick={toggleExpanded}
     disabled={loading}
   >
@@ -200,7 +268,10 @@ $effect(() => {
     </div>
     {#if !loading}
       <SharpChevronDownIcon
-        class="size-5 text-zinc-400 transition-transform duration-200 {open ? 'rotate-180' : ''}"
+        class={cn(
+          "size-5 text-zinc-400 transition-transform duration-200",
+          open && "rotate-180",
+        )}
       />
     {/if}
   </button>

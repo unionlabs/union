@@ -15,6 +15,7 @@ import {
   RuntimeFlags,
   Stream,
 } from "effect"
+import { constVoid } from "effect/Function"
 import { flushSync } from "svelte"
 import { assert, describe, expect, it } from "vitest"
 import { runForkWithRuntime, runPromiseExitWithRuntime } from "./effect.svelte.js"
@@ -29,7 +30,7 @@ describe("Effect runes", () => {
 
   describe("runPromiseExit", () => {
     it("executes", async ({ onTestFinished }) => {
-      const asyncEffect = Effect.promise(async () => 1)
+      const asyncEffect = () => Effect.promise(async () => 1)
       let result = $state<AppliedReturn<typeof runPromiseExit, typeof asyncEffect> | null>(null)
       const cleanup = $effect.root(() => {
         result = runPromiseExit(asyncEffect)
@@ -40,14 +41,15 @@ describe("Effect runes", () => {
     })
     it("interrupts on cleanup", async () => {
       const latch = Deferred.unsafeMake<void>(FiberId.none)
-      const asyncEffect = pipe(
-        Deferred.complete(latch, Effect.void),
-        Effect.andThen(() => pipe(Effect.void, Effect.forever)),
-      )
+      const asyncEffect = () =>
+        pipe(
+          Deferred.complete(latch, Effect.void),
+          Effect.andThen(() => pipe(Effect.void, Effect.forever)),
+        )
       let result = $state<AppliedReturn<typeof runPromiseExit, typeof asyncEffect> | null>(null)
       const cleanup = $effect.root(() => {
         result = runPromiseExit(asyncEffect)
-        return () => result?.interrupt("some reason")
+        return () => result?.interrupt()
       })
       await Effect.runPromise(Deferred.await(latch))
       cleanup()
@@ -61,10 +63,11 @@ describe("Effect runes", () => {
     })
     it("is interruptible", async ({ onTestFinished }) => {
       const latch = Deferred.unsafeMake<void>(FiberId.none)
-      const asyncEffect = pipe(
-        Deferred.complete(latch, Effect.void),
-        Effect.andThen(() => pipe(Effect.void, Effect.forever)),
-      )
+      const asyncEffect = () =>
+        pipe(
+          Deferred.complete(latch, Effect.void),
+          Effect.andThen(() => pipe(Effect.void, Effect.forever)),
+        )
       let result = $state<AppliedReturn<typeof runPromiseExit, typeof asyncEffect> | null>(null)
       const cleanup = $effect.root(() => {
         result = runPromiseExit(asyncEffect)
@@ -80,6 +83,11 @@ describe("Effect runes", () => {
         )
       onTestFinished(cleanup)
     })
+    describe("onInterrupt", () => {
+      it.todo("ignore", constVoid)
+      it.todo("none", constVoid)
+      it.todo("error (default)", constVoid)
+    })
     it("accepts runtime", async ({ onTestFinished }) => {
       class A extends Context.Tag("MyService")<A, { readonly _: Effect.Effect<number> }>() {}
       const managedRuntime = ManagedRuntime.make(Layer.succeed(A, { _: Effect.succeed(1) }))
@@ -88,14 +96,15 @@ describe("Effect runes", () => {
       let result = $state<number>(0)
       const cleanup = $effect.root(() => {
         runForkLive(
-          pipe(
-            Effect.andThen(A, ({ _ }) => _),
-            Effect.flatMap(x =>
-              Effect.sync(() => {
-                result = x
-              })
+          () =>
+            pipe(
+              Effect.andThen(A, ({ _ }) => _),
+              Effect.flatMap(x =>
+                Effect.sync(() => {
+                  result = x
+                })
+              ),
             ),
-          ),
         )
       })
       expect(result).toStrictEqual(0)
@@ -108,7 +117,7 @@ describe("Effect runes", () => {
     it("provisions fiber reference", ({ onTestFinished }) => {
       let result = $state<ReturnType<typeof runFork> | null>(null)
       const cleanup = $effect.root(() => {
-        result = runFork(Effect.void.pipe(Effect.forever))
+        result = runFork(() => Effect.void.pipe(Effect.forever))
       })
       flushSync()
       // biome-ignore lint/style/noNonNullAssertion: flushed
@@ -121,17 +130,18 @@ describe("Effect runes", () => {
       const latch = Deferred.unsafeMake<void>(FiberId.none)
       const cleanup = $effect.root(() => {
         runFork(
-          pipe(
-            Stream.repeatValue(0),
-            Stream.take(3),
-            Stream.mapEffect(() =>
-              Effect.sync(() => {
-                count += 1
-              })
+          () =>
+            pipe(
+              Stream.repeatValue(0),
+              Stream.take(3),
+              Stream.mapEffect(() =>
+                Effect.sync(() => {
+                  count += 1
+                })
+              ),
+              Stream.onDone(() => Deferred.succeed(latch, undefined)),
+              Stream.runDrain,
             ),
-            Stream.onDone(() => Deferred.succeed(latch, undefined)),
-            Stream.runDrain,
-          ),
         )
       })
       expect(count).toBe(0)
@@ -143,7 +153,7 @@ describe("Effect runes", () => {
     it("cleans up fork fiber", async () => {
       let result = $state<ReturnType<typeof runFork> | null>(null)
       const cleanup = $effect.root(() => {
-        result = runFork(Effect.void.pipe(Effect.forever))
+        result = runFork(() => Effect.void.pipe(Effect.forever))
       })
       flushSync()
       // biome-ignore lint/style/noNonNullAssertion: flushed
