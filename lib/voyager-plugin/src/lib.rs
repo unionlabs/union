@@ -3,7 +3,7 @@ use std::{env::VarError, time::Duration};
 use opentelemetry::KeyValue;
 use opentelemetry_otlp::WithExportConfig;
 use serde::de::DeserializeOwned;
-use tracing::{debug_span, error, instrument, Instrument};
+use tracing::{debug_span, instrument, Instrument};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt, EnvFilter, Layer};
 use unionlabs::ErrorReporter;
 pub use voyager_plugin_protocol as protocol;
@@ -349,7 +349,7 @@ fn must_parse<T: DeserializeOwned>(config_str: &str) -> T {
     match serde_json::from_str::<T>(config_str) {
         Ok(ok) => ok,
         Err(err) => {
-            error!("invalid config: {}", ErrorReporter(err));
+            eprintln!("invalid config: {}", ErrorReporter(err));
             std::process::exit(INVALID_CONFIG_EXIT_CODE as i32);
         }
     }
