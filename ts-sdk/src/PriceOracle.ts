@@ -103,8 +103,13 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
   static Pyth = Layer.effect(
     PriceOracle,
     Effect.gen(function*() {
+      // XXX: source from chain info?
       const map: Record<UniversalChainId, string> = {
         [UniversalChainId.make("ethereum.11155111")]: "WETH",
+        [UniversalChainId.make("ethereum.1")]: "ETH",
+        [UniversalChainId.make("ethereum.17000")]: "ETH",
+        [UniversalChainId.make("babylon.bbn-1")]: "BABY",
+        [UniversalChainId.make("babylon.bbn-test-5")]: "BABY",
       }
 
       const symbolFromId = Effect.fn("symbolFromId")(
@@ -152,31 +157,35 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
 
       // TODO: probably make this accept variadic arguments or ensure array; alternatively
       //       this can be abstracted or implement concurrency/batching
-      const feedIdOf = Effect.fn("feedIdOf")((symbol: string) =>
-        pipe(
-          queryPriceFeed(symbol),
-          // TODO: move into helper or extend `queryPriceFeed`
-          Effect.flatMap(flow(
-            A.findFirst(x =>
-              // TODO: check safely
-              x.attributes["base"] === symbol && x.attributes["quote_currency"] === "USD"
+      const feedIdOf = yield* Effect.cachedFunction(
+        Effect.fn("feedIdOf")((symbol: string) =>
+          pipe(
+            queryPriceFeed(symbol),
+            // TODO: move into helper or extend `queryPriceFeed`
+            Effect.flatMap(flow(
+              A.findFirst(x =>
+                // TODO: check safely
+                x.attributes["base"] === symbol && x.attributes["quote_currency"] === "USD"
+              ),
+              O.map(({ id, attributes }) => ({
+                id,
+                url: `https://www.pyth.network/price-feeds/${
+                  attributes["asset_type"].toLowerCase()
+                }-${attributes["base"].toLowerCase()}-${
+                  attributes["quote_currency"].toLowerCase()
+                }`,
+              })),
+            )),
+            Effect.catchTag(
+              "NoSuchElementException",
+              (cause) =>
+                new PriceError({
+                  message: `Failed to capture feed ID for ${symbol}.`,
+                  cause,
+                }),
             ),
-            O.map(({ id, attributes }) => ({
-              id,
-              url: `https://www.pyth.network/price-feeds/${
-                attributes["asset_type"].toLowerCase()
-              }-${attributes["base"].toLowerCase()}-${attributes["quote_currency"].toLowerCase()}`,
-            })),
-          )),
-          Effect.catchTag(
-            "NoSuchElementException",
-            (cause) =>
-              new PriceError({
-                message: `Failed to capture feed ID for ${symbol}.`,
-                cause,
-              }),
-          ),
-        )
+          )
+        ),
       )
 
       const getLatestPriceUpdate = Effect.fn("getLatestPriceUpdates")(
