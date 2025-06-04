@@ -36,19 +36,9 @@
           "height": 461766,
           "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
         },
-        "movement": {
-          "address": "union1m2hhspxpqml6lujg0s38tdp3yfjasmfxnxvh9fnxpcjajucj0sgq54rs2g",
-          "height": 461794,
-          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
-        },
         "state-lens/ics23/mpt": {
           "address": "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904",
           "height": 461799,
-          "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
-        },
-        "state-lens/ics23/smt": {
-          "address": "union1z7xnvelm23fx2qqj8jhx9kgaa6qr94dxt5ljnapeljszluun0e8sw67mtt",
-          "height": 461803,
           "commit": "65cc0bc088732faafeaa372f5018ca92c691ed04"
         },
         "tendermint": {
@@ -113,19 +103,9 @@
           "height": 354894,
           "commit": "dd96526681f00b0c5df52f5db74db04043f0e64b"
         },
-        "movement": {
-          "address": "union1m2hhspxpqml6lujg0s38tdp3yfjasmfxnxvh9fnxpcjajucj0sgq54rs2g",
-          "height": 354898,
-          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
-        },
         "state-lens/ics23/mpt": {
           "address": "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904",
           "height": 354902,
-          "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
-        },
-        "state-lens/ics23/smt": {
-          "address": "union1z7xnvelm23fx2qqj8jhx9kgaa6qr94dxt5ljnapeljszluun0e8sw67mtt",
-          "height": 354906,
           "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91"
         },
         "tendermint": {
@@ -190,11 +170,11 @@
         "ucs03": {
           "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
           "height": 714737,
-          "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba",
+          "commit": "207390ccab742eae1dba672203f153951474044e",
           "minter": {
             "type": "cw20",
             "address": "bbn1sakazthycqgzer50nqgr5ta4vy3gwz8wxla3s8rd8pql4ctmz5qssg39sf",
-            "commit": "2a09e8e6b570292fe117c5009bbf22ca140099ba"
+            "commit": "207390ccab742eae1dba672203f153951474044e"
           }
         }
       }
@@ -684,6 +664,11 @@
           "height": 2864405,
           "commit": "88b294bf58128e60324735bec76e3b90a264a858"
         },
+        "state-lens/ics23/ics23": {
+          "address": "xion1ndv9vcehelnetc8dqfkp77um6e3vxamv25k5lxlgs70kfq4n89pqhgrevz",
+          "height": 3797628,
+          "commit": "f38b91437c5c738c678bcd7adb0c0c73ba56229c"
+        },
         "state-lens/ics23/mpt": {
           "address": "xion1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufstvlas8",
           "height": 2864414,
@@ -758,7 +743,7 @@
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
           "height": 169277356,
-          "commit": "6187819079b3acb603e4d8c2d71ea6bd94d48e87"
+          "commit": "3572c2b07bef3074b1b91a88fd95964158b8f9a0"
         }
       }
     }
