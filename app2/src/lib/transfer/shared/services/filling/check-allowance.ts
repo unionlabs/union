@@ -5,6 +5,7 @@ import {
 } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { isValidBech32ContractAddress } from "@unionlabs/client"
+import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import { CosmWasmClientSource, createCosmWasmClient } from "@unionlabs/sdk/cosmos"
 import {
   createViemPublicClient,
@@ -25,7 +26,9 @@ export class ApprovalStep extends Data.TaggedClass("ApprovalStep")<{
   currentAllowance: bigint
 }> {}
 
-function gatherNeededAmounts(contexts: Array<{ baseToken: string; baseAmount: bigint }>) {
+function gatherNeededAmounts(
+  contexts: Array<{ baseToken: string; baseAmount: bigint }>,
+) {
   const map = new Map<string, bigint>()
   for (const { baseToken, baseAmount } of contexts) {
     const current = map.get(baseToken) ?? 0n
@@ -48,37 +51,44 @@ export function checkAllowances(
     const spender = firstIntent.ucs03address
 
     const neededMap = gatherNeededAmounts(
-      context.intents.map(({ baseToken, baseAmount }) => ({ baseToken, baseAmount })),
+      context.intents.map(({ baseToken, baseAmount }) => ({
+        baseToken,
+        baseAmount,
+      })),
     )
     const tokenAddresses = [...neededMap.keys()]
 
     const allowances = yield* Match.value(chain.rpc_type).pipe(
-      Match.when(
-        "evm",
-        () =>
-          handleEvmAllowances(tokenAddresses.map(ensureHex), sender, ensureHex(spender), chain)
-            .pipe(
-              Effect.mapError(err =>
-                new AllowanceCheckError({
-                  message: (err as Error).message ?? "unknown message",
-                  cause: err,
-                })
-              ),
-            ),
-      ),
-      Match.when("cosmos", () =>
-        handleCosmosAllowances(tokenAddresses, sender, chain).pipe(
-          Effect.mapError(err =>
-            new AllowanceCheckError({
-              message: "Failed to check cosmos balance",
-              cause: err,
-            })
+      Match.when("evm", () =>
+        handleEvmAllowances(
+          tokenAddresses.map(ensureHex),
+          sender,
+          ensureHex(spender),
+          chain,
+        ).pipe(
+          Effect.mapError(
+            (err) =>
+              new AllowanceCheckError({
+                message: (err as Error).message ?? "unknown message",
+                cause: err,
+              }),
           ),
         )),
-      Match.orElse((x) =>
-        new AllowanceCheckError({
-          message: `Could not match RPC type ${x}`,
-        })
+      Match.when("cosmos", () =>
+        handleCosmosAllowances(tokenAddresses, sender, chain).pipe(
+          Effect.mapError(
+            (err) =>
+              new AllowanceCheckError({
+                message: "Failed to check cosmos balance",
+                cause: err,
+              }),
+          ),
+        )),
+      Match.orElse(
+        (x) =>
+          new AllowanceCheckError({
+            message: `Could not match RPC type ${x}`,
+          }),
       ),
     )
 
@@ -123,11 +133,31 @@ const handleEvmAllowances = (
     })
 
     const results = yield* Effect.all(
-      tokenAddresses.map(tokenAddress =>
+      tokenAddresses.map((tokenAddress) =>
         Effect.gen(function*() {
-          const allowance = yield* readErc20Allowance(tokenAddress, sender, spender)
+          // Check if this is a gas token - gas tokens don't have allowance functions
+          const gasTokenAddress = GAS_DENOMS[sourceChain.universal_chain_id].address
+          if (gasTokenAddress === tokenAddress) {
+            // Gas tokens have infinite allowance (no approval needed)
+            return {
+              token: tokenAddress,
+              allowance: BigInt(
+                "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+              ),
+            }
+          }
+
+          const allowance = yield* readErc20Allowance(
+            tokenAddress,
+            sender,
+            spender,
+          )
           return { token: tokenAddress, allowance }
-        }).pipe(Effect.provideService(ViemPublicClient, { client: publicClientSource }))
+        }).pipe(
+          Effect.provideService(ViemPublicClient, {
+            client: publicClientSource,
+          }),
+        )
       ),
     )
 
@@ -138,7 +168,10 @@ export const handleCosmosAllowances = (
   tokenAddresses: Array<string>,
   sender: AddressCanonicalBytes,
   sourceChain: Chain,
-): Effect.Effect<Array<{ token: string; allowance: bigint }>, CosmosQueryError> =>
+): Effect.Effect<
+  Array<{ token: string; allowance: bigint }>,
+  CosmosQueryError
+> =>
   Effect.gen(function*() {
     const rpcUrlOpt = sourceChain.getRpcUrl("rpc")
     if (Option.isNone(rpcUrlOpt) || !sourceChain.toCosmosDisplay) {
@@ -152,7 +185,9 @@ export const handleCosmosAllowances = (
 
     const rpcUrl = rpcUrlOpt.value
     const cosmwasmClient = yield* createCosmWasmClient(rpcUrl).pipe(
-      Effect.mapError(err => new CosmosQueryError({ token: "N/A", cause: err })),
+      Effect.mapError(
+        (err) => new CosmosQueryError({ token: "N/A", cause: err }),
+      ),
     )
 
     const isNativeToken = (token: string): boolean => /^u[a-zA-Z]+$/.test(token)
@@ -168,36 +203,54 @@ export const handleCosmosAllowances = (
 
         const decoded = yield* Effect.try(() => fromHex(token, "string")).pipe(
           Effect.mapError(
-            err => new CosmosQueryError({ token, cause: `Hex decoding failed: ${err}` }),
+            (err) =>
+              new CosmosQueryError({
+                token,
+                cause: `Hex decoding failed: ${err}`,
+              }),
           ),
         )
         return isValidBech32ContractAddress(decoded)
       })
     }
 
-    const contractTokenCandidates = tokenAddresses.filter(token => !isNativeToken(token))
-    const contractTokens = yield* Effect.filter(contractTokenCandidates, isContractToken)
+    const contractTokenCandidates = tokenAddresses.filter(
+      (token) => !isNativeToken(token),
+    )
+    const contractTokens = yield* Effect.filter(
+      contractTokenCandidates,
+      isContractToken,
+    )
 
     if (contractTokens.length === 0) {
       return []
     }
 
     const checks = yield* Effect.all(
-      contractTokens.map(tokenAddress =>
+      contractTokens.map((tokenAddress) =>
         Effect.gen(function*() {
           const owner = yield* sourceChain
             // XXX: remove explicit transformers in favor of generic
             .toCosmosDisplay(sender as AddressCosmosCanonical)
-            .pipe(Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err })))
+            .pipe(
+              Effect.mapError(
+                (err) => new CosmosQueryError({ token: tokenAddress, cause: err }),
+              ),
+            )
 
           const spender = sourceChain.minter_address_display
           let bech32Address: string | null = null
 
-          if (!isHex(tokenAddress) && isValidBech32ContractAddress(tokenAddress)) {
+          if (
+            !isHex(tokenAddress)
+            && isValidBech32ContractAddress(tokenAddress)
+          ) {
             bech32Address = tokenAddress
           } else if (isHex(tokenAddress)) {
             const decoded = yield* Effect.try(() => fromHex(tokenAddress, "string")).pipe(
-              Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err })),
+              Effect.mapError(
+                (err) => new CosmosQueryError({ token: tokenAddress, cause: err }),
+              ),
             )
             if (isValidBech32ContractAddress(decoded)) {
               bech32Address = decoded
@@ -212,11 +265,19 @@ export const handleCosmosAllowances = (
             cosmwasmClient.queryContractSmart(bech32Address, {
               allowance: { owner, spender },
             })
-          ).pipe(Effect.mapError(err => new CosmosQueryError({ token: tokenAddress, cause: err })))
+          ).pipe(
+            Effect.mapError(
+              (err) => new CosmosQueryError({ token: tokenAddress, cause: err }),
+            ),
+          )
 
           const allowance = result.allowance ? BigInt(result.allowance) : 0n
           return { token: tokenAddress, allowance }
-        }).pipe(Effect.provideService(CosmWasmClientSource, { client: cosmwasmClient }))
+        }).pipe(
+          Effect.provideService(CosmWasmClientSource, {
+            client: cosmwasmClient,
+          }),
+        )
       ),
     )
 

@@ -55,7 +55,7 @@ export const createEvmToEvmFungibleAssetOrder = (intent: EvmToEvmIntent) =>
   Effect.gen(function*() {
     yield* guardAgainstZeroAmount(intent)
     const sourceClient = (yield* ViemPublicClientSource).client
-    const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
+    const tokenMeta = yield* readErc20Meta(intent.baseToken as Address, intent.sourceChainId).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient }),
     )
 
@@ -113,7 +113,7 @@ export const createEvmToCosmosFungibleAssetOrder = (intent: EvmToCosmosIntent) =
     yield* Effect.logTrace("creating client")
     const sourceClient = (yield* ViemPublicClientSource).client
     yield* Effect.logTrace("reading erc20 meta")
-    const tokenMeta = yield* readErc20Meta(intent.baseToken as Address).pipe(
+    const tokenMeta = yield* readErc20Meta(intent.baseToken as Address, intent.sourceChainId).pipe(
       Effect.provideService(ViemPublicClient, { client: sourceClient }),
     )
 
