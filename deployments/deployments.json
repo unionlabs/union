@@ -333,7 +333,7 @@
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
           "height": 3646605,
-          "commit": "2e2f466cb49e21137f6415d573e5372e8609dd96"
+          "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
         },
         "state-lens/ics23/smt": {
           "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
@@ -350,7 +350,7 @@
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
           "height": 3646606,
-          "commit": "8d545161f9cd4b04c50328bfa63265e9b825c2d1"
+          "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
         }
       }
     }
@@ -387,7 +387,7 @@
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
           "height": 8088108,
-          "commit": "2e2f466cb49e21137f6415d573e5372e8609dd96"
+          "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
         },
         "state-lens/ics23/smt": {
           "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
@@ -404,7 +404,7 @@
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
           "height": 8088109,
-          "commit": "7fa6e1955dde62dca7704c733dc1d84adeb3296e"
+          "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
         }
       }
     }
@@ -495,7 +495,7 @@
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
           "height": 10951500,
-          "commit": "aa90386763b85895fc7accb2045d6397f467dc0a"
+          "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
         },
         "state-lens/ics23/smt": {
           "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
@@ -512,7 +512,7 @@
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
           "height": 10951500,
-          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+          "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
         }
       }
     }
@@ -603,7 +603,7 @@
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
           "height": 181415,
-          "commit": "6896f31e61941bbb52a846338879c68b0a21bbe5"
+          "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
         },
         "state-lens/ics23/smt": {
           "address": "0xd411236ab864284374ae95b23b747b97bfca9207",
@@ -620,7 +620,7 @@
         "ucs03": {
           "address": "0x5fbe74a283f7954f10aa04c2edf55578811aeb03",
           "height": 181417,
-          "commit": "7fa6e1955dde62dca7704c733dc1d84adeb3296e"
+          "commit": "f24add34d7a8ae2a8038f0cf4446845e5bb8397d"
         }
       }
     }
