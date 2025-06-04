@@ -61,8 +61,8 @@
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@effect/platform": "^0.82",
-    "effect": "^3.15",
+    "@effect/platform": "^0.84",
+    "effect": "^3.16",
     "viem": "^2"
   },
   "devDependencies": {
@@ -71,12 +71,11 @@
     "@cosmjs/math": "^0.33.1",
     "@cosmjs/proto-signing": "^0.33.0",
     "@effect/build-utils": "^0.7.7",
-    "@effect/platform": "0.82.4",
+    "@effect/platform": "0.84.6",
     "@types/node": "^22.13.1",
     "babel-plugin-annotate-pure-calls": "^0.5.0",
     "dpdm": "^3.14.0",
-    "effect": "3.15.2",
-    "husky": "^9.1.7",
+    "effect": "3.16.3",
     "vitest": "^3.0.5"
   },
   "dependencies": {

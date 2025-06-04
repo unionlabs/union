@@ -17,11 +17,11 @@ importers:
   .:
     devDependencies:
       '@effect/language-service':
-        specifier: ~0.16.6
-        version: 0.16.6
+        specifier: 0.18.0
+        version: 0.18.0
       '@effect/vitest':
-        specifier: ~0.22.2
-        version: 0.22.2(effect@3.15.2)(vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
+        specifier: 0.23.3
+        version: 0.23.3(effect@3.16.3)(vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
       typescript:
         specifier: ~5.8.2
         version: 5.8.2
@@ -62,11 +62,11 @@ importers:
         specifier: ^6.6.4
         version: 6.6.4
       '@effect/experimental':
-        specifier: ^0.46.4
-        version: 0.46.4(@effect/platform@0.82.4(effect@3.15.2))(effect@3.15.2)
+        specifier: 0.48.6
+        version: 0.48.6(@effect/platform@0.84.6(effect@3.16.3))(effect@3.16.3)
       '@effect/platform':
-        specifier: 0.82.4
-        version: 0.82.4(effect@3.15.2)
+        specifier: 0.84.6
+        version: 0.84.6(effect@3.16.3)
       '@eslint/compat':
         specifier: ^1.2.8
         version: 1.2.8(eslint@9.24.0(jiti@2.4.2))
@@ -131,8 +131,8 @@ importers:
         specifier: ^2.1.1
         version: 2.1.1
       effect:
-        specifier: 3.15.2
-        version: 3.15.2
+        specifier: 3.16.3
+        version: 3.16.3
       eslint:
         specifier: ^9.24.0
         version: 9.24.0(jiti@2.4.2)
@@ -249,8 +249,8 @@ importers:
         specifier: ^0.7.7
         version: 0.7.9
       '@effect/platform':
-        specifier: 0.82.4
-        version: 0.82.4(effect@3.15.2)
+        specifier: 0.84.6
+        version: 0.84.6(effect@3.16.3)
       '@types/node':
         specifier: ^22.13.1
         version: 22.13.14
@@ -261,11 +261,8 @@ importers:
         specifier: ^3.14.0
         version: 3.14.0
       effect:
-        specifier: 3.15.2
-        version: 3.15.2
-      husky:
-        specifier: ^9.1.7
-        version: 9.1.7
+        specifier: 3.16.3
+        version: 3.16.3
       vitest:
         specifier: ^3.0.5
         version: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
@@ -590,11 +587,11 @@ packages:
     engines: {node: '>=16.17.1'}
     hasBin: true
 
-  '@effect/experimental@0.46.4':
-    resolution: {integrity: sha512-jKym3mkV7Z1fK7Kg+Wuv3XnV/DqjSRBNdWFCAz7NHAn8noGccXp3eWVui5JP/7KOZJ9gXj52ESJzkgk9PBy1rw==}
+  '@effect/experimental@0.48.6':
+    resolution: {integrity: sha512-Bc6R1ptf0kXrhcug+NzytXfF2lT9fy/xU6zRvAHFZVZ1F0Z3kQkzDIIol1cZIhFuzhVInzcKtnjAyTzvsAKHIA==}
     peerDependencies:
-      '@effect/platform': ^0.82.4
-      effect: ^3.15.2
+      '@effect/platform': ^0.84.6
+      effect: ^3.16.3
       ioredis: ^5
       lmdb: ^3
     peerDependenciesMeta:
@@ -603,18 +600,18 @@ packages:
       lmdb:
         optional: true
 
-  '@effect/language-service@0.16.6':
-    resolution: {integrity: sha512-12yL0eNusb+g43FZXvXacC5IKA+tRVSGEOtXMEEc/sK23NLbzwwzmC5q3IkAkLhLI8Wz+yoTKW0+/FvXD6+ZTg==}
+  '@effect/language-service@0.18.0':
+    resolution: {integrity: sha512-Wk7x6W7pI5C9ix/7xE2Ad9ruWrk26uJuc8IgVzxH98AoiHO1G0f8Cblj6N1WaLB0PTyQoQPmrNsIII2Th6ywuw==}
 
-  '@effect/platform@0.82.4':
-    resolution: {integrity: sha512-og5DIzx4wz7nIXd/loDfenXvV3c/NT+NDG+YJsi3g6a5Xb6xwrNJuX97sDaV2LJ29G3LroeVJCmYUmfdf/h5Vg==}
+  '@effect/platform@0.84.6':
+    resolution: {integrity: sha512-DjrGIK3rnAit/eHI+iDToiiFvlyAQrsBuLBhu5I5dkJ7+KGQXjSclR50V1bUrtkC5DlBrv0qNtbWskE23eZsHQ==}
     peerDependencies:
-      effect: ^3.15.2
+      effect: ^3.16.3
 
-  '@effect/vitest@0.22.2':
-    resolution: {integrity: sha512-EZudN92GRXqD1FLk7wW5yjW3HN5BEWnDoBoi01Pn5os+8+RxLU8Bk4cXcjhgWUDsHjoPzGRJTn42x6GvR7lTkA==}
+  '@effect/vitest@0.23.3':
+    resolution: {integrity: sha512-yIB+Cllk1txmtpdpVX95SdmM0/FHqapz4wGSWYTe0c/K9fhgL6t0t5WsLmgzlk0rGnSi0+U21AHmPynjgk6+ig==}
     peerDependencies:
-      effect: ^3.15.2
+      effect: ^3.16.3
       vitest: ^3.0.0
 
   '@esbuild/aix-ppc64@0.25.1':
@@ -2437,8 +2434,8 @@ packages:
     resolution: {integrity: sha512-eJAgf9pdv214Hn98FlUzclRMYWF7WfoLlkS9nWMTm1qcCwn6Ad4EGD9lr9HXMBfSrZhYQujRE+p0adPRkctC6A==}
     engines: {bun: '>=1', deno: '>=2', node: '>=16'}
 
-  effect@3.15.2:
-    resolution: {integrity: sha512-0JNwvfs4Wwbo3f6IOydBFlp+zxuO8Iny2UAWNW3+FNn9x8FJf7q67QnQagUZgPl/BLl/xuPLVksrmNyIrJ8k/Q==}
+  effect@3.16.3:
+    resolution: {integrity: sha512-SWndb1UavNWvet1+hnkU4qp3EHtnmDKhUeP14eB+7vf/2nCFlM77/oIjdDeZctveibNjE65P9H/sBBmF0NTy/w==}
 
   electron-to-chromium@1.5.128:
     resolution: {integrity: sha512-bo1A4HH/NS522Ws0QNFIzyPcyUUNV/yyy70Ho1xqfGYzPUme2F/xr4tlEOuM6/A538U1vDA7a4XfCd1CKRegKQ==}
@@ -2916,11 +2913,6 @@ packages:
   https-proxy-agent@7.0.6:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
-
-  husky@9.1.7:
-    resolution: {integrity: sha512-5gs5ytaNjBrh5Ow3zrvdUUY+0VxIuWVL4i9irt6friV+BqdCfmV11CQTWMiBYWHbXhco+J1kHfTOUkePhCDvMA==}
-    engines: {node: '>=18'}
-    hasBin: true
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
@@ -3471,8 +3463,8 @@ packages:
     resolution: {integrity: sha512-P0efT1C9jIdVRefqjzOQ9Xml57zpOXnIuS+csaB4MdZbTdmGDLo8XhzBG1N7aO11gKDDkJvBLULeFTo46wwreA==}
     hasBin: true
 
-  msgpackr@1.11.2:
-    resolution: {integrity: sha512-F9UngXRlPyWCDEASDpTf6c9uNhGPTqnTeLVt7bN+bU1eajoR/8V9ys2BRaV5C/e5ihE6sJ9uPIKaYt6bFuO32g==}
+  msgpackr@1.11.4:
+    resolution: {integrity: sha512-uaff7RG9VIC4jacFW9xzL3jc0iM32DNHe4jYVycBcjUePT/Klnfj7pqtWJt9khvDFizmjN2TlYniYmSS2LIaZg==}
 
   multiformats@9.9.0:
     resolution: {integrity: sha512-HoMUjhH9T8DDBNT+6xzkrd9ga/XiBI4xLr58LJACwK6G3HTOPeMz4nB4KJs33L2BelrIJa7P0VuNaVF3hMYfjg==}
@@ -5269,24 +5261,24 @@ snapshots:
 
   '@effect/build-utils@0.7.9': {}
 
-  '@effect/experimental@0.46.4(@effect/platform@0.82.4(effect@3.15.2))(effect@3.15.2)':
+  '@effect/experimental@0.48.6(@effect/platform@0.84.6(effect@3.16.3))(effect@3.16.3)':
     dependencies:
-      '@effect/platform': 0.82.4(effect@3.15.2)
-      effect: 3.15.2
+      '@effect/platform': 0.84.6(effect@3.16.3)
+      effect: 3.16.3
       uuid: 11.1.0
 
-  '@effect/language-service@0.16.6': {}
+  '@effect/language-service@0.18.0': {}
 
-  '@effect/platform@0.82.4(effect@3.15.2)':
+  '@effect/platform@0.84.6(effect@3.16.3)':
     dependencies:
-      effect: 3.15.2
+      effect: 3.16.3
       find-my-way-ts: 0.1.5
-      msgpackr: 1.11.2
+      msgpackr: 1.11.4
       multipasta: 0.2.5
 
-  ? '@effect/vitest@0.22.2(effect@3.15.2)(vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))'
+  ? '@effect/vitest@0.23.3(effect@3.16.3)(vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))'
   : dependencies:
-      effect: 3.15.2
+      effect: 3.16.3
       vitest: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   '@esbuild/aix-ppc64@0.25.1':
@@ -7873,7 +7865,7 @@ snapshots:
       '@noble/curves': 1.8.1
       '@noble/hashes': 1.7.1
 
-  effect@3.15.2:
+  effect@3.16.3:
     dependencies:
       '@standard-schema/spec': 1.0.0
       fast-check: 3.23.2
@@ -8490,8 +8482,6 @@ snapshots:
       - supports-color
     optional: true
 
-  husky@9.1.7: {}
-
   iconv-lite@0.6.3:
     dependencies:
       safer-buffer: 2.1.2
@@ -9105,7 +9095,7 @@ snapshots:
       '@msgpackr-extract/msgpackr-extract-win32-x64': 3.0.3
     optional: true
 
-  msgpackr@1.11.2:
+  msgpackr@1.11.4:
     optionalDependencies:
       msgpackr-extract: 3.0.3
 

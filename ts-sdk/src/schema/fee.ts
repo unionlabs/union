@@ -1,6 +1,6 @@
 import { Array as A, Equal, Option as O, pipe, Schema as S } from "effect"
 
-const FeeValue = S.Positive
+const FeeValue = S.Int.pipe(S.greaterThanOrEqualTo(0))
 type FeeValue = typeof FeeValue.Type
 
 const Action = S.Union(
