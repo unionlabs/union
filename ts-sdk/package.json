@@ -53,10 +53,11 @@
   "scripts": {
     "build": "pnpm build-esm && pnpm build-annotate",
     "build-annotate": "babel dist/ --plugins annotate-pure-calls --out-dir dist/ --source-maps",
-    "build-esm": "tsc -b tsconfig.build.json",
-    "check": "tsc -b tsconfig.json",
-    "check:examples": "tsc -p tsconfig.examples.json",
+    "build-esm": "tspc -b tsconfig.build.json",
+    "check": "tspc -b tsconfig.json",
     "check:circular": "dpdm -T src",
+    "check:examples": "tspc -p tsconfig.examples.json",
+    "prepare": "ts-patch install -s",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -76,6 +77,7 @@
     "babel-plugin-annotate-pure-calls": "^0.5.0",
     "dpdm": "^3.14.0",
     "effect": "3.16.3",
+    "ts-patch": "^3.3.0",
     "vitest": "^3.0.5"
   },
   "dependencies": {

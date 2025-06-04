@@ -35,7 +35,12 @@
     "module": "NodeNext",
     "incremental": true,
     "removeComments": false,
-    "plugins": [{ "name": "@effect/language-service" }],
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "transform": "@effect/language-service/transform"
+      }
+    ],
     "paths": {
       "@unionlabs/sdk": ["./ts-sdk/src/index.js"],
       "@unionlabs/sdk/*": ["./ts-sdk/src/*.js", "./ts-sdk/src/*/index.js"],
