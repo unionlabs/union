@@ -35,33 +35,44 @@ export type RunPromiseExitResult<A, E> = {
  * **TODO:**
  * - This ignores errors; either enforce no known errors or catch all {@link Cause<void>}?
  */
+type RunPromiseExitOptions = {
+  ignoreInterrupt?: boolean | undefined
+}
 export const runPromiseExitWithRuntime: {
   <R = never>(
     runtime: Runtime.Runtime<R>,
-  ): <A, E, R>(effect: Effect.Effect<A, E, R>) => Simplify<RunPromiseExitResult<A, E>>
+  ): <A, E, R>(
+    effect: () => Effect.Effect<A, E, R>,
+    options?: RunPromiseExitOptions | undefined,
+  ) => Simplify<RunPromiseExitResult<A, E>>
   <A, E, R = never>(
-    effect: Effect.Effect<A, E, R>,
+    effect: () => Effect.Effect<A, E, R>,
     runtime: Runtime.Runtime<R>,
+    options?: RunPromiseExitOptions | undefined,
   ): Simplify<RunPromiseExitResult<A, E>>
 } = dual(
-  2,
+  3,
   <A, E, R>(
-    effect: Effect.Effect<A, E, R>,
+    effect: () => Effect.Effect<A, E, R>,
     runtime: Runtime.Runtime<R>,
+    options?: RunPromiseExitOptions | undefined,
   ): Simplify<RunPromiseExitResult<A, E>> => {
     const runPromiseExit = Runtime.runPromiseExit(runtime)
     let state = $state<Option.Option<Exit.Exit<A, E>>>(Option.none())
-    const controller = new AbortController()
-    const { signal } = controller
+    let controller = new AbortController()
 
     $effect(() => {
-      runPromiseExit(effect, { signal })
-        .then(Option.some)
+      controller = new AbortController()
+      runPromiseExit(
+        effect().pipe(
+          Effect.allowInterrupt,
+        ),
+        { signal: controller.signal },
+      ).then(Option.some)
         .then(x => {
           state = x
         })
-
-      return () => controller.abort()
+      return () => controller.abort("teardown")
     })
 
     return {
