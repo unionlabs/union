@@ -38,19 +38,6 @@ const feeConfig = {
   usdPrice: 0.13, // Gas price from service
 }
 
-// const sourceGasPrice = runPromiseExit$(
-//   Effect.gen(function*() {
-//     const chain = yield* transferData.sourceChain
-//     console.log("SOURCE CHAIN", chain.rpc_type)
-//     // const gasPrice = yield* GasPrice.pipe(
-//     //   GasPriceMap.provide(chain),
-//     // )
-//     const gasPrice = yield* GasPriceMap.get(chain)
-//     const result = yield* gasPrice.of
-//     return result
-//   }).pipe(Effect.scoped),
-// )
-
 const applyGasPrice = (gasUnits: number) => gasUnits * feeConfig.gasPrice
 const applyFeeMultiplier = (ubbnAmount: number) => ubbnAmount * (1 + feeConfig.feeMultiplier)
 const applyBatchDivision = (ubbnAmount: number) => ubbnAmount / feeConfig.batchDivideNumber
@@ -149,7 +136,7 @@ const gasForChain = Effect.fn((chain: Chain) =>
   pipe(
     GasPrice,
     Effect.andThen(({ of }) => of),
-    GasPriceMap.provide(chain),
+    Effect.provide(GasPriceMap.get(chain)),
   )
 )
 
@@ -159,7 +146,6 @@ const gasPrices = runPromiseExit$(() =>
       source: Effect.transposeMapOption(transferData.sourceChain, gasForChain),
       destination: Effect.transposeMapOption(transferData.destinationChain, gasForChain),
     }, { concurrency: 2 }),
-    Effect.delay("1 second"),
   ), { onInterrupt: "none" })
 
 const usdOfChainGas = Effect.fn((chain: Chain) =>
@@ -232,6 +218,7 @@ $effect(() => {
 </script>
 
 <!-- NOTE: presently only **BOB -> BABYLON** and **BABYLON -> BOB** -->
+{JSON.stringify(gasPrices.current, null, 2)}
 <div>
   <ul class="text-red-500">
     {#each errors as error}

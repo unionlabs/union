@@ -3,6 +3,7 @@ import { createViemPublicClient } from "@unionlabs/sdk/evm"
 import type { Chain } from "@unionlabs/sdk/schema"
 import {
   Array as A,
+  BigDecimal,
   Effect,
   flow,
   Layer,
@@ -26,33 +27,34 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
         rpc_type: "evm",
       },
       (chain) =>
-        Effect.gen(function*() {
-          const client = yield* pipe(
-            chain.toViemChain(),
-            Effect.flatMap((chain) =>
-              createViemPublicClient({
-                chain,
-                transport: http(),
-              })
-            ),
-          )
+        Layer.effect(
+          GasPrice.GasPrice,
+          Effect.gen(function*() {
+            const client = yield* pipe(
+              chain.toViemChain(),
+              Effect.flatMap((chain) =>
+                createViemPublicClient({
+                  chain,
+                  transport: http(),
+                })
+              ),
+            )
 
-          const of = Effect.tryPromise({
-            try: () => client.getGasPrice(),
-            catch: (cause) =>
-              new GasPriceError({
-                module: "Evm",
-                method: "of",
-                description: "some",
-                cause: unsafeCoerce<unknown, GetGasPriceErrorType>(cause),
-              }),
-          })
+            const of = Effect.tryPromise({
+              try: () => client.getGasPrice(),
+              catch: (cause) =>
+                new GasPriceError({
+                  module: "Evm",
+                  method: "of",
+                  description: "some",
+                  cause: unsafeCoerce<unknown, GetGasPriceErrorType>(cause),
+                }),
+            })
 
-          return GasPrice.GasPrice.of({
-            of,
-          })
-        }).pipe(
-          e => Layer.effect(GasPrice.GasPrice, e),
+            return GasPrice.GasPrice.of({
+              of,
+            })
+          }),
         ),
     ),
     Match.when(
@@ -60,44 +62,54 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
         rpc_type: "cosmos",
       },
       (chain) =>
-        Effect.gen(function*() {
-          const of = Effect.gen(function*() {
-            const config = yield* R.get(chainInfoMap, chain.chain_id).pipe(
-              Effect.mapError(() =>
-                new GasPriceError({
-                  module: "Cosmos",
-                  method: "of",
-                  description: `No chain configured with identifier ${chain.chain_id}.`,
-                })
-              ),
-            )
+        Layer.effect(
+          GasPrice.GasPrice,
+          Effect.gen(function*() {
+            const of = Effect.gen(function*() {
+              const config = yield* R.get(chainInfoMap, chain.chain_id).pipe(
+                Effect.mapError(() =>
+                  new GasPriceError({
+                    module: "Cosmos",
+                    method: "of",
+                    description: `No chain configured with identifier ${chain.chain_id}.`,
+                  })
+                ),
+              )
 
-            const avg = yield* pipe(
-              config.feeCurrencies,
-              A.head,
-              O.flatMap(flow(x => x.gasPriceStep, O.fromNullable)),
-              O.map(x => x.average),
-              Effect.mapError(() =>
-                new GasPriceError({
-                  module: "Cosmos",
-                  method: "of",
-                  description: `No chain configured with identifier ${chain.chain_id}.`,
-                })
-              ),
-            )
+              const avg = yield* pipe(
+                config.feeCurrencies,
+                A.head, // XXX: how to handle multiple?
+                O.flatMap(x =>
+                  O.Do.pipe(
+                    O.bind("average", () =>
+                      pipe(
+                        O.fromNullable(x.gasPriceStep),
+                        O.map(x => x.average),
+                      )),
+                    O.let("decimals", () => x.coinDecimals),
+                    O.map(({ average, decimals }) => BigInt(average * 10 ** decimals)),
+                  )
+                ),
+                Effect.mapError(() =>
+                  new GasPriceError({
+                    module: "Cosmos",
+                    method: "of",
+                    description: `No chain configured with identifier ${chain.chain_id}.`,
+                  })
+                ),
+              )
 
-            return BigInt(avg)
-          })
+              return avg
+            })
 
-          return GasPrice.GasPrice.of({
-            of,
-          })
-        }).pipe(
-          e => Layer.effect(GasPrice.GasPrice, e),
+            return GasPrice.GasPrice.of({
+              of,
+            })
+          }),
         ),
     ),
     Match.orElseAbsurd,
   ),
-  idleTimeToLive: "5 seconds", // XXX: ???
+  idleTimeToLive: "30 seconds",
   dependencies: [],
 }) {}
