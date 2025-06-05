@@ -979,7 +979,7 @@ _: {
               MINTER_ADDRESS="$(
                 curl -L \
                   --silent \
-                  '${rpc_url}/abci_query?path="/cosmwasm.wasm.v1.Query/SmartContractState"&data=0x'"$(
+                  '${rpc_url}/abci_query?path=%22/cosmwasm.wasm.v1.Query/SmartContractState%22&data=0x'"$(
                     buf \
                       convert \
                       ${cosmwasmProtoDefs}/cosmwasm.proto \
