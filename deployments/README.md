@@ -76,6 +76,7 @@ The file maps [UCS04] chain ids to an object containing channels on that chain. 
   Fees object structure:
 
   The keys of the `forward` and `reverse` fees objects specify the event type; the value specifies the amount of gas (as a string). Event types are:
+
   - `PACKET_RECV`: Handling the packet on the destination chain.
   - `PACKET_SEND_LC_UPDATE_Ln`: Light-client updates to prove the `PACKET_SEND` event on the destination chain, where _`n`_ denotes the relay step; `0` represents verification on the destination chain, with higher numbers indicating intermediate clients in the relay path.
 
