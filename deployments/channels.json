@@ -2,6 +2,20 @@
   "babylon.bbn-1": {
     "3": {
       "comments": "ethereum.1 channel 1",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "258650",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "532511",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        }
+      },
       "sla": {
         "forward": "PT20M",
         "reverse": "PT45M"
@@ -12,10 +26,34 @@
   "babylon.bbn-test-5": {
     "3": {
       "comments": "corn.21000001 channel 1",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "1095972",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "215268",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "885936"
+        }
+      },
       "tags": ["canonical"]
     },
     "4": {
       "comments": "xion.xion-testnet-2 channel 2",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "917981",
+          "PACKET_SEND_LC_UPDATE_L0": "5128061"
+        },
+        "reverse": {
+          "PACKET_RECV": "810553",
+          "PACKET_SEND_LC_UPDATE_L0": "2116634"
+        }
+      },
       "tags": ["canonical"]
     },
     "5": {
@@ -26,6 +64,20 @@
   "bob.60808": {
     "1": {
       "comments": "babylon.bbn-1 channel 1",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "56789",
+          "PACKET_SEND_LC_UPDATE_L0": "1097389",
+          "PACKET_SEND_LC_UPDATE_L1": "34567",
+          "PACKET_SEND_LC_UPDATE_L2": "45678"
+        },
+        "reverse": {
+          "PACKET_RECV": "6789",
+          "PACKET_SEND_LC_UPDATE_L0": "3445",
+          "PACKET_SEND_LC_UPDATE_L1": "4567",
+          "PACKET_SEND_LC_UPDATE_L2": "5678"
+        }
+      },
       "sla": {
         "forward": "PT15H",
         "reverse": "PT20M"
@@ -36,6 +88,20 @@
   "corn.21000000": {
     "1": {
       "comments": "babylon.bbn-1 channel 2",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "1150393",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "885936"
+        },
+        "reverse": {
+          "PACKET_RECV": "253938",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        }
+      },
       "sla": {
         "forward": "PT17H",
         "reverse": "PT20M"
@@ -46,6 +112,16 @@
   "ethereum.11155111": {
     "1": {
       "comments": "union.union-testnet-10 channel 1",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "64875",
+          "PACKET_SEND_LC_UPDATE_L0": "1028227"
+        },
+        "reverse": {
+          "PACKET_RECV": "1063412",
+          "PACKET_SEND_LC_UPDATE_L0": "519141"
+        }
+      },
       "tags": ["canonical"]
     },
     "3": {
@@ -58,16 +134,58 @@
     },
     "7": {
       "comments": "babylon.bbn-test-5 channel 1",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "637233",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        },
+        "reverse": {
+          "PACKET_RECV": "1569674",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        }
+      },
       "tags": ["canonical"]
     }
   },
   "ethereum.17000": {
     "2": {
       "comments": "ethereum.11155111 channel 8",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "450038",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        },
+        "reverse": {
+          "PACKET_RECV": "1371886",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        }
+      },
       "tags": ["canonical"]
     },
     "3": {
       "comments": "babylon.bbn-test-5 channel 2",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "447836",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        },
+        "reverse": {
+          "PACKET_RECV": "2131847",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        }
+      },
       "tags": ["canonical"]
     }
   },
@@ -84,14 +202,56 @@
   "xion.xion-testnet-2": {
     "1": {
       "comments": "ethereum.17000 channel 4",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "1569674",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "637233",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        }
+      },
       "tags": ["canonical"]
     },
     "3": {
       "comments": "corn.21000001 channel 2",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "924672",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "3075197",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "885936"
+        }
+      },
       "tags": ["canonical"]
     },
     "6": {
       "comments": "sei.1328 channel 1",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "1463397",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "938092",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "721546"
+        }
+      },
       "tags": ["canonical"]
     }
   }

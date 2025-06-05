@@ -68,6 +68,18 @@ The file maps [UCS04] chain ids to an object containing channels on that chain. 
   Currently supported and well-known tags:
   `canonical`: A canonical channel built over one of the clients in `clients.json`. This channel can safely be used by third party applications, and is exposed through our [GraphQL] API.
 
+- `fees`: Gas fees for each event.
+
+  - `forward`: Fees object for sending _from_ the specified chain (i.e., send packet was emitted on this chain).
+  - `reverse`: Fees object for sending _to_ the specified chain (i.e., send packet was emitted on the counterparty chain).
+
+  Fees object structure:
+
+  The keys of the `forward` and `reverse` fees objects specify the event type; the value specifies the amount of gas (as a string). Event types are:
+
+  - `PACKET_RECV`: Handling the packet on the destination chain.
+  - `PACKET_SEND_LC_UPDATE_Ln`: Light-client updates to prove the `PACKET_SEND` event on the destination chain, where _`n`_ denotes the relay step; `0` represents verification on the destination chain, with higher numbers indicating intermediate clients in the relay path.
+
 - `sla`: Maximum time (in ISO 8601) between a packet-send and a packet-ack.
 
   - `forward`: Maximum duration when sending _from_ the specified chain (ie. send packet was emitted on this chain).
