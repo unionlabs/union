@@ -128,6 +128,8 @@ enum ZkgmStakeState {
     STAKING,
     // The tokens are bonded and the position is being rewarded.
     STAKED,
+    // The rewards are being withdrawn.
+    WITHDRAWING_REWARDS,
     // The tokens are being unbonded, the position no longer earns rewards.
     UNSTAKING,
     // The tokens has been unstaked and withdrawn.

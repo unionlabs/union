@@ -60,8 +60,9 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
         WithdrawRewardsAck calldata _withdrawRewardsAck
     ) internal {
         ensureStakeIsFromChannel(channelId, _withdrawRewards.tokenId);
+        ZkgmStake storage _stake = stakes[_withdrawRewards.tokenId];
+        _stake.state = ZkgmStakeState.STAKED;
         if (_withdrawRewardsAck.amount > 0) {
-            ZkgmStake storage _stake = stakes[_withdrawRewards.tokenId];
             (IZkgmERC20 governanceToken,) =
                 _getGovernanceToken(_stake.channelId);
             address beneficiary = address(bytes20(_withdrawRewards.beneficiary));
@@ -168,6 +169,8 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
         WithdrawRewards calldata _withdrawRewards
     ) internal {
         ensureStakeIsFromChannel(channelId, _withdrawRewards.tokenId);
+        ZkgmStake storage _stake = stakes[_withdrawRewards.tokenId];
+        _stake.state = ZkgmStakeState.STAKED;
         address sender = address(bytes20(_withdrawRewards.sender));
         _getStakeNFTManager().transferFrom(
             address(this), sender, _withdrawRewards.tokenId

@@ -527,6 +527,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         _getStakeNFTManager().transferFrom(
             msg.sender, address(this), withdrawRewards.tokenId
         );
+        _stake.state = ZkgmStakeState.WITHDRAWING_REWARDS;
     }
 
     function predictWrappedToken(
