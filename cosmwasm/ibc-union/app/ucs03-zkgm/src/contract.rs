@@ -2373,6 +2373,7 @@ fn execute_stake(
         str::from_utf8(&stake.validator).map_err(|_| ContractError::InvalidValidator)?;
     let governance_token = str::from_utf8(&stake.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
+    let governance_token_metadata_image = stake.governance_metadata_image.0.into();
     let stake_amount = u128::try_from(stake.amount).map_err(|_| ContractError::AmountOverflow)?;
 
     let stake_account = predict_stake_account(
@@ -2429,13 +2430,25 @@ fn execute_stake(
 
     // 2. Unescrow the gov tokens to the stake account.
     let minter = TOKEN_MINTER.load(deps.storage)?;
-    decrease_channel_balance(
-        deps,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.into(),
-        stake_amount.into(),
-    )?;
+    let is_v1 = governance_token_metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
+    if is_v1 {
+        decrease_channel_balance(
+            deps,
+            packet.destination_channel_id,
+            U256::ZERO,
+            governance_token.into(),
+            stake_amount.into(),
+        )?;
+    } else {
+        decrease_channel_balance_v2(
+            deps,
+            packet.destination_channel_id,
+            U256::ZERO,
+            governance_token.into(),
+            governance_token_metadata_image,
+            stake_amount.into(),
+        )?;
+    }
     messages.push(make_wasm_msg(
         LocalTokenMsg::Unescrow {
             denom: governance_token.into(),
@@ -2550,6 +2563,7 @@ fn execute_withdraw_stake(
 
     let governance_token = str::from_utf8(&withdraw_stake.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
+    let governance_token_metadata_image = withdraw_stake.governance_metadata_image.0.into();
 
     let stake_account = predict_stake_account(
         deps.as_ref(),
@@ -2564,14 +2578,26 @@ fn execute_withdraw_stake(
 
     let minter = TOKEN_MINTER.load(deps.storage)?;
 
+    let is_v1 = governance_token_metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
     // The amount will be unescrowed + minted (for additional reward) on the counterparty
-    increase_channel_balance(
-        deps.storage,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.to_string(),
-        coin.amount.u128().into(),
-    )?;
+    if is_v1 {
+        increase_channel_balance(
+            deps.storage,
+            packet.destination_channel_id,
+            U256::ZERO,
+            governance_token.to_string(),
+            coin.amount.u128().into(),
+        )?;
+    } else {
+        increase_channel_balance_v2(
+            deps.storage,
+            packet.destination_channel_id,
+            U256::ZERO,
+            governance_token.to_string(),
+            governance_token_metadata_image,
+            coin.amount.u128().into(),
+        )?;
+    }
 
     Ok(Response::new()
         .add_message(wasm_execute(
@@ -2621,6 +2647,7 @@ fn execute_withdraw_rewards(
         str::from_utf8(&withdraw_rewards.validator).map_err(|_| ContractError::InvalidValidator)?;
     let governance_token = str::from_utf8(&withdraw_rewards.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
+    let governance_token_metadata_image = withdraw_rewards.governance_metadata_image.0.into();
 
     let stake_account = predict_stake_account(
         deps.as_ref(),
@@ -2650,13 +2677,25 @@ fn execute_withdraw_rewards(
     let minter = TOKEN_MINTER.load(deps.storage)?;
 
     // The amount will be minted on the counterparty
-    increase_channel_balance(
-        deps.storage,
-        packet.destination_channel_id,
-        U256::ZERO,
-        governance_token.to_string(),
-        reward.amount.u128().into(),
-    )?;
+    let is_v1 = governance_token_metadata_image == FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
+    if is_v1 {
+        increase_channel_balance(
+            deps.storage,
+            packet.destination_channel_id,
+            U256::ZERO,
+            governance_token.to_string(),
+            reward.amount.u128().into(),
+        )?;
+    } else {
+        increase_channel_balance_v2(
+            deps.storage,
+            packet.destination_channel_id,
+            U256::ZERO,
+            governance_token.to_string(),
+            governance_token_metadata_image,
+            reward.amount.u128().into(),
+        )?;
+    }
 
     Ok(Response::new()
         .add_message(wasm_execute(

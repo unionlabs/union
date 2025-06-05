@@ -106,6 +106,7 @@ alloy_sol_types::sol! {
     struct Stake {
         uint256 token_id;
         bytes governance_token;
+        bytes32 governance_metadata_image;
         bytes sender;
         bytes beneficiary;
         bytes validator;
@@ -115,6 +116,7 @@ alloy_sol_types::sol! {
     struct Unstake {
         uint256 token_id;
         bytes governance_token;
+        bytes32 governance_metadata_image;
         bytes sender;
         bytes validator;
         uint256 amount;
@@ -123,7 +125,7 @@ alloy_sol_types::sol! {
     struct WithdrawStake {
         uint256 token_id;
         bytes governance_token;
-        bytes validator;
+        bytes32 governance_metadata_image;
         bytes sender;
         bytes beneficiary;
     }
@@ -131,6 +133,7 @@ alloy_sol_types::sol! {
     struct WithdrawRewards {
         uint256 token_id;
         bytes governance_token;
+        bytes32 governance_metadata_image;
         bytes validator;
         bytes sender;
         bytes beneficiary;

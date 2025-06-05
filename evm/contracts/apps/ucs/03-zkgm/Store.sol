@@ -67,7 +67,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
 
     function _getGovernanceToken(
         uint32 channelId
-    ) internal view returns (ZkgmERC20, bytes memory) {
+    ) internal view returns (ZkgmERC20, GovernanceToken memory) {
         GovernanceToken memory governanceToken =
             channelGovernanceToken[channelId];
         if (governanceToken.unwrappedToken.length == 0) {
@@ -81,8 +81,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
             governanceToken.metadataImage,
             false
         );
-        return
-            (ZkgmERC20(wrappedGovernanceToken), governanceToken.unwrappedToken);
+        return (ZkgmERC20(wrappedGovernanceToken), governanceToken);
     }
 
     function _predictStakeManagerAddress() internal view returns (ZkgmERC721) {
