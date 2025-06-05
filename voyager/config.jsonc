@@ -66,7 +66,7 @@
     "consensus": [
       {
         "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-cometbls",
+        "path": "./target/debug/voyager-finality-module-cometbls",
         "info": {
           "chain_id": "union-devnet-1",
           "consensus_type": "cometbls"
@@ -77,7 +77,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-consensus-module-trusted-evm",
+        "path": "./target/debug/voyager-finality-module-trusted-evm",
         "info": {
           "chain_id": "32382",
           "consensus_type": "trusted/evm"
