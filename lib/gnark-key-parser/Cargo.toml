@@ -15,10 +15,10 @@ workspace = true
 ark-bls12-381 = { version = "0.4", default-features = false, features = ["curve"] }
 substrate-bn  = { version = "0.6", default-features = false }
 thiserror     = { workspace = true }
+ark-serialize = "0.4.2"
+num-bigint    = { workspace = true }
 
 [dev-dependencies]
 ark-bn254     = { version = "0.4", default-features = false, features = ["curve"] }
 ark-ff        = { version = "0.4.2", default-features = false }
-ark-serialize = "0.4.2"
 hex           = { workspace = true, features = ["alloc"] }
-num-bigint    = { workspace = true }

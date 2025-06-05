@@ -145,12 +145,14 @@ func (p *proverServerBls12381) Poll(ctx context.Context, pollReq *grpc.PollReque
 			InnerInputsHash: innerProof.InputsHash,
 		}
 
+		fmt.Println("inputs hash ", innerProof.InputsHash)
+
 		privateWitness, err := frontend.NewWitness(bls12381Witness, ecc.BLS12_381.ScalarField())
 		if err != nil {
 			return nil, fmt.Errorf("Witness err %s", err)
 		}
 
-		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&cometblsHashToField{}))
+		proof, err := backend.Prove(constraint.R1CS(&p.cs), backend.ProvingKey(&p.pk), privateWitness, backend_opts.WithProverHashToFieldFunction(&bls12381HashToField{}))
 		if err != nil {
 			return nil, fmt.Errorf("Could not prove %s", err)
 		}

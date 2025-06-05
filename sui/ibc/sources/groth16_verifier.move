@@ -1,5 +1,5 @@
 module ibc::groth16_verifier {
-    use sui::bls12381::{Self, G1, G2, GT, scalar_one, g1_from_bytes, scalar_from_bytes, g1_multi_scalar_multiplication, g1_add, g2_from_bytes, pairing, gt_add, g1_to_uncompressed_g1};
+    use sui::bls12381::{Self, G1, G2, GT, scalar_one, g1_from_bytes, scalar_from_bytes, g1_mul, g1_multi_scalar_multiplication, g1_add, g2_from_bytes, pairing, gt_add, g1_to_uncompressed_g1};
     use sui::group_ops::{Self, Element};
     use sui::hash::keccak256;
     use sui::bcs;
@@ -22,6 +22,7 @@ module ibc::groth16_verifier {
             x"908f777c2fcc59ed481a56585f47c48b7776e92ef90a710bc7d6eeba3d8a0d5f3c8885924a2b5407b45718ec62f67982",
     ];
     const PRIME_R_MINUS_ONE: vector<u8> = x"00000000fffffffffe5bfeff02a4bd5305d8a10908d83933487d9d2953a7ed73";
+    const PRIME_R_MINUS_ONE_BN254: vector<u8> = x"000000f093f5e1439170b97948e833285d588181b64550b829a031e1724e6430";
     const HMAC_O: vector<u8> = x"1F333139281E100F5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C5C";
     const HMAC_I: vector<u8> = x"75595B5342747A653636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636363636";
     const G1_SIZE: u64 = 48;
@@ -41,31 +42,31 @@ module ibc::groth16_verifier {
     }
 
     public fun verify_zkp(
-        // chain_id: &String,
-        // trusted_validators_hash: &vector<u8>,
-        // light_header_hash: vector<u8>,
-        mut inputs_hash: vector<u8>,
+        chain_id: &String,
+        trusted_validators_hash: &vector<u8>,
+        light_header_hash: vector<u8>,
         zkp: &ZKP
     ): bool {
 
-        // let mut inputs_hash: vector<u8> = vector::empty();
-        // let mut i = 0;
-        // while (i < 32 - chain_id.length()) {
-        //     inputs_hash.push_back(0);
-        //     i = i + 1;
-        // };
-        // inputs_hash.append(*chain_id.bytes());
-        // inputs_hash.append(light_header_hash);
-        // inputs_hash.append(*trusted_validators_hash);
+        let mut inputs_hash: vector<u8> = vector::empty();
+        let mut i = 0;
+        while (i < 32 - chain_id.length()) {
+            inputs_hash.push_back(0);
+            i = i + 1;
+        };
+        inputs_hash.append(*chain_id.bytes());
+        inputs_hash.append(light_header_hash);
+        inputs_hash.append(*trusted_validators_hash);
 
-        // let mut inputs_hash = sha2_256(inputs_hash);
-        // let mut first_elem = inputs_hash.borrow_mut(0);
-
-        // *first_elem = 0;
+        let mut inputs_hash = sha2_256(inputs_hash);
+        let mut first_elem = inputs_hash.borrow_mut(0);
+        *first_elem = 0;
+        // let inputs_hash = vector[0, 224, 145, 40, 84, 89, 34, 39, 221, 156, 192, 245, 138, 61, 32, 127, 128, 107, 29, 247, 44, 137, 180, 35, 67, 23, 121, 0, 96, 87, 93, 110];
+        // let inputs_hash = x"00e578c5692e48ed4d5c59d82be1b73cd00192825ef2e8fe51c720e4b95f627e";
 
         let inputs_hash = scalar_from_bytes(&inputs_hash);
 
-        let mut inner_commitment_hash = bcs::to_bytes(&hash_commitment_bytes(zkp.inner_commitment));
+        let mut inner_commitment_hash = bcs::to_bytes(&hash_commitment_bytes(zkp.inner_commitment, PRIME_R_MINUS_ONE_BN254));
         inner_commitment_hash.reverse();
         let inner_commitment_hash = scalar_from_bytes(&inner_commitment_hash);
 
@@ -84,28 +85,68 @@ module ibc::groth16_verifier {
         let gamma_abc_5 = g1_from_bytes(&GAMMA_ABC_G1[4]);
         let gamma_abc_6 = g1_from_bytes(&GAMMA_ABC_G1[5]);
 
-        let mut commitment_hash = bcs::to_bytes(&hash_commitment(&zkp.proof_commitment));
+        let mut commitment_hash = bcs::to_bytes(&hash_commitment(&zkp.proof_commitment, PRIME_R_MINUS_ONE));
         commitment_hash.reverse();
         let commitment_hash = scalar_from_bytes(&commitment_hash);
 
-        let gamma = g1_multi_scalar_multiplication(
-            &vector[
-                scalar_one(),
-                inner_commitment_hash,
-                inner_commitment_x,
-                inner_commitment_y,
-                inputs_hash,
-                commitment_hash
-            ],
-            &vector[
-                g1_add(&gamma_abc_1, &zkp.proof_commitment),
-                gamma_abc_2,
-                gamma_abc_3,
-                gamma_abc_4,
-                gamma_abc_5,
-                gamma_abc_6
-            ]
+        let gamma = g1_add(
+            &g1_add(&gamma_abc_1, &zkp.proof_commitment),
+            &g1_mul(
+                &inner_commitment_hash,
+                &gamma_abc_2
+            )
         );
+
+        let gamma = g1_add(
+            &gamma,
+            &g1_mul(
+                &inner_commitment_x,
+                &gamma_abc_3
+            )
+        );
+
+        let gamma = g1_add(
+            &gamma,
+            &g1_mul(
+                &inner_commitment_y,
+                &gamma_abc_4
+            )
+        );
+
+        let gamma = g1_add(
+            &gamma,
+            &g1_mul(
+                &inputs_hash,
+                &gamma_abc_5
+            )
+        );
+
+        let gamma = g1_add(
+            &gamma,
+            &g1_mul(
+                &commitment_hash,
+                &gamma_abc_6
+            )
+        );
+
+        // let gamma = g1_multi_scalar_multiplication(
+        //     &vector[
+        //         scalar_one(),
+        //         inner_commitment_hash,
+        //         inner_commitment_x,
+        //         inner_commitment_y,
+        //         inputs_hash,
+        //         commitment_hash
+        //     ],
+        //     &vector[
+        //         g1_add(&gamma_abc_1, &zkp.proof_commitment),
+        //         gamma_abc_2,
+        //         gamma_abc_3,
+        //         gamma_abc_4,
+        //         gamma_abc_5,
+        //         gamma_abc_6
+        //     ]
+        // );
 
         let res = gt_add(
             &pairing(&zkp.proof.a, &zkp.proof.b),
@@ -142,21 +183,21 @@ module ibc::groth16_verifier {
         keccak256(&outer)
     }
 
-    fun hash_commitment_bytes(mut buffer: vector<u8>): u256 {
+    fun hash_commitment_bytes(mut buffer: vector<u8>, prime: vector<u8>): u256 {
         let mut hmac = hmac_keccak(&buffer);
         hmac.reverse();
 
-        let prime_r_minus_one = bcs::new(PRIME_R_MINUS_ONE).peel_u256();
+        let prime_r_minus_one = bcs::new(prime).peel_u256();
         let hmac = bcs::new(hmac).peel_u256();
 
         (hmac % prime_r_minus_one) + 1
     }
 
-    fun hash_commitment(commitment: &Element<G1>): u256 {
+    fun hash_commitment(commitment: &Element<G1>, prime: vector<u8>): u256 {
         let uncompr = g1_to_uncompressed_g1(commitment);
         let buffer = *uncompr.bytes(); // TODO(aeryz): check if this matches the uncompressed serialization in aptos
 
-        hash_commitment_bytes(buffer)
+        hash_commitment_bytes(buffer, prime)
     }
 
     fun vector_slice(v: &vector<u8>, start: u64, end: u64): vector<u8> {
@@ -199,41 +240,16 @@ module ibc::groth16_verifier {
 
     #[test]
     fun test_proof() {
-        let proof = x"b32726c4ddc6d39d064f620bfdfc8d0b1786818b9f3d150c59a3eae294b78ffab878aee354e387278561a36bc5fc93fcac4e2a7683345fd4e01c804da23097a4e18b098b47299c2566c37c8c22c4deb05057947bcb90f24a7af4b5e0e65b2adc0fe6f413506cdc1fecf1e18ca23f4e356cb9d930bdbb0cd966101bce3e6852be2054c8cb92e371373ffea6876be171c098e9f3d16286303ddc387f47e435a4c378505bf3abcd0d5c052b9cc007415a0e0bddda783d759625cefabf7133fd41d8b782abfa90170a69dd6314a03388cf35f7a7de483e08a457e2bc25afef9e2ba7ae257f7507eb4bcc3767281e5f63986ea435e9828488f47ae8d60d1f1e88872187cfbc014878631b022233a9961a88db7138c3aea9878e101dc475f551fdb9e703b2697868231c45ced290c2c4000e368cb86a36c0649aa8575e0b423331f35103dce7190414a8ce71cc6cfb15035e26bda47fb60551b0ae44ac9a03ea992043";
+        let proof = x"8e6f419184390ee9847cff1ad98f8e29492391c536e99a2c95cb487ad22b9571931f9a9b33292fae5567e5c0779f69e68f75e49a4f4f93ca3655c0cee5c585c2f49a266b8387dc3ea8740cb45fac3a40b5fe2f004945ff5b1f9d4a1f49550e1509d2d919e35d3ec36d75428e950760225ec2ff49aca3009786e67bd688e34e1b882baafc5317964e4a30f59abf45b429a593b0b833d06f36e8a6447ccade4b912e2fac63b130d50f7a5f1cd3e04dd1ad280fe3ded32ddf1564ca4cdfb7eba18eb70650667730fcf55085ce7ae91e0f271f648779c431c07a67c8925421dcfd8bd74e4ad3672ba0a57acf1521bb653c6ea4dd7bc5fe436681859040b7b77f9fa7e446b06d24369a9da1c361ab2f9089c32a1614f35d8c0ce6d366c840f08663392f448f3dd5351a07ec7ba74f77c4f232d4ba428f916d6809e7ad607926a5fdd41150fc7acb376d2836365b2b98ddc97d5ae980398a13b9a3e43323d985943c2a";
         // let uncompr_proof = x"";
     
-        let mut cursor = 0;
+        let zkp = parse_zkp(proof);
 
-        let a = g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
-        cursor = cursor + G1_SIZE;
-
-        let b = g2_from_bytes(&vector_slice(&proof, cursor, cursor + G2_SIZE));
-        cursor = cursor + G2_SIZE;
-
-        let c = g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
-        cursor = cursor + G1_SIZE;    
-
-        let poc = g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
-        cursor = cursor + G1_SIZE;
-
-        let pok = g1_from_bytes(&vector_slice(&proof, cursor, cursor + G1_SIZE));
-        cursor = cursor + G1_SIZE;
-
-        let inner_commitment = vector_slice(&proof, cursor, cursor + 64);
-
-        let zkp = ZKP {
-            proof: Proof { a, b, c},
-            proof_commitment: poc,
-            proof_commitment_pok: pok,
-            inner_commitment
-        };
-
-        let inputs_hash = x"001eb8378edf181e75b0c17186f0c36b5749e8698f4d892646c1079c29c2c6c7";
-
-        //
-        let mut v = PRIME_R_MINUS_ONE;
-        v.reverse();
-        std::debug::print(&v);
+        // let mut v = x"73eda753299d7d483339d80809a1d80553bda402fffe5bfeffffffff00000000";
+        // v.reverse();
+        // std::debug::print(&v);
+        
+         std::debug::print(&verify_zkp(&std::string::utf8(b""), &vector::empty(), vector::empty(), &zkp));
         // assert!(verify_zkp(inputs_hash, &zkp), 1);
     }
     

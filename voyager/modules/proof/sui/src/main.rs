@@ -114,6 +114,7 @@ impl ProofModuleServer<IbcUnion> for Module {
             key.get().as_slice(),
         );
 
+        println!("1???\n\n");
         let target_object = self
             .sui_client
             .read_api()
@@ -133,19 +134,26 @@ impl ProofModuleServer<IbcUnion> for Module {
             .map_err(|e| err(e, "error fetching the object"))?
             .data
             .expect("data is fetched");
+        println!("2???\n\n");
 
         let previous_tx = target_object
             .previous_transaction
             .expect("tx info is requested");
+        println!("3 {}???\n\n", previous_tx);
 
         let checkpoint_number = self
             .sui_client
             .read_api()
             .get_transaction_with_options(previous_tx, SuiTransactionBlockResponseOptions::new())
             .await
-            .map_err(|e| err(e, "error fetching the tx"))?
-            .checkpoint
-            .expect("checkpoint is fetched");
+            .map_err(|e| err(e, "error fetching the tx"))?;
+        // .checkpoint
+        // .expect("checkpoint is fetched");
+        println!("tx: {checkpoint_number:?}???\n\n");
+
+        let checkpoint_number = checkpoint_number.checkpoint.unwrap();
+
+        println!("{} {}", height.height(), checkpoint_number);
 
         if height.height() != checkpoint_number {
             return Err(ErrorObject::owned(
@@ -154,6 +162,8 @@ impl ProofModuleServer<IbcUnion> for Module {
                 None::<()>,
             ));
         }
+
+        println!("5???\n\n");
 
         let client = reqwest::Client::new();
         let req = format!("{}/{checkpoint_number}.chk", self.sui_object_store_rpc_url);

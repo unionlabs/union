@@ -87,7 +87,22 @@ pub struct EndOfEpochData {
     /// Commitments to epoch specific state (e.g. live object set)
     ///
     /// This is not used, so we ignore it
-    pub epoch_commitments: Vec<()>,
+    pub epoch_commitments: Vec<CheckpointCommitment>,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub enum CheckpointCommitment {
+    ECMHLiveObjectSetDigest(ECMHLiveObjectSetDigest),
+    // Other commitment types (e.g. merkle roots) go here.
+}
+
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
+pub struct ECMHLiveObjectSetDigest {
+    pub digest: Digest,
 }
 
 #[derive(Clone, Debug, PartialEq, Eq)]

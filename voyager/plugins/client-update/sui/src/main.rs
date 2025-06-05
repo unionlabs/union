@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{collections::VecDeque, str::FromStr};
 
 use call::FetchUpdate;
 use jsonrpsee::{
@@ -7,9 +7,14 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
+use serde_json::{json, Value};
 use sui_light_client_types::{checkpoint_summary::CheckpointContents, CertifiedCheckpointSummary};
 use sui_sdk::{
-    types::{base_types::ObjectID, full_checkpoint_content::CheckpointTransaction},
+    rpc_types::CheckpointId,
+    types::{
+        base_types::ObjectID, committee::EpochId, digests::CheckpointDigest,
+        full_checkpoint_content::CheckpointTransaction,
+    },
     SuiClient, SuiClientBuilder,
 };
 use tracing::instrument;
@@ -53,6 +58,8 @@ pub struct Module {
     pub sui_object_store_rpc_url: String,
 
     pub sui_client: SuiClient,
+
+    pub graphql_url: String,
 }
 
 impl Plugin for Module {
@@ -79,6 +86,7 @@ impl Plugin for Module {
             chain_id: config.chain_id,
             ibc_handler_address: config.ibc_handler_address,
             sui_object_store_rpc_url: config.sui_object_store_rpc_url,
+            graphql_url: config.graphql_url,
             sui_client,
         })
     }
@@ -117,6 +125,8 @@ pub struct Config {
 
     /// The RPC endpoint for custom movement apis.
     pub rpc_url: String,
+
+    pub graphql_url: String,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -129,6 +139,105 @@ pub struct CheckpointData {
 impl Module {
     fn plugin_name(&self) -> String {
         plugin_name(&self.chain_id)
+    }
+
+    async fn fetch_epoch_changing_updates(
+        &self,
+        mut trusted_height: u64,
+        from: EpochId,
+        to: EpochId,
+    ) -> RpcResult<(u64, Vec<(DecodedHeaderMeta, Value)>)> {
+        if from == to {
+            return Ok((trusted_height, vec![]));
+        }
+
+        let client = reqwest::Client::new()
+            .post(&self.graphql_url)
+            .header("Content-Type", "application/json");
+
+        let mut headers = vec![];
+
+        let mut is_first = true;
+        for epoch in from..to {
+            let query = json!({
+              "query": "query ($epoch_id: UInt53) { epoch(id: $epoch_id) { edges  { checkpoints(last: 1) { edges { node { sequenceNumber } } } }  } }",
+              "variables": { "epoch_id": epoch }
+            });
+
+            let resp = client
+                .try_clone()
+                .expect("no body, so this will work")
+                .body(query.to_string())
+                .send()
+                .await
+                .unwrap()
+                .text()
+                .await
+                .unwrap();
+
+            let v: serde_json::Value = serde_json::from_str(&resp).unwrap();
+            let update_to = v["data"]["epoch"]["checkpoints"]["edges"][0]["node"]["sequenceNumber"]
+                .as_u64()
+                .unwrap();
+
+            if is_first && trusted_height == update_to {
+                is_first = false;
+                continue;
+            }
+
+            let checkpoint = self.fetch_checkpoint(update_to).await?;
+
+            headers.push((
+                DecodedHeaderMeta {
+                    height: Height::new(update_to),
+                },
+                serde_json::to_value(sui_light_client_types::header::Header {
+                    trusted_height,
+                    checkpoint_summary: checkpoint.checkpoint_summary.data,
+                    sign_info: checkpoint.checkpoint_summary.auth_signature,
+                })
+                .expect("serde serialization works"),
+            ));
+
+            trusted_height = update_to;
+        }
+
+        Ok((trusted_height, headers))
+    }
+
+    async fn fetch_checkpoint(&self, num: u64) -> RpcResult<CheckpointData> {
+        let req = format!("{}/{}.chk", self.sui_object_store_rpc_url, num);
+        let client = reqwest::Client::new();
+        let res = client
+            .get(req)
+            .send()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching the checkpoint"),
+                    None::<()>,
+                )
+            })?
+            .bytes()
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("error fetching the checkpoint"),
+                    None::<()>,
+                )
+            })?;
+
+        let (_, checkpoint) = bcs::from_bytes::<(u8, CheckpointData)>(&res).map_err(|e| {
+            ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                ErrorReporter(e).with_message("checkpoint data cannot be decoded"),
+                None::<()>,
+            )
+        })?;
+
+        Ok(checkpoint)
     }
 }
 
@@ -168,11 +277,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::FetchUpdate(FetchUpdate { from, to }) => {
-                let client = reqwest::Client::new();
-                let req = format!("{}/{}.chk", self.sui_object_store_rpc_url, to);
-                let res = client
-                    .get(req)
-                    .send()
+                let from_epoch = self
+                    .sui_client
+                    .read_api()
+                    .get_checkpoint(CheckpointId::SequenceNumber(from))
                     .await
                     .map_err(|e| {
                         ErrorObject::owned(
@@ -181,38 +289,31 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                             None::<()>,
                         )
                     })?
-                    .bytes()
-                    .await
-                    .map_err(|e| {
-                        ErrorObject::owned(
-                            -1,
-                            ErrorReporter(e).with_message("error fetching the checkpoint"),
-                            None::<()>,
-                        )
-                    })?;
+                    .epoch;
 
-                let (_, checkpoint) =
-                    bcs::from_bytes::<(u8, CheckpointData)>(&res).map_err(|e| {
-                        ErrorObject::owned(
-                            FATAL_JSONRPC_ERROR_CODE,
-                            ErrorReporter(e).with_message("checkpoint data cannot be decoded"),
-                            None::<()>,
-                        )
-                    })?;
+                let checkpoint = self.fetch_checkpoint(to).await?;
 
-                Ok(data(OrderedHeaders {
-                    headers: vec![(
-                        DecodedHeaderMeta {
-                            height: Height::new(to),
-                        },
-                        serde_json::to_value(sui_light_client_types::header::Header {
-                            trusted_height: from,
-                            checkpoint_summary: checkpoint.checkpoint_summary.data,
-                            sign_info: checkpoint.checkpoint_summary.auth_signature,
-                        })
-                        .expect("serde serialization works"),
-                    )],
-                }))
+                let (trusted_height, mut updates) = self
+                    .fetch_epoch_changing_updates(
+                        from,
+                        from_epoch,
+                        checkpoint.checkpoint_summary.data.epoch,
+                    )
+                    .await?;
+
+                updates.push((
+                    DecodedHeaderMeta {
+                        height: Height::new(to),
+                    },
+                    serde_json::to_value(sui_light_client_types::header::Header {
+                        trusted_height,
+                        checkpoint_summary: checkpoint.checkpoint_summary.data,
+                        sign_info: checkpoint.checkpoint_summary.auth_signature,
+                    })
+                    .expect("serde serialization works"),
+                ));
+
+                Ok(data(OrderedHeaders { headers: updates }))
             }
         }
     }

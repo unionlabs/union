@@ -16,7 +16,10 @@ impl<'a> SignatureVerification for Verifier<'a> {
         msg: &[u8],
         signature: &sui_light_client_types::crypto::AggregateAuthoritySignature,
     ) -> Result<(), Self::Error> {
-        let pubkeys = public_keys.iter().flat_map(|x| x.0).collect::<Vec<u8>>();
+        let pubkeys = public_keys
+            .iter()
+            .flat_map(|x| x.0.clone())
+            .collect::<Vec<u8>>();
 
         let aggregate_pubkey = self.deps.api.bls12_381_aggregate_g2(&pubkeys)?;
 

@@ -17943,6 +17943,7 @@ dependencies = [
  "bcs",
  "cosmwasm-std 2.2.2",
  "embed-commit",
+ "hex-literal",
  "jsonrpsee 0.25.1",
  "reqwest 0.11.27",
  "serde",
@@ -18045,11 +18046,10 @@ name = "voyager-client-module-cometbls"
 version = "0.0.0"
 dependencies = [
  "alloy-sol-types",
- "ark-bn254",
- "ark-serialize 0.4.2",
  "bcs",
  "cometbls-light-client-types",
  "embed-commit",
+ "gnark-key-parser",
  "hex",
  "hex-literal 0.4.1",
  "jsonrpsee 0.25.1",
