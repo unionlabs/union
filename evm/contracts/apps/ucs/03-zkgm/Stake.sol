@@ -25,7 +25,6 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
 
     function _stakingFailed(uint32 channelId, Stake calldata _stake) internal {
         ensureStakeIsFromChannel(channelId, _stake.tokenId);
-        _getStakeNFTManager().burn(_stake.tokenId);
         address sender = address(bytes20(_stake.sender));
         (IZkgmERC20 governanceToken,) = _getGovernanceToken(channelId);
         governanceToken.transfer(sender, _stake.amount);
@@ -53,7 +52,6 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
                 beneficiary, _stake.amount - _withdrawStakeAck.amount
             );
         }
-        // We do not burn the token so that it's ID can't be reused. It will stay forever locked in this contract.
     }
 
     function _withdrawRewardsSucceeded(
