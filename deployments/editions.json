@@ -14,7 +14,7 @@
         "environment": "production"
       },
       "sei.1328": {
-        "environment": "staging"
+        "environment": "production"
       },
       "xion.xion-testnet-2": {
         "environment": "production"
