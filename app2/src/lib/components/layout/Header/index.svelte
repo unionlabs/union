@@ -11,7 +11,6 @@ type Props = {
 }
 const { showNavigation = false }: Props = $props()
 
-// Maintenance banner state
 let showMaintenanceBanner = $state(true)
 </script>
 
@@ -45,7 +44,7 @@ let showMaintenanceBanner = $state(true)
 </header>
 
 <!-- Maintenance Banner -->
-{#if showMaintenanceBanner}
+<!-- {#if showMaintenanceBanner}
   <div
     class="bg-yellow-400 text-black px-3 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium relative"
   >
@@ -67,7 +66,7 @@ let showMaintenanceBanner = $state(true)
         <span class="sm:hidden">Maintenance in progress. Features may be unavailable.</span>
       </span>
     </div>
-    <button
+    <button 
       class="absolute right-2 sm:right-4 top-1/2 transform -translate-y-1/2 text-gray-800 hover:text-gray-900 font-bold cursor-pointer text-base sm:text-lg"
       onclick={() => showMaintenanceBanner = false}
       title="Dismiss banner"
@@ -75,4 +74,4 @@ let showMaintenanceBanner = $state(true)
       ×
     </button>
   </div>
-{/if}
+{/if} -->
