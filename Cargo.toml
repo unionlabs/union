@@ -255,7 +255,7 @@ members = [
   "lib/voyager-sdk",
   "lib/voyager-plugin-protocol",
   "lib/wasm-client-type",
-  "lib/sui-verifier",
+  "lib/sui-verifier", "lib/bsc-verifier",
 ]
 
 [workspace.package]

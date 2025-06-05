@@ -2649,6 +2649,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "bsc-verifier"
+version = "0.0.0"
+dependencies = [
+ "blst",
+ "cosmwasm-crypto 2.2.2",
+ "hex",
+ "hex-literal",
+ "rlp",
+ "sha3",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "bstr"
 version = "1.11.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"

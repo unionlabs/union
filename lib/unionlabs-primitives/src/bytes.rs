@@ -337,22 +337,20 @@ impl<EBytes: Encoding, EHash: Encoding, const N: usize> From<&FixedBytes<N, EHas
     }
 }
 
-// // TODO: Feature gate rlp across the crate
-// // #[cfg(feature = "rlp")]
-// impl<E: Encoding> rlp::Decodable for Bytes<E> {
-//     fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
-//         rlp.decoder()
-//             .decode_value(|bytes| Ok(Self::new(bytes.to_owned())))
-//     }
-// }
+#[cfg(feature = "rlp")]
+impl<E: Encoding> rlp::Decodable for Bytes<E> {
+    fn decode(rlp: &rlp::Rlp) -> Result<Self, rlp::DecoderError> {
+        rlp.decoder()
+            .decode_value(|bytes| Ok(Self::new(bytes.to_owned())))
+    }
+}
 
-// // TODO: Feature gate rlp across the crate
-// // #[cfg(feature = "rlp")]
-// impl<E: Encoding> rlp::Encodable for Bytes<E> {
-//     fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
-//         s.encoder().encode_value(self.as_ref());
-//     }
-// }
+#[cfg(feature = "rlp")]
+impl<E: Encoding> rlp::Encodable for Bytes<E> {
+    fn rlp_append(&self, s: &mut ::rlp::RlpStream) {
+        s.encoder().encode_value(self.as_ref());
+    }
+}
 
 // #[cfg(feature = "ethabi")]
 // impl<E: Encoding> From<alloy::core::primitives::Bytes> for Bytes<E> {
