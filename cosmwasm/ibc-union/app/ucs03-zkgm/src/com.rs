@@ -13,6 +13,7 @@ pub const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
 pub const OP_STAKE: u8 = 0x04;
 pub const OP_UNSTAKE: u8 = 0x05;
 pub const OP_WITHDRAW_STAKE: u8 = 0x06;
+pub const OP_WITHDRAW_REWARDS: u8 = 0x07;
 
 pub const ACK_ERR_ONLY_MAKER: &[u8] = &[0xDE, 0xAD, 0xC0, 0xDE];
 
@@ -105,6 +106,7 @@ alloy_sol_types::sol! {
     struct Stake {
         uint256 token_id;
         bytes governance_token;
+        bytes32 governance_metadata_image;
         bytes sender;
         bytes beneficiary;
         bytes validator;
@@ -114,6 +116,7 @@ alloy_sol_types::sol! {
     struct Unstake {
         uint256 token_id;
         bytes governance_token;
+        bytes32 governance_metadata_image;
         bytes sender;
         bytes validator;
         uint256 amount;
@@ -122,6 +125,16 @@ alloy_sol_types::sol! {
     struct WithdrawStake {
         uint256 token_id;
         bytes governance_token;
+        bytes32 governance_metadata_image;
+        bytes sender;
+        bytes beneficiary;
+    }
+
+    struct WithdrawRewards {
+        uint256 token_id;
+        bytes governance_token;
+        bytes32 governance_metadata_image;
+        bytes validator;
         bytes sender;
         bytes beneficiary;
     }
@@ -147,6 +160,10 @@ alloy_sol_types::sol! {
     }
 
     struct WithdrawStakeAck {
+        uint256 amount;
+    }
+
+    struct WithdrawRewardsAck {
         uint256 amount;
     }
 }

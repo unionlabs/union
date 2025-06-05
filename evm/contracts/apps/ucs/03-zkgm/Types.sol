@@ -62,6 +62,7 @@ struct FungibleAssetMetadata {
 struct Stake {
     uint256 tokenId;
     bytes governanceToken;
+    bytes32 governanceTokenMetadataImage;
     bytes sender;
     bytes beneficiary;
     bytes validator;
@@ -71,6 +72,7 @@ struct Stake {
 struct Unstake {
     uint256 tokenId;
     bytes governanceToken;
+    bytes32 governanceTokenMetadataImage;
     bytes sender;
     bytes validator;
     uint256 amount;
@@ -79,6 +81,16 @@ struct Unstake {
 struct WithdrawStake {
     uint256 tokenId;
     bytes governanceToken;
+    bytes32 governanceTokenMetadataImage;
+    bytes sender;
+    bytes beneficiary;
+}
+
+struct WithdrawRewards {
+    uint256 tokenId;
+    bytes governanceToken;
+    bytes32 governanceTokenMetadataImage;
+    bytes validator;
     bytes sender;
     bytes beneficiary;
 }
@@ -105,6 +117,10 @@ struct WithdrawStakeAck {
     uint256 amount;
 }
 
+struct WithdrawRewardsAck {
+    uint256 amount;
+}
+
 enum ZkgmStakeState {
     // The position doesn't exist yet.
     UNDEFINED,
@@ -112,6 +128,8 @@ enum ZkgmStakeState {
     STAKING,
     // The tokens are bonded and the position is being rewarded.
     STAKED,
+    // The rewards are being withdrawn.
+    WITHDRAWING_REWARDS,
     // The tokens are being unbonded, the position no longer earns rewards.
     UNSTAKING,
     // The tokens has been unstaked and withdrawn.

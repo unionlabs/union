@@ -116,6 +116,16 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
                 path,
                 ZkgmLib.decodeWithdrawStake(instruction.operand)
             );
+        } else if (
+            instruction.isInst(
+                ZkgmLib.OP_WITHDRAW_REWARDS, ZkgmLib.INSTR_VERSION_0
+            )
+        ) {
+            _verifyWithdrawRewards(
+                channelId,
+                path,
+                ZkgmLib.decodeWithdrawRewards(instruction.operand)
+            );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
         }
@@ -362,9 +372,17 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             revert ZkgmLib.ErrInstructionCannotBeForwarded();
         }
         // Verify the preimage of the governance token.
-        (IZkgmERC20 governanceToken, bytes memory unwrappedGovernanceToken) =
-            _getGovernanceToken(channelId);
-        if (!stake.governanceToken.eq(unwrappedGovernanceToken)) {
+        (
+            IZkgmERC20 governanceToken,
+            GovernanceToken memory originGovernanceToken
+        ) = _getGovernanceToken(channelId);
+        if (!stake.governanceToken.eq(originGovernanceToken.unwrappedToken)) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        if (
+            stake.governanceTokenMetadataImage
+                != originGovernanceToken.metadataImage
+        ) {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         // Escrow the staked amount.
@@ -392,9 +410,17 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             revert ZkgmLib.ErrInvalidStakeChannelId();
         }
         // Verify the preimage of the governance token.
-        (IZkgmERC20 governanceToken, bytes memory unwrappedGovernanceToken) =
-            _getGovernanceToken(channelId);
-        if (!unstake.governanceToken.eq(unwrappedGovernanceToken)) {
+        (
+            IZkgmERC20 governanceToken,
+            GovernanceToken memory originGovernanceToken
+        ) = _getGovernanceToken(channelId);
+        if (!unstake.governanceToken.eq(originGovernanceToken.unwrappedToken)) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        if (
+            unstake.governanceTokenMetadataImage
+                != originGovernanceToken.metadataImage
+        ) {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (!_canUnstake(_stake)) {
@@ -419,6 +445,12 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             && _stake.unstakingCompletion <= block.timestamp;
     }
 
+    function _canWithdrawRewards(
+        ZkgmStake storage _stake
+    ) internal view returns (bool) {
+        return _stake.state == ZkgmStakeState.STAKED;
+    }
+
     function _verifyWithdrawStake(
         uint32 channelId,
         uint256 path,
@@ -431,9 +463,21 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         if (channelId != _stake.channelId) {
             revert ZkgmLib.ErrInvalidStakeChannelId();
         }
-        (IZkgmERC20 governanceToken, bytes memory unwrappedGovernanceToken) =
-            _getGovernanceToken(channelId);
-        if (!withdrawStake.governanceToken.eq(unwrappedGovernanceToken)) {
+        (
+            IZkgmERC20 governanceToken,
+            GovernanceToken memory originGovernanceToken
+        ) = _getGovernanceToken(channelId);
+        if (
+            !withdrawStake.governanceToken.eq(
+                originGovernanceToken.unwrappedToken
+            )
+        ) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        if (
+            withdrawStake.governanceTokenMetadataImage
+                != originGovernanceToken.metadataImage
+        ) {
             revert ZkgmLib.ErrInvalidStakeGovernanceToken();
         }
         if (!_canWithdraw(_stake)) {
@@ -443,6 +487,47 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         _getStakeNFTManager().transferFrom(
             msg.sender, address(this), withdrawStake.tokenId
         );
+    }
+
+    function _verifyWithdrawRewards(
+        uint32 channelId,
+        uint256 path,
+        WithdrawRewards calldata withdrawRewards
+    ) internal {
+        if (path != 0) {
+            revert ZkgmLib.ErrInstructionCannotBeForwarded();
+        }
+        ZkgmStake storage _stake = stakes[withdrawRewards.tokenId];
+        if (channelId != _stake.channelId) {
+            revert ZkgmLib.ErrInvalidStakeChannelId();
+        }
+        (
+            IZkgmERC20 governanceToken,
+            GovernanceToken memory originGovernanceToken
+        ) = _getGovernanceToken(channelId);
+        if (
+            !withdrawRewards.governanceToken.eq(
+                originGovernanceToken.unwrappedToken
+            )
+        ) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        if (
+            withdrawRewards.governanceTokenMetadataImage
+                != originGovernanceToken.metadataImage
+        ) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        if (!_canWithdrawRewards(_stake)) {
+            revert ZkgmLib.ErrStakingRewardNotWithdrawable();
+        }
+        if (!_stake.validator.eq(withdrawRewards.validator)) {
+            revert ZkgmLib.ErrInvalidStakeValidator();
+        }
+        _getStakeNFTManager().transferFrom(
+            msg.sender, address(this), withdrawRewards.tokenId
+        );
+        _stake.state = ZkgmStakeState.WITHDRAWING_REWARDS;
     }
 
     function predictWrappedToken(
