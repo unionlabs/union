@@ -1,4 +1,9 @@
-use ark_bls12_381::{G1Affine, G2Affine};
+use ark_bls12_381::{Fq, Fq2, G1Affine, G2Affine};
+use ark_serialize::{CanonicalSerialize, SerializationError, Valid};
+use num_bigint::BigUint;
+
+pub const G1_SIZE: usize = 48;
+pub const G2_SIZE: usize = G1_SIZE * 2;
 
 pub struct VerifyingKey {
     /// The `alpha * G`, where `G` is the generator of `E::G1`.
@@ -20,76 +25,75 @@ pub struct PedersenVerifyingKey {
     pub g_root_sigma_neg: G2Affine,
 }
 
+pub fn reencode_evm_zkp_for_sui(zkp: &[u8]) -> Result<Vec<u8>, SerializationError> {
+    let mut buf = Vec::new();
+
+    let serialize_g1 =
+        |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
+            let proof = G1Affine::new_unchecked(
+                Fq::from(BigUint::from_bytes_be(&zkp[*cursor..*cursor + G1_SIZE])),
+                Fq::from(BigUint::from_bytes_be(
+                    &zkp[*cursor + G1_SIZE..*cursor + (G1_SIZE * 2)],
+                )),
+            );
+            proof.check()?;
+            *cursor += G1_SIZE * 2;
+            proof.serialize_compressed(buf)?;
+            Ok(())
+        };
+
+    let serialize_g2 =
+        |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
+            let proof = G2Affine::new_unchecked(
+                Fq2::new(
+                    Fq::from(BigUint::from_bytes_be(
+                        &zkp[*cursor + G1_SIZE..*cursor + (2 * G1_SIZE)],
+                    )),
+                    Fq::from(BigUint::from_bytes_be(&zkp[*cursor..*cursor + G1_SIZE])),
+                ),
+                Fq2::new(
+                    Fq::from(BigUint::from_bytes_be(
+                        &zkp[*cursor + (G1_SIZE * 3)..*cursor + (G1_SIZE * 4)],
+                    )),
+                    Fq::from(BigUint::from_bytes_be(
+                        &zkp[*cursor + (G1_SIZE * 2)..*cursor + (G1_SIZE * 3)],
+                    )),
+                ),
+            );
+            proof.check()?;
+            *cursor += G1_SIZE * 4;
+            proof.serialize_compressed(buf)?;
+            Ok(())
+        };
+
+    let mut cursor = 0;
+    // zkp.proof.a
+    serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
+    // zkp.proof.b
+    serialize_g2(&mut cursor, &mut buf, &zkp).unwrap();
+    // zkp.proof.c
+    serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
+    // zkp.poc
+    serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
+    // zkp.pok
+    serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
+
+    buf.extend_from_slice(&zkp[cursor..]);
+
+    Ok(buf)
+}
+
 #[cfg(test)]
 mod tests {
 
-    const G1_SIZE: usize = 48;
-    const G2_SIZE: usize = G1_SIZE * 2;
-
-    use ark_bls12_381::{Fq, Fq2};
-    use ark_serialize::{CanonicalDeserialize, CanonicalSerialize, SerializationError, Valid};
-    use num_bigint::BigUint;
+    use ark_serialize::CanonicalDeserialize;
 
     use super::*;
 
     #[test]
     fn dump_sui_proof() {
-        let zkp = hex::decode("132726C4DDC6D39D064F620BFDFC8D0B1786818B9F3D150C59A3EAE294B78FFAB878AEE354E387278561A36BC5FC93FC17BAECEA01996CB591FD03F7913037FAC31BCFE94675EEE2C3690DCF1DB2D54911E6F27C10A893858944A2C71C3D15CC0C4E2A7683345FD4E01C804DA23097A4E18B098B47299C2566C37C8C22C4DEB05057947BCB90F24A7AF4B5E0E65B2ADC0FE6F413506CDC1FECF1E18CA23F4E356CB9D930BDBB0CD966101BCE3E6852BE2054C8CB92E371373FFEA6876BE171C018A6E641051F7E5F5039322DA99506401356B3515A91956EC15E11B8C4D5FDDF4F25265486C248933EFD959815E0B5970B9673FF2145608495144E150CFC1BA313D2BC4E3062D335FD53D6314E1D7C32450E976C8444563E180201FF818E640A18E9F3D16286303DDC387F47E435A4C378505BF3ABCD0D5C052B9CC007415A0E0BDDDA783D759625CEFABF7133FD41D8076A0EB0428C16A28AC89A150CDFEED543126B9EF0ACFD9895D38DD2C68506875513A8F12328BB2044A2A19E82074C841782ABFA90170A69DD6314A03388CF35F7A7DE483E08A457E2BC25AFEF9E2BA7AE257F7507EB4BCC3767281E5F63986E113824A4C8FB09F8E58A2864B38CB582E8C7B159082C06330707B75FCA255B79A6164E04369EA1532705512E0DA427790435E9828488F47AE8D60D1F1E88872187CFBC014878631B022233A9961A88DB7138C3AEA9878E101DC475F551FDB9E717C4EC2872C23A23F5F9B87C112C5A274E0FD875B53CE619590E356FD22FACF1F7A990B752548F73FAAFD8D94EFCFE6103B2697868231C45CED290C2C4000E368CB86A36C0649AA8575E0B423331F35103DCE7190414A8CE71CC6CFB15035E26BDA47FB60551B0AE44AC9A03EA992043").unwrap();
-
-        let mut buf = Vec::new();
-
-        let serialize_g1 =
-            |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
-                let proof = G1Affine::new_unchecked(
-                    Fq::from(BigUint::from_bytes_be(&zkp[*cursor..*cursor + G1_SIZE])),
-                    Fq::from(BigUint::from_bytes_be(
-                        &zkp[*cursor + G1_SIZE..*cursor + (G1_SIZE * 2)],
-                    )),
-                );
-                proof.check()?;
-                *cursor += G1_SIZE * 2;
-                proof.serialize_compressed(buf)?;
-                Ok(())
-            };
-
-        let serialize_g2 =
-            |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
-                let proof = G2Affine::new_unchecked(
-                    Fq2::new(
-                        Fq::from(BigUint::from_bytes_be(
-                            &zkp[*cursor + G1_SIZE..*cursor + (2 * G1_SIZE)],
-                        )),
-                        Fq::from(BigUint::from_bytes_be(&zkp[*cursor..*cursor + G1_SIZE])),
-                    ),
-                    Fq2::new(
-                        Fq::from(BigUint::from_bytes_be(
-                            &zkp[*cursor + (G1_SIZE * 3)..*cursor + (G1_SIZE * 4)],
-                        )),
-                        Fq::from(BigUint::from_bytes_be(
-                            &zkp[*cursor + (G1_SIZE * 2)..*cursor + (G1_SIZE * 3)],
-                        )),
-                    ),
-                );
-                proof.check()?;
-                *cursor += G1_SIZE * 4;
-                proof.serialize_compressed(buf)?;
-                Ok(())
-            };
-
-        let mut cursor = 0;
-        // zkp.proof.a
-        serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
-        // zkp.proof.b
-        serialize_g2(&mut cursor, &mut buf, &zkp).unwrap();
-        // zkp.proof.c
-        serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
-        // zkp.poc
-        serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
-        // zkp.pok
-        serialize_g1(&mut cursor, &mut buf, &zkp).unwrap();
-
-        buf.extend_from_slice(&zkp[cursor..]);
-
+        let zkp = hex::decode("0E6F419184390EE9847CFF1AD98F8E29492391C536E99A2C95CB487AD22B9571931F9A9B33292FAE5567E5C0779F69E6055D4E5B48B834D71216AFCAEC185BECB919D325035A2F041F1480340DFEDFF7E67AD132B310CE1DA03F51188128ADAC0F75E49A4F4F93CA3655C0CEE5C585C2F49A266B8387DC3EA8740CB45FAC3A40B5FE2F004945FF5B1F9D4A1F49550E1509D2D919E35D3EC36D75428E950760225EC2FF49ACA3009786E67BD688E34E1B882BAAFC5317964E4A30F59ABF45B429063F586AD31A8F65F8898AEBA35973A35615DA7E82A3C167FB887D7C18C3602AF22C9ABEEC865038B544F756413AD8C409957FF28C5AA6131C3D3717B585A813B7BDECE396DE5A7C2476F8234D1DA3590B7A56A15B6CC6E9CB7C6A75D34AD4C20593B0B833D06F36E8A6447CCADE4B912E2FAC63B130D50F7A5F1CD3E04DD1AD280FE3DED32DDF1564CA4CDFB7EBA18E0F06D9D009E28B46A0F7C5460B5A6107DCD429604B508AFA61D9414E0F6F1915CE5787D871E90284E5B8FD559672D644170650667730FCF55085CE7AE91E0F271F648779C431C07A67C8925421DCFD8BD74E4AD3672BA0A57ACF1521BB653C6E0D24888CF809A128D8F3462BAE99400A645E1313CA535A9505832A87AA52644BD8B0A919FB11E5D3CF7DFED1A1FD638D04DD7BC5FE436681859040B7B77F9FA7E446B06D24369A9DA1C361AB2F9089C32A1614F35D8C0CE6D366C840F0866339156F0FF4C0E208AC203CF336BBDE9B6B5BD21898C35527B354A4E8D4ED77A2AA4F69AC7CDF9C70E2C4B7B2B9AB1913D22F448F3DD5351A07EC7BA74F77C4F232D4BA428F916D6809E7AD607926A5FDD41150FC7ACB376D2836365B2B98DDC97D5AE980398A13B9A3E43323D985943C2A").unwrap();
+        let buf = reencode_evm_zkp_for_sui(&zkp).unwrap();
         println!("{}", hex::encode(&buf));
     }
 

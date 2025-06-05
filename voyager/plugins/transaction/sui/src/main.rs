@@ -40,7 +40,7 @@ use sui_sdk::{
     },
     SuiClient, SuiClientBuilder,
 };
-use tracing::{info, instrument};
+use tracing::{debug, info, instrument};
 use ucs03_zkgm::com::{FungibleAssetOrder, ZkgmPacket};
 use unionlabs::{
     primitives::{encoding::HexPrefixed, Bytes, U256},
@@ -320,6 +320,11 @@ async fn process_msgs(
                         id: module.ibc_store.into(),
                         initial_shared_version: module.ibc_store_initial_seq,
                         mutable: true,
+                    }),
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ObjectID::from_str("0x6").unwrap(),
+                        initial_shared_version: 1.into(),
+                        mutable: false,
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.client_message).unwrap()),
@@ -886,6 +891,7 @@ pub async fn send_transactions(
     pk: &Arc<SuiKeyPair>,
     ptb: ProgrammableTransaction,
 ) -> RpcResult<SuiTransactionBlockResponse> {
+    println!("SUBMIT BROTHERRR");
     let sender = SuiAddress::from(&pk.public());
     let gas_coin = module
         .sui_client
@@ -955,5 +961,49 @@ pub async fn send_transactions(
             )
         })?;
 
+    debug!("tx response {transaction_response:?}");
+
     Ok(transaction_response)
 }
+
+/*
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Object Changes                                                                                                                                    │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Created Objects:                                                                                                                                  │
+│  ┌──                                                                                                                                              │
+│  │ ObjectID: 0x3f40f5ee083b947a74dfbf0071e8ae051d6a09366c065b720930f6ccae86f75e                                                                   │
+│  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                     │
+│  │ Owner: Account Address ( 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b )                                                  │
+│  │ ObjectType: 0x2::package::UpgradeCap                                                                                                           │
+│  │ Version: 349179655                                                                                                                             │
+│  │ Digest: 6KSt3SNKKfFLAqupM5DP3Q5Wxo8QA3AEq1fLamqHTvn5                                                                                           │
+│  └──                                                                                                                                              │
+│  ┌──                                                                                                                                              │
+│  │ ObjectID: 0x50fe8c5faed80bef58c6a6243689f03a36000852f5aed8efbff50278ae887a71                                                                   │
+│  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                     │
+│  │ Owner: Shared( 349179655 )                                                                                                                     │
+│  │ ObjectType: 0x3b305eaf161580056178f6e375624a406fcad0eebb99ebb802788d6c47e2b367::ibc::IBCStore                                                  │
+│  │ Version: 349179655                                                                                                                             │
+│  │ Digest: ANSraQpcpxLMee2uP3Uq5kXxEgh3z7BsT6z3EwfbquYU                                                                                           │
+│  └──                                                                                                                                              │
+│ Mutated Objects:                                                                                                                                  │
+│  ┌──                                                                                                                                              │
+│  │ ObjectID: 0xe1fbe13ed5e81d9dba74e2819c6a4cfaba6be25bdadb7ac5321def4eaab5bf09                                                                   │
+│  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                     │
+│  │ Owner: Account Address ( 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b )                                                  │
+│  │ ObjectType: 0x2::coin::Coin<0x2::sui::SUI>                                                                                                     │
+│  │ Version: 349179655                                                                                                                             │
+│  │ Digest: 7y8JWpcE4eirC8CHKdGeJQmYX7wny1yq3VrhJLEsXGvQ                                                                                           │
+│  └──                                                                                                                                              │
+│ Published Objects:                                                                                                                                │
+│  ┌──                                                                                                                                              │
+│  │ PackageID: 0x3b305eaf161580056178f6e375624a406fcad0eebb99ebb802788d6c47e2b367                                                                  │
+│  │ Version: 1                                                                                                                                     │
+│  │ Digest: 44KR1h95cn5gFYF4QZDhTrWg3jytXgiwxnFrxZqbtgBq                                                                                           │
+│  │ Modules: bcs_utils, channel, commitment, connection_end, create_lens_client_event, ethabi, groth16_verifier, height, ibc, light_client, packet │
+│  └──                                                                                                                                              │
+╰─
+
+commitments: 0xaef6807dd959db193c6dd56b54aea5ebab70e93acf7053f231014c6f93f0ca77
+*/
