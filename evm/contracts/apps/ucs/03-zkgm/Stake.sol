@@ -31,7 +31,7 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
         governanceToken.transfer(sender, _stake.amount);
     }
 
-    function _withdrawSucceeded(
+    function _withdrawStakeSucceeded(
         uint32 channelId,
         WithdrawStake calldata _withdrawStake,
         WithdrawStakeAck calldata _withdrawStakeAck
@@ -54,6 +54,26 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
             );
         }
         // We do not burn the token so that it's ID can't be reused. It will stay forever locked in this contract.
+    }
+
+    function _withdrawRewardsSucceeded(
+        uint32 channelId,
+        WithdrawRewards calldata _withdrawRewards,
+        WithdrawRewardsAck calldata _withdrawRewardsAck
+    ) internal {
+        ensureStakeIsFromChannel(channelId, _withdrawRewards.tokenId);
+        if (_withdrawRewardsAck.amount > 0) {
+            ZkgmStake storage _stake = stakes[_withdrawRewards.tokenId];
+            (IZkgmERC20 governanceToken,) =
+                _getGovernanceToken(_stake.channelId);
+            address beneficiary = address(bytes20(_withdrawRewards.beneficiary));
+            // Mints the reward
+            governanceToken.mint(beneficiary, _withdrawRewardsAck.amount);
+        }
+        address sender = address(bytes20(_withdrawRewards.sender));
+        _getStakeNFTManager().transferFrom(
+            address(this), sender, _withdrawRewards.tokenId
+        );
     }
 
     function _setUnstaking(uint256 tokenId, uint256 completionTime) internal {
@@ -109,11 +129,28 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
         if (successful) {
             WithdrawStakeAck calldata _withdrawStakeAck =
                 ZkgmLib.decodeWithdrawStakeAck(ack);
-            _withdrawSucceeded(
+            _withdrawStakeSucceeded(
                 ibcPacket.sourceChannelId, _withdrawStake, _withdrawStakeAck
             );
         } else {
             _withdrawStakeFailed(ibcPacket.sourceChannelId, _withdrawStake);
+        }
+    }
+
+    function acknowledgeWithdrawRewards(
+        IBCPacket calldata ibcPacket,
+        WithdrawRewards calldata _withdrawRewards,
+        bool successful,
+        bytes calldata ack
+    ) public {
+        if (successful) {
+            _withdrawRewardsSucceeded(
+                ibcPacket.sourceChannelId,
+                _withdrawRewards,
+                ZkgmLib.decodeWithdrawRewardsAck(ack)
+            );
+        } else {
+            _withdrawRewardsFailed(ibcPacket.sourceChannelId, _withdrawRewards);
         }
     }
 
@@ -125,6 +162,17 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
         address sender = address(bytes20(_withdrawStake.sender));
         _getStakeNFTManager().transferFrom(
             address(this), sender, _withdrawStake.tokenId
+        );
+    }
+
+    function _withdrawRewardsFailed(
+        uint32 channelId,
+        WithdrawRewards calldata _withdrawRewards
+    ) internal {
+        ensureStakeIsFromChannel(channelId, _withdrawRewards.tokenId);
+        address sender = address(bytes20(_withdrawRewards.sender));
+        _getStakeNFTManager().transferFrom(
+            address(this), sender, _withdrawRewards.tokenId
         );
     }
 
@@ -151,5 +199,12 @@ contract UCS03ZkgmStakeImpl is Versioned, UCS03ZkgmStore {
         WithdrawStake calldata _withdrawStake
     ) public {
         _withdrawStakeFailed(ibcPacket.sourceChannelId, _withdrawStake);
+    }
+
+    function timeoutWithdrawRewards(
+        IBCPacket calldata ibcPacket,
+        WithdrawRewards calldata _withdrawRewards
+    ) public {
+        _withdrawRewardsFailed(ibcPacket.sourceChannelId, _withdrawRewards);
     }
 }

@@ -40,6 +40,7 @@ library ZkgmLib {
     uint8 public constant OP_STAKE = 0x04;
     uint8 public constant OP_UNSTAKE = 0x05;
     uint8 public constant OP_WITHDRAW_STAKE = 0x06;
+    uint8 public constant OP_WITHDRAW_REWARDS = 0x07;
 
     uint8 public constant INSTR_VERSION_0 = 0x00;
     uint8 public constant INSTR_VERSION_1 = 0x01;
@@ -93,6 +94,7 @@ library ZkgmLib {
     error ErrInvalidMetadataImage();
     error ErrMustBeUnwrap();
     error ErrMustBeWrap();
+    error ErrStakingRewardNotWithdrawable();
 
     function encodeFungibleAssetOrderAck(
         FungibleAssetOrderAck memory ack
@@ -124,6 +126,16 @@ library ZkgmLib {
         bytes calldata stream
     ) internal pure returns (WithdrawStakeAck calldata) {
         WithdrawStakeAck calldata ack;
+        assembly {
+            ack := stream.offset
+        }
+        return ack;
+    }
+
+    function decodeWithdrawRewardsAck(
+        bytes calldata stream
+    ) internal pure returns (WithdrawRewardsAck calldata) {
+        WithdrawRewardsAck calldata ack;
         assembly {
             ack := stream.offset
         }
@@ -312,6 +324,16 @@ library ZkgmLib {
         bytes calldata stream
     ) internal pure returns (WithdrawStake calldata) {
         WithdrawStake calldata operand;
+        assembly {
+            operand := stream.offset
+        }
+        return operand;
+    }
+
+    function decodeWithdrawRewards(
+        bytes calldata stream
+    ) internal pure returns (WithdrawRewards calldata) {
+        WithdrawRewards calldata operand;
         assembly {
             operand := stream.offset
         }
