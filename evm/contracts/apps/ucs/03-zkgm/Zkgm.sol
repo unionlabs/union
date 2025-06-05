@@ -56,19 +56,19 @@ contract UCS03Zkgm is
     IIBCModulePacket public immutable IBC_HANDLER;
     address public immutable SEND_IMPL;
     address public immutable STAKE_IMPL;
-    address public immutable FOA_IMPL;
+    address public immutable FAO_IMPL;
 
     constructor(
         IIBCModulePacket _ibcHandler,
         UCS03ZkgmSendImpl _sendImpl,
         UCS03ZkgmStakeImpl _stakeImpl,
-        UCS03ZkgmFungibleAssetOrderImpl _foaImpl
+        UCS03ZkgmFungibleAssetOrderImpl _faoImpl
     ) {
         _disableInitializers();
         IBC_HANDLER = _ibcHandler;
         SEND_IMPL = address(_sendImpl);
         STAKE_IMPL = address(_stakeImpl);
-        FOA_IMPL = address(_foaImpl);
+        FAO_IMPL = address(_faoImpl);
     }
 
     function initialize(
@@ -233,7 +233,7 @@ contract UCS03Zkgm is
         ) {
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            bytes memory rawResult = _callFOAImpl(
+            bytes memory rawResult = _callFAOImpl(
                 abi.encodeCall(
                     UCS03ZkgmFungibleAssetOrderImpl.executeFungibleAssetOrder,
                     (
@@ -255,7 +255,7 @@ contract UCS03Zkgm is
         ) {
             FungibleAssetOrderV2 calldata order =
                 ZkgmLib.decodeFungibleAssetOrderV2(instruction.operand);
-            bytes memory rawResult = _callFOAImpl(
+            bytes memory rawResult = _callFAOImpl(
                 abi.encodeCall(
                     UCS03ZkgmFungibleAssetOrderImpl.executeFungibleAssetOrderV2,
                     (
@@ -522,10 +522,10 @@ contract UCS03Zkgm is
         );
     }
 
-    function _callFOAImpl(
+    function _callFAOImpl(
         bytes memory data
     ) internal returns (bytes memory) {
-        return FOA_IMPL.delegateCallContract(data);
+        return FAO_IMPL.delegateCallContract(data);
     }
 
     function _callStakeImpl(
@@ -551,7 +551,7 @@ contract UCS03Zkgm is
         ) {
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            _callFOAImpl(
+            _callFAOImpl(
                 abi.encodeCall(
                     UCS03ZkgmFungibleAssetOrderImpl
                         .acknowledgeFungibleAssetOrder,
@@ -565,7 +565,7 @@ contract UCS03Zkgm is
         ) {
             FungibleAssetOrderV2 calldata order =
                 ZkgmLib.decodeFungibleAssetOrderV2(instruction.operand);
-            _callFOAImpl(
+            _callFAOImpl(
                 abi.encodeCall(
                     UCS03ZkgmFungibleAssetOrderImpl
                         .acknowledgeFungibleAssetOrderV2,
@@ -782,7 +782,7 @@ contract UCS03Zkgm is
         ) {
             FungibleAssetOrder calldata order =
                 ZkgmLib.decodeFungibleAssetOrder(instruction.operand);
-            _callFOAImpl(
+            _callFAOImpl(
                 abi.encodeCall(
                     UCS03ZkgmFungibleAssetOrderImpl.timeoutFungibleAssetOrder,
                     (ibcPacket, path, order)
@@ -795,7 +795,7 @@ contract UCS03Zkgm is
         ) {
             FungibleAssetOrderV2 calldata order =
                 ZkgmLib.decodeFungibleAssetOrderV2(instruction.operand);
-            _callFOAImpl(
+            _callFAOImpl(
                 abi.encodeCall(
                     UCS03ZkgmFungibleAssetOrderImpl.timeoutFungibleAssetOrderV2,
                     (ibcPacket, path, order)
