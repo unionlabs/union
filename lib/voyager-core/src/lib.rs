@@ -4,7 +4,6 @@ use std::{
     collections::{HashMap, VecDeque},
     net::{IpAddr, Ipv4Addr, SocketAddr},
     panic::AssertUnwindSafe,
-    process::Stdio,
     sync::{Arc, OnceLock},
     time::Duration,
 };
@@ -1220,27 +1219,25 @@ pub fn get_plugin_info(plugin_config: &PluginConfig) -> anyhow::Result<PluginInf
     cmd.arg(plugin_config.config.to_string());
 
     let output = cmd
-        .stdout(Stdio::piped())
-        .stderr(Stdio::piped())
-        .spawn()
-        .with_context(|| format!("spawning plugin at {}", plugin_config.path.display()))?
-        .wait_with_output()
-        .unwrap();
+        .output()
+        .with_context(|| format!("spawning plugin at {}", plugin_config.path.display()))?;
 
     if !output.status.success() {
         match output.status.code() {
             Some(code) if code == INVALID_CONFIG_EXIT_CODE as i32 => {
                 return Err(anyhow!(
-                    "unable to query info for plugin at path {}: stdout:\n{}",
+                    "invalid config for plugin at path {}: stdout:\n{}\nstderr:\n{}",
                     &plugin_config.path.to_string_lossy(),
-                    String::from_utf8_lossy(&output.stdout)
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr),
                 ));
             }
             Some(_) | None => {
                 return Err(anyhow!(
-                    "unable to query info for plugin at path {}: stdout:\n{}",
+                    "unable to query info for plugin at path {}: stdout:\n{}\nstderr:\n{}",
                     &plugin_config.path.to_string_lossy(),
-                    String::from_utf8_lossy(&output.stdout)
+                    String::from_utf8_lossy(&output.stdout),
+                    String::from_utf8_lossy(&output.stderr),
                 ));
             }
         }
