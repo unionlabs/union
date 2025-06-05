@@ -10,7 +10,24 @@ import { runPromiseExit$, runSync } from "$lib/runtime"
 import { cn } from "$lib/utils"
 import { PriceOracle } from "@unionlabs/sdk/PriceOracle"
 import type { Chain } from "@unionlabs/sdk/schema/chain"
-import { Array as A, Cause, Effect, Exit, Option as O, pipe, Predicate, Unify } from "effect"
+import type { Fees } from "@unionlabs/sdk/schema/fee"
+import {
+  Array as A,
+  BigDecimal as BD,
+  BigInt as BI,
+  Cause,
+  Effect,
+  Either as E,
+  Exit,
+  Match,
+  Option as O,
+  pipe,
+  Predicate,
+  Record as R,
+  Struct,
+  Unify,
+} from "effect"
+import { constant, flow } from "effect/Function"
 import { slide } from "svelte/transition"
 import { transferData } from "../data/transfer-data.svelte"
 
@@ -22,131 +39,182 @@ function toggleExpanded() {
   }
 }
 
-const feeConfig = {
-  baseFees: { // From graphql
-    packetSend: 21000,
-    lightClientL1: 150000,
-    lightClientL0: 500000,
-    packetReceive: 80000,
-  },
-  gasPrice: 10, // gasPrice from chain
-  decimals: 6, // BABY token decimals (in rep)
-  feeMultiplier: 0.20, // Union hardcoded fee
-  batchDivideNumber: 2, // Api?
-  gasTokenDecimals: 6, // Token data
-  gasTokenSymbol: "BABY", // Token data
-  usdPrice: 0.13, // Gas price from service
-}
+const feeConfig = $derived(pipe(
+  O.all({ fees: transferData.fees }),
+  O.map(({ fees }) => ({
+    fees: Struct.evolve(fees, {
+      PACKET_SEND: O.getOrElse(constant(0n))<bigint>,
+      PACKET_RECV: O.getOrElse(constant(0n))<bigint>,
+      PACKET_SEND_LC_UPDATE_L0: O.getOrElse(constant(0n))<bigint>,
+      PACKET_SEND_LC_UPDATE_L1: O.getOrElse(constant(0n))<bigint>,
+      PACKET_SEND_LC_UPDATE_L2: O.getOrElse(constant(0n))<bigint>,
+    }),
+    gasPrice: BD.fromBigInt(10n), // gasPrice from chain
+    decimals: 6, // BABY token decimals (in rep)
+    feeMultiplier: BD.unsafeFromNumber(1.20), // Union hardcoded fee
+    batchDivideNumber: BD.unsafeFromNumber(2), // Api?
+    gasTokenDecimals: 6, // Token data
+    gasTokenSymbol: "BABY", // Token data
+    applyGasPrice(gasUnits: BD.BigDecimal) {
+      // return BD.multiply(gasUnits, this.gasPrice)
+      return BD.multiply(gasUnits, BD.fromBigInt(10n))
+    },
+    applyFeeMultiplier(ubbnAmount: BD.BigDecimal) {
+      // return BD.multiply(ubbnAmount, this.feeMultiplier)
+      return BD.multiply(ubbnAmount, BD.unsafeFromNumber(1.20))
+    },
+    applyBatchDivision(ubbnAmount: BD.BigDecimal) {
+      // return BD.divide(ubbnAmount, this.batchDivideNumber)
+      return BD.divide(ubbnAmount, BD.unsafeFromNumber(2))
+    },
+    formatToDisplay(ubbnAmount: BD.BigDecimal): string {
+      // const exp = BD.unsafeFromNumber(Math.pow(10, this.decimals))
+      const exp = BD.unsafeFromNumber(Math.pow(10, 6))
+      const babyAmount = E.fromOption(
+        BD.divide(ubbnAmount, exp),
+        () => `could not divide by ${exp}`,
+      )
+      if (E.isLeft(babyAmount)) {
+        return babyAmount.left
+      }
+      return Match.value(babyAmount.right).pipe(
+        Match.when(BD.lessThan(BD.unsafeFromNumber(0.001)), BD.format),
+        Match.when(BD.lessThan(BD.unsafeFromNumber(1)), BD.format),
+        Match.when(BD.lessThan(BD.unsafeFromNumber(100)), BD.format),
+        Match.orElse(BD.format),
+      )
+    },
+    usdPrice: 0.13, // Gas price from service
+  })),
+))
 
-const applyGasPrice = (gasUnits: number) => gasUnits * feeConfig.gasPrice
-const applyFeeMultiplier = (ubbnAmount: number) => ubbnAmount * (1 + feeConfig.feeMultiplier)
-const applyBatchDivision = (ubbnAmount: number) => ubbnAmount / feeConfig.batchDivideNumber
-const formatToDisplay = (ubbnAmount: number) => {
-  const babyAmount = ubbnAmount / Math.pow(10, feeConfig.decimals)
-  if (babyAmount < 0.001) {
-    return babyAmount.toFixed(6)
-  }
-  if (babyAmount < 1) {
-    return babyAmount.toFixed(4)
-  }
-  if (babyAmount < 100) {
-    return babyAmount.toFixed(3)
-  }
-  return babyAmount.toFixed(2)
-}
-const calculateTotalFee = () =>
-  pipe(feeConfig.baseFees.packetSend, applyGasPrice, applyFeeMultiplier)
-  + pipe(feeConfig.baseFees.lightClientL1, applyGasPrice, applyFeeMultiplier, applyBatchDivision)
-  + pipe(feeConfig.baseFees.lightClientL0, applyGasPrice, applyFeeMultiplier, applyBatchDivision)
-  + pipe(feeConfig.baseFees.packetReceive, applyGasPrice, applyFeeMultiplier)
+const calculatedFees = $derived(pipe(
+  O.map(feeConfig, (config) =>
+    Struct.evolve(config.fees, {
+      PACKET_SEND: flow(
+        BD.fromBigInt,
+        config.applyGasPrice,
+        config.applyFeeMultiplier,
+        O.some,
+      ),
+      PACKET_SEND_LC_UPDATE_L1: flow(
+        BD.fromBigInt,
+        config.applyGasPrice,
+        config.applyFeeMultiplier,
+        config.applyBatchDivision,
+      ),
+      PACKET_SEND_LC_UPDATE_L0: flow(
+        BD.fromBigInt,
+        config.applyGasPrice,
+        config.applyFeeMultiplier,
+        config.applyBatchDivision,
+      ),
+      PACKET_SEND_LC_UPDATE_L2: flow(
+        BD.fromBigInt,
+        config.applyGasPrice,
+        config.applyFeeMultiplier,
+        config.applyBatchDivision,
+      ),
+      PACKET_RECV: flow(
+        BD.fromBigInt,
+        config.applyGasPrice,
+        config.applyFeeMultiplier,
+        O.some,
+      ),
+    })),
+))
 
-const displayFees = $derived({
-  packetSend: pipe(
-    feeConfig.baseFees.packetSend,
-    applyGasPrice,
-    applyFeeMultiplier,
-    formatToDisplay,
+const totalFee = $derived(pipe(
+  calculatedFees,
+  O.map(R.values),
+  O.map(O.all),
+  O.map(O.map(BD.sumAll)),
+  O.flatten,
+))
+
+const displayFees = $derived(pipe(
+  O.all({ calculatedFees, config: feeConfig }),
+  O.map(({ calculatedFees, config: { formatToDisplay } }) =>
+    Struct.evolve(calculatedFees, {
+      PACKET_SEND: O.map(formatToDisplay),
+      PACKET_SEND_LC_UPDATE_L0: O.map(formatToDisplay),
+      PACKET_SEND_LC_UPDATE_L1: O.map(formatToDisplay),
+      PACKET_SEND_LC_UPDATE_L2: O.map(formatToDisplay),
+      PACKET_RECV: O.map(formatToDisplay),
+    })
   ),
-  lightClientL1: pipe(
-    feeConfig.baseFees.lightClientL1,
-    applyGasPrice,
-    applyFeeMultiplier,
-    applyBatchDivision,
-    formatToDisplay,
-  ),
-  lightClientL0: pipe(
-    feeConfig.baseFees.lightClientL0,
-    applyGasPrice,
-    applyFeeMultiplier,
-    applyBatchDivision,
-    formatToDisplay,
-  ),
-  packetReceive: pipe(
-    feeConfig.baseFees.packetReceive,
-    applyGasPrice,
-    applyFeeMultiplier,
-    formatToDisplay,
-  ),
+))
+
+const displayTotals = $derived({
   total: pipe(
-    calculateTotalFee(),
-    formatToDisplay,
+    O.map(feeConfig, (x) => x.formatToDisplay),
+    O.flatMap((format) => O.map(totalFee, format)),
   ),
   totalUsd: pipe(
-    calculateTotalFee(),
-    formatToDisplay,
-    (amount) => parseFloat(amount),
-    (amount) => amount * feeConfig.usdPrice,
-    (amount) => amount.toFixed(2),
+    "$123.456",
+    // calculateTotalFee(),
+    // formatToDisplay,
+    // (amount) => parseFloat(amount),
+    // (amount) => amount * feeConfig.usdPrice,
+    // (amount) => amount.toFixed(2),
   ),
 })
 
 // Fee breakdown items for iteration
 const feeBreakdownItems = $derived([
-  {
-    label: "Packet Send",
-    amount: displayFees.packetSend,
-    baseFee: feeConfig.baseFees.packetSend,
-    isBatched: false,
-    description: "Fee for sending the packet to the destination chain",
-  },
-  {
-    label: "Light Client (L1)",
-    amount: displayFees.lightClientL1,
-    baseFee: feeConfig.baseFees.lightClientL1,
-    isBatched: true,
-    description: "L1 light client update fee (shared across batch)",
-  },
-  {
-    label: "Light Client (L0)",
-    amount: displayFees.lightClientL0,
-    baseFee: feeConfig.baseFees.lightClientL0,
-    isBatched: true,
-    description: "L0 light client update fee (shared across batch)",
-  },
-  {
-    label: "Packet Receive",
-    amount: displayFees.packetReceive,
-    baseFee: feeConfig.baseFees.packetReceive,
-    isBatched: false,
-    description: "Fee for receiving the packet on the destination chain",
-  },
+  pipe(
+    O.all({
+      amount: O.flatMap(displayFees, Struct.get("PACKET_SEND")),
+      baseFee: O.flatMap(calculatedFees, Struct.get("PACKET_SEND")),
+    }),
+    O.map(({ amount, baseFee }) => ({
+      label: "Packet Send",
+      amount,
+      baseFee,
+      isBatched: false,
+      description: "Fee for sending the packet to the destination chain",
+    })),
+  ),
+  pipe(
+    O.all({
+      amount: O.flatMap(displayFees, Struct.get("PACKET_SEND_LC_UPDATE_L1")),
+      baseFee: O.flatMap(calculatedFees, Struct.get("PACKET_SEND")),
+    }),
+    O.map(({ amount, baseFee }) => ({
+      label: "Light Client (L1)",
+      amount,
+      baseFee,
+      isBatched: true,
+      description: "L1 light client update fee (shared across batch)",
+    })),
+  ),
+  pipe(
+    O.all({
+      amount: O.flatMap(displayFees, Struct.get("PACKET_SEND_LC_UPDATE_L0")),
+      baseFee: O.flatMap(calculatedFees, Struct.get("PACKET_SEND_LC_UPDATE_L0")),
+    }),
+    O.map(({ amount, baseFee }) => ({
+      label: "Light Client (L0)",
+      amount,
+      baseFee,
+      isBatched: true,
+      description: "L0 light client update fee (shared across batch)",
+    })),
+  ),
+  pipe(
+    O.all({
+      amount: O.flatMap(displayFees, Struct.get("PACKET_RECV")),
+      baseFee: O.flatMap(calculatedFees, Struct.get("PACKET_RECV")),
+    }),
+    O.map(({ amount, baseFee }) => ({
+      label: "Packet Receive",
+      amount,
+      baseFee,
+      isBatched: false,
+      description: "Fee for receiving the packet on the destination chain",
+    })),
+  ),
 ])
-
-const gasForChain = Effect.fn((chain: Chain) =>
-  pipe(
-    GasPrice,
-    Effect.andThen(({ of }) => of),
-    Effect.provide(GasPriceMap.get(chain)),
-  )
-)
-
-const gasPrices = runPromiseExit$(() =>
-  pipe(
-    Effect.all({
-      source: Effect.transposeMapOption(transferData.sourceChain, gasForChain),
-      destination: Effect.transposeMapOption(transferData.destinationChain, gasForChain),
-    }, { concurrency: 2 }),
-  ), { onInterrupt: "none" })
 
 const usdOfChainGas = Effect.fn((chain: Chain) =>
   pipe(
@@ -165,7 +233,7 @@ const usdPrices = runPromiseExit$(() =>
 )
 
 const loading = $derived(pipe(
-  O.all([gasPrices.current]),
+  O.all([transferData.gasPrices.current]),
   O.isNone,
 ))
 
@@ -180,7 +248,7 @@ const errors = $derived.by(() => {
     )
   return pipe(
     [
-      extractError(gasPrices.current),
+      extractError(transferData.gasPrices.current),
       extractError(usdPrices.current),
     ] as const,
     A.getSomes,
@@ -192,7 +260,7 @@ const errors = $derived.by(() => {
 })
 
 const gasDisplay = $derived(pipe(
-  gasPrices.current,
+  transferData.gasPrices.current,
   // TODO: extract to helper
   O.flatMap(Exit.match({
     onSuccess: O.some,
@@ -217,18 +285,23 @@ $effect(() => {
 })
 </script>
 
+{#snippet BigDecimal(x: BD.BigDecimal)}
+  {BD.format(x)}
+{/snippet}
+
 <!-- NOTE: presently only **BOB -> BABYLON** and **BABYLON -> BOB** -->
-{JSON.stringify(gasPrices.current, null, 2)}
 <div>
   <ul class="text-red-500">
     {#each errors as error}
       <li>{error}</li>
     {/each}
   </ul>
+  <!--
   <b>GAS:</b>
   <pre class="w-[350px] overflow-scroll">{JSON.stringify(gasDisplay, null, 2)}</pre>
   <b>USD:</b>
   <pre class="w-[350px] overflow-scroll">{JSON.stringify(usdDisplay, null, 2)}</pre>
+  -->
 </div>
 <div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
@@ -243,14 +316,16 @@ $effect(() => {
   >
     <div class="flex items-center gap-1">
       <SharpGasIcon class="size-4 text-zinc-300" />
-      {#if loading}
+      {#if loading || O.isNone(feeConfig)}
         <!-- Show nothing when loading -->
       {:else if calculating}
         <Skeleton class="h-3 w-16" />
         <Skeleton class="h-3 w-12" />
       {:else}
-        <span class="text-xs font-semibold">{displayFees.total} {feeConfig.gasTokenSymbol}</span>
-        <span class="text-xs text-zinc-500">(${displayFees.totalUsd})</span>
+        {@const _feeConfig = feeConfig.value}
+        <span class="text-xs font-semibold">{O.getOrUndefined(totalFee)?.value}
+          {_feeConfig.gasTokenSymbol}</span>
+        <span class="text-xs text-zinc-500">(${displayTotals.totalUsd})</span>
       {/if}
     </div>
     {#if !loading}
@@ -264,14 +339,16 @@ $effect(() => {
   </button>
 
   <!-- Expandable content -->
-  {#if open}
+  {#if open && O.isSome(feeConfig) && O.isSome(displayFees)}
+    {@const _feeConfig = feeConfig.value}
+    {@const _displayFees = displayFees.value}
     <div
       class="bg-zinc-900 rounded-b-md overflow-hidden border-t border-zinc-800"
       transition:slide={{ duration: 250 }}
     >
       <!-- Fee breakdown -->
       <div class="px-4 pt-3 pb-2 space-y-2">
-        {#each feeBreakdownItems as item}
+        {#each A.getSomes(feeBreakdownItems) as item}
           <div class="w-full flex items-center justify-between text-xs">
             <div class="flex items-center gap-1">
               <Tooltip>
@@ -307,13 +384,13 @@ $effect(() => {
                           <div class="grid grid-cols-2 border-b border-zinc-700">
                             <div class="px-3 py-2 text-zinc-300">Gas cost</div>
                             <div class="px-3 py-2 text-white border-l border-zinc-700">
-                              {item.baseFee.toLocaleString()}
+                              {@render BigDecimal(item.baseFee)}
                             </div>
                           </div>
                           <div class="grid grid-cols-2">
                             <div class="px-3 py-2 text-zinc-300">Gas price</div>
                             <div class="px-3 py-2 text-white border-l border-zinc-700">
-                              {feeConfig.gasPrice.toLocaleString()} ubbn
+                              {@render BigDecimal(_feeConfig.gasPrice)} ubbn
                             </div>
                           </div>
                         </div>
@@ -342,15 +419,17 @@ $effect(() => {
                           <div class="grid grid-cols-3 border-b border-zinc-700">
                             <div class="px-3 py-2 text-zinc-300">Base fee</div>
                             <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
-                              {item.baseFee.toLocaleString()} × {
-                                feeConfig.gasPrice.toLocaleString()
-                              }
+                              {@render BigDecimal(item.baseFee)} ×
+                              {@render BigDecimal(_feeConfig.gasPrice)}
                             </div>
                             <div class="px-3 py-2 text-white border-l border-zinc-700">
-                              {
-                                (item.baseFee * feeConfig.gasPrice)
-                                .toLocaleString()
-                              } ubbn
+                              {@render BigDecimal(
+                            BD.multiply(
+                              item.baseFee,
+                              _feeConfig.gasPrice,
+                            ),
+                          )}
+                              ubbn
                             </div>
                           </div>
 
@@ -359,12 +438,23 @@ $effect(() => {
                           >
                             <div class="px-3 py-2 text-zinc-300">Protocol fee</div>
                             <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
-                              + {Math.round(feeConfig.feeMultiplier * 100)}%
+                              +
+                              {@render BigDecimal(
+                            BD.multiply(
+                              _feeConfig.feeMultiplier,
+                              BD.unsafeFromNumber(10),
+                            ),
+                          )}%
                             </div>
                             <div class="px-3 py-2 text-white border-l border-zinc-700">
                               +{
-                                (item.baseFee * feeConfig.gasPrice
-                                * feeConfig.feeMultiplier).toLocaleString()
+                                (BD.multiply(
+                                  BD.multiply(
+                                    item.baseFee,
+                                    _feeConfig.gasPrice,
+                                  ),
+                                  _feeConfig.feeMultiplier,
+                                )).toLocaleString()
                               } ubbn
                             </div>
                           </div>
@@ -373,17 +463,19 @@ $effect(() => {
                             <div class="grid grid-cols-3 border-b border-zinc-700">
                               <div class="px-3 py-2 text-green-300">Batch savings</div>
                               <div class="px-3 py-2 text-green-300 border-l border-zinc-700">
-                                ÷ {feeConfig.batchDivideNumber}
+                                ÷ {_feeConfig.batchDivideNumber}
                               </div>
                               <div class="px-3 py-2 text-green-400 border-l border-zinc-700">
+                                <!--
                                 -{
-                                  ((item.baseFee * feeConfig.gasPrice
+                                  ((item.baseFee * _feeConfig.gasPrice
                                   * (1 + feeConfig.feeMultiplier))
                                   - (item.baseFee * feeConfig.gasPrice
                                       * (1 + feeConfig.feeMultiplier))
                                     / feeConfig.batchDivideNumber)
                                   .toLocaleString()
                                 } ubbn
+                                -->
                               </div>
                             </div>
                           {/if}
@@ -397,20 +489,22 @@ $effect(() => {
                             <div
                               class="px-3 py-2 text-white font-semibold border-l border-zinc-700"
                             >
+                              <!--
                               {#if item.isBatched}
                                 {
-                                  ((item.baseFee * feeConfig.gasPrice
-                                  * (1 + feeConfig.feeMultiplier))
-                                  / feeConfig.batchDivideNumber)
+                                  ((item.baseFee * _feeConfig.gasPrice
+                                  * (1 + _feeConfig.feeMultiplier))
+                                  / _feeConfig.batchDivideNumber)
                                   .toLocaleString()
                                 } ubbn
                               {:else}
                                 {
-                                  (item.baseFee * feeConfig.gasPrice
-                                  * (1 + feeConfig.feeMultiplier))
+                                  (item.baseFee * _feeConfig.gasPrice
+                                  * (1 + _feeConfig.feeMultiplier))
                                   .toLocaleString()
                                 } ubbn
                               {/if}
+                              -->
                             </div>
                           </div>
                         </div>
@@ -437,26 +531,28 @@ $effect(() => {
                           </div>
                           <div class="grid grid-cols-3">
                             <div class="px-3 py-2 text-zinc-300">
+                              <!--
                               {#if item.isBatched}
                                 {
-                                  ((item.baseFee * feeConfig.gasPrice
-                                  * (1 + feeConfig.feeMultiplier))
-                                  / feeConfig.batchDivideNumber)
+                                  ((item.baseFee * _feeConfig.gasPrice
+                                  * (1 + _feeConfig.feeMultiplier))
+                                  / _feeConfig.batchDivideNumber)
                                   .toLocaleString()
                                 }
                               {:else}
                                 {
-                                  (item.baseFee * feeConfig.gasPrice
-                                  * (1 + feeConfig.feeMultiplier))
+                                  (item.baseFee * _feeConfig.gasPrice
+                                  * (1 + _feeConfig.feeMultiplier))
                                   .toLocaleString()
                                 }
                               {/if}
+                              -->
                             </div>
                             <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
-                              ÷ 10^{feeConfig.decimals}
+                              ÷ 10^{_feeConfig.decimals}
                             </div>
                             <div class="px-3 py-2 text-white border-l border-zinc-700">
-                              {item.amount} {feeConfig.gasTokenSymbol}
+                              {item.amount} {_feeConfig.gasTokenSymbol}
                             </div>
                           </div>
                         </div>
@@ -470,16 +566,16 @@ $effect(() => {
                         <div class="border-2 border-zinc-600 rounded-lg bg-zinc-900/30">
                           <div class="px-3 py-2 text-center">
                             <div class="text-sm font-bold text-white mb-0.5">
-                              {item.amount} {feeConfig.gasTokenSymbol}
+                              {item.amount} {_feeConfig.gasTokenSymbol}
                             </div>
                             <div class="text-xs text-zinc-400">
                               ≈ ${
-                                (parseFloat(item.amount) * feeConfig.usdPrice)
+                                (parseFloat(item.amount) * _feeConfig.usdPrice)
                                 .toFixed(4)
                               } USD
                             </div>
                             <div class="text-xs text-zinc-500">
-                              @ ${feeConfig.usdPrice} per {feeConfig.gasTokenSymbol}
+                              @ ${_feeConfig.usdPrice} per {_feeConfig.gasTokenSymbol}
                             </div>
                           </div>
                         </div>
@@ -492,7 +588,7 @@ $effect(() => {
             {#if calculating}
               <Skeleton class="h-3 w-20" />
             {:else}
-              <span class="text-zinc-400">{item.amount} {feeConfig.gasTokenSymbol}</span>
+              <span class="text-zinc-400">{item.amount} {_feeConfig.gasTokenSymbol}</span>
             {/if}
           </div>
         {/each}
@@ -507,8 +603,9 @@ $effect(() => {
               <Skeleton class="h-3 w-12" />
               <Skeleton class="h-3 w-16" />
             {:else}
-              <span class="text-zinc-500">(${displayFees.totalUsd})</span>
-              <span class="font-semibold">{displayFees.total} {feeConfig.gasTokenSymbol}</span>
+              <span class="text-zinc-500">(${displayTotals.totalUsd})</span>
+              <span class="font-semibold">{O.getOrUndefined(displayTotals.total)}
+                {O.getOrUndefined(feeConfig)?.gasTokenSymbol}</span>
             {/if}
           </div>
         </div>

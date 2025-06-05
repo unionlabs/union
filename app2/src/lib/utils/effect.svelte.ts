@@ -9,7 +9,7 @@ import {
   Option,
   Runtime,
 } from "effect"
-import { constVoid, dual, flow, identity } from "effect/Function"
+import { constant, constVoid, dual, flow, identity } from "effect/Function"
 import type { Simplify } from "effect/Types"
 
 /* eslint-disable @typescript-eslint/no-explicit-any, prefer-rest-params,  */
@@ -57,6 +57,7 @@ type RunPromiseExitOptions = {
    * - `none`: set state to {@link Option.None}
    */
   onInterrupt?: "ignore" | "none" | "error" | undefined
+  variant?: "post" | "root" | "pre" | undefined
 }
 /**
  * {@link Effect.runPromiseExit} but like {@link $effect}.
@@ -81,10 +82,11 @@ export const runPromiseExitWithRuntime: {
   ): Simplify<RunPromiseExitResult<A, E>> => {
     const onInterrupt: NonNullable<RunPromiseExitOptions["onInterrupt"]> = options?.onInterrupt
       ?? "error"
+    const variant: NonNullable<RunPromiseExitOptions["variant"]> = options?.variant ?? "post"
     const runPromiseExit = Runtime.runPromiseExit(runtime)
     let state = $state<Option.Option<Exit.Exit<A, E>>>(Option.none())
     let controller = new AbortController()
-    const match = Match.type<Exit.Exit<A, E>>().pipe(
+    const wrap = Match.type<Exit.Exit<A, E>>().pipe(
       Match.whenAnd(
         Exit.isInterrupted<A, E>,
         () => onInterrupt === "ignore",
@@ -97,20 +99,53 @@ export const runPromiseExitWithRuntime: {
       ),
       Match.orElse(flow(identity<Exit.Exit<A, E>>, Option.some, Option.some)),
     )
-    $effect(() => {
+
+    const effect: () => void | VoidFunction = () => {
       controller = new AbortController()
       runPromiseExit(
         self(),
         { signal: controller.signal },
       ).then(flow(
-        match,
+        wrap,
         Option.match({
           onNone: constVoid,
           onSome: (exit) => (state = exit),
         }),
       ))
       return () => controller.abort("teardown")
-    })
+    }
+
+    switch (variant) {
+      case "post":
+        $effect(effect)
+        break
+      case "root":
+        $effect.root(effect)
+        break
+      case "pre":
+        $effect.pre(effect)
+        break
+    }
+    // Match.value(variant).pipe(
+    //   Match.when("pre", constant($effect.pre(effect))),
+    //   Match.when("post", constant($effect(effect))),
+    //   Match.when("root", constant($effect.root(effect))),
+    //   Match.exhaustive,
+    // )
+    // f(() => {
+    //   controller = new AbortController()
+    //   runPromiseExit(
+    //     self(),
+    //     { signal: controller.signal },
+    //   ).then(flow(
+    //     wrap,
+    //     Option.match({
+    //       onNone: constVoid,
+    //       onSome: (exit) => (state = exit),
+    //     }),
+    //   ))
+    //   return () => controller.abort("teardown")
+    // })
 
     return {
       get current() {

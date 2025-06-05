@@ -1,3 +1,6 @@
+import { GasPriceMap } from "$lib/gasprice"
+import { GasPrice } from "$lib/gasprice/service"
+import { runPromiseExit$ } from "$lib/runtime"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
@@ -9,10 +12,19 @@ import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { Edition } from "$lib/themes"
 import { RawTransferDataSvelte } from "$lib/transfer/shared/data/raw-transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
+import type { RunPromiseExitResult } from "$lib/utils/effect.svelte"
 import type { Chain, Channel, Token } from "@unionlabs/sdk/schema"
 import type { Fees } from "@unionlabs/sdk/schema/fee"
-import { Array as A, Effect, Either, Match, Option, pipe } from "effect"
+import { Array as A, Effect, Match, Option, pipe } from "effect"
 import { type Address, fromHex, type Hex } from "viem"
+
+const gasForChain = Effect.fn((chain: Chain) =>
+  pipe(
+    GasPrice,
+    Effect.andThen(({ of }) => of),
+    Effect.provide(GasPriceMap.get(chain)),
+  )
+)
 
 export class TransferData {
   raw = new RawTransferDataSvelte()

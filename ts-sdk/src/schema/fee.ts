@@ -1,6 +1,6 @@
 import { Array as A, Equal, Option as O, pipe, Schema as S } from "effect"
 
-const FeeValue = S.Int.pipe(S.greaterThanOrEqualTo(0))
+const FeeValue = S.BigIntFromSelf.pipe(S.greaterThanOrEqualToBigInt(0n))
 type FeeValue = typeof FeeValue.Type
 
 const Action = S.Union(
@@ -16,7 +16,7 @@ export const Fees = S.transform(
   pipe(
     S.Struct({
       action: Action,
-      fee: FeeValue,
+      fee: S.BigInt.pipe(S.greaterThanOrEqualToBigInt(0n)),
     }),
     S.Array,
     S.filter(
@@ -33,7 +33,7 @@ export const Fees = S.transform(
     ),
   ),
   S.Struct({
-    PACKET_RECV: S.OptionFromSelf(FeeValue),
+    PACKET_RECV: S.OptionFromSelf(FeeValue).pipe(),
     PACKET_SEND: S.OptionFromSelf(FeeValue),
     PACKET_SEND_LC_UPDATE_L0: S.OptionFromSelf(FeeValue),
     PACKET_SEND_LC_UPDATE_L1: S.OptionFromSelf(FeeValue),
