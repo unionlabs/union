@@ -350,7 +350,21 @@
                           unset LD_LIBRARY_PATH
                           EOF
 
+                          echo "patched cast"
+
                           chmod +x $out/bin/cast
+
+                          mv $out/bin/forge $out/bin/forge-cursed
+
+                          cat <<EOF >> $out/bin/forge
+                          export LD_LIBRARY_PATH=${lib.makeLibraryPath [ super.stdenv.cc.cc.lib ]}
+                          $out/bin/forge-cursed "\$@"
+                          unset LD_LIBRARY_PATH
+                          EOF
+
+                          chmod +x $out/bin/forge
+
+                          echo "patched forge"
                         '';
                     });
 

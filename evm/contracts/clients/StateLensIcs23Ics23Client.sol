@@ -28,14 +28,6 @@ struct Header {
     bytes l2ConsensusState;
 }
 
-struct LegacyClientState {
-    string l2ChainId;
-    uint32 l1ClientId;
-    uint32 l2ClientId;
-    uint64 l2LatestHeight;
-    bytes32 contractAddress;
-}
-
 struct ClientState {
     string l2ChainId;
     uint32 l1ClientId;
@@ -133,7 +125,7 @@ contract StateLensIcs23Ics23Client is
 
     address public immutable IBC_HANDLER;
 
-    mapping(uint32 => LegacyClientState) private legacyClientStates;
+    uint256 private _deprecatedLegacyClientStates;
     mapping(uint32 => mapping(uint64 => ConsensusState)) private consensusStates;
 
     mapping(uint32 => ClientState) private clientStates;
@@ -151,30 +143,6 @@ contract StateLensIcs23Ics23Client is
         __AccessManaged_init(authority);
         __UUPSUpgradeable_init();
         __Pausable_init();
-    }
-
-    function migrateClientStateToV1(
-        uint32[] calldata clientIds
-    ) public restricted {
-        for (uint256 i = 0; i < clientIds.length; i++) {
-            LegacyClientState storage legacyState =
-                legacyClientStates[clientIds[i]];
-            ClientState storage newState = clientStates[clientIds[i]];
-
-            newState.l2ChainId = legacyState.l2ChainId;
-            newState.l1ClientId = legacyState.l1ClientId;
-            newState.l2ClientId = legacyState.l2ClientId;
-            newState.l2LatestHeight = legacyState.l2LatestHeight;
-            newState.version = uint256(1);
-            newState.state = ExtraV1({
-                storeKey: IBCStoreLib.WASMD_MODULE_STORE_KEY,
-                keyPrefixStorage: abi.encodePacked(
-                    IBCStoreLib.WASMD_CONTRACT_STORE_PREFIX,
-                    legacyState.contractAddress,
-                    IBCStoreLib.IBC_UNION_COSMWASM_COMMITMENT_PREFIX
-                )
-            }).encode();
-        }
     }
 
     function createClient(

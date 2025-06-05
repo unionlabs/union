@@ -1559,20 +1559,11 @@ contract UpgradeStateLensIcs23Ics23Client is VersionedScript {
     address immutable deployer;
     address immutable sender;
     uint256 immutable privateKey;
-    uint32[] public clientIds;
 
     constructor() {
         deployer = vm.envAddress("DEPLOYER");
         sender = vm.envAddress("SENDER");
         privateKey = vm.envUint("PRIVATE_KEY");
-
-        // uint256[] memory u256ClientIds = vm.envUint("CLIENT_IDS", ",");
-
-        // clientIds = new uint32[](u256ClientIds.length);
-
-        // for (uint256 i = 0; i < u256ClientIds.length; ++i) {
-        //     clientIds[i] = uint32(u256ClientIds[i]);
-        // }
     }
 
     function getDeployed(
@@ -1605,10 +1596,6 @@ contract UpgradeStateLensIcs23Ics23Client is VersionedScript {
         stateLensIcs23Ics23Client.upgradeToAndCall(
             newImplementation, new bytes(0)
         );
-        // abi.encodeWithSelector(
-        //     StateLensIcs23Ics23Client.migrateClientStateToV1.selector,
-        //     clientIds
-        // )
 
         vm.stopBroadcast();
     }
