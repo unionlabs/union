@@ -7,9 +7,9 @@ use chrono::DateTime;
 use cosmwasm_std::entry_point;
 use cosmwasm_std::{
     instantiate2_address, to_json_binary, to_json_string, wasm_execute, Addr, BankMsg, Binary,
-    CodeInfoResponse, Coin, Coins, CosmosMsg, Deps, DepsMut, DistributionMsg, Empty, Env, Event,
-    MessageInfo, QueryRequest, Reply, Response, StakingMsg, StdError, StdResult, Storage, SubMsg,
-    SubMsgResult, Uint256, WasmMsg,
+    CodeInfoResponse, Coin, Coins, CosmosMsg, DecCoin, Decimal256, Deps, DepsMut, DistributionMsg,
+    Empty, Env, Event, MessageInfo, QueryRequest, Reply, Response, StakingMsg, StdError, StdResult,
+    Storage, SubMsg, SubMsgResult, Uint128, Uint256, WasmMsg,
 };
 use frissitheto::UpgradeMsg;
 use ibc_union_msg::{
@@ -27,13 +27,13 @@ use crate::{
     com::{
         Ack, Batch, BatchAck, Forward, FungibleAssetMetadata, FungibleAssetOrder,
         FungibleAssetOrderAck, FungibleAssetOrderV2, Instruction, Multiplex, Stake, Unstake,
-        UnstakeAck, WithdrawStake, WithdrawStakeAck, ZkgmPacket, ACK_ERR_ONLY_MAKER,
-        FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL, FORWARD_SALT_MAGIC,
-        FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1, FUNGIBLE_ASSET_METADATA_TYPE_IMAGE,
-        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP, FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
-        INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_BATCH, OP_FORWARD,
-        OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, OP_STAKE, OP_UNSTAKE, OP_WITHDRAW_STAKE,
-        TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
+        UnstakeAck, WithdrawRewards, WithdrawRewardsAck, WithdrawStake, WithdrawStakeAck,
+        ZkgmPacket, ACK_ERR_ONLY_MAKER, FILL_TYPE_MARKETMAKER, FILL_TYPE_PROTOCOL,
+        FORWARD_SALT_MAGIC, FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1,
+        FUNGIBLE_ASSET_METADATA_TYPE_IMAGE, FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
+        FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2,
+        OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, OP_STAKE, OP_UNSTAKE,
+        OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
     msg::{Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, ZkgmMsg},
     state::{
@@ -1448,6 +1448,16 @@ fn execute_internal(
             let withdraw_stake = WithdrawStake::abi_decode_params_validate(&instruction.operand)?;
             execute_withdraw_stake(deps, env, packet, withdraw_stake, intent)
         }
+        OP_WITHDRAW_REWARDS => {
+            if instruction.version > INSTR_VERSION_0 {
+                return Err(ContractError::UnsupportedVersion {
+                    version: instruction.version,
+                });
+            }
+            let withdraw_rewards =
+                WithdrawRewards::abi_decode_params_validate(&instruction.operand)?;
+            execute_withdraw_rewards(deps, env, packet, withdraw_rewards, intent)
+        }
         _ => Err(ContractError::UnknownOpcode {
             opcode: instruction.opcode,
         }),
@@ -2580,6 +2590,97 @@ fn execute_withdraw_stake(
             &ExecuteMsg::InternalWriteAck {
                 ack: WithdrawStakeAck {
                     amount: U256::from(coin.amount.u128()),
+                }
+                .abi_encode_params()
+                .into(),
+            },
+            vec![],
+        )?))
+}
+
+#[allow(clippy::too_many_arguments)]
+fn execute_withdraw_rewards(
+    deps: DepsMut,
+    env: Env,
+    packet: Packet,
+    withdraw_rewards: WithdrawRewards,
+    intent: bool,
+) -> Result<Response, ContractError> {
+    // Market makers not allowed to fill unstaking requests.
+    if intent {
+        return Ok(Response::new().add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: ACK_ERR_ONLY_MAKER.into(),
+            },
+            vec![],
+        )?));
+    }
+
+    let validator =
+        str::from_utf8(&withdraw_rewards.validator).map_err(|_| ContractError::InvalidValidator)?;
+    let governance_token = str::from_utf8(&withdraw_rewards.governance_token)
+        .map_err(|_| ContractError::InvalidGovernanceToken)?;
+
+    let stake_account = predict_stake_account(
+        deps.as_ref(),
+        env.clone(),
+        packet.destination_channel_id,
+        withdraw_rewards.token_id,
+    )?;
+
+    let reward = deps
+        .querier
+        .query_delegation_rewards(stake_account.clone(), validator)?
+        .into_iter()
+        .find_map(|reward| {
+            if reward.denom == governance_token {
+                Some(reward)
+            } else {
+                None
+            }
+        })
+        .unwrap_or(DecCoin::new(Decimal256::zero(), governance_token));
+
+    let reward = Coin::new(
+        Uint128::try_from(reward.amount.to_uint_floor()).expect("impossible"),
+        governance_token,
+    );
+
+    let minter = TOKEN_MINTER.load(deps.storage)?;
+
+    // The amount will be minted on the counterparty
+    increase_channel_balance(
+        deps.storage,
+        packet.destination_channel_id,
+        U256::ZERO,
+        governance_token.to_string(),
+        reward.amount.u128().into(),
+    )?;
+
+    Ok(Response::new()
+        .add_message(wasm_execute(
+            stake_account.clone(),
+            &cw_account::msg::ExecuteMsg {
+                messages: vec![
+                    DistributionMsg::WithdrawDelegatorReward {
+                        validator: validator.into(),
+                    }
+                    .into(),
+                    BankMsg::Send {
+                        to_address: minter.into(),
+                        amount: vec![reward.clone()],
+                    }
+                    .into(),
+                ],
+            },
+            vec![],
+        )?)
+        .add_message(wasm_execute(
+            env.contract.address,
+            &ExecuteMsg::InternalWriteAck {
+                ack: WithdrawRewardsAck {
+                    amount: U256::from(reward.amount.u128()),
                 }
                 .abi_encode_params()
                 .into(),

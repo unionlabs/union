@@ -116,6 +116,16 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
                 path,
                 ZkgmLib.decodeWithdrawStake(instruction.operand)
             );
+        } else if (
+            instruction.isInst(
+                ZkgmLib.OP_WITHDRAW_REWARDS, ZkgmLib.INSTR_VERSION_0
+            )
+        ) {
+            _verifyWithdrawRewards(
+                channelId,
+                path,
+                ZkgmLib.decodeWithdrawRewards(instruction.operand)
+            );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
         }
@@ -419,6 +429,12 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             && _stake.unstakingCompletion <= block.timestamp;
     }
 
+    function _canWithdrawRewards(
+        ZkgmStake storage _stake
+    ) internal view returns (bool) {
+        return _stake.state == ZkgmStakeState.STAKED;
+    }
+
     function _verifyWithdrawStake(
         uint32 channelId,
         uint256 path,
@@ -442,6 +458,34 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         // Escrow the NFT.
         _getStakeNFTManager().transferFrom(
             msg.sender, address(this), withdrawStake.tokenId
+        );
+    }
+
+    function _verifyWithdrawRewards(
+        uint32 channelId,
+        uint256 path,
+        WithdrawRewards calldata withdrawRewards
+    ) internal {
+        if (path != 0) {
+            revert ZkgmLib.ErrInstructionCannotBeForwarded();
+        }
+        ZkgmStake storage _stake = stakes[withdrawRewards.tokenId];
+        if (channelId != _stake.channelId) {
+            revert ZkgmLib.ErrInvalidStakeChannelId();
+        }
+        (IZkgmERC20 governanceToken, bytes memory unwrappedGovernanceToken) =
+            _getGovernanceToken(channelId);
+        if (!withdrawRewards.governanceToken.eq(unwrappedGovernanceToken)) {
+            revert ZkgmLib.ErrInvalidStakeGovernanceToken();
+        }
+        if (!_canWithdrawRewards(_stake)) {
+            revert ZkgmLib.ErrStakingRewardNotWithdrawable();
+        }
+        if (!_stake.validator.eq(withdrawRewards.validator)) {
+            revert ZkgmLib.ErrInvalidStakeValidator();
+        }
+        _getStakeNFTManager().transferFrom(
+            msg.sender, address(this), withdrawRewards.tokenId
         );
     }
 

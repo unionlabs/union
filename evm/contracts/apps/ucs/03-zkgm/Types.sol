@@ -83,6 +83,14 @@ struct WithdrawStake {
     bytes beneficiary;
 }
 
+struct WithdrawRewards {
+    uint256 tokenId;
+    bytes governanceToken;
+    bytes validator;
+    bytes sender;
+    bytes beneficiary;
+}
+
 struct Ack {
     uint256 tag;
     bytes innerAck;
@@ -102,6 +110,10 @@ struct UnstakeAck {
 }
 
 struct WithdrawStakeAck {
+    uint256 amount;
+}
+
+struct WithdrawRewardsAck {
     uint256 amount;
 }
 

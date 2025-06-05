@@ -22,7 +22,7 @@ alloy-primitives            = { workspace = true }
 alloy-sol-types             = { workspace = true }
 chrono                      = { workspace = true }
 cosmwasm-schema             = { workspace = true }
-cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "staking"] }
+cosmwasm-std                = { workspace = true, features = ["cosmwasm_1_2", "cosmwasm_1_4", "staking"] }
 cw-account                  = { workspace = true }
 cw-storage-plus             = { workspace = true }
 embed-commit                = { workspace = true }

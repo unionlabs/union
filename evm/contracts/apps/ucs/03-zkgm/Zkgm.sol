@@ -653,6 +653,22 @@ contract UCS03Zkgm is
                     )
                 )
             );
+        } else if (
+            instruction.isInst(
+                ZkgmLib.OP_WITHDRAW_REWARDS, ZkgmLib.INSTR_VERSION_0
+            )
+        ) {
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.acknowledgeWithdrawRewards,
+                    (
+                        ibcPacket,
+                        ZkgmLib.decodeWithdrawRewards(instruction.operand),
+                        successful,
+                        ack
+                    )
+                )
+            );
         } else {
             revert ZkgmLib.ErrUnknownOpcode();
         }
@@ -859,6 +875,20 @@ contract UCS03Zkgm is
                     (
                         ibcPacket,
                         ZkgmLib.decodeWithdrawStake(instruction.operand)
+                    )
+                )
+            );
+        } else if (
+            instruction.isInst(
+                ZkgmLib.OP_WITHDRAW_REWARDS, ZkgmLib.INSTR_VERSION_0
+            )
+        ) {
+            _callStakeImpl(
+                abi.encodeCall(
+                    UCS03ZkgmStakeImpl.timeoutWithdrawRewards,
+                    (
+                        ibcPacket,
+                        ZkgmLib.decodeWithdrawRewards(instruction.operand)
                     )
                 )
             );
