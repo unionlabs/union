@@ -40,7 +40,7 @@ use sui_sdk::{
     },
     SuiClient, SuiClientBuilder,
 };
-use tracing::{info, instrument};
+use tracing::{debug, info, instrument};
 use ucs03_zkgm::com::{FungibleAssetOrder, ZkgmPacket};
 use unionlabs::{
     primitives::{encoding::HexPrefixed, Bytes, U256},
@@ -53,6 +53,7 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::ChainId,
     rpc::{types::PluginInfo, PluginServer},
+    serde_json::{self, json},
     vm::{call, noop, pass::PassResult, Op, Visit},
     DefaultCmd,
 };
@@ -80,6 +81,8 @@ pub struct Module {
     pub ibc_handler_address: SuiAddress,
 
     pub ibc_store: SuiAddress,
+
+    pub graphql_url: String,
 
     pub sui_client: sui_sdk::SuiClient,
 
@@ -119,6 +122,7 @@ impl Plugin for Module {
             chain_id: ChainId::new(chain_id.to_string()),
             ibc_handler_address: config.ibc_handler_address,
             sui_client,
+            graphql_url: config.graphql_url,
             ibc_store_initial_seq,
             keyring: ConcurrentKeyring::new(
                 config.keyring.name,
@@ -158,6 +162,7 @@ impl Plugin for Module {
 pub struct Config {
     pub chain_id: ChainId,
     pub rpc_url: String,
+    pub graphql_url: String,
     pub ibc_handler_address: SuiAddress,
     pub ibc_store: SuiAddress,
 
@@ -316,6 +321,11 @@ async fn process_msgs(
                         initial_shared_version: module.ibc_store_initial_seq,
                         mutable: true,
                     }),
+                    CallArg::Object(ObjectArg::SharedObject {
+                        id: ObjectID::from_str("0x6").unwrap(),
+                        initial_shared_version: 1.into(),
+                        mutable: false,
+                    }),
                     CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.client_message).unwrap()),
                 ],
@@ -394,7 +404,7 @@ async fn process_msgs(
             Datagram::ChannelOpenInit(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
 
                 (
                     module_info.latest_address,
@@ -418,7 +428,7 @@ async fn process_msgs(
             Datagram::ChannelOpenTry(data) => {
                 let port_id = String::from_utf8(data.port_id.to_vec()).expect("port id is String");
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
 
                 (
                     module_info.latest_address,
@@ -460,8 +470,7 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
-
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
                 (
                     module_info.latest_address,
                     msg,
@@ -498,7 +507,7 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info = parse_port(&module.sui_client, &port_id).await;
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
                 (
                     module_info.latest_address,
                     msg,
@@ -533,7 +542,7 @@ async fn process_msgs(
 
                 let port_id = bcs::from_bytes::<String>(&res[0].0).unwrap();
 
-                let module_info: ModuleInfo = parse_port(&module.sui_client, &port_id).await;
+                let module_info = parse_port(&module.graphql_url, &port_id).await;
 
                 let store_initial_seq = module
                     .sui_client
@@ -835,43 +844,42 @@ pub struct ModuleInfo {
     pub stores: Vec<SuiAddress>,
 }
 
-pub async fn parse_port(_: &SuiClient, port_id: &str) -> ModuleInfo {
+// original_address::module_name::store_address
+// TODO(aeryz): we can also choose to include store_name here
+pub async fn parse_port(graphql_url: &str, port_id: &str) -> ModuleInfo {
     let module_info = port_id.split("::").collect::<Vec<&str>>();
     if module_info.len() < 4 {
         panic!("invalid port id");
     }
 
-    // let upgrade_cap_address: SuiAddress = module_info[2].parse().unwrap();
+    let original_address = module_info[0].parse().unwrap();
 
-    // let sui_sdk::rpc_types::SuiMoveValue::Address(addr) = sui_client
-    //     .read_api()
-    //     .get_object_with_options(
-    //         upgrade_cap_address.into(),
-    //         SuiObjectDataOptions::new().with_content(),
-    //     )
-    //     .await
-    //     .unwrap()
-    //     .into_object()
-    //     .unwrap()
-    //     .content
-    //     .unwrap()
-    //     .try_into_move()
-    //     .unwrap()
-    //     .fields
-    //     .field_value("package")
-    //     .unwrap()
-    // else {
-    //     panic!("this can't be the case");
-    // };
+    let query = json!({
+        "query": "query ($address: SuiAddress) { latestPackage(address: $address) { address } }",
+        "variables": { "address": original_address }
+    });
 
-    // TODO(aeryz): the latest address has to be fetched using graphql
+    let client = reqwest::Client::new();
+    let resp = client
+        .post(graphql_url)
+        .header("Content-Type", "application/json")
+        .body(query.to_string())
+        .send()
+        .await
+        .unwrap()
+        .text()
+        .await
+        .unwrap();
+
+    let v: serde_json::Value = serde_json::from_str(resp.as_str()).unwrap();
+    let latest_address =
+        SuiAddress::from_str(v["data"]["latestPackage"]["address"].as_str().unwrap()).unwrap();
 
     ModuleInfo {
-        original_address: module_info[0].parse().unwrap(),
-        // TODO(aeryz): change this
-        latest_address: module_info[0].parse().unwrap(),
+        original_address,
+        latest_address,
         module_name: module_info[1].to_string(),
-        stores: module_info[3..]
+        stores: module_info[2..]
             .iter()
             .map(|s| s.parse().unwrap())
             .collect(),
@@ -883,6 +891,7 @@ pub async fn send_transactions(
     pk: &Arc<SuiKeyPair>,
     ptb: ProgrammableTransaction,
 ) -> RpcResult<SuiTransactionBlockResponse> {
+    println!("SUBMIT BROTHERRR");
     let sender = SuiAddress::from(&pk.public());
     let gas_coin = module
         .sui_client
@@ -952,5 +961,49 @@ pub async fn send_transactions(
             )
         })?;
 
+    debug!("tx response {transaction_response:?}");
+
     Ok(transaction_response)
 }
+
+/*
+╭───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│ Object Changes                                                                                                                                    │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ Created Objects:                                                                                                                                  │
+│  ┌──                                                                                                                                              │
+│  │ ObjectID: 0x3f40f5ee083b947a74dfbf0071e8ae051d6a09366c065b720930f6ccae86f75e                                                                   │
+│  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                     │
+│  │ Owner: Account Address ( 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b )                                                  │
+│  │ ObjectType: 0x2::package::UpgradeCap                                                                                                           │
+│  │ Version: 349179655                                                                                                                             │
+│  │ Digest: 6KSt3SNKKfFLAqupM5DP3Q5Wxo8QA3AEq1fLamqHTvn5                                                                                           │
+│  └──                                                                                                                                              │
+│  ┌──                                                                                                                                              │
+│  │ ObjectID: 0x50fe8c5faed80bef58c6a6243689f03a36000852f5aed8efbff50278ae887a71                                                                   │
+│  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                     │
+│  │ Owner: Shared( 349179655 )                                                                                                                     │
+│  │ ObjectType: 0x3b305eaf161580056178f6e375624a406fcad0eebb99ebb802788d6c47e2b367::ibc::IBCStore                                                  │
+│  │ Version: 349179655                                                                                                                             │
+│  │ Digest: ANSraQpcpxLMee2uP3Uq5kXxEgh3z7BsT6z3EwfbquYU                                                                                           │
+│  └──                                                                                                                                              │
+│ Mutated Objects:                                                                                                                                  │
+│  ┌──                                                                                                                                              │
+│  │ ObjectID: 0xe1fbe13ed5e81d9dba74e2819c6a4cfaba6be25bdadb7ac5321def4eaab5bf09                                                                   │
+│  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                     │
+│  │ Owner: Account Address ( 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b )                                                  │
+│  │ ObjectType: 0x2::coin::Coin<0x2::sui::SUI>                                                                                                     │
+│  │ Version: 349179655                                                                                                                             │
+│  │ Digest: 7y8JWpcE4eirC8CHKdGeJQmYX7wny1yq3VrhJLEsXGvQ                                                                                           │
+│  └──                                                                                                                                              │
+│ Published Objects:                                                                                                                                │
+│  ┌──                                                                                                                                              │
+│  │ PackageID: 0x3b305eaf161580056178f6e375624a406fcad0eebb99ebb802788d6c47e2b367                                                                  │
+│  │ Version: 1                                                                                                                                     │
+│  │ Digest: 44KR1h95cn5gFYF4QZDhTrWg3jytXgiwxnFrxZqbtgBq                                                                                           │
+│  │ Modules: bcs_utils, channel, commitment, connection_end, create_lens_client_event, ethabi, groth16_verifier, height, ibc, light_client, packet │
+│  └──                                                                                                                                              │
+╰─
+
+commitments: 0xaef6807dd959db193c6dd56b54aea5ebab70e93acf7053f231014c6f93f0ca77
+*/
