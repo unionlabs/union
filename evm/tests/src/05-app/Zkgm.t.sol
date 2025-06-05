@@ -3800,6 +3800,8 @@ contract ZkgmTests is Test {
             opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
             operand: ZkgmLib.encodeFungibleAssetOrderV2(foa)
         });
+        console.log("Image");
+        console.logBytes32(image);
         console.log("Instruction");
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
@@ -3887,44 +3889,87 @@ contract ZkgmTests is Test {
 
     function test_create_stake() public {
         Stake memory stake = Stake({
-            tokenId: 0,
+            tokenId: 1,
             governanceToken: bytes("muno"),
-            sender: abi.encodePacked(
-                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
-            ),
+            governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(
-                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+                0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
             ),
             validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
             amount: 10
         });
-        console.logBytes(ZkgmLib.encodeStake(stake));
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_0,
+            opcode: ZkgmLib.OP_STAKE,
+            operand: ZkgmLib.encodeStake(stake)
+        });
+        console.log("Instruction");
+        console.log(inst.version);
+        console.log(inst.opcode);
+        console.logBytes(inst.operand);
     }
 
     function test_create_unstake() public {
         Unstake memory unstake = Unstake({
-            tokenId: 0,
+            tokenId: 1,
             governanceToken: bytes("muno"),
-            sender: abi.encodePacked(
-                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
-            ),
+            governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
             amount: 10
         });
-        console.logBytes(ZkgmLib.encodeUnstake(unstake));
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_0,
+            opcode: ZkgmLib.OP_UNSTAKE,
+            operand: ZkgmLib.encodeUnstake(unstake)
+        });
+        console.log("Instruction");
+        console.log(inst.version);
+        console.log(inst.opcode);
+        console.logBytes(inst.operand);
     }
 
     function test_create_withdraw_stake() public {
         WithdrawStake memory withdrawStake = WithdrawStake({
-            tokenId: 0,
+            tokenId: 1,
             governanceToken: bytes("muno"),
-            sender: abi.encodePacked(
-                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
-            ),
+            governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(
-                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+                0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
             )
         });
-        console.logBytes(ZkgmLib.encodeWithdrawStake(withdrawStake));
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_0,
+            opcode: ZkgmLib.OP_WITHDRAW_STAKE,
+            operand: ZkgmLib.encodeWithdrawStake(withdrawStake)
+        });
+        console.log("Instruction");
+        console.log(inst.version);
+        console.log(inst.opcode);
+        console.logBytes(inst.operand);
+    }
+
+    function test_create_withdraw_rewards() public {
+        WithdrawRewards memory withdrawRewards = WithdrawRewards({
+            tokenId: 1,
+            governanceToken: bytes("muno"),
+            governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
+            validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
+            sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
+            beneficiary: abi.encodePacked(
+                0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
+            )
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_0,
+            opcode: ZkgmLib.OP_WITHDRAW_REWARDS,
+            operand: ZkgmLib.encodeWithdrawRewards(withdrawRewards)
+        });
+        console.log("Instruction");
+        console.log(inst.version);
+        console.log(inst.opcode);
+        console.logBytes(inst.operand);
     }
 }
