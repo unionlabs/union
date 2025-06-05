@@ -1172,18 +1172,18 @@ contract GetDeployed is VersionedScript {
             UCS03Zkgm(payable(ucs03)).STAKE_IMPL().toHexString(), implUCS03Stake
         );
 
-        string memory implUCS03FOA = "implUCS03FOA";
-        implUCS03FOA.serialize(
+        string memory implUCS03FAO = "implUCS03FAO";
+        implUCS03FAO.serialize(
             "contract",
             string(
                 "contracts/apps/ucs/03-zkgm/FungibleAssetOrder.sol:UCS03ZkgmFungibleAssetOrderImpl"
             )
         );
-        implUCS03FOA = implUCS03FOA.serialize(
+        implUCS03FAO = implUCS03FAO.serialize(
             "args", abi.encode(weth, zkgmERC20, rateLimitEnabled)
         );
         impls.serialize(
-            UCS03Zkgm(payable(ucs03)).FOA_IMPL().toHexString(), implUCS03FOA
+            UCS03Zkgm(payable(ucs03)).FAO_IMPL().toHexString(), implUCS03FAO
         );
 
         string memory implUCS03 = "implUCS03";
@@ -1196,7 +1196,7 @@ contract GetDeployed is VersionedScript {
                 handler,
                 UCS03Zkgm(payable(ucs03)).SEND_IMPL(),
                 UCS03Zkgm(payable(ucs03)).STAKE_IMPL(),
-                UCS03Zkgm(payable(ucs03)).FOA_IMPL()
+                UCS03Zkgm(payable(ucs03)).FAO_IMPL()
             )
         );
         impls = impls.serialize(implOf(ucs03).toHexString(), implUCS03);
