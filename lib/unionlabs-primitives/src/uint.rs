@@ -4,7 +4,7 @@ use core::{
     fmt::{self, Display},
     iter::Sum,
     num::NonZeroU32,
-    ops::{Add, AddAssign, BitAnd, Div, Mul, Rem},
+    ops::{Add, AddAssign, BitAnd, Div, Mul, Rem, Sub, SubAssign},
     str::FromStr,
 };
 
@@ -318,6 +318,18 @@ impl U256 {
                 )?)
             })
     }
+
+    #[must_use]
+    pub fn div_ceil(self, other: Self) -> Self {
+        // https://doc.rust-lang.org/stable/src/core/num/uint_macros.rs.html#3247
+
+        let (d, r) = self.0.div_mod(other.0);
+        if r.is_zero() {
+            Self(d)
+        } else {
+            Self(d) + Self::ONE
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
@@ -379,6 +391,14 @@ impl Add for U256 {
     }
 }
 
+impl Sub for U256 {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Self(self.0 - rhs.0)
+    }
+}
+
 impl Mul for U256 {
     type Output = Self;
 
@@ -390,6 +410,12 @@ impl Mul for U256 {
 impl AddAssign for U256 {
     fn add_assign(&mut self, rhs: Self) {
         self.0 += rhs.0;
+    }
+}
+
+impl SubAssign for U256 {
+    fn sub_assign(&mut self, rhs: Self) {
+        self.0 -= rhs.0;
     }
 }
 

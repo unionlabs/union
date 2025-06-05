@@ -108,9 +108,9 @@ _: {
           ucs03_type = "cw20";
           bech32_prefix = "union";
           apps = {
-            ucs03 = ucs03-configs.cw20 // {
-              rate_limit_disabled = true;
-            };
+            # ucs03 = ucs03-configs.cw20 // {
+            #   rate_limit_disabled = true;
+            # };
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
@@ -441,6 +441,11 @@ _: {
           name = "sui";
           dir = "sui";
           client-type = "sui";
+        }
+        {
+          name = "parlia";
+          dir = "parlia";
+          client-type = "parlia";
         }
       ];
 
