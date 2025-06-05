@@ -1,0 +1,28 @@
+[package]
+name    = "parlia-types"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = "LICENSE"
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+bincode              = { workspace = true, features = ["alloc", "derive"], optional = true }
+hex-literal          = { workspace = true }
+rlp                  = { workspace = true, features = ["derive"] }
+serde                = { workspace = true, optional = true, features = ["derive"] }
+serde-utils          = { workspace = true, optional = true }
+sha3                 = { workspace = true }
+unionlabs-primitives = { workspace = true, features = ["rlp", "generic-array-compat"] }
+
+[features]
+bincode = ["dep:bincode", "unionlabs-primitives/bincode"]
+serde   = ["dep:serde", "dep:serde-utils", "unionlabs-primitives/serde"]
+
+[dev-dependencies]
+hex-literal = { workspace = true }

@@ -312,6 +312,38 @@ pub mod u64_hex {
     }
 }
 
+pub mod u64_hex_opt {
+    use alloc::{format, string::String};
+
+    use serde::{de, Deserialize};
+
+    use crate::HEX_ENCODING_PREFIX;
+
+    pub fn serialize<S>(data: &Option<u64>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match data {
+            Some(data) => serializer.serialize_str(&format!("0x{data:x}")),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<u64>, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        <Option<String>>::deserialize(deserializer).and_then(|x| {
+            x.map(|x| {
+                x.strip_prefix(HEX_ENCODING_PREFIX)
+                    .ok_or_else(|| de::Error::custom("missing 0x prefix"))
+                    .and_then(|s| u64::from_str_radix(s, 16).map_err(de::Error::custom))
+            })
+            .transpose()
+        })
+    }
+}
+
 pub mod hex_upper_unprefixed {
     use alloc::{format, string::String, vec::Vec};
     use core::fmt::Debug;
