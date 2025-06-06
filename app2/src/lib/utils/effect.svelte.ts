@@ -117,12 +117,15 @@ export const runPromiseExitWithRuntime: {
 
     switch (variant) {
       case "post":
+        console.log("POST")
         $effect(effect)
         break
       case "root":
+        console.log("ROOT")
         $effect.root(effect)
         break
       case "pre":
+        console.log("PRE")
         $effect.pre(effect)
         break
     }

@@ -7,6 +7,7 @@ import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { GasPriceMap } from "$lib/gasprice"
 import { GasPrice } from "$lib/gasprice/service"
 import { runPromiseExit$, runSync } from "$lib/runtime"
+import { FeeStore } from "$lib/stores/fee.svelte"
 import { cn } from "$lib/utils"
 import { PriceOracle } from "@unionlabs/sdk/PriceOracle"
 import type { Chain } from "@unionlabs/sdk/schema/chain"
@@ -302,6 +303,8 @@ $effect(() => {
   <b>USD:</b>
   <pre class="w-[350px] overflow-scroll">{JSON.stringify(usdDisplay, null, 2)}</pre>
   -->
+  {FeeStore.toasts}
+  {FeeStore.a.current}
 </div>
 <div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
