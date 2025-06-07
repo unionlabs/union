@@ -42,7 +42,7 @@ pub enum ModuleCallback {
     MakeBatchTransactionUnion(MakeBatchTransaction<IbcUnion>),
 }
 
-/// Given an [`OrderedMsgUpdateClients`], returns [`Op`]s that generate [`IbcMessage`]s with proofs at the highest height of the updates.
+/// Given an `OrderedMsgUpdateClients`, returns [`Op`]s that generate `IbcMessage`s with proofs at the highest height of the updates.
 #[model]
 #[serde(bound(serialize = "", deserialize = ""))]
 pub struct MakeIbcMessagesFromUpdate<V: IbcSpecExt> {

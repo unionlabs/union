@@ -40,7 +40,7 @@ pub struct BatchableEvent<V: IbcSpecExt> {
 }
 
 // REVIEW: We probably want to add a way to have "a packet timed out" be a variant here as well
-/// A subset of [`FullEvent`], containing only events that cause an action on the counterparty chain.
+/// A subset of [`ibc_classic_spec::FullEvent`], containing only events that cause an action on the counterparty chain.
 #[model]
 #[derive(Enumorph)]
 pub enum EventClassic {
@@ -77,7 +77,7 @@ impl TryFrom<ibc_classic_spec::FullEvent> for EventClassic {
 }
 
 // REVIEW: We probably want to add a way to have "a packet timed out" be a variant here as well
-/// A subset of [`FullEvent`], containing only events that cause an action on the counterparty chain.
+/// A subset of [`ibc_union_spec::event::FullEvent`], containing only events that cause an action on the counterparty chain.
 #[model]
 #[derive(Enumorph)]
 pub enum EventUnion {

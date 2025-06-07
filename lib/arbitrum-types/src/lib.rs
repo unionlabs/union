@@ -17,50 +17,40 @@ pub mod slots {
     use solidity_slot::{MappingKey, Slot, U256};
     use unionlabs_primitives::ByteArrayExt;
 
-    /// The slot containing [`_latestNodeCreated`].
+    /// The slot containing [`_latestNodeCreated`](https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L62).
     ///
     /// ```solidity
     /// _latestNodeCreated uint64;
     /// ```
-    ///
-    /// [`_latestNodeCreated`] https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L62
     pub const ROLLUP_CORE_LATEST_NODE_CREATED: Slot =
         Slot::Offset(U256::from_limbs([117, 0, 0, 0]));
 
-    /// The offset into the storage layout of the slot containing [`_latestNodeCreated`].
-    ///
-    /// [`_latestNodeCreated`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L62
+    /// The offset into the storage layout of the slot containing [`_latestNodeCreated`](https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L62).
     pub const ROLLUP_CORE_LATEST_NODE_CREATED_SLOT_OFFSET_BYTES: u8 = 16;
 
-    /// The base slot of the [`_nodes`] mapping.
+    /// The base slot of the [`_nodes`](https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#L64) mapping.
     ///
     /// ```solidity
     /// _nodes mapping(uint64 => struct Node);
     /// ```
     ///
-    /// Use [`nodes()`] to calculate the slot for the mapping.
-    ///
-    /// [`_nodes`] https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/RollupCore.sol#64
+    /// Use `nodes()` to calculate the slot for the mapping.
     pub const ROLLUP_CORE_NODES_MAPPING_BASE: Slot = Slot::Offset(U256::from_limbs([118, 0, 0, 0]));
 
-    /// The offset of the `confirmData` field in the storage layout of the [`Node`] struct.
+    /// The offset of the `confirmData` field in the storage layout of the [`Node`](https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L21-L46) struct.
     ///
-    /// The node value is stored in the mapping at [`ROLLUP_CORE_NODES_MAPPING_BASE_SLOT`].
-    ///
-    /// [`Node`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L21-L46
+    /// The node value is stored in the mapping at [`crate::slots::ROLLUP_CORE_NODES_MAPPING_BASE`].
     pub const NODE_CONFIRM_DATA_OFFSET: U256 = U256::from_limbs([2, 0, 0, 0]);
 
-    /// Calculate the slot of the [`confirmData`] field of the `Node` struct stored in the `_nodes`
+    /// Calculate the slot of the [`confirmData`](https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L27) field of the `Node` struct stored in the `_nodes`
     /// mapping.
     ///
     /// ```solidity
     /// _nodes mapping(uint64 => struct Node);
     /// ```
     ///
-    /// The base slot for this mapping is [`ROLLUP_CORE_NODES_MAPPING_BASE_SLOT`], and the
-    /// `confirmData` offset is [`NODE_CONFIRM_DATA_OFFSET`].
-    ///
-    /// [`confirmData`]: https://github.com/OffchainLabs/nitro-contracts/blob/90037b996509312ef1addb3f9352457b8a99d6a6/src/rollup/Node.sol#L27
+    /// The base slot for this mapping is [`crate::slots::ROLLUP_CORE_NODES_MAPPING_BASE`], and the
+    /// `confirmData` offset is [`crate::slots::NODE_CONFIRM_DATA_OFFSET`].
     pub fn rollup_core_nodes_confirm_data_slot(node_num: u64) -> U256 {
         Slot::StructOffset(
             &Slot::Mapping(

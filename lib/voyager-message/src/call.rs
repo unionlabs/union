@@ -81,11 +81,11 @@ pub struct FetchBlocks {
 ///
 /// # Implementation Note
 ///
-/// The returned [`Op`] ***MUST*** resolve to an [`OrderedHeaders`] data.
+/// The returned [`Op`] ***MUST*** resolve to an [`crate::data::OrderedHeaders`] data.
 /// This is the entrypoint called when a client update is requested, and
 /// is intended to be called in the queue of an
-/// [`AggregateSubmitTxFromOrderedHeaders`] message, which will
-/// be used to build the actual [`MsgUpdateClient`]s.
+/// [`crate::Callback::AggregateSubmitTxFromOrderedHeaders`] message, which will
+/// be used to build the actual [`unionlabs::ibc::core::client::msg_update_client::MsgUpdateClient`]s.
 #[model]
 pub struct FetchUpdateHeaders {
     /// The type of client that is tracking the consensus on `self.chain_id`.

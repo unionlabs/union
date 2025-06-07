@@ -76,7 +76,7 @@ pub fn verify_storage_absence(
 /// * `proof`: Proof of storage.
 /// * `storage_root`: Storage root of the contract.
 ///
-/// NOTE: You must not trust the `root` unless you verified it by calling [`validate_light_client_update`].
+/// NOTE: You must not trust the `root` unless you verified it by calling `ethereum_sync_protocol::validate_light_client_update`.
 pub fn verify_account_storage_root(
     root: H256,
     address: &H160,
