@@ -15,6 +15,7 @@ import (
 	backend "github.com/consensys/gnark/backend/groth16"
 	backend_bn254 "github.com/consensys/gnark/backend/groth16/bn254"
 	"github.com/holiman/uint256"
+	comet "github.com/unionlabs/cometbls/crypto/bn254"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -155,26 +156,6 @@ func (zkp ZKP) Verify(trustedValidatorsHash []byte, header ProverLightHeader) er
 	return verifyingKey.CommitmentKey.Verify(zkp.ProofCommitment, zkp.ProofCommitmentPoK)
 }
 
-func hashToField(msg []byte) fr.Element {
-	hmac := hmac.New(Hash, []byte(CometblsHMACKey))
-	hmac.Write(msg)
-	modMinusOne := new(big.Int).Sub(fr.Modulus(), big.NewInt(1))
-	num := new(big.Int).SetBytes(hmac.Sum(nil))
-	num.Mod(num, modMinusOne)
-	num.Add(num, big.NewInt(1))
-	val, overflow := uint256.FromBig(num)
-	if overflow {
-		panic("impossible; qed;")
-	}
-	valBytes := val.Bytes32()
-	var element fr.Element
-	err := element.SetBytesCanonical(valBytes[:])
-	if err != nil {
-		panic("impossible; qed;")
-	}
-	return element
-}
-
 func commitmentsHash(proofCommitment curve.G1Affine) fr.Element {
 	var buffer [64]byte
 
@@ -184,7 +165,7 @@ func commitmentsHash(proofCommitment curve.G1Affine) fr.Element {
 	y := proofCommitment.Y.Bytes()
 	copy(buffer[32:64], y[:])
 
-	return hashToField(buffer[:])
+	return comet.HashToField(buffer[:])
 }
 
 func inputsHash(header ProverLightHeader, trustedValidatorsHash []byte) fr.Element {
