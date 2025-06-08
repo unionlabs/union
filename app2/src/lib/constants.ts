@@ -16,8 +16,8 @@ export const ENV = (): Environment =>
 
 export const URLS = () => {
   const GRAPHQL_BASE = ENV() === "DEVELOPMENT"
-    ? "development.graphql.union.build"
-    : "graphql.union.build"
+    ? "staging.graphql.union.build"
+    : "staging.graphql.union.build"
 
   return {
     GRAPHQL: `https://${GRAPHQL_BASE}/v1/graphql`,
