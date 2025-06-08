@@ -22,6 +22,10 @@ The input/output is a string in RFC3339 format.
 """
 scalar DateTime @specifiedBy(url: "https://datatracker.ietf.org/doc/html/rfc3339")
 
+input Int_comparison_exp {
+  _eq: Int!
+}
+
 """A scalar that can represent any JSON value."""
 scalar JSON
 
@@ -71,8 +75,8 @@ type Query {
   v2_stats_transfers_chain(args: v2_stats_transfers_chain_args! = {p_days_back: null, p_destination_universal_chain_id: null, p_source_universal_chain_id: null}): [v2_stats_transfers_chain_type!]!
   v2_stats_transfers_daily_count(args: v2_stats_transfers_daily_count_args! = {p_days_back: null}): [v2_stats_daily_count_type!]!
   dashboard_balance_current(args: dashboard_balance_current_args! = {p_contract_address_canonical: null, p_phase: null, p_universal_chain_id: null, p_wallet_addresses_canonical: null}): [dashboard_balance_current_type!]!
-  dashboard_transfer_count_by_chain(args: dashboard_count_by_chain_args! = {p_addresses_dashboard: null, p_phase: null}): [dashboard_count_by_chain_type!]!
-  dashboard_transfer_days_count_by_chain(args: dashboard_days_by_chain_args! = {p_addresses_dashboard: null}): [dashboard_days_by_chain_type!]!
+  dashboard_transfer_count_by_chain(args: dashboard_count_by_chain_args! = {p_addresses_dashboard: null, p_phase: null}, order_by: dashboard_count_by_chain_type_order_by = null): [dashboard_count_by_chain_type!]!
+  dashboard_transfer_days_count_by_chain(args: dashboard_days_by_chain_args! = {p_addresses_dashboard: null}, order_by: dashboard_days_by_chain_type_order_by = null): [dashboard_days_by_chain_type!]!
 }
 
 input String_comparison_exp {
@@ -108,6 +112,11 @@ type dashboard_count_by_chain_type {
   count: String
 }
 
+input dashboard_count_by_chain_type_order_by {
+  phase: OrderBy = null
+  universal_chain_id: OrderBy = null
+}
+
 input dashboard_days_by_chain_args {
   p_addresses_dashboard: jsonb
 }
@@ -115,6 +124,10 @@ input dashboard_days_by_chain_args {
 type dashboard_days_by_chain_type {
   universal_chain_id: String
   day_count: String
+}
+
+input dashboard_days_by_chain_type_order_by {
+  universal_chain_id: OrderBy = null
 }
 
 """Scalar implementation for GraphQL"""
@@ -492,7 +505,7 @@ type v2_token_meta {
   chain: v2_chain_type!
   bucket: v2_token_meta_bucket
   representations: [v2_token_meta_representations!]!
-  wrapping: [v2_token_meta_wrapping!]!
+  wrapping(where: v2_token_meta_wrapping_bool_exp! = {destination_channel_id: null}): [v2_token_meta_wrapping!]!
 }
 
 type v2_token_meta_bucket {
@@ -542,6 +555,10 @@ type v2_token_meta_wrapping {
   unwrapped_chain: v2_chain_type!
 }
 
+input v2_token_meta_wrapping_bool_exp {
+  destination_channel_id: Int_comparison_exp = null
+}
+
 input v2_tokens_args {
   p_denom: String
   p_universal_chain_id: String
@@ -556,6 +573,7 @@ type v2_traces_type {
   timestamp: DateTime
   transaction_hash: String
   universal_chain_id: String
+  chain: v2_chain_type!
 }
 
 type v2_transfer_type {
