@@ -170,11 +170,11 @@
         "ucs03": {
           "address": "bbn1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292q77945h",
           "height": 714737,
-          "commit": "207390ccab742eae1dba672203f153951474044e",
+          "commit": "218bc586cb91534126759f6f479deaecb58e92e7",
           "minter": {
             "type": "cw20",
             "address": "bbn1sakazthycqgzer50nqgr5ta4vy3gwz8wxla3s8rd8pql4ctmz5qssg39sf",
-            "commit": "207390ccab742eae1dba672203f153951474044e"
+            "commit": "218bc586cb91534126759f6f479deaecb58e92e7"
           }
         }
       }

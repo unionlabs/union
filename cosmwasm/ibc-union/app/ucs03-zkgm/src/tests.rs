@@ -1208,7 +1208,10 @@ fn test_recv_packet_native_new_wrapped() {
             },
         )
         .unwrap()
-        .wrapped_token;
+        .wrapped_token
+        .parse::<Bytes>()
+        .map(|bz| String::from_utf8(bz.into()).unwrap())
+        .unwrap();
     let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
     let (order, msg, packet) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
@@ -1292,7 +1295,10 @@ fn test_recv_packet_native_new_wrapped_relative_supply() {
             },
         )
         .unwrap()
-        .wrapped_token;
+        .wrapped_token
+        .parse::<Bytes>()
+        .map(|bz| String::from_utf8(bz.into()).unwrap())
+        .unwrap();
     let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
     let (order, msg, _) = IncomingOrderBuilder::new(quote_token_addr.clone().into())
@@ -1350,7 +1356,10 @@ fn test_recv_packet_native_new_wrapped_split_fee() {
             },
         )
         .unwrap()
-        .wrapped_token;
+        .wrapped_token
+        .parse::<Bytes>()
+        .map(|bz| String::from_utf8(bz.into()).unwrap())
+        .unwrap();
     let (order, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
@@ -1414,7 +1423,10 @@ fn test_recv_packet_native_new_wrapped_origin_set() {
             },
         )
         .unwrap()
-        .wrapped_token;
+        .wrapped_token
+        .parse::<Bytes>()
+        .map(|bz| String::from_utf8(bz.into()).unwrap())
+        .unwrap();
     let (order, msg, _) = IncomingOrderBuilder::new(quote_token.clone())
         .with_base_token(base_token)
         .with_destination_channel_id(destination_channel_id)
@@ -1475,7 +1487,10 @@ fn test_recv_packet_native_base_dont_cover_quote_only_maker() {
             },
         )
         .unwrap()
-        .wrapped_token;
+        .wrapped_token
+        .parse::<Bytes>()
+        .map(|bz| String::from_utf8(bz.into()).unwrap())
+        .unwrap();
     let quote_token_addr = Addr::unchecked(quote_token);
     assert!(st.app.contract_data(&quote_token_addr).is_err());
     let (_, msg, _) = IncomingOrderBuilder::new(quote_token_addr.clone().into())

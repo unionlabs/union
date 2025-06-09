@@ -3390,7 +3390,8 @@ pub fn query(deps: Deps, env: Env, msg: QueryMsg) -> Result<Binary, ContractErro
                 token,
             )?;
             Ok(to_json_binary(&PredictWrappedTokenResponse {
-                wrapped_token: token,
+                // HACK(benluelo): This previously returned hex bytes, but was accidentally changed. This is a hotfix until we decide on a format.
+                wrapped_token: <Bytes>::from(token.into_bytes()).to_string(),
             })?)
         }
         QueryMsg::PredictWrappedTokenV2 {
