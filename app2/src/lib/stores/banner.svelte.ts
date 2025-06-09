@@ -23,11 +23,8 @@ class BannerStore {
   error: Option.Option<FetchDecodeError> = $state(Option.none())
 
   // Get banner for specific edition
-  getBannerForEdition(edition: "app" | "btc"): BannerConfig | null {
-    return Option.match(this.data, {
-      onNone: () => null,
-      onSome: (data) => data[edition].banner,
-    })
+  getBannerForEdition(edition: "app" | "btc"): Option.Option<BannerConfig> {
+    return Option.map(this.data, (data) => data[edition].banner)
   }
 }
 
