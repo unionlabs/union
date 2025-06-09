@@ -255,8 +255,7 @@ library ZkgmLib {
             unstake.governanceToken,
             unstake.governanceTokenMetadataImage,
             unstake.sender,
-            unstake.validator,
-            unstake.amount
+            unstake.validator
         );
     }
 
