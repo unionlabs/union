@@ -308,7 +308,7 @@
         "state-lens/ics23/mpt": {
           "address": "0x473b540b38f02db8109d5bf4f80f0e03e4e31805",
           "height": 3646605,
-          "commit": "2d6ccbaaf8dcb6d282e8e499584de937f9719066"
+          "commit": "64cdc7d6fa1d0219d09c0c8f00016c11b6fcf6c8"
         },
         "state-lens/ics23/ics23": {
           "address": "0x2c5b55a11fad1d169b83df21d886ce0797f3a83d",
