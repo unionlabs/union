@@ -1,20 +1,28 @@
 #![warn(clippy::pedantic)]
-#![allow(clippy::too_many_lines)]
+#![allow(clippy::too_many_lines, clippy::match_wildcard_for_single_variants)]
 
 use std::{
-    collections::{hash_map::Entry, HashMap},
+    collections::{btree_map::Entry, BTreeMap},
     fmt::Display,
     fs,
     path::PathBuf,
     str::FromStr,
+    time::Duration,
 };
 
 use anyhow::{bail, Result};
 use beacon_api_types::chain_spec::PresetBaseKind;
 use chain_kitchen::{Endpoint, Protocol};
 use clap::Parser;
-use cliclack::{input, intro, log, outro, select};
+use cliclack::{confirm, input, intro, log, outro, select};
+use deployments::DEPLOYMENTS;
 use heck::ToKebabCase;
+use hex_literal::hex;
+use pg_queue::{
+    default_max_connections, default_min_connections, default_retryable_error_expo_backoff_max,
+    default_retryable_error_expo_backoff_multiplier, PgQueueConfig,
+};
+use serde::{Deserialize, Serialize};
 #[allow(clippy::enum_glob_use)]
 use ucs04::Family::*;
 use ucs04::{
@@ -25,8 +33,16 @@ use ucs04::{
     },
     Family, Id, UniversalChainId,
 };
-use unionlabs_primitives::H160;
-use voyager_core::context::{ModuleConfig, ModulesConfig};
+use unionlabs::{
+    bech32::Bech32,
+    primitives::{H160, H256},
+};
+use voyager_config::VoyagerConfig;
+use voyager_core::{
+    context::{ModuleConfig, ModulesConfig},
+    default_metrics_endpoint, default_rest_laddr, default_rpc_laddr,
+    equivalent_chain_ids::EquivalentChainIds,
+};
 use voyager_primitives::{ChainId, ConsensusType, IbcSpecId};
 use voyager_rpc::types::{FinalityModuleInfo, ProofModuleInfo, StateModuleInfo};
 
@@ -41,17 +57,51 @@ pub const SUPPORTED_FAMILIES: &[Family] = &[
     Family::Xion,
 ];
 
-pub mod keys {
-    pub const COMET_RPC_URL: &str = "cosmos_rpc_url";
-    pub const EVM_RPC_URL: &str = "evm_rpc_url";
-    pub const COSMOS_CHAIN_ID: &str = "cosmos_chain_id";
-    pub const EVM_CHAIN_ID: &str = "evm_chain_id";
-    pub const BEACON_RPC_URL: &str = "beacon_rpc_url";
-    pub const CHAIN_SPEC: &str = "chain_spec";
-    pub const L1_CONTRACT_ADDRESS: &str = "l1_contract_address";
-    pub const L2_ORACLE_ADDRESS: &str = "l2_oracle_address";
-    pub const L1_CHAIN_ID: &str = "l1_chain_id";
-    pub const IBC_HOST_CONTRACT_ADDRESS: &str = "ibc_host_contract_address";
+#[derive(
+    Debug,
+    Clone,
+    Copy,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    serde::Serialize,
+    serde::Deserialize,
+    derive_more::Display,
+)]
+#[serde(rename_all = "snake_case")]
+pub enum Key {
+    #[display(fmt = "cometbft rpc url")]
+    CometbftRpcUrl,
+    #[display(fmt = "eth rpc url")]
+    EthRpcUrl,
+    #[display(fmt = "cosmos chain id")]
+    CosmosChainId,
+    #[display(fmt = "evm chain id")]
+    EvmChainId,
+    #[display(fmt = "beacon rpc url")]
+    BeaconRpcUrl,
+    #[display(fmt = "chain spec")]
+    ChainSpec,
+    #[display(fmt = "L1 contract address")]
+    L1ContractAddress,
+    #[display(fmt = "L2 oracle address")]
+    L2OracleAddress,
+    #[display(fmt = "L1 chain id")]
+    L1ChainId,
+    #[display(fmt = "ibc host contract address")]
+    IbcHostContractAddress,
+    #[display(fmt = "ibc handler address")]
+    IbcHandlerAddress,
+    #[display(fmt = "max query window")]
+    MaxQueryWindow,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case", tag = "type")]
+pub enum QueueConfig {
+    PgQueue(PgQueueConfig),
 }
 
 #[derive(Parser)]
@@ -69,6 +119,35 @@ fn bootstrap() -> Result<()> {
     intro("create-voyager-config")?;
 
     let mut context = Context::new(input("plugins base path").interact()?);
+
+    let mut config = voyager_config::Config::<QueueConfig> {
+        schema: None,
+        equivalent_chain_ids: EquivalentChainIds::default(),
+        modules: ModulesConfig::default(),
+        plugins: vec![],
+        voyager: VoyagerConfig {
+            num_workers: 50,
+            rest_laddr: default_rest_laddr(),
+            rpc_laddr: default_rpc_laddr(),
+            metrics_endpoint: default_metrics_endpoint(),
+            queue: QueueConfig::PgQueue(PgQueueConfig {
+                database_url: input("database url")
+                    .default_input("postgres://postgres:postgrespassword@127.0.0.1:5432/default")
+                    .interact()?,
+                max_connections: default_max_connections(),
+                min_connections: default_min_connections(),
+                idle_timeout: None,
+                max_lifetime: None,
+                optimize_batch_limit: None,
+                retryable_error_expo_backoff_max: default_retryable_error_expo_backoff_max(),
+                retryable_error_expo_backoff_multiplier:
+                    default_retryable_error_expo_backoff_multiplier(),
+            }),
+            optimizer_delay_milliseconds: 100,
+            ipc_client_request_timeout: Duration::new(60, 0),
+            cache: voyager_core::cache::Config::default(),
+        },
+    };
 
     loop {
         log::step("chain pair")?;
@@ -90,16 +169,42 @@ fn bootstrap() -> Result<()> {
 
         log::info(format!("chain pair [{a}, {b}]"))?;
 
-        let config = context.build_chain_pair(&a, &b)?;
-
-        dbg!(&config);
+        let modules = context.build_chain_pair(&a, &b)?;
 
         context.dump_receipt()?;
+
+        merge_modules(&mut config.modules, modules);
+
+        if !confirm("add another chain pair?").interact()? {
+            break;
+        }
     }
+
+    fs::write(
+        "voyager.json",
+        serde_json::to_string_pretty(&config).unwrap(),
+    )?;
 
     outro("create-voyager-config")?;
 
     Ok(())
+}
+
+fn merge_modules(base: &mut ModulesConfig, new: ModulesConfig) {
+    base.state.extend(new.state);
+    base.state.dedup_by_key(|s| s.info.id());
+
+    base.proof.extend(new.proof);
+    base.proof.dedup_by_key(|s| s.info.id());
+
+    base.consensus.extend(new.consensus);
+    base.consensus.dedup_by_key(|s| s.info.id());
+
+    base.client.extend(new.client);
+    base.client.dedup_by_key(|s| s.info.id());
+
+    base.client_bootstrap.extend(new.client_bootstrap);
+    base.client_bootstrap.dedup_by_key(|s| s.info.id());
 }
 
 macro_rules! module_config {
@@ -120,14 +225,21 @@ macro_rules! module_config {
 
 struct Context<'a> {
     // id -> key -> value
-    defaults: HashMap<UniversalChainId<'a>, HashMap<&'static str, String>>,
+    defaults: BTreeMap<UniversalChainId<'a>, BTreeMap<Key, String>>,
     base_path: String,
 }
 
 impl<'a> Context<'a> {
     fn new(base_path: String) -> Self {
         Self {
-            defaults: HashMap::default(),
+            defaults:
+                serde_json::from_str::<BTreeMap<UniversalChainId<'_>, BTreeMap<Key, String>>>(
+                    &fs::read_to_string("./receipt.json").unwrap(),
+                )
+                .unwrap()
+                .into_iter()
+                .map(|(k, v)| (k.into_owned(), v))
+                .collect(),
             base_path,
         }
     }
@@ -135,6 +247,50 @@ impl<'a> Context<'a> {
     fn with_chain(&mut self, id: &UniversalChainId<'a>) -> Result<()> {
         self.defaults.entry(id.clone()).or_default();
 
+        // load deployment info
+        match id.family() {
+            Babylon | Osmosis | Stargaze | Stride | Union | Xion => {
+                let entry = self
+                    .defaults
+                    .get_mut(id)
+                    .unwrap()
+                    .entry(Key::IbcHostContractAddress);
+
+                if let Entry::Vacant(vacant_entry) = entry {
+                    if let Some(deployment) = DEPLOYMENTS.get(id) {
+                        vacant_entry.insert(deployment.deployments.core.address.to_string());
+                    } else {
+                        vacant_entry.insert(
+                            input(format!("{id} {}", Key::IbcHostContractAddress))
+                                .interact::<Bech32<H256>>()?
+                                .to_string(),
+                        );
+                    }
+                }
+            }
+            Arbitrum | Berachain | Bob | Corn | Ethereum | Movement | Scroll | Sei => {
+                let entry = self
+                    .defaults
+                    .get_mut(id)
+                    .unwrap()
+                    .entry(Key::IbcHandlerAddress);
+
+                if let Entry::Vacant(vacant_entry) = entry {
+                    if let Some(deployment) = DEPLOYMENTS.get(id) {
+                        vacant_entry.insert(deployment.deployments.core.address.to_string());
+                    } else {
+                        vacant_entry.insert(
+                            input(format!("{id} {}", Key::IbcHandlerAddress))
+                                .interact::<H160>()?
+                                .to_string(),
+                        );
+                    }
+                }
+            }
+            family => bail!("{family} is not currently supported"),
+        }
+
+        // load chain-specific values
         match id.family() {
             Arbitrum => todo!(),
             Babylon | Osmosis | Stargaze | Stride | Xion => {
@@ -142,7 +298,7 @@ impl<'a> Context<'a> {
                     self.defaults
                         .get_mut(id)
                         .unwrap()
-                        .entry(keys::COMET_RPC_URL)
+                        .entry(Key::CometbftRpcUrl)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
                 }
             }
@@ -152,12 +308,12 @@ impl<'a> Context<'a> {
                     self.defaults
                         .get_mut(id)
                         .unwrap()
-                        .entry(keys::EVM_RPC_URL)
+                        .entry(Key::EthRpcUrl)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
                 }
 
                 if let Entry::Vacant(vacant_entry) =
-                    self.defaults.get_mut(id).unwrap().entry(keys::L1_CHAIN_ID)
+                    self.defaults.get_mut(id).unwrap().entry(Key::L1ChainId)
                 {
                     vacant_entry.insert(
                         if id == BOB_60808 {
@@ -165,7 +321,7 @@ impl<'a> Context<'a> {
                         } else if id == BOB_808813 {
                             ETHEREUM_11155111
                         } else {
-                            input(keys::L1_CHAIN_ID)
+                            input(Key::L1ChainId)
                                 .validate(|id: &String| {
                                     id.parse::<UniversalChainId>()
                                         .map_err(|e| e.to_string())
@@ -188,32 +344,30 @@ impl<'a> Context<'a> {
                     .defaults
                     .get_mut(id)
                     .unwrap()
-                    .entry(keys::L2_ORACLE_ADDRESS)
+                    .entry(Key::L2OracleAddress)
                 {
                     vacant_entry.insert(if id == BOB_60808 {
                         "0xdDa53E23f8a32640b04D7256e651C1db98dB11C1".to_owned()
                     } else if id == BOB_808813 {
                         "0xd1cBBC06213B7E14e99aDFfFeF1C249E6f9537e0".to_owned()
                     } else {
-                        input(keys::L2_ORACLE_ADDRESS)
-                            .interact::<H160>()?
-                            .to_string()
+                        input(Key::L2OracleAddress).interact::<H160>()?.to_string()
                     });
                 }
 
-                self.with_chain(&self.get_required_default(id, keys::L1_CHAIN_ID))?;
+                self.with_chain(&self.get_required_default(id, Key::L1ChainId))?;
             }
             Corn => {
                 if is_well_known(id) {
                     self.defaults
                         .get_mut(id)
                         .unwrap()
-                        .entry(keys::EVM_RPC_URL)
+                        .entry(Key::EthRpcUrl)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
                 }
 
                 if let Entry::Vacant(vacant_entry) =
-                    self.defaults.get_mut(id).unwrap().entry(keys::L1_CHAIN_ID)
+                    self.defaults.get_mut(id).unwrap().entry(Key::L1ChainId)
                 {
                     vacant_entry.insert(
                         if id == CORN_21000000 {
@@ -221,7 +375,7 @@ impl<'a> Context<'a> {
                         } else if id == CORN_21000001 {
                             ETHEREUM_11155111
                         } else {
-                            input(keys::L1_CHAIN_ID)
+                            input(Key::L1ChainId)
                                 .validate(|id: &String| {
                                     id.parse::<UniversalChainId>()
                                         .map_err(|e| e.to_string())
@@ -244,37 +398,37 @@ impl<'a> Context<'a> {
                     .defaults
                     .get_mut(id)
                     .unwrap()
-                    .entry(keys::L1_CONTRACT_ADDRESS)
+                    .entry(Key::L1ContractAddress)
                 {
                     vacant_entry.insert(if id == CORN_21000000 {
                         "0x828C71bc1D7A34F32FfA624240633b6B7272C3D6".to_owned()
                     } else if id == CORN_21000001 {
                         "0xD318638594A5B17b50a1389B0c0580576226C0AE".to_owned()
                     } else {
-                        input(keys::L1_CONTRACT_ADDRESS)
+                        input(Key::L1ContractAddress)
                             .interact::<H160>()?
                             .to_string()
                     });
                 }
 
-                self.with_chain(&self.get_required_default(id, keys::L1_CHAIN_ID))?;
+                self.with_chain(&self.get_required_default(id, Key::L1ChainId))?;
             }
             Ethereum => {
                 if is_well_known(id) {
                     self.defaults
                         .get_mut(id)
                         .unwrap()
-                        .entry(keys::EVM_RPC_URL)
+                        .entry(Key::EthRpcUrl)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
                     self.defaults
                         .get_mut(id)
                         .unwrap()
-                        .entry(keys::BEACON_RPC_URL)
+                        .entry(Key::BeaconRpcUrl)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::BEACON).to_string());
                 }
 
                 if let Entry::Vacant(vacant_entry) =
-                    self.defaults.get_mut(id).unwrap().entry(keys::CHAIN_SPEC)
+                    self.defaults.get_mut(id).unwrap().entry(Key::ChainSpec)
                 {
                     if [
                         well_known::ETHEREUM_1,
@@ -287,7 +441,7 @@ impl<'a> Context<'a> {
                         vacant_entry.insert(PresetBaseKind::Mainnet.to_string());
                     } else {
                         vacant_entry.insert(
-                            select(keys::CHAIN_SPEC)
+                            select(Key::ChainSpec)
                                 .items(&[
                                     (PresetBaseKind::Mainnet, "mainnet", ""),
                                     (PresetBaseKind::Minimal, "minimal", ""),
@@ -338,16 +492,16 @@ impl<'a> Context<'a> {
                 };
 
                 chain
-                    .entry(keys::COSMOS_CHAIN_ID)
+                    .entry(Key::CosmosChainId)
                     .or_insert(cosmos.to_string());
-                chain.entry(keys::EVM_CHAIN_ID).or_insert(evm.to_string());
+                chain.entry(Key::EvmChainId).or_insert(evm.to_string());
 
                 if is_well_known(id) {
                     chain
-                        .entry(keys::COMET_RPC_URL)
+                        .entry(Key::CometbftRpcUrl)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
                     chain
-                        .entry(keys::EVM_RPC_URL)
+                        .entry(Key::EthRpcUrl)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
                 }
             }
@@ -355,7 +509,7 @@ impl<'a> Context<'a> {
                 self.defaults
                     .get_mut(id)
                     .unwrap()
-                    .entry(keys::COMET_RPC_URL)
+                    .entry(Key::CometbftRpcUrl)
                     .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
             }
             family => bail!("{family} is not currently supported"),
@@ -371,9 +525,9 @@ impl<'a> Context<'a> {
     #[track_caller]
     fn read_value<T: Display + FromStr>(
         &mut self,
-        title: &str,
+        title: impl Display,
         id: &UniversalChainId<'a>,
-        key: &'static str,
+        key: Key,
     ) -> Result<T> {
         let mut i = input(title);
         if let Some(default) = self.defaults[id].get(&key) {
@@ -395,7 +549,7 @@ impl<'a> Context<'a> {
         title: &str,
         items: &[(T, impl Display, impl Display)],
         id: &UniversalChainId<'a>,
-        key: &'static str,
+        key: Key,
     ) -> Result<T> {
         let mut s = select::<T>(title).items(items).filter_mode();
         if let Some(default) = self.defaults[id].get(&key) {
@@ -423,15 +577,14 @@ impl<'a> Context<'a> {
                 },
                 config: voyager_finality_module_tendermint::Config {
                     rpc_url: self.read_value(
-                        &format!("{id} finality rpc url"),
+                        format!("{id} finality rpc url"),
                         id,
-                        keys::COMET_RPC_URL
+                        Key::CometbftRpcUrl
                     )?,
                 },
             }),
             Bob => {
-                let l1_chain_id =
-                    self.get_required_default::<UniversalChainId>(id, keys::L1_CHAIN_ID);
+                let l1_chain_id = self.get_required_default::<UniversalChainId>(id, Key::L1ChainId);
 
                 module_config!(self {
                     info: FinalityModuleInfo {
@@ -440,24 +593,23 @@ impl<'a> Context<'a> {
                     },
                     config: voyager_finality_module_bob::Config {
                         l1_chain_id: ChainId::new(l1_chain_id.id().to_string()),
-                        l2_oracle_address: self.get_required_default(id, keys::L2_ORACLE_ADDRESS),
+                        l2_oracle_address: self.get_required_default(id, Key::L2OracleAddress),
                         l1_rpc_url: self.read_value(
-                            &format!("{l1_chain_id} finality rpc url"),
+                            format!("{l1_chain_id} finality rpc url"),
                             &l1_chain_id,
-                            keys::EVM_RPC_URL
+                            Key::EthRpcUrl
                         )?,
                         l2_rpc_url: self.read_value(
-                            &format!("{id} finality rpc url"),
+                            format!("{id} finality rpc url"),
                             id,
-                            keys::EVM_RPC_URL
+                            Key::EthRpcUrl
                         )?,
                         max_cache_size: 1000,
                     },
                 })
             }
             Arbitrum | Corn => {
-                let l1_chain_id =
-                    self.get_required_default::<UniversalChainId>(id, keys::L1_CHAIN_ID);
+                let l1_chain_id = self.get_required_default::<UniversalChainId>(id, Key::L1ChainId);
 
                 module_config!(self {
                     info: FinalityModuleInfo {
@@ -466,17 +618,16 @@ impl<'a> Context<'a> {
                     },
                     config: voyager_finality_module_arbitrum::Config {
                         l1_chain_id: ChainId::new(l1_chain_id.id().to_string()),
-                        l1_contract_address: self
-                            .get_required_default(id, keys::L1_CONTRACT_ADDRESS),
+                        l1_contract_address: self.get_required_default(id, Key::L1ContractAddress),
                         l1_rpc_url: self.read_value(
-                            &format!("{l1_chain_id} finality rpc url"),
+                            format!("{l1_chain_id} finality rpc url"),
                             &l1_chain_id,
-                            keys::EVM_RPC_URL
+                            Key::EthRpcUrl
                         )?,
                         l2_rpc_url: self.read_value(
-                            &format!("{id} finality rpc url"),
+                            format!("{id} finality rpc url"),
                             id,
-                            keys::EVM_RPC_URL
+                            Key::EthRpcUrl
                         )?,
                         max_cache_size: 1000,
                     },
@@ -489,16 +640,16 @@ impl<'a> Context<'a> {
                 },
                 config: voyager_finality_module_ethereum::Config {
                     rpc_url: self.read_value(
-                        &format!("{id} finality rpc url"),
+                        format!("{id} finality rpc url"),
                         id,
-                        keys::EVM_RPC_URL
+                        Key::EthRpcUrl
                     )?,
                     beacon_rpc_url: self.read_value(
-                        &format!("{id} finality beacon rpc url"),
+                        format!("{id} finality beacon rpc url"),
                         id,
-                        keys::BEACON_RPC_URL
+                        Key::BeaconRpcUrl
                     )?,
-                    chain_spec: self.get_required_default(id, keys::CHAIN_SPEC),
+                    chain_spec: self.get_required_default(id, Key::ChainSpec),
                     max_cache_size: 1000
                 },
             }),
@@ -509,9 +660,9 @@ impl<'a> Context<'a> {
                 },
                 config: voyager_finality_module_cometbls::Config {
                     rpc_url: self.read_value(
-                        &format!("{id} finality rpc url"),
+                        format!("{id} finality rpc url"),
                         id,
-                        keys::COMET_RPC_URL
+                        Key::CometbftRpcUrl
                     )?,
                 },
             }),
@@ -533,12 +684,12 @@ impl<'a> Context<'a> {
                     },
                     config: voyager_state_module_cosmos_sdk_union::Config {
                         rpc_url: self.read_value(
-                            &format!("{id} state rpc url"),
+                            format!("{id} state rpc url"),
                             id,
-                            keys::COMET_RPC_URL
+                            Key::CometbftRpcUrl
                         )?,
                         ibc_host_contract_address: self
-                            .get_required_default(id, keys::IBC_HOST_CONTRACT_ADDRESS)
+                            .get_required_default(id, Key::IbcHostContractAddress)
                     },
                 })
             }
@@ -549,18 +700,25 @@ impl<'a> Context<'a> {
                         ibc_spec_id
                     },
                     config: voyager_state_module_ethereum::Config {
-                        ibc_handler_address: todo!(),
+                        ibc_handler_address: self.get_required_default(id, Key::IbcHandlerAddress),
                         rpc_url: self.read_value(
-                            &format!("{id} state rpc url"),
+                            format!("{id} state rpc url"),
                             id,
-                            keys::EVM_RPC_URL
+                            Key::EthRpcUrl
                         )?,
-                        max_query_window: todo!(),
+                        // TODO: Make optional?
+                        max_query_window: Some(self.read_value(
+                            format!("{id} state rpc url max eth_getLogs query window"),
+                            id,
+                            Key::MaxQueryWindow
+                        )?),
                         max_cache_size: 1000
                     },
                 })
             }
-            (family, spec) => bail!("{family} on {spec} is not currently supported"),
+            (family, spec) => {
+                bail!("chain family {family} and ibc spec {spec} is not currently supported")
+            }
         })
     }
 
@@ -578,12 +736,12 @@ impl<'a> Context<'a> {
                     },
                     config: voyager_proof_module_cosmos_sdk_union::Config {
                         rpc_url: self.read_value(
-                            &format!("{id} Proof rpc url"),
+                            format!("{id} proof rpc url"),
                             id,
-                            keys::COMET_RPC_URL
+                            Key::CometbftRpcUrl
                         )?,
                         ibc_host_contract_address: self
-                            .get_required_default(id, keys::IBC_HOST_CONTRACT_ADDRESS)
+                            .get_required_default(id, Key::IbcHostContractAddress)
                     },
                 })
             }
@@ -594,13 +752,12 @@ impl<'a> Context<'a> {
                         ibc_spec_id
                     },
                     config: voyager_proof_module_ethereum::Config {
-                        ibc_handler_address: todo!(),
+                        ibc_handler_address: self.get_required_default(id, Key::IbcHandlerAddress),
                         rpc_url: self.read_value(
-                            &format!("{id} Proof rpc url"),
+                            format!("{id} proof rpc url"),
                             id,
-                            keys::EVM_RPC_URL
+                            Key::EthRpcUrl
                         )?,
-                        max_query_window: todo!(),
                         max_cache_size: 1000
                     },
                 })
@@ -611,15 +768,15 @@ impl<'a> Context<'a> {
                         chain_id: ChainId::new(id.id().to_string()),
                         ibc_spec_id
                     },
-                    config: voyager_proof_module_ethereum::Config {
-                        ibc_handler_address: todo!(),
+                    config: voyager_proof_module_ethermint::Config {
+                        ibc_handler_address: self.get_required_default(id, Key::IbcHandlerAddress),
                         rpc_url: self.read_value(
-                            &format!("{id} Proof rpc url"),
+                            format!("{id} proof rpc url"),
                             id,
-                            keys::EVM_RPC_URL
+                            Key::EthRpcUrl
                         )?,
-                        max_query_window: todo!(),
-                        max_cache_size: 1000
+                        key_prefix_storage: hex!("03").into(),
+                        store_key: hex!("65766D").into()
                     },
                 })
             }
@@ -627,8 +784,9 @@ impl<'a> Context<'a> {
         })
     }
 
-    fn get_required_default<T: FromStr>(&self, id: &UniversalChainId<'a>, key: &'static str) -> T {
-        self.defaults[id][key].parse().ok().unwrap()
+    #[track_caller]
+    fn get_required_default<T: FromStr>(&self, id: &UniversalChainId<'a>, key: Key) -> T {
+        self.defaults[id][&key].parse().ok().unwrap()
     }
 
     fn build_chain_pair(
@@ -641,22 +799,31 @@ impl<'a> Context<'a> {
 
         let mut config = ModulesConfig::default();
 
+        // load finality modules
         config.consensus.push(self.finality_module(a)?);
+        self.dump_receipt()?;
         config.consensus.push(self.finality_module(b)?);
+        self.dump_receipt()?;
 
+        // load state modules
         config
             .state
             .push(self.state_module(a, IbcSpecId::new(IbcSpecId::UNION))?);
+        self.dump_receipt()?;
         config
             .state
             .push(self.state_module(b, IbcSpecId::new(IbcSpecId::UNION))?);
+        self.dump_receipt()?;
 
+        // load proof modules
         config
             .proof
             .push(self.proof_module(a, IbcSpecId::new(IbcSpecId::UNION))?);
+        self.dump_receipt()?;
         config
             .proof
             .push(self.proof_module(b, IbcSpecId::new(IbcSpecId::UNION))?);
+        self.dump_receipt()?;
 
         match (a.parts(), b.parts()) {
             ((Babylon, babylon), (Ethereum, ethereum))
@@ -753,14 +920,7 @@ impl<'a> Context<'a> {
     fn dump_receipt(&self) -> Result<()> {
         Ok(fs::write(
             "./receipt.json",
-            serde_json::to_string_pretty(
-                &self
-                    .defaults
-                    .iter()
-                    .map(|(k, v)| (k.to_string(), v))
-                    .collect::<HashMap<_, _>>(),
-            )
-            .unwrap(),
+            serde_json::to_string_pretty(&self.defaults).unwrap(),
         )?)
     }
 }

@@ -1,5 +1,6 @@
 use anyhow::{anyhow, Result};
 use clap::Subcommand;
+use deployments::DEPLOYMENTS;
 use ucs04::UniversalChainId;
 
 use crate::print_json;

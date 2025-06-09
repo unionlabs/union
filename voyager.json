@@ -1,0 +1,86 @@
+{
+  "state": [
+    {
+      "path": "lksjdf/voyager-state-module-cosmos-sdk-union",
+      "info": {
+        "chain_id": "bbn-1",
+        "ibc_spec_id": "ibc-union"
+      },
+      "config": {
+        "rpc_url": "https://rpc.bbn-1.babylon.chain.kitchen",
+        "ibc_host_contract_address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f"
+      },
+      "enabled": true
+    },
+    {
+      "path": "lksjdf/voyager-state-module-ethereum",
+      "info": {
+        "chain_id": "1",
+        "ibc_spec_id": "ibc-union"
+      },
+      "config": {
+        "ibc_handler_address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "rpc_url": "https://rpc.1.ethereum.chain.kitchen",
+        "max_query_window": 1234,
+        "max_cache_size": 1000
+      },
+      "enabled": true
+    }
+  ],
+  "proof": [
+    {
+      "path": "lksjdf/voyager-proof-module-cosmos-sdk-union",
+      "info": {
+        "chain_id": "bbn-1",
+        "ibc_spec_id": "ibc-union"
+      },
+      "config": {
+        "rpc_url": "https://rpc.bbn-1.babylon.chain.kitchen",
+        "ibc_host_contract_address": "bbn1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqnlye9f"
+      },
+      "enabled": true
+    },
+    {
+      "path": "lksjdf/voyager-proof-module-ethereum",
+      "info": {
+        "chain_id": "1",
+        "ibc_spec_id": "ibc-union"
+      },
+      "config": {
+        "ibc_handler_address": "0xee4ea8d358473f0fcebf0329feed95d56e8c04d7",
+        "rpc_url": "https://rpc.1.ethereum.chain.kitchen",
+        "max_cache_size": 1000
+      },
+      "enabled": true
+    }
+  ],
+  "consensus": [
+    {
+      "path": "lksjdf/voyager-finality-module-tendermint",
+      "info": {
+        "chain_id": "bbn-1",
+        "consensus_type": "tendermint"
+      },
+      "config": {
+        "rpc_url": "https://rpc.bbn-1.babylon.chain.kitchen"
+      },
+      "enabled": true
+    },
+    {
+      "path": "lksjdf/voyager-finality-module-ethereum",
+      "info": {
+        "chain_id": "1",
+        "consensus_type": "ethereum"
+      },
+      "config": {
+        "chain_spec": "mainnet",
+        "rpc_url": "https://rpc.1.ethereum.chain.kitchen",
+        "beacon_rpc_url": "https://beacon.1.ethereum.chain.kitchen",
+        "max_cache_size": 1000
+      },
+      "enabled": true
+    }
+  ],
+  "client": [],
+  "client_bootstrap": []
+}
