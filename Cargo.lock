@@ -10031,6 +10031,71 @@ dependencies = [
 ]
 
 [[package]]
+name = "parlia-light-client"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-std 2.2.2",
+ "depolama",
+ "embed-commit",
+ "ethereum-light-client",
+ "ethereum-light-client-types",
+ "evm-storage-verifier",
+ "frissitheto",
+ "ibc-union-light-client",
+ "ibc-union-msg",
+ "ics23",
+ "parlia-light-client-types",
+ "parlia-types",
+ "parlia-verifier",
+ "serde",
+ "thiserror 2.0.12",
+ "unionlabs",
+]
+
+[[package]]
+name = "parlia-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.1",
+ "ethereum-light-client-types",
+ "hex-literal",
+ "ibc-union-spec",
+ "parlia-types",
+ "rlp",
+ "serde",
+ "sha3",
+ "unionlabs",
+]
+
+[[package]]
+name = "parlia-types"
+version = "0.0.0"
+dependencies = [
+ "bincode 2.0.1",
+ "hex-literal",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "sha3",
+ "unionlabs-primitives",
+]
+
+[[package]]
+name = "parlia-verifier"
+version = "0.0.0"
+dependencies = [
+ "blst",
+ "hex",
+ "hex-literal",
+ "parlia-types",
+ "rlp",
+ "serde_json",
+ "thiserror 2.0.12",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "parse-wasm-client-type"
 version = "0.0.0"
 dependencies = [
@@ -16076,6 +16141,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-parlia"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "parlia-light-client-types",
+ "parlia-types",
+ "parlia-verifier",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-state-lens-ics23-ics23"
 version = "0.0.0"
 dependencies = [
@@ -16276,6 +16360,22 @@ dependencies = [
  "serde",
  "serde_json",
  "tendermint-light-client-types",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-client-module-parlia"
+version = "0.0.0"
+dependencies = [
+ "embed-commit",
+ "ethereum-light-client-types",
+ "jsonrpsee 0.25.1",
+ "parlia-light-client-types",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "unionlabs",
@@ -16539,6 +16639,29 @@ dependencies = [
  "serde_json",
  "tendermint-light-client-types",
  "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-parlia"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "macros",
+ "parlia-light-client-types",
+ "parlia-types",
+ "parlia-verifier",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "unionlabs",
@@ -16835,6 +16958,24 @@ dependencies = [
  "embed-commit",
  "jsonrpsee 0.25.1",
  "moka",
+ "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-finality-module-parlia"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "parlia-light-client-types",
+ "parlia-types",
+ "parlia-verifier",
  "serde",
  "tokio",
  "tracing",
