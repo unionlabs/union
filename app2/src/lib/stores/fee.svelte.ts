@@ -325,6 +325,18 @@ const createFeeStore = () => {
     get totalFee() {
       return totalFee
     },
+    /**
+     * Total cost in gas token symbol.
+     */
+    get feeDisplay() {
+      return pipe(
+        totalFee,
+        O.map(BigDecimal.format)
+      )
+    },
+    get symbol() {
+      return config.gasTokenSymbol
+    },
     get errors() {
       return errors
     },

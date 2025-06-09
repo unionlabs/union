@@ -29,6 +29,7 @@ import {
 import { constant, flow } from "effect/Function"
 import { slide } from "svelte/transition"
 import { transferData } from "../data/transfer-data.svelte"
+    import { mapOption } from "$lib/utils/snippets.svelte";
 
 let { open, onToggle } = $props()
 
@@ -38,20 +39,20 @@ function toggleExpanded() {
   }
 }
 
-const displayTotals = $derived({
-  total: pipe(
-    O.map(feeConfig, (x) => x.formatToDisplay),
-    O.flatMap((format) => O.map(totalFee, format)),
-  ),
-  totalUsd: pipe(
-    "$123.456",
-    // calculateTotalFee(),
-    // formatToDisplay,
-    // (amount) => parseFloat(amount),
-    // (amount) => amount * feeConfig.usdPrice,
-    // (amount) => amount.toFixed(2),
-  ),
-})
+// const displayTotals = $derived({
+//   total: pipe(
+//     O.map(feeConfig, (x) => x.formatToDisplay),
+//     O.flatMap((format) => O.map(totalFee, format)),
+//   ),
+//   totalUsd: pipe(
+//     "$123.456",
+//     // calculateTotalFee(),
+//     // formatToDisplay,
+//     // (amount) => parseFloat(amount),
+//     // (amount) => amount * feeConfig.usdPrice,
+//     // (amount) => amount.toFixed(2),
+//   ),
+// })
 
 const loading = $derived(pipe(
   O.all([FeeStore.gasPrices.current]),
@@ -63,6 +64,16 @@ const calculating = false
 
 {#snippet BigDecimal(x: BD.BigDecimal)}
   {BD.format(x)}
+{/snippet}
+
+{#snippet gasButton(props: {
+  value: string
+  symbol: string
+  usd: string
+})}
+  <span class="text-xs font-semibold">{props.value}
+    {props.symbol}</span>
+  <span class="text-xs text-zinc-500">(${props.usd})</span>
 {/snippet}
 
 <!-- NOTE: presently only **BOB -> BABYLON** and **BABYLON -> BOB** -->
@@ -102,6 +113,14 @@ const calculating = false
         <Skeleton class="h-3 w-16" />
         <Skeleton class="h-3 w-12" />
       {:else}
+        {@render mapOption(
+          O.all({
+            value: FeeStore.feeDisplay,
+            symbol: FeeStore.symbol,
+            usd: FeeStore.usdDisplay
+          }),
+          gasButton
+        )}
         {@const _feeConfig = feeConfig.value}
         <span class="text-xs font-semibold">{O.getOrUndefined(totalFee)?.value}
           {_feeConfig.gasTokenSymbol}</span>
