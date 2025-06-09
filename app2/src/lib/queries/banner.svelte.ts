@@ -14,7 +14,7 @@ const BannerData = Schema.Struct({
   }),
   btc: Schema.Struct({
     banner: BannerConfig,
-  })
+  }),
 })
 
 export const bannerQuery = () =>
