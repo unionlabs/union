@@ -29,7 +29,7 @@ const feeConfig = O.none()
 </script>
 
 {#snippet formatBigDecimal(x: BD.BigDecimal)}
-  {BD.format(x)}
+  {BD.format(BD.truncate(x, 8))}
 {/snippet}
 
 {#snippet gasButton(props: {
@@ -66,17 +66,8 @@ const feeConfig = O.none()
       <li>{error}</li>
     {/each}
   </ul>
-  <!--
-  <b>GAS:</b>
-  <pre class="w-[350px] overflow-scroll">{JSON.stringify(gasDisplay, null, 2)}</pre>
-  <b>USD:</b>
-  <pre class="w-[350px] overflow-scroll">{JSON.stringify(usdDisplay, null, 2)}</pre>
-  -->
-  <!--
-  {FeeStore.toasts}
-  {FeeStore.a.current}
-  -->
 </div>
+<pre>RATIO: {@render mapOption(FeeStore.ratio, formatBigDecimal)}</pre>
 <div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
   <button
@@ -100,7 +91,7 @@ const feeConfig = O.none()
           O.all({
             value: FeeStore.feeDisplay,
             symbol: FeeStore.symbol,
-            usd: O.some("0.123"),
+            usd: FeeStore.usdDisplay,
           }),
           gasButton,
         )}
@@ -118,7 +109,6 @@ const feeConfig = O.none()
 
   <!-- Expandable content -->
   {#if open && O.isSome(FeeStore.baseFees)}
-    {@const _feeConfig = feeConfig.value}
     <div
       class="bg-zinc-900 rounded-b-md overflow-hidden border-t border-zinc-800"
       transition:slide={{ duration: 250 }}
@@ -192,48 +182,35 @@ const feeConfig = O.none()
                           </div>
 
                           <div class="grid grid-cols-3 border-b border-zinc-700">
-                            <div class="px-3 py-2 text-zinc-300">Base fee</div>
-                            <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
-                              {@render formatBigDecimal(item.baseFee)} ×
-                              {"GAS PRICE"}
-                            </div>
-                            <div class="px-3 py-2 text-white border-l border-zinc-700">
-                              {@render formatBigDecimal(
-                            BD.multiply(
-                              item.baseFee,
-                              BigDecimal.fromNumber(1),
-                            ),
-                          )}
-                              ubbn
-                            </div>
+                            {#if O.isSome(item.steps.baseFee)}
+                              {@const { result, operation } = item.steps.baseFee.value}
+                              <div class="px-3 py-2 text-zinc-300">Base fee</div>
+                              <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
+                                {operation}
+                              </div>
+                              <div class="px-3 py-2 text-white border-l border-zinc-700">
+                                {result}
+                              </div>
+                            {/if}
                           </div>
 
-                          <div class="grid grid-cols-3 {item.isBatched ? 'border-b border-zinc-700' : ''}">
-                            <div class="px-3 py-2 text-zinc-300">Protocol fee</div>
-                            <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
-                              +
-                              {@render formatBigDecimal(
-                            BD.multiply(
-                              FeeStore.feeMultiplier,
-                              BD.unsafeFromNumber(10),
-                            ),
-                          )}%
+                          {#if O.isSome(item.steps.protocolFee)}
+                            {@const { result, operation } = item.steps.protocolFee.value}
+                            <div
+                              class={cn(
+                                "grid grid-cols-3",
+                                item.isBatched && "border-b border-zinc-700",
+                              )}
+                            >
+                              <div class="px-3 py-2 text-zinc-300">Protocol fee</div>
+                              <div class="px-3 py-2 text-zinc-400 border-l border-zinc-700">
+                                {operation}
+                              </div>
+                              <div class="px-3 py-2 text-white border-l border-zinc-700">
+                                {result}
+                              </div>
                             </div>
-                            <div class="px-3 py-2 text-white border-l border-zinc-700">
-                              {#snippet a()}
-                                <div></div>
-                              {/snippet}
-                              +{
-                                (BD.multiply(
-                                  BD.multiply(
-                                    item.baseFee,
-                                    0,
-                                  ),
-                                  FeeStore.feeMultiplier,
-                                )).toLocaleString()
-                              } ubbn
-                            </div>
-                          </div>
+                          {/if}
 
                           {#if item.isBatched}
                             <div class="grid grid-cols-3 border-b border-zinc-700">

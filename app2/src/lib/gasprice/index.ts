@@ -3,6 +3,7 @@ import { createViemPublicClient } from "@unionlabs/sdk/evm"
 import type { Chain } from "@unionlabs/sdk/schema"
 import {
   Array as A,
+  BigDecimal,
   Effect,
   Layer,
   LayerMap,
@@ -46,16 +47,19 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
               ),
             )
 
-            const of = Effect.tryPromise({
-              try: () => client.getGasPrice(),
-              catch: (cause) =>
-                new GasPriceError({
-                  module: "Evm",
-                  method: "of",
-                  description: "some",
-                  cause: unsafeCoerce<unknown, GetGasPriceErrorType>(cause),
-                }),
-            })
+            const of = pipe(
+              Effect.tryPromise({
+                try: () => client.getGasPrice(),
+                catch: (cause) =>
+                  new GasPriceError({
+                    module: "Evm",
+                    method: "of",
+                    description: "some",
+                    cause: unsafeCoerce<unknown, GetGasPriceErrorType>(cause),
+                  }),
+              }),
+              Effect.map((a) => BigDecimal.make(a, 18)),
+            )
 
             return GasPrice.GasPrice.of({
               of,
@@ -93,7 +97,12 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                         O.map(x => x.average),
                       )),
                     O.let("decimals", () => x.coinDecimals),
-                    O.map(({ average, decimals }) => BigInt(average * 10 ** decimals)),
+                    O.map(({ average, decimals }) =>
+                      pipe(
+                        BigDecimal.unsafeFromNumber(average),
+                        BigDecimal.unsafeDivide(BigDecimal.make(1n, -decimals)),
+                      )
+                    ),
                   )
                 ),
                 Effect.mapError(() =>

@@ -1,5 +1,5 @@
 import type { Chain } from "@unionlabs/sdk/schema"
-import { Context, Effect } from "effect"
+import { BigDecimal, Context, Effect } from "effect"
 import type { GasPriceError } from "./error"
 
 /**
@@ -21,6 +21,6 @@ export declare namespace GasPrice {
    * @category models
    */
   export interface Service {
-    readonly of: Effect.Effect<bigint, GasPriceError>
+    readonly of: Effect.Effect<BigDecimal.BigDecimal, GasPriceError>
   }
 }

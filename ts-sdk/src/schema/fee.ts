@@ -5,7 +5,6 @@ type FeeValue = typeof FeeValue.Type
 
 const Action = S.Union(
   S.Literal("PACKET_RECV"),
-  S.Literal("PACKET_SEND"),
   S.Literal("PACKET_SEND_LC_UPDATE_L0"),
   S.Literal("PACKET_SEND_LC_UPDATE_L1"),
   S.Literal("PACKET_SEND_LC_UPDATE_L2"),
@@ -34,7 +33,6 @@ export const Fees = S.transform(
   ),
   S.Struct({
     PACKET_RECV: S.OptionFromSelf(FeeValue).pipe(),
-    PACKET_SEND: S.OptionFromSelf(FeeValue),
     PACKET_SEND_LC_UPDATE_L0: S.OptionFromSelf(FeeValue),
     PACKET_SEND_LC_UPDATE_L1: S.OptionFromSelf(FeeValue),
     PACKET_SEND_LC_UPDATE_L2: S.OptionFromSelf(FeeValue),
@@ -48,7 +46,6 @@ export const Fees = S.transform(
         )
       return {
         PACKET_RECV: byAction("PACKET_RECV"),
-        PACKET_SEND: byAction("PACKET_SEND"),
         PACKET_SEND_LC_UPDATE_L0: byAction("PACKET_SEND_LC_UPDATE_L0"),
         PACKET_SEND_LC_UPDATE_L1: byAction("PACKET_SEND_LC_UPDATE_L1"),
         PACKET_SEND_LC_UPDATE_L2: byAction("PACKET_SEND_LC_UPDATE_L2"),

@@ -11,6 +11,7 @@
  */
 import {
   Array as A,
+  BigDecimal,
   Data,
   Effect,
   Layer,
@@ -34,9 +35,11 @@ export const PriceSource = S.Struct({
 export type PriceSource = typeof PriceSource.Type
 
 export const PriceResult = S.Struct({
-  price: S.Positive.pipe(
+  price: S.BigDecimalFromNumber.pipe(
+    S.positiveBigDecimal(),
     S.annotations({
-      arbitrary: () => (fc) => fc.float({ min: Math.fround(0.1), max: Math.fround(200) }),
+      arbitrary: () => (fc) =>
+        fc.float({ min: Math.fround(0.1), max: Math.fround(200) }).map(BigDecimal.unsafeFromNumber),
     }),
   ),
   source: PriceSource,
@@ -54,7 +57,7 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
         from: UniversalChainId,
         to: UniversalChainId,
       ) => Effect.Effect<{
-        ratio: number
+        ratio: BigDecimal.BigDecimal
         source: PriceSource
         destination: PriceSource
       }, PriceError>
@@ -82,15 +85,23 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
           Stream.schedule(Schedule.spaced("3 seconds")),
         )
 
-      const ratio: PriceOracle["ratio"] = (a, b) =>
-        pipe(
-          Effect.all([of(a), of(b)], { concurrency: "unbounded" }),
-          Effect.map(([a, b]) => ({
-            ratio: a.price / b.price,
-            source: a.source,
-            destination: a.source,
-          })),
+      const ratio: PriceOracle["ratio"] = Effect.fn(function*(a, b) {
+        const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
+        const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
+          Effect.mapError((cause) =>
+            new PriceError({
+              message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+              cause,
+            })
+          ),
         )
+
+        return {
+          ratio,
+          source: ofA.source,
+          destination: ofB.source,
+        } as const
+      })
 
       return PriceOracle.make({
         of,
@@ -105,9 +116,12 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
     Effect.gen(function*() {
       // XXX: source from chain info?
       const map: Record<UniversalChainId, string> = {
-        [UniversalChainId.make("ethereum.11155111")]: "WETH",
+        [UniversalChainId.make("ethereum.11155111")]: "ETH",
         [UniversalChainId.make("ethereum.1")]: "ETH",
+        [UniversalChainId.make("corn.21000001")]: "BTC",
         [UniversalChainId.make("ethereum.17000")]: "ETH",
+        [UniversalChainId.make("xion.xion-testnet-2")]: "XION",
+        [UniversalChainId.make("sei.1328")]: "SEI",
         [UniversalChainId.make("babylon.bbn-1")]: "BABY",
         [UniversalChainId.make("babylon.bbn-test-5")]: "BABY",
       }
@@ -208,26 +222,45 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
           ),
       )
 
+      const of: PriceOracle["of"] = Effect.fn("of")(flow(
+        symbolFromId,
+        Effect.flatMap(feedIdOf),
+        Effect.flatMap(({ id, url }) =>
+          pipe(
+            getLatestPriceUpdate(id),
+            Effect.map((price) =>
+              PriceResult.make({
+                price: BigDecimal.unsafeFromNumber(price),
+                source: PriceSource.make({
+                  url: new URL(url),
+                }),
+              })
+            ),
+            Effect.tap((x) => Effect.log(id, BigDecimal.format(x.price))),
+          )
+        ),
+      ))
+
       return PriceOracle.make({
-        of: Effect.fn("of")(flow(
-          symbolFromId,
-          Effect.flatMap(feedIdOf),
-          Effect.flatMap(({ id, url }) =>
-            pipe(
-              getLatestPriceUpdate(id),
-              Effect.map((price) =>
-                PriceResult.make({
-                  price: price,
-                  source: PriceSource.make({
-                    url: new URL(url),
-                  }),
-                })
-              ),
-            )
-          ),
-        )),
+        of,
         stream: () => Stream.fail(new PriceError({ message: "not implemented" })),
-        ratio: () => Effect.fail(new PriceError({ message: "not implemented" })),
+        ratio: Effect.fn(function*(a, b) {
+          const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
+          const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
+            Effect.mapError((cause) =>
+              new PriceError({
+                message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+                cause,
+              })
+            ),
+          )
+
+          return {
+            ratio,
+            source: ofA.source,
+            destination: ofB.source,
+          } as const
+        }),
       })
     }),
   )

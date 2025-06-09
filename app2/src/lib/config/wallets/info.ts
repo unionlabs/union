@@ -159,7 +159,7 @@ export const babylonTestnet = InternalChainInfo.make({
   },
   currencies: [
     {
-      coinDenom: "tBABY",
+      coinDenom: "BABY",
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
       coinImageUrl:
