@@ -144,21 +144,6 @@ const createFeeStore = () => {
         }),
         BigDecimal.format,
       )
-      // XXX:  format using decimals
-      const exp = BigDecimal.make(10n, self.gasPrice.scale)
-      const babyAmount = E.fromOption(
-        BigDecimal.divide(ubbnAmount, exp),
-        () => `Could not divide by ${exp}`,
-      )
-      if (E.isLeft(babyAmount)) {
-        return babyAmount.left
-      }
-      return Match.value(babyAmount.right).pipe(
-        Match.when(BigDecimal.lessThan(BigDecimal.make(1n, 3)), BigDecimal.format),
-        Match.when(BigDecimal.lessThan(BigDecimal.make(1n, 0)), BigDecimal.format),
-        Match.when(BigDecimal.lessThan(BigDecimal.make(100n, 0)), BigDecimal.format),
-        Match.orElse(BigDecimal.format),
-      )
     }
 
     return Object.assign(self, {

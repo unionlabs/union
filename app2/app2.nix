@@ -37,7 +37,7 @@ _: {
             ../typescript-sdk
             ../ts-sdk
           ];
-          hash = "sha256-FFerKG7Fefv0uU0yJo4tGaHwqr7Y9klwFuDUUW28cBU=";
+          hash = "sha256-9YkrzAjL15+VcyT1ojaJwTPn5FwS0UcL/CQqXqXVKE0=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [

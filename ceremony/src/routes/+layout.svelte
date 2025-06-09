@@ -239,9 +239,7 @@ const imagePath = "https://ceremony.union.build/images/ceremony-og.png"
       type="video/webm"
     />
   </video>
-  <main
-    class="flex w-full h-full overflow-hidden content flex-col items-center justify-center gap-4"
-  >
+  <main class="flex w-full h-full overflow-hidden content flex-col items-center justify-center gap-4">
     <Terminal>
       {@render children()}
     </Terminal>

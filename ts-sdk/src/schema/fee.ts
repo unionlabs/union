@@ -56,9 +56,7 @@ export const Fees = S.transform(
         toI,
         A.fromRecord,
         A.map(x => ({ action: x[0], fee: x[1] })),
-        A.filter(x => O.isSome(x.fee as O.Option<number>)),
-        // XXX: wrong
-        x => [],
+        (xs) => xs as unknown as any, // XXX: wrong
       ),
     strict: true,
   },

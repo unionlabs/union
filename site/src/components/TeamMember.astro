@@ -36,9 +36,7 @@ const { person } = Astro.props
       </div>
 
       <!-- Twitter picture or grey background that shows on hover -->
-      <div
-        class="absolute inset-0 opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100"
-      >
+      <div class="absolute inset-0 opacity-0 transition-opacity duration-300 ease-in-out group-hover:opacity-100">
         {
           person?.twitterPicture ? (
             <img
