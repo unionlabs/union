@@ -75,9 +75,7 @@ function getStatusColor() {
       </h3>
     </div>
     <div class="relative">
-      <div
-        class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {showXp ? 'scale-110 border-accent/50' : ''} transition-all duration-300 flex items-center justify-center"
-      >
+      <div class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {showXp ? 'scale-110 border-accent/50' : ''} transition-all duration-300 flex items-center justify-center">
         <span
           class="text-[10px] lg:text-xs font-medium {showXp ? 'text-accent' : 'text-white'} transition-all duration-300"
         >
@@ -90,9 +88,7 @@ function getStatusColor() {
     </div>
   </div>
 
-  <div
-    class="text-xs lg:text-sm text-neutral-300 [&_a]:text-accent [&_strong]:font-bold [&_strong]:text-white"
-  >
+  <div class="text-xs lg:text-sm text-neutral-300 [&_a]:text-accent [&_strong]:font-bold [&_strong]:text-white">
     {#await mdToHTML(achievement.description)}
       <p>Loading description...</p>
     {:then vFile}
@@ -127,8 +123,9 @@ function getStatusColor() {
           <span>Started: {new Date(userAchievement.created_at).toLocaleDateString()}</span>
         {/if}
         {#if completed}
-          <span>Completed: {new Date(userAchievement?.achieved_at ?? "").toLocaleDateString()}</span
-          >
+          <span>Completed: {
+              new Date(userAchievement?.achieved_at ?? "").toLocaleDateString()
+            }</span>
         {/if}
       </div>
     </div>
@@ -147,9 +144,7 @@ function getStatusColor() {
       ) as
         reward
       }
-        <div
-          class="flex flex-col rounded bg-zinc-800/50 px-2 py-1 text-xs font-medium text-neutral-300"
-        >
+        <div class="flex flex-col rounded bg-zinc-800/50 px-2 py-1 text-xs font-medium text-neutral-300">
           <div>{reward.title}</div>
           {#if reward.cutoff}
             <div class="text-[10px]">

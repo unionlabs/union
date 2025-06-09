@@ -36,6 +36,14 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                   transport: http(),
                 })
               ),
+              Effect.mapError((cause) =>
+                new GasPriceError({
+                  module: "Evm",
+                  method: "of",
+                  description: "Could not create public client.",
+                  cause,
+                })
+              ),
             )
 
             const of = Effect.tryPromise({

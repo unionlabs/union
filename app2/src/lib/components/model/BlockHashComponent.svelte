@@ -52,7 +52,8 @@ const explorerName = $derived(
 
   {#snippet content()}
     <section>
-      <Label>Chain</Label> <ChainComponent {chain} />
+      <Label>Chain</Label>
+      <ChainComponent {chain} />
     </section>
 
     <section>
@@ -64,7 +65,8 @@ const explorerName = $derived(
 
     {#if Option.isSome(explorerUrl)}
       <section>
-        <Label>Explorer</Label> <A href={explorerUrl.value}>View on {explorerName}</A>
+        <Label>Explorer</Label>
+        <A href={explorerUrl.value}>View on {explorerName}</A>
       </section>
     {/if}
   {/snippet}

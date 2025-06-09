@@ -91,9 +91,7 @@ function handleClick() {
       transition:fly={{ y: 30, duration: 300, opacity: 0 }}
     >
       <!-- Header with close button -->
-      <div
-        class="p-4 border-b border-zinc-800 flex justify-between items-center h-12 flex-shrink-0"
-      >
+      <div class="p-4 border-b border-zinc-800 flex justify-between items-center h-12 flex-shrink-0">
         <button
           aria-label="Back"
           onclick={back}

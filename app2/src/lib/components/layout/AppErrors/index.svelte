@@ -16,12 +16,14 @@ import { channels } from "$lib/stores/channels.svelte"
   <div class="overflow-y-auto flex flex-col gap-4">
     {#if Option.isSome(chains.error)}
       <div>
-        <Label>Chain Info Service</Label> <ErrorComponent error={chains.error.value} />
+        <Label>Chain Info Service</Label>
+        <ErrorComponent error={chains.error.value} />
       </div>
     {/if}
     {#if Option.isSome(channels.error)}
       <div>
-        <Label>Channel Info Service</Label> <ErrorComponent error={channels.error.value} />
+        <Label>Channel Info Service</Label>
+        <ErrorComponent error={channels.error.value} />
       </div>
     {/if}
     {#each tokenErrors() as { chainId, error }}
