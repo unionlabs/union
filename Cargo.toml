@@ -416,9 +416,9 @@ consensus-primitives = { path = "lib/consensus-primitives", default-features = f
 state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
 
 chain-kitchen    = { path = "lib/chain-kitchen", default-features = false }
+deployments      = { path = "lib/deployments", default-features = false }
 solidity-slot    = { path = "lib/solidity-slot", default-features = false }
 ucs04            = { path = "lib/ucs04", default-features = false }
-deployments            = { path = "lib/deployments", default-features = false }
 wasm-client-type = { path = "lib/wasm-client-type", default-features = false }
 
 voyager-client-module-arbitrum               = { path = "voyager/modules/client/arbitrum", default-features = false }
@@ -445,6 +445,12 @@ voyager-state-module-cosmos-sdk       = { path = "voyager/modules/state/cosmos-s
 voyager-state-module-cosmos-sdk-union = { path = "voyager/modules/state/cosmos-sdk-union", default-features = false }
 voyager-state-module-ethereum         = { path = "voyager/modules/state/ethereum", default-features = false }
 voyager-state-module-sui              = { path = "voyager/modules/state/sui", default-features = false }
+
+voyager-proof-module-cosmos-sdk       = { path = "voyager/modules/proof/cosmos-sdk", default-features = false }
+voyager-proof-module-cosmos-sdk-union = { path = "voyager/modules/proof/cosmos-sdk-union", default-features = false }
+voyager-proof-module-ethereum         = { path = "voyager/modules/proof/ethereum", default-features = false }
+voyager-proof-module-ethermint        = { path = "voyager/modules/proof/ethermint", default-features = false }
+voyager-proof-module-sui              = { path = "voyager/modules/proof/sui", default-features = false }
 
 # =====================
 # external dependencies

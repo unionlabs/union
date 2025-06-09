@@ -49,3 +49,9 @@ voyager-state-module-cosmos-sdk       = { workspace = true }
 voyager-state-module-cosmos-sdk-union = { workspace = true }
 voyager-state-module-ethereum         = { workspace = true }
 voyager-state-module-sui              = { workspace = true }
+
+voyager-proof-module-cosmos-sdk       = { workspace = true }
+voyager-proof-module-cosmos-sdk-union = { workspace = true }
+voyager-proof-module-ethereum         = { workspace = true }
+voyager-proof-module-ethermint        = { workspace = true }
+voyager-proof-module-sui              = { workspace = true }

@@ -1,13 +1,12 @@
 use alloy::{network::AnyNetwork, primitives::Address, providers::ProviderBuilder, sol};
 use anyhow::{bail, Context, Result};
 use clap::Args;
+use deployments::{App, DEPLOYMENTS};
 use ibc_union_spec::ChannelId;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::primitives::{Bytes, U256};
 use voyager_primitives::IbcInterface;
-
-use crate::deployments::{App, DEPLOYMENTS};
 
 #[derive(Debug, Args)]
 pub struct Cmd {
