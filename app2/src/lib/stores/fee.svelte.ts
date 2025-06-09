@@ -46,13 +46,9 @@ const gasForChain = Effect.fn((chain: Chain) =>
  * NOTE:
  * - Fees are optional to represent presence of base data.
  * - USD is derived from fee (if ready)
- * - Conversion rate is detremined optionally if USD is avaliable for source and destination.
- * - Calcs:
- *   - send covered by wallet
- *   - l2 covered by u
- *   -
+ * - Conversion rate is detremined optionally if USD is available for source and destination.
  *
- * TOOD:
+ * TODO:
  * - How to represent loading? (only show loading for side-effecting)
  */
 const createFeeStore = () => {
