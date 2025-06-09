@@ -4,8 +4,6 @@ import SharpGasIcon from "$lib/components/icons/SharpGasIcon.svelte"
 import SharpInfoIcon from "$lib/components/icons/SharpInfoIcon.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import { GasPriceMap } from "$lib/gasprice"
-import { GasPrice } from "$lib/gasprice/service"
 import { runPromiseExit$, runSync } from "$lib/runtime"
 import { FeeStore } from "$lib/stores/fee.svelte"
 import { cn } from "$lib/utils"
@@ -40,112 +38,6 @@ function toggleExpanded() {
   }
 }
 
-const feeConfig = $derived(pipe(
-  O.all({ fees: transferData.fees }),
-  O.map(({ fees }) => ({
-    fees: Struct.evolve(fees, {
-      PACKET_SEND: O.getOrElse(constant(0n))<bigint>,
-      PACKET_RECV: O.getOrElse(constant(0n))<bigint>,
-      PACKET_SEND_LC_UPDATE_L0: O.getOrElse(constant(0n))<bigint>,
-      PACKET_SEND_LC_UPDATE_L1: O.getOrElse(constant(0n))<bigint>,
-      PACKET_SEND_LC_UPDATE_L2: O.getOrElse(constant(0n))<bigint>,
-    }),
-    gasPrice: BD.fromBigInt(10n), // gasPrice from chain
-    decimals: 6, // BABY token decimals (in rep)
-    feeMultiplier: BD.unsafeFromNumber(1.20), // Union hardcoded fee
-    batchDivideNumber: BD.unsafeFromNumber(2), // Api?
-    gasTokenDecimals: 6, // Token data
-    gasTokenSymbol: "BABY", // Token data
-    applyGasPrice(gasUnits: BD.BigDecimal) {
-      // return BD.multiply(gasUnits, this.gasPrice)
-      return BD.multiply(gasUnits, BD.fromBigInt(10n))
-    },
-    applyFeeMultiplier(ubbnAmount: BD.BigDecimal) {
-      // return BD.multiply(ubbnAmount, this.feeMultiplier)
-      return BD.multiply(ubbnAmount, BD.unsafeFromNumber(1.20))
-    },
-    applyBatchDivision(ubbnAmount: BD.BigDecimal) {
-      // return BD.divide(ubbnAmount, this.batchDivideNumber)
-      return BD.divide(ubbnAmount, BD.unsafeFromNumber(2))
-    },
-    formatToDisplay(ubbnAmount: BD.BigDecimal): string {
-      // const exp = BD.unsafeFromNumber(Math.pow(10, this.decimals))
-      const exp = BD.unsafeFromNumber(Math.pow(10, 6))
-      const babyAmount = E.fromOption(
-        BD.divide(ubbnAmount, exp),
-        () => `could not divide by ${exp}`,
-      )
-      if (E.isLeft(babyAmount)) {
-        return babyAmount.left
-      }
-      return Match.value(babyAmount.right).pipe(
-        Match.when(BD.lessThan(BD.unsafeFromNumber(0.001)), BD.format),
-        Match.when(BD.lessThan(BD.unsafeFromNumber(1)), BD.format),
-        Match.when(BD.lessThan(BD.unsafeFromNumber(100)), BD.format),
-        Match.orElse(BD.format),
-      )
-    },
-    usdPrice: 0.13, // Gas price from service
-  })),
-))
-
-const calculatedFees = $derived(pipe(
-  O.map(feeConfig, (config) =>
-    Struct.evolve(config.fees, {
-      PACKET_SEND: flow(
-        BD.fromBigInt,
-        config.applyGasPrice,
-        config.applyFeeMultiplier,
-        O.some,
-      ),
-      PACKET_SEND_LC_UPDATE_L1: flow(
-        BD.fromBigInt,
-        config.applyGasPrice,
-        config.applyFeeMultiplier,
-        config.applyBatchDivision,
-      ),
-      PACKET_SEND_LC_UPDATE_L0: flow(
-        BD.fromBigInt,
-        config.applyGasPrice,
-        config.applyFeeMultiplier,
-        config.applyBatchDivision,
-      ),
-      PACKET_SEND_LC_UPDATE_L2: flow(
-        BD.fromBigInt,
-        config.applyGasPrice,
-        config.applyFeeMultiplier,
-        config.applyBatchDivision,
-      ),
-      PACKET_RECV: flow(
-        BD.fromBigInt,
-        config.applyGasPrice,
-        config.applyFeeMultiplier,
-        O.some,
-      ),
-    })),
-))
-
-const totalFee = $derived(pipe(
-  calculatedFees,
-  O.map(R.values),
-  O.map(O.all),
-  O.map(O.map(BD.sumAll)),
-  O.flatten,
-))
-
-const displayFees = $derived(pipe(
-  O.all({ calculatedFees, config: feeConfig }),
-  O.map(({ calculatedFees, config: { formatToDisplay } }) =>
-    Struct.evolve(calculatedFees, {
-      PACKET_SEND: O.map(formatToDisplay),
-      PACKET_SEND_LC_UPDATE_L0: O.map(formatToDisplay),
-      PACKET_SEND_LC_UPDATE_L1: O.map(formatToDisplay),
-      PACKET_SEND_LC_UPDATE_L2: O.map(formatToDisplay),
-      PACKET_RECV: O.map(formatToDisplay),
-    })
-  ),
-))
-
 const displayTotals = $derived({
   total: pipe(
     O.map(feeConfig, (x) => x.formatToDisplay),
@@ -161,129 +53,12 @@ const displayTotals = $derived({
   ),
 })
 
-// Fee breakdown items for iteration
-const feeBreakdownItems = $derived([
-  pipe(
-    O.all({
-      amount: O.flatMap(displayFees, Struct.get("PACKET_SEND")),
-      baseFee: O.flatMap(calculatedFees, Struct.get("PACKET_SEND")),
-    }),
-    O.map(({ amount, baseFee }) => ({
-      label: "Packet Send",
-      amount,
-      baseFee,
-      isBatched: false,
-      description: "Fee for sending the packet to the destination chain",
-    })),
-  ),
-  pipe(
-    O.all({
-      amount: O.flatMap(displayFees, Struct.get("PACKET_SEND_LC_UPDATE_L1")),
-      baseFee: O.flatMap(calculatedFees, Struct.get("PACKET_SEND")),
-    }),
-    O.map(({ amount, baseFee }) => ({
-      label: "Light Client (L1)",
-      amount,
-      baseFee,
-      isBatched: true,
-      description: "L1 light client update fee (shared across batch)",
-    })),
-  ),
-  pipe(
-    O.all({
-      amount: O.flatMap(displayFees, Struct.get("PACKET_SEND_LC_UPDATE_L0")),
-      baseFee: O.flatMap(calculatedFees, Struct.get("PACKET_SEND_LC_UPDATE_L0")),
-    }),
-    O.map(({ amount, baseFee }) => ({
-      label: "Light Client (L0)",
-      amount,
-      baseFee,
-      isBatched: true,
-      description: "L0 light client update fee (shared across batch)",
-    })),
-  ),
-  pipe(
-    O.all({
-      amount: O.flatMap(displayFees, Struct.get("PACKET_RECV")),
-      baseFee: O.flatMap(calculatedFees, Struct.get("PACKET_RECV")),
-    }),
-    O.map(({ amount, baseFee }) => ({
-      label: "Packet Receive",
-      amount,
-      baseFee,
-      isBatched: false,
-      description: "Fee for receiving the packet on the destination chain",
-    })),
-  ),
-])
-
-const usdOfChainGas = Effect.fn((chain: Chain) =>
-  pipe(
-    PriceOracle,
-    Effect.andThen((oracle) => oracle.of(chain.universal_chain_id)),
-  )
-)
-
-const usdPrices = runPromiseExit$(() =>
-  pipe(
-    Effect.all({
-      source: Effect.transposeMapOption(transferData.sourceChain, usdOfChainGas),
-      destination: Effect.transposeMapOption(transferData.destinationChain, usdOfChainGas),
-    }, { concurrency: 2 }),
-  )
-)
-
 const loading = $derived(pipe(
-  O.all([transferData.gasPrices.current]),
+  O.all([FeeStore.gasPrices.current]),
   O.isNone,
 ))
 
 const calculating = false
-
-const errors = $derived.by(() => {
-  // TODO: extract to helper
-  const extractError = <E>(x: O.Option<Exit.Exit<any, E>>) =>
-    pipe(
-      x,
-      O.flatMap(Exit.causeOption),
-    )
-  return pipe(
-    [
-      extractError(transferData.gasPrices.current),
-      extractError(usdPrices.current),
-    ] as const,
-    A.getSomes,
-    Unify.unify,
-    A.map(Cause.squash),
-    A.map(x => (x as any)?.message),
-    A.filter(Predicate.isNotUndefined),
-  )
-})
-
-const gasDisplay = $derived(pipe(
-  transferData.gasPrices.current,
-  // TODO: extract to helper
-  O.flatMap(Exit.match({
-    onSuccess: O.some,
-    onFailure: O.none,
-  })),
-  O.getOrNull,
-))
-
-const usdDisplay = $derived(pipe(
-  usdPrices.current,
-  // TODO: extract to helper
-  O.flatMap(Exit.match({
-    onSuccess: O.some,
-    onFailure: O.none,
-  })),
-  O.getOrNull,
-))
-
-$effect(() => {
-  // console.log("FEES:", transferData.fees)
-  // console.log("GAS PRICES:", JSON.stringify(gasPrices.current, null, 2))
-})
 </script>
 
 {#snippet BigDecimal(x: BD.BigDecimal)}
@@ -293,7 +68,7 @@ $effect(() => {
 <!-- NOTE: presently only **BOB -> BABYLON** and **BABYLON -> BOB** -->
 <div>
   <ul class="text-red-500">
-    {#each errors as error}
+    {#each FeeStore.errors as error}
       <li>{error}</li>
     {/each}
   </ul>
@@ -303,8 +78,10 @@ $effect(() => {
   <b>USD:</b>
   <pre class="w-[350px] overflow-scroll">{JSON.stringify(usdDisplay, null, 2)}</pre>
   -->
+  <!--
   {FeeStore.toasts}
   {FeeStore.a.current}
+  -->
 </div>
 <div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
@@ -319,7 +96,7 @@ $effect(() => {
   >
     <div class="flex items-center gap-1">
       <SharpGasIcon class="size-4 text-zinc-300" />
-      {#if loading || O.isNone(feeConfig)}
+      {#if loading}
         <!-- Show nothing when loading -->
       {:else if calculating}
         <Skeleton class="h-3 w-16" />

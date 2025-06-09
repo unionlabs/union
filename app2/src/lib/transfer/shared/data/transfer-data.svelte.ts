@@ -1,6 +1,3 @@
-import { GasPriceMap } from "$lib/gasprice"
-import { GasPrice } from "$lib/gasprice/service"
-import { runPromiseExit$ } from "$lib/runtime"
 import { getDerivedReceiverSafe, getParsedAmountSafe } from "$lib/services/shared"
 import { getChannelInfoSafe } from "$lib/services/transfer-ucs03-evm/channel.ts"
 import { chains } from "$lib/stores/chains.svelte.ts"
@@ -17,14 +14,6 @@ import type { Chain, Channel, Token } from "@unionlabs/sdk/schema"
 import type { Fees } from "@unionlabs/sdk/schema/fee"
 import { Array as A, Effect, Match, Option, pipe } from "effect"
 import { type Address, fromHex, type Hex } from "viem"
-
-const gasForChain = Effect.fn((chain: Chain) =>
-  pipe(
-    GasPrice,
-    Effect.andThen(({ of }) => of),
-    Effect.provide(GasPriceMap.get(chain)),
-  )
-)
 
 export class TransferData {
   raw = new RawTransferDataSvelte()
@@ -154,8 +143,6 @@ export class TransferData {
       ),
     ),
   )
-
-  fees = $derived<Option.Option<Fees>>(Option.map(this.channel, x => x.fees))
 
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(
