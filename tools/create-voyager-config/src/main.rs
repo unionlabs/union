@@ -3,7 +3,6 @@
 
 use std::{
     collections::{hash_map::Entry, HashMap},
-    env::temp_dir,
     fmt::Display,
     fs,
     path::PathBuf,
@@ -29,7 +28,7 @@ use ucs04::{
 use unionlabs_primitives::H160;
 use voyager_core::context::{ModuleConfig, ModulesConfig};
 use voyager_primitives::{ChainId, ConsensusType, IbcSpecId};
-use voyager_rpc::types::FinalityModuleInfo;
+use voyager_rpc::types::{FinalityModuleInfo, ProofModuleInfo, StateModuleInfo};
 
 pub const SUPPORTED_FAMILIES: &[Family] = &[
     Family::Babylon,
@@ -43,7 +42,7 @@ pub const SUPPORTED_FAMILIES: &[Family] = &[
 ];
 
 pub mod keys {
-    pub const COSMOS_RPC_URL: &str = "cosmos_rpc_url";
+    pub const COMET_RPC_URL: &str = "cosmos_rpc_url";
     pub const EVM_RPC_URL: &str = "evm_rpc_url";
     pub const COSMOS_CHAIN_ID: &str = "cosmos_chain_id";
     pub const EVM_CHAIN_ID: &str = "evm_chain_id";
@@ -143,7 +142,7 @@ impl<'a> Context<'a> {
                     self.defaults
                         .get_mut(id)
                         .unwrap()
-                        .entry(keys::COSMOS_RPC_URL)
+                        .entry(keys::COMET_RPC_URL)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
                 }
             }
@@ -345,7 +344,7 @@ impl<'a> Context<'a> {
 
                 if is_well_known(id) {
                     chain
-                        .entry(keys::COSMOS_RPC_URL)
+                        .entry(keys::COMET_RPC_URL)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
                     chain
                         .entry(keys::EVM_RPC_URL)
@@ -356,7 +355,7 @@ impl<'a> Context<'a> {
                 self.defaults
                     .get_mut(id)
                     .unwrap()
-                    .entry(keys::COSMOS_RPC_URL)
+                    .entry(keys::COMET_RPC_URL)
                     .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
             }
             family => bail!("{family} is not currently supported"),
@@ -426,7 +425,7 @@ impl<'a> Context<'a> {
                     rpc_url: self.read_value(
                         &format!("{id} finality rpc url"),
                         id,
-                        keys::COSMOS_RPC_URL
+                        keys::COMET_RPC_URL
                     )?,
                 },
             }),
@@ -512,7 +511,7 @@ impl<'a> Context<'a> {
                     rpc_url: self.read_value(
                         &format!("{id} finality rpc url"),
                         id,
-                        keys::COSMOS_RPC_URL
+                        keys::COMET_RPC_URL
                     )?,
                 },
             }),
@@ -524,112 +523,107 @@ impl<'a> Context<'a> {
         &mut self,
         id: &UniversalChainId<'a>,
         ibc_spec_id: IbcSpecId,
-    ) -> Result<ModuleConfig<FinalityModuleInfo>> {
+    ) -> Result<ModuleConfig<StateModuleInfo>> {
         Ok(match (id.family(), ibc_spec_id.as_str()) {
-            (Babylon | Osmosis | Stargaze | Stride | Xion, IbcSpecId::UNION) => {
+            (Babylon | Osmosis | Stargaze | Stride | Union | Xion, IbcSpecId::UNION) => {
                 module_config!(self {
-                    info: FinalityModuleInfo {
+                    info: StateModuleInfo {
                         chain_id: ChainId::new(id.id().to_string()),
-                        consensus_type: ConsensusType::new(ConsensusType::TENDERMINT),
+                        ibc_spec_id
                     },
                     config: voyager_state_module_cosmos_sdk_union::Config {
                         rpc_url: self.read_value(
-                            &format!("{id} finality rpc url"),
+                            &format!("{id} state rpc url"),
                             id,
-                            keys::COSMOS_RPC_URL
+                            keys::COMET_RPC_URL
                         )?,
                         ibc_host_contract_address: self
-                            .get_required_default(id, keys::IBC_HOST_CONTRACT_ADDRESS)?,
+                            .get_required_default(id, keys::IBC_HOST_CONTRACT_ADDRESS)
                     },
                 })
             }
-            (Bob, IbcSpecId::UNION) => {
-                let l1_chain_id =
-                    self.get_required_default::<UniversalChainId>(id, keys::L1_CHAIN_ID);
-
+            (Arbitrum | Bob | Corn | Ethereum | Sei, IbcSpecId::UNION) => {
                 module_config!(self {
-                    info: FinalityModuleInfo {
+                    info: StateModuleInfo {
                         chain_id: ChainId::new(id.id().to_string()),
-                        consensus_type: ConsensusType::new(ConsensusType::ARBITRUM),
+                        ibc_spec_id
                     },
-                    config: voyager_finality_module_bob::Config {
-                        l1_chain_id: ChainId::new(l1_chain_id.id().to_string()),
-                        l2_oracle_address: self.get_required_default(id, keys::L2_ORACLE_ADDRESS),
-                        l1_rpc_url: self.read_value(
-                            &format!("{l1_chain_id} finality rpc url"),
-                            &l1_chain_id,
-                            keys::EVM_RPC_URL
-                        )?,
-                        l2_rpc_url: self.read_value(
-                            &format!("{id} finality rpc url"),
+                    config: voyager_state_module_ethereum::Config {
+                        ibc_handler_address: todo!(),
+                        rpc_url: self.read_value(
+                            &format!("{id} state rpc url"),
                             id,
                             keys::EVM_RPC_URL
                         )?,
-                        max_cache_size: 1000,
+                        max_query_window: todo!(),
+                        max_cache_size: 1000
                     },
                 })
             }
-            Arbitrum | Corn => {
-                let l1_chain_id =
-                    self.get_required_default::<UniversalChainId>(id, keys::L1_CHAIN_ID);
+            (family, spec) => bail!("{family} on {spec} is not currently supported"),
+        })
+    }
 
+    fn proof_module(
+        &mut self,
+        id: &UniversalChainId<'a>,
+        ibc_spec_id: IbcSpecId,
+    ) -> Result<ModuleConfig<ProofModuleInfo>> {
+        Ok(match (id.family(), ibc_spec_id.as_str()) {
+            (Babylon | Osmosis | Stargaze | Stride | Union | Xion, IbcSpecId::UNION) => {
                 module_config!(self {
-                    info: FinalityModuleInfo {
+                    info: ProofModuleInfo {
                         chain_id: ChainId::new(id.id().to_string()),
-                        consensus_type: ConsensusType::new(ConsensusType::ARBITRUM),
+                        ibc_spec_id
                     },
-                    config: voyager_finality_module_arbitrum::Config {
-                        l1_chain_id: ChainId::new(l1_chain_id.id().to_string()),
-                        l1_contract_address: self
-                            .get_required_default(id, keys::L1_CONTRACT_ADDRESS),
-                        l1_rpc_url: self.read_value(
-                            &format!("{l1_chain_id} finality rpc url"),
-                            &l1_chain_id,
-                            keys::EVM_RPC_URL
+                    config: voyager_proof_module_cosmos_sdk_union::Config {
+                        rpc_url: self.read_value(
+                            &format!("{id} Proof rpc url"),
+                            id,
+                            keys::COMET_RPC_URL
                         )?,
-                        l2_rpc_url: self.read_value(
-                            &format!("{id} finality rpc url"),
+                        ibc_host_contract_address: self
+                            .get_required_default(id, keys::IBC_HOST_CONTRACT_ADDRESS)
+                    },
+                })
+            }
+            (Arbitrum | Bob | Corn | Ethereum, IbcSpecId::UNION) => {
+                module_config!(self {
+                    info: ProofModuleInfo {
+                        chain_id: ChainId::new(id.id().to_string()),
+                        ibc_spec_id
+                    },
+                    config: voyager_proof_module_ethereum::Config {
+                        ibc_handler_address: todo!(),
+                        rpc_url: self.read_value(
+                            &format!("{id} Proof rpc url"),
                             id,
                             keys::EVM_RPC_URL
                         )?,
-                        max_cache_size: 1000,
+                        max_query_window: todo!(),
+                        max_cache_size: 1000
                     },
                 })
             }
-            Ethereum => module_config!(self {
-                info: FinalityModuleInfo {
-                    chain_id: ChainId::new(id.id().to_string()),
-                    consensus_type: ConsensusType::new(ConsensusType::ETHEREUM),
-                },
-                config: voyager_finality_module_ethereum::Config {
-                    rpc_url: self.read_value(
-                        &format!("{id} finality rpc url"),
-                        id,
-                        keys::EVM_RPC_URL
-                    )?,
-                    beacon_rpc_url: self.read_value(
-                        &format!("{id} finality beacon rpc url"),
-                        id,
-                        keys::BEACON_RPC_URL
-                    )?,
-                    chain_spec: self.get_required_default(id, keys::CHAIN_SPEC),
-                    max_cache_size: 1000
-                },
-            }),
-            Union => module_config!(self {
-                info: FinalityModuleInfo {
-                    chain_id: ChainId::new(id.id().to_string()),
-                    consensus_type: ConsensusType::new(ConsensusType::COMETBLS),
-                },
-                config: voyager_finality_module_cometbls::Config {
-                    rpc_url: self.read_value(
-                        &format!("{id} finality rpc url"),
-                        id,
-                        keys::COSMOS_RPC_URL
-                    )?,
-                },
-            }),
-            family => bail!("{family} is not currently supported"),
+            (Sei, IbcSpecId::UNION) => {
+                module_config!(self {
+                    info: ProofModuleInfo {
+                        chain_id: ChainId::new(id.id().to_string()),
+                        ibc_spec_id
+                    },
+                    config: voyager_proof_module_ethereum::Config {
+                        ibc_handler_address: todo!(),
+                        rpc_url: self.read_value(
+                            &format!("{id} Proof rpc url"),
+                            id,
+                            keys::EVM_RPC_URL
+                        )?,
+                        max_query_window: todo!(),
+                        max_cache_size: 1000
+                    },
+                })
+            }
+            (family, spec) => bail!("{family} on {spec} is not currently supported"),
         })
     }
 
@@ -650,8 +644,19 @@ impl<'a> Context<'a> {
         config.consensus.push(self.finality_module(a)?);
         config.consensus.push(self.finality_module(b)?);
 
-        config.state.push(self.finality_module(a)?);
-        config.state.push(self.finality_module(b)?);
+        config
+            .state
+            .push(self.state_module(a, IbcSpecId::new(IbcSpecId::UNION))?);
+        config
+            .state
+            .push(self.state_module(b, IbcSpecId::new(IbcSpecId::UNION))?);
+
+        config
+            .proof
+            .push(self.proof_module(a, IbcSpecId::new(IbcSpecId::UNION))?);
+        config
+            .proof
+            .push(self.proof_module(b, IbcSpecId::new(IbcSpecId::UNION))?);
 
         match (a.parts(), b.parts()) {
             ((Babylon, babylon), (Ethereum, ethereum))
