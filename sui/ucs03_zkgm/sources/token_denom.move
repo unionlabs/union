@@ -58,28 +58,28 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::fungible_token {
-    use sui::coin::{Self};
+// module zkgm::fungible_token {
+//     use sui::coin::{Self};
 
-    // one time witness
-    public struct FUNGIBLE_TOKEN has drop {}
+//     // one time witness
+//     public struct FUNGIBLE_TOKEN has drop {}
 
-    fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
-        let (treasury_cap, metadata) =
-            coin::create_currency<FUNGIBLE_TOKEN>(
-                witness,
-                (@decimals.to_u256()) as u8,
-                b"muno",
-                b"muno",
-                b"zkgm token created by voyager",
-                option::none(),
-                ctx
-            );
+//     fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
+//         let (treasury_cap, metadata) =
+//             coin::create_currency<FUNGIBLE_TOKEN>(
+//                 witness,
+//                 (@decimals.to_u256()) as u8,
+//                 b"muno",
+//                 b"muno",
+//                 b"zkgm token created by voyager",
+//                 option::none(),
+//                 ctx
+//             );
 
-        transfer::public_share_object(metadata);
-        transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
-    }
-}
+//         transfer::public_share_object(metadata);
+//         transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
+//     }
+// }
 
 /*
 
