@@ -43,7 +43,7 @@ use sui_sdk::{
 use tracing::{debug, info, instrument};
 use ucs03_zkgm::com::{FungibleAssetOrder, ZkgmPacket};
 use unionlabs::{
-    primitives::{encoding::HexPrefixed, Bytes, U256},
+    primitives::{encoding::HexPrefixed, Bytes, H256, U256},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -444,7 +444,7 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&port_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.channel.connection_id).unwrap()),
                         CallArg::Pure(
-                            bcs::to_bytes(&data.channel.counterparty_channel_id).unwrap(),
+                            bcs::to_bytes(&data.channel.counterparty_channel_id.unwrap()).unwrap(),
                         ),
                         CallArg::Pure(bcs::to_bytes(&data.channel.counterparty_port_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.channel.version).unwrap()),
@@ -560,7 +560,7 @@ async fn process_msgs(
                     .start_version()
                     .expect("object is shared, hence it has a start version");
 
-                register_token_if_zkgm(
+                let coin_t = register_token_if_zkgm(
                     module,
                     pk,
                     &data.packets[0],
@@ -598,6 +598,13 @@ async fn process_msgs(
                     timeout_timestamps
                 );
 
+                println!(
+                    "
+                    REGISTERED COIN TYPE: {:?}
+                    ",
+                    coin_t
+                );
+
                 (
                     module_info.latest_address,
                     msg,
@@ -629,15 +636,7 @@ async fn process_msgs(
                         CallArg::Pure(bcs::to_bytes(&fee_recipient).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.relayer_msgs).unwrap()),
                     ],
-                    vec![TypeTag::Struct(Box::new(StructTag {
-                        address: AccountAddress::from_str(
-                            "0xacc51178ffc547cdfa36a8ab4a6ae3823edaa8f07ff9177d9d520aad080b28fd",
-                        )
-                        .unwrap(),
-                        module: MoveIdentifier::new("fungible_token").unwrap(),
-                        name: MoveIdentifier::new("FUNGIBLE_TOKEN").unwrap(),
-                        type_params: vec![],
-                    }))],
+                    vec![coin_t.unwrap()],
                 )
             }
             _ => todo!(),
@@ -648,7 +647,7 @@ async fn process_msgs(
     data
 }
 
-fn predict_wrapped_denom(path: U256, channel: ChannelId, base_token: Vec<u8>) -> Vec<u8> {
+fn predict_wrapped_denom(path: H256, channel: ChannelId, base_token: Vec<u8>) -> Vec<u8> {
     let mut buf = vec![];
     bcs::serialize_into(&mut buf, &path).expect("works");
     bcs::serialize_into(&mut buf, &channel.raw()).expect("works");
@@ -663,23 +662,23 @@ async fn register_token_if_zkgm(
     packet: &ibc_union_spec::Packet,
     module_info: &ModuleInfo,
     store_initial_seq: SequenceNumber,
-) {
+) -> Option<TypeTag> {
     let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data) else {
-        return;
+        return None;
     };
 
     let Ok(fao) = FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand) else {
-        return;
+        return None;
     };
 
     let wrapped_token = predict_wrapped_denom(
-        fao.base_token_path.into(),
+        fao.base_token_path.to_le_bytes().into(),
         packet.destination_channel_id,
         fao.base_token.to_vec(),
     );
 
     if fao.quote_token != wrapped_token {
-        return;
+        return None;
     }
 
     let mut bytecode = TOKEN_BYTECODE[0].to_vec();
@@ -711,6 +710,8 @@ async fn register_token_if_zkgm(
     let _ = ptb.command(Command::TransferObjects(vec![res], arg));
 
     let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
+
+    println!("tx response: {transaction_response:?}");
 
     tokio::time::sleep(Duration::from_secs(1)).await;
     let (treasury_ref, coin_t) = module
@@ -760,9 +761,15 @@ async fn register_token_if_zkgm(
         module_info.latest_address.into(),
         Identifier::new(module_info.module_name.clone()).unwrap(),
         ident_str!("register_capability").into(),
-        vec![coin_t],
+        vec![coin_t.clone()],
         arguments,
     ));
+
+    let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
+
+    println!("register tx: {transaction_response}");
+
+    Some(coin_t)
 }
 
 struct SuiQuery<'a> {
@@ -848,7 +855,7 @@ pub struct ModuleInfo {
 // TODO(aeryz): we can also choose to include store_name here
 pub async fn parse_port(graphql_url: &str, port_id: &str) -> ModuleInfo {
     let module_info = port_id.split("::").collect::<Vec<&str>>();
-    if module_info.len() < 4 {
+    if module_info.len() < 3 {
         panic!("invalid port id");
     }
 
@@ -891,7 +898,6 @@ pub async fn send_transactions(
     pk: &Arc<SuiKeyPair>,
     ptb: ProgrammableTransaction,
 ) -> RpcResult<SuiTransactionBlockResponse> {
-    println!("SUBMIT BROTHERRR");
     let sender = SuiAddress::from(&pk.public());
     let gas_coin = module
         .sui_client
@@ -952,14 +958,17 @@ pub async fn send_transactions(
             SuiTransactionBlockResponseOptions::default(),
             None,
         )
-        .await
-        .map_err(|e| {
-            ErrorObject::owned(
-                -1,
-                ErrorReporter(e).with_message("error executing a tx"),
-                None::<()>,
-            )
-        })?;
+        .await;
+
+    println!("{transaction_response:?}");
+
+    let transaction_response = transaction_response.map_err(|e| {
+        ErrorObject::owned(
+            -1,
+            ErrorReporter(e).with_message("error executing a tx"),
+            None::<()>,
+        )
+    })?;
 
     debug!("tx response {transaction_response:?}");
 
