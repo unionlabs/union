@@ -22,7 +22,7 @@ $effect(() => {
   isDismissed = false
 })
 
-const bannerOption = bannerStore.getBannerForEdition(uiStore.edition)
+const bannerOption = $derived(bannerStore.getBannerForEdition(uiStore.edition))
 </script>
 
 {#if !isDismissed && Option.isSome(bannerOption) && bannerOption.value.enabled}
