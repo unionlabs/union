@@ -569,21 +569,20 @@ const createFeeStore = () => {
   //   ucs03address: string
   // }
 
-  type FeeIntent = Pick<
-    Intent,
-    "decimals" | "baseToken" | "quoteAmount" | "baseAmount" | "receiver"
-  >
+  // type FeeIntent = Pick<
+  //   Intent,
+  //   "decimals" | "baseToken" | "quoteAmount" | "baseAmount" | "receiver"
+  // >
 
-  const feeIntent: O.Option<Intent> = $derived(O.gen(function*() {
-    const config = yield* decoratedConfig
+  // const feeIntent: O.Option<Intent> = $derived(O.gen(function*() {
+  //   const config = yield* decoratedConfig
 
-    const decimals = config.gasDecimals
-    const baseToken
+  //   const decimals = config.gasDecimals
 
-    return {
-      decimals,
-    } as const
-  }))
+  //   return {
+  //     decimals,
+  //   } as const
+  // }))
 
   return {
     get baseFees() {
