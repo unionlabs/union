@@ -4,6 +4,7 @@ import { AtomicGasPrice, BaseGasPrice, GasPrice } from "$lib/gasprice/service"
 import * as AppRuntime from "$lib/runtime"
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { transferData as TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
+import type { Intent } from "$lib/transfer/shared/services/filling/create-context"
 import * as Writer from "$lib/typeclass/Writer.js"
 import type { RunPromiseExitResult } from "$lib/utils/effect.svelte"
 import * as StringInstances from "@effect/typeclass/data/String"
@@ -551,6 +552,38 @@ const createFeeStore = () => {
     })),
     O.map(BigDecimal.format),
   ))
+
+  // TODO
+  // export type Intent = {
+  //   sender: AddressCanonicalBytes
+  //   receiver: AddressCanonicalBytes
+  //   baseToken: string
+  //   baseAmount: TokenRawAmount
+  //   quoteAmount: TokenRawAmount
+  //   decimals: number
+  //   sourceChain: Chain
+  //   sourceChainId: UniversalChainId
+  //   sourceChannelId: ChannelId
+  //   destinationChain: Chain
+  //   channel: Channel
+  //   ucs03address: string
+  // }
+
+  type FeeIntent = Pick<
+    Intent,
+    "decimals" | "baseToken" | "quoteAmount" | "baseAmount" | "receiver"
+  >
+
+  const feeIntent: O.Option<Intent> = $derived(O.gen(function*() {
+    const config = yield* decoratedConfig
+
+    const decimals = config.gasDecimals
+    const baseToken
+
+    return {
+      decimals,
+    } as const
+  }))
 
   return {
     get baseFees() {

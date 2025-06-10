@@ -3,6 +3,7 @@ import { beforeNavigate } from "$app/navigation"
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { runFork } from "$lib/runtime"
+import { FeeStore } from "$lib/stores/fee.svelte"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
@@ -25,7 +26,7 @@ import type { TransferContext } from "$lib/transfer/shared/services/filling/crea
 import { TokenRawAmountFromSelf, TokenRawDenom } from "@unionlabs/sdk/schema"
 import { Array as Arr, Effect, Fiber, FiberId, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
-import { onMount } from "svelte"
+import { onMount, untrack } from "svelte"
 import { fly } from "svelte/transition"
 
 let currentPage = $state(0)
@@ -127,6 +128,7 @@ $effect(() => {
   isLoading = true
   transferSteps = Option.none()
   transferErrors = Option.none()
+  const fee = untrack(() => FeeStore.feeDisplay)
 
   const machineEffect = Effect.gen(function*() {
     let currentState: CreateContextState = CreateContextState.Filling()
