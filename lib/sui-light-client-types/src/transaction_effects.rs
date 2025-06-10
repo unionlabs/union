@@ -1,6 +1,6 @@
 use blake2::{Blake2b, Digest as _};
 
-use crate::{checkpoint_summary::GasCostSummary, digest::Digest, ObjectID, ObjectRef, Owner};
+use crate::{checkpoint_summary::GasCostSummary, Digest, ObjectID, ObjectRef, Owner};
 
 #[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -167,10 +167,12 @@ pub enum ExecutionStatus {
 impl TransactionEffects {
     #[cfg(feature = "serde")]
     pub fn digest(&self) -> Digest {
+        use crate::fixed_bytes::SuiFixedBytes;
+
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("TransactionEffects::");
         bcs::serialize_into(&mut hasher, self).unwrap();
-        Digest(hasher.finalize().into())
+        SuiFixedBytes(hasher.finalize().into())
     }
 }
 

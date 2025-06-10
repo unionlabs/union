@@ -1,4 +1,4 @@
-use sui_light_client_types::{digest::Digest, ObjectID};
+use sui_light_client_types::{Digest, ObjectID};
 use unionlabs_primitives::Bytes;
 
 #[derive(Debug, thiserror::Error)]

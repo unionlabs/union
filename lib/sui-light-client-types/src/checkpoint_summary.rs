@@ -4,7 +4,7 @@ use unionlabs_primitives::{
     Bytes, FixedBytes,
 };
 
-use crate::{crypto::AuthorityPublicKeyBytes, digest::Digest, U64};
+use crate::{crypto::AuthorityPublicKeyBytes, Digest, U64};
 
 pub type CheckpointSequenceNumber = u64;
 pub type CheckpointTimestamp = u64;
@@ -120,10 +120,12 @@ impl CheckpointContents {
 
     #[cfg(feature = "serde")]
     pub fn digest(&self) -> Digest {
+        use crate::fixed_bytes::SuiFixedBytes;
+
         let mut hasher = Blake2b::<typenum::U32>::new();
         hasher.update("CheckpointContents::");
         bcs::serialize_into(&mut hasher, self).unwrap();
-        Digest(FixedBytes::new(hasher.finalize().into()))
+        SuiFixedBytes(FixedBytes::new(hasher.finalize().into()))
     }
 }
 
@@ -143,7 +145,7 @@ pub struct CheckpointContentsV1 {
     pub user_signatures: Vec<Vec<GenericSignature>>,
 }
 
-#[derive(Eq, PartialEq, Copy, Clone, Debug)]
+#[derive(Eq, PartialEq, Clone, Debug)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[cfg_attr(feature = "bincode", derive(bincode::Encode, bincode::Decode))]
 pub struct ExecutionDigests {

@@ -14052,6 +14052,7 @@ dependencies = [
  "bincode 2.0.1",
  "blake2",
  "cosmwasm-std 2.2.2",
+ "frame-support-procedural",
  "hex-literal",
  "roaring",
  "serde",
