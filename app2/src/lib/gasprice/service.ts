@@ -1,6 +1,11 @@
-import type { Chain } from "@unionlabs/sdk/schema"
-import { BigDecimal, Context, Effect } from "effect"
+import { BigDecimal, Brand, Context, Effect } from "effect"
 import type { GasPriceError } from "./error"
+
+export type AtomicGasPrice = BigDecimal.BigDecimal & Brand.Brand<"AtomicGasPrice">
+export const AtomicGasPrice = Brand.nominal<AtomicGasPrice>()
+
+export type BaseGasPrice = BigDecimal.BigDecimal & Brand.Brand<"BaseGasPrice">
+export const BaseGasPrice = Brand.nominal<BaseGasPrice>()
 
 /**
  * @since 0.0.1
@@ -21,6 +26,6 @@ export declare namespace GasPrice {
    * @category models
    */
   export interface Service {
-    readonly of: Effect.Effect<BigDecimal.BigDecimal, GasPriceError>
+    readonly of: Effect.Effect<BaseGasPrice, GasPriceError>
   }
 }

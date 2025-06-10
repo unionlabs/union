@@ -1,6 +1,6 @@
 import { GasPriceMap } from "$lib/gasprice"
 import type { GasPriceError } from "$lib/gasprice/error"
-import { GasPrice } from "$lib/gasprice/service"
+import { AtomicGasPrice, BaseGasPrice, GasPrice } from "$lib/gasprice/service"
 import * as AppRuntime from "$lib/runtime"
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { transferData as TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
@@ -35,7 +35,10 @@ const composeK = pipe(
   FlatMap.composeK,
 )
 
-type BaseFees = { [K in keyof Fees]: Fees[K] extends O.Option<infer T> ? T : never }
+type BaseFees = Omit<
+  { [K in keyof Fees]: Fees[K] extends O.Option<infer T> ? T : never },
+  "PACKET_SEND_LC_UPDATE_L2"
+>
 
 const usdOfChainGas = Effect.fn((chain: Chain) =>
   Effect.andThen(PriceOracle, (oracle) => oracle.of(chain.universal_chain_id))
@@ -74,8 +77,8 @@ const createFeeStore = () => {
   >
 
   let gasPrices!: RunPromiseExitResult<{
-    source: O.Option<BigDecimal.BigDecimal>
-    destination: O.Option<BigDecimal.BigDecimal>
+    source: O.Option<BaseGasPrice>
+    destination: O.Option<BaseGasPrice>
   }, GasPriceError>
 
   /**
@@ -129,37 +132,106 @@ const createFeeStore = () => {
     })
   })
 
-  const decorate = (self: { fees: BaseFees; gasPrice: BigDecimal.BigDecimal } & typeof config) => {
-    const applyGasPrice = (gasUnits: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => [
-      BigDecimal.multiply(gasUnits, self.gasPrice),
-      `[applyGasPrice] ${gasUnits} × ${self.gasPrice}`,
-    ]
-    const applyFeeMultiplier = (amount: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => [
-      BigDecimal.multiply(amount, self.feeMultiplier),
-      `[applyFeeMultiplier] ${amount} × ${self.feeMultiplier}`,
-    ]
+  const maybeRatio = $derived(pipe(
+    ratio.current,
+    O.flatMap(Exit.match({
+      onSuccess: O.some,
+      onFailure: O.none,
+    })),
+    O.flatMap(O.map(x => x.ratio)),
+  ))
+
+  const decorate = (
+    self: { fees: BaseFees; gasPrice: BaseGasPrice; ratio: BigDecimal.BigDecimal } & typeof config,
+  ) => {
+    const gasDecimals = self.gasPrice.scale
+    console.log({ symbol: gasDecimals })
+
+    const asBaseUnit = (a: AtomicGasPrice): [BaseGasPrice, string] => {
+      const result = pipe(
+        BigDecimal.multiply(a, BigDecimal.make(1n, gasDecimals)),
+        BaseGasPrice,
+      )
+
+      return [
+        result,
+        `${a} atomic unit * 10e-${gasDecimals} = ${result} base unit`,
+      ]
+    }
+
+    const asAtomicUnit = (a: BaseGasPrice): [AtomicGasPrice, string] => {
+      const result = pipe(
+        BigDecimal.multiply(a, BigDecimal.make(1n, -gasDecimals)),
+        AtomicGasPrice,
+      )
+
+      return [
+        result,
+        `${a} base unit * 10e${-gasDecimals} = ${result} atomic unit`,
+      ]
+    }
+
+    const applyGasPrice = (gasUnits: BigDecimal.BigDecimal): [AtomicGasPrice, string] => {
+      const atomicGasPrice = asAtomicUnit(self.gasPrice)
+      // TODO: composeK
+      const result = AtomicGasPrice(BigDecimal.multiply(gasUnits, atomicGasPrice[0]))
+      return [
+        result,
+        `${gasUnits} gas units × ${atomicGasPrice[0]} wei/gas unit = ${result} wei`,
+      ]
+    }
+
+    const applyRatio = (a: BaseGasPrice): [BaseGasPrice, string] => {
+      const result = pipe(
+        BigDecimal.multiply(a, self.ratio),
+        BaseGasPrice,
+      )
+
+      return [
+        result,
+        `${a} base unit * ${self.ratio} = ${result} base unit`,
+      ]
+    }
+
+    const applyFeeMultiplier = (amount: AtomicGasPrice): [AtomicGasPrice, string] => {
+      const result = pipe(
+        BigDecimal.multiply(amount, self.feeMultiplier),
+        AtomicGasPrice,
+      )
+      return [
+        result,
+        `${amount} × ${self.feeMultiplier} = ${result} atomic units`,
+      ]
+    }
 
     const applyBatchDivision = (
-      amount: BigDecimal.BigDecimal,
-    ): [BigDecimal.BigDecimal, string] => [
-      BigDecimal.unsafeDivide(amount, self.batchDivideNumber),
-      `[applyBatchDivision] ${amount} ÷ ${self.batchDivideNumber}`,
-    ]
+      a: AtomicGasPrice,
+    ): [AtomicGasPrice, string] => {
+      const result = pipe(
+        BigDecimal.unsafeDivide(a, self.batchDivideNumber),
+        AtomicGasPrice,
+      )
+      return [
+        result,
+        `${a} atomic units ÷ ${self.batchDivideNumber} = ${result} atomic units`,
+      ]
+    }
 
-    const formatToDisplay = (amount: BigDecimal.BigDecimal): string => {
+    const formatToDisplay = (a: AtomicGasPrice): string => {
+      // TODO: add composeK
       return pipe(
-        amount,
-        BigDecimal.round({
-          scale: self.gasPrice.scale - 4,
-          mode: "from-zero",
-        }),
+        asBaseUnit(a)[0],
         BigDecimal.format,
       )
     }
 
     return Object.assign(self, {
+      gasDecimals,
       applyGasPrice,
+      asBaseUnit,
+      asAtomicUnit,
       applyFeeMultiplier,
+      applyRatio,
       applyBatchDivision,
       formatToDisplay,
     })
@@ -168,12 +240,11 @@ const createFeeStore = () => {
   const baseFees: O.Option<BaseFees> = $derived(pipe(
     TransferData.channel,
     O.map(Struct.get("fees")),
+    O.map(Struct.omit("PACKET_SEND_LC_UPDATE_L2")),
     O.map(Struct.evolve({
       PACKET_RECV: O.getOrElse(constant(0n))<bigint>,
       PACKET_SEND_LC_UPDATE_L0: O.getOrElse(constant(0n))<bigint>,
       PACKET_SEND_LC_UPDATE_L1: O.getOrElse(constant(0n))<bigint>,
-      // PACKET_SEND_LC_UPDATE_L2: O.getOrElse(constant(0n))<bigint>, // XXX: can meaningfully be none
-      PACKET_SEND_LC_UPDATE_L2: () => 0n, // XXX: can meaningfully be none
     })),
   ))
 
@@ -220,9 +291,10 @@ const createFeeStore = () => {
     O.all({
       baseFees,
       // XXX: source / dest here should be determined on per-transaction basis
-      destGasUnitPrice,
+      gasPrice: destGasUnitPrice,
+      ratio: maybeRatio,
     }),
-    O.map(({ baseFees: fees, destGasUnitPrice: gasPrice }) => ({ fees, gasPrice, ...config })),
+    O.map(({ baseFees: fees, gasPrice, ratio }) => ({ fees, gasPrice, ratio, ...config })),
     O.map(decorate),
   ))
 
@@ -246,14 +318,6 @@ const createFeeStore = () => {
             composeK(config.applyBatchDivision),
           ),
         ),
-        PACKET_SEND_LC_UPDATE_L2: flow(
-          BigDecimal.fromBigInt,
-          pipe( // TODO: extract
-            config.applyGasPrice,
-            composeK(config.applyFeeMultiplier),
-            composeK(config.applyBatchDivision),
-          ),
-        ),
         PACKET_RECV: flow(
           BigDecimal.fromBigInt,
           pipe( // TODO: extract
@@ -270,7 +334,6 @@ const createFeeStore = () => {
       Struct.evolve(calculatedFees, {
         PACKET_SEND_LC_UPDATE_L0: Tuple.mapFirst(formatToDisplay),
         PACKET_SEND_LC_UPDATE_L1: Tuple.mapFirst(formatToDisplay),
-        PACKET_SEND_LC_UPDATE_L2: Tuple.mapFirst(formatToDisplay),
         PACKET_RECV: Tuple.mapFirst(formatToDisplay),
       })
     ),
@@ -278,19 +341,12 @@ const createFeeStore = () => {
 
   type BaseFeeInfo = {
     label: string
-    key: keyof Fees
+    key: keyof BaseFees
     isBatched: boolean
     description: string
   }
 
   const feeItems: BaseFeeInfo[] = [
-    {
-      label: "Light Client (L2)",
-      key: "PACKET_SEND_LC_UPDATE_L2",
-      isBatched: true,
-      // XXX: notify free
-      description: "L2 light client update fee (shared across batch).",
-    },
     {
       label: "Light Client (L1)",
       key: "PACKET_SEND_LC_UPDATE_L1",
@@ -397,14 +453,24 @@ const createFeeStore = () => {
 
   const totalFee = $derived(pipe(
     calculatedFees,
+    x => {
+      console.log(JSON.stringify(calculatedFees, null, 2))
+      return x
+    },
     O.map(R.values),
     O.map(A.map(Tuple.getFirst)),
     O.map(BigDecimal.sumAll),
+    O.map(AtomicGasPrice),
+    O.tap(x => {
+      console.log("totalFee", { scale: x.scale })
+      return O.some(x)
+    }),
   ))
 
   // XXX: this is wrong; need to get usd price of source symbol instead of ratio
   const usdDisplay = $derived(pipe(
     O.all({
+      decoratedConfig,
       perUsd: O.flatMap(
         usdPrices.current,
         Exit.match({
@@ -419,10 +485,12 @@ const createFeeStore = () => {
       totalFee,
     }),
     x => {
-      console.log({ x })
+      console.log({ totalFee: x })
       return x
     },
-    O.map(({ perUsd, totalFee }) => BigDecimal.multiply(perUsd, totalFee)),
+    O.map(({ decoratedConfig, perUsd, totalFee }) =>
+      BigDecimal.multiply(perUsd, decoratedConfig.asBaseUnit(totalFee)[0])
+    ),
     O.map(BigDecimal.round({
       scale: 4,
       mode: "from-zero",
@@ -460,6 +528,7 @@ const createFeeStore = () => {
       return config.batchDivideNumber
     },
     get totalFee() {
+      console.log({ totalFee })
       return totalFee
     },
     /**

@@ -29,7 +29,7 @@ const feeConfig = O.none()
 </script>
 
 {#snippet formatBigDecimal(x: BD.BigDecimal)}
-  {BD.format(BD.truncate(x, 8))}
+  {BD.format(x)}
 {/snippet}
 
 {#snippet gasButton(props: {
@@ -67,7 +67,10 @@ const feeConfig = O.none()
     {/each}
   </ul>
 </div>
-<pre>RATIO: {@render mapOption(FeeStore.ratio, formatBigDecimal)}</pre>
+<pre
+  
+>RATIO: {@render mapOption(O.map(FeeStore.ratio, BigDecimal.truncate(8)), formatBigDecimal)}</pre>
+<pre>TOTAL FEE <i>(atomic)</i>: {@render mapOption(FeeStore.totalFee, formatBigDecimal)}</pre>
 <div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
   <button

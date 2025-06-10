@@ -222,7 +222,8 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
           ),
       )
 
-      const of: PriceOracle["of"] = Effect.fn("of")(flow(
+      // XXX: reduce cache
+      const of: PriceOracle["of"] = yield* Effect.cachedFunction(flow(
         symbolFromId,
         Effect.flatMap(feedIdOf),
         Effect.flatMap(({ id, url }) =>
@@ -236,7 +237,7 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
                 }),
               })
             ),
-            Effect.tap((x) => Effect.log(id, BigDecimal.format(x.price))),
+            Effect.tap((x) => Effect.log(`${url}: $${BigDecimal.format(x.price)}`)),
           )
         ),
       ))

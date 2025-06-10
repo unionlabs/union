@@ -54,13 +54,14 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                   new GasPriceError({
                     module: "Evm",
                     method: "of",
-                    description: "some",
+                    description: `Could not read gas price on-chain for ${chain.display_name}.`,
                     cause: unsafeCoerce<unknown, GetGasPriceErrorType>(cause),
                   }),
               }),
               // XXX: take from constants file
-              Effect.map((a) => BigDecimal.make(a, 18)),
-              Effect.tap((x) => Effect.log("evm gas price (wei):", x, BigDecimal.format(x))),
+              Effect.tap((x) => Effect.log(`${chain.display_name} gas price (wei): ${x}`)),
+              Effect.map((a) => GasPrice.BaseGasPrice(BigDecimal.make(a, 18))),
+              Effect.tap((x) => Effect.log(`${chain.display_name} gas price (ETH): ${x}`)),
             )
 
             return GasPrice.GasPrice.of({
@@ -102,11 +103,21 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                     O.map(({ average, decimals }) =>
                       pipe(
                         BigDecimal.unsafeFromNumber(average), // 0.007
+                        (x) => {
+                          console.log({ gasPrice: x })
+                          return x
+                        },
                         BigDecimal.multiply(BigDecimal.make(1n, decimals)), // 0.007 * 1x10^6
+                        GasPrice.BaseGasPrice,
+                        (x) => {
+                          console.log({ normalizedGasPrice: x })
+                          return x
+                        },
                       )
                     ),
                   )
                 ),
+                Effect.tap((x) => Effect.log(`${chain.display_name} gas price (?): ${x}`)),
                 Effect.mapError(() =>
                   new GasPriceError({
                     module: "Cosmos",
