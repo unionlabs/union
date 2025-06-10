@@ -27,7 +27,7 @@ import {
   Tuple,
   Unify,
 } from "effect"
-import { constant, flow } from "effect/Function"
+import { constant, flow, identity } from "effect/Function"
 
 const composeK = pipe(
   StringInstances.Semigroup,
@@ -181,13 +181,13 @@ const createFeeStore = () => {
       ]
     }
 
-    const applyRatio = (a: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => {
+    const applyRatio = <T extends BigDecimal.BigDecimal>(a: T): [T, string] => {
       const result = pipe(
         BigDecimal.unsafeDivide(a, self.ratio),
       )
 
       return [
-        result,
+        result as T,
         `${a} * ${self.ratio} ratio = ${result}`,
       ]
     }
@@ -221,10 +221,36 @@ const createFeeStore = () => {
       return pipe(
         asBaseUnit(a)[0],
         BigDecimal.round({
-          scale: 8,
+          scale: 10,
           mode: "from-zero",
         }),
         BigDecimal.format,
+      )
+    }
+
+    const formatToDisplayK = (a: AtomicGasPrice): [string, string] => {
+      const round = (x: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => {
+        const scale = 10
+        const mode = "from-zero"
+        const result = BigDecimal.round(x, { scale, mode })
+        return [
+          result,
+          `round ${a} to ${scale} with ${mode} = ${result}`,
+        ]
+      }
+      const format = (x: BigDecimal.BigDecimal): [string, string] => [
+        BigDecimal.format(x),
+        `(fmt)`,
+      ]
+
+      // TODO: add composeK
+      return pipe(
+        a,
+        pipe(
+          asBaseUnit,
+          composeK(round),
+          composeK(format),
+        ),
       )
     }
 
@@ -237,6 +263,7 @@ const createFeeStore = () => {
       applyRatio,
       applyBatchDivision,
       formatToDisplay,
+      formatToDisplayK,
     })
   }
 
@@ -323,58 +350,45 @@ const createFeeStore = () => {
         ),
         PACKET_RECV: flow(
           BigDecimal.fromBigInt,
-          pipe( // TODO: extract
-            config.applyGasPrice,
-            composeK(config.applyFeeMultiplier),
-          ),
+          x =>
+            pipe( // TODO: extract
+              config.applyGasPrice,
+              composeK(config.applyFeeMultiplier),
+            )(x),
         ),
       })),
   ))
 
   const displayFees = $derived(pipe(
     O.all({ calculatedFees, decoratedConfig }),
-    O.map(({ calculatedFees, decoratedConfig: { formatToDisplay, applyRatio } }) =>
+    O.map(({ calculatedFees, decoratedConfig: { formatToDisplayK, applyRatio } }) =>
       Struct.evolve(calculatedFees, {
-        PACKET_SEND_LC_UPDATE_L0: (x) =>
-          pipe(
-            applyRatio(x[0]),
-            (y) => {
-              console.log("calculatedFee", BigDecimal.format(x[0]))
-              console.log("after ratio", BigDecimal.format(y[0]))
-              return y
-            },
-            Tuple.mapFirst(
-              flow(
-                AtomicGasPrice,
-                formatToDisplay,
-                (y) => {
-                  console.log("after format", y)
-                  return y
-                },
-              ),
-            ),
-          ),
-        PACKET_SEND_LC_UPDATE_L1: (x) =>
-          pipe(
-            applyRatio(x[0]),
-            Tuple.mapFirst(
-              flow(
-                AtomicGasPrice,
-                formatToDisplay,
-              ),
-            ),
-          ),
+        PACKET_SEND_LC_UPDATE_L0: (x) => {
+          const f = pipe(
+            applyRatio<AtomicGasPrice>,
+            composeK(formatToDisplayK),
+          )
 
-        PACKET_RECV: (x) =>
-          pipe(
-            applyRatio(x[0]),
-            Tuple.mapFirst(
-              flow(
-                AtomicGasPrice,
-                formatToDisplay,
-              ),
+          const g = composeK(identity<typeof x>, f)
+          const h = g(x)
+          return h
+        },
+        PACKET_SEND_LC_UPDATE_L1: (x) =>
+          composeK(
+            () => x,
+            pipe(
+              applyRatio<AtomicGasPrice>,
+              composeK(formatToDisplayK),
             ),
-          ),
+          )(x),
+        PACKET_RECV: (x) =>
+          composeK(
+            () => x,
+            pipe(
+              applyRatio<AtomicGasPrice>,
+              composeK(formatToDisplayK),
+            ),
+          )(x),
       })
     ),
   ))
@@ -413,7 +427,7 @@ const createFeeStore = () => {
         const { formatToDisplay: format, feeMultiplier } = yield* decoratedConfig
         const amount = yield* O.map(displayFees, flow(Struct.get(x.key), Tuple.getFirst))
         const baseFee = yield* O.map(calculatedFees, flow(Struct.get(x.key), Tuple.getFirst))
-        const calc = yield* O.map(calculatedFees, flow(Struct.get(x.key), Tuple.getSecond))
+        const calc = yield* O.map(displayFees, flow(Struct.get(x.key), Tuple.getSecond))
         const symbol = yield* sourceSymbol
 
         // const baseFeeStep = O.gen(function*() {
@@ -535,7 +549,6 @@ const createFeeStore = () => {
       scale: 4,
       mode: "from-zero",
     })),
-    // O.map(BigDecimal.truncate(2)),
     O.map(BigDecimal.format),
   ))
 
@@ -577,7 +590,12 @@ const createFeeStore = () => {
     get feeDisplay() {
       return pipe(
         O.all({ totalFee, decoratedConfig }),
-        O.map(({ totalFee, decoratedConfig: { formatToDisplay } }) => formatToDisplay(totalFee)),
+        O.map(({ totalFee, decoratedConfig: { formatToDisplay, applyRatio } }) =>
+          pipe(
+            applyRatio(totalFee),
+            (x) => formatToDisplay(x[0]),
+          )
+        ),
       )
     },
     /**

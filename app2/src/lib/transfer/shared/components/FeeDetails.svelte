@@ -67,10 +67,7 @@ const feeConfig = O.none()
     {/each}
   </ul>
 </div>
-<pre
-  
->RATIO: {@render mapOption(O.map(FeeStore.ratio, BigDecimal.truncate(8)), formatBigDecimal)}</pre>
-<pre>TOTAL FEE <i>(atomic)</i>: {@render mapOption(FeeStore.totalFee, formatBigDecimal)}</pre>
+
 <div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
   <button
@@ -344,25 +341,8 @@ const feeConfig = O.none()
         {/each}
       </div>
 
-      <!-- Total fee -->
-      <div class="border-t border-zinc-800 px-4 py-3">
-        <div class="flex items-center justify-between text-xs">
-          <span class="text-white font-semibold">Total</span>
-          <div class="flex items-center gap-2">
-            {@render matchOption(
-              O.all({
-                totalUsd: O.some("1.23"),
-                value: O.some("value"),
-                symbol: O.some("symbol"),
-              }),
-              totalFee,
-              totalFeeSkeleton,
-            )}
-          </div>
-        </div>
-      </div>
-
-      <!-- Route visualization -->
+      <!-- TODO: Route visualization -->
+      <!--
       <div class="border-t border-zinc-800 px-4 py-3">
         <div class="flex items-center justify-between text-xs mb-3">
           <span class="text-zinc-400 font-medium">Route</span>
@@ -381,7 +361,8 @@ const feeConfig = O.none()
             <span class="text-xs font-bold text-white">₿</span>
           </div>
         </div>
-      </div>
+    </div>
+    -->
     </div>
   {/if}
 </div>
