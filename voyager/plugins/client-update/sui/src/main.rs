@@ -160,7 +160,7 @@ impl Module {
         let mut is_first = true;
         for epoch in from..to {
             let query = json!({
-              "query": "query ($epoch_id: UInt53) { epoch(id: $epoch_id) { edges  { checkpoints(last: 1) { edges { node { sequenceNumber } } } }  } }",
+              "query": "query ($epoch_id: UInt53) { epoch(id: $epoch_id) { checkpoints(last: 1) { edges { node { sequenceNumber } } }  } }",
               "variables": { "epoch_id": epoch }
             });
 
