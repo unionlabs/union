@@ -8,8 +8,10 @@ export type BaseGasPrice = BigDecimal.BigDecimal & Brand.Brand<"BaseGasPrice">
 export const BaseGasPrice = Brand.nominal<BaseGasPrice>()
 
 /**
- * @since 0.0.1
- * @category tags
+ * Normalized gas price.
+ * @example
+ * * 0.0007 ubbn / gas unit => price in BABY / gas unit
+ * * 123 wei / gas unit => 0.000000000000000123 ETH / pre gas unit
  */
 export class GasPrice extends Context.Tag("@unionlabs/app/GasPrice")<
   GasPrice,

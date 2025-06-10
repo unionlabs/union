@@ -9,13 +9,15 @@ import * as Writer from "$lib/typeclass/Writer.js"
 import type { RunPromiseExitResult } from "$lib/utils/effect.svelte"
 import * as StringInstances from "@effect/typeclass/data/String"
 import * as FlatMap from "@effect/typeclass/FlatMap"
+import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
 import { PriceError, PriceOracle, PriceSource } from "@unionlabs/sdk/PriceOracle"
-import { Chain } from "@unionlabs/sdk/schema"
+import { Chain, TokenRawAmount } from "@unionlabs/sdk/schema"
 import type { Fees } from "@unionlabs/sdk/schema/fee"
 import {
   Array as A,
   BigDecimal,
+  BigInt as BI,
   Cause,
   Effect,
   Exit,
@@ -39,6 +41,11 @@ const composeK = pipe(
 type BaseFees = Omit<
   { [K in keyof Fees]: Fees[K] extends O.Option<infer T> ? T : never },
   "PACKET_SEND_LC_UPDATE_L2"
+>
+
+export type FeeIntent = Pick<
+  Intent,
+  "decimals" | "baseToken" | "quoteAmount" | "baseAmount"
 >
 
 const usdOfChainGas = Effect.fn((chain: Chain) =>
@@ -244,7 +251,6 @@ const createFeeStore = () => {
         `(fmt)`,
       ]
 
-      // TODO: add composeK
       return pipe(
         a,
         pipe(
@@ -569,22 +575,33 @@ const createFeeStore = () => {
   //   ucs03address: string
   // }
 
-  // type FeeIntent = Pick<
-  //   Intent,
-  //   "decimals" | "baseToken" | "quoteAmount" | "baseAmount" | "receiver"
-  // >
+  const feeIntent: O.Option<FeeIntent> = $derived(O.gen(function*() {
+    const universal_chain_id = (yield* TransferData.sourceChain).universal_chain_id
 
-  // const feeIntent: O.Option<Intent> = $derived(O.gen(function*() {
-  //   const config = yield* decoratedConfig
+    const baseToken = GAS_DENOMS[universal_chain_id].address
+    // TODO: source from more reliable source
+    const decimals = GAS_DENOMS[universal_chain_id].decimals
+    const amount = BigDecimal.multiply(
+      BigDecimal.make((yield* totalFee).value, 0),
+      BigDecimal.make(1n, -decimals),
+    )
+    const BIamount = BI.multiply(
+      amount.value,
+      10n ** (BigInt(amount.scale * -1) - 1n),
+    )
 
-  //   const decimals = config.gasDecimals
-
-  //   return {
-  //     decimals,
-  //   } as const
-  // }))
+    return {
+      decimals,
+      baseToken,
+      quoteAmount: TokenRawAmount.make(0n),
+      baseAmount: TokenRawAmount.make(BIamount),
+    } as const
+  }))
 
   return {
+    get feeIntent() {
+      return feeIntent
+    },
     get baseFees() {
       return baseFees
     },
