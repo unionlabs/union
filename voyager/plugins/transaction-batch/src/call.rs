@@ -79,7 +79,10 @@ where
             .map(|e| e.provable_height)
             .reduce(|acc, elem| match (elem, acc) {
                 (EventProvableHeight::Min(elem), EventProvableHeight::Min(acc)) => {
-                    EventProvableHeight::Min(elem.min(acc))
+                    // the min target height of a batch of `Min` events is the highest min height
+                    // given the batch [10, 11, 12]
+                    // the min height that all events are provable at is 12
+                    EventProvableHeight::Min(elem.max(acc))
                 }
                 (EventProvableHeight::Exactly(elem), EventProvableHeight::Exactly(acc)) => {
                     assert_eq!(elem, acc, "multiple exact heights in the batch");

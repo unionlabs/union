@@ -139,9 +139,8 @@ where
                     assert!(
                         provable_height <= new_trusted_height,
                         "the provable height of the event is less than the trusted height \
-                        of the client ({:?} <= {}, client {client_id})",
-                        batchable_event.provable_height,
-                        new_trusted_height
+                        of the client (provable height: {provable_height}, new trusted height: \
+                        {new_trusted_height}, client {client_id})",
                     );
                 }
 
