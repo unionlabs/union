@@ -4,7 +4,10 @@ import { GasPrice } from "$lib/gasprice/service"
 import * as AppRuntime from "$lib/runtime"
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { transferData as TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
+import * as Writer from "$lib/typeclass/Writer.js"
 import type { RunPromiseExitResult } from "$lib/utils/effect.svelte"
+import * as StringInstances from "@effect/typeclass/data/String"
+import * as FlatMap from "@effect/typeclass/FlatMap"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
 import { PriceError, PriceOracle, PriceSource } from "@unionlabs/sdk/PriceOracle"
 import { Chain } from "@unionlabs/sdk/schema"
@@ -14,7 +17,6 @@ import {
   BigDecimal,
   Cause,
   Effect,
-  Either as E,
   Exit,
   Match,
   Option as O,
@@ -22,10 +24,16 @@ import {
   Predicate,
   Record as R,
   Struct,
+  Tuple,
   Unify,
 } from "effect"
-
 import { constant, flow } from "effect/Function"
+
+const composeK = pipe(
+  StringInstances.Semigroup,
+  Writer.fromSemigroup,
+  FlatMap.composeK,
+)
 
 type BaseFees = { [K in keyof Fees]: Fees[K] extends O.Option<infer T> ? T : never }
 
@@ -54,7 +62,7 @@ const gasForChain = Effect.fn((chain: Chain) =>
 const createFeeStore = () => {
   const config = {
     feeMultiplier: BigDecimal.make(12n, 1), // Union hardcoded fee
-    batchDivideNumber: BigDecimal.make(1n, 0), // Api?
+    batchDivideNumber: BigDecimal.make(2n, 0), // Api?
   } as const
 
   let usdPrices!: RunPromiseExitResult<
@@ -122,18 +130,25 @@ const createFeeStore = () => {
   })
 
   const decorate = (self: { fees: BaseFees; gasPrice: BigDecimal.BigDecimal } & typeof config) => {
-    const applyGasPrice = (gasUnits: BigDecimal.BigDecimal) =>
-      BigDecimal.multiply(gasUnits, self.gasPrice)
+    const applyGasPrice = (gasUnits: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => [
+      BigDecimal.multiply(gasUnits, self.gasPrice),
+      `[applyGasPrice] ${gasUnits} × ${self.gasPrice}`,
+    ]
+    const applyFeeMultiplier = (amount: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => [
+      BigDecimal.multiply(amount, self.feeMultiplier),
+      `[applyFeeMultiplier] ${amount} × ${self.feeMultiplier}`,
+    ]
 
-    const applyFeeMultiplier = (ubbnAmount: BigDecimal.BigDecimal) =>
-      BigDecimal.multiply(ubbnAmount, self.feeMultiplier)
+    const applyBatchDivision = (
+      amount: BigDecimal.BigDecimal,
+    ): [BigDecimal.BigDecimal, string] => [
+      BigDecimal.unsafeDivide(amount, self.batchDivideNumber),
+      `[applyBatchDivision] ${amount} ÷ ${self.batchDivideNumber}`,
+    ]
 
-    const applyBatchDivision = (ubbnAmount: BigDecimal.BigDecimal) =>
-      BigDecimal.divide(ubbnAmount, self.batchDivideNumber)
-
-    const formatToDisplay = (ubbnAmount: BigDecimal.BigDecimal): string => {
+    const formatToDisplay = (amount: BigDecimal.BigDecimal): string => {
       return pipe(
-        ubbnAmount,
+        amount,
         BigDecimal.round({
           scale: self.gasPrice.scale - 4,
           mode: "from-zero",
@@ -157,7 +172,8 @@ const createFeeStore = () => {
       PACKET_RECV: O.getOrElse(constant(0n))<bigint>,
       PACKET_SEND_LC_UPDATE_L0: O.getOrElse(constant(0n))<bigint>,
       PACKET_SEND_LC_UPDATE_L1: O.getOrElse(constant(0n))<bigint>,
-      PACKET_SEND_LC_UPDATE_L2: O.getOrElse(constant(0n))<bigint>,
+      // PACKET_SEND_LC_UPDATE_L2: O.getOrElse(constant(0n))<bigint>, // XXX: can meaningfully be none
+      PACKET_SEND_LC_UPDATE_L2: () => 0n, // XXX: can meaningfully be none
     })),
   ))
 
@@ -203,38 +219,47 @@ const createFeeStore = () => {
   const decoratedConfig = $derived(pipe(
     O.all({
       baseFees,
+      // XXX: source / dest here should be determined on per-transaction basis
       destGasUnitPrice,
     }),
     O.map(({ baseFees: fees, destGasUnitPrice: gasPrice }) => ({ fees, gasPrice, ...config })),
     O.map(decorate),
   ))
 
+  // TODO: tuple-ify outputs; concatenate to show record of calculations performed
   const calculatedFees = $derived(pipe(
     O.map(decoratedConfig, (config) =>
       Struct.evolve(config.fees, {
         PACKET_SEND_LC_UPDATE_L1: flow(
           BigDecimal.fromBigInt,
-          config.applyGasPrice,
-          config.applyFeeMultiplier,
-          config.applyBatchDivision,
+          pipe( // TODO: extract
+            config.applyGasPrice,
+            composeK(config.applyFeeMultiplier),
+            composeK(config.applyBatchDivision),
+          ),
         ),
         PACKET_SEND_LC_UPDATE_L0: flow(
           BigDecimal.fromBigInt,
-          config.applyGasPrice,
-          config.applyFeeMultiplier,
-          config.applyBatchDivision,
+          pipe( // TODO: extract
+            config.applyGasPrice,
+            composeK(config.applyFeeMultiplier),
+            composeK(config.applyBatchDivision),
+          ),
         ),
         PACKET_SEND_LC_UPDATE_L2: flow(
           BigDecimal.fromBigInt,
-          config.applyGasPrice,
-          config.applyFeeMultiplier,
-          config.applyBatchDivision,
+          pipe( // TODO: extract
+            config.applyGasPrice,
+            composeK(config.applyFeeMultiplier),
+            composeK(config.applyBatchDivision),
+          ),
         ),
         PACKET_RECV: flow(
           BigDecimal.fromBigInt,
-          config.applyGasPrice,
-          config.applyFeeMultiplier,
-          O.some,
+          pipe( // TODO: extract
+            config.applyGasPrice,
+            composeK(config.applyFeeMultiplier),
+          ),
         ),
       })),
   ))
@@ -243,10 +268,10 @@ const createFeeStore = () => {
     O.all({ calculatedFees, decoratedConfig }),
     O.map(({ calculatedFees, decoratedConfig: { formatToDisplay } }) =>
       Struct.evolve(calculatedFees, {
-        PACKET_SEND_LC_UPDATE_L0: O.map(formatToDisplay),
-        PACKET_SEND_LC_UPDATE_L1: O.map(formatToDisplay),
-        PACKET_SEND_LC_UPDATE_L2: O.map(formatToDisplay),
-        PACKET_RECV: O.map(formatToDisplay),
+        PACKET_SEND_LC_UPDATE_L0: Tuple.mapFirst(formatToDisplay),
+        PACKET_SEND_LC_UPDATE_L1: Tuple.mapFirst(formatToDisplay),
+        PACKET_SEND_LC_UPDATE_L2: Tuple.mapFirst(formatToDisplay),
+        PACKET_RECV: Tuple.mapFirst(formatToDisplay),
       })
     ),
   ))
@@ -263,6 +288,7 @@ const createFeeStore = () => {
       label: "Light Client (L2)",
       key: "PACKET_SEND_LC_UPDATE_L2",
       isBatched: true,
+      // XXX: notify free
       description: "L2 light client update fee (shared across batch).",
     },
     {
@@ -289,42 +315,44 @@ const createFeeStore = () => {
     const enrich = (x: BaseFeeInfo) =>
       O.gen(function*() {
         const { formatToDisplay: format, feeMultiplier } = yield* decoratedConfig
-        const amount = yield* O.flatMap(displayFees, Struct.get(x.key))
-        const baseFee = yield* O.flatMap(calculatedFees, Struct.get(x.key))
+        const amount = yield* O.map(displayFees, flow(Struct.get(x.key), Tuple.getFirst))
+        const baseFee = yield* O.map(calculatedFees, flow(Struct.get(x.key), Tuple.getFirst))
+        const calc = yield* O.map(calculatedFees, flow(Struct.get(x.key), Tuple.getSecond))
         const symbol = yield* sourceSymbol
 
-        const baseFeeStep = O.gen(function*() {
-          const gasUnit = yield* sourceGasUnitPrice
-          const operation = `${format(baseFee)} × ${format(gasUnit)} ${symbol}`
-          const result = BigDecimal.format(BigDecimal.multiply(baseFee, gasUnit))
-          return {
-            operation,
-            result: `${result} ${symbol}`,
-          }
-        })
+        // const baseFeeStep = O.gen(function*() {
+        //   const gasUnit = yield* sourceGasUnitPrice
+        //   const operation = `${format(baseFee)} × ${format(gasUnit)} ${symbol}`
+        //   const result = BigDecimal.format(BigDecimal.multiply(baseFee, gasUnit))
+        //   return {
+        //     operation,
+        //     result: `${result} ${symbol}`,
+        //   }
+        // })
 
-        const protocolFeeStep = O.gen(function*() {
-          const gasUnit = yield* sourceGasUnitPrice
-          const mult = BigDecimal.scale(feeMultiplier, 100)
-          const operation = `+ ${BigDecimal.format(mult)}%`
-          const result = pipe(
-            baseFee,
-            BigDecimal.multiply(gasUnit),
-            BigDecimal.multiply(mult),
-            format,
-          )
-          return {
-            operation,
-            result: `${result} ${symbol}`,
-          }
-        })
+        // const protocolFeeStep = O.gen(function*() {
+        //   const gasUnit = yield* sourceGasUnitPrice
+        //   const mult = BigDecimal.scale(feeMultiplier, 100)
+        //   const operation = `+ ${BigDecimal.format(mult)}%`
+        //   const result = pipe(
+        //     baseFee,
+        //     BigDecimal.multiply(gasUnit),
+        //     BigDecimal.multiply(mult),
+        //     format,
+        //   )
+        //   return {
+        //     operation,
+        //     result: `${result} ${symbol}`,
+        //   }
+        // })
 
         return {
           ...x,
           baseFee,
           steps: {
-            baseFee: baseFeeStep,
-            protocolFee: protocolFeeStep,
+            calc,
+            baseFee: O.none(),
+            protocolFee: O.none(),
           },
           amount,
         }
@@ -347,6 +375,7 @@ const createFeeStore = () => {
       [
         extractError(gasPrices.current),
         extractError(usdPrices.current),
+        extractError(ratio.current),
       ] as const,
       A.getSomes,
       Unify.unify,
@@ -369,25 +398,33 @@ const createFeeStore = () => {
   const totalFee = $derived(pipe(
     calculatedFees,
     O.map(R.values),
-    O.map(O.all),
-    O.map(O.map(BigDecimal.sumAll)),
-    O.flatten,
+    O.map(A.map(Tuple.getFirst)),
+    O.map(BigDecimal.sumAll),
   ))
 
+  // XXX: this is wrong; need to get usd price of source symbol instead of ratio
   const usdDisplay = $derived(pipe(
     O.all({
-      ratio: O.flatMap(
-        ratio.current,
+      perUsd: O.flatMap(
+        usdPrices.current,
         Exit.match({
           onSuccess: O.some,
           onFailure: O.none,
         }),
-      ).pipe(O.flatten),
+      ).pipe(
+        O.map(x => x.source),
+        O.map(O.map(x => x.price)),
+        O.flatten,
+      ),
       totalFee,
     }),
-    O.map(({ ratio: { ratio }, totalFee }) => BigDecimal.multiply(ratio, totalFee)),
+    x => {
+      console.log({ x })
+      return x
+    },
+    O.map(({ perUsd, totalFee }) => BigDecimal.multiply(perUsd, totalFee)),
     O.map(BigDecimal.round({
-      scale: 2,
+      scale: 4,
       mode: "from-zero",
     })),
     // O.map(BigDecimal.truncate(2)),

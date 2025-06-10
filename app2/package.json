@@ -26,6 +26,7 @@
     "@datadog/browser-logs": "^6.6.4",
     "@effect/experimental": "0.48.6",
     "@effect/platform": "0.84.6",
+    "@effect/typeclass": "^0.35.5",
     "@eslint/compat": "^1.2.8",
     "@eslint/js": "^9.24.0",
     "@keplr-wallet/types": "^0.12.220",

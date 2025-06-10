@@ -58,7 +58,9 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                     cause: unsafeCoerce<unknown, GetGasPriceErrorType>(cause),
                   }),
               }),
+              // XXX: take from constants file
               Effect.map((a) => BigDecimal.make(a, 18)),
+              Effect.tap((x) => Effect.log("evm gas price (wei):", x, BigDecimal.format(x))),
             )
 
             return GasPrice.GasPrice.of({
@@ -99,8 +101,8 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                     O.let("decimals", () => x.coinDecimals),
                     O.map(({ average, decimals }) =>
                       pipe(
-                        BigDecimal.unsafeFromNumber(average),
-                        BigDecimal.unsafeDivide(BigDecimal.make(1n, -decimals)),
+                        BigDecimal.unsafeFromNumber(average), // 0.007
+                        BigDecimal.multiply(BigDecimal.make(1n, decimals)), // 0.007 * 1x10^6
                       )
                     ),
                   )
