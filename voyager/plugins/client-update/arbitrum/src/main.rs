@@ -1,4 +1,4 @@
-// #![warn(clippy::unwrap_used)]
+#![warn(clippy::unwrap_used)]
 
 use std::collections::VecDeque;
 
@@ -123,8 +123,21 @@ impl Plugin for Module {
         let l1_chain_id = ChainId::new(l1_provider.get_chain_id().await?.to_string());
         let l2_chain_id = ChainId::new(l2_provider.get_chain_id().await?.to_string());
 
-        assert_eq!(l1_chain_id, config.l1_chain_id);
-        assert_eq!(l2_chain_id, config.l2_chain_id);
+        if l1_chain_id != config.l1_chain_id {
+            return Err(anyhow::anyhow!(
+                "L1 chain ID mismatch: expected {}, got {}",
+                config.l1_chain_id,
+                l1_chain_id
+            ));
+        }
+
+        if l2_chain_id != config.l2_chain_id {
+            return Err(anyhow::anyhow!(
+                "L2 chain ID mismatch: expected {}, got {}",
+                config.l2_chain_id,
+                l2_chain_id
+            ));
+        }
 
         Ok(Self {
             chain_id: l2_chain_id,
@@ -283,17 +296,23 @@ impl Module {
     async fn fetch_l1_latest_confirmed_proofs(
         &self,
         l1_block_number: u64,
-    ) -> LatestConfirmedProofs {
+    ) -> RpcResult<LatestConfirmedProofs> {
         let latest_confirmed = arbitrum_client::next_node_num_at_l1_height(
             &self.l1_provider,
             self.l1_contract_address,
             l1_block_number,
         )
         .await
-        .unwrap();
+        .map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                format!("failed to fetch next node number at L1 height: {}", ErrorReporter(&*e)),
+                None::<()>,
+            )
+        })?;
 
         // fetch two proofs at once!
-        let [latest_confirmed_slot_proof, nodes_slot_proof]: [_; 2] = self
+        let storage_proofs = self
             .l1_provider
             .get_proof(
                 self.l1_contract_address.into(),
@@ -306,12 +325,30 @@ impl Module {
             )
             .block_id(l1_block_number.into())
             .await
-            .unwrap()
-            .storage_proof
-            .try_into()
-            .unwrap();
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("failed to fetch storage proofs"),
+                    None::<()>,
+                )
+            })?
+            .storage_proof;
 
-        LatestConfirmedProofs {
+        if storage_proofs.len() != 2 {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!(
+                    "expected exactly 2 storage proofs, got {}",
+                    storage_proofs.len()
+                ),
+                None::<()>,
+            ));
+        }
+
+        let latest_confirmed_slot_proof = &storage_proofs[0];
+        let nodes_slot_proof = &storage_proofs[1];
+
+        Ok(LatestConfirmedProofs {
             latest_confirmed,
             // TODO: Extract this logic into a fn, we do it all over the place
             latest_confirmed_slot_proof: StorageProof {
@@ -319,8 +356,8 @@ impl Module {
                 value: latest_confirmed_slot_proof.value.into(),
                 proof: latest_confirmed_slot_proof
                     .proof
-                    .into_iter()
-                    .map(|bytes| bytes.into())
+                    .iter()
+                    .map(|bytes| bytes.clone().into())
                     .collect(),
             },
             nodes_slot_proof: StorageProof {
@@ -328,26 +365,32 @@ impl Module {
                 value: nodes_slot_proof.value.into(),
                 proof: nodes_slot_proof
                     .proof
-                    .into_iter()
-                    .map(|bytes| bytes.into())
+                    .iter()
+                    .map(|bytes| bytes.clone().into())
                     .collect(),
             },
-        }
+        })
     }
 
     /// Fetch the account update of the IBCHandler contract in the L2 state root at the specified ***L2*** block number.
-    async fn fetch_l2_ibc_contract_root_proof(&self, l2_block_number: u64) -> AccountProof {
+    async fn fetch_l2_ibc_contract_root_proof(&self, l2_block_number: u64) -> RpcResult<AccountProof> {
         let proof = self
             .l2_provider
             .get_proof(self.ibc_handler_address.into(), vec![])
             .block_id(l2_block_number.into())
             .await
-            .unwrap();
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e).with_message("failed to fetch L2 IBC contract proof"),
+                    None::<()>,
+                )
+            })?;
 
-        AccountProof {
+        Ok(AccountProof {
             storage_root: proof.storage_hash.into(),
             proof: proof.account_proof.into_iter().map(|x| x.into()).collect(),
-        }
+        })
     }
 
     #[instrument(
@@ -429,7 +472,13 @@ impl Module {
             l1_latest_height.height(),
         )
         .await
-        .unwrap();
+        .map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                format!("failed to get finalized L2 block of L1 height: {}", ErrorReporter(&*e)),
+                None::<()>,
+            )
+        })?;
 
         info!(
             number = %l2_settlement_block.header.number,
@@ -563,7 +612,13 @@ impl Module {
             l1_client_meta.counterparty_height.height(),
         )
         .await
-        .unwrap();
+        .map_err(|e| {
+            ErrorObject::owned(
+                -1,
+                format!("failed to get finalized L2 block of L1 height: {}", ErrorReporter(&*e)),
+                None::<()>,
+            )
+        })?;
 
         debug!(?l2_settlement_block, "l2 settlement block");
 
@@ -586,16 +641,28 @@ impl Module {
         } else {
             let l1_account_proof = self
                 .fetch_l1_rollup_account_update(l1_client_meta.counterparty_height.height())
-                .await
-                .unwrap();
+                .await?;
 
             let l1_latest_confirmed_proofs = self
                 .fetch_l1_latest_confirmed_proofs(l1_client_meta.counterparty_height.height())
-                .await;
+                .await?;
 
             let l2_ibc_account_proof = self
                 .fetch_l2_ibc_contract_root_proof(l2_settlement_block.header.number)
-                .await;
+                .await?;
+
+            let extra_data = l2_settlement_block
+                .header
+                .extra_data
+                .to_vec()
+                .try_into()
+                .map_err(|_| {
+                    ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        "L2 block extra_data has invalid length",
+                        None::<()>,
+                    )
+                })?;
 
             Ok(data(OrderedHeaders {
                 headers: vec![(
@@ -622,12 +689,7 @@ impl Module {
                             gas_limit: l2_settlement_block.header.gas_limit,
                             gas_used: l2_settlement_block.header.gas_used,
                             timestamp: l2_settlement_block.header.timestamp,
-                            extra_data: l2_settlement_block
-                                .header
-                                .extra_data
-                                .to_vec()
-                                .try_into()
-                                .unwrap(),
+                            extra_data,
                             mix_hash: l2_settlement_block
                                 .header
                                 .mix_hash
