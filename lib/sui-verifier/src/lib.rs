@@ -6,10 +6,9 @@ use sui_light_client_types::{
         AggregateAuthoritySignature, AuthorityPublicKeyBytes, AuthorityStrongQuorumSignInfo,
         BLS_DST,
     },
-    digest::Digest,
     object::{Data, ObjectInner, TypeTag},
     transaction_effects::{ObjectOut, TransactionEffects},
-    AppId, Intent, IntentMessage, IntentScope, IntentVersion, ObjectID,
+    AppId, Digest, Intent, IntentMessage, IntentScope, IntentVersion, ObjectID,
 };
 
 mod error;
@@ -164,7 +163,7 @@ fn find_write_effect(effects: &TransactionEffects, object: ObjectID) -> Option<D
         TransactionEffects::V2(effects) => effects.changed_objects.iter().find_map(|eff| {
             if eff.0 == object {
                 match &eff.1.output_state {
-                    ObjectOut::ObjectWrite(write) => Some(write.0),
+                    ObjectOut::ObjectWrite(write) => Some(write.0.clone()),
                     _ => None,
                 }
             } else {
