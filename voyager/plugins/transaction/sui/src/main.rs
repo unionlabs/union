@@ -24,12 +24,13 @@ use sha3::{Digest, Keccak256};
 use shared_crypto::intent::{Intent, IntentMessage};
 use sui_sdk::{
     rpc_types::{
-        ObjectChange, SuiObjectDataOptions, SuiTransactionBlockResponse,
-        SuiTransactionBlockResponseOptions, SuiTypeTag,
+        ObjectChange, SuiMoveValue, SuiObjectDataOptions, SuiParsedData,
+        SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions, SuiTypeTag,
     },
     types::{
         base_types::{ObjectID, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
+        dynamic_field::DynamicFieldName,
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         signature::GenericSignature,
         transaction::{
@@ -598,13 +599,6 @@ async fn process_msgs(
                     timeout_timestamps
                 );
 
-                println!(
-                    "
-                    REGISTERED COIN TYPE: {:?}
-                    ",
-                    coin_t
-                );
-
                 (
                     module_info.latest_address,
                     msg,
@@ -679,6 +673,52 @@ async fn register_token_if_zkgm(
 
     if fao.quote_token != wrapped_token {
         return None;
+    }
+
+    if let Some(wrapped_token_t) = module
+        .sui_client
+        .read_api()
+        .get_dynamic_field_object(
+            ObjectID::from_str(
+                "0xa9afebf911f6493be34a8ab596b5487b5d1f5fac0e8015035182981957f694aa",
+            )
+            .unwrap(),
+            DynamicFieldName {
+                type_: TypeTag::Vector(Box::new(TypeTag::U8)),
+                value: serde_json::to_value(&wrapped_token).expect("serde will work"),
+            },
+        )
+        .await
+        .unwrap()
+        .data
+    {
+        match wrapped_token_t.content.expect("content always exists") {
+            SuiParsedData::MoveObject(object) => {
+                let SuiMoveValue::String(field_value) = object
+                    .fields
+                    .field_value("value")
+                    .expect("token has a `value` field")
+                else {
+                    panic!("token has type `String`");
+                };
+
+                debug!("the token is already registered");
+
+                let fields: Vec<&str> = field_value.split("::").collect();
+                assert!(fields.len() == 3);
+
+                return Some(
+                    StructTag {
+                        address: AccountAddress::from_str(fields[0]).expect("address is valid"),
+                        module: Identifier::new(fields[1]).expect("module name is valid"),
+                        name: Identifier::new(fields[2]).expect("name is valid"),
+                        type_params: vec![],
+                    }
+                    .into(),
+                );
+            }
+            SuiParsedData::Package(_) => panic!("this should never be a package"),
+        }
     }
 
     let mut bytecode = TOKEN_BYTECODE[0].to_vec();
@@ -960,7 +1000,7 @@ pub async fn send_transactions(
         )
         .await;
 
-    println!("{transaction_response:?}");
+    info!("{transaction_response:?}");
 
     let transaction_response = transaction_response.map_err(|e| {
         ErrorObject::owned(
@@ -969,8 +1009,6 @@ pub async fn send_transactions(
             None::<()>,
         )
     })?;
-
-    debug!("tx response {transaction_response:?}");
 
     Ok(transaction_response)
 }
