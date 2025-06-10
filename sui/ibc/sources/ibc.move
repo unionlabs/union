@@ -1157,6 +1157,7 @@ module ibc::ibc {
         assert!(parts.length() >= 3, 1);
 
         let mut a = sui::address::from_ascii_bytes(parts[0].bytes()).to_ascii_string();
+        a.append(std::ascii::string(b"::"));
         a.append(parts[1].to_ascii());
 
         a
@@ -1169,7 +1170,7 @@ module ibc::ibc {
         let caller_t = std::type_name::get<T>();
 
         let mut addr_module = deconstruct_port_id(port_id);
-        addr_module.append(std::ascii::string(b"IbcAppWitness"));
+        addr_module.append(std::ascii::string(b"::IbcAppWitness"));
         
         // ensure the port info matches the caller
         assert!(addr_module == std::type_name::get<T>().into_string(), 1)
@@ -1464,13 +1465,13 @@ module ibc::ibc {
         if (!ibc_store.commitments.contains(commitment_key)) {
             abort E_PACKET_NOT_RECEIVED
         };
-        let commitment = ibc_store.commitments.borrow(commitment_key);
+        let commitment = ibc_store.commitments.borrow_mut(commitment_key);
         assert!(
             *commitment == COMMITMENT_MAGIC,
             E_ACK_ALREADY_EXIST
         );
 
-        ibc_store.commitments.add(commitment_key, commitment::commit_ack(acknowledgement));
+        *commitment = commitment::commit_ack(acknowledgement);
     }
 
     public fun timeout_packet(
@@ -2119,4 +2120,14 @@ module ibc::ibc {
     // //     test_scenario::return_shared(ibc_store);
     // //     test_case.end();
     // // }
+    public struct IbcAppWitness has drop {}
+    #[test]
+    fun validate_port_bro() {
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+
+        validate_port(
+            port,
+            IbcAppWitness {}
+        );
+    }
 }

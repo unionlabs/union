@@ -588,6 +588,11 @@ module zkgm::zkgm_relay {
         return salt
     }
 
+    #[test]
+    fun compute_salt_bro() {
+        std::debug::print(&compute_salt(0, 2, b"muno"));
+    }
+
     public fun distribute_coin<T>(
         relay_store: &mut RelayStore,
         receiver: address,
@@ -895,9 +900,8 @@ module zkgm::zkgm_relay {
         let typename_t = type_name::get<T>();
         let key = string::from_ascii(type_name::into_string(typename_t));
         if(!type_name_contains_capability(relay_store, key)) {
-            abort E_NO_TREASURY_CAPABILITY // We don't have capability.
+            abort E_NO_TREASURY_CAPABILITY
         };
-        // We have capability
         let capability: &mut TreasuryCap<T> = relay_store.type_name_t_to_capability.borrow_mut(key);
         return capability
     }

@@ -1,6 +1,7 @@
 [package]
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 name    = "ibc"
+published-at = "0x098727571dc2ce469280ecf9ac4c98f62270acba7cbd2acb7d9a541bdd30ffe3"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 
@@ -19,7 +20,7 @@ name    = "ibc"
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc = "0x0"
+ibc = "0xed0ecbea85ff8ea33853795c5b1013bf9a67a1ba21ac01cc9e91784ca60635be"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
