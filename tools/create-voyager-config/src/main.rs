@@ -118,7 +118,7 @@ fn main() -> Result<()> {
 fn bootstrap() -> Result<()> {
     intro("create-voyager-config")?;
 
-    let mut context = Context::new(input("plugins base path").interact()?);
+    let mut context = Receipt::new()?;
 
     let mut config = voyager_config::Config::<QueueConfig> {
         schema: None,
@@ -131,9 +131,7 @@ fn bootstrap() -> Result<()> {
             rpc_laddr: default_rpc_laddr(),
             metrics_endpoint: default_metrics_endpoint(),
             queue: QueueConfig::PgQueue(PgQueueConfig {
-                database_url: input("database url")
-                    .default_input("postgres://postgres:postgrespassword@127.0.0.1:5432/default")
-                    .interact()?,
+                database_url: context.database_url.clone(),
                 max_connections: default_max_connections(),
                 min_connections: default_min_connections(),
                 idle_timeout: None,
@@ -223,35 +221,39 @@ macro_rules! module_config {
     };
 }
 
-struct Context<'a> {
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(bound(deserialize = "'de: 'a"))]
+struct Receipt<'a> {
     // id -> key -> value
-    defaults: BTreeMap<UniversalChainId<'a>, BTreeMap<Key, String>>,
+    chains: BTreeMap<UniversalChainId<'a>, BTreeMap<Key, String>>,
+    database_url: String,
     base_path: String,
 }
 
-impl<'a> Context<'a> {
-    fn new(base_path: String) -> Self {
-        Self {
-            defaults:
-                serde_json::from_str::<BTreeMap<UniversalChainId<'_>, BTreeMap<Key, String>>>(
-                    &fs::read_to_string("./receipt.json").unwrap(),
-                )
-                .unwrap()
-                .into_iter()
-                .map(|(k, v)| (k.into_owned(), v))
-                .collect(),
-            base_path,
-        }
+impl<'a> Receipt<'a> {
+    fn new() -> anyhow::Result<Self> {
+        Ok(Self {
+            chains: serde_json::from_str::<BTreeMap<UniversalChainId<'_>, BTreeMap<Key, String>>>(
+                &fs::read_to_string("./receipt.json")?,
+            )?
+            .into_iter()
+            .map(|(k, v)| (k.into_owned(), v))
+            .collect(),
+            database_url: input("database url")
+                .default_input("postgres://postgres:postgrespassword@127.0.0.1:5432/default")
+                .interact()?,
+            base_path: input("plugins base path").interact()?,
+        })
     }
 
     fn with_chain(&mut self, id: &UniversalChainId<'a>) -> Result<()> {
-        self.defaults.entry(id.clone()).or_default();
+        self.chains.entry(id.clone()).or_default();
 
         // load deployment info
         match id.family() {
             Babylon | Osmosis | Stargaze | Stride | Union | Xion => {
                 let entry = self
-                    .defaults
+                    .chains
                     .get_mut(id)
                     .unwrap()
                     .entry(Key::IbcHostContractAddress);
@@ -270,7 +272,7 @@ impl<'a> Context<'a> {
             }
             Arbitrum | Berachain | Bob | Corn | Ethereum | Movement | Scroll | Sei => {
                 let entry = self
-                    .defaults
+                    .chains
                     .get_mut(id)
                     .unwrap()
                     .entry(Key::IbcHandlerAddress);
@@ -295,7 +297,7 @@ impl<'a> Context<'a> {
             Arbitrum => todo!(),
             Babylon | Osmosis | Stargaze | Stride | Xion => {
                 if is_well_known(id) {
-                    self.defaults
+                    self.chains
                         .get_mut(id)
                         .unwrap()
                         .entry(Key::CometbftRpcUrl)
@@ -305,7 +307,7 @@ impl<'a> Context<'a> {
             Berachain => todo!(),
             Bob => {
                 if is_well_known(id) {
-                    self.defaults
+                    self.chains
                         .get_mut(id)
                         .unwrap()
                         .entry(Key::EthRpcUrl)
@@ -313,7 +315,7 @@ impl<'a> Context<'a> {
                 }
 
                 if let Entry::Vacant(vacant_entry) =
-                    self.defaults.get_mut(id).unwrap().entry(Key::L1ChainId)
+                    self.chains.get_mut(id).unwrap().entry(Key::L1ChainId)
                 {
                     vacant_entry.insert(
                         if id == BOB_60808 {
@@ -340,11 +342,8 @@ impl<'a> Context<'a> {
                     );
                 }
 
-                if let Entry::Vacant(vacant_entry) = self
-                    .defaults
-                    .get_mut(id)
-                    .unwrap()
-                    .entry(Key::L2OracleAddress)
+                if let Entry::Vacant(vacant_entry) =
+                    self.chains.get_mut(id).unwrap().entry(Key::L2OracleAddress)
                 {
                     vacant_entry.insert(if id == BOB_60808 {
                         "0xdDa53E23f8a32640b04D7256e651C1db98dB11C1".to_owned()
@@ -359,7 +358,7 @@ impl<'a> Context<'a> {
             }
             Corn => {
                 if is_well_known(id) {
-                    self.defaults
+                    self.chains
                         .get_mut(id)
                         .unwrap()
                         .entry(Key::EthRpcUrl)
@@ -367,7 +366,7 @@ impl<'a> Context<'a> {
                 }
 
                 if let Entry::Vacant(vacant_entry) =
-                    self.defaults.get_mut(id).unwrap().entry(Key::L1ChainId)
+                    self.chains.get_mut(id).unwrap().entry(Key::L1ChainId)
                 {
                     vacant_entry.insert(
                         if id == CORN_21000000 {
@@ -395,7 +394,7 @@ impl<'a> Context<'a> {
                 }
 
                 if let Entry::Vacant(vacant_entry) = self
-                    .defaults
+                    .chains
                     .get_mut(id)
                     .unwrap()
                     .entry(Key::L1ContractAddress)
@@ -415,12 +414,12 @@ impl<'a> Context<'a> {
             }
             Ethereum => {
                 if is_well_known(id) {
-                    self.defaults
+                    self.chains
                         .get_mut(id)
                         .unwrap()
                         .entry(Key::EthRpcUrl)
                         .or_insert(Endpoint::from_ucs04(id, Protocol::RPC).to_string());
-                    self.defaults
+                    self.chains
                         .get_mut(id)
                         .unwrap()
                         .entry(Key::BeaconRpcUrl)
@@ -428,7 +427,7 @@ impl<'a> Context<'a> {
                 }
 
                 if let Entry::Vacant(vacant_entry) =
-                    self.defaults.get_mut(id).unwrap().entry(Key::ChainSpec)
+                    self.chains.get_mut(id).unwrap().entry(Key::ChainSpec)
                 {
                     if [
                         well_known::ETHEREUM_1,
@@ -456,7 +455,7 @@ impl<'a> Context<'a> {
             Movement => todo!(),
             Scroll => todo!(),
             Sei => {
-                let chain = self.defaults.get_mut(id).unwrap();
+                let chain = self.chains.get_mut(id).unwrap();
 
                 let (evm, cosmos) = if id == SEI_1328 {
                     (SEI_1328, SEI_ATLANTIC_2)
@@ -506,7 +505,7 @@ impl<'a> Context<'a> {
                 }
             }
             Union => {
-                self.defaults
+                self.chains
                     .get_mut(id)
                     .unwrap()
                     .entry(Key::CometbftRpcUrl)
@@ -530,12 +529,12 @@ impl<'a> Context<'a> {
         key: Key,
     ) -> Result<T> {
         let mut i = input(title);
-        if let Some(default) = self.defaults[id].get(&key) {
+        if let Some(default) = self.chains[id].get(&key) {
             i = i.default_input(default);
         }
         let res = i.interact::<T>()?;
 
-        self.defaults
+        self.chains
             .get_mut(id)
             .unwrap()
             .insert(key, res.to_string());
@@ -543,27 +542,27 @@ impl<'a> Context<'a> {
         Ok(res)
     }
 
-    #[track_caller]
-    fn read_value_select<T: Clone + Eq + Display + FromStr>(
-        &mut self,
-        title: &str,
-        items: &[(T, impl Display, impl Display)],
-        id: &UniversalChainId<'a>,
-        key: Key,
-    ) -> Result<T> {
-        let mut s = select::<T>(title).items(items).filter_mode();
-        if let Some(default) = self.defaults[id].get(&key) {
-            s = s.initial_value(default.parse().ok().unwrap());
-        }
-        let res = s.interact()?;
+    // #[track_caller]
+    // fn read_value_select<T: Clone + Eq + Display + FromStr>(
+    //     &mut self,
+    //     title: &str,
+    //     items: &[(T, impl Display, impl Display)],
+    //     id: &UniversalChainId<'a>,
+    //     key: Key,
+    // ) -> Result<T> {
+    //     let mut s = select::<T>(title).items(items).filter_mode();
+    //     if let Some(default) = self.chains[id].get(&key) {
+    //         s = s.initial_value(default.parse().ok().unwrap());
+    //     }
+    //     let res = s.interact()?;
 
-        self.defaults
-            .get_mut(id)
-            .unwrap()
-            .insert(key, res.to_string());
+    //     self.chains
+    //         .get_mut(id)
+    //         .unwrap()
+    //         .insert(key, res.to_string());
 
-        Ok(res)
-    }
+    //     Ok(res)
+    // }
 
     fn finality_module(
         &mut self,
@@ -786,7 +785,7 @@ impl<'a> Context<'a> {
 
     #[track_caller]
     fn get_required_default<T: FromStr>(&self, id: &UniversalChainId<'a>, key: Key) -> T {
-        self.defaults[id][&key].parse().ok().unwrap()
+        self.chains[id][&key].parse().ok().unwrap()
     }
 
     fn build_chain_pair(
@@ -920,7 +919,7 @@ impl<'a> Context<'a> {
     fn dump_receipt(&self) -> Result<()> {
         Ok(fs::write(
             "./receipt.json",
-            serde_json::to_string_pretty(&self.defaults).unwrap(),
+            serde_json::to_string_pretty(&self).unwrap(),
         )?)
     }
 }
