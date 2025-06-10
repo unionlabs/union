@@ -169,7 +169,7 @@ pub enum CallArg {
     Object(ObjectArg),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum ObjectArg {
     // A Move object from fastpath.
