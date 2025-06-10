@@ -181,15 +181,14 @@ const createFeeStore = () => {
       ]
     }
 
-    const applyRatio = (a: BaseGasPrice): [BaseGasPrice, string] => {
+    const applyRatio = (a: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => {
       const result = pipe(
-        BigDecimal.multiply(a, self.ratio),
-        BaseGasPrice,
+        BigDecimal.unsafeDivide(a, self.ratio),
       )
 
       return [
         result,
-        `${a} base unit * ${self.ratio} = ${result} base unit`,
+        `${a} * ${self.ratio} ratio = ${result}`,
       ]
     }
 
@@ -221,6 +220,10 @@ const createFeeStore = () => {
       // TODO: add composeK
       return pipe(
         asBaseUnit(a)[0],
+        BigDecimal.round({
+          scale: 8,
+          mode: "from-zero",
+        }),
         BigDecimal.format,
       )
     }
@@ -330,11 +333,48 @@ const createFeeStore = () => {
 
   const displayFees = $derived(pipe(
     O.all({ calculatedFees, decoratedConfig }),
-    O.map(({ calculatedFees, decoratedConfig: { formatToDisplay } }) =>
+    O.map(({ calculatedFees, decoratedConfig: { formatToDisplay, applyRatio } }) =>
       Struct.evolve(calculatedFees, {
-        PACKET_SEND_LC_UPDATE_L0: Tuple.mapFirst(formatToDisplay),
-        PACKET_SEND_LC_UPDATE_L1: Tuple.mapFirst(formatToDisplay),
-        PACKET_RECV: Tuple.mapFirst(formatToDisplay),
+        PACKET_SEND_LC_UPDATE_L0: (x) =>
+          pipe(
+            applyRatio(x[0]),
+            (y) => {
+              console.log("calculatedFee", BigDecimal.format(x[0]))
+              console.log("after ratio", BigDecimal.format(y[0]))
+              return y
+            },
+            Tuple.mapFirst(
+              flow(
+                AtomicGasPrice,
+                formatToDisplay,
+                (y) => {
+                  console.log("after format", y)
+                  return y
+                },
+              ),
+            ),
+          ),
+        PACKET_SEND_LC_UPDATE_L1: (x) =>
+          pipe(
+            applyRatio(x[0]),
+            Tuple.mapFirst(
+              flow(
+                AtomicGasPrice,
+                formatToDisplay,
+              ),
+            ),
+          ),
+
+        PACKET_RECV: (x) =>
+          pipe(
+            applyRatio(x[0]),
+            Tuple.mapFirst(
+              flow(
+                AtomicGasPrice,
+                formatToDisplay,
+              ),
+            ),
+          ),
       })
     ),
   ))
