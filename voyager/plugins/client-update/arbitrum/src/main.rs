@@ -306,7 +306,10 @@ impl Module {
         .map_err(|e| {
             ErrorObject::owned(
                 -1,
-                format!("failed to fetch next node number at L1 height: {}", ErrorReporter(&*e)),
+                format!(
+                    "failed to fetch next node number at L1 height: {}",
+                    ErrorReporter(&*e)
+                ),
                 None::<()>,
             )
         })?;
@@ -373,7 +376,10 @@ impl Module {
     }
 
     /// Fetch the account update of the IBCHandler contract in the L2 state root at the specified ***L2*** block number.
-    async fn fetch_l2_ibc_contract_root_proof(&self, l2_block_number: u64) -> RpcResult<AccountProof> {
+    async fn fetch_l2_ibc_contract_root_proof(
+        &self,
+        l2_block_number: u64,
+    ) -> RpcResult<AccountProof> {
         let proof = self
             .l2_provider
             .get_proof(self.ibc_handler_address.into(), vec![])
@@ -475,7 +481,10 @@ impl Module {
         .map_err(|e| {
             ErrorObject::owned(
                 -1,
-                format!("failed to get finalized L2 block of L1 height: {}", ErrorReporter(&*e)),
+                format!(
+                    "failed to get finalized L2 block of L1 height: {}",
+                    ErrorReporter(&*e)
+                ),
                 None::<()>,
             )
         })?;
@@ -615,7 +624,10 @@ impl Module {
         .map_err(|e| {
             ErrorObject::owned(
                 -1,
-                format!("failed to get finalized L2 block of L1 height: {}", ErrorReporter(&*e)),
+                format!(
+                    "failed to get finalized L2 block of L1 height: {}",
+                    ErrorReporter(&*e)
+                ),
                 None::<()>,
             )
         })?;
