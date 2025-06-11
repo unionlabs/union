@@ -1,6 +1,7 @@
 use enumorph::Enumorph;
 use macros::model;
 use sui_light_client_types::U64;
+use sui_sdk::types::base_types::SuiAddress;
 
 #[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 pub struct CreateClient {
@@ -100,6 +101,14 @@ pub struct PacketSend {
     pub packet: Packet,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PacketRecv {
+    pub channel_id: u32,
+    pub packet_hash: Vec<u8>,
+    pub maker: SuiAddress,
+    pub maker_msg: Vec<u8>,
+}
+
 #[model]
 #[derive(Enumorph)]
 pub enum IbcEvent {
@@ -115,6 +124,8 @@ pub enum IbcEvent {
     ChannelOpenConfirm(ChannelOpenConfirm),
     // WriteAcknowledgement(ibc::WriteAck),
     // RecvPacket(ibc::PacketRecv),
-    PacketSend(PacketSend), // AcknowledgePacket(ibc::PacketAck),
-                            // TimeoutPacket(ibc::TimeoutPacket),
+    PacketSend(PacketSend),
+    PacketRecv(PacketRecv),
+    // AcknowledgePacket(ibc::PacketAck),
+    // TimeoutPacket(ibc::TimeoutPacket),
 }
