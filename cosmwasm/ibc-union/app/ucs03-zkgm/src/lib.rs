@@ -116,6 +116,8 @@ pub enum ContractError {
     InvalidMultiplexSender,
     #[error("async acknowledgements are not allowed in batches as they are atomic")]
     BatchMustBeSync,
+    #[error("base amount must be greater or equal than quote amount when unwrapping")]
+    BaseAmountLessThanQuoteAmount,
     #[error("invalid metadata type")]
     InvalidMetadataType,
     #[error("invalid metadata image")]

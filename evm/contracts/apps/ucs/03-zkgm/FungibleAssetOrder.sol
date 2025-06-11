@@ -60,10 +60,7 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         uint256 fee = baseAmount - quoteAmount;
         // If the base token path is being unwrapped, it's going to be non-zero.
         _decreaseOutstanding(
-            channelId,
-            ZkgmLib.reverseChannelPath(path),
-            quoteToken,
-            quoteAmount + fee
+            channelId, ZkgmLib.reverseChannelPath(path), quoteToken, baseAmount
         );
         if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
             if (quoteAmount + fee > 0) {
@@ -117,16 +114,15 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             ZkgmLib.reverseChannelPath(path),
             quoteToken,
             metadataImage,
-            quoteAmount + fee
+            baseAmount
         );
         if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
             if (quoteAmount + fee > 0) {
-                WETH.withdraw(quoteAmount + fee);
+                WETH.withdraw(baseAmount);
             }
             if (quoteAmount > 0) {
                 payable(receiver).sendValue(quoteAmount);
             }
-
             if (fee > 0) {
                 if (
                     !SafeTransferLib.trySafeTransferETH(
@@ -354,6 +350,8 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             );
         }
 
+        bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
+
         address wrappedToken;
         bytes32 wrappedTokenSalt;
         FungibleAssetMetadata memory metadata;
@@ -379,6 +377,12 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             order.metadataType
                 == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP
         ) {
+            if (!baseAmountCoversQuoteAmount) {
+                revert ZkgmLib.ErrUnwrapBaseAmountSmallerThanQuoteAmount();
+            }
+            bytes32 metadataImage = bytes32(order.metadata);
+            v1 = metadataImage
+                == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1;
             _optionalRateLimit(quoteToken, order.quoteAmount);
             if (v1) {
                 return _protocolFillUnescrow(
@@ -391,7 +395,6 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
                     order.quoteAmount
                 );
             } else {
-                bytes32 metadataImage = bytes32(order.metadata);
                 return _protocolFillUnescrowV2(
                     ibcPacket.destinationChannelId,
                     path,
@@ -407,7 +410,6 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             revert ZkgmLib.ErrInvalidMetadataType();
         }
 
-        bool baseAmountCoversQuoteAmount = order.baseAmount >= order.quoteAmount;
         if (quoteToken == wrappedToken && baseAmountCoversQuoteAmount) {
             _optionalRateLimit(quoteToken, order.quoteAmount);
             // The asset can only be deployed if the metadata preimage is provided.
