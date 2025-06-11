@@ -1,9 +1,14 @@
-use std::time::Duration;
+use std::{collections::HashMap, time::Duration};
 
+use async_nats::HeaderMap;
+use bytes::Bytes;
 use sqlx::Postgres;
 use time::OffsetDateTime;
 
-use crate::indexer::api::{BlockHash, BlockHeight, BlockRange, IndexerId};
+use crate::indexer::{
+    api::{BlockHash, BlockHeight, BlockRange, IndexerId},
+    nats::Message,
+};
 
 pub async fn get_current_height(
     tx: &mut sqlx::Transaction<'_, Postgres>,
@@ -240,4 +245,82 @@ pub async fn update_block_status(
     .await?;
 
     Ok(())
+}
+
+pub async fn publish(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    subject: &str,
+    data: bytes::Bytes,
+) -> sqlx::Result<i64> {
+    let record = sqlx::query!(
+        "
+        INSERT INTO nats.out(subject, data)
+        VALUES ($1, $2)
+        RETURNING id
+        ",
+        subject,
+        data.as_ref(),
+    )
+    .fetch_one(tx.as_mut())
+    .await?;
+
+    Ok(record.id)
+}
+
+pub async fn next_to_publish(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    subject: &str,
+    batch_size: usize,
+) -> sqlx::Result<Vec<Message>> {
+    let raw_rows = sqlx::query!(
+        r#"
+        WITH to_publish AS (
+            SELECT id
+            FROM nats.out
+            WHERE subject = $1
+            ORDER BY id
+            FOR UPDATE SKIP LOCKED
+            LIMIT $2
+        ),
+        deleted AS (
+            DELETE FROM nats.out
+            USING to_publish
+            WHERE nats.out.id = to_publish.id
+            RETURNING nats.out.id, nats.out.subject, nats.out.headers, nats.out.data
+        )
+        SELECT id, subject, headers, data
+        FROM deleted
+        ORDER BY id;
+        "#,
+        subject,
+        i64::try_from(batch_size).expect("batch-size < i64 max"),
+    )
+    .fetch_all(tx.as_mut())
+    .await?;
+
+    let result: Vec<Message> = raw_rows
+        .into_iter()
+        .map(|row| {
+            let id: i64 = row.id;
+            let subject: String = row.subject;
+            let data: Bytes = row.data.into();
+
+            let raw_headers: HashMap<String, Vec<String>> = serde_json::from_value(row.headers)
+                .map_err(|e| sqlx::Error::ColumnDecode {
+                    index: "headers".into(),
+                    source: Box::new(e),
+                })?;
+
+            let mut headers = HeaderMap::new();
+            for (key, values) in raw_headers {
+                for value in values {
+                    headers.insert(key.clone(), value);
+                }
+            }
+
+            Ok(Message::new(id, subject, headers, data))
+        })
+        .collect::<Result<_, sqlx::Error>>()?;
+
+    Ok(result)
 }

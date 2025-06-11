@@ -10,7 +10,9 @@ use super::{
 };
 use crate::indexer::{
     api::{BlockHandle, BlockRange, BlockSelection, FetchMode, IndexerError},
-    postgres::{get_current_height, update_block_status, update_current_height},
+    event::{HubbleEvent, Range},
+    nats::subject_for_block,
+    postgres::{get_current_height, publish, update_block_status, update_current_height},
     HappyRangeFetcher,
 };
 
@@ -112,6 +114,24 @@ impl<T: FetcherClient> Indexer<T> {
             reference.timestamp,
         )
         .await?;
+
+        if self.nats.is_some() {
+            let subject = subject_for_block(&self.indexer_id);
+            let data = bytes::Bytes::from(serde_json::to_vec(&HubbleEvent {
+                version: 1,
+                universal_chain_id: self.indexer_id.clone(),
+                range: Range {
+                    start: reference.height,
+                    end: reference.height,
+                },
+                chunk: None,
+                details: serde_json::Value::Null,
+            })?);
+
+            let id = publish(&mut tx, &subject, data).await?;
+
+            debug!("store: {} - published: {}", reference, id);
+        }
 
         tx.commit().await?;
 

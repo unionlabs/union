@@ -1,5 +1,6 @@
 use std::{fmt::Display, ops::Range};
 
+use async_nats::jetstream::context::PublishErrorKind;
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
@@ -30,6 +31,9 @@ pub enum IndexerError {
     ProviderError(Report),
     #[error("internal error: {0}")]
     InternalError(Report),
+
+    #[error("nats publish error: {0}")]
+    NatsPublishError(#[from] async_nats::error::Error<PublishErrorKind>),
 }
 
 impl From<Report> for IndexerError {
@@ -49,7 +53,7 @@ pub type BlockHeight = u64;
 pub type BlockHash = String;
 pub type BlockTimestamp = OffsetDateTime;
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct BlockRange {
     pub start_inclusive: BlockHeight,
     pub end_exclusive: BlockHeight,
