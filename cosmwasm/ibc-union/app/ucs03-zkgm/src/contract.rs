@@ -2513,7 +2513,6 @@ fn execute_unstake(
         str::from_utf8(&unstake.validator).map_err(|_| ContractError::InvalidValidator)?;
     let governance_token = str::from_utf8(&unstake.governance_token)
         .map_err(|_| ContractError::InvalidGovernanceToken)?;
-    let stake_amount = u128::try_from(unstake.amount).map_err(|_| ContractError::AmountOverflow)?;
 
     let stake_account = predict_stake_account(
         deps.as_ref(),
@@ -2521,6 +2520,12 @@ fn execute_unstake(
         packet.destination_channel_id,
         unstake.token_id,
     )?;
+
+    let stake_amount = deps
+        .querier
+        .query_delegation(stake_account.clone(), validator)?
+        .map(|delegation| delegation.amount.amount)
+        .unwrap_or(0u128.into());
 
     Ok(Response::new().add_submessage(SubMsg::reply_on_success(
         wasm_execute(

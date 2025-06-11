@@ -119,7 +119,6 @@ alloy_sol_types::sol! {
         bytes32 governance_metadata_image;
         bytes sender;
         bytes validator;
-        uint256 amount;
     }
 
     struct WithdrawStake {
