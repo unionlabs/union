@@ -65,6 +65,7 @@ library ZkgmLib {
     error ErrInvalidFillType();
     error ErrInvalidIBCVersion();
     error ErrInvalidHops();
+    error ErrUnwrapBaseAmountSmallerThanQuoteAmount();
     error ErrInvalidAssetOrigin();
     error ErrInvalidAssetSymbol();
     error ErrInvalidAssetDecimals();
