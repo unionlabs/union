@@ -1,8 +1,9 @@
 use core::fmt;
 
+use consensus_primitives::Timestamp;
 use rlp::{RlpDecodable, RlpDecodableWrapper, RlpEncodable, RlpEncodableWrapper};
 use sha3::Digest as _;
-use unionlabs_primitives::{Bytes, H160, H2048, H256, H384, H64, H768, U256};
+use unionlabs_primitives::{ByteArrayExt, Bytes, H160, H2048, H256, H384, H64, H768, U256};
 
 #[derive(Debug, Clone, RlpDecodable, RlpEncodable)]
 pub struct VoteAttestation {
@@ -137,6 +138,13 @@ pub struct ParliaHeader {
         serde(default, skip_serializing_if = "Nullable::is_none")
     )]
     pub requests_hash: Nullable<H256>,
+}
+
+impl ParliaHeader {
+    pub fn full_timestamp(&self) -> Timestamp {
+        let millis = u16::from_be_bytes(self.mix_hash.get().array_slice::<30, 2>());
+        Timestamp::from_millis((self.timestamp * 1_000) + (millis as u64))
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Default)]

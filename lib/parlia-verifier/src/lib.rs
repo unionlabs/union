@@ -2,6 +2,7 @@
 
 use std::ops::{Mul, Sub};
 
+use consensus_primitives::{Duration, Timestamp};
 use parlia_types::{ParliaHeader, Valset, VoteAttestation, VoteData};
 use unionlabs_primitives::{ByteArrayExt, H160, H384, H768, U256};
 
@@ -129,10 +130,14 @@ pub enum Error<E> {
     InvalidTrustedValsetEpochBlockNumber { expected: u64, found: u64 },
     #[error("the valset is not sorted")]
     ValsetNotSorted,
+    #[error("the header is expired")]
+    HeaderExpired,
 }
 
 pub trait VerificationContext {
     type Error: std::error::Error;
+
+    fn current_timestamp(&self) -> Timestamp;
 
     fn get_valset(&self, epoch_block_number: u64) -> Result<Valset, Self::Error>;
 
@@ -145,17 +150,30 @@ pub trait VerificationContext {
 }
 
 /// Given 3 headers: source `S`, target `T`, and attestation `A`, where `A` contains the vote data for `S` and `T`:
-/// 1. verify that `S ∈ T ∈ A`
-/// 2. validate the signature contained in `A` with the valset that signed it
-/// 3. if `S` is an epoch change block, return the epoch change block number and the new valset
+/// 1. ensure that `A` is not expired
+/// 2. verify that `S ∈ T ∈ A`
+/// 3. validate the signature contained in `A` with the valset that signed it
+/// 4. if `S` is an epoch change block, return the epoch change block number and the new valset
 pub fn verify_header<C: VerificationContext>(
     source: &ParliaHeader,
     target: &ParliaHeader,
     attestation: &ParliaHeader,
+    unbond_period: Duration,
     trusted_valset_epoch_block_number: u64,
     ctx: C,
 ) -> Result<Option<(u64, Valset)>, Error<C::Error>> {
     // 1.
+    if attestation
+        .full_timestamp()
+        .plus_duration(unbond_period)
+        .is_none_or(|header_timestamp_plus_unbonding_period| {
+            dbg!(header_timestamp_plus_unbonding_period) < dbg!(ctx.current_timestamp())
+        })
+    {
+        return Err(Error::HeaderExpired);
+    }
+
+    // 2.
     if source.number + U256::ONE != target.number || target.number + U256::ONE != attestation.number
     {
         return Err(Error::InvalidAttestationChain);
@@ -216,7 +234,7 @@ pub fn verify_header<C: VerificationContext>(
         return Err(Error::ValsetNotSorted);
     }
 
-    // 2.
+    // 3.
     ctx.verify(
         signing_valset.map(|x| &x.1 .1),
         vote_attestation.data.hash().get(),
@@ -224,7 +242,7 @@ pub fn verify_header<C: VerificationContext>(
     )
     .map_err(Error::ContextError)?;
 
-    // 3.
+    // 4.
     if is_epoch_rotation_header(source) {
         let (_, new_valset) = parse_epoch_rotation_header_extra_data(&source.extra_data)?;
         Ok(Some((
@@ -247,7 +265,10 @@ mod tests {
 
     use super::*;
 
-    struct BlstContext(HashMap<u64, Valset>);
+    struct BlstContext {
+        current_timestamp: Timestamp,
+        epoch_valsets: HashMap<u64, Valset>,
+    }
 
     // will never be BLST_SUCCESS
     #[derive(Debug, Clone, thiserror::Error)]
@@ -271,8 +292,12 @@ mod tests {
     impl VerificationContext for BlstContext {
         type Error = BlstError;
 
+        fn current_timestamp(&self) -> Timestamp {
+            self.current_timestamp
+        }
+
         fn get_valset(&self, epoch_block_number: u64) -> Result<Valset, Self::Error> {
-            Ok(self.0.get(&epoch_block_number).unwrap().clone())
+            Ok(self.epoch_valsets.get(&epoch_block_number).unwrap().clone())
         }
 
         fn verify<'pk>(
@@ -351,8 +376,12 @@ mod tests {
             &source,
             &target,
             &attestation,
+            Duration::from_secs(604800),
             51006000,
-            BlstContext([(51006000, valset)].into_iter().collect()),
+            BlstContext {
+                current_timestamp: Timestamp::from_nanos(1749649227605872553),
+                epoch_valsets: [(51006000, valset)].into_iter().collect(),
+            },
         )
         .unwrap();
 
@@ -377,8 +406,12 @@ mod tests {
             &source,
             &target,
             &attestation,
+            Duration::from_secs(604800),
             51005500,
-            BlstContext([(51005500, valset)].into_iter().collect()),
+            BlstContext {
+                current_timestamp: Timestamp::from_nanos(1749649227605872553),
+                epoch_valsets: [(51005500, valset)].into_iter().collect(),
+            },
         )
         .unwrap();
 
@@ -413,8 +446,12 @@ mod tests {
             &source,
             &target,
             &attestation,
+            Duration::from_secs(604800),
             50932000,
-            BlstContext([(50932000, valset)].into_iter().collect()),
+            BlstContext {
+                current_timestamp: Timestamp::from_nanos(1749649227605872553),
+                epoch_valsets: [(50932000, valset)].into_iter().collect(),
+            },
         )
         .unwrap();
 
@@ -439,8 +476,12 @@ mod tests {
             &source,
             &target,
             &attestation,
+            Duration::from_secs(604800),
             50931500,
-            BlstContext([(50931500, valset)].into_iter().collect()),
+            BlstContext {
+                current_timestamp: Timestamp::from_nanos(1749649227605872553),
+                epoch_valsets: [(50931500, valset)].into_iter().collect(),
+            },
         )
         .unwrap();
 
