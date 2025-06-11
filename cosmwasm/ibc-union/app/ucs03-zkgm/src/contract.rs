@@ -2269,6 +2269,10 @@ fn execute_fungible_asset_order_v2(
             }
         }
         FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP => {
+            if !base_covers_quote {
+                return Err(ContractError::BaseAmountLessThanQuoteAmount);
+            }
+
             // Handle unwrapping case
             let metadata_image = H256::try_from(order.metadata.0.as_ref())
                 .map_err(|_| ContractError::InvalidMetadataType)?;
@@ -3510,7 +3514,7 @@ fn decrease_channel_balance(
 }
 
 /// Decrease the outstanding balance of a (channel, path, token, metadata_image) combination for V2 tokens.
-fn decrease_channel_balance_v2(
+pub fn decrease_channel_balance_v2(
     deps: DepsMut,
     channel_id: ChannelId,
     path: U256,
@@ -3540,7 +3544,7 @@ fn decrease_channel_balance_v2(
 }
 
 /// Increase the outstanding balance for a (channel, path, token, metadata_image) combination for V2 tokens.
-fn increase_channel_balance_v2(
+pub fn increase_channel_balance_v2(
     storage: &mut dyn Storage,
     channel_id: ChannelId,
     path: U256,

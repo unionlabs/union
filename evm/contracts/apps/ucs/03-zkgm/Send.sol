@@ -261,12 +261,9 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             ) {
                 revert ZkgmLib.ErrInvalidMetadataType();
             }
-            if (!v1) {
-                bytes32 metadataImageOfV2Token = metadataImageOf[baseToken];
-                if (metadataImage != metadataImageOfV2Token) {
-                    revert ZkgmLib.ErrInvalidMetadataImage();
-                }
-            }
+            // We don't have to verify that metadataImage matches the stored one
+            // because the prediction would fail otherwise and we would fall
+            // back in the else branch.
             IZkgmERC20(baseToken).burn(msg.sender, order.baseAmount);
         } else {
             if (
