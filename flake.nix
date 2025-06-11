@@ -118,7 +118,7 @@
       url = "github:unionlabs/union/release/uniond/v1.0.0";
       flake = false;
     };
-    v1_1_1 = {
+    v1_1_0 = {
       url = "github:unionlabs/union/release/uniond/v1.1.1";
       flake = false;
     };
