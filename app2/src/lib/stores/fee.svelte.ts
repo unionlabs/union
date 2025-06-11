@@ -12,7 +12,7 @@ import * as FlatMap from "@effect/typeclass/FlatMap"
 import * as Of from "@effect/typeclass/Of"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
-import { PriceError, PriceOracle, PriceOraclePlan, PriceSource } from "@unionlabs/sdk/PriceOracle"
+import { PriceError, PriceOracle, PriceSource } from "@unionlabs/sdk/PriceOracle"
 import { Chain, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { type Fees, GasFee } from "@unionlabs/sdk/schema/fee"
 import {
@@ -78,9 +78,9 @@ const createFeeStore = () => {
   let usdPrices!: RunPromiseExitResult<
     R.ReadonlyRecord<
       "source" | "destination",
-      O.Option<Effect.Effect.Success<ReturnType<PriceOracle["of"]>>>
+      O.Option<Effect.Effect.Success<ReturnType<PriceOracle.Service["of"]>>>
     >,
-    Effect.Effect.Error<ReturnType<PriceOracle["of"]>>
+    Effect.Effect.Error<ReturnType<PriceOracle.Service["of"]>>
   >
 
   let gasPrices!: RunPromiseExitResult<{
@@ -112,7 +112,6 @@ const createFeeStore = () => {
           Effect.andThen(PriceOracle, ({ ratio }) => ratio(source, destination))
         ),
         Effect.transposeOption,
-        Effect.withExecutionPlan(PriceOraclePlan),
       ), {
       onInterrupt: "none",
     })
@@ -125,7 +124,6 @@ const createFeeStore = () => {
         },
         R.map(Effect.transposeMapOption(usdOfChainGas)),
         Effect.allWith({ concurrency: 2 }),
-        Effect.withExecutionPlan(PriceOraclePlan),
       ), {
       onInterrupt: "none",
     })
