@@ -117,8 +117,10 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
       // XXX: source from chain info?
       const map: Record<UniversalChainId, string> = {
         [UniversalChainId.make("ethereum.11155111")]: "ETH",
+        [UniversalChainId.make("bob.60808")]: "ETH",
         [UniversalChainId.make("ethereum.1")]: "ETH",
         [UniversalChainId.make("corn.21000001")]: "BTC",
+        [UniversalChainId.make("corn.21000000")]: "BTC",
         [UniversalChainId.make("ethereum.17000")]: "ETH",
         [UniversalChainId.make("xion.xion-testnet-2")]: "XION",
         [UniversalChainId.make("sei.1328")]: "SEI",
