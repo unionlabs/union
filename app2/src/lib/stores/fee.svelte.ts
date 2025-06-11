@@ -20,6 +20,7 @@ import {
   BigInt as BI,
   Cause,
   Effect,
+  Either as E,
   Exit,
   Match,
   Option as O,
@@ -153,7 +154,6 @@ const createFeeStore = () => {
     self: { fees: BaseFees; gasPrice: BaseGasPrice; ratio: BigDecimal.BigDecimal } & typeof config,
   ) => {
     const gasDecimals = self.gasPrice.scale
-    console.log({ symbol: gasDecimals })
 
     const asBaseUnit = (a: AtomicGasPrice): [BaseGasPrice, string] => {
       const result = pipe(
@@ -514,18 +514,10 @@ const createFeeStore = () => {
 
   const totalFee = $derived(pipe(
     calculatedFees,
-    x => {
-      console.log(JSON.stringify(calculatedFees, null, 2))
-      return x
-    },
     O.map(R.values),
     O.map(A.map(Tuple.getFirst)),
     O.map(BigDecimal.sumAll),
     O.map(AtomicGasPrice),
-    O.tap(x => {
-      console.log("totalFee", { scale: x.scale })
-      return O.some(x)
-    }),
   ))
 
   // XXX: this is wrong; need to get usd price of source symbol instead of ratio
@@ -545,10 +537,6 @@ const createFeeStore = () => {
       ),
       totalFee,
     }),
-    x => {
-      console.log({ totalFee: x })
-      return x
-    },
     O.map(({ decoratedConfig, perUsd, totalFee }) =>
       BigDecimal.multiply(perUsd, decoratedConfig.asBaseUnit(totalFee)[0])
     ),
@@ -575,14 +563,25 @@ const createFeeStore = () => {
   //   ucs03address: string
   // }
 
-  const feeIntent: O.Option<FeeIntent> = $derived(O.gen(function*() {
-    const universal_chain_id = (yield* TransferData.sourceChain).universal_chain_id
+  const feeIntent: E.Either<FeeIntent, string> = $derived(E.gen(function*() {
+    const _totalFee = yield* pipe(
+      totalFee,
+      E.fromOption(() => "No total fee"),
+    )
+    const sourceChain = yield* pipe(
+      TransferData.sourceChain,
+      E.fromOption(() => "No source chain"),
+    )
+    const gasDenom = yield* pipe(
+      R.get(GAS_DENOMS, sourceChain.universal_chain_id),
+      E.fromOption(() => `No gas denom for ${sourceChain.universal_chain_id}`),
+    )
 
-    const baseToken = GAS_DENOMS[universal_chain_id].address
-    // TODO: source from more reliable source
-    const decimals = GAS_DENOMS[universal_chain_id].decimals
+    const baseToken = gasDenom.address
+    // TODO: get from more reliable source
+    const decimals = gasDenom.decimals
     const amount = BigDecimal.multiply(
-      BigDecimal.make((yield* totalFee).value, 0),
+      BigDecimal.make(_totalFee.value, 0),
       BigDecimal.make(1n, -decimals),
     )
     const BIamount = BI.multiply(
@@ -630,7 +629,7 @@ const createFeeStore = () => {
       return config.batchDivideNumber
     },
     get totalFee() {
-      console.log({ totalFee })
+      console.log("Total fee (atomic):", totalFee.toString())
       return totalFee
     },
     /**

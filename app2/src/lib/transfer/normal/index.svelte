@@ -129,7 +129,7 @@ $effect(() => {
   transferSteps = Option.none()
   transferErrors = Option.none()
   const feeIntent = untrack(() => FeeStore.feeIntent)
-  console.log({ feeIntent })
+  console.log("FEE INTENT:", feeIntent.toString())
 
   const machineEffect = Effect.gen(function*() {
     let currentState: CreateContextState = CreateContextState.Filling()

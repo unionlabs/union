@@ -68,7 +68,6 @@ const feeConfig = O.none()
   </ul>
 </div>
 
-<pre>{JSON.stringify(O.getOrNull(O.map(FeeStore.totalFee, BigDecimal.format)))}</pre>
 <div class="w-full overflow-hidden mt-auto">
   <!-- Always visible -->
   <button

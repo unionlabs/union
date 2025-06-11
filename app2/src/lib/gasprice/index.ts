@@ -102,17 +102,9 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                     O.let("decimals", () => x.coinDecimals),
                     O.map(({ average, decimals }) =>
                       pipe(
-                        BigDecimal.unsafeFromNumber(average), // 0.007
-                        (x) => {
-                          console.log({ gasPrice: x })
-                          return x
-                        },
-                        BigDecimal.multiply(BigDecimal.make(1n, decimals)), // 0.007 * 1x10^6
+                        BigDecimal.unsafeFromNumber(average),
+                        BigDecimal.multiply(BigDecimal.make(1n, decimals)),
                         GasPrice.BaseGasPrice,
-                        (x) => {
-                          console.log({ normalizedGasPrice: x })
-                          return x
-                        },
                       )
                     ),
                   )
