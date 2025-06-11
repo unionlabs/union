@@ -16,7 +16,7 @@ An IBC specification defines the semantics of a light client based bridging prot
 - a store specification, where client and consensus states are stored (among any other states required by the IBC specification)
 - this store is required to be provable (i.e. the host environment must have some form of "proof" for it's storage, most likely merkleized)
 
-Everything else is an implementation detail of the ibc specification.
+Everything else is an implementation detail of the IBC specification.
 
 ### Chain
 
@@ -33,9 +33,9 @@ A chain's consensus defines the client and consensus state types stored in the c
 
 #### Examples
 
-- cometbls
-- tendermint
-- ethereum
+- `cometbls`
+- `tendermint`
+- `ethereum`
 
 ### IBC Interface
 
@@ -43,11 +43,11 @@ An IBC interface defines the entrypoints of an IBC specification implementation 
 
 #### Examples
 
-- ibc-go-v8/08-wasm
-- ibc-solidity
-- ibc-cosmwasm
+- `ibc-go-v8/08-wasm`
+- `ibc-solidity`
+- `ibc-cosmwasm`
 
-### Client
+### Client Type
 
 Clients are the mechanism used to verify a counterparty consensus. Clients are defined by 4 properties:
 
@@ -58,11 +58,11 @@ Clients are the mechanism used to verify a counterparty consensus. Clients are d
 
 #### Examples
 
-| IBC interface     | consensus  | verifier         |
-|-------------------|------------|------------------|
-| ibc-go-v8/08-wasm | cometbls   | cometbls-groth16 |
-| ibc-go-v8/08-wasm | cometbls   | 11-cometbls      |
-| ibc-go-v8/native  | cometbls   | cometbls-groth16 |
-| ibc-solidity      | cometbls   | cometbls-groth16 |
-| ibc-go-v8/native  | tendermint | 07-tendermint    |
-| ibc-go-v8/08-wasm | tendermint | 07-tendermint    |
+| IBC interface       | consensus    | verifier           |
+|---------------------|--------------|--------------------|
+| `ibc-go-v8/08-wasm` | `cometbls`   | `cometbls-groth16` |
+| `ibc-go-v8/08-wasm` | `cometbls`   | `11-cometbls`      |
+| `ibc-go-v8/native`  | `cometbls`   | `cometbls-groth16` |
+| `ibc-solidity`      | `cometbls`   | `cometbls-groth16` |
+| `ibc-go-v8/native`  | `tendermint` | `07-tendermint`    |
+| `ibc-go-v8/08-wasm` | `tendermint` | `07-tendermint`    |
