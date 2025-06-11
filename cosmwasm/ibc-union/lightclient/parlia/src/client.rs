@@ -193,6 +193,10 @@ impl IbcClient for ParliaLightClient {
             return Err(Error::MisbehaviourHeadersNotForSameHeight.into());
         }
 
+        if misbehaviour.attestation_1 == misbehaviour.attestation_2 {
+            return Err(Error::MisbehaviourHeadersMustBeDifferent.into());
+        }
+
         let cw_ctx = CwContext { ctx: &ctx };
 
         // verify first attestation
