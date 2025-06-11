@@ -33,8 +33,8 @@ import {
 import { constant, flow, identity } from "effect/Function"
 
 const composeK = pipe(
-  StringInstances.Semigroup,
-  Writer.fromSemigroup,
+  StringInstances.Monoid,
+  Writer.getFlatMap,
   FlatMap.composeK,
 )
 
@@ -236,7 +236,7 @@ const createFeeStore = () => {
       )
     }
 
-    const formatToDisplayK = (a: AtomicGasPrice): [string, string] => {
+    const formatToDisplayK = (a: AtomicGasPrice): readonly [string, string] => {
       const round = (x: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => {
         const scale = 10
         const mode = "from-zero"
