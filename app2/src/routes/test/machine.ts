@@ -1,9 +1,9 @@
-import { Effect, Schedule, Duration, Fiber, Schema } from 'effect'
+import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
+import { runFork } from "$lib/runtime"
 import { fetchDecodeGraphql } from "$lib/utils/queries"
 import { TransferList } from "@unionlabs/sdk/schema"
-import { transferListItemFragment } from "$lib/queries/fragments/transfer-list-item"
-import { runFork } from '$lib/runtime'
-import type { TransferListItem } from '@unionlabs/sdk/schema'
+import type { TransferListItem } from "@unionlabs/sdk/schema"
+import { Duration, Effect, Fiber, Schedule, Schema } from "effect"
 import { graphql } from "gql.tada"
 
 const MAINNET_ONLY = false // Set to true to only show mainnet transfers
@@ -33,7 +33,7 @@ const fetchLatestTransfers = (limit = 50, mainnetOnly = MAINNET_ONLY) =>
     {
       limit,
       network: mainnetOnly ? "mainnet" : null,
-    }
+    },
   )
 
 // Fetch transfers newer than a given sort_order using pagination
@@ -59,7 +59,7 @@ const fetchNewTransfers = (lastSortOrder: string, limit = 50, mainnetOnly = MAIN
       page: lastSortOrder,
       limit,
       network: mainnetOnly ? "mainnet" : null,
-    }
+    },
   )
 
 export function createTransferPollingMachine(limit = 50): TransferPollingMachine {
@@ -67,7 +67,7 @@ export function createTransferPollingMachine(limit = 50): TransferPollingMachine
   let pollingFiber: Fiber.RuntimeFiber<number, unknown> | null = null
   let callback: ((newTxs: Array<TransferListItem>) => void) | null = null
   let isInitialFetch = true
-  
+
   // Transfer scheduling for smooth streaming
   let scheduledTransfers: Array<{
     transfer: TransferListItem
@@ -77,27 +77,28 @@ export function createTransferPollingMachine(limit = 50): TransferPollingMachine
   const SPREAD_TIME_MS = 3000
   const POLL_INTERVAL_MS = 1000
 
-  const checkForNewTransfers = Effect.gen(function* () {
-          if (isInitialFetch || !lastSortOrder) {
-        // STEP 1: Get latest single transfer to establish baseline (don't display it)
-        const result = yield* fetchLatestTransfers(1)
+  const checkForNewTransfers = Effect.gen(function*() {
+    if (isInitialFetch || !lastSortOrder) {
+      // STEP 1: Get latest single transfer to establish baseline (don't display it)
+      const result = yield* fetchLatestTransfers(1)
+      const transfers = [...result.v2_transfers]
+      isInitialFetch = false
+
+      if (transfers.length > 0) {
+        // Set baseline to this latest transfer, so gt queries get everything newer
+        lastSortOrder = transfers[0].sort_order
+      }
+      // Don't schedule any transfers - let polling handle all display
+    } else {
+      // STEP 2: Poll for transfers newer than our baseline using pagination
+      try {
+        const result = yield* fetchNewTransfers(lastSortOrder!, limit)
         const transfers = [...result.v2_transfers]
-        isInitialFetch = false
-      
-        if (transfers.length > 0) {
-          // Set baseline to this latest transfer, so gt queries get everything newer
-          lastSortOrder = transfers[0].sort_order
-        }
-        // Don't schedule any transfers - let polling handle all display
-      } else {
-        // STEP 2: Poll for transfers newer than our baseline using pagination
-        try {
-          const result = yield* fetchNewTransfers(lastSortOrder!, limit)
-          const transfers = [...result.v2_transfers]
-        
+
         if (transfers.length > 0) {
           // Update baseline to newest transfer found
-          lastSortOrder = transfers.map((t: TransferListItem) => t.sort_order).sort().pop() ?? lastSortOrder
+          lastSortOrder = transfers.map((t: TransferListItem) => t.sort_order).sort().pop()
+            ?? lastSortOrder
           scheduleTransfers(transfers)
         }
       } catch (error) {
@@ -126,7 +127,7 @@ export function createTransferPollingMachine(limit = 50): TransferPollingMachine
     const checkScheduled = () => {
       const now = Date.now()
       const ready = scheduledTransfers.filter(t => t.scheduledTime <= now)
-      
+
       if (ready.length > 0 && callback) {
         ready.forEach(t => callback!([t.transfer]))
         scheduledTransfers = scheduledTransfers.filter(t => t.scheduledTime > now)
@@ -139,7 +140,7 @@ export function createTransferPollingMachine(limit = 50): TransferPollingMachine
 
   const startMachine = () => {
     const pollingEffect = checkForNewTransfers.pipe(
-      Effect.repeat(Schedule.spaced(Duration.millis(POLL_INTERVAL_MS)))
+      Effect.repeat(Schedule.spaced(Duration.millis(POLL_INTERVAL_MS))),
     )
     pollingFiber = runFork(pollingEffect)
     processScheduledTransfers()
