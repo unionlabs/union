@@ -335,7 +335,8 @@ const feeConfig = O.none()
             {#if calculating}
               <Skeleton class="h-3 w-20" />
             {:else}
-              <span class="text-zinc-400">{item.amount} {@render gasTokenSymbol()}</span>
+              <span class="text-zinc-400"><code>{item.amount}</code>
+                {@render gasTokenSymbol()}</span>
             {/if}
           </div>
         {/each}

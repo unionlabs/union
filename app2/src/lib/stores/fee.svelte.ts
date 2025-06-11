@@ -267,8 +267,9 @@ const createFeeStore = () => {
           ],
         ]
       }
+
       const format = (x: BigDecimal.BigDecimal): [string, readonly string[]] => {
-        const result = BigDecimal.format(x)
+        const result = BigDecimal.unsafeToNumber(x).toFixed(10)
         return [
           result,
           [`<code>format</code>(${x})`],
