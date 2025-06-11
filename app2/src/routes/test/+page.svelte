@@ -34,28 +34,26 @@ onDestroy(() => {
 })
 </script>
 
-<Card class="h-full rounded-none border-none bg-zinc-950">
-  <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full p-4">
-    <!-- Stats - spans full width on mobile, 1 column on desktop -->
-    <div class="lg:col-span-3">
-      <TransferStats {transfers} />
-    </div>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full p-4">
+      <!-- Network Visualizer - first on mobile, right side on desktop (spans 2 columns) -->
+      <div class="order-1 lg:order-3 lg:col-span-2 min-h-0">
+        <NetworkVisualizer
+          {transfers}
+          onChainSelection={handleChainSelection}
+        />
+      </div>
 
-    <!-- Terminal Log - left side on desktop -->
-    <div class="lg:col-span-1 min-h-0">
-      <TerminalLog
-        {transfers}
-        {selectedFromChain}
-        {selectedToChain}
-      />
-    </div>
+      <!-- Stats - second on mobile, spans full width on desktop -->
+      <div class="order-2 lg:order-1 lg:col-span-3">
+        <TransferStats {transfers} />
+      </div>
 
-    <!-- Network Visualizer - right side on desktop, spans 2 columns -->
-    <div class="lg:col-span-2 min-h-0">
-      <NetworkVisualizer
-        {transfers}
-        onChainSelection={handleChainSelection}
-      />
+      <!-- Terminal Log - third on mobile, left side on desktop -->
+      <div class="order-3 lg:order-2 lg:col-span-1 min-h-0">
+        <TerminalLog
+          {transfers}
+          {selectedFromChain}
+          {selectedToChain}
+        />
+      </div>
     </div>
-  </div>
-</Card>
