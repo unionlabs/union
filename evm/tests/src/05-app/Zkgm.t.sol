@@ -5166,6 +5166,325 @@ contract ZkgmTests is Test {
         console.logBytes(inst.operand);
     }
 
+    function test_batch_mixed_v1_v2_orders_ok(
+        uint32 channelId,
+        uint32 counterpartyChannelId,
+        address caller,
+        bytes memory sender,
+        bytes memory receiver,
+        uint128 baseAmount1,
+        uint128 baseAmount2,
+        bytes memory quoteToken,
+        uint256 quoteAmount1,
+        uint256 quoteAmount2
+    ) public {
+        assumeUnusedAddress(caller);
+        vm.assume(channelId > 0);
+        vm.assume(counterpartyChannelId > 0);
+        vm.assume(baseAmount1 > 0);
+        vm.assume(baseAmount2 > 0);
+        handler.setChannel(channelId, counterpartyChannelId);
+
+        address baseToken = address(erc20);
+        uint256 totalAmount = uint256(baseAmount1) + uint256(baseAmount2);
+        erc20.mint(caller, totalAmount);
+        vm.prank(caller);
+        erc20.approve(address(zkgm), totalAmount);
+
+        FungibleAssetMetadata memory metadata = _metadata(
+            TokenMeta({
+                symbol: erc20.symbol(),
+                name: erc20.name(),
+                decimals: erc20.decimals()
+            })
+        );
+
+        Instruction[] memory instructions = new Instruction[](2);
+        // V1 order
+        instructions[0] = Instruction({
+            version: ZkgmLib.INSTR_VERSION_1,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrder(
+                FungibleAssetOrder({
+                    sender: sender,
+                    receiver: receiver,
+                    baseToken: abi.encodePacked(baseToken),
+                    baseTokenPath: 0,
+                    baseTokenSymbol: erc20.symbol(),
+                    baseTokenName: erc20.name(),
+                    baseTokenDecimals: erc20.decimals(),
+                    baseAmount: baseAmount1,
+                    quoteToken: abi.encodePacked(quoteToken),
+                    quoteAmount: quoteAmount1
+                })
+            )
+        });
+        // V2 order
+        instructions[1] = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrderV2(
+                FungibleAssetOrderV2({
+                    sender: sender,
+                    receiver: receiver,
+                    baseToken: abi.encodePacked(baseToken),
+                    baseAmount: baseAmount2,
+                    metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                    metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                    quoteToken: abi.encodePacked(quoteToken),
+                    quoteAmount: quoteAmount2
+                })
+            )
+        });
+
+        vm.expectEmit();
+        emit IERC20.Transfer(caller, address(zkgm), baseAmount1);
+
+        vm.expectEmit();
+        emit IERC20.Transfer(caller, address(zkgm), baseAmount2);
+
+        vm.prank(caller);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_BATCH,
+                operand: ZkgmLib.encodeBatch(Batch({instructions: instructions}))
+            })
+        )
+
+        // Check both V1 and V2 outstanding balances are updated
+        assertEq(zkgm.channelBalance(channelId, 0, baseToken), baseAmount1);
+        bytes32 metadataImage =
+            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+        assertEq(
+            zkgm.channelBalanceV2(channelId, 0, baseToken, metadataImage),
+            baseAmount2
+        );
+    }
+
+    function test_v1_v2_same_token_different_metadata_compatibility(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        uint192 path,
+        bytes31 salt,
+        bytes memory sender,
+        address receiver,
+        bytes memory baseToken,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount
+    ) public {
+        {
+            assumeUnusedAddress(receiver);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(baseAmount > 0);
+        }
+        handler.setChannel(destinationChannelId, sourceChannelId);
+
+        // First create a V1 wrapped token
+        address v1QuoteToken = test_onRecvPacket_transferNative_newWrapped(
+            caller,
+            sourceChannelId,
+            destinationChannelId,
+            relayer,
+            relayerMsg,
+            path,
+            salt,
+            sender,
+            receiver,
+            baseToken,
+            baseTokenMeta,
+            baseAmount
+        );
+
+        // Now create a V2 wrapped token for the same base token but different metadata
+        TokenMeta memory differentMeta = TokenMeta({
+            symbol: string.concat(baseTokenMeta.symbol, "V2"),
+            name: string.concat(baseTokenMeta.name, " V2"),
+            decimals: baseTokenMeta.decimals
+        });
+
+        address v2QuoteToken = test_onRecvPacket_transferNative_newWrapped_v2(
+            caller,
+            sourceChannelId,
+            destinationChannelId,
+            relayer,
+            relayerMsg,
+            path,
+            bytes32(uint256(uint248(salt)) + 1), // Different salt
+            sender,
+            receiver,
+            baseToken,
+            differentMeta,
+            baseAmount
+        );
+
+        // Verify they are different tokens
+        assertTrue(v1QuoteToken != v2QuoteToken);
+
+        // Verify V1 token has the metadata image from _makeDefaultFungibleAssetMetadata
+        FungibleAssetMetadata memory v1Metadata = _metadata(baseTokenMeta);
+        bytes32 expectedV1MetadataImage = EfficientHashLib.hash(
+            ZkgmLib.encodeFungibleAssetMetadata(v1Metadata)
+        );
+        assertEq(zkgm.metadataImageOf(v1QuoteToken), expectedV1MetadataImage);
+
+        // Verify V2 token has metadata image
+        FungibleAssetMetadata memory v2Metadata = _metadata(differentMeta);
+        bytes32 expectedMetadataImage = EfficientHashLib.hash(
+            ZkgmLib.encodeFungibleAssetMetadata(v2Metadata)
+        );
+        assertEq(zkgm.metadataImageOf(v2QuoteToken), expectedMetadataImage);
+
+        // Verify both have same origin path
+        uint256 expectedOrigin =
+            ZkgmLib.updateChannelPath(path, destinationChannelId);
+        assertEq(zkgm.tokenOrigin(v1QuoteToken), expectedOrigin);
+        assertEq(zkgm.tokenOrigin(v2QuoteToken), expectedOrigin);
+    }
+
+    function test_v1_to_v2_upgrade_scenario(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        bytes memory relayerMsg,
+        bytes32 salt,
+        bytes memory sender,
+        address receiver,
+        bytes memory baseToken,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount,
+        uint256 unwrapAmount
+    ) public {
+        {
+            assumeUnusedAddress(receiver);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(baseAmount > 0);
+            vm.assume(unwrapAmount > 0);
+            vm.assume(unwrapAmount <= baseAmount);
+        }
+        handler.setChannel(destinationChannelId, sourceChannelId);
+
+        // Step 1: Create V1 wrapped token
+        address v1QuoteToken = test_onRecvPacket_transferNative_newWrapped(
+            caller,
+            sourceChannelId,
+            destinationChannelId,
+            relayer,
+            relayerMsg,
+            0,
+            salt,
+            sender,
+            receiver,
+            baseToken,
+            baseTokenMeta,
+            baseAmount
+        );
+
+        // Step 2: User unwraps some V1 tokens using V2 with V1 compatibility
+        vm.expectEmit();
+        emit IERC20.Transfer(receiver, address(0), unwrapAmount);
+
+        vm.prank(receiver);
+        zkgm.send(
+            destinationChannelId,
+            0,
+            type(uint64).max,
+            bytes32(uint256(salt) + 1),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_2,
+                opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                operand: ZkgmLib.encodeFungibleAssetOrderV2(
+                    FungibleAssetOrderV2({
+                        sender: abi.encodePacked(receiver),
+                        receiver: sender,
+                        baseToken: abi.encodePacked(v1QuoteToken),
+                        metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
+                        metadata: abi.encodePacked(
+                            ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
+                        ),
+                        baseAmount: unwrapAmount,
+                        quoteToken: abi.encodePacked(baseToken),
+                        quoteAmount: unwrapAmount
+                    })
+                )
+            })
+        );
+
+        // Verify V1 token supply decreased
+        assertEq(IERC20(v1QuoteToken).totalSupply(), baseAmount - unwrapAmount);
+
+        // Verify receiver balance decreased
+        assertEq(
+            IERC20(v1QuoteToken).balanceOf(receiver), baseAmount - unwrapAmount
+        );
+    }
+
+    function test_mixed_v1_v2_outstanding_balance_tracking(
+        uint32 sourceChannelId,
+        uint256 path,
+        address token,
+        uint256 v1Amount,
+        uint256 v2Amount,
+        bytes32 metadataImage
+    ) public {
+        vm.assume(v1Amount > 0);
+        vm.assume(v2Amount > 0);
+        vm.assume(metadataImage != bytes32(0));
+
+        // Test V1 and V2 outstanding balances are tracked separately
+        assertEq(zkgm.channelBalance(sourceChannelId, path, token), 0);
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, token, metadataImage),
+            0
+        );
+
+        // Increase V1 outstanding
+        zkgm.doIncreaseOutstanding(sourceChannelId, path, token, v1Amount);
+        assertEq(zkgm.channelBalance(sourceChannelId, path, token), v1Amount);
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, token, metadataImage),
+            0
+        );
+
+        // Increase V2 outstanding
+        zkgm.doIncreaseOutstandingV2(
+            sourceChannelId, path, token, metadataImage, v2Amount
+        );
+        assertEq(zkgm.channelBalance(sourceChannelId, path, token), v1Amount);
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, token, metadataImage),
+            v2Amount
+        );
+
+        // Decrease V1 outstanding
+        zkgm.doDecreaseOutstanding(sourceChannelId, path, token, v1Amount);
+        assertEq(zkgm.channelBalance(sourceChannelId, path, token), 0);
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, token, metadataImage),
+            v2Amount
+        );
+
+        // Decrease V2 outstanding
+        zkgm.doDecreaseOutstandingV2(
+            sourceChannelId, path, token, metadataImage, v2Amount
+        );
+        assertEq(zkgm.channelBalance(sourceChannelId, path, token), 0);
+        assertEq(
+            zkgm.channelBalanceV2(sourceChannelId, path, token, metadataImage),
+            0
+        );
+    }
+
     function test_onRecvPacket_transferNative_v2_unwrap_baseAmountEqualQuoteAmount_ok(
         address caller,
         uint32 sourceChannelId,
@@ -5578,6 +5897,209 @@ contract ZkgmTests is Test {
         assertEq(
             zkgm.channelBalanceV2(
                 destinationChannelId, path, quoteToken, metadataImage
+            ),
+            0
+        );
+    }
+
+    function internalOnTimeoutOrderV2(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 path,
+        address relayer,
+        FungibleAssetOrderV2 memory order
+    ) internal {
+        vm.prank(address(handler));
+        zkgm.onTimeoutPacket(
+            caller,
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: path,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_2,
+                            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+                            operand: ZkgmLib.encodeFungibleAssetOrderV2(order)
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            relayer
+        );
+    }
+
+    function test_onTimeoutPacket_v2_transfer_unescrowRefund(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        uint192 path,
+        address sender,
+        bytes memory receiver,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        {
+            assumeUnusedAddress(sender);
+            assumeUnusedAddress(relayer);
+            vm.assume(path > 0);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(baseAmount > 0);
+            vm.assume(quoteAmount > 0);
+        }
+        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        bytes32 metadataImage =
+            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+        erc20.mint(address(zkgm), baseAmount);
+        zkgm.doIncreaseOutstandingV2(
+            sourceChannelId, path, address(erc20), metadataImage, baseAmount
+        );
+        vm.expectEmit();
+        emit IERC20.Transfer(address(zkgm), sender, baseAmount);
+        {
+            FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+                sender: abi.encodePacked(sender),
+                receiver: receiver,
+                baseToken: abi.encodePacked(erc20),
+                baseAmount: baseAmount,
+                metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            });
+            internalOnTimeoutOrderV2(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                path,
+                relayer,
+                order
+            );
+        }
+        assertEq(
+            zkgm.channelBalanceV2(
+                sourceChannelId, path, address(erc20), metadataImage
+            ),
+            0
+        );
+    }
+
+    function test_onTimeoutPacket_v2_transfer_mintRefund(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        uint192 path,
+        address sender,
+        bytes memory receiver,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        {
+            assumeUnusedAddress(sender);
+            assumeUnusedAddress(relayer);
+            vm.assume(path > 0);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(baseAmount > 0);
+            vm.assume(quoteAmount > 0);
+        }
+        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        bytes32 metadataImage =
+            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+        vm.expectEmit();
+        emit IERC20.Transfer(address(0), sender, baseAmount);
+        {
+            FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+                sender: abi.encodePacked(sender),
+                receiver: receiver,
+                baseToken: abi.encodePacked(erc20),
+                baseAmount: baseAmount,
+                metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP,
+                metadata: abi.encodePacked(metadataImage),
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            });
+            internalOnTimeoutOrderV2(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                path,
+                relayer,
+                order
+            );
+        }
+    }
+
+    function test_onTimeoutPacket_v2_transfer_decreaseOutstanding(
+        address caller,
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        address relayer,
+        uint192 path,
+        address sender,
+        bytes memory receiver,
+        TokenMeta memory baseTokenMeta,
+        uint256 baseAmount,
+        bytes memory quoteToken,
+        uint256 quoteAmount
+    ) public {
+        {
+            assumeUnusedAddress(sender);
+            assumeUnusedAddress(relayer);
+            vm.assume(path > 0);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(baseAmount > 0);
+            vm.assume(quoteAmount > 0);
+        }
+        FungibleAssetMetadata memory metadata = _metadata(baseTokenMeta);
+        bytes32 metadataImage =
+            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+        erc20.mint(address(zkgm), baseAmount);
+        zkgm.doIncreaseOutstandingV2(
+            sourceChannelId, path, address(erc20), metadataImage, baseAmount
+        );
+        assertEq(
+            zkgm.channelBalanceV2(
+                sourceChannelId, path, address(erc20), metadataImage
+            ),
+            baseAmount
+        );
+        {
+            FungibleAssetOrderV2 memory order = FungibleAssetOrderV2({
+                sender: abi.encodePacked(sender),
+                receiver: receiver,
+                baseToken: abi.encodePacked(erc20),
+                baseAmount: baseAmount,
+                metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+                metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+                quoteToken: abi.encodePacked(quoteToken),
+                quoteAmount: quoteAmount
+            });
+            internalOnTimeoutOrderV2(
+                caller,
+                sourceChannelId,
+                destinationChannelId,
+                path,
+                relayer,
+                order
+            );
+        }
+        assertEq(
+            zkgm.channelBalanceV2(
+                sourceChannelId, path, address(erc20), metadataImage
             ),
             0
         );
