@@ -7,8 +7,9 @@ import { transferData as TransferData } from "$lib/transfer/shared/data/transfer
 import type { Intent } from "$lib/transfer/shared/services/filling/create-context"
 import * as Writer from "$lib/typeclass/Writer.js"
 import type { RunPromiseExitResult } from "$lib/utils/effect.svelte"
-import * as StringInstances from "@effect/typeclass/data/String"
+import * as ArrayInstances from "@effect/typeclass/data/Array"
 import * as FlatMap from "@effect/typeclass/FlatMap"
+import * as Of from "@effect/typeclass/Of"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
 import { PriceError, PriceOracle, PriceSource } from "@unionlabs/sdk/PriceOracle"
@@ -33,11 +34,8 @@ import {
 } from "effect"
 import { constant, flow, identity } from "effect/Function"
 
-const composeK = pipe(
-  StringInstances.Monoid,
-  Writer.getFlatMap,
-  FlatMap.composeK,
-)
+const LogWriter = Writer.getMonad(ArrayInstances.getMonoid<string>())
+const composeK = FlatMap.composeK(LogWriter)
 
 type BaseFees = Omit<
   { [K in keyof Fees]: Fees[K] extends O.Option<infer T> ? T : never },
@@ -155,7 +153,7 @@ const createFeeStore = () => {
   ) => {
     const gasDecimals = self.gasPrice.scale
 
-    const asBaseUnit = (a: AtomicGasPrice): [BaseGasPrice, string] => {
+    const asBaseUnit = (a: AtomicGasPrice): [BaseGasPrice, string[]] => {
       const result = pipe(
         BigDecimal.multiply(a, BigDecimal.make(1n, gasDecimals)),
         BaseGasPrice,
@@ -163,11 +161,13 @@ const createFeeStore = () => {
 
       return [
         result,
-        `${a} atomic unit * 10e-${gasDecimals} = ${result} base unit`,
+        [
+          `${BigDecimal.format(a)} atomic gas units &times; 10<sup>-${gasDecimals}</sup>`,
+        ],
       ]
     }
 
-    const asAtomicUnit = (a: BaseGasPrice): [AtomicGasPrice, string] => {
+    const asAtomicUnit = (a: BaseGasPrice): [AtomicGasPrice, string[]] => {
       const result = pipe(
         BigDecimal.multiply(a, BigDecimal.make(1n, -gasDecimals)),
         AtomicGasPrice,
@@ -175,52 +175,69 @@ const createFeeStore = () => {
 
       return [
         result,
-        `${a} base unit * 10e${-gasDecimals} = ${result} atomic unit`,
+        [
+          `${a} base gas units &times; 10<sup>${-gasDecimals}</sup>`,
+        ],
       ]
     }
 
-    const applyGasPrice = (gasUnits: BigDecimal.BigDecimal): [AtomicGasPrice, string] => {
+    const applyGasPrice = (
+      gasUnits: BigDecimal.BigDecimal,
+    ): [AtomicGasPrice, readonly string[]] => {
       const atomicGasPrice = asAtomicUnit(self.gasPrice)
-      // TODO: composeK
       const result = AtomicGasPrice(BigDecimal.multiply(gasUnits, atomicGasPrice[0]))
       return [
         result,
-        `${gasUnits} gas units × ${atomicGasPrice[0]} wei/gas unit = ${result} wei`,
+        [
+          `${BigDecimal.format(gasUnits)} gas units &times; ${
+            BigDecimal.format(atomicGasPrice[0])
+          } atomic gas unit/gas unit`,
+        ],
       ]
     }
 
-    const applyRatio = <T extends BigDecimal.BigDecimal>(a: T): [T, string] => {
+    const applyRatio = <T extends BigDecimal.BigDecimal>(a: T): [T, readonly string[]] => {
       const result = pipe(
         BigDecimal.unsafeDivide(a, self.ratio),
       )
 
       return [
         result as T,
-        `${a} * ${self.ratio} ratio = ${result}`,
+        [
+          `${BigDecimal.format(a)} &times; ${BigDecimal.format(self.ratio)}`,
+        ],
       ]
     }
 
-    const applyFeeMultiplier = (amount: AtomicGasPrice): [AtomicGasPrice, string] => {
+    const applyFeeMultiplier = (amount: AtomicGasPrice): [AtomicGasPrice, readonly string[]] => {
       const result = pipe(
         BigDecimal.multiply(amount, self.feeMultiplier),
         AtomicGasPrice,
       )
       return [
         result,
-        `${amount} × ${self.feeMultiplier} = ${result} atomic units`,
+        [
+          `${BigDecimal.format(amount)} atomic gas units × ${
+            BigDecimal.format(self.feeMultiplier)
+          }`,
+        ],
       ]
     }
 
     const applyBatchDivision = (
       a: AtomicGasPrice,
-    ): [AtomicGasPrice, string] => {
+    ): [AtomicGasPrice, readonly string[]] => {
       const result = pipe(
         BigDecimal.unsafeDivide(a, self.batchDivideNumber),
         AtomicGasPrice,
       )
       return [
         result,
-        `${a} atomic units ÷ ${self.batchDivideNumber} = ${result} atomic units`,
+        [
+          `${BigDecimal.format(a)} atomic gas units &divide; ${
+            BigDecimal.format(self.batchDivideNumber)
+          }`,
+        ],
       ]
     }
 
@@ -236,22 +253,29 @@ const createFeeStore = () => {
       )
     }
 
-    const formatToDisplayK = (a: AtomicGasPrice): readonly [string, string] => {
-      const round = (x: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, string] => {
+    const formatToDisplayK = (a: AtomicGasPrice): [string, readonly string[]] => {
+      const round = (x: BigDecimal.BigDecimal): [BigDecimal.BigDecimal, readonly string[]] => {
         const scale = 10
         const mode = "from-zero"
         const result = BigDecimal.round(x, { scale, mode })
         return [
           result,
-          `round ${a} to ${scale} with ${mode} = ${result}`,
+          [
+            `<code>round</code><sub>${scale}</sub>(${
+              BigDecimal.format(a)
+            }) with mode <i>${mode}</i>`,
+          ],
         ]
       }
-      const format = (x: BigDecimal.BigDecimal): [string, string] => [
-        BigDecimal.format(x),
-        `(fmt)`,
-      ]
+      const format = (x: BigDecimal.BigDecimal): [string, readonly string[]] => {
+        const result = BigDecimal.format(x)
+        return [
+          result,
+          [`<code>format</code>(${x})`],
+        ]
+      }
 
-      return pipe(
+      const result = pipe(
         a,
         pipe(
           asBaseUnit,
@@ -259,6 +283,8 @@ const createFeeStore = () => {
           composeK(format),
         ),
       )
+
+      return result as unknown as any
     }
 
     return Object.assign(self, {
@@ -434,7 +460,10 @@ const createFeeStore = () => {
         const { formatToDisplay: format, feeMultiplier } = yield* decoratedConfig
         const amount = yield* O.map(displayFees, flow(Struct.get(x.key), Tuple.getFirst))
         const baseFee = yield* O.map(calculatedFees, flow(Struct.get(x.key), Tuple.getFirst))
-        const calc = yield* O.map(displayFees, flow(Struct.get(x.key), Tuple.getSecond))
+        const calc = A.join(
+          yield* O.map(displayFees, flow(Struct.get(x.key), Tuple.getSecond)),
+          "<br/>&rarr; ",
+        )
         const symbol = yield* sourceSymbol
 
         // const baseFeeStep = O.gen(function*() {

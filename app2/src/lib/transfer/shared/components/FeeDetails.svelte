@@ -133,8 +133,8 @@ const feeConfig = O.none()
                     <div class="font-semibold text-white mb-2">{item.label}</div>
                     <div class="text-zinc-300 mb-4">{item.description}</div>
 
-                    <div>{item.steps.calc}</div>
-
+                    <div>{@html item.steps.calc}</div>
+                    <br />
                     <div class="text-xs font-mono space-y-4">
                       <!-- Input Parameters -->
                       <div>
