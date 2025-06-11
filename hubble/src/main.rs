@@ -2,6 +2,10 @@
 
 use std::time::Duration;
 
+use async_nats::{
+    jetstream::{self, stream::StorageType},
+    ConnectOptions,
+};
 use axum::{routing::get, Router};
 use backon::{ConstantBuilder, ExponentialBuilder};
 use clap::Parser;
@@ -40,6 +44,30 @@ async fn main() -> color_eyre::eyre::Result<()> {
         .connect(&args.database_url.unwrap())
         .await?;
 
+    let nats = match args.nats {
+        Some(nats) => {
+            let client = ConnectOptions::new()
+                .user_and_password(nats.username.clone(), nats.password.clone())
+                .connect(nats.url.clone())
+                .await?;
+
+            let jetstream = jetstream::new(client);
+
+            jetstream
+                .get_or_create_stream(jetstream::stream::Config {
+                    name: "hubble".to_string(),
+                    subjects: vec!["hubble.>".to_string()],
+                    storage: StorageType::File,
+                    num_replicas: 2,
+                    ..Default::default()
+                })
+                .await?;
+
+            Some(jetstream)
+        }
+        None => None,
+    };
+
     let mut set = JoinSet::new();
 
     if let Some(addr) = args.metrics_addr {
@@ -55,11 +83,12 @@ async fn main() -> color_eyre::eyre::Result<()> {
     }
     args.indexers.clone().into_iter().for_each(|indexer| {
         let db: sqlx::Pool<sqlx::Postgres> = db.clone();
+        let nats = nats.clone();
         set.spawn(async move {
             info!("starting indexer {:?}", indexer);
             let label = indexer.label().to_owned();
             // indexer should never return with Ok, thus we log the error.
-            indexer.index(db).await.inspect_err(|err| {
+            indexer.index(db, nats).await.inspect_err(|err| {
                 warn!("indexer {label} exited with: {:?}", err);
             })
         });

@@ -2,10 +2,13 @@ pub mod api;
 // pub mod aptos;
 pub mod dummy;
 pub mod ethereum;
+pub mod event;
 mod fetcher;
 mod finalizer;
 mod fixer;
+mod nats;
 mod postgres;
+mod publisher;
 pub mod tendermint;
 
 use std::{future::Future, time::Duration};
@@ -27,11 +30,69 @@ enum EndOfRunResult {
 #[derive(Clone)]
 pub struct Indexer<T: FetcherClient> {
     pub pg_pool: sqlx::PgPool,
+    pub nats: Option<async_nats::jetstream::context::Context>,
     pub indexer_id: IndexerId,
     pub start_height: BlockHeight,
     pub chunk_size: usize,
     pub finalizer_config: FinalizerConfig,
+    pub publisher_config: PublisherConfig,
     pub context: T::Context,
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct PublisherConfig {
+    // sleep time (in milliseconds) when there is nothing to publish.
+    // default: 100 millis
+    #[serde(
+        rename = "retry_later_sleep_millis",
+        default = "PublisherConfig::default_retry_later_sleep",
+        deserialize_with = "PublisherConfig::deserialize_millis"
+    )]
+    pub retry_later_sleep: Duration,
+    // sleep time (in milliseconds) when there is error publishing.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_error_sleep_millis",
+        default = "PublisherConfig::default_retry_error_sleep",
+        deserialize_with = "PublisherConfig::deserialize_millis"
+    )]
+    pub retry_error_sleep: Duration,
+    // number of messages read from the database that are pushed in one database transaction.
+    // default: 1
+    #[serde(default = "PublisherConfig::default_batch_size")]
+    pub batch_size: usize,
+}
+
+impl PublisherConfig {
+    pub fn default_retry_later_sleep() -> Duration {
+        Duration::from_millis(100)
+    }
+
+    pub fn default_retry_error_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_batch_size() -> usize {
+        1
+    }
+
+    fn deserialize_millis<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let millis = u64::deserialize(deserializer)?;
+        Ok(Duration::from_millis(millis))
+    }
+}
+
+impl Default for PublisherConfig {
+    fn default() -> Self {
+        PublisherConfig {
+            retry_later_sleep: PublisherConfig::default_retry_later_sleep(),
+            retry_error_sleep: PublisherConfig::default_retry_error_sleep(),
+            batch_size: PublisherConfig::default_batch_size(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -106,20 +167,25 @@ impl<T> Indexer<T>
 where
     T: FetcherClient,
 {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pg_pool: sqlx::PgPool,
+        nats: Option<async_nats::jetstream::context::Context>,
         indexer_id: IndexerId,
         start_height: BlockHeight,
         chunk_size: usize,
         finalizer_config: FinalizerConfig,
+        publisher_config: PublisherConfig,
         context: T::Context,
     ) -> Self {
         Indexer {
             pg_pool,
+            nats,
             indexer_id,
             start_height,
             chunk_size,
             finalizer_config,
+            publisher_config,
             context,
         }
     }
@@ -153,6 +219,12 @@ where
                     join_set.spawn(
                         async move { self_clone.run_fixer(fetcher_client_clone).await }
                             .instrument(info_span!("fixer")),
+                    );
+
+                    let self_clone = self.clone();
+                    join_set.spawn(
+                        async move { self_clone.run_publisher().await }
+                            .instrument(info_span!("publisher")),
                     );
 
                     if let EndOfRunResult::Exit = self

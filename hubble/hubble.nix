@@ -65,6 +65,30 @@
           type = types.path;
           default = "";
         };
+        nats-url-file = mkOption {
+          description = lib.mdDoc ''
+            Path to a file containing the nats connect string (e.g. nats://localhost).
+          '';
+          example = "/run/keys/nats.url";
+          type = types.nullOr types.path;
+          default = null;
+        };
+        nats-username-file = mkOption {
+          description = lib.mdDoc ''
+            Path to a file containing the nats username.
+          '';
+          example = "/run/keys/nats.username";
+          type = types.nullOr types.path;
+          default = null;
+        };
+        nats-password-file = mkOption {
+          description = lib.mdDoc ''
+            Path to a file containing the nats password.
+          '';
+          example = "/run/keys/nats.password";
+          type = types.nullOr types.path;
+          default = null;
+        };
         indexers = mkOption {
           type = types.listOf (
             types.submodule {
@@ -195,10 +219,18 @@
                   filterNullValues = lib.attrsets.filterAttrsRecursive (_n: v: v != null);
                   indexersWithoutNulls = map filterNullValues cfg.indexers;
                   indexersJson = builtins.toJSON indexersWithoutNulls;
+                  natsUrlArg = if cfg.nats-url-file != null then "--nats-url @${cfg.nats-url-file}" else "";
+                  natsUsernameArg =
+                    if cfg.nats-username-file != null then "--nats-username @${cfg.nats-username-file}" else "";
+                  natsPasswordArg =
+                    if cfg.nats-password-file != null then "--nats-password @${cfg.nats-password-file}" else "";
                 in
                 ''
                   ${pkgs.lib.getExe cfg.package}  \
                     --database-url "$(head -n 1 ${cfg.api-key-file})" \
+                    ${natsUrlArg} \
+                    ${natsUsernameArg} \
+                    ${natsPasswordArg} \
                     --log-format ${cfg.log-format} \
                     --metrics-addr ${cfg.metrics-addr} \
                     --indexers '${indexersJson}'
