@@ -14,6 +14,9 @@ pub enum Error {
     #[error("misbehaviour headers were not for the same height")]
     MisbehaviourHeadersNotForSameHeight,
 
+    #[error("misbehaviour headers were exactly equal")]
+    MisbehaviourHeadersMustBeDifferent,
+
     #[error(transparent)]
     ParliaVerify(#[from] parlia_verifier::Error<CwContextError>),
 
