@@ -34,26 +34,26 @@ onDestroy(() => {
 })
 </script>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full p-4">
-      <!-- Network Visualizer - first on mobile, right side on desktop (spans 2 columns) -->
-      <div class="order-1 lg:order-3 lg:col-span-2 min-h-0">
-        <NetworkVisualizer
-          {transfers}
-          onChainSelection={handleChainSelection}
-        />
-      </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full p-4">
+  <!-- Network Visualizer - first on mobile, right side on desktop (spans 2 columns) -->
+  <div class="order-1 lg:order-3 lg:col-span-2 min-h-0">
+    <NetworkVisualizer
+      {transfers}
+      onChainSelection={handleChainSelection}
+    />
+  </div>
 
-      <!-- Stats - second on mobile, spans full width on desktop -->
-      <div class="order-2 lg:order-1 lg:col-span-3">
-        <TransferStats {transfers} />
-      </div>
+  <!-- Stats - second on mobile, spans full width on desktop -->
+  <div class="order-2 lg:order-1 lg:col-span-3">
+    <TransferStats {transfers} />
+  </div>
 
-      <!-- Terminal Log - third on mobile, left side on desktop -->
-      <div class="order-3 lg:order-2 lg:col-span-1 min-h-0">
-        <TerminalLog
-          {transfers}
-          {selectedFromChain}
-          {selectedToChain}
-        />
-      </div>
-    </div>
+  <!-- Terminal Log - third on mobile, left side on desktop -->
+  <div class="order-3 lg:order-2 lg:col-span-1 min-h-0">
+    <TerminalLog
+      {transfers}
+      {selectedFromChain}
+      {selectedToChain}
+    />
+  </div>
+</div>
