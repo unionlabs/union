@@ -12,6 +12,7 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
+consensus-primitives = { workspace = true }
 parlia-types         = { workspace = true }
 rlp                  = { workspace = true, features = ["std"] }
 thiserror            = { workspace = true }
