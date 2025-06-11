@@ -4,7 +4,7 @@ use ibc_union_light_client::{
     spec::Timestamp, ClientCreationResult, IbcClient, IbcClientCtx, IbcClientError, StateUpdate,
 };
 use ibc_union_msg::lightclient::Status;
-use parlia_light_client_types::{ClientState, ConsensusState, Header};
+use parlia_light_client_types::{ClientState, ClientStateV1, ConsensusState, Header, Misbehaviour};
 use parlia_types::Valset;
 use parlia_verifier::VerificationContext;
 use unionlabs::{
@@ -21,7 +21,7 @@ impl IbcClient for ParliaLightClient {
 
     type Header = Header;
 
-    type Misbehaviour = ();
+    type Misbehaviour = Misbehaviour;
 
     type ClientState = ClientState;
 
@@ -80,11 +80,24 @@ impl IbcClient for ParliaLightClient {
     }
 
     fn status(
-        _ctx: IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         ClientState::V1(client_state): &Self::ClientState,
     ) -> Status {
         if client_state.frozen_height == 0 {
-            Status::Active
+            let consensus_state = ctx
+                .read_self_consensus_state(client_state.latest_height)
+                .unwrap();
+
+            if consensus_state
+                .timestamp
+                .plus_duration(client_state.unbond_period)
+                .expect("should be ok")
+                < Timestamp::from_nanos(ctx.env.block.time.nanos())
+            {
+                Status::Expired
+            } else {
+                Status::Active
+            }
         } else {
             Status::Frozen
         }
@@ -123,8 +136,9 @@ impl IbcClient for ParliaLightClient {
             &header.source,
             &header.target,
             &header.attestation,
+            client_state.unbond_period,
             header.trusted_valset_epoch_number,
-            CwContext { ctx },
+            CwContext { ctx: &ctx },
         )
         .map_err(Into::<Error>::into)?;
 
@@ -168,21 +182,63 @@ impl IbcClient for ParliaLightClient {
     }
 
     fn misbehaviour(
-        _ctx: IbcClientCtx<Self>,
+        ctx: IbcClientCtx<Self>,
         _caller: Addr,
-        _misbehaviour: Self::Misbehaviour,
+        misbehaviour: Self::Misbehaviour,
         _relayer: Addr,
     ) -> Result<Self::ClientState, IbcClientError<Self>> {
-        Err(Error::Unimplemented.into())
+        let ClientState::V1(client_state) = ctx.read_self_client_state()?;
+
+        if misbehaviour.attestation_1.number != misbehaviour.attestation_2.number {
+            return Err(Error::MisbehaviourHeadersNotForSameHeight.into());
+        }
+
+        let cw_ctx = CwContext { ctx: &ctx };
+
+        // verify first attestation
+        parlia_verifier::verify_header(
+            &misbehaviour.source_1,
+            &misbehaviour.target_1,
+            &misbehaviour.attestation_1,
+            client_state.unbond_period,
+            misbehaviour.trusted_valset_epoch_number,
+            cw_ctx.clone(),
+        )
+        .map_err(Into::<Error>::into)?;
+
+        // verify second attestation
+        parlia_verifier::verify_header(
+            &misbehaviour.source_2,
+            &misbehaviour.target_2,
+            &misbehaviour.attestation_2,
+            client_state.unbond_period,
+            misbehaviour.trusted_valset_epoch_number,
+            cw_ctx,
+        )
+        .map_err(Into::<Error>::into)?;
+
+        Ok(ClientState::V1(ClientStateV1 {
+            frozen_height: misbehaviour
+                .source_1
+                .number
+                .try_into()
+                .expect("checked in verify_header; qed;"),
+            ..client_state
+        }))
     }
 }
 
+#[derive(Clone)]
 pub struct CwContext<'a> {
-    ctx: IbcClientCtx<'a, ParliaLightClient>,
+    ctx: &'a IbcClientCtx<'a, ParliaLightClient>,
 }
 
 impl VerificationContext for CwContext<'_> {
     type Error = CwContextError;
+
+    fn current_timestamp(&self) -> Timestamp {
+        Timestamp::from_nanos(self.ctx.env.block.time.nanos())
+    }
 
     fn get_valset(&self, epoch_block_number: u64) -> Result<Valset, Self::Error> {
         self.ctx

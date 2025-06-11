@@ -11,6 +11,9 @@ pub enum Error {
     #[error("no initial valset provided on client creation")]
     NoInitialValset,
 
+    #[error("misbehaviour headers were not for the same height")]
+    MisbehaviourHeadersNotForSameHeight,
+
     #[error(transparent)]
     ParliaVerify(#[from] parlia_verifier::Error<CwContextError>),
 

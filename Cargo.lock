@@ -10083,6 +10083,7 @@ name = "parlia-types"
 version = "0.0.0"
 dependencies = [
  "bincode 2.0.1",
+ "consensus-primitives",
  "hex-literal",
  "rlp",
  "serde",
@@ -10096,6 +10097,7 @@ name = "parlia-verifier"
 version = "0.0.0"
 dependencies = [
  "blst",
+ "consensus-primitives",
  "hex",
  "hex-literal",
  "parlia-types",

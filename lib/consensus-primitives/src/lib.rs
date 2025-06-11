@@ -44,6 +44,17 @@ impl Timestamp {
         Timestamp(nanos)
     }
 
+    /// Construct a [`Timestamp`] from the given ***milliseconds*** value.
+    ///
+    /// ```rust
+    /// # use consensus_primitives::Timestamp;
+    /// assert_eq!(Timestamp::from_millis(1_000).as_secs(), 1);
+    /// ```
+    #[must_use = "constructing a Timestamp has no effect"]
+    pub const fn from_millis(millis: u64) -> Self {
+        Timestamp(millis * 1_000_000)
+    }
+
     /// Construct a [`Timestamp`] from the given ***seconds*** value.
     ///
     /// ```rust

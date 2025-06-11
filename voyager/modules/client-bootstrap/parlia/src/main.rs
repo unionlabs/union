@@ -1,8 +1,10 @@
 use alloy::{
     network::AnyNetwork,
+    primitives::address,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
+    sol,
 };
-use ibc_union_spec::Timestamp;
+use ibc_union_spec::{Duration, Timestamp};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
     types::ErrorObject,
@@ -127,6 +129,16 @@ impl ClientBootstrapModuleServer for Module {
         )
         .unwrap();
 
+        let unbond_period = Duration::from_secs(
+            StakeHub::new(STAKE_HUB_ADDRESS, &self.provider)
+                .unbondPeriod()
+                .call()
+                .await
+                .unwrap(),
+        );
+
+        info!("unbond period: {unbond_period}");
+
         Ok(into_value(ClientState::V1(ClientStateV1 {
             latest_height: height.height(),
             chain_id: self
@@ -135,6 +147,7 @@ impl ClientBootstrapModuleServer for Module {
                 .parse()
                 .expect("self.chain_id is a valid u256; qed;"),
             frozen_height: 0,
+            unbond_period,
             ibc_contract_address: self.ibc_handler_address,
             initial_valset: Some(initial_valset),
         })))
@@ -194,5 +207,16 @@ impl ClientBootstrapModuleServer for Module {
             timestamp: Timestamp::from_secs(block.header.timestamp),
             valset_epoch_block_number,
         }))
+    }
+}
+
+const STAKE_HUB_ADDRESS: alloy::primitives::Address =
+    address!("0x0000000000000000000000000000000000002002");
+
+sol! {
+    #![sol(rpc)]
+
+    interface StakeHub {
+        function unbondPeriod() external view returns (uint64);
     }
 }
