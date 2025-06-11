@@ -2,12 +2,14 @@
 import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.svelte"
 import SharpGasIcon from "$lib/components/icons/SharpGasIcon.svelte"
 import SharpInfoIcon from "$lib/components/icons/SharpInfoIcon.svelte"
+import Anchor from "$lib/components/ui/A.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { FeeStore } from "$lib/stores/fee.svelte"
 import { cn } from "$lib/utils"
 import { getOptionOrNull, mapOption, matchOption } from "$lib/utils/snippets.svelte"
-import { Array as A, BigDecimal, BigDecimal as BD, Option as O, pipe } from "effect"
+import { PriceSource } from "@unionlabs/sdk/PriceOracle"
+import { Array as A, BigDecimal, BigDecimal as BD, Option as O, pipe, Record as R } from "effect"
 import { slide } from "svelte/transition"
 
 let { open, onToggle } = $props()
@@ -36,9 +38,29 @@ const feeConfig = O.none()
   value: string
   symbol: string
   usd: string
+  sources: Record<string, PriceSource>
 })}
   <span class="text-xs font-semibold">{props.value} {props.symbol}</span>
   <span class="text-xs text-zinc-500">(${props.usd})</span>
+  <Tooltip>
+    {#snippet trigger()}
+      <div class="flex items-center gap-1 cursor-help group transition-colors">
+        <SharpInfoIcon class="size-3.5 text-zinc-500 group-hover:text-zinc-400 transition-colors" />
+      </div>
+    {/snippet}
+
+    {#snippet content()}
+      <div class="text-sm">
+        {#each R.toEntries(props.sources) as [k, v]}
+          <div class="size-3.5 uppercase text-zinc-500 mb-1 tracking-wide">{k}</div>
+          <Anchor
+            class="font-semibold text-white mb-2"
+            href={v.url.toString()}
+          >{v.url}</Anchor>
+        {/each}
+      </div>
+    {/snippet}
+  </Tooltip>
 {/snippet}
 
 {#snippet totalFee(props: {
@@ -92,6 +114,7 @@ const feeConfig = O.none()
             value: FeeStore.feeDisplay,
             symbol: FeeStore.symbol,
             usd: FeeStore.usdDisplay,
+            sources: FeeStore.usdSources,
           }),
           gasButton,
         )}

@@ -532,6 +532,16 @@ const createFeeStore = () => {
     )
   })
 
+  const usdSources = $derived(pipe(
+    usdPrices.current,
+    O.flatMap(Exit.match({
+      onSuccess: O.some,
+      onFailure: O.none,
+    })),
+    O.map(R.getSomes),
+    O.map(R.map(x => x.source)),
+  ))
+
   const gasDisplay = $derived(pipe(
     gasPrices.current,
     // TODO: extract to helper
@@ -661,6 +671,9 @@ const createFeeStore = () => {
     get totalFee() {
       console.log("Total fee (atomic):", totalFee.toString())
       return totalFee
+    },
+    get usdSources() {
+      return usdSources
     },
     /**
      * Total cost in gas token symbol.
