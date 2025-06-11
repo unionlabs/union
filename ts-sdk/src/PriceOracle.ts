@@ -14,7 +14,10 @@ import {
   BigDecimal,
   Data,
   Effect,
+  ExecutionPlan,
   Layer,
+  Match,
+  Number as N,
   Option as O,
   Record as R,
   Schedule,
@@ -22,6 +25,7 @@ import {
   Stream,
 } from "effect"
 import { flow, hole, pipe } from "effect/Function"
+import { GAS_DENOMS } from "./constants/gas-denoms.js"
 import { UniversalChainId } from "./schema/chain.js"
 
 export class PriceError extends Data.TaggedError("@unionlabs/sdk/PriceOracle/PriceError")<{
@@ -107,6 +111,164 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
         of,
         stream,
         ratio,
+      })
+    }),
+  )
+
+  // https://api.redstone.finance/prices?forceInflux=true&interval=1&symbols=ETH
+  static Redstone = Layer.effect(
+    PriceOracle,
+    Effect.gen(function*() {
+      const DATA_SERVICE_ID = "redstone-primary-prod"
+
+      const { requestDataPackages, getOracleRegistryState } = yield* Effect.tryPromise({
+        try: () => import("@redstone-finance/sdk"),
+        catch: (cause) =>
+          new PriceError({
+            message: "Unable to import Redstone SDK.",
+            cause,
+          }),
+      })
+
+      const getRegistryState = yield* Effect.cached(
+        Effect.tryPromise({
+          try: () => getOracleRegistryState(),
+          catch: (cause) =>
+            new PriceError({
+              message: "Could not fetch Redstone registry state",
+              cause,
+            }),
+        }).pipe(
+          Effect.tap((x) => Effect.log("got registry", x)),
+        ),
+      )
+
+      const getAuthorizedSigners = yield* Effect.cached(pipe(
+        getRegistryState,
+        Effect.map(flow(
+          x => x.nodes,
+          x => {
+            console.log({ nodes: x })
+            return x
+          },
+          R.values,
+          A.filter(x => x.dataServiceId === DATA_SERVICE_ID),
+          A.map(x => x.evmAddress),
+        )),
+        Effect.tap((xs) => Effect.log("got authorized signers", xs)),
+      ))
+      const getDataPackagesForSymbol = Effect.fn("getDataPackagesForSymbol")((symbol: string) =>
+        pipe(
+          getAuthorizedSigners,
+          Effect.andThen((authorizedSigners) =>
+            Effect.tryPromise({
+              try: () =>
+                requestDataPackages({
+                  dataServiceId: "redstone-primary-prod", // production-grade service
+                  dataPackagesIds: [symbol],
+                  uniqueSignersCount: 2, // security via multiple signers
+                  maxTimestampDeviationMS: 60 * 1000, // tolerate 1 min clock skew
+                  authorizedSigners,
+                }),
+              catch: (cause) =>
+                new PriceError({
+                  message: `Could not fetch data packages for ${symbol}`,
+                  cause,
+                }),
+            })
+          ),
+        )
+      )
+
+      const priceOfSymbol = Effect.fn("getDataPackageByChain")((symbol: string) =>
+        pipe(
+          getDataPackagesForSymbol(symbol),
+          Effect.tapError((x) => Effect.logError("Redstone price fetch", x)),
+          Effect.flatMap((r) =>
+            pipe(
+              r[symbol], // don't know why R.get isn't valid here
+              O.fromNullable,
+              Effect.mapError(() =>
+                new PriceError({
+                  message: `No data package returned for ${symbol}`,
+                })
+              ),
+            )
+          ),
+          Effect.flatMap(flow(
+            A.flatMap(x => x.dataPackage.dataPoints),
+            A.map(x => x.toObj().value),
+            A.filterMap(
+              Match.type<number | string>().pipe(
+                Match.when(Match.number, O.some<number>),
+                Match.when(Match.string, N.parse),
+                Match.exhaustive,
+              ),
+            ),
+            O.liftPredicate(A.isNonEmptyArray),
+            Effect.mapError(() =>
+              new PriceError({
+                message: "Data points is an empty array",
+              })
+            ),
+            Effect.map(xs => A.reduce(xs, 0, (acc, x) => acc + x) / A.length(xs)),
+          )),
+          Effect.flatMap(x =>
+            pipe(
+              BigDecimal.safeFromNumber(x),
+              Effect.mapError(() =>
+                new PriceError({
+                  message: `Could not parse ${x} to a BigDecimal`,
+                })
+              ),
+            )
+          ),
+          Effect.tap((x) => Effect.log("got price of symbol", x)),
+        )
+      )
+      const of: PriceOracle["of"] = Effect.fn("of")((id) =>
+        pipe(
+          R.get(GAS_DENOMS, id),
+          Effect.mapError(() =>
+            new PriceError({
+              message: `ID ${id} does not exist in GAS_DENOMS`,
+            })
+          ),
+          Effect.map(x => x.symbol),
+          Effect.flatMap((symbol) =>
+            pipe(
+              priceOfSymbol(symbol),
+              Effect.map((price) => ({
+                price,
+                source: {
+                  url: new URL(`https://app.redstone.finance/app/token/${symbol}/`),
+                },
+              })),
+            )
+          ),
+        )
+      )
+
+      return PriceOracle.make({
+        of,
+        ratio: Effect.fn(function*(a, b) {
+          const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
+          const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
+            Effect.mapError((cause) =>
+              new PriceError({
+                message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+                cause,
+              })
+            ),
+          )
+
+          return {
+            ratio,
+            source: ofA.source,
+            destination: ofB.source,
+          } as const
+        }),
+        stream: () => Stream.fail(new PriceError({ message: "not implemented" })),
       })
     }),
   )
@@ -268,3 +430,16 @@ export class PriceOracle extends Effect.Service<PriceOracle>()("@unionlabs/sdk/P
     }),
   )
 }
+
+export const PriceOraclePlan = ExecutionPlan.make(
+  {
+    provide: PriceOracle.Pyth,
+    attempts: 3,
+    schedule: Schedule.exponential("100 millis", 1.5),
+  },
+  {
+    provide: PriceOracle.Redstone,
+    attempts: 3,
+    schedule: Schedule.exponential("100 millis", 1.5),
+  },
+)

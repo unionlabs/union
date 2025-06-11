@@ -1,7 +1,10 @@
-import { Array as A, Equal, Option as O, pipe, Schema as S } from "effect"
+import { Array as A, BigDecimal, Equal, Option as O, pipe, Schema as S } from "effect"
 
-const FeeValue = S.BigIntFromSelf.pipe(S.greaterThanOrEqualToBigInt(0n))
-type FeeValue = typeof FeeValue.Type
+export const GasFee = S.BigDecimalFromSelf.pipe(
+  S.greaterThanBigDecimal(BigDecimal.make(0n, 0)),
+  S.brand("GasFee"),
+)
+export type GasFee = typeof GasFee.Type
 
 const Action = S.Union(
   S.Literal("PACKET_RECV"),
@@ -15,7 +18,9 @@ export const Fees = S.transform(
   pipe(
     S.Struct({
       action: Action,
-      fee: S.BigInt.pipe(S.greaterThanOrEqualToBigInt(0n)),
+      fee: S.BigDecimal.pipe(
+        S.greaterThanBigDecimal(BigDecimal.make(0n, 0)),
+      ),
     }),
     S.Array,
     S.filter(
@@ -32,10 +37,10 @@ export const Fees = S.transform(
     ),
   ),
   S.Struct({
-    PACKET_RECV: S.OptionFromSelf(FeeValue).pipe(),
-    PACKET_SEND_LC_UPDATE_L0: S.OptionFromSelf(FeeValue),
-    PACKET_SEND_LC_UPDATE_L1: S.OptionFromSelf(FeeValue),
-    PACKET_SEND_LC_UPDATE_L2: S.OptionFromSelf(FeeValue),
+    PACKET_RECV: S.OptionFromSelf(GasFee),
+    PACKET_SEND_LC_UPDATE_L0: S.OptionFromSelf(GasFee),
+    PACKET_SEND_LC_UPDATE_L1: S.OptionFromSelf(GasFee),
+    PACKET_SEND_LC_UPDATE_L2: S.OptionFromSelf(GasFee),
   }),
   {
     decode: (fromA) => {

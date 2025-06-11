@@ -29,6 +29,13 @@ const CORN_METADATA = {
   decimals: 18,
 } as const
 
+const BABYLON_METADATA = {
+  address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+  name: "Baby",
+  symbol: "BABY",
+  decimals: 6,
+} as const
+
 export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // Ethereum chains
   [UniversalChainId.make("ethereum.11155111")]: ETH_METADATA,
@@ -44,6 +51,8 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   [UniversalChainId.make("sei.atlantic-2")]: SEI_METADATA,
   [UniversalChainId.make("sei.1328")]: SEI_METADATA,
   [UniversalChainId.make("sei.1329")]: SEI_METADATA,
+
+  [UniversalChainId.make("babylon.bbn-test-5")]: BABYLON_METADATA,
 
   // Corn
   [UniversalChainId.make("corn.21000000")]: CORN_METADATA,

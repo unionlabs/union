@@ -17,7 +17,7 @@ const minimumLogLevel = Logger.minimumLogLevel(
 export default Layer.mergeAll(
   GraphQL.Default,
   GasPriceMap.Default,
-  PriceOracle.Pyth, // TODO: make executor
+  PriceOracle.Test, // TODO: make executor
   Logger.replace(
     Logger.defaultLogger,
     Logger.zip(
