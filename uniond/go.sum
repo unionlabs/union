@@ -1005,8 +1005,8 @@ github.com/unionlabs/cometbls v0.0.0-20250228223008-5aa5a57b377d h1:AyxZU3UGD7eO
 github.com/unionlabs/cometbls v0.0.0-20250228223008-5aa5a57b377d/go.mod h1:y7BIYcqvljLTF97qfdrjj+JncXy9Fwd7Oxz4WLjZCi4=
 github.com/unionlabs/cometbls/api v0.0.0-20250228223008-5aa5a57b377d h1:iLc/cO68sqVod6LYXHIaTKU20s81PSoK1gj62bzyFPM=
 github.com/unionlabs/cometbls/api v0.0.0-20250228223008-5aa5a57b377d/go.mod h1:HkAbGFNE6/YE5o7qfVUoi5Qg74pJ6d8Mc7d35cM5/WE=
-github.com/unionlabs/cosmos-sdk v0.0.0-20250228163659-0f0e36772bd6 h1:dog8gK8oV5CWCuUPoJFzibzy4DUiS7koCzPqIU+g4HY=
-github.com/unionlabs/cosmos-sdk v0.0.0-20250228163659-0f0e36772bd6/go.mod h1:Wi9sykhEB+7cUw96D1Gx+u2EkWAmAC4l8Z2V78yRmro=
+github.com/unionlabs/cosmos-sdk v0.0.0-20250611150258-c03752a2eb52 h1:K7E98h/mu8m73dIjyU9QE79CcjJEKtuVZHXaQTAJris=
+github.com/unionlabs/cosmos-sdk v0.0.0-20250611150258-c03752a2eb52/go.mod h1:Wi9sykhEB+7cUw96D1Gx+u2EkWAmAC4l8Z2V78yRmro=
 github.com/unionlabs/cosmos-sdk/core v0.0.0-20250228163659-0f0e36772bd6 h1:dn9hPdFj9kjAfpcwQbAKTWA8b7CTBAOdYgBmetM7hnk=
 github.com/unionlabs/cosmos-sdk/core v0.0.0-20250228163659-0f0e36772bd6/go.mod h1:01u7jX5X4U/LlkPfEONgYGMTsHtyLPeFm1cPHeLce2Y=
 github.com/unionlabs/cosmos-sdk/store v0.0.0-20250228163659-0f0e36772bd6 h1:cj5y598yqPpC0uoo3dAjjT3tUptp91KV+5mduqNFF/8=
