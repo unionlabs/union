@@ -1,6 +1,7 @@
 use std::str::from_utf8;
 
 use async_nats::jetstream::consumer::{pull::Config, Consumer};
+use bytes::Bytes;
 use futures::StreamExt;
 use tokio::time::sleep;
 use tracing::{debug, info, warn};
@@ -9,6 +10,7 @@ use super::{
     api::{FetcherClient, IndexerError},
     Indexer,
 };
+use crate::indexer::nats::consume;
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_consumer(&self) -> Result<(), IndexerError> {
@@ -51,30 +53,21 @@ impl<T: FetcherClient> Indexer<T> {
         info!("messages");
 
         while let Some(message) = messages.next().await {
-            debug!("message");
             let message = message.map_err(IndexerError::NatsNextError)?;
-            let meta = message.info().map_err(IndexerError::NatsMetaError)?;
-
-            debug!("Stream sequence number: {}", meta.stream_sequence);
-            debug!("Consumer sequence number: {}", meta.consumer_sequence);
-
-            let tx = self.pg_pool.begin().await?;
-
-            info!(
-                "got message on subject {} with payload {:?}",
-                message.subject,
-                from_utf8(&message.payload).expect("conversion")
-            );
-
-            debug!("committing");
-            tx.commit().await?;
-
-            debug!("acking");
-            message.ack().await.map_err(IndexerError::NatsAckError)?;
-            debug!("acked");
+            consume(message, handle_message).await?;
         }
 
         info!("done");
         Ok(())
     }
+}
+
+async fn handle_message(subject: String, payload: Bytes) -> Result<(), IndexerError> {
+    debug!(
+        "got message on subject {} with payload {:?}",
+        subject,
+        from_utf8(&payload).map_err(|e| IndexerError::InternalError(e.into()))?
+    );
+
+    Ok(())
 }

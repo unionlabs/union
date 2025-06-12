@@ -1,4 +1,8 @@
-use std::fmt::Display;
+use core::time::Duration;
+use std::{
+    fmt::{self, Display},
+    future::Future,
+};
 
 use async_nats::{
     header::HeaderMap,
@@ -10,7 +14,8 @@ use async_nats::{
     ConnectOptions,
 };
 use bytes::Bytes;
-use tracing::debug;
+use lz4_flex::{compress_prepend_size, decompress_size_prepended};
+use tracing::{debug, info, warn};
 
 use crate::indexer::api::IndexerError;
 
@@ -85,6 +90,94 @@ impl NatsConnection {
             .stream
             .get_or_create_consumer(&durable_name, consumer_config)
             .await?)
+    }
+
+    pub async fn publish(&self, message: &Message) -> Result<Ack, IndexerError> {
+        info!("{}: sending", message.id);
+
+        let mut headers = message.headers.clone();
+        headers.append("Content-Encoding", "lz4");
+
+        let data = compress_prepend_size(&message.data);
+
+        let ack_future = self
+            .context
+            .publish_with_headers(message.subject.clone(), headers, data.into())
+            .await?;
+
+        debug!("{}: acking", message.id);
+        let ack = ack_future.await?;
+
+        debug!("{}: acked (sequence: {})", message.id, ack.sequence);
+
+        Ok(Ack {
+            sequence: ack.sequence,
+        })
+    }
+}
+
+pub async fn consume<F, Fut>(
+    message: async_nats::jetstream::Message,
+    handler: F,
+) -> Result<(), IndexerError>
+where
+    F: Fn(String, Bytes) -> Fut,
+    Fut: Future<Output = Result<(), IndexerError>>,
+{
+    let meta = message.info().map_err(IndexerError::NatsMetaError)?;
+
+    debug!("Stream sequence number: {}", meta.stream_sequence);
+    debug!("Consumer sequence number: {}", meta.consumer_sequence);
+
+    let payload = &message.payload;
+
+    let decoded = if let Some(encoding) = message
+        .headers
+        .as_ref()
+        .and_then(|h| h.get("Content-Encoding"))
+    {
+        match encoding.as_str() {
+            "lz4" => decompress_size_prepended(payload)?.into(),
+            _ => {
+                warn!("nacking - unsupported encoding: {encoding}");
+
+                // TODO: improve nack flow
+                message
+                    .ack_with(jetstream::AckKind::Nak(Some(Duration::from_secs(60))))
+                    .await
+                    .map_err(IndexerError::NatsNackError)?;
+
+                return Err(IndexerError::NatsUnsupportedEncoding(encoding.to_string()));
+            }
+        }
+    } else {
+        payload.clone()
+    };
+
+    match handler(message.subject.to_string(), decoded).await {
+        Ok(_) => {
+            debug!("acking");
+            message.ack().await.map_err(IndexerError::NatsAckError)?;
+        }
+        Err(e) => {
+            warn!("nacking: {e:?}");
+            message
+                .ack_with(jetstream::AckKind::Nak(Some(Duration::from_secs(60))))
+                .await
+                .map_err(IndexerError::NatsNackError)?;
+        }
+    }
+
+    Ok(())
+}
+
+pub struct Ack {
+    sequence: u64,
+}
+
+impl fmt::Display for Ack {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Ack(sequence: {})", self.sequence)
     }
 }
 

@@ -247,7 +247,7 @@ pub async fn update_block_status(
     Ok(())
 }
 
-pub async fn publish(
+pub async fn schedule(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     subject: &str,
     data: bytes::Bytes,

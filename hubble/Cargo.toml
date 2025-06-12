@@ -34,6 +34,7 @@ hex                = { workspace = true }
 itertools          = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lazy_static        = { workspace = true }
+lz4_flex           = "0.11.3"
 prometheus         = { version = "0.13.4", features = ["process"] }
 reqwest            = { workspace = true, features = ["json", "blocking"] }
 serde              = { workspace = true, features = ["derive"] }

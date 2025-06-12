@@ -11,6 +11,7 @@ use async_nats::jetstream::{
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
+use serde_json::Value;
 use sqlx::Postgres;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
@@ -52,8 +53,16 @@ pub enum IndexerError {
     NatsNextError(Box<dyn std::error::Error + Send + Sync + 'static>),
     #[error("nats ack error: {0}")]
     NatsAckError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error("nats nack error: {0}")]
+    NatsNackError(Box<dyn std::error::Error + Send + Sync + 'static>),
     #[error("nats meta error: {0}")]
     NatsMetaError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error("formatting json error: {0}")]
+    FormattingJsonError(#[from] serde_json::Error),
+    #[error("error decoding data: {0}")]
+    NatsDecodeError(#[from] lz4_flex::block::DecompressError),
+    #[error("unsupported encoding: {0}")]
+    NatsUnsupportedEncoding(String),
 }
 
 impl From<Report> for IndexerError {
@@ -203,6 +212,12 @@ pub trait BlockHandle: Send + Sync + Sized {
         range: BlockRange,
         mode: FetchMode,
     ) -> Result<impl Stream<Item = Result<Self, IndexerError>> + Send, IndexerError>;
-    async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError>;
-    async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError>;
+    async fn insert(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<Value>, IndexerError>;
+    async fn update(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<Value>, IndexerError>;
 }
