@@ -34,7 +34,7 @@ onDestroy(() => {
 })
 </script>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full p-4">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full p-4 bg-zinc-950">
   <!-- Network Visualizer - first on mobile, right side on desktop (spans 2 columns) -->
   <div class="order-1 lg:order-3 lg:col-span-2 min-h-0">
     <NetworkVisualizer

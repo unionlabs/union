@@ -26,11 +26,17 @@ class TransactionAudio {
   }
 
   // Pre-render and cache a single sound
-  private async createCachedSound(frequency: number, waveType: OscillatorType, duration: number): Promise<AudioBuffer | null> {
-    if (!this.offlineContext) return null
+  private async createCachedSound(
+    frequency: number,
+    waveType: OscillatorType,
+    duration: number,
+  ): Promise<AudioBuffer | null> {
+    if (!this.offlineContext) {
+      return null
+    }
 
     const cacheKey = this.getCacheKey(frequency, waveType, duration)
-    
+
     // Return cached version if exists
     if (this.audioCache.has(cacheKey)) {
       return this.audioCache.get(cacheKey)!
@@ -39,7 +45,7 @@ class TransactionAudio {
     try {
       // Create a new offline context for this sound
       const offlineCtx = new OfflineAudioContext(2, Math.ceil(44100 * duration * 1.5), 44100)
-      
+
       // Create the sound using same logic as live version
       const oscillator = offlineCtx.createOscillator()
       const gainNode = offlineCtx.createGain()
@@ -80,9 +86,13 @@ class TransactionAudio {
       harmonicGain.connect(leftGain)
       harmonicGain.connect(rightGain)
 
-      const harmonicMultiplier = waveType === "sine" ? 2 : 
-                                waveType === "triangle" ? 3 : 
-                                waveType === "square" ? 1.5 : 2.5
+      const harmonicMultiplier = waveType === "sine"
+        ? 2
+        : waveType === "triangle"
+        ? 3
+        : waveType === "square"
+        ? 1.5
+        : 2.5
 
       harmonic.type = "sine"
       harmonic.frequency.setValueAtTime(frequency * harmonicMultiplier, 0)
@@ -105,35 +115,36 @@ class TransactionAudio {
       const buffer = await offlineCtx.startRendering()
       this.audioCache.set(cacheKey, buffer)
       return buffer
-
     } catch (error) {
       console.warn("Failed to create cached sound:", error)
       return null
     }
   }
 
-     // Pre-cache common sounds based on chain values
-   async preloadChainSounds() {
-     if (!this.audioContext) return
+  // Pre-cache common sounds based on chain values
+  async preloadChainSounds() {
+    if (!this.audioContext) {
+      return
+    }
 
-     const commonDurations = [0.08, 0.1, 0.12] // Common durations we use
-     
-     // Pre-cache sounds for common chain value ranges
-     const promises: Promise<AudioBuffer | null>[] = []
-     
-     for (let chainValue = 100; chainValue <= 900; chainValue += 100) {
-       const frequency = this.getChainFrequency(chainValue)
-       const waveType = this.getChainWaveType(chainValue)
-       
-       for (const duration of commonDurations) {
-         promises.push(this.createCachedSound(frequency, waveType, duration))
-       }
-     }
+    const commonDurations = [0.08, 0.1, 0.12] // Common durations we use
 
-     // Wait for all sounds to be cached
-     await Promise.all(promises)
-     console.log(`Preloaded ${this.audioCache.size} cached sounds`)
-   }
+    // Pre-cache sounds for common chain value ranges
+    const promises: Promise<AudioBuffer | null>[] = []
+
+    for (let chainValue = 100; chainValue <= 900; chainValue += 100) {
+      const frequency = this.getChainFrequency(chainValue)
+      const waveType = this.getChainWaveType(chainValue)
+
+      for (const duration of commonDurations) {
+        promises.push(this.createCachedSound(frequency, waveType, duration))
+      }
+    }
+
+    // Wait for all sounds to be cached
+    await Promise.all(promises)
+    console.log(`Preloaded ${this.audioCache.size} cached sounds`)
+  }
 
   async resumeIfNeeded() {
     if (!this.audioContext || !this.soundEnabled) {
@@ -150,48 +161,50 @@ class TransactionAudio {
     }
   }
 
-     // Generate a consistent numeric value from chain ID
-   private getChainValue(chainId: string): number {
-     if (!chainId) return 1
-     
-     // Simple hash function to convert string to number
-     let hash = 0
-     for (let i = 0; i < chainId.length; i++) {
-       const char = chainId.charCodeAt(i)
-       hash = ((hash << 5) - hash) + char
-       hash = hash & hash // Convert to 32-bit integer
-     }
-     
-     // Convert to positive number and scale to reasonable range (1-1000)
-     return Math.abs(hash % 1000) + 1
-   }
+  // Generate a consistent numeric value from chain ID
+  private getChainValue(chainId: string): number {
+    if (!chainId) {
+      return 1
+    }
 
-   // Map chain value to frequency (musical notes)
-   private getChainFrequency(chainValue: number): number {
-     // Map to musical scale - pentatonic for nice harmonies
-     const notes = [
-       261.63, // C4
-       293.66, // D4
-       329.63, // E4
-       392.00, // G4
-       440.00, // A4
-       523.25, // C5
-       587.33, // D5
-       659.25, // E5
-       783.99, // G5
-       880.00  // A5
-     ]
-     
-     const noteIndex = chainValue % notes.length
-     return notes[noteIndex]
-   }
+    // Simple hash function to convert string to number
+    let hash = 0
+    for (let i = 0; i < chainId.length; i++) {
+      const char = chainId.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32-bit integer
+    }
 
-   // Map chain value to wave type for timbral variety
-   private getChainWaveType(chainValue: number): OscillatorType {
-     const waveTypes: OscillatorType[] = ["sine", "square", "sawtooth", "triangle"]
-     const typeIndex = Math.floor(chainValue / 250) % waveTypes.length
-     return waveTypes[typeIndex]
-   }
+    // Convert to positive number and scale to reasonable range (1-1000)
+    return Math.abs(hash % 1000) + 1
+  }
+
+  // Map chain value to frequency (musical notes)
+  private getChainFrequency(chainValue: number): number {
+    // Map to musical scale - pentatonic for nice harmonies
+    const notes = [
+      261.63, // C4
+      293.66, // D4
+      329.63, // E4
+      392.00, // G4
+      440.00, // A4
+      523.25, // C5
+      587.33, // D5
+      659.25, // E5
+      783.99, // G5
+      880.00, // A5
+    ]
+
+    const noteIndex = chainValue % notes.length
+    return notes[noteIndex]
+  }
+
+  // Map chain value to wave type for timbral variety
+  private getChainWaveType(chainValue: number): OscillatorType {
+    const waveTypes: OscillatorType[] = ["sine", "square", "sawtooth", "triangle"]
+    const typeIndex = Math.floor(chainValue / 250) % waveTypes.length
+    return waveTypes[typeIndex]
+  }
 
   playSound(transactionValue: number, sourceChainId?: string, destChainId?: string) {
     if (!this.audioContext || !this.soundEnabled) {
@@ -208,7 +221,7 @@ class TransactionAudio {
 
       // BTC ticker style sounds based on combined value
       const logValue = Math.log(combinedValue + 1)
-      
+
       if (logValue > 15) {
         // Large transaction - rapid ticker sequence
         this.playLargeTickerSound(combinedValue, sourceChainId, destChainId)
@@ -219,112 +232,129 @@ class TransactionAudio {
         // Regular transaction - single ticker beep
         this.playTickerBeep(combinedValue, sourceChainId, destChainId)
       }
-
     } catch (error) {
       console.warn("Failed to play sound:", error)
     }
   }
 
-        private playLargeTickerSound(_value: number, sourceChainId?: string, destChainId?: string) {
-     if (!this.audioContext) return
+  private playLargeTickerSound(_value: number, sourceChainId?: string, destChainId?: string) {
+    if (!this.audioContext) {
+      return
+    }
 
-     // Rapid ticker sequence using chain tones
-     const sourceValue = sourceChainId ? this.getChainValue(sourceChainId) : 500
-     const destValue = destChainId ? this.getChainValue(destChainId) : 600
-     const sourceFreq = this.getChainFrequency(sourceValue)
-     const destFreq = this.getChainFrequency(destValue)
-     const sourceWave = this.getChainWaveType(sourceValue)
-     const destWave = this.getChainWaveType(destValue)
-     
-     const beepCount = 5
-     for (let i = 0; i < beepCount; i++) {
-       setTimeout(() => {
-         const freq = i % 2 === 0 ? sourceFreq : destFreq // Alternate between source and dest
-         const wave = i % 2 === 0 ? sourceWave : destWave
-         const pan = (Math.random() - 0.5) * 0.6 // Slight random stereo
-         this.createChainTickerBeep(freq + (i * 50), 0.08, pan, wave) // Rising pitch sequence
-       }, i * 60) // Very rapid succession
-     }
-   }
+    // Rapid ticker sequence using chain tones
+    const sourceValue = sourceChainId ? this.getChainValue(sourceChainId) : 500
+    const destValue = destChainId ? this.getChainValue(destChainId) : 600
+    const sourceFreq = this.getChainFrequency(sourceValue)
+    const destFreq = this.getChainFrequency(destValue)
+    const sourceWave = this.getChainWaveType(sourceValue)
+    const destWave = this.getChainWaveType(destValue)
 
-   private playMediumTickerSound(_value: number, sourceChainId?: string, destChainId?: string) {
-     if (!this.audioContext) return
+    const beepCount = 5
+    for (let i = 0; i < beepCount; i++) {
+      setTimeout(() => {
+        const freq = i % 2 === 0 ? sourceFreq : destFreq // Alternate between source and dest
+        const wave = i % 2 === 0 ? sourceWave : destWave
+        const pan = (Math.random() - 0.5) * 0.6 // Slight random stereo
+        this.createChainTickerBeep(freq + (i * 50), 0.08, pan, wave) // Rising pitch sequence
+      }, i * 60) // Very rapid succession
+    }
+  }
 
-     // Double beep using actual chain tones
-     const sourceValue = sourceChainId ? this.getChainValue(sourceChainId) : 500
-     const destValue = destChainId ? this.getChainValue(destChainId) : 600
-     const sourceFreq = this.getChainFrequency(sourceValue)
-     const destFreq = this.getChainFrequency(destValue)
-     const sourceWave = this.getChainWaveType(sourceValue)
-     const destWave = this.getChainWaveType(destValue)
+  private playMediumTickerSound(_value: number, sourceChainId?: string, destChainId?: string) {
+    if (!this.audioContext) {
+      return
+    }
 
-     // Source chain sound (left)
-     this.createChainTickerBeep(sourceFreq, 0.1, -0.3, sourceWave)
-     
-     setTimeout(() => {
-       // Destination chain sound (right)
-       this.createChainTickerBeep(destFreq, 0.1, 0.3, destWave)
-     }, 80)
-   }
+    // Double beep using actual chain tones
+    const sourceValue = sourceChainId ? this.getChainValue(sourceChainId) : 500
+    const destValue = destChainId ? this.getChainValue(destChainId) : 600
+    const sourceFreq = this.getChainFrequency(sourceValue)
+    const destFreq = this.getChainFrequency(destValue)
+    const sourceWave = this.getChainWaveType(sourceValue)
+    const destWave = this.getChainWaveType(destValue)
 
-   private playTickerBeep(value: number, sourceChainId?: string, destChainId?: string) {
-     if (!this.audioContext) return
+    // Source chain sound (left)
+    this.createChainTickerBeep(sourceFreq, 0.1, -0.3, sourceWave)
 
-     // Use chain values to determine tone characteristics
-     const sourceValue = sourceChainId ? this.getChainValue(sourceChainId) : 500
-     const destValue = destChainId ? this.getChainValue(destChainId) : 500
+    setTimeout(() => {
+      // Destination chain sound (right)
+      this.createChainTickerBeep(destFreq, 0.1, 0.3, destWave)
+    }, 80)
+  }
 
-     // Create source tone (left channel)
-     const sourceFreq = this.getChainFrequency(sourceValue)
-     const sourceWave = this.getChainWaveType(sourceValue)
-     this.createChainTickerBeep(sourceFreq, 0.12, -0.3, sourceWave)
+  private playTickerBeep(value: number, sourceChainId?: string, destChainId?: string) {
+    if (!this.audioContext) {
+      return
+    }
 
-     // Create destination tone (right channel) after small delay
-     setTimeout(() => {
-       const destFreq = this.getChainFrequency(destValue)
-       const destWave = this.getChainWaveType(destValue)
-       this.createChainTickerBeep(destFreq, 0.1, 0.3, destWave)
-     }, 80)
-   }
+    // Use chain values to determine tone characteristics
+    const sourceValue = sourceChainId ? this.getChainValue(sourceChainId) : 500
+    const destValue = destChainId ? this.getChainValue(destChainId) : 500
 
-     private async playCachedSound(frequency: number, duration: number, pan: number, waveType: OscillatorType) {
-     if (!this.audioContext) return
+    // Create source tone (left channel)
+    const sourceFreq = this.getChainFrequency(sourceValue)
+    const sourceWave = this.getChainWaveType(sourceValue)
+    this.createChainTickerBeep(sourceFreq, 0.12, -0.3, sourceWave)
 
-     const cacheKey = this.getCacheKey(frequency, waveType, duration)
-     let buffer = this.audioCache.get(cacheKey)
+    // Create destination tone (right channel) after small delay
+    setTimeout(() => {
+      const destFreq = this.getChainFrequency(destValue)
+      const destWave = this.getChainWaveType(destValue)
+      this.createChainTickerBeep(destFreq, 0.1, 0.3, destWave)
+    }, 80)
+  }
 
-     // If not cached, create it on-demand
-     if (!buffer) {
-       const newBuffer = await this.createCachedSound(frequency, waveType, duration)
-       if (!newBuffer) return // Failed to create
-       buffer = newBuffer
-     }
+  private async playCachedSound(
+    frequency: number,
+    duration: number,
+    pan: number,
+    waveType: OscillatorType,
+  ) {
+    if (!this.audioContext) {
+      return
+    }
 
-     // Play the cached buffer
-     const source = this.audioContext.createBufferSource()
-     const gainNode = this.audioContext.createGain()
-     const panNode = this.audioContext.createStereoPanner()
+    const cacheKey = this.getCacheKey(frequency, waveType, duration)
+    let buffer = this.audioCache.get(cacheKey)
 
-     source.buffer = buffer
-     source.connect(gainNode)
-     gainNode.connect(panNode)
-     panNode.connect(this.audioContext.destination)
+    // If not cached, create it on-demand
+    if (!buffer) {
+      const newBuffer = await this.createCachedSound(frequency, waveType, duration)
+      if (!newBuffer) {
+        return // Failed to create
+      }
+      buffer = newBuffer
+    }
 
-     // Apply panning
-     panNode.pan.setValueAtTime(pan, this.audioContext.currentTime)
-     
-     // Optional gain adjustment
-     gainNode.gain.setValueAtTime(1, this.audioContext.currentTime)
+    // Play the cached buffer
+    const source = this.audioContext.createBufferSource()
+    const gainNode = this.audioContext.createGain()
+    const panNode = this.audioContext.createStereoPanner()
 
-     source.start(this.audioContext.currentTime)
-   }
+    source.buffer = buffer
+    source.connect(gainNode)
+    gainNode.connect(panNode)
+    panNode.connect(this.audioContext.destination)
 
-   private createChainTickerBeep(frequency: number, duration: number, pan: number, waveType: OscillatorType) {
-     // Use cached version for better performance
-     this.playCachedSound(frequency, duration, pan, waveType)
-   }
+    // Apply panning
+    panNode.pan.setValueAtTime(pan, this.audioContext.currentTime)
 
+    // Optional gain adjustment
+    gainNode.gain.setValueAtTime(1, this.audioContext.currentTime)
 
+    source.start(this.audioContext.currentTime)
+  }
+
+  private createChainTickerBeep(
+    frequency: number,
+    duration: number,
+    pan: number,
+    waveType: OscillatorType,
+  ) {
+    // Use cached version for better performance
+    this.playCachedSound(frequency, duration, pan, waveType)
+  }
 
   playTransactionSound(value: number) {
     if (!this.audioContext || !this.soundEnabled) {
