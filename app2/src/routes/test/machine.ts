@@ -126,14 +126,39 @@ export function createTransferPollingMachine(limit = 50): TransferPollingMachine
   const processScheduledTransfers = () => {
     const checkScheduled = () => {
       const now = Date.now()
-      const ready = scheduledTransfers.filter(t => t.scheduledTime <= now)
 
-      if (ready.length > 0 && callback) {
-        ready.forEach(t => callback!([t.transfer]))
-        scheduledTransfers = scheduledTransfers.filter(t => t.scheduledTime > now)
+      // Early exit if no transfers scheduled (saves CPU when idle)
+      if (scheduledTransfers.length === 0) {
+        setTimeout(checkScheduled, 100) // Longer interval when idle
+        return
       }
 
-      setTimeout(checkScheduled, 50)
+      // Batch process ready transfers (reduces memory allocations)
+      const readyTransfers: TransferListItem[] = []
+      const remainingTransfers = []
+
+      // Single pass through array instead of double filtering
+      for (const scheduled of scheduledTransfers) {
+        if (scheduled.scheduledTime <= now) {
+          readyTransfers.push(scheduled.transfer)
+        } else {
+          remainingTransfers.push(scheduled)
+        }
+      }
+
+      // Update array only if we processed transfers
+      if (readyTransfers.length > 0) {
+        scheduledTransfers = remainingTransfers
+
+        // Send all ready transfers in one batch (fewer callback calls)
+        if (callback) {
+          callback(readyTransfers)
+        }
+      }
+
+      // Adaptive interval: faster when processing, slower when idle
+      const interval = readyTransfers.length > 0 ? 50 : 100
+      setTimeout(checkScheduled, interval)
     }
     checkScheduled()
   }
