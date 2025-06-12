@@ -3,7 +3,7 @@ import { runSync } from "$lib/runtime.js"
 import { type ClientInit } from "@sveltejs/kit"
 import type { Handle } from "@sveltejs/kit"
 import { Data, Effect, identity, Match, Option, pipe } from "effect"
-import { isString } from "effect/Predicate"
+import { Predicate } from "effect"
 
 class UncaughtError extends Data.TaggedError("UncaughtError")<{
   cause: Error | undefined
@@ -53,7 +53,7 @@ export const init: ClientInit = async () => {
 
   window.onerror = (event, source, lineno, colno, error) => {
     const message = Match.value(event).pipe(
-      Match.when(isString, identity),
+      Match.when(Match.string, identity),
       Match.when(Match.instanceOfUnsafe(Event), (x) => x),
       Match.exhaustive,
     )
@@ -71,7 +71,7 @@ export const init: ClientInit = async () => {
   }
   window.onunhandledrejection = (event) => {
     const message = Match.value(event.reason).pipe(
-      Match.when(isString, identity<string>),
+      Match.when(Match.string, identity<string>),
       Match.when(Match.instanceOfUnsafe(Error), error => error.message),
       Match.orElse(() => "no message"),
     )
@@ -84,29 +84,4 @@ export const init: ClientInit = async () => {
     )
     event.preventDefault()
   }
-}
-
-const PROTECTED_PATHS = ["/dashboard"]
-
-export const handle: Handle = async ({ event, resolve }) => {
-  const dashboard = await import("$lib/dashboard/stores/user.svelte").then(x => x.dashboard)
-  if (browser && PROTECTED_PATHS.some(path => event.url.pathname.startsWith(path))) {
-    return Effect.runPromise(
-      pipe(
-        Effect.succeed(dashboard.session),
-        Effect.flatMap(session =>
-          Option.isNone(session)
-            ? Effect.succeed(
-              new Response("Redirect", {
-                status: 302,
-                headers: { Location: "/" },
-              }),
-            )
-            : Effect.succeed(resolve(event))
-        ),
-      ),
-    )
-  }
-
-  return resolve(event)
 }
