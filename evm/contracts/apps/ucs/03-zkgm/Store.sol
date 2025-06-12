@@ -84,6 +84,12 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         return (ZkgmERC20(wrappedGovernanceToken), governanceToken);
     }
 
+    function getGovernanceToken(
+        uint32 channelId
+    ) public view returns (ZkgmERC20, GovernanceToken memory) {
+        return _getGovernanceToken(channelId);
+    }
+
     function _predictStakeManagerAddress() internal view returns (ZkgmERC721) {
         return ZkgmERC721(
             CREATE3.predictDeterministicAddress(STAKE_NFT_MANAGER_SALT)

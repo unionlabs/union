@@ -273,6 +273,12 @@ library ZkgmLib {
         );
     }
 
+    function encodeWithdrawStakeAck(
+        WithdrawStakeAck memory withdrawStakeAck
+    ) internal pure returns (bytes memory) {
+        return abi.encode(withdrawStakeAck.amount);
+    }
+
     function encodeWithdrawRewards(
         WithdrawRewards memory withdrawRewards
     ) internal pure returns (bytes memory) {

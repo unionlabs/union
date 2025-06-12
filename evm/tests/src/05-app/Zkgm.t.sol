@@ -119,6 +119,28 @@ contract TestZkgm is UCS03Zkgm {
     ) public {
         _setBucketConfig(token, capacity, refillRate, reset);
     }
+
+    function doUpdateStake(
+        uint256 tokenId,
+        uint32 channelId,
+        bytes memory validator,
+        uint256 amount,
+        ZkgmStakeState state,
+        uint256 unstakingCompletion
+    ) public {
+        // Update the stake state directly in the mapping
+        stakes[tokenId] = ZkgmStake({
+            state: state,
+            channelId: channelId,
+            validator: validator,
+            amount: amount,
+            unstakingCompletion: unstakingCompletion
+        });
+    }
+
+    function doCreateStakeNFTManager() public {
+        _getStakeNFTManager();
+    }
 }
 
 contract TestIBCHandler is IIBCModulePacket {
@@ -187,6 +209,10 @@ contract TestERC20 is ERC20 {
 
     function mint(address to, uint256 amount) public {
         _mint(to, amount);
+    }
+
+    function burn(address from, uint256 amount) public {
+        _burn(from, amount);
     }
 }
 
@@ -346,6 +372,7 @@ contract ZkgmTests is Test {
             abi.encodeCall(UCS03Zkgm.initialize, (address(this)))
         );
         zkgm = TestZkgm(payable(address(proxy)));
+        zkgm.doCreateStakeNFTManager();
         multiplexTarget = new TestMultiplexTarget(address(zkgm));
     }
 
@@ -4895,6 +4922,1280 @@ contract ZkgmTests is Test {
         );
     }
 
+    // ========== STAKING TESTS ==========
+
+    function setupGovernanceToken(
+        uint32 channelId
+    ) internal returns (address) {
+        // Register governance token for the channel
+        GovernanceToken memory govToken = GovernanceToken({
+            unwrappedToken: hex"BABE",
+            metadataImage: bytes32(uint256(0x123))
+        });
+        zkgm.registerGovernanceToken(channelId, govToken);
+        (ZkgmERC20 governanceTokenImage,) = zkgm.getGovernanceToken(channelId);
+        vm.cloneAccount(
+            address(new TestERC20("Governance Token", "GOV", 18)),
+            address(governanceTokenImage)
+        );
+        return address(governanceTokenImage);
+    }
+
+    function test_verify_stake_ok(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(channelId);
+        handler.setChannel(channelId, channelId);
+
+        // Mint tokens to staker and approve
+        TestERC20(governanceToken).mint(staker, amount);
+        vm.prank(staker);
+        TestERC20(governanceToken).approve(address(zkgm), amount);
+
+        vm.expectEmit();
+        emit IERC20.Transfer(staker, address(zkgm), amount);
+
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_STAKE,
+                operand: ZkgmLib.encodeStake(
+                    Stake({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        sender: abi.encodePacked(staker),
+                        beneficiary: beneficiary,
+                        validator: validator,
+                        amount: amount
+                    })
+                )
+            })
+        );
+
+        // Verify NFT was minted and stake state is correct
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        assertEq(stakeNFT.ownerOf(tokenId), address(zkgm));
+
+        (
+            ZkgmStakeState state,
+            uint32 stakeChannelId,
+            bytes memory stakeValidator,
+            uint256 stakeAmount,
+            uint256 unstakingCompletion
+        ) = zkgm.stakes(tokenId);
+
+        assertEq(uint256(state), uint256(ZkgmStakeState.STAKING));
+        assertEq(stakeChannelId, channelId);
+        assertEq(stakeValidator, validator);
+        assertEq(stakeAmount, amount);
+        assertEq(unstakingCompletion, 0);
+    }
+
+    function test_verify_stake_invalidGovernanceToken(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator,
+        uint256 amount,
+        address wrongToken
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            assumeUnusedAddress(wrongToken);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        setupGovernanceToken(channelId);
+
+        vm.expectRevert(ZkgmLib.ErrInvalidStakeGovernanceToken.selector);
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_STAKE,
+                operand: ZkgmLib.encodeStake(
+                    Stake({
+                        tokenId: tokenId,
+                        governanceToken: abi.encodePacked(wrongToken),
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        sender: abi.encodePacked(staker),
+                        beneficiary: beneficiary,
+                        validator: validator,
+                        amount: amount
+                    })
+                )
+            })
+        );
+    }
+
+    function test_verify_stake_invalidMetadataImage(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator,
+        uint256 amount,
+        bytes32 wrongMetadataImage
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+            vm.assume(wrongMetadataImage != bytes32(uint256(0x123)));
+        }
+
+        address governanceToken = setupGovernanceToken(channelId);
+
+        vm.expectRevert(ZkgmLib.ErrInvalidStakeGovernanceToken.selector);
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_STAKE,
+                operand: ZkgmLib.encodeStake(
+                    Stake({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: wrongMetadataImage,
+                        sender: abi.encodePacked(staker),
+                        beneficiary: beneficiary,
+                        validator: validator,
+                        amount: amount
+                    })
+                )
+            })
+        );
+    }
+
+    function test_verify_stake_cannotBeForwarded(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        setupGovernanceToken(channelId);
+
+        vm.expectRevert(ZkgmLib.ErrInvalidForwardInstruction.selector);
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_FORWARD,
+                operand: ZkgmLib.encodeForward(
+                    Forward({
+                        path: ZkgmLib.updateChannelPath(0, channelId),
+                        timeoutHeight: type(uint64).max,
+                        timeoutTimestamp: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_STAKE,
+                            operand: ZkgmLib.encodeStake(
+                                Stake({
+                                    tokenId: tokenId,
+                                    governanceToken: abi.encodePacked(address(erc20)),
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    sender: abi.encodePacked(staker),
+                                    beneficiary: beneficiary,
+                                    validator: validator,
+                                    amount: amount
+                                })
+                            )
+                        })
+                    })
+                )
+            })
+        );
+    }
+
+    function test_verify_unstake_ok(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(channelId);
+        handler.setChannel(channelId, channelId);
+
+        // First stake to create the NFT
+        TestERC20(governanceToken).mint(staker, amount);
+        vm.prank(staker);
+        TestERC20(governanceToken).approve(address(zkgm), amount);
+
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_STAKE,
+                operand: ZkgmLib.encodeStake(
+                    Stake({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        sender: abi.encodePacked(staker),
+                        beneficiary: abi.encodePacked(staker),
+                        validator: validator,
+                        amount: amount
+                    })
+                )
+            })
+        );
+
+        // Simulate successful staking acknowledgment
+        vm.prank(address(handler));
+        zkgm.onAcknowledgementPacket(
+            address(this),
+            IBCPacket({
+                sourceChannelId: channelId,
+                destinationChannelId: channelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_STAKE,
+                            operand: ZkgmLib.encodeStake(
+                                Stake({
+                                    tokenId: tokenId,
+                                    governanceToken: hex"BABE",
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    sender: abi.encodePacked(staker),
+                                    beneficiary: abi.encodePacked(staker),
+                                    validator: validator,
+                                    amount: amount
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            ZkgmLib.encodeAck(
+                Ack({tag: ZkgmLib.ACK_SUCCESS, innerAck: ZkgmLib.ACK_EMPTY})
+            ),
+            address(this)
+        );
+
+        // Now the NFT should be owned by staker and state should be STAKED
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        assertEq(stakeNFT.ownerOf(tokenId), staker);
+
+        // Transfer NFT back to staker for unstaking
+        vm.prank(staker);
+        stakeNFT.approve(address(zkgm), tokenId);
+
+        // Now test unstaking
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(uint256(1)),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_UNSTAKE,
+                operand: ZkgmLib.encodeUnstake(
+                    Unstake({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        sender: abi.encodePacked(staker),
+                        validator: validator,
+                        amount: amount
+                    })
+                )
+            })
+        );
+
+        // Verify NFT is now owned by zkgm contract
+        assertEq(stakeNFT.ownerOf(tokenId), address(zkgm));
+    }
+
+    function test_verify_unstake_notStakable(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(channelId);
+
+        // Create a stake in STAKING state (not yet STAKED, so not unstakable)
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId, channelId, validator, amount, ZkgmStakeState.STAKING, 0
+        );
+
+        // Try to unstake while still in STAKING state
+        vm.expectRevert(ZkgmLib.ErrStakeNotUnstakable.selector);
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_UNSTAKE,
+                operand: ZkgmLib.encodeUnstake(
+                    Unstake({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        sender: abi.encodePacked(staker),
+                        validator: validator,
+                        amount: amount
+                    })
+                )
+            })
+        );
+    }
+
+    function test_verify_withdrawStake_ok(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(sourceChannelId);
+        handler.setChannel(sourceChannelId, destinationChannelId);
+
+        // Create a stake in UNSTAKING state with completion time in the past
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId,
+            sourceChannelId,
+            validator,
+            amount,
+            ZkgmStakeState.UNSTAKING,
+            block.timestamp - 1
+        );
+
+        // Transfer NFT to staker first
+        vm.prank(address(zkgm));
+        stakeNFT.transferFrom(address(zkgm), staker, tokenId);
+
+        vm.prank(staker);
+        stakeNFT.approve(address(zkgm), tokenId);
+
+        vm.prank(staker);
+        zkgm.send(
+            sourceChannelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_WITHDRAW_STAKE,
+                operand: ZkgmLib.encodeWithdrawStake(
+                    WithdrawStake({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        sender: abi.encodePacked(staker),
+                        beneficiary: beneficiary
+                    })
+                )
+            })
+        );
+
+        // Verify NFT is now owned by zkgm contract
+        assertEq(stakeNFT.ownerOf(tokenId), address(zkgm));
+    }
+
+    function test_verify_withdrawStake_notWithdrawable(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(channelId);
+
+        // Create a stake in STAKED state (not UNSTAKING with completion time passed)
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId, channelId, hex"C0DE", 1000, ZkgmStakeState.STAKED, 0
+        );
+
+        vm.expectRevert(ZkgmLib.ErrStakeNotWithdrawable.selector);
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_WITHDRAW_STAKE,
+                operand: ZkgmLib.encodeWithdrawStake(
+                    WithdrawStake({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        sender: abi.encodePacked(staker),
+                        beneficiary: beneficiary
+                    })
+                )
+            })
+        );
+    }
+
+    function test_verify_withdrawRewards_ok(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(channelId);
+        handler.setChannel(channelId, channelId);
+
+        // Create a stake in STAKED state
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId, channelId, validator, 1000, ZkgmStakeState.STAKED, 0
+        );
+
+        // Transfer NFT to staker first
+        vm.prank(address(zkgm));
+        stakeNFT.transferFrom(address(zkgm), staker, tokenId);
+
+        vm.prank(staker);
+        stakeNFT.approve(address(zkgm), tokenId);
+
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_WITHDRAW_REWARDS,
+                operand: ZkgmLib.encodeWithdrawRewards(
+                    WithdrawRewards({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        validator: validator,
+                        sender: abi.encodePacked(staker),
+                        beneficiary: beneficiary
+                    })
+                )
+            })
+        );
+
+        // Verify NFT is now owned by zkgm contract
+        assertEq(stakeNFT.ownerOf(tokenId), address(zkgm));
+
+        // Verify state changed to WITHDRAWING_REWARDS
+        (ZkgmStakeState state,,,,) = zkgm.stakes(tokenId);
+        assertEq(uint256(state), uint256(ZkgmStakeState.WITHDRAWING_REWARDS));
+    }
+
+    function test_verify_withdrawRewards_notWithdrawable(
+        uint32 channelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(channelId);
+
+        // Create a stake in UNSTAKING state (not STAKED, so rewards not withdrawable)
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId, channelId, validator, 1000, ZkgmStakeState.UNSTAKING, 0
+        );
+
+        vm.expectRevert(ZkgmLib.ErrStakingRewardNotWithdrawable.selector);
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_WITHDRAW_REWARDS,
+                operand: ZkgmLib.encodeWithdrawRewards(
+                    WithdrawRewards({
+                        tokenId: tokenId,
+                        governanceToken: hex"BABE",
+                        governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                        validator: validator,
+                        sender: abi.encodePacked(staker),
+                        beneficiary: beneficiary
+                    })
+                )
+            })
+        );
+    }
+
+    function test_onAckPacket_stake_success(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 tokenId,
+        address staker,
+        address beneficiary,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            assumeUnusedAddress(beneficiary);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(sourceChannelId);
+
+        // Setup initial stake state
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId,
+            sourceChannelId,
+            validator,
+            amount,
+            ZkgmStakeState.STAKING,
+            0
+        );
+
+        vm.prank(address(handler));
+        zkgm.onAcknowledgementPacket(
+            address(this),
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_STAKE,
+                            operand: ZkgmLib.encodeStake(
+                                Stake({
+                                    tokenId: tokenId,
+                                    governanceToken: hex"BABE",
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    sender: abi.encodePacked(staker),
+                                    beneficiary: abi.encodePacked(beneficiary),
+                                    validator: validator,
+                                    amount: amount
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            ZkgmLib.encodeAck(
+                Ack({tag: ZkgmLib.ACK_SUCCESS, innerAck: ZkgmLib.ACK_EMPTY})
+            ),
+            address(this)
+        );
+
+        // Verify NFT transferred to beneficiary and state updated
+        assertEq(stakeNFT.ownerOf(tokenId), address(bytes20(beneficiary)));
+        (ZkgmStakeState state,,,,) = zkgm.stakes(tokenId);
+        assertEq(uint256(state), uint256(ZkgmStakeState.STAKED));
+    }
+
+    function test_onAckPacket_stake_failure(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(sourceChannelId);
+        TestERC20(governanceToken).mint(address(zkgm), amount);
+
+        // Setup the stake state that would exist before failure acknowledgment
+        zkgm.doUpdateStake(
+            tokenId,
+            sourceChannelId,
+            validator,
+            amount,
+            ZkgmStakeState.STAKING,
+            0
+        );
+
+        vm.expectEmit();
+        emit IERC20.Transfer(address(zkgm), staker, amount);
+
+        vm.prank(address(handler));
+        zkgm.onAcknowledgementPacket(
+            address(this),
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_STAKE,
+                            operand: ZkgmLib.encodeStake(
+                                Stake({
+                                    tokenId: tokenId,
+                                    governanceToken: hex"BABE",
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    sender: abi.encodePacked(staker),
+                                    beneficiary: beneficiary,
+                                    validator: validator,
+                                    amount: amount
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            ZkgmLib.encodeAck(
+                Ack({tag: ZkgmLib.ACK_FAILURE, innerAck: ZkgmLib.ACK_EMPTY})
+            ),
+            address(this)
+        );
+    }
+
+    function test_onAckPacket_unstake_success(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory validator,
+        uint256 amount,
+        uint256 completionTime
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+            vm.assume(completionTime > block.timestamp);
+        }
+
+        address governanceToken = setupGovernanceToken(sourceChannelId);
+
+        // Setup the stake state that would exist before unstake acknowledgment
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId,
+            sourceChannelId,
+            validator,
+            amount,
+            ZkgmStakeState.STAKED,
+            0
+        );
+
+        vm.prank(address(handler));
+        zkgm.onAcknowledgementPacket(
+            address(this),
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_UNSTAKE,
+                            operand: ZkgmLib.encodeUnstake(
+                                Unstake({
+                                    tokenId: tokenId,
+                                    governanceToken: hex"BABE",
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    sender: abi.encodePacked(staker),
+                                    validator: validator,
+                                    amount: amount
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            ZkgmLib.encodeAck(
+                Ack({
+                    tag: ZkgmLib.ACK_SUCCESS,
+                    innerAck: abi.encode(completionTime)
+                })
+            ),
+            address(this)
+        );
+
+        // Verify NFT transferred back to staker and state updated
+        assertEq(stakeNFT.ownerOf(tokenId), staker);
+        (ZkgmStakeState state,,,, uint256 unstakingCompletion) =
+            zkgm.stakes(tokenId);
+        assertEq(uint256(state), uint256(ZkgmStakeState.UNSTAKING));
+        assertEq(unstakingCompletion, completionTime);
+    }
+
+    function test_onAckPacket_withdrawStake_success(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 tokenId,
+        address staker,
+        address beneficiary,
+        uint256 stakedAmount,
+        uint256 withdrawnAmount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            assumeUnusedAddress(beneficiary);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(stakedAmount > 0);
+            vm.assume(withdrawnAmount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(sourceChannelId);
+
+        // Setup stake state
+        zkgm.doUpdateStake(
+            tokenId,
+            sourceChannelId,
+            hex"C0DE",
+            stakedAmount,
+            ZkgmStakeState.UNSTAKING,
+            0
+        );
+
+        TestERC20(governanceToken).mint(address(zkgm), stakedAmount);
+
+        vm.expectEmit();
+        emit IERC20.Transfer(address(zkgm), beneficiary, stakedAmount);
+        if (withdrawnAmount >= stakedAmount) {
+            if (withdrawnAmount > stakedAmount) {
+                vm.expectEmit();
+                emit IERC20.Transfer(
+                    address(0), beneficiary, withdrawnAmount - stakedAmount
+                );
+            }
+        } else {
+            vm.expectEmit();
+            emit IERC20.Transfer(
+                beneficiary, address(0), stakedAmount - withdrawnAmount
+            );
+        }
+
+        vm.prank(address(handler));
+        zkgm.onAcknowledgementPacket(
+            address(this),
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_WITHDRAW_STAKE,
+                            operand: ZkgmLib.encodeWithdrawStake(
+                                WithdrawStake({
+                                    tokenId: tokenId,
+                                    governanceToken: hex"BABE",
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    sender: abi.encodePacked(staker),
+                                    beneficiary: abi.encodePacked(beneficiary)
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            ZkgmLib.encodeAck(
+                Ack({
+                    tag: ZkgmLib.ACK_SUCCESS,
+                    innerAck: ZkgmLib.encodeWithdrawStakeAck(
+                        WithdrawStakeAck({amount: withdrawnAmount})
+                    )
+                })
+            ),
+            address(this)
+        );
+
+        // Verify state updated to UNSTAKED
+        (ZkgmStakeState state,,,,) = zkgm.stakes(tokenId);
+        assertEq(uint256(state), uint256(ZkgmStakeState.UNSTAKED));
+    }
+
+    function test_onAckPacket_withdrawRewards_success(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 tokenId,
+        address staker,
+        address beneficiary,
+        bytes memory validator,
+        uint256 rewardAmount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            assumeUnusedAddress(beneficiary);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(rewardAmount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(sourceChannelId);
+
+        // Setup stake state
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId,
+            sourceChannelId,
+            validator,
+            rewardAmount,
+            ZkgmStakeState.WITHDRAWING_REWARDS,
+            0
+        );
+
+        vm.expectEmit();
+        emit IERC20.Transfer(address(0), beneficiary, rewardAmount);
+
+        vm.prank(address(handler));
+        zkgm.onAcknowledgementPacket(
+            address(this),
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_WITHDRAW_REWARDS,
+                            operand: ZkgmLib.encodeWithdrawRewards(
+                                WithdrawRewards({
+                                    tokenId: tokenId,
+                                    governanceToken: hex"BABE",
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    validator: validator,
+                                    sender: abi.encodePacked(staker),
+                                    beneficiary: abi.encodePacked(beneficiary)
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            ZkgmLib.encodeAck(
+                Ack({
+                    tag: ZkgmLib.ACK_SUCCESS,
+                    innerAck: abi.encode(rewardAmount)
+                })
+            ),
+            address(this)
+        );
+
+        // Verify NFT transferred back to sender and state updated
+        assertEq(stakeNFT.ownerOf(tokenId), staker);
+        (ZkgmStakeState state,,,,) = zkgm.stakes(tokenId);
+        assertEq(uint256(state), uint256(ZkgmStakeState.STAKED));
+    }
+
+    function test_onTimeoutPacket_stake(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(sourceChannelId);
+        TestERC20(governanceToken).mint(address(zkgm), amount);
+
+        // Setup the stake state that would exist before timeout
+        zkgm.doUpdateStake(
+            tokenId,
+            sourceChannelId,
+            validator,
+            amount,
+            ZkgmStakeState.STAKING,
+            0
+        );
+
+        vm.expectEmit();
+        emit IERC20.Transfer(address(zkgm), staker, amount);
+
+        vm.prank(address(handler));
+        zkgm.onTimeoutPacket(
+            address(this),
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_STAKE,
+                            operand: ZkgmLib.encodeStake(
+                                Stake({
+                                    tokenId: tokenId,
+                                    governanceToken: hex"BABE",
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    sender: abi.encodePacked(staker),
+                                    beneficiary: beneficiary,
+                                    validator: validator,
+                                    amount: amount
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            address(this)
+        );
+    }
+
+    function test_onTimeoutPacket_unstake(
+        uint32 sourceChannelId,
+        uint32 destinationChannelId,
+        uint256 tokenId,
+        address staker,
+        bytes memory validator,
+        uint256 amount
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(sourceChannelId > 0);
+            vm.assume(destinationChannelId > 0);
+            vm.assume(tokenId > 0);
+            vm.assume(amount > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(sourceChannelId);
+
+        // Setup stake state
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        vm.prank(address(zkgm));
+        stakeNFT.mint(tokenId, address(zkgm));
+        zkgm.doUpdateStake(
+            tokenId,
+            sourceChannelId,
+            validator,
+            amount,
+            ZkgmStakeState.STAKED,
+            0
+        );
+
+        vm.prank(address(handler));
+        zkgm.onTimeoutPacket(
+            address(this),
+            IBCPacket({
+                sourceChannelId: sourceChannelId,
+                destinationChannelId: destinationChannelId,
+                data: ZkgmLib.encode(
+                    ZkgmPacket({
+                        salt: bytes32(0),
+                        path: 0,
+                        instruction: Instruction({
+                            version: ZkgmLib.INSTR_VERSION_0,
+                            opcode: ZkgmLib.OP_UNSTAKE,
+                            operand: ZkgmLib.encodeUnstake(
+                                Unstake({
+                                    tokenId: tokenId,
+                                    governanceToken: hex"BABE",
+                                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                                    sender: abi.encodePacked(staker),
+                                    validator: validator,
+                                    amount: amount
+                                })
+                            )
+                        })
+                    })
+                ),
+                timeoutHeight: type(uint64).max,
+                timeoutTimestamp: 0
+            }),
+            address(this)
+        );
+
+        // Verify NFT transferred back to staker
+        assertEq(stakeNFT.ownerOf(tokenId), staker);
+    }
+
+    function test_registerGovernanceToken_ok(
+        uint32 channelId,
+        bytes memory unwrappedToken,
+        bytes32 metadataImage
+    ) public {
+        vm.assume(channelId > 0);
+
+        GovernanceToken memory govToken = GovernanceToken({
+            unwrappedToken: unwrappedToken,
+            metadataImage: metadataImage
+        });
+
+        zkgm.registerGovernanceToken(channelId, govToken);
+
+        (bytes memory storedToken, bytes32 storedImage) =
+            zkgm.channelGovernanceToken(channelId);
+        assertEq(storedToken, unwrappedToken);
+        assertEq(storedImage, metadataImage);
+    }
+
+    function test_registerGovernanceToken_alreadySet(
+        uint32 channelId,
+        bytes memory unwrappedToken1,
+        bytes32 metadataImage1,
+        bytes memory unwrappedToken2,
+        bytes32 metadataImage2
+    ) public {
+        vm.assume(channelId > 0);
+        vm.assume(unwrappedToken1.length > 0);
+        vm.assume(unwrappedToken2.length > 0);
+
+        GovernanceToken memory govToken1 = GovernanceToken({
+            unwrappedToken: unwrappedToken1,
+            metadataImage: metadataImage1
+        });
+
+        GovernanceToken memory govToken2 = GovernanceToken({
+            unwrappedToken: unwrappedToken2,
+            metadataImage: metadataImage2
+        });
+
+        zkgm.registerGovernanceToken(channelId, govToken1);
+
+        vm.expectRevert(ZkgmLib.ErrChannelGovernanceTokenAlreadySet.selector);
+        zkgm.registerGovernanceToken(channelId, govToken2);
+    }
+
+    function test_staking_batch_ok(
+        uint32 channelId,
+        uint256 tokenId1,
+        uint256 tokenId2,
+        address staker,
+        bytes memory beneficiary,
+        bytes memory validator,
+        uint248 amount1,
+        uint248 amount2
+    ) public {
+        {
+            assumeUnusedAddress(staker);
+            vm.assume(channelId > 0);
+            vm.assume(tokenId1 > 0);
+            vm.assume(tokenId2 > 0);
+            vm.assume(tokenId1 != tokenId2);
+            vm.assume(amount1 > 0);
+            vm.assume(amount2 > 0);
+        }
+
+        address governanceToken = setupGovernanceToken(channelId);
+        handler.setChannel(channelId, channelId);
+
+        uint256 totalAmount = uint256(amount1) + uint256(amount2);
+        TestERC20(governanceToken).mint(staker, totalAmount);
+        vm.prank(staker);
+        TestERC20(governanceToken).approve(address(zkgm), totalAmount);
+
+        Instruction[] memory instructions = new Instruction[](2);
+        instructions[0] = Instruction({
+            version: ZkgmLib.INSTR_VERSION_0,
+            opcode: ZkgmLib.OP_STAKE,
+            operand: ZkgmLib.encodeStake(
+                Stake({
+                    tokenId: tokenId1,
+                    governanceToken: hex"BABE",
+                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                    sender: abi.encodePacked(staker),
+                    beneficiary: beneficiary,
+                    validator: validator,
+                    amount: amount1
+                })
+            )
+        });
+        instructions[1] = Instruction({
+            version: ZkgmLib.INSTR_VERSION_0,
+            opcode: ZkgmLib.OP_STAKE,
+            operand: ZkgmLib.encodeStake(
+                Stake({
+                    tokenId: tokenId2,
+                    governanceToken: hex"BABE",
+                    governanceTokenMetadataImage: bytes32(uint256(0x123)),
+                    sender: abi.encodePacked(staker),
+                    beneficiary: beneficiary,
+                    validator: validator,
+                    amount: amount2
+                })
+            )
+        });
+
+        vm.expectEmit();
+        emit IERC20.Transfer(staker, address(zkgm), amount1);
+        vm.expectEmit();
+        emit IERC20.Transfer(staker, address(zkgm), amount2);
+
+        vm.prank(staker);
+        zkgm.send(
+            channelId,
+            0,
+            type(uint64).max,
+            bytes32(0),
+            Instruction({
+                version: ZkgmLib.INSTR_VERSION_0,
+                opcode: ZkgmLib.OP_BATCH,
+                operand: ZkgmLib.encodeBatch(Batch({instructions: instructions}))
+            })
+        );
+
+        // Verify both NFTs were minted
+        ZkgmERC721 stakeNFT = zkgm.predictStakeManagerAddress();
+        assertEq(stakeNFT.ownerOf(tokenId1), address(zkgm));
+        assertEq(stakeNFT.ownerOf(tokenId2), address(zkgm));
+    }
+
     function test_create_foa() public {
         FungibleAssetOrder memory foa = FungibleAssetOrder({
             sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
@@ -5254,7 +6555,7 @@ contract ZkgmTests is Test {
                 opcode: ZkgmLib.OP_BATCH,
                 operand: ZkgmLib.encodeBatch(Batch({instructions: instructions}))
             })
-        )
+        );
 
         // Check both V1 and V2 outstanding balances are updated
         assertEq(zkgm.channelBalance(channelId, 0, baseToken), baseAmount1);
