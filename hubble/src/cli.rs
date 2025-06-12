@@ -3,7 +3,10 @@ use std::{fs, net::SocketAddr, path::Path, str::FromStr};
 use clap::{builder::ValueParser, ArgGroup, Parser};
 use tracing::{info_span, Instrument};
 
-use crate::{indexer, logging::LogFormat};
+use crate::{
+    indexer::{self, nats::NatsConnection},
+    logging::LogFormat,
+};
 
 fn parse_string_or_file_source(input: &str) -> Result<String, String> {
     if let Some(stripped) = input.strip_prefix('@') {
@@ -22,7 +25,7 @@ fn parse_string_or_file_source(input: &str) -> Result<String, String> {
 #[command(group(
     ArgGroup::new("nats")
         .required(false)
-        .requires_all(["nats-url", "nats-username", "nats-password"])
+        .requires_all(["nats-consumer", "nats-url", "nats-username", "nats-password"])
 ))]
 pub struct Args {
     /// The database url used to connect with timescaledb.
@@ -59,6 +62,10 @@ pub struct Args {
 
 #[derive(Parser, Debug)]
 pub struct Nats {
+    /// Nats server URL (without credentials)
+    #[arg(id = "nats-consumer", long = "nats-consumer", required = false)]
+    pub consumer: String,
+
     /// Nats server URL (without credentials)
     #[arg(
         id = "nats-url", 
@@ -126,7 +133,7 @@ impl IndexerConfig {
     pub async fn index(
         self,
         db: sqlx::PgPool,
-        nats: Option<async_nats::jetstream::context::Context>,
+        nats: Option<NatsConnection>,
     ) -> Result<(), color_eyre::eyre::Report> {
         let label = self.label();
 

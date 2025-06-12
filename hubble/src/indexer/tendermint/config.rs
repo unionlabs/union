@@ -4,8 +4,9 @@ use url::Url;
 
 use crate::indexer::{
     api::{BlockHeight, IndexerId},
+    nats::NatsConnection,
     tendermint::{context::TmContext, fetcher_client::TmFetcherClient},
-    FinalizerConfig, Indexer, PublisherConfig,
+    ConsumerConfig, FinalizerConfig, Indexer, PublisherConfig,
 };
 
 const DEFAULT_CHUNK_SIZE: usize = 20;
@@ -23,6 +24,8 @@ pub struct Config {
     #[serde(default)]
     pub publisher: PublisherConfig,
     #[serde(default)]
+    pub consumer: ConsumerConfig,
+    #[serde(default)]
     pub testnet: bool,
 }
 
@@ -30,7 +33,7 @@ impl Config {
     pub async fn build(
         self,
         pg_pool: PgPool,
-        nats: Option<async_nats::jetstream::context::Context>,
+        nats: Option<NatsConnection>,
     ) -> Result<Indexer<TmFetcherClient>, Report> {
         Ok(Indexer::new(
             pg_pool,
@@ -40,6 +43,7 @@ impl Config {
             self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
             self.finalizer,
             self.publisher,
+            self.consumer,
             TmContext {
                 rpc_urls: self.rpc_urls,
                 tx_search_max_page_size: self

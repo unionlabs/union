@@ -2,10 +2,6 @@
 
 use std::time::Duration;
 
-use async_nats::{
-    jetstream::{self, stream::StorageType},
-    ConnectOptions,
-};
 use axum::{routing::get, Router};
 use backon::{ConstantBuilder, ExponentialBuilder};
 use clap::Parser;
@@ -28,6 +24,8 @@ mod token_fetcher;
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
 
+use crate::indexer::nats::NatsConnection;
+
 #[cfg(not(target_env = "msvc"))]
 #[global_allocator]
 static GLOBAL: Jemalloc = Jemalloc;
@@ -39,38 +37,25 @@ async fn main() -> color_eyre::eyre::Result<()> {
     crate::logging::init(args.log_format);
     metrics::register_custom_metrics();
 
+    info!("connecting to database");
     let db = PgPoolOptions::new()
         .max_connections(40)
         .connect(&args.database_url.unwrap())
         .await?;
 
+    info!("connecting to nats");
     let nats = match args.nats {
-        Some(nats) => {
-            let client = ConnectOptions::new()
-                .user_and_password(nats.username.clone(), nats.password.clone())
-                .connect(nats.url.clone())
-                .await?;
-
-            let jetstream = jetstream::new(client);
-
-            jetstream
-                .get_or_create_stream(jetstream::stream::Config {
-                    name: "hubble".to_string(),
-                    subjects: vec!["hubble.>".to_string()],
-                    storage: StorageType::File,
-                    num_replicas: 2,
-                    ..Default::default()
-                })
-                .await?;
-
-            Some(jetstream)
-        }
+        Some(nats) => Some(
+            NatsConnection::create(&nats.url, &nats.username, &nats.password, &nats.consumer)
+                .await?,
+        ),
         None => None,
     };
 
     let mut set = JoinSet::new();
 
     if let Some(addr) = args.metrics_addr {
+        info!("enabling metrics");
         set.spawn(async move {
             let app = Router::new()
                 .route("/metrics", get(metrics::handler))
