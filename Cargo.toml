@@ -74,6 +74,7 @@ members = [
   "lib/ethereum-sync-protocol-types",
   "lib/evm-storage-verifier",
   "lib/parlia-verifier",
+  "lib/satoshi-verifier",
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 

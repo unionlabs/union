@@ -12103,6 +12103,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "satoshi-verifier"
+version = "0.0.0"
+dependencies = [
+ "blst",
+ "consensus-primitives",
+ "hex",
+ "hex-literal",
+ "rlp",
+ "serde_json",
+ "thiserror 2.0.12",
+ "unionlabs-primitives",
+]
+
+[[package]]
 name = "schannel"
 version = "0.1.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
