@@ -31,28 +31,50 @@ interface LogEntry {
 }
 
 let allLogs: LogEntry[] = $state([])
-let logContainer: HTMLElement
+let canvas: HTMLCanvasElement
+let ctx: CanvasRenderingContext2D
+let containerElement: HTMLElement
 let processedCount = $state(0)
 let logIdCounter = $state(0)
 
-// Optimization: Cache chain display names to avoid repeated lookups
+// Canvas settings
+let canvasWidth = $state(400)
+let canvasHeight = $state(600)
+let scrollOffset = $state(0)
+let maxScrollOffset = $state(0)
+let isMouseDown = false
+let lastMouseY = 0
+
+// Visual constants
+const LOG_HEIGHT = 56
+const PADDING = 8
+const LINE_HEIGHT = 14
+const FONT_SIZE = 12
+const COLORS = {
+  background: "#00000000",
+  text: "#d4d4d8", // zinc-300
+  textSecondary: "#9ca3af", // gray-400
+  filter: "#f59e0b", // amber-400
+  filterBg: "#27272a", // zinc-800
+  border: "#3f3f46", // zinc-700
+}
+
+// Optimization: Cache chain display names
 const chainDisplayNameCache = new Map<string, string>()
 
 const getChainDisplayName = (universalChainId: string): string => {
-  // Check cache first
   if (chainDisplayNameCache.has(universalChainId)) {
     return chainDisplayNameCache.get(universalChainId)!
   }
 
   let displayName = universalChainId
-  
+
   if (Option.isSome(chains.data)) {
     const chain = chains.data.value.find(c => c.universal_chain_id === universalChainId)
     if (chain) {
       displayName = chain.display_name || chain.chain_id
     }
   } else {
-    // Fallback to simple mapping if chains store not loaded
     const simpleNames: Record<string, string> = {
       "union-testnet-8": "Union",
       "osmo-test-5": "Osmosis",
@@ -62,7 +84,6 @@ const getChainDisplayName = (universalChainId: string): string => {
     displayName = simpleNames[universalChainId] || universalChainId
   }
 
-  // Cache the result
   chainDisplayNameCache.set(universalChainId, displayName)
   return displayName
 }
@@ -71,22 +92,20 @@ const formatHash = (hash: string): string => {
   return hash ? `${hash.slice(0, 8)}...${hash.slice(-4)}` : "N/A"
 }
 
-// Optimization: Pre-filter logs based on chain selection to reduce reactive computation
+// Filter logs based on selection
 let filteredLogs = $derived.by(() => {
   if (!selectedFromChain && !selectedToChain) {
-    return allLogs.slice(0, 100) // Only show recent 100 logs for performance
+    return allLogs.slice(0, 1000) // Show more logs since canvas can handle it
   }
 
   const filtered = allLogs.filter(log => {
     const sourceId = log.sourceChainId
     const destId = log.destChainId
 
-    // If both chains are selected, must match the exact route
     if (selectedFromChain && selectedToChain) {
       return sourceId === selectedFromChain && destId === selectedToChain
     }
 
-    // If only one chain is selected, must involve that chain
     if (selectedFromChain) {
       return sourceId === selectedFromChain || destId === selectedFromChain
     }
@@ -98,30 +117,191 @@ let filteredLogs = $derived.by(() => {
     return true
   })
 
-  return filtered.slice(0, 100) // Limit to 100 filtered results
+  return filtered.slice(0, 1000)
 })
 
-// Optimization: Batch log additions to reduce reactive updates
-let pendingLogs: LogEntry[] = []
-let batchTimeoutId: ReturnType<typeof setTimeout> | null = null
+// Canvas drawing functions
+function updateCanvasSize() {
+  if (!containerElement || !canvas) {
+    return
+  }
 
-const flushPendingLogs = () => {
-  if (pendingLogs.length === 0) return
-  
-  allLogs = [...pendingLogs, ...allLogs].slice(0, 500) // Keep max 500 logs
-  pendingLogs = []
-  batchTimeoutId = null
+  const rect = containerElement.getBoundingClientRect()
+  const dpr = window.devicePixelRatio || 1
+
+  canvasWidth = rect.width
+  canvasHeight = rect.height
+
+  canvas.width = canvasWidth * dpr
+  canvas.height = canvasHeight * dpr
+  canvas.style.width = canvasWidth + "px"
+  canvas.style.height = canvasHeight + "px"
+
+  if (ctx) {
+    ctx.scale(dpr, dpr)
+    ctx.textBaseline = "top"
+    setupCanvasFont()
+  }
+
+  // Update max scroll
+  const filterHeight = (selectedFromChain || selectedToChain) ? 32 : 0
+  const contentHeight = filteredLogs.length * LOG_HEIGHT
+  const viewportHeight = canvasHeight - filterHeight
+  maxScrollOffset = Math.max(0, contentHeight - viewportHeight)
 }
 
+function setupCanvasFont() {
+  if (!ctx) {
+    return
+  }
+  ctx.font =
+    `${FONT_SIZE}px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
+  ctx.textAlign = "left"
+}
+
+function drawFilterBar() {
+  if (!selectedFromChain && !selectedToChain) {
+    return
+  }
+
+  ctx.fillStyle = COLORS.filterBg
+  ctx.fillRect(0, 0, canvasWidth, 32)
+
+  // Border line
+  ctx.fillStyle = COLORS.border
+  ctx.fillRect(0, 31, canvasWidth, 1)
+
+  ctx.fillStyle = COLORS.filter
+  ctx.font = `${
+    FONT_SIZE - 1
+  }px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
+
+  let filterText = "Filtering: "
+  if (selectedFromChain && selectedToChain) {
+    filterText += `${getChainDisplayName(selectedFromChain)} → ${
+      getChainDisplayName(selectedToChain)
+    }`
+  } else if (selectedFromChain) {
+    filterText += `${getChainDisplayName(selectedFromChain)} (any direction)`
+  } else if (selectedToChain) {
+    filterText += `${getChainDisplayName(selectedToChain)} (any direction)`
+  }
+
+  ctx.fillText(filterText, PADDING, 10)
+  setupCanvasFont() // Reset font
+}
+
+function drawLogEntry(log: LogEntry, y: number) {
+  const baseY = y + PADDING
+
+  // Message line
+  ctx.fillStyle = COLORS.text
+  ctx.fillText(log.message, PADDING, baseY)
+
+  // Hash line
+  ctx.fillText(`tx: ${log.hash}`, PADDING, baseY + LINE_HEIGHT)
+
+  let currentY = baseY + LINE_HEIGHT * 2
+
+  // Sender line
+  if (log.sender) {
+    ctx.fillStyle = COLORS.textSecondary
+    ctx.fillText(`from: ${log.sender}`, PADDING, currentY)
+    currentY += LINE_HEIGHT
+  }
+
+  // Receiver line
+  if (log.receiver) {
+    ctx.fillStyle = COLORS.textSecondary
+    ctx.fillText(`to: ${log.receiver}`, PADDING, currentY)
+  }
+}
+
+function drawCanvas() {
+  if (!ctx) {
+    return
+  }
+
+  // Clear canvas
+  ctx.fillStyle = COLORS.background
+  ctx.fillRect(0, 0, canvasWidth, canvasHeight)
+
+  // Draw filter bar
+  const filterHeight = (selectedFromChain || selectedToChain) ? 32 : 0
+  drawFilterBar()
+
+  // Calculate visible log range (virtual scrolling)
+  const viewportTop = scrollOffset
+  const viewportBottom = viewportTop + (canvasHeight - filterHeight)
+
+  const startIndex = Math.max(0, Math.floor(viewportTop / LOG_HEIGHT))
+  const endIndex = Math.min(filteredLogs.length, Math.ceil(viewportBottom / LOG_HEIGHT) + 1)
+
+  // Save context for clipping
+  ctx.save()
+  ctx.beginPath()
+  ctx.rect(0, filterHeight, canvasWidth, canvasHeight - filterHeight)
+  ctx.clip()
+
+  // Draw visible logs
+  for (let i = startIndex; i < endIndex; i++) {
+    const logY = (i * LOG_HEIGHT) - scrollOffset + filterHeight
+    if (logY > -LOG_HEIGHT && logY < canvasHeight) {
+      drawLogEntry(filteredLogs[i], logY)
+    }
+  }
+
+  ctx.restore()
+
+  // Draw "waiting" message if no logs
+  if (filteredLogs.length === 0) {
+    ctx.fillStyle = "#6b7280" // zinc-500
+    ctx.textAlign = "center"
+    const centerY = canvasHeight / 2
+    ctx.fillText("Waiting for transfers...", canvasWidth / 2, centerY - 10)
+    ctx.fillText("_", canvasWidth / 2, centerY + 10)
+    ctx.textAlign = "left"
+  }
+}
+
+// Scroll handling
+function handleWheel(event: WheelEvent) {
+  event.preventDefault()
+  const delta = event.deltaY
+  scrollOffset = Math.max(0, Math.min(maxScrollOffset, scrollOffset + delta))
+  drawCanvas()
+}
+
+function handleMouseDown(event: MouseEvent) {
+  isMouseDown = true
+  lastMouseY = event.clientY
+}
+
+function handleMouseMove(event: MouseEvent) {
+  if (!isMouseDown) {
+    return
+  }
+
+  const deltaY = event.clientY - lastMouseY
+  scrollOffset = Math.max(0, Math.min(maxScrollOffset, scrollOffset - deltaY))
+  lastMouseY = event.clientY
+  drawCanvas()
+}
+
+function handleMouseUp() {
+  isMouseDown = false
+}
+
+// Add log function
 const addLog = (
-  type: string, 
-  sourceChain: string, 
-  destChain: string, 
-  hash: string, 
-  sender?: string, 
+  type: string,
+  sourceChain: string,
+  destChain: string,
+  hash: string,
+  sender?: string,
   receiver?: string,
   sourceChainId?: string,
-  destChainId?: string
+  destChainId?: string,
 ) => {
   const timestamp = new Date().toLocaleTimeString()
   logIdCounter++
@@ -140,19 +320,20 @@ const addLog = (
     destChainId,
   }
 
-  pendingLogs.push(logEntry)
+  // Add to beginning of array
+  allLogs = [logEntry, ...allLogs].slice(0, 1000) // Keep max 1000 logs
 
-  // Batch updates - flush after 16ms (next frame) or when we have 10+ pending
-  if (batchTimeoutId === null) {
-    if (pendingLogs.length >= 10) {
-      flushPendingLogs()
-    } else {
-      batchTimeoutId = setTimeout(flushPendingLogs, 16)
-    }
+  // Auto-scroll to top for new logs if user is near top
+  if (scrollOffset < 100) {
+    scrollOffset = 0
   }
+
+  // Update max scroll and redraw
+  updateCanvasSize()
+  drawCanvas()
 }
 
-// Check if transfer matches selected chain filter (for sound filtering)
+// Sound filtering function
 const shouldPlaySound = (transfer: any): boolean => {
   if (!selectedFromChain && !selectedToChain) {
     return true
@@ -161,12 +342,10 @@ const shouldPlaySound = (transfer: any): boolean => {
   const sourceId = transfer.source_chain?.universal_chain_id
   const destId = transfer.destination_chain?.universal_chain_id
 
-  // If both chains are selected, must match the exact route
   if (selectedFromChain && selectedToChain) {
     return sourceId === selectedFromChain && destId === selectedToChain
   }
 
-  // If only one chain is selected, must involve that chain
   if (selectedFromChain) {
     return sourceId === selectedFromChain || destId === selectedFromChain
   }
@@ -178,12 +357,11 @@ const shouldPlaySound = (transfer: any): boolean => {
   return true
 }
 
-// Process new transfers reactively
+// Process new transfers
 $effect(() => {
   if (transfers.length > processedCount) {
     const newTransfers = transfers.slice(processedCount)
     newTransfers.forEach((transfer: any) => {
-      // Only play sound for transfers that match the current filter
       if (shouldPlaySound(transfer)) {
         const value = parseFloat(transfer.base_amount?.toString() || "0") || 1
         const sourceChainId = transfer.source_chain?.universal_chain_id
@@ -191,7 +369,6 @@ $effect(() => {
         transactionAudio.playSound(value, sourceChainId, destChainId)
       }
 
-      // Pre-compute display values to avoid repeated work
       const sourceChain = getChainDisplayName(
         transfer.source_chain?.universal_chain_id || "unknown",
       )
@@ -221,60 +398,53 @@ $effect(() => {
   }
 })
 
-onMount(() => {
-  addLog("system", "Terminal", "Ready", "waiting for transfers...")
+// Reactive updates for filtering
+$effect(() => {
+  updateCanvasSize()
+  drawCanvas()
 })
 
-// Clear logs and cache
-const clearLogs = () => {
-  allLogs = []
-  pendingLogs = []
-  chainDisplayNameCache.clear()
-  if (batchTimeoutId !== null) {
-    clearTimeout(batchTimeoutId)
-    batchTimeoutId = null
+onMount(() => {
+  if (canvas && containerElement) {
+    ctx = canvas.getContext("2d")!
+    updateCanvasSize()
+
+    // Add event listeners
+    canvas.addEventListener("wheel", handleWheel, { passive: false })
+    canvas.addEventListener("mousedown", handleMouseDown)
+    window.addEventListener("mousemove", handleMouseMove)
+    window.addEventListener("mouseup", handleMouseUp)
+
+    // Resize observer
+    const resizeObserver = new ResizeObserver(() => {
+      updateCanvasSize()
+      drawCanvas()
+    })
+    resizeObserver.observe(containerElement)
+
+    // Initial log
+    addLog("system", "Terminal", "Ready", "waiting for transfers...")
+
+    return () => {
+      canvas.removeEventListener("wheel", handleWheel)
+      canvas.removeEventListener("mousedown", handleMouseDown)
+      window.removeEventListener("mousemove", handleMouseMove)
+      window.removeEventListener("mouseup", handleMouseUp)
+      resizeObserver.disconnect()
+    }
   }
-}
+})
 </script>
 
-<Card class="h-full flex flex-col">
-  <div class="flex flex-col h-full text-zinc-300 font-mono text-sm overflow-hidden">
-    {#if selectedFromChain || selectedToChain}
-      <div class="px-2 py-1 bg-zinc-800 border-b border-zinc-700 text-xs text-amber-400">
-        {#if selectedFromChain && selectedToChain}
-          Filtering: {getChainDisplayName(selectedFromChain)} → {
-            getChainDisplayName(selectedToChain)
-          }
-        {:else if selectedFromChain}
-          Filtering: {getChainDisplayName(selectedFromChain)} (any direction)
-        {:else if selectedToChain}
-          Filtering: {getChainDisplayName(selectedToChain)} (any direction)
-        {/if}
-      </div>
-    {/if}
-    <div
-      class="flex-1 overflow-y-auto leading-relaxed scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-600 hover:scrollbar-thumb-zinc-500 min-h-0 p-2"
-      bind:this={logContainer}
-    >
-      {#each filteredLogs as log (log.id)}
-        <div class="text-xs mb-2">
-          <div class="text-zinc-300 font-mono">{log.message}</div>
-          <div class="text-zinc-300 font-mono">tx: {log.hash}</div>
-          {#if log.sender}
-            <div class="text-zinc-400">from: {log.sender}</div>
-          {/if}
-          {#if log.receiver}
-            <div class="text-zinc-400">to: {log.receiver}</div>
-          {/if}
-        </div>
-      {/each}
-
-      {#if filteredLogs.length === 0}
-        <div class="flex items-center justify-center h-full text-zinc-500 flex-col gap-2">
-          <div>Waiting for transfers...</div>
-          <div class="animate-pulse font-bold">_</div>
-        </div>
-      {/if}
-    </div>
+<Card class="h-full">
+  <div
+    class="relative w-full h-full"
+    bind:this={containerElement}
+  >
+    <canvas
+      bind:this={canvas}
+      class="w-full h-full cursor-default"
+      style="background: transparent;"
+    ></canvas>
   </div>
 </Card>

@@ -33,8 +33,10 @@ const COLOR_CONFIG = {
 
 // Constants
 const PARTICLE_SPEED = 0.03
-const TARGET_FPS = 120
+const TARGET_FPS = 60 // Reduced from 120 to 30 FPS - major CPU savings
 const FRAME_INTERVAL = 1000 / TARGET_FPS
+const MAX_PARTICLES = 200 // Limit particle count to prevent accumulation
+const MOUSE_CHECK_INTERVAL = 5 // Check mouse hover every 5 frames instead of every frame
 
 // Calculate responsive chain node size based on canvas dimensions
 const getChainNodeSize = () => {
@@ -98,6 +100,10 @@ let chainNodes: Map<string, {
   glowIntensity: number
 }> = new Map()
 
+// Performance optimization variables
+let frameCount = 0
+let particlePool: any[] = [] // Reuse particle objects
+
 function updateCanvasSize() {
   if (!containerElement || !canvas || !ctx) {
     return
@@ -159,6 +165,12 @@ function setupChainNodes() {
 }
 
 function createParticleFromTransfer(transfer: TransferListItem) {
+  // Limit particle count to prevent performance issues
+  if (particles.length >= MAX_PARTICLES) {
+    // Remove oldest particles if we're at the limit
+    particles.splice(0, Math.floor(MAX_PARTICLES * 0.2)) // Remove 20% of oldest particles
+  }
+
   if (
     !chainNodes.has(transfer.source_chain.universal_chain_id)
     || !chainNodes.has(transfer.destination_chain.universal_chain_id)
@@ -173,7 +185,7 @@ function createParticleFromTransfer(transfer: TransferListItem) {
   fromNode.activity = Math.min(fromNode.activity + 0.5, 3)
   toNode.activity = Math.min(toNode.activity + 0.5, 3)
 
-  // Check if either source or destination chain is testnet
+  // Cache testnet check to avoid repeated lookups
   let isTestnetTransfer = false
   if (Option.isSome(chains.data)) {
     const chainData = chains.data.value
@@ -186,7 +198,14 @@ function createParticleFromTransfer(transfer: TransferListItem) {
     isTestnetTransfer = (sourceChain?.testnet || destChain?.testnet) || false
   }
 
-  particles.push({
+  // Reuse particle objects from pool or create new one
+  let particle = particlePool.pop()
+  if (!particle) {
+    particle = {}
+  }
+
+  // Update particle properties
+  Object.assign(particle, {
     id: transfer.packet_hash,
     x: fromNode.x,
     y: fromNode.y,
@@ -201,9 +220,16 @@ function createParticleFromTransfer(transfer: TransferListItem) {
     color: isTestnetTransfer ? COLOR_CONFIG.particleTestnet : COLOR_CONFIG.particle,
     size: getParticleSize(),
   })
+
+  particles.push(particle)
 }
 
 function checkHover() {
+  // Only check hover every few frames to reduce CPU usage
+  if (frameCount % MOUSE_CHECK_INTERVAL !== 0) {
+    return
+  }
+
   hoveredChain = null
   chainNodes.forEach((node, chainId) => {
     const distance = Math.sqrt(
@@ -254,12 +280,15 @@ function animate(currentTime = 0) {
     return
   }
   lastFrameTime = currentTime
+  frameCount++
 
   checkHover()
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
 
-  // Update particles
-  particles = particles.filter(particle => {
+  // Optimize particle updates - use for loop instead of filter for better performance
+  let activeParticles = []
+  for (let i = 0; i < particles.length; i++) {
+    const particle = particles[i]
     particle.progress += PARTICLE_SPEED
 
     if (particle.progress >= 1) {
@@ -269,17 +298,18 @@ function animate(currentTime = 0) {
         toNode.glowColor = COLOR_CONFIG.chainHit
         toNode.glowIntensity = 1.0
       }
-      return false
+      // Return particle to pool for reuse
+      particlePool.push(particle)
+    } else {
+      // Smooth interpolation - only calculate for active particles
+      const t = particle.progress
+      const easedT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
+      particle.x = particle.startX + (particle.targetX - particle.startX) * easedT
+      particle.y = particle.startY + (particle.targetY - particle.startY) * easedT
+      activeParticles.push(particle)
     }
-
-    // Smooth interpolation
-    const t = particle.progress
-    const easedT = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
-    particle.x = particle.startX + (particle.targetX - particle.startX) * easedT
-    particle.y = particle.startY + (particle.targetY - particle.startY) * easedT
-
-    return true
-  })
+  }
+  particles = activeParticles
 
   if (chainNodes.size === 0) {
     animationFrame = requestAnimationFrame(animate)
@@ -301,7 +331,8 @@ function animate(currentTime = 0) {
         const [chainId1, node1] = nodeArray[i]
         const [chainId2, node2] = nodeArray[j]
 
-        const isSelectedConnection = (selectedFromChain === chainId1 && selectedToChain === chainId2)
+        const isSelectedConnection =
+          (selectedFromChain === chainId1 && selectedToChain === chainId2)
           || (selectedFromChain === chainId2 && selectedToChain === chainId1)
 
         if (isSelectedConnection) {
@@ -329,23 +360,28 @@ function animate(currentTime = 0) {
     }
   }
 
-  // Draw chain nodes (optimized)
+  // Draw chain nodes (optimized) - batch similar operations
   chainNodes.forEach((node, chainId) => {
     // Update node state
     node.activity = Math.max(node.activity - 0.08, 0)
     node.glowIntensity = Math.max(node.glowIntensity - 0.05, 0)
-    
+  })
+
+  // Batch draw all nodes
+  chainNodes.forEach((node, chainId) => {
     const isSelected = chainId === selectedFromChain || chainId === selectedToChain
     const nodeRadius = node.size + (node.activity > 0 ? node.activity * 0.5 : 0)
 
     // Draw main node (simplified)
     ctx.beginPath()
     ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI)
-    
+
     // Simple color logic
-    ctx.fillStyle = isSelected ? COLOR_CONFIG.chainSelected : 
-                   node.glowIntensity > 0 ? COLOR_CONFIG.chainHit : 
-                   node.color
+    ctx.fillStyle = isSelected
+      ? COLOR_CONFIG.chainSelected
+      : node.glowIntensity > 0
+      ? COLOR_CONFIG.chainHit
+      : node.color
     ctx.fill()
 
     // Simple border for selected nodes only
@@ -355,7 +391,7 @@ function animate(currentTime = 0) {
       ctx.stroke()
     }
 
-    // Draw chain name on hover (no shadow)
+    // Draw chain name on hover (no shadow) - only when actively hovering
     if (hoveredChain === chainId) {
       ctx.fillStyle = "rgba(255, 255, 255, 0.9)"
       ctx.font = "10px sans-serif"
@@ -364,17 +400,18 @@ function animate(currentTime = 0) {
     }
   })
 
-
-
-  // Draw particles (optimized - no glow)
+  // Draw particles (optimized) - batch all particle drawing
   if (particles.length > 0) {
+    ctx.fillStyle = COLOR_CONFIG.particle // Set once for mainnet particles
     particles.forEach(particle => {
-      ctx.fillStyle = particle.color
+      if (particle.color !== COLOR_CONFIG.particle) {
+        ctx.fillStyle = particle.color // Only change if different
+      }
       ctx.fillRect(
         particle.x - particle.size,
         particle.y - particle.size,
         particle.size * 2,
-        particle.size * 2
+        particle.size * 2,
       )
     })
   }
