@@ -32,12 +32,30 @@ const COLOR_CONFIG = {
 }
 
 // Constants
-const CHAIN_BASE_SIZE = 12
-const PARTICLE_SPEED = 0.02
+const PARTICLE_SPEED = 0.03
+const TARGET_FPS = 120
+const FRAME_INTERVAL = 1000 / TARGET_FPS
+
+// Calculate responsive chain node size based on canvas dimensions
+const getChainNodeSize = () => {
+  const minSize = 5
+  const maxSize = 18
+  const baseSize = Math.min(canvasWidth, canvasHeight) * 0.02
+  return Math.max(minSize, Math.min(maxSize, baseSize))
+}
+
+// Calculate responsive particle size based on canvas dimensions
+const getParticleSize = () => {
+  const minSize = 0.1
+  const maxSize = 4
+  const baseSize = Math.min(canvasWidth, canvasHeight) * 0.008
+  return Math.max(minSize, Math.min(maxSize, baseSize))
+}
 
 let canvas: HTMLCanvasElement
 let ctx: CanvasRenderingContext2D
 let animationFrame: number
+let lastFrameTime = 0
 let canvasWidth = $state(800)
 let canvasHeight = $state(600)
 let containerElement: HTMLElement
@@ -119,6 +137,7 @@ function setupChainNodes() {
   const centerX = canvasWidth / 2
   const centerY = canvasHeight / 2
   const radius = Math.min(canvasWidth, canvasHeight) * 0.3
+  const nodeSize = getChainNodeSize()
 
   chainData.forEach((chain, index) => {
     const angle = (index / chainData.length) * 2 * Math.PI
@@ -128,8 +147,8 @@ function setupChainNodes() {
     chainNodes.set(chain.universal_chain_id, {
       x,
       y,
-      size: CHAIN_BASE_SIZE,
-      pulseSize: CHAIN_BASE_SIZE,
+      size: nodeSize,
+      pulseSize: nodeSize,
       color: COLOR_CONFIG.chainDefault,
       activity: 0,
       displayName: chain.display_name || chain.chain_id,
@@ -180,7 +199,7 @@ function createParticleFromTransfer(transfer: TransferListItem) {
     value: parseFloat(transfer.base_amount.toString()) || 1,
     progress: 0,
     color: isTestnetTransfer ? COLOR_CONFIG.particleTestnet : COLOR_CONFIG.particle,
-    size: 3,
+    size: getParticleSize(),
   })
 }
 
@@ -223,10 +242,18 @@ function handleChainClick() {
   }
 }
 
-function animate() {
+function animate(currentTime = 0) {
   if (!ctx) {
+    animationFrame = requestAnimationFrame(animate)
     return
   }
+
+  // Frame rate limiting
+  if (currentTime - lastFrameTime < FRAME_INTERVAL) {
+    animationFrame = requestAnimationFrame(animate)
+    return
+  }
+  lastFrameTime = currentTime
 
   checkHover()
   ctx.clearRect(0, 0, canvasWidth, canvasHeight)
@@ -259,176 +286,98 @@ function animate() {
     return
   }
 
-  // Draw connection lines
-  const nodeArray = Array.from(chainNodes.entries())
-  let selectedConnectionPairs: Array<[any, any]> = []
+  // Draw connection lines (optimized)
+  if (chainNodes.size > 1) {
+    const nodeArray = Array.from(chainNodes.entries())
+    let selectedConnectionPairs: Array<[any, any]> = []
 
-  for (let i = 0; i < nodeArray.length; i++) {
-    for (let j = i + 1; j < nodeArray.length; j++) {
-      const [chainId1, node1] = nodeArray[i]
-      const [chainId2, node2] = nodeArray[j]
+    // Set default connection style once
+    ctx.strokeStyle = COLOR_CONFIG.connectionDefault
+    ctx.lineWidth = 1
+    ctx.beginPath()
 
-      const isSelectedConnection = (selectedFromChain === chainId1 && selectedToChain === chainId2)
-        || (selectedFromChain === chainId2 && selectedToChain === chainId1)
+    for (let i = 0; i < nodeArray.length; i++) {
+      for (let j = i + 1; j < nodeArray.length; j++) {
+        const [chainId1, node1] = nodeArray[i]
+        const [chainId2, node2] = nodeArray[j]
 
-      if (isSelectedConnection) {
-        selectedConnectionPairs.push([node1, node2])
-      } else {
-        ctx.beginPath()
+        const isSelectedConnection = (selectedFromChain === chainId1 && selectedToChain === chainId2)
+          || (selectedFromChain === chainId2 && selectedToChain === chainId1)
+
+        if (isSelectedConnection) {
+          selectedConnectionPairs.push([node1, node2])
+        } else {
+          ctx.moveTo(node1.x, node1.y)
+          ctx.lineTo(node2.x, node2.y)
+        }
+      }
+    }
+    ctx.stroke()
+
+    // Draw selected connections
+    if (selectedConnectionPairs.length > 0) {
+      ctx.strokeStyle = COLOR_CONFIG.connectionSelected
+      ctx.lineWidth = 1
+      ctx.globalAlpha = 0.6
+      ctx.beginPath()
+      selectedConnectionPairs.forEach(([node1, node2]) => {
         ctx.moveTo(node1.x, node1.y)
         ctx.lineTo(node2.x, node2.y)
-        ctx.strokeStyle = COLOR_CONFIG.connectionDefault
-        ctx.lineWidth = 1
-        ctx.stroke()
-      }
+      })
+      ctx.stroke()
+      ctx.globalAlpha = 1
     }
   }
 
-  // Draw chain nodes
+  // Draw chain nodes (optimized)
   chainNodes.forEach((node, chainId) => {
     // Update node state
     node.activity = Math.max(node.activity - 0.08, 0)
     node.glowIntensity = Math.max(node.glowIntensity - 0.05, 0)
-    node.pulseSize = node.pulseSize + (node.size - node.pulseSize) * 0.1
-
-    const nodeRadius = node.size + node.activity * 0.8
+    
     const isSelected = chainId === selectedFromChain || chainId === selectedToChain
+    const nodeRadius = node.size + (node.activity > 0 ? node.activity * 0.5 : 0)
 
-    // Draw pulse effect
-    if (node.activity > 0) {
-      const pulseRadius = node.size + node.activity * 2.5
-      const pulseGradient = ctx.createRadialGradient(
-        node.x,
-        node.y,
-        node.size,
-        node.x,
-        node.y,
-        pulseRadius,
-      )
-      pulseGradient.addColorStop(0, node.color + "20")
-      pulseGradient.addColorStop(1, node.color + "00")
-
-      ctx.beginPath()
-      ctx.arc(node.x, node.y, pulseRadius, 0, 2 * Math.PI)
-      ctx.fillStyle = pulseGradient
-      ctx.fill()
-    }
-
-    // Draw outer glow
-    const outerGlow = ctx.createRadialGradient(
-      node.x,
-      node.y,
-      0,
-      node.x,
-      node.y,
-      nodeRadius * (isSelected ? 2.2 : 1.5),
-    )
-    const glowOpacity = isSelected ? "80" : "40"
-    const glowColor = isSelected ? COLOR_CONFIG.chainSelectedGlow : node.color
-    outerGlow.addColorStop(0, glowColor + glowOpacity)
-    outerGlow.addColorStop(1, glowColor + "00")
-
-    ctx.beginPath()
-    ctx.arc(node.x, node.y, nodeRadius * (isSelected ? 2.2 : 1.5), 0, 2 * Math.PI)
-    ctx.fillStyle = outerGlow
-    ctx.fill()
-
-    // Draw main node
+    // Draw main node (simplified)
     ctx.beginPath()
     ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI)
-
-    // Determine node fill color based on selection and glow state
-    let fillColor = isSelected ? COLOR_CONFIG.chainSelected : node.color
-
-    if (node.glowIntensity > 0) {
-      const glowAmount = node.glowIntensity
-      const baseAmount = 1 - glowAmount
-      const r1 = parseInt(fillColor.slice(1, 3), 16)
-      const g1 = parseInt(fillColor.slice(3, 5), 16)
-      const b1 = parseInt(fillColor.slice(5, 7), 16)
-      const r2 = parseInt(node.glowColor.slice(1, 3), 16)
-      const g2 = parseInt(node.glowColor.slice(3, 5), 16)
-      const b2 = parseInt(node.glowColor.slice(5, 7), 16)
-
-      const r = Math.round(r1 * baseAmount + r2 * glowAmount)
-      const g = Math.round(g1 * baseAmount + g2 * glowAmount)
-      const b = Math.round(b1 * baseAmount + b2 * glowAmount)
-
-      ctx.fillStyle = `rgb(${r}, ${g}, ${b})`
-    } else {
-      ctx.fillStyle = fillColor
-    }
+    
+    // Simple color logic
+    ctx.fillStyle = isSelected ? COLOR_CONFIG.chainSelected : 
+                   node.glowIntensity > 0 ? COLOR_CONFIG.chainHit : 
+                   node.color
     ctx.fill()
 
-    // Draw border
-    ctx.beginPath()
-    ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI)
+    // Simple border for selected nodes only
     if (isSelected) {
       ctx.strokeStyle = COLOR_CONFIG.chainSelected
       ctx.lineWidth = 2
-      ctx.globalAlpha = 0.8
-    } else {
-      ctx.strokeStyle = "rgba(255, 255, 255, 0.2)"
-      ctx.lineWidth = 1
-      ctx.globalAlpha = 1
+      ctx.stroke()
     }
-    ctx.stroke()
-    ctx.globalAlpha = 1
 
-    // Draw chain name on hover
+    // Draw chain name on hover (no shadow)
     if (hoveredChain === chainId) {
       ctx.fillStyle = "rgba(255, 255, 255, 0.9)"
-      ctx.font = "10px -apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, sans-serif"
+      ctx.font = "10px sans-serif"
       ctx.textAlign = "center"
-      ctx.shadowColor = "rgba(0, 0, 0, 0.7)"
-      ctx.shadowBlur = 4
-      ctx.shadowOffsetX = 0
-      ctx.shadowOffsetY = 1
       ctx.fillText(node.displayName, node.x, node.y - nodeRadius - 8)
-      ctx.shadowColor = "transparent"
-      ctx.shadowBlur = 0
-      ctx.shadowOffsetX = 0
-      ctx.shadowOffsetY = 0
     }
   })
 
-  // Draw selected connections
-  selectedConnectionPairs.forEach(([node1, node2]) => {
-    ctx.beginPath()
-    ctx.moveTo(node1.x, node1.y)
-    ctx.lineTo(node2.x, node2.y)
-    ctx.strokeStyle = COLOR_CONFIG.connectionSelected
-    ctx.lineWidth = 1
-    ctx.globalAlpha = 0.6
-    ctx.stroke()
-  })
-  ctx.globalAlpha = 1
 
-  // Draw particles
-  particles.forEach(particle => {
-    // Outer glow
-    const glowGradient = ctx.createRadialGradient(
-      particle.x,
-      particle.y,
-      0,
-      particle.x,
-      particle.y,
-      particle.size * 2.5,
-    )
-    glowGradient.addColorStop(0, COLOR_CONFIG.particleGlow)
-    glowGradient.addColorStop(1, particle.color + "00")
 
-    ctx.beginPath()
-    ctx.arc(particle.x, particle.y, particle.size * 2.5, 0, 2 * Math.PI)
-    ctx.fillStyle = glowGradient
-    ctx.fill()
-
-    // Main particle
-    ctx.beginPath()
-    ctx.arc(particle.x, particle.y, particle.size, 0, 2 * Math.PI)
-    ctx.fillStyle = particle.color
-    ctx.fill()
-  })
+  // Draw particles (optimized - no glow)
+  if (particles.length > 0) {
+    particles.forEach(particle => {
+      ctx.fillStyle = particle.color
+      ctx.fillRect(
+        particle.x - particle.size,
+        particle.y - particle.size,
+        particle.size * 2,
+        particle.size * 2
+      )
+    })
+  }
 
   animationFrame = requestAnimationFrame(animate)
 }
