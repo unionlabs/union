@@ -3,6 +3,7 @@ use std::fmt::{Display, Formatter};
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::{stream::FuturesOrdered, Stream};
+use serde_json::{json, Value};
 use sqlx::Postgres;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
@@ -57,7 +58,10 @@ impl BlockHandle for DummyBlock {
         )))
     }
 
-    async fn insert(&self, _tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    async fn insert(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<Value>, IndexerError> {
         let content = match self.content.clone() {
             Some(content) => content,
             None => {
@@ -76,10 +80,20 @@ impl BlockHandle for DummyBlock {
 
         // sleep(Duration::from_millis(50)).await;
 
-        Ok(())
+        Ok(Some(json!({
+            "type": "dummy",
+            "events": [
+                {
+                    "content": content
+                }
+            ],
+        })))
     }
 
-    async fn update(&self, _tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    async fn update(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<Value>, IndexerError> {
         info!(
             "chain: {} - update: {} - {}",
             self.dummy_client.internal_chain_id,
@@ -95,7 +109,14 @@ impl BlockHandle for DummyBlock {
 
         // sleep(Duration::from_millis(50)).await;
 
-        Ok(())
+        Ok(Some(json!({
+            "type": "dummy",
+            "events": [
+                {
+                    "content": self.content
+                }
+            ],
+        })))
     }
 }
 

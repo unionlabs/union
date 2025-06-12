@@ -10,9 +10,7 @@ use super::{
 };
 use crate::indexer::{
     api::{BlockHandle, BlockRange, BlockSelection, FetchMode, IndexerError},
-    event::{HubbleEvent, Range},
-    nats::subject_for_block,
-    postgres::{get_current_height, publish, update_block_status, update_current_height},
+    postgres::{get_current_height, update_block_status, update_current_height},
     HappyRangeFetcher,
 };
 
@@ -105,7 +103,9 @@ impl<T: FetcherClient> Indexer<T> {
 
         let mut tx = self.pg_pool.begin().await?;
 
-        block_handle.insert(&mut tx).await?;
+        if let Some(events) = block_handle.insert(&mut tx).await? {
+            self.schedule_event(&mut tx, &reference, events).await?;
+        }
 
         update_current_height(
             &mut tx,
@@ -114,24 +114,6 @@ impl<T: FetcherClient> Indexer<T> {
             reference.timestamp,
         )
         .await?;
-
-        if self.nats.is_some() {
-            let subject = subject_for_block(&self.indexer_id);
-            let data = bytes::Bytes::from(serde_json::to_vec(&HubbleEvent {
-                version: 1,
-                universal_chain_id: self.indexer_id.clone(),
-                range: Range {
-                    start: reference.height,
-                    end: reference.height,
-                },
-                chunk: None,
-                details: serde_json::Value::Null,
-            })?);
-
-            let id = publish(&mut tx, &subject, data).await?;
-
-            debug!("store: {} - published: {}", reference, id);
-        }
 
         tx.commit().await?;
 
@@ -183,10 +165,13 @@ impl<T: FetcherClient> Indexer<T> {
                 }
 
                 let mut tx = self.pg_pool.begin().await?;
-                block_handle
+                if let Some(events) = block_handle
                     .insert(&mut tx)
                     .instrument(info_span!("insert"))
-                    .await?;
+                    .await?
+                {
+                    self.schedule_event(&mut tx, reference, events).await?;
+                }
 
                 debug!("{}: update height", reference);
                 update_current_height(

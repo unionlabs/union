@@ -1,12 +1,14 @@
-use async_nats::jetstream::Context;
 use tokio::time::sleep;
-use tracing::{debug, info, warn};
+use tracing::{debug, warn};
 
 use super::{
     api::{FetcherClient, IndexerError},
     Indexer,
 };
-use crate::indexer::{nats::subject_for_block, postgres::next_to_publish};
+use crate::indexer::{
+    nats::{subject_for_block, NatsConnection},
+    postgres::next_to_publish,
+};
 
 enum PublisherLoopResult {
     RunAgain,
@@ -17,7 +19,7 @@ impl<T: FetcherClient> Indexer<T> {
     pub async fn run_publisher(&self) -> Result<(), IndexerError> {
         if let Some(nats) = &self.nats {
             loop {
-                match self.run_publisher_loop(&nats.context).await {
+                match self.run_publisher_loop(nats).await {
                     Ok(PublisherLoopResult::RunAgain) => {
                         debug!("run again");
                     }
@@ -38,7 +40,7 @@ impl<T: FetcherClient> Indexer<T> {
                 }
             }
         } else {
-            info!("no nats configuration => no need to create publisher");
+            debug!("no nats configuration => no need to create publisher");
         };
 
         Ok(())
@@ -46,7 +48,7 @@ impl<T: FetcherClient> Indexer<T> {
 
     async fn run_publisher_loop(
         &self,
-        nats: &Context,
+        nats: &NatsConnection,
     ) -> Result<PublisherLoopResult, IndexerError> {
         debug!("begin");
         let mut tx = self.pg_pool.begin().await?;
@@ -56,28 +58,21 @@ impl<T: FetcherClient> Indexer<T> {
         let messages = next_to_publish(&mut tx, &subject, self.publisher_config.batch_size).await?;
 
         if messages.is_empty() {
-            info!("nothing scheduled to publish => retry later");
+            debug!("nothing scheduled to publish => retry later");
 
             return Ok(PublisherLoopResult::TryAgainLater);
         }
 
-        info!("sending (count: {})", messages.len());
+        debug!("sending (count: {})", messages.len());
         for message in messages {
-            info!("{}: sending", message.id);
+            let ack = nats.publish(&message).await?;
 
-            let ack_future = nats
-                .publish_with_headers(message.subject, message.headers, message.data)
-                .await?;
-
-            info!("{}: acking", message.id);
-            let ack = ack_future.await?;
-
-            info!("{}: acked (sequence: {})", message.id, ack.sequence);
+            debug!("{}: acked {ack}", message.id);
         }
 
         debug!("commit");
         tx.commit().await?;
-        info!("done");
+        debug!("done");
         Ok(PublisherLoopResult::RunAgain)
     }
 }

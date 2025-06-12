@@ -1,4 +1,5 @@
 use itertools::Itertools;
+use serde_json::{json, Value};
 use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 
@@ -51,20 +52,32 @@ pub struct PgEvent {
 pub async fn insert_batch_blocks(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     blocks: impl IntoIterator<Item = PgBlock>,
-) -> sqlx::Result<()> {
+) -> sqlx::Result<Vec<Value>> {
+    let (result, tuples): (Vec<_>, Vec<_>) = blocks
+        .into_iter()
+        .map(|b| {
+            let height: i64 = b.height.try_into().unwrap();
+            let event = json!({
+                "type": "tendermint-block",
+                "internal_chain_id": b.chain_id.db,
+                "hash": b.hash,
+                "data": b.data,
+                "height": height,
+                "time": b.time,
+            });
+            let tuple = (b.chain_id.db, b.hash, b.data, height, b.time);
+
+            (event, tuple)
+        })
+        .unzip();
+
     let (chain_ids, hashes, data, height, time): (
         Vec<i32>,
         Vec<String>,
         Vec<_>,
         Vec<i64>,
         Vec<OffsetDateTime>,
-    ) = blocks
-        .into_iter()
-        .map(|b| {
-            let height: i64 = b.height.try_into().unwrap();
-            (b.chain_id.db, b.hash, b.data, height, b.time)
-        })
-        .multiunzip();
+    ) = tuples.into_iter().multiunzip();
 
     sqlx::query!("
         INSERT INTO v2_cosmos.blocks (internal_chain_id, hash, data, height, time)
@@ -72,14 +85,41 @@ pub async fn insert_batch_blocks(
         ", &chain_ids, &hashes, &data, &height, &time)
     .execute(tx.as_mut()).await?;
 
-    Ok(())
+    Ok(result)
 }
 
 pub async fn insert_batch_transactions(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     transactions: impl IntoIterator<Item = PgTransaction>,
-) -> sqlx::Result<()> {
+) -> sqlx::Result<Vec<Value>> {
     #![allow(clippy::type_complexity)]
+    let (result, tuples): (Vec<_>, Vec<_>) = transactions
+        .into_iter()
+        .map(|t| {
+            let block_height: i64 = t.block_height.try_into().unwrap();
+            let event = json!({
+                "type": "tendermint-transaction",
+                "internal_chain_id": t.chain_id.db,
+                "block_hash": t.block_hash,
+                "height": block_height,
+                "hash": t.hash,
+                "data": t.data,
+                "index": t.index,
+            });
+
+            let tuple = (
+                t.chain_id.db,
+                t.block_hash,
+                block_height,
+                t.hash,
+                t.data,
+                t.index,
+            );
+
+            (event, tuple)
+        })
+        .unzip();
+
     let (chain_ids, block_hashes, heights, hashes, data, indexes): (
         Vec<i32>,
         Vec<String>,
@@ -87,21 +127,7 @@ pub async fn insert_batch_transactions(
         Vec<String>,
         Vec<_>,
         Vec<i32>,
-    ) = transactions
-        .into_iter()
-        .map(|t| {
-            let block_height: i64 = t.block_height.try_into().unwrap();
-
-            (
-                t.chain_id.db,
-                t.block_hash,
-                block_height,
-                t.hash,
-                t.data,
-                t.index,
-            )
-        })
-        .multiunzip();
+    ) = tuples.into_iter().multiunzip();
 
     sqlx::query!("
         INSERT INTO v2_cosmos.transactions (internal_chain_id, block_hash, height, hash, data, index) 
@@ -110,14 +136,52 @@ pub async fn insert_batch_transactions(
         &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
     .execute(tx.as_mut()).await?;
 
-    Ok(())
+    Ok(result)
 }
 
 pub async fn insert_batch_events(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     events: impl IntoIterator<Item = EventInFlows>,
-) -> sqlx::Result<()> {
+) -> sqlx::Result<Vec<Value>> {
     #![allow(clippy::type_complexity)]
+    let (result, tuples): (Vec<_>, Vec<_>) = events
+        .into_iter()
+        .flat_map(|e| {
+            e.flows
+                .iter()
+                .map(|flow| {
+                    let block_height: i64 = e.event.block_height.try_into().unwrap();
+                    let event = json!({
+                        "type": "tendermint-event",
+                        "internal_chain_id": e.event.chain_id.db,
+                        "block_hash": e.event.block_hash,
+                        "height": block_height,
+                        "transaction_hash": e.event.transaction_hash,
+                        "index": e.event.block_index,
+                        "transaction_index": e.event.transaction_index,
+                        "data": e.event.data,
+                        "time": e.event.time,
+                        "flow": flow,
+                    });
+
+                    let tuple = (
+                        e.event.chain_id.db,
+                        e.event.block_hash.clone(),
+                        block_height,
+                        e.event.transaction_hash.clone(),
+                        e.event.block_index,
+                        e.event.transaction_index,
+                        e.event.data.clone(),
+                        e.event.time,
+                        flow.clone(),
+                    );
+
+                    (event, tuple)
+                })
+                .collect::<Vec<_>>()
+        })
+        .unzip();
+
     let (
         chain_ids,
         block_hashes,
@@ -138,28 +202,7 @@ pub async fn insert_batch_events(
         Vec<_>,
         Vec<OffsetDateTime>,
         Vec<String>,
-    ) = events
-        .into_iter()
-        .flat_map(|e| {
-            e.flows
-                .iter()
-                .map(|flow| {
-                    let block_height: i64 = e.event.block_height.try_into().unwrap();
-                    (
-                        e.event.chain_id.db,
-                        e.event.block_hash.clone(),
-                        block_height,
-                        e.event.transaction_hash.clone(),
-                        e.event.block_index,
-                        e.event.transaction_index,
-                        e.event.data.clone(),
-                        e.event.time,
-                        flow.clone(),
-                    )
-                })
-                .collect::<Vec<_>>()
-        })
-        .multiunzip();
+    ) = tuples.into_iter().multiunzip();
 
     sqlx::query!("
         INSERT INTO v2_cosmos.events (internal_chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time, flow)
@@ -168,7 +211,7 @@ pub async fn insert_batch_events(
         &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times, &flows)
     .execute(tx.as_mut()).await?;
 
-    Ok(())
+    Ok(result)
 }
 
 pub async fn delete_tm_block_transactions_events(
