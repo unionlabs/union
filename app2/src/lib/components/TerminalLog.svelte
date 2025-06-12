@@ -21,28 +21,65 @@ interface LogEntry {
   timestamp: string
   type: string
   message: string
-  data?: any
+  sourceChain: string
+  destChain: string
+  hash: string
+  sender?: string | undefined
+  receiver?: string | undefined
+  sourceChainId?: string | undefined
+  destChainId?: string | undefined
 }
 
 let allLogs: LogEntry[] = $state([])
 let logContainer: HTMLElement
 let processedCount = $state(0)
-let startTime = $state(Date.now())
 let logIdCounter = $state(0)
 
-// Filtered logs based on chain selection
-let filteredLogs = $derived.by(() => {
-  if (!selectedFromChain && !selectedToChain) {
-    return allLogs
+// Optimization: Cache chain display names to avoid repeated lookups
+const chainDisplayNameCache = new Map<string, string>()
+
+const getChainDisplayName = (universalChainId: string): string => {
+  // Check cache first
+  if (chainDisplayNameCache.has(universalChainId)) {
+    return chainDisplayNameCache.get(universalChainId)!
   }
 
-  return allLogs.filter(log => {
-    if (log.type !== "transfer" || !log.data) {
-      return true // Show system messages
+  let displayName = universalChainId
+  
+  if (Option.isSome(chains.data)) {
+    const chain = chains.data.value.find(c => c.universal_chain_id === universalChainId)
+    if (chain) {
+      displayName = chain.display_name || chain.chain_id
     }
+  } else {
+    // Fallback to simple mapping if chains store not loaded
+    const simpleNames: Record<string, string> = {
+      "union-testnet-8": "Union",
+      "osmo-test-5": "Osmosis",
+      "sepolia-1": "Ethereum",
+      "stride-internal-1": "Stride",
+    }
+    displayName = simpleNames[universalChainId] || universalChainId
+  }
 
-    const sourceId = log.data.sourceChainId
-    const destId = log.data.destChainId
+  // Cache the result
+  chainDisplayNameCache.set(universalChainId, displayName)
+  return displayName
+}
+
+const formatHash = (hash: string): string => {
+  return hash ? `${hash.slice(0, 8)}...${hash.slice(-4)}` : "N/A"
+}
+
+// Optimization: Pre-filter logs based on chain selection to reduce reactive computation
+let filteredLogs = $derived.by(() => {
+  if (!selectedFromChain && !selectedToChain) {
+    return allLogs.slice(0, 100) // Only show recent 100 logs for performance
+  }
+
+  const filtered = allLogs.filter(log => {
+    const sourceId = log.sourceChainId
+    const destId = log.destChainId
 
     // If both chains are selected, must match the exact route
     if (selectedFromChain && selectedToChain) {
@@ -60,52 +97,59 @@ let filteredLogs = $derived.by(() => {
 
     return true
   })
+
+  return filtered.slice(0, 100) // Limit to 100 filtered results
 })
 
-const addLog = (type: string, message: string, data: any = null) => {
+// Optimization: Batch log additions to reduce reactive updates
+let pendingLogs: LogEntry[] = []
+let batchTimeoutId: ReturnType<typeof setTimeout> | null = null
+
+const flushPendingLogs = () => {
+  if (pendingLogs.length === 0) return
+  
+  allLogs = [...pendingLogs, ...allLogs].slice(0, 500) // Keep max 500 logs
+  pendingLogs = []
+  batchTimeoutId = null
+}
+
+const addLog = (
+  type: string, 
+  sourceChain: string, 
+  destChain: string, 
+  hash: string, 
+  sender?: string, 
+  receiver?: string,
+  sourceChainId?: string,
+  destChainId?: string
+) => {
   const timestamp = new Date().toLocaleTimeString()
   logIdCounter++
 
-  allLogs = [{
+  const logEntry: LogEntry = {
     id: logIdCounter,
     timestamp,
     type,
-    message,
-    data,
-  }, ...allLogs].slice(0, 500) // Keep many more logs to handle filtering
-}
+    message: `${sourceChain} → ${destChain}`,
+    sourceChain,
+    destChain,
+    hash,
+    sender,
+    receiver,
+    sourceChainId,
+    destChainId,
+  }
 
-const getChainDisplayName = (universalChainId: string): string => {
-  if (Option.isSome(chains.data)) {
-    const chain = chains.data.value.find(c => c.universal_chain_id === universalChainId)
-    if (chain) {
-      return chain.display_name || chain.chain_id
+  pendingLogs.push(logEntry)
+
+  // Batch updates - flush after 16ms (next frame) or when we have 10+ pending
+  if (batchTimeoutId === null) {
+    if (pendingLogs.length >= 10) {
+      flushPendingLogs()
+    } else {
+      batchTimeoutId = setTimeout(flushPendingLogs, 16)
     }
   }
-
-  // Fallback to simple mapping if chains store not loaded
-  const simpleNames: Record<string, string> = {
-    "union-testnet-8": "Union",
-    "osmo-test-5": "Osmosis",
-    "sepolia-1": "Ethereum",
-    "stride-internal-1": "Stride",
-  }
-  return simpleNames[universalChainId] || universalChainId
-}
-
-const formatHash = (hash: string): string => {
-  return hash ? `${hash.slice(0, 8)}...${hash.slice(-4)}` : "N/A"
-}
-
-const formatAmount = (amount: string, token: string): string => {
-  if (!amount || !token) {
-    return ""
-  }
-
-  // Convert from base units (assuming 6 decimals for most tokens)
-  const numAmount = parseFloat(amount) / 1_000_000
-  const formatted = numAmount >= 1 ? numAmount.toFixed(2) : numAmount.toFixed(6)
-  return `${formatted} ${token}`
 }
 
 // Check if transfer matches selected chain filter (for sound filtering)
@@ -142,10 +186,12 @@ $effect(() => {
       // Only play sound for transfers that match the current filter
       if (shouldPlaySound(transfer)) {
         const value = parseFloat(transfer.base_amount?.toString() || "0") || 1
-        transactionAudio.playTransactionSound(value)
+        const sourceChainId = transfer.source_chain?.universal_chain_id
+        const destChainId = transfer.destination_chain?.universal_chain_id
+        transactionAudio.playSound(value, sourceChainId, destChainId)
       }
 
-      // Log all transfers (filtering happens in display)
+      // Pre-compute display values to avoid repeated work
       const sourceChain = getChainDisplayName(
         transfer.source_chain?.universal_chain_id || "unknown",
       )
@@ -153,33 +199,41 @@ $effect(() => {
         transfer.destination_chain?.universal_chain_id || "unknown",
       )
       const hash = formatHash(transfer.packet_hash)
-      const amount = formatAmount(transfer.base_amount, transfer.base_token)
+      const sender = transfer.sender_canonical
+        ? `${transfer.sender_canonical.slice(0, 8)}...${transfer.sender_canonical.slice(-4)}`
+        : undefined
+      const receiver = transfer.receiver_canonical
+        ? `${transfer.receiver_canonical.slice(0, 8)}...${transfer.receiver_canonical.slice(-4)}`
+        : undefined
 
-      addLog("transfer", `${sourceChain} → ${destChain}`, {
+      addLog(
+        "transfer",
+        sourceChain,
+        destChain,
         hash,
-        amount,
-        sender: transfer.sender_canonical
-          ? `${transfer.sender_canonical.slice(0, 8)}...${transfer.sender_canonical.slice(-4)}`
-          : null,
-        receiver: transfer.receiver_canonical
-          ? `${transfer.receiver_canonical.slice(0, 8)}...${transfer.receiver_canonical.slice(-4)}`
-          : null,
-        timestamp: transfer.transfer_send_timestamp,
-        sourceChainId: transfer.source_chain?.universal_chain_id,
-        destChainId: transfer.destination_chain?.universal_chain_id,
-      })
+        sender,
+        receiver,
+        transfer.source_chain?.universal_chain_id,
+        transfer.destination_chain?.universal_chain_id,
+      )
     })
     processedCount = transfers.length
   }
 })
 
 onMount(() => {
-  addLog("system", "Terminal log ready, watching for transfers...")
+  addLog("system", "Terminal", "Ready", "waiting for transfers...")
 })
 
+// Clear logs and cache
 const clearLogs = () => {
   allLogs = []
-  startTime = Date.now()
+  pendingLogs = []
+  chainDisplayNameCache.clear()
+  if (batchTimeoutId !== null) {
+    clearTimeout(batchTimeoutId)
+    batchTimeoutId = null
+  }
 }
 </script>
 
@@ -204,21 +258,13 @@ const clearLogs = () => {
     >
       {#each filteredLogs as log (log.id)}
         <div class="text-xs mb-2">
-          {#if log.data}
-            <div class="text-zinc-300 font-mono">
-              {#if log.message}
-                <div class="text-zinc-300 font-mono">{log.message}</div>
-              {/if}
-              {#if log.data.hash}
-                <div class="text-zinc-300 font-mono">tx: {log.data.hash}</div>
-              {/if}
-              {#if log.data.sender}
-                <div class="text-zinc-400">from: {log.data.sender}</div>
-              {/if}
-              {#if log.data.receiver}
-                <div class="text-zinc-400">to: {log.data.receiver}</div>
-              {/if}
-            </div>
+          <div class="text-zinc-300 font-mono">{log.message}</div>
+          <div class="text-zinc-300 font-mono">tx: {log.hash}</div>
+          {#if log.sender}
+            <div class="text-zinc-400">from: {log.sender}</div>
+          {/if}
+          {#if log.receiver}
+            <div class="text-zinc-400">to: {log.receiver}</div>
           {/if}
         </div>
       {/each}
