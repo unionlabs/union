@@ -1,6 +1,13 @@
 use std::{fmt::Display, ops::Range};
 
-use async_nats::jetstream::context::PublishErrorKind;
+use async_nats::jetstream::{
+    consumer::{
+        pull::{BatchErrorKind, MessagesErrorKind},
+        StreamErrorKind,
+    },
+    context::PublishErrorKind,
+    stream::ConsumerErrorKind,
+};
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
@@ -31,9 +38,22 @@ pub enum IndexerError {
     ProviderError(Report),
     #[error("internal error: {0}")]
     InternalError(Report),
-
     #[error("nats publish error: {0}")]
     NatsPublishError(#[from] async_nats::error::Error<PublishErrorKind>),
+    #[error("nats consumer error: {0}")]
+    NatsConsumerError(#[from] async_nats::error::Error<ConsumerErrorKind>),
+    #[error("nats fetch error: {0}")]
+    NatsFetchError(#[from] async_nats::error::Error<BatchErrorKind>),
+    #[error("nats messages error: {0}")]
+    NatsMessagesError(#[from] async_nats::error::Error<StreamErrorKind>),
+    #[error("nats pull error: {0}")]
+    NatsPullError(#[from] async_nats::error::Error<MessagesErrorKind>),
+    #[error("nats next error: {0}")]
+    NatsNextError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error("nats ack error: {0}")]
+    NatsAckError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error("nats meta error: {0}")]
+    NatsMetaError(Box<dyn std::error::Error + Send + Sync + 'static>),
 }
 
 impl From<Report> for IndexerError {
