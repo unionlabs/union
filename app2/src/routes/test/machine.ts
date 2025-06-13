@@ -77,6 +77,30 @@ export function createTransferPollingMachine(limit = 50): TransferPollingMachine
   const SPREAD_TIME_MS = 3000
   const POLL_INTERVAL_MS = 1000
 
+  // Tab visibility handling
+  let isTabVisible = !document.hidden
+  let visibilityCleanup: (() => void) | null = null
+
+  const handleVisibilityChange = () => {
+    const wasVisible = isTabVisible
+    isTabVisible = !document.hidden
+    
+    // Tab became visible again after being hidden
+    if (!wasVisible && isTabVisible) {
+      console.log('[MACHINE] Tab became visible - restarting machine')
+      
+      // Clear stale scheduled transfers
+      scheduledTransfers = []
+      
+      // Reset to initial state to force fresh data fetch
+      isInitialFetch = true
+      
+      // Restart the machine
+      destroy()
+      startMachine()
+    }
+  }
+
   const checkForNewTransfers = Effect.gen(function*() {
     if (isInitialFetch || !lastSortOrder) {
       // STEP 1: Get latest single transfer to establish baseline (don't display it)
@@ -169,6 +193,12 @@ export function createTransferPollingMachine(limit = 50): TransferPollingMachine
     )
     pollingFiber = runFork(pollingEffect)
     processScheduledTransfers()
+    
+    // Set up tab visibility listener
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    visibilityCleanup = () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
   }
 
   startMachine()
@@ -177,6 +207,12 @@ export function createTransferPollingMachine(limit = 50): TransferPollingMachine
     if (pollingFiber) {
       runFork(Fiber.interrupt(pollingFiber))
       pollingFiber = null
+    }
+    
+    // Clean up visibility listener
+    if (visibilityCleanup) {
+      visibilityCleanup()
+      visibilityCleanup = null
     }
   }
 

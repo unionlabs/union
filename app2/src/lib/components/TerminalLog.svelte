@@ -1,6 +1,17 @@
 <script lang="ts">
 import { chains } from "$lib/stores/chains.svelte"
 import type { TransferListItem } from "@unionlabs/sdk/schema"
+
+// Extended transfer type with server pre-computed fields
+type EnhancedTransferListItem = TransferListItem & {
+  isTestnetTransfer?: boolean
+  sourceDisplayName?: string
+  destinationDisplayName?: string
+  formattedTimestamp?: string
+  routeKey?: string
+  senderDisplay?: string
+  receiverDisplay?: string
+}
 import { Option } from "effect"
 import { onMount } from "svelte"
 import { transactionAudio } from "../../routes/test/audio"
@@ -11,7 +22,7 @@ let {
   selectedFromChain = null,
   selectedToChain = null,
 }: {
-  transfers: TransferListItem[]
+  transfers: EnhancedTransferListItem[]
   selectedFromChain?: string | null
   selectedToChain?: string | null
 } = $props()
@@ -92,33 +103,8 @@ const formatHash = (hash: string): string => {
   return hash ? `${hash.slice(0, 8)}...${hash.slice(-4)}` : "N/A"
 }
 
-// Filter logs based on selection
-let filteredLogs = $derived.by(() => {
-  if (!selectedFromChain && !selectedToChain) {
-    return allLogs.slice(0, 1000) // Show more logs since canvas can handle it
-  }
-
-  const filtered = allLogs.filter(log => {
-    const sourceId = log.sourceChainId
-    const destId = log.destChainId
-
-    if (selectedFromChain && selectedToChain) {
-      return sourceId === selectedFromChain && destId === selectedToChain
-    }
-
-    if (selectedFromChain) {
-      return sourceId === selectedFromChain || destId === selectedFromChain
-    }
-
-    if (selectedToChain) {
-      return sourceId === selectedToChain || destId === selectedToChain
-    }
-
-    return true
-  })
-
-  return filtered.slice(0, 1000)
-})
+// Display logs without filtering (server handles filtering now)
+let filteredLogs = $derived(allLogs.slice(0, 1000))
 
 // Canvas drawing functions
 function updateCanvasSize() {
@@ -176,15 +162,15 @@ function drawFilterBar() {
     FONT_SIZE - 1
   }px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
 
-  let filterText = "Filtering: "
+  let filterText = "Server filter: "
   if (selectedFromChain && selectedToChain) {
     filterText += `${getChainDisplayName(selectedFromChain)} → ${
       getChainDisplayName(selectedToChain)
     }`
   } else if (selectedFromChain) {
-    filterText += `${getChainDisplayName(selectedFromChain)} (any direction)`
+    filterText += `from ${getChainDisplayName(selectedFromChain)}`
   } else if (selectedToChain) {
-    filterText += `${getChainDisplayName(selectedToChain)} (any direction)`
+    filterText += `to ${getChainDisplayName(selectedToChain)}`
   }
 
   ctx.fillText(filterText, PADDING, 10)
@@ -369,19 +355,12 @@ $effect(() => {
         transactionAudio.playSound(value, sourceChainId, destChainId)
       }
 
-      const sourceChain = getChainDisplayName(
-        transfer.source_chain?.universal_chain_id || "unknown",
-      )
-      const destChain = getChainDisplayName(
-        transfer.destination_chain?.universal_chain_id || "unknown",
-      )
+      // Use pre-computed display data from server
+      const sourceChain = transfer.sourceDisplayName || "unknown"
+      const destChain = transfer.destinationDisplayName || "unknown"
       const hash = formatHash(transfer.packet_hash)
-      const sender = transfer.sender_canonical
-        ? `${transfer.sender_canonical.slice(0, 8)}...${transfer.sender_canonical.slice(-4)}`
-        : undefined
-      const receiver = transfer.receiver_canonical
-        ? `${transfer.receiver_canonical.slice(0, 8)}...${transfer.receiver_canonical.slice(-4)}`
-        : undefined
+      const sender = transfer.senderDisplay
+      const receiver = transfer.receiverDisplay
 
       addLog(
         "transfer",
