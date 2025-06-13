@@ -659,20 +659,13 @@ const createFeeStore = () => {
     const baseToken = gasDenom.address
     // TODO: get from more reliable source
     const decimals = gasDenom.decimals
-    const amount = BigDecimal.multiply(
-      BigDecimal.make(_totalFee.value, 0),
-      BigDecimal.make(1n, -decimals),
-    )
-    const BIamount = BI.multiply(
-      amount.value,
-      10n ** (BigInt(amount.scale * -1) - 1n),
-    )
+    const baseAmount = BigDecimal.round(_totalFee, { scale: gasDenom.decimals })
 
     return {
       decimals,
       baseToken,
       quoteAmount: TokenRawAmount.make(0n),
-      baseAmount: TokenRawAmount.make(BIamount),
+      baseAmount: TokenRawAmount.make(baseAmount.value),
     } as const
   }))
 
