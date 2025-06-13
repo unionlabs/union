@@ -28,6 +28,9 @@ export declare namespace GasPrice {
    * @category models
    */
   export interface Service {
-    readonly of: Effect.Effect<BaseGasPrice, GasPriceError>
+    readonly of: Effect.Effect<{
+      value: BaseGasPrice
+      decimals: number
+    }, GasPriceError>
   }
 }

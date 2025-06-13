@@ -60,7 +60,10 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
               }),
               // XXX: take from constants file
               Effect.tap((x) => Effect.log(`${chain.display_name} gas price (wei): ${x}`)),
-              Effect.map((a) => GasPrice.BaseGasPrice(BigDecimal.make(a, 18))),
+              Effect.map((a) => ({
+                value: GasPrice.BaseGasPrice(BigDecimal.make(a, 18)),
+                decimals: 18,
+              })),
               Effect.tap((x) => Effect.log(`${chain.display_name} gas price (ETH): ${x}`)),
             )
 
@@ -105,6 +108,10 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                         BigDecimal.unsafeFromNumber(average),
                         BigDecimal.multiply(BigDecimal.make(1n, decimals)),
                         GasPrice.BaseGasPrice,
+                        (value) => ({
+                          value,
+                          decimals,
+                        }),
                       )
                     ),
                   )

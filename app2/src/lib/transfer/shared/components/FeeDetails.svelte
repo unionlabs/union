@@ -5,6 +5,7 @@ import SharpInfoIcon from "$lib/components/icons/SharpInfoIcon.svelte"
 import Anchor from "$lib/components/ui/A.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
+import { BaseGasPrice } from "$lib/gasprice/service"
 import { FeeStore } from "$lib/stores/fee.svelte"
 import { cn } from "$lib/utils"
 import { getOptionOrNull, mapOption, matchOption } from "$lib/utils/snippets.svelte"
@@ -35,7 +36,7 @@ const feeConfig = O.none()
 {/snippet}
 
 {#snippet gasButton(props: {
-  value: string
+  value: BaseGasPrice
   symbol: string
   usd: string
   sources: Record<string, PriceSource>
@@ -94,7 +95,7 @@ const feeConfig = O.none()
   <!-- Always visible -->
   <button
     class={cn(
-      "w-full p-3 flex items-center justify-between bg-zinc-900 transition-colors text-left",
+      "w-full p-3 flex items-center justify-between bg-transparent transition-colors text-left",
       open ? "rounded-t-md" : "rounded-md",
       loading ? "cursor-default" : "hover:bg-zinc-800 cursor-pointer",
     )}
@@ -133,7 +134,7 @@ const feeConfig = O.none()
   <!-- Expandable content -->
   {#if open && O.isSome(FeeStore.baseFees)}
     <div
-      class="bg-zinc-900 rounded-b-md overflow-hidden border-t border-zinc-800"
+      class="bg-transparent rounded-b-md overflow-hidden border-t border-zinc-800"
       transition:slide={{ duration: 250 }}
     >
       <!-- Fee breakdown -->
@@ -180,10 +181,12 @@ const feeConfig = O.none()
                           <div class="grid grid-cols-2">
                             <div class="px-3 py-2 text-zinc-300">Gas price</div>
                             <div class="px-3 py-2 text-white border-l border-zinc-700">
+                              <!--
                               {@render mapOption(
                             FeeStore.sourceGasUnitPrice,
                             formatBigDecimal,
                           )}
+                          -->
                               ubbn
                             </div>
                           </div>

@@ -205,6 +205,8 @@ const Pyth = Layer.effect(
       ratio: Effect.fn(function*(a, b) {
         const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
         const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
+          Effect.map(BigDecimal.round({ scale: 4, mode: "from-zero" })),
+          Effect.tap((x) => Effect.log(`dividing ${ofA.price} by ${ofB.price} to get ${x}`)),
           Effect.mapError((cause) =>
             new PriceError({
               message: `Could not divide ${ofA.price} by ${ofB.price}.`,

@@ -144,6 +144,24 @@ export class TransferData {
     ),
   )
 
+  destChannel = $derived<Option.Option<Channel>>(
+    Option.all([channels.data, this.sourceChain, this.destinationChain]).pipe(
+      Option.flatMap(([channelsData, sourceChain, destinationChain]) =>
+        Match.value({ channelsData, sourceChain, destinationChain }).pipe(
+          Match.orElse(() =>
+            Option.fromNullable(
+              getChannelInfoSafe(
+                destinationChain.universal_chain_id,
+                sourceChain.universal_chain_id,
+                channelsData,
+              ),
+            )
+          ),
+        )
+      ),
+    ),
+  )
+
   baseTokenBalance = $derived(
     Option.all([this.baseToken, this.sortedBalances]).pipe(
       Option.flatMap(([token, sortedTokens]) =>
