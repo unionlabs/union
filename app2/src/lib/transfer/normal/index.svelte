@@ -24,7 +24,7 @@ import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { TokenRawAmountFromSelf, TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Array as Arr, Effect, Fiber, FiberId, Option, Schema } from "effect"
+import { Array as Arr, Effect, Either, Fiber, FiberId, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
 import { onMount, untrack } from "svelte"
 import { fly } from "svelte/transition"
@@ -128,7 +128,7 @@ $effect(() => {
   isLoading = true
   transferSteps = Option.none()
   transferErrors = Option.none()
-  const feeIntent = untrack(() => FeeStore.feeIntent)
+  const feeIntent = untrack(() => Option.getRight(FeeStore.feeIntent))
   console.log("FEE INTENT:", feeIntent.toString())
 
   const machineEffect = Effect.gen(function*() {
@@ -136,7 +136,11 @@ $effect(() => {
     let context: TransferContext | null = null
 
     while (true) {
-      const result: StateResult | void = yield* createContextState(currentState, transferData)
+      const result: StateResult | void = yield* createContextState(
+        currentState,
+        transferData,
+        feeIntent,
+      )
 
       if (!result) {
         break

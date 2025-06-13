@@ -29,8 +29,8 @@ const CORN_METADATA = {
   decimals: 18,
 } as const
 
-const BABYLON_METADATA = {
-  address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+export const BABYLON_METADATA = {
+  address: TokenRawDenom.make("0x7562626e"),
   name: "Baby",
   symbol: "BABY",
   decimals: 6,

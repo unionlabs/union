@@ -1,3 +1,4 @@
+import type { FeeIntent } from "$lib/stores/fee.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
@@ -18,6 +19,7 @@ export interface TransferArgs {
   sourceRpcType?: string
   destinationRpcType?: string
   sourceChannelId?: ChannelId
+  fee: FeeIntent
 }
 
 export type FillingState = Data.TaggedEnum<{
@@ -32,12 +34,16 @@ export type FillingState = Data.TaggedEnum<{
   ReceiverMissing: {}
   NoRoute: {}
   NoContract: {}
+  NoFee: {}
   Ready: TransferArgs
 }>
 
 export const FillingState = Data.taggedEnum<FillingState>()
 
-export const getFillingState = (transferData: TransferData): FillingState => {
+export const getFillingState = (
+  transferData: TransferData,
+  fee: Option.Option<FeeIntent>,
+): FillingState => {
   if (!wallets.hasAnyWallet() && signingMode.mode === "single") {
     return FillingState.NoWallet()
   }
@@ -84,6 +90,12 @@ export const getFillingState = (transferData: TransferData): FillingState => {
         return FillingState.ReceiverMissing()
       }
 
+      if (
+        Option.isNone(fee)
+      ) {
+        return FillingState.NoFee()
+      }
+
       const unwrapped = Option.all({
         destinationChain: transferData.destinationChain,
         channel: transferData.channel,
@@ -91,6 +103,7 @@ export const getFillingState = (transferData: TransferData): FillingState => {
         parsedAmount: transferData.parsedAmount,
         baseToken: transferData.baseToken,
         ucs03address: transferData.ucs03address,
+        fee,
       })
 
       return Option.match(unwrapped, {
@@ -99,7 +112,9 @@ export const getFillingState = (transferData: TransferData): FillingState => {
           return FillingState.Empty()
         },
 
-        onSome: ({ destinationChain, channel, receiver, parsedAmount, baseToken, ucs03address }) =>
+        onSome: (
+          { destinationChain, channel, receiver, parsedAmount, baseToken, ucs03address, fee },
+        ) =>
           FillingState.Ready({
             sourceChain,
             destinationChain,
@@ -114,6 +129,7 @@ export const getFillingState = (transferData: TransferData): FillingState => {
             sourceRpcType: sourceChain.rpc_type,
             destinationRpcType: destinationChain.rpc_type,
             sourceChannelId: channel.source_channel_id,
+            fee,
           }),
       })
     },

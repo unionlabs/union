@@ -1,3 +1,5 @@
+import { GAS_DENOMS } from "$lib/constants/gas-denoms.ts"
+import { BABYLON_METADATA } from "@unionlabs/sdk/constants/gas-denoms.ts"
 import type {
   AddressCanonicalBytes,
   Chain,
@@ -77,8 +79,23 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
         ucs03address: args.ucs03address,
       }
 
+      const feeIntent: Intent = {
+        sender: args.sender,
+        receiver: args.receiver,
+        baseToken: args.fee.baseToken,
+        baseAmount: args.fee.baseAmount,
+        quoteAmount: args.fee.quoteAmount,
+        decimals: args.fee.decimals,
+        sourceChain: args.sourceChain,
+        sourceChainId: args.sourceChain.universal_chain_id,
+        sourceChannelId: args.channel.source_channel_id,
+        destinationChain: args.destinationChain,
+        channel: args.channel,
+        ucs03address: args.ucs03address,
+      }
+
       return Option.some({
-        intents: [intent],
+        intents: [intent, feeIntent],
         allowances: Option.none(),
         instruction: Option.none(),
         message: Option.none(),
@@ -107,8 +124,27 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
         ucs03address: args.ucs03address,
       }
 
+      const feeIntent: Intent = {
+        sender: args.sender.toLowerCase() as typeof args.sender,
+        receiver: args.receiver.toLowerCase() as typeof args.receiver,
+        baseToken: args.fee.baseToken === BABYLON_METADATA.address ? "ubbn" : args.fee.baseToken,
+        baseAmount: args.fee.baseAmount,
+        quoteAmount: args.fee.quoteAmount,
+        decimals: args.fee.decimals,
+        sourceChain: args.sourceChain,
+        sourceChainId: args.sourceChain.universal_chain_id,
+        sourceChannelId: args.channel.source_channel_id,
+        destinationChain: args.destinationChain,
+        channel: args.channel,
+        ucs03address: args.ucs03address,
+      }
+
+      const intents = [intent, feeIntent]
+
+      console.log("cosmos", { intents })
+
       return Option.some({
-        intents: [intent],
+        intents,
         allowances: Option.none(),
         instruction: Option.none(),
         message: Option.none(),
