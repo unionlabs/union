@@ -17171,6 +17171,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tokio-util",
+ "tower 0.5.2",
  "tracing",
  "unionlabs",
  "voyager-client",
