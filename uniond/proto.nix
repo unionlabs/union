@@ -61,6 +61,13 @@ _: {
             hash = "sha256-fpntV6A47+StBGA9NPUKVjXrdU1i4el3Rv8FwobKNgs=";
           };
 
+          wasmd = pkgs.fetchFromGitHub {
+            owner = "unionlabs";
+            repo = "wasmd";
+            rev = "fa271bbe8508bb0fa3dab2842cfa26a354fa1169";
+            hash = "sha256-oJFLT89IdH44c+NOOpvYU7oeEExaXkxury2jvYEGUCg=";
+          };
+
           generate-uniond-proto = pkgs.stdenv.mkDerivation {
             name = "generate-uniond-proto";
             pname = "generate-uniond-proto";
@@ -160,8 +167,33 @@ _: {
                   "$file"
                   echo "Done generating for $file"
                 done
-                
 
+              find ${wasmd}/proto -type f -regex ".*proto" | \
+              while read -r file; do
+                if [[ $file == *"feemarket/feemarket/module/v1/module.proto" ]]; then
+                  continue
+                fi
+
+                relpath="$(sed 's#/nix/store/.*-uniond/proto##' <<< $file)"
+                echo "Generating protobuf for $file"
+                mkdir -p "$out/openapi$relpath"
+                protoc \
+                  -I"${proto.uniond}" \
+                  -I"${proto.gogoproto}" \
+                  -I"${proto.googleapis}" \
+                  -I"$(pwd)/cosmos-sdk/proto" \
+                  -I"${proto.cosmosproto}/proto" \
+                  -I"${proto.ibc-go}/proto" \
+                  -I"${proto.ics23}/proto" \
+                  -I"${proto.cometbls}/proto" \
+                  -I"${wasmd}/proto" \
+                  --gocosmos_out $out \
+                  --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
+                  --openapi_out=$out/openapi$relpath \
+                  "$file"
+                  echo "Done generating for $file"
+                done
+                
               echo "Generating Cosmos SDK OpenAPI"
               echo "$LINENO"
               find ${proto.cosmossdk}/proto -type f -regex '.*proto' | \
