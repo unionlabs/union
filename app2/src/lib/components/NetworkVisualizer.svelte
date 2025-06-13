@@ -6,11 +6,22 @@ import Card from "./ui/Card.svelte"
 
 import type { TransferListItem } from "@unionlabs/sdk/schema"
 
+// Extended transfer type with server pre-computed fields
+type EnhancedTransferListItem = TransferListItem & {
+  isTestnetTransfer?: boolean
+  sourceDisplayName?: string
+  destinationDisplayName?: string
+  formattedTimestamp?: string
+  routeKey?: string
+  senderDisplay?: string
+  receiverDisplay?: string
+}
+
 let {
   transfers = [],
   onChainSelection = () => {},
 }: {
-  transfers: TransferListItem[]
+  transfers: EnhancedTransferListItem[]
   onChainSelection?: (fromChain: string | null, toChain: string | null) => void
 } = $props()
 
@@ -33,7 +44,7 @@ const COLOR_CONFIG = {
 
 // Constants
 const PARTICLE_SPEED = 0.03
-const TARGET_FPS = 60 // Reduced from 120 to 30 FPS - major CPU savings
+const TARGET_FPS = 120 // Reduced from 120 to 30 FPS - major CPU savings
 const FRAME_INTERVAL = 1000 / TARGET_FPS
 const MAX_PARTICLES = 200 // Limit particle count to prevent accumulation
 const MOUSE_CHECK_INTERVAL = 5 // Check mouse hover every 5 frames instead of every frame
@@ -142,7 +153,7 @@ function setupChainNodes() {
 
   const centerX = canvasWidth / 2
   const centerY = canvasHeight / 2
-  const radius = Math.min(canvasWidth, canvasHeight) * 0.3
+  const radius = Math.min(canvasWidth, canvasHeight) * 0.45
   const nodeSize = getChainNodeSize()
 
   chainData.forEach((chain, index) => {
@@ -164,7 +175,7 @@ function setupChainNodes() {
   })
 }
 
-function createParticleFromTransfer(transfer: TransferListItem) {
+function createParticleFromTransfer(transfer: EnhancedTransferListItem) {
   // Limit particle count to prevent performance issues
   if (particles.length >= MAX_PARTICLES) {
     // Remove oldest particles if we're at the limit
@@ -185,18 +196,8 @@ function createParticleFromTransfer(transfer: TransferListItem) {
   fromNode.activity = Math.min(fromNode.activity + 0.5, 3)
   toNode.activity = Math.min(toNode.activity + 0.5, 3)
 
-  // Cache testnet check to avoid repeated lookups
-  let isTestnetTransfer = false
-  if (Option.isSome(chains.data)) {
-    const chainData = chains.data.value
-    const sourceChain = chainData.find(c =>
-      c.universal_chain_id === transfer.source_chain.universal_chain_id
-    )
-    const destChain = chainData.find(c =>
-      c.universal_chain_id === transfer.destination_chain.universal_chain_id
-    )
-    isTestnetTransfer = (sourceChain?.testnet || destChain?.testnet) || false
-  }
+  // Use pre-computed testnet flag from server
+  const isTestnetTransfer = transfer.isTestnetTransfer || false
 
   // Reuse particle objects from pool or create new one
   let particle = particlePool.pop()
