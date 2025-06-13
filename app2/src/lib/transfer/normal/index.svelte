@@ -224,8 +224,8 @@ $effect(() => {
 
         // Create steps for the batch instruction, not individual intents
         steps.push(
-          Steps.SubmitInstruction({ 
-            instruction, 
+          Steps.SubmitInstruction({
+            instruction,
             intent: context.intents[0],
             native: Option.map(context.native, (native) => ({
               baseToken: native.baseToken,

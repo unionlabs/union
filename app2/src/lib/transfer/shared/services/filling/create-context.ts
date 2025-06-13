@@ -1,3 +1,4 @@
+import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms.ts"
 import type {
   AddressCanonicalBytes,
   Chain,
@@ -11,7 +12,6 @@ import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
 import { Match, Option } from "effect"
 import { fromHex, isHex } from "viem"
 import type { TransferArgs } from "./check-filling.ts"
-import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms.ts"
 
 export type Intent = {
   sender: AddressCanonicalBytes
@@ -46,7 +46,6 @@ export type TransferContext = {
   // XXX: where is message fulfilled?
   message: Option.Option<string>
 }
-
 
 export const createContext = (args: TransferArgs): Option.Option<TransferContext> => {
   console.debug("[createContext] args:", args)
@@ -91,32 +90,34 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
         ucs03address: args.ucs03address,
       }
 
-              // Calculate native value for EVM
-        const calculateNativeValue = () => {
-          const chainGasDenom = GAS_DENOMS[args.sourceChain.universal_chain_id]
-          if (!chainGasDenom) return Option.none()
-
-          let totalAmount = 0n
-
-          // Check if intent uses native token
-          if (intent.baseToken === chainGasDenom.address) {
-            totalAmount += intent.baseAmount
-          }
-
-          // Check if fee intent uses native token
-          if (feeIntent.baseToken === chainGasDenom.address) {
-            totalAmount += feeIntent.baseAmount
-          }
-
-          if (totalAmount > 0n) {
-            return Option.some({
-              baseToken: args.fee.baseToken, // Always use fee baseToken
-              amount: totalAmount as TokenRawAmount,
-            })
-          }
-
+      // Calculate native value for EVM
+      const calculateNativeValue = () => {
+        const chainGasDenom = GAS_DENOMS[args.sourceChain.universal_chain_id]
+        if (!chainGasDenom) {
           return Option.none()
         }
+
+        let totalAmount = 0n
+
+        // Check if intent uses native token
+        if (intent.baseToken === chainGasDenom.address) {
+          totalAmount += intent.baseAmount
+        }
+
+        // Check if fee intent uses native token
+        if (feeIntent.baseToken === chainGasDenom.address) {
+          totalAmount += feeIntent.baseAmount
+        }
+
+        if (totalAmount > 0n) {
+          return Option.some({
+            baseToken: args.fee.baseToken, // Always use fee baseToken
+            amount: totalAmount as TokenRawAmount,
+          })
+        }
+
+        return Option.none()
+      }
 
       return Option.some({
         intents: [intent, feeIntent],
@@ -148,7 +149,9 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
       const feeIntent: Intent = {
         sender: args.sender.toLowerCase() as typeof args.sender,
         receiver: args.receiver.toLowerCase() as typeof args.receiver,
-        baseToken: isHex(args.fee.baseToken) ? fromHex(args.fee.baseToken, "string") : args.fee.baseToken,
+        baseToken: isHex(args.fee.baseToken)
+          ? fromHex(args.fee.baseToken, "string")
+          : args.fee.baseToken,
         baseAmount: args.fee.baseAmount,
         quoteAmount: args.fee.quoteAmount,
         decimals: args.fee.decimals,
@@ -160,40 +163,42 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
         ucs03address: args.ucs03address,
       }
 
-              // Calculate native value for Cosmos  
-        const calculateNativeValue = () => {
-          const chainGasDenom = GAS_DENOMS[args.sourceChain.universal_chain_id]
-          if (!chainGasDenom) return Option.none()
-
-          let totalAmount = 0n
-
-          // Convert hex format to string for comparison
-          const nativeTokenString = fromHex(chainGasDenom.address, "string")
-
-          // Check if intent uses native token
-          if (intent.baseToken === nativeTokenString) {
-            totalAmount += intent.baseAmount
-          }
-
-          // Check if fee intent uses native token
-          if (feeIntent.baseToken === nativeTokenString) {
-            totalAmount += feeIntent.baseAmount
-          }
-
-          if (totalAmount > 0n) {
-            // For Cosmos, ensure fee baseToken is in string format (not hex)
-            const feeBaseToken = isHex(args.fee.baseToken) 
-              ? fromHex(args.fee.baseToken, "string") 
-              : args.fee.baseToken
-              
-            return Option.some({
-              baseToken: feeBaseToken,
-              amount: totalAmount as TokenRawAmount,
-            })
-          }
-
+      // Calculate native value for Cosmos
+      const calculateNativeValue = () => {
+        const chainGasDenom = GAS_DENOMS[args.sourceChain.universal_chain_id]
+        if (!chainGasDenom) {
           return Option.none()
         }
+
+        let totalAmount = 0n
+
+        // Convert hex format to string for comparison
+        const nativeTokenString = fromHex(chainGasDenom.address, "string")
+
+        // Check if intent uses native token
+        if (intent.baseToken === nativeTokenString) {
+          totalAmount += intent.baseAmount
+        }
+
+        // Check if fee intent uses native token
+        if (feeIntent.baseToken === nativeTokenString) {
+          totalAmount += feeIntent.baseAmount
+        }
+
+        if (totalAmount > 0n) {
+          // For Cosmos, ensure fee baseToken is in string format (not hex)
+          const feeBaseToken = isHex(args.fee.baseToken)
+            ? fromHex(args.fee.baseToken, "string")
+            : args.fee.baseToken
+
+          return Option.some({
+            baseToken: feeBaseToken,
+            amount: totalAmount as TokenRawAmount,
+          })
+        }
+
+        return Option.none()
+      }
 
       return Option.some({
         intents: [intent, feeIntent],

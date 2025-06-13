@@ -27,9 +27,7 @@ const bannerOption = $derived(bannerStore.getBannerForEdition(uiStore.edition))
 
 {#if !isDismissed && Option.isSome(bannerOption) && bannerOption.value.enabled}
   {@const banner = bannerOption.value}
-  <div
-    class="{getBannerStyle(banner.type)} px-3 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium relative"
-  >
+  <div class="{getBannerStyle(banner.type)} px-3 sm:px-4 py-2 sm:py-3 text-center text-xs sm:text-sm font-medium relative">
     <div class="flex items-center justify-center gap-1 sm:gap-2 pr-8">
       <svg
         class="w-3 h-3 sm:w-4 sm:h-4 flex-shrink-0"
