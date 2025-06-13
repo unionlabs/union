@@ -528,28 +528,32 @@ impl<Inner: ClientT + Send + Sync> ClientT for IdThreadClient<Inner> {
     }
 }
 
-#[instrument(skip_all, fields(%name))]
-pub async fn worker_child_process(
-    name: String,
-    path: PathBuf,
+pub trait SpawnWorkerChildProcess {
+    fn name(&self) -> &str;
+
+    fn path(&self) -> &Path;
+
+    fn args(
+        &self,
+        coordinator_to_worker_socket: String,
+        worker_to_coordinator_socket: String,
+    ) -> impl Iterator<Item = String>;
+}
+
+#[instrument(skip_all, fields(name = %c.name()))]
+pub async fn worker_child_process<C: SpawnWorkerChildProcess>(
+    c: C,
     cancellation_token: CancellationToken,
-    args: impl IntoIterator<Item: Into<String>>,
 ) {
-    let coordinator_to_worker_socket = worker_socket_path(&name);
-    let worker_to_coordinator_socket = coordinator_socket_path(&name);
+    let coordinator_to_worker_socket = worker_socket_path(c.name());
+    let worker_to_coordinator_socket = coordinator_socket_path(c.name());
 
     debug!(%coordinator_to_worker_socket, %worker_to_coordinator_socket);
 
     lazarus_pit(
-        &path,
-        [
-            "run".to_owned(),
-            coordinator_to_worker_socket,
-            worker_to_coordinator_socket,
-        ]
-        .into_iter()
-        .chain(args.into_iter().map(Into::into))
-        .collect(),
+        c.path(),
+        c.args(coordinator_to_worker_socket, worker_to_coordinator_socket)
+            .collect(),
         cancellation_token,
     )
     .await

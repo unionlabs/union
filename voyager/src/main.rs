@@ -182,6 +182,13 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 }))
                 .into_root_schema_for::<Config>(),
             ),
+            ConfigCmd::Check => {
+                let config = get_voyager_config()?;
+
+                for state_module in config.modules.state {
+                    // state_module.path
+                }
+            }
         },
         Command::Start => {
             let config = get_voyager_config()?;

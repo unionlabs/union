@@ -135,6 +135,8 @@ pub enum ConfigCmd {
     Default,
     /// Print the JSON Schema for the voyager config, to be used in the top-level `$schema` field.
     Schema,
+    /// Check the config for validity, reporting any errors.
+    Check,
 }
 
 type Pg64 = BoundedI64<1, { i64::MAX }>;
