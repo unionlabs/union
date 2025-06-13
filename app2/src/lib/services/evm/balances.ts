@@ -86,11 +86,12 @@ export const fetchEvmBalance = ({
     const isGasToken = decodedDenom === "native"
       || GAS_DENOMS[chain.universal_chain_id].address === tokenAddress
 
-    const fetchBalance = isGasToken
-      ? fetchEvmGasBalance({ client, walletAddress })
-      : fetchEvmErc20Balance({ client, tokenAddress, walletAddress })
-
-    const balance = yield* Effect.retry(fetchBalance, evmBalanceRetrySchedule)
+    const balance = isGasToken
+      ? yield* Effect.retry(fetchEvmGasBalance({ client, walletAddress }), evmBalanceRetrySchedule)
+      : yield* Effect.retry(
+        fetchEvmErc20Balance({ client, tokenAddress, walletAddress }),
+        evmBalanceRetrySchedule,
+      )
 
     return RawTokenBalance.make(Option.some(TokenRawAmount.make(balance)))
   }).pipe(
