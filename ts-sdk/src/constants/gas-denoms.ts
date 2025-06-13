@@ -36,6 +36,20 @@ export const BABYLON_METADATA = {
   decimals: 6,
 } as const
 
+const UNION_METADATA = {
+  address: TokenRawDenom.make("0x6d756e6f"),
+  name: "Union",
+  symbol: "UNO",
+  decimals: 6,
+} as const
+
+const XION_METADATA = {
+  address: TokenRawDenom.make("0x7578696f6e"),
+  name: "Xion",
+  symbol: "XION",
+  decimals: 6,
+} as const
+
 export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // Ethereum chains
   [UniversalChainId.make("ethereum.11155111")]: ETH_METADATA,
@@ -52,7 +66,19 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   [UniversalChainId.make("sei.1328")]: SEI_METADATA,
   [UniversalChainId.make("sei.1329")]: SEI_METADATA,
 
+  // Babylon chains
   [UniversalChainId.make("babylon.bbn-test-5")]: BABYLON_METADATA,
+  [UniversalChainId.make("babylon.bbn-1")]: BABYLON_METADATA,
+
+  // Union chains
+  [UniversalChainId.make("union.union-testnet-8")]: UNION_METADATA,
+  [UniversalChainId.make("union.union-testnet-9")]: UNION_METADATA,
+  [UniversalChainId.make("union.union-testnet-10")]: UNION_METADATA,
+  [UniversalChainId.make("union.union-1")]: UNION_METADATA,
+
+  // Xion chains
+  [UniversalChainId.make("xion.xion-testnet-2")]: XION_METADATA,
+  [UniversalChainId.make("xion.xion-mainnet-1")]: XION_METADATA,
 
   // Corn
   [UniversalChainId.make("corn.21000000")]: CORN_METADATA,

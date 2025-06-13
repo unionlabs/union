@@ -222,12 +222,18 @@ $effect(() => {
       if (Option.isSome(context.instruction)) {
         const instruction = context.instruction.value
 
-        for (const intent of context.intents) {
-          steps.push(
-            Steps.SubmitInstruction({ instruction, intent }),
-            Steps.WaitForIndex({ intent }),
-          )
-        }
+        // Create steps for the batch instruction, not individual intents
+        steps.push(
+          Steps.SubmitInstruction({ 
+            instruction, 
+            intent: context.intents[0],
+            native: Option.map(context.native, (native) => ({
+              baseToken: native.baseToken,
+              amount: native.amount,
+            })),
+          }),
+          Steps.WaitForIndex({ intent: context.intents[0] }),
+        )
       }
     }
 

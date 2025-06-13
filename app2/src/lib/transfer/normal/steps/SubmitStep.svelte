@@ -160,8 +160,6 @@ export const submit = Effect.gen(function*() {
         ets = nextEts
       })
 
-    const isNative = GAS_DENOMS[step.intent.sourceChainId].address === step.intent.baseToken
-
     const nextState = Effect.tap(
       Effect.suspend(() =>
         WriteEvm.nextState(ets, viemChain, publicClient, walletClient, {
@@ -181,7 +179,7 @@ export const submit = Effect.gen(function*() {
               operand: encodeAbi(step.instruction),
             },
           ],
-          ...(isNative ? { value: step.intent.baseAmount } : {}),
+          ...(Option.isSome(step.native) ? { value: step.native.value.amount } : {}),
         })
       ),
       setEts,
@@ -229,11 +227,11 @@ export const submit = Effect.gen(function*() {
               ]),
             },
           },
-          isNative
+          Option.isSome(step.native)
             ? [
               {
-                denom: baseToken,
-                amount: step.intent.baseAmount.toString(),
+                denom: step.native.value.baseToken,
+                amount: step.native.value.amount.toString(),
               },
             ]
             : undefined,
