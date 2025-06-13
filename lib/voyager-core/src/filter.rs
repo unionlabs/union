@@ -1,9 +1,12 @@
-use std::rc::Rc;
+use std::fmt::Debug;
 
 use anyhow::anyhow;
-use jaq_interpret::{Ctx, Filter, FilterT, ParseCtx, RcIter, Val};
+use jaq_core::{
+    load::{Arena, File, Loader},
+    Ctx, Filter, Native, RcIter,
+};
+use jaq_json::Val;
 use tracing::{error, instrument, trace};
-use unionlabs::ErrorReporter;
 use voyager_rpc::types::PluginInfo;
 use voyager_vm::{
     filter::{FilterResult, Interest, InterestFilter},
@@ -12,9 +15,9 @@ use voyager_vm::{
 
 use crate::VoyagerMessage;
 
-#[derive(Debug, Clone)]
+#[derive(Clone)]
 pub struct InterestFilters {
-    pub filters: Vec<(Filter, String)>,
+    pub filters: Vec<(Filter<Native<Val>>, String)>,
 }
 
 impl InterestFilters {
@@ -33,46 +36,69 @@ pub fn make_filter(
         name,
         interest_filter,
     }: PluginInfo,
-) -> anyhow::Result<(Filter, String)> {
-    let mut ctx = ParseCtx::new(["PLUGIN_NAME".to_owned()].into());
-    ctx.insert_natives(jaq_core::core());
-    ctx.insert_defs(jaq_std::std());
-
-    // parse the filter
-    let lexed = jaq_syn::Lexer::new(&interest_filter).lex().map_err(|es| {
+) -> anyhow::Result<(Filter<Native<Val>>, String)> {
+    fn map_jq_errs(es: Vec<(File<&str, &str>, impl Debug)>) -> anyhow::Error {
         anyhow!(es
             .iter()
-            .map(|(expect, s)| format!("({}: {s})", expect.as_str()))
+            .map(|(file, error)| format!("{}: {:?}", file.path, error))
             .collect::<Vec<_>>()
             .join(","))
-    })?;
+    }
 
-    let f = jaq_syn::Parser::new(&lexed)
-        .parse(|p| p.module(|p| p.term()))
-        .map_err(|es| {
-            anyhow!(es
-                .iter()
-                .map(|(expect, maybe_token)| match maybe_token {
-                    Some(token) => {
-                        format!("({}, {})", expect.as_str(), token.as_str())
-                    }
-                    None => format!("({})", expect.as_str()),
-                })
-                .collect::<Vec<_>>()
-                .join(","))
-        })?;
+    let program = File {
+        code: &*interest_filter,
+        path: &*name,
+    };
 
-    // compile the filter in the context of the given definitions
-    let filter = ctx.compile(f.conv(&interest_filter));
+    let loader = Loader::new(jaq_std::defs().chain(jaq_json::defs()));
+    let arena = Arena::default();
 
-    assert!(
-        ctx.errs.is_empty(),
-        "{:?}",
-        ctx.errs
-            .into_iter()
-            .map(|x| x.0.to_string())
-            .collect::<Vec<_>>()
-    );
+    let modules = loader.load(&arena, program).map_err(map_jq_errs)?;
+
+    let filter = jaq_core::Compiler::default()
+        .with_funs(jaq_std::funs().chain(jaq_json::funs()))
+        .compile(modules)
+        .map_err(map_jq_errs)?;
+
+    // let mut ctx = ParseCtx::new(["PLUGIN_NAME".to_owned()].into());
+    // ctx.insert_natives(jaq_core::core());
+    // ctx.insert_defs(jaq_std::std());
+
+    // // parse the filter
+    // let lexed = jaq_syn::Lexer::new(&interest_filter).lex().map_err(|es| {
+    //     anyhow!(es
+    //         .iter()
+    //         .map(|(expect, s)| format!("({}: {s})", expect.as_str()))
+    //         .collect::<Vec<_>>()
+    //         .join(","))
+    // })?;
+
+    // let f = jaq_syn::Parser::new(&lexed)
+    //     .parse(|p| p.module(|p| p.term()))
+    //     .map_err(|es| {
+    //         anyhow!(es
+    //             .iter()
+    //             .map(|(expect, maybe_token)| match maybe_token {
+    //                 Some(token) => {
+    //                     format!("({}, {})", expect.as_str(), token.as_str())
+    //                 }
+    //                 None => format!("({})", expect.as_str()),
+    //             })
+    //             .collect::<Vec<_>>()
+    //             .join(","))
+    //     })?;
+
+    // // compile the filter in the context of the given definitions
+    // let filter = ctx.compile(f.conv(&interest_filter));
+
+    // assert!(
+    //     ctx.errs.is_empty(),
+    //     "{:?}",
+    //     ctx.errs
+    //         .into_iter()
+    //         .map(|x| x.0.to_string())
+    //         .collect::<Vec<_>>()
+    // );
 
     Ok((filter, name))
 }
@@ -113,16 +139,13 @@ impl InterestFilter<VoyagerMessage> for InterestFilters {
     fields(%plugin_name)
 )]
 pub fn run_filter<'a>(
-    filter: &Filter,
+    filter: &Filter<Native<Val>>,
     plugin_name: &'a str,
     msg_json: Val,
 ) -> Result<JaqFilterResult<'a>, ()> {
     let inputs = RcIter::new(core::iter::empty());
     let mut out = filter
-        .run((
-            Ctx::new([Val::Str(Rc::new(plugin_name.to_owned()))], &inputs),
-            msg_json.clone(),
-        ))
+        .run((Ctx::new([], &inputs), msg_json.clone()))
         .peekable();
 
     let Some(result) = out.next() else {
@@ -134,7 +157,7 @@ pub fn run_filter<'a>(
     let result = match result {
         Ok(ok) => ok,
         Err(err) => {
-            error!(err = %ErrorReporter(err), "filter failed");
+            error!(%err, "filter failed");
 
             return Err(());
         }
