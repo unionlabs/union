@@ -15,6 +15,8 @@ use futures::{
     Future, FutureExt, StreamExt, TryFutureExt, TryStreamExt,
 };
 use itertools::Itertools;
+use jsonrpsee::core::middleware::{RpcServiceBuilder, RpcServiceT};
+use opentelemetry::{metrics::Counter, KeyValue};
 use serde::Serialize;
 use serde_json::Value;
 use tokio_util::sync::CancellationToken;
@@ -77,6 +79,8 @@ pub struct Engine<Q: Queue<VoyagerMessage>> {
     rest_laddr: SocketAddr,
     rpc_laddr: SocketAddr,
     optimizer_delay_milliseconds: u64,
+    // TODO: Make this generic
+    rpc_middleware: LoggerMiddlewareLayer,
 }
 
 impl Engine<InMemoryQueue<VoyagerMessage>> {
@@ -131,6 +135,9 @@ impl<Q: Queue<VoyagerMessage>> Engine<Q> {
                         .set_http_middleware(
                             tower::ServiceBuilder::new()
                                 .layer(tower_http::cors::CorsLayer::permissive()),
+                        )
+                        .set_rpc_middleware(
+                            RpcServiceBuilder::new().layer(self.rpc_middleware.clone()),
                         )
                         .build(&self.rpc_laddr)
                         .await?;
@@ -408,6 +415,8 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
             ibc_spec_handlers: self.ibc_spec_handlers,
         };
 
+        let logger_middleware_layer = LoggerMiddlewareLayer::new();
+
         let context = Arc::new(OnceLock::new());
 
         let mut interest_filters = HashMap::new();
@@ -435,7 +444,10 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
                 debug!("starting rpc server for plugin {}", plugin_info.name);
 
-                tokio::spawn(coordinator_server(&plugin_info.name, server).await?);
+                tokio::spawn(
+                    coordinator_server(&plugin_info.name, server, logger_middleware_layer.clone())
+                        .await?,
+                );
 
                 debug!("started rpc server for plugin {}", plugin_info.name);
 
@@ -485,6 +497,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
         modules_startup(
             self.module_configs.state,
+            logger_middleware_layer.clone(),
             cancellation_token.clone(),
             Server::new(cache.clone(), context.clone()),
             self.ipc_client_request_timeout,
@@ -520,6 +533,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
         modules_startup(
             self.module_configs.proof,
+            logger_middleware_layer.clone(),
             cancellation_token.clone(),
             Server::new(cache.clone(), context.clone()),
             self.ipc_client_request_timeout,
@@ -555,6 +569,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
         modules_startup(
             self.module_configs.consensus,
+            logger_middleware_layer.clone(),
             cancellation_token.clone(),
             Server::new(cache.clone(), context.clone()),
             self.ipc_client_request_timeout,
@@ -596,6 +611,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
         modules_startup(
             self.module_configs.client,
+            logger_middleware_layer.clone(),
             cancellation_token.clone(),
             Server::new(cache.clone(), context.clone()),
             self.ipc_client_request_timeout,
@@ -656,6 +672,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
 
         modules_startup(
             self.module_configs.client_bootstrap,
+            logger_middleware_layer.clone(),
             cancellation_token.clone(),
             Server::new(cache.clone(), context.clone()),
             self.ipc_client_request_timeout,
@@ -764,6 +781,7 @@ impl<Q: Queue<VoyagerMessage>> EngineBuilder<Q> {
             rest_laddr: self.rest_laddr,
             rpc_laddr: self.rpc_laddr,
             optimizer_delay_milliseconds: self.optimizer_delay_milliseconds,
+            rpc_middleware: logger_middleware_layer,
         })
     }
 }
@@ -1248,8 +1266,10 @@ pub fn get_plugin_info(plugin_config: &PluginConfig) -> anyhow::Result<PluginInf
     Ok(serde_json::from_slice(&output.stdout).unwrap())
 }
 
+#[allow(clippy::too_many_arguments)] // coward
 async fn modules_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
     configs: Vec<ModuleConfig<Info>>,
+    logger_middleware_layer: LoggerMiddlewareLayer,
     cancellation_token: CancellationToken,
     server: Server,
     ipc_client_request_timeout: Duration,
@@ -1269,25 +1289,37 @@ async fn modules_startup<Info: Serialize + Clone + Unpin + Send + 'static>(
                 true
             })
         })
-        .zip(stream::repeat(server.clone()))
+        .zip(stream::repeat((
+            server.clone(),
+            logger_middleware_layer.clone(),
+        )))
         .map::<anyhow::Result<_>, _>(anyhow::Result::Ok)
-        .try_filter_map(|(module_config, server)| async move {
-            if !module_config.enabled {
-                info!(
-                    module_path = %module_config.path.to_string_lossy(),
-                    "module is not enabled, skipping"
-                );
-                anyhow::Result::Ok(None)
-            } else {
-                debug!(
-                    "starting rpc server for module {}",
-                    id_f(&module_config.info)
-                );
-                tokio::spawn(coordinator_server(&id_f(&module_config.info), server).await?);
+        .try_filter_map(
+            |(module_config, (server, logger_middleware_layer))| async move {
+                if !module_config.enabled {
+                    info!(
+                        module_path = %module_config.path.to_string_lossy(),
+                        "module is not enabled, skipping"
+                    );
+                    anyhow::Result::Ok(None)
+                } else {
+                    debug!(
+                        "starting rpc server for module {}",
+                        id_f(&module_config.info)
+                    );
+                    tokio::spawn(
+                        coordinator_server(
+                            &id_f(&module_config.info),
+                            server,
+                            logger_middleware_layer,
+                        )
+                        .await?,
+                    );
 
-                anyhow::Result::Ok(Some(module_config))
-            }
-        })
+                    anyhow::Result::Ok(Some(module_config))
+                }
+            },
+        )
         .try_collect::<FuturesUnordered<_>>()
         .await?
         .into_iter()
@@ -1406,4 +1438,68 @@ pub const fn default_optimizer_delay_milliseconds() -> u64 {
 #[inline]
 pub const fn default_ipc_client_request_timeout() -> Duration {
     Duration::new(60, 0)
+}
+
+#[derive(Clone)]
+pub struct LoggerMiddlewareLayer {
+    request_counter: Counter<u64>,
+}
+
+impl LoggerMiddlewareLayer {
+    #[allow(clippy::new_without_default)]
+    pub fn new() -> Self {
+        Self {
+            request_counter: opentelemetry::global::meter("voyager")
+                .u64_counter("rpc.requests.count")
+                .build(),
+        }
+    }
+}
+
+impl<S> tower::Layer<S> for LoggerMiddlewareLayer {
+    type Service = LoggerMiddleware<S>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        LoggerMiddleware {
+            request_counter: self.request_counter.clone(),
+            service: inner,
+        }
+    }
+}
+
+#[derive(Clone)]
+pub struct LoggerMiddleware<S> {
+    request_counter: Counter<u64>,
+    service: S,
+}
+
+impl<S: RpcServiceT> RpcServiceT for LoggerMiddleware<S> {
+    type MethodResponse = S::MethodResponse;
+    type NotificationResponse = S::NotificationResponse;
+    type BatchResponse = S::BatchResponse;
+
+    fn call<'a>(
+        &self,
+        request: jsonrpsee::types::Request<'a>,
+    ) -> impl Future<Output = Self::MethodResponse> + Send + 'a {
+        self.request_counter.add(
+            1,
+            &[KeyValue::new("method", request.method.clone().into_owned())],
+        );
+        self.service.call(request)
+    }
+
+    fn batch<'a>(
+        &self,
+        requests: jsonrpsee::core::middleware::Batch<'a>,
+    ) -> impl Future<Output = Self::BatchResponse> + Send + 'a {
+        self.service.batch(requests)
+    }
+
+    fn notification<'a>(
+        &self,
+        n: jsonrpsee::core::middleware::Notification<'a>,
+    ) -> impl Future<Output = Self::NotificationResponse> + Send + 'a {
+        self.service.notification(n)
+    }
 }

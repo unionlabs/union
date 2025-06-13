@@ -219,7 +219,7 @@ impl Module {
         connection_id: ConnectionId,
     ) -> RpcResult<Option<Connection>> {
         if let Some(connection) = self.connection_cache.get(&connection_id).await {
-            debug!("cache hit");
+            trace!("cache hit");
 
             return Ok(Some(connection));
         }
@@ -277,7 +277,7 @@ impl Module {
     ) -> RpcResult<Option<Channel>> {
         // NOTE: We will need to review this logic if/when we support channel closings
         if let Some(channel) = self.channel_cache.get(&channel_id).await {
-            debug!("cache hit");
+            trace!("cache hit");
 
             return Ok(Some(channel));
         }

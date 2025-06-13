@@ -23,6 +23,7 @@ serde_json                     = { workspace = true }
 thiserror                      = { workspace = true }
 tokio                          = { workspace = true, features = ["fs", "signal"] }
 tokio-util                     = { workspace = true }
+tower                          = "0.5"
 tracing                        = { workspace = true }
 unionlabs                      = { workspace = true }
 voyager-client                 = { workspace = true }

@@ -9,6 +9,7 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
+use opentelemetry::{metrics::Gauge, KeyValue};
 use serde_json::Value;
 use tracing::{debug, info_span, instrument, trace};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes, ErrorReporter};
@@ -39,10 +40,27 @@ pub struct Server {
     context: Arc<OnceLock<Context>>,
     cache: crate::cache::Cache,
     item_id: Option<ItemId>,
+    server_metrics: ServerMetrics,
 }
 
 #[derive(Clone)]
-pub struct ServerInner {}
+pub struct ServerMetrics {
+    latest_height_gauge: Gauge<u64>,
+    latest_timestamp_gauge: Gauge<u64>,
+}
+
+impl ServerMetrics {
+    fn new() -> Self {
+        Self {
+            latest_height_gauge: opentelemetry::global::meter("voyager")
+                .u64_gauge("chain.latest_height")
+                .build(),
+            latest_timestamp_gauge: opentelemetry::global::meter("voyager")
+                .u64_gauge("chain.latest_timestamp")
+                .build(),
+        }
+    }
+}
 
 impl Server {
     pub fn new(cache: crate::cache::Cache, context: Arc<OnceLock<Context>>) -> Self {
@@ -50,6 +68,7 @@ impl Server {
             context,
             cache,
             item_id: None,
+            server_metrics: ServerMetrics::new(),
         }
     }
 
@@ -63,6 +82,7 @@ impl Server {
             context: self.context.clone(),
             cache: self.cache.clone(),
             item_id,
+            server_metrics: self.server_metrics.clone(),
         }
     }
 
@@ -92,7 +112,15 @@ impl Server {
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
-                debug!(%latest_height, finalized = false, "queried latest height");
+                trace!(%latest_height, finalized = false, "queried latest height");
+
+                self.server_metrics.latest_height_gauge.record(
+                    latest_height.height(),
+                    &[
+                        KeyValue::new("chain_id", chain_id.to_string()),
+                        KeyValue::new("finalized", false),
+                    ],
+                );
 
                 Ok(latest_height)
             }
@@ -105,7 +133,15 @@ impl Server {
                     .await
                     .map_err(json_rpc_error_to_error_object)?;
 
-                debug!(%latest_height, finalized = true, "queried latest height");
+                trace!(%latest_height, finalized = true, "queried latest height");
+
+                self.server_metrics.latest_height_gauge.record(
+                    latest_height.height(),
+                    &[
+                        KeyValue::new("chain_id", chain_id.to_string()),
+                        KeyValue::new("finalized", true),
+                    ],
+                );
 
                 Ok(latest_height)
             }
@@ -135,7 +171,16 @@ impl Server {
 
                 trace!(
                     %latest_height,
+                    finalized,
                     "queried latest height"
+                );
+
+                self.server_metrics.latest_height_gauge.record(
+                    latest_height.height(),
+                    &[
+                        KeyValue::new("chain_id", chain_id.to_string()),
+                        KeyValue::new("finalized", finalized),
+                    ],
                 );
 
                 Ok(latest_height)
@@ -163,7 +208,16 @@ impl Server {
 
                 trace!(
                     latest_timestamp = latest_timestamp.as_nanos(),
+                    finalized,
                     "queried latest timestamp"
+                );
+
+                self.server_metrics.latest_timestamp_gauge.record(
+                    latest_timestamp.as_nanos(),
+                    &[
+                        KeyValue::new("chain_id", chain_id.to_string()),
+                        KeyValue::new("finalized", finalized),
+                    ],
                 );
 
                 Ok(latest_timestamp)
