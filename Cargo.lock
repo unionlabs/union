@@ -7550,52 +7550,43 @@ dependencies = [
 
 [[package]]
 name = "jaq-core"
-version = "1.5.1"
+version = "2.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6fda09ee08c84c81293fdf811d9ebaa87b327557b5391f290c926d728c2ddd4"
+checksum = "4c3dcf2d6c22e94aef9da5823024d0f7b726332c993ee5b337ee06bdf999672a"
 dependencies = [
- "aho-corasick",
- "base64 0.22.1",
- "chrono",
- "hifijson",
- "jaq-interpret",
- "libm",
- "log",
- "regex",
- "urlencoding",
+ "dyn-clone",
+ "once_cell",
+ "typed-arena",
 ]
 
 [[package]]
-name = "jaq-interpret"
-version = "1.5.0"
+name = "jaq-json"
+version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "2fe95ec3c24af3fd9f3dd1091593f5e49b003a66c496a8aa39d764d0a06ae17b"
+checksum = "848f085cdaa2c0508c87e021392ec5fe3fd7da90d6d548f3c1790e1d499f3080"
 dependencies = [
- "ahash 0.8.11",
- "dyn-clone",
+ "foldhash",
  "hifijson",
  "indexmap 2.9.0",
- "jaq-syn",
- "once_cell",
+ "jaq-core",
+ "jaq-std",
  "serde_json",
 ]
 
 [[package]]
 name = "jaq-std"
-version = "1.6.0"
+version = "2.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bfbaa55578fd3b70433b594a370741e0c364e4afff92cc0099623fce87311bc1"
+checksum = "9360182e2b7837fe24ad8da58e21b29c5bff9eb722e68603986535c1e1b39a46"
 dependencies = [
- "jaq-syn",
-]
-
-[[package]]
-name = "jaq-syn"
-version = "1.6.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1ba44fe4428c71304604261ecbae047ee9cfb60c4f1a6bd222ebbb31726d3948"
-dependencies = [
- "serde",
+ "aho-corasick",
+ "base64 0.22.1",
+ "chrono",
+ "jaq-core",
+ "libm",
+ "log",
+ "regex-lite",
+ "urlencoding",
 ]
 
 [[package]]
@@ -11465,6 +11456,12 @@ dependencies = [
  "memchr",
  "regex-syntax 0.8.5",
 ]
+
+[[package]]
+name = "regex-lite"
+version = "0.1.6"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "53a49587ad06b26609c52e423de037e7f57f20d53535d66e08c695f347df952a"
 
 [[package]]
 name = "regex-syntax"
@@ -15442,6 +15439,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "typed-arena"
+version = "2.0.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6af6ae20167a9ece4bcb41af5b80f8a1f1df981f6391189ce00fd257af04126a"
+
+[[package]]
 name = "typed-store-error"
 version = "0.4.0"
 source = "git+https://github.com/mystenlabs/sui#db00b650ffb3c8590f5dc63f1b479dc73b7a77ec"
@@ -16770,9 +16773,8 @@ dependencies = [
  "indexmap 2.9.0",
  "itertools 0.13.0",
  "jaq-core",
- "jaq-interpret",
+ "jaq-json",
  "jaq-std",
- "jaq-syn",
  "jsonrpsee 0.25.1",
  "moka",
  "opentelemetry",
