@@ -7016,6 +7016,840 @@
           }
         }
       }
+    },
+    "/cosmwasm/wasm/v1/code": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "Codes gets the metadata for all stored wasm codes",
+        "operationId": "Query_Codes",
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "in": "query",
+            "description": "key is a value returned in PageResponse.next_key to begin\n querying the next page most efficiently. Only one of offset or key\n should be set.",
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          },
+          {
+            "name": "pagination.offset",
+            "in": "query",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\n It is less efficient than using key. Only one of offset or key should\n be set.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.limit",
+            "in": "query",
+            "description": "limit is the total number of results to be returned in the result page.\n If left empty it will default to a value to be set by each app.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.countTotal",
+            "in": "query",
+            "description": "count_total is set to true  to indicate that the result set should include\n a count of the total number of items available for pagination in UIs.\n count_total is only respected when offset is used. It is ignored when key\n is set.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "pagination.reverse",
+            "in": "query",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\n Since: cosmos-sdk 0.43",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryCodesResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/code-info/{codeId}": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "CodeInfo gets the metadata for a single wasm code",
+        "operationId": "Query_CodeInfo",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryCodeInfoResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/code/{codeId}": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "Code gets the binary code and metadata for a single wasm code",
+        "operationId": "Query_Code",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryCodeResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/code/{codeId}/contracts": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "ContractsByCode lists all smart contracts for a code id",
+        "operationId": "Query_ContractsByCode",
+        "parameters": [
+          {
+            "name": "codeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.key",
+            "in": "query",
+            "description": "key is a value returned in PageResponse.next_key to begin\n querying the next page most efficiently. Only one of offset or key\n should be set.",
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          },
+          {
+            "name": "pagination.offset",
+            "in": "query",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\n It is less efficient than using key. Only one of offset or key should\n be set.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.limit",
+            "in": "query",
+            "description": "limit is the total number of results to be returned in the result page.\n If left empty it will default to a value to be set by each app.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.countTotal",
+            "in": "query",
+            "description": "count_total is set to true  to indicate that the result set should include\n a count of the total number of items available for pagination in UIs.\n count_total is only respected when offset is used. It is ignored when key\n is set.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "pagination.reverse",
+            "in": "query",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\n Since: cosmos-sdk 0.43",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryContractsByCodeResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/codes/params": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "Params gets the module params",
+        "operationId": "Query_Params",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryParamsResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/codes/pinned": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "PinnedCodes gets the pinned code ids",
+        "operationId": "Query_PinnedCodes",
+        "parameters": [
+          {
+            "name": "pagination.key",
+            "in": "query",
+            "description": "key is a value returned in PageResponse.next_key to begin\n querying the next page most efficiently. Only one of offset or key\n should be set.",
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          },
+          {
+            "name": "pagination.offset",
+            "in": "query",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\n It is less efficient than using key. Only one of offset or key should\n be set.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.limit",
+            "in": "query",
+            "description": "limit is the total number of results to be returned in the result page.\n If left empty it will default to a value to be set by each app.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.countTotal",
+            "in": "query",
+            "description": "count_total is set to true  to indicate that the result set should include\n a count of the total number of items available for pagination in UIs.\n count_total is only respected when offset is used. It is ignored when key\n is set.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "pagination.reverse",
+            "in": "query",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\n Since: cosmos-sdk 0.43",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryPinnedCodesResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/contract/build_address": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "BuildAddress builds a contract address",
+        "operationId": "Query_BuildAddress",
+        "parameters": [
+          {
+            "name": "codeHash",
+            "in": "query",
+            "description": "CodeHash is the hash of the code",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "creatorAddress",
+            "in": "query",
+            "description": "CreatorAddress is the address of the contract instantiator",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "salt",
+            "in": "query",
+            "description": "Salt is a hex encoded salt",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "initArgs",
+            "in": "query",
+            "description": "InitArgs are optional json encoded init args to be used in contract address\n building if provided",
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryBuildAddressResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/contract/{address}": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "ContractInfo gets the contract meta data",
+        "operationId": "Query_ContractInfo",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "address is the address of the contract to query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryContractInfoResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/contract/{address}/history": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "ContractHistory gets the contract code history",
+        "operationId": "Query_ContractHistory",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "address is the address of the contract to query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.key",
+            "in": "query",
+            "description": "key is a value returned in PageResponse.next_key to begin\n querying the next page most efficiently. Only one of offset or key\n should be set.",
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          },
+          {
+            "name": "pagination.offset",
+            "in": "query",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\n It is less efficient than using key. Only one of offset or key should\n be set.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.limit",
+            "in": "query",
+            "description": "limit is the total number of results to be returned in the result page.\n If left empty it will default to a value to be set by each app.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.countTotal",
+            "in": "query",
+            "description": "count_total is set to true  to indicate that the result set should include\n a count of the total number of items available for pagination in UIs.\n count_total is only respected when offset is used. It is ignored when key\n is set.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "pagination.reverse",
+            "in": "query",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\n Since: cosmos-sdk 0.43",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryContractHistoryResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/contract/{address}/raw/{queryData}": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "RawContractState gets single key from the raw store data of a contract",
+        "operationId": "Query_RawContractState",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "address is the address of the contract",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "queryData",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryRawContractStateResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/contract/{address}/smart/{queryData}": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "SmartContractState get smart query result from the contract",
+        "operationId": "Query_SmartContractState",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "address is the address of the contract",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "queryData",
+            "in": "path",
+            "description": "QueryData contains the query data passed to the contract",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QuerySmartContractStateResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/contract/{address}/state": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "AllContractState gets all raw store data for a single contract",
+        "operationId": "Query_AllContractState",
+        "parameters": [
+          {
+            "name": "address",
+            "in": "path",
+            "description": "address is the address of the contract",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.key",
+            "in": "query",
+            "description": "key is a value returned in PageResponse.next_key to begin\n querying the next page most efficiently. Only one of offset or key\n should be set.",
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          },
+          {
+            "name": "pagination.offset",
+            "in": "query",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\n It is less efficient than using key. Only one of offset or key should\n be set.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.limit",
+            "in": "query",
+            "description": "limit is the total number of results to be returned in the result page.\n If left empty it will default to a value to be set by each app.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.countTotal",
+            "in": "query",
+            "description": "count_total is set to true  to indicate that the result set should include\n a count of the total number of items available for pagination in UIs.\n count_total is only respected when offset is used. It is ignored when key\n is set.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "pagination.reverse",
+            "in": "query",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\n Since: cosmos-sdk 0.43",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryAllContractStateResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/contracts/creator/{creatorAddress}": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "ContractsByCreator gets the contracts by creator",
+        "operationId": "Query_ContractsByCreator",
+        "parameters": [
+          {
+            "name": "creatorAddress",
+            "in": "path",
+            "description": "CreatorAddress is the address of contract creator",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.key",
+            "in": "query",
+            "description": "key is a value returned in PageResponse.next_key to begin\n querying the next page most efficiently. Only one of offset or key\n should be set.",
+            "schema": {
+              "type": "string",
+              "format": "bytes"
+            }
+          },
+          {
+            "name": "pagination.offset",
+            "in": "query",
+            "description": "offset is a numeric offset that can be used when key is unavailable.\n It is less efficient than using key. Only one of offset or key should\n be set.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.limit",
+            "in": "query",
+            "description": "limit is the total number of results to be returned in the result page.\n If left empty it will default to a value to be set by each app.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pagination.countTotal",
+            "in": "query",
+            "description": "count_total is set to true  to indicate that the result set should include\n a count of the total number of items available for pagination in UIs.\n count_total is only respected when offset is used. It is ignored when key\n is set.",
+            "schema": {
+              "type": "boolean"
+            }
+          },
+          {
+            "name": "pagination.reverse",
+            "in": "query",
+            "description": "reverse is set to true if results are to be returned in the descending order.\n\n Since: cosmos-sdk 0.43",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryContractsByCreatorResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/cosmwasm/wasm/v1/wasm-limits-config": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "description": "WasmLimitsConfig gets the configured limits for static validation of Wasm\n files, encoded in JSON.",
+        "operationId": "Query_WasmLimitsConfig",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QueryWasmLimitsConfigResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "Default error response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Status"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -7095,56 +7929,15 @@
       "Params": {
         "type": "object",
         "properties": {
-          "alpha": {
-            "type": "string",
-            "description": "Alpha is the amount we additively increase the learning rate\n when it is above or below the target +/- threshold.\n\n Must be > 0."
+          "codeUploadAccess": {
+            "$ref": "#/components/schemas/AccessConfig"
           },
-          "beta": {
-            "type": "string",
-            "description": "Beta is the amount we multiplicatively decrease the learning rate\n when it is within the target +/- threshold.\n\n Must be [0, 1]."
-          },
-          "gamma": {
-            "type": "string",
-            "description": "Gamma is the threshold for the learning rate. If the learning rate is\n above or below the target +/- threshold, we additively increase the\n learning rate by Alpha. Otherwise, we multiplicatively decrease the\n learning rate by Beta.\n\n Must be [0, 0.5]."
-          },
-          "delta": {
-            "type": "string",
-            "description": "Delta is the amount we additively increase/decrease the gas price when the\n net block utilization difference in the window is above/below the target\n utilization."
-          },
-          "minBaseGasPrice": {
-            "type": "string",
-            "description": "MinBaseGasPrice determines the initial gas price of the module and the\n global minimum for the network."
-          },
-          "minLearningRate": {
-            "type": "string",
-            "description": "MinLearningRate is the lower bound for the learning rate."
-          },
-          "maxLearningRate": {
-            "type": "string",
-            "description": "MaxLearningRate is the upper bound for the learning rate."
-          },
-          "maxBlockUtilization": {
-            "type": "string",
-            "description": "MaxBlockUtilization is the maximum block utilization."
-          },
-          "window": {
-            "type": "string",
-            "description": "Window defines the window size for calculating an adaptive learning rate\n over a moving window of blocks."
-          },
-          "feeDenom": {
-            "type": "string",
-            "description": "FeeDenom is the denom that will be used for all fee payments."
-          },
-          "enabled": {
-            "type": "boolean",
-            "description": "Enabled is a boolean that determines whether the EIP1559 fee market is\n enabled."
-          },
-          "distributeFees": {
-            "type": "boolean",
-            "description": "DistributeFees is a boolean that determines whether the fees are burned or\n distributed to all stakers."
+          "instantiateDefaultPermission": {
+            "type": "integer",
+            "format": "enum"
           }
         },
-        "description": "Params contains the required set of parameters for the EIP1559 fee market\n plugin implementation."
+        "description": "Params defines the set of wasm parameters."
       },
       "QueryAccountAddressByIDResponse": {
         "type": "object",
@@ -7234,10 +8027,10 @@
                 "$ref": "#/components/schemas/Params"
               }
             ],
-            "description": "params holds all the parameters of this module."
+            "description": "params defines the parameters of the module."
           }
         },
-        "description": "QueryParamsResponse is response type for the Query/Params RPC method."
+        "description": "QueryParamsResponse is the response type for the Query/Params RPC method."
       },
       "Status": {
         "type": "object",
@@ -11047,6 +11840,346 @@
           }
         },
         "description": "StateResponse is the response type for the Query/State RPC method."
+      },
+      "AbsoluteTxPosition": {
+        "type": "object",
+        "properties": {
+          "blockHeight": {
+            "type": "string",
+            "description": "BlockHeight is the block the contract was created at"
+          },
+          "txIndex": {
+            "type": "string",
+            "description": "TxIndex is a monotonic counter within the block (actual transaction index,\n or gas consumed)"
+          }
+        },
+        "description": "AbsoluteTxPosition is a unique transaction position that allows for global\n ordering of transactions."
+      },
+      "AccessConfig": {
+        "type": "object",
+        "properties": {
+          "permission": {
+            "type": "integer",
+            "format": "enum"
+          },
+          "addresses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "description": "AccessConfig access control type."
+      },
+      "CodeInfoResponse": {
+        "type": "object",
+        "properties": {
+          "codeId": {
+            "type": "string"
+          },
+          "creator": {
+            "type": "string"
+          },
+          "dataHash": {
+            "type": "string",
+            "format": "bytes"
+          },
+          "instantiatePermission": {
+            "$ref": "#/components/schemas/AccessConfig"
+          }
+        },
+        "description": "CodeInfoResponse contains code meta data from CodeInfo"
+      },
+      "ContractCodeHistoryEntry": {
+        "type": "object",
+        "properties": {
+          "operation": {
+            "type": "integer",
+            "format": "enum"
+          },
+          "codeId": {
+            "type": "string",
+            "description": "CodeID is the reference to the stored WASM code"
+          },
+          "updated": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbsoluteTxPosition"
+              }
+            ],
+            "description": "Updated Tx position when the operation was executed."
+          },
+          "msg": {
+            "type": "string",
+            "format": "bytes"
+          }
+        },
+        "description": "ContractCodeHistoryEntry metadata to a contract."
+      },
+      "ContractInfo": {
+        "type": "object",
+        "properties": {
+          "codeId": {
+            "type": "string",
+            "description": "CodeID is the reference to the stored Wasm code"
+          },
+          "creator": {
+            "type": "string",
+            "description": "Creator address who initially instantiated the contract"
+          },
+          "admin": {
+            "type": "string",
+            "description": "Admin is an optional address that can execute migrations"
+          },
+          "label": {
+            "type": "string",
+            "description": "Label is optional metadata to be stored with a contract instance."
+          },
+          "created": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/AbsoluteTxPosition"
+              }
+            ],
+            "description": "Created Tx position when the contract was instantiated."
+          },
+          "ibcPortId": {
+            "type": "string"
+          },
+          "extension": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/GoogleProtobufAny"
+              }
+            ],
+            "description": "Extension is an extension point to store custom metadata within the\n persistence model."
+          }
+        },
+        "description": "ContractInfo stores a WASM contract instance"
+      },
+      "Model": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "description": "hex-encode key to read it better (this is often ascii)",
+            "format": "bytes"
+          },
+          "value": {
+            "type": "string",
+            "description": "base64-encode raw value",
+            "format": "bytes"
+          }
+        },
+        "description": "Model is a struct that holds a KV pair"
+      },
+      "QueryAllContractStateResponse": {
+        "type": "object",
+        "properties": {
+          "models": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Model"
+            }
+          },
+          "pagination": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PageResponse"
+              }
+            ],
+            "description": "pagination defines the pagination in the response."
+          }
+        },
+        "description": "QueryAllContractStateResponse is the response type for the\n Query/AllContractState RPC method"
+      },
+      "QueryBuildAddressResponse": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "Address is the contract address"
+          }
+        },
+        "description": "QueryBuildAddressResponse is the response type for the Query/BuildAddress RPC\n method."
+      },
+      "QueryCodeInfoResponse": {
+        "type": "object",
+        "properties": {
+          "codeId": {
+            "type": "string"
+          },
+          "creator": {
+            "type": "string"
+          },
+          "checksum": {
+            "type": "string",
+            "format": "bytes"
+          },
+          "instantiatePermission": {
+            "$ref": "#/components/schemas/AccessConfig"
+          }
+        },
+        "description": "QueryCodeInfoResponse is the response type for the Query/CodeInfo RPC method"
+      },
+      "QueryCodeResponse": {
+        "type": "object",
+        "properties": {
+          "codeInfo": {
+            "$ref": "#/components/schemas/CodeInfoResponse"
+          },
+          "data": {
+            "type": "string",
+            "format": "bytes"
+          }
+        },
+        "description": "QueryCodeResponse is the response type for the Query/Code RPC method"
+      },
+      "QueryCodesResponse": {
+        "type": "object",
+        "properties": {
+          "codeInfos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CodeInfoResponse"
+            }
+          },
+          "pagination": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PageResponse"
+              }
+            ],
+            "description": "pagination defines the pagination in the response."
+          }
+        },
+        "description": "QueryCodesResponse is the response type for the Query/Codes RPC method"
+      },
+      "QueryContractHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ContractCodeHistoryEntry"
+            }
+          },
+          "pagination": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PageResponse"
+              }
+            ],
+            "description": "pagination defines the pagination in the response."
+          }
+        },
+        "description": "QueryContractHistoryResponse is the response type for the\n Query/ContractHistory RPC method"
+      },
+      "QueryContractInfoResponse": {
+        "type": "object",
+        "properties": {
+          "address": {
+            "type": "string",
+            "description": "address is the address of the contract"
+          },
+          "contractInfo": {
+            "$ref": "#/components/schemas/ContractInfo"
+          }
+        },
+        "description": "QueryContractInfoResponse is the response type for the Query/ContractInfo RPC\n method"
+      },
+      "QueryContractsByCodeResponse": {
+        "type": "object",
+        "properties": {
+          "contracts": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "contracts are a set of contract addresses"
+          },
+          "pagination": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PageResponse"
+              }
+            ],
+            "description": "pagination defines the pagination in the response."
+          }
+        },
+        "description": "QueryContractsByCodeResponse is the response type for the\n Query/ContractsByCode RPC method"
+      },
+      "QueryContractsByCreatorResponse": {
+        "type": "object",
+        "properties": {
+          "contractAddresses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "ContractAddresses result set"
+          },
+          "pagination": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PageResponse"
+              }
+            ],
+            "description": "Pagination defines the pagination in the response."
+          }
+        },
+        "description": "QueryContractsByCreatorResponse is the response type for the\n Query/ContractsByCreator RPC method."
+      },
+      "QueryPinnedCodesResponse": {
+        "type": "object",
+        "properties": {
+          "codeIds": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pagination": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/PageResponse"
+              }
+            ],
+            "description": "pagination defines the pagination in the response."
+          }
+        },
+        "description": "QueryPinnedCodesResponse is the response type for the\n Query/PinnedCodes RPC method"
+      },
+      "QueryRawContractStateResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string",
+            "description": "Data contains the raw store data",
+            "format": "bytes"
+          }
+        },
+        "description": "QueryRawContractStateResponse is the response type for the\n Query/RawContractState RPC method"
+      },
+      "QuerySmartContractStateResponse": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "string",
+            "description": "Data contains the json data returned from the smart contract",
+            "format": "bytes"
+          }
+        },
+        "description": "QuerySmartContractStateResponse is the response type for the\n Query/SmartContractState RPC method"
+      },
+      "QueryWasmLimitsConfigResponse": {
+        "type": "object",
+        "properties": {
+          "config": {
+            "type": "string"
+          }
+        },
+        "description": "QueryWasmLimitsConfigResponse is the response type for the\n Query/WasmLimitsConfig RPC method. It contains the JSON encoded limits for\n static validation of Wasm files."
       }
     }
   }
