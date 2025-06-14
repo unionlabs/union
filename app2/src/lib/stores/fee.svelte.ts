@@ -27,6 +27,8 @@ import {
   pipe,
   Predicate,
   Record as R,
+  Schedule,
+  Stream,
   Struct,
   Tuple,
   Unify,

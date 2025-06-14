@@ -71,24 +71,11 @@ export class PriceOracle extends Context.Tag("@unionlabs/sdk/PriceOracle")<
 const Pyth = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
-    // XXX: source from chain info?
-    const map: Record<UniversalChainId, string> = {
-      [UniversalChainId.make("ethereum.11155111")]: "ETH",
-      [UniversalChainId.make("bob.60808")]: "ETH",
-      [UniversalChainId.make("ethereum.1")]: "ETH",
-      [UniversalChainId.make("corn.21000001")]: "BTC",
-      [UniversalChainId.make("corn.21000000")]: "BTC",
-      [UniversalChainId.make("ethereum.17000")]: "ETH",
-      [UniversalChainId.make("xion.xion-testnet-2")]: "XION",
-      [UniversalChainId.make("sei.1328")]: "SEI",
-      [UniversalChainId.make("babylon.bbn-1")]: "BABY",
-      [UniversalChainId.make("babylon.bbn-test-5")]: "BABY",
-    }
-
     const symbolFromId = Effect.fn("symbolFromId")(
       (id: UniversalChainId) =>
         pipe(
-          R.get(map, id),
+          R.get(GAS_DENOMS, id),
+          O.map(x => x.symbol),
           Effect.mapError((cause) =>
             new PriceError({
               message: `No price ID mapping for ${id}`,
