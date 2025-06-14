@@ -292,7 +292,8 @@ module ibc::ibc {
         channel_to_port: Table<u32, String>,
         next_client_sequence: u32,
         next_channel_sequence: u32,
-        next_connection_sequence: u32
+        next_connection_sequence: u32,
+        packet_hash_to_digest: Table<vector<u8>, vector<u8>>
     }
 
     fun init(ctx: &mut TxContext) {
@@ -307,7 +308,8 @@ module ibc::ibc {
             channel_to_port: table::new(ctx),
             next_client_sequence: 1,
             next_channel_sequence: 1,
-            next_connection_sequence: 1
+            next_connection_sequence: 1,
+            packet_hash_to_digest: table::new(ctx)
         });
     }
 
@@ -953,7 +955,8 @@ module ibc::ibc {
         timeout_height: u64,
         timeout_timestamp: u64,
         data: vector<u8>,
-        witness: T
+        witness: T,
+        ctx: &TxContext
     ): packet::Packet {
         let port_id = *ibc_store.channel_to_port.borrow(source_channel);
         validate_port(port_id, witness);
@@ -994,6 +997,8 @@ module ibc::ibc {
         assert!(!ibc_store.commitments.contains(commitment_key), E_PACKET_ALREADY_SENT);
 
         add_or_update_table(&mut ibc_store.commitments, commitment_key, COMMITMENT_MAGIC);
+
+        ibc_store.packet_hash_to_digest.add(packet_hash, *ctx.digest());
 
         event::emit(
             PacketSend {
