@@ -7,6 +7,7 @@ use time::OffsetDateTime;
 
 use crate::indexer::{
     api::{BlockHash, BlockHeight, BlockRange, IndexerId},
+    event::MessageHash,
     nats::Message,
 };
 
@@ -178,45 +179,56 @@ pub async fn update_block_range_to_fix(
     Ok(())
 }
 
+#[derive(sqlx::FromRow)]
+pub struct BlockStatus {
+    pub block_hash: BlockHash,
+    pub message_hash: Option<MessageHash>,
+}
+
 pub async fn delete_block_status(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     indexer_id: IndexerId,
     height: BlockHeight,
-) -> sqlx::Result<Option<BlockHash>> {
+) -> sqlx::Result<Option<BlockStatus>> {
     let height: i64 = height.try_into().unwrap();
-    let record = sqlx::query!(
+    Ok(sqlx::query!(
         "
         DELETE FROM hubble.block_status
         WHERE indexer_id = $1 AND height = $2
-        RETURNING hash
+        RETURNING hash as block_hash, message_hash
         ",
         indexer_id,
         height,
     )
     .fetch_optional(tx.as_mut())
-    .await?;
-
-    Ok(record.map(|r| r.hash))
+    .await?
+    .map(|record| BlockStatus {
+        block_hash: record.block_hash,
+        message_hash: record.message_hash.map(|message_hash| message_hash.into()),
+    }))
 }
 
 pub async fn get_block_status_hash(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     indexer_id: IndexerId,
     height: BlockHeight,
-) -> sqlx::Result<Option<BlockHash>> {
+) -> sqlx::Result<Option<BlockStatus>> {
     let height: i64 = height.try_into().unwrap();
-    let record = sqlx::query!(
+    Ok(sqlx::query!(
         "
-        SELECT hash FROM hubble.block_status
+        SELECT hash as block_hash, message_hash
+        FROM hubble.block_status
         WHERE indexer_id = $1 AND height = $2
         ",
         indexer_id,
         height,
     )
     .fetch_optional(tx.as_mut())
-    .await?;
-
-    Ok(record.map(|r| r.hash))
+    .await?
+    .map(|record| BlockStatus {
+        block_hash: record.block_hash,
+        message_hash: record.message_hash.map(|message_hash| message_hash.into()),
+    }))
 }
 
 pub async fn update_block_status(
@@ -225,21 +237,29 @@ pub async fn update_block_status(
     height: BlockHeight,
     hash: BlockHash,
     timestamp: OffsetDateTime,
+    message_hash: Option<MessageHash>,
 ) -> sqlx::Result<()> {
     let height: i64 = height.try_into().unwrap();
+
     sqlx::query!(
         "
-        INSERT INTO hubble.block_status (indexer_id, height, hash, timestamp)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO hubble.block_status (indexer_id, height, hash, timestamp, message_hash)
+        VALUES ($1, $2, $3, $4, $5)
         ON CONFLICT (indexer_id, height) DO 
         UPDATE SET
             hash = excluded.hash,
-            timestamp = excluded.timestamp
+            timestamp = excluded.timestamp,
+            message_hash = 
+                CASE
+                    WHEN block_status.message_hash IS NOT NULL AND excluded.message_hash IS NULL THEN block_status.message_hash
+                    ELSE excluded.message_hash
+                END
         ",
         indexer_id,
         height,
         hash,
         timestamp,
+        message_hash.map(|message_hash|Into::<Vec<u8>>::into(message_hash)),
     )
     .execute(tx.as_mut())
     .await?;

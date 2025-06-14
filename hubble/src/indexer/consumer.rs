@@ -4,7 +4,7 @@ use async_nats::jetstream::consumer::{pull::Config, Consumer};
 use bytes::Bytes;
 use futures::StreamExt;
 use tokio::time::sleep;
-use tracing::{debug, info, warn};
+use tracing::{debug, info, trace, warn};
 
 use super::{
     api::{FetcherClient, IndexerError},
@@ -54,20 +54,36 @@ impl<T: FetcherClient> Indexer<T> {
 
         while let Some(message) = messages.next().await {
             let message = message.map_err(IndexerError::NatsNextError)?;
-            consume(message, handle_message).await?;
+            consume(message, |subject, payload| {
+                self.handle_message(subject, payload)
+            })
+            .await?;
         }
 
         info!("done");
         Ok(())
     }
-}
 
-async fn handle_message(subject: String, payload: Bytes) -> Result<(), IndexerError> {
-    debug!(
-        "got message on subject {} with payload {:?}",
-        subject,
-        from_utf8(&payload).map_err(|e| IndexerError::InternalError(e.into()))?
-    );
+    async fn handle_message(&self, subject: String, payload: Bytes) -> Result<(), IndexerError> {
+        info!("begin");
+        let tx = self.pg_pool.begin().await?;
 
-    Ok(())
+        info!(
+            "got message on subject {} with payload size {}",
+            subject,
+            payload.len(),
+        );
+
+        trace!(
+            "got message on subject {} with payload {:?}",
+            subject,
+            from_utf8(&payload).map_err(|e| IndexerError::InternalError(e.into()))?
+        );
+
+        info!("commit");
+        tx.commit().await?;
+
+        info!("done");
+        Ok(())
+    }
 }
