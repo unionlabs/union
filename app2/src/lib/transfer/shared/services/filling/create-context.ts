@@ -68,23 +68,6 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
   )
 }
 
-const createBaseIntent = (
-  args: TransferArgs,
-  baseAmount: TokenRawAmount,
-): Omit<Intent, "baseToken"> => ({
-  sender: args.sender,
-  receiver: args.receiver,
-  baseAmount,
-  quoteAmount: baseAmount,
-  decimals: args.decimals,
-  sourceChain: args.sourceChain,
-  sourceChainId: args.sourceChain.universal_chain_id,
-  sourceChannelId: args.channel.source_channel_id,
-  destinationChain: args.destinationChain,
-  channel: args.channel,
-  ucs03address: args.ucs03address,
-})
-
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
   const shouldIncludeFees = shouldChargeFees(uiStore.edition, args.sourceChain)
   const baseIntent = createBaseIntent(args, baseAmount)
@@ -125,6 +108,23 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
     Match.orElse(() => []),
   )
 }
+
+const createBaseIntent = (
+  args: TransferArgs,
+  baseAmount: TokenRawAmount,
+): Omit<Intent, "baseToken"> => ({
+  sender: args.sender,
+  receiver: args.receiver,
+  baseAmount,
+  quoteAmount: baseAmount,
+  decimals: args.decimals,
+  sourceChain: args.sourceChain,
+  sourceChainId: args.sourceChain.universal_chain_id,
+  sourceChannelId: args.channel.source_channel_id,
+  destinationChain: args.destinationChain,
+  channel: args.channel,
+  ucs03address: args.ucs03address,
+})
 
 // Fee strategy: BTC edition only charges fees when going FROM Babylon
 const shouldChargeFees = (edition: string, sourceChain: Chain): boolean => {
