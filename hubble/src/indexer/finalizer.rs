@@ -1,6 +1,8 @@
 use std::cmp::min;
 
 use color_eyre::eyre::Report;
+use serde_json::Value;
+use sqlx::Postgres;
 use tokio::time::sleep;
 use tracing::{debug, info, info_span, trace, warn, Instrument};
 
@@ -10,7 +12,8 @@ use super::{
     Indexer,
 };
 use crate::indexer::{
-    api::{BlockHandle, BlockHeight, BlockSelection, FetchMode},
+    api::{BlockHandle, BlockHeight, BlockReference, BlockSelection, FetchMode},
+    event::MessageHash,
     postgres::{
         delete_block_status, get_block_range_to_finalize, get_block_status_hash,
         update_block_status,
@@ -192,18 +195,19 @@ impl<T: FetcherClient> Indexer<T> {
 
         let is_finalized = last_finalized_height >= reference.height;
 
-        if let Some(old_hash) = match is_finalized {
+        if let Some(current_block_status) = match is_finalized {
             true => delete_block_status(&mut tx, self.indexer_id.clone(), reference.height).await?,
             false => {
                 get_block_status_hash(&mut tx, self.indexer_id.clone(), reference.height).await?
             }
         } {
-            if is_finalized && self.finalizer_config.reload {
+            let old_hash = current_block_status.block_hash;
+            let events = if is_finalized && self.finalizer_config.reload {
                 debug!("{}: finalized (reloading)", reference.height,);
                 block
                     .update(&mut tx)
                     .instrument(info_span!("reload"))
-                    .await?;
+                    .await?
             } else if old_hash != reference.hash {
                 debug!(
                     "{}: changed ({} > {} => updating)",
@@ -212,8 +216,19 @@ impl<T: FetcherClient> Indexer<T> {
                 block
                     .update(&mut tx)
                     .instrument(info_span!("update"))
-                    .await?;
-            }
+                    .await?
+            } else {
+                None
+            };
+
+            let new_message_hash = self
+                .schedule_event_when_required(
+                    &mut tx,
+                    &reference,
+                    &current_block_status.message_hash,
+                    events,
+                )
+                .await?;
 
             if !is_finalized {
                 debug!("{}: update status", reference);
@@ -223,6 +238,7 @@ impl<T: FetcherClient> Indexer<T> {
                     reference.height,
                     reference.hash.clone(),
                     reference.timestamp,
+                    new_message_hash,
                 )
                 .await?;
             }
@@ -238,6 +254,53 @@ impl<T: FetcherClient> Indexer<T> {
         debug!("{}: finalized", reference);
 
         Ok(())
+    }
+
+    async fn schedule_event_when_required(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        reference: &BlockReference,
+        old_message_hash: &Option<MessageHash>,
+        events: Option<serde_json::Value>,
+    ) -> Result<Option<MessageHash>, IndexerError> {
+        debug!(
+            "schedule_event_when_required: {reference}, {}, has_events: {}",
+            old_message_hash
+                .as_ref()
+                .map_or("-".to_string(), |h| h.to_string()),
+            events.is_some()
+        );
+
+        Ok(match (old_message_hash, events) {
+            (None, None) => {
+                // do nothing, never sent a message and there are no events
+                trace!("None, None => ignore");
+                None
+            }
+            (Some(original_message_hash), None) => {
+                // send empty block: we did send a message before, but now there are no events
+                // still deduplicating, because it could be the original hash could be of a
+                // 'no events' message
+                trace!("Some, None => send-dedup ({original_message_hash})");
+                Some(
+                    self.schedule_event_dedup(tx, reference, Value::Null, original_message_hash)
+                        .await?,
+                )
+            }
+            (None, Some(events)) => {
+                // we never sent a event, but now we found events
+                trace!("None, Some => send");
+                Some(self.schedule_event(tx, reference, events).await?)
+            }
+            (Some(original_message_hash), Some(events)) => {
+                // we did send an event before, only send an event if the contents changed
+                trace!("Some, Some => send-debup ({original_message_hash})");
+                Some(
+                    self.schedule_event_dedup(tx, reference, events, original_message_hash)
+                        .await?,
+                )
+            }
+        })
     }
 
     async fn block_range_to_finalize(&self) -> Result<Option<BlockRange>, Report> {

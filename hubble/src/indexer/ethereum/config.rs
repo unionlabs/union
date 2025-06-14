@@ -19,7 +19,9 @@ pub struct Config {
     pub rpc_urls: Vec<Url>,
     #[serde(default)]
     pub finalizer: FinalizerConfig,
+    #[serde(default)]
     pub publisher: PublisherConfig,
+    #[serde(default)]
     pub consumer: ConsumerConfig,
 }
 
