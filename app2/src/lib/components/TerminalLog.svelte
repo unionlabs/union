@@ -57,10 +57,10 @@ let isMouseDown = false
 let lastMouseY = 0
 
 // Visual constants
-const LOG_HEIGHT = 56
+const LOG_HEIGHT = 48
 const PADDING = 8
-const LINE_HEIGHT = 14
-const FONT_SIZE = 12
+const LINE_HEIGHT = 12
+const FONT_SIZE = 10
 const COLORS = {
   background: "#00000000",
   text: "#d4d4d8", // zinc-300
@@ -415,7 +415,7 @@ onMount(() => {
 })
 </script>
 
-<Card class="h-full">
+<Card class="h-full p-2">
   <div
     class="relative w-full h-full"
     bind:this={containerElement}

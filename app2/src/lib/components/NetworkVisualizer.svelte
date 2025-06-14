@@ -32,7 +32,7 @@ const COLOR_CONFIG = {
   chainSelectedGlow: "#4bb7c3", // Selected chain glow color
   chainHit: "#ffffff", // Chain color when hit by transaction
   particle: "#fbbf24", // Transaction particle color (mainnet)
-  particleTestnet: "#ffffff", // Transaction particle color for testnet (amber-400)
+  particleTestnet: "#4bb7c3", // Transaction particle color for testnet (amber-400)
   particleGlow: "#ffffff", // Particle glow effect
   connectionDefault: "#52525b", // Normal connection lines (zinc-600)
   connectionSelected: "#4bb7c3", // Selected connection line (accent blue)
@@ -361,6 +361,22 @@ function animate(currentTime = 0) {
     }
   }
 
+  // Draw particles (optimized) - batch all particle drawing
+  if (particles.length > 0) {
+    ctx.fillStyle = COLOR_CONFIG.particle // Set once for mainnet particles
+    particles.forEach(particle => {
+      if (particle.color !== COLOR_CONFIG.particle) {
+        ctx.fillStyle = particle.color // Only change if different
+      }
+      ctx.fillRect(
+        particle.x - particle.size,
+        particle.y - particle.size,
+        particle.size * 2,
+        particle.size * 2,
+      )
+    })
+  }
+
   // Draw chain nodes (optimized) - batch similar operations
   chainNodes.forEach((node, chainId) => {
     // Update node state
@@ -400,22 +416,6 @@ function animate(currentTime = 0) {
       ctx.fillText(node.displayName, node.x, node.y - nodeRadius - 8)
     }
   })
-
-  // Draw particles (optimized) - batch all particle drawing
-  if (particles.length > 0) {
-    ctx.fillStyle = COLOR_CONFIG.particle // Set once for mainnet particles
-    particles.forEach(particle => {
-      if (particle.color !== COLOR_CONFIG.particle) {
-        ctx.fillStyle = particle.color // Only change if different
-      }
-      ctx.fillRect(
-        particle.x - particle.size,
-        particle.y - particle.size,
-        particle.size * 2,
-        particle.size * 2,
-      )
-    })
-  }
 
   animationFrame = requestAnimationFrame(animate)
 }
@@ -479,7 +479,7 @@ $effect(() => {
 })
 </script>
 
-<Card class="h-full">
+<Card class="h-full p-3">
   <div
     class="relative w-full h-full"
     bind:this={containerElement}
