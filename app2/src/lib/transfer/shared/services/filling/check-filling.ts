@@ -96,6 +96,8 @@ export const getFillingState = (
         return FillingState.NoFee()
       }
 
+      // TODO: if fee is Some<Either.Left<Error>> => error state
+
       const unwrapped = Option.all({
         destinationChain: transferData.destinationChain,
         channel: transferData.channel,

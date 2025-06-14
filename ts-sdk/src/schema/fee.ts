@@ -44,17 +44,20 @@ export const Fees = S.transform(
   }),
   {
     decode: (fromA) => {
-      const byAction = <T extends Action>(action: T) =>
+      const byAction = <T extends Action>(action: T): O.Option<BigDecimal.BigDecimal> =>
         pipe(
           A.findFirst(fromA, x => x.action === action),
           O.map(x => x.fee),
         )
-      return {
+      console.log("FROMA", fromA)
+      const result = {
         PACKET_RECV: byAction("PACKET_RECV"),
         PACKET_SEND_LC_UPDATE_L0: byAction("PACKET_SEND_LC_UPDATE_L0"),
         PACKET_SEND_LC_UPDATE_L1: byAction("PACKET_SEND_LC_UPDATE_L1"),
         PACKET_SEND_LC_UPDATE_L2: byAction("PACKET_SEND_LC_UPDATE_L2"),
       }
+      console.log("RESULT", JSON.stringify(result))
+      return result
     },
     encode: (toI) =>
       pipe(

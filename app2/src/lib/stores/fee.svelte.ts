@@ -11,13 +11,12 @@ import * as ArrayInstances from "@effect/typeclass/data/Array"
 import * as FlatMap from "@effect/typeclass/FlatMap"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
-import { PriceError, PriceOracle, PriceSource } from "@unionlabs/sdk/PriceOracle"
+import { PriceError, PriceOracle, PriceResult, PriceSource } from "@unionlabs/sdk/PriceOracle"
 import { Chain, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { type Fees, GasFee } from "@unionlabs/sdk/schema/fee"
 import {
   Array as A,
   BigDecimal,
-  BigInt as BI,
   Cause,
   Effect,
   Either as E,
@@ -27,13 +26,11 @@ import {
   pipe,
   Predicate,
   Record as R,
-  Schedule,
-  Stream,
   Struct,
   Tuple,
   Unify,
 } from "effect"
-import { constant, flow, identity } from "effect/Function"
+import { flow, identity } from "effect/Function"
 
 const LogWriter = Writer.getMonad(ArrayInstances.getMonoid<string>())
 const composeK = FlatMap.composeK(LogWriter)
@@ -75,6 +72,24 @@ const createFeeStore = () => {
     feeMultiplier: BigDecimal.unsafeFromString("1.2"), // Union hardcoded fee
     batchDivideNumber: BigDecimal.unsafeFromString("3"), // Api?
   } as const
+
+  type Happy = O.Option<
+    E.Either<
+      {
+        source: {
+          gas: BaseGasPrice
+          gasDecimals: number
+          usd: PriceResult
+        }
+        destination: {
+          gas: BaseGasPrice
+          gasDecimals: number
+          usd: PriceResult
+        }
+      },
+      GasPriceError | PriceError
+    >
+  >
 
   let usdPrices!: RunPromiseExitResult<
     R.ReadonlyRecord<
@@ -148,6 +163,20 @@ const createFeeStore = () => {
     })
   })
 
+  const baseFees: O.Option<BaseFees> = $derived(pipe(
+    TransferData.channel,
+    O.map(Struct.get("fees")),
+    O.map(Struct.omit("PACKET_SEND_LC_UPDATE_L2")),
+    O.map((fees) => {
+      const withDefault = O.getOrElse<GasFee>(() => GasFee.make(BigDecimal.make(0n, 0)))<GasFee>
+      return Struct.evolve(fees, {
+        PACKET_RECV: withDefault,
+        PACKET_SEND_LC_UPDATE_L0: withDefault,
+        PACKET_SEND_LC_UPDATE_L1: withDefault,
+      })
+    }),
+  ))
+
   const maybeRatio = $derived(pipe(
     ratio.current,
     O.flatMap(Exit.match({
@@ -159,7 +188,6 @@ const createFeeStore = () => {
 
   const decorate = (
     self: {
-      fees: BaseFees
       gasPrice: { value: BaseGasPrice; decimals: number }
       ratio: BigDecimal.BigDecimal
     } & typeof config,
@@ -320,20 +348,6 @@ const createFeeStore = () => {
     })
   }
 
-  const baseFees: O.Option<BaseFees> = $derived(pipe(
-    TransferData.channel,
-    O.map(Struct.get("fees")),
-    O.map(Struct.omit("PACKET_SEND_LC_UPDATE_L2")),
-    O.map((fees) => {
-      const withDefault = O.getOrElse<GasFee>(() => GasFee.make(BigDecimal.make(0n, 0)))<GasFee>
-      return Struct.evolve(fees, {
-        PACKET_RECV: withDefault,
-        PACKET_SEND_LC_UPDATE_L0: withDefault,
-        PACKET_SEND_LC_UPDATE_L1: withDefault,
-      })
-    }),
-  ))
-
   /**
    * The denom symbol for the source transfer chain.
    * @example
@@ -393,8 +407,9 @@ const createFeeStore = () => {
 
   // TODO: tuple-ify outputs; concatenate to show record of calculations performed
   const calculatedFees = $derived(pipe(
-    O.map(decoratedConfig, (config) =>
-      Struct.evolve(config.fees, {
+    O.all({ fees: baseFees, config: decoratedConfig }),
+    O.map(({ config, fees }) =>
+      Struct.evolve(fees, {
         PACKET_SEND_LC_UPDATE_L1: flow(
           pipe( // TODO: extract
             config.applyGasPriceK,
@@ -421,12 +436,13 @@ const createFeeStore = () => {
             composeK(config.applyRatioK),
           ),
         ),
-      })),
+      })
+    ),
   ))
 
   const displayFees = $derived(pipe(
     O.all({ calculatedFees, decoratedConfig }),
-    O.map(({ calculatedFees, decoratedConfig: { formatToDisplayK, applyRatioK } }) =>
+    O.map(({ calculatedFees, decoratedConfig: { formatToDisplayK } }) =>
       Struct.evolve(calculatedFees, {
         PACKET_SEND_LC_UPDATE_L0: (x) => {
           const f = pipe(
@@ -486,40 +502,12 @@ const createFeeStore = () => {
   const newFeeBreakdown = $derived.by(() => {
     const enrich = (x: BaseFeeInfo) =>
       O.gen(function*() {
-        const { formatToDisplayK: format, feeMultiplier } = yield* decoratedConfig
         const amount = yield* O.map(displayFees, flow(Struct.get(x.key), Tuple.getFirst))
         const baseFee = yield* O.map(calculatedFees, flow(Struct.get(x.key), Tuple.getFirst))
         const calc = A.join(
           yield* O.map(displayFees, flow(Struct.get(x.key), Tuple.getSecond)),
           "<br/>&rarr; ",
         )
-        const symbol = yield* sourceSymbol
-
-        // const baseFeeStep = O.gen(function*() {
-        //   const gasUnit = yield* sourceGasUnitPrice
-        //   const operation = `${format(baseFee)} × ${format(gasUnit)} ${symbol}`
-        //   const result = BigDecimal.format(BigDecimal.multiply(baseFee, gasUnit))
-        //   return {
-        //     operation,
-        //     result: `${result} ${symbol}`,
-        //   }
-        // })
-
-        // const protocolFeeStep = O.gen(function*() {
-        //   const gasUnit = yield* sourceGasUnitPrice
-        //   const mult = BigDecimal.scale(feeMultiplier, 100)
-        //   const operation = `+ ${BigDecimal.format(mult)}%`
-        //   const result = pipe(
-        //     baseFee,
-        //     BigDecimal.multiply(gasUnit),
-        //     BigDecimal.multiply(mult),
-        //     format,
-        //   )
-        //   return {
-        //     operation,
-        //     result: `${result} ${symbol}`,
-        //   }
-        // })
 
         return {
           ...x,
@@ -606,7 +594,7 @@ const createFeeStore = () => {
       ),
       totalFee,
     }),
-    O.map(({ decoratedConfig, perUsd, totalFee }) => BigDecimal.multiply(totalFee, perUsd)),
+    O.map(({ perUsd, totalFee }) => BigDecimal.multiply(totalFee, perUsd)),
     O.map(BigDecimal.round({
       scale: 4,
       mode: "from-zero",
@@ -700,7 +688,7 @@ const createFeeStore = () => {
     get feeDisplay() {
       return pipe(
         O.all({ totalFee, decoratedConfig }),
-        O.map(({ totalFee, decoratedConfig: { formatToDisplayK, applyRatioK } }) =>
+        O.map(({ totalFee, decoratedConfig: { formatToDisplayK } }) =>
           pipe(
             // TODO: normalize to base gas price due to USD conversion being in base
             totalFee,
