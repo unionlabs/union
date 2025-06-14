@@ -4,8 +4,6 @@ import TerminalLog from "$lib/components/TerminalLog.svelte"
 import TransferStats from "$lib/components/TransferStats.svelte"
 import PopularRoutesChart from "$lib/components/PopularRoutesChart.svelte"
 import WalletActivityChart from "$lib/components/WalletActivityChart.svelte"
-import Card from "$lib/components/ui/Card.svelte"
-import Sections from "$lib/components/ui/Sections.svelte"
 import type { TransferListItem } from "@unionlabs/sdk/schema"
 
 // Extended transfer type with server pre-computed fields
@@ -97,7 +95,15 @@ let chartData = {
   currentRates: null,
   popularRoutesTimeScale: {},
   activeSendersTimeScale: {},
-  activeReceiversTimeScale: {}
+  activeReceiversTimeScale: {},
+  dataAvailability: {
+    hasMinute: false,
+    hasHour: false,
+    hasDay: false,
+    has7Days: false,
+    has14Days: false,
+    has30Days: false
+  }
 }
 
 // Chains data from backend
@@ -263,10 +269,15 @@ onDestroy(() => {
       <PopularRoutesChart 
         popularRoutes={chartData.popularRoutes}
         popularRoutesTimeScale={chartData.popularRoutesTimeScale}
+        dataAvailability={chartData.dataAvailability}
       />
       <WalletActivityChart 
+        activeSenders={chartData.activeSenders}
+        activeReceivers={chartData.activeReceivers}
         activeSendersTimeScale={chartData.activeSendersTimeScale}
         activeReceiversTimeScale={chartData.activeReceiversTimeScale}
+        activeWalletRates={activeWalletRates}
+        dataAvailability={chartData.dataAvailability}
       />
     </div>
   </div>
@@ -276,6 +287,7 @@ onDestroy(() => {
     <TransferStats 
       {transferRates} 
       {activeWalletRates}
+      dataAvailability={chartData.dataAvailability}
       {connectionStatus}
     />
   </div>
