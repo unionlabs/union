@@ -1,0 +1,12 @@
+config:
+  target: "wss://ws-production-8c61.up.railway.app"
+  phases:
+    - duration: 600
+      arrivalRate: 50     # clients/sec
+      rampTo: 10
+  engines:
+    ws: {}
+scenarios:
+  - engine: "ws"
+    flow:
+      - think: 600          # stay connected for 60s
