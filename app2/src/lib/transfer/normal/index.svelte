@@ -134,12 +134,10 @@ $effect(() => {
     let context: TransferContext | null = null
 
     while (true) {
-      const feeIntent = Option.getRight(FeeStore.feeIntent)
-
       const result: StateResult | void = yield* createContextState(
         currentState,
         transferData,
-        feeIntent,
+        FeeStore.intent,
       )
 
       if (!result) {

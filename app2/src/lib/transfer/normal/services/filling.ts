@@ -17,7 +17,7 @@ import {
   type TransferContext,
 } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { createOrdersBatch } from "$lib/transfer/shared/services/filling/create-orders.ts"
-import { Data, Effect, Match, Option } from "effect"
+import { Data, Effect, Either as E, Match, Option } from "effect"
 import { pipe } from "effect/Function"
 
 export type StateResult = {
@@ -85,7 +85,7 @@ const complete = (msg: string, context: TransferContext): StateResult => ({
 export const createContextState = (
   cts: CreateContextState,
   transfer: TransferData,
-  fee: Option.Option<FeeIntent>,
+  fee: Option.Option<E.Either<FeeIntent, string>>,
 ) => {
   return CreateContextState.$match(cts, {
     Empty: () => Effect.void,
@@ -104,7 +104,7 @@ export const createContextState = (
         EmptyAmount: () => Effect.succeed(ok(Empty(), "Enter amount")),
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
-        NoFee: () => Effect.succeed(ok(Empty(), "No fee")),
+        NoFee: ({ message }) => Effect.succeed(ok(Empty(), message ?? "Loading fee...")),
         Ready: (args) => Effect.succeed(ok(Validation({ args }), "Validating...")),
       })
     },

@@ -166,14 +166,32 @@ const createFeeStore = () => {
   const baseFees: O.Option<BaseFees> = $derived(pipe(
     TransferData.channel,
     O.map(Struct.get("fees")),
-    O.map(Struct.omit("PACKET_SEND_LC_UPDATE_L2")),
     O.map((fees) => {
-      const withDefault = O.getOrElse<GasFee>(() => GasFee.make(BigDecimal.make(0n, 0)))<GasFee>
-      return Struct.evolve(fees, {
-        PACKET_RECV: withDefault,
-        PACKET_SEND_LC_UPDATE_L0: withDefault,
-        PACKET_SEND_LC_UPDATE_L1: withDefault,
-      })
+      // const withDefault = O.getOrElse<GasFee>(() => GasFee.make(BigDecimal.make(0n, 0)))<GasFee>
+      const withDefault = (x: O.Option<BigDecimal.BigDecimal>): GasFee => {
+        if (O.isSome(x)) {
+          console.log("IS SOME", JSON.stringify(x))
+          return GasFee.make(x.value)
+        } else {
+          console.log("IS NONE", JSON.stringify(x))
+          return GasFee.make(BigDecimal.make(0n, 0))
+        }
+      }
+      console.log("BEFORE EVOLUTION")
+      const result = {
+        PACKET_RECV: withDefault(fees.PACKET_RECV),
+        PACKET_SEND_LC_UPDATE_L0: withDefault(fees.PACKET_SEND_LC_UPDATE_L0),
+        PACKET_SEND_LC_UPDATE_L1: withDefault(fees.PACKET_SEND_LC_UPDATE_L1),
+      } as const
+      console.log("AFTER EVOLUTION")
+
+      return result
+
+      // return Struct.evolve(fees, {
+      //   PACKET_RECV: withDefault,
+      //   PACKET_SEND_LC_UPDATE_L0: withDefault,
+      //   PACKET_SEND_LC_UPDATE_L1: withDefault,
+      // })
     }),
   ))
 
@@ -618,36 +636,28 @@ const createFeeStore = () => {
   //   ucs03address: string
   // }
 
-  const feeIntent: E.Either<FeeIntent, string> = $derived(E.gen(function*() {
-    const _totalFee = yield* pipe(
-      totalFee,
-      E.fromOption(() => "No total fee"),
-    )
-    const sourceChain = yield* pipe(
-      TransferData.sourceChain,
-      E.fromOption(() => "No source chain"),
-    )
-    const gasDenom = yield* pipe(
-      R.get(GAS_DENOMS, sourceChain.universal_chain_id),
-      E.fromOption(() => `No gas denom for ${sourceChain.universal_chain_id}`),
-    )
+  const intent: O.Option<E.Either<FeeIntent, string>> = $derived(O.gen(function*() {
+    const _totalFee = yield* totalFee
+    const sourceChain = yield* TransferData.sourceChain
 
-    const baseToken = gasDenom.address
-    // TODO: get from more reliable source
-    const decimals = gasDenom.decimals
-    const baseAmount = BigDecimal.round(_totalFee, { scale: gasDenom.decimals })
-
-    return {
-      decimals,
-      baseToken,
-      quoteAmount: TokenRawAmount.make(0n),
-      baseAmount: TokenRawAmount.make(baseAmount.value),
-    } as const
+    return E.gen(function*() {
+      const { decimals, address: baseToken } = yield* pipe(
+        R.get(GAS_DENOMS, sourceChain.universal_chain_id),
+        E.fromOption(() => `No gas denom for ${sourceChain.universal_chain_id}`),
+      )
+      const baseAmount = BigDecimal.round(_totalFee, { scale: decimals })
+      return {
+        decimals,
+        baseToken,
+        quoteAmount: TokenRawAmount.make(0n),
+        baseAmount: TokenRawAmount.make(baseAmount.value),
+      } as const
+    })
   }))
 
   return {
-    get feeIntent() {
-      return feeIntent
+    get intent() {
+      return intent
     },
     get baseFees() {
       return baseFees

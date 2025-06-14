@@ -171,6 +171,7 @@ const feeConfig = O.none()
       </div>
 
       <!-- TODO: Receipt transparency -->
+      <!--
       <div class="border-t border-zinc-800 px-4 py-3">
         <div class="flex items-center justify-between text-xs mb-3">
           <span class="text-zinc-400 font-medium">Route</span>
