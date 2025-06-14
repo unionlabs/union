@@ -844,7 +844,8 @@ module zkgm::zkgm_relay {
             timeout_height,
             timeout_timestamp,
             zkgm_packet::encode(&zkgm_pack),
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx
         );
     }
     fun verify_internal<T>(
