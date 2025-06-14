@@ -135,13 +135,11 @@ members = [
   "lib/voyager-primitives",
 
   "voyager/modules/state/cosmos-sdk",
-  "voyager/modules/state/cosmos-sdk-union",
   "voyager/modules/state/ethereum",
   # "voyager/modules/state/movement",
   "voyager/modules/state/sui",
 
   "voyager/modules/proof/cosmos-sdk",
-  "voyager/modules/proof/cosmos-sdk-union",
   "voyager/modules/proof/ethermint",
   "voyager/modules/proof/ethereum",
   # "voyager/modules/proof/movement",
