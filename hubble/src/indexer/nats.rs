@@ -1,0 +1,231 @@
+use core::time::Duration;
+use std::{
+    fmt::{self, Display},
+    future::Future,
+};
+
+use async_nats::{
+    header::HeaderMap,
+    jetstream::{
+        self,
+        consumer::{pull::Config, Consumer},
+        stream::StorageType,
+    },
+    ConnectOptions,
+};
+use bytes::Bytes;
+use lz4_flex::{compress_prepend_size, decompress_size_prepended};
+use tracing::{debug, info, warn};
+
+use crate::indexer::api::IndexerError;
+
+#[derive(Clone)]
+pub struct NatsConnection {
+    pub consumer: String,
+    pub context: async_nats::jetstream::context::Context,
+    pub stream: async_nats::jetstream::stream::Stream,
+}
+
+impl Display for NatsConnection {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let info = self.stream.cached_info();
+        write!(
+            f,
+            "NatsConnection(consumer: {}, stream: {}, subjects: {:?})",
+            self.consumer, info.config.name, info.config.subjects
+        )
+    }
+}
+
+impl NatsConnection {
+    pub async fn create(
+        url: &str,
+        username: &str,
+        password: &str,
+        consumer: &str,
+    ) -> color_eyre::eyre::Result<NatsConnection> {
+        debug!("creating client for user {username} to {url}");
+        let client = ConnectOptions::new()
+            .user_and_password(username.to_string(), password.to_string())
+            .connect(url)
+            .await?;
+
+        debug!("creating context");
+        let context = jetstream::new(client);
+        debug!("created context: {context:?}");
+
+        debug!("ensure 'hubble' stream exists");
+        let stream = context
+            .get_or_create_stream(jetstream::stream::Config {
+                name: "hubble".to_string(),
+                subjects: vec!["hubble.>".to_string()],
+                storage: StorageType::File,
+                num_replicas: 2,
+                ..Default::default()
+            })
+            .await?;
+        debug!("found stream: {stream:?}");
+
+        Ok(Self {
+            consumer: consumer.to_string(),
+            context,
+            stream,
+        })
+    }
+
+    pub async fn create_consumer(
+        &self,
+        indexer_id: &str,
+    ) -> Result<Consumer<Config>, IndexerError> {
+        let durable_name = durable_name(&self.consumer, indexer_id);
+        let consumer_config = jetstream::consumer::pull::Config {
+            durable_name: Some(durable_name.clone()),
+            description: Some("indexing chain events".to_string()),
+            ack_policy: jetstream::consumer::AckPolicy::Explicit,
+            filter_subject: subject_for_block(indexer_id),
+            ..Default::default()
+        };
+
+        Ok(self
+            .stream
+            .get_or_create_consumer(&durable_name, consumer_config)
+            .await?)
+    }
+
+    pub async fn publish(&self, message: &Message) -> Result<Ack, IndexerError> {
+        info!("{}: sending", message.id);
+
+        let mut headers = message.headers.clone();
+        headers.append("Content-Encoding", "lz4");
+
+        let data = compress_prepend_size(&message.data);
+
+        let ack_future = self
+            .context
+            .publish_with_headers(message.subject.clone(), headers, data.into())
+            .await?;
+
+        debug!("{}: acking", message.id);
+        let ack = ack_future.await?;
+
+        debug!("{}: acked (sequence: {})", message.id, ack.sequence);
+
+        Ok(Ack {
+            sequence: ack.sequence,
+        })
+    }
+}
+
+pub async fn consume<F, Fut>(
+    message: async_nats::jetstream::Message,
+    handler: F,
+) -> Result<(), IndexerError>
+where
+    F: Fn(String, Bytes) -> Fut,
+    Fut: Future<Output = Result<(), IndexerError>>,
+{
+    let meta = message.info().map_err(IndexerError::NatsMetaError)?;
+
+    debug!("Stream sequence number: {}", meta.stream_sequence);
+    debug!("Consumer sequence number: {}", meta.consumer_sequence);
+
+    let payload = &message.payload;
+
+    let decoded = if let Some(encoding) = message
+        .headers
+        .as_ref()
+        .and_then(|h| h.get("Content-Encoding"))
+    {
+        match encoding.as_str() {
+            "lz4" => decompress_size_prepended(payload)?.into(),
+            _ => {
+                warn!("nacking - unsupported encoding: {encoding}");
+
+                // TODO: improve nack flow
+                message
+                    .ack_with(jetstream::AckKind::Nak(Some(Duration::from_secs(60))))
+                    .await
+                    .map_err(IndexerError::NatsNackError)?;
+
+                return Err(IndexerError::NatsUnsupportedEncoding(encoding.to_string()));
+            }
+        }
+    } else {
+        payload.clone()
+    };
+
+    match handler(message.subject.to_string(), decoded).await {
+        Ok(_) => {
+            debug!("acking");
+            message.ack().await.map_err(IndexerError::NatsAckError)?;
+        }
+        Err(e) => {
+            warn!("nacking: {e:?}");
+            message
+                .ack_with(jetstream::AckKind::Nak(Some(Duration::from_secs(60))))
+                .await
+                .map_err(IndexerError::NatsNackError)?;
+        }
+    }
+
+    Ok(())
+}
+
+pub struct Ack {
+    sequence: u64,
+}
+
+impl fmt::Display for Ack {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Ack(sequence: {})", self.sequence)
+    }
+}
+
+pub struct Message {
+    pub id: i64,
+    pub subject: String,
+    pub headers: HeaderMap,
+    pub data: bytes::Bytes,
+}
+
+impl Message {
+    pub fn new(id: i64, subject: String, headers: HeaderMap, data: Bytes) -> Self {
+        Self {
+            id,
+            subject,
+            headers,
+            data,
+        }
+    }
+}
+
+pub fn subject_for_block(universal_chain_id: &str) -> String {
+    format!("hubble.block.{}", universal_chain_id)
+}
+
+pub fn durable_name(consumer_id: &str, universal_chain_id: &str) -> String {
+    sanitize_consumer_name(&format!(
+        "{}:{}",
+        consumer_id,
+        subject_for_block(universal_chain_id)
+    ))
+}
+
+pub fn sanitize_consumer_name(name: &str) -> String {
+    name.chars()
+        .map(|c| {
+            if c == '.'
+                || c == '*'
+                || c == '>'
+                || c == '/'
+                || c == '\\'
+                || c.is_whitespace()
+                || c.is_control()
+            {
+                '-'
+            } else {
+                c
+            }
+        })
+        .collect()
+}

@@ -8,7 +8,7 @@ use cometbft_rpc::{
 };
 use futures::Stream;
 use itertools::Itertools;
-use serde_json::Value;
+use serde_json::{json, Value};
 use sqlx::Postgres;
 use time::OffsetDateTime;
 use tracing::{debug, trace};
@@ -289,7 +289,10 @@ impl BlockHandle for TmBlockHandle {
             .fetch_range_with_provider(block_range, fetch_mode, Some(self.provider_id))
     }
 
-    async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    async fn insert(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<Value>, IndexerError> {
         let reference = self.reference();
         debug!("{}: inserting", reference);
 
@@ -321,7 +324,7 @@ impl BlockHandle for TmBlockHandle {
             .filter(|transaction| transaction_hashes_of_filtered_events.contains(&transaction.hash))
             .collect_vec();
 
-        if !&filtered_events.is_empty() {
+        let events: Vec<Value> = if !&filtered_events.is_empty() {
             trace!(
                 "{}: insert (transactions: {}, events:{})",
                 reference,
@@ -329,27 +332,41 @@ impl BlockHandle for TmBlockHandle {
                 filtered_events.len(),
             );
 
-            insert_batch_blocks(tx, vec![block]).await?;
-            insert_batch_transactions(tx, filtered_transactions).await?;
-            insert_batch_events(tx, filtered_events).await?;
+            vec![
+                insert_batch_blocks(tx, vec![block]).await?,
+                insert_batch_transactions(tx, filtered_transactions).await?,
+                insert_batch_events(tx, filtered_events).await?,
+            ]
+            .into_iter()
+            .flatten()
+            .collect()
         } else {
             trace!("{}: ignore (no events for registered contracts)", reference);
-        }
+
+            vec![]
+        };
 
         debug!("{}: done", reference);
-        Ok(())
+
+        Ok((!events.is_empty()).then_some(json!({
+            "type": "tendermint",
+            "events": events,
+        })))
     }
 
-    async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    async fn update(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<Value>, IndexerError> {
         let reference = self.reference();
         debug!("{}: updating", reference);
 
         delete_tm_block_transactions_events(tx, self.tm_client.chain_id.db, self.reference.height)
             .await?;
-        self.insert(tx).await?;
+        let result = self.insert(tx).await?;
 
         debug!("{}: done", reference);
-        Ok(())
+        Ok(result)
     }
 }
 

@@ -103,7 +103,9 @@ impl<T: FetcherClient> Indexer<T> {
 
         let mut tx = self.pg_pool.begin().await?;
 
-        block_handle.insert(&mut tx).await?;
+        if let Some(events) = block_handle.insert(&mut tx).await? {
+            self.schedule_event(&mut tx, &reference, events).await?;
+        }
 
         update_current_height(
             &mut tx,
@@ -163,10 +165,15 @@ impl<T: FetcherClient> Indexer<T> {
                 }
 
                 let mut tx = self.pg_pool.begin().await?;
-                block_handle
+                let events = block_handle
                     .insert(&mut tx)
                     .instrument(info_span!("insert"))
                     .await?;
+
+                let message_hash = match events {
+                    Some(events) => Some(self.schedule_event(&mut tx, reference, events).await?),
+                    None => None,
+                };
 
                 debug!("{}: update height", reference);
                 update_current_height(
@@ -184,6 +191,7 @@ impl<T: FetcherClient> Indexer<T> {
                     reference.height,
                     reference.hash.clone(),
                     reference.timestamp,
+                    message_hash,
                 )
                 .await?;
 
