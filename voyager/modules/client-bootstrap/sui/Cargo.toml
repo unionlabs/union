@@ -26,3 +26,4 @@ tokio                  = { workspace = true }
 tracing                = { workspace = true }
 unionlabs              = { workspace = true }
 voyager-sdk            = { workspace = true }
+hex-literal            = { workspace = true }

@@ -1,5 +1,4 @@
 use alloy_sol_types::SolValue;
-use ark_serialize::{CanonicalSerialize, SerializationError, Valid};
 use cometbls_light_client_types::{ClientState, ConsensusState, Header};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -39,6 +38,7 @@ async fn main() {
 pub enum SupportedIbcInterface {
     IbcSolidity,
     IbcMoveAptos,
+    IbcMoveSui,
     IbcGoV8_08Wasm,
     IbcCosmwasm,
 }
@@ -51,6 +51,7 @@ impl TryFrom<String> for SupportedIbcInterface {
         match &*value {
             IbcInterface::IBC_SOLIDITY => Ok(SupportedIbcInterface::IbcSolidity),
             IbcInterface::IBC_MOVE_APTOS => Ok(SupportedIbcInterface::IbcMoveAptos),
+            IbcInterface::IBC_MOVE_SUI => Ok(SupportedIbcInterface::IbcMoveSui),
             IbcInterface::IBC_GO_V8_08_WASM => Ok(SupportedIbcInterface::IbcGoV8_08Wasm),
             IbcInterface::IBC_COSMWASM => Ok(SupportedIbcInterface::IbcCosmwasm),
             _ => Err(format!("unsupported IBC interface: `{value}`")),
@@ -63,6 +64,7 @@ impl SupportedIbcInterface {
         match self {
             SupportedIbcInterface::IbcSolidity => IbcInterface::IBC_SOLIDITY,
             SupportedIbcInterface::IbcMoveAptos => IbcInterface::IBC_MOVE_APTOS,
+            SupportedIbcInterface::IbcMoveSui => IbcInterface::IBC_MOVE_SUI,
             SupportedIbcInterface::IbcGoV8_08Wasm => IbcInterface::IBC_GO_V8_08_WASM,
             SupportedIbcInterface::IbcCosmwasm => IbcInterface::IBC_COSMWASM,
         }
@@ -103,6 +105,7 @@ impl Module {
         match self.ibc_interface {
             SupportedIbcInterface::IbcSolidity
             | SupportedIbcInterface::IbcMoveAptos
+            | SupportedIbcInterface::IbcMoveSui
             | SupportedIbcInterface::IbcCosmwasm => {
                 ConsensusState::decode_as::<EthAbi>(consensus_state).map_err(|err| {
                     ErrorObject::owned(
@@ -138,14 +141,15 @@ impl Module {
                         None::<()>,
                     )
                 }),
-            SupportedIbcInterface::IbcMoveAptos => ClientState::decode_as::<Bcs>(client_state)
-                .map_err(|err| {
+            SupportedIbcInterface::IbcMoveAptos | SupportedIbcInterface::IbcMoveSui => {
+                ClientState::decode_as::<Bcs>(client_state).map_err(|err| {
                     ErrorObject::owned(
                         FATAL_JSONRPC_ERROR_CODE,
                         format!("unable to decode client state: {}", ErrorReporter(err)),
                         None::<()>,
                     )
-                }),
+                })
+            }
             SupportedIbcInterface::IbcGoV8_08Wasm => {
                 <Any<wasm::client_state::ClientState<ClientState>>>::decode_as::<Proto>(
                     client_state,
@@ -244,7 +248,7 @@ impl ClientModuleServer for Module {
 
                     Ok(cs.encode_as::<EthAbi>())
                 }
-                SupportedIbcInterface::IbcMoveAptos => {
+                SupportedIbcInterface::IbcMoveAptos | SupportedIbcInterface::IbcMoveSui => {
                     if !metadata.is_null() {
                         return Err(ErrorObject::owned(
                             FATAL_JSONRPC_ERROR_CODE,
@@ -315,6 +319,7 @@ impl ClientModuleServer for Module {
             .map(|cs| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity
                 | SupportedIbcInterface::IbcMoveAptos
+                | SupportedIbcInterface::IbcMoveSui
                 | SupportedIbcInterface::IbcCosmwasm => cs.encode_as::<EthAbi>(),
                 SupportedIbcInterface::IbcGoV8_08Wasm => {
                     Any(wasm::consensus_state::ConsensusState { data: cs }).encode_as::<Proto>()
@@ -336,17 +341,19 @@ impl ClientModuleServer for Module {
             .map(|mut header| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => Ok(header.encode_as::<EthAbi>()),
                 SupportedIbcInterface::IbcCosmwasm => Ok(header.encode_as::<Bincode>()),
-                SupportedIbcInterface::IbcMoveAptos => {
+                SupportedIbcInterface::IbcMoveAptos | SupportedIbcInterface::IbcMoveSui => {
                     header.zero_knowledge_proof =
-                        reencode_zkp_for_move(&header.zero_knowledge_proof)
-                            .map_err(|e| {
-                                ErrorObject::owned(
-                                    FATAL_JSONRPC_ERROR_CODE,
-                                    format!("unable to decode zkp: {}", e),
-                                    None::<()>,
-                                )
-                            })?
-                            .into();
+                        gnark_key_parser::bls12381::reencode_evm_zkp_for_sui(
+                            &header.zero_knowledge_proof,
+                        )
+                        .map_err(|e| {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                format!("unable to decode zkp: {}", e),
+                                None::<()>,
+                            )
+                        })?
+                        .into();
                     Ok(header.encode_as::<Bcs>())
                 }
                 SupportedIbcInterface::IbcGoV8_08Wasm => {
@@ -372,12 +379,14 @@ impl ClientModuleServer for Module {
             .map(|proof| match self.ibc_interface {
                 SupportedIbcInterface::IbcSolidity => encode_merkle_proof_for_evm(proof),
                 SupportedIbcInterface::IbcCosmwasm => proof.encode_as::<Bincode>(),
-                SupportedIbcInterface::IbcMoveAptos => encode_merkle_proof_for_move(
-                    ics23::merkle_proof::MerkleProof::try_from(
-                        protos::ibc::core::commitment::v1::MerkleProof::from(proof),
+                SupportedIbcInterface::IbcMoveAptos | SupportedIbcInterface::IbcMoveSui => {
+                    encode_merkle_proof_for_move(
+                        ics23::merkle_proof::MerkleProof::try_from(
+                            protos::ibc::core::commitment::v1::MerkleProof::from(proof),
+                        )
+                        .unwrap(),
                     )
-                    .unwrap(),
-                ),
+                }
                 SupportedIbcInterface::IbcGoV8_08Wasm => proof.encode_as::<Proto>(),
             })
             .map(Into::into)
@@ -454,65 +463,65 @@ fn encode_merkle_proof_for_evm(
     }
 }
 
-fn reencode_zkp_for_move(zkp: &[u8]) -> Result<Vec<u8>, SerializationError> {
-    let mut buf = Vec::new();
+// fn reencode_zkp_for_move(zkp: &[u8]) -> Result<Vec<u8>, SerializationError> {
+//     let mut buf = Vec::new();
 
-    let serialize_g1 =
-        |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
-            let proof = ark_bn254::G1Affine::new_unchecked(
-                ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
-                    &zkp[*cursor..*cursor + 32],
-                )),
-                ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
-                    &zkp[*cursor + 32..*cursor + 64],
-                )),
-            );
-            proof.check()?;
-            *cursor += 64;
-            proof.serialize_compressed(buf)?;
-            Ok(())
-        };
+//     let serialize_g1 =
+//         |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
+//             let proof = ark_bn254::G1Affine::new_unchecked(
+//                 ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+//                     &zkp[*cursor..*cursor + 32],
+//                 )),
+//                 ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+//                     &zkp[*cursor + 32..*cursor + 64],
+//                 )),
+//             );
+//             proof.check()?;
+//             *cursor += 64;
+//             proof.serialize_compressed(buf)?;
+//             Ok(())
+//         };
 
-    let serialize_g2 =
-        |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
-            let proof = ark_bn254::G2Affine::new_unchecked(
-                ark_bn254::Fq2::new(
-                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
-                        &zkp[*cursor + 32..*cursor + 64],
-                    )),
-                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
-                        &zkp[*cursor..*cursor + 32],
-                    )),
-                ),
-                ark_bn254::Fq2::new(
-                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
-                        &zkp[*cursor + 96..*cursor + 128],
-                    )),
-                    ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
-                        &zkp[*cursor + 64..*cursor + 96],
-                    )),
-                ),
-            );
-            proof.check()?;
-            *cursor += 128;
-            proof.serialize_compressed(buf)?;
-            Ok(())
-        };
+//     let serialize_g2 =
+//         |cursor: &mut usize, buf: &mut Vec<u8>, zkp: &[u8]| -> Result<(), SerializationError> {
+//             let proof = ark_bn254::G2Affine::new_unchecked(
+//                 ark_bn254::Fq2::new(
+//                     ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+//                         &zkp[*cursor + 32..*cursor + 64],
+//                     )),
+//                     ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+//                         &zkp[*cursor..*cursor + 32],
+//                     )),
+//                 ),
+//                 ark_bn254::Fq2::new(
+//                     ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+//                         &zkp[*cursor + 96..*cursor + 128],
+//                     )),
+//                     ark_bn254::Fq::from(num_bigint::BigUint::from_bytes_be(
+//                         &zkp[*cursor + 64..*cursor + 96],
+//                     )),
+//                 ),
+//             );
+//             proof.check()?;
+//             *cursor += 128;
+//             proof.serialize_compressed(buf)?;
+//             Ok(())
+//         };
 
-    let mut cursor = 0;
-    // zkp.proof.a
-    serialize_g1(&mut cursor, &mut buf, zkp)?;
-    // zkp.proof.b
-    serialize_g2(&mut cursor, &mut buf, zkp)?;
-    // zkp.proof.c
-    serialize_g1(&mut cursor, &mut buf, zkp)?;
-    // zkp.poc
-    serialize_g1(&mut cursor, &mut buf, zkp)?;
-    // zkp.pok
-    serialize_g1(&mut cursor, &mut buf, zkp)?;
+//     let mut cursor = 0;
+//     // zkp.proof.a
+//     serialize_g1(&mut cursor, &mut buf, zkp)?;
+//     // zkp.proof.b
+//     serialize_g2(&mut cursor, &mut buf, zkp)?;
+//     // zkp.proof.c
+//     serialize_g1(&mut cursor, &mut buf, zkp)?;
+//     // zkp.poc
+//     serialize_g1(&mut cursor, &mut buf, zkp)?;
+//     // zkp.pok
+//     serialize_g1(&mut cursor, &mut buf, zkp)?;
 
-    Ok(buf)
-}
+//     Ok(buf)
+// }
 
 #[model]
 struct MoveMembershipProof {

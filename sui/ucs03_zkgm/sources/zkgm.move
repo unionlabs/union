@@ -122,6 +122,7 @@ module zkgm::zkgm_relay {
     const E_INVALID_BASE_AMOUNT: u64 = 22;
     const E_NO_COIN_IN_BAG: u64 = 23;
     const E_CHANNEL_BALANCE_PAIR_NOT_FOUND: u64 = 25;
+    const E_ANOTHER_TOKEN_IS_REGISTERED: u64 = 26;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
 
     public struct IbcAppWitness has drop {}
@@ -139,6 +140,7 @@ module zkgm::zkgm_relay {
         token_origin: Table<vector<u8>, u256>,
         type_name_t_to_capability: ObjectBag,
         bag_to_coin: ObjectBag,
+        wrapped_denom_to_t: Table<vector<u8>, String>
     }
 
     public fun type_name_contains_capability(
@@ -158,7 +160,8 @@ module zkgm::zkgm_relay {
             channel_balance: table::new(ctx),
             token_origin: table::new(ctx),
             type_name_t_to_capability: object_bag::new(ctx),
-            bag_to_coin: object_bag::new(ctx)
+            bag_to_coin: object_bag::new(ctx),
+            wrapped_denom_to_t: table::new(ctx)
         });
     }
 
@@ -610,7 +613,7 @@ module zkgm::zkgm_relay {
         relay_store: &mut RelayStore,
         channel_id: u32,
         path: u256,
-        _wrapped_token: vector<u8>,
+        wrapped_token: vector<u8>,
         quote_token: vector<u8>,
         receiver: address,
         relayer: address,
@@ -621,6 +624,8 @@ module zkgm::zkgm_relay {
     ): vector<u8> {
         let fee = base_amount - quote_amount;
         if (mint) {
+            // if this token is minted for the first time, then we need to ensure that its always minting the same T
+            assert!(relay_store.claim_wrapped_denom<T>(wrapped_token), E_ANOTHER_TOKEN_IS_REGISTERED);
             let capability = get_treasury_cap<T>(relay_store);
             if (quote_amount > 0) {
                 coin::mint_and_transfer<T>(capability, quote_amount, receiver, ctx);
@@ -839,7 +844,8 @@ module zkgm::zkgm_relay {
             timeout_height,
             timeout_timestamp,
             zkgm_packet::encode(&zkgm_pack),
-            IbcAppWitness {}
+            IbcAppWitness {},
+            ctx
         );
     }
     fun verify_internal<T>(
@@ -895,11 +901,25 @@ module zkgm::zkgm_relay {
         let typename_t = type_name::get<T>();
         let key = string::from_ascii(type_name::into_string(typename_t));
         if(!type_name_contains_capability(relay_store, key)) {
-            abort E_NO_TREASURY_CAPABILITY // We don't have capability.
+            abort E_NO_TREASURY_CAPABILITY
         };
-        // We have capability
         let capability: &mut TreasuryCap<T> = relay_store.type_name_t_to_capability.borrow_mut(key);
         return capability
+    }
+
+    fun claim_wrapped_denom<T>(
+        relay_store: &mut RelayStore,
+        wrapped_denom: vector<u8>
+    ): bool {
+        let typename_t = type_name::get<T>();
+        let key = string::from_ascii(type_name::into_string(typename_t));
+        if (!relay_store.wrapped_denom_to_t.contains(wrapped_denom)) {
+            relay_store.wrapped_denom_to_t.add(wrapped_denom, key);
+            true
+        } else {
+            let claimed_key = relay_store.wrapped_denom_to_t.borrow(wrapped_denom);
+            claimed_key == key
+        }
     }
 
     fun save_coin_to_bag<T>(

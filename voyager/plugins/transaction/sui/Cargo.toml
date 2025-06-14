@@ -33,3 +33,4 @@ tracing     = { workspace = true }
 ucs03-zkgm  = { workspace = true, features = ["library"] }
 unionlabs   = { workspace = true }
 voyager-sdk = { workspace = true }
+reqwest = { workspace = true, features = [ "rustls-tls" ] }
