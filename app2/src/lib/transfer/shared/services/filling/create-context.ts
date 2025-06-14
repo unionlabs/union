@@ -126,7 +126,7 @@ const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[]
   )
 }
 
-// Fee strategy: BTC edition only charges fees when going FROM Babylon to cosmos
+// Fee strategy: BTC edition only charges fees when going FROM Babylon
 const shouldChargeFees = (edition: string, sourceChain: Chain): boolean => {
   return Match.value(edition).pipe(
     Match.when("btc", () => sourceChain.universal_chain_id === "babylon.bbn-1"),
