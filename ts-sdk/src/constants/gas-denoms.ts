@@ -5,48 +5,58 @@ interface GasDenomMetadata {
   address: TokenRawDenom
   name: string
   symbol: string
+  /**
+   * Symbol used to fetch USD pricing.
+   */
+  tickerSymbol: string
   decimals: number
 }
 
-const ETH_METADATA = {
+const ETH_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
   name: "Ether",
   symbol: "ETH",
+  tickerSymbol: "ETH",
   decimals: 18,
 } as const
 
-const SEI_METADATA = {
+const SEI_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
   name: "Sei",
   symbol: "SEI",
+  tickerSymbol: "SEI",
   decimals: 18,
 } as const
 
-const CORN_METADATA = {
+const CORN_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
   name: "Bitcorn",
   symbol: "BTCN",
+  tickerSymbol: "BTC",
   decimals: 18,
 } as const
 
-export const BABYLON_METADATA = {
+export const BABYLON_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0x7562626e"),
   name: "Baby",
   symbol: "BABY",
+  tickerSymbol: "BABY",
   decimals: 6,
 } as const
 
-const UNION_METADATA = {
+const UNION_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0x6d756e6f"),
   name: "Union",
   symbol: "UNO",
+  tickerSymbol: "UNO",
   decimals: 6,
 } as const
 
-const XION_METADATA = {
+const XION_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0x7578696f6e"),
   name: "Xion",
   symbol: "XION",
+  tickerSymbol: "XION",
   decimals: 6,
 } as const
 

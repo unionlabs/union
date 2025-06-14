@@ -75,7 +75,7 @@ const Pyth = Layer.effect(
       (id: UniversalChainId) =>
         pipe(
           R.get(GAS_DENOMS, id),
-          O.map(x => x.symbol),
+          O.map(x => x.tickerSymbol),
           Effect.mapError((cause) =>
             new PriceError({
               message: `No price ID mapping for ${id}`,
@@ -327,7 +327,7 @@ const Redstone = Layer.effect(
             message: `ID ${id} does not exist in GAS_DENOMS`,
           })
         ),
-        Effect.map(x => x.symbol),
+        Effect.map(x => x.tickerSymbol),
         Effect.flatMap((symbol) =>
           pipe(
             priceOfSymbol(symbol),
