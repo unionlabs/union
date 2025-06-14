@@ -59,12 +59,17 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                   }),
               }),
               // XXX: take from constants file
-              Effect.tap((x) => Effect.log(`${chain.display_name} gas price (wei): ${x}`)),
+              Effect.tap((x) =>
+                Effect.logDebug(`${chain.display_name} gas price (atomic): ${JSON.stringify(x)}`)
+              ),
               Effect.map((a) => ({
                 value: GasPrice.BaseGasPrice(BigDecimal.make(a, 18)),
                 decimals: 18,
               })),
-              Effect.tap((x) => Effect.log(`${chain.display_name} gas price (ETH): ${x}`)),
+              Effect.tap((x) =>
+                Effect.logDebug(`${chain.display_name} gas price (ETH): ${JSON.stringify(x)}`)
+              ),
+              Effect.tapError((cause) => Effect.logError("GasPrice.of", cause)),
             )
 
             return GasPrice.GasPrice.of({
@@ -116,7 +121,9 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                     ),
                   )
                 ),
-                Effect.tap((x) => Effect.log(`${chain.display_name} gas price (?): ${x}`)),
+                Effect.tap((x) =>
+                  Effect.logDebug(`${chain.display_name} gas price (?): ${JSON.stringify(x)}`)
+                ),
                 Effect.mapError(() =>
                   new GasPriceError({
                     module: "Cosmos",
@@ -124,6 +131,7 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                     description: `No chain configured with identifier ${chain.chain_id}.`,
                   })
                 ),
+                Effect.tapError((cause) => Effect.logError("GasPrice.of", cause)),
               )
 
               return avg

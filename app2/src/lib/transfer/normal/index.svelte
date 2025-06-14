@@ -128,14 +128,13 @@ $effect(() => {
   isLoading = true
   transferSteps = Option.none()
   transferErrors = Option.none()
-  const feeIntent = untrack(() => Option.getRight(FeeStore.feeIntent))
-  console.log("FEE INTENT:", feeIntent.toString())
 
   const machineEffect = Effect.gen(function*() {
     let currentState: CreateContextState = CreateContextState.Filling()
     let context: TransferContext | null = null
 
     while (true) {
+      const feeIntent = untrack(() => Option.getRight(FeeStore.feeIntent))
       const result: StateResult | void = yield* createContextState(
         currentState,
         transferData,

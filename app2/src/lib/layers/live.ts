@@ -7,7 +7,7 @@ import { Layer, Logger, LogLevel, Match } from "effect"
 
 const minimumLogLevel = Logger.minimumLogLevel(
   Match.value(ENV()).pipe(
-    Match.when("DEVELOPMENT", () => LogLevel.Info),
+    Match.when("DEVELOPMENT", () => LogLevel.Debug),
     Match.when("STAGING", () => LogLevel.Debug),
     Match.when("PRODUCTION", () => LogLevel.Info),
     Match.exhaustive,

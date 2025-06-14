@@ -582,15 +582,8 @@ const createFeeStore = () => {
   const totalFee = $derived(pipe(
     calculatedFees,
     O.map(R.values),
-    O.map(A.map((x) => {
-      console.log("SUMMING", BigDecimal.format(Tuple.getFirst(x)))
-      return Tuple.getFirst(x)
-    })),
+    O.map(A.map(Tuple.getFirst)),
     O.map(BigDecimal.sumAll),
-    x => {
-      console.log("SUM:", x.toJSON())
-      return x
-    },
     O.map(BaseGasPrice),
   ))
 
@@ -607,12 +600,6 @@ const createFeeStore = () => {
       ).pipe(
         O.map(x => x.source),
         O.map(O.map(x => x.price)),
-        O.tap(x => {
-          if (x._tag === "Some") {
-            console.log("USD PRICE", BigDecimal.format(x.value))
-          }
-          return x
-        }),
         O.flatten,
       ),
       totalFee,
@@ -700,7 +687,6 @@ const createFeeStore = () => {
       return config.batchDivideNumber
     },
     get totalFee() {
-      console.log("Total fee (base):", totalFee.toString())
       return totalFee
     },
     get usdSources() {

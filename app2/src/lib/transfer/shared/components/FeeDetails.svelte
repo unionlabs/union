@@ -36,7 +36,7 @@ const feeConfig = O.none()
 {/snippet}
 
 {#snippet gasButton(props: {
-  value: BaseGasPrice
+  value: string
   symbol: string
   usd: string
   sources: Record<string, PriceSource>

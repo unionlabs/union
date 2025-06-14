@@ -194,7 +194,7 @@ const Pyth = Layer.effect(
               }),
             })
           ),
-          Effect.tap((x) => Effect.log(`${url}: $${BigDecimal.format(x.price)}`)),
+          Effect.tapError((cause) => Effect.logError("PriceOracle.of", cause)),
         )
       ),
     ))
@@ -206,7 +206,7 @@ const Pyth = Layer.effect(
         const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
         const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
           Effect.map(BigDecimal.round({ scale: 4, mode: "from-zero" })),
-          Effect.tap((x) => Effect.log(`dividing ${ofA.price} by ${ofB.price} to get ${x}`)),
+          Effect.tap((x) => Effect.logDebug(`Dividing ${ofA.price} by ${ofB.price} to get ${x}`)),
           Effect.mapError((cause) =>
             new PriceError({
               message: `Could not divide ${ofA.price} by ${ofB.price}.`,
@@ -249,9 +249,7 @@ const Redstone = Layer.effect(
             message: "Could not fetch Redstone registry state",
             cause,
           }),
-      }).pipe(
-        Effect.tap((x) => Effect.log("got registry", x)),
-      ),
+      }),
     )
 
     const getAuthorizedSigners = yield* Effect.cached(pipe(
@@ -266,7 +264,6 @@ const Redstone = Layer.effect(
         A.filter(x => x.dataServiceId === DATA_SERVICE_ID),
         A.map(x => x.evmAddress),
       )),
-      Effect.tap((xs) => Effect.log("got authorized signers", xs)),
     ))
     const getDataPackagesForSymbol = Effect.fn("getDataPackagesForSymbol")((symbol: string) =>
       pipe(
@@ -294,7 +291,6 @@ const Redstone = Layer.effect(
     const priceOfSymbol = Effect.fn("getDataPackageByChain")((symbol: string) =>
       pipe(
         getDataPackagesForSymbol(symbol),
-        Effect.tapError((x) => Effect.logError("Redstone price fetch", x)),
         Effect.flatMap((r) =>
           pipe(
             r[symbol], // don't know why R.get isn't valid here
@@ -334,7 +330,6 @@ const Redstone = Layer.effect(
             ),
           )
         ),
-        Effect.tap((x) => Effect.log("got price of symbol", x)),
       )
     )
     const of: PriceOracle.Service["of"] = Effect.fn("of")((id) =>
@@ -357,6 +352,7 @@ const Redstone = Layer.effect(
             })),
           )
         ),
+        Effect.tapError((cause) => Effect.logError("PriceOracle.of", cause)),
       )
     )
 
