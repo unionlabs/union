@@ -52,8 +52,10 @@ impl IbcInterface {
     /// Light clients running on Union's cosmwasm IBC implementation.
     pub const IBC_COSMWASM: &'static str = "ibc-cosmwasm";
 
+    /// Light clients running on Union's Aptos Move IBC implementation
     pub const IBC_MOVE_APTOS: &'static str = "ibc-move/aptos";
 
+    /// Light clients running on Union's Sui Move IBC implementation
     pub const IBC_MOVE_SUI: &'static str = "ibc-move/sui";
 
     // lots more to come - near, fuel - stay tuned
