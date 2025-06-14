@@ -1,22 +1,25 @@
 use std::fmt::Debug;
 
 use ibc_union_spec::{
-    path::StorePath, query::Query, Channel, ChannelState, ClientId, Connection, ConnectionState,
-    IbcUnion,
+    path::StorePath,
+    query::{PacketByHash, Query},
+    Channel, ChannelId, ChannelState, ClientId, Connection, ConnectionState, IbcUnion, Packet,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_sdk::{
-    rpc_types::{SuiObjectDataOptions, SuiTypeTag},
+    rpc_types::{EventFilter, SuiMoveValue, SuiObjectDataOptions, SuiParsedData, SuiTypeTag},
     types::{
         base_types::{ObjectID, SuiAddress},
+        dynamic_field::DynamicFieldName,
         programmable_transaction_builder::ProgrammableTransactionBuilder,
         transaction::{Argument, CallArg, Command, ObjectArg, TransactionKind},
-        Identifier,
+        Identifier, TypeTag,
     },
     SuiClient, SuiClientBuilder,
 };
@@ -24,13 +27,14 @@ use tracing::instrument;
 use unionlabs::{
     encoding::{Bcs, DecodeAs as _},
     ibc::core::client::height::Height,
-    primitives::Bytes,
+    primitives::{Bytes, H256},
+    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{types::StateModuleInfo, StateModuleServer},
+    rpc::{types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -57,6 +61,108 @@ pub struct Module {
     pub ibc_store: ObjectID,
 
     pub ibc_contract: ObjectID,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+pub struct PacketSend {
+    pub channel_id: u32,
+    pub packet_hash: Vec<u8>,
+
+    pub packet: Packet,
+}
+
+impl Module {
+    pub async fn query_packet_by_hash(
+        &self,
+        _channel_id: ChannelId,
+        packet_hash: H256,
+    ) -> RpcResult<Packet> {
+        let SuiParsedData::MoveObject(object) = self
+            .sui_client
+            .read_api()
+            .get_dynamic_field_object(
+                self.ibc_store,
+                DynamicFieldName {
+                    type_: TypeTag::Vector(Box::new(TypeTag::U8)),
+                    value: serde_json::to_value(&packet_hash).expect("serde will work"),
+                },
+            )
+            .await
+            .map_err(|err| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("unable to fetch the packet hash: {}", ErrorReporter(err)),
+                    None::<()>,
+                )
+            })?
+            .data
+            .expect("data exists")
+            .content
+            .expect("content exists")
+        else {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "unexpected data found when trying to fetch the packet hash to digest",
+                None::<()>,
+            ));
+        };
+
+        let SuiMoveValue::Vector(v) = object
+            .fields
+            .field_value("value")
+            .expect("table has a value")
+        else {
+            return Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "invalid value type when parsing the packet to digest",
+                None::<()>,
+            ));
+        };
+
+        let digest: Vec<u8> = v
+            .into_iter()
+            .map(|n| {
+                let SuiMoveValue::Number(n) = n else {
+                    panic!("this will always be u8");
+                };
+
+                n as u8
+            })
+            .collect();
+
+        let packet = self
+            .sui_client
+            .event_api()
+            .get_events(digest.try_into().expect("ibc saves tx digest"))
+            .await
+            .expect("there must be some events exist")
+            .into_iter()
+            .find_map(|e| {
+                if e.type_.address == self.ibc_contract.into()
+                    && e.type_.module.as_str() == "ibc"
+                    && e.type_.name.as_str() == "PacketSend"
+                {
+                    let send: PacketSend = serde_json::from_value(e.parsed_json).unwrap();
+                    if &send.packet_hash == packet_hash.as_ref() {
+                        Some(send.packet)
+                    } else {
+                        None
+                    }
+                } else {
+                    None
+                }
+            })
+            .ok_or(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                format!(
+                    "couldn't find the send event with packet hash: {}",
+                    packet_hash
+                ),
+                None::<()>,
+            ))?;
+
+        Ok(packet)
+    }
 }
 
 impl StateModule<IbcUnion> for Module {
@@ -92,7 +198,13 @@ impl StateModuleServer<IbcUnion> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn query(&self, _: &Extensions, query: Query) -> RpcResult<Value> {
         match query {
-            Query::PacketByHash(_packet_by_hash) => todo!(),
+            Query::PacketByHash(PacketByHash {
+                channel_id,
+                packet_hash,
+            }) => self
+                .query_packet_by_hash(channel_id, packet_hash)
+                .await
+                .map(into_value),
             Query::PacketsByBatchHash(_packets_by_batch_hash) => todo!(),
             Query::PacketAckByHash(_packet_ack_by_hash) => todo!(),
             Query::ClientStatus(_client_status) => todo!(),
@@ -104,7 +216,7 @@ impl StateModuleServer<IbcUnion> for Module {
         Ok(ClientInfo {
             // TODO(aeryz): make this queryable
             client_type: ClientType::new("cometbls"),
-            ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_APTOS),
+            ibc_interface: IbcInterface::new(IbcInterface::IBC_MOVE_SUI),
             metadata: Default::default(),
         })
     }
