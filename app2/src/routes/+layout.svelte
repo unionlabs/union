@@ -35,9 +35,8 @@ onMount(() => {
 
   interceptLogos()
   runExample()
-  runFork$(chainsQuery(ENV()))
-  runFork$(channelsQuery())
-  runFork$(bannerQuery())
+  runFork$(() => chainsQuery(ENV()))
+  runFork$(() => channelsQuery())
 
   keyboardShortcuts.addShortcut(["ctrl", "option", "shift", "keya"], () => {
     uiStore.overrideEdition = "app"

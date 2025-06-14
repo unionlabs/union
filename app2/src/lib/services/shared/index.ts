@@ -1,5 +1,3 @@
 export * from "./address.ts"
 export * from "./amount.ts"
 export * from "./errors.ts"
-export * from "./quote-token.ts"
-export * from "./weth-token.ts"

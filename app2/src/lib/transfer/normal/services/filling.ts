@@ -1,3 +1,4 @@
+import type { FeeIntent } from "$lib/stores/fee.svelte"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { validateTransfer } from "$lib/transfer/shared/data/validation.ts"
 import { type ContextFlowError, OrderCreationError } from "$lib/transfer/shared/errors"
@@ -84,11 +85,12 @@ const complete = (msg: string, context: TransferContext): StateResult => ({
 export const createContextState = (
   cts: CreateContextState,
   transfer: TransferData,
+  fee: Option.Option<FeeIntent>,
 ) => {
   return CreateContextState.$match(cts, {
     Empty: () => Effect.void,
     Filling: () => {
-      const state = getFillingState(transfer)
+      const state = getFillingState(transfer, fee)
 
       return FillingState.$match(state, {
         Empty: () => Effect.void,
@@ -102,11 +104,13 @@ export const createContextState = (
         EmptyAmount: () => Effect.succeed(ok(Empty(), "Enter amount")),
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
+        NoFee: () => Effect.succeed(ok(Empty(), "No fee")),
         Ready: (args) => Effect.succeed(ok(Validation({ args }), "Validating...")),
       })
     },
 
     Validation: ({ args }) => {
+      // TODO: validate fee intent
       const validation = validateTransfer(args)
       if (validation._tag !== "Success") {
         return Effect.succeed(fail("Validation failed"))

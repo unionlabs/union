@@ -2,8 +2,8 @@
   "private": true,
   "type": "module",
   "devDependencies": {
-    "@effect/language-service": "~0.16.6",
-    "@effect/vitest": "~0.22.2",
+    "@effect/language-service": "0.18.0",
+    "@effect/vitest": "0.23.3",
     "typescript": "~5.8.2",
     "viem": "^2.26.2",
     "vite": "~6.3.1",

@@ -6,7 +6,7 @@ import type {
   TokenRawDenom,
 } from "@unionlabs/sdk/schema"
 import type { Instruction } from "@unionlabs/sdk/ucs03/instruction.ts"
-import { Data } from "effect"
+import { Data, Option } from "effect"
 import type { ExtractTag } from "effect/Types"
 
 /**
@@ -27,6 +27,10 @@ export type Steps = Data.TaggedEnum<{
   SubmitInstruction: {
     readonly instruction: Instruction
     readonly intent: Intent
+    readonly native: Option.Option<{
+      baseToken: string
+      amount: bigint
+    }>
   }
   WaitForIndex: {
     readonly intent: Intent

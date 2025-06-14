@@ -116,14 +116,16 @@ const tokenLogo = $derived(
         </div>
       </section>
       <section>
-        <Label>Universal Chain ID</Label> <LongMonoWord>{chain.universal_chain_id}</LongMonoWord>
+        <Label>Universal Chain ID</Label>
+        <LongMonoWord>{chain.universal_chain_id}</LongMonoWord>
       </section>
       <section>
         <Label>Network Type</Label>
         <div>{chain.rpc_type} {chain.testnet ? "testnet" : "mainnet"}</div>
       </section>
       <section>
-        <Label>Address Prefix</Label> <div>{chain.addr_prefix}</div>
+        <Label>Address Prefix</Label>
+        <div>{chain.addr_prefix}</div>
       </section>
 
       {#if chain.explorers.length > 0}

@@ -60,8 +60,11 @@ export function createOrdersBatch(
       })
     )
 
+    console.log("newIntents", newIntents)
+
     const resolvedIntents = yield* Effect.all(newIntents, { concurrency: "unbounded" })
 
+    console.log("resolvedIntents", resolvedIntents)
     // XXX: discriminate order intent data at higher level
     const provideClients = yield* Match.value([
       first.sourceChain.rpc_type,

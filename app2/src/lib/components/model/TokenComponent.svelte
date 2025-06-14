@@ -187,29 +187,36 @@ const displayDenom = $derived(
         </section>
 
         <section>
-          <Label>Chain</Label> <ChainComponent {chain} />
+          <Label>Chain</Label>
+          <ChainComponent {chain} />
         </section>
         <section>
-          <Label>Raw Denom</Label> <LongMonoWord>{denom}</LongMonoWord>
+          <Label>Raw Denom</Label>
+          <LongMonoWord>{denom}</LongMonoWord>
         </section>
         {#if chain.rpc_type === "cosmos"}
           <section>
-            <Label>Denom</Label> <LongMonoWord>{fromHex(denom, "string")}</LongMonoWord>
+            <Label>Denom</Label>
+            <LongMonoWord>{fromHex(denom, "string")}</LongMonoWord>
           </section>
         {/if}
 
         {#each token.value.representations as rep}
           <section>
-            <Label>Name</Label> <div>{rep.name}</div>
+            <Label>Name</Label>
+            <div>{rep.name}</div>
           </section>
           <section>
-            <Label>Symbol</Label> <div>{rep.symbol}</div>
+            <Label>Symbol</Label>
+            <div>{rep.symbol}</div>
           </section>
           <section>
-            <Label>Decimals</Label> <div>{rep.decimals}</div>
+            <Label>Decimals</Label>
+            <div>{rep.decimals}</div>
           </section>
           <section>
-            <Label>Rank</Label> <div>{Option.getOrElse(token.value.rank, () => "Unranked")}</div>
+            <Label>Rank</Label>
+            <div>{Option.getOrElse(token.value.rank, () => "Unranked")}</div>
           </section>
           <section>
             {#each rep.sources as source}

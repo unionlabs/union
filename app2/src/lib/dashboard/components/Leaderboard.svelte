@@ -116,9 +116,7 @@ let isOnLeaderboardPage = $derived($page.url.pathname === "/dashboard/leaderboar
             class="opacity-0 transform animate-fade-in flex gap-3 items-center py-2 px-2 transition-colors {rank === 0 ? 'bg-accent/5 hover:bg-accent/10' : rank === 1 ? 'bg-yellow-500/5 hover:bg-yellow-500/10' : rank === 2 ? 'bg-amber-700/5 hover:bg-amber-700/10' : 'hover:bg-zinc-900/50'}"
             style="--index: {rank}"
           >
-            <div
-              class="font-supermolot font-bold text-[13px] w-6 h-6 flex justify-center items-center {rank === 0 ? 'text-accent bg-accent/10' : rank === 1 ? 'text-yellow-500 bg-yellow-500/10' : rank === 2 ? 'text-amber-700 bg-amber-700/10' : 'text-zinc-300 bg-zinc-800/50'}"
-            >
+            <div class="font-supermolot font-bold text-[13px] w-6 h-6 flex justify-center items-center {rank === 0 ? 'text-accent bg-accent/10' : rank === 1 ? 'text-yellow-500 bg-yellow-500/10' : rank === 2 ? 'text-amber-700 bg-amber-700/10' : 'text-zinc-300 bg-zinc-800/50'}">
               {rank + 1}
             </div>
             <img
@@ -127,9 +125,7 @@ let isOnLeaderboardPage = $derived($page.url.pathname === "/dashboard/leaderboar
               src={validatedPfps[entry.user_id] || generateAvatar(entry.user_id)}
             />
             <div class="flex flex-col gap-0.5">
-              <div
-                class="text-sm {rank === 0 ? 'text-accent' : rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-amber-700' : 'text-zinc-100'}"
-              >
+              <div class="text-sm {rank === 0 ? 'text-accent' : rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-amber-700' : 'text-zinc-100'}">
                 {truncate(entry.display_name ?? entry.user_id, 24, "end")}
               </div>
               <div class="text-xs text-zinc-400">
@@ -143,9 +139,7 @@ let isOnLeaderboardPage = $derived($page.url.pathname === "/dashboard/leaderboar
             </div>
             <div class="flex-1"></div>
             <div class="flex items-center gap-2">
-              <div
-                class="text-xs {rank === 0 ? 'text-accent' : rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-amber-700' : 'text-zinc-200'}"
-              >
+              <div class="text-xs {rank === 0 ? 'text-accent' : rank === 1 ? 'text-yellow-500' : rank === 2 ? 'text-amber-700' : 'text-zinc-200'}">
                 {(entry.total_xp ?? 0).toLocaleString()} XP
               </div>
               <img

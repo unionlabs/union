@@ -49,9 +49,7 @@ onDestroy(() => {
       </div>
 
       <div class="relative w-fit">
-        <div
-          class="px-2 py-0.5 rounded-sm bg-zinc-800/80 border scale-110 border-accent/50 transition-all duration-300 flex items-center gap-2"
-        >
+        <div class="px-2 py-0.5 rounded-sm bg-zinc-800/80 border scale-110 border-accent/50 transition-all duration-300 flex items-center gap-2">
           <SpinnerIcon class="size-3 text-accent animate-spin" />
           <span class="text-sm font-medium text-accent">Processing</span>
         </div>

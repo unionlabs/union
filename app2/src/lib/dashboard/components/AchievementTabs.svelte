@@ -400,18 +400,14 @@ let sortedChains = $derived(
                       {chain[0]?.title ?? "Chain"}
                     </h3>
                   </div>
-                  <div
-                    class="flex items-center gap-2 text-xs text-zinc-400 group-hover:text-zinc-300 transition-colors"
-                  >
+                  <div class="flex items-center gap-2 text-xs text-zinc-400 group-hover:text-zinc-300 transition-colors">
                     <span>Progress</span>
                     <span>{organizedChain.completed.length} / {chain.length} completed</span>
                   </div>
                 </div>
                 <div class="flex items-center gap-2">
                   <div class="relative">
-                    <div
-                      class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {chainProgress === 100 ? 'scale-110 border-accent/50' : ''} transition-all duration-300 flex items-center justify-center"
-                    >
+                    <div class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 {chainProgress === 100 ? 'scale-110 border-accent/50' : ''} transition-all duration-300 flex items-center justify-center">
                       <span
                         class="text-[10px] lg:text-xs font-medium {chainProgress === 100 ? 'text-accent' : 'text-white'} transition-all duration-300"
                       >
@@ -451,9 +447,7 @@ let sortedChains = $derived(
                       <div class="text-xs text-zinc-400">Available Rewards</div>
                       <div class="flex flex-wrap gap-2">
                         {#each availableRewards as reward}
-                          <div
-                            class="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800/50 text-xs font-medium text-neutral-300 hover:bg-zinc-800/80 transition-colors"
-                          >
+                          <div class="flex items-center gap-1 px-2 py-1 rounded bg-zinc-800/50 text-xs font-medium text-neutral-300 hover:bg-zinc-800/80 transition-colors">
                             <span>{reward.title}</span>
                             {#if reward.cutoff}
                               <span class="text-[10px] text-zinc-400">
@@ -472,9 +466,7 @@ let sortedChains = $derived(
                       <div class="text-xs text-zinc-400">Earned Rewards</div>
                       <div class="flex flex-wrap gap-2">
                         {#each earnedRewards as reward}
-                          <div
-                            class="flex items-center gap-1 px-2 py-1 rounded bg-accent/10 border border-accent/20 text-xs font-medium text-accent"
-                          >
+                          <div class="flex items-center gap-1 px-2 py-1 rounded bg-accent/10 border border-accent/20 text-xs font-medium text-accent">
                             <span>{reward.title}</span>
                             {#if reward.cutoff}
                               <span class="text-[10px] text-accent/70">
@@ -530,9 +522,7 @@ let sortedChains = $derived(
         {:else}
           <div class="relative w-full">
             <div class="absolute inset-0 flex items-center justify-center z-10 w-full h-full">
-              <div
-                class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center"
-              >
+              <div class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center">
                 <div class="text-center">
                   <div class="text-zinc-400 mb-2">No achievements available</div>
                   <div class="text-sm text-zinc-500">Complete achievements to unlock more</div>
@@ -573,9 +563,7 @@ let sortedChains = $derived(
       {:else}
         <div class="relative w-full">
           <div class="absolute inset-0 flex items-center justify-center z-10 w-full h-full">
-            <div
-              class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center"
-            >
+            <div class="bg-zinc-900/1 backdrop-blur-sm w-full h-full flex items-center justify-center">
               <div class="text-center">
                 <div class="text-zinc-400 mb-2">Loading achievements...</div>
                 <div class="text-sm text-zinc-500">

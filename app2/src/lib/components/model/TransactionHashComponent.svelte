@@ -57,7 +57,8 @@ const explorerName = $derived(
   {#snippet content()}
     {#if chain}
       <section>
-        <Label>Chain</Label> <ChainComponent {chain} />
+        <Label>Chain</Label>
+        <ChainComponent {chain} />
       </section>
     {/if}
 

@@ -7,7 +7,6 @@ import { fromHex, isHex } from "viem"
 
 export const approveTransfer = (
   chain: Chain,
-  connectedWallet: CosmosWalletId,
   params: ValidTransfer["args"],
 ) => {
   const decodedDenom = isHex(params.baseToken)
@@ -32,5 +31,5 @@ export const approveTransfer = (
     },
   ]
 
-  return executeCosmWasmInstructions(chain, connectedWallet, instructions)
+  return executeCosmWasmInstructions(chain, instructions)
 }

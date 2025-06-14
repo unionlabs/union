@@ -19,9 +19,7 @@ const lastModified = pipe(
 {/snippet}
 
 {#if ENV() !== "PRODUCTION"}
-  <div
-    class="absolute bottom-0 right-0 bg-zinc-900/[var(--bg-opacity)] [--bg-opacity:80%] text-accent px-[1em] py-2 font-mono rounded-tl-lg z-999"
-  >
+  <div class="absolute bottom-0 right-0 bg-zinc-900/[var(--bg-opacity)] [--bg-opacity:80%] text-accent px-[1em] py-2 font-mono rounded-tl-lg z-999">
     <span>
       {`${ENV().toLowerCase()}`}
       {#if O.isSome(revision)}

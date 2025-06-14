@@ -26,7 +26,7 @@ let highlightElement: HTMLElement
 let overflowContainer: HTMLDivElement
 
 const updateHighlightPosition = () => {
-  const yOffset = overflowContainer.scrollTop
+  const yOffset = overflowContainer?.scrollTop ?? 0
   if (page.url.pathname && highlightElement) {
     // Find the best matching navigation item
     let bestMatch: HTMLElement | null = null

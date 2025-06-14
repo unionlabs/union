@@ -45,9 +45,7 @@ const exportData = () => {
       <div class="p-4 overflow-y-auto flex-1">
         {#if message}
           {@const parsedMessage = JSON.parse(message)}
-          <pre
-            class="text-xs p-4 rounded whitespace-pre-wrap break-all overflow-x-auto"
-          >
+          <pre class="text-xs p-4 rounded whitespace-pre-wrap break-all overflow-x-auto">
             {JSON.stringify(parsedMessage, null, 2)}
           </pre>
         {:else}
@@ -55,9 +53,7 @@ const exportData = () => {
         {/if}
       </div>
 
-      <div
-        class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925"
-      >
+      <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
         <div class="flex gap-2">
           <Button
             variant="secondary"
