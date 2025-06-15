@@ -19,7 +19,7 @@ type EnhancedTransferListItem = TransferListItem & {
 import { onDestroy, onMount } from "svelte"
 
 // WebSocket configuration
-const WS_URL = 'ws://localhost:8080/ws'
+const WS_URL = 'wss://ws.union.build/ws'
 
 let ws: WebSocket | null = null
 let transfers: EnhancedTransferListItem[] = []
