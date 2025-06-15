@@ -5,8 +5,6 @@ import type { TransferListItem } from "@unionlabs/sdk/schema"
 // Extended transfer type with server pre-computed fields
 type EnhancedTransferListItem = TransferListItem & {
   isTestnetTransfer?: boolean
-  sourceDisplayName?: string
-  destinationDisplayName?: string
   formattedTimestamp?: string
   routeKey?: string
   senderDisplay?: string
@@ -349,15 +347,15 @@ $effect(() => {
     const newTransfers = transfers.slice(processedCount)
     newTransfers.forEach((transfer: any) => {
       if (shouldPlaySound(transfer)) {
-        const value = parseFloat(transfer.base_amount?.toString() || "0") || 1
+        const value = 1 // Fixed value since base_amount was removed
         const sourceChainId = transfer.source_chain?.universal_chain_id
         const destChainId = transfer.destination_chain?.universal_chain_id
         transactionAudio.playSound(value, sourceChainId, destChainId)
       }
 
-      // Use pre-computed display data from server
-      const sourceChain = transfer.sourceDisplayName || "unknown"
-      const destChain = transfer.destinationDisplayName || "unknown"
+      // Use chain display names from nested chain objects
+      const sourceChain = transfer.source_chain?.display_name || "unknown"
+      const destChain = transfer.destination_chain?.display_name || "unknown"
       const hash = formatHash(transfer.packet_hash)
       const sender = transfer.senderDisplay
       const receiver = transfer.receiverDisplay

@@ -254,14 +254,6 @@ const selectedTimeFrameInfo = $derived(timeFrames.find(tf => tf.key === selected
           <span class="text-zinc-600 text-xs">--tf={selectedTimeFrameInfo.key}</span>
         {/if}
       </div>
-      <div class="flex items-center space-x-1">
-        {#if loading}
-          <span class="text-zinc-600 text-xs animate-pulse">●</span>
-        {:else}
-          <span class="text-green-500 text-xs">●</span>
-        {/if}
-        <span class="text-xs text-zinc-500">live</span>
-      </div>
     </div>
 
     <!-- Time Frame Selector - Terminal Style -->
@@ -318,7 +310,7 @@ const selectedTimeFrameInfo = $derived(timeFrames.find(tf => tf.key === selected
     {:else if loading}
       <!-- Loading skeletons -->
       <div class="flex-1 flex flex-col p-3">
-        <div class="grid grid-cols-2 gap-2 flex-1">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 flex-1">
           <!-- Top Senders Skeleton -->
           <div>
             <div class="text-xs text-zinc-500 font-mono mb-1">
@@ -374,7 +366,7 @@ const selectedTimeFrameInfo = $derived(timeFrames.find(tf => tf.key === selected
       </div>
     {:else}
       <div class="flex-1 flex flex-col p-3">
-        <div class="grid grid-cols-2 gap-2 flex-1">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-2 flex-1">
           <!-- Top Senders - Terminal Style -->
           <div>
             <div class="text-xs text-zinc-500 font-mono mb-1">
