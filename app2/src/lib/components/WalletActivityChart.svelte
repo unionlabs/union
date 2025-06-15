@@ -1,7 +1,7 @@
 <script lang="ts">
+import { itemCounts, selectedItemCount } from "$lib/stores/chartSettings"
 import Card from "./ui/Card.svelte"
 import Skeleton from "./ui/Skeleton.svelte"
-import { selectedItemCount, itemCounts } from "$lib/stores/chartSettings"
 
 interface WalletStats {
   count: number
@@ -16,37 +16,54 @@ interface ActiveWalletRates {
   sendersLast7d: number
   sendersLast14d: number
   sendersLast30d: number
-  
+
   receiversLastMin: number
   receiversLastHour: number
   receiversLastDay: number
   receiversLast7d: number
   receiversLast14d: number
   receiversLast30d: number
-  
+
   totalLastMin: number
   totalLastHour: number
   totalLastDay: number
   totalLast7d: number
   totalLast14d: number
   totalLast30d: number
-  
+
   uniqueSendersTotal: number
   uniqueReceiversTotal: number
   uniqueTotalWallets: number
 }
 
 // Props from parent component (WebSocket data)
-let { 
+let {
   activeSenders = [],
   activeReceivers = [],
   activeSendersTimeScale = {},
   activeReceiversTimeScale = {},
   activeWalletRates = {
-    sendersLastMin: 0, sendersLastHour: 0, sendersLastDay: 0, sendersLast7d: 0, sendersLast14d: 0, sendersLast30d: 0,
-    receiversLastMin: 0, receiversLastHour: 0, receiversLastDay: 0, receiversLast7d: 0, receiversLast14d: 0, receiversLast30d: 0,
-    totalLastMin: 0, totalLastHour: 0, totalLastDay: 0, totalLast7d: 0, totalLast14d: 0, totalLast30d: 0,
-    uniqueSendersTotal: 0, uniqueReceiversTotal: 0, uniqueTotalWallets: 0
+    sendersLastMin: 0,
+    sendersLastHour: 0,
+    sendersLastDay: 0,
+    sendersLast7d: 0,
+    sendersLast14d: 0,
+    sendersLast30d: 0,
+    receiversLastMin: 0,
+    receiversLastHour: 0,
+    receiversLastDay: 0,
+    receiversLast7d: 0,
+    receiversLast14d: 0,
+    receiversLast30d: 0,
+    totalLastMin: 0,
+    totalLastHour: 0,
+    totalLastDay: 0,
+    totalLast7d: 0,
+    totalLast14d: 0,
+    totalLast30d: 0,
+    uniqueSendersTotal: 0,
+    uniqueReceiversTotal: 0,
+    uniqueTotalWallets: 0,
   },
   dataAvailability = {
     hasMinute: false,
@@ -54,8 +71,8 @@ let {
     hasDay: false,
     has7Days: false,
     has14Days: false,
-    has30Days: false
-  }
+    has30Days: false,
+  },
 }: {
   activeSenders?: WalletStats[]
   activeReceivers?: WalletStats[]
@@ -70,9 +87,9 @@ let {
     has14Days: boolean
     has30Days: boolean
   }
-  } = $props()
+} = $props()
 
-let selectedTimeFrame = $state('1m') // Default to 1 minute
+let selectedTimeFrame = $state("1m") // Default to 1 minute
 
 // Use shared item count selection
 
@@ -80,62 +97,74 @@ let selectedTimeFrame = $state('1m') // Default to 1 minute
 const currentSenders = $derived(
   (() => {
     let data = []
-    if (activeSendersTimeScale && activeSendersTimeScale[selectedTimeFrame] && activeSendersTimeScale[selectedTimeFrame].length > 0) {
+    if (
+      activeSendersTimeScale && activeSendersTimeScale[selectedTimeFrame]
+      && activeSendersTimeScale[selectedTimeFrame].length > 0
+    ) {
       data = activeSendersTimeScale[selectedTimeFrame]
     } else {
       data = activeSenders
     }
-    
+
     // Limit to selected number for display
     return data?.slice(0, $selectedItemCount) || []
-  })()
+  })(),
 )
 
 const currentReceivers = $derived(
   (() => {
     let data = []
-    if (activeReceiversTimeScale && activeReceiversTimeScale[selectedTimeFrame] && activeReceiversTimeScale[selectedTimeFrame].length > 0) {
+    if (
+      activeReceiversTimeScale && activeReceiversTimeScale[selectedTimeFrame]
+      && activeReceiversTimeScale[selectedTimeFrame].length > 0
+    ) {
       data = activeReceiversTimeScale[selectedTimeFrame]
     } else {
       data = activeReceivers
     }
-    
+
     // Limit to selected number for display
     return data?.slice(0, $selectedItemCount) || []
-  })()
+  })(),
 )
 
 // Combine props into chartData structure for compatibility
 const chartData = $derived({
   activeSenders: currentSenders,
   activeReceivers: currentReceivers,
-  activeWalletRates
+  activeWalletRates,
 })
 
 let loading = $derived(currentSenders.length === 0 && currentReceivers.length === 0)
-let error = ''
+let error = ""
 
 // Time frame options with terminal-style labels
 const timeFrames = [
-  { key: '1m', label: '1m', field: 'LastMin', desc: 'last minute' },
-  { key: '1h', label: '1h', field: 'LastHour', desc: 'last hour' },
-  { key: '1d', label: '1d', field: 'LastDay', desc: 'last day' },
-  { key: '7d', label: '7d', field: 'Last7d', desc: 'last 7 days' },
-  { key: '14d', label: '14d', field: 'Last14d', desc: 'last 14 days' },
-  { key: '30d', label: '30d', field: 'Last30d', desc: 'last 30 days' }
+  { key: "1m", label: "1m", field: "LastMin", desc: "last minute" },
+  { key: "1h", label: "1h", field: "LastHour", desc: "last hour" },
+  { key: "1d", label: "1d", field: "LastDay", desc: "last day" },
+  { key: "7d", label: "7d", field: "Last7d", desc: "last 7 days" },
+  { key: "14d", label: "14d", field: "Last14d", desc: "last 14 days" },
+  { key: "30d", label: "30d", field: "Last30d", desc: "last 30 days" },
 ]
 
 // Terminal-style address truncation
 function formatAddress(address: string): string {
-  if (address.length <= 16) return address
+  if (address.length <= 16) {
+    return address
+  }
   return `${address.slice(0, 8)}...${address.slice(-6)}`
 }
 
 // Terminal-style count formatting
 function formatCount(count: number): string {
-  if (count >= 1000000) return `${(count / 1000000).toFixed(1)}M`
-  if (count >= 1000) return `${(count / 1000).toFixed(1)}K`
-  return count.toString().padStart(3, ' ')
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`
+  }
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`
+  }
+  return count.toString().padStart(3, " ")
 }
 
 // Get wallet counts for selected time frame
@@ -144,12 +173,14 @@ function getWalletCounts() {
   if (!timeFrame || !chartData.activeWalletRates) {
     return { senders: 0, receivers: 0, total: 0 }
   }
-  
+
   const field = timeFrame.field
   return {
-    senders: chartData.activeWalletRates[`senders${field}` as keyof ActiveWalletRates] as number || 0,
-    receivers: chartData.activeWalletRates[`receivers${field}` as keyof ActiveWalletRates] as number || 0,
-    total: chartData.activeWalletRates[`total${field}` as keyof ActiveWalletRates] as number || 0
+    senders: chartData.activeWalletRates[`senders${field}` as keyof ActiveWalletRates] as number
+      || 0,
+    receivers: chartData.activeWalletRates[`receivers${field}` as keyof ActiveWalletRates] as number
+      || 0,
+    total: chartData.activeWalletRates[`total${field}` as keyof ActiveWalletRates] as number || 0,
   }
 }
 
@@ -163,24 +194,28 @@ const totalTransfersForTimeframe = $derived(() => {
 
 // Get max count for progress bar scaling (visual scaling)
 const maxSenderCount = $derived(
-  chartData.activeSenders.length > 0 ? Math.max(...chartData.activeSenders.map(sender => sender.count)) : 1
+  chartData.activeSenders.length > 0
+    ? Math.max(...chartData.activeSenders.map(sender => sender.count))
+    : 1,
 )
 
 const maxReceiverCount = $derived(
-  chartData.activeReceivers.length > 0 ? Math.max(...chartData.activeReceivers.map(receiver => receiver.count)) : 1
+  chartData.activeReceivers.length > 0
+    ? Math.max(...chartData.activeReceivers.map(receiver => receiver.count))
+    : 1,
 )
 
 // Check if time frame data is available using global dataAvailability
 function isTimeFrameAvailable(timeFrameKey: string): boolean {
   const availabilityMap: Record<string, keyof typeof dataAvailability> = {
-    '1m': 'hasMinute',
-    '1h': 'hasHour', 
-    '1d': 'hasDay',
-    '7d': 'has7Days',
-    '14d': 'has14Days',
-    '30d': 'has30Days'
+    "1m": "hasMinute",
+    "1h": "hasHour",
+    "1d": "hasDay",
+    "7d": "has7Days",
+    "14d": "has14Days",
+    "30d": "has30Days",
   }
-  
+
   return dataAvailability[availabilityMap[timeFrameKey]] || false
 }
 
@@ -191,13 +226,13 @@ function getFirstAvailableTimeFrame(): string {
       return timeFrame.key
     }
   }
-  return '1m' // Fallback to 1m even if not available yet
+  return "1m" // Fallback to 1m even if not available yet
 }
 
 // Auto-update selected timeframe when data becomes available
 $effect(() => {
   const firstAvailable = getFirstAvailableTimeFrame()
-  
+
   // If current selection is not available, switch to first available
   if (!isTimeFrameAvailable(selectedTimeFrame)) {
     selectedTimeFrame = firstAvailable
@@ -235,13 +270,15 @@ const selectedTimeFrameInfo = $derived(timeFrames.find(tf => tf.key === selected
         <div class="flex flex-wrap gap-1">
           {#each timeFrames as timeFrame}
             <button
-              class="px-1.5 py-0.5 text-xs font-mono border transition-colors {
-                selectedTimeFrame === timeFrame.key 
-                  ? 'border-zinc-500 bg-zinc-800 text-zinc-200' 
-                  : isTimeFrameAvailable(timeFrame.key)
-                    ? 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-                    : 'border-zinc-800 bg-zinc-950 text-zinc-600 cursor-not-allowed'
-              }"
+              class="
+                px-1.5 py-0.5 text-xs font-mono border transition-colors {
+                selectedTimeFrame === timeFrame.key
+                ? 'border-zinc-500 bg-zinc-800 text-zinc-200'
+                : isTimeFrameAvailable(timeFrame.key)
+                ? 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                : 'border-zinc-800 bg-zinc-950 text-zinc-600 cursor-not-allowed'
+                }
+              "
               disabled={!isTimeFrameAvailable(timeFrame.key)}
               onclick={() => selectedTimeFrame = timeFrame.key}
             >
@@ -249,17 +286,19 @@ const selectedTimeFrameInfo = $derived(timeFrames.find(tf => tf.key === selected
             </button>
           {/each}
         </div>
-        
+
         <!-- Item Count Selector -->
         <div class="flex items-center gap-1">
           <span class="text-zinc-600 text-xs font-mono">show:</span>
           {#each itemCounts as itemCount}
             <button
-              class="px-1.5 py-0.5 text-xs font-mono border transition-colors {
+              class="
+                px-1.5 py-0.5 text-xs font-mono border transition-colors {
                 $selectedItemCount === itemCount.value
-                  ? 'border-zinc-500 bg-zinc-800 text-zinc-200' 
-                  : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-              }"
+                ? 'border-zinc-500 bg-zinc-800 text-zinc-200'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                }
+              "
               onclick={() => selectedItemCount.set(itemCount.value)}
             >
               {itemCount.label}
@@ -336,19 +375,22 @@ const selectedTimeFrameInfo = $derived(timeFrames.find(tf => tf.key === selected
     {:else}
       <div class="flex-1 flex flex-col p-3">
         <div class="grid grid-cols-2 gap-2 flex-1">
-        <!-- Top Senders - Terminal Style -->
-        <div>
-          <div class="text-xs text-zinc-500 font-mono mb-1">
-            top_senders:
-          </div>
-          <div class="space-y-0.5">
+          <!-- Top Senders - Terminal Style -->
+          <div>
+            <div class="text-xs text-zinc-500 font-mono mb-1">
+              top_senders:
+            </div>
+            <div class="space-y-0.5">
               {#each chartData.activeSenders.slice(0, $selectedItemCount) as sender, index}
                 <div class="p-2 bg-zinc-900 border border-zinc-800 rounded">
                   <!-- Sender header -->
                   <div class="flex items-center justify-between mb-0.5">
                     <div class="flex items-center space-x-1 text-xs">
-                      <span class="text-zinc-500 w-3">{(index + 1)}.</span>
-                      <span class="text-zinc-300" title={sender.address}>
+                      <span class="text-zinc-500 w-3">{index + 1}.</span>
+                      <span
+                        class="text-zinc-300"
+                        title={sender.address}
+                      >
                         {formatAddress(sender.address)}
                       </span>
                     </div>
@@ -356,87 +398,104 @@ const selectedTimeFrameInfo = $derived(timeFrames.find(tf => tf.key === selected
                       {formatCount(sender.count)}
                     </span>
                   </div>
-                  
+
                   <!-- Progress bar -->
                   <div class="flex items-center space-x-1">
                     <span class="text-zinc-600 text-xs">[</span>
                     <div class="flex-1 flex">
                       {#each Array(25) as _, i}
-                        <span class="flex-1 text-center text-[7px] leading-none {
-                          i < Math.floor((sender.count / totalTransfersForTimeframe()) * 25) 
-                            ? 'text-zinc-400' 
+                        <span
+                          class="
+                            flex-1 text-center text-[7px] leading-none {
+                            i < Math.floor((sender.count / totalTransfersForTimeframe()) * 25)
+                            ? 'text-zinc-400'
                             : 'text-zinc-800'
-                        }">█</span>
+                            }
+                          "
+                        >█</span>
                       {/each}
                     </div>
                     <span class="text-zinc-600 text-xs">]</span>
                     <span class="text-zinc-500 text-xs tabular-nums">
-                      {Math.round((sender.count / totalTransfersForTimeframe()) * 100)}%
+                      {
+                        Math.round(
+                          (sender.count / totalTransfersForTimeframe()) * 100,
+                        )
+                      }%
                     </span>
                   </div>
                 </div>
               {/each}
-            
-            {#if chartData.activeSenders.length === 0 && !loading}
-              <div class="text-center py-2">
-                <div class="text-zinc-600 text-xs font-mono">no_data</div>
-              </div>
-            {/if}
-          </div>
-        </div>
 
-        <!-- Top Receivers - Terminal Style -->
-        <div>
-          <div class="text-xs text-zinc-500 font-mono mb-1">
-            top_receivers:
+              {#if chartData.activeSenders.length === 0 && !loading}
+                <div class="text-center py-2">
+                  <div class="text-zinc-600 text-xs font-mono">no_data</div>
+                </div>
+              {/if}
+            </div>
           </div>
-          <div class="space-y-0.5 flex-1">
-            {#each chartData.activeReceivers.slice(0, $selectedItemCount) as receiver, index}
-              <div class="p-2 bg-zinc-900 border border-zinc-800 rounded">
-                <!-- Receiver header -->
-                <div class="flex items-center justify-between mb-0.5">
-                  <div class="flex items-center space-x-1 text-xs">
-                      <span class="text-zinc-500 w-3">{(index + 1)}.</span>
-                      <span class="text-zinc-300" title={receiver.address}>
+
+          <!-- Top Receivers - Terminal Style -->
+          <div>
+            <div class="text-xs text-zinc-500 font-mono mb-1">
+              top_receivers:
+            </div>
+            <div class="space-y-0.5 flex-1">
+              {#each chartData.activeReceivers.slice(0, $selectedItemCount) as receiver, index}
+                <div class="p-2 bg-zinc-900 border border-zinc-800 rounded">
+                  <!-- Receiver header -->
+                  <div class="flex items-center justify-between mb-0.5">
+                    <div class="flex items-center space-x-1 text-xs">
+                      <span class="text-zinc-500 w-3">{index + 1}.</span>
+                      <span
+                        class="text-zinc-300"
+                        title={receiver.address}
+                      >
                         {formatAddress(receiver.address)}
                       </span>
                     </div>
                     <span class="text-zinc-100 text-xs tabular-nums">
                       {formatCount(receiver.count)}
                     </span>
-                </div>
-                
-                <!-- Progress bar -->
-                <div class="flex items-center space-x-1">
-                  <span class="text-zinc-600 text-xs">[</span>
-                  <div class="flex-1 flex">
-                    {#each Array(25) as _, i}
-                      <span class="flex-1 text-center text-[7px] leading-none {
-                        i < Math.floor((receiver.count / totalTransfersForTimeframe()) * 25) 
-                          ? 'text-zinc-400' 
-                          : 'text-zinc-800'
-                      }">█</span>
-                    {/each}
                   </div>
-                  <span class="text-zinc-600 text-xs">]</span>
-                  <span class="text-zinc-500 text-xs tabular-nums">
-                    {Math.round((receiver.count / totalTransfersForTimeframe()) * 100)}%
-                  </span>
+
+                  <!-- Progress bar -->
+                  <div class="flex items-center space-x-1">
+                    <span class="text-zinc-600 text-xs">[</span>
+                    <div class="flex-1 flex">
+                      {#each Array(25) as _, i}
+                        <span
+                          class="
+                            flex-1 text-center text-[7px] leading-none {
+                            i < Math.floor((receiver.count / totalTransfersForTimeframe()) * 25)
+                            ? 'text-zinc-400'
+                            : 'text-zinc-800'
+                            }
+                          "
+                        >█</span>
+                      {/each}
+                    </div>
+                    <span class="text-zinc-600 text-xs">]</span>
+                    <span class="text-zinc-500 text-xs tabular-nums">
+                      {
+                        Math.round(
+                          (receiver.count / totalTransfersForTimeframe()) * 100,
+                        )
+                      }%
+                    </span>
+                  </div>
                 </div>
-              </div>
-            {/each}
-            
-            {#if chartData.activeReceivers.length === 0 && !loading}
-              <div class="text-center py-2">
-                <div class="text-zinc-600 text-xs font-mono">no_data</div>
-              </div>
-            {/if}
+              {/each}
+
+              {#if chartData.activeReceivers.length === 0 && !loading}
+                <div class="text-center py-2">
+                  <div class="text-zinc-600 text-xs font-mono">no_data</div>
+                </div>
+              {/if}
+            </div>
           </div>
         </div>
-        </div>
       </div>
-
-
     {/if}
   </div>
-</Card> 
+</Card>
