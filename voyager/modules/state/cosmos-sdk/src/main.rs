@@ -8,11 +8,10 @@ use std::{
 
 use cometbft_rpc::{rpc_types::Order, types::abci::response_query::QueryResponse};
 use cosmos_sdk_event::CosmosSdkEvent;
-
 use ibc_classic_spec::{
     AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
-    ConnectionPath, NextClientSequencePath, NextConnectionSequencePath,
-    NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, ReceiptPath,
+    ConnectionPath, NextClientSequencePath, NextConnectionSequencePath, NextSequenceAckPath,
+    NextSequenceRecvPath, NextSequenceSendPath, ReceiptPath,
 };
 use ibc_union_spec::{
     Channel as UnionChannel, ChannelId as UnionChannelId, ClientId as UnionClientId,
@@ -96,7 +95,7 @@ impl From<SupportedIbcSpec> for String {
 
 impl IbcSpec for SupportedIbcSpec {
     const ID: IbcSpecId = IbcSpecId::new_static("cosmos-sdk");
-    
+
     type ClientId = ClientId;
     type Query = Never;
     type StorePath = Never;
@@ -123,7 +122,7 @@ pub struct Module {
     pub ibc_spec: SupportedIbcSpec,
 
     pub cometbft_client: cometbft_rpc::Client,
-    
+
     // Optional field for Union IBC
     pub ibc_host_contract_address: Option<Bech32<H256>>,
 }
@@ -231,12 +230,14 @@ impl Module {
         query: &Q,
         height: Option<Height>,
     ) -> RpcResult<Option<R>> {
-        let ibc_host_contract_address = self.ibc_host_contract_address.as_ref()
-            .ok_or_else(|| ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "ibc_host_contract_address not configured for Union IBC",
-                None::<()>,
-            ))?;
+        let ibc_host_contract_address =
+            self.ibc_host_contract_address.as_ref().ok_or_else(|| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    "ibc_host_contract_address not configured for Union IBC",
+                    None::<()>,
+                )
+            })?;
 
         let query_data = serde_json::to_string(query).expect("serialization is infallible; qed;");
         let response = self
@@ -312,12 +313,14 @@ impl Module {
             ));
         }
 
-        let ibc_host_contract_address = self.ibc_host_contract_address.as_ref()
-            .ok_or_else(|| ErrorObject::owned(
-                FATAL_JSONRPC_ERROR_CODE,
-                "ibc_host_contract_address not configured",
-                None::<()>,
-            ))?;
+        let ibc_host_contract_address =
+            self.ibc_host_contract_address.as_ref().ok_or_else(|| {
+                ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    "ibc_host_contract_address not configured",
+                    None::<()>,
+                )
+            })?;
 
         let query = format!("wasm-packet_send.packet_hash='{packet_hash}' AND wasm-packet_send.channel_id={channel_id}");
 
@@ -383,26 +386,32 @@ impl Module {
                 Ok(query_result.value.unwrap().into_encoding())
             }
             SupportedIbcSpec::IbcUnion => {
-                let parsed_id = client_id.to_string().parse::<u32>()
+                let parsed_id = client_id
+                    .to_string()
+                    .parse::<u32>()
                     .map_err(|e| rpc_error("invalid client id", None)(e))?;
-                let client_id = UnionClientId::new(
-                    NonZeroU32::new(parsed_id)
-                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "client id cannot be zero", None::<()>))?
-                );
+                let client_id =
+                    UnionClientId::new(NonZeroU32::new(parsed_id).ok_or_else(|| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "client id cannot be zero",
+                            None::<()>,
+                        )
+                    })?);
                 let client_state = self
                     .query_smart::<_, Bytes>(
                         &ibc_union_msg::query::QueryMsg::GetClientState { client_id },
                         Some(height),
                     )
                     .await?;
-                
+
                 client_state.ok_or_else(|| {
                     ErrorObject::owned(
                         -1,
                         format!("client state not found for client {client_id}"),
                         None::<()>,
                     )
-                }).map(Into::into)
+                })
             }
         }
     }
@@ -425,12 +434,18 @@ impl Module {
                 Ok(query_result.value.unwrap().into_encoding())
             }
             SupportedIbcSpec::IbcUnion => {
-                let parsed_id = client_id.to_string().parse::<u32>()
+                let parsed_id = client_id
+                    .to_string()
+                    .parse::<u32>()
                     .map_err(|e| rpc_error("invalid client id", None)(e))?;
-                let client_id = UnionClientId::new(
-                    NonZeroU32::new(parsed_id)
-                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "client id cannot be zero", None::<()>))?
-                );
+                let client_id =
+                    UnionClientId::new(NonZeroU32::new(parsed_id).ok_or_else(|| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "client id cannot be zero",
+                            None::<()>,
+                        )
+                    })?);
                 let consensus_state = self
                     .query_smart::<_, Bytes>(
                         &ibc_union_msg::query::QueryMsg::GetConsensusState {
@@ -440,14 +455,14 @@ impl Module {
                         Some(height),
                     )
                     .await?;
-                
+
                 consensus_state.ok_or_else(|| {
                     ErrorObject::owned(
                         -1,
                         format!("consensus state not found for client {client_id} at height {trusted_height}"),
                         None::<()>,
                     )
-                }).map(Into::into)
+                })
             }
         }
     }
@@ -463,30 +478,42 @@ impl Module {
             SupportedIbcSpec::IbcClassic => {
                 let path_string = ConnectionPath { connection_id }.to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(match query_result.value {
                     Some(value) => {
-                        let connection_end = ConnectionEnd::decode_as::<Proto>(&value)
-                            .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding connection end: {:?}", e), None::<()>))?;
+                        let connection_end =
+                            ConnectionEnd::decode_as::<Proto>(&value).map_err(|e| {
+                                ErrorObject::owned(
+                                    FATAL_JSONRPC_ERROR_CODE,
+                                    format!("error decoding connection end: {:?}", e),
+                                    None::<()>,
+                                )
+                            })?;
                         Some(into_value(connection_end))
                     }
                     None => None,
                 })
             }
             SupportedIbcSpec::IbcUnion => {
-                let parsed_id = connection_id.to_string().parse::<u32>()
+                let parsed_id = connection_id
+                    .to_string()
+                    .parse::<u32>()
                     .map_err(|e| rpc_error("invalid connection id", None)(e))?;
-                let connection_id = UnionConnectionId::new(
-                    NonZeroU32::new(parsed_id)
-                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "connection id cannot be zero", None::<()>))?
-                );
+                let connection_id =
+                    UnionConnectionId::new(NonZeroU32::new(parsed_id).ok_or_else(|| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "connection id cannot be zero",
+                            None::<()>,
+                        )
+                    })?);
                 let connection = self
                     .query_smart::<_, UnionConnection>(
                         &ibc_union_msg::query::QueryMsg::GetConnection { connection_id },
                         Some(height),
                     )
                     .await?;
-                
+
                 Ok(connection.map(|c| into_value(c)))
             }
         }
@@ -508,30 +535,41 @@ impl Module {
                 }
                 .to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(match query_result.value {
                     Some(value) => {
-                        let channel = Channel::decode_as::<Proto>(&value)
-                            .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding channel end: {:?}", e), None::<()>))?;
+                        let channel = Channel::decode_as::<Proto>(&value).map_err(|e| {
+                            ErrorObject::owned(
+                                FATAL_JSONRPC_ERROR_CODE,
+                                format!("error decoding channel end: {:?}", e),
+                                None::<()>,
+                            )
+                        })?;
                         Some(into_value(channel))
                     }
                     None => None,
                 })
             }
             SupportedIbcSpec::IbcUnion => {
-                let parsed_id = channel_id.to_string().parse::<u32>()
+                let parsed_id = channel_id
+                    .to_string()
+                    .parse::<u32>()
                     .map_err(|e| rpc_error("invalid channel id", None)(e))?;
-                let channel_id = UnionChannelId::new(
-                    NonZeroU32::new(parsed_id)
-                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "channel id cannot be zero", None::<()>))?
-                );
+                let channel_id =
+                    UnionChannelId::new(NonZeroU32::new(parsed_id).ok_or_else(|| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "channel id cannot be zero",
+                            None::<()>,
+                        )
+                    })?);
                 let channel = self
                     .query_smart::<_, UnionChannel>(
                         &ibc_union_msg::query::QueryMsg::GetChannel { channel_id },
                         Some(height),
                     )
                     .await?;
-                
+
                 Ok(channel.map(|c| into_value(c)))
             }
         }
@@ -555,22 +593,23 @@ impl Module {
                 }
                 .to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(match query_result.value {
-                    Some(value) => Some(
-                        H256::try_from(value)
-                            .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding commitment: {:?}", e), None::<()>))?,
-                    ),
+                    Some(value) => Some(H256::try_from(value).map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("error decoding commitment: {:?}", e),
+                            None::<()>,
+                        )
+                    })?),
                     None => None,
                 })
             }
-            SupportedIbcSpec::IbcUnion => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "commitment queries not supported for Union IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcUnion => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "commitment queries not supported for Union IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -592,23 +631,23 @@ impl Module {
                 }
                 .to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(match query_result.value {
-                    Some(value) => Some(H256::try_from(value).map_err(|e| ErrorObject::owned(
-                        FATAL_JSONRPC_ERROR_CODE,
-                        format!("error decoding acknowledgement commitment: {:?}", e),
-                        None::<()>,
-                    ))?),
+                    Some(value) => Some(H256::try_from(value).map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("error decoding acknowledgement commitment: {:?}", e),
+                            None::<()>,
+                        )
+                    })?),
                     None => None,
                 })
             }
-            SupportedIbcSpec::IbcUnion => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "acknowledgement queries not supported for Union IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcUnion => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "acknowledgement queries not supported for Union IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -630,16 +669,14 @@ impl Module {
                 }
                 .to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(query_result.value.is_some())
             }
-            SupportedIbcSpec::IbcUnion => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "receipt queries not supported for Union IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcUnion => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "receipt queries not supported for Union IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -659,19 +696,22 @@ impl Module {
                 }
                 .to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(u64::from_be_bytes(
-                    query_result.value.unwrap().try_into()
-                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next sequence send: {:?}", e), None::<()>))?
+                    query_result.value.unwrap().try_into().map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("error decoding next sequence send: {:?}", e),
+                            None::<()>,
+                        )
+                    })?,
                 ))
             }
-            SupportedIbcSpec::IbcUnion => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "sequence queries not supported for Union IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcUnion => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "sequence queries not supported for Union IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -690,19 +730,22 @@ impl Module {
                 }
                 .to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(u64::from_be_bytes(
-                    query_result.value.unwrap().try_into()
-                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next sequence recv: {:?}", e), None::<()>))?
+                    query_result.value.unwrap().try_into().map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("error decoding next sequence recv: {:?}", e),
+                            None::<()>,
+                        )
+                    })?,
                 ))
             }
-            SupportedIbcSpec::IbcUnion => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "sequence queries not supported for Union IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcUnion => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "sequence queries not supported for Union IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -721,19 +764,22 @@ impl Module {
                 }
                 .to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(u64::from_be_bytes(
-                    query_result.value.unwrap().try_into()
-                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next sequence ack: {:?}", e), None::<()>))?
+                    query_result.value.unwrap().try_into().map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("error decoding next sequence ack: {:?}", e),
+                            None::<()>,
+                        )
+                    })?,
                 ))
             }
-            SupportedIbcSpec::IbcUnion => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "sequence queries not supported for Union IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcUnion => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "sequence queries not supported for Union IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -743,19 +789,22 @@ impl Module {
             SupportedIbcSpec::IbcClassic => {
                 let path_string = NextConnectionSequencePath {}.to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(u64::from_be_bytes(
-                    query_result.value.unwrap().try_into()
-                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next connection sequence: {:?}", e), None::<()>))?
+                    query_result.value.unwrap().try_into().map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("error decoding next connection sequence: {:?}", e),
+                            None::<()>,
+                        )
+                    })?,
                 ))
             }
-            SupportedIbcSpec::IbcUnion => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "connection sequence queries not supported for Union IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcUnion => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "connection sequence queries not supported for Union IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -765,19 +814,22 @@ impl Module {
             SupportedIbcSpec::IbcClassic => {
                 let path_string = NextClientSequencePath {}.to_string();
                 let query_result = self.abci_query(&path_string, height).await?;
-                
+
                 Ok(u64::from_be_bytes(
-                    query_result.value.unwrap().try_into()
-                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next client sequence: {:?}", e), None::<()>))?
+                    query_result.value.unwrap().try_into().map_err(|e| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            format!("error decoding next client sequence: {:?}", e),
+                            None::<()>,
+                        )
+                    })?,
                 ))
             }
-            SupportedIbcSpec::IbcUnion => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "client sequence queries not supported for Union IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcUnion => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "client sequence queries not supported for Union IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -796,13 +848,11 @@ impl Module {
                 )
                 .await
             }
-            SupportedIbcSpec::IbcClassic => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "batch packet queries not supported for Classic IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcClassic => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "batch packet queries not supported for Classic IBC",
+                None::<()>,
+            )),
         }
     }
 
@@ -820,13 +870,11 @@ impl Module {
                 )
                 .await
             }
-            SupportedIbcSpec::IbcClassic => {
-                Err(ErrorObject::owned(
-                    FATAL_JSONRPC_ERROR_CODE,
-                    "batch receipt queries not supported for Classic IBC",
-                    None::<()>,
-                ))
-            }
+            SupportedIbcSpec::IbcClassic => Err(ErrorObject::owned(
+                FATAL_JSONRPC_ERROR_CODE,
+                "batch receipt queries not supported for Classic IBC",
+                None::<()>,
+            )),
         }
     }
 }
@@ -861,7 +909,7 @@ impl StateModuleServer<SupportedIbcSpec> for Module {
             .sync_info
             .latest_block_height;
 
-        let height = self.make_height(latest_height.into());
+        let height = self.make_height(latest_height);
 
         let _client_state = self.query_client_state(height, client_id.clone()).await?;
 
@@ -876,12 +924,18 @@ impl StateModuleServer<SupportedIbcSpec> for Module {
                 })
             }
             SupportedIbcSpec::IbcUnion => {
-                let parsed_id = client_id.to_string().parse::<u32>()
+                let parsed_id = client_id
+                    .to_string()
+                    .parse::<u32>()
                     .map_err(|e| rpc_error("invalid client id", None)(e))?;
-                let union_client_id = UnionClientId::new(
-                    NonZeroU32::new(parsed_id)
-                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "client id cannot be zero", None::<()>))?
-                );
+                let union_client_id =
+                    UnionClientId::new(NonZeroU32::new(parsed_id).ok_or_else(|| {
+                        ErrorObject::owned(
+                            FATAL_JSONRPC_ERROR_CODE,
+                            "client id cannot be zero",
+                            None::<()>,
+                        )
+                    })?);
                 let client_type = self
                     .query_smart::<_, String>(
                         &ibc_union_msg::query::QueryMsg::GetClientType {
@@ -902,12 +956,7 @@ impl StateModuleServer<SupportedIbcSpec> for Module {
     }
 
     #[instrument(skip_all)]
-    async fn query_ibc_state(
-        &self,
-        _: &Extensions,
-        _at: Height,
-        path: Never,
-    ) -> RpcResult<Value> {
+    async fn query_ibc_state(&self, _: &Extensions, _at: Height, path: Never) -> RpcResult<Value> {
         match path {}
     }
 }
@@ -921,8 +970,6 @@ fn rpc_error<E: Error>(
         ErrorObject::owned(-1, message.to_string(), data)
     }
 }
-
-
 
 // Union IBC Events
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
