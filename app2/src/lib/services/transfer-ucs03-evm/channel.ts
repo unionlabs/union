@@ -2,8 +2,9 @@ import { runSync } from "$lib/runtime"
 import { ChannelValidationError } from "$lib/services/transfer-ucs03-evm/errors.ts"
 import type { UniversalChainId } from "@unionlabs/sdk/schema"
 import { Channel, type Channels } from "@unionlabs/sdk/schema"
-import { Effect } from "effect"
+import { Array as A, Effect } from "effect"
 
+// TODO(ehegnes): replace this with a schema transform
 export const getChannelInfoEffect = (
   source_universal_chain_id: UniversalChainId,
   destination_universal_chain_id: UniversalChainId,
@@ -40,6 +41,7 @@ export const getChannelInfoEffect = (
       source_channel_id: channel.source_channel_id,
       source_client_id: channel.source_client_id,
       source_port_id: channel.source_port_id,
+      fees: channel.fees,
       destination_universal_chain_id,
       destination_connection_id: channel.destination_connection_id,
       destination_channel_id: channel.destination_channel_id,
@@ -48,6 +50,7 @@ export const getChannelInfoEffect = (
     })
   })
 
+// TODO(ehegnes): replace this with a schema transform
 export const getChannelInfoSafe = (
   source_universal_chain_id: UniversalChainId,
   destination_universal_chain_id: UniversalChainId,

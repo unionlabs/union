@@ -9,16 +9,11 @@ import { Effect } from "effect"
 
 export const executeCosmWasmInstructions = (
   chain: Chain,
-  connectedWallet: CosmosWalletId,
   instructions: Array<ExecuteInstruction>,
 ) => {
   // Early validations
   if (!chain) {
     return Effect.fail(new CosmWasmError({ cause: "Chain is undefined" }))
-  }
-
-  if (!connectedWallet) {
-    return Effect.fail(new CosmWasmError({ cause: "Connected wallet is undefined" }))
   }
 
   if (!instructions || instructions.length === 0) {
@@ -45,7 +40,7 @@ export const executeCosmWasmInstructions = (
 
   return Effect.flatMap(
     Effect.mapError(
-      getCosmWasmClient(chain, connectedWallet),
+      getCosmWasmClient(chain),
       err => new CosmWasmError({ cause: String(err) }),
     ),
     client => {

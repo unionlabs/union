@@ -43,9 +43,7 @@ function truncateAddress(address: string): string {
 <Card class="flex flex-col gap-3 p-4 transition-all hover:bg-zinc-800/50 group">
   <div class="flex items-center justify-between gap-2">
     <div class="flex items-center gap-3 min-w-0">
-      <div
-        class="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-medium text-zinc-300 shrink-0"
-      >
+      <div class="w-6 h-6 rounded-full bg-zinc-700 flex items-center justify-center text-xs font-medium text-zinc-300 shrink-0">
         {getChainDisplayNameForAvatar(wallet.chain_id).substring(0, 1).toUpperCase()}
       </div>
       {#if category === "evm"}

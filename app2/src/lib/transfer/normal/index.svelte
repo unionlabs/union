@@ -3,6 +3,7 @@ import { beforeNavigate } from "$app/navigation"
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { runFork } from "$lib/runtime"
+import { FeeStore } from "$lib/stores/fee.svelte"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
@@ -23,9 +24,9 @@ import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { TokenRawAmountFromSelf, TokenRawDenom } from "@unionlabs/sdk/schema"
-import { Array as Arr, Effect, Fiber, FiberId, Option, Schema } from "effect"
+import { Array as Arr, Effect, Either, Fiber, FiberId, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
-import { onMount } from "svelte"
+import { onMount, untrack } from "svelte"
 import { fly } from "svelte/transition"
 
 let currentPage = $state(0)
@@ -133,7 +134,11 @@ $effect(() => {
     let context: TransferContext | null = null
 
     while (true) {
-      const result: StateResult | void = yield* createContextState(currentState, transferData)
+      const result: StateResult | void = yield* createContextState(
+        currentState,
+        transferData,
+        FeeStore.intent,
+      )
 
       if (!result) {
         break
@@ -163,28 +168,26 @@ $effect(() => {
 
     const steps: Array<Steps.Steps> = [Steps.Filling()]
 
-    /**
-     * Check if receiver is in connected wallet.
-     * Always show step if no receiver wallet is connected.
-     */
-    yield* Option.gen(function*() {
-      const {
-        destinationChain,
-        receiver,
-      } = yield* Option.all({
-        destinationChain: transferData.destinationChain,
-        receiver: transferData.derivedReceiver,
-      })
-      const inWallet = pipe(
-        wallets.getAddressForChain(destinationChain),
-        Option.map(x => x.toLowerCase() === receiver.toLowerCase()),
-        Option.getOrElse(() => false),
-      )
-
-      if (!inWallet) {
-        steps.push(Steps.CheckReceiver({ receiver, destinationChain }))
-      }
-    })
+    // Check if receiver exists in wallet
+    yield* Option.Do.pipe(
+      Option.bind("destinationChain", () => transferData.destinationChain),
+      Option.bind("receiver", () => transferData.derivedReceiver),
+      Option.bind("inWallet", ({ destinationChain, receiver }) => {
+        const walletaddr = wallets.getAddressForChain(destinationChain)
+        return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
+      }),
+      Option.match({
+        onNone: () => Effect.void,
+        onSome: ({ inWallet, destinationChain, receiver }) =>
+          Effect.if(inWallet, {
+            onFalse: () =>
+              Effect.sync(() => {
+                steps.push(Steps.CheckReceiver({ receiver, destinationChain }))
+              }),
+            onTrue: () => Effect.void,
+          }),
+      }),
+    )
 
     if (context) {
       if (Option.isSome(context.allowances)) {
@@ -217,12 +220,18 @@ $effect(() => {
       if (Option.isSome(context.instruction)) {
         const instruction = context.instruction.value
 
-        for (const intent of context.intents) {
-          steps.push(
-            Steps.SubmitInstruction({ instruction, intent }),
-            Steps.WaitForIndex({ intent }),
-          )
-        }
+        // Create steps for the batch instruction, not individual intents
+        steps.push(
+          Steps.SubmitInstruction({
+            instruction,
+            intent: context.intents[0],
+            native: Option.map(context.native, (native) => ({
+              baseToken: native.baseToken,
+              amount: native.amount,
+            })),
+          }),
+          Steps.WaitForIndex({ intent: context.intents[0] }),
+        )
       }
     }
 
@@ -256,7 +265,7 @@ const currentStep = $derived(
 
 <Card
   divided
-  class="max-w-sm w-full mt-12 md:mt-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden transition-transform duration-500"
+  class="max-w-sm w-full mt-12 md:mt-24 relative self-center flex flex-col justify-between min-h-[498px] overflow-hidden transition-transform duration-500"
 >
   <div class="w-full">
     <StepProgressBar

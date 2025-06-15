@@ -37,7 +37,7 @@ _: {
             ../typescript-sdk
             ../ts-sdk
           ];
-          hash = "sha256-Rre5X8ATXG/dSr50+RJXZVwpMdSSNs+rxoe6oK0TdQg";
+          hash = "sha256-kjFwxPfawrFdnF4Jsd5UdRIsuIoDpg8HLSaz++6oB08=";
           buildInputs = deps;
           nativeBuildInputs = buildInputs;
           pnpmWorkspaces = [
@@ -95,6 +95,7 @@ _: {
           program = pkgs.writeShellApplication {
             name = "app-check-watch";
             runtimeInputs = deps;
+            # TODO: decrease threshold to "warning"
             text = ''
               ${ensureAtRepositoryRoot}
               cd app2/
@@ -102,7 +103,7 @@ _: {
               export PUBLIC_GIT_REV="${PUBLIC_GIT_REV}"
               export PUBLIC_LAST_MODIFIED_DATE="${PUBLIC_LAST_MODIFIED_DATE}"
               export PUBLIC_LAST_MODIFIED_EPOCH="${PUBLIC_LAST_MODIFIED_EPOCH}"
-              pnpm run check --watch --threshold warning
+              pnpm run check --watch --threshold error
             '';
           };
         };

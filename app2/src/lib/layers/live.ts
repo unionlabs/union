@@ -1,11 +1,13 @@
 import { ENV } from "$lib/constants"
+import { GasPriceMap } from "$lib/gasprice"
 import { GraphQL } from "$lib/graphql/service"
 import * as Datadog from "$lib/logging/datadog"
-import { Context, Layer, Logger, LogLevel, Match } from "effect"
+import { PriceOracleExecutor } from "@unionlabs/sdk/PriceOracle"
+import { Layer, Logger, LogLevel, Match } from "effect"
 
 const minimumLogLevel = Logger.minimumLogLevel(
   Match.value(ENV()).pipe(
-    Match.when("DEVELOPMENT", () => LogLevel.Trace),
+    Match.when("DEVELOPMENT", () => LogLevel.Debug),
     Match.when("STAGING", () => LogLevel.Debug),
     Match.when("PRODUCTION", () => LogLevel.Info),
     Match.exhaustive,
@@ -14,6 +16,8 @@ const minimumLogLevel = Logger.minimumLogLevel(
 
 export default Layer.mergeAll(
   GraphQL.Default,
+  GasPriceMap.Default,
+  PriceOracleExecutor.Default,
   Logger.replace(
     Logger.defaultLogger,
     Logger.zip(

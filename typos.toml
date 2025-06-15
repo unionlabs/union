@@ -1410,6 +1410,7 @@ files.extend-exclude = [
 "txfees"                  = "txfees"
 "txmodule"                = "txmodule"
 "txpool"                  = "txpool"
+"typ"                     = "typ"
 "typecheck"               = "typecheck"
 "typeform"                = "typeform"
 "typemap"                 = "typemap"

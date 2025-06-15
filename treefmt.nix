@@ -36,13 +36,17 @@
         in
         {
           extends = builtins.toString patchedConfig;
-          plugins = map toString (
-            with pkgsUnstable.dprint-plugins;
-            [
-              dprint-plugin-typescript
-              g-plane-markup_fmt
-            ]
-          );
+          plugins = pkgsUnstable.dprint-plugins.getPluginList (plugins: [
+            plugins.dprint-plugin-typescript
+            plugins.g-plane-markup_fmt
+          ]);
+          # plugins = map toString (
+          #   with pkgsUnstable.dprint-plugins;
+          #   [
+          #     dprint-plugin-typescript
+          #     g-plane-markup_fmt
+          #   ]
+          # );
         };
     };
     yamlfmt = {

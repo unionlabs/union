@@ -16,6 +16,7 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
+    "./*": "./src/*.js",
     "./ucs03": {
       "import": "./dist/ucs03/index.js",
       "types": "./dist/ucs03/index.d.ts"
@@ -52,16 +53,17 @@
   "scripts": {
     "build": "pnpm build-esm && pnpm build-annotate",
     "build-annotate": "babel dist/ --plugins annotate-pure-calls --out-dir dist/ --source-maps",
-    "build-esm": "tsc -b tsconfig.build.json",
-    "check": "tsc -b tsconfig.json",
-    "check:examples": "tsc -p tsconfig.examples.json",
+    "build-esm": "tspc -b tsconfig.build.json",
+    "check": "tspc -b tsconfig.json",
     "check:circular": "dpdm -T src",
+    "check:examples": "tspc -p tsconfig.examples.json",
+    "prepare": "ts-patch install -s",
     "test": "vitest run",
     "test:watch": "vitest"
   },
   "peerDependencies": {
-    "@effect/platform": "^0.82",
-    "effect": "^3.15",
+    "@effect/platform": "^0.84",
+    "effect": "^3.16",
     "viem": "^2"
   },
   "devDependencies": {
@@ -70,12 +72,12 @@
     "@cosmjs/math": "^0.33.1",
     "@cosmjs/proto-signing": "^0.33.0",
     "@effect/build-utils": "^0.7.7",
-    "@effect/platform": "0.82.4",
+    "@effect/platform": "0.84.6",
     "@types/node": "^22.13.1",
     "babel-plugin-annotate-pure-calls": "^0.5.0",
     "dpdm": "^3.14.0",
-    "effect": "3.15.2",
-    "husky": "^9.1.7",
+    "effect": "3.16.3",
+    "ts-patch": "^3.3.0",
     "vitest": "^3.0.5"
   },
   "dependencies": {
@@ -84,6 +86,8 @@
     "@cosmjs/stargate": "^0.33.1",
     "@cosmjs/tendermint-rpc": "^0.33.1",
     "@mysten/sui": "^1.30.1",
+    "@pythnetwork/hermes-client": "^2.0.0",
+    "@redstone-finance/sdk": "^0.8.0",
     "@scure/base": "1.2.4",
     "crc": "^4.3.2",
     "gql.tada": "^1.8.10",

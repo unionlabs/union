@@ -121,17 +121,13 @@ const getUserFriendlyMessage = pipe(
         {#if error.cause}
           <div>
             <p class="font-semibold">Cause:</p>
-            <pre
-              class="text-sm mt-1 whitespace-pre-wrap"
-            >{JSON.stringify(error.cause, null, 2)}</pre>
+            <pre class="text-sm mt-1 whitespace-pre-wrap">{JSON.stringify(error.cause, null, 2)}</pre>
           </div>
         {/if}
         {#if error._tag === "SupabaseError" && error.error}
           <div>
             <p class="font-semibold">Database Error:</p>
-            <pre
-              class="text-sm mt-1 whitespace-pre-wrap"
-            >{JSON.stringify(error.error, null, 2)}</pre>
+            <pre class="text-sm mt-1 whitespace-pre-wrap">{JSON.stringify(error.error, null, 2)}</pre>
           </div>
         {/if}
       </div>

@@ -92,7 +92,7 @@ export const createContextState = (
   return CreateContextState.$match(cts, {
     Empty: () => Effect.void,
     Filling: () => {
-      const state = getFillingState(transfer)
+      const state = getFillingState(transfer, Option.none())
 
       return FillingState.$match(state, {
         Empty: () => Effect.void,
@@ -104,6 +104,7 @@ export const createContextState = (
         NoRoute: () => Effect.succeed(ok(Empty(), "No route")),
         NoContract: () => Effect.succeed(ok(Empty(), "No ucs03 contract")),
         EmptyAmount: () => Effect.succeed(ok(Empty(), "Enter amount")),
+        NoFee: () => Effect.succeed(ok(Empty(), "No fee")), // XXX: wrong
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
         Ready: (args) => Effect.succeed(ok(Validation({ args }), "Validating...")),
