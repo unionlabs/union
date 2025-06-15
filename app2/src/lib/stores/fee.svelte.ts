@@ -105,6 +105,11 @@ const createFeeStore = () => {
     return pipe(
       Stream.fromSchedule(schedule),
       Stream.mapEffect(() =>
+        Effect.sync(() => {
+          data = O.none()
+        })
+      ),
+      Stream.mapEffect(() =>
         Effect.gen(function*() {
           const { source, destination, channel } = yield* pipe(
             O.all({

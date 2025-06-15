@@ -370,12 +370,12 @@ const Redstone = Layer.effect(
 export const LivePlan = ExecutionPlan.make(
   {
     provide: Pyth,
-    attempts: 3,
+    attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
   {
     provide: Redstone,
-    attempts: 3,
+    attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
 )
@@ -383,7 +383,25 @@ export const LivePlan = ExecutionPlan.make(
 // TODO: rename to just "Executor" 8)
 export class PriceOracleExecutor
   extends Effect.Service<PriceOracle>()("@unionlabs/sdk/PriceOracle", { // XXX: is this a sin?
-    effect: Effect.withExecutionPlan(PriceOracle, LivePlan),
+    effect: Effect.gen(function*() {
+      const ctx = PriceOracle
+
+      return PriceOracle.of({
+        of: (id: UniversalChainId) =>
+          pipe(
+            ctx,
+            Effect.andThen((oracle) => oracle.of(id)),
+            Effect.withExecutionPlan(LivePlan),
+          ),
+        stream: () => Stream.fail(new PriceError({ message: "not implemented" })),
+        ratio: (from: UniversalChainId, to: UniversalChainId) =>
+          pipe(
+            ctx,
+            Effect.andThen((oracle) => oracle.ratio(from, to)),
+            Effect.withExecutionPlan(LivePlan),
+          ),
+      })
+    }),
   })
 {
   static Test = Layer.effect(
@@ -449,3 +467,10 @@ export class PriceOracleExecutor
     }),
   )
 }
+
+const program = Effect.gen(function*() {
+  const a = yield* PriceOracle
+  return yield* a.of(void 0 as unknown as any)
+}).pipe(
+  Effect.provide(PriceOracleExecutor.Default),
+)
