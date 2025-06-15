@@ -5,12 +5,13 @@ import SharpInfoIcon from "$lib/components/icons/SharpInfoIcon.svelte"
 import Anchor from "$lib/components/ui/A.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
-import { BaseGasPrice } from "$lib/gasprice/service"
+import * as AppRuntime from "$lib/runtime"
 import { FeeStore } from "$lib/stores/fee.svelte"
 import { cn } from "$lib/utils"
-import { getOptionOrNull, mapOption, matchOption } from "$lib/utils/snippets.svelte"
+import { getOptionOrNull, mapOption } from "$lib/utils/snippets.svelte"
 import { PriceSource } from "@unionlabs/sdk/PriceOracle"
-import { Array as A, BigDecimal, BigDecimal as BD, Option as O, pipe, Record as R } from "effect"
+import { Array as A, BigDecimal as BD, Boolean as B, Option as O, Record as R } from "effect"
+import { onDestroy } from "svelte"
 import { slide } from "svelte/transition"
 
 let { open, onToggle } = $props()
@@ -21,19 +22,18 @@ function toggleExpanded() {
   }
 }
 
-const loading = $derived(pipe(
-  O.all([FeeStore.gasPrices.current]),
-  O.isNone,
-))
+const loading: boolean = $derived(B.every([
+  FeeStore.isLoading,
+]))
+
+const fiber = AppRuntime.runFork$(() => FeeStore.init)
+
+onDestroy(() => {
+  fiber.interrupt()
+})
 
 const calculating = false
-
-const feeConfig = O.none()
 </script>
-
-{#snippet formatBigDecimal(x: BD.BigDecimal)}
-  {BD.format(x)}
-{/snippet}
 
 {#snippet gasButton(props: {
   value: string
@@ -105,8 +105,6 @@ const feeConfig = O.none()
     <div class="flex items-center gap-1">
       <SharpGasIcon class="size-4 text-zinc-300" />
       {#if loading}
-        <!-- Show nothing when loading -->
-      {:else if calculating}
         <Skeleton class="h-3 w-16" />
         <Skeleton class="h-3 w-12" />
       {:else}
@@ -132,7 +130,7 @@ const feeConfig = O.none()
   </button>
 
   <!-- Expandable content -->
-  {#if open && O.isSome(FeeStore.baseFees)}
+  {#if open && O.isSome(O.all(FeeStore.feeBreakdown))}
     <div
       class="bg-transparent rounded-b-md overflow-hidden border-t border-zinc-800"
       transition:slide={{ duration: 250 }}

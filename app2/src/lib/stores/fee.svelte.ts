@@ -6,12 +6,11 @@ import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { transferData as TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import type { Intent } from "$lib/transfer/shared/services/filling/create-context.ts"
 import * as Writer from "$lib/typeclass/Writer.js"
-import type { RunPromiseExitResult } from "$lib/utils/effect.svelte"
 import * as ArrayInstances from "@effect/typeclass/data/Array"
 import * as FlatMap from "@effect/typeclass/FlatMap"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
-import { PriceError, PriceOracle, PriceResult, PriceSource } from "@unionlabs/sdk/PriceOracle"
+import { PriceError, PriceOracle, PriceResult } from "@unionlabs/sdk/PriceOracle"
 import { Chain, TokenRawAmount } from "@unionlabs/sdk/schema"
 import { type Fees, GasFee } from "@unionlabs/sdk/schema/fee"
 import {
@@ -20,12 +19,13 @@ import {
   Cause,
   Effect,
   Either as E,
-  Exit,
   Match,
   Option as O,
   pipe,
   Predicate,
   Record as R,
+  Schedule,
+  Stream,
   Struct,
   Tuple,
   Unify,
@@ -91,77 +91,77 @@ const createFeeStore = () => {
     >
   >
 
-  let usdPrices!: RunPromiseExitResult<
-    R.ReadonlyRecord<
-      "source" | "destination",
-      O.Option<Effect.Effect.Success<ReturnType<PriceOracle.Service["of"]>>>
-    >,
-    Effect.Effect.Error<ReturnType<PriceOracle.Service["of"]>>
-  >
+  let data = $state<Happy>(O.none())
 
-  let gasPrices!: RunPromiseExitResult<{
-    source: O.Option<{
-      value: BaseGasPrice
-      decimals: number
-    }>
-    destination: O.Option<{
-      value: BaseGasPrice
-      decimals: number
-    }>
-  }, GasPriceError>
+  const fetchFee = $derived.by(() => {
+    const _source = TransferData.sourceChain
+    const _destination = TransferData.destinationChain
+    const _channel = TransferData.channel
 
-  /**
-   * Ratio of source / destination
-   */
-  let ratio!: RunPromiseExitResult<
-    O.Option<{
-      ratio: BigDecimal.BigDecimal
-      source: PriceSource
-      destination: PriceSource
-    }>,
-    PriceError
-  >
+    const schedule = pipe(
+      Schedule.once,
+      Schedule.andThen(Schedule.spaced("2 minutes")),
+    )
+    return pipe(
+      Stream.fromSchedule(schedule),
+      Stream.mapEffect(() =>
+        Effect.gen(function*() {
+          const { source, destination, channel } = yield* pipe(
+            O.all({
+              source: _source,
+              destination: _destination,
+              channel: _channel,
+            }),
+          )
 
-  $effect.root(() => {
-    ratio = AppRuntime.runPromiseExit$(() =>
-      pipe(
-        O.all({
-          source: TransferData.sourceChain,
-          destination: TransferData.destinationChain,
-        }),
-        O.map(R.map(x => x.universal_chain_id)),
-        O.map(({ source, destination }) =>
-          Effect.andThen(PriceOracle, ({ ratio }) => ratio(source, destination))
-        ),
-        Effect.transposeOption,
-      ), {
-      onInterrupt: "none",
-    })
+          const fetchAllFor = Effect.fn(function*(chain: Chain) {
+            const {
+              gas,
+              usd,
+            } = yield* Effect.all({
+              gas: gasForChain(chain),
+              usd: usdOfChainGas(chain),
+            }, { concurrency: 2 })
 
-    usdPrices = AppRuntime.runPromiseExit$(() =>
-      pipe(
-        {
-          source: TransferData.sourceChain,
-          destination: TransferData.destinationChain,
-        },
-        R.map(Effect.transposeMapOption(usdOfChainGas)),
-        Effect.allWith({ concurrency: 2 }),
-      ), {
-      onInterrupt: "none",
-    })
+            return {
+              gas: gas.value,
+              gasDecimals: gas.decimals,
+              usd,
+            }
+          })
 
-    gasPrices = AppRuntime.runPromiseExit$(() =>
-      pipe(
-        {
-          source: TransferData.sourceChain,
-          destination: TransferData.destinationChain,
-        },
-        R.map(Effect.transposeMapOption(gasForChain)),
-        Effect.allWith({ concurrency: 2 }),
-      ), {
-      onInterrupt: "none",
-    })
+          const c = yield* pipe(
+            Effect.all({
+              source: Effect.either(fetchAllFor(source)),
+              destination: Effect.either(fetchAllFor(destination)),
+            }, { concurrency: 2 }),
+            Effect.map(E.all),
+          )
+
+          yield* Effect.sync(() => {
+            data = O.some(c)
+          })
+        }).pipe(
+          Effect.catchTag("NoSuchElementException", () =>
+            Effect.sync(() => {
+              data = O.none()
+            })),
+        )
+      ),
+      Stream.runDrain,
+    )
   })
+
+  const maybeRatio = $derived(pipe(
+    data,
+    O.flatMap(O.getRight),
+    O.map((data) => ({
+      ratio: BigDecimal.unsafeDivide(data.source.usd.price, data.destination.usd.price),
+      source: data.source.usd.source,
+      destination: data.destination.usd.source,
+    })),
+    O.map(x => x.ratio),
+  ))
 
   const baseFees: O.Option<BaseFees> = $derived(pipe(
     TransferData.channel,
@@ -183,7 +183,7 @@ const createFeeStore = () => {
         PACKET_SEND_LC_UPDATE_L0: withDefault(fees.PACKET_SEND_LC_UPDATE_L0),
         PACKET_SEND_LC_UPDATE_L1: withDefault(fees.PACKET_SEND_LC_UPDATE_L1),
       } as const
-      console.log("AFTER EVOLUTION")
+      console.log("AFTER EVOLUTION", JSON.stringify(result, null, 2))
 
       return result
 
@@ -193,15 +193,6 @@ const createFeeStore = () => {
       //   PACKET_SEND_LC_UPDATE_L1: withDefault,
       // })
     }),
-  ))
-
-  const maybeRatio = $derived(pipe(
-    ratio.current,
-    O.flatMap(Exit.match({
-      onSuccess: O.some,
-      onFailure: O.none,
-    })),
-    O.flatMap(O.map(x => x.ratio)),
   ))
 
   const decorate = (
@@ -395,32 +386,31 @@ const createFeeStore = () => {
   }))
 
   const sourceGasUnitPrice = $derived(pipe(
-    gasPrices.current,
-    O.flatMap(Exit.match({
-      onSuccess: O.some,
-      onFailure: O.none,
-    })),
-    O.flatMap(x => x.source),
+    data,
+    O.flatMap(O.getRight),
+    O.map(x => x.source.gas),
   ))
 
   const destGasUnitPrice = $derived(pipe(
-    gasPrices.current,
-    O.flatMap(Exit.match({
-      onSuccess: O.some,
-      onFailure: O.none,
-    })),
-    O.flatMap(x => x.destination),
+    data,
+    O.flatMap(O.getRight),
+    O.map(x => x.destination.gas),
   ))
 
   const decoratedConfig = $derived(pipe(
     O.all({
-      baseFees, // fees for source
       // XXX: source / dest here should be determined on per-transaction basis
-      gasPrice: destGasUnitPrice,
+      gasPrice: pipe(
+        data,
+        O.flatMap(O.getRight),
+        O.map(x => ({
+          value: x.destination.gas,
+          decimals: x.destination.gasDecimals,
+        })),
+      ),
       ratio: maybeRatio,
     }),
-    O.map(({ baseFees: fees, gasPrice, ratio }) => ({ fees, gasPrice, ratio, ...config })),
-    O.map(decorate),
+    O.map(({ gasPrice, ratio }) => decorate({ gasPrice, ratio, ...config })),
   ))
 
   // TODO: tuple-ify outputs; concatenate to show record of calculations performed
@@ -547,16 +537,14 @@ const createFeeStore = () => {
 
   const errors = $derived.by(() => {
     // TODO: extract to helper
-    const extractError = <E>(x: O.Option<Exit.Exit<any, E>>) =>
+    const extractError = <E>(x: O.Option<E.Either<any, E>>) =>
       pipe(
         x,
-        O.flatMap(Exit.causeOption),
+        O.flatMap(E.getLeft),
       )
     return pipe(
       [
-        extractError(gasPrices.current),
-        extractError(usdPrices.current),
-        extractError(ratio.current),
+        extractError(data),
       ] as const,
       A.getSomes,
       Unify.unify,
@@ -567,23 +555,12 @@ const createFeeStore = () => {
   })
 
   const usdSources = $derived(pipe(
-    usdPrices.current,
-    O.flatMap(Exit.match({
-      onSuccess: O.some,
-      onFailure: O.none,
+    data,
+    O.flatMap(O.getRight),
+    O.map(x => ({
+      source: x.source.usd.source,
+      destination: x.destination.usd.source,
     })),
-    O.map(R.getSomes),
-    O.map(R.map(x => x.source)),
-  ))
-
-  const gasDisplay = $derived(pipe(
-    gasPrices.current,
-    // TODO: extract to helper
-    O.flatMap(Exit.match({
-      onSuccess: O.some,
-      onFailure: O.none,
-    })),
-    O.getOrNull,
   ))
 
   /** total in base source chain */
@@ -599,16 +576,10 @@ const createFeeStore = () => {
   const usdDisplay = $derived(pipe(
     O.all({
       decoratedConfig,
-      perUsd: O.flatMap(
-        usdPrices.current,
-        Exit.match({
-          onSuccess: O.some,
-          onFailure: O.none,
-        }),
-      ).pipe(
-        O.map(x => x.source),
-        O.map(O.map(x => x.price)),
-        O.flatten,
+      perUsd: pipe(
+        data,
+        O.flatMap(O.getRight),
+        O.map(x => x.source.usd.price),
       ),
       totalFee,
     }),
@@ -619,22 +590,6 @@ const createFeeStore = () => {
     })),
     O.map(BigDecimal.format),
   ))
-
-  // TODO
-  // export type Intent = {
-  //   sender: AddressCanonicalBytes
-  //   receiver: AddressCanonicalBytes
-  //   baseToken: string
-  //   baseAmount: TokenRawAmount
-  //   quoteAmount: TokenRawAmount
-  //   decimals: number
-  //   sourceChain: Chain
-  //   sourceChainId: UniversalChainId
-  //   sourceChannelId: ChannelId
-  //   destinationChain: Chain
-  //   channel: Channel
-  //   ucs03address: string
-  // }
 
   const intent: O.Option<E.Either<FeeIntent, string>> = $derived(O.gen(function*() {
     const _totalFee = yield* totalFee
@@ -662,20 +617,11 @@ const createFeeStore = () => {
     get baseFees() {
       return baseFees
     },
-    get gasPrices() {
-      return gasPrices
-    },
     get sourceGasUnitPrice() {
       return sourceGasUnitPrice
     },
     get feeBreakdown() {
       return newFeeBreakdown
-    },
-    get usdPrices() {
-      return usdPrices
-    },
-    get gasDisplay() {
-      return gasDisplay
     },
     get usdDisplay() {
       return usdDisplay
@@ -713,16 +659,11 @@ const createFeeStore = () => {
     get symbol(): O.Option<string> {
       return sourceSymbol
     },
-    get ratio() {
-      return pipe(
-        ratio?.current,
-        O.flatMap(Exit.match({
-          onSuccess: O.some,
-          onFailure: O.none,
-        })),
-        O.flatten,
-        O.map(x => x.ratio),
-      )
+    get isLoading(): boolean {
+      return O.isNone(data)
+    },
+    get init() {
+      return fetchFee
     },
     get errors() {
       return errors
