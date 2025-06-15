@@ -292,7 +292,8 @@ module ibc::ibc {
         channel_to_port: Table<u32, String>,
         next_client_sequence: u32,
         next_channel_sequence: u32,
-        next_connection_sequence: u32
+        next_connection_sequence: u32,
+        packet_hash_to_digest: Table<vector<u8>, vector<u8>>
     }
 
     fun init(ctx: &mut TxContext) {
@@ -307,7 +308,8 @@ module ibc::ibc {
             channel_to_port: table::new(ctx),
             next_client_sequence: 1,
             next_channel_sequence: 1,
-            next_connection_sequence: 1
+            next_connection_sequence: 1,
+            packet_hash_to_digest: table::new(ctx)
         });
     }
 
@@ -371,6 +373,7 @@ module ibc::ibc {
     /// `client_message`: the client-defined update message
     public entry fun update_client(
         ibc_store: &mut IBCStore,
+        clock: &clock::Clock,
         client_id: u32,
         client_message: vector<u8>
     ) {
@@ -379,11 +382,11 @@ module ibc::ibc {
             ibc_store.commitments.contains(commitment::client_state_commitment_key(client_id)),
             E_CLIENT_NOT_FOUND
         );
-        let client = ibc_store.clients.borrow(client_id);
+        let mut client = ibc_store.clients.borrow_mut(client_id);
 
         // Update the client and consensus states using the client message
         let (client_state, consensus_state, height) =
-            client.update_client(client_message);
+            client.update_client(clock, client_message);
 
         // Update the client state commitment
         add_or_update_table<vector<u8>, vector<u8>>(&mut ibc_store.commitments,
@@ -952,7 +955,8 @@ module ibc::ibc {
         timeout_height: u64,
         timeout_timestamp: u64,
         data: vector<u8>,
-        witness: T
+        witness: T,
+        ctx: &TxContext
     ): packet::Packet {
         let port_id = *ibc_store.channel_to_port.borrow(source_channel);
         validate_port(port_id, witness);
@@ -993,6 +997,8 @@ module ibc::ibc {
         assert!(!ibc_store.commitments.contains(commitment_key), E_PACKET_ALREADY_SENT);
 
         add_or_update_table(&mut ibc_store.commitments, commitment_key, COMMITMENT_MAGIC);
+
+        ibc_store.packet_hash_to_digest.add(packet_hash, *ctx.digest());
 
         event::emit(
             PacketSend {
@@ -1156,6 +1162,7 @@ module ibc::ibc {
         assert!(parts.length() >= 3, 1);
 
         let mut a = sui::address::from_ascii_bytes(parts[0].bytes()).to_ascii_string();
+        a.append(std::ascii::string(b"::"));
         a.append(parts[1].to_ascii());
 
         a
@@ -1168,7 +1175,7 @@ module ibc::ibc {
         let caller_t = std::type_name::get<T>();
 
         let mut addr_module = deconstruct_port_id(port_id);
-        addr_module.append(std::ascii::string(b"IbcAppWitness"));
+        addr_module.append(std::ascii::string(b"::IbcAppWitness"));
         
         // ensure the port info matches the caller
         assert!(addr_module == std::type_name::get<T>().into_string(), 1)
@@ -1463,13 +1470,13 @@ module ibc::ibc {
         if (!ibc_store.commitments.contains(commitment_key)) {
             abort E_PACKET_NOT_RECEIVED
         };
-        let commitment = ibc_store.commitments.borrow(commitment_key);
+        let commitment = ibc_store.commitments.borrow_mut(commitment_key);
         assert!(
             *commitment == COMMITMENT_MAGIC,
             E_ACK_ALREADY_EXIST
         );
 
-        ibc_store.commitments.add(commitment_key, commitment::commit_ack(acknowledgement));
+        *commitment = commitment::commit_ack(acknowledgement);
     }
 
     public fun timeout_packet(
@@ -2118,4 +2125,14 @@ module ibc::ibc {
     // //     test_scenario::return_shared(ibc_store);
     // //     test_case.end();
     // // }
+    public struct IbcAppWitness has drop {}
+    #[test]
+    fun validate_port_bro() {
+        let port = string::utf8(b"0x0000000000000000000000000000000000000000000000000000000000022222::ibc::0xbe0f436bb8f8b30e0cad1c1bf27ede5bb158d47375c3a4ce108f435bd1cc9bea");
+
+        validate_port(
+            port,
+            IbcAppWitness {}
+        );
+    }
 }

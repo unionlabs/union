@@ -1,4 +1,4 @@
-use crate::digest::Digest;
+use crate::Digest;
 
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -12,6 +12,7 @@ pub mod ethabi {
     use unionlabs::impl_ethabi_via_try_from_into;
 
     use super::*;
+    use crate::fixed_bytes::SuiFixedBytes;
 
     impl_ethabi_via_try_from_into!(ConsensusState => SolConsensusState);
 
@@ -40,7 +41,7 @@ pub mod ethabi {
         fn try_from(value: SolConsensusState) -> Result<Self, Self::Error> {
             Ok(Self {
                 timestamp: value.timestamp,
-                content_digest: Digest(value.content_digest.into()),
+                content_digest: SuiFixedBytes(value.content_digest.into()),
             })
         }
     }
