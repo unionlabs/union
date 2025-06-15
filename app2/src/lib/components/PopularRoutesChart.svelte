@@ -165,14 +165,6 @@ const isLoading = $derived(!hasData && popularRoutes.length === 0)
         <h3 class="text-xs text-zinc-300">popular-routes</h3>
         <span class="text-zinc-600 text-xs">--tf={selectedTimeScale}</span>
       </div>
-      <div class="flex items-center space-x-1">
-        {#if isLoading}
-          <span class="text-zinc-600 text-xs animate-pulse">●</span>
-        {:else}
-          <span class="text-green-500 text-xs">●</span>
-        {/if}
-        <span class="text-xs text-zinc-500">live</span>
-      </div>
     </div>
 
     <!-- Time Frame Selector - Terminal Style -->

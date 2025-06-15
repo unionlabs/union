@@ -9,8 +9,6 @@ import type { TransferListItem } from "@unionlabs/sdk/schema"
 // Extended transfer type with server pre-computed fields
 type EnhancedTransferListItem = TransferListItem & {
   isTestnetTransfer?: boolean
-  sourceDisplayName?: string
-  destinationDisplayName?: string
   formattedTimestamp?: string
   routeKey?: string
   senderDisplay?: string
@@ -216,7 +214,7 @@ function createParticleFromTransfer(transfer: EnhancedTransferListItem) {
     targetY: toNode.y,
     fromChain: transfer.source_chain.universal_chain_id,
     toChain: transfer.destination_chain.universal_chain_id,
-    value: parseFloat(transfer.base_amount.toString()) || 1,
+    value: 1, // Fixed value since base_amount was removed
     progress: 0,
     color: isTestnetTransfer ? COLOR_CONFIG.particleTestnet : COLOR_CONFIG.particle,
     size: getParticleSize(),

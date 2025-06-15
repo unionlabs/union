@@ -268,9 +268,9 @@ onDestroy(() => {
 })
 </script>
 
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 h-full p-4 bg-zinc-950">
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4 lg:h-full">
   <!-- Network Visualizer - spans 2 columns -->
-  <div class="order-1 lg:order-3 lg:col-span-2 min-h-0">
+  <div class="order-1 lg:order-3 lg:col-span-2 min-h-0 h-full">
     <NetworkVisualizer
       {transfers}
       onChainSelection={handleChainSelection}
@@ -278,7 +278,7 @@ onDestroy(() => {
   </div>
 
   <!-- Charts - full width row with 50/50 split -->
-  <div class="order-2 lg:order-4 lg:col-span-3 min-h-0">
+  <div class="order-3 lg:order-4 lg:col-span-3 min-h-0">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
       <PopularRoutesChart
         popularRoutes={chartData.popularRoutes}
@@ -297,7 +297,7 @@ onDestroy(() => {
   </div>
 
   <!-- Stats - spans full width, now includes connection status -->
-  <div class="order-3 lg:order-1 lg:col-span-3">
+  <div class="order-2 lg:order-1 lg:col-span-3">
     <TransferStats
       {transferRates}
       {activeWalletRates}
