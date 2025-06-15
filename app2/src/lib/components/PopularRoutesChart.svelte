@@ -269,7 +269,7 @@ const isLoading = $derived(!hasData && popularRoutes.length === 0)
                     {#if isTimeFrameAvailable(selectedTimeScale)
                     && route.countChange !== undefined}
                       <span
-                        class="text-xs mr-1 {route.countChange && route.countChange >= 0 ? 'text-green-400' : 'text-red-400'}"
+                        class="text-xs mr-1 hidden md:inline {route.countChange && route.countChange >= 0 ? 'text-green-400' : 'text-red-400'}"
                       >{formatPercentageChange(route.countChange)}</span>
                     {/if}
                     {formatCount(route.count)}
@@ -296,6 +296,12 @@ const isLoading = $derived(!hasData && popularRoutes.length === 0)
                   <span class="text-zinc-500 text-[10px] tabular-nums">
                     {Math.round((route.count / totalTransfersForTimeframe()) * 100)}%
                   </span>
+                  {#if isTimeFrameAvailable(selectedTimeScale)
+                  && route.countChange !== undefined}
+                    <span
+                      class="text-[10px] tabular-nums md:hidden ml-2 {route.countChange && route.countChange >= 0 ? 'text-green-400' : 'text-red-400'}"
+                    >{formatPercentageChange(route.countChange)}</span>
+                  {/if}
                 </div>
               </div>
             {/each}
