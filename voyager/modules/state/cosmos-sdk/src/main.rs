@@ -8,18 +8,15 @@ use std::{
 
 use cometbft_rpc::{rpc_types::Order, types::abci::response_query::QueryResponse};
 use cosmos_sdk_event::CosmosSdkEvent;
-use futures::{stream::FuturesUnordered, TryStreamExt};
+
 use ibc_classic_spec::{
     AcknowledgementPath, ChannelEndPath, ClientConsensusStatePath, ClientStatePath, CommitmentPath,
-    ConnectionPath, IbcClassic, NextClientSequencePath, NextConnectionSequencePath,
+    ConnectionPath, NextClientSequencePath, NextConnectionSequencePath,
     NextSequenceAckPath, NextSequenceRecvPath, NextSequenceSendPath, ReceiptPath,
-    StorePath as ClassicStorePath,
 };
 use ibc_union_spec::{
-    path::StorePath as UnionStorePath,
-    query::{PacketByHash, PacketsByBatchHash, Query},
     Channel as UnionChannel, ChannelId as UnionChannelId, ClientId as UnionClientId,
-    Connection as UnionConnection, ConnectionId as UnionConnectionId, IbcUnion, Packet, Timestamp,
+    Connection as UnionConnection, ConnectionId as UnionConnectionId, Packet, Timestamp,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -40,7 +37,7 @@ use unionlabs::{
     id::{ChannelId, ClientId, ConnectionId, PortId},
     never::Never,
     option_unwrap,
-    primitives::{Bytes, H256, H64},
+    primitives::{Bytes, H256},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -98,9 +95,25 @@ impl From<SupportedIbcSpec> for String {
 }
 
 impl IbcSpec for SupportedIbcSpec {
+    const ID: IbcSpecId = IbcSpecId::new_static("cosmos-sdk");
+    
     type ClientId = ClientId;
     type Query = Never;
     type StorePath = Never;
+    type Datagram = Never;
+    type Event = Never;
+
+    fn update_client_datagram(_: Self::ClientId, _: Bytes) -> Self::Datagram {
+        unreachable!("Never type cannot be constructed")
+    }
+
+    fn client_state_path(_: Self::ClientId) -> Self::StorePath {
+        unreachable!("Never type cannot be constructed")
+    }
+
+    fn consensus_state_path(_: Self::ClientId, _: Height) -> Self::StorePath {
+        unreachable!("Never type cannot be constructed")
+    }
 }
 
 #[derive(Debug, Clone)]
@@ -370,8 +383,12 @@ impl Module {
                 Ok(query_result.value.unwrap().into_encoding())
             }
             SupportedIbcSpec::IbcUnion => {
-                let client_id = UnionClientId::new(client_id.to_string().parse::<u32>()
-                    .map_err(|e| rpc_error("invalid client id", None)(e))?);
+                let parsed_id = client_id.to_string().parse::<u32>()
+                    .map_err(|e| rpc_error("invalid client id", None)(e))?;
+                let client_id = UnionClientId::new(
+                    NonZeroU32::new(parsed_id)
+                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "client id cannot be zero", None::<()>))?
+                );
                 let client_state = self
                     .query_smart::<_, Bytes>(
                         &ibc_union_msg::query::QueryMsg::GetClientState { client_id },
@@ -408,8 +425,12 @@ impl Module {
                 Ok(query_result.value.unwrap().into_encoding())
             }
             SupportedIbcSpec::IbcUnion => {
-                let client_id = UnionClientId::new(client_id.to_string().parse::<u32>()
-                    .map_err(|e| rpc_error("invalid client id", None)(e))?);
+                let parsed_id = client_id.to_string().parse::<u32>()
+                    .map_err(|e| rpc_error("invalid client id", None)(e))?;
+                let client_id = UnionClientId::new(
+                    NonZeroU32::new(parsed_id)
+                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "client id cannot be zero", None::<()>))?
+                );
                 let consensus_state = self
                     .query_smart::<_, Bytes>(
                         &ibc_union_msg::query::QueryMsg::GetConsensusState {
@@ -446,15 +467,19 @@ impl Module {
                 Ok(match query_result.value {
                     Some(value) => {
                         let connection_end = ConnectionEnd::decode_as::<Proto>(&value)
-                            .map_err(fatal_rpc_error("error decoding connection end", None))?;
+                            .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding connection end: {:?}", e), None::<()>))?;
                         Some(into_value(connection_end))
                     }
                     None => None,
                 })
             }
             SupportedIbcSpec::IbcUnion => {
-                let connection_id = UnionConnectionId::new(connection_id.to_string().parse::<u32>()
-                    .map_err(|e| rpc_error("invalid connection id", None)(e))?);
+                let parsed_id = connection_id.to_string().parse::<u32>()
+                    .map_err(|e| rpc_error("invalid connection id", None)(e))?;
+                let connection_id = UnionConnectionId::new(
+                    NonZeroU32::new(parsed_id)
+                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "connection id cannot be zero", None::<()>))?
+                );
                 let connection = self
                     .query_smart::<_, UnionConnection>(
                         &ibc_union_msg::query::QueryMsg::GetConnection { connection_id },
@@ -487,15 +512,19 @@ impl Module {
                 Ok(match query_result.value {
                     Some(value) => {
                         let channel = Channel::decode_as::<Proto>(&value)
-                            .map_err(fatal_rpc_error("error decoding channel end", None))?;
+                            .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding channel end: {:?}", e), None::<()>))?;
                         Some(into_value(channel))
                     }
                     None => None,
                 })
             }
             SupportedIbcSpec::IbcUnion => {
-                let channel_id = UnionChannelId::new(channel_id.to_string().parse::<u32>()
-                    .map_err(|e| rpc_error("invalid channel id", None)(e))?);
+                let parsed_id = channel_id.to_string().parse::<u32>()
+                    .map_err(|e| rpc_error("invalid channel id", None)(e))?;
+                let channel_id = UnionChannelId::new(
+                    NonZeroU32::new(parsed_id)
+                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "channel id cannot be zero", None::<()>))?
+                );
                 let channel = self
                     .query_smart::<_, UnionChannel>(
                         &ibc_union_msg::query::QueryMsg::GetChannel { channel_id },
@@ -530,7 +559,7 @@ impl Module {
                 Ok(match query_result.value {
                     Some(value) => Some(
                         H256::try_from(value)
-                            .map_err(fatal_rpc_error("error decoding commitment", None))?,
+                            .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding commitment: {:?}", e), None::<()>))?,
                     ),
                     None => None,
                 })
@@ -565,9 +594,10 @@ impl Module {
                 let query_result = self.abci_query(&path_string, height).await?;
                 
                 Ok(match query_result.value {
-                    Some(value) => Some(H256::try_from(value).map_err(fatal_rpc_error(
-                        "error decoding acknowledgement commitment",
-                        None,
+                    Some(value) => Some(H256::try_from(value).map_err(|e| ErrorObject::owned(
+                        FATAL_JSONRPC_ERROR_CODE,
+                        format!("error decoding acknowledgement commitment: {:?}", e),
+                        None::<()>,
                     ))?),
                     None => None,
                 })
@@ -632,7 +662,7 @@ impl Module {
                 
                 Ok(u64::from_be_bytes(
                     query_result.value.unwrap().try_into()
-                        .map_err(fatal_rpc_error("error decoding next sequence send", None))?
+                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next sequence send: {:?}", e), None::<()>))?
                 ))
             }
             SupportedIbcSpec::IbcUnion => {
@@ -663,7 +693,7 @@ impl Module {
                 
                 Ok(u64::from_be_bytes(
                     query_result.value.unwrap().try_into()
-                        .map_err(fatal_rpc_error("error decoding next sequence recv", None))?
+                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next sequence recv: {:?}", e), None::<()>))?
                 ))
             }
             SupportedIbcSpec::IbcUnion => {
@@ -694,7 +724,7 @@ impl Module {
                 
                 Ok(u64::from_be_bytes(
                     query_result.value.unwrap().try_into()
-                        .map_err(fatal_rpc_error("error decoding next sequence ack", None))?
+                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next sequence ack: {:?}", e), None::<()>))?
                 ))
             }
             SupportedIbcSpec::IbcUnion => {
@@ -716,7 +746,7 @@ impl Module {
                 
                 Ok(u64::from_be_bytes(
                     query_result.value.unwrap().try_into()
-                        .map_err(fatal_rpc_error("error decoding next connection sequence", None))?
+                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next connection sequence: {:?}", e), None::<()>))?
                 ))
             }
             SupportedIbcSpec::IbcUnion => {
@@ -738,7 +768,7 @@ impl Module {
                 
                 Ok(u64::from_be_bytes(
                     query_result.value.unwrap().try_into()
-                        .map_err(fatal_rpc_error("error decoding next client sequence", None))?
+                        .map_err(|e| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, format!("error decoding next client sequence: {:?}", e), None::<()>))?
                 ))
             }
             SupportedIbcSpec::IbcUnion => {
@@ -817,39 +847,8 @@ impl Display for ChainIdParseError {
 #[async_trait]
 impl StateModuleServer<SupportedIbcSpec> for Module {
     #[instrument(skip_all)]
-    async fn query(&self, _: &Extensions, query: Value) -> RpcResult<Value> {
-        match self.ibc_spec {
-            SupportedIbcSpec::IbcClassic => {
-                let _query: Never = serde_json::from_value(query).map_err(|err| {
-                    ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, err.to_string(), None::<()>)
-                })?;
-                Ok(Value::Null)
-            }
-            SupportedIbcSpec::IbcUnion => {
-                let query: Query = serde_json::from_value(query).map_err(|err| {
-                    ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, err.to_string(), None::<()>)
-                })?;
-
-                match query {
-                    Query::PacketByHash(PacketByHash {
-                        channel_id,
-                        packet_hash,
-                    }) => {
-                        let packet = self.query_packet_by_hash(channel_id, packet_hash).await?;
-                        Ok(into_value(packet))
-                    }
-                    Query::PacketsByBatchHash(PacketsByBatchHash { batch_hash, channel_id }) => {
-                        let packets = self
-                            .query_smart::<_, Vec<Packet>>(
-                                &ibc_union_msg::query::QueryMsg::GetBatchPackets { batch_hash },
-                                None,
-                            )
-                            .await?;
-                        Ok(into_value(packets))
-                    }
-                }
-            }
-        }
+    async fn query(&self, _: &Extensions, query: Never) -> RpcResult<Value> {
+        match query {}
     }
 
     #[instrument(skip_all)]
@@ -864,7 +863,7 @@ impl StateModuleServer<SupportedIbcSpec> for Module {
 
         let height = self.make_height(latest_height.into());
 
-        let client_state = self.query_client_state(height, client_id).await?;
+        let _client_state = self.query_client_state(height, client_id.clone()).await?;
 
         match self.ibc_spec {
             SupportedIbcSpec::IbcClassic => {
@@ -877,8 +876,12 @@ impl StateModuleServer<SupportedIbcSpec> for Module {
                 })
             }
             SupportedIbcSpec::IbcUnion => {
-                let union_client_id = UnionClientId::new(client_id.to_string().parse::<u32>()
-                    .map_err(|e| rpc_error("invalid client id", None)(e))?);
+                let parsed_id = client_id.to_string().parse::<u32>()
+                    .map_err(|e| rpc_error("invalid client id", None)(e))?;
+                let union_client_id = UnionClientId::new(
+                    NonZeroU32::new(parsed_id)
+                        .ok_or_else(|| ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, "client id cannot be zero", None::<()>))?
+                );
                 let client_type = self
                     .query_smart::<_, String>(
                         &ibc_union_msg::query::QueryMsg::GetClientType {
@@ -902,142 +905,10 @@ impl StateModuleServer<SupportedIbcSpec> for Module {
     async fn query_ibc_state(
         &self,
         _: &Extensions,
-        at: Height,
-        path: Value,
+        _at: Height,
+        path: Never,
     ) -> RpcResult<Value> {
-        match self.ibc_spec {
-            SupportedIbcSpec::IbcClassic => {
-                let path: ClassicStorePath = serde_json::from_value(path).map_err(|err| {
-                    ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, err.to_string(), None::<()>)
-                })?;
-
-                match path {
-                    ClassicStorePath::ClientState(client_state_path) => {
-                        let client_state = self
-                            .query_client_state(at, client_state_path.client_id)
-                            .await?;
-                        Ok(into_value(client_state))
-                    }
-                    ClassicStorePath::ClientConsensusState(consensus_state_path) => {
-                        let consensus_state = self
-                            .query_client_consensus_state(
-                                at,
-                                consensus_state_path.client_id,
-                                consensus_state_path.height,
-                            )
-                            .await?;
-                        Ok(into_value(consensus_state))
-                    }
-                    ClassicStorePath::Connection(connection_path) => {
-                        let connection = self
-                            .query_connection(at, connection_path.connection_id)
-                            .await?;
-                        Ok(into_value(connection))
-                    }
-                    ClassicStorePath::ChannelEnd(channel_path) => {
-                        let channel = self
-                            .query_channel(at, channel_path.port_id, channel_path.channel_id)
-                            .await?;
-                        Ok(into_value(channel))
-                    }
-                    ClassicStorePath::Commitment(commitment_path) => {
-                        let commitment = self
-                            .query_commitment(
-                                at,
-                                commitment_path.port_id,
-                                commitment_path.channel_id,
-                                commitment_path.sequence,
-                            )
-                            .await?;
-                        Ok(into_value(commitment))
-                    }
-                    ClassicStorePath::Acknowledgement(ack_path) => {
-                        let ack = self
-                            .query_acknowledgement(
-                                at,
-                                ack_path.port_id,
-                                ack_path.channel_id,
-                                ack_path.sequence,
-                            )
-                            .await?;
-                        Ok(into_value(ack))
-                    }
-                    ClassicStorePath::Receipt(receipt_path) => {
-                        let receipt = self
-                            .query_receipt(
-                                at,
-                                receipt_path.port_id,
-                                receipt_path.channel_id,
-                                receipt_path.sequence,
-                            )
-                            .await?;
-                        Ok(into_value(receipt))
-                    }
-                    ClassicStorePath::NextSequenceSend(seq_path) => {
-                        let sequence = self
-                            .query_next_sequence_send(at, seq_path.port_id, seq_path.channel_id)
-                            .await?;
-                        Ok(into_value(sequence))
-                    }
-                    ClassicStorePath::NextSequenceRecv(seq_path) => {
-                        let sequence = self
-                            .query_next_sequence_recv(at, seq_path.port_id, seq_path.channel_id)
-                            .await?;
-                        Ok(into_value(sequence))
-                    }
-                    ClassicStorePath::NextSequenceAck(seq_path) => {
-                        let sequence = self
-                            .query_next_sequence_ack(at, seq_path.port_id, seq_path.channel_id)
-                            .await?;
-                        Ok(into_value(sequence))
-                    }
-                    ClassicStorePath::NextConnectionSequence(_) => {
-                        let sequence = self.query_next_connection_sequence(at).await?;
-                        Ok(into_value(sequence))
-                    }
-                    ClassicStorePath::NextClientSequence(_) => {
-                        let sequence = self.query_next_client_sequence(at).await?;
-                        Ok(into_value(sequence))
-                    }
-                }
-            }
-            SupportedIbcSpec::IbcUnion => {
-                let path: UnionStorePath = serde_json::from_value(path).map_err(|err| {
-                    ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, err.to_string(), None::<()>)
-                })?;
-
-                match path {
-                    UnionStorePath::ClientState(_) => {
-                        // Union client state query - placeholder for now
-                        Ok(Value::Null)
-                    }
-                    UnionStorePath::ConsensusState(_) => {
-                        // Union consensus state query - placeholder for now
-                        Ok(Value::Null)
-                    }
-                    UnionStorePath::Connection(_) => {
-                        // Union connection query - placeholder for now
-                        Ok(Value::Null)
-                    }
-                    UnionStorePath::Channel(_) => {
-                        // Union channel query - placeholder for now
-                        Ok(Value::Null)
-                    }
-                    UnionStorePath::BatchPackets(batch_path) => {
-                        let batch_packets = self
-                            .query_batch_packets(at, batch_path.batch_hash)
-                            .await?;
-                        Ok(into_value(batch_packets))
-                    }
-                    UnionStorePath::BatchReceipts(batch_path) => {
-                        let batch_receipts = self
-                            .query_batch_receipts(at, batch_path.batch_hash)
-                            .await?;
-                        Ok(into_value(batch_receipts))
-                    }
-                }
-            }
-        }
+        match path {}
     }
 }
 
@@ -1051,15 +922,7 @@ fn rpc_error<E: Error>(
     }
 }
 
-fn fatal_rpc_error<E: Into<Box<dyn Error>>>(
-    message: impl Display,
-    data: Option<Value>,
-) -> impl FnOnce(E) -> ErrorObjectOwned {
-    move |err| {
-        error!("{message}: {}", ErrorReporter(&err));
-        ErrorObject::owned(FATAL_JSONRPC_ERROR_CODE, message.to_string(), data)
-    }
-}
+
 
 // Union IBC Events
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
