@@ -122,10 +122,12 @@ const isButtonEnabled = $derived.by(() =>
       </ul>
     {/if}
     <Amount type="source" />
+    <!-- TODO: replace with real fee
     <FeeDetails
       open={feeDetailsOpen}
       onToggle={(newOpen: boolean) => feeDetailsOpen = newOpen}
     />
+    -->
   </div>
 
   <div class="grow"></div>
