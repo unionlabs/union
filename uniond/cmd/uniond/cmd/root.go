@@ -31,7 +31,12 @@ func NewRootCmd() *cobra.Command {
 		clientCtx          client.Context
 	)
 
-	if err := depinject.Inject(
+	if err := depinject.InjectDebug(
+		depinject.Visualizer(func(dotGraph string) {
+			if depinjectOutPath, ok := os.LookupEnv("DEPINJECT_OUT_PATH"); ok {
+				os.WriteFile(depinjectOutPath, []byte(dotGraph), 0644)
+			}
+		}),
 		depinject.Configs(app.AppConfig(),
 			depinject.Supply(
 				log.NewNopLogger(),

@@ -60,7 +60,6 @@ import (
 	feemarketmodule "github.com/skip-mev/feemarket/api/feemarket/feemarket/module/v1"
 	_ "github.com/skip-mev/feemarket/x/feemarket/keeper"
 	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
-	// this line is used by starport scaffolding # stargate/app/moduleImport
 )
 
 const UNION_MULTI_SIG = "union1wpm2d4h73pd5d6u3p7rw8707rkenduuckhxcsm"
@@ -100,7 +99,6 @@ var (
 		// chain modules
 		wasmtypes.ModuleName,
 		feemarkettypes.ModuleName,
-		// this line is used by starport scaffolding # stargate/app/initGenesis
 	}
 
 	// During begin block slashing happens after distr.BeginBlocker so that
@@ -126,7 +124,6 @@ var (
 		// chain modules
 		wasmtypes.ModuleName,
 		feemarkettypes.ModuleName,
-		// this line is used by starport scaffolding # stargate/app/beginBlockers
 	}
 
 	endBlockers = []string{
@@ -146,12 +143,10 @@ var (
 		// chain modules
 		wasmtypes.ModuleName,
 		feemarkettypes.ModuleName,
-		// this line is used by starport scaffolding # stargate/app/endBlockers
 	}
 
 	preBlockers = []string{
 		upgradetypes.ModuleName,
-		// this line is used by starport scaffolding # stargate/app/preBlockers
 	}
 
 	// module account permissions
@@ -167,7 +162,6 @@ var (
 		{Account: wasmtypes.ModuleName, Permissions: []string{authtypes.Burner}},
 		{Account: feemarkettypes.ModuleName, Permissions: []string{authtypes.Burner}},
 		{Account: feemarkettypes.FeeCollectorName, Permissions: []string{authtypes.Burner}},
-		// this line is used by starport scaffolding # stargate/app/maccPerms
 	}
 
 	// blocked account addresses
@@ -307,7 +301,6 @@ var (
 				Name:   feemarkettypes.ModuleName,
 				Config: appconfig.WrapAny(&feemarketmodule.Module{}),
 			},
-			// this line is used by starport scaffolding # stargate/app/moduleConfig
 		},
 	})
 )
