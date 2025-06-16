@@ -1,7 +1,6 @@
 import { GasPriceMap } from "$lib/gasprice"
 import { GasPriceError } from "$lib/gasprice/error"
 import { AtomicGasPrice, BaseGasPrice, GasPrice } from "$lib/gasprice/service"
-import * as AppRuntime from "$lib/runtime"
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { transferData as TransferData } from "$lib/transfer/shared/data/transfer-data.svelte"
 import type { Intent } from "$lib/transfer/shared/services/filling/create-context.ts"

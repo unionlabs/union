@@ -49,15 +49,12 @@ export const Fees = S.transform(
           A.findFirst(fromA, x => x.action === action),
           O.map(x => x.fee),
         )
-      console.log("FROMA", fromA)
-      const result = {
+      return {
         PACKET_RECV: byAction("PACKET_RECV"),
         PACKET_SEND_LC_UPDATE_L0: byAction("PACKET_SEND_LC_UPDATE_L0"),
         PACKET_SEND_LC_UPDATE_L1: byAction("PACKET_SEND_LC_UPDATE_L1"),
         PACKET_SEND_LC_UPDATE_L2: byAction("PACKET_SEND_LC_UPDATE_L2"),
-      }
-      console.log("RESULT", JSON.stringify(result))
-      return result
+      } as const
     },
     encode: (toI) =>
       pipe(
