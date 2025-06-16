@@ -55,6 +55,30 @@ export type PortSignerBalances = Record<string, SignerBalanceThresholds>
 
 export type SignerBalancesConfig = Record<string, PortSignerBalances>
 
+export interface WrappedToken {
+    chain: { universal_chain_id: string }
+    denom: Hex
+    wrapping: Array<{
+      unwrapped_chain: { universal_chain_id: string }
+      destination_channel_id: number
+      unwrapped_denom: string
+    }>
+  }
+  
+  export interface Packet {
+    source_chain: {
+      universal_chain_id: string
+    }
+    destination_chain: {
+      universal_chain_id: string
+    }
+    packet_send_timestamp: string
+    packet_hash: string
+    status: string
+    sort_order: string
+  }
+
+  
 type ChainType = "evm" | "cosmos"
 
 interface ChainConfigEntry {
@@ -238,3 +262,19 @@ export const resolveIncident = (
   )
 }
 
+export function getCertExpiry(endpoint: string): Promise<Date> {
+    const { hostname, port } = new URL(endpoint)
+    const portNum = port ? Number(port) : 443
+    return new Promise((resolve, reject) => {
+      const socket = tls.connect({ host: hostname, port: portNum, servername: hostname }, () => {
+        const cert = socket.getPeerCertificate()
+        socket.end()
+        if (!cert || !cert.valid_to) {
+          return reject(new Error(`no valid_to on cert for ${endpoint}`))
+        }
+        resolve(new Date(cert.valid_to))
+      })
+      socket.on("error", reject)
+    })
+  }
+  
