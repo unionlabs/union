@@ -645,6 +645,16 @@ const createFeeStore = () => {
     get symbol(): O.Option<string> {
       return sourceSymbol
     },
+    get isReady(): boolean {
+      return pipe(
+        O.all([
+          TransferData.sourceChain,
+          TransferData.destinationChain,
+          TransferData.channel,
+        ]),
+        O.isSome,
+      )
+    },
     get isLoading(): boolean {
       return O.isNone(data)
     },

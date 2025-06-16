@@ -104,8 +104,10 @@ const calculating = false
   >
     <div class="flex items-center gap-1">
       <SharpGasIcon class="size-4 text-zinc-300" />
-      {#if loading}
-        <Skeleton class="h-3 w-16" />
+      {#if !FeeStore.isReady}
+        <!-- empty -->
+      {:else if loading}
+        <Skeleton class="h-3 w-26" />
         <Skeleton class="h-3 w-12" />
       {:else}
         {@render mapOption(
