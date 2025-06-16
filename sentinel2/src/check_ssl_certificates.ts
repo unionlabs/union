@@ -1,17 +1,17 @@
 import { Effect, Schedule } from "effect"
 import fetch from "node-fetch"
-import { getSslIncident, markSslIncident, clearSslIncident } from "./db_queries.js"
+import { clearSslIncident, getSslIncident, markSslIncident } from "./db_queries.js"
 import { getCertExpiry } from "./helpers.js"
-import { triggerIncident, resolveIncident, Config } from "./helpers.js"
+import { Config, resolveIncident, triggerIncident } from "./helpers.js"
 import { db } from "./sentinel2.js"
 
 process.on("uncaughtException", err => {
-    console.error("❌ Uncaught Exception:", err.stack || err)
-  })
-  process.on("unhandledRejection", (reason, promise) => {
-    console.error("❌ Unhandled Rejection at:", promise, "reason:", reason)
-  })
-  
+  console.error("❌ Uncaught Exception:", err.stack || err)
+})
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason)
+})
+
 export const safeGetRequest = ({
   url,
   port,
@@ -39,13 +39,12 @@ export const safeGetRequest = ({
       }) as GetRequestError,
   })
 
-
 interface GetRequestError {
-    readonly _tag: "GetRequestError"
-    readonly message: string
-    readonly status?: number
-  }
-  
+  readonly _tag: "GetRequestError"
+  readonly message: string
+  readonly status?: number
+}
+
 export const checkSSLCertificates = Effect.repeat(
   Effect.gen(function*(_) {
     yield* Effect.log("Spawning checkSSLCertificates loop")
@@ -119,4 +118,3 @@ export const checkSSLCertificates = Effect.repeat(
   }),
   Schedule.spaced("6 hours"),
 )
-

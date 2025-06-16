@@ -4,8 +4,8 @@ import { gql, request } from "graphql-request"
 
 import type { Packet } from "./helpers.js"
 
-import { hasErrorOpen, markTransferError, getOpenErrors, clearTransferError} from "./db_queries.js"
-import { Config, triggerIncident, resolveIncident } from "./helpers.js"
+import { clearTransferError, getOpenErrors, hasErrorOpen, markTransferError } from "./db_queries.js"
+import { Config, resolveIncident, triggerIncident } from "./helpers.js"
 import { db } from "./sentinel2.js"
 
 process.on("uncaughtException", err => {
@@ -90,7 +90,6 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
     return allPackets
   })
 
-
 // @ts-ignore
 BigInt["prototype"].toJSON = function() {
   return this.toString()
@@ -113,7 +112,6 @@ export const runIbcChecksForever = Effect.gen(function*(_) {
 
   return yield* Effect.repeat(effectToRepeat, schedule)
 })
-
 
 export const checkPackets = (
   hasuraEndpoint: string,
@@ -183,4 +181,3 @@ export const checkPackets = (
       }
     }
   }).pipe(Effect.withLogSpan("checkPackets"))
-

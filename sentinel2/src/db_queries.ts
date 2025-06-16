@@ -2,57 +2,57 @@ import type { Database as BetterSqlite3Database } from "better-sqlite3"
 import { Effect } from "effect"
 
 export function getIncidentId(db: BetterSqlite3Database, packetHash: string): string | undefined {
-    const row = db
-      .prepare(`SELECT incident_id FROM transfer_errors WHERE packet_hash = ?`)
-      .get(packetHash) as { incident_id: string } | undefined
-    return row?.incident_id
-  }
-  
-  export function hasErrorOpen(db: BetterSqlite3Database, sla: string, packetHash: string) {
-    return !!db
-      .prepare(
-        `SELECT 1
+  const row = db
+    .prepare(`SELECT incident_id FROM transfer_errors WHERE packet_hash = ?`)
+    .get(packetHash) as { incident_id: string } | undefined
+  return row?.incident_id
+}
+
+export function hasErrorOpen(db: BetterSqlite3Database, sla: string, packetHash: string) {
+  return !!db
+    .prepare(
+      `SELECT 1
            FROM transfer_errors
           WHERE sla = ?
             AND packet_hash = ?`,
-      )
-      .get(sla, packetHash)
-  }
-  
-  export function markTransferError(
-    db: BetterSqlite3Database,
-    sla: string,
-    packetHash: string,
-    incidentId: string,
-  ) {
-    db.prepare(`
+    )
+    .get(sla, packetHash)
+}
+
+export function markTransferError(
+  db: BetterSqlite3Database,
+  sla: string,
+  packetHash: string,
+  incidentId: string,
+) {
+  db.prepare(`
       INSERT OR REPLACE INTO transfer_errors
         (sla, packet_hash, incident_id, inserted_at)
       VALUES (?, ?, ?, strftime('%s','now')*1000)
     `).run(sla, packetHash, incidentId)
-  }
-  
-  export function clearTransferError(db: BetterSqlite3Database, sla: string, packetHash: string) {
-    db.prepare(`
+}
+
+export function clearTransferError(db: BetterSqlite3Database, sla: string, packetHash: string) {
+  db.prepare(`
       DELETE FROM transfer_errors
        WHERE sla = ?
          AND packet_hash = ?
     `).run(sla, packetHash)
-  }
-  
-  export function getOpenErrors(
-    db: BetterSqlite3Database,
-    sla: string,
-  ): Array<{ packet_hash: string; incident_id: string }> {
-    return db
-      .prepare(
-        `SELECT packet_hash, incident_id
+}
+
+export function getOpenErrors(
+  db: BetterSqlite3Database,
+  sla: string,
+): Array<{ packet_hash: string; incident_id: string }> {
+  return db
+    .prepare(
+      `SELECT packet_hash, incident_id
            FROM transfer_errors
           WHERE sla = ?`,
-      )
-      .all(sla) as Array<{ packet_hash: string; incident_id: string }>
-  }
-  
+    )
+    .all(sla) as Array<{ packet_hash: string; incident_id: string }>
+}
+
 export function getAggregateIncident(db: BetterSqlite3Database, key: string): string | undefined {
   const row = db
     .prepare(`SELECT incident_id FROM aggregate_incidents WHERE key = ?`)
@@ -168,16 +168,15 @@ export function addFunded(db: BetterSqlite3Database, txHash: string) {
   db.prepare(`INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`).run(txHash)
 }
 
-
 export const dbPrepeare = (db: BetterSqlite3Database) =>
-    Effect.gen(function*() {
-        db.prepare(`
+  Effect.gen(function*() {
+    db.prepare(`
         CREATE TABLE IF NOT EXISTS funded_txs (
             transaction_hash TEXT PRIMARY KEY
         )
         `).run()
 
-        db.prepare(`
+    db.prepare(`
         CREATE TABLE IF NOT EXISTS transfer_errors (
             sla           TEXT    NOT NULL,
             packet_hash   TEXT PRIMARY KEY,
@@ -186,7 +185,7 @@ export const dbPrepeare = (db: BetterSqlite3Database) =>
         )
         `).run()
 
-        db.prepare(`
+    db.prepare(`
         CREATE TABLE IF NOT EXISTS signer_incidents (
             key          TEXT PRIMARY KEY,    -- "url:port:plugin:wallet"
             incident_id  TEXT NOT NULL,
@@ -194,7 +193,7 @@ export const dbPrepeare = (db: BetterSqlite3Database) =>
         )
         `).run()
 
-        db.prepare(`
+    db.prepare(`
         CREATE TABLE IF NOT EXISTS ssl_incidents (
             url          TEXT    PRIMARY KEY,
             incident_id  TEXT    NOT NULL,
@@ -202,7 +201,7 @@ export const dbPrepeare = (db: BetterSqlite3Database) =>
         )
         `).run()
 
-        db.prepare(`
+    db.prepare(`
         CREATE TABLE IF NOT EXISTS supply_incidents (
             key            TEXT PRIMARY KEY,  -- e.g. "$srcChain:dstChain:token.denom"
             incident_id    TEXT NOT NULL,
@@ -210,18 +209,18 @@ export const dbPrepeare = (db: BetterSqlite3Database) =>
         )
         `).run()
 
-        db.prepare(`
+    db.prepare(`
         CREATE TABLE IF NOT EXISTS pending_supply_mismatch (
             key         TEXT PRIMARY KEY,
             inserted_at INTEGER
         )
         `).run()
 
-        db.prepare(`
+    db.prepare(`
         CREATE TABLE IF NOT EXISTS aggregate_incidents (
             key            TEXT PRIMARY KEY,  -- e.g. "chainId:tokenAddr"
             incident_id    TEXT NOT NULL,
             inserted_at    INTEGER
         )
-        `).run()    
-    })
+        `).run()
+  })

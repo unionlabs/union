@@ -1,4 +1,4 @@
-import {  Effect } from "effect"
+import { Effect } from "effect"
 import { pipe } from "effect"
 import * as Cause from "effect/Cause"
 
@@ -6,13 +6,13 @@ import Database from "better-sqlite3"
 import type { Database as BetterSqlite3Database } from "better-sqlite3"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
-import { runIbcChecksForever } from "./run_ibc_checks.js"
-import { escrowSupplyControlLoop } from "./escrow_supply_control_loop.js"
-import { fundBabylonAccounts } from "./fund_babylon_accounts.js"
 import { checkBalances } from "./check_balances.js"
 import { checkSSLCertificates } from "./check_ssl_certificates.js"
 import { dbPrepeare } from "./db_queries.js"
+import { escrowSupplyControlLoop } from "./escrow_supply_control_loop.js"
+import { fundBabylonAccounts } from "./fund_babylon_accounts.js"
 import { Config, loadConfig } from "./helpers.js"
+import { runIbcChecksForever } from "./run_ibc_checks.js"
 
 process.on("uncaughtException", err => {
   console.error("❌ Uncaught Exception:", err.stack || err)

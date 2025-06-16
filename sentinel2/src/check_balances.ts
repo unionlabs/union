@@ -1,66 +1,63 @@
-
-import { Effect, Logger, Schedule, pipe } from "effect"
+import { Effect, Logger, pipe, Schedule } from "effect"
 import fetch from "node-fetch"
-import { getSignerIncident, markSignerIncident, clearSignerIncident } from "./db_queries.js"
-import { Config, triggerIncident, resolveIncident } from "./helpers.js"
+import { clearSignerIncident, getSignerIncident, markSignerIncident } from "./db_queries.js"
+import { Config, resolveIncident, triggerIncident } from "./helpers.js"
 import { db } from "./sentinel2.js"
 
 process.on("uncaughtException", err => {
-    console.error("❌ Uncaught Exception:", err.stack || err)
-  })
-  process.on("unhandledRejection", (reason, promise) => {
-    console.error("❌ Unhandled Rejection at:", promise, "reason:", reason)
-  })
-  
-interface PostRequestInput {
-    url: string
-    port?: number
-    headers: Record<string, string>
-    payload: unknown
-  }
+  console.error("❌ Uncaught Exception:", err.stack || err)
+})
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason)
+})
 
-  interface PostRequestError {
-    readonly _tag: "PostRequestError"
-    readonly message: string
-    readonly status?: number
-  }
+interface PostRequestInput {
+  url: string
+  port?: number
+  headers: Record<string, string>
+  payload: unknown
+}
+
+interface PostRequestError {
+  readonly _tag: "PostRequestError"
+  readonly message: string
+  readonly status?: number
+}
 
 export const safePostRequest = ({ url, port, headers, payload }: PostRequestInput) => {
-    const fullUrl = port ? `${url}:${port}` : url
-  
-    return Effect.tryPromise({
-      try: () =>
-        fetch(fullUrl, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(payload),
-        }).then(async response => {
-          if (response.status === 200) {
-            return await response.json()
-          }
-          const text = await response.text().catch(() => "")
-          // biome-ignore lint/style/useThrowOnlyError: <explanation>
-          throw {
-            _tag: "PostRequestError",
-            message: `Non-200 status: ${response.status} body: ${text}`,
-            status: response.status,
-          }
-        }),
-      catch: error =>
-        ({
-          _tag: "PostRequestError",
-          message: error instanceof Error
-            ? error.message
-            : typeof error === "object"
-            ? JSON.stringify(error)
-            : String(error),
-          status: (error as any)?.status,
-        }) satisfies PostRequestError,
-    })
-  }
-  
+  const fullUrl = port ? `${url}:${port}` : url
 
-  
+  return Effect.tryPromise({
+    try: () =>
+      fetch(fullUrl, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
+      }).then(async response => {
+        if (response.status === 200) {
+          return await response.json()
+        }
+        const text = await response.text().catch(() => "")
+        // biome-ignore lint/style/useThrowOnlyError: <explanation>
+        throw {
+          _tag: "PostRequestError",
+          message: `Non-200 status: ${response.status} body: ${text}`,
+          status: response.status,
+        }
+      }),
+    catch: error =>
+      ({
+        _tag: "PostRequestError",
+        message: error instanceof Error
+          ? error.message
+          : typeof error === "object"
+          ? JSON.stringify(error)
+          : String(error),
+        status: (error as any)?.status,
+      }) satisfies PostRequestError,
+  })
+}
+
 export const checkBalances = Effect.repeat(
   Effect.gen(function*(_) {
     yield* Effect.log("Spawning per-plugin balance checks…")
@@ -86,10 +83,10 @@ export const checkBalances = Effect.repeat(
                 }) as unknown) as PromiseLike<Response>,
               catch: e => new Error(`RPC probe connection failed: ${e}`),
             }),
-            Effect.catchAllCause((err) =>{
+            Effect.catchAllCause((err) => {
               console.error(`SIGNER_BALANCE_PROBE_FAILED @ ${portKey}: ${String(err)}`)
               return Effect.succeed(undefined)
-            })
+            }),
           )
 
           if (!maybeResp) {
@@ -111,8 +108,6 @@ export const checkBalances = Effect.repeat(
 
           return [json, took] as const
         })
-
-
 
         if (!probeJson || typeof probeJson.error !== "object") {
           yield* Effect.logError(`SIGNER_BALANCE_PORT_DOWN @ ${portKey}`)
