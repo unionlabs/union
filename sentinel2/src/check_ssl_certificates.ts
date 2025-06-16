@@ -40,10 +40,11 @@ import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import { runIbcChecksForever } from "./run_ibc_checks.js"
 import type { WrappedToken } from "./sentinel2.js"
-import { Config, triggerIncident, resolveIncident, db} from "./sentinel2.js"
 import { clearPendingSupply, clearSupplyIncident, getPendingSupply, markPendingSupply, getAggregateIncident, markAggregateIncident, getSupplyIncident, markSupplyIncident, clearAggregateIncident } from "./db_queries.js"
 import { getSslIncident, markSslIncident, clearSslIncident } from "./db_queries.js"
 import { getCertExpiry } from "./sentinel2.js"
+import { triggerIncident, resolveIncident, Config } from "./helpers.js"
+import { db } from "./sentinel2.js"
 
 export const safeGetRequest = ({
   url,

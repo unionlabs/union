@@ -39,20 +39,15 @@ import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import { runIbcChecksForever } from "./run_ibc_checks.js"
 import type { WrappedToken } from "./sentinel2.js"
-import { Config, triggerIncident, resolveIncident, db} from "./sentinel2.js"
 import { clearPendingSupply, clearSupplyIncident, getPendingSupply, markPendingSupply, getAggregateIncident, markAggregateIncident, getSupplyIncident, markSupplyIncident, clearAggregateIncident } from "./db_queries.js"
-type Hex = `0x${string}`
+import { hexToUtf8, Config, triggerIncident, resolveIncident } from "./helpers.js"
+import type { Hex } from "./helpers.js"
+import { db } from "./sentinel2.js"
+
 
 interface ChannelInfo {
     source_channel_id: number
   }
-
-function hexToUtf8(hex: string): string {
-    // strip optional 0x
-    const clean = hex.startsWith("0x") ? hex.slice(2) : hex
-    // build a Buffer from hex, then decode as UTF‑8
-    return Buffer.from(clean, "hex").toString("utf8")
-}
 
 /**
  * Checks whether a denom is a native token or CW20.
