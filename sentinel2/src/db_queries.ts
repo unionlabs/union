@@ -1,4 +1,5 @@
 import type { Database as BetterSqlite3Database } from "better-sqlite3"
+import { Context, Data, Effect, Logger, Schedule } from "effect"
 
 export function getIncidentId(db: BetterSqlite3Database, packetHash: string): string | undefined {
     const row = db
@@ -167,3 +168,60 @@ export function addFunded(db: BetterSqlite3Database, txHash: string) {
   db.prepare(`INSERT OR IGNORE INTO funded_txs (transaction_hash) VALUES (?)`).run(txHash)
 }
 
+
+export const dbPrepeare = (db: BetterSqlite3Database) =>
+    Effect.gen(function*() {
+        db.prepare(`
+        CREATE TABLE IF NOT EXISTS funded_txs (
+            transaction_hash TEXT PRIMARY KEY
+        )
+        `).run()
+
+        db.prepare(`
+        CREATE TABLE IF NOT EXISTS transfer_errors (
+            sla           TEXT    NOT NULL,
+            packet_hash   TEXT PRIMARY KEY,
+            incident_id   TEXT NOT NULL,
+            inserted_at   INTEGER
+        )
+        `).run()
+
+        db.prepare(`
+        CREATE TABLE IF NOT EXISTS signer_incidents (
+            key          TEXT PRIMARY KEY,    -- "url:port:plugin:wallet"
+            incident_id  TEXT NOT NULL,
+            inserted_at  INTEGER
+        )
+        `).run()
+
+        db.prepare(`
+        CREATE TABLE IF NOT EXISTS ssl_incidents (
+            url          TEXT    PRIMARY KEY,
+            incident_id  TEXT    NOT NULL,
+            inserted_at  INTEGER
+        )
+        `).run()
+
+        db.prepare(`
+        CREATE TABLE IF NOT EXISTS supply_incidents (
+            key            TEXT PRIMARY KEY,  -- e.g. "$srcChain:dstChain:token.denom"
+            incident_id    TEXT NOT NULL,
+            inserted_at    INTEGER
+        )
+        `).run()
+
+        db.prepare(`
+        CREATE TABLE IF NOT EXISTS pending_supply_mismatch (
+            key         TEXT PRIMARY KEY,
+            inserted_at INTEGER
+        )
+        `).run()
+
+        db.prepare(`
+        CREATE TABLE IF NOT EXISTS aggregate_incidents (
+            key            TEXT PRIMARY KEY,  -- e.g. "chainId:tokenAddr"
+            incident_id    TEXT NOT NULL,
+            inserted_at    INTEGER
+        )
+        `).run()    
+    })
