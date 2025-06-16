@@ -171,32 +171,14 @@ const createFeeStore = () => {
   const baseFees: O.Option<BaseFees> = $derived(pipe(
     TransferData.channel,
     O.map(Struct.get("fees")),
+    O.map(Struct.omit("PACKET_SEND_LC_UPDATE_L2")),
     O.map((fees) => {
-      // const withDefault = O.getOrElse<GasFee>(() => GasFee.make(BigDecimal.make(0n, 0)))<GasFee>
-      const withDefault = (x: O.Option<BigDecimal.BigDecimal>): GasFee => {
-        if (O.isSome(x)) {
-          console.log("IS SOME", JSON.stringify(x))
-          return GasFee.make(x.value)
-        } else {
-          console.log("IS NONE", JSON.stringify(x))
-          return GasFee.make(BigDecimal.make(0n, 0))
-        }
-      }
-      console.log("BEFORE EVOLUTION")
-      const result = {
-        PACKET_RECV: withDefault(fees.PACKET_RECV),
-        PACKET_SEND_LC_UPDATE_L0: withDefault(fees.PACKET_SEND_LC_UPDATE_L0),
-        PACKET_SEND_LC_UPDATE_L1: withDefault(fees.PACKET_SEND_LC_UPDATE_L1),
-      } as const
-      console.log("AFTER EVOLUTION", JSON.stringify(result, null, 2))
-
-      return result
-
-      // return Struct.evolve(fees, {
-      //   PACKET_RECV: withDefault,
-      //   PACKET_SEND_LC_UPDATE_L0: withDefault,
-      //   PACKET_SEND_LC_UPDATE_L1: withDefault,
-      // })
+      const withDefault = O.getOrElse<GasFee>(() => GasFee.make(BigDecimal.make(0n, 0)))<GasFee>
+      return Struct.evolve(fees, {
+        PACKET_RECV: withDefault,
+        PACKET_SEND_LC_UPDATE_L0: withDefault,
+        PACKET_SEND_LC_UPDATE_L1: withDefault,
+      })
     }),
   ))
 

@@ -1,3 +1,4 @@
+import type { FeeIntent } from "$lib/stores/fee.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms.ts"
 import type {
@@ -69,7 +70,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
 }
 
 const createIntents = (args: TransferArgs, baseAmount: TokenRawAmount): Intent[] => {
-  const shouldIncludeFees = shouldChargeFees(uiStore.edition, args.sourceChain)
+  const shouldIncludeFees = shouldChargeFees(args.fee, uiStore.edition, args.sourceChain)
   const baseIntent = createBaseIntent(args, baseAmount)
 
   return Match.value(args.sourceChain.rpc_type).pipe(
@@ -127,7 +128,10 @@ const createBaseIntent = (
 })
 
 // Fee strategy: BTC edition only charges fees when going FROM Babylon
-const shouldChargeFees = (edition: string, sourceChain: Chain): boolean => {
+const shouldChargeFees = (fee: FeeIntent, edition: string, sourceChain: Chain): boolean => {
+  if (fee.baseAmount === 0n) {
+    return false
+  }
   return Match.value(edition).pipe(
     Match.when("btc", () => sourceChain.universal_chain_id === "babylon.bbn-1"),
     Match.orElse(() => true),

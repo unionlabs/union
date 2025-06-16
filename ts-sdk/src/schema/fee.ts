@@ -1,7 +1,7 @@
 import { Array as A, BigDecimal, Equal, Option as O, pipe, Schema as S } from "effect"
 
 export const GasFee = S.BigDecimalFromSelf.pipe(
-  S.greaterThanBigDecimal(BigDecimal.make(0n, 0)),
+  S.greaterThanOrEqualToBigDecimal(BigDecimal.make(0n, 0)),
   S.brand("GasFee"),
 )
 export type GasFee = typeof GasFee.Type
