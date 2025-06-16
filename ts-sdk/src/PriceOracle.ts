@@ -467,10 +467,3 @@ export class PriceOracleExecutor
     }),
   )
 }
-
-const program = Effect.gen(function*() {
-  const a = yield* PriceOracle
-  return yield* a.of(void 0 as unknown as any)
-}).pipe(
-  Effect.provide(PriceOracleExecutor.Default),
-)
