@@ -3,14 +3,17 @@ use std::fmt::{Display, Formatter};
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::{stream::FuturesOrdered, Stream};
-use serde_json::{json, Value};
 use sqlx::Postgres;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info};
 
-use crate::indexer::api::{
-    BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError,
+use crate::indexer::{
+    api::{
+        BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient,
+        IndexerError,
+    },
+    event::BlockEvents,
 };
 
 #[derive(Clone)]
@@ -61,7 +64,7 @@ impl BlockHandle for DummyBlock {
     async fn insert(
         &self,
         _tx: &mut sqlx::Transaction<'_, Postgres>,
-    ) -> Result<Option<Value>, IndexerError> {
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         let content = match self.content.clone() {
             Some(content) => content,
             None => {
@@ -80,20 +83,13 @@ impl BlockHandle for DummyBlock {
 
         // sleep(Duration::from_millis(50)).await;
 
-        Ok(Some(json!({
-            "type": "dummy",
-            "events": [
-                {
-                    "content": content
-                }
-            ],
-        })))
+        Ok(Some(BlockEvents::new(vec![])))
     }
 
     async fn update(
         &self,
         _tx: &mut sqlx::Transaction<'_, Postgres>,
-    ) -> Result<Option<Value>, IndexerError> {
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         info!(
             "chain: {} - update: {} - {}",
             self.dummy_client.internal_chain_id,
@@ -109,14 +105,7 @@ impl BlockHandle for DummyBlock {
 
         // sleep(Duration::from_millis(50)).await;
 
-        Ok(Some(json!({
-            "type": "dummy",
-            "events": [
-                {
-                    "content": self.content
-                }
-            ],
-        })))
+        Ok(Some(BlockEvents::new(vec![])))
     }
 }
 

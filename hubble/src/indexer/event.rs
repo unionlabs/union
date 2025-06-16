@@ -1,10 +1,11 @@
-use std::fmt::{self, Display};
+use std::{fmt, fmt::Display};
 
 use bytes::Bytes;
-use serde::Serializer;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use sha2::Digest;
 use sqlx::Postgres;
+use time::OffsetDateTime;
 use tracing::debug;
 
 use crate::indexer::{
@@ -14,30 +15,22 @@ use crate::indexer::{
     Indexer,
 };
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct HubbleEvent {
     pub version: u8,
     pub universal_chain_id: String,
     pub range: Range,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chunk: Option<Chunk>,
-    #[serde(skip_serializing_if = "Value::is_null")]
-    pub events: Value,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub events: Option<BlockEvents>,
 }
 
-fn serialize_as_str<S, T>(x: &T, s: S) -> Result<S::Ok, S::Error>
-where
-    S: Serializer,
-    T: ToString,
-{
-    s.serialize_str(&x.to_string())
-}
-
-#[derive(serde::Serialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone)]
 pub struct Range {
-    #[serde(serialize_with = "serialize_as_str")]
+    #[serde(with = "flexible_u64")]
     pub start_inclusive: u64,
-    #[serde(serialize_with = "serialize_as_str")]
+    #[serde(with = "flexible_u64")]
     pub end_exclusive: u64,
 }
 
@@ -65,7 +58,7 @@ impl Display for Range {
     }
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Chunk {
     pub index: u8,
     pub total: u8,
@@ -113,7 +106,7 @@ impl<T: FetcherClient> Indexer<T> {
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
         range: Range,
-        events: Value,
+        events: Option<BlockEvents>,
     ) -> Result<MessageHash, IndexerError> {
         self.schedule_message_internal(tx, range, events, None)
             .await
@@ -123,7 +116,7 @@ impl<T: FetcherClient> Indexer<T> {
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
         range: Range,
-        events: Value,
+        events: Option<BlockEvents>,
         dedup_message_hash: &MessageHash,
     ) -> Result<MessageHash, IndexerError> {
         self.schedule_message_internal(tx, range, events, Some(dedup_message_hash))
@@ -134,7 +127,7 @@ impl<T: FetcherClient> Indexer<T> {
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
         range: Range,
-        events: Value,
+        events: Option<BlockEvents>,
         dedup_message_hash: Option<&MessageHash>,
     ) -> Result<MessageHash, IndexerError> {
         let data = serde_json::to_vec(&HubbleEvent {
@@ -165,5 +158,123 @@ impl<T: FetcherClient> Indexer<T> {
         }
 
         Ok(message_hash)
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct BlockEvents {
+    pub events: Vec<BlockEvent>,
+}
+
+impl BlockEvents {
+    pub fn new(events: Vec<BlockEvent>) -> Self {
+        Self { events }
+    }
+}
+
+#[warn(clippy::enum_variant_names)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+// using database representation of fields. all these 'record representations' will
+// be replaced by USC events
+pub struct EthereumLog {
+    pub internal_chain_id: i32,
+    pub block_hash: String,
+    pub data: Value,
+    #[serde(with = "flexible_i64")]
+    pub height: i64,
+    pub time: OffsetDateTime,
+}
+
+#[warn(clippy::enum_variant_names)]
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(tag = "type")]
+pub enum BlockEvent {
+    #[serde(rename = "ethereum-log")]
+    EthereumLog(EthereumLog),
+
+    #[serde(rename = "tendermint-block")]
+    TendermintBlock {
+        internal_chain_id: i32,
+        hash: String,
+        data: Value,
+        #[serde(with = "flexible_i64")]
+        height: i64,
+        time: OffsetDateTime,
+    },
+
+    #[serde(rename = "tendermint-transaction")]
+    TendermintTransaction {
+        internal_chain_id: i32,
+        block_hash: String,
+        #[serde(with = "flexible_i64")]
+        height: i64,
+        hash: String,
+        data: Value,
+        index: i32,
+    },
+
+    #[serde(rename = "tendermint-event")]
+    TendermintEvent {
+        internal_chain_id: i32,
+        block_hash: String,
+        #[serde(with = "flexible_i64")]
+        height: i64,
+        transaction_hash: Option<String>,
+        index: i32,
+        transaction_index: Option<i32>,
+        data: Value,
+        time: OffsetDateTime,
+        flow: String,
+    },
+}
+
+mod flexible_u64 {
+    use super::*;
+
+    pub fn serialize<S>(value: &u64, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&value.to_string())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<u64, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?;
+        match value {
+            Value::Number(n) => n
+                .as_u64()
+                .ok_or_else(|| serde::de::Error::custom("invalid number")),
+            Value::String(s) => s.parse().map_err(serde::de::Error::custom),
+            _ => Err(serde::de::Error::custom("expected number or string")),
+        }
+    }
+}
+
+mod flexible_i64 {
+    use super::*;
+
+    pub fn serialize<S>(value: &i64, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&value.to_string())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<i64, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?;
+        match value {
+            Value::Number(n) => n
+                .as_i64()
+                .ok_or_else(|| serde::de::Error::custom("invalid number")),
+            Value::String(s) => s.parse().map_err(serde::de::Error::custom),
+            _ => Err(serde::de::Error::custom("expected number or string")),
+        }
     }
 }

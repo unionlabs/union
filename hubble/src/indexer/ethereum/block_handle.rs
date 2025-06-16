@@ -3,7 +3,6 @@ use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::{stream::FuturesOrdered, Stream};
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use sqlx::Postgres;
 use time::OffsetDateTime;
 use tracing::debug;
@@ -16,6 +15,7 @@ use crate::{
             postgres::{delete_eth_log, insert_batch_logs},
             provider::RpcProviderId,
         },
+        event::BlockEvents,
     },
     postgres::{ChainId, InsertMode},
 };
@@ -101,7 +101,7 @@ impl BlockHandle for EthBlockHandle {
     async fn insert(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-    ) -> Result<Option<Value>, IndexerError> {
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         let reference = self.reference();
         debug!("{}: inserting", reference);
 
@@ -126,16 +126,13 @@ impl BlockHandle for EthBlockHandle {
 
         debug!("{}: done", reference);
 
-        Ok((!events.is_empty()).then_some(json!({
-            "type": "ethereum",
-            "events": events,
-        })))
+        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
     }
 
     async fn update(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-    ) -> Result<Option<Value>, IndexerError> {
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         let reference = self.reference();
         debug!("{}: updating", reference);
 
@@ -154,9 +151,6 @@ impl BlockHandle for EthBlockHandle {
             vec![]
         };
 
-        Ok((!events.is_empty()).then_some(json!({
-            "type": "ethereum",
-            "events": events,
-        })))
+        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
     }
 }

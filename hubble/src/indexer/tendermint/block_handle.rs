@@ -8,7 +8,7 @@ use cometbft_rpc::{
 };
 use futures::Stream;
 use itertools::Itertools;
-use serde_json::{json, Value};
+use serde_json::Value;
 use sqlx::Postgres;
 use time::OffsetDateTime;
 use tracing::{debug, trace};
@@ -17,6 +17,7 @@ use crate::indexer::{
     api::{
         BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, FetchMode, IndexerError,
     },
+    event::BlockEvents,
     tendermint::{
         fetcher_client::TmFetcherClient,
         postgres::{
@@ -292,7 +293,7 @@ impl BlockHandle for TmBlockHandle {
     async fn insert(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-    ) -> Result<Option<Value>, IndexerError> {
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         let reference = self.reference();
         debug!("{}: inserting", reference);
 
@@ -324,7 +325,7 @@ impl BlockHandle for TmBlockHandle {
             .filter(|transaction| transaction_hashes_of_filtered_events.contains(&transaction.hash))
             .collect_vec();
 
-        let events: Vec<Value> = if !&filtered_events.is_empty() {
+        let events = if !&filtered_events.is_empty() {
             trace!(
                 "{}: insert (transactions: {}, events:{})",
                 reference,
@@ -348,16 +349,13 @@ impl BlockHandle for TmBlockHandle {
 
         debug!("{}: done", reference);
 
-        Ok((!events.is_empty()).then_some(json!({
-            "type": "tendermint",
-            "events": events,
-        })))
+        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
     }
 
     async fn update(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-    ) -> Result<Option<Value>, IndexerError> {
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         let reference = self.reference();
         debug!("{}: updating", reference);
 

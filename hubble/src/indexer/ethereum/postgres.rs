@@ -1,7 +1,6 @@
 use alloy::{network::AnyRpcBlock, primitives::Address};
 use itertools::Itertools;
 use serde::{Deserialize, Serialize};
-use serde_json::{json, Value};
 use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 
@@ -9,6 +8,7 @@ use crate::{
     indexer::{
         api::{BlockHash, BlockHeight},
         ethereum::block_handle::{BlockInsert, TransactionInsert},
+        event::{BlockEvent, EthereumLog},
     },
     postgres::{schedule_replication_reset, ChainId, InsertMode},
 };
@@ -46,19 +46,19 @@ pub async fn insert_batch_logs(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     logs: impl IntoIterator<Item = PgLog>,
     mode: InsertMode,
-) -> sqlx::Result<Vec<Value>> {
+) -> sqlx::Result<Vec<BlockEvent>> {
     let (result, tuples): (Vec<_>, Vec<_>) = logs
         .into_iter()
         .map(|l| {
             let height: i64 = l.height.try_into().unwrap();
-            let event = json!({
-                "type": "ethereum-log",
-                "internal_chain_id": l.chain_id.db,
-                "block_hash": l.block_hash.clone(),
-                "data": serde_json::to_value(&l.data).expect("data should be json serializable"),
-                "height": height,
-                "time": l.time,
+            let event = BlockEvent::EthereumLog(EthereumLog {
+                internal_chain_id: l.chain_id.db,
+                block_hash: l.block_hash.clone(),
+                data: serde_json::to_value(&l.data).expect("data should be json serializable"),
+                height,
+                time: l.time,
             });
+
             let tuple = (
                 l.chain_id.db,
                 l.block_hash.clone(), // Clone if needed

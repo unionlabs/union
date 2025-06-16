@@ -107,7 +107,7 @@ impl<T: FetcherClient> Indexer<T> {
         let mut tx = self.pg_pool.begin().await?;
 
         if let Some(events) = block_handle.insert(&mut tx).await? {
-            self.schedule_message(&mut tx, reference.into(), events)
+            self.schedule_message(&mut tx, reference.into(), Some(events))
                 .await?;
         }
 
@@ -176,7 +176,7 @@ impl<T: FetcherClient> Indexer<T> {
 
                 let message_hash = match events {
                     Some(events) => Some(
-                        self.schedule_message(&mut tx, reference.into(), events)
+                        self.schedule_message(&mut tx, reference.into(), Some(events))
                             .await?,
                     ),
                     None => None,

@@ -1,7 +1,6 @@
 use std::cmp::min;
 
 use color_eyre::eyre::Report;
-use serde_json::Value;
 use sqlx::Postgres;
 use tokio::time::sleep;
 use tracing::{debug, info, info_span, trace, warn, Instrument};
@@ -11,7 +10,7 @@ use crate::indexer::{
         BlockHandle, BlockHeight, BlockRange, BlockReference, BlockSelection, FetchMode,
         FetcherClient, IndexerError,
     },
-    event::{MessageHash, Range},
+    event::{BlockEvents, MessageHash, Range},
     postgres::block_status::{
         delete_block_status, get_block_range_to_finalize, get_block_status_hash,
         get_next_block_to_monitor, update_block_status,
@@ -259,7 +258,7 @@ impl<T: FetcherClient> Indexer<T> {
         tx: &mut sqlx::Transaction<'_, Postgres>,
         reference: &BlockReference,
         dedup_message_hash: &Option<MessageHash>,
-        events: Option<serde_json::Value>,
+        events: Option<BlockEvents>,
     ) -> Result<Option<MessageHash>, IndexerError> {
         debug!(
             "schedule_event_when_required: {reference}, {}, has_events: {}",
@@ -283,20 +282,20 @@ impl<T: FetcherClient> Indexer<T> {
                 // 'no events' message
                 trace!("Some, None => send-dedup ({dedup_message_hash})");
                 Some(
-                    self.schedule_message_dedup(tx, range, Value::Null, dedup_message_hash)
+                    self.schedule_message_dedup(tx, range, None, dedup_message_hash)
                         .await?,
                 )
             }
             (None, Some(events)) => {
                 // we never sent a event, but now we found events
                 trace!("None, Some => send");
-                Some(self.schedule_message(tx, range, events).await?)
+                Some(self.schedule_message(tx, range, Some(events)).await?)
             }
             (Some(dedup_message_hash), Some(events)) => {
                 // we did send an event before, only send an event if the contents changed
                 trace!("Some, Some => send-debup ({dedup_message_hash})");
                 Some(
-                    self.schedule_message_dedup(tx, range, events, dedup_message_hash)
+                    self.schedule_message_dedup(tx, range, Some(events), dedup_message_hash)
                         .await?,
                 )
             }

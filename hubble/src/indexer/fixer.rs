@@ -154,7 +154,7 @@ impl<T: FetcherClient> Indexer<T> {
                         start_inclusive: block_fix_status.range.start_inclusive,
                         end_exclusive: new_next, // new_next is current + 1 (so exclusive)
                     },
-                    events.unwrap_or(serde_json::Value::Null),
+                    events,
                 )
                 .await?;
 

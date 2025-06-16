@@ -1,5 +1,3 @@
-use std::str::from_utf8;
-
 use async_nats::jetstream::consumer::{pull::Config, Consumer};
 use bytes::Bytes;
 use futures::StreamExt;
@@ -10,7 +8,7 @@ use super::{
     api::{FetcherClient, IndexerError},
     Indexer,
 };
-use crate::indexer::nats::consume;
+use crate::indexer::{event::HubbleEvent, nats::consume};
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_consumer(&self) -> Result<(), IndexerError> {
@@ -78,9 +76,14 @@ impl<T: FetcherClient> Indexer<T> {
             payload.len(),
         );
 
+        let message: HubbleEvent = serde_json::from_slice(&payload)?;
+
         trace!(
-            "got message with sequence {message_sequence} on subject {subject} with payload {:?}",
-            from_utf8(&payload).map_err(|e| IndexerError::InternalError(e.into()))?
+            "got message with sequence {message_sequence} on subject {subject} with event count {}",
+            message
+                .events
+                .map(|e| e.events.len().to_string())
+                .unwrap_or("0".to_string())
         );
 
         info!("commit");

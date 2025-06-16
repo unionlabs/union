@@ -1,11 +1,11 @@
 use itertools::Itertools;
-use serde_json::{json, Value};
 use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 
 use crate::{
     indexer::{
         api::{BlockHash, BlockHeight},
+        event::BlockEvent,
         tendermint::block_handle::{ActiveContracts, EventInFlows},
     },
     postgres::{schedule_replication_reset, ChainId},
@@ -52,19 +52,18 @@ pub struct PgEvent {
 pub async fn insert_batch_blocks(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     blocks: impl IntoIterator<Item = PgBlock>,
-) -> sqlx::Result<Vec<Value>> {
+) -> sqlx::Result<Vec<BlockEvent>> {
     let (result, tuples): (Vec<_>, Vec<_>) = blocks
         .into_iter()
         .map(|b| {
             let height: i64 = b.height.try_into().unwrap();
-            let event = json!({
-                "type": "tendermint-block",
-                "internal_chain_id": b.chain_id.db,
-                "hash": b.hash,
-                "data": b.data,
-                "height": height,
-                "time": b.time,
-            });
+            let event = BlockEvent::TendermintBlock {
+                internal_chain_id: b.chain_id.db,
+                hash: b.hash.clone(),
+                data: b.data.clone(),
+                height,
+                time: b.time,
+            };
             let tuple = (b.chain_id.db, b.hash, b.data, height, b.time);
 
             (event, tuple)
@@ -91,21 +90,20 @@ pub async fn insert_batch_blocks(
 pub async fn insert_batch_transactions(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     transactions: impl IntoIterator<Item = PgTransaction>,
-) -> sqlx::Result<Vec<Value>> {
+) -> sqlx::Result<Vec<BlockEvent>> {
     #![allow(clippy::type_complexity)]
     let (result, tuples): (Vec<_>, Vec<_>) = transactions
         .into_iter()
         .map(|t| {
             let block_height: i64 = t.block_height.try_into().unwrap();
-            let event = json!({
-                "type": "tendermint-transaction",
-                "internal_chain_id": t.chain_id.db,
-                "block_hash": t.block_hash,
-                "height": block_height,
-                "hash": t.hash,
-                "data": t.data,
-                "index": t.index,
-            });
+            let event = BlockEvent::TendermintTransaction {
+                internal_chain_id: t.chain_id.db,
+                block_hash: t.block_hash.clone(),
+                height: block_height,
+                hash: t.hash.clone(),
+                data: t.data.clone(),
+                index: t.index,
+            };
 
             let tuple = (
                 t.chain_id.db,
@@ -142,7 +140,7 @@ pub async fn insert_batch_transactions(
 pub async fn insert_batch_events(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     events: impl IntoIterator<Item = EventInFlows>,
-) -> sqlx::Result<Vec<Value>> {
+) -> sqlx::Result<Vec<BlockEvent>> {
     #![allow(clippy::type_complexity)]
     let (result, tuples): (Vec<_>, Vec<_>) = events
         .into_iter()
@@ -151,18 +149,17 @@ pub async fn insert_batch_events(
                 .iter()
                 .map(|flow| {
                     let block_height: i64 = e.event.block_height.try_into().unwrap();
-                    let event = json!({
-                        "type": "tendermint-event",
-                        "internal_chain_id": e.event.chain_id.db,
-                        "block_hash": e.event.block_hash,
-                        "height": block_height,
-                        "transaction_hash": e.event.transaction_hash,
-                        "index": e.event.block_index,
-                        "transaction_index": e.event.transaction_index,
-                        "data": e.event.data,
-                        "time": e.event.time,
-                        "flow": flow,
-                    });
+                    let event = BlockEvent::TendermintEvent {
+                        internal_chain_id: e.event.chain_id.db,
+                        block_hash: e.event.block_hash.clone(),
+                        height: block_height,
+                        transaction_hash: e.event.transaction_hash.clone(),
+                        index: e.event.block_index,
+                        transaction_index: e.event.transaction_index,
+                        data: e.event.data.clone(),
+                        time: e.event.time,
+                        flow: flow.clone(),
+                    };
 
                     let tuple = (
                         e.event.chain_id.db,

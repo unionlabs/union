@@ -11,11 +11,12 @@ use async_nats::jetstream::{
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
-use serde_json::Value;
 use sqlx::Postgres;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::error;
+
+use crate::indexer::event::BlockEvents;
 
 #[derive(Debug, thiserror::Error)]
 pub enum IndexerError {
@@ -219,9 +220,9 @@ pub trait BlockHandle: Send + Sync + Sized {
     async fn insert(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-    ) -> Result<Option<Value>, IndexerError>;
+    ) -> Result<Option<BlockEvents>, IndexerError>;
     async fn update(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-    ) -> Result<Option<Value>, IndexerError>;
+    ) -> Result<Option<BlockEvents>, IndexerError>;
 }
