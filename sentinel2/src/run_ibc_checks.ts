@@ -17,7 +17,6 @@ process.on("unhandledRejection", (reason, promise) => {
 const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
   Effect.gen(function*() {
     let allPackets: Array<Packet> = []
-    return allPackets;
     let cursor: string | undefined
     let continueFetching = true
 
