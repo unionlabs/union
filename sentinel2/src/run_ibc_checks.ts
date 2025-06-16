@@ -2,10 +2,11 @@ import { Effect, Logger, Schedule } from "effect"
 
 import { gql, request } from "graphql-request"
 
-import { Config, triggerIncident, resolveIncident, db} from "./sentinel2.js"
 import type { Packet } from "./sentinel2.js"
 import { hasErrorOpen, markTransferError, getOpenErrors, clearTransferError} from "./db_queries.js"
-  
+import { Config, triggerIncident, resolveIncident } from "./helpers.js"
+import { db } from "./sentinel2.js"
+
 process.on("uncaughtException", err => {
   console.error("❌ Uncaught Exception:", err.stack || err)
 })
