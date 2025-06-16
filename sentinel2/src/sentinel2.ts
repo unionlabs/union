@@ -40,6 +40,8 @@ import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
 import { runIbcChecksForever } from "./run_ibc_checks.js"
 import { escrowSupplyControlLoop } from "./escrow_supply_control_loop.js"
+import { fundBabylonAccounts } from "./fund_babylon_accounts.js"
+import { checkBalances } from "./check_balances.js"
 import { dbPrepeare } from "./db_queries.js"
 
 process.on("uncaughtException", err => {
@@ -253,14 +255,6 @@ export interface WrappedToken {
   }>
 }
 
-interface FundableAccounts {
-  receiver_display: string
-  traces: Array<{
-    type: string
-    transaction_hash: string
-  }>
-}
-
 interface V2Channels {
   source_channel_id: string
 }
@@ -322,46 +316,6 @@ class FilesystemError extends Data.TaggedError("FilesystemError")<{
 export class Config extends Context.Tag("Config")<Config, { readonly config: ConfigFile }>() {}
 
 
-const fetchFundableAccounts = (hasuraEndpoint: string) =>
-  Effect.gen(function*() {
-    const query = gql`
-      query {
-        v2_transfers(args: { p_destination_universal_chain_id: "babylon.bbn-1" }) {
-          receiver_display
-          traces {
-            type
-            transaction_hash
-          }
-        }
-      }
-    `
-
-    const response: any = yield* Effect.tryPromise({
-      try: () => request(hasuraEndpoint, query),
-      catch: error => {
-        console.error("fetchFundableAccounts failed:", error)
-        throw error
-      },
-    })
-
-    const tokens: Array<FundableAccounts> = response?.v2_transfers || []
-    const filtered: Array<FundableAccounts> = tokens
-      .map(({ receiver_display, traces }) => ({
-        receiver_display,
-        traces: traces
-          .filter(
-            trace =>
-              trace.type === "WRITE_ACK"
-              && trace.transaction_hash != null
-              && !isFunded(db, trace.transaction_hash),
-          )
-          // biome-ignore lint/style/noNonNullAssertion: <explanation>
-          .map(trace => ({ type: trace.type, transaction_hash: trace.transaction_hash! })),
-      }))
-      .filter(acc => acc.traces.length > 0)
-
-    return filtered
-  })
 
 
 function loadConfig(configPath: string) {
@@ -383,85 +337,6 @@ function loadConfig(configPath: string) {
       }),
   })
 }
-const fundBabylonAccounts = Effect.repeat(
-  Effect.gen(function*(_) {
-    yield* Effect.log("Funding babylon accounts loop started")
-    let config = (yield* Config).config
-    if (config.isLocal) {
-      yield* Effect.log("Local mode: skipping funding babylon accounts")
-      return
-    }
-
-    const wallet = yield* Effect.tryPromise(() =>
-      DirectSecp256k1HdWallet.fromMnemonic(config.signer_account_mnemonic, { prefix: "bbn" })
-    )
-    const options: SigningCosmWasmClientOptions = {
-      gasPrice: GasPrice.fromString("0.025bbn"),
-    }
-    const [senderAccount] = yield* Effect.tryPromise(() => wallet.getAccounts())
-
-    const client = yield* createSigningCosmWasmClient(
-      "https://rpc.bbn-1.babylon.chain.kitchen",
-      wallet,
-      options,
-    )
-
-    if (!senderAccount?.address) {
-      yield* Effect.logError("Sender account couldnt found!")
-      return
-    }
-    const balance = yield* Effect.tryPromise(() => client.getBalance(senderAccount.address, "ubbn"))
-
-    if (Number.parseInt(balance.amount) < 1_000_000) {
-      const errLog = Effect.annotateLogs({
-        issueType: "SPENDER_BALANCE_LOW",
-        balance: balance.amount,
-        chainId: "babylon.bbn-1",
-        tokenAddr: "ubbn",
-        account: senderAccount.address,
-      })(Effect.logError("SPENDER_BALANCE_LOW"))
-
-      Effect.runFork(errLog.pipe(Effect.provide(Logger.json)))
-      return
-    }
-
-    const fee = {
-      amount: coins(500, "ubbn"),
-      gas: "200000",
-    }
-
-    const accs = yield* fetchFundableAccounts(config.hasuraEndpoint)
-    for (const acc of accs) {
-      const receiver = acc.receiver_display
-      const result = yield* Effect.tryPromise({
-        try: () =>
-          client.sendTokens(
-            senderAccount.address,
-            receiver,
-            coins(10000, "ubbn"), // send 0.01 bbn
-            fee,
-          ),
-        catch: err => {
-          console.error("raw sendTokens error:", err)
-          throw err
-        },
-      })
-
-      addFunded(db, result.transactionHash)
-
-      const okLog = Effect.annotateLogs({
-        sentAmount: "0.01",
-        chainId: "babylon.bbn-1",
-        tokenAddr: "ubbn",
-        account: senderAccount.address,
-        receiver,
-        transactionHash: result.transactionHash,
-      })(Effect.logInfo("SENT_OK"))
-      Effect.runFork(okLog.pipe(Effect.provide(Logger.json)))
-    }
-  }),
-  Schedule.spaced("1 minutes"),
-)
 
 interface PostRequestInput {
   url: string
@@ -617,199 +492,6 @@ export const checkSSLCertificates = Effect.repeat(
   Schedule.spaced("6 hours"),
 )
 
-export const checkBalances = Effect.repeat(
-  Effect.gen(function*(_) {
-    yield* Effect.log("Spawning per-plugin balance checks…")
-    const { config } = yield* Config
-    const sbConfig = config.signerBalances
-
-    for (const [url, ports] of Object.entries(sbConfig)) {
-      for (const [portStr, plugins] of Object.entries(ports)) {
-        const port = Number(portStr)
-
-        const portKey = `${url}:${port}`
-        const existingPortIncident = getSignerIncident(db, portKey)
-
-        const [probeJson, durationMs] = yield* Effect.gen(function*($) {
-          const start = Date.now()
-          const resp = yield* Effect.tryPromise<Response, Error>({
-            try: () =>
-              (fetch(`${url}:${port}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              }) as unknown) as PromiseLike<Response>,
-            catch: e => new Error(`RPC probe connection failed: ${e}`),
-          })
-
-          const text = yield* Effect.tryPromise<string, Error>({
-            try: () => resp.text(),
-            catch: e => new Error(`RPC probe read failed: ${e}`),
-          })
-          const took = Date.now() - start
-
-          let json: any = null
-          try {
-            json = JSON.parse(text)
-          } catch { /* leave json=null */ }
-
-          return [json, took] as const
-        })
-
-        if (!probeJson || typeof probeJson.error !== "object") {
-          yield* Effect.logError(`SIGNER_BALANCE_PORT_DOWN @ ${portKey}`)
-          if (!existingPortIncident) {
-            const inc = yield* triggerIncident(
-              `SIGNER_BALANCE_PORT_DOWN @ ${portKey}`,
-              `no RPC response from ${url}:${port}`,
-              config.betterstack_api_key,
-              config.trigger_betterstack,
-              "SENTINEL@union.build",
-              "SIGNER_BALANCE_PORT_DOWN",
-              "Union",
-              config.isLocal,
-            )
-            markSignerIncident(db, portKey, inc.data.id)
-          }
-          continue
-        }
-
-        const errMsg = String(probeJson.error.message)
-        if (errMsg !== "Parse error") {
-          yield* Effect.logError(`SIGNER_BALANCE_RPC_ERROR @ ${portKey}: ${errMsg}`)
-          if (!existingPortIncident) {
-            const inc = yield* triggerIncident(
-              `SIGNER_BALANCE_RPC_ERROR @ ${portKey}`,
-              `unexpected RPC error: ${errMsg}`,
-              config.betterstack_api_key,
-              config.trigger_betterstack,
-              "SENTINEL@union.build",
-              "SIGNER_BALANCE_RPC_ERROR",
-              "Union",
-              config.isLocal,
-            )
-            markSignerIncident(db, portKey, inc.data.id)
-          }
-          continue
-        }
-
-        yield* Effect.log(`SIGNER_BALANCE_RPC_OK @ ${portKey} in ${durationMs}ms`)
-        if (existingPortIncident) {
-          const resolved = yield* resolveIncident(
-            existingPortIncident,
-            config.betterstack_api_key,
-            config.trigger_betterstack,
-            config.isLocal,
-            "Sentinel: RPC back online",
-          )
-          if (resolved) {
-            clearSignerIncident(db, portKey)
-          }
-        }
-
-        for (const [plugin, expectedThreshold] of Object.entries(plugins)) {
-          const payload = [
-            {
-              jsonrpc: "2.0",
-              id: 1,
-              method: "voyager_pluginCustom",
-              params: [plugin, "signerBalances", []] as const,
-            },
-          ]
-
-          const callWithRetry = safePostRequest({
-            url,
-            port,
-            headers: { "Content-Type": "application/json" },
-            payload,
-          })
-
-          const worker = Effect.gen(function*(_) {
-            const result = yield* callWithRetry
-            if (result) {
-              if (!Array.isArray(result) || result.length === 0) {
-                yield* Effect.logError(
-                  `Unexpected response shape for ${plugin} @ ${url}:${port}. Result: ${result}`,
-                )
-                return
-              }
-
-              const rpcObj = (result[0] as any).result
-              if (typeof rpcObj !== "object" || rpcObj === null) {
-                yield* Effect.logError(
-                  `No 'result' object for ${plugin} @ ${url}:${port}. Result: ${
-                    JSON.stringify(result)
-                  }`,
-                )
-                return
-              }
-
-              for (const [wallet, balStr] of Object.entries(rpcObj)) {
-                let bal = BigInt(balStr as string)
-
-                const tags = {
-                  plugin,
-                  url,
-                  port: portStr,
-                  wallet,
-                  balance: bal.toString(),
-                  expected: expectedThreshold.toString(),
-                }
-
-                const key = `${url}:${port}:${plugin}:${wallet}`
-                const existing = getSignerIncident(db, key)
-
-                if (bal < expectedThreshold) {
-                  const logEffect = Effect.annotateLogs(tags)(Effect.logError("SIGNER_BALANCE_LOW"))
-                  Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-
-                  if (!existing) {
-                    const inc = yield* triggerIncident(
-                      `SIGNER_BALANCE_LOW @ ${key}`,
-                      JSON.stringify({
-                        plugin,
-                        url,
-                        port: portStr,
-                        wallet,
-                        balance: bal.toString(),
-                      }),
-                      config.betterstack_api_key,
-                      config.trigger_betterstack,
-                      "SENTINEL@union.build",
-                      "SIGNER_BALANCE_LOW",
-                      "Union",
-                      config.isLocal,
-                    )
-                    if (inc.data.id) {
-                      markSignerIncident(db, key, inc.data.id)
-                    }
-                  }
-                } else {
-                  const logEffect = Effect.annotateLogs(tags)(Effect.logInfo("SIGNER_BALANCE_OK"))
-                  Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
-
-                  if (existing) {
-                    const didResolve = yield* resolveIncident(
-                      existing,
-                      config.betterstack_api_key,
-                      config.trigger_betterstack,
-                      config.isLocal,
-                      "Sentinel-Automatically resolved.",
-                    )
-                    if (didResolve) {
-                      clearSignerIncident(db, key)
-                    }
-                  }
-                }
-              }
-            }
-          })
-          Effect.runFork(worker)
-        }
-      }
-    }
-  }),
-  Schedule.spaced("30 minutes"),
-)
 
 const mainEffect = Effect.gen(function*(_) {
   const argv = yield* Effect.sync(() =>
@@ -843,8 +525,8 @@ const mainEffect = Effect.gen(function*(_) {
     [
       runIbcChecksForever,
       escrowSupplyControlLoop,
-      // fundBabylonAccounts,
-      // checkBalances,
+      fundBabylonAccounts,
+      checkBalances,
       // checkSSLCertificates,
     ],
     {
