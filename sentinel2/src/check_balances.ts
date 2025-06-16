@@ -1,5 +1,5 @@
 
-import { Effect, Logger, Schedule } from "effect"
+import { Effect, Logger, Schedule, pipe } from "effect"
 import fetch from "node-fetch"
 import { getSignerIncident, markSignerIncident, clearSignerIncident } from "./db_queries.js"
 import { Config, triggerIncident, resolveIncident } from "./helpers.js"
@@ -76,17 +76,28 @@ export const checkBalances = Effect.repeat(
 
         const [probeJson, durationMs] = yield* Effect.gen(function*($) {
           const start = Date.now()
-          const resp = yield* Effect.tryPromise<Response, Error>({
-            try: () =>
-              (fetch(`${url}:${port}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-              }) as unknown) as PromiseLike<Response>,
-            catch: e => new Error(`RPC probe connection failed: ${e}`),
-          })
+
+          const maybeResp = yield* pipe(
+            Effect.tryPromise<Response, Error>({
+              try: () =>
+                (fetch(`${url}:${port}`, {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                }) as unknown) as PromiseLike<Response>,
+              catch: e => new Error(`RPC probe connection failed: ${e}`),
+            }),
+            Effect.catchAllCause((err) =>{
+              console.error(`SIGNER_BALANCE_PROBE_FAILED @ ${portKey}: ${String(err)}`)
+              return Effect.succeed(undefined)
+            })
+          )
+
+          if (!maybeResp) {
+            return [undefined, 0] as const
+          }
 
           const text = yield* Effect.tryPromise<string, Error>({
-            try: () => resp.text(),
+            try: () => maybeResp.text(),
             catch: e => new Error(`RPC probe read failed: ${e}`),
           })
           const took = Date.now() - start
@@ -94,10 +105,14 @@ export const checkBalances = Effect.repeat(
           let json: any = null
           try {
             json = JSON.parse(text)
-          } catch { /* leave json=null */ }
+          } catch {
+            /* ignore parse error */
+          }
 
           return [json, took] as const
         })
+
+
 
         if (!probeJson || typeof probeJson.error !== "object") {
           yield* Effect.logError(`SIGNER_BALANCE_PORT_DOWN @ ${portKey}`)
@@ -136,7 +151,7 @@ export const checkBalances = Effect.repeat(
           continue
         }
 
-        yield* Effect.log(`SIGNER_BALANCE_RPC_OK @ ${portKey} in ${durationMs}ms`)
+        yield* Effect.log(`SIGNER_BALANCE_RPC_OK @ ${portKey}`)
         if (existingPortIncident) {
           const resolved = yield* resolveIncident(
             existingPortIncident,
