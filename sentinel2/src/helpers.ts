@@ -1,42 +1,41 @@
 import { Context, Data, Effect } from "effect"
-import tls from "node:tls"
 import fetch from "node-fetch"
 import fs from "node:fs"
+import tls from "node:tls"
 
 export type Hex = `0x${string}`
 
 export interface SignerBalanceThresholds {
-    [plugin: string]: bigint
-  }
+  [plugin: string]: bigint
+}
 
 export type PortSignerBalances = Record<string, SignerBalanceThresholds>
 
 export type SignerBalancesConfig = Record<string, PortSignerBalances>
 
 export interface WrappedToken {
-    chain: { universal_chain_id: string }
-    denom: Hex
-    wrapping: Array<{
-      unwrapped_chain: { universal_chain_id: string }
-      destination_channel_id: number
-      unwrapped_denom: string
-    }>
-  }
-  
-  export interface Packet {
-    source_chain: {
-      universal_chain_id: string
-    }
-    destination_chain: {
-      universal_chain_id: string
-    }
-    packet_send_timestamp: string
-    packet_hash: string
-    status: string
-    sort_order: string
-  }
+  chain: { universal_chain_id: string }
+  denom: Hex
+  wrapping: Array<{
+    unwrapped_chain: { universal_chain_id: string }
+    destination_channel_id: number
+    unwrapped_denom: string
+  }>
+}
 
-  
+export interface Packet {
+  source_chain: {
+    universal_chain_id: string
+  }
+  destination_chain: {
+    universal_chain_id: string
+  }
+  packet_send_timestamp: string
+  packet_hash: string
+  status: string
+  sort_order: string
+}
+
 type ChainType = "evm" | "cosmos"
 
 interface ChainConfigEntry {
@@ -51,25 +50,25 @@ type ChainConfig = Record<string, ChainConfigEntry>
 
 // Combined configuration shape
 interface ConfigFile {
-    cycleIntervalMs: number
-    hasuraEndpoint: string
-    rpcHostEndpoints: string[]
-    signerBalances: SignerBalancesConfig
-    chainConfig: ChainConfig
-    signer_account_mnemonic: string
-    betterstack_api_key: string
-    trigger_betterstack: boolean
-    dbPath: string
-    isLocal: boolean
-  }
-  
-  class FilesystemError extends Data.TaggedError("FilesystemError")<{
-    message: string
-    cause: unknown
-  }> {}
-  
-  export class Config extends Context.Tag("Config")<Config, { readonly config: ConfigFile }>() {}
-  
+  cycleIntervalMs: number
+  hasuraEndpoint: string
+  rpcHostEndpoints: string[]
+  signerBalances: SignerBalancesConfig
+  chainConfig: ChainConfig
+  signer_account_mnemonic: string
+  betterstack_api_key: string
+  trigger_betterstack: boolean
+  dbPath: string
+  isLocal: boolean
+}
+
+class FilesystemError extends Data.TaggedError("FilesystemError")<{
+  message: string
+  cause: unknown
+}> {}
+
+export class Config extends Context.Tag("Config")<Config, { readonly config: ConfigFile }>() {}
+
 export function loadConfig(configPath: string) {
   return Effect.tryPromise({
     // biome-ignore lint/suspicious/useAwait: <explanation>
@@ -90,14 +89,12 @@ export function loadConfig(configPath: string) {
   })
 }
 
-
 export function hexToUtf8(hex: string): string {
   // strip optional 0x
   const clean = hex.startsWith("0x") ? hex.slice(2) : hex
   // build a Buffer from hex, then decode as UTF‑8
   return Buffer.from(clean, "hex").toString("utf8")
 }
-
 
 /**
  * Effect to trigger a BetterStack incident via the Uptime API
@@ -221,18 +218,17 @@ export const resolveIncident = (
 }
 
 export function getCertExpiry(endpoint: string): Promise<Date> {
-    const { hostname, port } = new URL(endpoint)
-    const portNum = port ? Number(port) : 443
-    return new Promise((resolve, reject) => {
-      const socket = tls.connect({ host: hostname, port: portNum, servername: hostname }, () => {
-        const cert = socket.getPeerCertificate()
-        socket.end()
-        if (!cert || !cert.valid_to) {
-          return reject(new Error(`no valid_to on cert for ${endpoint}`))
-        }
-        resolve(new Date(cert.valid_to))
-      })
-      socket.on("error", reject)
+  const { hostname, port } = new URL(endpoint)
+  const portNum = port ? Number(port) : 443
+  return new Promise((resolve, reject) => {
+    const socket = tls.connect({ host: hostname, port: portNum, servername: hostname }, () => {
+      const cert = socket.getPeerCertificate()
+      socket.end()
+      if (!cert || !cert.valid_to) {
+        return reject(new Error(`no valid_to on cert for ${endpoint}`))
+      }
+      resolve(new Date(cert.valid_to))
     })
-  }
-  
+    socket.on("error", reject)
+  })
+}

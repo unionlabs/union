@@ -2,32 +2,29 @@ import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { coins } from "@cosmjs/proto-signing"
 import { GasPrice } from "@cosmjs/stargate"
+import { createSigningCosmWasmClient } from "@unionlabs/sdk/cosmos"
 import { Effect, Logger, Schedule } from "effect"
-import {
-  createSigningCosmWasmClient
-} from "@unionlabs/sdk/cosmos"
 
 import { gql, request } from "graphql-request"
-import { isFunded, addFunded } from "./db_queries.js"
+import { addFunded, isFunded } from "./db_queries.js"
 import { Config } from "./helpers.js"
 import { db } from "./sentinel2.js"
 
 process.on("uncaughtException", err => {
-    console.error("❌ Uncaught Exception:", err.stack || err)
-  })
-  process.on("unhandledRejection", (reason, promise) => {
-    console.error("❌ Unhandled Rejection at:", promise, "reason:", reason)
-  })
-  
+  console.error("❌ Uncaught Exception:", err.stack || err)
+})
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("❌ Unhandled Rejection at:", promise, "reason:", reason)
+})
+
 interface FundableAccounts {
-    receiver_display: string
-    traces: Array<{
-      type: string
-      transaction_hash: string
-    }>
-  }
-  
-  
+  receiver_display: string
+  traces: Array<{
+    type: string
+    transaction_hash: string
+  }>
+}
+
 const fetchFundableAccounts = (hasuraEndpoint: string) =>
   Effect.gen(function*() {
     const query = gql`
@@ -68,7 +65,6 @@ const fetchFundableAccounts = (hasuraEndpoint: string) =>
 
     return filtered
   })
-
 
 export const fundBabylonAccounts = Effect.repeat(
   Effect.gen(function*(_) {
