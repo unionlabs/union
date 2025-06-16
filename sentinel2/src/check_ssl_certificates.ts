@@ -1,50 +1,17 @@
-import type { SigningCosmWasmClientOptions } from "@cosmjs/cosmwasm-stargate"
-import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
-import { coins } from "@cosmjs/proto-signing"
-import { GasPrice } from "@cosmjs/stargate"
-import { FetchHttpClient } from "@effect/platform"
-import {
-  channelBalanceAtBlock as EthereumChannelBalanceAtBlock,
-  EvmChannelDestination,
-  readErc20BalanceAtBlock,
-  readErc20TotalSupplyAtBlock,
-  ViemPublicClient as ViemPublicClientContext,
-  ViemPublicClientDestination,
-} from "@unionlabs/sdk/evm"
-import { Context, Data, Effect, Logger, Schedule } from "effect"
-import { pipe } from "effect"
-import * as Cause from "effect/Cause"
-import tls from "node:tls"
-import { createPublicClient, http } from "viem"
-
-import {
-  channelBalanceAtHeight,
-  channelBalanceAtHeight as CosmosChannelBalanceAtHeight,
-  CosmosChannelDestination,
-  CosmWasmClientContext,
-  createCosmWasmClient,
-  createSigningCosmWasmClient,
-  getBalanceAtHeight,
-  getChainHeight,
-  readCw20BalanceAtHeight,
-  readCw20TokenInfo,
-  readCw20TotalSupplyAtHeight,
-} from "@unionlabs/sdk/cosmos"
-
-import Database from "better-sqlite3"
-import type { Database as BetterSqlite3Database } from "better-sqlite3"
-import { gql, request } from "graphql-request"
+import { Effect, Schedule } from "effect"
 import fetch from "node-fetch"
-import fs from "node:fs"
-import yargs from "yargs"
-import { hideBin } from "yargs/helpers"
-import { runIbcChecksForever } from "./run_ibc_checks.js"
-import { clearPendingSupply, clearSupplyIncident, getPendingSupply, markPendingSupply, getAggregateIncident, markAggregateIncident, getSupplyIncident, markSupplyIncident, clearAggregateIncident } from "./db_queries.js"
 import { getSslIncident, markSslIncident, clearSslIncident } from "./db_queries.js"
 import { getCertExpiry } from "./helpers.js"
 import { triggerIncident, resolveIncident, Config } from "./helpers.js"
 import { db } from "./sentinel2.js"
 
+process.on("uncaughtException", err => {
+    console.error("❌ Uncaught Exception:", err.stack || err)
+  })
+  process.on("unhandledRejection", (reason, promise) => {
+    console.error("❌ Unhandled Rejection at:", promise, "reason:", reason)
+  })
+  
 export const safeGetRequest = ({
   url,
   port,
