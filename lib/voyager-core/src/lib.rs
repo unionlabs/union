@@ -26,7 +26,7 @@ use tracing::{
 use unionlabs::{traits::Member, ErrorReporter};
 use voyager_message::{
     call::{
-        Call, FetchBlocks, FetchUpdateHeaders, SubmitTx, WaitForClientUpdate, WaitForHeight,
+        Call, FetchUpdateHeaders, Index, IndexRange, SubmitTx, WaitForClientUpdate, WaitForHeight,
         WaitForHeightRelative, WaitForTimestamp, WaitForTrustedHeight, WaitForTrustedTimestamp,
     },
     callback::{AggregateSubmitTxFromOrderedHeaders, Callback},
@@ -794,13 +794,23 @@ impl voyager_vm::Handler<VoyagerMessage> for Handler {
     #[instrument(skip_all)]
     async fn call(&self, call: Call) -> Result<Op<VoyagerMessage>, QueueError> {
         match call {
-            Call::FetchBlocks(FetchBlocks {
+            Call::Index(Index {
                 start_height,
                 chain_id,
             }) => {
                 let message = format!(
                     "fetch blocks request received for chain `{chain_id}` at height \
                     {start_height} but it was not picked up by a plugin"
+                );
+
+                Err(QueueError::Unprocessable(message.into()))
+            }
+            Call::IndexRange(IndexRange { chain_id, range }) => {
+                let message = format!(
+                    "fetch block range request received for chain `{chain_id}` for range \
+                    {}..={} but it was not picked up by a plugin",
+                    range.from_height(),
+                    range.to_height()
                 );
 
                 Err(QueueError::Unprocessable(message.into()))

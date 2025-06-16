@@ -17042,6 +17042,7 @@ dependencies = [
  "serde",
  "serde_json",
  "subset-of",
+ "thiserror 2.0.12",
  "tracing",
  "unionlabs",
  "voyager-primitives",

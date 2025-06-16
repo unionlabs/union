@@ -16,6 +16,8 @@ pub enum ModuleCall {
 #[model]
 pub struct FetchBlocks {
     pub block_number: u64,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub until: Option<u64>,
 }
 
 /// Fetch all events in `block_number` emitted by the `IBCHandler` via [`eth_getLogs`].

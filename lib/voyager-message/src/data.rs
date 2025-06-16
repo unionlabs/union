@@ -60,6 +60,27 @@ pub struct ChainEvent {
     pub event: Value,
 }
 
+impl ChainEvent {
+    pub fn new<V: IbcSpec>(
+        chain_id: ChainId,
+        client_info: ClientInfo,
+        counterparty_chain_id: ChainId,
+        tx_hash: H256,
+        provable_height: EventProvableHeight,
+        event: V::Event,
+    ) -> Self {
+        Self {
+            chain_id,
+            client_info,
+            counterparty_chain_id,
+            tx_hash,
+            provable_height,
+            ibc_spec_id: V::ID,
+            event: serde_json::to_value(event).expect("event serialization is infallible; qed;"),
+        }
+    }
+}
+
 #[model]
 #[derive(Copy)]
 pub enum EventProvableHeight {
@@ -128,15 +149,3 @@ pub struct DecodedHeaderMeta {
 pub struct OrderedHeaders {
     pub headers: Vec<(DecodedHeaderMeta, Value)>,
 }
-
-// #[model]
-// pub struct OrderedClientUpdates {
-//     pub updates: Vec<(DecodedHeaderMeta, ClientUpdate)>,
-// }
-
-// #[model]
-// pub struct ClientUpdate {
-//     pub client_id: RawClientId,
-//     pub ibc_spec_id: IbcSpecId,
-//     pub client_message: Bytes,
-// }

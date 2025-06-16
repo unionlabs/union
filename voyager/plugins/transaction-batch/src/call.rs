@@ -6,7 +6,7 @@ use ibc_union_spec::{query::PacketsByBatchHash, IbcUnion};
 use jsonrpsee::{core::RpcResult, types::ErrorObject};
 use macros::model;
 use serde_json::json;
-use tracing::{debug, info, instrument};
+use tracing::{debug, info, instrument, warn};
 use unionlabs::{ibc::core::client::height::Height, primitives::Bytes};
 use voyager_sdk::{
     message::{
@@ -148,7 +148,18 @@ where
                             chain_id: client_state_meta.counterparty_chain_id,
                             client_id: RawClientId::new(self.client_id.clone()),
                             update_from: client_state_meta.counterparty_height,
-                            update_to: latest_height,
+                            update_to: if latest_height.height() < target_height.height() {
+                                warn!(
+                                    "latest height {latest_height} is less than the target \
+                                     height {target_height}, there may be something wrong \
+                                     with the rpc for {} - client {} will be updated to the \
+                                     target height instead of the latest height",
+                                    module.chain_id, self.client_id
+                                );
+                                target_height
+                            } else {
+                                latest_height
+                            },
                         })],
                         [],
                         PluginMessage::new(
