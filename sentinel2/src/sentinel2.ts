@@ -38,7 +38,9 @@ import fetch from "node-fetch"
 import fs from "node:fs"
 import yargs from "yargs"
 import { hideBin } from "yargs/helpers"
-// import { runIbcChecksForever } from "./run_ibc_checks.js"
+import { runIbcChecksForever } from "./run_ibc_checks.js"
+import { escrowSupplyControlLoop } from "./escrow_supply_control_loop.js"
+
 
 process.on("uncaughtException", err => {
   console.error("❌ Uncaught Exception:", err.stack || err)
@@ -1435,83 +1437,6 @@ export const checkBalances = Effect.repeat(
   }),
   Schedule.spaced("30 minutes"),
 )
-
-const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
-  Effect.gen(function*() {
-    let allPackets: Array<Packet> = []
-    let cursor: string | undefined
-    let continueFetching = true
-
-    while (continueFetching) {
-      let response: any
-
-      if (cursor) {
-        const queryNext = gql`
-            query MissingPacketsNext($sla: String!, $cursor: String!) {
-              v2_packets(args: {
-                p_exceeding_sla: $sla,
-                p_sort_order: $cursor
-              }) {
-                source_chain { universal_chain_id }
-                destination_chain { universal_chain_id }
-                packet_send_timestamp
-                packet_hash
-                status
-                sort_order
-              }
-            }
-          `
-        response = yield* Effect.tryPromise({
-          try: () =>
-            request(hasuraEndpoint, queryNext, {
-              sla: exceedingSla,
-              cursor,
-            }),
-          catch: err => {
-            console.error("fetchMissingPackets (next) failed:", err)
-            return []
-          },
-        })
-      } else {
-        const queryFirst = gql`
-            query MissingPackets($sla: String!) {
-              v2_packets(args: { p_exceeding_sla: $sla }) {
-                source_chain { universal_chain_id }
-                destination_chain { universal_chain_id }
-                packet_send_timestamp
-                packet_hash
-                status
-                sort_order
-              }
-            }
-          `
-        response = yield* Effect.tryPromise({
-          try: () =>
-            request(hasuraEndpoint, queryFirst, {
-              sla: exceedingSla,
-            }),
-          catch: err => {
-            console.error("fetchMissingPackets (first) failed:", err)
-            return []
-          },
-        })
-      }
-
-      const page: Array<Packet> = response.v2_packets || []
-      if (page.length === 0) {
-        break
-      }
-
-      allPackets.push(...page)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
-      const last = page.at(-1)!
-
-      cursor = last.sort_order
-    }
-
-    return allPackets
-  })
-
 
 const mainEffect = Effect.gen(function*(_) {
   const argv = yield* Effect.sync(() =>
