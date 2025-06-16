@@ -17,6 +17,7 @@ process.on("unhandledRejection", (reason, promise) => {
 const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
   Effect.gen(function*() {
     let allPackets: Array<Packet> = []
+    return allPackets;
     let cursor: string | undefined
     let continueFetching = true
 
@@ -131,7 +132,6 @@ export const checkPackets = (
       const missingPacketsMainnet = yield* fetchMissingPackets(hasuraEndpoint, sla)
       if (!missingPacketsMainnet || missingPacketsMainnet.length === 0) {
         yield* Effect.log(`No missing packets found for ${sla}`)
-        continue
       }
       yield* Effect.log(`Fetched ${missingPacketsMainnet.length} missingPackets from Hasura`)
 
@@ -163,6 +163,7 @@ export const checkPackets = (
         Effect.runFork(logEffect.pipe(Effect.provide(Logger.json)))
       }
       const openErrors = getOpenErrors(db, sla)
+      console.info(`Found ${openErrors.length} open errors for ${sla}`)
 
       const missingSet = new Set(missingPacketsMainnet.map(p => p.packet_hash))
 
