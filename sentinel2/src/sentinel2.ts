@@ -42,6 +42,7 @@ import { runIbcChecksForever } from "./run_ibc_checks.js"
 import { escrowSupplyControlLoop } from "./escrow_supply_control_loop.js"
 import { fundBabylonAccounts } from "./fund_babylon_accounts.js"
 import { checkBalances } from "./check_balances.js"
+import { checkSSLCertificates } from "./check_ssl_certificates.js"
 import { dbPrepeare } from "./db_queries.js"
 
 process.on("uncaughtException", err => {
@@ -89,7 +90,7 @@ export const checkSslCertificate = (host: string, isExpiringInDays: number) =>
     catch: e => new Error(`SSL certificate check failed: ${e}`),
   })
 // helper to pull the cert expiry date out of a host:port
-function getCertExpiry(endpoint: string): Promise<Date> {
+export function getCertExpiry(endpoint: string): Promise<Date> {
   const { hostname, port } = new URL(endpoint)
   const portNum = port ? Number(port) : 443
   return new Promise((resolve, reject) => {
@@ -418,79 +419,6 @@ export const safePostRequest = ({ url, port, headers, payload }: PostRequestInpu
   })
 }
 
-export const checkSSLCertificates = Effect.repeat(
-  Effect.gen(function*(_) {
-    yield* Effect.log("Spawning checkSSLCertificates loop")
-    const { config } = yield* Config
-    const rpchostEndpoints = config.rpcHostEndpoints
-
-    for (const rpchostEndpoint of rpchostEndpoints) {
-      const pageHtml: string = yield* safeGetRequest({
-        url: rpchostEndpoint,
-        port: 443,
-        headers: {},
-      }).pipe(Effect.retry(Schedule.spaced("2 minutes")))
-      const endpointAnchorRegex = /<a\s+href="([^"]+)">https?:\/\/[^<]+<\/a>/gi
-      const links: string[] = []
-      let m: RegExpExecArray | null
-      while ((m = endpointAnchorRegex.exec(pageHtml))) {
-        const href = m[1]
-        if (href) {
-          links.push(href)
-        }
-      }
-      const uniqueEndpoints = Array.from(new Set(links))
-      yield* Effect.log(`Found ${uniqueEndpoints.length} endpoints}`)
-
-      const now = Date.now()
-      const fourDaysMs = 4 * 24 * 60 * 60 * 1000
-      for (const url of uniqueEndpoints) {
-        const existingIncident = getSslIncident(db, url)
-        const expiry: Date = yield* Effect.tryPromise({
-          try: () => getCertExpiry(url),
-          catch: e => new Error(`SSL check failed for ${url}: ${String(e)}`),
-        })
-
-        const msLeft = expiry.getTime() - now
-        const description = JSON.stringify({ endpoint: url, expiresAt: expiry.toISOString() })
-
-        if (msLeft <= fourDaysMs) {
-          if (!existingIncident) {
-            const inc = yield* triggerIncident(
-              `SSL expiring soon @ ${url}`,
-              description,
-              config.betterstack_api_key,
-              config.trigger_betterstack,
-              "SENTINEL@union.build",
-              "SSL_CERT_EXPIRY",
-              "Union",
-              config.isLocal,
-            )
-            if (inc.data.id) {
-              markSslIncident(db, url, inc.data.id)
-            }
-          }
-          yield* Effect.logError(`SSL expiring in ${(msLeft / 86400000).toFixed(1)} day. @ ${url}`)
-        } else {
-          if (existingIncident) {
-            const didResolve = yield* resolveIncident(
-              existingIncident,
-              config.betterstack_api_key,
-              config.trigger_betterstack,
-              config.isLocal,
-              "Sentinel: SSL renewed",
-            )
-            if (didResolve) {
-              clearSslIncident(db, url)
-            }
-          }
-          yield* Effect.log(`SSL ok @ ${url}, expires in ${(msLeft / 86400000).toFixed(1)} days`)
-        }
-      }
-    }
-  }),
-  Schedule.spaced("6 hours"),
-)
 
 
 const mainEffect = Effect.gen(function*(_) {
@@ -527,7 +455,7 @@ const mainEffect = Effect.gen(function*(_) {
       escrowSupplyControlLoop,
       fundBabylonAccounts,
       checkBalances,
-      // checkSSLCertificates,
+      checkSSLCertificates,
     ],
     {
       concurrency: "unbounded",
