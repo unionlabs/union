@@ -3,6 +3,7 @@ import { beforeNavigate } from "$app/navigation"
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { runFork } from "$lib/runtime"
+import { FeeStore } from "$lib/stores/fee.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import transfer from "$lib/transfer/index.svelte"
@@ -81,7 +82,11 @@ $effect(() => {
     let context: TransferContext | null = null
 
     while (true) {
-      const result: StateResult | void = yield* createContextState(currentState, transferData)
+      const result: StateResult | void = yield* createContextState(
+        currentState,
+        transferData,
+        FeeStore.intent,
+      )
 
       if (!result) {
         break

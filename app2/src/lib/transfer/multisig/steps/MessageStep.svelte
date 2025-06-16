@@ -12,10 +12,6 @@ type Props = {
   step: CheckMessage
 }
 
-$effect(() => {
-  console.log("rr", step)
-})
-
 const { step, onBack, onSubmit }: Props = $props()
 
 const writeToClipboard = () => {

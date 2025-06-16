@@ -6,6 +6,7 @@ import Input from "$lib/components/ui/Input.svelte"
 import { wallets } from "$lib/stores/wallets.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
+import FeeDetails from "$lib/transfer/shared/components/FeeDetails.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
@@ -33,6 +34,7 @@ let senderErrors: string[] = $state([])
 let _errors = $derived(
   A.isEmptyArray(senderErrors) && A.isEmptyArray(receiverErrors),
 )
+let feeDetailsOpen = $state<boolean>(false)
 
 const uiStatus = $derived.by(() => {
   return Option.match(errors, {
@@ -120,6 +122,10 @@ const isButtonEnabled = $derived.by(() =>
       </ul>
     {/if}
     <Amount type="source" />
+    <FeeDetails
+      open={feeDetailsOpen}
+      onToggle={(newOpen: boolean) => feeDetailsOpen = newOpen}
+    />
   </div>
 
   <div class="grow"></div>
