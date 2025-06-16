@@ -1282,7 +1282,6 @@ files.extend-exclude = [
 "stakingkeeper"           = "stakingkeeper"
 "stakingtypes"            = "stakingtypes"
 "stargate"                = "stargate"
-"starport"                = "starport"
 "starsd"                  = "starsd"
 "statedb"                 = "statedb"
 "statelens"               = "statelens"

@@ -29,7 +29,6 @@ import (
 	solomachine "github.com/cosmos/ibc-go/v8/modules/light-clients/06-solomachine"
 	ibctm "github.com/cosmos/ibc-go/v8/modules/light-clients/07-tendermint"
 
-	// this line is used by starport scaffolding # ibc/app/import
 	wasmtypes "github.com/CosmWasm/wasmd/x/wasm/types"
 )
 
@@ -117,8 +116,6 @@ func (app *App) registerIBCModules(appOpts servertypes.AppOptions) error {
 		return err
 	}
 	ibcRouter.AddRoute(wasmtypes.ModuleName, wasmStack)
-
-	// this line is used by starport scaffolding # ibc/app/module
 
 	app.IBCKeeper.SetRouter(ibcRouter)
 
