@@ -43,8 +43,56 @@ import type { WrappedToken } from "./sentinel2.js"
 import { Config, triggerIncident, resolveIncident, db} from "./sentinel2.js"
 import { clearPendingSupply, clearSupplyIncident, getPendingSupply, markPendingSupply, getAggregateIncident, markAggregateIncident, getSupplyIncident, markSupplyIncident, clearAggregateIncident } from "./db_queries.js"
 import { getSignerIncident, markSignerIncident, clearSignerIncident } from "./db_queries.js"
-import { safePostRequest } from "./sentinel2.js"
 
+interface PostRequestInput {
+    url: string
+    port?: number
+    headers: Record<string, string>
+    payload: unknown
+  }
+
+  interface PostRequestError {
+    readonly _tag: "PostRequestError"
+    readonly message: string
+    readonly status?: number
+  }
+
+export const safePostRequest = ({ url, port, headers, payload }: PostRequestInput) => {
+    const fullUrl = port ? `${url}:${port}` : url
+  
+    return Effect.tryPromise({
+      try: () =>
+        fetch(fullUrl, {
+          method: "POST",
+          headers,
+          body: JSON.stringify(payload),
+        }).then(async response => {
+          if (response.status === 200) {
+            return await response.json()
+          }
+          const text = await response.text().catch(() => "")
+          // biome-ignore lint/style/useThrowOnlyError: <explanation>
+          throw {
+            _tag: "PostRequestError",
+            message: `Non-200 status: ${response.status} body: ${text}`,
+            status: response.status,
+          }
+        }),
+      catch: error =>
+        ({
+          _tag: "PostRequestError",
+          message: error instanceof Error
+            ? error.message
+            : typeof error === "object"
+            ? JSON.stringify(error)
+            : String(error),
+          status: (error as any)?.status,
+        }) satisfies PostRequestError,
+    })
+  }
+  
+
+  
 export const checkBalances = Effect.repeat(
   Effect.gen(function*(_) {
     yield* Effect.log("Spawning per-plugin balance checks…")

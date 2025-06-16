@@ -358,32 +358,6 @@ interface GetRequestError {
 }
 
 // 1) make headers always defined by giving it a default
-export const safeGetRequest = ({
-  url,
-  port,
-  headers = {} as Record<string, string>,
-}: {
-  url: string
-  port?: number
-  headers?: Record<string, string>
-}) =>
-  Effect.tryPromise({
-    try: async () => {
-      const fullUrl = port ? `${url}:${port}` : url
-      const res = await fetch(fullUrl, { method: "GET", headers }) // headers is now always a Record<string,string>
-      const text = await res.text()
-      if (!res.ok) {
-        throw { _tag: "GetRequestError", message: `GET ${res.status}`, status: res.status }
-      }
-      return text
-    },
-    catch: error =>
-      ({
-        _tag: "GetRequestError",
-        message: error instanceof Error ? error.message : String(error),
-        status: (error as any)?.status,
-      }) as GetRequestError,
-  })
 
 export const safePostRequest = ({ url, port, headers, payload }: PostRequestInput) => {
   const fullUrl = port ? `${url}:${port}` : url
