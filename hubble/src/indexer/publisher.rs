@@ -7,7 +7,7 @@ use super::{
 };
 use crate::indexer::{
     nats::{subject_for_block, NatsConnection},
-    postgres::next_to_publish,
+    postgres::nats::next_to_publish,
 };
 
 enum PublisherLoopResult {
@@ -65,7 +65,7 @@ impl<T: FetcherClient> Indexer<T> {
 
         debug!("sending (count: {})", messages.len());
         for message in messages {
-            let ack = nats.publish(&message).await?;
+            let ack = nats.publish(&self.indexer_id, &message).await?;
 
             debug!("{}: acked {ack}", message.id);
         }

@@ -54,8 +54,8 @@ impl<T: FetcherClient> Indexer<T> {
 
         while let Some(message) = messages.next().await {
             let message = message.map_err(IndexerError::NatsNextError)?;
-            consume(message, |subject, payload| {
-                self.handle_message(subject, payload)
+            consume(message, |message_sequence, subject, payload| {
+                self.handle_message(message_sequence, subject, payload)
             })
             .await?;
         }
@@ -64,19 +64,22 @@ impl<T: FetcherClient> Indexer<T> {
         Ok(())
     }
 
-    async fn handle_message(&self, subject: String, payload: Bytes) -> Result<(), IndexerError> {
+    async fn handle_message(
+        &self,
+        message_sequence: u64,
+        subject: String,
+        payload: Bytes,
+    ) -> Result<(), IndexerError> {
         info!("begin");
         let tx = self.pg_pool.begin().await?;
 
         info!(
-            "got message on subject {} with payload size {}",
-            subject,
+            "got message with sequence {message_sequence} on subject {subject} with payload size {}",
             payload.len(),
         );
 
         trace!(
-            "got message on subject {} with payload {:?}",
-            subject,
+            "got message with sequence {message_sequence} on subject {subject} with payload {:?}",
             from_utf8(&payload).map_err(|e| IndexerError::InternalError(e.into()))?
         );
 

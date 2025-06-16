@@ -6,19 +6,17 @@ use sqlx::Postgres;
 use tokio::time::sleep;
 use tracing::{debug, info, info_span, trace, warn, Instrument};
 
-use super::{
-    api::{BlockRange, FetcherClient, IndexerError},
-    postgres::get_next_block_to_monitor,
-    Indexer,
-};
 use crate::indexer::{
-    api::{BlockHandle, BlockHeight, BlockReference, BlockSelection, FetchMode},
-    event::MessageHash,
-    postgres::{
-        delete_block_status, get_block_range_to_finalize, get_block_status_hash,
-        update_block_status,
+    api::{
+        BlockHandle, BlockHeight, BlockRange, BlockReference, BlockSelection, FetchMode,
+        FetcherClient, IndexerError,
     },
-    HappyRangeFetcher,
+    event::{MessageHash, Range},
+    postgres::block_status::{
+        delete_block_status, get_block_range_to_finalize, get_block_status_hash,
+        get_next_block_to_monitor, update_block_status,
+    },
+    HappyRangeFetcher, Indexer,
 };
 
 enum FinalizerLoopResult {
@@ -260,43 +258,45 @@ impl<T: FetcherClient> Indexer<T> {
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
         reference: &BlockReference,
-        old_message_hash: &Option<MessageHash>,
+        dedup_message_hash: &Option<MessageHash>,
         events: Option<serde_json::Value>,
     ) -> Result<Option<MessageHash>, IndexerError> {
         debug!(
             "schedule_event_when_required: {reference}, {}, has_events: {}",
-            old_message_hash
+            dedup_message_hash
                 .as_ref()
                 .map_or("-".to_string(), |h| h.to_string()),
             events.is_some()
         );
 
-        Ok(match (old_message_hash, events) {
+        let range: Range = reference.into();
+
+        Ok(match (dedup_message_hash, events) {
             (None, None) => {
                 // do nothing, never sent a message and there are no events
                 trace!("None, None => ignore");
                 None
             }
-            (Some(original_message_hash), None) => {
+            (Some(dedup_message_hash), None) => {
                 // send empty block: we did send a message before, but now there are no events
                 // still deduplicating, because it could be the original hash could be of a
                 // 'no events' message
-                trace!("Some, None => send-dedup ({original_message_hash})");
+                trace!("Some, None => send-dedup ({dedup_message_hash})");
                 Some(
-                    self.schedule_event_dedup(tx, reference, Value::Null, original_message_hash)
+                    self.schedule_message_dedup(tx, range, Value::Null, dedup_message_hash)
                         .await?,
                 )
             }
             (None, Some(events)) => {
                 // we never sent a event, but now we found events
                 trace!("None, Some => send");
-                Some(self.schedule_event(tx, reference, events).await?)
+                Some(self.schedule_message(tx, range, events).await?)
             }
-            (Some(original_message_hash), Some(events)) => {
+            (Some(dedup_message_hash), Some(events)) => {
                 // we did send an event before, only send an event if the contents changed
-                trace!("Some, Some => send-debup ({original_message_hash})");
+                trace!("Some, Some => send-debup ({dedup_message_hash})");
                 Some(
-                    self.schedule_event_dedup(tx, reference, events, original_message_hash)
+                    self.schedule_message_dedup(tx, range, events, dedup_message_hash)
                         .await?,
                 )
             }

@@ -1,4 +1,4 @@
-use std::{fmt::Display, ops::Range};
+use std::{fmt::Display, num::ParseIntError, ops::Range};
 
 use async_nats::jetstream::{
     consumer::{
@@ -63,6 +63,10 @@ pub enum IndexerError {
     NatsDecodeError(#[from] lz4_flex::block::DecompressError),
     #[error("unsupported encoding: {0}")]
     NatsUnsupportedEncoding(String),
+    #[error("missing message sequence in stream sequence: {0}, consumer_sequence sequence: {1}")]
+    NatsMissingMessageSequence(u64, u64),
+    #[error("unsupported message sequence:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
+    NatsUnparseableMessageSequence(String, u64, u64, ParseIntError),
 }
 
 impl From<Report> for IndexerError {

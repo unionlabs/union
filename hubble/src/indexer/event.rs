@@ -1,4 +1,4 @@
-use std::fmt;
+use std::fmt::{self, Display};
 
 use bytes::Bytes;
 use serde::Serializer;
@@ -8,9 +8,9 @@ use sqlx::Postgres;
 use tracing::debug;
 
 use crate::indexer::{
-    api::{BlockReference, FetcherClient, IndexerError},
+    api::{BlockRange, BlockReference, FetcherClient, IndexerError},
     nats::subject_for_block,
-    postgres::schedule,
+    postgres::nats::schedule,
     Indexer,
 };
 
@@ -33,12 +33,36 @@ where
     s.serialize_str(&x.to_string())
 }
 
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, Clone)]
 pub struct Range {
     #[serde(serialize_with = "serialize_as_str")]
-    pub start: u64,
+    pub start_inclusive: u64,
     #[serde(serialize_with = "serialize_as_str")]
-    pub end: u64,
+    pub end_exclusive: u64,
+}
+
+impl From<&BlockRange> for Range {
+    fn from(value: &BlockRange) -> Self {
+        Self {
+            start_inclusive: value.start_inclusive,
+            end_exclusive: value.end_exclusive,
+        }
+    }
+}
+
+impl From<&BlockReference> for Range {
+    fn from(value: &BlockReference) -> Self {
+        Self {
+            start_inclusive: value.height,
+            end_exclusive: value.height + 1,
+        }
+    }
+}
+
+impl Display for Range {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "[{},{})", self.start_inclusive, self.end_exclusive)
+    }
 }
 
 #[derive(serde::Serialize)]
@@ -85,64 +109,61 @@ impl fmt::Display for MessageHash {
 }
 
 impl<T: FetcherClient> Indexer<T> {
-    pub async fn schedule_event(
+    pub async fn schedule_message(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-        reference: &BlockReference,
+        range: Range,
         events: Value,
     ) -> Result<MessageHash, IndexerError> {
-        self.schedule_event_internal(tx, reference, events, None)
+        self.schedule_message_internal(tx, range, events, None)
             .await
     }
 
-    pub async fn schedule_event_dedup(
+    pub async fn schedule_message_dedup(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-        reference: &BlockReference,
+        range: Range,
         events: Value,
-        dedup_event_hash: &MessageHash,
+        dedup_message_hash: &MessageHash,
     ) -> Result<MessageHash, IndexerError> {
-        self.schedule_event_internal(tx, reference, events, Some(dedup_event_hash))
+        self.schedule_message_internal(tx, range, events, Some(dedup_message_hash))
             .await
     }
 
-    pub async fn schedule_event_internal(
+    pub async fn schedule_message_internal(
         &self,
         tx: &mut sqlx::Transaction<'_, Postgres>,
-        reference: &BlockReference,
+        range: Range,
         events: Value,
-        dedup_event_hash: Option<&MessageHash>,
+        dedup_message_hash: Option<&MessageHash>,
     ) -> Result<MessageHash, IndexerError> {
         let data = serde_json::to_vec(&HubbleEvent {
             version: 1,
             universal_chain_id: self.indexer_id.clone(),
-            range: Range {
-                start: reference.height,
-                end: reference.height,
-            },
+            range: range.clone(),
             chunk: None,
             events,
         })
         .map_err(|e| IndexerError::InternalError(e.into()))?;
 
-        let event_hash = MessageHash::new(&data);
-        debug!("event_hash: {event_hash}");
+        let message_hash = MessageHash::new(&data);
+        debug!("event_hash: {message_hash}");
 
-        if dedup_event_hash == Some(&event_hash) {
-            debug!("deduplicating: {reference}");
-            return Ok(event_hash);
+        if dedup_message_hash == Some(&message_hash) {
+            debug!("deduplicating: {}", range);
+            return Ok(message_hash);
         }
 
         if self.nats.is_some() {
-            debug!("scheduling: {reference}");
+            debug!("scheduling: {}", range);
 
             let subject = subject_for_block(&self.indexer_id);
 
             let id = schedule(tx, &subject, data.into()).await?;
 
-            debug!("scheduled: {reference} - {id}");
+            debug!("scheduled: {range} - {id}");
         }
 
-        Ok(event_hash)
+        Ok(message_hash)
     }
 }

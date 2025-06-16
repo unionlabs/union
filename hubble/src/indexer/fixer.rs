@@ -1,16 +1,20 @@
 use std::cmp::min;
 
-use color_eyre::eyre::Report;
+use color_eyre::eyre::{eyre, Report};
 use tokio::time::sleep;
 use tracing::{debug, info, info_span, trace, warn, Instrument};
 
 use super::{
     api::{BlockRange, FetcherClient, IndexerError},
-    postgres::{get_block_range_to_fix, update_block_range_to_fix},
     Indexer,
 };
 use crate::indexer::{
     api::{BlockHandle, BlockSelection, FetchMode},
+    event::Range,
+    postgres::block_fix::{
+        delete_block_range_to_fix, get_block_fix_status, update_block_range_to_fix_next,
+        update_block_range_to_fix_start_and_next,
+    },
     HappyRangeFetcher,
 };
 
@@ -78,8 +82,6 @@ impl<T: FetcherClient> Indexer<T> {
                         self.fix_blocks(&last_finalized, range_to_fix.clone())
                             .instrument(info_span!("fix"))
                             .await?;
-
-                        self.remove_blocks_to_fix(range_to_fix.clone()).await?;
                     }
 
                     Ok(FixerLoopResult::RunAgain)
@@ -124,10 +126,59 @@ impl<T: FetcherClient> Indexer<T> {
 
         let mut tx = self.pg_pool.begin().await?;
 
-        block
-            .update(&mut tx)
-            .instrument(info_span!("rewrite"))
-            .await?;
+        if let Some(block_fix_status) = get_block_fix_status(&mut tx, &self.indexer_id).await? {
+            if block_fix_status.next != block.reference().height {
+                warn!("block fix status next {} does not align with the expected height {}, probably due to manual action. reset fixer", block_fix_status.next, block.reference().height);
+                return Err(eyre!(
+                    "block fix status next {} does not align with the expected height {}",
+                    block_fix_status.next,
+                    block.reference().height
+                ));
+            }
+
+            let events = block
+                .update(&mut tx)
+                .instrument(info_span!("rewrite"))
+                .await?;
+
+            let new_next = block.reference().height + 1;
+            let last_block = block_fix_status.range.end_exclusive == new_next;
+            let has_events = events.is_some();
+
+            if last_block || has_events {
+                debug!("{reference}: schedule event (last: {last_block}, events: {has_events})");
+
+                self.schedule_message(
+                    &mut tx,
+                    Range {
+                        start_inclusive: block_fix_status.range.start_inclusive,
+                        end_exclusive: new_next, // new_next is current + 1 (so exclusive)
+                    },
+                    events.unwrap_or(serde_json::Value::Null),
+                )
+                .await?;
+
+                if last_block {
+                    debug!("{reference}: last block => delete fixer");
+
+                    delete_block_range_to_fix(&mut tx, &block_fix_status).await?;
+                } else {
+                    // we're updating the start, because we've just sent a message
+                    // with all events from start until the current next
+                    debug!("{reference}: more blocks => update start and next");
+
+                    update_block_range_to_fix_start_and_next(&mut tx, &block_fix_status, new_next)
+                        .await?;
+                }
+            } else {
+                debug!("{reference}: nothing to do (last: {last_block}, events: {has_events}) => update next");
+
+                update_block_range_to_fix_next(&mut tx, &block_fix_status, new_next).await?;
+            }
+        } else {
+            warn!("block status record disappeared, probably due to manual action. reset fixer");
+            return Err(eyre!("block status record disappeared"));
+        }
 
         tx.commit().await?;
 
@@ -138,17 +189,14 @@ impl<T: FetcherClient> Indexer<T> {
 
     async fn block_range_to_fix(&self) -> Result<Option<BlockRange>, Report> {
         let mut tx = self.pg_pool.begin().await?;
-        let result = get_block_range_to_fix(&mut tx, self.indexer_id.clone()).await?;
+        let result = get_block_fix_status(&mut tx, &self.indexer_id)
+            .await?
+            .map(|b| BlockRange {
+                start_inclusive: b.next, // block range to fix starts with 'next'. start points to the last block without events
+                end_exclusive: b.range.end_exclusive,
+            });
         tx.commit().await?;
 
         Ok(result)
-    }
-
-    async fn remove_blocks_to_fix(&self, range: BlockRange) -> Result<(), Report> {
-        let mut tx = self.pg_pool.begin().await?;
-        update_block_range_to_fix(&mut tx, self.indexer_id.clone(), range).await?;
-        tx.commit().await?;
-
-        Ok(())
     }
 }

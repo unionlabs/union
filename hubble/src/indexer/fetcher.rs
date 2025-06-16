@@ -10,7 +10,10 @@ use super::{
 };
 use crate::indexer::{
     api::{BlockHandle, BlockRange, BlockSelection, FetchMode, IndexerError},
-    postgres::{get_current_height, update_block_status, update_current_height},
+    postgres::{
+        block_status::update_block_status,
+        indexer_status::{get_current_height, update_current_height},
+    },
     HappyRangeFetcher,
 };
 
@@ -98,13 +101,14 @@ impl<T: FetcherClient> Indexer<T> {
     }
 
     async fn store_block(&self, block_handle: T::BlockHandle) -> Result<(), Report> {
-        let reference = block_handle.reference();
+        let reference = &block_handle.reference();
         debug!("store: {}", reference);
 
         let mut tx = self.pg_pool.begin().await?;
 
         if let Some(events) = block_handle.insert(&mut tx).await? {
-            self.schedule_event(&mut tx, &reference, events).await?;
+            self.schedule_message(&mut tx, reference.into(), events)
+                .await?;
         }
 
         update_current_height(
@@ -171,7 +175,10 @@ impl<T: FetcherClient> Indexer<T> {
                     .await?;
 
                 let message_hash = match events {
-                    Some(events) => Some(self.schedule_event(&mut tx, reference, events).await?),
+                    Some(events) => Some(
+                        self.schedule_message(&mut tx, reference.into(), events)
+                            .await?,
+                    ),
                     None => None,
                 };
 

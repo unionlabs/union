@@ -1,0 +1,52 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                bf.id,\n                bf.start_height,\n                bf.next_height,\n                bf.end_height,\n                (SELECT COUNT(*) FROM hubble.block_fix c WHERE indexer_id = $1 AND bf.id <> c.id AND c.start_height < bf.next_height) AS count_others_start_before_next,\n                (SELECT COUNT(*) FROM hubble.block_fix c WHERE indexer_id = $1 AND bf.id <> c.id AND c.start_height = bf.next_height) AS count_others_start_at_next\n            FROM hubble.block_fix bf\n            WHERE indexer_id = $1\n            AND bf.next_height > bf.start_height\n            FOR UPDATE\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "start_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "next_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "end_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 4,
+        "name": "count_others_start_before_next",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 5,
+        "name": "count_others_start_at_next",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      null,
+      null
+    ]
+  },
+  "hash": "ddcdc2b52d9ff4da9e4aee56cb542e94290494d3d158e795fa616703e1176895"
+}

@@ -92,11 +92,17 @@ impl NatsConnection {
             .await?)
     }
 
-    pub async fn publish(&self, message: &Message) -> Result<Ack, IndexerError> {
+    pub async fn publish(
+        &self,
+        universal_chain_id: &str,
+        message: &Message,
+    ) -> Result<Ack, IndexerError> {
         info!("{}: sending", message.id);
 
         let mut headers = message.headers.clone();
         headers.append("Content-Encoding", "lz4");
+        headers.append("Message-Sequence", message.id.to_string());
+        headers.append("Universal-Chain-Id", universal_chain_id);
 
         let data = compress_prepend_size(&message.data);
 
@@ -121,7 +127,7 @@ pub async fn consume<F, Fut>(
     handler: F,
 ) -> Result<(), IndexerError>
 where
-    F: Fn(String, Bytes) -> Fut,
+    F: Fn(u64, String, Bytes) -> Fut,
     Fut: Future<Output = Result<(), IndexerError>>,
 {
     let meta = message.info().map_err(IndexerError::NatsMetaError)?;
@@ -154,7 +160,26 @@ where
         payload.clone()
     };
 
-    match handler(message.subject.to_string(), decoded).await {
+    let message_sequence = message
+        .headers
+        .as_ref()
+        .and_then(|h| h.get("Message-Sequence"))
+        .map(|h| {
+            h.as_str().parse::<u64>().map_err(|e| {
+                IndexerError::NatsUnparseableMessageSequence(
+                    h.as_str().to_string(),
+                    meta.stream_sequence,
+                    meta.consumer_sequence,
+                    e,
+                )
+            })
+        })
+        .unwrap_or(Err(IndexerError::NatsMissingMessageSequence(
+            meta.stream_sequence,
+            meta.consumer_sequence,
+        )))?;
+
+    match handler(message_sequence, message.subject.to_string(), decoded).await {
         Ok(_) => {
             debug!("acking");
             message.ack().await.map_err(IndexerError::NatsAckError)?;

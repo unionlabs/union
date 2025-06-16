@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO nats.out(subject, data)\n        VALUES ($1, $2)\n        RETURNING id\n        ",
+  "query": "\n        INSERT INTO hubble.out(subject, data)\n        VALUES ($1, $2)\n        RETURNING id\n        ",
   "describe": {
     "columns": [
       {
@@ -19,5 +19,5 @@
       false
     ]
   },
-  "hash": "103026ad46d916d5e359d9e389bb42958111a0cb46616c7069069ee01fc0cc23"
+  "hash": "dd0566345ebe571703c79c87326587970f2af1534b496c037c0deabc049aaf3a"
 }
