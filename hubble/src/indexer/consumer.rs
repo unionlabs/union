@@ -409,7 +409,7 @@ fn get_message_meta(message: &async_nats::jetstream::Message) -> Result<MessageM
     if let Some(header_map) = &message.headers {
         let message_sequence = match header_map.get("Message-Sequence") {
             Some(message_sequence) => message_sequence.as_str().parse::<u64>().map_err(|e| {
-                IndexerError::NatsUnparseableMessageSequence(
+                IndexerError::NatsUnparsableMessageSequence(
                     message_sequence.as_str().to_string(),
                     nats_stream_sequence,
                     nats_consumer_sequence,
@@ -424,7 +424,7 @@ fn get_message_meta(message: &async_nats::jetstream::Message) -> Result<MessageM
 
         let message_hash = match header_map.get("Message-Hash") {
             Some(message_hash) => message_hash.as_str().parse::<MessageHash>().map_err(|e| {
-                IndexerError::NatsUnparseableMessageHash(
+                IndexerError::NatsUnparsableMessageHash(
                     message_hash.as_str().to_string(),
                     nats_stream_sequence,
                     nats_consumer_sequence,

@@ -69,11 +69,11 @@ pub enum IndexerError {
     #[error("missing headers: in stream sequence: {0}, consumer_sequence sequence: {1}")]
     NatsMissingMessageSequence(u64, u64),
     #[error("unsupported message sequence:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
-    NatsUnparseableMessageSequence(String, u64, u64, ParseIntError),
+    NatsUnparsableMessageSequence(String, u64, u64, ParseIntError),
     #[error("missing message hash: in stream sequence: {0}, consumer_sequence sequence: {1}")]
     NatsMissingMessageHash(u64, u64),
     #[error("unsupported message hash:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
-    NatsUnparseableMessageHash(String, u64, u64, hex::FromHexError),
+    NatsUnparsableMessageHash(String, u64, u64, hex::FromHexError),
     #[error(
         "missing universal chain id: in stream sequence: {0}, consumer_sequence sequence: {1}"
     )]
