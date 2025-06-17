@@ -1,4 +1,4 @@
-import { BigDecimal, Brand, Context, Effect } from "effect"
+import { BigDecimal, Brand, Context, Effect, Option as O } from "effect"
 import type { GasPriceError } from "./error"
 
 export type AtomicGasPrice = BigDecimal.BigDecimal & Brand.Brand<"AtomicGasPrice">
@@ -30,6 +30,10 @@ export declare namespace GasPrice {
   export interface Service {
     readonly of: Effect.Effect<{
       value: BaseGasPrice
+      /**
+       * e.g. L1 fee on BOB
+       */
+      additiveFee: O.Option<AtomicGasPrice>
       decimals: number
     }, GasPriceError>
   }

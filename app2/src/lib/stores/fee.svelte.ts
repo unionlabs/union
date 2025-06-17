@@ -78,11 +78,13 @@ const createFeeStore = () => {
         source: {
           gas: BaseGasPrice
           gasDecimals: number
+          additiveFee: O.Option<AtomicGasPrice>
           usd: PriceResult
         }
         destination: {
           gas: BaseGasPrice
           gasDecimals: number
+          additiveFee: O.Option<AtomicGasPrice>
           usd: PriceResult
         }
       },
@@ -130,6 +132,7 @@ const createFeeStore = () => {
             return {
               gas: gas.value,
               gasDecimals: gas.decimals,
+              additiveFee: gas.additiveFee,
               usd,
             }
           })
@@ -183,7 +186,8 @@ const createFeeStore = () => {
 
   const decorate = (
     self: {
-      gasPrice: { value: BaseGasPrice; decimals: number }
+      // TODO: consolidate type
+      gasPrice: { value: BaseGasPrice; additiveFee: O.Option<AtomicGasPrice>; decimals: number }
       ratio: BigDecimal.BigDecimal
     } & typeof config,
   ) => {
@@ -242,6 +246,21 @@ const createFeeStore = () => {
       )
 
       return f(self.gasPrice.value)
+    }
+
+    const applyAdditiveFeeK = (
+      amount: AtomicGasPrice,
+    ): Writer.Writer<readonly string[], AtomicGasPrice> => {
+      const result = self.gasPrice.additiveFee.pipe(
+        O.map(BigDecimal.sum(amount)),
+        O.getOrElse(() => amount),
+        AtomicGasPrice,
+      )
+
+      return [
+        result,
+        [`additive (L1) fee for BOB is ${self.gasPrice.additiveFee.toString()}`],
+      ]
     }
 
     const applyRatioK = (a: BaseGasPrice): Writer.Writer<readonly string[], BaseGasPrice> => {
@@ -336,6 +355,7 @@ const createFeeStore = () => {
       applyGasPriceK,
       asBaseUnitK,
       asAtomicUnitK,
+      applyAdditiveFeeK,
       applyFeeMultiplierK,
       applyRatioK,
       applyBatchDivisionK,
@@ -377,12 +397,6 @@ const createFeeStore = () => {
     O.map(x => x.source.gas),
   ))
 
-  const destGasUnitPrice = $derived(pipe(
-    data,
-    O.flatMap(O.getRight),
-    O.map(x => x.destination.gas),
-  ))
-
   const decoratedConfig = $derived(pipe(
     O.all({
       // XXX: source / dest here should be determined on per-transaction basis
@@ -392,6 +406,7 @@ const createFeeStore = () => {
         O.map(x => ({
           value: x.destination.gas,
           decimals: x.destination.gasDecimals,
+          additiveFee: x.destination.additiveFee,
         })),
       ),
       ratio: maybeRatio,
@@ -407,6 +422,7 @@ const createFeeStore = () => {
         PACKET_SEND_LC_UPDATE_L1: flow(
           pipe( // TODO: extract
             config.applyGasPriceK,
+            composeK(config.applyAdditiveFeeK),
             composeK(config.asBaseUnitK),
             composeK(config.applyFeeMultiplierK),
             composeK(config.applyBatchDivisionK),
@@ -416,6 +432,7 @@ const createFeeStore = () => {
         PACKET_SEND_LC_UPDATE_L0: flow(
           pipe( // TODO: extract
             config.applyGasPriceK,
+            composeK(config.applyAdditiveFeeK),
             composeK(config.asBaseUnitK),
             composeK(config.applyFeeMultiplierK),
             composeK(config.applyBatchDivisionK),
@@ -425,6 +442,7 @@ const createFeeStore = () => {
         PACKET_RECV: flow(
           pipe( // TODO: extract
             config.applyGasPriceK,
+            composeK(config.applyAdditiveFeeK),
             composeK(config.asBaseUnitK),
             composeK(config.applyFeeMultiplierK),
             composeK(config.applyRatioK),

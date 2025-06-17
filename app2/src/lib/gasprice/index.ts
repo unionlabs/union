@@ -1,6 +1,6 @@
 import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
 import { createViemPublicClient } from "@unionlabs/sdk/evm"
-import type { Chain } from "@unionlabs/sdk/schema"
+import { type Chain, NumberFromHexString, UniversalChainId } from "@unionlabs/sdk/schema"
 import {
   Array as A,
   BigDecimal,
@@ -11,9 +11,12 @@ import {
   Option as O,
   pipe,
   Record as R,
+  Schema as S,
   unsafeCoerce,
 } from "effect"
 import { type GetGasPriceErrorType, http } from "viem"
+import type * as V from "viem"
+import { publicActionsL2 } from "viem/op-stack"
 import { GasPriceError } from "./error"
 import * as GasPrice from "./service"
 
@@ -29,14 +32,22 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
         Layer.effect(
           GasPrice.GasPrice,
           Effect.gen(function*() {
-            const client = yield* pipe(
-              chain.toViemChain(),
-              Effect.flatMap((chain) =>
-                createViemPublicClient({
-                  chain,
-                  transport: http(),
+            const viemChain = yield* chain.toViemChain().pipe(
+              Effect.mapError((cause) =>
+                new GasPriceError({
+                  module: "Evm",
+                  method: "chain",
+                  description: "could not convert internal chain to viem chain",
+                  cause,
                 })
               ),
+            )
+
+            const client = yield* pipe(
+              createViemPublicClient({
+                chain: viemChain,
+                transport: http(),
+              }),
               Effect.mapError((cause) =>
                 new GasPriceError({
                   module: "Evm",
@@ -45,6 +56,38 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                   cause,
                 })
               ),
+            )
+
+            const additiveFee = yield* pipe(
+              Match.value(chain.universal_chain_id),
+              Match.whenOr(
+                Match.is(UniversalChainId.make("bob.60808")),
+                Match.is(UniversalChainId.make("bob.808813")),
+                (id) =>
+                  pipe(
+                    client.extend(publicActionsL2()),
+                    (client) =>
+                      Effect.tryPromise({
+                        try: () =>
+                          client.estimateL1Fee({
+                            // TODO: re-evaluate correctness
+                            account: "0x0000000000000000000000000000000000000000",
+                            chain: undefined,
+                          }),
+                        catch: (cause) =>
+                          new GasPriceError({
+                            module: "Evm",
+                            method: "additiveFee",
+                            description: `Could not calculate L1 fee for ${id}`,
+                            cause,
+                          }),
+                      }),
+                    Effect.map((atomic) => BigDecimal.make(atomic, 0)),
+                    Effect.map(GasPrice.AtomicGasPrice),
+                  ),
+              ),
+              Match.option,
+              Effect.transposeOption,
             )
 
             const of = pipe(
@@ -60,10 +103,13 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
               }),
               // XXX: take from constants file
               Effect.tap((x) =>
-                Effect.logDebug(`${chain.display_name} gas price (atomic): ${JSON.stringify(x)}`)
+                Effect.logDebug(
+                  `${chain.display_name} gas price (atomic): ${JSON.stringify(x)}`,
+                )
               ),
               Effect.map((a) => ({
                 value: GasPrice.BaseGasPrice(BigDecimal.make(a, 18)),
+                additiveFee,
                 decimals: 18,
               })),
               Effect.tap((x) =>
@@ -115,6 +161,7 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                         GasPrice.BaseGasPrice,
                         (value) => ({
                           value,
+                          additiveFee: O.none<GasPrice.AtomicGasPrice>(),
                           decimals,
                         }),
                       )

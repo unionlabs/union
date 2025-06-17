@@ -156,6 +156,7 @@ const calculating = false
                   <div class="text-sm">
                     <div class="font-semibold text-white mb-2">{item.label}</div>
                     <div class="text-zinc-300 mb-4">{item.description}</div>
+                    <!-- <div>{@html item.steps.calc}</div> -->
                   </div>
                 {/snippet}
               </Tooltip>

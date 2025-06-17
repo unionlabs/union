@@ -1,4 +1,4 @@
-import { Context, Data, Effect } from "effect"
+import { Array as A, Context, Data, Effect, pipe, Predicate } from "effect"
 import {
   type Account,
   type Chain,
@@ -62,11 +62,23 @@ export class CreateViemWalletClientError extends Data.TaggedError("CreateViemWal
   cause: CreateWalletClientErrorType
 }> {}
 
+type Extension = Parameters<ReturnType<typeof createPublicClient>["extend"]>[0]
+
 export const createViemPublicClient = (
   parameters: PublicClientConfig,
+  extensions?: ReadonlyArray<Extension> | Extension | undefined,
 ): Effect.Effect<PublicClient, CreateViemPublicClientError> =>
   Effect.try({
-    try: () => createPublicClient(parameters),
+    try: () =>
+      pipe(
+        A.ensure(extensions),
+        A.filter(Predicate.isNotUndefined),
+        (xs) =>
+          xs.reduce(
+            (client, extension) => client.extend(extension as unknown as any),
+            createPublicClient(parameters),
+          ),
+      ),
     catch: err =>
       new CreateViemPublicClientError({
         cause: extractErrorDetails(err as CreatePublicClientErrorType),
