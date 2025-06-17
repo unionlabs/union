@@ -83,9 +83,7 @@ function handleLogin(provider: AuthProvider) {
             {/if}
           </span>
           {#if loading}
-            <div
-              class="absolute right-4 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin"
-            >
+            <div class="absolute right-4 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin">
             </div>
           {/if}
         </Button>

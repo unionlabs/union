@@ -1,8 +1,9 @@
+import type { FeeIntent } from "$lib/stores/fee.svelte"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { signingMode } from "$lib/transfer/signingMode.svelte.ts"
 import type { AddressCanonicalBytes, Chain, Channel, ChannelId } from "@unionlabs/sdk/schema"
-import { Data, Option } from "effect"
+import { Data, Either as E, Option } from "effect"
 
 export interface TransferArgs {
   sourceChain: Chain
@@ -18,6 +19,7 @@ export interface TransferArgs {
   sourceRpcType?: string
   destinationRpcType?: string
   sourceChannelId?: ChannelId
+  fee: FeeIntent
 }
 
 export type FillingState = Data.TaggedEnum<{
@@ -32,12 +34,18 @@ export type FillingState = Data.TaggedEnum<{
   ReceiverMissing: {}
   NoRoute: {}
   NoContract: {}
+  NoFee: {
+    message?: string | undefined
+  }
   Ready: TransferArgs
 }>
 
 export const FillingState = Data.taggedEnum<FillingState>()
 
-export const getFillingState = (transferData: TransferData): FillingState => {
+export const getFillingState = (
+  transferData: TransferData,
+  fee: Option.Option<E.Either<FeeIntent, string>>,
+): FillingState => {
   if (!wallets.hasAnyWallet() && signingMode.mode === "single") {
     return FillingState.NoWallet()
   }
@@ -84,6 +92,18 @@ export const getFillingState = (transferData: TransferData): FillingState => {
         return FillingState.ReceiverMissing()
       }
 
+      if (Option.isNone(fee)) {
+        return FillingState.NoFee({})
+      }
+
+      if (E.isLeft(fee.value)) {
+        return FillingState.NoFee({ message: fee.value.left })
+      }
+
+      const unwrappedFee = fee.value.right
+
+      // TODO: if fee is Some<Either.Left<Error>> => error state
+
       const unwrapped = Option.all({
         destinationChain: transferData.destinationChain,
         channel: transferData.channel,
@@ -99,7 +119,9 @@ export const getFillingState = (transferData: TransferData): FillingState => {
           return FillingState.Empty()
         },
 
-        onSome: ({ destinationChain, channel, receiver, parsedAmount, baseToken, ucs03address }) =>
+        onSome: (
+          { destinationChain, channel, receiver, parsedAmount, baseToken, ucs03address },
+        ) =>
           FillingState.Ready({
             sourceChain,
             destinationChain,
@@ -114,6 +136,7 @@ export const getFillingState = (transferData: TransferData): FillingState => {
             sourceRpcType: sourceChain.rpc_type,
             destinationRpcType: destinationChain.rpc_type,
             sourceChannelId: channel.source_channel_id,
+            fee: unwrappedFee,
           }),
       })
     },

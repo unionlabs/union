@@ -3,6 +3,7 @@ import * as S from "effect/Schema"
 import { UniversalChainId } from "./chain.js"
 import { ClientId } from "./client.js"
 import { ConnectionId } from "./connection.js"
+import { Fees } from "./fee.js"
 import { PortId } from "./port.js"
 
 export const ChannelId = S.Int.pipe(S.brand("ChannelId"))
@@ -17,6 +18,7 @@ export class Channel extends Schema.Class<Channel>("Channel")({
   destination_connection_id: ConnectionId,
   destination_port_id: PortId,
   destination_universal_chain_id: UniversalChainId,
+  fees: Fees,
   source_channel_id: ChannelId,
   source_client_id: ClientId,
   source_connection_id: ConnectionId,

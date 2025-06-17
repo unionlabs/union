@@ -1,7 +1,6 @@
 import { runPromiseExit } from "$lib/runtime.ts"
-import type { CosmosWalletId } from "$lib/wallet/cosmos"
+
 import type { ValidTransfer } from "@unionlabs/sdk/schema"
-import { Effect } from "effect"
 import { approveTransfer } from "./approval.ts"
 import { switchChain } from "./chain.ts"
 import {
@@ -15,7 +14,6 @@ import { submitTransfer } from "./transactions.ts"
 export async function nextState(
   ts: TransferSubmission,
   params: ValidTransfer["args"],
-  connectedWallet: CosmosWalletId,
 ): Promise<TransferSubmission> {
   return TransferSubmission.$match(ts, {
     Filling: () => {
@@ -48,7 +46,7 @@ export async function nextState(
       return ApprovalSubmitState.$match(state, {
         InProgress: async () => {
           const exit = await runPromiseExit(
-            approveTransfer(params.sourceChain, connectedWallet, params),
+            approveTransfer(params.sourceChain, params),
           )
           return TransferSubmission.ApprovalSubmit({
             state: ApprovalSubmitState.Complete({ exit }),

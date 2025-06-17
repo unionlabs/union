@@ -126,7 +126,7 @@ function setMaxAmount() {
     disabled={!transferData.raw.asset || disabled}
     label=""
     autocorrect="off"
-    placeholder="0.00"
+    placeholder="Enter amount"
     spellcheck="false"
     autocomplete="off"
     inputmode="decimal"
@@ -160,21 +160,9 @@ function setMaxAmount() {
     autocapitalize="none"
     pattern="^[0-9]*[.,]?[0-9]*$"
     value={transferData.raw.amount}
-    class="h-14 text-center text-lg text-white"
+    class="h-14 text-center text-lg"
     oninput={(event) => {
       transferData.raw.updateField("amount", event)
     }}
   />
 </div>
-{#if Option.isSome(transferData.sourceChain) && Option.isSome(transferData.baseToken)}
-  {#if transferData.sourceChain.value.universal_chain_id === "babylon.bbn-1"
-    // XXX: denom type should be expanded, or this is wrong
-    // @ts-expect-error 2367
-    && (transferData.baseToken.value.denom === "ubbn"
-      || transferData.baseToken.value.denom
-        === "0x" + Array.from(new TextEncoder().encode("ubbn"))
-            .map((b) => b.toString(16).padStart(2, "0"))
-            .join(""))}
-    <div class="text-xs text-zinc-400 text-end">Relayer Fee: 20 BABY</div>
-  {/if}
-{/if}

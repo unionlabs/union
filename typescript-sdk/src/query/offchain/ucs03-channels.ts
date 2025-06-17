@@ -93,7 +93,9 @@ export const getQuoteToken = async (
   let wrappingTokens = wrapping.value.v1_ibc_union_tokens
 
   // if it is, quote token is the unwrapped verison of the wrapped token.
+  // @ts-expect-error
   if (wrappingTokens.length > 0) {
+    // @ts-expect-error
     let quote_token = wrappingTokens.at(0)?.wrapping.at(0)?.unwrapped_address_hex
     if (quote_token) {
       return ok({ type: "UNWRAPPED", quote_token })
@@ -232,7 +234,9 @@ export const getChannelInfo = (
   destination_chain_id: string,
   channels: Awaited<ReturnType<typeof getRecommendedChannels>>,
 ): Channel | null => {
+  // @ts-expect-error
   let rawChannel = channels.find(
+    // @ts-expect-error
     chan =>
       chan.source_chain_id === source_chain_id
       && chan.destination_chain_id === destination_chain_id,

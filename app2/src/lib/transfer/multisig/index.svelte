@@ -3,6 +3,7 @@ import { beforeNavigate } from "$app/navigation"
 import Card from "$lib/components/ui/Card.svelte"
 import StepProgressBar from "$lib/components/ui/StepProgressBar.svelte"
 import { runFork } from "$lib/runtime"
+import { type FeeIntent, FeeStore } from "$lib/stores/fee.svelte"
 import { transferHashStore } from "$lib/stores/transfer-hash.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import transfer from "$lib/transfer/index.svelte"
@@ -15,7 +16,9 @@ import { FillingStep, MessageStep, Steps } from "$lib/transfer/multisig/steps"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
 import type { TransferContext } from "$lib/transfer/shared/services/filling/create-context.ts"
-import { Array as Arr, Effect, Fiber, FiberId, Option } from "effect"
+import { BABYLON_METADATA } from "@unionlabs/sdk/constants/gas-denoms"
+import { TokenRawAmount } from "@unionlabs/sdk/schema"
+import { Array as Arr, Effect, Either as E, Fiber, FiberId, Option } from "effect"
 import { constVoid, pipe } from "effect/Function"
 import { fly } from "svelte/transition"
 let currentPage = $state(0)
@@ -76,12 +79,24 @@ $effect(() => {
   steps = Option.none()
   errors = Option.none()
 
+  // TODO: replace with real fee
+  const emptyFeeIntent: FeeIntent = {
+    decimals: 0,
+    baseToken: BABYLON_METADATA.address,
+    quoteAmount: TokenRawAmount.make(0n),
+    baseAmount: TokenRawAmount.make(0n),
+  }
+
   const machineEffect = Effect.gen(function*() {
     let currentState: CreateContextState = CreateContextState.Filling()
     let context: TransferContext | null = null
 
     while (true) {
-      const result: StateResult | void = yield* createContextState(currentState, transferData)
+      const result: StateResult | void = yield* createContextState(
+        currentState,
+        transferData,
+        Option.some(E.right(emptyFeeIntent)),
+      )
 
       if (!result) {
         break

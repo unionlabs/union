@@ -54,15 +54,11 @@ onDestroy(() => {
           class="absolute inset-0 bg-zinc-925/5 backdrop-blur-lg z-50 flex items-center justify-center cursor-pointer transition-all hover:bg-zinc-700/10 hover:backdrop-blur-md group"
         >
           <div class="relative w-fit transition-transform duration-300 group-hover:scale-[1.02]">
-            <div
-              class="px-2 py-0.5 rounded-sm bg-zinc-800/40 border scale-110 border-accent/40 transition-all flex items-center gap-2 group-hover:border-accent/50"
-            >
+            <div class="px-2 py-0.5 rounded-sm bg-zinc-800/40 border scale-110 border-accent/40 transition-all flex items-center gap-2 group-hover:border-accent/50">
               <SpinnerIcon class="size-3 text-accent animate-spin" />
               <span class="text-sm font-medium text-accent">Processing</span>
             </div>
-            <div
-              class="absolute inset-0 rounded-sm bg-accent/10 blur-sm animate-pulse group-hover:bg-accent/15"
-            >
+            <div class="absolute inset-0 rounded-sm bg-accent/10 blur-sm animate-pulse group-hover:bg-accent/15">
             </div>
           </div>
         </a>

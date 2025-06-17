@@ -3,16 +3,14 @@ import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.sve
 import SharpWalletIcon from "$lib/components/icons/SharpWalletIcon.svelte"
 import InsetError from "$lib/components/model/InsetError.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import Label from "$lib/components/ui/Label.svelte"
-import { runPromiseExit$, runSync } from "$lib/runtime"
 import { uiStore } from "$lib/stores/ui.svelte"
 import Amount from "$lib/transfer/shared/components/Amount.svelte"
 import ChainAsset from "$lib/transfer/shared/components/ChainAsset/index.svelte"
+import FeeDetails from "$lib/transfer/shared/components/FeeDetails.svelte"
 import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
-import { Effect, identity, Match, Option } from "effect"
-import { onMount } from "svelte"
+import { Match, Option } from "effect"
 
 type Props = {
   onContinue: () => void
@@ -29,8 +27,35 @@ const {
   transferErrors = Option.none<ContextFlowError>(),
 }: Props = $props()
 
+let chainAssetOpen = $state(false)
 let isErrorModalOpen = $state(false)
 let isReceiverOpen = $state(false)
+let feeDetailsOpen = $state(false)
+
+// Handle ChainAsset open/close with proper sequencing
+function handleChainAssetOpen(isOpen: boolean) {
+  if (isOpen) {
+    // ChainAsset is opening - close fee details first, then open chain asset
+    feeDetailsOpen = false
+    setTimeout(() => {
+      chainAssetOpen = true
+    }, 250) // Match the slide duration from FeeDetails
+  } else {
+    // ChainAsset is closing - just close it, don't auto-open fee details
+    chainAssetOpen = false
+    // User can manually click fee details button if they want to see it
+  }
+}
+
+// Handle continue button - close fee details first, then proceed
+function handleContinueClick() {
+  // Close fee details first for smooth transition
+  feeDetailsOpen = false
+  // Wait for fee details slide animation to complete (250ms) + small buffer
+  setTimeout(() => {
+    onContinue()
+  }, 300)
+}
 
 const uiStatus = $derived.by(() => {
   return Option.match(transferErrors, {
@@ -68,7 +93,10 @@ const isButtonEnabled = $derived.by(() => !loading)
 
 <div class="min-w-full flex flex-col grow">
   <div class="flex flex-col gap-4 p-4">
-    <ChainAsset type="source" />
+    <ChainAsset
+      type="source"
+      isOpen={(v) => handleChainAssetOpen(v)}
+    />
     <button
       class="group flex items-center gap-2 -mt-3 -mb-4 text-zinc-800 group-hover:text-zinc-600 transition-colors cursor-pointer"
       onclick={transferData.flipTransfer}
@@ -81,11 +109,17 @@ const isButtonEnabled = $derived.by(() => !loading)
       </div>
       <span class="flex-1 h-px bg-zinc-800 group-hover:bg-zinc-700 transition-colors"></span>
     </button>
-    <ChainAsset type="destination" />
+    <ChainAsset
+      type="destination"
+      isOpen={(v) => handleChainAssetOpen(v)}
+    />
     <Amount type="source" />
+    <div class="grow"></div>
+    <FeeDetails
+      open={feeDetailsOpen}
+      onToggle={(newOpen: boolean) => feeDetailsOpen = newOpen}
+    />
   </div>
-
-  <div class="grow"></div>
 
   <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
     <div class="flex w-full flex-col items-end">
@@ -107,7 +141,7 @@ const isButtonEnabled = $derived.by(() => !loading)
               if (uiStatus.text === "Connect wallet") {
                 uiStore.openWalletModal()
               } else {
-                onContinue()
+                handleContinueClick()
               }
             }}
             disabled={!isButtonEnabled && uiStatus.text !== "Connect wallet"}

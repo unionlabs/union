@@ -1,9 +1,14 @@
+import { unionTestnet } from "$lib/config/wallets/info"
 import { runSync } from "$lib/runtime"
+import { chainInfoMap } from "$lib/services/cosmos/chain-info/config"
+import {
+  KeplrChainInfoFromInternal,
+  LeapChainInfoFromInternal,
+} from "$lib/services/cosmos/chain-info/transform"
 import { wallets } from "$lib/stores/wallets.svelte"
-import { unionKeplrChainInfo, unionLeapChainInfo } from "$lib/wallet/cosmos/chain-info"
 import { bech32AddressToHex } from "@unionlabs/client"
 import { AddressCosmosCanonical } from "@unionlabs/sdk/schema"
-import { Effect, Option } from "effect"
+import { Effect, Option, Schema as S } from "effect"
 
 export const cosmosWalletsInformation = [
   {
@@ -40,13 +45,18 @@ class CosmosStore {
   address = $state<string | undefined>(undefined)
   rawAddress = $state<Uint8Array | undefined>(undefined)
   connectedWallet = $state<CosmosWalletId | undefined>(undefined)
-  connectionStatus = $state<"disconnected" | "connecting" | "connected">("disconnected")
+  connectionStatus = $state<"disconnected" | "connecting" | "connected">(
+    "disconnected",
+  )
 
   constructor() {
     this.loadFromStorage()
 
     if (this.connectedWallet && this.connectionStatus === "connected") {
-      console.log("Attempting to auto-reconnect to Cosmos wallet:", this.connectedWallet)
+      console.log(
+        "Attempting to auto-reconnect to Cosmos wallet:",
+        this.connectedWallet,
+      )
       setTimeout(() => {
         this.reconnect(this.connectedWallet as CosmosWalletId)
       }, 1000)
@@ -60,7 +70,9 @@ class CosmosStore {
         const hexAddress = bech32AddressToHex({ address })
         return AddressCosmosCanonical.make(hexAddress)
       }
-      wallets.cosmosAddress = Option.some(cosmosAddressFromBech32(bech32Address))
+      wallets.cosmosAddress = Option.some(
+        cosmosAddressFromBech32(bech32Address),
+      )
     } else {
       wallets.cosmosAddress = Option.none()
     }
@@ -75,7 +87,9 @@ class CosmosStore {
 
         this.chain = parsedData.chain || "cosmos"
         this.address = parsedData.address
-        this.rawAddress = parsedData.rawAddress ? new Uint8Array(parsedData.rawAddress) : undefined
+        this.rawAddress = parsedData.rawAddress
+          ? new Uint8Array(parsedData.rawAddress)
+          : undefined
         this.connectedWallet = parsedData.connectedWallet
         this.connectionStatus = parsedData.connectionStatus || "disconnected"
 
@@ -128,7 +142,9 @@ class CosmosStore {
 
     const walletApi = window[cosmosWalletId]
     if (!walletApi) {
-      const walletInfo = cosmosWalletsInformation.find(wallet => wallet.id === cosmosWalletId)
+      const walletInfo = cosmosWalletsInformation.find(
+        (wallet) => wallet.id === cosmosWalletId,
+      )
       if (walletInfo) {
         const { deepLink, download } = walletInfo
         window.open(deepLink || download, "_blank", "noopener noreferrer")
@@ -139,8 +155,8 @@ class CosmosStore {
     }
 
     const chainInfoMap = {
-      keplr: unionKeplrChainInfo,
-      leap: unionLeapChainInfo,
+      keplr: S.decodeSync(KeplrChainInfoFromInternal)(unionTestnet)[0],
+      leap: S.decodeSync(LeapChainInfoFromInternal)(unionTestnet)[0],
     }
 
     const chainInfo = chainInfoMap[cosmosWalletId]
@@ -154,15 +170,9 @@ class CosmosStore {
     try {
       await walletApi.experimentalSuggestChain(chainInfo)
       await walletApi.enable(["bbn-1"])
-      Effect.log("wallet.connect").pipe(
-        annotate,
-        runSync,
-      )
+      Effect.log("wallet.connect").pipe(annotate, runSync)
     } catch (e) {
-      Effect.logError("wallet.connect", e).pipe(
-        annotate,
-        runSync,
-      )
+      Effect.logError("wallet.connect", e).pipe(annotate, runSync)
       this.connectionStatus = "disconnected"
       this.saveToStorage()
       return
@@ -178,8 +188,6 @@ class CosmosStore {
     this.updateCosmosAddress(account?.bech32Address)
 
     this.saveToStorage()
-
-    Effect.sleep(2_000)
   }
 
   reconnect = async (walletId: CosmosWalletId) => {
@@ -196,8 +204,8 @@ class CosmosStore {
     }
 
     const chainInfoMap = {
-      keplr: unionKeplrChainInfo,
-      leap: unionLeapChainInfo,
+      keplr: S.decodeSync(KeplrChainInfoFromInternal)(unionTestnet)[0],
+      leap: S.decodeSync(LeapChainInfoFromInternal)(unionTestnet)[0],
     }
 
     const chainInfo = chainInfoMap[walletId]

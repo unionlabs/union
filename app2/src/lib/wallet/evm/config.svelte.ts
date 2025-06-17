@@ -10,7 +10,7 @@ import {
   switchChain as _switchChain,
   watchAccount,
 } from "@wagmi/core"
-import { Effect, Option, pipe } from "effect"
+import { Effect, Option } from "effect"
 import type { Hex } from "viem"
 
 import { runSync } from "$lib/runtime.ts"
@@ -140,8 +140,6 @@ class SepoliaStore {
     } catch (error) {
       console.error("Disconnect failed:", error)
     }
-
-    Effect.sleep(2_000)
   }
 
   reconnectLast = async () => {

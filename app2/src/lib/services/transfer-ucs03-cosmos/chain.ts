@@ -1,10 +1,10 @@
 import { getCosmosWalletClient, getCosmWasmClient } from "$lib/services/cosmos/clients.ts"
-import { getCosmosChainInfo } from "$lib/wallet/cosmos/chain-info.ts"
 import { cosmosStore } from "$lib/wallet/cosmos/index.ts"
 import type { SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import type { Chain } from "@unionlabs/sdk/schema"
 import { extractErrorDetails } from "@unionlabs/sdk/utils/extract-error-details.ts"
 import { Effect } from "effect"
+import { getCosmosChainInfo } from "../cosmos/chain-info/index.ts"
 import {
   CosmosSwitchChainError,
   CosmosWalletNotConnectedError,
@@ -31,7 +31,7 @@ export const switchChain = (chain: Chain) =>
 
     const wallet = yield* getCosmosWalletClient
 
-    const chainInfo = getCosmosChainInfo(chain.chain_id)
+    const chainInfo = yield* getCosmosChainInfo(chain)
 
     if (!chainInfo) {
       return yield* new NoCosmosChainInfoError({ chain })
@@ -39,7 +39,7 @@ export const switchChain = (chain: Chain) =>
 
     yield* Effect.tryPromise({
       try: () => wallet.experimentalSuggestChain(chainInfo),
-      catch: err =>
+      catch: (err) =>
         new CosmosSwitchChainError({
           cause: extractErrorDetails(err as Error),
           chainId: chain.universal_chain_id,
@@ -50,7 +50,7 @@ export const switchChain = (chain: Chain) =>
 
     yield* Effect.tryPromise({
       try: () => wallet.enable([chain.chain_id]),
-      catch: err =>
+      catch: (err) =>
         new CosmosSwitchChainError({
           cause: extractErrorDetails(err as Error),
           chainId: chain.universal_chain_id,
@@ -59,9 +59,10 @@ export const switchChain = (chain: Chain) =>
         }),
     })
 
+    // XXX: why
     yield* Effect.sleep("1.5 seconds")
 
-    const signingClient = yield* getCosmWasmClient(chain, connectedWallet)
+    const signingClient = yield* getCosmWasmClient(chain)
 
     return yield* Effect.succeed<SwitchChainSuccess>({
       success: true,

@@ -1,3 +1,4 @@
+import type { FeeIntent } from "$lib/stores/fee.svelte"
 import { createMultisigMessage } from "$lib/transfer/multisig/services/create-multisig.ts"
 import type { TransferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { validateTransfer } from "$lib/transfer/shared/data/validation.ts"
@@ -17,7 +18,7 @@ import {
   type TransferContext,
 } from "$lib/transfer/shared/services/filling/create-context.ts"
 import { createOrdersBatch } from "$lib/transfer/shared/services/filling/create-orders.ts"
-import { Data, Effect, Match, Option } from "effect"
+import { Data, Effect, Either as E, Match, Option } from "effect"
 
 export type StateResult = {
   nextState: Option.Option<CreateContextState>
@@ -88,11 +89,12 @@ const complete = (msg: string, context: TransferContext): StateResult => ({
 export const createContextState = (
   cts: CreateContextState,
   transfer: TransferData,
+  fee: Option.Option<E.Either<FeeIntent, string>>,
 ) => {
   return CreateContextState.$match(cts, {
     Empty: () => Effect.void,
     Filling: () => {
-      const state = getFillingState(transfer)
+      const state = getFillingState(transfer, fee)
 
       return FillingState.$match(state, {
         Empty: () => Effect.void,
@@ -104,6 +106,7 @@ export const createContextState = (
         NoRoute: () => Effect.succeed(ok(Empty(), "No route")),
         NoContract: () => Effect.succeed(ok(Empty(), "No ucs03 contract")),
         EmptyAmount: () => Effect.succeed(ok(Empty(), "Enter amount")),
+        NoFee: ({ message }) => Effect.succeed(ok(Empty(), message ?? "Loading fee...")),
         InvalidAmount: () => Effect.succeed(ok(Empty(), "Invalid amount")),
         ReceiverMissing: () => Effect.succeed(ok(Empty(), "Select receiver")),
         Ready: (args) => Effect.succeed(ok(Validation({ args }), "Validating...")),

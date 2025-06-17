@@ -123,9 +123,7 @@ function getStatusBadge(status: string) {
               {#if reward.status !== "available"}
                 <div class="flex items-center gap-1.5">
                   <div class="relative">
-                    <div
-                      class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 hover:scale-110 hover:border-accent/50 transition-all duration-300 flex items-center justify-center"
-                    >
+                    <div class="px-1.5 py-0.5 rounded-sm bg-zinc-800/80 border border-zinc-700/50 hover:scale-110 hover:border-accent/50 transition-all duration-300 flex items-center justify-center">
                       <span
                         class="text-[10px] lg:text-xs font-medium {status.color} transition-all duration-300"
                       >

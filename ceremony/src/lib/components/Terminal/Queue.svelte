@@ -54,10 +54,12 @@ $effect(() => {
   }{getNumberSuffix(contributor.queueState.position)}</span>
 </Print>
 <Print><br></Print>
-<Print>Average wait time: <span class="text-union-accent-500">{formatWaitTime(avgWaitTime)}</span
-  ></Print>
-<Print>Maximum wait time: <span class="text-union-accent-500">{formatWaitTime(maxWaitTime)}</span
-  ></Print>
+<Print>Average wait time: <span class="text-union-accent-500">{
+    formatWaitTime(avgWaitTime)
+  }</span></Print>
+<Print>Maximum wait time: <span class="text-union-accent-500">{
+    formatWaitTime(maxWaitTime)
+  }</span></Print>
 <Print><br></Print>
 <Print><span class="text-green-400">✓</span> MPC Client connected.</Print>
 {#if contributor.userWallet && contributor.userWallet !== "SKIPPED"}

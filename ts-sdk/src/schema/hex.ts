@@ -1,3 +1,5 @@
+import { Effect, ParseResult } from "effect"
+import { pipe } from "effect/Function"
 import * as S from "effect/Schema"
 import { fromHex, toHex } from "viem"
 
@@ -26,3 +28,24 @@ export const HexFromString = S.transform(S.String, Hex, {
   encode: hex => fromHex(hex, "string"),
 })
 export type HexFromString = typeof HexFromString.Type
+
+/**
+ * TODO: handle signed hex?
+ */
+export const NumberFromHexString = S.transformOrFail(
+  Hex,
+  S.Positive,
+  {
+    decode: (fromA, _, ast) =>
+      pipe(
+        Effect.try({
+          try: () => Number.parseInt(fromA, 16),
+          catch: (e) => new Error(String(e)),
+        }),
+        Effect.mapError((e) => new ParseResult.Type(ast, fromA, e.message)),
+      ),
+    encode: (toI) => Effect.succeed(`0x${toI.toString(16)}` as const),
+    strict: true,
+  },
+)
+export type NumberFromHexString = typeof NumberFromHexString.Type
