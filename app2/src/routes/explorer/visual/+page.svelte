@@ -1,13 +1,14 @@
 <script lang="ts">
-import AssetVolumeChart from "./charts/AssetVolumeChart.svelte";
-import ChainFlowChart from "./charts/ChainFlowChart.svelte";
+import type { TransferListItem } from "@unionlabs/sdk/schema"
+import { onDestroy, onMount } from "svelte"
+import AssetVolumeChart from "./charts/AssetVolumeChart.svelte"
+import ChainFlowChart from "./charts/ChainFlowChart.svelte"
+import LatencyChart from "./charts/LatencyChart.svelte"
 import NetworkVisualizer from "./charts/NetworkVisualizer.svelte"
 import PopularRoutesChart from "./charts/PopularRoutesChart.svelte"
 import TerminalLog from "./charts/TerminalLog.svelte"
 import TransferStats from "./charts/TransferStats.svelte"
 import WalletActivityChart from "./charts/WalletActivityChart.svelte"
-import type { TransferListItem } from "@unionlabs/sdk/schema"
-import { onDestroy, onMount } from "svelte"
 // Extended transfer type with server pre-computed fields
 type EnhancedTransferListItem = TransferListItem & {
   isTestnetTransfer?: boolean
@@ -19,15 +20,14 @@ type EnhancedTransferListItem = TransferListItem & {
   receiverDisplay?: string
 }
 
-
 // WebSocket configuration
-const WS_URL = "wss://ws.union.build/ws"
+const WS_URL = "ws://localhost:8080/ws"
 
 let ws: WebSocket | null = null
 let transfers: EnhancedTransferListItem[] = $state([])
 let selectedFromChain: string | null = $state(null)
 let selectedToChain: string | null = $state(null)
-let connectionStatus: "connecting" | "connected" | "disconnected" | "error" = $state("disconnected")  
+let connectionStatus: "connecting" | "connected" | "disconnected" | "error" = $state("disconnected")
 let reconnectAttempts = 0
 let maxReconnectAttempts = 5
 let reconnectTimeout: ReturnType<typeof setTimeout> | null = null
@@ -56,7 +56,7 @@ let transferRates = $state({
 })
 
 // Active wallet rates from backend
-let activeWalletRates = $state( {
+let activeWalletRates = $state({
   sendersLastMin: 0,
   sendersLastHour: 0,
   sendersLastDay: 0,
@@ -113,6 +113,7 @@ let chartData = $state({
     totalTransfers: 0,
     serverUptimeSeconds: 0,
   },
+  latencyData: [],
   dataAvailability: {
     hasMinute: false,
     hasHour: false,
@@ -176,7 +177,7 @@ function connectWebSocket() {
     try {
       const message = JSON.parse(event.data)
 
-      console.log('message',message)
+      console.log("message", message)
 
       if (message.type === "transfers" && Array.isArray(message.data)) {
         // Add new transfers - WebSocket sends them with server-side optimizations!
@@ -184,7 +185,9 @@ function connectWebSocket() {
         // Add new transfers - WebSocket sends them with server-side optimizations!
         // Server pre-computes: testnet flags, display names, truncated addresses, formatted timestamps
         transfers = [...transfers, ...message.data]
-        console.log(`📦 Received ${message.data.length} new transfers (server-optimized). Total: ${transfers.length}`)
+        console.log(
+          `📦 Received ${message.data.length} new transfers (server-optimized). Total: ${transfers.length}`,
+        )
       } else if (message.type === "transfer" && message.data) {
         // Handle individual transfer (singular)
         transfers = [...transfers, message.data]
@@ -204,26 +207,38 @@ function connectWebSocket() {
             ...message.data.currentRates,
             dataAvailability: {
               // Keep existing true values, only update to true (never back to false)
-              hasMinute: transferRates.dataAvailability.hasMinute || message.data.currentRates.dataAvailability?.hasMinute || false,
-              hasHour: transferRates.dataAvailability.hasHour || message.data.currentRates.dataAvailability?.hasHour || false,
-              hasDay: transferRates.dataAvailability.hasDay || message.data.currentRates.dataAvailability?.hasDay || false,
-              has7Days: transferRates.dataAvailability.has7Days || message.data.currentRates.dataAvailability?.has7Days || false,
-              has14Days: transferRates.dataAvailability.has14Days || message.data.currentRates.dataAvailability?.has14Days || false,
-              has30Days: transferRates.dataAvailability.has30Days || message.data.currentRates.dataAvailability?.has30Days || false,
-            }
+              hasMinute: transferRates.dataAvailability.hasMinute
+                || message.data.currentRates.dataAvailability?.hasMinute || false,
+              hasHour: transferRates.dataAvailability.hasHour
+                || message.data.currentRates.dataAvailability?.hasHour || false,
+              hasDay: transferRates.dataAvailability.hasDay
+                || message.data.currentRates.dataAvailability?.hasDay || false,
+              has7Days: transferRates.dataAvailability.has7Days
+                || message.data.currentRates.dataAvailability?.has7Days || false,
+              has14Days: transferRates.dataAvailability.has14Days
+                || message.data.currentRates.dataAvailability?.has14Days || false,
+              has30Days: transferRates.dataAvailability.has30Days
+                || message.data.currentRates.dataAvailability?.has30Days || false,
+            },
           }
-          
+
           activeWalletRates = {
             ...message.data.activeWalletRates,
             dataAvailability: {
               // Keep existing true values, only update to true (never back to false)
-              hasMinute: activeWalletRates.dataAvailability.hasMinute || message.data.activeWalletRates.dataAvailability?.hasMinute || false,
-              hasHour: activeWalletRates.dataAvailability.hasHour || message.data.activeWalletRates.dataAvailability?.hasHour || false,
-              hasDay: activeWalletRates.dataAvailability.hasDay || message.data.activeWalletRates.dataAvailability?.hasDay || false,
-              has7Days: activeWalletRates.dataAvailability.has7Days || message.data.activeWalletRates.dataAvailability?.has7Days || false,
-              has14Days: activeWalletRates.dataAvailability.has14Days || message.data.activeWalletRates.dataAvailability?.has14Days || false,
-              has30Days: activeWalletRates.dataAvailability.has30Days || message.data.activeWalletRates.dataAvailability?.has30Days || false,
-            }
+              hasMinute: activeWalletRates.dataAvailability.hasMinute
+                || message.data.activeWalletRates.dataAvailability?.hasMinute || false,
+              hasHour: activeWalletRates.dataAvailability.hasHour
+                || message.data.activeWalletRates.dataAvailability?.hasHour || false,
+              hasDay: activeWalletRates.dataAvailability.hasDay
+                || message.data.activeWalletRates.dataAvailability?.hasDay || false,
+              has7Days: activeWalletRates.dataAvailability.has7Days
+                || message.data.activeWalletRates.dataAvailability?.has7Days || false,
+              has14Days: activeWalletRates.dataAvailability.has14Days
+                || message.data.activeWalletRates.dataAvailability?.has14Days || false,
+              has30Days: activeWalletRates.dataAvailability.has30Days
+                || message.data.activeWalletRates.dataAvailability?.has30Days || false,
+            },
           }
 
           // Also update chartData.dataAvailability consistently
@@ -231,15 +246,21 @@ function connectWebSocket() {
             ...chartData,
             ...message.data,
             dataAvailability: {
-              hasMinute: chartData.dataAvailability.hasMinute || message.data.dataAvailability?.hasMinute || false,
-              hasHour: chartData.dataAvailability.hasHour || message.data.dataAvailability?.hasHour || false,
-              hasDay: chartData.dataAvailability.hasDay || message.data.dataAvailability?.hasDay || false,
-              has7Days: chartData.dataAvailability.has7Days || message.data.dataAvailability?.has7Days || false,
-              has14Days: chartData.dataAvailability.has14Days || message.data.dataAvailability?.has14Days || false,
-              has30Days: chartData.dataAvailability.has30Days || message.data.dataAvailability?.has30Days || false,
-            }
+              hasMinute: chartData.dataAvailability.hasMinute
+                || message.data.dataAvailability?.hasMinute || false,
+              hasHour: chartData.dataAvailability.hasHour || message.data.dataAvailability?.hasHour
+                || false,
+              hasDay: chartData.dataAvailability.hasDay || message.data.dataAvailability?.hasDay
+                || false,
+              has7Days: chartData.dataAvailability.has7Days
+                || message.data.dataAvailability?.has7Days || false,
+              has14Days: chartData.dataAvailability.has14Days
+                || message.data.dataAvailability?.has14Days || false,
+              has30Days: chartData.dataAvailability.has30Days
+                || message.data.dataAvailability?.has30Days || false,
+            },
           }
-          
+
           console.log(
             `📊 Updated enhanced charts: ${message.data.popularRoutes?.length || 0} routes, ${
               message.data.activeSenders?.length || 0
@@ -369,7 +390,7 @@ onDestroy(() => {
     />
   </div>
 
-    <!-- Terminal Log - left column -->
+  <!-- Terminal Log - left column -->
   <div class="order-4 lg:order-2 lg:col-span-1 min-h-0">
     <TerminalLog
       {transfers}
@@ -392,4 +413,8 @@ onDestroy(() => {
     </div>
   </div>
 
+  <!-- Latency Chart - full width row -->
+  <div class="order-6 lg:order-6 lg:col-span-3 min-h-0">
+    <LatencyChart latencyData={chartData.latencyData} />
+  </div>
 </div>

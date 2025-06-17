@@ -1,11 +1,11 @@
 <script lang="ts">
+import Card from "$lib/components/ui/Card.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import type { TransferListItem } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { onMount } from "svelte"
 import { transactionAudio } from "../audio"
 import { initializeCanvasWithCleanup } from "../canvasInit"
-import Card from "$lib/components/ui/Card.svelte"
 
 // Extended transfer type with server pre-computed fields
 type EnhancedTransferListItem = TransferListItem & {
@@ -72,18 +72,18 @@ const FONT_SIZE = 10
 const COLORS = {
   background: "#00000000",
   text: "#d4d4d8",
-  textSecondary: "#9ca3af", 
+  textSecondary: "#9ca3af",
   filter: "#f59e0b",
   filterBg: "#27272a",
   border: "#3f3f46",
-  waiting: "#6b7280"
+  waiting: "#6b7280",
 } as const
 
 // Cache for chain display names
 const chainDisplayNameCache = new Map<string, string>()
 
 // Utility functions
-const formatHash = (hash: string): string => 
+const formatHash = (hash: string): string =>
   hash ? `${hash.slice(0, 8)}...${hash.slice(-4)}` : "N/A"
 
 const getChainDisplayName = (universalChainId: string): string => {
@@ -101,7 +101,7 @@ const getChainDisplayName = (universalChainId: string): string => {
   } else {
     const simpleNames: Record<string, string> = {
       "union-testnet-8": "Union",
-      "osmo-test-5": "Osmosis", 
+      "osmo-test-5": "Osmosis",
       "sepolia-1": "Ethereum",
       "stride-internal-1": "Stride",
     }
@@ -113,7 +113,9 @@ const getChainDisplayName = (universalChainId: string): string => {
 }
 
 const shouldPlaySound = (transfer: EnhancedTransferListItem): boolean => {
-  if (!hasFilter) return true
+  if (!hasFilter) {
+    return true
+  }
 
   const sourceId = transfer.source_chain?.universal_chain_id
   const destId = transfer.destination_chain?.universal_chain_id
@@ -135,17 +137,22 @@ const shouldPlaySound = (transfer: EnhancedTransferListItem): boolean => {
 
 // Canvas functions
 function setupCanvasContext() {
-  if (!ctx) return
-  
+  if (!ctx) {
+    return
+  }
+
   const dpr = window.devicePixelRatio || 1
   ctx.scale(dpr, dpr)
   ctx.textBaseline = "top"
-  ctx.font = `${FONT_SIZE}px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
+  ctx.font =
+    `${FONT_SIZE}px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
   ctx.textAlign = "left"
 }
 
 function updateCanvasSize() {
-  if (!containerElement || !canvas) return
+  if (!containerElement || !canvas) {
+    return
+  }
 
   const rect = containerElement.getBoundingClientRect()
   const dpr = window.devicePixelRatio || 1
@@ -170,7 +177,9 @@ function updateCanvasSize() {
 }
 
 function drawFilterBar() {
-  if (!hasFilter) return
+  if (!hasFilter) {
+    return
+  }
 
   // Background
   ctx.fillStyle = COLORS.filterBg
@@ -182,11 +191,15 @@ function drawFilterBar() {
 
   // Text
   ctx.fillStyle = COLORS.filter
-  ctx.font = `${FONT_SIZE - 1}px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
+  ctx.font = `${
+    FONT_SIZE - 1
+  }px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
 
   let filterText = "Server filter: "
   if (selectedFromChain && selectedToChain) {
-    filterText += `${getChainDisplayName(selectedFromChain)} → ${getChainDisplayName(selectedToChain)}`
+    filterText += `${getChainDisplayName(selectedFromChain)} → ${
+      getChainDisplayName(selectedToChain)
+    }`
   } else if (selectedFromChain) {
     filterText += `from ${getChainDisplayName(selectedFromChain)}`
   } else if (selectedToChain) {
@@ -194,9 +207,10 @@ function drawFilterBar() {
   }
 
   ctx.fillText(filterText, PADDING, 10)
-  
+
   // Reset font
-  ctx.font = `${FONT_SIZE}px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
+  ctx.font =
+    `${FONT_SIZE}px ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace`
 }
 
 function drawLogEntry(log: LogEntry, y: number) {
@@ -206,7 +220,7 @@ function drawLogEntry(log: LogEntry, y: number) {
   ctx.fillStyle = COLORS.text
   ctx.fillText(log.message, PADDING, baseY)
 
-  // Hash line  
+  // Hash line
   ctx.fillText(`tx: ${log.hash}`, PADDING, baseY + LINE_HEIGHT)
 
   let currentY = baseY + LINE_HEIGHT * 2
@@ -235,7 +249,9 @@ function drawWaitingMessage() {
 }
 
 function drawCanvas() {
-  if (!ctx) return
+  if (!ctx) {
+    return
+  }
 
   // Clear canvas
   ctx.fillStyle = COLORS.background
@@ -285,7 +301,9 @@ const handleMouseDown = (event: MouseEvent) => {
 }
 
 const handleMouseMove = (event: MouseEvent) => {
-  if (!isMouseDown) return
+  if (!isMouseDown) {
+    return
+  }
 
   const deltaY = event.clientY - lastMouseY
   scrollOffset = Math.max(0, Math.min(maxScrollOffset, scrollOffset - deltaY))
@@ -300,7 +318,7 @@ const handleMouseUp = () => {
 // Add log function
 const addLog = (
   type: string,
-  sourceChain: string, 
+  sourceChain: string,
   destChain: string,
   hash: string,
   sender?: string,
@@ -339,21 +357,23 @@ const addLog = (
 $effect(() => {
   if (canvasReady && transfersLength > processedCount) {
     const newTransfers = transfers.slice(processedCount)
-    
+
     newTransfers.forEach((transfer) => {
       if (shouldPlaySound(transfer)) {
         requestAnimationFrame(() => {
           transactionAudio.playSound(
             1,
             transfer.source_chain?.universal_chain_id,
-            transfer.destination_chain?.universal_chain_id
+            transfer.destination_chain?.universal_chain_id,
           )
         })
       }
 
-      const sourceChain = transfer.sourceDisplayName || transfer.source_chain?.display_name || "unknown"
-      const destChain = transfer.destinationDisplayName || transfer.destination_chain?.display_name || "unknown"
-      
+      const sourceChain = transfer.sourceDisplayName || transfer.source_chain?.display_name
+        || "unknown"
+      const destChain = transfer.destinationDisplayName || transfer.destination_chain?.display_name
+        || "unknown"
+
       addLog(
         "transfer",
         sourceChain,
@@ -365,7 +385,7 @@ $effect(() => {
         transfer.destination_chain?.universal_chain_id,
       )
     })
-    
+
     processedCount = transfers.length
   }
 })
@@ -381,7 +401,7 @@ $effect(() => {
 onMount(() => {
   if (canvas && containerElement) {
     ctx = canvas.getContext("2d")!
-    
+
     const cleanup = initializeCanvasWithCleanup({
       canvas,
       container: containerElement,
@@ -396,11 +416,16 @@ onMount(() => {
         drawCanvas()
       },
       eventListeners: [
-        { element: canvas, event: "wheel", handler: handleWheel as (event: Event) => void, options: { passive: false } },
+        {
+          element: canvas,
+          event: "wheel",
+          handler: handleWheel as (event: Event) => void,
+          options: { passive: false },
+        },
         { element: canvas, event: "mousedown", handler: handleMouseDown as (event: Event) => void },
         { element: window, event: "mousemove", handler: handleMouseMove as (event: Event) => void },
-        { element: window, event: "mouseup", handler: handleMouseUp as (event: Event) => void }
-      ]
+        { element: window, event: "mouseup", handler: handleMouseUp as (event: Event) => void },
+      ],
     })
 
     return cleanup
@@ -409,7 +434,10 @@ onMount(() => {
 </script>
 
 <Card class="h-full p-2 pointer-events-none">
-  <div class="relative w-full h-full pointer-events-none" bind:this={containerElement}>
+  <div
+    class="relative w-full h-full pointer-events-none"
+    bind:this={containerElement}
+  >
     <canvas
       bind:this={canvas}
       class="w-full h-full cursor-default pointer-events-none"

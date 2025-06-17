@@ -1,337 +1,363 @@
 <script lang="ts">
-  import Card from "$lib/components/ui/Card.svelte"
-  import Skeleton from "$lib/components/ui/Skeleton.svelte"
-  
-  // Interface for assets flowing through a chain
-  interface ChainAsset {
-    assetSymbol: string
-    assetName: string
-    outgoingCount: number
-    incomingCount: number
-    netFlow: number
-    totalVolume: number
-    averageAmount: number
-    percentage: number
-    lastActivity: string
-  }
-  
-  // Interface for chain data with assets
-  interface ChainData {
-    universal_chain_id: string
-    chainName: string
-    outgoingCount: number
-    incomingCount: number
-    netFlow: number
-    outgoingChange?: number
-    incomingChange?: number
-    netFlowChange?: number
-    lastActivity: string
-    topAssets?: ChainAsset[]
-  }
-  
-  interface ChainFlowData {
-    chains: ChainData[]
-    chainFlowTimeScale: Record<string, ChainData[]>
-    totalOutgoing: number
-    totalIncoming: number
-    serverUptimeSeconds: number
-  }
-  
-  interface DataAvailability {
-    hasMinute: boolean
-    hasHour: boolean
-    hasDay: boolean
-    has7Days: boolean
-    has14Days: boolean
-    has30Days: boolean
-  }
-  
-  interface Props {
-    chainFlowData?: ChainFlowData
-    dataAvailability?: DataAvailability
-  }
-  
-  const DEFAULT_CHAIN_DATA: ChainFlowData = {
-    chains: [],
-    chainFlowTimeScale: {},
-    totalOutgoing: 0,
-    totalIncoming: 0,
-    serverUptimeSeconds: 0,
-  }
-  
-  const DEFAULT_DATA_AVAILABILITY: DataAvailability = {
-    hasMinute: false,
-    hasHour: false,
-    hasDay: false,
-    has7Days: false,
-    has14Days: false,
-    has30Days: false,
-  }
-  
-  let {
-    chainFlowData = DEFAULT_CHAIN_DATA,
-    dataAvailability = DEFAULT_DATA_AVAILABILITY,
-  }: Props = $props()
+import Card from "$lib/components/ui/Card.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
 
-  // Local item count configuration
-  const itemCounts = [
-    { value: 3, label: "3" },
-    { value: 5, label: "5" },
-    { value: 7, label: "7" },
-    { value: 10, label: "10" },
-  ]
-  
-  // State management
-  let selectedTimeScale = $state("1m")
-  let displayMode = $state<"total" | "outgoing" | "incoming" | "netflow">("total")
-  let expandedChain = $state<string | null>(null)
-  let hoveredChain = $state<string | null>(null)
-  let selectedItemCount = $state(5) // Default to 5 items
-  
-  // Time scale configuration
-  const timeScales = [
-    { key: "1m", label: "1m" },
-    { key: "1h", label: "1h" },
-    { key: "1d", label: "1d" },
-    { key: "7d", label: "7d" },
-    { key: "14d", label: "14d" },
-    { key: "30d", label: "30d" },
-  ] as const
-  
-  // Display mode configuration
-  const displayModes = [
-    { key: "total", label: "total" },
-    { key: "outgoing", label: "out" },
-    { key: "incoming", label: "in" },
-    { key: "netflow", label: "net" },
-  ] as const
-  
-  
-  
-  // Get current data based on selected time scale
-  const currentData = $derived.by(() => {
-    let data = []
-    if (
-      chainFlowData.chainFlowTimeScale && 
-      chainFlowData.chainFlowTimeScale[selectedTimeScale] &&
-      chainFlowData.chainFlowTimeScale[selectedTimeScale].length > 0
-    ) {
-      data = chainFlowData.chainFlowTimeScale[selectedTimeScale]
-    } else {
-      data = chainFlowData.chains
+// Interface for assets flowing through a chain
+interface ChainAsset {
+  assetSymbol: string
+  assetName: string
+  outgoingCount: number
+  incomingCount: number
+  netFlow: number
+  totalVolume: number
+  averageAmount: number
+  percentage: number
+  lastActivity: string
+}
+
+// Interface for chain data with assets
+interface ChainData {
+  universal_chain_id: string
+  chainName: string
+  outgoingCount: number
+  incomingCount: number
+  netFlow: number
+  outgoingChange?: number
+  incomingChange?: number
+  netFlowChange?: number
+  lastActivity: string
+  topAssets?: ChainAsset[]
+}
+
+interface ChainFlowData {
+  chains: ChainData[]
+  chainFlowTimeScale: Record<string, ChainData[]>
+  totalOutgoing: number
+  totalIncoming: number
+  serverUptimeSeconds: number
+}
+
+interface DataAvailability {
+  hasMinute: boolean
+  hasHour: boolean
+  hasDay: boolean
+  has7Days: boolean
+  has14Days: boolean
+  has30Days: boolean
+}
+
+interface Props {
+  chainFlowData?: ChainFlowData
+  dataAvailability?: DataAvailability
+}
+
+const DEFAULT_CHAIN_DATA: ChainFlowData = {
+  chains: [],
+  chainFlowTimeScale: {},
+  totalOutgoing: 0,
+  totalIncoming: 0,
+  serverUptimeSeconds: 0,
+}
+
+const DEFAULT_DATA_AVAILABILITY: DataAvailability = {
+  hasMinute: false,
+  hasHour: false,
+  hasDay: false,
+  has7Days: false,
+  has14Days: false,
+  has30Days: false,
+}
+
+let {
+  chainFlowData = DEFAULT_CHAIN_DATA,
+  dataAvailability = DEFAULT_DATA_AVAILABILITY,
+}: Props = $props()
+
+// Local item count configuration
+const itemCounts = [
+  { value: 3, label: "3" },
+  { value: 5, label: "5" },
+  { value: 7, label: "7" },
+  { value: 10, label: "10" },
+]
+
+// State management
+let selectedTimeScale = $state("1m")
+let displayMode = $state<"total" | "outgoing" | "incoming" | "netflow">("total")
+let expandedChain = $state<string | null>(null)
+let hoveredChain = $state<string | null>(null)
+let selectedItemCount = $state(5) // Default to 5 items
+
+// Time scale configuration
+const timeScales = [
+  { key: "1m", label: "1m" },
+  { key: "1h", label: "1h" },
+  { key: "1d", label: "1d" },
+  { key: "7d", label: "7d" },
+  { key: "14d", label: "14d" },
+  { key: "30d", label: "30d" },
+] as const
+
+// Display mode configuration
+const displayModes = [
+  { key: "total", label: "total" },
+  { key: "outgoing", label: "out" },
+  { key: "incoming", label: "in" },
+  { key: "netflow", label: "net" },
+] as const
+
+// Get current data based on selected time scale
+const currentData = $derived.by(() => {
+  let data = []
+  if (
+    chainFlowData.chainFlowTimeScale
+    && chainFlowData.chainFlowTimeScale[selectedTimeScale]
+    && chainFlowData.chainFlowTimeScale[selectedTimeScale].length > 0
+  ) {
+    data = chainFlowData.chainFlowTimeScale[selectedTimeScale]
+  } else {
+    data = chainFlowData.chains
+  }
+
+  // Sort based on display mode
+  const sortedData = [...(data || [])].sort((a, b) => {
+    switch (displayMode) {
+      case "outgoing":
+        return b.outgoingCount - a.outgoingCount
+      case "incoming":
+        return b.incomingCount - a.incomingCount
+      case "netflow":
+        return b.netFlow - a.netFlow
+      case "total":
+      default:
+        return (b.outgoingCount + b.incomingCount) - (a.outgoingCount + a.incomingCount)
     }
-  
-    // Sort based on display mode
-    const sortedData = [...(data || [])].sort((a, b) => {
-      switch (displayMode) {
-        case "outgoing":
-          return b.outgoingCount - a.outgoingCount
-        case "incoming":
-          return b.incomingCount - a.incomingCount
-        case "netflow":
-          return b.netFlow - a.netFlow
-        case "total":
-        default:
-          return (b.outgoingCount + b.incomingCount) - (a.outgoingCount + a.incomingCount)
-      }
-    })
-  
-    // Limit to selected number for display
-    return sortedData?.slice(0, selectedItemCount) || []
   })
-  
-  // Derived state
-  const hasData = $derived(currentData.length > 0)
-  const isLoading = $derived(!hasData && (!chainFlowData || !chainFlowData.chains || chainFlowData.chains.length === 0))
-  
-  // Utility functions
-  function formatCount(count: number): string {
-    if (count >= 1000000) {
-      return `${(count / 1000000).toFixed(1)}M`
-    }
-    if (count >= 1000) {
-      return `${(count / 1000).toFixed(1)}K`
-    }
-    return count.toString().padStart(3, " ")
+
+  // Limit to selected number for display
+  return sortedData?.slice(0, selectedItemCount) || []
+})
+
+// Derived state
+const hasData = $derived(currentData.length > 0)
+const isLoading = $derived(
+  !hasData && (!chainFlowData || !chainFlowData.chains || chainFlowData.chains.length === 0),
+)
+
+// Utility functions
+function formatCount(count: number): string {
+  if (count >= 1000000) {
+    return `${(count / 1000000).toFixed(1)}M`
   }
-  
-  function formatNumber(num: number): string {
-    if (num === 0) return '0'
-    if (num < 1) return num.toFixed(6)
-    if (num < 1000) return num.toFixed(2)
-    if (num < 1000000) return (num / 1000).toFixed(1) + 'K'
-    if (num < 1000000000) return (num / 1000000).toFixed(1) + 'M'
-    return (num / 1000000000).toFixed(1) + 'B'
+  if (count >= 1000) {
+    return `${(count / 1000).toFixed(1)}K`
   }
-  
-  function formatChainName(name: string): string {
-    return name.toLowerCase().replace(/\s+/g, "_")
+  return count.toString().padStart(3, " ")
+}
+
+function formatNumber(num: number): string {
+  if (num === 0) {
+    return "0"
   }
-  
-  function formatPercentageChange(change?: number): string {
-    if (change === undefined || change === null || !isFinite(change)) {
-      return ""
-    }
-    const sign = change >= 0 ? "+" : ""
-    return `(${sign}${change.toFixed(1)}%)`
+  if (num < 1) {
+    return num.toFixed(6)
   }
-  
-  function formatTime(dateString: string): string {
-    try {
-      return new Date(dateString).toLocaleTimeString()
-    } catch {
-      return 'N/A'
-    }
+  if (num < 1000) {
+    return num.toFixed(2)
   }
-  
-  // Get display value based on mode
-  function getDisplayValue(chain: ChainData): number {
-    switch (displayMode) {
-      case "outgoing":
-        return chain.outgoingCount
-      case "incoming":
-        return chain.incomingCount
-      case "netflow":
-        return chain.netFlow
-      case "total":
-      default:
-        return chain.outgoingCount + chain.incomingCount
-    }
+  if (num < 1000000) {
+    return (num / 1000).toFixed(1) + "K"
   }
-  
-  // Get change value based on mode
-  function getChangeValue(chain: ChainData): number | undefined {
-    switch (displayMode) {
-      case "outgoing":
-        return chain.outgoingChange
-      case "incoming":
-        return chain.incomingChange
-      case "netflow":
-        return chain.netFlowChange
-      case "total":
-      default:
-        // For total, we could average the changes or use a different logic
-        return chain.outgoingChange !== undefined && chain.incomingChange !== undefined
-          ? (chain.outgoingChange + chain.incomingChange) / 2
-          : undefined
-    }
+  if (num < 1000000000) {
+    return (num / 1000000).toFixed(1) + "M"
   }
-  
-  // Check if time frame data is available
-  function isTimeFrameAvailable(timeFrameKey: string): boolean {
-    const availabilityMap: Record<string, keyof typeof dataAvailability> = {
-      "1m": "hasMinute",
-      "1h": "hasHour",
-      "1d": "hasDay",
-      "7d": "has7Days",
-      "14d": "has14Days",
-      "30d": "has30Days",
-    }
-  
-    return dataAvailability[availabilityMap[timeFrameKey]] || false
+  return (num / 1000000000).toFixed(1) + "B"
+}
+
+function formatChainName(name: string): string {
+  return name.toLowerCase().replace(/\s+/g, "_")
+}
+
+function formatPercentageChange(change?: number): string {
+  if (change === undefined || change === null || !isFinite(change)) {
+    return ""
   }
-  
-  // Get the first available timeframe
-  function getFirstAvailableTimeframe(): string {
-    for (const timeScale of timeScales) {
-      if (isTimeFrameAvailable(timeScale.key)) {
-        return timeScale.key
-      }
-    }
-    return "1m"
+  const sign = change >= 0 ? "+" : ""
+  return `(${sign}${change.toFixed(1)}%)`
+}
+
+function formatTime(dateString: string): string {
+  try {
+    return new Date(dateString).toLocaleTimeString()
+  } catch {
+    return "N/A"
   }
-  
-  // Toggle chain expansion
-  function toggleChainExpansion(chainId: string): void {
-    expandedChain = expandedChain === chainId ? null : chainId
+}
+
+// Get display value based on mode
+function getDisplayValue(chain: ChainData): number {
+  switch (displayMode) {
+    case "outgoing":
+      return chain.outgoingCount
+    case "incoming":
+      return chain.incomingCount
+    case "netflow":
+      return chain.netFlow
+    case "total":
+    default:
+      return chain.outgoingCount + chain.incomingCount
+  }
+}
+
+// Get change value based on mode
+function getChangeValue(chain: ChainData): number | undefined {
+  switch (displayMode) {
+    case "outgoing":
+      return chain.outgoingChange
+    case "incoming":
+      return chain.incomingChange
+    case "netflow":
+      return chain.netFlowChange
+    case "total":
+    default:
+      // For total, we could average the changes or use a different logic
+      return chain.outgoingChange !== undefined && chain.incomingChange !== undefined
+        ? (chain.outgoingChange + chain.incomingChange) / 2
+        : undefined
+  }
+}
+
+// Check if time frame data is available
+function isTimeFrameAvailable(timeFrameKey: string): boolean {
+  const availabilityMap: Record<string, keyof typeof dataAvailability> = {
+    "1m": "hasMinute",
+    "1h": "hasHour",
+    "1d": "hasDay",
+    "7d": "has7Days",
+    "14d": "has14Days",
+    "30d": "has30Days",
   }
 
-  // Check if chain should show colored bars (expanded, hovered, or parent of expanded)
-  function shouldShowColoredBars(chainId: string): boolean {
-    return expandedChain === chainId || hoveredChain === chainId
-  }
+  return dataAvailability[availabilityMap[timeFrameKey]] || false
+}
 
-  // Get bar colors based on state
-  function getBarColors(chainId: string): { incoming: string, outgoing: string } {
-    if (shouldShowColoredBars(chainId)) {
-      return {
-        incoming: 'bg-green-400',
-        outgoing: 'bg-red-400'
-      }
+// Get the first available timeframe
+function getFirstAvailableTimeframe(): string {
+  for (const timeScale of timeScales) {
+    if (isTimeFrameAvailable(timeScale.key)) {
+      return timeScale.key
     }
+  }
+  return "1m"
+}
+
+// Toggle chain expansion
+function toggleChainExpansion(chainId: string): void {
+  expandedChain = expandedChain === chainId ? null : chainId
+}
+
+// Check if chain should show colored bars (expanded, hovered, or parent of expanded)
+function shouldShowColoredBars(chainId: string): boolean {
+  return expandedChain === chainId || hoveredChain === chainId
+}
+
+// Get bar colors based on state
+function getBarColors(chainId: string): { incoming: string; outgoing: string } {
+  if (shouldShowColoredBars(chainId)) {
     return {
-      incoming: 'bg-zinc-400',
-      outgoing: 'bg-zinc-500'
+      incoming: "bg-green-400",
+      outgoing: "bg-red-400",
     }
   }
-  
-  // Calculate incoming/outgoing widths for assets 
-  function getAssetIncomingOutgoingWidths(asset: ChainAsset, totalChars: number = 50): { incomingWidth: number, outgoingWidth: number } {
-    const totalFlow = asset.incomingCount + asset.outgoingCount
-    if (totalFlow === 0) return { incomingWidth: 0, outgoingWidth: totalChars }
-    
-    // Calculate proportional widths based on actual flow ratios
-    const incomingRatio = asset.incomingCount / totalFlow
-    
-    const incomingWidth = Math.round(totalChars * incomingRatio)
-    const outgoingWidth = totalChars - incomingWidth // Ensure they add up to exactly totalChars
-    
-    return { 
-      incomingWidth: Math.max(0, incomingWidth), 
-      outgoingWidth: Math.max(0, outgoingWidth) 
-    }
+  return {
+    incoming: "bg-zinc-400",
+    outgoing: "bg-zinc-500",
   }
-  
-  // Auto-update selected timeframe when data becomes available
-  $effect(() => {
-    const firstAvailable = getFirstAvailableTimeframe()
-    if (!isTimeFrameAvailable(selectedTimeScale)) {
-      selectedTimeScale = firstAvailable
-    }
-  })
-  
-  // Progress bar calculations for incoming/outgoing split with dynamic center
-  function getIncomingOutgoingWidths(chain: ChainData, totalChars: number = 50): { incomingWidth: number, outgoingWidth: number } {
-    if (currentData.length === 0) return { incomingWidth: 0, outgoingWidth: totalChars }
-    
-    const totalFlow = chain.incomingCount + chain.outgoingCount
-    if (totalFlow === 0) return { incomingWidth: 0, outgoingWidth: totalChars }
-    
-    // Calculate proportional widths based on actual flow ratios - always use full width
-    const incomingRatio = chain.incomingCount / totalFlow
-    
-    const incomingWidth = Math.round(totalChars * incomingRatio)
-    const outgoingWidth = totalChars - incomingWidth // Ensure they add up to exactly totalChars
-    
-    return { 
-      incomingWidth: Math.max(0, incomingWidth), 
-      outgoingWidth: Math.max(0, outgoingWidth) 
-    }
+}
+
+// Calculate incoming/outgoing widths for assets
+function getAssetIncomingOutgoingWidths(
+  asset: ChainAsset,
+  totalChars: number = 50,
+): { incomingWidth: number; outgoingWidth: number } {
+  const totalFlow = asset.incomingCount + asset.outgoingCount
+  if (totalFlow === 0) {
+    return { incomingWidth: 0, outgoingWidth: totalChars }
   }
-  
-  function getPercentageOfTotal(chain: ChainData): number {
-    if (currentData.length === 0) return 0
-    
-    const displayValue = Math.abs(getDisplayValue(chain))
-    const total = currentData.reduce((sum, c) => sum + Math.abs(getDisplayValue(c)), 0)
-    
-    if (total === 0) return 0
-    
-    return Math.round((displayValue / total) * 100)
+
+  // Calculate proportional widths based on actual flow ratios
+  const incomingRatio = asset.incomingCount / totalFlow
+
+  const incomingWidth = Math.round(totalChars * incomingRatio)
+  const outgoingWidth = totalChars - incomingWidth // Ensure they add up to exactly totalChars
+
+  return {
+    incomingWidth: Math.max(0, incomingWidth),
+    outgoingWidth: Math.max(0, outgoingWidth),
   }
-  
-  // Debug logging in development
-  $effect(() => {
-    if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      console.log('ChainFlowChart data:', {
-        chainFlowData,
-        hasData,
-        isLoading,
-        currentDataLength: currentData.length,
-        chainsLength: chainFlowData.chains?.length || 0
-      })
-    }
-  })
+}
+
+// Auto-update selected timeframe when data becomes available
+$effect(() => {
+  const firstAvailable = getFirstAvailableTimeframe()
+  if (!isTimeFrameAvailable(selectedTimeScale)) {
+    selectedTimeScale = firstAvailable
+  }
+})
+
+// Progress bar calculations for incoming/outgoing split with dynamic center
+function getIncomingOutgoingWidths(
+  chain: ChainData,
+  totalChars: number = 50,
+): { incomingWidth: number; outgoingWidth: number } {
+  if (currentData.length === 0) {
+    return { incomingWidth: 0, outgoingWidth: totalChars }
+  }
+
+  const totalFlow = chain.incomingCount + chain.outgoingCount
+  if (totalFlow === 0) {
+    return { incomingWidth: 0, outgoingWidth: totalChars }
+  }
+
+  // Calculate proportional widths based on actual flow ratios - always use full width
+  const incomingRatio = chain.incomingCount / totalFlow
+
+  const incomingWidth = Math.round(totalChars * incomingRatio)
+  const outgoingWidth = totalChars - incomingWidth // Ensure they add up to exactly totalChars
+
+  return {
+    incomingWidth: Math.max(0, incomingWidth),
+    outgoingWidth: Math.max(0, outgoingWidth),
+  }
+}
+
+function getPercentageOfTotal(chain: ChainData): number {
+  if (currentData.length === 0) {
+    return 0
+  }
+
+  const displayValue = Math.abs(getDisplayValue(chain))
+  const total = currentData.reduce((sum, c) => sum + Math.abs(getDisplayValue(c)), 0)
+
+  if (total === 0) {
+    return 0
+  }
+
+  return Math.round((displayValue / total) * 100)
+}
+
+// Debug logging in development
+$effect(() => {
+  if (typeof window !== "undefined" && window.location.hostname === "localhost") {
+    console.log("ChainFlowChart data:", {
+      chainFlowData,
+      hasData,
+      isLoading,
+      currentDataLength: currentData.length,
+      chainsLength: chainFlowData.chains?.length || 0,
+    })
+  }
+})
 </script>
 
 <Card class="h-full p-0">
@@ -363,13 +389,15 @@
           <div class="flex flex-wrap gap-0.5">
             {#each timeScales as timeScale}
               <button
-                class="px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
+                class="
+                  px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
                   selectedTimeScale === timeScale.key
-                    ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
-                    : isTimeFrameAvailable(timeScale.key)
-                    ? 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-                    : 'border-zinc-800 bg-zinc-950 text-zinc-600 cursor-not-allowed'
-                }"
+                  ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
+                  : isTimeFrameAvailable(timeScale.key)
+                  ? 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                  : 'border-zinc-800 bg-zinc-950 text-zinc-600 cursor-not-allowed'
+                  }
+                "
                 disabled={!isTimeFrameAvailable(timeScale.key)}
                 onclick={() => selectedTimeScale = timeScale.key}
               >
@@ -383,11 +411,13 @@
             <span class="text-zinc-600 text-xs font-mono">show:</span>
             {#each itemCounts as itemCount}
               <button
-                class="px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
+                class="
+                  px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
                   selectedItemCount === itemCount.value
-                    ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
-                    : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-                }"
+                  ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
+                  : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                  }
+                "
                 onclick={() => selectedItemCount = itemCount.value}
               >
                 {itemCount.label}
@@ -401,11 +431,13 @@
           <span class="text-zinc-600 text-xs font-mono">view:</span>
           {#each displayModes as mode}
             <button
-              class="px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
-                displayMode === mode.key 
-                  ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium' 
-                  : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-              }"
+              class="
+                px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
+                displayMode === mode.key
+                ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                }
+              "
               onclick={() => displayMode = mode.key}
             >
               {mode.label}
@@ -494,18 +526,19 @@
                       <span class="text-zinc-600 text-[10px]">({chain.universal_chain_id})</span>
                       {#if chain.topAssets && chain.topAssets.length > 0}
                         <span class="text-zinc-600 text-xs">
-                          {expandedChain === chain.universal_chain_id ? '▼' : '▶'} {chain.topAssets.length}
+                          {expandedChain === chain.universal_chain_id ? "▼" : "▶"}
+                          {chain.topAssets.length}
                         </span>
                       {/if}
                     </div>
                     <div class="text-zinc-300 font-mono font-medium text-xs">
-                                             {#if isTimeFrameAvailable(selectedTimeScale)}
-                         {#if getChangeValue(chain) !== undefined}
-                           <span
-                             class="text-xs mr-1 hidden md:inline {getChangeValue(chain) >= 0 ? 'text-green-400' : 'text-red-400'}"
-                           >{formatPercentageChange(getChangeValue(chain))}</span>
-                         {/if}
-                       {/if}
+                      {#if isTimeFrameAvailable(selectedTimeScale)}
+                        {#if getChangeValue(chain) !== undefined}
+                          <span
+                            class="text-xs mr-1 hidden md:inline {getChangeValue(chain) >= 0 ? 'text-green-400' : 'text-red-400'}"
+                          >{formatPercentageChange(getChangeValue(chain))}</span>
+                        {/if}
+                      {/if}
                       {formatCount(getDisplayValue(chain))}
                     </div>
                   </div>
@@ -513,12 +546,18 @@
                   <!-- Flow Details -->
                   <div class="flex items-center space-x-1.5 text-xs mb-0.5">
                     <span class="text-zinc-600">out:</span>
-                    <span class="text-zinc-400 tabular-nums">{formatCount(chain.outgoingCount)}</span>
+                    <span class="text-zinc-400 tabular-nums">{
+                      formatCount(chain.outgoingCount)
+                    }</span>
                     <span class="text-zinc-600">in:</span>
-                    <span class="text-zinc-400 tabular-nums">{formatCount(chain.incomingCount)}</span>
+                    <span class="text-zinc-400 tabular-nums">{
+                      formatCount(chain.incomingCount)
+                    }</span>
                     <span class="text-zinc-600">net:</span>
-                    <span class="tabular-nums {chain.netFlow >= 0 ? 'text-green-400' : 'text-red-400'}">
-                      {chain.netFlow >= 0 ? '+' : ''}{formatCount(chain.netFlow)}
+                    <span
+                      class="tabular-nums {chain.netFlow >= 0 ? 'text-green-400' : 'text-red-400'}"
+                    >
+                      {chain.netFlow >= 0 ? "+" : ""}{formatCount(chain.netFlow)}
                     </span>
                     {#if chain.topAssets && chain.topAssets.length > 0}
                       <span class="text-zinc-600">{chain.topAssets.length}</span>
@@ -526,43 +565,47 @@
                     {/if}
                   </div>
 
-                                    <!-- Chain Flow Visualization -->
+                  <!-- Chain Flow Visualization -->
                   <div class="flex items-center">
                     <div class="flex-1 flex min-w-0">
                       <div class="hidden sm:flex w-full h-1">
                         <!-- Incoming side (left, green) -->
                         {#if getIncomingOutgoingWidths(chain, 50).incomingWidth > 0}
-                          <div 
-                            class="{getBarColors(chain.universal_chain_id).incoming} h-full transition-colors duration-300" 
+                          <div
+                            class="{getBarColors(chain.universal_chain_id).incoming} h-full transition-colors duration-300"
                             style="width: {(getIncomingOutgoingWidths(chain, 50).incomingWidth / 50) * 100}%"
                             title="Incoming: {chain.incomingCount}"
-                          ></div>
+                          >
+                          </div>
                         {/if}
                         <!-- Outgoing side (right, red) -->
                         {#if getIncomingOutgoingWidths(chain, 50).outgoingWidth > 0}
-                          <div 
-                            class="{getBarColors(chain.universal_chain_id).outgoing} h-full transition-colors duration-300" 
+                          <div
+                            class="{getBarColors(chain.universal_chain_id).outgoing} h-full transition-colors duration-300"
                             style="width: {(getIncomingOutgoingWidths(chain, 50).outgoingWidth / 50) * 100}%"
                             title="Outgoing: {chain.outgoingCount}"
-                          ></div>
+                          >
+                          </div>
                         {/if}
                       </div>
                       <div class="flex sm:hidden w-full h-1.5">
                         <!-- Incoming side (left, green) -->
                         {#if getIncomingOutgoingWidths(chain, 25).incomingWidth > 0}
-                          <div 
-                            class="{getBarColors(chain.universal_chain_id).incoming} h-full transition-colors duration-300" 
+                          <div
+                            class="{getBarColors(chain.universal_chain_id).incoming} h-full transition-colors duration-300"
                             style="width: {(getIncomingOutgoingWidths(chain, 25).incomingWidth / 25) * 100}%"
                             title="Incoming: {chain.incomingCount}"
-                          ></div>
+                          >
+                          </div>
                         {/if}
                         <!-- Outgoing side (right, red) -->
                         {#if getIncomingOutgoingWidths(chain, 25).outgoingWidth > 0}
-                          <div 
-                            class="{getBarColors(chain.universal_chain_id).outgoing} h-full transition-colors duration-300" 
+                          <div
+                            class="{getBarColors(chain.universal_chain_id).outgoing} h-full transition-colors duration-300"
                             style="width: {(getIncomingOutgoingWidths(chain, 25).outgoingWidth / 25) * 100}%"
                             title="Outgoing: {chain.outgoingCount}"
-                          ></div>
+                          >
+                          </div>
                         {/if}
                       </div>
                     </div>
@@ -574,13 +617,12 @@
                       {/if}
                     {/if}
                   </div>
-
-
                 </button>
 
                 <!-- Expanded Assets Section -->
-                {#if expandedChain === chain.universal_chain_id && chain.topAssets && chain.topAssets.length > 0}
-                  <section 
+                {#if expandedChain === chain.universal_chain_id && chain.topAssets
+                && chain.topAssets.length > 0}
+                  <section
                     id="assets-{chain.universal_chain_id}"
                     class="border-t border-zinc-800 bg-zinc-950 p-1.5"
                   >
@@ -594,7 +636,8 @@
                             <div class="flex items-center space-x-1">
                               <span class="text-zinc-600">#{assetIndex + 1}</span>
                               <span class="text-zinc-200 font-bold">{asset.assetSymbol}</span>
-                              {#if asset.assetName && asset.assetName !== asset.assetSymbol}
+                              {#if asset.assetName
+                          && asset.assetName !== asset.assetSymbol}
                                 <span class="text-zinc-500">({asset.assetName})</span>
                               {/if}
                             </div>
@@ -602,12 +645,14 @@
                               <span class="text-zinc-600">vol:</span>
                               <span class="text-zinc-400">{formatNumber(asset.totalVolume)}</span>
                               <span class="text-zinc-600">cnt:</span>
-                              <span class="text-zinc-400">{asset.outgoingCount + asset.incomingCount}</span>
+                              <span class="text-zinc-400">{
+                                asset.outgoingCount + asset.incomingCount
+                              }</span>
                               <span class="text-zinc-600">avg:</span>
                               <span class="text-zinc-400">{formatNumber(asset.averageAmount)}</span>
                             </div>
                           </div>
-                          
+
                           <!-- Asset Flow Details -->
                           <div class="flex items-center space-x-1.5 text-xs mb-0.5">
                             <span class="text-zinc-600">out:</span>
@@ -615,8 +660,10 @@
                             <span class="text-zinc-600">in:</span>
                             <span class="text-zinc-400">{formatCount(asset.incomingCount)}</span>
                             <span class="text-zinc-600">net:</span>
-                            <span class="text-zinc-400 {asset.netFlow >= 0 ? 'text-green-400' : 'text-red-400'}">
-                              {asset.netFlow >= 0 ? '+' : ''}{formatCount(asset.netFlow)}
+                            <span
+                              class="text-zinc-400 {asset.netFlow >= 0 ? 'text-green-400' : 'text-red-400'}"
+                            >
+                              {asset.netFlow >= 0 ? "+" : ""}{formatCount(asset.netFlow)}
                             </span>
                             <span class="text-zinc-600">avg:</span>
                             <span class="text-zinc-400">{formatNumber(asset.averageAmount)}</span>
@@ -627,38 +674,46 @@
                             <div class="flex-1 flex min-w-0">
                               <div class="hidden sm:flex w-full h-1">
                                 <!-- Incoming side (left, green) -->
-                                {#if getAssetIncomingOutgoingWidths(asset, 50).incomingWidth > 0}
-                                  <div 
-                                    class="{getBarColors(chain.universal_chain_id).incoming} h-full transition-colors duration-300" 
+                                {#if getAssetIncomingOutgoingWidths(asset, 50)
+                            .incomingWidth > 0}
+                                  <div
+                                    class="{getBarColors(chain.universal_chain_id).incoming} h-full transition-colors duration-300"
                                     style="width: {(getAssetIncomingOutgoingWidths(asset, 50).incomingWidth / 50) * 100}%"
                                     title="Incoming: {asset.incomingCount}"
-                                  ></div>
+                                  >
+                                  </div>
                                 {/if}
                                 <!-- Outgoing side (right, red) -->
-                                {#if getAssetIncomingOutgoingWidths(asset, 50).outgoingWidth > 0}
-                                  <div 
-                                    class="{getBarColors(chain.universal_chain_id).outgoing} h-full transition-colors duration-300" 
+                                {#if getAssetIncomingOutgoingWidths(asset, 50)
+                            .outgoingWidth > 0}
+                                  <div
+                                    class="{getBarColors(chain.universal_chain_id).outgoing} h-full transition-colors duration-300"
                                     style="width: {(getAssetIncomingOutgoingWidths(asset, 50).outgoingWidth / 50) * 100}%"
                                     title="Outgoing: {asset.outgoingCount}"
-                                  ></div>
+                                  >
+                                  </div>
                                 {/if}
                               </div>
                               <div class="flex sm:hidden w-full h-1.5">
                                 <!-- Incoming side (left, green) -->
-                                {#if getAssetIncomingOutgoingWidths(asset, 25).incomingWidth > 0}
-                                  <div 
-                                    class="{getBarColors(chain.universal_chain_id).incoming} h-full transition-colors duration-300" 
+                                {#if getAssetIncomingOutgoingWidths(asset, 25)
+                            .incomingWidth > 0}
+                                  <div
+                                    class="{getBarColors(chain.universal_chain_id).incoming} h-full transition-colors duration-300"
                                     style="width: {(getAssetIncomingOutgoingWidths(asset, 25).incomingWidth / 25) * 100}%"
                                     title="Incoming: {asset.incomingCount}"
-                                  ></div>
+                                  >
+                                  </div>
                                 {/if}
                                 <!-- Outgoing side (right, red) -->
-                                {#if getAssetIncomingOutgoingWidths(asset, 25).outgoingWidth > 0}
-                                  <div 
-                                    class="{getBarColors(chain.universal_chain_id).outgoing} h-full transition-colors duration-300" 
+                                {#if getAssetIncomingOutgoingWidths(asset, 25)
+                            .outgoingWidth > 0}
+                                  <div
+                                    class="{getBarColors(chain.universal_chain_id).outgoing} h-full transition-colors duration-300"
                                     style="width: {(getAssetIncomingOutgoingWidths(asset, 25).outgoingWidth / 25) * 100}%"
                                     title="Outgoing: {asset.outgoingCount}"
-                                  ></div>
+                                  >
+                                  </div>
                                 {/if}
                               </div>
                             </div>
@@ -678,21 +733,21 @@
 </Card>
 
 <style>
-  /* Custom scrollbar styling */
-  .overflow-y-auto::-webkit-scrollbar {
-    width: 4px;
-  }
-  
-  .overflow-y-auto::-webkit-scrollbar-track {
-    background: #27272a;
-  }
-  
-  .overflow-y-auto::-webkit-scrollbar-thumb {
-    background: #52525b;
-    border-radius: 2px;
-  }
-  
-  .overflow-y-auto::-webkit-scrollbar-thumb:hover {
-    background: #71717a;
-  }
-</style> 
+/* Custom scrollbar styling */
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: #27272a;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: #52525b;
+  border-radius: 2px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: #71717a;
+}
+</style>

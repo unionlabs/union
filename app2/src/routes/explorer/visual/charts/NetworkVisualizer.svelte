@@ -1,10 +1,10 @@
 <script lang="ts">
+import Card from "$lib/components/ui/Card.svelte"
 import { chains } from "$lib/stores/chains.svelte"
+import type { TransferListItem } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { onMount } from "svelte"
 import { initializeCanvasWithCleanup } from "../canvasInit"
-import Card from "$lib/components/ui/Card.svelte"
-import type { TransferListItem } from "@unionlabs/sdk/schema"
 
 type EnhancedTransferListItem = TransferListItem & {
   isTestnetTransfer?: boolean
@@ -40,6 +40,8 @@ interface ChainNode {
   displayName: string
   glowColor: string
   glowIntensity: number
+  lastActivity: number // Timestamp of last activity
+  fadeLevel: number // 0-1, how faded the node is (0 = fully faded, 1 = fully bright)
 }
 
 let {
@@ -52,8 +54,10 @@ let {
 
 // Color configuration
 const COLORS = {
-  chainDefault: "#e4e4e7",
-  chainSelected: "#4bb7c3", 
+  chainActive: "#ffffff", // Bright white for active chains
+  chainDefault: "#e4e4e7", // Normal state
+  chainFaded: "#52525b", // Faded inactive chains
+  chainSelected: "#4bb7c3",
   chainHit: "#ffffff",
   particle: "#fbbf24",
   particleTestnet: "#4bb7c3",
@@ -62,7 +66,7 @@ const COLORS = {
   uiBackground: "#000000cc",
   uiText: "#ffffff",
   uiTextSecondary: "#9ca3af",
-  uiTextMuted: "#6b7280"
+  uiTextMuted: "#6b7280",
 } as const
 
 // Performance constants
@@ -71,6 +75,11 @@ const TARGET_FPS = 120
 const FRAME_INTERVAL = 1000 / TARGET_FPS
 const MAX_PARTICLES = 200
 const MOUSE_CHECK_INTERVAL = 5
+
+// Fade system constants
+const FADE_DELAY = 3000 // Start fading after 3 seconds of inactivity
+const FADE_DURATION = 5000 // Take 5 seconds to fully fade
+const MIN_FADE_LEVEL = 0.2 // Don't fade completely (30% minimum brightness)
 
 // Responsive sizing functions
 const getChainNodeSize = () => {
@@ -114,11 +123,13 @@ let processedTransferCount = $state(0)
 
 // Canvas functions
 function updateCanvasSize() {
-  if (!containerElement || !canvas || !ctx) return
+  if (!containerElement || !canvas || !ctx) {
+    return
+  }
 
   const rect = containerElement.getBoundingClientRect()
   const dpr = window.devicePixelRatio || 1
-  
+
   canvasWidth = rect.width
   canvasHeight = rect.height
 
@@ -136,10 +147,14 @@ function updateCanvasSize() {
 }
 
 function setupChainNodes() {
-  if (!Option.isSome(chains.data)) return
+  if (!Option.isSome(chains.data)) {
+    return
+  }
 
   const chainData = chains.data.value
-  if (!chainData?.length) return
+  if (!chainData?.length) {
+    return
+  }
 
   chainNodes.clear()
 
@@ -153,6 +168,10 @@ function setupChainNodes() {
     const x = centerX + Math.cos(angle) * radius
     const y = centerY + Math.sin(angle) * radius
 
+    const now = Date.now()
+    // Start nodes in faded state since they haven't had activity yet
+    const initialLastActivity = now - (FADE_DELAY + FADE_DURATION)
+
     chainNodes.set(chain.universal_chain_id, {
       x,
       y,
@@ -163,6 +182,8 @@ function setupChainNodes() {
       displayName: chain.display_name || chain.chain_id,
       glowColor: COLORS.chainHit,
       glowIntensity: 0,
+      lastActivity: initialLastActivity,
+      fadeLevel: MIN_FADE_LEVEL, // Start at minimum fade level
     })
   })
 }
@@ -176,14 +197,22 @@ function createParticleFromTransfer(transfer: EnhancedTransferListItem) {
   const sourceId = transfer.source_chain.universal_chain_id
   const destId = transfer.destination_chain.universal_chain_id
 
-  if (!chainNodes.has(sourceId) || !chainNodes.has(destId)) return
+  if (!chainNodes.has(sourceId) || !chainNodes.has(destId)) {
+    return
+  }
 
   const fromNode = chainNodes.get(sourceId)!
   const toNode = chainNodes.get(destId)!
 
-  // Increase activity for both chains
+  // Increase activity for both chains and reset fade
+  const now = Date.now()
   fromNode.activity = Math.min(fromNode.activity + 0.5, 3)
+  fromNode.lastActivity = now
+  fromNode.fadeLevel = 1 // Reset to full brightness
+
   toNode.activity = Math.min(toNode.activity + 0.5, 3)
+  toNode.lastActivity = now
+  toNode.fadeLevel = 1 // Reset to full brightness
 
   // Reuse particle objects from pool
   let particle = particlePool.pop() || {} as Particle
@@ -208,12 +237,14 @@ function createParticleFromTransfer(transfer: EnhancedTransferListItem) {
 }
 
 function checkHover() {
-  if (frameCount % MOUSE_CHECK_INTERVAL !== 0) return
+  if (frameCount % MOUSE_CHECK_INTERVAL !== 0) {
+    return
+  }
 
   hoveredChain = null
   for (const [chainId, node] of chainNodes) {
     const distance = Math.sqrt(
-      (mouseX - node.x) ** 2 + (mouseY - node.y) ** 2
+      (mouseX - node.x) ** 2 + (mouseY - node.y) ** 2,
     )
     if (distance <= node.size + 10) {
       hoveredChain = chainId
@@ -276,6 +307,8 @@ function animate(currentTime = 0) {
         toNode.pulseSize = toNode.size * 1.5
         toNode.glowColor = COLORS.chainHit
         toNode.glowIntensity = 1.0
+        toNode.lastActivity = Date.now()
+        toNode.fadeLevel = 1 // Reset to full brightness on hit
       }
       particlePool.push(particle)
     } else {
@@ -322,9 +355,8 @@ function drawConnections() {
       const [chainId1, node1] = nodeArray[i]
       const [chainId2, node2] = nodeArray[j]
 
-      const isSelected = 
-        (selectedFromChain === chainId1 && selectedToChain === chainId2) ||
-        (selectedFromChain === chainId2 && selectedToChain === chainId1)
+      const isSelected = (selectedFromChain === chainId1 && selectedToChain === chainId2)
+        || (selectedFromChain === chainId2 && selectedToChain === chainId1)
 
       if (isSelected) {
         selectedConnections.push([node1, node2])
@@ -352,7 +384,9 @@ function drawConnections() {
 }
 
 function drawParticles() {
-  if (particles.length === 0) return
+  if (particles.length === 0) {
+    return
+  }
 
   ctx.fillStyle = COLORS.particle
   for (const particle of particles) {
@@ -363,32 +397,75 @@ function drawParticles() {
       particle.x - particle.size,
       particle.y - particle.size,
       particle.size * 2,
-      particle.size * 2
+      particle.size * 2,
     )
   }
 }
 
 function updateAndDrawNodes() {
+  const now = Date.now()
+
   // Update node states
   for (const node of chainNodes.values()) {
     node.activity = Math.max(node.activity - 0.08, 0)
     node.glowIntensity = Math.max(node.glowIntensity - 0.05, 0)
+
+    // Calculate fade level based on time since last activity
+    const timeSinceActivity = now - node.lastActivity
+    if (timeSinceActivity > FADE_DELAY) {
+      const fadeProgress = Math.min((timeSinceActivity - FADE_DELAY) / FADE_DURATION, 1)
+      node.fadeLevel = 1 - (fadeProgress * (1 - MIN_FADE_LEVEL))
+    } else {
+      node.fadeLevel = 1 // No fading during delay period
+    }
   }
 
   // Draw nodes
   for (const [chainId, node] of chainNodes) {
     const isSelected = chainId === selectedFromChain || chainId === selectedToChain
+    const isHovered = hoveredChain === chainId
     const nodeRadius = node.size + (node.activity > 0 ? node.activity * 0.5 : 0)
+
+    // Keep selected/hovered nodes bright
+    if (isSelected || isHovered) {
+      node.fadeLevel = Math.max(node.fadeLevel, 0.8)
+    }
 
     // Main node
     ctx.beginPath()
     ctx.arc(node.x, node.y, nodeRadius, 0, 2 * Math.PI)
-    
-    ctx.fillStyle = isSelected
-      ? COLORS.chainSelected
-      : node.glowIntensity > 0
-      ? COLORS.chainHit
-      : node.color
+
+    let nodeColor: string
+    if (isSelected) {
+      nodeColor = COLORS.chainSelected
+    } else if (node.glowIntensity > 0) {
+      nodeColor = COLORS.chainHit
+    } else {
+      // Interpolate between faded and normal/active based on fade level
+      const baseColor = node.activity > 0 ? COLORS.chainActive : COLORS.chainDefault
+      if (node.fadeLevel < 1) {
+        // Create interpolated color between base and faded
+        const r1 = parseInt(baseColor.slice(1, 3), 16)
+        const g1 = parseInt(baseColor.slice(3, 5), 16)
+        const b1 = parseInt(baseColor.slice(5, 7), 16)
+
+        const r2 = parseInt(COLORS.chainFaded.slice(1, 3), 16)
+        const g2 = parseInt(COLORS.chainFaded.slice(3, 5), 16)
+        const b2 = parseInt(COLORS.chainFaded.slice(5, 7), 16)
+
+        const r = Math.round(r2 + (r1 - r2) * node.fadeLevel)
+        const g = Math.round(g2 + (g1 - g2) * node.fadeLevel)
+        const b = Math.round(b2 + (b1 - b2) * node.fadeLevel)
+
+        nodeColor = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${
+          b.toString(16).padStart(2, "0")
+        }`
+      } else {
+        nodeColor = baseColor
+      }
+    }
+
+    ctx.fillStyle = nodeColor
     ctx.fill()
 
     // Border for selected nodes
@@ -455,9 +532,13 @@ onMount(() => {
       },
       eventListeners: [
         { element: canvas, event: "mousemove", handler: handleMouseMove as (event: Event) => void },
-        { element: canvas, event: "mouseleave", handler: handleMouseLeave as (event: Event) => void },
-        { element: canvas, event: "click", handler: handleChainClick as (event: Event) => void }
-      ]
+        {
+          element: canvas,
+          event: "mouseleave",
+          handler: handleMouseLeave as (event: Event) => void,
+        },
+        { element: canvas, event: "click", handler: handleChainClick as (event: Event) => void },
+      ],
     })
 
     return () => {
@@ -473,20 +554,32 @@ onMount(() => {
 </script>
 
 <Card class="h-full p-3">
-  <div class="relative w-full h-full" bind:this={containerElement}>
+  <div
+    class="relative w-full h-full"
+    bind:this={containerElement}
+  >
     {#if selectedFromChain && selectedToChain}
       <div
         class="absolute top-0 left-0 z-10 rounded-lg text-white min-w-48"
         style="background-color: {COLORS.uiBackground};"
       >
-        <div class="text-xs mb-1" style="color: {COLORS.uiTextSecondary};">
+        <div
+          class="text-xs mb-1"
+          style="color: {COLORS.uiTextSecondary};"
+        >
           Route Latency
         </div>
-        <div class="text-sm font-medium mb-2" style="color: {COLORS.uiText};">
+        <div
+          class="text-sm font-medium mb-2"
+          style="color: {COLORS.uiText};"
+        >
           {chainNodes.get(selectedFromChain)?.displayName || selectedFromChain} →
           {chainNodes.get(selectedToChain)?.displayName || selectedToChain}
         </div>
-        <div class="text-xs mt-2" style="color: {COLORS.uiTextMuted};">
+        <div
+          class="text-xs mt-2"
+          style="color: {COLORS.uiTextMuted};"
+        >
           Click elsewhere to clear selection
         </div>
       </div>

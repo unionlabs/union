@@ -17,26 +17,26 @@ export function initializeCanvasRobustly(options: CanvasInitOptions): void {
 
   const tryInitialize = () => {
     attempts++
-    
+
     // Get container dimensions
     const rect = container.getBoundingClientRect()
     const width = rect.width
     const height = rect.height
-    
+
     // Check if we have valid dimensions
     if (width > 0 && height > 0) {
       // Success - container has dimensions
       onInitialized()
       return
     }
-    
+
     // If we've exceeded max retries, force initialization anyway
     if (attempts >= maxRetries) {
-      console.warn('Canvas initialization: Max retries exceeded, forcing initialization')
+      console.warn("Canvas initialization: Max retries exceeded, forcing initialization")
       onInitialized()
       return
     }
-    
+
     // Retry after delay
     setTimeout(tryInitialize, retryDelay)
   }
@@ -63,23 +63,23 @@ export interface EnhancedCanvasInitOptions extends CanvasInitOptions {
 
 export function initializeCanvasWithCleanup(options: EnhancedCanvasInitOptions): () => void {
   const { container, onResize, eventListeners = [] } = options
-  
+
   let resizeObserver: ResizeObserver | null = null
-  
+
   // Setup resize observer if resize callback provided
   if (onResize) {
     resizeObserver = new ResizeObserver(onResize)
     resizeObserver.observe(container)
   }
-  
+
   // Add event listeners
   eventListeners.forEach(({ element, event, handler, options: listenerOptions }) => {
     element.addEventListener(event, handler, listenerOptions)
   })
-  
+
   // Initialize canvas
   initializeCanvasRobustly(options)
-  
+
   // Return cleanup function
   return () => {
     resizeObserver?.disconnect()
@@ -87,4 +87,4 @@ export function initializeCanvasWithCleanup(options: EnhancedCanvasInitOptions):
       element.removeEventListener(event, handler, listenerOptions)
     })
   }
-} 
+}
