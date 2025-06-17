@@ -218,7 +218,7 @@ impl EthFetcherClient {
                             transaction_log_index: transaction_log_index.try_into().unwrap(),
                         }
                     })
-                    .sorted_by_key(|e|e.log_index)
+                    .sorted_by_key(|e| e.log_index)
                     .collect();
 
                 trace!(
@@ -235,7 +235,7 @@ impl EthFetcherClient {
                     events,
                 }
             })
-            .sorted_by_key(|t|t.index)
+            .sorted_by_key(|t| t.index)
             .collect();
 
         debug!(
