@@ -86,7 +86,7 @@ _: {
               export VITE_SUPABASE_URL="${VITE_SUPABASE_URL}"
               export VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY}"
               pnpm install
-              pnpm run dev -- --host
+              pnpm run dev --host
             '';
           };
         };
