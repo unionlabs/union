@@ -62,23 +62,11 @@ export class CreateViemWalletClientError extends Data.TaggedError("CreateViemWal
   cause: CreateWalletClientErrorType
 }> {}
 
-type Extension = Parameters<ReturnType<typeof createPublicClient>["extend"]>[0]
-
 export const createViemPublicClient = (
   parameters: PublicClientConfig,
-  extensions?: ReadonlyArray<Extension> | Extension | undefined,
 ): Effect.Effect<PublicClient, CreateViemPublicClientError> =>
   Effect.try({
-    try: () =>
-      pipe(
-        A.ensure(extensions),
-        A.filter(Predicate.isNotUndefined),
-        (xs) =>
-          xs.reduce(
-            (client, extension) => client.extend(extension as unknown as any),
-            createPublicClient(parameters),
-          ),
-      ),
+    try: () => createPublicClient(parameters),
     catch: err =>
       new CreateViemPublicClientError({
         cause: extractErrorDetails(err as CreatePublicClientErrorType),
