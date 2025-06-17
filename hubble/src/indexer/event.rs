@@ -1,6 +1,12 @@
-use std::{fmt, fmt::Display};
+use std::{
+    collections::HashMap,
+    fmt::{self, Display},
+    str::FromStr,
+};
 
 use bytes::Bytes;
+use hex::decode;
+use itertools::Itertools;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use sha2::Digest;
@@ -9,7 +15,7 @@ use time::OffsetDateTime;
 use tracing::debug;
 
 use crate::indexer::{
-    api::{BlockRange, BlockReference, FetcherClient, IndexerError},
+    api::{BlockHeight, BlockRange, BlockReference, FetcherClient, IndexerError},
     nats::subject_for_block,
     postgres::nats::schedule,
     Indexer,
@@ -24,6 +30,32 @@ pub struct HubbleEvent {
     pub chunk: Option<Chunk>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub events: Option<BlockEvents>,
+}
+
+impl Display for HubbleEvent {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} {} (events: {}, height: {})",
+            self.universal_chain_id,
+            self.range,
+            self.events
+                .as_ref()
+                .map(|e| e.events.len().to_string())
+                .unwrap_or("-".to_string()),
+            self.events
+                .as_ref()
+                .map(|es| {
+                    es.events
+                        .iter()
+                        .map(|e| e.height())
+                        .sorted()
+                        .unique()
+                        .join(", ")
+                })
+                .unwrap_or_else(|| "-".to_string()),
+        )
+    }
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone)]
@@ -101,6 +133,18 @@ impl fmt::Display for MessageHash {
     }
 }
 
+impl FromStr for MessageHash {
+    type Err = hex::FromHexError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.strip_prefix("0x").unwrap_or(s);
+        let bytes = decode(s)?;
+        Ok(MessageHash {
+            message_hash: Bytes::from(bytes),
+        })
+    }
+}
+
 impl<T: FetcherClient> Indexer<T> {
     pub async fn schedule_message(
         &self,
@@ -147,12 +191,17 @@ impl<T: FetcherClient> Indexer<T> {
             return Ok(message_hash);
         }
 
+        let headers: HashMap<String, Vec<String>> =
+            vec![("Message-Hash".to_string(), vec![message_hash.to_string()])]
+                .into_iter()
+                .collect();
+
         if self.nats.is_some() {
             debug!("scheduling: {}", range);
 
             let subject = subject_for_block(&self.indexer_id);
 
-            let id = schedule(tx, &subject, data.into()).await?;
+            let id = schedule(tx, &subject, data.into(), &headers).await?;
 
             debug!("scheduled: {range} - {id}");
         }
@@ -175,31 +224,26 @@ impl BlockEvents {
 #[warn(clippy::enum_variant_names)]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
-// using database representation of fields. all these 'record representations' will
-// be replaced by USC events
-pub struct EthereumLog {
-    pub internal_chain_id: i32,
-    pub block_hash: String,
-    pub data: Value,
-    #[serde(with = "flexible_i64")]
-    pub height: i64,
-    pub time: OffsetDateTime,
-}
-
-#[warn(clippy::enum_variant_names)]
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(tag = "type")]
 pub enum BlockEvent {
+    // using database representation of fields. all these 'record representations' will
+    // be replaced by USC events
     #[serde(rename = "ethereum-log")]
-    EthereumLog(EthereumLog),
+    EthereumLog {
+        internal_chain_id: i32,
+        block_hash: String,
+        data: Value,
+        #[serde(with = "flexible_u64")]
+        height: BlockHeight,
+        time: OffsetDateTime,
+    },
 
     #[serde(rename = "tendermint-block")]
     TendermintBlock {
         internal_chain_id: i32,
         hash: String,
         data: Value,
-        #[serde(with = "flexible_i64")]
-        height: i64,
+        #[serde(with = "flexible_u64")]
+        height: BlockHeight,
         time: OffsetDateTime,
     },
 
@@ -207,8 +251,8 @@ pub enum BlockEvent {
     TendermintTransaction {
         internal_chain_id: i32,
         block_hash: String,
-        #[serde(with = "flexible_i64")]
-        height: i64,
+        #[serde(with = "flexible_u64")]
+        height: BlockHeight,
         hash: String,
         data: Value,
         index: i32,
@@ -218,8 +262,8 @@ pub enum BlockEvent {
     TendermintEvent {
         internal_chain_id: i32,
         block_hash: String,
-        #[serde(with = "flexible_i64")]
-        height: i64,
+        #[serde(with = "flexible_u64")]
+        height: BlockHeight,
         transaction_hash: Option<String>,
         index: i32,
         transaction_index: Option<i32>,
@@ -227,6 +271,17 @@ pub enum BlockEvent {
         time: OffsetDateTime,
         flow: String,
     },
+}
+
+impl BlockEvent {
+    pub fn height(&self) -> BlockHeight {
+        match self {
+            BlockEvent::TendermintBlock { height, .. } => *height,
+            BlockEvent::TendermintTransaction { height, .. } => *height,
+            BlockEvent::TendermintEvent { height, .. } => *height,
+            BlockEvent::EthereumLog { height, .. } => *height,
+        }
+    }
 }
 
 mod flexible_u64 {
@@ -247,31 +302,6 @@ mod flexible_u64 {
         match value {
             Value::Number(n) => n
                 .as_u64()
-                .ok_or_else(|| serde::de::Error::custom("invalid number")),
-            Value::String(s) => s.parse().map_err(serde::de::Error::custom),
-            _ => Err(serde::de::Error::custom("expected number or string")),
-        }
-    }
-}
-
-mod flexible_i64 {
-    use super::*;
-
-    pub fn serialize<S>(value: &i64, serializer: S) -> Result<S::Ok, S::Error>
-    where
-        S: Serializer,
-    {
-        serializer.serialize_str(&value.to_string())
-    }
-
-    pub fn deserialize<'de, D>(deserializer: D) -> Result<i64, D::Error>
-    where
-        D: Deserializer<'de>,
-    {
-        let value = Value::deserialize(deserializer)?;
-        match value {
-            Value::Number(n) => n
-                .as_i64()
                 .ok_or_else(|| serde::de::Error::custom("invalid number")),
             Value::String(s) => s.parse().map_err(serde::de::Error::custom),
             _ => Err(serde::de::Error::custom("expected number or string")),

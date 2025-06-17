@@ -10,15 +10,17 @@ pub async fn schedule(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     subject: &str,
     data: bytes::Bytes,
+    headers: &HashMap<String, Vec<String>>,
 ) -> sqlx::Result<i64> {
     let record = sqlx::query!(
         "
-        INSERT INTO hubble.out(subject, data)
-        VALUES ($1, $2)
+        INSERT INTO hubble.out(subject, data, headers)
+        VALUES ($1, $2, $3)
         RETURNING id
         ",
         subject,
         data.as_ref(),
+        serde_json::to_value(headers).expect("headers should be json serializable"),
     )
     .fetch_one(tx.as_mut())
     .await?;

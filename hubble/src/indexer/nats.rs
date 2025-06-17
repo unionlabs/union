@@ -1,8 +1,4 @@
-use core::time::Duration;
-use std::{
-    fmt::{self, Display},
-    future::Future,
-};
+use std::fmt::{self, Display};
 
 use async_nats::{
     header::HeaderMap,
@@ -14,10 +10,10 @@ use async_nats::{
     ConnectOptions,
 };
 use bytes::Bytes;
-use lz4_flex::{compress_prepend_size, decompress_size_prepended};
-use tracing::{debug, info, warn};
+use lz4_flex::compress_prepend_size;
+use tracing::{debug, info};
 
-use crate::indexer::api::IndexerError;
+use crate::indexer::{api::IndexerError, event::MessageHash};
 
 #[derive(Clone)]
 pub struct NatsConnection {
@@ -122,78 +118,26 @@ impl NatsConnection {
     }
 }
 
-pub async fn consume<F, Fut>(
-    message: async_nats::jetstream::Message,
-    handler: F,
-) -> Result<(), IndexerError>
-where
-    F: Fn(u64, String, Bytes) -> Fut,
-    Fut: Future<Output = Result<(), IndexerError>>,
-{
-    let meta = message.info().map_err(IndexerError::NatsMetaError)?;
+pub struct MessageMeta {
+    pub message_sequence: u64,
+    pub message_hash: MessageHash,
+    pub nats_stream_sequence: u64,
+    pub nats_consumer_sequence: u64,
+    pub subject: String,
+}
 
-    debug!("Stream sequence number: {}", meta.stream_sequence);
-    debug!("Consumer sequence number: {}", meta.consumer_sequence);
-
-    let payload = &message.payload;
-
-    let decoded = if let Some(encoding) = message
-        .headers
-        .as_ref()
-        .and_then(|h| h.get("Content-Encoding"))
-    {
-        match encoding.as_str() {
-            "lz4" => decompress_size_prepended(payload)?.into(),
-            _ => {
-                warn!("nacking - unsupported encoding: {encoding}");
-
-                // TODO: improve nack flow
-                message
-                    .ack_with(jetstream::AckKind::Nak(Some(Duration::from_secs(60))))
-                    .await
-                    .map_err(IndexerError::NatsNackError)?;
-
-                return Err(IndexerError::NatsUnsupportedEncoding(encoding.to_string()));
-            }
-        }
-    } else {
-        payload.clone()
-    };
-
-    let message_sequence = message
-        .headers
-        .as_ref()
-        .and_then(|h| h.get("Message-Sequence"))
-        .map(|h| {
-            h.as_str().parse::<u64>().map_err(|e| {
-                IndexerError::NatsUnparseableMessageSequence(
-                    h.as_str().to_string(),
-                    meta.stream_sequence,
-                    meta.consumer_sequence,
-                    e,
-                )
-            })
-        })
-        .unwrap_or(Err(IndexerError::NatsMissingMessageSequence(
-            meta.stream_sequence,
-            meta.consumer_sequence,
-        )))?;
-
-    match handler(message_sequence, message.subject.to_string(), decoded).await {
-        Ok(_) => {
-            debug!("acking");
-            message.ack().await.map_err(IndexerError::NatsAckError)?;
-        }
-        Err(e) => {
-            warn!("nacking: {e:?}");
-            message
-                .ack_with(jetstream::AckKind::Nak(Some(Duration::from_secs(60))))
-                .await
-                .map_err(IndexerError::NatsNackError)?;
-        }
+impl fmt::Display for MessageMeta {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "{} [m{}|s{}|c{}] ({})",
+            self.subject,
+            self.message_sequence,
+            self.nats_stream_sequence,
+            self.nats_consumer_sequence,
+            self.message_hash,
+        )
     }
-
-    Ok(())
 }
 
 pub struct Ack {

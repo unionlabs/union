@@ -8,7 +8,7 @@ use crate::{
     indexer::{
         api::{BlockHash, BlockHeight},
         ethereum::block_handle::{BlockInsert, TransactionInsert},
-        event::{BlockEvent, EthereumLog},
+        event::BlockEvent,
     },
     postgres::{schedule_replication_reset, ChainId, InsertMode},
 };
@@ -50,15 +50,15 @@ pub async fn insert_batch_logs(
     let (result, tuples): (Vec<_>, Vec<_>) = logs
         .into_iter()
         .map(|l| {
-            let height: i64 = l.height.try_into().unwrap();
-            let event = BlockEvent::EthereumLog(EthereumLog {
+            let event = BlockEvent::EthereumLog {
                 internal_chain_id: l.chain_id.db,
                 block_hash: l.block_hash.clone(),
                 data: serde_json::to_value(&l.data).expect("data should be json serializable"),
-                height,
+                height: l.height,
                 time: l.time,
-            });
+            };
 
+            let height: i64 = l.height.try_into().unwrap();
             let tuple = (
                 l.chain_id.db,
                 l.block_hash.clone(), // Clone if needed

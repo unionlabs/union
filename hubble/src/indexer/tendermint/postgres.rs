@@ -56,14 +56,14 @@ pub async fn insert_batch_blocks(
     let (result, tuples): (Vec<_>, Vec<_>) = blocks
         .into_iter()
         .map(|b| {
-            let height: i64 = b.height.try_into().unwrap();
             let event = BlockEvent::TendermintBlock {
                 internal_chain_id: b.chain_id.db,
                 hash: b.hash.clone(),
                 data: b.data.clone(),
-                height,
+                height: b.height,
                 time: b.time,
             };
+            let height: i64 = b.height.try_into().unwrap();
             let tuple = (b.chain_id.db, b.hash, b.data, height, b.time);
 
             (event, tuple)
@@ -95,16 +95,16 @@ pub async fn insert_batch_transactions(
     let (result, tuples): (Vec<_>, Vec<_>) = transactions
         .into_iter()
         .map(|t| {
-            let block_height: i64 = t.block_height.try_into().unwrap();
             let event = BlockEvent::TendermintTransaction {
                 internal_chain_id: t.chain_id.db,
                 block_hash: t.block_hash.clone(),
-                height: block_height,
+                height: t.block_height,
                 hash: t.hash.clone(),
                 data: t.data.clone(),
                 index: t.index,
             };
 
+            let block_height: i64 = t.block_height.try_into().unwrap();
             let tuple = (
                 t.chain_id.db,
                 t.block_hash,
@@ -148,11 +148,10 @@ pub async fn insert_batch_events(
             e.flows
                 .iter()
                 .map(|flow| {
-                    let block_height: i64 = e.event.block_height.try_into().unwrap();
                     let event = BlockEvent::TendermintEvent {
                         internal_chain_id: e.event.chain_id.db,
                         block_hash: e.event.block_hash.clone(),
-                        height: block_height,
+                        height: e.event.block_height,
                         transaction_hash: e.event.transaction_hash.clone(),
                         index: e.event.block_index,
                         transaction_index: e.event.transaction_index,
@@ -161,6 +160,7 @@ pub async fn insert_batch_events(
                         flow: flow.clone(),
                     };
 
+                    let block_height: i64 = e.event.block_height.try_into().unwrap();
                     let tuple = (
                         e.event.chain_id.db,
                         e.event.block_hash.clone(),

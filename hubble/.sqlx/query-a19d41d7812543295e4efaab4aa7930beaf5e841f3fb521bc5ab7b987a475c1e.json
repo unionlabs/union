@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO hubble.out(subject, data)\n        VALUES ($1, $2)\n        RETURNING id\n        ",
+  "query": "\n        INSERT INTO hubble.out(subject, data, headers)\n        VALUES ($1, $2, $3)\n        RETURNING id\n        ",
   "describe": {
     "columns": [
       {
@@ -12,12 +12,13 @@
     "parameters": {
       "Left": [
         "Text",
-        "Bytea"
+        "Bytea",
+        "Jsonb"
       ]
     },
     "nullable": [
       false
     ]
   },
-  "hash": "dd0566345ebe571703c79c87326587970f2af1534b496c037c0deabc049aaf3a"
+  "hash": "a19d41d7812543295e4efaab4aa7930beaf5e841f3fb521bc5ab7b987a475c1e"
 }

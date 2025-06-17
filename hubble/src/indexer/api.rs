@@ -65,9 +65,15 @@ pub enum IndexerError {
     #[error("unsupported encoding: {0}")]
     NatsUnsupportedEncoding(String),
     #[error("missing message sequence in stream sequence: {0}, consumer_sequence sequence: {1}")]
+    NatsMissingMessageHeaders(u64, u64),
+    #[error("missing headers: in stream sequence: {0}, consumer_sequence sequence: {1}")]
     NatsMissingMessageSequence(u64, u64),
     #[error("unsupported message sequence:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
     NatsUnparseableMessageSequence(String, u64, u64, ParseIntError),
+    #[error("missing message hash: in stream sequence: {0}, consumer_sequence sequence: {1}")]
+    NatsMissingMessageHash(u64, u64),
+    #[error("unsupported message hash:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
+    NatsUnparseableMessageHash(String, u64, u64, hex::FromHexError),
 }
 
 impl From<Report> for IndexerError {
