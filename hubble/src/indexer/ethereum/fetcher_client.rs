@@ -8,6 +8,7 @@ use alloy::{
 };
 use axum::async_trait;
 use color_eyre::eyre::Report;
+use itertools::Itertools;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info, info_span, trace, Instrument};
@@ -217,6 +218,7 @@ impl EthFetcherClient {
                             transaction_log_index: transaction_log_index.try_into().unwrap(),
                         }
                     })
+                    .sorted_by_key(|e|e.log_index)
                     .collect();
 
                 trace!(
@@ -233,6 +235,7 @@ impl EthFetcherClient {
                     events,
                 }
             })
+            .sorted_by_key(|t|t.index)
             .collect();
 
         debug!(
