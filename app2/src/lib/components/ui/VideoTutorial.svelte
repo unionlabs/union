@@ -1,4 +1,6 @@
 <script lang="ts">
+import SharpPlayCircleIcon from "$lib/components/icons/SharpPlayCircleIcon.svelte"
+
 interface Props {
   title: string
   videoUrl: string
@@ -51,7 +53,7 @@ function restore() {
     onclick={restore}
     class="rounded-lg bg-zinc-925 border border-zinc-800 shadow-xl p-3 hover:bg-zinc-900 transition-all duration-200 text-white {className}"
   >
-    <span class="text-lg">📺</span>
+    <SharpPlayCircleIcon class="size-5" />
   </button>
 {:else}
   <!-- Normal popup state -->
@@ -59,7 +61,8 @@ function restore() {
     <!-- Header with controls -->
     <div class="flex items-center justify-between p-3 border-b border-zinc-800">
       <div class="flex items-center gap-2">
-        <span class="text-sm font-medium text-white">📺 Tutorial</span>
+        <SharpPlayCircleIcon class="size-4 text-zinc-300" />
+        <span class="text-sm font-medium text-white">Tutorial</span>
       </div>
       <div class="flex items-center gap-1">
         <button
