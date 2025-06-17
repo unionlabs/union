@@ -1,9 +1,10 @@
 use core::fmt::Debug;
 use std::fmt;
 
-use serde::Deserialize;
 use sqlx::{types::BigDecimal, Error, Postgres};
 use valuable::Valuable;
+
+use crate::indexer::api::UniversalChainId;
 
 /// ChainIds track both the database ID of a chain, as well as some canonical representation for
 /// debug logging.
@@ -17,6 +18,7 @@ pub type ChainId = ChainIdInner<'static>;
 
 /// The internal representation of a chain-id, assigned by the database, combined
 /// with the canonical chain-id (from the genesis).
+/// and the UCS04 universal chain id
 #[derive(Clone, Debug, Valuable, PartialEq, Eq)]
 pub struct ChainIdInner<'a> {
     pub db: i32,
@@ -38,11 +40,24 @@ impl<'a> ChainIdInner<'a> {
     }
 }
 
-#[derive(Copy, Clone, Debug, Default, Deserialize)]
-pub enum InsertMode {
-    #[default]
-    Insert,
-    Upsert,
+pub async fn fetch_internal_chain_id_for_universal_chain_id(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    universal_chain_id: &UniversalChainId,
+) -> sqlx::Result<i32> {
+    match sqlx::query!(
+        "
+        SELECT id as internal_chain_id 
+        FROM config.chains c WHERE family || '.' || chain_id = $1 
+        LIMIT 1
+        ",
+        universal_chain_id
+    )
+    .fetch_optional(tx.as_mut())
+    .await?
+    {
+        Some(record) => Ok(record.internal_chain_id),
+        None => Err(Error::Protocol("No chain found with universal_chain_id {universal_chain_id}. Add it to the config.chains table before using it in hubble".into()))
+    }
 }
 
 pub async fn fetch_chain_id_tx(

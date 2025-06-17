@@ -13,7 +13,10 @@ use bytes::Bytes;
 use lz4_flex::compress_prepend_size;
 use tracing::{debug, info};
 
-use crate::indexer::{api::IndexerError, event::MessageHash};
+use crate::indexer::{
+    api::{IndexerError, UniversalChainId},
+    event::MessageHash,
+};
 
 #[derive(Clone)]
 pub struct NatsConnection {
@@ -71,14 +74,14 @@ impl NatsConnection {
 
     pub async fn create_consumer(
         &self,
-        indexer_id: &str,
+        universal_chain_id: &UniversalChainId,
     ) -> Result<Consumer<Config>, IndexerError> {
-        let durable_name = durable_name(&self.consumer, indexer_id);
+        let durable_name = durable_name(&self.consumer, universal_chain_id);
         let consumer_config = jetstream::consumer::pull::Config {
             durable_name: Some(durable_name.clone()),
             description: Some("indexing chain events".to_string()),
             ack_policy: jetstream::consumer::AckPolicy::Explicit,
-            filter_subject: subject_for_block(indexer_id),
+            filter_subject: subject_for_block(universal_chain_id),
             ..Default::default()
         };
 
@@ -90,7 +93,7 @@ impl NatsConnection {
 
     pub async fn publish(
         &self,
-        universal_chain_id: &str,
+        universal_chain_id: &UniversalChainId,
         message: &Message,
     ) -> Result<Ack, IndexerError> {
         info!("{}: sending", message.id);
@@ -98,7 +101,7 @@ impl NatsConnection {
         let mut headers = message.headers.clone();
         headers.append("Content-Encoding", "lz4");
         headers.append("Message-Sequence", message.id.to_string());
-        headers.append("Universal-Chain-Id", universal_chain_id);
+        headers.append("Universal-Chain-Id", universal_chain_id.to_string());
 
         let data = compress_prepend_size(&message.data);
 
@@ -119,11 +122,12 @@ impl NatsConnection {
 }
 
 pub struct MessageMeta {
+    pub subject: String,
+    pub universal_chain_id: UniversalChainId,
     pub message_sequence: u64,
     pub message_hash: MessageHash,
     pub nats_stream_sequence: u64,
     pub nats_consumer_sequence: u64,
-    pub subject: String,
 }
 
 impl fmt::Display for MessageMeta {
@@ -168,11 +172,11 @@ impl Message {
     }
 }
 
-pub fn subject_for_block(universal_chain_id: &str) -> String {
+pub fn subject_for_block(universal_chain_id: &UniversalChainId) -> String {
     format!("hubble.block.{}", universal_chain_id)
 }
 
-pub fn durable_name(consumer_id: &str, universal_chain_id: &str) -> String {
+pub fn durable_name(consumer_id: &str, universal_chain_id: &UniversalChainId) -> String {
     sanitize_consumer_name(&format!(
         "{}:{}",
         consumer_id,

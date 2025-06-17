@@ -53,7 +53,7 @@ impl<T: FetcherClient> Indexer<T> {
         debug!("begin");
         let mut tx = self.pg_pool.begin().await?;
 
-        let subject = subject_for_block(&self.indexer_id);
+        let subject = subject_for_block(&self.universal_chain_id);
 
         let messages = next_to_publish(&mut tx, &subject, self.publisher_config.batch_size).await?;
 
@@ -65,7 +65,7 @@ impl<T: FetcherClient> Indexer<T> {
 
         debug!("sending (count: {})", messages.len());
         for message in messages {
-            let ack = nats.publish(&self.indexer_id, &message).await?;
+            let ack = nats.publish(&self.universal_chain_id, &message).await?;
 
             debug!("{}: acked {ack}", message.id);
         }

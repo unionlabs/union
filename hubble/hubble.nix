@@ -93,10 +93,14 @@
           type = types.listOf (
             types.submodule {
               options.indexer_id = mkOption {
-                type = types.nullOr types.str;
+                type = types.str;
                 description = "Id of the indexer which is used by the internal administration of Hubble. Should never change.";
                 example = "amazing-testnet";
-                default = null;
+              };
+              options.universal_chain_id = mkOption {
+                type = types.str;
+                description = "Universal chain id of the chain that is indexed.";
+                example = "union-testnet-10.union";
               };
               options.rpc_urls = mkOption {
                 type = types.nullOr (types.listOf types.str);

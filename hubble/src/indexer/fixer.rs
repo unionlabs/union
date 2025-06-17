@@ -98,7 +98,7 @@ impl<T: FetcherClient> Indexer<T> {
                 }
             }
         } else {
-            info!("nothing scheduled to fix => retry later");
+            debug!("nothing scheduled to fix => retry later");
             Ok(FixerLoopResult::TryAgainLater)
         }
     }

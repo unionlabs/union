@@ -304,7 +304,7 @@ async fn merge_into_active_block_fix_status(
                 SELECT MAX(inactive_bf.end_height)
                 FROM hubble.block_fix active_bf
                 JOIN hubble.block_fix inactive_bf
-                    ON active_bf.indexer_id = inactive_bf.indexer_id          -- same chain
+                    ON active_bf.indexer_id = inactive_bf.indexer_id      -- same chain
                     AND active_bf.next_height = inactive_bf.start_height  -- start at active next
                 WHERE active_bf.id = $1                                   -- current record
             )

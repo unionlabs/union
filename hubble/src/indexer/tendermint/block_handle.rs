@@ -21,8 +21,8 @@ use crate::indexer::{
     tendermint::{
         fetcher_client::TmFetcherClient,
         postgres::{
-            active_contracts, delete_tm_block_transactions_events, insert_batch_blocks,
-            insert_batch_events, insert_batch_transactions, PgBlock, PgEvent, PgTransaction,
+            active_contracts, insert_batch_blocks, insert_batch_events, insert_batch_transactions,
+            PgBlock, PgEvent, PgTransaction,
         },
         provider::RpcProviderId,
     },
@@ -334,9 +334,9 @@ impl BlockHandle for TmBlockHandle {
             );
 
             vec![
-                insert_batch_blocks(tx, vec![block]).await?,
-                insert_batch_transactions(tx, filtered_transactions).await?,
-                insert_batch_events(tx, filtered_events).await?,
+                insert_batch_blocks(vec![block]).await?,
+                insert_batch_transactions(filtered_transactions).await?,
+                insert_batch_events(filtered_events).await?,
             ]
             .into_iter()
             .flatten()
@@ -359,8 +359,6 @@ impl BlockHandle for TmBlockHandle {
         let reference = self.reference();
         debug!("{}: updating", reference);
 
-        delete_tm_block_transactions_events(tx, self.tm_client.chain_id.db, self.reference.height)
-            .await?;
         let result = self.insert(tx).await?;
 
         debug!("{}: done", reference);

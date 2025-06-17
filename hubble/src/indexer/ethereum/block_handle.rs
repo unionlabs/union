@@ -11,13 +11,11 @@ use crate::{
     indexer::{
         api::{BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, IndexerError},
         ethereum::{
-            fetcher_client::EthFetcherClient,
-            postgres::{delete_eth_log, insert_batch_logs},
-            provider::RpcProviderId,
+            fetcher_client::EthFetcherClient, postgres::insert_batch_logs, provider::RpcProviderId,
         },
         event::BlockEvents,
     },
-    postgres::{ChainId, InsertMode},
+    postgres::ChainId,
 };
 
 #[derive(Clone)]
@@ -100,7 +98,7 @@ impl BlockHandle for EthBlockHandle {
 
     async fn insert(
         &self,
-        tx: &mut sqlx::Transaction<'_, Postgres>,
+        _tx: &mut sqlx::Transaction<'_, Postgres>,
     ) -> Result<Option<BlockEvents>, IndexerError> {
         let reference = self.reference();
         debug!("{}: inserting", reference);
@@ -115,7 +113,7 @@ impl BlockHandle for EthBlockHandle {
                     block_to_insert.transactions.len()
                 );
 
-                insert_batch_logs(tx, vec![block_to_insert.into()], InsertMode::Insert).await?
+                insert_batch_logs(vec![block_to_insert.into()]).await?
             }
             None => {
                 debug!("{}: block without transactions => ignore", reference);
@@ -131,7 +129,7 @@ impl BlockHandle for EthBlockHandle {
 
     async fn update(
         &self,
-        tx: &mut sqlx::Transaction<'_, Postgres>,
+        _tx: &mut sqlx::Transaction<'_, Postgres>,
     ) -> Result<Option<BlockEvents>, IndexerError> {
         let reference = self.reference();
         debug!("{}: updating", reference);
@@ -144,10 +142,9 @@ impl BlockHandle for EthBlockHandle {
                 reference,
                 block_to_insert.transactions.len()
             );
-            insert_batch_logs(tx, vec![block_to_insert.into()], InsertMode::Upsert).await?
+            insert_batch_logs(vec![block_to_insert.into()]).await?
         } else {
             debug!("{}: block without transactions => delete", reference);
-            delete_eth_log(tx, self.eth_client.chain_id.db, reference.height).await?;
             vec![]
         };
 

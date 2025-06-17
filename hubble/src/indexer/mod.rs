@@ -23,7 +23,7 @@ use serde::{Deserialize, Deserializer};
 use tokio::{task::JoinSet, time::sleep};
 use tracing::{error, info, info_span, Instrument};
 
-use crate::indexer::nats::NatsConnection;
+use crate::indexer::{api::UniversalChainId, nats::NatsConnection};
 
 enum EndOfRunResult {
     Exit,
@@ -35,6 +35,7 @@ pub struct Indexer<T: FetcherClient> {
     pub pg_pool: sqlx::PgPool,
     pub nats: Option<NatsConnection>,
     pub indexer_id: IndexerId,
+    pub universal_chain_id: UniversalChainId,
     pub start_height: BlockHeight,
     pub chunk_size: usize,
     pub finalizer_config: FinalizerConfig,
@@ -219,6 +220,7 @@ where
         pg_pool: sqlx::PgPool,
         nats: Option<NatsConnection>,
         indexer_id: IndexerId,
+        universal_chain_id: UniversalChainId,
         start_height: BlockHeight,
         chunk_size: usize,
         finalizer_config: FinalizerConfig,
@@ -230,6 +232,7 @@ where
             pg_pool,
             nats,
             indexer_id,
+            universal_chain_id,
             start_height,
             chunk_size,
             finalizer_config,

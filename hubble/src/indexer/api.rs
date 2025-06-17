@@ -74,6 +74,10 @@ pub enum IndexerError {
     NatsMissingMessageHash(u64, u64),
     #[error("unsupported message hash:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
     NatsUnparseableMessageHash(String, u64, u64, hex::FromHexError),
+    #[error(
+        "missing universal chain id: in stream sequence: {0}, consumer_sequence sequence: {1}"
+    )]
+    NatsMissingUniversalChainId(u64, u64),
 }
 
 impl From<Report> for IndexerError {
@@ -92,6 +96,7 @@ pub type IndexerId = String;
 pub type BlockHeight = u64;
 pub type BlockHash = String;
 pub type BlockTimestamp = OffsetDateTime;
+pub type UniversalChainId = String;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct BlockRange {

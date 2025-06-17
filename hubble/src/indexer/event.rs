@@ -15,7 +15,7 @@ use time::OffsetDateTime;
 use tracing::debug;
 
 use crate::indexer::{
-    api::{BlockHeight, BlockRange, BlockReference, FetcherClient, IndexerError},
+    api::{BlockHeight, BlockRange, BlockReference, FetcherClient, IndexerError, UniversalChainId},
     nats::subject_for_block,
     postgres::nats::schedule,
     Indexer,
@@ -24,12 +24,26 @@ use crate::indexer::{
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct HubbleEvent {
     pub version: u8,
-    pub universal_chain_id: String,
+    pub universal_chain_id: UniversalChainId,
     pub range: Range,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub chunk: Option<Chunk>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub events: Option<BlockEvents>,
+}
+
+impl HubbleEvent {
+    pub fn events_by_height<'a>(&'a self) -> HashMap<BlockHeight, Vec<&'a BlockEvent>> {
+        let mut by_height: HashMap<BlockHeight, Vec<&'a BlockEvent>> = HashMap::new();
+
+        if let Some(es) = &self.events {
+            for event in &es.events {
+                by_height.entry(event.height()).or_default().push(event);
+            }
+        }
+
+        by_height
+    }
 }
 
 impl Display for HubbleEvent {
@@ -176,7 +190,7 @@ impl<T: FetcherClient> Indexer<T> {
     ) -> Result<MessageHash, IndexerError> {
         let data = serde_json::to_vec(&HubbleEvent {
             version: 1,
-            universal_chain_id: self.indexer_id.clone(),
+            universal_chain_id: self.universal_chain_id.clone(),
             range: range.clone(),
             chunk: None,
             events,
@@ -199,7 +213,7 @@ impl<T: FetcherClient> Indexer<T> {
         if self.nats.is_some() {
             debug!("scheduling: {}", range);
 
-            let subject = subject_for_block(&self.indexer_id);
+            let subject = subject_for_block(&self.universal_chain_id);
 
             let id = schedule(tx, &subject, data.into(), &headers).await?;
 

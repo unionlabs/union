@@ -4,11 +4,11 @@ use time::OffsetDateTime;
 
 use crate::{
     indexer::{
-        api::{BlockHash, BlockHeight},
+        api::{BlockHash, BlockHeight, IndexerError},
         event::BlockEvent,
         tendermint::block_handle::{ActiveContracts, EventInFlows},
     },
-    postgres::{schedule_replication_reset, ChainId},
+    postgres::ChainId,
 };
 
 type TransactionHash = String;
@@ -49,208 +49,63 @@ pub struct PgEvent {
     pub block_index: i32,
 }
 
+// provides original insert details during migration.
 pub async fn insert_batch_blocks(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
     blocks: impl IntoIterator<Item = PgBlock>,
-) -> sqlx::Result<Vec<BlockEvent>> {
-    let (result, tuples): (Vec<_>, Vec<_>) = blocks
+) -> Result<Vec<BlockEvent>, IndexerError> {
+    Ok(blocks
         .into_iter()
-        .map(|b| {
-            let event = BlockEvent::TendermintBlock {
-                internal_chain_id: b.chain_id.db,
-                hash: b.hash.clone(),
-                data: b.data.clone(),
-                height: b.height,
-                time: b.time,
-            };
-            let height: i64 = b.height.try_into().unwrap();
-            let tuple = (b.chain_id.db, b.hash, b.data, height, b.time);
-
-            (event, tuple)
+        .map(|b| BlockEvent::TendermintBlock {
+            internal_chain_id: b.chain_id.db,
+            hash: b.hash.clone(),
+            data: b.data.clone(),
+            height: b.height,
+            time: b.time,
         })
-        .unzip();
-
-    let (chain_ids, hashes, data, height, time): (
-        Vec<i32>,
-        Vec<String>,
-        Vec<_>,
-        Vec<i64>,
-        Vec<OffsetDateTime>,
-    ) = tuples.into_iter().multiunzip();
-
-    sqlx::query!("
-        INSERT INTO v2_cosmos.blocks (internal_chain_id, hash, data, height, time)
-        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::jsonb[]), unnest($4::bigint[]), unnest($5::timestamptz[])
-        ", &chain_ids, &hashes, &data, &height, &time)
-    .execute(tx.as_mut()).await?;
-
-    Ok(result)
+        .collect_vec())
 }
 
+// provides original insert details during migration.
 pub async fn insert_batch_transactions(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
     transactions: impl IntoIterator<Item = PgTransaction>,
-) -> sqlx::Result<Vec<BlockEvent>> {
-    #![allow(clippy::type_complexity)]
-    let (result, tuples): (Vec<_>, Vec<_>) = transactions
+) -> Result<Vec<BlockEvent>, IndexerError> {
+    Ok(transactions
         .into_iter()
-        .map(|t| {
-            let event = BlockEvent::TendermintTransaction {
-                internal_chain_id: t.chain_id.db,
-                block_hash: t.block_hash.clone(),
-                height: t.block_height,
-                hash: t.hash.clone(),
-                data: t.data.clone(),
-                index: t.index,
-            };
-
-            let block_height: i64 = t.block_height.try_into().unwrap();
-            let tuple = (
-                t.chain_id.db,
-                t.block_hash,
-                block_height,
-                t.hash,
-                t.data,
-                t.index,
-            );
-
-            (event, tuple)
+        .map(|t| BlockEvent::TendermintTransaction {
+            internal_chain_id: t.chain_id.db,
+            block_hash: t.block_hash.clone(),
+            height: t.block_height,
+            hash: t.hash.clone(),
+            data: t.data.clone(),
+            index: t.index,
         })
-        .unzip();
-
-    let (chain_ids, block_hashes, heights, hashes, data, indexes): (
-        Vec<i32>,
-        Vec<String>,
-        Vec<i64>,
-        Vec<String>,
-        Vec<_>,
-        Vec<i32>,
-    ) = tuples.into_iter().multiunzip();
-
-    sqlx::query!("
-        INSERT INTO v2_cosmos.transactions (internal_chain_id, block_hash, height, hash, data, index) 
-        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::jsonb[]), unnest($6::int[])
-        ", 
-        &chain_ids, &block_hashes, &heights, &hashes, &data, &indexes)
-    .execute(tx.as_mut()).await?;
-
-    Ok(result)
+        .collect_vec())
 }
 
+// provides original insert details during migration.
 pub async fn insert_batch_events(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
     events: impl IntoIterator<Item = EventInFlows>,
-) -> sqlx::Result<Vec<BlockEvent>> {
+) -> Result<Vec<BlockEvent>, IndexerError> {
     #![allow(clippy::type_complexity)]
-    let (result, tuples): (Vec<_>, Vec<_>) = events
+    Ok(events
         .into_iter()
         .flat_map(|e| {
             e.flows
                 .iter()
-                .map(|flow| {
-                    let event = BlockEvent::TendermintEvent {
-                        internal_chain_id: e.event.chain_id.db,
-                        block_hash: e.event.block_hash.clone(),
-                        height: e.event.block_height,
-                        transaction_hash: e.event.transaction_hash.clone(),
-                        index: e.event.block_index,
-                        transaction_index: e.event.transaction_index,
-                        data: e.event.data.clone(),
-                        time: e.event.time,
-                        flow: flow.clone(),
-                    };
-
-                    let block_height: i64 = e.event.block_height.try_into().unwrap();
-                    let tuple = (
-                        e.event.chain_id.db,
-                        e.event.block_hash.clone(),
-                        block_height,
-                        e.event.transaction_hash.clone(),
-                        e.event.block_index,
-                        e.event.transaction_index,
-                        e.event.data.clone(),
-                        e.event.time,
-                        flow.clone(),
-                    );
-
-                    (event, tuple)
+                .map(|flow| BlockEvent::TendermintEvent {
+                    internal_chain_id: e.event.chain_id.db,
+                    block_hash: e.event.block_hash.clone(),
+                    height: e.event.block_height,
+                    transaction_hash: e.event.transaction_hash.clone(),
+                    index: e.event.block_index,
+                    transaction_index: e.event.transaction_index,
+                    data: e.event.data.clone(),
+                    time: e.event.time,
+                    flow: flow.clone(),
                 })
-                .collect::<Vec<_>>()
+                .collect_vec()
         })
-        .unzip();
-
-    let (
-        chain_ids,
-        block_hashes,
-        heights,
-        transaction_hashes,
-        indexes,
-        transaction_indexes,
-        data,
-        times,
-        flows,
-    ): (
-        Vec<i32>,
-        Vec<String>,
-        Vec<i64>,
-        Vec<Option<String>>,
-        Vec<i32>,
-        Vec<Option<i32>>,
-        Vec<_>,
-        Vec<OffsetDateTime>,
-        Vec<String>,
-    ) = tuples.into_iter().multiunzip();
-
-    sqlx::query!("
-        INSERT INTO v2_cosmos.events (internal_chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time, flow)
-        SELECT unnest($1::int[]), unnest($2::text[]), unnest($3::bigint[]), unnest($4::text[]), unnest($5::int[]), unnest($6::int[]), unnest($7::jsonb[]), unnest($8::timestamptz[]), unnest($9::text[])
-        ",
-        &chain_ids, &block_hashes, &heights, &transaction_hashes as _, &indexes, &transaction_indexes as _, &data, &times, &flows)
-    .execute(tx.as_mut()).await?;
-
-    Ok(result)
-}
-
-pub async fn delete_tm_block_transactions_events(
-    tx: &mut Transaction<'_, Postgres>,
-    chain_id: i32,
-    height: BlockHeight,
-) -> sqlx::Result<()> {
-    let height: i64 = height.try_into().unwrap();
-
-    sqlx::query!(
-        "
-        DELETE FROM v2_cosmos.events WHERE internal_chain_id = $1 AND height = $2
-        ",
-        chain_id,
-        height,
-    )
-    .execute(tx.as_mut())
-    .await?;
-
-    sqlx::query!(
-        "
-        DELETE FROM v2_cosmos.transactions WHERE internal_chain_id = $1 AND height = $2
-        ",
-        chain_id,
-        height,
-    )
-    .execute(tx.as_mut())
-    .await?;
-
-    sqlx::query!(
-        "
-        DELETE FROM v2_cosmos.blocks WHERE internal_chain_id = $1 AND height = $2
-        ",
-        chain_id,
-        height,
-    )
-    .execute(tx.as_mut())
-    .await?;
-
-    schedule_replication_reset(tx, chain_id, height, "block reorg (delete)").await?;
-
-    Ok(())
+        .collect_vec())
 }
 
 pub async fn active_contracts(

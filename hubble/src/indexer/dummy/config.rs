@@ -3,12 +3,15 @@ use sqlx::PgPool;
 
 use super::dummy::{DummyContext, DummyFetcherClient};
 use crate::indexer::{
-    api::IndexerId, nats::NatsConnection, ConsumerConfig, FinalizerConfig, Indexer, PublisherConfig,
+    api::{IndexerId, UniversalChainId},
+    nats::NatsConnection,
+    ConsumerConfig, FinalizerConfig, Indexer, PublisherConfig,
 };
 
 #[derive(Clone, Debug, serde::Deserialize)]
 pub struct Config {
     pub indexer_id: IndexerId,
+    pub universal_chain_id: UniversalChainId,
     pub start_height: u64,
     pub finalizer: FinalizerConfig,
     pub publisher: PublisherConfig,
@@ -25,6 +28,7 @@ impl Config {
             pg_pool,
             nats,
             self.indexer_id,
+            self.universal_chain_id,
             self.start_height,
             5,
             self.finalizer,
