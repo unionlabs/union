@@ -1,4 +1,4 @@
-import { Array as A, Context, Data, Effect, pipe, Predicate } from "effect"
+import { Context, Data, Effect } from "effect"
 import {
   type Account,
   type Chain,
