@@ -380,7 +380,7 @@ library Proof {
         if (rCode != CalculateRootError.None) {
             return VerifyExistenceError.CalculateRoot;
         }
-        //require(BytesLib.equal(root, commitmentRoot)); // dev: Calculcated root doesn't match provided root
+        //require(BytesLib.equal(root, commitmentRoot)); // dev: Calculated root doesn't match provided root
 
         if (root != commitmentRoot) {
             return VerifyExistenceError.RootNotMatching;
