@@ -89,6 +89,14 @@
           type = types.nullOr types.path;
           default = null;
         };
+        nats-consumer = mkOption {
+          description = lib.mdDoc ''
+            Name of the nats consumer that reads message.
+          '';
+          example = "hubble-magenta";
+          type = types.nullOr types.str;
+          default = null;
+        };
         indexers = mkOption {
           type = types.listOf (
             types.submodule {
@@ -228,6 +236,7 @@
                     if cfg.nats-username-file != null then "--nats-username @${cfg.nats-username-file}" else "";
                   natsPasswordArg =
                     if cfg.nats-password-file != null then "--nats-password @${cfg.nats-password-file}" else "";
+                  natsConsumerArg = if cfg.nats-consumer != null then "--nats-consumer ${cfg.nats-consumer}" else "";
                 in
                 ''
                   ${pkgs.lib.getExe cfg.package}  \
@@ -235,6 +244,7 @@
                     ${natsUrlArg} \
                     ${natsUsernameArg} \
                     ${natsPasswordArg} \
+                    ${natsConsumerArg} \
                     --log-format ${cfg.log-format} \
                     --metrics-addr ${cfg.metrics-addr} \
                     --indexers '${indexersJson}'
