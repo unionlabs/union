@@ -36,7 +36,7 @@ jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "ht
 lazy_static        = { workspace = true }
 lz4_flex           = "0.11.3"
 prometheus         = { version = "0.13.4", features = ["process"] }
-reqwest            = { workspace = true, features = ["json", "blocking"] }
+reqwest            = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
