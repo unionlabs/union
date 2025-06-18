@@ -1,4 +1,7 @@
-use std::fmt::{self, Display};
+use std::{
+    fmt::{self, Display},
+    time::Duration,
+};
 
 use async_nats::{
     header::HeaderMap,
@@ -53,17 +56,20 @@ impl NatsConnection {
         let context = jetstream::new(client);
         debug!("created context: {context:?}");
 
-        debug!("ensure 'hubble' stream exists");
-        let stream = context
-            .get_or_create_stream(jetstream::stream::Config {
-                name: "hubble".to_string(),
-                subjects: vec!["hubble.>".to_string()],
-                storage: StorageType::File,
-                num_replicas: 2,
-                ..Default::default()
-            })
-            .await?;
-        debug!("found stream: {stream:?}");
+        let config = jetstream::stream::Config {
+            name: "hubble".to_string(),
+            subjects: vec!["hubble.>".to_string()],
+            storage: StorageType::File,
+            num_replicas: 2,
+            max_bytes: 75 * 1024 * 1024 * 1024, // 75GiB
+            discard: jetstream::stream::DiscardPolicy::New,
+            max_age: Duration::from_secs(7 * 24 * 60 * 60), // 1 week
+            ..Default::default()
+        };
+
+        info!("ensure 'hubble' stream exists");
+        let stream = context.get_or_create_stream(&config).await?;
+        info!("found: {stream:?}");
 
         Ok(Self {
             consumer: consumer.to_string(),
