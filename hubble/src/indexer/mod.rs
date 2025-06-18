@@ -39,6 +39,7 @@ pub struct Indexer<T: FetcherClient> {
     pub start_height: BlockHeight,
     pub chunk_size: usize,
     pub finalizer_config: FinalizerConfig,
+    pub fixer_config: FixerConfig,
     pub publisher_config: PublisherConfig,
     pub consumer_config: ConsumerConfig,
     pub context: T::Context,
@@ -171,6 +172,14 @@ pub struct FinalizerConfig {
         deserialize_with = "FinalizerConfig::deserialize_seconds"
     )]
     pub retry_later_sleep: Duration,
+    // sleep time (in seconds) when there is an error.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_error_sleep_seconds",
+        default = "FinalizerConfig::default_retry_error_sleep",
+        deserialize_with = "FinalizerConfig::deserialize_seconds"
+    )]
+    pub retry_error_sleep: Duration,
 }
 
 impl FinalizerConfig {
@@ -187,6 +196,10 @@ impl FinalizerConfig {
     }
 
     pub fn default_retry_later_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_retry_error_sleep() -> Duration {
         Duration::from_secs(5)
     }
 
@@ -207,6 +220,69 @@ impl Default for FinalizerConfig {
             min_duration_between_monitor_checks:
                 FinalizerConfig::default_min_duration_between_monitor_checks(),
             retry_later_sleep: FinalizerConfig::default_retry_later_sleep(),
+            retry_error_sleep: FinalizerConfig::default_retry_error_sleep(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct FixerConfig {
+    // sleep time (in seconds) when there is nothing to fix.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_later_sleep_seconds",
+        default = "FixerConfig::default_retry_later_sleep",
+        deserialize_with = "FixerConfig::deserialize_seconds"
+    )]
+    pub retry_later_sleep: Duration,
+
+    // sleep time (in seconds) when there is an error.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_error_sleep_seconds",
+        default = "FixerConfig::default_retry_error_sleep",
+        deserialize_with = "FixerConfig::deserialize_seconds"
+    )]
+    pub retry_error_sleep: Duration,
+
+    // maximum number of blocks to send in one message. An empty block is sent if no
+    // events are found after this amount of blocks.
+    // default: 1000
+    #[serde(
+        rename = "max_blocks_in_message",
+        default = "FixerConfig::default_max_blocks_in_message"
+    )]
+    pub max_blocks_in_message: u64,
+}
+
+impl FixerConfig {
+    pub fn default_retry_later_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_retry_error_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_max_blocks_in_message() -> u64 {
+        1000
+    }
+
+    fn deserialize_seconds<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let seconds = u64::deserialize(deserializer)?;
+        Ok(Duration::from_secs(seconds))
+    }
+}
+
+impl Default for FixerConfig {
+    fn default() -> Self {
+        FixerConfig {
+            retry_later_sleep: FixerConfig::default_retry_later_sleep(),
+            retry_error_sleep: FixerConfig::default_retry_error_sleep(),
+            max_blocks_in_message: FixerConfig::default_max_blocks_in_message(),
         }
     }
 }
@@ -224,6 +300,7 @@ where
         start_height: BlockHeight,
         chunk_size: usize,
         finalizer_config: FinalizerConfig,
+        fixer_config: FixerConfig,
         publisher_config: PublisherConfig,
         consumer_config: ConsumerConfig,
         context: T::Context,
@@ -236,6 +313,7 @@ where
             start_height,
             chunk_size,
             finalizer_config,
+            fixer_config,
             publisher_config,
             consumer_config,
             context,

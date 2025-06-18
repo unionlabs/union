@@ -40,9 +40,9 @@ impl<T: FetcherClient> Indexer<T> {
                 Err(error) => {
                     warn!(
                         "error in finalizer loop: {error} => try again later (sleep {}s)",
-                        self.finalizer_config.retry_later_sleep.as_secs()
+                        self.finalizer_config.retry_error_sleep.as_secs()
                     );
-                    sleep(self.finalizer_config.retry_later_sleep).await;
+                    sleep(self.finalizer_config.retry_error_sleep).await;
                 }
             }
         }

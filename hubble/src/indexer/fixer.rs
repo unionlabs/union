@@ -33,16 +33,16 @@ impl<T: FetcherClient> Indexer<T> {
                 Ok(FixerLoopResult::TryAgainLater) => {
                     debug!(
                         "try again later (sleep {}s)",
-                        self.finalizer_config.retry_later_sleep.as_secs()
+                        self.fixer_config.retry_later_sleep.as_secs()
                     );
-                    sleep(self.finalizer_config.retry_later_sleep).await;
+                    sleep(self.fixer_config.retry_later_sleep).await;
                 }
                 Err(error) => {
                     warn!(
-                        "error in finalizer loop: {error} => try again later (sleep {}s)",
-                        self.finalizer_config.retry_later_sleep.as_secs()
+                        "error in fixer loop: {error} => try again later (sleep {}s)",
+                        self.fixer_config.retry_error_sleep.as_secs()
                     );
-                    sleep(self.finalizer_config.retry_later_sleep).await;
+                    sleep(self.fixer_config.retry_error_sleep).await;
                 }
             }
         }
@@ -144,9 +144,11 @@ impl<T: FetcherClient> Indexer<T> {
             let new_next = block.reference().height + 1;
             let last_block = block_fix_status.range.end_exclusive == new_next;
             let has_events = events.is_some();
+            let block_count = new_next - block_fix_status.range.start_inclusive;
+            let max_blocks = block_count >= self.fixer_config.max_blocks_in_message;
 
-            if last_block || has_events {
-                debug!("{reference}: schedule event (last: {last_block}, events: {has_events})");
+            if last_block || has_events || max_blocks {
+                debug!("{reference}: schedule event (last: {last_block}, events: {has_events}, max_blocks: {max_blocks})");
 
                 self.schedule_message(
                     &mut tx,
@@ -171,7 +173,7 @@ impl<T: FetcherClient> Indexer<T> {
                         .await?;
                 }
             } else {
-                debug!("{reference}: nothing to do (last: {last_block}, events: {has_events}) => update next");
+                debug!("{reference}: nothing to do (last: {last_block}, events: {has_events}, max_blocks: {max_blocks}) => update next");
 
                 update_block_range_to_fix_next(&mut tx, &block_fix_status, new_next).await?;
             }

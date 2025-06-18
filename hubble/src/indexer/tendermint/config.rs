@@ -6,7 +6,7 @@ use crate::indexer::{
     api::{BlockHeight, IndexerId, UniversalChainId},
     nats::NatsConnection,
     tendermint::{context::TmContext, fetcher_client::TmFetcherClient},
-    ConsumerConfig, FinalizerConfig, Indexer, PublisherConfig,
+    ConsumerConfig, FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
 };
 
 const DEFAULT_CHUNK_SIZE: usize = 20;
@@ -22,6 +22,8 @@ pub struct Config {
     pub tx_search_max_page_size: Option<u8>,
     #[serde(default)]
     pub finalizer: FinalizerConfig,
+    #[serde(default)]
+    pub fixer: FixerConfig,
     #[serde(default)]
     pub publisher: PublisherConfig,
     #[serde(default)]
@@ -44,6 +46,7 @@ impl Config {
             self.start_height,
             self.chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE),
             self.finalizer,
+            self.fixer,
             self.publisher,
             self.consumer,
             TmContext {
