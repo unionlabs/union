@@ -39,7 +39,7 @@ use voyager_core::{
     Engine,
 };
 use voyager_message::{
-    call::{FetchBlocks, FetchUpdateHeaders},
+    call::{FetchUpdateHeaders, Index, IndexRange, IndexRangeHeights},
     callback::AggregateSubmitTxFromOrderedHeaders,
     VoyagerMessage,
 };
@@ -350,9 +350,11 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                 }
             }
         }
-        Command::InitFetch {
+        Command::Index {
             chain_id,
-            height,
+            from,
+            to,
+            exact,
             enqueue,
             rpc_url,
             rest_url,
@@ -362,30 +364,43 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
 
             let voyager_client = jsonrpsee::http_client::HttpClient::builder().build(rpc_url)?;
 
-            let start_height = match height {
-                QueryHeight::Latest => {
-                    voyager_client
-                        .query_latest_height(chain_id.clone(), false)
-                        .await?
+            let op = if let Some(exact) = exact {
+                call::<VoyagerMessage>(IndexRange {
+                    chain_id: chain_id.clone(),
+                    range: IndexRangeHeights::new(exact, exact).expect("valid"),
+                })
+            } else {
+                let start_height = match from {
+                    QueryHeight::Latest => {
+                        voyager_client
+                            .query_latest_height(chain_id.clone(), false)
+                            .await?
+                    }
+                    QueryHeight::Finalized => {
+                        voyager_client
+                            .query_latest_height(chain_id.clone(), true)
+                            .await?
+                    }
+                    QueryHeight::Specific(height) => height,
+                };
+
+                if let Some(to) = to {
+                    call(IndexRange {
+                        chain_id: chain_id.clone(),
+                        range: IndexRangeHeights::new(start_height, to)?,
+                    })
+                } else {
+                    call(Index {
+                        chain_id: chain_id.clone(),
+                        start_height,
+                    })
                 }
-                QueryHeight::Finalized => {
-                    voyager_client
-                        .query_latest_height(chain_id.clone(), true)
-                        .await?
-                }
-                QueryHeight::Specific(height) => height,
             };
 
-            let op = call::<VoyagerMessage>(FetchBlocks {
-                chain_id: chain_id.clone(),
-                start_height,
-            });
+            print_json(&op);
 
             if enqueue {
-                println!("enqueueing op for {chain_id} at {start_height}");
                 send_enqueue(&rest_url, op).await?;
-            } else {
-                print_json(&op);
             }
         }
         Command::Rpc { cmd, rpc_url } => {

@@ -17,6 +17,8 @@ pub enum ModuleCall {
 #[model]
 pub struct FetchBlocks {
     pub height: Height,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub until: Option<Height>,
 }
 
 #[model]

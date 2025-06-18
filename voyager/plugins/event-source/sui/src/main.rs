@@ -22,14 +22,13 @@ use tracing::{info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
 use voyager_sdk::{
     hook::simple_take_filter,
-    into_value,
     message::{
         call::{Call, WaitForHeight},
         data::{ChainEvent, Data, EventProvableHeight},
         PluginMessage, VoyagerMessage,
     },
     plugin::Plugin,
-    primitives::{ChainId, ClientInfo, ClientType, IbcSpec, QueryHeight},
+    primitives::{ChainId, ClientInfo, ClientType, QueryHeight},
     rpc::{types::PluginInfo, PluginServer},
     vm::{call, conc, data, pass::PassResult, seq, Op},
     DefaultCmd, ExtensionsExt, VoyagerClient,
@@ -91,7 +90,7 @@ impl Plugin for Module {
         PluginInfo {
             name: plugin_name(&config.chain_id),
             interest_filter: simple_take_filter(format!(
-                r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
+                r#"[.. | (."@type"? == "fetch_blocks" or ."@type"? == "fetch_block_range") and ."@value".chain_id == "{}"] | any"#,
                 config.chain_id
             )),
         }
@@ -266,7 +265,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
             ready: msgs
                 .into_iter()
                 .map(|op| match op {
-                    Op::Call(Call::FetchBlocks(fetch)) if fetch.chain_id == self.chain_id => {
+                    Op::Call(Call::Index(fetch)) if fetch.chain_id == self.chain_id => {
                         call(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::FetchBlocks(FetchBlocks {
@@ -700,15 +699,14 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     )
                     .await?;
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Exactly(Height::new(height)),
-                    event: into_value::<FullEvent>(full_event),
-                    ibc_spec_id: IbcUnion::ID,
-                }))
+                    EventProvableHeight::Exactly(Height::new(height)),
+                    full_event,
+                )))
             }
         }
     }

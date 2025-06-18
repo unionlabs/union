@@ -94,13 +94,24 @@ pub enum Command {
     /// Config related subcommands.
     #[command(subcommand)]
     Config(ConfigCmd),
-    /// Construct a `FetchBlocks` op to send to the specified chain.
-    InitFetch {
+    /// Construct an op to index events on a chain.
+    ///
+    /// This will build the necessary op to index blocks on a chain. Note that the voyager instance this is queued on must have a plugin loaded that will pick this up in it's interest filter in order for the op to do anything.
+    Index {
+        /// The chain to create an index op for.
         #[arg(value_parser(|s: &str| Ok::<_, BoxDynError>(ChainId::new(s.to_owned()))))]
         chain_id: ChainId,
         /// The height to start fetching blocks at.
+        ///
+        /// If only this flag is specified, then the op will be an infinite unfold from the specified height.
         #[arg(long, short = 'H', default_value_t = QueryHeight::Latest)]
-        height: QueryHeight,
+        from: QueryHeight,
+        /// The height to index blocks until. If provided, this will fetch blocks in the range from..=to.
+        #[arg(long, requires = "from")]
+        to: Option<Height>,
+        /// Index a specific block.
+        #[arg(long, conflicts_with_all(["from", "to"]))]
+        exact: Option<Height>,
         /// Automatically enqueue the op.
         #[arg(long, short = 'e', default_value_t = false)]
         enqueue: bool,

@@ -43,7 +43,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientInfo, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
     vm::{call, conc, data, noop, pass::PassResult, seq, Op},
     DefaultCmd, ExtensionsExt, VoyagerClient,
 };
@@ -111,7 +111,7 @@ impl Plugin for Module {
         PluginInfo {
             name: plugin_name(&config.chain_id),
             interest_filter: simple_take_filter(format!(
-                r#"[.. | ."@type"? == "fetch_blocks" and ."@value".chain_id == "{}"] | any"#,
+                r#"[.. | (."@type"? == "fetch_blocks" or ."@type"? == "fetch_block_range") and ."@value".chain_id == "{}"] | any"#,
                 config.chain_id
             )),
         }
@@ -247,11 +247,21 @@ impl PluginServer<ModuleCall, Never> for Module {
             ready: msgs
                 .into_iter()
                 .map(|op| match op {
-                    Op::Call(Call::FetchBlocks(fetch)) if fetch.chain_id == self.chain_id => {
+                    Op::Call(Call::Index(fetch)) if fetch.chain_id == self.chain_id => {
                         call(PluginMessage::new(
                             self.plugin_name(),
                             ModuleCall::from(FetchBlocks {
                                 block_number: fetch.start_height.height(),
+                                until: None,
+                            }),
+                        ))
+                    }
+                    Op::Call(Call::IndexRange(fetch)) if fetch.chain_id == self.chain_id => {
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(FetchBlocks {
+                                block_number: fetch.range.from_height().height(),
+                                until: Some(fetch.range.to_height().height()),
                             }),
                         ))
                     }
@@ -276,8 +286,12 @@ impl PluginServer<ModuleCall, Never> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
-            ModuleCall::FetchBlocks(FetchBlocks { block_number }) => {
-                self.fetch_blocks(e.voyager_client()?, block_number).await
+            ModuleCall::FetchBlocks(FetchBlocks {
+                block_number,
+                until,
+            }) => {
+                self.fetch_blocks(e.voyager_client()?, block_number, until)
+                    .await
             }
             ModuleCall::FetchGetLogs(FetchGetLogs { block_number }) => {
                 self.fetch_get_logs(block_number).await
@@ -300,7 +314,24 @@ impl Module {
         &self,
         voyager_client: &VoyagerClient,
         block_number: u64,
+        until: Option<u64>,
     ) -> RpcResult<Op<VoyagerMessage>> {
+        if let Some(until) = until {
+            if block_number > until {
+                return Err(ErrorObject::owned(
+                    FATAL_JSONRPC_ERROR_CODE,
+                    format!("block number {block_number} cannot be greater than the until height {until}"),
+                    None::<()>,
+                ));
+            } else if block_number == until {
+                // if this is a ranged fetch, we need to fetch the upper bound of the range individually sinnce FetchBlocks is exclusive on the upper bound
+                return Ok(call(PluginMessage::new(
+                    self.plugin_name(),
+                    ModuleCall::from(FetchGetLogs { block_number }),
+                )));
+            }
+        }
+
         let latest_height = voyager_client
             .query_latest_height(self.chain_id.clone(), true)
             .await?
@@ -320,19 +351,22 @@ impl Module {
                     self.plugin_name(),
                     ModuleCall::from(FetchBlocks {
                         block_number: next_height,
+                        until,
                     }),
                 )),
             ])
         };
 
         match block_number.cmp(&latest_height) {
-            // height < latest_height
+            // block_number <= latest_height
             // fetch transactions on all blocks height..next_height (*exclusive* on the upper bound!)
             // and then queue the continuation starting at next_height
             Ordering::Equal | Ordering::Less => {
                 let next_height = (latest_height - block_number)
                     .clamp(1, self.chunk_block_fetch_size)
                     + block_number;
+
+                let next_height = next_height.min(until.unwrap_or(next_height));
 
                 info!(
                     from_height = block_number,
@@ -551,15 +585,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info: client_info.clone(),
-                    counterparty_chain_id: ChainId::new(raw_event.counterparty_chain_id),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    ChainId::new(raw_event.counterparty_chain_id),
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::RegisterClient(raw_event) => {
                 info!(?raw_event, "observed RegisterClient event");
@@ -590,15 +623,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info: client_info.clone(),
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
 
             IbcEvents::ConnectionOpenInit(raw_event) => {
@@ -627,15 +659,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
                     client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    ibc_spec_id: IbcUnion::ID,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::ConnectionOpenTry(raw_event) => {
                 let client_id = raw_event.client_id.try_into().unwrap();
@@ -666,15 +697,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::ConnectionOpenAck(raw_event) => {
                 let client_id = raw_event.client_id.try_into().unwrap();
@@ -705,15 +735,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::ConnectionOpenConfirm(raw_event) => {
                 let client_id = raw_event.client_id.try_into().unwrap();
@@ -744,15 +773,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::ChannelOpenInit(raw_event) => {
                 let channel_id = raw_event.channel_id.try_into().unwrap();
@@ -802,15 +830,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::ChannelOpenTry(raw_event) => {
                 let channel_id = raw_event.channel_id.try_into().unwrap();
@@ -862,15 +889,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::ChannelOpenAck(raw_event) => {
                 let channel_id = raw_event.channel_id.try_into().unwrap();
@@ -917,15 +943,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::ChannelOpenConfirm(raw_event) => {
                 let channel_id = raw_event.channel_id.try_into().unwrap();
@@ -972,15 +997,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
-                    client_info,
-                    counterparty_chain_id: client_state_meta.counterparty_chain_id,
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
+                    client_info.clone(),
+                    client_state_meta.counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
 
             IbcEvents::ChannelCloseInit(_) | IbcEvents::ChannelCloseConfirm(_) => {
@@ -1087,15 +1111,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
 
             IbcEvents::PacketTimeout(raw_event) => {
@@ -1130,15 +1153,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::PacketAck(raw_event) => {
                 let (counterparty_chain_id, client_info, source_channel, destination_channel) =
@@ -1173,15 +1195,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::BatchAck(_raw_event) => {
                 // let (counterparty_chain_id, client_info, source_channel, destination_channel) =
@@ -1283,15 +1304,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::PacketRecv(raw_event) => {
                 let (counterparty_chain_id, client_info, destination_channel, source_channel) =
@@ -1326,15 +1346,14 @@ impl Module {
 
                 ibc_union_spec::log_event(&event, &self.chain_id);
 
-                Ok(data(ChainEvent {
-                    chain_id: self.chain_id.clone(),
+                Ok(data(ChainEvent::new::<IbcUnion>(
+                    self.chain_id.clone(),
                     client_info,
                     counterparty_chain_id,
                     tx_hash,
-                    provable_height: EventProvableHeight::Min(min_provable_height),
-                    ibc_spec_id: IbcUnion::ID,
-                    event: into_value::<FullEvent>(event),
-                }))
+                    EventProvableHeight::Min(min_provable_height),
+                    event,
+                )))
             }
             IbcEvents::IntentPacketRecv(_event) => {
                 todo!()

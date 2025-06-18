@@ -12,18 +12,19 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-enumorph           = { workspace = true }
-futures            = { workspace = true }
-macros             = { workspace = true }
-schemars           = { workspace = true }
-serde              = { workspace = true, features = ["derive"] }
-serde_json         = { workspace = true }
-subset-of          = { workspace = true }
-tracing            = { workspace = true }
-unionlabs          = { workspace = true, features = ["ethabi"] }
-voyager-primitives = { workspace = true, features = ["schemars", "serde"] }
-voyager-types      = { workspace = true }
-voyager-vm         = { workspace = true }
+enumorph            = { workspace = true }
+futures             = { workspace = true }
+macros              = { workspace = true }
+schemars            = { workspace = true }
+serde               = { workspace = true, features = ["derive"] }
+serde_json          = { workspace = true }
+subset-of           = { workspace = true }
+thiserror.workspace = true
+tracing             = { workspace = true }
+unionlabs           = { workspace = true, features = ["ethabi"] }
+voyager-primitives  = { workspace = true, features = ["schemars", "serde"] }
+voyager-types       = { workspace = true }
+voyager-vm          = { workspace = true }
 
 [features]
 default = []
