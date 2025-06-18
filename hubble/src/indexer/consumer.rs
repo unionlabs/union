@@ -86,7 +86,7 @@ impl<T: FetcherClient> Indexer<T> {
     }
 
     async fn run_consumer_loop(&self, consumer: &Consumer<Config>) -> Result<(), IndexerError> {
-        info!("begin");
+        debug!("begin");
 
         let mut messages = consumer
             .batch()
@@ -94,7 +94,7 @@ impl<T: FetcherClient> Indexer<T> {
             .messages()
             .await?;
 
-        info!("waiting");
+        debug!("waiting");
 
         while let Some(message) = messages.next().await {
             let message = message.map_err(IndexerError::NatsNextError)?;
@@ -104,7 +104,7 @@ impl<T: FetcherClient> Indexer<T> {
             .await?;
         }
 
-        info!("done");
+        debug!("done");
         Ok(())
     }
 
@@ -186,7 +186,7 @@ impl<T: FetcherClient> Indexer<T> {
         // fetch the maximum height of currently stored data. we should trigger a sync when
         // changing data at or before this height
         let max_event_height = max_event_height(&mut tx, &message_meta.universal_chain_id).await?;
-        info!(
+        debug!(
             "handling {message_meta} - actions: {} (max_event_height: {max_event_height})",
             actions.len()
         );
@@ -216,10 +216,10 @@ impl<T: FetcherClient> Indexer<T> {
             }
         }
 
-        info!("commit");
+        debug!("commit");
         tx.commit().await?;
 
-        info!("done");
+        debug!("done");
         Ok(())
     }
 }
@@ -330,14 +330,14 @@ impl<'a> Action<'a> {
 impl<'a> fmt::Display for Action<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            Action::Delete(meta, delete) => {
-                write!(f, "delete: {meta}: {delete}")
+            Action::Delete(_, delete) => {
+                write!(f, "delete: {delete}")
             }
-            Action::Update(meta, update, events) => {
-                write!(f, "update: {meta}: {update} - {} events", events.len())
+            Action::Update(_, update, events) => {
+                write!(f, "update: {update} - {} events", events.len())
             }
-            Action::Insert(meta, insert, events) => {
-                write!(f, "insert: {meta} - {insert} - {} events", events.len(),)
+            Action::Insert(_, insert, events) => {
+                write!(f, "insert: {insert} - {} events", events.len(),)
             }
         }
     }
