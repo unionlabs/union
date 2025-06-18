@@ -123,7 +123,10 @@ impl<T: FetcherClient> Indexer<T> {
 
         let message: HubbleEvent = serde_json::from_slice(&payload)?;
 
-        info!("got message {message_meta} with details {message}");
+        info!(
+            "got message ({}) {message_meta} with details {message}",
+            human_readable_bytes(payload.len())
+        );
 
         let block_events = message.events_by_height();
 
@@ -458,5 +461,22 @@ fn get_message_meta(message: &async_nats::jetstream::Message) -> Result<MessageM
             nats_stream_sequence,
             nats_consumer_sequence,
         ))
+    }
+}
+
+fn human_readable_bytes(bytes: usize) -> String {
+    const UNITS: [&str; 4] = ["B", "KiB", "MiB", "GiB"];
+    let mut size = bytes as f64;
+    let mut unit = 0;
+
+    while size >= 1024.0 && unit < UNITS.len() - 1 {
+        size /= 1024.0;
+        unit += 1;
+    }
+
+    if unit == 0 {
+        format!("{} {}", bytes, UNITS[unit])
+    } else {
+        format!("{:.1} {}", size, UNITS[unit])
     }
 }
