@@ -60,7 +60,7 @@ impl NatsConnection {
             name: "hubble".to_string(),
             subjects: vec!["hubble.>".to_string()],
             storage: StorageType::File,
-            num_replicas: 2,
+            num_replicas: 3,
             max_bytes: 75 * 1024 * 1024 * 1024, // 75GiB
             discard: jetstream::stream::DiscardPolicy::New,
             max_age: Duration::from_secs(7 * 24 * 60 * 60), // 1 week
