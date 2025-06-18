@@ -13,9 +13,8 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tracing::{error, instrument};
 use unionlabs::{
-    bech32::Bech32,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
-    primitives::H256,
+    primitives::{Bech32, H256},
     traits::Member,
     ErrorReporter,
 };

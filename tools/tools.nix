@@ -8,6 +8,7 @@ _: {
     {
       packages = {
         inherit (crane.buildWorkspaceMember "tools/devnet-utils" { }) devnet-utils;
+        inherit (crane.buildWorkspaceMember "tools/update-deployments" { }) update-deployments;
         inherit (crane.buildWorkspaceMember "tools/build-evm-deployer-tx" { }) build-evm-deployer-tx;
         inherit (crane.buildWorkspaceMember "tools/json-schema-to-nixos-module-options" { })
           json-schema-to-nixos-module-options

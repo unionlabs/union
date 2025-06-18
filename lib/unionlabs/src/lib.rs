@@ -76,8 +76,6 @@ pub(crate) mod macros;
 
 pub mod errors;
 
-pub mod bech32;
-
 pub mod tuple;
 
 #[cfg(feature = "proto")]

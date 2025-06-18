@@ -17,12 +17,15 @@ mod fixed_bytes;
 
 mod bytes;
 
+mod bech32;
+
 // TODO: Replace with something like <https://github.com/recmo/uint>
 pub mod uint;
 
 mod compat;
 
 pub use crate::{
+    bech32::{Bech32, Bech32DecodeError},
     bytes::Bytes,
     fixed_bytes::{FixedBytes, FixedBytesError},
     uint::U256,

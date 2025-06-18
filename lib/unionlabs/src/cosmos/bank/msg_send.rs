@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::Bytes;
 
-use crate::{bech32::Bech32, cosmos::base::coin::Coin};
+use crate::{
+    cosmos::base::coin::Coin,
+    primitives::{Bech32, Bytes},
+};
 
 pub mod response;
 
@@ -15,12 +17,11 @@ pub struct MsgSend {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use core::str::FromStr;
 
-    use unionlabs_primitives::Bytes;
+    use unionlabs_primitives::Bech32DecodeError;
 
     use super::MsgSend;
-    use crate::{bech32::Bech32, cosmos::base::coin, impl_proto_via_try_from_into, Msg};
+    use crate::{cosmos::base::coin, impl_proto_via_try_from_into, Msg};
 
     impl_proto_via_try_from_into!(MsgSend => protos::cosmos::bank::v1beta1::MsgSend);
 
@@ -53,9 +54,9 @@ pub mod proto {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid from address")]
-        FromAddress(#[source] <Bech32<Bytes> as FromStr>::Err),
+        FromAddress(#[source] Bech32DecodeError),
         #[error("invalid to address")]
-        ToAddress(#[source] <Bech32<Bytes> as FromStr>::Err),
+        ToAddress(#[source] Bech32DecodeError),
         #[error("invalid amount")]
         InstantiatePermissions(#[from] coin::proto::Error),
     }

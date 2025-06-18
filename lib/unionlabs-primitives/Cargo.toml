@@ -24,6 +24,7 @@ rlp              = { workspace = true, optional = true }
 schemars         = { workspace = true, optional = true }
 serde            = { workspace = true, features = ["derive"], optional = true }
 serde_bytes      = { version = "0.11.17", optional = true }
+subtle-encoding  = { workspace = true, features = ["bech32-preview"] }
 thiserror        = { workspace = true }
 typenum          = { workspace = true, optional = true }
 
@@ -31,6 +32,7 @@ typenum          = { workspace = true, optional = true }
 uint = "0.9.5"
 
 [dev-dependencies]
+serde_json           = { workspace = true }
 unionlabs            = { workspace = true, features = ["test-utils"] }
 unionlabs-primitives = { workspace = true, features = ["bincode"] }
 

@@ -7,7 +7,9 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use tracing::{error, instrument, trace};
 use unionlabs::{
-    bech32::Bech32, ibc::core::client::height::Height, primitives::H256, traits::Member,
+    ibc::core::client::height::Height,
+    primitives::{Bech32, H256},
+    traits::Member,
 };
 use voyager_sdk::{
     anyhow,

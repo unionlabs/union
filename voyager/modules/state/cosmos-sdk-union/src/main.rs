@@ -24,10 +24,9 @@ use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{error, instrument, trace};
 use unionlabs::{
-    bech32::Bech32,
     ibc::core::client::height::Height,
     option_unwrap,
-    primitives::{Bytes, H256},
+    primitives::{Bech32, Bytes, H256},
     ErrorReporter,
 };
 use voyager_sdk::{

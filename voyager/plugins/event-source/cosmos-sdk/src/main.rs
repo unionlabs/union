@@ -22,7 +22,6 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
-    bech32::Bech32,
     ibc::core::{
         channel::{self},
         client::height::Height,
@@ -30,7 +29,7 @@ use unionlabs::{
     id::{ChannelId, ConnectionId, PortId},
     never::Never,
     option_unwrap,
-    primitives::H256,
+    primitives::{Bech32, H256},
     ErrorReporter,
 };
 use voyager_sdk::{

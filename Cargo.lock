@@ -4511,6 +4511,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "deployments"
+version = "0.0.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "ucs04",
+ "unionlabs-primitives",
+ "voyager-primitives",
+]
+
+[[package]]
 name = "depolama"
 version = "0.0.0"
 dependencies = [
@@ -15500,6 +15511,7 @@ dependencies = [
  "clap 4.5.39",
  "cometbft-rpc",
  "cometbls-light-client-types",
+ "deployments",
  "derive_more 0.99.20",
  "embed-commit",
  "ethereum-light-client-types",
@@ -15760,7 +15772,6 @@ dependencies = [
  "solidity-slot",
  "ssz",
  "static_assertions 1.1.0 (git+https://github.com/nvzqz/static-assertions)",
- "subtle-encoding",
  "thiserror 2.0.12",
  "typenum",
  "unionlabs-encoding",
@@ -15797,6 +15808,8 @@ dependencies = [
  "schemars",
  "serde",
  "serde_bytes",
+ "serde_json",
+ "subtle-encoding",
  "thiserror 2.0.12",
  "typenum",
  "uint",
@@ -15854,6 +15867,29 @@ name = "unty"
 version = "0.0.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6d49784317cd0d1ee7ec5c716dd598ec5b4483ea832a2dced265471cc0f690ae"
+
+[[package]]
+name = "update-deployments"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "clap 4.5.39",
+ "cometbft-rpc",
+ "cosmos-client",
+ "cosmwasm-std 2.2.2",
+ "deployments",
+ "embed-commit",
+ "embed-commit-verifier",
+ "protos",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "ucs04",
+ "unionlabs",
+]
 
 [[package]]
 name = "url"

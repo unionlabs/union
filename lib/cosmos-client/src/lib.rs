@@ -12,7 +12,6 @@ use protos::cosmos::base::abci;
 use sha2::Digest;
 use tracing::{debug, info, instrument};
 use unionlabs::{
-    bech32::Bech32,
     cosmos::{
         auth::base_account::BaseAccount,
         base::abci::gas_info::GasInfo,
@@ -25,7 +24,7 @@ use unionlabs::{
     cosmwasm::wasm::msg_update_instantiate_config::response::MsgUpdateInstantiateConfigResponse,
     encoding::{Decode, EncodeAs, Proto},
     google::protobuf::any::{Any, RawAny, TryFromAnyError},
-    primitives::{encoding::HexUnprefixed, H256},
+    primitives::{encoding::HexUnprefixed, Bech32, H256},
     prost::{self, Message},
     ErrorReporter, Msg, TypeUrl,
 };

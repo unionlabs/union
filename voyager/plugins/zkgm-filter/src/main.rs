@@ -33,13 +33,12 @@ use tracing::{debug, info, info_span, instrument, trace, warn, Instrument};
 use ucs03_zkgm::com::{Ack, BatchAck, FungibleAssetOrderAck, FILL_TYPE_PROTOCOL, TAG_ACK_SUCCESS};
 use unionlabs::{
     self,
-    bech32::Bech32,
     cosmos::tx::{tx_body::TxBody, tx_raw::TxRaw},
     cosmwasm::wasm::msg_execute_contract::MsgExecuteContract,
     encoding::{DecodeAs, Proto},
     google::protobuf::any::RawAny,
     never::Never,
-    primitives::{ByteArrayExt, Bytes, H160, H32},
+    primitives::{Bech32, ByteArrayExt, Bytes, H160, H32},
     traits::Member,
     ErrorReporter,
 };

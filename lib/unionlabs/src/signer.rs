@@ -7,7 +7,7 @@ use bip32::{
 use ripemd::Digest;
 use unionlabs_primitives::{FixedBytes, H160};
 
-use crate::{bech32::Bech32, primitives::H256};
+use crate::primitives::{Bech32, H256};
 
 /// A simple wrapper around a cosmos signer (ECDSA), easily representable as a bech32 string.
 #[derive(Debug, Clone)]
