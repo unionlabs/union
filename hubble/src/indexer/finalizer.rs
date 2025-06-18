@@ -198,34 +198,24 @@ impl<T: FetcherClient> Indexer<T> {
                 get_block_status_hash(&mut tx, self.indexer_id.clone(), reference.height).await?
             }
         } {
-            let old_hash = current_block_status.block_hash;
-            let events = if is_finalized && self.finalizer_config.reload {
-                debug!("{}: finalized (reloading)", reference.height,);
-                block
-                    .update(&mut tx)
+            let old_block_hash = current_block_status.block_hash;
+            let new_message_hash = if is_finalized && self.finalizer_config.reload {
+                debug!("{}: finalized (reloading)", reference.height);
+                self.update_block(&mut tx, block, &current_block_status.message_hash)
                     .instrument(info_span!("reload"))
                     .await?
-            } else if old_hash != reference.hash {
+            } else if old_block_hash != reference.hash {
                 debug!(
                     "{}: changed ({} > {} => updating)",
-                    reference.height, old_hash, reference.hash,
+                    reference.height, old_block_hash, reference.hash,
                 );
-                block
-                    .update(&mut tx)
+                self.update_block(&mut tx, block, &current_block_status.message_hash)
                     .instrument(info_span!("update"))
                     .await?
             } else {
-                None
+                // nothing changed: keep the same message hash
+                current_block_status.message_hash
             };
-
-            let new_message_hash = self
-                .schedule_event_when_required(
-                    &mut tx,
-                    &reference,
-                    &current_block_status.message_hash,
-                    events,
-                )
-                .await?;
 
             if !is_finalized {
                 debug!("{}: update status", reference);
@@ -251,6 +241,18 @@ impl<T: FetcherClient> Indexer<T> {
         debug!("{}: finalized", reference);
 
         Ok(())
+    }
+
+    async fn update_block(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        block: T::BlockHandle,
+        dedup_message_hash: &Option<MessageHash>,
+    ) -> Result<Option<MessageHash>, IndexerError> {
+        let events = block.update(tx).await?;
+
+        self.schedule_event_when_required(tx, &block.reference(), dedup_message_hash, events)
+            .await
     }
 
     async fn schedule_event_when_required(
