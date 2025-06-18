@@ -1,4 +1,14 @@
-use jsonrpsee::{core::RpcResult, types::ErrorObject};
+use std::{fmt::Debug, future::Future};
+
+use jsonrpsee::{
+    core::{
+        client::{BatchResponse, ClientT},
+        params::{ArrayParams, BatchRequestBuilder},
+        traits::ToRpcParams,
+        RpcResult,
+    },
+    types::ErrorObject,
+};
 use serde::de::DeserializeOwned;
 use serde_json::{json, Value};
 use tracing::instrument;
@@ -17,7 +27,7 @@ use voyager_rpc::{
 use voyager_types::RawClientId;
 
 #[derive(Debug, Clone)]
-pub struct VoyagerClient<C: VoyagerRpcClient>(C);
+pub struct VoyagerClient<C: ClientT>(C);
 
 impl<C: VoyagerRpcClient> VoyagerClient<C> {
     pub fn new(inner: C) -> Self {
@@ -541,5 +551,78 @@ impl<C: VoyagerRpcClient> VoyagerClient<C> {
             .consensus_state_meta(chain_id, ibc_spec_id, at, client_id, counterparty_height)
             .await
             .map_err(json_rpc_error_to_error_object)
+    }
+
+    pub fn plugin_client(&self, plugin: impl Into<String>) -> VoyagerPluginClient<C> {
+        VoyagerPluginClient {
+            inner: self,
+            plugin: plugin.into(),
+        }
+    }
+}
+
+pub struct VoyagerPluginClient<'a, C: ClientT> {
+    inner: &'a VoyagerClient<C>,
+    plugin: String,
+}
+
+#[allow(clippy::manual_async_fn)] // false positive? fails with a Send bound error if i do it with the async syntax
+impl<C: ClientT> ClientT for VoyagerPluginClient<'_, C> {
+    fn notification<Params>(
+        &self,
+        _method: &str,
+        _params: Params,
+    ) -> impl Future<Output = Result<(), jsonrpsee::core::client::Error>> + Send
+    where
+        Params: ToRpcParams + Send,
+    {
+        async {
+            Err(jsonrpsee::core::client::Error::Custom(
+                "notifications are not supported for plugin calls".to_owned(),
+            ))
+        }
+    }
+
+    fn request<R, Params>(
+        &self,
+        method: &str,
+        params: Params,
+    ) -> impl Future<Output = Result<R, jsonrpsee::core::client::Error>> + Send
+    where
+        R: DeserializeOwned,
+        Params: ToRpcParams + Send,
+    {
+        let mut p = ArrayParams::new();
+
+        p.insert(&self.plugin)
+            .expect("serializaiton is infallible; qed;");
+        p.insert(method).expect("serializaiton is infallible; qed;");
+
+        if let Some(params) = params
+            .to_rpc_params()
+            .expect("serialization is infallible; qed;")
+        {
+            p.insert(params).expect("serializaiton is infallible; qed;");
+        } else {
+            // just need an empty array
+            p.insert([0u8; 0])
+                .expect("serializaiton is infallible; qed;");
+        };
+
+        self.inner.0.request("voyager_pluginCustom", p)
+    }
+
+    fn batch_request<'a, R>(
+        &self,
+        _batch: BatchRequestBuilder<'a>,
+    ) -> impl Future<Output = Result<BatchResponse<'a, R>, jsonrpsee::core::client::Error>> + Send
+    where
+        R: DeserializeOwned + Debug + 'a,
+    {
+        async {
+            Err(jsonrpsee::core::client::Error::Custom(
+                "batch requests are not supported for plugin calls".to_owned(),
+            ))
+        }
     }
 }
