@@ -6,8 +6,9 @@ import { empty, mapOption, matchRuntimeResult } from "$lib/utils/snippets.svelte
 import { FetchHttpClient } from "@effect/platform"
 import * as Validators from "@unionlabs/sdk/schema/validators.js"
 import * as Staking from "@unionlabs/sdk/Staking.js"
-import { BigDecimal, Cause, Effect, Option as O, pipe, Record as R } from "effect"
+import { BigDecimal, Cause, Effect, Option as O, pipe } from "effect"
 
+// XXX: won't pass CORS w/ browser fetch
 const getFavicon = (url: URL) =>
   pipe(
     Favicon.Favicon,
@@ -16,13 +17,12 @@ const getFavicon = (url: URL) =>
     Effect.provide(FetchHttpClient.layer),
   )
 
-const program = Effect.gen(function*() {
+const getValidators = Effect.gen(function*() {
   const staking = yield* Staking.Staking
 
   const validators = yield* staking.getValidators(
     new Staking.GetValidators({
       status: "BOND_STATUS_BONDED",
-      pagination: {},
     }),
   )
 
@@ -47,7 +47,19 @@ const program = Effect.gen(function*() {
   Effect.provide(Staking.Staking.Default),
 )
 
-const data = AppRuntime.runPromiseExit$(() => program)
+const validators = AppRuntime.runPromiseExit$(() => getValidators)
+const params = AppRuntime.runPromiseExit$(() =>
+  pipe(
+    Staking.Staking,
+    Effect.andThen((staking) =>
+      pipe(
+        new Staking.GetParams({}),
+        staking.getParams,
+      )
+    ),
+    Effect.provide(Staking.Staking.Default),
+  )
+)
 </script>
 
 <h1>Stake</h1>
@@ -105,12 +117,19 @@ const data = AppRuntime.runPromiseExit$(() => program)
   </div>
 {/snippet}
 
+<div class="mx-8 p-8 bg-zinc-900">
+  <div class="text-xl font-bold">
+    Params
+  </div>
+  <pre>{JSON.stringify(params.current, null, 2)}</pre>
+</div>
+<br />
 <div class="w-[900px] mx-8 p-8 bg-zinc-900">
   <div class="text-xl font-bold">
     Search Validators
   </div>
   {@render matchRuntimeResult(
-      data.current,
+      validators.current,
       renderValidators,
       renderError,
       empty,
@@ -118,5 +137,5 @@ const data = AppRuntime.runPromiseExit$(() => program)
 </div>
 
 <pre>
-{JSON.stringify(data.current, null, 2)}
+{JSON.stringify(validators.current, null, 2)}
 </pre>
