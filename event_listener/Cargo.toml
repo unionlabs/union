@@ -13,6 +13,9 @@ tokio             = { workspace = true }
 cometbft-rpc      = { workspace = true }
 anyhow            = { workspace = true }
 futures           = { workspace = true }
+concurrent-keyring = { workspace = true }
+cosmos-client      = { workspace = true }
+prost              = { workspace = true }
 cosmos-sdk-event = { workspace = true }
 tracing          = { workspace = true }
 bincode          = { workspace = true, features = ["derive"] }
@@ -22,10 +25,11 @@ embed-commit     = { workspace = true }
 enumorph         = { workspace = true }
 ibc-classic-spec = { workspace = true }
 ibc-solidity   = { workspace = true, features = ["serde", "rpc"] }
+ibc-union-msg      = { workspace = true }
+ibc-union          = { workspace = true, features = ["library"] }
 ibc-union-spec   = { workspace = true, features = ["tracing", "bincode", "serde"] }
 jsonrpsee        = { workspace = true, features = ["macros", "server", "tracing"] }
 macros           = { workspace = true }
-prost            = { workspace = true }
 protos           = { workspace = true }
 serde            = { workspace = true, features = ["derive"] }
 serde-utils      = { workspace = true }

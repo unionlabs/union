@@ -5545,6 +5545,44 @@ dependencies = [
 ]
 
 [[package]]
+name = "event_listener"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "anyhow",
+ "bincode 2.0.1",
+ "clap 4.5.39",
+ "cometbft-rpc",
+ "concurrent-keyring",
+ "cosmos-client",
+ "cosmos-sdk-event",
+ "dashmap 5.5.3",
+ "embed-commit",
+ "enumorph",
+ "futures",
+ "ibc-classic-spec",
+ "ibc-solidity",
+ "ibc-union",
+ "ibc-union-msg",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "macros",
+ "prost 0.12.6",
+ "protos",
+ "serde",
+ "serde-utils",
+ "serde_json",
+ "sha2 0.10.9",
+ "thiserror 2.0.12",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+ "voyager-sdk",
+ "wasm-client-type",
+]
+
+[[package]]
 name = "evm-storage-verifier"
 version = "0.0.0"
 dependencies = [
