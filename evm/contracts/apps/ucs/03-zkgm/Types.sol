@@ -75,7 +75,6 @@ struct Unstake {
     bytes32 governanceTokenMetadataImage;
     bytes sender;
     bytes validator;
-    uint256 amount;
 }
 
 struct WithdrawStake {

@@ -2,11 +2,14 @@ pragma solidity ^0.8.27;
 
 import "./Types.sol";
 import "./IZkgmERC20.sol";
+import "./ZkgmERC721.sol";
 
 interface IZkgmStore {
     function tokenOrigin(
         address token
     ) external view returns (uint256);
+
+    function predictStakeManagerAddress() external view returns (ZkgmERC721);
 }
 
 interface IZkgm is IZkgmStore {
