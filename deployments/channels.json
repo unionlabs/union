@@ -197,6 +197,10 @@
     "3": {
       "comments": "union.union-testnet-10 channel 16",
       "tags": ["canonical"]
+    },
+    "4": {
+      "comments": "babylon.bbn-test-5 channel 6",
+      "tags": ["canonical"]
     }
   },
   "xion.xion-testnet-2": {
