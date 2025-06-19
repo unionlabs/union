@@ -14,7 +14,7 @@
       },
       {
         "enabled": true,
-        "path": "./target/debug/voyager-state-module-cosmos-sdk-union",
+        "path": "./target/debug/voyager-state-module-cosmos-sdk",
         "info": {
           "chain_id": "union-devnet-1",
           "ibc_spec_id": "ibc-union"
@@ -40,7 +40,7 @@
     "proof": [
       {
         "enabled": true,
-        "path": "./target/debug/voyager-proof-module-cosmos-sdk-union",
+        "path": "./target/debug/voyager-proof-module-cosmos-sdk",
         "info": {
           "chain_id": "union-devnet-1",
           "ibc_spec_id": "ibc-union"
