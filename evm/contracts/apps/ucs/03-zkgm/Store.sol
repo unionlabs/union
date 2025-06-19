@@ -79,7 +79,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
             channelId,
             governanceToken.unwrappedToken,
             governanceToken.metadataImage,
-            false
+            true
         );
         return (ZkgmERC20(wrappedGovernanceToken), governanceToken);
     }
