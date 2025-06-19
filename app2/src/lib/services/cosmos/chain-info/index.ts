@@ -22,6 +22,22 @@ export const getCosmosChainInfo = (
     return chainInfo
   })
 
+export const getCosmosChainInfoById = (
+  chainId: string,
+): Effect.Effect<InternalChainInfo, GetChainInfoError, never> =>
+  Effect.gen(function*() {
+    const chainInfo = yield* R.get(chainInfoMap, chainId).pipe(
+      Effect.mapError(() =>
+        new GetChainInfoError({
+          cause: `Chain with ID ${chainId} is not configured.`,
+          chainId: chainId,
+        })
+      ),
+    )
+
+    return chainInfo
+  })
+
 export const getHighGasPriceStep = (
   chainInfo: KeplrChainInfo | LeapChainInfo,
 ): Effect.Effect<{ amount: string; denom: string }, GasPriceError, never> =>

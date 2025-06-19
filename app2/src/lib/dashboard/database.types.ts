@@ -188,6 +188,75 @@ export type Database = {
         }
         Relationships: []
       }
+      allo_raw: {
+        Row: {
+          allocation_percentage: number
+          created_at: string | null
+          dashboard_id: string | null
+          display_name: string | null
+          id: string
+          kaito_cn_kr_tokens: string | null
+          kaito_s0_tokens: string | null
+          kaito_s1_tokens: string | null
+          level: string | null
+          mods_tokens: string | null
+          sloths_multiplier: string | null
+          stargaze_addresses: string | null
+          testers_tokens: string | null
+          total_tokens: number
+          tsc_multiplier: string | null
+          twitter_id: string | null
+          updated_at: string | null
+          validators_tokens: string | null
+          wws_tokens: string | null
+          zkgoblim_multiplier: string | null
+        }
+        Insert: {
+          allocation_percentage?: number
+          created_at?: string | null
+          dashboard_id?: string | null
+          display_name?: string | null
+          id?: string
+          kaito_cn_kr_tokens?: string | null
+          kaito_s0_tokens?: string | null
+          kaito_s1_tokens?: string | null
+          level?: string | null
+          mods_tokens?: string | null
+          sloths_multiplier?: string | null
+          stargaze_addresses?: string | null
+          testers_tokens?: string | null
+          total_tokens?: number
+          tsc_multiplier?: string | null
+          twitter_id?: string | null
+          updated_at?: string | null
+          validators_tokens?: string | null
+          wws_tokens?: string | null
+          zkgoblim_multiplier?: string | null
+        }
+        Update: {
+          allocation_percentage?: number
+          created_at?: string | null
+          dashboard_id?: string | null
+          display_name?: string | null
+          id?: string
+          kaito_cn_kr_tokens?: string | null
+          kaito_s0_tokens?: string | null
+          kaito_s1_tokens?: string | null
+          level?: string | null
+          mods_tokens?: string | null
+          sloths_multiplier?: string | null
+          stargaze_addresses?: string | null
+          testers_tokens?: string | null
+          total_tokens?: number
+          tsc_multiplier?: string | null
+          twitter_id?: string | null
+          updated_at?: string | null
+          validators_tokens?: string | null
+          wws_tokens?: string | null
+          zkgoblim_multiplier?: string | null
+        }
+        Relationships: []
+      }
       call_attendees: {
         Row: {
           call: string
@@ -1108,6 +1177,71 @@ export type Database = {
         }
         Relationships: []
       }
+      referral_codes: {
+        Row: {
+          claimed_at: string | null
+          claimed_by_user_id: string | null
+          code: string
+          created_at: string | null
+          id: string
+          is_claimed: boolean
+          percentage: number
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          code: string
+          created_at?: string | null
+          id?: string
+          is_claimed?: boolean
+          percentage: number
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          claimed_at?: string | null
+          claimed_by_user_id?: string | null
+          code?: string
+          created_at?: string | null
+          id?: string
+          is_claimed?: boolean
+          percentage?: number
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_claimed_by_user_id_fkey"
+            columns: ["claimed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_discord_invites"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_codes_claimed_by_user_id_fkey"
+            columns: ["claimed_by_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "user_discord_invites"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       resend_audiences: {
         Row: {
           created_at: string
@@ -1633,6 +1767,81 @@ export type Database = {
           },
         ]
       }
+      user_allocations: {
+        Row: {
+          allo_raw_id: string | null
+          allocation_percentage: number | null
+          authena_user_id: string | null
+          created_at: string | null
+          evm_wallet: string | null
+          id: string
+          is_eligible: boolean | null
+          is_human: boolean
+          stargaze_address: string | null
+          tokens_claimable: number | null
+          tokens_prestaked: number
+          tos_accepted: boolean
+          tos_accepted_at: string | null
+          total_tokens: number
+          twitter_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          allo_raw_id?: string | null
+          allocation_percentage?: number | null
+          authena_user_id?: string | null
+          created_at?: string | null
+          evm_wallet?: string | null
+          id?: string
+          is_eligible?: boolean | null
+          is_human?: boolean
+          stargaze_address?: string | null
+          tokens_claimable?: number | null
+          tokens_prestaked?: number
+          tos_accepted?: boolean
+          tos_accepted_at?: string | null
+          total_tokens?: number
+          twitter_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          allo_raw_id?: string | null
+          allocation_percentage?: number | null
+          authena_user_id?: string | null
+          created_at?: string | null
+          evm_wallet?: string | null
+          id?: string
+          is_eligible?: boolean | null
+          is_human?: boolean
+          stargaze_address?: string | null
+          tokens_claimable?: number | null
+          tokens_prestaked?: number
+          tos_accepted?: boolean
+          tos_accepted_at?: string | null
+          total_tokens?: number
+          twitter_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_allocations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "user_discord_invites"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "user_allocations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_discord_roles: {
         Row: {
           assign: boolean
@@ -2122,6 +2331,12 @@ export type Database = {
       }
     }
     Views: {
+      current_incentives: {
+        Row: {
+          incentives_percent_effective: number | null
+        }
+        Relationships: []
+      }
       leaderboard: {
         Row: {
           current_xp: number | null
@@ -2205,6 +2420,53 @@ export type Database = {
           wal_records: number | null
         }
         Relationships: []
+      }
+      referral_codes_with_users: {
+        Row: {
+          claimed_at: string | null
+          claimer_display_name: string | null
+          claimer_pfp: string | null
+          claimer_user_id: string | null
+          code: string | null
+          created_at: string | null
+          id: string | null
+          is_claimed: boolean | null
+          owner_display_name: string | null
+          owner_pfp: string | null
+          owner_user_id: string | null
+          percentage: number | null
+          updated_at: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "referral_codes_claimed_by_user_id_fkey"
+            columns: ["claimer_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_discord_invites"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_codes_claimed_by_user_id_fkey"
+            columns: ["claimer_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "user_discord_invites"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "referral_codes_user_id_fkey"
+            columns: ["owner_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_discord_invites: {
         Row: {

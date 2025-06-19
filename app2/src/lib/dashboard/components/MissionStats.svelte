@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/stores"
+import { page } from "$app/state"
 import Card from "$lib/components/ui/Card.svelte"
 import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
@@ -54,7 +54,7 @@ let earnedXP = $derived(
 )
 
 // Check if we're on the missions page
-let isOnMissionsPage = $derived($page.url.pathname === "/dashboard/missions")
+let isOnMissionsPage = $derived(page.url.pathname === "/dashboard/missions")
 </script>
 
 <Card class="flex flex-col flex-1">

@@ -12,6 +12,7 @@ import { ENV, MAX_MOBILE_SIZE } from "$lib/constants"
 import { chainsQuery } from "$lib/queries/chains.svelte"
 import { channelsQuery } from "$lib/queries/channels.svelte"
 import { runFork$ } from "$lib/runtime"
+
 import { settingsStore } from "$lib/stores/settings.svelte"
 import { keyboardShortcuts } from "$lib/stores/shortcuts.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
@@ -162,4 +163,5 @@ $effect(() => {
   isOpen={uiStore.errorsModalOpen}
   onClose={() => uiStore.closeErrorsModal()}
 />
+
 <DevInfo />

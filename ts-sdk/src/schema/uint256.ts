@@ -17,3 +17,5 @@ export class Uint256 extends S.BigInt.pipe(
     arbitrary: () => fc => fc.bigInt(0n, MAX_UINT256),
   }),
 ) {}
+
+export const HexFromUint256 = S.Uint8ArrayFromHex

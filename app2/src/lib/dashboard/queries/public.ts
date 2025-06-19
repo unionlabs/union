@@ -31,6 +31,10 @@ export type YapsSeason = {
   rank: number | null
 }
 
+export type CurrentIncentives = {
+  incentives_percent_effective: number
+}
+
 export const getChains = () =>
   withLocalStorageCacheStale(
     "public",
@@ -303,6 +307,39 @@ export const getYapsSeason1Public = () =>
       Effect.catchAll((error) => {
         errorStore.showError(
           new LeaderboardError({ cause: error, operation: "loadYapsSeason1Public" }),
+        )
+        return Effect.succeed(Option.none())
+      }),
+    ),
+  )
+
+export const getCurrentIncentives = () =>
+  withLocalStorageCacheStale(
+    "public",
+    `${CACHE_VERSION}:current_incentives`,
+    TTL,
+    STALE,
+    pipe(
+      SupabaseClient,
+      Effect.flatMap((client) =>
+        Effect.tryPromise({
+          try: () =>
+            client
+              .from("current_incentives")
+              .select("incentives_percent_effective")
+              .single(),
+          catch: (error) =>
+            new SupabaseError({
+              operation: "loadCurrentIncentives",
+              cause: extractErrorDetails(error as Error),
+            }),
+        })
+      ),
+      Effect.retry(retryForever),
+      Effect.map(({ data }) => Option.fromNullable(data)),
+      Effect.catchAll((error) => {
+        errorStore.showError(
+          new LeaderboardError({ cause: error, operation: "loadCurrentIncentives" }),
         )
         return Effect.succeed(Option.none())
       }),

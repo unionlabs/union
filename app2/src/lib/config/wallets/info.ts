@@ -349,6 +349,68 @@ export const osmosisTestnet = InternalChainInfo.make({
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
 })
 
+export const stargazeMainnet = InternalChainInfo.make({
+  rpc: "https://rpc.stargaze-apis.com/",
+  rest: "https://rest.stargaze-apis.com/",
+  chainId: "stargaze-1",
+  chainName: "Stargaze",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/cosmos/chain-registry/master/stargaze/images/stars.png",
+  stakeCurrency: {
+    coinDenom: "STARS",
+    coinMinimalDenom: "ustars",
+    coinDecimals: 6,
+    coinGeckoId: "stargaze",
+    coinImageUrl:
+      "https://raw.githubusercontent.com/cosmos/chain-registry/master/stargaze/images/stars.png",
+  },
+  walletUrlForStaking: "https://wallet.keplr.app/chains/stargaze",
+  bip44: {
+    coinType: 118,
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "stars",
+    bech32PrefixAccPub: "starspub",
+    bech32PrefixValAddr: "starsvaloper",
+    bech32PrefixValPub: "starsvaloperpub",
+    bech32PrefixConsAddr: "starsvalcons",
+    bech32PrefixConsPub: "starsvalconspub",
+  },
+  currencies: [
+    {
+      coinDenom: "STARS",
+      coinMinimalDenom: "ustars",
+      coinDecimals: 6,
+      coinGeckoId: "stargaze",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/cosmos/chain-registry/master/stargaze/images/stars.png",
+    },
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "STARS",
+      coinMinimalDenom: "ustars",
+      coinDecimals: 6,
+      coinGeckoId: "stargaze",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/cosmos/chain-registry/master/stargaze/images/stars.png",
+      gasPriceStep: {
+        low: 1,
+        average: 1.1,
+        high: 1.2,
+      },
+    },
+  ],
+  features: [
+    "cosmwasm",
+  ],
+  theme: {
+    gradient: "linear-gradient(180deg, rgba(255, 20, 147, 0.32) 0%, rgba(255, 20, 147, 0) 100%)",
+    primaryColor: "#ff1493",
+  },
+  image: "https://raw.githubusercontent.com/cosmos/chain-registry/master/stargaze/images/stars.png",
+})
+
 export const osmosisMainnet = InternalChainInfo.make({
   rpc: "https://rpc.osmosis.zone/",
   rest: "https://lcd.osmosis.zone/",

@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/stores"
+import { page } from "$app/state"
 import ExternalLinkIcon from "$lib/components/icons/ExternalLinkIcon.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { cn } from "$lib/utils"
@@ -24,7 +24,7 @@ let highlightElement: HTMLElement | undefined
 let navigationContainer: HTMLDivElement | undefined
 
 const updateHighlightPosition = () => {
-  if (variant === "animated" && $page.url.pathname && highlightElement && navigationContainer) {
+  if (variant === "animated" && page.url.pathname && highlightElement && navigationContainer) {
     let bestMatch: HTMLElement | null = null
     let bestMatchLength = 0
 
@@ -33,8 +33,8 @@ const updateHighlightPosition = () => {
       const itemPath = item.getAttribute("data-path")
       if (
         itemPath
-        && ($page.url.pathname === itemPath
-          || ($page.url.pathname.startsWith(`${itemPath}/`)
+        && (page.url.pathname === itemPath
+          || (page.url.pathname.startsWith(`${itemPath}/`)
             && itemPath.length > bestMatchLength))
       ) {
         bestMatch = item as HTMLElement
@@ -60,7 +60,7 @@ const updateHighlightPosition = () => {
 }
 
 $effect(() => {
-  if ($page.url.pathname && variant === "animated") {
+  if (page.url.pathname && variant === "animated") {
     updateHighlightPosition()
     setTimeout(updateHighlightPosition, 100)
   }
@@ -80,7 +80,7 @@ onMount(() => {
 })
 
 const isCurrentPath = (path: string) => {
-  if ($page.url.pathname === path) {
+  if (page.url.pathname === path) {
     return true
   }
 
@@ -90,14 +90,14 @@ const isCurrentPath = (path: string) => {
         if (item.subroutes) {
           for (const subroute of item.subroutes) {
             if (
-              $page.url.pathname === subroute.path
-              || (subroute.path !== "/" && $page.url.pathname.startsWith(`${subroute.path}/`))
+              page.url.pathname === subroute.path
+              || (subroute.path !== "/" && page.url.pathname.startsWith(`${subroute.path}/`))
             ) {
               return true
             }
           }
         }
-        if (path !== "/" && $page.url.pathname.startsWith(`${path}/`)) {
+        if (path !== "/" && page.url.pathname.startsWith(`${path}/`)) {
           return true
         }
         break
@@ -106,7 +106,7 @@ const isCurrentPath = (path: string) => {
       if (item.subroutes) {
         for (const subroute of item.subroutes) {
           if (subroute.path === path) {
-            if (path !== "/" && $page.url.pathname.startsWith(`${path}/`)) {
+            if (path !== "/" && page.url.pathname.startsWith(`${path}/`)) {
               return true
             }
             break
@@ -125,8 +125,8 @@ const hasActiveSubroute = (item: any) => {
   }
 
   return item.subroutes.some((subroute: any) =>
-    $page.url.pathname === subroute.path
-    || (subroute.path !== "/" && $page.url.pathname.startsWith(`${subroute.path}/`))
+    page.url.pathname === subroute.path
+    || (subroute.path !== "/" && page.url.pathname.startsWith(`${subroute.path}/`))
   )
 }
 

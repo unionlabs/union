@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/stores"
+import { page } from "$app/state"
 import Card from "$lib/components/ui/Card.svelte"
 import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
@@ -85,7 +85,7 @@ let progress = $derived(
 )
 
 // Check if we're on the achievements page
-let isOnAchievementsPage = $derived($page.url.pathname === "/dashboard/achievements")
+let isOnAchievementsPage = $derived(page.url.pathname === "/dashboard/achievements")
 </script>
 
 <Card class="flex flex-col flex-1">

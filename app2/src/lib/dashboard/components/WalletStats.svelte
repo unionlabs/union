@@ -1,5 +1,5 @@
 <script lang="ts">
-import { page } from "$app/stores"
+import { page } from "$app/state"
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
@@ -17,7 +17,7 @@ let stats = $derived(
 )
 
 // Check if we're on the wallets page
-let isOnWalletsPage = $derived($page.url.pathname === "/dashboard/wallets")
+let isOnWalletsPage = $derived(page.url.pathname === "/dashboard/wallets")
 </script>
 
 <Card class="flex flex-col flex-1">
