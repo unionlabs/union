@@ -363,8 +363,7 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
                 path,
                 ibcPacket.destinationChannelId,
                 order.baseToken,
-                metadataImage,
-                true
+                metadataImage
             );
         } else if (
             order.metadataType == ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE
