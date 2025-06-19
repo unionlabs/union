@@ -40,6 +40,20 @@
     {
       packages =
         voyager
+        // {
+          voyager-image = pkgs.dockerTools.buildLayeredImage {
+            name = "voyager";
+            contents = [
+              pkgs.coreutils-full
+              self'.packages.voyager
+              self'.packages.voyager-modules-plugins
+            ];
+            extraCommands = "cp ${../e2e/voyager-configs/voyager-config.jsonc} .";
+            config = {
+              Entrypoint = [ (pkgs.lib.getExe self'.packages.voyager) ];
+            };
+          };
+        }
         // schema.packages
         // {
           voyager-modules-plugins-names = builtins.toFile "voyager-modules-plugins-names.json" (

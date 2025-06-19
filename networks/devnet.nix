@@ -319,6 +319,21 @@
           postgres = import ./services/postgres.nix { inherit lib pkgs; };
         };
 
+        devnet-voyager = {
+          devnet-voyager = {
+            build.image = lib.mkForce self'.packages.voyager-image;
+            service = {
+              tty = true;
+              stop_signal = "SIGINT";
+              ports = [
+                "7177:7177"
+                "7178:7178"
+              ];
+              command = "start -c ${../e2e/voyager-configs/voyager-config.jsonc}";
+            };
+          };
+        };
+
         # hasura = import ./services/hasura.nix {
         #   inherit lib pkgs;
         # };
@@ -339,6 +354,7 @@
             services = services.devnet-eth // services.devnet-union // services.postgres;
           };
         }
+        // mkNamedModule "devnet-voyager"
         // mkNamedModule "postgres"
         // mkNamedModule "devnet-eth"
         // mkNamedModule "devnet-stargaze"
@@ -359,6 +375,7 @@
             modules = [ modules.postgres ];
           };
         }
+        // mkNamedSpec "devnet-voyager"
         // mkNamedSpec "full-dev-setup"
         // mkNamedSpec "devnet-eth"
         // mkNamedSpec "devnet-stargaze"
@@ -373,6 +390,7 @@
 
       build =
         mkNamedBuild "full-dev-setup"
+        // mkNamedBuild "devnet-voyager"
         // mkNamedBuild "voyager-queue"
         // mkNamedBuild "devnet-eth"
         // mkNamedBuild "devnet-stargaze"
@@ -455,6 +473,7 @@
           ];
         }
         // (mkArionBuild "full-dev-setup" (system == "x86_64-linux"))
+        // (mkArionBuild "devnet-voyager" false)
         // (mkArionBuild "voyager-queue" false)
         // (mkArionBuild "devnet-union" (system == "x86_64-linux"))
         // (mkArionBuild "devnet-simd" (system == "x86_64-linux"))
