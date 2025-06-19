@@ -15,7 +15,7 @@ let {
   currentSlide = $bindable(0),
   totalSlides,
   onSlideChange,
-  children
+  children,
 }: Props = $props()
 
 let previousSlide = $state(0)
@@ -41,11 +41,11 @@ function goToPreviousSlide() {
   }
 }
 
-export { goToSlide, goToNextSlide, goToPreviousSlide }
+export { goToNextSlide, goToPreviousSlide, goToSlide }
 </script>
 
 <div class="relative overflow-hidden {className}">
-  <div class="grid w-full grow overflow-hidden min-h-[300px]">
+  <div class="grid w-full grow overflow-hidden h-full">
     {#each Array(totalSlides) as _, slideIndex}
       {#if slideIndex === currentSlide}
         <div
@@ -58,4 +58,4 @@ export { goToSlide, goToNextSlide, goToPreviousSlide }
       {/if}
     {/each}
   </div>
-</div> 
+</div>
