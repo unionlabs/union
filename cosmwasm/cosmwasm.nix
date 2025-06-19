@@ -271,6 +271,7 @@ _: {
             "tendermint"
             "trusted-mpt"
             "state-lens-ics23-mpt"
+            "state-lens-ics23-ics23"
           ];
         }
         {

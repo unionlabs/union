@@ -65,6 +65,12 @@
         "commit": "21d7cd4dd6bfe66bd7334eb2055469944a3b0b91",
         "code_id": 536
       },
+      "state-lens/ics23/ics23": {
+        "address": "bbn1ndv9vcehelnetc8dqfkp77um6e3vxamv25k5lxlgs70kfq4n89pqk53pws",
+        "height": 1269725,
+        "commit": "dirty",
+        "code_id": 756
+      },
       "state-lens/ics23/mpt": {
         "address": "bbn1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs2sd9j4",
         "height": 714714,
