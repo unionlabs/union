@@ -30,7 +30,7 @@ interface IIBCPacketIntentRecv {
     /**
      * @dev recvIntentPacket is called by a module in order to receive & process an IBC intent packet
      * for an IBC packet sent on the corresponding channel end on the counterparty chain.
-     * Note that no verification is done by the handler, the protocol must ensure that the market maker fullfilling the intent executes the expected effects.
+     * Note that no verification is done by the handler, the protocol must ensure that the market maker fulfilling the intent executes the expected effects.
      */
     function recvIntentPacket(
         IBCMsgs.MsgIntentPacketRecv calldata msg_

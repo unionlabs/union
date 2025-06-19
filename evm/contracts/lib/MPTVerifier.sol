@@ -614,7 +614,7 @@ library MPTVerifier {
         }
 
         // initialize return values to make solc happy;
-        // one will always be overwritten before returing
+        // one will always be overwritten before returning
         assembly {
             value.offset := 0
             value.length := 0
