@@ -114,7 +114,7 @@ _: {
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
-            "sui"
+            # "sui"
             "trusted-mpt"
           ];
         }

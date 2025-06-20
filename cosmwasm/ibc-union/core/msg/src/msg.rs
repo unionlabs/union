@@ -9,14 +9,14 @@ pub struct InitMsg {
     pub relayers: Vec<String>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgRegisterClient {
     pub client_type: String,
     pub client_address: String,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 #[cfg_attr(feature = "cw-orch-interface", derive(cw_orch::ExecuteFns))]
 pub enum ExecuteMsg {
@@ -220,14 +220,14 @@ pub struct MsgBatchAcks {
     pub acks: Vec<Bytes>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgWriteAcknowledgement {
     pub packet: Packet,
     pub acknowledgement: Bytes,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct MsgSendPacket {
     pub source_channel_id: ChannelId,
