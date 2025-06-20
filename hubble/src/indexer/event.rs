@@ -92,7 +92,9 @@ impl From<&BlockRange> for Range {
 impl From<&BlockReference> for Range {
     fn from(value: &BlockReference) -> Self {
         Self {
+            // a range for a single block starts at the block height (inclusive) and ...
             start_inclusive: value.height,
+            // ends one block after the block height (because it's exclusive).
             end_exclusive: value.height + 1,
         }
     }
