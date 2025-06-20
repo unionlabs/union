@@ -19,11 +19,10 @@ use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
 use tracing::{error, instrument};
 use unionlabs::{
-    bech32::Bech32,
     bounded::BoundedI64,
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-    primitives::H256,
+    primitives::{Bech32, H256},
     ErrorReporter,
 };
 use voyager_sdk::{

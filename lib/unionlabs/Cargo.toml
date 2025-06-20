@@ -33,7 +33,6 @@ sha2                     = { workspace = true }
 sha3                     = { workspace = true }
 ssz                      = { workspace = true }
 static_assertions        = { workspace = true }
-subtle-encoding          = { workspace = true, features = ["bech32-preview"] }
 thiserror                = { workspace = true }
 typenum                  = { workspace = true, features = ["const-generics", "no_std"] }
 
@@ -65,7 +64,7 @@ ethabi = [
   "unionlabs-encoding/ethabi",
 ]
 near = ["borsh", "near-sdk", "near-primitives-core"]
-std = ["subtle-encoding/std", "sha2/std", "unionlabs-encoding/std"]
+std = ["sha2/std", "unionlabs-encoding/std"]
 
 fuzzing    = []
 test-utils = []

@@ -1,8 +1,9 @@
-use core::{fmt, marker::PhantomData, str::FromStr};
+use core::{convert::Infallible, fmt, marker::PhantomData, str::FromStr};
 
+#[cfg(feature = "serde")]
 use serde::{de, Deserialize, Serialize};
 
-use crate::{primitives::Bytes, ErrorReporter};
+use crate::Bytes;
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Bech32<Data = Bytes, Hrp = String> {
@@ -42,6 +43,11 @@ where
     Data: TryFrom<Vec<u8>>,
     Hrp: From<String>,
 {
+    /// Decode the provided bech32 string.
+    ///
+    /// # Errors
+    ///
+    /// This will error if the encoded string is invalid bech32, or if the decoded bytes cannot be converted to `Data`.
     pub fn decode(encoded: impl AsRef<str>) -> Result<Self, Bech32DecodeError<Data::Error>> {
         let (hrp, bytes) =
             subtle_encoding::bech32::decode(encoded).map_err(Bech32DecodeError::Decode)?;
@@ -54,9 +60,9 @@ where
 }
 
 #[derive(Debug, Clone, PartialEq, thiserror::Error)]
-pub enum Bech32DecodeError<E> {
-    #[error("error decoding bech32 string")]
-    Decode(#[cfg_attr(feature = "std", source)] subtle_encoding::Error),
+pub enum Bech32DecodeError<E = Infallible> {
+    #[error("error decoding bech32 string: {0}")]
+    Decode(subtle_encoding::Error),
     #[error("unable to convert decoded data")]
     Data(#[source] E),
 }
@@ -86,6 +92,7 @@ where
     }
 }
 
+#[cfg(feature = "serde")]
 impl<Data, Hrp> Serialize for Bech32<Data, Hrp>
 where
     Data: AsRef<[u8]>,
@@ -99,6 +106,7 @@ where
     }
 }
 
+#[cfg(feature = "serde")]
 impl<'de, Data, Hrp> Deserialize<'de> for Bech32<Data, Hrp>
 where
     Data: TryFrom<Vec<u8>, Error: core::error::Error + 'static>,
@@ -125,7 +133,7 @@ where
             where
                 E: de::Error,
             {
-                Bech32::decode(v).map_err(|e| de::Error::custom(ErrorReporter(e)))
+                Bech32::decode(v).map_err(|e| de::Error::custom(e))
             }
 
             fn visit_borrowed_str<E>(self, v: &'de str) -> Result<Self::Value, E>

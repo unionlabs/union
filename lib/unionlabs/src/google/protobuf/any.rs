@@ -263,7 +263,7 @@ pub fn mk_any<T: prost::Name + prost::Message>(t: &T) -> protos::google::protobu
 mod tests {
     use super::*;
     use crate::{
-        bech32::Bech32, cosmwasm::wasm::msg_instantiate_contract2::MsgInstantiateContract2,
+        cosmwasm::wasm::msg_instantiate_contract2::MsgInstantiateContract2, primitives::Bech32,
         test_utils::assert_codec_iso,
     };
 

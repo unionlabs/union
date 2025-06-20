@@ -32,7 +32,7 @@ fn main() {
     let enum_ = format!(
         r#"
         /// The `<chain_family_name>` portion of a universal chain id.
-        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
         pub enum Family {{
             {variants}
         }}
@@ -88,7 +88,15 @@ fn main() {
             #![allow(clippy::enum_glob_use)]
             use super::{{UniversalChainId, Family::*, Id}};
             {}
-        }}"#,
+        }}
+
+        /// Check whether the specified id is well-known.
+        // TODO: Make this fn const
+        #[must_use]
+        pub fn is_well_known(id: &UniversalChainId<'_>) -> bool {{
+            [{}].iter().any(|wk| wk == id)
+        }}
+        "#,
         universal_chain_ids
             .iter()
             .flat_map(
@@ -106,7 +114,20 @@ fn main() {
                     chain_id
                 ))
             )
-            .collect::<String>()
+            .collect::<String>(),
+        universal_chain_ids
+            .iter()
+            .flat_map(
+                |(family, chain_ids)| chain_ids.iter().map(move |chain_id| format!(
+                    r#"
+                    crate::well_known::{}_{}
+                    "#,
+                    family.to_uppercase(),
+                    chain_id.to_uppercase().replace('-', "_"),
+                ))
+            )
+            .collect::<Vec<_>>()
+            .join(","),
     );
 
     fs::write(

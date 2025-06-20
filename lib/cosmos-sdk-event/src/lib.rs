@@ -2,7 +2,7 @@ use std::{collections::BTreeMap, fmt::Display, str::FromStr};
 
 use cometbft_types::abci::event_attribute::EventAttribute;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
-use unionlabs::{bech32::Bech32, primitives::H256};
+use unionlabs::primitives::{Bech32, H256};
 
 /// Wrapper around a strongly-typed enum of on-chain events, containing well-known attributes that
 /// are added automatically by various modules in the Cosmos SDK.

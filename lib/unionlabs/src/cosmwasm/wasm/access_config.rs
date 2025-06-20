@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::Bytes;
 
-use crate::bech32::Bech32;
+use crate::primitives::{Bech32, Bytes};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(tag = "permission")]
@@ -16,12 +15,11 @@ pub enum AccessConfig {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use core::str::FromStr;
 
-    use unionlabs_primitives::Bytes;
+    use unionlabs_primitives::Bech32DecodeError;
 
     use super::AccessConfig;
-    use crate::{bech32::Bech32, impl_proto_via_try_from_into};
+    use crate::impl_proto_via_try_from_into;
 
     impl_proto_via_try_from_into!(AccessConfig => protos::cosmwasm::wasm::v1::AccessConfig);
 
@@ -84,7 +82,7 @@ pub mod proto {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid address")]
-        Addresses(#[from] <Bech32<Bytes> as FromStr>::Err),
+        Addresses(#[from] Bech32DecodeError),
         #[error("addresses are only valid for AnyOfAddresses, found {0:?}")]
         UnexpectedAddresses(Vec<String>),
         #[error("invalid access type `{0}`")]

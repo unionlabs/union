@@ -1,0 +1,21 @@
+[package]
+name    = "deployments"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = { workspace = true }
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+include = ["../../deployments/deployments.json"]
+
+[lints]
+workspace = true
+
+[dependencies]
+serde                = { workspace = true, features = ["derive"] }
+serde_json           = { workspace = true }
+ucs04                = { workspace = true, features = ["serde"] }
+unionlabs-primitives = { workspace = true, features = ["serde"] }
+voyager-primitives   = { workspace = true, features = ["serde"] }

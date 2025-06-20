@@ -7,7 +7,7 @@ use core::{
     ptr,
 };
 
-use ucs04::{Family, Id};
+use ucs04::{Family, Id, UniversalChainId};
 
 extern crate alloc;
 
@@ -30,6 +30,16 @@ impl<'a> Endpoint<'a> {
         Self {
             id,
             family,
+            protocol,
+            tags: Vec::new(),
+            domain: Self::DEFAULT_DOMAIN,
+        }
+    }
+
+    pub fn from_ucs04(ucs04: &'a UniversalChainId<'a>, protocol: &'a Protocol) -> Self {
+        Self {
+            id: ucs04.id(),
+            family: ucs04.family(),
             protocol,
             tags: Vec::new(),
             domain: Self::DEFAULT_DOMAIN,
@@ -82,7 +92,7 @@ pub struct Protocol(str);
 impl Protocol {
     pub const RPC: &'static Self = Self::new("rpc").unwrap();
     pub const REST: &'static Self = Self::new("rest").unwrap();
-    pub const GRPC: &'static Self = Self::new("grpc").unwrap();
+    pub const BEACON: &'static Self = Self::new("beacon").unwrap();
 
     #[must_use]
     pub const fn new(s: &str) -> Option<&Self> {

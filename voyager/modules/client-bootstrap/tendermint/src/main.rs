@@ -15,10 +15,9 @@ use serde_json::Value;
 use tendermint_light_client_types::{ClientState, ConsensusState, Fraction};
 use tracing::{error, info, instrument};
 use unionlabs::{
-    bech32::Bech32,
     ibc::core::{client::height::Height, commitment::merkle_root::MerkleRoot},
     option_unwrap,
-    primitives::H256,
+    primitives::{Bech32, H256},
     result_unwrap, ErrorReporter,
 };
 use voyager_sdk::{

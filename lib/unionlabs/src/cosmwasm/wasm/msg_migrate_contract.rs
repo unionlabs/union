@@ -1,9 +1,8 @@
 use core::num::NonZeroU64;
 
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{encoding::Base64, Bytes, H256};
 
-use crate::bech32::Bech32;
+use crate::primitives::{encoding::Base64, Bech32, Bytes, H256};
 
 pub mod response;
 
@@ -18,12 +17,11 @@ pub struct MsgMigrateContract {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use core::str::FromStr;
 
-    use unionlabs_primitives::{Bytes, H256};
+    use unionlabs_primitives::{Bech32DecodeError, FixedBytesError};
 
     use super::MsgMigrateContract;
-    use crate::{bech32::Bech32, impl_proto_via_try_from_into, Msg};
+    use crate::{impl_proto_via_try_from_into, Msg};
 
     impl_proto_via_try_from_into!(MsgMigrateContract => protos::cosmwasm::wasm::v1::MsgMigrateContract);
 
@@ -56,9 +54,9 @@ pub mod proto {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid sender")]
-        Sender(#[from] <Bech32<Bytes> as FromStr>::Err),
+        Sender(#[from] Bech32DecodeError),
         #[error("invalid contract")]
-        Contract(#[source] <Bech32<H256> as FromStr>::Err),
+        Contract(#[source] Bech32DecodeError<FixedBytesError>),
         #[error("invalid code id, must be > 0")]
         CodeId,
     }

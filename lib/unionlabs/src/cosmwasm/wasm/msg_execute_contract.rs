@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{encoding::Base64, Bytes, H256};
 
-use crate::{bech32::Bech32, cosmos::base::coin::Coin};
+use crate::{
+    cosmos::base::coin::Coin,
+    primitives::{encoding::Base64, Bech32, Bytes, H256},
+};
 
 pub mod response;
 
@@ -16,12 +18,11 @@ pub struct MsgExecuteContract {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use core::str::FromStr;
 
-    use unionlabs_primitives::{Bytes, H256};
+    use unionlabs_primitives::{Bech32DecodeError, FixedBytesError};
 
     use super::MsgExecuteContract;
-    use crate::{bech32::Bech32, cosmos::base::coin, impl_proto_via_try_from_into, Msg};
+    use crate::{cosmos::base::coin, impl_proto_via_try_from_into, Msg};
 
     impl_proto_via_try_from_into!(MsgExecuteContract => protos::cosmwasm::wasm::v1::MsgExecuteContract);
 
@@ -58,9 +59,9 @@ pub mod proto {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid sender")]
-        Sender(#[source] <Bech32<Bytes> as FromStr>::Err),
+        Sender(#[source] Bech32DecodeError),
         #[error("invalid contract")]
-        Contract(#[source] <Bech32<H256> as FromStr>::Err),
+        Contract(#[source] Bech32DecodeError<FixedBytesError>),
         #[error("invalid funds")]
         Funds(#[from] coin::proto::Error),
     }

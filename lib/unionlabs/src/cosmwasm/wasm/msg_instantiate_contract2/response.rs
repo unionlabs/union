@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{encoding::Base64, Bytes, H256};
 
-use crate::bech32::Bech32;
+use crate::primitives::{encoding::Base64, Bech32, Bytes, H256};
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -12,12 +11,12 @@ pub struct MsgInstantiateContract2Response {
 
 #[doc(hidden)] // TODO: Do this to all proto and ethabi modules
 pub mod proto {
-    use core::str::FromStr;
-
-    use unionlabs_primitives::H256;
 
     use super::MsgInstantiateContract2Response;
-    use crate::{bech32::Bech32, impl_proto_via_try_from_into};
+    use crate::{
+        impl_proto_via_try_from_into,
+        primitives::{Bech32DecodeError, FixedBytesError},
+    };
 
     impl_proto_via_try_from_into!(MsgInstantiateContract2Response => protos::cosmwasm::wasm::v1::MsgInstantiateContract2Response);
 
@@ -50,6 +49,6 @@ pub mod proto {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid address")]
-        Address(#[from] <Bech32<H256> as FromStr>::Err),
+        Address(#[from] Bech32DecodeError<FixedBytesError>),
     }
 }

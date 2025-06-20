@@ -30,12 +30,11 @@ use serde_json::Value;
 use tracing::{debug, error, info, info_span, instrument, trace, warn};
 use unionlabs::{
     self,
-    bech32::Bech32,
     cosmos::base::coin::Coin,
     google::protobuf::any::mk_any,
     never::Never,
     option_unwrap,
-    primitives::{Bytes, H160, H256},
+    primitives::{Bech32, Bytes, H160, H256},
     ErrorReporter,
 };
 use voyager_sdk::{

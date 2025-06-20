@@ -1,9 +1,11 @@
 use core::num::NonZeroU64;
 
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{encoding::Base64, Bytes};
 
-use crate::{bech32::Bech32, cosmos::base::coin::Coin};
+use crate::{
+    cosmos::base::coin::Coin,
+    primitives::{encoding::Base64, Bech32, Bytes},
+};
 
 pub mod response;
 
@@ -22,12 +24,11 @@ pub struct MsgInstantiateContract2 {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use core::str::FromStr;
 
-    use unionlabs_primitives::Bytes;
+    use unionlabs_primitives::Bech32DecodeError;
 
     use super::MsgInstantiateContract2;
-    use crate::{bech32::Bech32, cosmos::base::coin, impl_proto_via_try_from_into, Msg};
+    use crate::{cosmos::base::coin, impl_proto_via_try_from_into, Msg};
 
     impl_proto_via_try_from_into!(MsgInstantiateContract2 => protos::cosmwasm::wasm::v1::MsgInstantiateContract2);
 
@@ -72,9 +73,9 @@ pub mod proto {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid sender")]
-        Sender(#[source] <Bech32<Bytes> as FromStr>::Err),
+        Sender(#[source] Bech32DecodeError),
         #[error("invalid admin")]
-        Admin(#[source] <Bech32<Bytes> as FromStr>::Err),
+        Admin(#[source] Bech32DecodeError),
         #[error("invalid code id, must be > 0")]
         CodeId,
         #[error("invalid funds")]

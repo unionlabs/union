@@ -1,13 +1,12 @@
 use alloy::{network::AnyNetwork, primitives::Address, providers::ProviderBuilder, sol};
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use clap::Args;
+use deployments::{Deployment, DEPLOYMENTS};
 use ibc_union_spec::ChannelId;
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::primitives::{Bytes, U256};
 use voyager_primitives::IbcInterface;
-
-use crate::deployments::{App, DEPLOYMENTS};
 
 #[derive(Debug, Args)]
 pub struct Cmd {
@@ -120,8 +119,8 @@ impl Cmd {
                 bail!("--address can only be used with `custom`");
             }
 
-            match deployment.ibc_interface.as_str() {
-                IbcInterface::IBC_SOLIDITY => {
+            match deployment {
+                Deployment::IbcSolidity { app, .. } => {
                     predict_wrapped_token_ibc_solidity(
                         rpc_url.unwrap_or_else(|| {
                             format!(
@@ -130,14 +129,16 @@ impl Cmd {
                                 chain_id.family(),
                             )
                         }),
-                        deployment.deployments.app[&App::Ucs03]
+                        app.ucs03
+                            .as_ref()
+                            .context(anyhow!("no ucs03 deployment for {chain_id}"))?
                             .address
-                            .parse::<Address>()?,
+                            .into(),
                         args,
                     )
                     .await
                 }
-                IbcInterface::IBC_COSMWASM => {
+                Deployment::IbcCosmwasm { app, .. } => {
                     predict_wrapped_token_ibc_cosmwasm(
                         rpc_url.unwrap_or_else(|| {
                             format!(
@@ -146,12 +147,15 @@ impl Cmd {
                                 chain_id.family(),
                             )
                         }),
-                        deployment.deployments.app[&App::Ucs03].address.clone(),
+                        app.ucs03
+                            .as_ref()
+                            .context(anyhow!("no ucs03 deployment for {chain_id}"))?
+                            .address
+                            .to_string(),
                         args,
                     )
                     .await
                 }
-                s => bail!("unsupported IBC interface `{s}`"),
             }
         }
     }

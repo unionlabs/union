@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{Bytes, H256};
 
-use crate::bech32::Bech32;
+use crate::primitives::{Bech32, Bytes, H256};
 
 pub mod response;
 
@@ -15,12 +14,13 @@ pub struct MsgUpdateAdmin {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use core::str::FromStr;
-
-    use unionlabs_primitives::{Bytes, H256};
 
     use super::MsgUpdateAdmin;
-    use crate::{bech32::Bech32, impl_proto_via_try_from_into, Msg};
+    use crate::{
+        impl_proto_via_try_from_into,
+        primitives::{Bech32DecodeError, FixedBytesError},
+        Msg,
+    };
 
     impl_proto_via_try_from_into!(MsgUpdateAdmin => protos::cosmwasm::wasm::v1::MsgUpdateAdmin);
 
@@ -51,11 +51,11 @@ pub mod proto {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid sender")]
-        Sender(#[source] <Bech32<Bytes> as FromStr>::Err),
+        Sender(#[source] Bech32DecodeError),
         #[error("invalid new admin")]
-        NewAdmin(#[source] <Bech32<Bytes> as FromStr>::Err),
+        NewAdmin(#[source] Bech32DecodeError),
         #[error("invalid contract")]
-        Contract(#[source] <Bech32<H256> as FromStr>::Err),
+        Contract(#[source] Bech32DecodeError<FixedBytesError>),
     }
 
     impl Msg for MsgUpdateAdmin {

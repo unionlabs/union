@@ -1,6 +1,5 @@
 use unionlabs::{
-    bech32::Bech32,
-    primitives::{FixedBytes, H160, H256, H512},
+    primitives::{Bech32, FixedBytes, H160, H256, H512},
     signer::CosmosSigner,
 };
 

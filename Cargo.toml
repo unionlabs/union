@@ -251,6 +251,7 @@ members = [
   "lib/embed-commit/verifier",
 
   "lib/ucs04",
+  "lib/deployments",
 
   "lib/consensus-primitives",
   "lib/solidity-slot",
@@ -264,6 +265,7 @@ members = [
   "lib/voyager-plugin-protocol",
   "lib/wasm-client-type",
   "lib/sui-verifier",
+  "tools/update-deployments",
 ]
 
 [workspace.package]
@@ -417,12 +419,14 @@ voyager-sdk             = { path = "lib/voyager-sdk", default-features = false }
 voyager-types           = { path = "lib/voyager-types", default-features = false }
 voyager-vm              = { path = "lib/voyager-vm", default-features = false }
 
-embed-commit = { path = "lib/embed-commit", default-features = false }
+embed-commit          = { path = "lib/embed-commit", default-features = false }
+embed-commit-verifier = { path = "lib/embed-commit/verifier", default-features = false }
 
 consensus-primitives = { path = "lib/consensus-primitives", default-features = false }
 
 state-lens-ics23-mpt-light-client = { path = "cosmwasm/ibc-union/lightclient/state-lens-ics23-mpt", default-features = false }
 
+deployments      = { path = "lib/deployments", default-features = false }
 solidity-slot    = { path = "lib/solidity-slot", default-features = false }
 ucs04            = { path = "lib/ucs04", default-features = false }
 wasm-client-type = { path = "lib/wasm-client-type", default-features = false }

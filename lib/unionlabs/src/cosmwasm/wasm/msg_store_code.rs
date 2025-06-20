@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
-use unionlabs_primitives::{encoding::Base64, Bytes};
 
-use crate::{bech32::Bech32, cosmwasm::wasm::access_config::AccessConfig};
+use crate::{
+    cosmwasm::wasm::access_config::AccessConfig,
+    primitives::{encoding::Base64, Bech32, Bytes},
+};
 
 pub mod response;
 
@@ -16,12 +18,11 @@ pub struct MsgStoreCode {
 
 #[cfg(feature = "proto")]
 pub mod proto {
-    use core::str::FromStr;
 
-    use unionlabs_primitives::Bytes;
+    use unionlabs_primitives::Bech32DecodeError;
 
     use super::MsgStoreCode;
-    use crate::{bech32::Bech32, cosmwasm::wasm::access_config, impl_proto_via_try_from_into, Msg};
+    use crate::{cosmwasm::wasm::access_config, impl_proto_via_try_from_into, Msg};
 
     impl_proto_via_try_from_into!(MsgStoreCode => protos::cosmwasm::wasm::v1::MsgStoreCode);
 
@@ -53,7 +54,7 @@ pub mod proto {
     #[derive(Debug, Clone, PartialEq, thiserror::Error)]
     pub enum Error {
         #[error("invalid sender")]
-        Sender(#[from] <Bech32<Bytes> as FromStr>::Err),
+        Sender(#[from] Bech32DecodeError),
         #[error("invalid instantiate permissions")]
         InstantiatePermissions(#[from] access_config::proto::Error),
     }

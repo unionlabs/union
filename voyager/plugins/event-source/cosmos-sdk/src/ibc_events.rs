@@ -4,9 +4,8 @@ use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
 use serde::{Deserialize, Serialize};
 use sha2::Digest;
 use unionlabs::{
-    bech32::Bech32,
     ibc::core::{channel::order::Order, client::height::Height},
-    primitives::{encoding::HexUnprefixed, Bytes, H256},
+    primitives::{encoding::HexUnprefixed, Bech32, Bytes, H256},
     ErrorReporter,
 };
 
