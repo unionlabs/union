@@ -147,9 +147,7 @@ function restore() {
               loading="lazy"
             />
           {/if}
-          <div
-            class="relative bg-black bg-opacity-70 text-white px-3 py-2 text-xs font-medium backdrop-blur-sm border border-white/20 rounded"
-          >
+          <div class="relative bg-black bg-opacity-70 text-white px-3 py-2 text-xs font-medium backdrop-blur-sm border border-white/20 rounded">
             ▶ Play Tutorial
           </div>
         </button>
