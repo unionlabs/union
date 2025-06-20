@@ -3196,6 +3196,7 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tracing",
+ "tracing-subscriber",
  "unionlabs",
 ]
 
@@ -15266,16 +15267,33 @@ dependencies = [
 
 [[package]]
 name = "tower-http"
-version = "0.6.4"
+version = "0.6.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0fdb0c213ca27a9f57ab69ddb290fd80d970922355b83ae380b395d3986b8a2e"
+checksum = "adc82fd73de2a9722ac5da747f12383d2bfdb93591ee6c58486e0097890f05f2"
 dependencies = [
+ "async-compression",
+ "base64 0.22.1",
  "bitflags 2.9.0",
  "bytes",
+ "futures-core",
+ "futures-util",
  "http 1.3.1",
+ "http-body 1.0.1",
+ "http-body-util",
+ "http-range-header",
+ "httpdate",
+ "iri-string",
+ "mime",
+ "mime_guess",
+ "percent-encoding",
  "pin-project-lite",
+ "tokio",
+ "tokio-util",
+ "tower 0.5.2",
  "tower-layer",
  "tower-service",
+ "tracing",
+ "uuid",
 ]
 
 [[package]]
@@ -16163,7 +16181,7 @@ dependencies = [
  "tikv-jemallocator",
  "tokio",
  "tower 0.4.13",
- "tower-http 0.6.4",
+ "tower-http 0.6.6",
  "tracing",
  "tracing-futures",
  "tracing-subscriber",
@@ -16951,7 +16969,7 @@ dependencies = [
  "tokio",
  "tokio-util",
  "tower 0.5.2",
- "tower-http 0.6.4",
+ "tower-http 0.6.6",
  "tracing",
  "unionlabs",
  "voyager-message",
@@ -17550,6 +17568,8 @@ dependencies = [
  "jsonrpsee 0.25.1",
  "serde",
  "serde_json",
+ "tower 0.5.2",
+ "tower-http 0.6.6",
  "tracing",
  "unionlabs",
  "voyager-client",

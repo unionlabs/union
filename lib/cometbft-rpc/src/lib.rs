@@ -1,5 +1,6 @@
 use core::fmt;
 use std::{
+    collections::BTreeMap,
     fmt::Debug,
     num::{NonZeroU32, NonZeroU64, NonZeroU8},
     time::Duration,
@@ -14,7 +15,7 @@ use jsonrpsee::{
     },
     http_client::{HttpClient, HttpClientBuilder},
     rpc_params,
-    ws_client::{PingConfig, WsClientBuilder},
+    ws_client::{HeaderMap, HeaderValue, PingConfig, WsClientBuilder},
 };
 use tracing::{debug, debug_span, instrument, trace, Instrument};
 use unionlabs::{
@@ -46,13 +47,35 @@ pub struct Client {
 
 impl Client {
     pub async fn new(url: impl AsRef<str>) -> Result<Self, JsonRpcError> {
+        Self::new_with_headers(url, &BTreeMap::default()).await
+    }
+
+    pub async fn new_with_headers(
+        url: impl AsRef<str>,
+        headers: &BTreeMap<String, String>,
+    ) -> Result<Self, JsonRpcError> {
         let url = url.as_ref().to_owned();
+
+        let headers = headers
+            .iter()
+            .map(|(k, v)| {
+                Ok((
+                    k.try_into().map_err(|e| {
+                        JsonRpcError::Custom(ErrorReporter(e).with_message("invalid header name"))
+                    })?,
+                    HeaderValue::from_bytes(v.as_bytes()).map_err(|e| {
+                        JsonRpcError::Custom(ErrorReporter(e).with_message("invalid header value"))
+                    })?,
+                ))
+            })
+            .collect::<Result<HeaderMap, JsonRpcError>>()?;
 
         let inner = match url.split_once("://") {
             Some(("ws" | "wss", _)) => {
                 let client = reconnecting_jsonrpc_ws_client::Client::new(move || {
                     WsClientBuilder::default()
                         .enable_ws_ping(PingConfig::new())
+                        .set_headers(headers.clone())
                         .build(url.clone())
                         .instrument(debug_span!("cometbft_rpc_client", %url))
                 });
@@ -68,6 +91,7 @@ impl Client {
             Some(("http" | "https", _)) => ClientInner::Http(Box::new(
                 HttpClientBuilder::default()
                     .max_response_size(100 * 1024 * 1024)
+                    .set_headers(headers)
                     .build(url)?,
             )),
             _ => return Err(JsonRpcError::Custom(format!("invalid url {url}"))),
@@ -379,131 +403,134 @@ impl ClientT for ClientInner {
 }
 
 // These tests are useful in testing and debugging, but should not be run in CI
-// #[cfg(test)]
-// mod live_tests {
-//     use hex_literal::hex;
+#[cfg(test)]
+mod live_tests {
+    use hex_literal::hex;
+    use tracing_subscriber::{EnvFilter, Layer};
 
-//     use super::*;
+    use super::*;
 
-//     const UNION_TESTNET: &str = "https://rpc.testnet-9.union.build";
-//     const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
-//     const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain.com/websocket";
-//     const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
-//     const BABYLON_TESTNET: &str = "https://rpc.bbn-test-5.babylon.chain.kitchen";
+    const UNION_TESTNET: &str = "https://rpc.testnet-9.union.build";
+    const BERACHAIN_DEVNET: &str = "ws://localhost:26657/websocket";
+    const BERACHAIN_TESTNET: &str = "wss://bartio-cosmos.berachain.com/websocket";
+    const OSMOSIS_TESTNET: &str = "wss://osmosis-rpc.publicnode.com/websocket";
+    const BABYLON_TESTNET: &str = "https://rpc.bbn-test-5.babylon.chain.kitchen";
 
-//     const TEST_URL: &str = UNION_TESTNET;
+    const TEST_URL: &str = UNION_TESTNET;
 
-//     #[tokio::test]
-//     async fn commit() {
-//         let client = Client::new(TEST_URL).await.unwrap();
+    #[tokio::test]
+    async fn commit() {
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client.commit(Some(1.try_into().unwrap())).await;
+        let result = client.commit(Some(1.try_into().unwrap())).await;
 
-//         dbg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn abci_query() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn abci_query() {
+        // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new("https://rpc.pacific-1.sei.io").await.unwrap();
+        let client = Client::new("https://rpc.pacific-1.sei.io").await.unwrap();
 
-//         let result = client
-//             .abci_query(
-//                 "store/evm/key",
-//                 &[
-//                     [0x03].as_slice(),
-//                     &hex!("4a4d9abD36F923cBA0Af62A39C01dEC2944fb638"),
-//                     &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
-//                 ]
-//                 .into_iter()
-//                 .flatten()
-//                 .copied()
-//                 .collect::<Vec<_>>(),
-//                 Some(142070066.try_into().unwrap()),
-//                 true,
-//             )
-//             .await;
+        let result = client
+            .abci_query(
+                "store/evm/key",
+                &[
+                    [0x03].as_slice(),
+                    &hex!("4a4d9abD36F923cBA0Af62A39C01dEC2944fb638"),
+                    &hex!("0000000000000000000000000000000000000000000000000000000000000000"),
+                ]
+                .into_iter()
+                .flatten()
+                .copied()
+                .collect::<Vec<_>>(),
+                Some(142070066.try_into().unwrap()),
+                true,
+            )
+            .await;
 
-//         dbg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn validators() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn validators() {
+        // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         // let result = client
-//         //     .validators(
-//         //         Some(100.try_into().unwrap()),
-//         //         Some(ValidatorsPagination {
-//         //             page: 1.try_into().unwrap(),
-//         //             per_page: None,
-//         //         }),
-//         //     )
-//         //     .await;
+        // let result = client
+        //     .validators(
+        //         Some(100.try_into().unwrap()),
+        //         Some(ValidatorsPagination {
+        //             page: 1.try_into().unwrap(),
+        //             per_page: None,
+        //         }),
+        //     )
+        //     .await;
 
-//         let result = client.all_validators(None).await.unwrap();
+        let result = client.all_validators(None).await.unwrap();
 
-//         dbg!(result.validators.len(),);
+        dbg!(result.validators.len(),);
 
-//         println!(
-//             "{}",
-//             serde_json::to_string_pretty(&result.validators).unwrap()
-//         );
-//     }
+        println!(
+            "{}",
+            serde_json::to_string_pretty(&result.validators).unwrap()
+        );
+    }
 
-//     #[tokio::test]
-//     async fn status() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn status() {
+        // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client.status().await.unwrap();
+        let result = client.status().await.unwrap();
 
-//         dbg!(result);
-//     }
+        dbg!(result);
+    }
 
-//     #[tokio::test]
-//     async fn block() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn block() {
+        let _ = tracing_subscriber::fmt()
+            .with_env_filter(EnvFilter::from_default_env())
+            .try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new("https://rpc.sei-apis.com").await.unwrap();
 
-//         // let mut i = 1376377;
+        // let mut i = 1376377;
 
-//         // loop {
-//         //     dbg!(i);
+        // loop {
+        //     dbg!(i);
 
-//         let result = client
-//             .block(Some(1.try_into().unwrap()))
-//             // .block(None)
-//             .await
-//             .unwrap();
+        let result = client
+            // .block(Some(1.try_into().unwrap()))
+            .block(None)
+            .await
+            .unwrap();
 
-//         dbg!(result.block);
+        dbg!(result.block);
 
-//         //     i += 1;
+        //     i += 1;
 
-//         //     tokio::time::sleep(Duration::from_millis(100)).await;
-//         // }
-//     }
+        //     tokio::time::sleep(Duration::from_millis(100)).await;
+        // }
+    }
 
-//     #[tokio::test]
-//     async fn tx() {
-//         // let _ = tracing_subscriber::fmt().try_init();
+    #[tokio::test]
+    async fn tx() {
+        // let _ = tracing_subscriber::fmt().try_init();
 
-//         let client = Client::new(TEST_URL).await.unwrap();
+        let client = Client::new(TEST_URL).await.unwrap();
 
-//         let result = client
-//             .tx(
-//                 hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
-//                 true,
-//             )
-//             .await
-//             .unwrap();
+        let result = client
+            .tx(
+                hex!("32DAD1842DF0441870B168D0C177F8EEC156B18B32D88C3658349BE07F352CCA").into(),
+                true,
+            )
+            .await
+            .unwrap();
 
-//         dbg!(result);
-//     }
-// }
+        dbg!(result);
+    }
+}

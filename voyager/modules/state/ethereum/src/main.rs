@@ -6,7 +6,7 @@ use alloy::{
     eips::BlockNumberOrTag,
     network::AnyNetwork,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-    rpc::types::{TransactionInput, TransactionRequest},
+    rpc::{client::ClientBuilder, types::{TransactionInput, TransactionRequest}},
     serde::WithOtherFields,
     sol_types::{SolCall, SolValue},
 };
@@ -35,10 +35,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_sdk::{
-    self, anyhow, into_value,
-    plugin::StateModule,
-    primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{types::StateModuleInfo, StateModuleServer, MISSING_STATE_ERROR_CODE},
+    self, anyhow, into_value, plugin::StateModule, primitives::{ChainId, ClientInfo, ClientType, IbcInterface}, rpc::{types::StateModuleInfo, StateModuleServer, MISSING_STATE_ERROR_CODE}, tower_http::{self, set_header::SetRequestHeaderLayer}, RpcUrlConfig
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -67,7 +64,7 @@ pub struct Config {
     pub ibc_handler_address: H160,
 
     /// The RPC endpoint for the execution chain.
-    pub rpc_url: String,
+    pub rpc_url: RpcUrlConfig,
 
     #[serde(default)]
     pub max_query_window: Option<u64>,
@@ -83,7 +80,7 @@ impl StateModule<IbcUnion> for Module {
         let provider = DynProvider::new(
             ProviderBuilder::new()
                 .layer(CacheLayer::new(config.max_cache_size))
-                .network::<AnyNetwork>()
+                .network::<AnyNetwork>().connect_client(ClientBuilder::default().layer(tower::))
                 .connect(&config.rpc_url)
                 .await?,
         );
@@ -245,7 +242,7 @@ impl Module {
             .map_err(|e| {
                 ErrorObject::owned(
                     -1,
-                    format!("error querying channel: {}", ErrorReporter(e)),
+                    format!("error querying connection: {}", ErrorReporter(e)),
                     None::<()>,
                 )
             })?;
@@ -253,7 +250,7 @@ impl Module {
         let connection = Connection::abi_decode_params_validate(&raw).map_err(|e| {
             ErrorObject::owned(
                 -1,
-                format!("error decoding channel: {}", ErrorReporter(e)),
+                format!("error decoding connection: {}", ErrorReporter(e)),
                 None::<()>,
             )
         })?;

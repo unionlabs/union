@@ -36,7 +36,7 @@ use voyager_sdk::{
     primitives::{ChainId, ClientType},
     rpc::{types::PluginInfo, PluginServer},
     vm::{data, pass::PassResult, Op, Visit},
-    DefaultCmd,
+    DefaultCmd, RpcUrlConfig,
 };
 
 use crate::call::{FetchUpdate, ModuleCall};
@@ -61,7 +61,7 @@ pub struct Module {
 pub struct Config {
     pub chain_id: ChainId,
 
-    pub rpc_url: String,
+    pub rpc_url: RpcUrlConfig,
 }
 
 impl Plugin for Module {
@@ -72,9 +72,16 @@ impl Plugin for Module {
     type Cmd = DefaultCmd;
 
     async fn new(config: Self::Config) -> anyhow::Result<Self> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let cometbft_client =
+            cometbft_rpc::Client::new_with_headers(config.rpc_url.url(), config.rpc_url.headers())
+                .await?;
 
-        let chain_id = tm_client.status().await?.node_info.network.to_string();
+        let chain_id = cometbft_client
+            .status()
+            .await?
+            .node_info
+            .network
+            .to_string();
 
         if chain_id != config.chain_id.as_str() {
             bail!(
@@ -98,7 +105,7 @@ impl Plugin for Module {
             })?;
 
         Ok(Self {
-            cometbft_client: tm_client,
+            cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
         })

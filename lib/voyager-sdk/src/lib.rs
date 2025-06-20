@@ -1,19 +1,22 @@
 pub mod hook;
 
-use std::fmt::Debug;
+use std::{collections::BTreeMap, fmt::Debug};
 
-use jsonrpsee::{async_client, core::RpcResult, types::ErrorObject, Extensions};
-use serde::Serialize;
+use jsonrpsee::{
+    async_client, core::RpcResult, types::ErrorObject, ws_client::HeaderMap, Extensions,
+};
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use tower::{Layer, Service};
 use tracing::error;
 use unionlabs::ErrorReporter;
 use voyager_plugin::protocol::{ArcClient, IdThreadClient};
 use voyager_rpc::FATAL_JSONRPC_ERROR_CODE;
 #[doc(no_inline)]
 pub use {
-    anyhow, jsonrpsee, serde_json, voyager_client as client, voyager_message as message,
-    voyager_plugin as plugin, voyager_primitives as primitives, voyager_rpc as rpc,
-    voyager_types as types, voyager_vm as vm,
+    anyhow, jsonrpsee, serde_json, tower_http, voyager_client as client,
+    voyager_message as message, voyager_plugin as plugin, voyager_primitives as primitives,
+    voyager_rpc as rpc, voyager_types as types, voyager_vm as vm,
 };
 
 #[track_caller]
@@ -69,3 +72,71 @@ impl ExtensionsExt for Extensions {
 
 #[derive(clap::Subcommand)]
 pub enum DefaultCmd {}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(untagged)]
+pub enum RpcUrlConfig {
+    Url(String),
+    Config {
+        url: String,
+        headers: BTreeMap<String, String>,
+    },
+}
+
+impl RpcUrlConfig {
+    pub fn url(&self) -> &str {
+        match self {
+            RpcUrlConfig::Url(url) => url,
+            RpcUrlConfig::Config { url, headers: _ } => url,
+        }
+    }
+
+    pub fn headers(&self) -> &BTreeMap<String, String> {
+        match self {
+            RpcUrlConfig::Url(_) => const { &BTreeMap::new() },
+            RpcUrlConfig::Config { url: _, headers } => headers,
+        }
+    }
+}
+
+pub struct SetMultipleHeadersLayer {
+    pub headers: HeaderMap,
+}
+
+impl<S> Layer<S> for SetMultipleHeadersLayer {
+    type Service = SetMultipleHeaders;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        todo!()
+    }
+}
+
+pub struct SetMultipleHeaders<S> {
+    headers: HeaderMap,
+    inner: S,
+}
+
+impl<ReqBody, ResBody, S, M> Service<Request<ReqBody>> for SetRequestHeader<S, M>
+where
+    S: Service<Request<ReqBody>, Response = Response<ResBody>>,
+
+    M: MakeHeaderValue<Request<ReqBody>>,
+{
+    type Response = S::Response;
+
+    type Error = S::Error;
+
+    type Future = S::Future;
+
+    #[inline]
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, mut req: Request<ReqBody>) -> Self::Future {
+        self.mode.apply(&self.header_name, &mut req, &mut self.make);
+
+        self.inner.call(req)
+    }
+}

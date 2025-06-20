@@ -13,6 +13,7 @@ use voyager_sdk::{
     plugin::FinalityModule,
     primitives::{ChainId, ConsensusType, Timestamp},
     rpc::{json_rpc_error_to_error_object, types::FinalityModuleInfo, FinalityModuleServer},
+    RpcUrlConfig,
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -31,16 +32,23 @@ pub struct Module {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
 pub struct Config {
-    pub rpc_url: String,
+    pub rpc_url: RpcUrlConfig,
 }
 
 impl FinalityModule for Module {
     type Config = Config;
 
     async fn new(config: Self::Config, info: FinalityModuleInfo) -> anyhow::Result<Self> {
-        let tm_client = cometbft_rpc::Client::new(config.rpc_url).await?;
+        let cometbft_client =
+            cometbft_rpc::Client::new_with_headers(config.rpc_url.url(), config.rpc_url.headers())
+                .await?;
 
-        let chain_id = tm_client.status().await?.node_info.network.to_string();
+        let chain_id = cometbft_client
+            .status()
+            .await?
+            .node_info
+            .network
+            .to_string();
 
         info.ensure_chain_id(&chain_id)?;
         info.ensure_consensus_type(ConsensusType::TENDERMINT)?;
@@ -59,7 +67,7 @@ impl FinalityModule for Module {
             })?;
 
         Ok(Self {
-            cometbft_client: tm_client,
+            cometbft_client,
             chain_id: ChainId::new(chain_id),
             chain_revision,
         })
