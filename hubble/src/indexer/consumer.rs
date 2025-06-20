@@ -28,6 +28,7 @@ use crate::{
         },
     },
     postgres::{fetch_internal_chain_id_for_universal_chain_id, schedule_replication_reset},
+    utils::human_readable::human_readable_bytes,
 };
 
 pub struct BlockUpdate {
@@ -460,22 +461,5 @@ fn get_message_meta(message: &async_nats::jetstream::Message) -> Result<MessageM
             nats_stream_sequence,
             nats_consumer_sequence,
         ))
-    }
-}
-
-fn human_readable_bytes(bytes: usize) -> String {
-    const UNITS: [&str; 4] = ["B", "KiB", "MiB", "GiB"];
-    let mut size = bytes as f64;
-    let mut unit = 0;
-
-    while size >= 1024.0 && unit < UNITS.len() - 1 {
-        size /= 1024.0;
-        unit += 1;
-    }
-
-    if unit == 0 {
-        format!("{} {}", bytes, UNITS[unit])
-    } else {
-        format!("{:.1} {}", size, UNITS[unit])
     }
 }

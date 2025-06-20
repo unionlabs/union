@@ -20,6 +20,7 @@ mod metrics;
 mod postgres;
 mod race_client;
 mod token_fetcher;
+mod utils;
 
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
