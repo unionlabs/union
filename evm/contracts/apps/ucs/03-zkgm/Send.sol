@@ -239,10 +239,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         }
         (address wrappedToken,, bool v1) =
         _predictWrappedTokenFromMetadataImageV2(
-            intermediateChannelPath,
-            channelId,
-            order.quoteToken,
-            metadataImage
+            intermediateChannelPath, channelId, order.quoteToken, metadataImage
         );
         bool isInverseIntermediatePath =
             path == ZkgmLib.reverseChannelPath(intermediateChannelPath);
