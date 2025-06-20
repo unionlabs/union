@@ -77,12 +77,6 @@ import (
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 
-	_ "github.com/strangelove-ventures/poa"               // import for side-effects
-	_ "github.com/strangelove-ventures/poa/api/module/v1" // import for side-effects
-	_ "github.com/strangelove-ventures/poa/api/v1"        // import for side-effects
-	poakeeper "github.com/strangelove-ventures/poa/keeper"
-	_ "github.com/strangelove-ventures/poa/module" // import for side-effects
-
 	_ "github.com/skip-mev/feemarket/x/feemarket"
 	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
 	_ "github.com/skip-mev/feemarket/x/feemarket/types"
@@ -150,9 +144,6 @@ type App struct {
 	// CosmWasm
 	WasmKeeper       wasmkeeper.Keeper
 	ScopedWasmKeeper capabilitykeeper.ScopedKeeper
-
-	// POA
-	POAKeeper poakeeper.Keeper
 
 	// Fee Market
 	FeeMarketKeeper feemarketkeeper.Keeper
@@ -255,7 +246,6 @@ func New(
 		&app.FeeGrantKeeper,
 		&app.GroupKeeper,
 		&app.CircuitBreakerKeeper,
-		&app.POAKeeper,
 		&app.FeeMarketKeeper,
 	); err != nil {
 		panic(err)

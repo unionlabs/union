@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	corestoretypes "cosmossdk.io/core/store"
-	sdkmath "cosmossdk.io/math"
 	circuitante "cosmossdk.io/x/circuit/ante"
 	circuitkeeper "cosmossdk.io/x/circuit/keeper"
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
@@ -13,8 +12,6 @@ import (
 	"github.com/cosmos/cosmos-sdk/x/auth/ante"
 	ibcante "github.com/cosmos/ibc-go/v8/modules/core/ante"
 	"github.com/cosmos/ibc-go/v8/modules/core/keeper"
-
-	poaante "github.com/strangelove-ventures/poa/ante"
 
 	feemarketante "github.com/skip-mev/feemarket/x/feemarket/ante"
 )
@@ -36,11 +33,6 @@ type HandlerOptions struct {
 
 // NewAnteHandler constructor
 func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
-	// poa commission limits
-	doGenTxRateValidation := false
-	rateFloor := sdkmath.LegacyMustNewDecFromStr("0.01")
-	rateCeil := sdkmath.LegacyMustNewDecFromStr("0.01")
-
 	if options.AccountKeeper == nil {
 		return nil, errors.New("account keeper is required for ante builder")
 	}
@@ -79,9 +71,6 @@ func NewAnteHandler(options HandlerOptions) (sdk.AnteHandler, error) {
 		ante.NewSigVerificationDecorator(options.AccountKeeper, options.SignModeHandler),
 		ante.NewIncrementSequenceDecorator(options.AccountKeeper),
 		ibcante.NewRedundantRelayDecorator(options.IBCKeeper),
-		poaante.NewPOADisableStakingDecorator(),
-		poaante.NewPOADisableWithdrawDelegatorRewards(),
-		poaante.NewCommissionLimitDecorator(doGenTxRateValidation, rateFloor, rateCeil),
 		feemarketante.NewFeeMarketCheckDecorator(
 			options.FeeMarketAccountKeeper,
 			options.FeeMarketBankKeeper,

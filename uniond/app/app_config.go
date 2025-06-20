@@ -51,12 +51,6 @@ import (
 	ibcexported "github.com/cosmos/ibc-go/v8/modules/core/exported"
 	"google.golang.org/protobuf/types/known/durationpb"
 
-	"github.com/strangelove-ventures/poa"
-	poamodule "github.com/strangelove-ventures/poa/api/module/v1"
-	_ "github.com/strangelove-ventures/poa/api/v1"
-	_ "github.com/strangelove-ventures/poa/keeper"
-	_ "github.com/strangelove-ventures/poa/module"
-
 	feemarketmodule "github.com/skip-mev/feemarket/api/feemarket/feemarket/module/v1"
 	_ "github.com/skip-mev/feemarket/x/feemarket/keeper"
 	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
@@ -78,7 +72,6 @@ var (
 		banktypes.ModuleName,
 		distrtypes.ModuleName,
 		stakingtypes.ModuleName,
-		poa.ModuleName,
 		slashingtypes.ModuleName,
 		govtypes.ModuleName,
 		minttypes.ModuleName,
@@ -112,7 +105,6 @@ var (
 		distrtypes.ModuleName,
 		slashingtypes.ModuleName,
 		evidencetypes.ModuleName,
-		poa.ModuleName,
 		stakingtypes.ModuleName,
 		authz.ModuleName,
 		genutiltypes.ModuleName,
@@ -130,7 +122,6 @@ var (
 		// cosmos sdk modules
 		crisistypes.ModuleName,
 		govtypes.ModuleName,
-		poa.ModuleName,
 		stakingtypes.ModuleName,
 		feegrant.ModuleName,
 		group.ModuleName,
@@ -290,12 +281,6 @@ var (
 			{
 				Name:   circuittypes.ModuleName,
 				Config: appconfig.WrapAny(&circuitmodulev1.Module{}),
-			},
-			{
-				Name: poa.ModuleName,
-				Config: appconfig.WrapAny(&poamodule.Module{
-					Authority: UNION_MULTI_SIG,
-				}),
 			},
 			{
 				Name:   feemarkettypes.ModuleName,
