@@ -64,6 +64,11 @@
       "counterparty": "xion.xion-testnet-2",
       "client_type": "tendermint",
       "refresh_rate": "500"
+    },
+    "10": {
+      "counterparty": "sei.atlantic-2",
+      "client_type": "state-lens/ics23/ics23",
+      "refresh_rate": "5000"
     }
   },
   "ethereum.11155111": {
@@ -275,6 +280,11 @@
     "8": {
       "counterparty": "corn.21000001",
       "client_type": "state-lens/ics23/mpt",
+      "refresh_rate": "500"
+    },
+    "10": {
+      "counterparty": "babylon.bbn-test-5",
+      "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "500"
     }
   }
