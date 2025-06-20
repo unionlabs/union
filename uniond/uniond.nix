@@ -50,7 +50,7 @@ _: {
                 (nix-filter.matchExt "md")
               ];
             };
-            vendorHash = "sha256-cF/iX1g5QAKVVNDL3qxkzQjxlQ9ij6Vv3BTVVJzw4BM=";
+            vendorHash = "sha256-tuUQ6a+59C81lftoiQ5UxziyRYD+VXZwKW+LJfGLBaw=";
             doCheck = true;
             meta.mainProgram = "uniond";
           }

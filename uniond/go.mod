@@ -27,7 +27,7 @@ require (
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/CosmWasm/wasmd v0.54.0
 	github.com/CosmWasm/wasmvm/v2 v2.2.1
-	github.com/cometbft/cometbft v1.0.0-alpha.2.0.20240429102542-490e9bc3de65
+	github.com/cometbft/cometbft v1.0.1
 	github.com/cometbft/cometbft/api v1.0.0
 	github.com/cosmos/cosmos-db v1.1.1
 	github.com/cosmos/cosmos-sdk v0.51.0
@@ -88,7 +88,7 @@ require (
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/iavl v1.2.4 // indirect
 	github.com/cosmos/ics23/go v0.11.0 // indirect
-	github.com/cosmos/ledger-cosmos-go v0.13.3 // indirect
+	github.com/cosmos/ledger-cosmos-go v0.14.0 // indirect
 	github.com/creachadair/atomicfile v0.3.3 // indirect
 	github.com/creachadair/tomledit v0.0.26 // indirect
 	github.com/danieljoos/wincred v1.2.1 // indirect
@@ -252,13 +252,13 @@ replace (
 )
 
 replace (
-	cosmossdk.io/core => github.com/unionlabs/cosmos-sdk/core v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/store => github.com/unionlabs/cosmos-sdk/store v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk/x/circuit v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk/x/evidence v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk/x/feegrant v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk/x/nft v0.0.0-20250228163659-0f0e36772bd6
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20250611150258-c03752a2eb52
+	cosmossdk.io/core => github.com/unionlabs/cosmos-sdk/core v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/store => github.com/unionlabs/cosmos-sdk/store v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk/x/circuit v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk/x/evidence v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk/x/feegrant v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk/x/nft v0.0.0-20250620195423-aec0a7b83e26
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20250620195423-aec0a7b83e26
 )
 
 replace (
