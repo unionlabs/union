@@ -27,7 +27,7 @@ pub struct ChainIdInner<'a> {
 
 impl<'a> fmt::Display for ChainIdInner<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.canonical)
+        write!(f, "{} ({})", self.canonical, self.db)
     }
 }
 
