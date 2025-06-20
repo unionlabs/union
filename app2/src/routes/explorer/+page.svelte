@@ -83,7 +83,7 @@ onMount(() => {
   <!-- Statistics Cards -->
   <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
     {#if Option.isSome(statistics.data)}
-      {#each statistics.data.value as stat}
+      {#each statistics.data.value.toReversed() as stat}
         <StatisticComponent statistic={stat} />
       {/each}
     {:else if Option.isSome(statistics.error)}
@@ -99,63 +99,66 @@ onMount(() => {
     {/if}
   </div>
 
-  <!-- Daily Transfers Chart -->
-  <Card
-    class="h-80 relative"
-    divided
-  >
-    <div class="p-4 gap-4 absolute top-0 left-0 border-b-0 w-full z-10">
-      <div class="flex justify-between items-center">
-        {#if displayTransferDay !== undefined}
-          <div>
-            <Label>Transfers</Label>
-            <div class="text-2xl font-bold mt-1">{displayTransferDay.count.toLocaleString()}</div>
-            {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent
-                  class="text-zinc-500"
-                  value={hoveredDay.value.day_date}
-                  showTime={false}
-                /></Label>{/if}
-          </div>
-        {/if}
+  <!-- Daily Charts - Side by side on wide screens -->
+  <div class="grid grid-cols-1 2xl:grid-cols-2 gap-6">
+    <!-- Daily Transfers Chart -->
+    <Card
+      class="h-80 relative"
+      divided
+    >
+      <div class="p-4 gap-4 absolute top-0 left-0 border-b-0 w-full z-10">
+        <div class="flex justify-between items-center">
+          {#if displayTransferDay !== undefined}
+            <div>
+              <Label>Transfers</Label>
+              <div class="text-2xl font-bold mt-1">{displayTransferDay.count.toLocaleString()}</div>
+              {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent
+                    class="text-zinc-500"
+                    value={hoveredDay.value.day_date}
+                    showTime={false}
+                  /></Label>{/if}
+            </div>
+          {/if}
+        </div>
       </div>
-    </div>
 
-    <BarChart
-      data={dailyTransfers.data}
-      error={dailyTransfers.error}
-      onHoverChange={(day) => hoveredDay = day}
-      hoveredDate={hoveredDay}
-    />
-  </Card>
+      <BarChart
+        data={dailyTransfers.data}
+        error={dailyTransfers.error}
+        onHoverChange={(day) => hoveredDay = day}
+        hoveredDate={hoveredDay}
+      />
+    </Card>
 
-  <!-- Daily Packets Chart -->
-  <Card
-    class="h-80 relative"
-    divided
-  >
-    <div class="p-4 gap-4 absolute top-0 left-0 border-b-0 w-full z-10">
-      <div class="flex justify-between items-center">
-        {#if displayPacketDay !== undefined}
-          <div>
-            <Label>Packets</Label>
-            <div class="text-2xl font-bold mt-1">{displayPacketDay.count.toLocaleString()}</div>
-            {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent
-                  class="text-zinc-500"
-                  value={hoveredDay.value.day_date}
-                  showTime={false}
-                /></Label>{/if}
-          </div>
-        {/if}
+    <!-- Daily Packets Chart -->
+    <Card
+      class="h-80 relative"
+      divided
+    >
+      <div class="p-4 gap-4 absolute top-0 left-0 border-b-0 w-full z-10">
+        <div class="flex justify-between items-center">
+          {#if displayPacketDay !== undefined}
+            <div>
+              <Label>Packets</Label>
+              <div class="text-2xl font-bold mt-1">{displayPacketDay.count.toLocaleString()}</div>
+              {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent
+                    class="text-zinc-500"
+                    value={hoveredDay.value.day_date}
+                    showTime={false}
+                  /></Label>{/if}
+            </div>
+          {/if}
+        </div>
       </div>
-    </div>
 
-    <BarChart
-      data={dailyPackets.data}
-      error={dailyPackets.error}
-      onHoverChange={(day) => hoveredDay = day}
-      hoveredDate={hoveredDay}
-    />
-  </Card>
+      <BarChart
+        data={dailyPackets.data}
+        error={dailyPackets.error}
+        onHoverChange={(day) => hoveredDay = day}
+        hoveredDate={hoveredDay}
+      />
+    </Card>
+  </div>
 
   <Card divided>
     <A
