@@ -58,31 +58,30 @@ impl fmt::Display for BlockUpdate {
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_consumer(&self) -> Result<(), IndexerError> {
-        if let Some(nats) = &self.nats {
-            info!("connection: {nats}");
-
-            let consumer = nats.create_consumer(&self.universal_chain_id).await?;
-
-            debug!("consumer: {consumer:?}");
-            loop {
-                match self.run_consumer_loop(&consumer).await {
-                    Ok(_) => {
-                        debug!("run again");
-                    }
-                    Err(error) => {
-                        warn!(
-                            "error in consumer loop: {error} => try again later (sleep {}ms)",
-                            self.consumer_config.retry_error_sleep.as_millis()
-                        );
-                        sleep(self.consumer_config.retry_error_sleep).await;
-                    }
-                }
-            }
-        } else {
+        let Some(nats) = &self.nats else {
             info!("no nats configuration => no need to create consumer");
+            return Ok(());
         };
 
-        Ok(())
+        info!("connection: {nats}");
+
+        let consumer = nats.create_consumer(&self.universal_chain_id).await?;
+
+        debug!("consumer: {consumer:?}");
+        loop {
+            match self.run_consumer_loop(&consumer).await {
+                Ok(_) => {
+                    debug!("run again");
+                }
+                Err(error) => {
+                    warn!(
+                        "error in consumer loop: {error} => try again later (sleep {}ms)",
+                        self.consumer_config.retry_error_sleep.as_millis()
+                    );
+                    sleep(self.consumer_config.retry_error_sleep).await;
+                }
+            }
+        }
     }
 
     async fn run_consumer_loop(&self, consumer: &Consumer<Config>) -> Result<(), IndexerError> {
