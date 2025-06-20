@@ -8,8 +8,12 @@ use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::{debug, info};
 
-use crate::indexer::api::{
-    BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError,
+use crate::indexer::{
+    api::{
+        BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient,
+        IndexerError,
+    },
+    event::BlockEvents,
 };
 
 #[derive(Clone)]
@@ -57,7 +61,10 @@ impl BlockHandle for DummyBlock {
         )))
     }
 
-    async fn insert(&self, _tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    async fn insert(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         let content = match self.content.clone() {
             Some(content) => content,
             None => {
@@ -76,10 +83,13 @@ impl BlockHandle for DummyBlock {
 
         // sleep(Duration::from_millis(50)).await;
 
-        Ok(())
+        Ok(Some(BlockEvents::new(vec![])))
     }
 
-    async fn update(&self, _tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    async fn update(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         info!(
             "chain: {} - update: {} - {}",
             self.dummy_client.internal_chain_id,
@@ -95,7 +105,7 @@ impl BlockHandle for DummyBlock {
 
         // sleep(Duration::from_millis(50)).await;
 
-        Ok(())
+        Ok(Some(BlockEvents::new(vec![])))
     }
 }
 

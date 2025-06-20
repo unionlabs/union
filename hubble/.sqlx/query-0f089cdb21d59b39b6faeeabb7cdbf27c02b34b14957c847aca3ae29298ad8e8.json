@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE hubble.block_update\n            SET message_sequence = $3\n              , delete = $4\n              , message_hash = $5\n              , nats_stream_sequence = $6\n              , nats_consumer_sequence = $7\n        WHERE universal_chain_id = $1 \n          AND height = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8",
+        "Bool",
+        "Bytea",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0f089cdb21d59b39b6faeeabb7cdbf27c02b34b14957c847aca3ae29298ad8e8"
+}

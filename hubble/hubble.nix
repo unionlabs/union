@@ -65,14 +65,50 @@
           type = types.path;
           default = "";
         };
+        nats-url-file = mkOption {
+          description = lib.mdDoc ''
+            Path to a file containing the nats connect string (e.g. nats://localhost).
+          '';
+          example = "/run/keys/nats.url";
+          type = types.nullOr types.path;
+          default = null;
+        };
+        nats-username-file = mkOption {
+          description = lib.mdDoc ''
+            Path to a file containing the nats username.
+          '';
+          example = "/run/keys/nats.username";
+          type = types.nullOr types.path;
+          default = null;
+        };
+        nats-password-file = mkOption {
+          description = lib.mdDoc ''
+            Path to a file containing the nats password.
+          '';
+          example = "/run/keys/nats.password";
+          type = types.nullOr types.path;
+          default = null;
+        };
+        nats-consumer = mkOption {
+          description = lib.mdDoc ''
+            Name of the nats consumer that reads message.
+          '';
+          example = "hubble-magenta";
+          type = types.nullOr types.str;
+          default = null;
+        };
         indexers = mkOption {
           type = types.listOf (
             types.submodule {
               options.indexer_id = mkOption {
-                type = types.nullOr types.str;
+                type = types.str;
                 description = "Id of the indexer which is used by the internal administration of Hubble. Should never change.";
                 example = "amazing-testnet";
-                default = null;
+              };
+              options.universal_chain_id = mkOption {
+                type = types.str;
+                description = "Universal chain id of the chain that is indexed.";
+                example = "union-testnet-10.union";
               };
               options.rpc_urls = mkOption {
                 type = types.nullOr (types.listOf types.str);
@@ -195,10 +231,20 @@
                   filterNullValues = lib.attrsets.filterAttrsRecursive (_n: v: v != null);
                   indexersWithoutNulls = map filterNullValues cfg.indexers;
                   indexersJson = builtins.toJSON indexersWithoutNulls;
+                  natsUrlArg = if cfg.nats-url-file != null then "--nats-url @${cfg.nats-url-file}" else "";
+                  natsUsernameArg =
+                    if cfg.nats-username-file != null then "--nats-username @${cfg.nats-username-file}" else "";
+                  natsPasswordArg =
+                    if cfg.nats-password-file != null then "--nats-password @${cfg.nats-password-file}" else "";
+                  natsConsumerArg = if cfg.nats-consumer != null then "--nats-consumer ${cfg.nats-consumer}" else "";
                 in
                 ''
                   ${pkgs.lib.getExe cfg.package}  \
                     --database-url "$(head -n 1 ${cfg.api-key-file})" \
+                    ${natsUrlArg} \
+                    ${natsUsernameArg} \
+                    ${natsPasswordArg} \
+                    ${natsConsumerArg} \
                     --log-format ${cfg.log-format} \
                     --metrics-addr ${cfg.metrics-addr} \
                     --indexers '${indexersJson}'

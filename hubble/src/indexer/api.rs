@@ -1,5 +1,13 @@
-use std::{fmt::Display, ops::Range};
+use std::{fmt::Display, num::ParseIntError, ops::Range};
 
+use async_nats::jetstream::{
+    consumer::{
+        pull::{BatchErrorKind, MessagesErrorKind},
+        StreamErrorKind,
+    },
+    context::PublishErrorKind,
+    stream::ConsumerErrorKind,
+};
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
@@ -7,6 +15,8 @@ use sqlx::Postgres;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::error;
+
+use crate::indexer::event::BlockEvents;
 
 #[derive(Debug, thiserror::Error)]
 pub enum IndexerError {
@@ -30,6 +40,44 @@ pub enum IndexerError {
     ProviderError(Report),
     #[error("internal error: {0}")]
     InternalError(Report),
+    #[error("nats publish error: {0}")]
+    NatsPublishError(#[from] async_nats::error::Error<PublishErrorKind>),
+    #[error("nats consumer error: {0}")]
+    NatsConsumerError(#[from] async_nats::error::Error<ConsumerErrorKind>),
+    #[error("nats fetch error: {0}")]
+    NatsFetchError(#[from] async_nats::error::Error<BatchErrorKind>),
+    #[error("nats messages error: {0}")]
+    NatsMessagesError(#[from] async_nats::error::Error<StreamErrorKind>),
+    #[error("nats pull error: {0}")]
+    NatsPullError(#[from] async_nats::error::Error<MessagesErrorKind>),
+    #[error("nats next error: {0}")]
+    NatsNextError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error("nats ack error: {0}")]
+    NatsAckError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error("nats nack error: {0}")]
+    NatsNackError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error("nats meta error: {0}")]
+    NatsMetaError(Box<dyn std::error::Error + Send + Sync + 'static>),
+    #[error("formatting json error: {0}")]
+    FormattingJsonError(#[from] serde_json::Error),
+    #[error("error decoding data: {0}")]
+    NatsDecodeError(#[from] lz4_flex::block::DecompressError),
+    #[error("unsupported encoding: {0}")]
+    NatsUnsupportedEncoding(String),
+    #[error("missing message sequence in stream sequence: {0}, consumer_sequence sequence: {1}")]
+    NatsMissingMessageHeaders(u64, u64),
+    #[error("missing headers: in stream sequence: {0}, consumer_sequence sequence: {1}")]
+    NatsMissingMessageSequence(u64, u64),
+    #[error("unsupported message sequence:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
+    NatsUnparsableMessageSequence(String, u64, u64, ParseIntError),
+    #[error("missing message hash: in stream sequence: {0}, consumer_sequence sequence: {1}")]
+    NatsMissingMessageHash(u64, u64),
+    #[error("unsupported message hash:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
+    NatsUnparsableMessageHash(String, u64, u64, hex::FromHexError),
+    #[error(
+        "missing universal chain id: in stream sequence: {0}, consumer_sequence sequence: {1}"
+    )]
+    NatsMissingUniversalChainId(u64, u64),
 }
 
 impl From<Report> for IndexerError {
@@ -48,8 +96,9 @@ pub type IndexerId = String;
 pub type BlockHeight = u64;
 pub type BlockHash = String;
 pub type BlockTimestamp = OffsetDateTime;
+pub type UniversalChainId = String;
 
-#[derive(Clone, Debug, serde::Deserialize)]
+#[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct BlockRange {
     pub start_inclusive: BlockHeight,
     pub end_exclusive: BlockHeight,
@@ -179,6 +228,12 @@ pub trait BlockHandle: Send + Sync + Sized {
         range: BlockRange,
         mode: FetchMode,
     ) -> Result<impl Stream<Item = Result<Self, IndexerError>> + Send, IndexerError>;
-    async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError>;
-    async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError>;
+    async fn insert(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<BlockEvents>, IndexerError>;
+    async fn update(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<BlockEvents>, IndexerError>;
 }

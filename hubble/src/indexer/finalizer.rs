@@ -1,21 +1,21 @@
 use std::cmp::min;
 
 use color_eyre::eyre::Report;
+use sqlx::Postgres;
 use tokio::time::sleep;
 use tracing::{debug, info, info_span, trace, warn, Instrument};
 
-use super::{
-    api::{BlockRange, FetcherClient, IndexerError},
-    postgres::get_next_block_to_monitor,
-    Indexer,
-};
 use crate::indexer::{
-    api::{BlockHandle, BlockHeight, BlockSelection, FetchMode},
-    postgres::{
-        delete_block_status, get_block_range_to_finalize, get_block_status_hash,
-        update_block_status,
+    api::{
+        BlockHandle, BlockHeight, BlockRange, BlockReference, BlockSelection, FetchMode,
+        FetcherClient, IndexerError,
     },
-    HappyRangeFetcher,
+    event::{BlockEvents, MessageHash, Range},
+    postgres::block_status::{
+        delete_block_status, get_block_range_to_finalize, get_block_status_hash,
+        get_next_block_to_monitor, update_block_status,
+    },
+    HappyRangeFetcher, Indexer,
 };
 
 enum FinalizerLoopResult {
@@ -40,9 +40,9 @@ impl<T: FetcherClient> Indexer<T> {
                 Err(error) => {
                     warn!(
                         "error in finalizer loop: {error} => try again later (sleep {}s)",
-                        self.finalizer_config.retry_later_sleep.as_secs()
+                        self.finalizer_config.retry_error_sleep.as_secs()
                     );
-                    sleep(self.finalizer_config.retry_later_sleep).await;
+                    sleep(self.finalizer_config.retry_error_sleep).await;
                 }
             }
         }
@@ -192,28 +192,30 @@ impl<T: FetcherClient> Indexer<T> {
 
         let is_finalized = last_finalized_height >= reference.height;
 
-        if let Some(old_hash) = match is_finalized {
+        if let Some(current_block_status) = match is_finalized {
             true => delete_block_status(&mut tx, self.indexer_id.clone(), reference.height).await?,
             false => {
                 get_block_status_hash(&mut tx, self.indexer_id.clone(), reference.height).await?
             }
         } {
-            if is_finalized && self.finalizer_config.reload {
-                debug!("{}: finalized (reloading)", reference.height,);
-                block
-                    .update(&mut tx)
+            let old_block_hash = current_block_status.block_hash;
+            let new_message_hash = if is_finalized && self.finalizer_config.reload {
+                debug!("{}: finalized (reloading)", reference.height);
+                self.update_block(&mut tx, block, &current_block_status.message_hash)
                     .instrument(info_span!("reload"))
-                    .await?;
-            } else if old_hash != reference.hash {
+                    .await?
+            } else if old_block_hash != reference.hash {
                 debug!(
                     "{}: changed ({} > {} => updating)",
-                    reference.height, old_hash, reference.hash,
+                    reference.height, old_block_hash, reference.hash,
                 );
-                block
-                    .update(&mut tx)
+                self.update_block(&mut tx, block, &current_block_status.message_hash)
                     .instrument(info_span!("update"))
-                    .await?;
-            }
+                    .await?
+            } else {
+                // nothing changed: keep the same message hash
+                current_block_status.message_hash
+            };
 
             if !is_finalized {
                 debug!("{}: update status", reference);
@@ -223,6 +225,7 @@ impl<T: FetcherClient> Indexer<T> {
                     reference.height,
                     reference.hash.clone(),
                     reference.timestamp,
+                    new_message_hash,
                 )
                 .await?;
             }
@@ -238,6 +241,67 @@ impl<T: FetcherClient> Indexer<T> {
         debug!("{}: finalized", reference);
 
         Ok(())
+    }
+
+    async fn update_block(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        block: T::BlockHandle,
+        dedup_message_hash: &Option<MessageHash>,
+    ) -> Result<Option<MessageHash>, IndexerError> {
+        let events = block.update(tx).await?;
+
+        self.schedule_event_when_required(tx, &block.reference(), dedup_message_hash, events)
+            .await
+    }
+
+    async fn schedule_event_when_required(
+        &self,
+        tx: &mut sqlx::Transaction<'_, Postgres>,
+        reference: &BlockReference,
+        dedup_message_hash: &Option<MessageHash>,
+        events: Option<BlockEvents>,
+    ) -> Result<Option<MessageHash>, IndexerError> {
+        debug!(
+            "schedule_event_when_required: {reference}, {}, has_events: {}",
+            dedup_message_hash
+                .as_ref()
+                .map_or("-".to_string(), |h| h.to_string()),
+            events.is_some()
+        );
+
+        let range: Range = reference.into();
+
+        Ok(match (dedup_message_hash, events) {
+            (None, None) => {
+                // do nothing, never sent a message and there are no events
+                trace!("None, None => ignore");
+                None
+            }
+            (Some(dedup_message_hash), None) => {
+                // send empty block: we did send a message before, but now there are no events
+                // still deduplicating, because it could be the original hash could be of a
+                // 'no events' message
+                trace!("Some, None => send-dedup ({dedup_message_hash})");
+                Some(
+                    self.schedule_message_dedup(tx, range, None, dedup_message_hash)
+                        .await?,
+                )
+            }
+            (None, Some(events)) => {
+                // we never sent a event, but now we found events
+                trace!("None, Some => send");
+                Some(self.schedule_message(tx, range, Some(events)).await?)
+            }
+            (Some(dedup_message_hash), Some(events)) => {
+                // we did send an event before, only send an event if the contents changed
+                trace!("Some, Some => send-debup ({dedup_message_hash})");
+                Some(
+                    self.schedule_message_dedup(tx, range, Some(events), dedup_message_hash)
+                        .await?,
+                )
+            }
+        })
     }
 
     async fn block_range_to_finalize(&self) -> Result<Option<BlockRange>, Report> {

@@ -1,11 +1,15 @@
 pub mod api;
 // pub mod aptos;
+mod consumer;
 pub mod dummy;
 pub mod ethereum;
+pub mod event;
 mod fetcher;
 mod finalizer;
 mod fixer;
+pub mod nats;
 mod postgres;
+mod publisher;
 pub mod tendermint;
 
 use std::{future::Future, time::Duration};
@@ -19,6 +23,8 @@ use serde::{Deserialize, Deserializer};
 use tokio::{task::JoinSet, time::sleep};
 use tracing::{error, info, info_span, Instrument};
 
+use crate::indexer::{api::UniversalChainId, nats::NatsConnection};
+
 enum EndOfRunResult {
     Exit,
     Restart,
@@ -27,11 +33,115 @@ enum EndOfRunResult {
 #[derive(Clone)]
 pub struct Indexer<T: FetcherClient> {
     pub pg_pool: sqlx::PgPool,
+    pub nats: Option<NatsConnection>,
     pub indexer_id: IndexerId,
+    pub universal_chain_id: UniversalChainId,
     pub start_height: BlockHeight,
     pub chunk_size: usize,
     pub finalizer_config: FinalizerConfig,
+    pub fixer_config: FixerConfig,
+    pub publisher_config: PublisherConfig,
+    pub consumer_config: ConsumerConfig,
     pub context: T::Context,
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct PublisherConfig {
+    // sleep time (in milliseconds) when there is nothing to publish.
+    // default: 100 millis
+    #[serde(
+        rename = "retry_later_sleep_millis",
+        default = "PublisherConfig::default_retry_later_sleep",
+        deserialize_with = "PublisherConfig::deserialize_millis"
+    )]
+    pub retry_later_sleep: Duration,
+    // sleep time (in milliseconds) when there is error publishing.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_error_sleep_millis",
+        default = "PublisherConfig::default_retry_error_sleep",
+        deserialize_with = "PublisherConfig::deserialize_millis"
+    )]
+    pub retry_error_sleep: Duration,
+    // number of messages read from the database that are pushed in one database transaction.
+    // default: 1
+    #[serde(default = "PublisherConfig::default_batch_size")]
+    pub batch_size: usize,
+}
+
+impl PublisherConfig {
+    pub fn default_retry_later_sleep() -> Duration {
+        Duration::from_millis(100)
+    }
+
+    pub fn default_retry_error_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_batch_size() -> usize {
+        1
+    }
+
+    fn deserialize_millis<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let millis = u64::deserialize(deserializer)?;
+        Ok(Duration::from_millis(millis))
+    }
+}
+
+impl Default for PublisherConfig {
+    fn default() -> Self {
+        PublisherConfig {
+            retry_later_sleep: PublisherConfig::default_retry_later_sleep(),
+            retry_error_sleep: PublisherConfig::default_retry_error_sleep(),
+            batch_size: PublisherConfig::default_batch_size(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct ConsumerConfig {
+    // sleep time (in milliseconds) when there is error publishing.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_error_sleep_millis",
+        default = "ConsumerConfig::default_retry_error_sleep",
+        deserialize_with = "ConsumerConfig::deserialize_millis"
+    )]
+    pub retry_error_sleep: Duration,
+    // number of messages read from the database that are pushed in one database transaction.
+    // default: 1
+    #[serde(default = "ConsumerConfig::default_batch_size")]
+    pub batch_size: usize,
+}
+
+impl ConsumerConfig {
+    pub fn default_retry_error_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_batch_size() -> usize {
+        1
+    }
+
+    fn deserialize_millis<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let millis = u64::deserialize(deserializer)?;
+        Ok(Duration::from_millis(millis))
+    }
+}
+
+impl Default for ConsumerConfig {
+    fn default() -> Self {
+        ConsumerConfig {
+            retry_error_sleep: ConsumerConfig::default_retry_error_sleep(),
+            batch_size: ConsumerConfig::default_batch_size(),
+        }
+    }
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -62,6 +172,14 @@ pub struct FinalizerConfig {
         deserialize_with = "FinalizerConfig::deserialize_seconds"
     )]
     pub retry_later_sleep: Duration,
+    // sleep time (in seconds) when there is an error.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_error_sleep_seconds",
+        default = "FinalizerConfig::default_retry_error_sleep",
+        deserialize_with = "FinalizerConfig::deserialize_seconds"
+    )]
+    pub retry_error_sleep: Duration,
 }
 
 impl FinalizerConfig {
@@ -78,6 +196,10 @@ impl FinalizerConfig {
     }
 
     pub fn default_retry_later_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_retry_error_sleep() -> Duration {
         Duration::from_secs(5)
     }
 
@@ -98,6 +220,69 @@ impl Default for FinalizerConfig {
             min_duration_between_monitor_checks:
                 FinalizerConfig::default_min_duration_between_monitor_checks(),
             retry_later_sleep: FinalizerConfig::default_retry_later_sleep(),
+            retry_error_sleep: FinalizerConfig::default_retry_error_sleep(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct FixerConfig {
+    // sleep time (in seconds) when there is nothing to fix.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_later_sleep_seconds",
+        default = "FixerConfig::default_retry_later_sleep",
+        deserialize_with = "FixerConfig::deserialize_seconds"
+    )]
+    pub retry_later_sleep: Duration,
+
+    // sleep time (in seconds) when there is an error.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_error_sleep_seconds",
+        default = "FixerConfig::default_retry_error_sleep",
+        deserialize_with = "FixerConfig::deserialize_seconds"
+    )]
+    pub retry_error_sleep: Duration,
+
+    // maximum number of blocks to send in one message. An empty block is sent if no
+    // events are found after this amount of blocks.
+    // default: 1000
+    #[serde(
+        rename = "max_blocks_in_message",
+        default = "FixerConfig::default_max_blocks_in_message"
+    )]
+    pub max_blocks_in_message: u64,
+}
+
+impl FixerConfig {
+    pub fn default_retry_later_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_retry_error_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_max_blocks_in_message() -> u64 {
+        1000
+    }
+
+    fn deserialize_seconds<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let seconds = u64::deserialize(deserializer)?;
+        Ok(Duration::from_secs(seconds))
+    }
+}
+
+impl Default for FixerConfig {
+    fn default() -> Self {
+        FixerConfig {
+            retry_later_sleep: FixerConfig::default_retry_later_sleep(),
+            retry_error_sleep: FixerConfig::default_retry_error_sleep(),
+            max_blocks_in_message: FixerConfig::default_max_blocks_in_message(),
         }
     }
 }
@@ -106,20 +291,31 @@ impl<T> Indexer<T>
 where
     T: FetcherClient,
 {
+    #[allow(clippy::too_many_arguments)]
     pub fn new(
         pg_pool: sqlx::PgPool,
+        nats: Option<NatsConnection>,
         indexer_id: IndexerId,
+        universal_chain_id: UniversalChainId,
         start_height: BlockHeight,
         chunk_size: usize,
         finalizer_config: FinalizerConfig,
+        fixer_config: FixerConfig,
+        publisher_config: PublisherConfig,
+        consumer_config: ConsumerConfig,
         context: T::Context,
     ) -> Self {
         Indexer {
             pg_pool,
+            nats,
             indexer_id,
+            universal_chain_id,
             start_height,
             chunk_size,
             finalizer_config,
+            fixer_config,
+            publisher_config,
+            consumer_config,
             context,
         }
     }
@@ -153,6 +349,18 @@ where
                     join_set.spawn(
                         async move { self_clone.run_fixer(fetcher_client_clone).await }
                             .instrument(info_span!("fixer")),
+                    );
+
+                    let self_clone = self.clone();
+                    join_set.spawn(
+                        async move { self_clone.run_publisher().await }
+                            .instrument(info_span!("publisher")),
+                    );
+
+                    let self_clone = self.clone();
+                    join_set.spawn(
+                        async move { self_clone.run_consumer().await }
+                            .instrument(info_span!("consumer")),
                     );
 
                     if let EndOfRunResult::Exit = self

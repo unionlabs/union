@@ -1,19 +1,33 @@
-use std::{net::SocketAddr, str::FromStr};
+use std::{fs, net::SocketAddr, path::Path, str::FromStr};
 
-use clap::Parser;
+use clap::{builder::ValueParser, ArgGroup, Parser};
 use tracing::{info_span, Instrument};
-use url::Url;
 
-use crate::{indexer, logging::LogFormat};
+use crate::{
+    indexer::{self, nats::NatsConnection},
+    logging::LogFormat,
+};
+
+fn parse_string_or_file_source(input: &str) -> Result<String, String> {
+    if let Some(stripped) = input.strip_prefix('@') {
+        let path = Path::new(stripped);
+        fs::read_to_string(path)
+            .map(|s| s.trim().to_string())
+            .map_err(|e| format!("Failed to read {}: {}", stripped, e))
+    } else {
+        Ok(input.to_string())
+    }
+}
 
 /// Hubble is state machine observer.
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
+#[command(group(
+    ArgGroup::new("nats")
+        .required(false)
+        .requires_all(["nats-consumer", "nats-url", "nats-username", "nats-password"])
+))]
 pub struct Args {
-    /// The url to the hasura graphql endpoint.
-    #[arg(short, long, env = "HUBBLE_HASURA_URL")]
-    pub url: Option<Url>,
-
     /// The database url used to connect with timescaledb.
     #[arg(
         group = "datastore",
@@ -23,6 +37,9 @@ pub struct Args {
         env = "HUBBLE_DATABASE_URL"
     )]
     pub database_url: Option<String>,
+
+    #[command(flatten)]
+    pub nats: Option<Nats>,
 
     /// Indexer configurations to start.
     #[arg(short, long, env = "HUBBLE_INDEXERS")]
@@ -41,6 +58,40 @@ pub struct Args {
         default_value = "json"
     )]
     pub log_format: LogFormat,
+}
+
+#[derive(Parser, Debug)]
+pub struct Nats {
+    /// Nats server URL (without credentials)
+    #[arg(id = "nats-consumer", long = "nats-consumer", required = false)]
+    pub consumer: String,
+
+    /// Nats server URL (without credentials)
+    #[arg(
+        id = "nats-url", 
+        long = "nats-url", 
+        value_parser = ValueParser::new(parse_string_or_file_source),
+        required = false,
+    )]
+    pub url: String,
+
+    /// Nats username
+    #[arg(
+        id = "nats-username",
+        long = "nats-username",
+        value_parser = ValueParser::new(parse_string_or_file_source),
+        required = false,
+    )]
+    pub username: String,
+
+    /// Nats password
+    #[arg(
+        id = "nats-password",
+        long = "nats-password",
+        value_parser = ValueParser::new(parse_string_or_file_source),
+        required = false,
+    )]
+    pub password: String,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -66,8 +117,6 @@ pub enum IndexerConfig {
     Ethereum(indexer::ethereum::config::Config),
     #[serde(rename = "tendermint")]
     Tendermint(indexer::tendermint::config::Config),
-    // #[serde(rename = "aptos")]
-    // Aptos(indexer::aptos::config::Config),
 }
 
 impl IndexerConfig {
@@ -76,13 +125,16 @@ impl IndexerConfig {
             Self::Dummy(cfg) => &cfg.indexer_id,
             Self::Ethereum(cfg) => &cfg.indexer_id,
             Self::Tendermint(cfg) => &cfg.indexer_id,
-            // Self::Aptos(cfg) => &cfg.indexer_id,
         }
     }
 }
 
 impl IndexerConfig {
-    pub async fn index(self, db: sqlx::PgPool) -> Result<(), color_eyre::eyre::Report> {
+    pub async fn index(
+        self,
+        db: sqlx::PgPool,
+        nats: Option<NatsConnection>,
+    ) -> Result<(), color_eyre::eyre::Report> {
         let label = self.label();
 
         let initializer_span = info_span!("initializer", label);
@@ -90,7 +142,7 @@ impl IndexerConfig {
 
         match self {
             Self::Dummy(cfg) => {
-                cfg.build(db)
+                cfg.build(db, nats)
                     .instrument(initializer_span)
                     .await?
                     .index()
@@ -98,7 +150,7 @@ impl IndexerConfig {
                     .await
             }
             Self::Ethereum(cfg) => {
-                cfg.build(db)
+                cfg.build(db, nats)
                     .instrument(initializer_span)
                     .await?
                     .index()
@@ -106,20 +158,13 @@ impl IndexerConfig {
                     .await
             }
             Self::Tendermint(cfg) => {
-                cfg.build(db)
+                cfg.build(db, nats)
                     .instrument(initializer_span)
                     .await?
                     .index()
                     .instrument(indexer_span)
                     .await
-            } // Self::Aptos(cfg) => {
-              //     cfg.build(db)
-              //         .instrument(initializer_span)
-              //         .await?
-              //         .index()
-              //         .instrument(indexer_span)
-              //         .await
-              // }
+            }
         }
     }
 }

@@ -11,12 +11,11 @@ use crate::{
     indexer::{
         api::{BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, IndexerError},
         ethereum::{
-            fetcher_client::EthFetcherClient,
-            postgres::{delete_eth_log, insert_batch_logs},
-            provider::RpcProviderId,
+            fetcher_client::EthFetcherClient, postgres::insert_batch_logs, provider::RpcProviderId,
         },
+        event::BlockEvents,
     },
-    postgres::{ChainId, InsertMode},
+    postgres::ChainId,
 };
 
 #[derive(Clone)]
@@ -97,13 +96,16 @@ impl BlockHandle for EthBlockHandle {
         ))
     }
 
-    async fn insert(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    async fn insert(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         let reference = self.reference();
         debug!("{}: inserting", reference);
 
         let block_to_insert = self.get_block_insert().await?;
 
-        match block_to_insert {
+        let events = match block_to_insert {
             Some(block_to_insert) => {
                 debug!(
                     "{}: block with transactions ({}) => insert",
@@ -111,37 +113,41 @@ impl BlockHandle for EthBlockHandle {
                     block_to_insert.transactions.len()
                 );
 
-                insert_batch_logs(tx, vec![block_to_insert.into()], InsertMode::Insert).await?;
+                insert_batch_logs(vec![block_to_insert.into()]).await?
             }
             None => {
                 debug!("{}: block without transactions => ignore", reference);
+
+                vec![]
             }
-        }
+        };
 
         debug!("{}: done", reference);
 
-        Ok(())
+        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
     }
 
-    async fn update(&self, tx: &mut sqlx::Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    async fn update(
+        &self,
+        _tx: &mut sqlx::Transaction<'_, Postgres>,
+    ) -> Result<Option<BlockEvents>, IndexerError> {
         let reference = self.reference();
         debug!("{}: updating", reference);
 
         let block_to_insert = self.get_block_insert().await?;
 
-        if let Some(block_to_insert) = block_to_insert {
+        let events = if let Some(block_to_insert) = block_to_insert {
             debug!(
                 "{}: block with transactions ({}) => upsert",
                 reference,
                 block_to_insert.transactions.len()
             );
-            insert_batch_logs(tx, vec![block_to_insert.into()], InsertMode::Upsert).await?;
+            insert_batch_logs(vec![block_to_insert.into()]).await?
         } else {
             debug!("{}: block without transactions => delete", reference);
-            delete_eth_log(tx, self.eth_client.chain_id.db, reference.height).await?;
-        }
+            vec![]
+        };
 
-        debug!("{}: done", reference);
-        Ok(())
+        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
     }
 }

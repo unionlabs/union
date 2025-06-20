@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO hubble.block_status (indexer_id, height, hash, timestamp, message_hash)\n        VALUES ($1, $2, $3, $4, $5)\n        ON CONFLICT (indexer_id, height) DO \n        UPDATE SET\n            hash = excluded.hash,\n            timestamp = excluded.timestamp,\n            message_hash = \n                CASE\n                    WHEN block_status.message_hash IS NOT NULL AND excluded.message_hash IS NULL THEN block_status.message_hash\n                    ELSE excluded.message_hash\n                END\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Text",
+        "Timestamptz",
+        "Bytea"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "64152be9d2b490dd61fc4e1147df589063e9c7a7c3d1bb5eb1c627374f5ce84b"
+}

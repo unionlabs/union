@@ -9,6 +9,7 @@ use crate::github_client::GitCommitHash;
 static CLIENT: LazyLock<Client> = LazyLock::new(|| {
     Client::builder()
         .user_agent("reqwest")
+        .https_only(true)
         .build()
         .expect("client can be built")
 });

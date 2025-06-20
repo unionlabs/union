@@ -20,9 +20,11 @@ path = "src/main.rs"
 [dependencies]
 # aptos-rest-client  = { workspace = true }
 alloy              = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest"] }
+async-nats         = { version = "0.41.0" }
 axum               = { workspace = true, features = ["macros", "tokio"] }
 backon             = "0.4.4"
 base64             = { workspace = true }
+bytes              = { version = "1.10.1" }
 clap               = { workspace = true, features = ["derive", "env", "error-context"] }
 color-eyre         = { workspace = true, features = ["default"] }
 cometbft-rpc       = { workspace = true }
@@ -32,11 +34,13 @@ hex                = { workspace = true }
 itertools          = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lazy_static        = { workspace = true }
+lz4_flex           = "0.11.3"
 prometheus         = { version = "0.13.4", features = ["process"] }
-reqwest            = { workspace = true, features = ["json", "blocking"] }
+reqwest            = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }
+sha2               = { workspace = true }
 sqlx               = { workspace = true, features = ["postgres", "runtime-tokio", "tls-rustls", "time", "macros", "json", "bigdecimal"] }
 tempfile           = "3.20.0"
 thiserror          = { workspace = true }

@@ -20,9 +20,12 @@ mod metrics;
 mod postgres;
 mod race_client;
 mod token_fetcher;
+mod utils;
 
 #[cfg(not(target_env = "msvc"))]
 use tikv_jemallocator::Jemalloc;
+
+use crate::indexer::nats::NatsConnection;
 
 #[cfg(not(target_env = "msvc"))]
 #[global_allocator]
@@ -35,14 +38,25 @@ async fn main() -> color_eyre::eyre::Result<()> {
     crate::logging::init(args.log_format);
     metrics::register_custom_metrics();
 
+    info!("connecting to database");
     let db = PgPoolOptions::new()
         .max_connections(40)
         .connect(&args.database_url.unwrap())
         .await?;
 
+    info!("connecting to nats");
+    let nats = match args.nats {
+        Some(nats) => Some(
+            NatsConnection::create(&nats.url, &nats.username, &nats.password, &nats.consumer)
+                .await?,
+        ),
+        None => None,
+    };
+
     let mut set = JoinSet::new();
 
     if let Some(addr) = args.metrics_addr {
+        info!("enabling metrics");
         set.spawn(async move {
             let app = Router::new()
                 .route("/metrics", get(metrics::handler))
@@ -55,11 +69,12 @@ async fn main() -> color_eyre::eyre::Result<()> {
     }
     args.indexers.clone().into_iter().for_each(|indexer| {
         let db: sqlx::Pool<sqlx::Postgres> = db.clone();
+        let nats = nats.clone();
         set.spawn(async move {
             info!("starting indexer {:?}", indexer);
             let label = indexer.label().to_owned();
             // indexer should never return with Ok, thus we log the error.
-            indexer.index(db).await.inspect_err(|err| {
+            indexer.index(db, nats).await.inspect_err(|err| {
                 warn!("indexer {label} exited with: {:?}", err);
             })
         });

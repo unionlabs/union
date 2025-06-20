@@ -1,0 +1,60 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT b.universal_chain_id,\n               b.height,\n               b.message_sequence,\n               b.delete,\n               b.message_hash,\n               b.nats_stream_sequence,\n               b.nats_consumer_sequence\n        FROM   hubble.block_update b\n        WHERE  b.universal_chain_id = $1\n        AND    b.height BETWEEN $2 AND $3\n        FOR UPDATE\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "universal_chain_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "message_sequence",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "delete",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "message_hash",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 5,
+        "name": "nats_stream_sequence",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 6,
+        "name": "nats_consumer_sequence",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "a8f1a8d234402b1a0405600d74ebc581a08a3e519f4be378ca1ff635a20b8db1"
+}
