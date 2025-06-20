@@ -27,11 +27,11 @@ const reversedDailyTransfers = $derived(Option.isSome(data) ? [...data.value].re
 
 // Track which bar should be highlighted based on the external hover
 const highlightedDate = $derived.by(() => {
-  if (!hoveredDate || !Option.isSome(hoveredDate)) {
-    return null
+  if (!hoveredDate || Option.isNone(hoveredDate)) {
+    return Option.none()
   }
   // Convert to string for comparison
-  return String(hoveredDate.value.day_date)
+  return Option.some(String(hoveredDate.value.day_date))
 })
 
 const maxCount = $derived(Option.isSome(data) ? Math.max(...data.value.map(d => d.count)) : 0)
@@ -76,7 +76,7 @@ const barHeights = $derived(
 
 {#if Option.isSome(data) && maxCount > 0}
   <!-- Chart container -->
-  <div class="h-full relative chart-container {className} {highlightedDate ? 'has-hover' : ''}">
+  <div class="h-full relative chart-container {className} {Option.isSome(highlightedDate) ? 'has-hover' : ''}">
     <!-- Grid lines -->
     <div class="absolute left-0 right-0 top-0 bottom-0 flex flex-col justify-between">
       {#each Array(5) as _, i}
@@ -90,7 +90,7 @@ const barHeights = $derived(
         {#each barHeights as day, i}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="flex pr-1 flex-col flex-1 group size-full justify-end hover:opacity-100 {highlightedDate && String(day.day_date) === highlightedDate ? 'is-hovered' : ''}"
+            class="flex pr-1 flex-col flex-1 group size-full justify-end hover:opacity-100 {Option.isSome(highlightedDate) && String(day.day_date) === highlightedDate.value ? 'is-hovered' : ''}"
             onmouseenter={() => {
               hoveredDay = Option.some(day)
               onHoverChange(Option.some(day))
