@@ -23,6 +23,7 @@ use crate::indexer::{
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub struct HubbleEvent {
+    /// Schema version. Consumers must reject messages with unsupported future versions.
     pub version: u8,
     pub universal_chain_id: UniversalChainId,
     pub range: Range,
