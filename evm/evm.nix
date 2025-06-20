@@ -359,6 +359,24 @@ _: {
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
         }
+        rec {
+          chain-id = "97";
+          ucs04-chain-id = "bsc.97";
+
+          name = "bsc-testnet";
+          rpc-url = "https://bsc-testnet.bnbchain.org";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0xae13d989dac2f0debff460ac112a837c89baa7cd";
+          rate-limit-enabled = "false";
+
+          native-token-name = "BNB";
+          native-token-symbol = "BNB";
+          native-token-decimals = 18;
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
         # {
         #   network = "0g-testnet";
         #   rpc-url = "https://evmrpc-testnet.0g.ai";
