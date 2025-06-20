@@ -8,7 +8,7 @@ use crate::{
     indexer::{
         api::{BlockHash, BlockHeight, IndexerError},
         ethereum::block_handle::{BlockInsert, TransactionInsert},
-        event::BlockEvent,
+        event::SupportedBlockEvent,
     },
     postgres::ChainId,
 };
@@ -44,10 +44,10 @@ impl From<BlockInsert> for PgLog {
 
 pub async fn insert_batch_logs(
     logs: impl IntoIterator<Item = PgLog>,
-) -> Result<Vec<BlockEvent>, IndexerError> {
+) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
     Ok(logs
         .into_iter()
-        .map(|l| BlockEvent::EthereumLog {
+        .map(|l| SupportedBlockEvent::EthereumLog {
             internal_chain_id: l.chain_id.db,
             block_hash: l.block_hash.clone(),
             data: serde_json::to_value(&l.data).expect("data should be json serializable"),

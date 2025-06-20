@@ -276,6 +276,7 @@ impl FetcherClient for EthFetcherClient {
             let mut tx = pg_pool.begin().await?;
 
             let chain_id = fetch_chain_id_tx(&mut tx, chain_id.to_string()).await?;
+            info!("fetched chain-id from database: {}", chain_id);
 
             tx.commit().await?;
 

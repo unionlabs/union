@@ -18,13 +18,11 @@ use super::{
 use crate::{
     indexer::{
         api::{BlockHeight, UniversalChainId},
-        event::{BlockEvent, HubbleEvent, MessageHash},
+        event::{HubbleEvent, MessageHash, SupportedBlockEvent},
         nats::MessageMeta,
         postgres::{
             block_update::{get_block_updates, insert_block_update, update_block_update},
-            event_data::{
-                delete_event_data_at_height, insert_event_data_with_events, max_event_height,
-            },
+            event_data::{delete_event_data_at_height, handle_block_events, max_event_height},
         },
     },
     postgres::{fetch_internal_chain_id_for_universal_chain_id, schedule_replication_reset},
@@ -286,9 +284,9 @@ async fn delete_block(
 
 async fn insert_block(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
-    block_events: &[&BlockEvent],
+    block_events: &[&SupportedBlockEvent],
 ) -> Result<bool, IndexerError> {
-    Ok(insert_event_data_with_events(tx, block_events).await?)
+    Ok(handle_block_events(tx, block_events).await?)
 }
 
 async fn schedule_replication_reset_for_action<'a>(
@@ -313,8 +311,16 @@ async fn schedule_replication_reset_for_action<'a>(
 // what should we do with a block at a specific height.
 enum Action<'a> {
     Delete(&'a MessageMeta, &'a BlockUpdate),
-    Update(&'a MessageMeta, &'a BlockUpdate, &'a Vec<&'a BlockEvent>), // events are guaranteed to belong to the same block height
-    Insert(&'a MessageMeta, BlockUpdate, &'a Vec<&'a BlockEvent>),
+    Update(
+        &'a MessageMeta,
+        &'a BlockUpdate,
+        &'a Vec<&'a SupportedBlockEvent>,
+    ), // events are guaranteed to belong to the same block height
+    Insert(
+        &'a MessageMeta,
+        BlockUpdate,
+        &'a Vec<&'a SupportedBlockEvent>,
+    ),
 }
 
 impl<'a> Action<'a> {
