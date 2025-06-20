@@ -13,9 +13,8 @@ import type { DailyTransfer } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { onMount } from "svelte"
 
-// State for tracking the currently hovered day
-let hoveredTransferDay = $state<Option.Option<DailyTransfer>>(Option.none())
-let hoveredPacketDay = $state<Option.Option<DailyTransfer>>(Option.none())
+// State for tracking the currently hovered day (shared between both charts)
+let hoveredDay = $state<Option.Option<DailyTransfer>>(Option.none())
 
 // Find the day with the highest count for transfers
 const highestTransferDay = $derived.by(() => {
@@ -43,23 +42,29 @@ const highestPacketDay = $derived.by(() => {
   )
 })
 
-// The count to display for transfers (either hovered day or highest day)
-const displayTransferDay = $derived(
-  Option.isSome(hoveredTransferDay)
-    ? hoveredTransferDay.value
-    : Option.isSome(highestTransferDay)
-    ? highestTransferDay.value
-    : undefined,
-)
+// Find the transfer data for the hovered day
+const displayTransferDay = $derived.by(() => {
+  if (Option.isSome(hoveredDay) && Option.isSome(dailyTransfers.data)) {
+    const hoveredDateString = String(hoveredDay.value.day_date)
+    const transfer = dailyTransfers.data.value.find(
+      t => String(t.day_date) === hoveredDateString
+    )
+    if (transfer) return transfer
+  }
+  return Option.isSome(highestTransferDay) ? highestTransferDay.value : undefined
+})
 
-// The count to display for packets (either hovered day or highest day)
-const displayPacketDay = $derived(
-  Option.isSome(hoveredPacketDay)
-    ? hoveredPacketDay.value
-    : Option.isSome(highestPacketDay)
-    ? highestPacketDay.value
-    : undefined,
-)
+// Find the packet data for the hovered day
+const displayPacketDay = $derived.by(() => {
+  if (Option.isSome(hoveredDay) && Option.isSome(dailyPackets.data)) {
+    const hoveredDateString = String(hoveredDay.value.day_date)
+    const packet = dailyPackets.data.value.find(
+      p => String(p.day_date) === hoveredDateString
+    )
+    if (packet) return packet
+  }
+  return Option.isSome(highestPacketDay) ? highestPacketDay.value : undefined
+})
 
 onMount(() => {
   statistics.runEffect(statisticsQuery)
@@ -105,9 +110,9 @@ onMount(() => {
           <div>
             <Label>Transfers</Label>
             <div class="text-2xl font-bold mt-1">{displayTransferDay.count.toLocaleString()}</div>
-            {#if Option.isSome(hoveredTransferDay)}<Label class="mt-1"><DateTimeComponent
+            {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent
                   class="text-zinc-500"
-                  value={hoveredTransferDay.value.day_date}
+                  value={hoveredDay.value.day_date}
                   showTime={false}
                 /></Label>{/if}
           </div>
@@ -118,7 +123,8 @@ onMount(() => {
     <BarChart
       data={dailyTransfers.data}
       error={dailyTransfers.error}
-      onHoverChange={(day) => hoveredTransferDay = day}
+      onHoverChange={(day) => hoveredDay = day}
+      hoveredDate={hoveredDay}
     />
   </Card>
 
@@ -133,9 +139,9 @@ onMount(() => {
           <div>
             <Label>Packets</Label>
             <div class="text-2xl font-bold mt-1">{displayPacketDay.count.toLocaleString()}</div>
-            {#if Option.isSome(hoveredPacketDay)}<Label class="mt-1"><DateTimeComponent
+            {#if Option.isSome(hoveredDay)}<Label class="mt-1"><DateTimeComponent
                   class="text-zinc-500"
-                  value={hoveredPacketDay.value.day_date}
+                  value={hoveredDay.value.day_date}
                   showTime={false}
                 /></Label>{/if}
           </div>
@@ -146,7 +152,8 @@ onMount(() => {
     <BarChart
       data={dailyPackets.data}
       error={dailyPackets.error}
-      onHoverChange={(day) => hoveredPacketDay = day}
+      onHoverChange={(day) => hoveredDay = day}
+      hoveredDate={hoveredDay}
     />
   </Card>
 
