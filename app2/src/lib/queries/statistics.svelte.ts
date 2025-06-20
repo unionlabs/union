@@ -1,7 +1,7 @@
 import { dailyPackets, dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
-import { Option, Schema } from "effect"
+import { Option, Schema, Struct } from "effect"
 import { graphql } from "gql.tada"
 
 export const statisticsQuery = createQueryGraphql({
@@ -28,7 +28,7 @@ export const dailyTransfersQuery = (limit = 60) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_stats_transfers_daily_count: DailyTransfers }),
     document: graphql(`
-      query TransfersPerDay($limit: Int!){
+      query TransfersPerDay($limit: Int!) @cached(ttl: 60) {
         v2_stats_transfers_daily_count(args: { p_days_back: $limit }) {
           count
           day_date
@@ -40,10 +40,7 @@ export const dailyTransfersQuery = (limit = 60) =>
     writeData: data => {
       // Only show testnet 10 transfers
       dailyTransfers.data = data.pipe(
-        Option.map(d => {
-          const modifiedData = [...d.v2_stats_transfers_daily_count]
-          return modifiedData
-        }),
+        Option.map(Struct.get("v2_stats_transfers_daily_count")),
       )
     },
     writeError: error => {
@@ -55,7 +52,7 @@ export const dailyPacketsQuery = (limit = 60) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_stats_packets_daily_count: DailyTransfers }),
     document: graphql(`
-      query PacketsPerDay($limit: Int!){
+      query PacketsPerDay($limit: Int!) @cached(ttl: 60) {
         v2_stats_packets_daily_count(args: { p_days_back: $limit }) {
           count
           day_date
@@ -66,10 +63,7 @@ export const dailyPacketsQuery = (limit = 60) =>
     refetchInterval: "60 seconds",
     writeData: data => {
       dailyPackets.data = data.pipe(
-        Option.map(d => {
-          const modifiedData = [...d.v2_stats_packets_daily_count]
-          return modifiedData
-        }),
+        Option.map(Struct.get("v2_stats_packets_daily_count")),
       )
     },
     writeError: error => {
