@@ -160,7 +160,7 @@ function createWagmiConfigInstance() {
           key: "unstable_connector-injected-corn",
           name: "unstable_connector-injected-corn",
         }),
-        http(bob.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
+        http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
       ]),
       [cornTestnet.id]: fallback([
         unstable_connector(injected, {
@@ -169,7 +169,7 @@ function createWagmiConfigInstance() {
           key: "unstable_connector-injected-corn-testnet",
           name: "unstable_connector-injected-corn-testnet",
         }),
-        http(bob.rpcUrls.default.http.at(0), {
+        http(cornTestnet.rpcUrls.default.http.at(0), {
           name: "default Corn Testnet RPC",
         }),
       ]),
