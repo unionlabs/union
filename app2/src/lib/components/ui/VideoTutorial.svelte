@@ -1,5 +1,6 @@
 <script lang="ts">
 import SharpPlayCircleIcon from "$lib/components/icons/SharpPlayCircleIcon.svelte"
+import { Data, Option } from "effect"
 
 interface Props {
   title: string
@@ -11,11 +12,19 @@ interface Props {
 
 let { title, videoUrl, description, thumbnailUrl, class: className = "" }: Props = $props()
 
-let isExpanded = $state(false)
-let isMinimized = $state(false)
+// Define proper state enum using Effect's Data module
+type ViewState = Data.TaggedEnum<{
+  Collapsed: {}
+  Expanded: {}
+  Minimized: {}
+}>
+
+const { Collapsed, Expanded, Minimized } = Data.taggedEnum<ViewState>()
+
+let viewState = $state<ViewState>(Collapsed())
 
 // Extract YouTube video ID from various YouTube URL formats
-function getYouTubeVideoId(url: string): string | null {
+function getYouTubeVideoId(url: string): Option.Option<string> {
   const patterns = [
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     /youtube\.com\/v\/([^&\n?#]+)/,
@@ -23,31 +32,42 @@ function getYouTubeVideoId(url: string): string | null {
   
   for (const pattern of patterns) {
     const match = url.match(pattern)
-    if (match) return match[1]
+    if (match) return Option.some(match[1])
   }
   
-  return null
+  return Option.none()
 }
 
 const videoId = $derived(getYouTubeVideoId(videoUrl))
-const embedUrl = $derived(videoId ? `https://www.youtube.com/embed/${videoId}` : videoUrl)
-const autoThumbnailUrl = $derived(videoId ? `https://img.youtube.com/vi/${videoId}/mqdefault.jpg` : undefined)
-const finalThumbnailUrl = $derived(thumbnailUrl || autoThumbnailUrl)
+const embedUrl = $derived(
+  Option.getOrElse(
+    Option.map(videoId, (id) => `https://www.youtube.com/embed/${id}`),
+    () => videoUrl
+  )
+)
+const autoThumbnailUrl = $derived(
+  Option.map(videoId, (id) => `https://img.youtube.com/vi/${id}/mqdefault.jpg`)
+)
+const finalThumbnailUrl = $derived(
+  Option.fromNullable(thumbnailUrl).pipe(
+    Option.orElse(() => autoThumbnailUrl)
+  )
+)
 
 function toggleExpanded() {
-  isExpanded = !isExpanded
+  viewState = viewState._tag === "Expanded" ? Collapsed() : Expanded()
 }
 
 function minimize() {
-  isMinimized = true
+  viewState = Minimized()
 }
 
 function restore() {
-  isMinimized = false
+  viewState = Collapsed()
 }
 </script>
 
-{#if isMinimized}
+{#if viewState._tag === "Minimized"}
   <!-- Minimized state - small button -->
   <button
     onclick={restore}
@@ -68,9 +88,9 @@ function restore() {
         <button
           onclick={toggleExpanded}
           class="rounded p-1 hover:bg-zinc-800 text-white text-sm w-6 h-6 flex items-center justify-center transition-colors"
-          title={isExpanded ? "Collapse" : "Expand"}
+          title={viewState._tag === "Expanded" ? "Collapse" : "Expand"}
         >
-          {isExpanded ? "−" : "+"}
+          {viewState._tag === "Expanded" ? "−" : "+"}
         </button>
         <button
           onclick={minimize}
@@ -82,7 +102,7 @@ function restore() {
       </div>
     </div>
 
-    {#if isExpanded}
+    {#if viewState._tag === "Expanded"}
       <!-- Expanded content -->
       <div class="p-3">
         <h4 class="text-sm font-medium mb-2 text-white">{title}</h4>
@@ -117,11 +137,12 @@ function restore() {
           onclick={toggleExpanded}
           class="relative w-full aspect-video bg-zinc-800 flex items-center justify-center hover:bg-zinc-700 transition-colors overflow-hidden group rounded-lg"
         >
-          {#if finalThumbnailUrl}
+          {#if Option.isSome(finalThumbnailUrl)}
             <img 
-              src={finalThumbnailUrl} 
+              src={finalThumbnailUrl.value} 
               alt={title}
               class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
+              loading="lazy"
             />
           {/if}
           <div class="relative bg-black bg-opacity-70 text-white px-3 py-2 text-xs font-medium backdrop-blur-sm border border-white/20 rounded">
