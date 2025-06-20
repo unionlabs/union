@@ -48,7 +48,7 @@ $effect(() => {
 
 <Sections>
   <Transfer mode="multisig" />
-  
+
   <!-- Video Tutorial Popup -->
   <VideoTutorial
     title="Multisig Transfer Tutorial"

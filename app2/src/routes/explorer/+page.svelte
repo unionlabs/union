@@ -7,7 +7,11 @@ import Card from "$lib/components/ui/Card.svelte"
 import DateTimeComponent from "$lib/components/ui/DateTimeComponent.svelte"
 import Label from "$lib/components/ui/Label.svelte"
 import Sections from "$lib/components/ui/Sections.svelte"
-import { dailyPacketsQuery, dailyTransfersQuery, statisticsQuery } from "$lib/queries/statistics.svelte"
+import {
+  dailyPacketsQuery,
+  dailyTransfersQuery,
+  statisticsQuery,
+} from "$lib/queries/statistics.svelte"
 import { dailyPackets, dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
 import type { DailyTransfer } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
@@ -47,9 +51,11 @@ const displayTransferDay = $derived.by(() => {
   if (Option.isSome(hoveredDay) && Option.isSome(dailyTransfers.data)) {
     const hoveredDateString = String(hoveredDay.value.day_date)
     const transfer = dailyTransfers.data.value.find(
-      t => String(t.day_date) === hoveredDateString
+      t => String(t.day_date) === hoveredDateString,
     )
-    if (transfer) return transfer
+    if (transfer) {
+      return transfer
+    }
   }
   return Option.isSome(highestTransferDay) ? highestTransferDay.value : undefined
 })
@@ -59,9 +65,11 @@ const displayPacketDay = $derived.by(() => {
   if (Option.isSome(hoveredDay) && Option.isSome(dailyPackets.data)) {
     const hoveredDateString = String(hoveredDay.value.day_date)
     const packet = dailyPackets.data.value.find(
-      p => String(p.day_date) === hoveredDateString
+      p => String(p.day_date) === hoveredDateString,
     )
-    if (packet) return packet
+    if (packet) {
+      return packet
+    }
   }
   return Option.isSome(highestPacketDay) ? highestPacketDay.value : undefined
 })

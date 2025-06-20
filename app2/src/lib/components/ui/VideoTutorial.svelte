@@ -29,12 +29,14 @@ function getYouTubeVideoId(url: string): Option.Option<string> {
     /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
     /youtube\.com\/v\/([^&\n?#]+)/,
   ]
-  
+
   for (const pattern of patterns) {
     const match = url.match(pattern)
-    if (match) return Option.some(match[1])
+    if (match) {
+      return Option.some(match[1])
+    }
   }
-  
+
   return Option.none()
 }
 
@@ -42,16 +44,16 @@ const videoId = $derived(getYouTubeVideoId(videoUrl))
 const embedUrl = $derived(
   Option.getOrElse(
     Option.map(videoId, (id) => `https://www.youtube.com/embed/${id}`),
-    () => videoUrl
-  )
+    () => videoUrl,
+  ),
 )
 const autoThumbnailUrl = $derived(
-  Option.map(videoId, (id) => `https://img.youtube.com/vi/${id}/mqdefault.jpg`)
+  Option.map(videoId, (id) => `https://img.youtube.com/vi/${id}/mqdefault.jpg`),
 )
 const finalThumbnailUrl = $derived(
   Option.fromNullable(thumbnailUrl).pipe(
-    Option.orElse(() => autoThumbnailUrl)
-  )
+    Option.orElse(() => autoThumbnailUrl),
+  ),
 )
 
 function toggleExpanded() {
@@ -109,7 +111,7 @@ function restore() {
         {#if description}
           <p class="text-xs text-zinc-400 mb-3">{description}</p>
         {/if}
-        
+
         <div class="relative aspect-video bg-zinc-800 mb-3 overflow-hidden rounded-lg">
           <iframe
             src={embedUrl}
@@ -120,10 +122,10 @@ function restore() {
             allowfullscreen
           ></iframe>
         </div>
-        
-        <a 
-          href={videoUrl} 
-          target="_blank" 
+
+        <a
+          href={videoUrl}
+          target="_blank"
           rel="noopener noreferrer"
           class="text-xs text-zinc-300 hover:text-white transition-colors"
         >
@@ -138,14 +140,16 @@ function restore() {
           class="relative w-full aspect-video bg-zinc-800 flex items-center justify-center hover:bg-zinc-700 transition-colors overflow-hidden group rounded-lg"
         >
           {#if Option.isSome(finalThumbnailUrl)}
-            <img 
-              src={finalThumbnailUrl.value} 
+            <img
+              src={finalThumbnailUrl.value}
               alt={title}
               class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
               loading="lazy"
             />
           {/if}
-          <div class="relative bg-black bg-opacity-70 text-white px-3 py-2 text-xs font-medium backdrop-blur-sm border border-white/20 rounded">
+          <div
+            class="relative bg-black bg-opacity-70 text-white px-3 py-2 text-xs font-medium backdrop-blur-sm border border-white/20 rounded"
+          >
             ▶ Play Tutorial
           </div>
         </button>

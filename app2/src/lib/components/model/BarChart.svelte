@@ -14,7 +14,8 @@ type Props = {
   hoveredDate?: Option.Option<DailyTransfer>
 }
 
-const { data, error, class: className = "", onHoverChange = constVoid, hoveredDate }: Props = $props()
+const { data, error, class: className = "", onHoverChange = constVoid, hoveredDate }: Props =
+  $props()
 
 // Format large numbers with commas (used for chart tooltips)
 function formatNumber(num: string | number): string {
@@ -26,7 +27,9 @@ const reversedDailyTransfers = $derived(Option.isSome(data) ? [...data.value].re
 
 // Track which bar should be highlighted based on the external hover
 const highlightedDate = $derived.by(() => {
-  if (!hoveredDate || !Option.isSome(hoveredDate)) return null
+  if (!hoveredDate || !Option.isSome(hoveredDate)) {
+    return null
+  }
   // Convert to string for comparison
   return String(hoveredDate.value.day_date)
 })
