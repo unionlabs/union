@@ -349,7 +349,7 @@ impl BlockHandle for TmBlockHandle {
 
         debug!("{}: done", reference);
 
-        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
+        Ok((!events.is_empty()).then_some(events.into()))
     }
 
     async fn update(

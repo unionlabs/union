@@ -8,7 +8,7 @@ use bytes::Bytes;
 use hex::decode;
 use itertools::Itertools;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::Value;
+use serde_json::{json, Value};
 use sha2::Digest;
 use sqlx::Postgres;
 use time::OffsetDateTime;
@@ -34,12 +34,14 @@ pub struct HubbleEvent {
 }
 
 impl HubbleEvent {
-    pub fn events_by_height<'a>(&'a self) -> HashMap<BlockHeight, Vec<&'a BlockEvent>> {
-        let mut by_height: HashMap<BlockHeight, Vec<&'a BlockEvent>> = HashMap::new();
+    pub fn events_by_height<'a>(&'a self) -> HashMap<BlockHeight, Vec<&'a SupportedBlockEvent>> {
+        let mut by_height: HashMap<BlockHeight, Vec<&'a SupportedBlockEvent>> = HashMap::new();
 
         if let Some(es) = &self.events {
             for event in &es.events {
-                by_height.entry(event.height()).or_default().push(event);
+                if let BlockEvent::Supported(event) = event {
+                    by_height.entry(event.height()).or_default().push(event);
+                }
             }
         }
 
@@ -63,7 +65,12 @@ impl Display for HubbleEvent {
                 .map(|es| {
                     es.events
                         .iter()
-                        .map(|e| e.height())
+                        .filter_map(|e| match e {
+                            BlockEvent::Supported(supported_block_event) => {
+                                Some(supported_block_event.height())
+                            }
+                            BlockEvent::Unsupported(_) => None,
+                        })
                         .sorted()
                         .unique()
                         .join(", ")
@@ -191,12 +198,31 @@ impl<T: FetcherClient> Indexer<T> {
         events: Option<BlockEvents>,
         dedup_message_hash: Option<&MessageHash>,
     ) -> Result<MessageHash, IndexerError> {
+        let events_with_unsupported_event = match events {
+            Some(events) => BlockEvents {
+                events: events
+                    .events
+                    .into_iter()
+                    .chain(vec![BlockEvent::Unsupported(UnsupportedBlockEvent {
+                        event_type: "unsupported-some".to_string(),
+                        raw: json!({ "bla": "blo" }),
+                    })])
+                    .collect_vec(),
+            },
+            None => BlockEvents {
+                events: vec![BlockEvent::Unsupported(UnsupportedBlockEvent {
+                    event_type: "unsupported-none".to_string(),
+                    raw: json!({ "bla": "blo" }),
+                })],
+            },
+        };
+
         let data = serde_json::to_vec(&HubbleEvent {
             version: 1,
             universal_chain_id: self.universal_chain_id.clone(),
             range: range.clone(),
             chunk: None,
-            events,
+            events: Some(events_with_unsupported_event),
         })
         .map_err(|e| IndexerError::InternalError(e.into()))?;
 
@@ -238,10 +264,37 @@ impl BlockEvents {
     }
 }
 
+impl FromIterator<BlockEvent> for BlockEvents {
+    fn from_iter<I: IntoIterator<Item = BlockEvent>>(iter: I) -> Self {
+        BlockEvents {
+            events: iter.into_iter().collect(),
+        }
+    }
+}
+
+impl From<Vec<SupportedBlockEvent>> for BlockEvents {
+    fn from(events: Vec<SupportedBlockEvent>) -> Self {
+        events.into_iter().map(Into::into).collect()
+    }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+#[serde(untagged)]
+pub enum BlockEvent {
+    Supported(SupportedBlockEvent),
+    Unsupported(UnsupportedBlockEvent),
+}
+
+impl From<SupportedBlockEvent> for BlockEvent {
+    fn from(value: SupportedBlockEvent) -> Self {
+        BlockEvent::Supported(value)
+    }
+}
+
 #[warn(clippy::enum_variant_names)]
 #[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
-pub enum BlockEvent {
+pub enum SupportedBlockEvent {
     // using database representation of fields. all these 'record representations' will
     // be replaced by USC events
     #[serde(rename = "ethereum-log")]
@@ -290,15 +343,23 @@ pub enum BlockEvent {
     },
 }
 
-impl BlockEvent {
+impl SupportedBlockEvent {
     pub fn height(&self) -> BlockHeight {
         match self {
-            BlockEvent::TendermintBlock { height, .. } => *height,
-            BlockEvent::TendermintTransaction { height, .. } => *height,
-            BlockEvent::TendermintEvent { height, .. } => *height,
-            BlockEvent::EthereumLog { height, .. } => *height,
+            SupportedBlockEvent::TendermintBlock { height, .. } => *height,
+            SupportedBlockEvent::TendermintTransaction { height, .. } => *height,
+            SupportedBlockEvent::TendermintEvent { height, .. } => *height,
+            SupportedBlockEvent::EthereumLog { height, .. } => *height,
         }
     }
+}
+
+#[derive(Serialize, Deserialize, Debug)]
+pub struct UnsupportedBlockEvent {
+    #[serde(rename = "type")]
+    pub event_type: String,
+    #[serde(flatten)]
+    pub raw: serde_json::Value,
 }
 
 mod flexible_u64 {

@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 use crate::{
     indexer::{
         api::{BlockHash, BlockHeight, IndexerError},
-        event::BlockEvent,
+        event::SupportedBlockEvent,
         tendermint::block_handle::{ActiveContracts, EventInFlows},
     },
     postgres::ChainId,
@@ -52,10 +52,10 @@ pub struct PgEvent {
 // provides original insert details during migration.
 pub async fn insert_batch_blocks(
     blocks: impl IntoIterator<Item = PgBlock>,
-) -> Result<Vec<BlockEvent>, IndexerError> {
+) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
     Ok(blocks
         .into_iter()
-        .map(|b| BlockEvent::TendermintBlock {
+        .map(|b| SupportedBlockEvent::TendermintBlock {
             internal_chain_id: b.chain_id.db,
             hash: b.hash.clone(),
             data: b.data.clone(),
@@ -68,10 +68,10 @@ pub async fn insert_batch_blocks(
 // provides original insert details during migration.
 pub async fn insert_batch_transactions(
     transactions: impl IntoIterator<Item = PgTransaction>,
-) -> Result<Vec<BlockEvent>, IndexerError> {
+) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
     Ok(transactions
         .into_iter()
-        .map(|t| BlockEvent::TendermintTransaction {
+        .map(|t| SupportedBlockEvent::TendermintTransaction {
             internal_chain_id: t.chain_id.db,
             block_hash: t.block_hash.clone(),
             height: t.block_height,
@@ -85,14 +85,14 @@ pub async fn insert_batch_transactions(
 // provides original insert details during migration.
 pub async fn insert_batch_events(
     events: impl IntoIterator<Item = EventInFlows>,
-) -> Result<Vec<BlockEvent>, IndexerError> {
+) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
     #![allow(clippy::type_complexity)]
     Ok(events
         .into_iter()
         .flat_map(|e| {
             e.flows
                 .iter()
-                .map(|flow| BlockEvent::TendermintEvent {
+                .map(|flow| SupportedBlockEvent::TendermintEvent {
                     internal_chain_id: e.event.chain_id.db,
                     block_hash: e.event.block_hash.clone(),
                     height: e.event.block_height,
