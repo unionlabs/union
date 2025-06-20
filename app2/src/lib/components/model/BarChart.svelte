@@ -76,7 +76,9 @@ const barHeights = $derived(
 
 {#if Option.isSome(data) && maxCount > 0}
   <!-- Chart container -->
-  <div class="h-full relative chart-container {className} {Option.isSome(highlightedDate) ? 'has-hover' : ''}">
+  <div
+    class="h-full relative chart-container {className} {Option.isSome(highlightedDate) ? 'has-hover' : ''}"
+  >
     <!-- Grid lines -->
     <div class="absolute left-0 right-0 top-0 bottom-0 flex flex-col justify-between">
       {#each Array(5) as _, i}
