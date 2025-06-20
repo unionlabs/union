@@ -24,11 +24,11 @@ export const statisticsQuery = createQueryGraphql({
   },
 })
 
-export const dailyTransfersQuery = (limit = 30) =>
+export const dailyTransfersQuery = (limit = 60) =>
   createQueryGraphql({
     schema: Schema.Struct({ v2_stats_transfers_daily_count: DailyTransfers }),
     document: graphql(`
-      query TransfersPerDay($limit: Int!) @cached(ttl: 60) {
+      query TransfersPerDay($limit: Int!){
         v2_stats_transfers_daily_count(args: { p_days_back: $limit }) {
           count
           day_date
@@ -42,10 +42,6 @@ export const dailyTransfersQuery = (limit = 30) =>
       dailyTransfers.data = data.pipe(
         Option.map(d => {
           const modifiedData = [...d.v2_stats_transfers_daily_count]
-          const len = modifiedData.length
-          for (let i = Math.max(0, len - 10); i < len; i++) {
-            modifiedData[i] = { ...modifiedData[i], count: 0 }
-          }
           return modifiedData
         }),
       )

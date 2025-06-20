@@ -40,7 +40,7 @@ const displayDay = $derived(
 
 onMount(() => {
   statistics.runEffect(statisticsQuery)
-  dailyTransfers.runEffect(dailyTransfersQuery(30))
+  dailyTransfers.runEffect(dailyTransfersQuery())
 
   return () => {
     statistics.interruptFiber()
