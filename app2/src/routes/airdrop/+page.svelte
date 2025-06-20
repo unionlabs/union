@@ -1,27 +1,25 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
+import Card from "$lib/components/ui/Card.svelte";
 import Sections from "$lib/components/ui/Sections.svelte"
 import StepperCard from "./StepperCard.svelte"
+import Step1 from "./step/Step1.svelte"
 
 let currentSlide = $state(0)
 let stepperCardRef: StepperCard
 </script>
 
-<Sections class="flex items-center w-full h-full">
+<Sections class="flex items-center justify-center w-full h-full -mt-12">
   <StepperCard
     bind:this={stepperCardRef}
     bind:currentSlide
-    totalSlides={4}
+    totalSlides={5}
+    class="max-w-3xl h-full md:h-auto"
   >
     {#snippet children(slideIndex)}
-      <div class="flex flex-col p-4 gap-4 h-full">
+            <div class="flex flex-col gap-4 h-full w-full">
         {#if slideIndex === 0}
-          <h1 class="text-4xl font-bold">Union Airdrop</h1>
-          <p class="text-gray-400">This is the first page</p>
-          <Button
-            class="mt-auto"
-            onclick={() => stepperCardRef.goToNextSlide()}
-          >Authenticate</Button>
+          <Step1 onNext={() => stepperCardRef.goToNextSlide()} />
         {:else if slideIndex === 1}
           <h1 class="text-4xl font-bold">Page 2</h1>
           <p class="text-gray-600">This is the second page</p>
@@ -41,3 +39,5 @@ let stepperCardRef: StepperCard
     {/snippet}
   </StepperCard>
 </Sections>
+
+
