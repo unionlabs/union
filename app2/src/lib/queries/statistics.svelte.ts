@@ -1,4 +1,4 @@
-import { dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
+import { dailyPackets, dailyTransfers, statistics } from "$lib/stores/statistics.svelte"
 import { createQueryGraphql } from "$lib/utils/queries"
 import { DailyTransfers, Statistics } from "@unionlabs/sdk/schema"
 import { Option, Schema } from "effect"
@@ -48,5 +48,31 @@ export const dailyTransfersQuery = (limit = 60) =>
     },
     writeError: error => {
       dailyTransfers.error = error
+    },
+  })
+
+export const dailyPacketsQuery = (limit = 60) =>
+  createQueryGraphql({
+    schema: Schema.Struct({ v2_stats_packets_daily_count: DailyTransfers }),
+    document: graphql(`
+      query PacketsPerDay($limit: Int!){
+        v2_stats_packets_daily_count(args: { p_days_back: $limit }) {
+          count
+          day_date
+        }
+      }
+    `),
+    variables: { limit },
+    refetchInterval: "60 seconds",
+    writeData: data => {
+      dailyPackets.data = data.pipe(
+        Option.map(d => {
+          const modifiedData = [...d.v2_stats_packets_daily_count]
+          return modifiedData
+        }),
+      )
+    },
+    writeError: error => {
+      dailyPackets.error = error
     },
   })
