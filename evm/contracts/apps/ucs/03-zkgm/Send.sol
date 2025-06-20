@@ -164,8 +164,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
             intermediateChannelPath,
             channelId,
             order.quoteToken,
-            ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1,
-            true
+            ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
         );
         bool isInverseIntermediatePath =
             path == ZkgmLib.reverseChannelPath(intermediateChannelPath);
@@ -240,11 +239,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         }
         (address wrappedToken,, bool v1) =
         _predictWrappedTokenFromMetadataImageV2(
-            intermediateChannelPath,
-            channelId,
-            order.quoteToken,
-            metadataImage,
-            true
+            intermediateChannelPath, channelId, order.quoteToken, metadataImage
         );
         bool isInverseIntermediatePath =
             path == ZkgmLib.reverseChannelPath(intermediateChannelPath);
@@ -551,7 +546,7 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         bytes32 metadataImage
     ) public returns (address, bytes32, bool) {
         return _predictWrappedTokenFromMetadataImageV2(
-            path, channel, token, metadataImage, true
+            path, channel, token, metadataImage
         );
     }
 }

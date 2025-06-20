@@ -78,8 +78,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
             0,
             channelId,
             governanceToken.unwrappedToken,
-            governanceToken.metadataImage,
-            false
+            governanceToken.metadataImage
         );
         return (ZkgmERC20(wrappedGovernanceToken), governanceToken);
     }
@@ -190,18 +189,12 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
         uint256 path,
         uint32 channel,
         bytes memory token,
-        bytes32 metadataImage,
-        bool checkV1
+        bytes32 metadataImage
     ) internal view returns (address, bytes32, bool) {
-        if (checkV1) {
-            if (
-                metadataImage
-                    == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1
-            ) {
-                (address quoteTokenV1, bytes32 saltV1) =
-                    _predictWrappedTokenMemory(path, channel, token);
-                return (quoteTokenV1, saltV1, true);
-            }
+        if (metadataImage == ZkgmLib.FUNGIBLE_ASSET_METADATA_IMAGE_PREDICT_V1) {
+            (address quoteTokenV1, bytes32 saltV1) =
+                _predictWrappedTokenMemory(path, channel, token);
+            return (quoteTokenV1, saltV1, true);
         }
         bytes32 wrappedTokenSalt = EfficientHashLib.hash(
             abi.encode(path, channel, token, metadataImage)
@@ -221,7 +214,7 @@ abstract contract UCS03ZkgmStore is AccessManagedUpgradeable, IZkgmStore {
             EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
         (address wrappedToken, bytes32 salt,) =
         _predictWrappedTokenFromMetadataImageV2(
-            path, channel, token, metadataImage, false
+            path, channel, token, metadataImage
         );
         return (wrappedToken, salt);
     }

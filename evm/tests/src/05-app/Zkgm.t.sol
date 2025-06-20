@@ -18,6 +18,7 @@ import "../../../contracts/core/05-port/IIBCModule.sol";
 import "../../../contracts/apps/ucs/03-zkgm/IWETH.sol";
 import "../../../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../../../contracts/apps/Base.sol";
+import "../../../contracts/Manager.sol";
 
 contract TestZkgm is UCS03Zkgm {
     constructor(
@@ -341,6 +342,7 @@ contract TestMultiplexTarget is IZkgmable, IIBCModuleRecv {
 contract ZkgmTests is Test {
     using LibString for *;
 
+    Manager manager;
     TestMultiplexTarget multiplexTarget;
     TestIBCHandler handler;
     TestERC20 erc20;
@@ -366,10 +368,17 @@ contract ZkgmTests is Test {
         erc20 = new TestERC20("Test", "T", 18);
         handler = new TestIBCHandler();
         erc20Impl = new ZkgmERC20();
-        TestZkgm implementation = new TestZkgm(handler, weth, erc20Impl);
+        manager = Manager(
+            address(
+                new ERC1967Proxy(
+                    address(new Manager()),
+                    abi.encodeCall(Manager.initialize, (address(this)))
+                )
+            )
+        );
         ERC1967Proxy proxy = new ERC1967Proxy(
-            address(implementation),
-            abi.encodeCall(UCS03Zkgm.initialize, (address(this)))
+            address(new TestZkgm(handler, weth, erc20Impl)),
+            abi.encodeCall(UCS03Zkgm.initialize, (address(manager)))
         );
         zkgm = TestZkgm(payable(address(proxy)));
         zkgm.doCreateStakeNFTManager();
@@ -2706,7 +2715,7 @@ contract ZkgmTests is Test {
         }
         assertTrue(ZkgmLib.isDeployed(quoteToken));
         assertEq(
-            AccessManagedUpgradeable(quoteToken).authority(), address(this)
+            AccessManagedUpgradeable(quoteToken).authority(), zkgm.authority()
         );
         return quoteToken;
     }
@@ -2762,7 +2771,7 @@ contract ZkgmTests is Test {
         }
         assertTrue(ZkgmLib.isDeployed(quoteToken));
         assertEq(
-            AccessManagedUpgradeable(quoteToken).authority(), address(this)
+            AccessManagedUpgradeable(quoteToken).authority(), zkgm.authority()
         );
         return quoteToken;
     }
@@ -6385,13 +6394,13 @@ contract ZkgmTests is Test {
         Stake memory stake = Stake({
             tokenId: 1,
             governanceToken: bytes("muno"),
-            governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
+            governanceTokenMetadataImage: 0xC0DEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE,
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
             beneficiary: abi.encodePacked(
                 0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD
             ),
-            validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
-            amount: 10
+            validator: bytes("unionvaloper1qu9x4j72r88s6ee9z6tu6enuqjvtpzujks5qk8"),
+            amount: 5
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_0,
