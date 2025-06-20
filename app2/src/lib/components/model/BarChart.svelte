@@ -11,9 +11,11 @@ type Props = {
   error: Option.Option<FetchDecodeGraphqlError | TimeoutException>
   class?: string
   onHoverChange?: (day: Option.Option<DailyTransfer>) => void
+  hoveredDate?: Option.Option<DailyTransfer>
 }
 
-const { data, error, class: className = "", onHoverChange = constVoid }: Props = $props()
+const { data, error, class: className = "", onHoverChange = constVoid, hoveredDate }: Props =
+  $props()
 
 // Format large numbers with commas (used for chart tooltips)
 function formatNumber(num: string | number): string {
@@ -22,6 +24,15 @@ function formatNumber(num: string | number): string {
 
 // Derived values for chart data
 const reversedDailyTransfers = $derived(Option.isSome(data) ? [...data.value].reverse() : [])
+
+// Track which bar should be highlighted based on the external hover
+const highlightedDate = $derived.by(() => {
+  if (!hoveredDate || Option.isNone(hoveredDate)) {
+    return Option.none()
+  }
+  // Convert to string for comparison
+  return Option.some(String(hoveredDate.value.day_date))
+})
 
 const maxCount = $derived(Option.isSome(data) ? Math.max(...data.value.map(d => d.count)) : 0)
 
@@ -65,7 +76,9 @@ const barHeights = $derived(
 
 {#if Option.isSome(data) && maxCount > 0}
   <!-- Chart container -->
-  <div class="h-full relative chart-container {className}">
+  <div
+    class="h-full relative chart-container {className} {Option.isSome(highlightedDate) ? 'has-hover' : ''}"
+  >
     <!-- Grid lines -->
     <div class="absolute left-0 right-0 top-0 bottom-0 flex flex-col justify-between">
       {#each Array(5) as _, i}
@@ -79,7 +92,7 @@ const barHeights = $derived(
         {#each barHeights as day, i}
           <!-- svelte-ignore a11y_no_static_element_interactions -->
           <div
-            class="flex pr-1 flex-col flex-1 group size-full justify-end hover:opacity-100"
+            class="flex pr-1 flex-col flex-1 group size-full justify-end hover:opacity-100 {Option.isSome(highlightedDate) && String(day.day_date) === highlightedDate.value ? 'is-hovered' : ''}"
             onmouseenter={() => {
               hoveredDay = Option.some(day)
               onHoverChange(Option.some(day))
@@ -112,11 +125,13 @@ const barHeights = $derived(
 
 <style>
 /* Style for chart bars - make non-hovered bars darker when any bar is hovered */
-:global(.chart-container:hover .flex-1) {
+:global(.chart-container:hover .flex-1),
+:global(.chart-container.has-hover .flex-1) {
   opacity: 0.3;
 }
 
-:global(.chart-container .flex-1:hover) {
+:global(.chart-container .flex-1:hover),
+:global(.chart-container .flex-1.is-hovered) {
   opacity: 1 !important;
 }
 

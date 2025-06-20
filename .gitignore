@@ -92,3 +92,7 @@ dist/
 .gas-snapshot
 
 sentinel2/sentinel.db
+
+# AI
+CLAUDE.md
+.claude/

@@ -1,5 +1,6 @@
 <script lang="ts">
 import Sections from "$lib/components/ui/Sections.svelte"
+import VideoTutorial from "$lib/components/ui/VideoTutorial.svelte"
 import { balancesStore } from "$lib/stores/balances.svelte.ts"
 import { tokensStore } from "$lib/stores/tokens.svelte.ts"
 import Transfer from "$lib/transfer/index.svelte"
@@ -47,4 +48,12 @@ $effect(() => {
 
 <Sections>
   <Transfer mode="multisig" />
+
+  <!-- Video Tutorial Popup -->
+  <VideoTutorial
+    title="Multisig Transfer Tutorial"
+    description="Learn how to create and execute multisig transfers with Robert's comprehensive guide."
+    videoUrl="https://www.youtube.com/watch?v=ajd3wHlyDYQ"
+    class="fixed bottom-6 right-6 z-50 max-w-80"
+  />
 </Sections>
