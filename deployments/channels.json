@@ -226,15 +226,15 @@
       "comments": "corn.21000001 channel 2",
       "fees": {
         "forward": {
-          "PACKET_RECV": "924672",
+          "PACKET_RECV": "326236",
           "PACKET_SEND_LC_UPDATE_L0": "321174",
           "PACKET_SEND_LC_UPDATE_L1": "519141",
           "PACKET_SEND_LC_UPDATE_L2": "2116634"
         },
         "reverse": {
-          "PACKET_RECV": "3075197",
-          "PACKET_SEND_LC_UPDATE_L0": "394498",
-          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_RECV": "679179",
+          "PACKET_SEND_LC_UPDATE_L0": "2454209",
+          "PACKET_SEND_LC_UPDATE_L1": "1192939",
           "PACKET_SEND_LC_UPDATE_L2": "885936"
         }
       },
