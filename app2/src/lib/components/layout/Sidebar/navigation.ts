@@ -87,6 +87,13 @@ export const navigation: Array<NavSection> = [
     ],
   },
   {
+    items: [{
+      path: "/stake",
+      title: "Stake",
+      icon: SharpStakeIcon,
+    }],
+  },
+  {
     title: "Developer",
     items: [
       {
@@ -98,11 +105,6 @@ export const navigation: Array<NavSection> = [
         path: "/dashboard",
         title: "Dashboard",
         icon: SharpDashboardIcon,
-      },
-      {
-        path: "/stake",
-        title: "Stake with Escher",
-        icon: SharpStakeIcon,
       },
       {
         path: "/balances",
