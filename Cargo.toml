@@ -275,6 +275,7 @@ members = [
   "lib/wasm-client-type",
   "lib/sui-verifier",
   "tools/update-deployments",
+  "tools/union-test",
 ]
 
 [workspace.package]

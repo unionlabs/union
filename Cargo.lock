@@ -16437,6 +16437,26 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "39ec24b3121d976906ece63c9daad25b85969647682eee313cb5779fdd69e14e"
 
 [[package]]
+name = "union-test"
+version = "0.1.0"
+dependencies = [
+ "alloy",
+ "bip32 0.5.3",
+ "concurrent-keyring",
+ "cosmos-client",
+ "hex-literal",
+ "ibc-solidity",
+ "ibc-union-msg",
+ "ibc-union-spec",
+ "protos",
+ "serde",
+ "tokio",
+ "trusted-mpt-light-client-types",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "unionlabs"
 version = "0.0.0"
 dependencies = [
