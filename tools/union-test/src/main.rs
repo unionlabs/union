@@ -1,9 +1,15 @@
 use std::{str::FromStr, time::Duration};
 
+use alloy::sol_types::SolValue;
 use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
 use cosmos::{FeemarketConfig, GasFillerConfig};
 use hex_literal::hex;
 use ibc_union_msg::msg::{ExecuteMsg, MsgCreateClient};
+use ibc_union_spec::{ChannelId, Timestamp};
+use protos::cosmos::base::v1beta1::Coin;
+use ucs03_zkgm::com::{
+    FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1, OP_FUNGIBLE_ASSET_ORDER,
+};
 use unionlabs::{
     bech32::Bech32,
     encoding::{Bincode, EncodeAs, EthAbi},
@@ -91,18 +97,75 @@ async fn main() -> anyhow::Result<()> {
 
     println!("connections bro: {connection_id} {counterparty_connection_id}");
 
-    /*
+    voyager::channel_open(
+        union.chain_id.clone(),
+        "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
+            .as_bytes()
+            .into(),
+        hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
+            .to_vec()
+            .into(),
+        connection_id,
+        "ucs03-zkgm-0".into(),
+    )?;
 
-    1. configure and setup the union module
-    2. configure and setup the evm module
-    3. send create-client to voyager using cli and wait for the client creation event (on union)
-    4. send create-client to voyager using cli and wait for the client creation event (on eth)
-    5. send conn handshake to voyager and wait for the confirm event
-    6. send chan handshake to voyager and wait for the confirm event
+    let confirm = eth.wait_for_channel_open_confirm().await?;
 
-    7. run the actual test
+    let channel_id: ChannelId = confirm.channel_id.try_into().unwrap();
+    let counterparty_channel_id: ChannelId = confirm.counterparty_channel_id.try_into().unwrap();
 
-    */
+    println!("channel bro: {channel_id} {counterparty_channel_id}");
+
+    let cosmos::IbcEvent::WasmPacketSend { packet_hash, .. } = union
+        .send_ibc_transaction(
+            Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+                .unwrap(),
+            vec![(
+                Box::new(ucs03_zkgm::msg::ExecuteMsg::Send {
+                    channel_id,
+                    timeout_height: 0u64.into(),
+                    timeout_timestamp: Timestamp::from_secs(u32::MAX.into()),
+                    salt: Default::default(),
+                    instruction: Instruction {
+                        version: INSTR_VERSION_1,
+                        opcode: OP_FUNGIBLE_ASSET_ORDER,
+                        operand: FungibleAssetOrder {
+                            sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+                                .as_bytes()
+                                .into(),
+                            receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                                .to_vec()
+                                .into(),
+                            base_token: "muno".as_bytes().into(),
+                            base_amount: "10".parse().unwrap(),
+                            base_token_symbol: "muno".into(),
+                            base_token_name: "muno".into(),
+                            base_token_decimals: 6,
+                            base_token_path: "0".parse().unwrap(),
+                            quote_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579")
+                                .to_vec()
+                                .into(),
+                            quote_amount: "10".parse().unwrap(),
+                        }
+                        .abi_encode_params()
+                        .into(),
+                    }
+                    .abi_encode_params()
+                    .into(),
+                }),
+                vec![Coin {
+                    denom: "muno".into(),
+                    amount: "10".into(),
+                }],
+            )],
+        )
+        .await
+        .unwrap()
+        .unwrap();
+
+    let recv = eth.wait_for_packet_recv(packet_hash).await?;
+
+    println!("received the packet brotha: {recv:?}");
 
     Ok(())
 }

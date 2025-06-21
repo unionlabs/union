@@ -1,6 +1,7 @@
 use std::process::Command;
 
-use voyager_sdk::{anyhow, primitives::ChainId};
+use unionlabs::{id::PortId, primitives::Bytes};
+use voyager_sdk::{anyhow, primitives::ChainId, serde_json::json};
 
 pub fn create_client(
     on: ChainId,
@@ -55,6 +56,48 @@ pub fn connection_open(
             "q", "e",
             format!("{{\"@type\":\"call\",\"@value\":{{\"@type\":\"submit_tx\",\"@value\":{{\"chain_id\":\"{on}\",\"datagrams\":[{{\"ibc_spec_id\":\"ibc-union\",\"datagram\":{{\"@type\":\"connection_open_init\",\"@value\":{{\"client_id\":{client_id},\"counterparty_client_id\":{counterparty_client_id}}}}}}}]}}}}}}").as_str()
         ]).status()?;
+
+    Ok(())
+}
+
+/// target/debug/voyager q e ''
+pub fn channel_open(
+    chain_id: ChainId,
+    port_id: Bytes,
+    counterparty_port_id: Bytes,
+    connection_id: u32,
+    version: String,
+) -> anyhow::Result<()> {
+    Command::new("./target/debug/voyager")
+        .args([
+            "q",
+            "e",
+            &json!({
+              "@type": "call",
+              "@value": {
+                "@type": "submit_tx",
+                "@value": {
+                  "chain_id": chain_id,
+                  "datagrams": [
+                    {
+                      "ibc_spec_id": "ibc-union",
+                      "datagram": {
+                        "@type": "channel_open_init",
+                        "@value": {
+                          "port_id": port_id,
+                          "counterparty_port_id": counterparty_port_id,
+                          "connection_id": connection_id,
+                          "version": version
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            })
+            .to_string(),
+        ])
+        .status()?;
 
     Ok(())
 }

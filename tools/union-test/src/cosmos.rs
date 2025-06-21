@@ -1,5 +1,6 @@
 use std::panic::AssertUnwindSafe;
 
+use cometbft_rpc::rpc_types::TxResponse;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
     gas::{any, feemarket, fixed},
@@ -7,6 +8,9 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
     BroadcastTxCommitError, TxClient,
 };
+use cosmos_sdk_event::CosmosSdkEvent;
+use ibc_union_spec::{event::PacketSend, ChannelId, Timestamp};
+use protos::cosmos::base::v1beta1::Coin;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
     self,
@@ -131,32 +135,30 @@ impl Module {
         })
     }
 
+    // TODO(aeryz): return the digest
     pub async fn send_transaction(
         &self,
-        msgs: Vec<Box<impl Encode<Json> + Clone>>,
-    ) -> Option<Result<(), BroadcastTxCommitError>> {
+        contract: Bech32<H256>,
+        funded_msgs: Vec<(Box<impl Encode<Json> + Clone>, Vec<Coin>)>,
+    ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
+        assert!(!funded_msgs.is_empty());
         self.keyring
             .with(|signer| {
-                let ibc_host_contract_address = self.ibc_host_contract_address.clone();
-
                 let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
 
-                let batch_size = msgs.len();
+                let batch_size = funded_msgs.len();
 
                 AssertUnwindSafe(async move {
-                    if msgs.is_empty() {
-                        return Ok(());
-                    }
-
                     match tx_client
                         .broadcast_tx_commit(
-                            msgs.iter()
-                                .map(|x| {
+                            funded_msgs
+                                .iter()
+                                .map(|(x, funds)| {
                                     mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                                         sender: signer.address().to_string(),
-                                        contract: ibc_host_contract_address.to_string(),
+                                        contract: contract.to_string(),
                                         msg: x.clone().encode(),
-                                        funds: vec![],
+                                        funds: funds.clone(),
                                     })
                                 })
                                 .collect::<Vec<_>>(),
@@ -173,7 +175,7 @@ impl Module {
                                 "submitted cosmos transaction"
                             );
 
-                            Ok(())
+                            Ok(tx_response)
                         }
                         Err(err) => {
                             info!(error = %ErrorReporter(&err), "cosmos tx failed");
@@ -184,4 +186,49 @@ impl Module {
             })
             .await
     }
+
+    pub async fn send_ibc_transaction(
+        &self,
+        contract: Bech32<H256>,
+        funded_msgs: Vec<(Box<impl Encode<Json> + Clone>, Vec<Coin>)>,
+    ) -> Option<Result<IbcEvent, BroadcastTxCommitError>> {
+        let tx_result = match self.send_transaction(contract, funded_msgs).await? {
+            Ok(tx_result) => tx_result,
+            Err(e) => return Some(Err(e)),
+        };
+
+        println!("tx_result: {tx_result:?}");
+
+        // TODO(aeryz): this should be an error
+        let send_event = tx_result.tx_result.events.into_iter().find_map(|e| {
+            if e.ty == "wasm-packet_send" {
+                let event = CosmosSdkEvent::<IbcEvent>::new(e).ok()?.event;
+                Some(event)
+            } else {
+                None
+            }
+        })?;
+
+        Some(Ok(send_event))
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
+pub enum IbcEvent {
+    #[serde(rename = "wasm-packet_send")]
+    WasmPacketSend {
+        #[serde(with = "serde_utils::string")]
+        packet_source_channel_id: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        packet_destination_channel_id: ChannelId,
+        packet_data: Bytes,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_height: u64,
+        #[serde(with = "serde_utils::string")]
+        packet_timeout_timestamp: Timestamp,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+    },
 }
