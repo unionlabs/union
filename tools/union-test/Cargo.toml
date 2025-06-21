@@ -24,5 +24,10 @@ bip32              = { workspace = true }
 ibc-union-spec = { workspace = true }
 ibc-solidity   = { workspace = true, features = ["serde", "rpc"] }
 
+ucs03-zkgm = { workspace = true, features = [ "library" ] }
+cometbft-rpc = { workspace = true }
+cosmos-sdk-event = { workspace = true }
+serde-utils = { workspace = true }
+
 [lints]
 workspace = true
