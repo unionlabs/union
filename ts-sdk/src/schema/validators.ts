@@ -1,6 +1,10 @@
+import { HttpClient, HttpClientResponse } from "@effect/platform"
+import { Effect, flow, pipe } from "effect"
+import * as A from "effect/Array"
 import * as E from "effect/Either"
 import * as O from "effect/Option"
 import * as S from "effect/Schema"
+import * as Struct from "effect/Struct"
 
 export const Status = S.Union(
   S.Literal("BOND_STATUS_BONDED"),
@@ -24,7 +28,7 @@ export const Validator = S.Struct({
   delegator_shares: S.BigDecimal,
   description: S.Struct({
     moniker: S.String,
-    identity: S.String,
+    identity: S.OptionFromNonEmptyTrimmedString,
     website: S.URL.pipe(
       S.OptionFromUndefinedOr,
       S.annotations({
@@ -55,3 +59,60 @@ export const Validator = S.Struct({
   unbonding_ids: S.Array(S.String),
 })
 export type Validator = typeof Validator.Type
+
+/**
+ * TODO:
+ * - Make icon a service and invertible
+ * - Provide proper `encode`
+ * - Remove duplicate `HttpClient` dependencies from `Staking` service
+ */
+export const ValidatorWithImage = S.transformOrFail(
+  Validator,
+  S.extend(
+    Validator,
+    S.Struct({ icon: S.OptionFromSelf(S.URLFromSelf) }),
+  ),
+  {
+    decode: (fromA, _, _ast, fromI) =>
+      pipe(
+        HttpClient.HttpClient.pipe(
+          Effect.map(HttpClient.withTracerDisabledWhen(() => true)),
+          Effect.map(HttpClient.filterStatusOk),
+        ),
+        Effect.andThen((client) =>
+          pipe(
+            O.map(fromA.description.identity, (id) =>
+              pipe(
+                `https://keybase.io/_/api/1.0/user/lookup.json?key_suffix=${id}&fields=pictures`,
+                (url) => client.get(url, { acceptJson: true }),
+                Effect.flatMap(HttpClientResponse.schemaBodyJson(S.Struct({
+                  them: S.Array(S.Struct({
+                    pictures: S.Struct({
+                      primary: S.Struct({
+                        url: S.URL,
+                      }),
+                    }),
+                  })),
+                }))),
+                Effect.map(flow(
+                  Struct.get("them"),
+                  A.head,
+                  O.map(x => x.pictures.primary.url),
+                )),
+              )),
+            Effect.flatten,
+          )
+        ),
+        Effect.catchAll(() => Effect.succeed(O.none<URL>())),
+        Effect.map((icon) =>
+          ({
+            ...fromI,
+            icon,
+          }) as const
+        ),
+      ),
+    encode: () => Effect.succeed(void 0 as unknown as Validator),
+    strict: true,
+  },
+)
+export type ValidatorWithImage = typeof ValidatorWithImage.Type

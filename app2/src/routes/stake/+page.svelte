@@ -1,53 +1,33 @@
 <script lang="ts">
 import SharpInfoIcon from "$lib/components/icons/SharpInfoIcon.svelte"
 import * as AppRuntime from "$lib/runtime"
-import * as Favicon from "$lib/services/Favicon"
 import { empty, mapOption, matchRuntimeResult } from "$lib/utils/snippets.svelte"
-import { FetchHttpClient } from "@effect/platform"
 import * as Validators from "@unionlabs/sdk/schema/validators.js"
 import * as Staking from "@unionlabs/sdk/Staking.js"
-import { BigDecimal, Cause, Effect, Option as O, pipe } from "effect"
+import { BigDecimal, Cause, Effect, Option as O, pipe, Schema as S } from "effect"
 
-// XXX: won't pass CORS w/ browser fetch
-const getFavicon = (url: URL) =>
+const limit = $state<5 | 10 | 30>(5)
+const status = $state<Validators.Status | undefined>(undefined)
+
+const arg = $derived(pipe(
+  {
+    _tag: "GetValidators",
+    status,
+    pagination: {
+      limit,
+    },
+  },
+  S.decodeSync(Staking.GetValidators),
+))
+
+const validators = AppRuntime.runPromiseExit$(() =>
   pipe(
-    Favicon.Favicon,
-    Effect.andThen(({ of }) => of(url)),
-    Effect.withExecutionPlan(Favicon.Plan),
-    Effect.provide(FetchHttpClient.layer),
+    Staking.Staking,
+    Effect.andThen((staking) => staking.getValidators(arg)),
+    Effect.provide(Staking.Staking.Default),
   )
-
-const getValidators = Effect.gen(function*() {
-  const staking = yield* Staking.Staking
-
-  const validators = yield* staking.getValidators(
-    new Staking.GetValidators({
-      status: "BOND_STATUS_BONDED",
-    }),
-  )
-
-  // const favicons = yield* pipe(
-  //   R.fromIterableBy(validators, (x) => x.operator_address),
-  //   R.map((x) =>
-  //     pipe(
-  //       x.description.website,
-  //       Effect.transposeMapOption(getFavicon),
-  //     )
-  //   ),
-  //   Effect.allWith({
-  //     concurrency: 2,
-  //   }),
-  // )
-
-  return {
-    validators,
-    favicons: {},
-  }
-}).pipe(
-  Effect.provide(Staking.Staking.Default),
 )
 
-const validators = AppRuntime.runPromiseExit$(() => getValidators)
 const params = AppRuntime.runPromiseExit$(() =>
   pipe(
     Staking.Staking,
@@ -62,7 +42,7 @@ const params = AppRuntime.runPromiseExit$(() =>
 )
 </script>
 
-<h1>Stake</h1>
+<h1 class="text-xl font-bold">Stake</h1>
 
 {#snippet renderError<E>(cause: Cause.Cause<E>)}
   <div class="text-red-500">
@@ -70,18 +50,7 @@ const params = AppRuntime.runPromiseExit$(() =>
   </div>
 {/snippet}
 
-{#snippet renderValidators(props: {
-  validators: readonly Validators.Validator[]
-  favicons: Record<string, O.Option<string>>
-})}
-  {#snippet renderFavicon(src: string)}
-    <img
-      class="size-12 rounded-full bg-zinc-600"
-      src={`https://icons.duckduckgo.com/ip3/${src}.ico`}
-      alt="alt"
-    />
-  {/snippet}
-
+{#snippet renderValidators(validators: readonly Validators.ValidatorWithImage[])}
   <div class="grid [grid-template-columns:2fr_1fr_1fr] gap-4 font-mono">
     <div class="text-zinc-400 font-bold">
       <span>Validator</span>
@@ -95,10 +64,16 @@ const params = AppRuntime.runPromiseExit$(() =>
       <SharpInfoIcon />
     </div>
     <div class="col-span-3"><hr class="text-zinc-700" /></div>
-    {#each props.validators as validator}
+    {#each validators as validator}
+      {#snippet renderIcon(url: URL)}
+        <img
+          class="size-12 rounded-full bg-zinc-600"
+          src={url.toString()}
+          alt={O.getOrUndefined(validator.description.identity) ?? validator.description.moniker}
+        />
+      {/snippet}
       <div class="flex flex-row items-center gap-2">
-        {@render mapOption(O.map(validator.description.website, (x) => x.hostname), renderFavicon)}
-        <!-- {@render mapOption(props.favicons[validator.operator_address], renderFavicon)} -->
+        {@render mapOption(validator.icon, renderIcon)}
         <div class="font-medium">{validator.description.moniker}</div>
       </div>
       <div class="font-medium font-mono text-xs">
@@ -124,7 +99,7 @@ const params = AppRuntime.runPromiseExit$(() =>
   <pre>{JSON.stringify(params.current, null, 2)}</pre>
 </div>
 <br />
-<div class="w-[900px] mx-8 p-8 bg-zinc-900">
+<div class="mx-8 p-8 bg-zinc-900">
   <div class="text-xl font-bold">
     Search Validators
   </div>
@@ -136,6 +111,6 @@ const params = AppRuntime.runPromiseExit$(() =>
     )}
 </div>
 
-<pre>
-{JSON.stringify(validators.current, null, 2)}
-</pre>
+<details>
+  {JSON.stringify(validators.current, null, 2)}
+</details>
