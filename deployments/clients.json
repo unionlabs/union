@@ -37,6 +37,10 @@
     "14": {
       "counterparty": "sei.atlantic-2",
       "refresh_rate": "5000"
+    },
+    "15": {
+      "counterparty": "bsc.97",
+      "refresh_rate": "5000"
     }
   },
   "babylon.bbn-test-5": {
@@ -67,6 +71,11 @@
     },
     "10": {
       "counterparty": "sei.atlantic-2",
+      "client_type": "state-lens/ics23/ics23",
+      "refresh_rate": "5000"
+    },
+    "12": {
+      "counterparty": "bsc.97",
       "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "5000"
     }
@@ -283,6 +292,18 @@
       "refresh_rate": "500"
     },
     "10": {
+      "counterparty": "babylon.bbn-test-5",
+      "client_type": "state-lens/ics23/ics23",
+      "refresh_rate": "500"
+    }
+  },
+  "bsc.97": {
+    "1": {
+      "counterparty": "union.union-testnet-10",
+      "client_type": "cometbls",
+      "refresh_rate": "500"
+    },
+    "2": {
       "counterparty": "babylon.bbn-test-5",
       "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "500"
