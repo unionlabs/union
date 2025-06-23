@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            WITH delete_cosmos_events AS (\n                DELETE FROM v2_cosmos.events WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1) AND height = $2\n            ),\n            delete_cosmos_transactions AS (\n                DELETE FROM v2_cosmos.transactions WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1) AND height = $2\n            ),\n            delete_cosmos_blocks AS (\n                DELETE FROM v2_cosmos.blocks WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1) AND height = $2\n            ),\n            delete_evm_logs_decoded AS (\n                DELETE FROM v2_evm.logs_decoded WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1) AND height = $2\n            )\n            DELETE FROM v2_evm.logs WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1) AND height = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "16acba42bc4721460b2801f5b2fbcd267b3192424bb35ea866223381db4b74ef"
+}

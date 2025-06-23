@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v2_evm.logs_decoded (\n                internal_chain_id,\n                block_hash,\n                height,\n                log_index,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                transaction_log_index,\n                raw_log,\n                log_to_jsonb)\n            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Int8",
+        "Int4",
+        "Timestamptz",
+        "Text",
+        "Int4",
+        "Int4",
+        "Jsonb",
+        "Jsonb"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "f12e6450a8da452b16e957bb5964d4e567c9a7f690749fa5b66970dc111fc4ef"
+}
