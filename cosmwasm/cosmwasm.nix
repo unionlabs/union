@@ -134,6 +134,7 @@ _: {
             "trusted-mpt"
             "ethermint"
             "tendermint-bls"
+            "parlia"
             # "movement"
             "state-lens-ics23-mpt"
             # "state-lens-ics23-smt"
