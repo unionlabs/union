@@ -234,6 +234,41 @@ export const invokeTick = (userId: string) =>
     }),
   )
 
+export const requestRole = (userId: string, rewardId: string) =>
+  pipe(
+    getSupabaseClient(),
+    Effect.flatMap((client) =>
+      Effect.tryPromise({
+        try: () =>
+          client.functions.invoke("request-role", {
+            body: { user_id: userId, reward_id: rewardId },
+          }),
+        catch: (error) =>
+          new SupabaseError({
+            operation: "requestRole",
+            cause: extractErrorDetails(error as Error),
+          }),
+      })
+    ),
+    Effect.retry(retryForever),
+    Effect.flatMap(response => {
+      if (response.error) {
+        const errorDetails = extractErrorDetails(response.error)
+        return Effect.zipRight(
+          Effect.logError("Request role function returned an error in its response.", {
+            error: errorDetails,
+          }),
+          Effect.fail(new RewardError({ operation: "requestRole", cause: errorDetails })),
+        )
+      }
+      return Effect.succeed(response.data)
+    }),
+    Effect.catchAll((error) => {
+      errorStore.showError(new RewardError({ cause: error, operation: "requestRole" }))
+      return Effect.succeed(void 0)
+    }),
+  )
+
 interface SubmitWalletVerificationInput {
   id: string
   address: string
