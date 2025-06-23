@@ -6,7 +6,7 @@ import { createSigningCosmWasmClient } from "@unionlabs/sdk/cosmos"
 import { Effect, Logger, Schedule } from "effect"
 
 import { gql, request } from "graphql-request"
-import { addFunded, isFunded } from "./db_queries.js"
+import { addFunded, isFunded } from "./db-queries.js"
 import { Config } from "./helpers.js"
 import { db } from "./sentinel2.js"
 

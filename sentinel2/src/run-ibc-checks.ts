@@ -4,7 +4,7 @@ import { gql, request } from "graphql-request"
 
 import type { Packet } from "./helpers.js"
 
-import { clearTransferError, getOpenErrors, hasErrorOpen, markTransferError } from "./db_queries.js"
+import { clearTransferError, getOpenErrors, hasErrorOpen, markTransferError } from "./db-queries.js"
 import { Config, resolveIncident, triggerIncident } from "./helpers.js"
 import { db } from "./sentinel2.js"
 

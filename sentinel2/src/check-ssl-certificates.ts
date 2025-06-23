@@ -1,6 +1,6 @@
 import { Effect, Schedule } from "effect"
 import fetch from "node-fetch"
-import { clearSslIncident, getSslIncident, markSslIncident } from "./db_queries.js"
+import { clearSslIncident, getSslIncident, markSslIncident } from "./db-queries.js"
 import { getCertExpiry } from "./helpers.js"
 import { Config, resolveIncident, triggerIncident } from "./helpers.js"
 import { db } from "./sentinel2.js"

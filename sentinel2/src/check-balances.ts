@@ -1,6 +1,6 @@
 import { Effect, Logger, pipe, Schedule } from "effect"
 import fetch from "node-fetch"
-import { clearSignerIncident, getSignerIncident, markSignerIncident } from "./db_queries.js"
+import { clearSignerIncident, getSignerIncident, markSignerIncident } from "./db-queries.js"
 import { Config, resolveIncident, triggerIncident } from "./helpers.js"
 import { db } from "./sentinel2.js"
 

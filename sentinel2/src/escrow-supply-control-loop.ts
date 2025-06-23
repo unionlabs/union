@@ -35,7 +35,7 @@ import {
   markAggregateIncident,
   markPendingSupply,
   markSupplyIncident,
-} from "./db_queries.js"
+} from "./db-queries.js"
 import { Config, hexToUtf8, resolveIncident, triggerIncident } from "./helpers.js"
 import type { Hex } from "./helpers.js"
 import type { WrappedToken } from "./helpers.js"
