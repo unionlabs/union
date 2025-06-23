@@ -445,6 +445,7 @@ const createFeeStore = () => {
             composeK(config.applyAdditiveFeeK),
             composeK(config.asBaseUnitK),
             composeK(config.applyFeeMultiplierK),
+            composeK(config.applyBatchDivisionK), // This should be removed later
             composeK(config.applyRatioK),
           ),
         ),
