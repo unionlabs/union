@@ -5,7 +5,7 @@ use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
 use cosmos::{FeemarketConfig, GasFillerConfig};
 use hex_literal::hex;
 use ibc_union_msg::msg::{ExecuteMsg, MsgCreateClient};
-use ibc_union_spec::{ChannelId, Timestamp};
+use ibc_union_spec::{ChannelId, Timestamp, ClientId};
 use protos::cosmos::base::v1beta1::Coin;
 use ucs03_zkgm::com::{
     FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1, OP_FUNGIBLE_ASSET_ORDER,
@@ -73,25 +73,18 @@ async fn main() -> anyhow::Result<()> {
     voyager::init_fetch(eth.chain_id.clone())?;
 
     voyager::create_client(
-        union.chain_id.clone(),
-        eth.chain_id.clone(),
-        "ibc-cosmwasm".into(),
-        "trusted/evm/mpt".into(),
-    )?;
-
-    voyager::create_client(
         eth.chain_id.clone(),
         union.chain_id.clone(),
         "ibc-solidity".into(),
         "cometbls".into(),
     )?;
 
-    let res = eth.wait_for_create_client(Duration::from_secs(15)).await;
+    let res = eth.wait_for_create_client(Duration::from_secs(30)).await;
 
     let counterparty_client_id = match res {
         Ok(confirm) => {
             println!(
-                "✅ got create client result. client_id: {}",
+                "✅ got create client result on EVM. client_id: {}",
                 confirm.client_id,
             );
             confirm.client_id
@@ -102,9 +95,35 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    voyager::create_client(
+        union.chain_id.clone(),
+        eth.chain_id.clone(),
+        "ibc-cosmwasm".into(),
+        "trusted/evm/mpt".into(),
+    )?;
+
+    let res = union.wait_for_create_client_id(Duration::from_secs(30)).await;
+    let client_id: ClientId = match res {
+        Ok(confirm) => {
+            println!(
+                "✅ got create client result on Cosmos. client_id: {}",
+                confirm,
+            );
+            confirm
+        }
+        Err(err) => {
+            eprintln!("⚠️  error waiting for create-client-confirm: {}", err);
+            return Ok(());
+        }
+    };  
+    let client_id_u32 = client_id
+        .raw()
+        .try_into()
+        .expect("client_id should be convertible to u32");
+
     std::thread::sleep(Duration::from_secs(5));
 
-    voyager::connection_open(union.chain_id.clone(), 1, counterparty_client_id)?;
+    voyager::connection_open(union.chain_id.clone(), client_id_u32, counterparty_client_id)?;
 
     let res = eth.wait_for_connection_open_confirm(Duration::from_secs(180)).await;
 
@@ -200,7 +219,7 @@ async fn main() -> anyhow::Result<()> {
         )
         .await
         .unwrap()
-        .unwrap();
+        .unwrap() else { todo!("unexpected event type") };
 
     let recv = match eth
         .wait_for_packet_recv(packet_hash, Duration::from_secs(240))

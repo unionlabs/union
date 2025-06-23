@@ -1,6 +1,6 @@
 use std::panic::AssertUnwindSafe;
+use std::{num::NonZeroU8, num::NonZeroU32, time::Duration, sync::Arc, str::FromStr};
 
-use cometbft_rpc::rpc_types::TxResponse;
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
     gas::{any, feemarket, fixed},
@@ -8,8 +8,12 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
     BroadcastTxCommitError, TxClient,
 };
+use protos::cometbft;
+use tokio::time::timeout;
 use cosmos_sdk_event::CosmosSdkEvent;
-use ibc_union_spec::{event::PacketSend, ChannelId, Timestamp};
+use cometbft::abci::v1::{Event, EventAttribute};
+use cometbft_rpc::rpc_types::{Order, TxResponse};
+use ibc_union_spec::{event::PacketSend, event::CreateClient, ChannelId, ClientId, Timestamp};
 use protos::cosmos::base::v1beta1::Coin;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -26,6 +30,7 @@ use voyager_sdk::{
     primitives::ChainId,
     vm::BoxDynError,
 };
+
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -135,6 +140,95 @@ impl Module {
         })
     }
 
+    async fn wait_for_event<T, F>(
+        &self,
+        mut filter_fn: F,
+        max_wait: Duration,
+    ) -> anyhow::Result<T>
+    where
+        F: FnMut(&IbcEvent) -> Option<T> + Send + 'static,
+        T: Send + 'static,
+    {
+        let client = self.rpc.client();
+        // start at the head
+        let mut height = client.status().await?.sync_info.latest_block_height;
+
+        tokio::time::timeout(max_wait, async move {
+            loop {
+                let latest = client.status().await?.sync_info.latest_block_height;
+                while height <= latest {
+                    let mut page = NonZeroU32::new(1).unwrap();
+                    let mut seen = 0;
+
+                    loop {
+                        let resp = client
+                            .tx_search(
+                                format!("tx.height={}", height),
+                                false,
+                                page,
+                                NonZeroU8::new(100).unwrap(),
+                                Order::Asc,
+                            )
+                            .await?;
+                        seen += resp.txs.len();
+
+                        for tx in resp.txs {
+                            for raw_ev in tx.tx_result.events.into_iter() {
+                                // decode into your enum
+                                // println!("raw event: {raw_ev:?}");
+                                let event = match CosmosSdkEvent::<IbcEvent>::new(raw_ev) {
+                                    Ok(event) => event,
+                                    Err(cosmos_sdk_event::Error::Deserialize(error)) => {
+                                        // println!("unable to parse event: {error}");
+                                        continue;
+                                    }
+                                    Err(err) => {
+                                        // println!("error parsing event: {}", ErrorReporter(err));
+                                        continue;
+                                    }
+                                };
+                                let ibc_evt = event.event;
+                                if let Some(found) = filter_fn(&ibc_evt) {
+                                    return Ok(found);
+                                }
+                            }
+                        }
+
+                        if seen >= resp.total_count as usize {
+                            break;
+                        }
+                        page = page.checked_add(1).unwrap();
+                    }
+
+                    height += 1;
+                }
+                tokio::time::sleep(Duration::from_secs(5)).await;
+            }
+        })
+        .await
+        .map_err(|_| anyhow::anyhow!("timed out after {:?}", max_wait))?
+    }
+
+    pub async fn wait_for_create_client_id(
+        &self,
+        max_wait: Duration,
+    ) -> anyhow::Result<ClientId> {
+        self.wait_for_event(
+            |evt| {
+                if let IbcEvent::WasmCreateClient { client_id, .. } = evt {
+                    Some(client_id.clone())
+                } else {
+                    None
+                }
+            },
+            max_wait,
+        )
+        .await
+    }
+
+
+
+
     // TODO(aeryz): return the digest
     pub async fn send_transaction(
         &self,
@@ -230,5 +324,12 @@ pub enum IbcEvent {
         #[serde(with = "serde_utils::string")]
         channel_id: ChannelId,
         packet_hash: H256,
+    },
+
+    #[serde(rename = "wasm-create_client")]
+    WasmCreateClient {
+        #[serde(with = "serde_utils::string")]
+        client_id: ClientId,
+        client_type: String,
     },
 }
