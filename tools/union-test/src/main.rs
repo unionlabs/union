@@ -86,9 +86,25 @@ async fn main() -> anyhow::Result<()> {
         "cometbls".into(),
     )?;
 
+    let res = eth.wait_for_create_client(Duration::from_secs(15)).await;
+
+    let counterparty_client_id = match res {
+        Ok(confirm) => {
+            println!(
+                "✅ got create client result. client_id: {}",
+                confirm.client_id,
+            );
+            confirm.client_id
+        }
+        Err(err) => {
+            eprintln!("⚠️  error waiting for create-client-confirm: {}", err);
+            return Ok(());
+        }
+    };
+
     std::thread::sleep(Duration::from_secs(5));
 
-    voyager::connection_open(union.chain_id.clone(), 1, 1)?;
+    voyager::connection_open(union.chain_id.clone(), 1, counterparty_client_id)?;
 
     let res = eth.wait_for_connection_open_confirm(Duration::from_secs(180)).await;
 
