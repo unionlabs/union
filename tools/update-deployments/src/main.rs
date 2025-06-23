@@ -1,15 +1,23 @@
 use std::{fmt::Display, path::PathBuf};
 
-use alloy::{eips::BlockNumberOrTag, network::AnyNetwork, providers::Provider};
+use alloy::{
+    eips::BlockNumberOrTag, hex, network::AnyNetwork, primitives::keccak256, providers::Provider,
+};
 use anyhow::{bail, Context, Result};
 use clap::Parser;
-use deployments::{Commit, Deployments, Minter};
+use cosmwasm_std::instantiate2_address;
+use deployments::{
+    Commit, DeployedContract, Deployments, IbcCosmwasmDeployedContractExtra, IbcCosmwasmUcs03Extra,
+    Minter,
+};
 use protos::cosmwasm::wasm::v1::{
     QueryCodeRequest, QueryCodeResponse, QueryContractInfoRequest, QueryContractInfoResponse,
+    QuerySmartContractStateRequest, QuerySmartContractStateResponse,
 };
 use tracing::info;
 use ucs04::UniversalChainId;
-use unionlabs::primitives::H160;
+use unionlabs::primitives::{Bech32, H160, H256};
+use voyager_primitives::ClientType;
 
 #[derive(clap::Parser)]
 struct Args {
@@ -17,6 +25,14 @@ struct Args {
     id: UniversalChainId<'static>,
     #[arg(long, short = 'r')]
     rpc_url: String,
+    #[arg(long)]
+    lightclient: Vec<String>,
+    #[arg(long)]
+    ucs00: bool,
+    #[arg(long)]
+    ucs03: bool,
+    #[arg(long)]
+    ucs03_minter: Option<Ucs03Minter>,
     #[arg(long, default_value_t = false)]
     update_deployment_heights: bool,
     #[arg(
@@ -25,6 +41,44 @@ struct Args {
         required_if_eq("update_deployment_heights", "true")
     )]
     eth_get_logs_window: u64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, clap::ValueEnum)]
+enum Ucs03Minter {
+    Cw20,
+    OsmosisTokenfactory,
+}
+
+const BYTECODE_BASE_CHECKSUM: &[u8] =
+    &hex!("ec827349ed4c1fec5a9c3462ff7c979d4c40e7aa43b16ed34469d04ff835f2a1");
+
+fn derive_cosmwasm(deployer: &Bech32<H160>, namespace: &'static str, salt: &str) -> Bech32<H256> {
+    Bech32::new(
+        deployer.hrp().to_string(),
+        <Vec<u8>>::from(
+            instantiate2_address(
+                BYTECODE_BASE_CHECKSUM,
+                &deployer.data().get().into(),
+                format!("{namespace}/{salt}").as_bytes(),
+            )
+            .unwrap(),
+        )
+        .try_into()
+        .unwrap(),
+    )
+}
+
+fn derive_evm(sender: H160, deployer: H160, namespace: &'static str, salt: &str) -> H160 {
+    create3::predict_deterministic_address(
+        deployer.into(),
+        keccak256(
+            sender
+                .into_iter()
+                .chain(format!("{namespace}/{salt}").bytes())
+                .collect::<Vec<_>>(),
+        ),
+    )
+    .into()
 }
 
 #[tokio::main]
@@ -49,10 +103,11 @@ async fn do_main() -> Result<()> {
             core,
             lightclient,
             app,
-            deployer: _,
+            deployer,
         } => {
             let client = cometbft_rpc::Client::new(args.rpc_url).await?;
 
+            // always write core
             let contract_info = get_cosmwasm_contract_info(&client, &core.address).await?;
             core.height = contract_info.created.unwrap().block_height;
             core.commit = get_commit_wasm(&client, contract_info.code_id).await?;
@@ -79,7 +134,14 @@ async fn do_main() -> Result<()> {
                 );
             }
 
-            if let Some(ucs00) = &mut app.ucs00 {
+            if args.ucs00 {
+                let ucs00 = app.ucs00.get_or_insert(DeployedContract {
+                    address: derive_cosmwasm(deployer, "protocols", "ucs00"),
+                    height: 0,
+                    commit: Commit::Unknown,
+                    extra: IbcCosmwasmDeployedContractExtra { code_id: 0 },
+                });
+
                 let contract_info = get_cosmwasm_contract_info(&client, &ucs00.address).await?;
                 ucs00.height = contract_info.created.unwrap().block_height;
                 ucs00.commit = get_commit_wasm(&client, contract_info.code_id).await?;
@@ -91,9 +153,57 @@ async fn do_main() -> Result<()> {
                     code_id = ucs00.extra.code_id,
                     "updating app ucs00"
                 );
+            } else {
+                app.ucs00 = None;
             }
 
-            if let Some(ucs03) = &mut app.ucs03 {
+            if args.ucs03 {
+                let ucs03 = match app.ucs03.as_mut() {
+                    Some(k) => k,
+                    None => {
+                        let address = derive_cosmwasm(deployer, "protocols", "ucs03");
+                        let minter_address = client
+                            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                                "/cosmwasm.wasm.v1.Query/SmartContractState",
+                                &QuerySmartContractStateRequest {
+                                    address: address.to_string(),
+                                    query_data: serde_json::to_vec(
+                                        &ucs03_zkgm::msg::QueryMsg::GetMinter {},
+                                    )
+                                    .unwrap(),
+                                },
+                                None,
+                                false,
+                            )
+                            .await?
+                            .into_result()?
+                            .map(|x| serde_json::from_slice::<Bech32<H256>>(&x.data))
+                            .transpose()?
+                            .unwrap();
+
+                        let minter = match args.ucs03_minter.unwrap() {
+                            Ucs03Minter::Cw20 => Minter::Cw20 {
+                                address: minter_address,
+                                commit: Commit::Unknown,
+                                code_id: 0,
+                            },
+                            Ucs03Minter::OsmosisTokenfactory => Minter::OsmosisTokenfactory {
+                                address: minter_address,
+                                commit: Commit::Unknown,
+                                code_id: 0,
+                            },
+                        };
+                        app.ucs03 = Some(DeployedContract {
+                            address,
+                            height: 0,
+                            commit: Commit::Unknown,
+                            extra: IbcCosmwasmUcs03Extra { code_id: 0, minter },
+                        });
+
+                        app.ucs03.as_mut().unwrap()
+                    }
+                };
+
                 let contract_info = get_cosmwasm_contract_info(&client, &ucs03.address).await?;
                 ucs03.height = contract_info.created.unwrap().block_height;
                 ucs03.commit = get_commit_wasm(&client, contract_info.code_id).await?;
@@ -105,33 +215,13 @@ async fn do_main() -> Result<()> {
                     code_id = ucs03.extra.code_id,
                     "updating app ucs03"
                 );
-                match &mut ucs03.extra.minter {
-                    Minter::Cw20 {
-                        address,
-                        commit,
-                        code_id,
-                    }
-                    | Minter::OsmosisTokenfactory {
-                        address,
-                        commit,
-                        code_id,
-                    } => {
-                        let contract_info = get_cosmwasm_contract_info(&client, &address).await?;
-                        *commit = get_commit_wasm(&client, contract_info.code_id).await?;
-                        *code_id = contract_info.code_id;
-                        info!(
-                            %address,
-                            %commit,
-                            code_id,
-                            "updating ucs03 minter"
-                        );
-                    }
-                }
+            } else {
+                app.ucs03 = None;
             }
         }
         deployments::Deployment::IbcSolidity {
-            deployer: _,
-            sender: _,
+            deployer,
+            sender,
             manager: _,
             multicall: _,
             core,
@@ -142,6 +232,7 @@ async fn do_main() -> Result<()> {
                 .connect(&args.rpc_url)
                 .await?;
 
+            // always write core
             if args.update_deployment_heights {
                 core.height =
                     get_init_height(&provider, core.address, args.eth_get_logs_window).await?;
@@ -154,7 +245,15 @@ async fn do_main() -> Result<()> {
                 "updating core"
             );
 
-            for (client_type, info) in lightclient {
+            for client_type in &args.lightclient {
+                let info = lightclient
+                    .entry(ClientType::new(client_type.clone()))
+                    .or_insert(DeployedContract {
+                        address: derive_evm(*sender, *deployer, "lightclients", client_type),
+                        height: 0,
+                        commit: Commit::Unknown,
+                        extra: (),
+                    });
                 if args.update_deployment_heights {
                     info.height =
                         get_init_height(&provider, info.address, args.eth_get_logs_window).await?;
@@ -168,7 +267,15 @@ async fn do_main() -> Result<()> {
                 );
             }
 
-            if let Some(ucs00) = &mut app.ucs00 {
+            lightclient.retain(|k, _| args.lightclient.iter().any(|s| s == k.as_str()));
+
+            if args.ucs00 {
+                let ucs00 = app.ucs00.get_or_insert(DeployedContract {
+                    address: derive_evm(*sender, *deployer, "protocols", "ucs00"),
+                    height: 0,
+                    commit: Commit::Unknown,
+                    extra: (),
+                });
                 if args.update_deployment_heights {
                     ucs00.height =
                         get_init_height(&provider, ucs00.address, args.eth_get_logs_window).await?;
@@ -180,9 +287,17 @@ async fn do_main() -> Result<()> {
                     commit = %ucs00.commit,
                     "updating app ucs00"
                 );
+            } else {
+                app.ucs00 = None;
             }
 
-            if let Some(ucs03) = &mut app.ucs03 {
+            if args.ucs03 {
+                let ucs03 = app.ucs03.get_or_insert(DeployedContract {
+                    address: derive_evm(*sender, *deployer, "protocols", "ucs03"),
+                    height: 0,
+                    commit: Commit::Unknown,
+                    extra: (),
+                });
                 if args.update_deployment_heights {
                     ucs03.height =
                         get_init_height(&provider, ucs03.address, args.eth_get_logs_window).await?;
@@ -194,6 +309,8 @@ async fn do_main() -> Result<()> {
                     commit = %ucs03.commit,
                     "updating app ucs03"
                 );
+            } else {
+                app.ucs03 = None;
             }
         }
     }

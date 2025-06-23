@@ -512,7 +512,12 @@ _: {
           text = ''
             ${ensureAtRepositoryRoot}
 
-            RUST_LOG=info update-deployments "deployments/deployments.json" ${ucs04-chain-id} --rpc-url ${rpc-url}
+            RUST_LOG=info update-deployments \
+              "deployments/deployments.json" \
+              ${ucs04-chain-id} \
+              --rpc-url ${rpc-url} \
+              --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
+              --ucs03 --ucs00
           '';
         };
 
