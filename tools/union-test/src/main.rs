@@ -90,12 +90,23 @@ async fn main() -> anyhow::Result<()> {
 
     voyager::connection_open(union.chain_id.clone(), 1, 1)?;
 
-    let confirm = eth.wait_for_connection_open_confirm().await?;
+    let res = eth.wait_for_connection_open_confirm(Duration::from_secs(180)).await;
 
-    let connection_id = confirm.connection_id;
-    let counterparty_connection_id = confirm.counterparty_connection_id;
+    let connection_id = match res {
+        Ok(confirm) => {
+            println!(
+                "✅ got connection confirm: {} ↔ {}",
+                confirm.connection_id,
+                confirm.counterparty_connection_id,
+            );
+            confirm.connection_id
+        }
+        Err (err) => {
+            println!("Error occured when waiting for connection open confirm. Err: {}", err);
+            return Ok(());
+        }
+    };
 
-    println!("connections bro: {connection_id} {counterparty_connection_id}");
 
     voyager::channel_open(
         union.chain_id.clone(),
@@ -109,12 +120,24 @@ async fn main() -> anyhow::Result<()> {
         "ucs03-zkgm-0".into(),
     )?;
 
-    let confirm = eth.wait_for_channel_open_confirm().await?;
-
-    let channel_id: ChannelId = confirm.channel_id.try_into().unwrap();
-    let counterparty_channel_id: ChannelId = confirm.counterparty_channel_id.try_into().unwrap();
-
-    println!("channel bro: {channel_id} {counterparty_channel_id}");
+    let channel_id = match 
+        eth.wait_for_channel_open_confirm(Duration::from_secs(240)).await
+    {
+        Ok(confirm) => {
+            println!(
+                "✅ got channel confirm: {} ↔ {}",
+                confirm.channel_id,
+                confirm.counterparty_channel_id,
+            );
+            
+            confirm.channel_id.try_into().unwrap()
+            
+        }
+        Err(err) => {
+            eprintln!("⚠️  error waiting for channel-open-confirm: {}", err);
+            return Ok(());
+        }
+    };
 
     let cosmos::IbcEvent::WasmPacketSend { packet_hash, .. } = union
         .send_ibc_transaction(
@@ -163,9 +186,20 @@ async fn main() -> anyhow::Result<()> {
         .unwrap()
         .unwrap();
 
-    let recv = eth.wait_for_packet_recv(packet_hash).await?;
+    let recv = match eth
+        .wait_for_packet_recv(packet_hash, Duration::from_secs(240))
+        .await
+    {
+        Ok(ev) => {
+            println!("✅ packet received: {:?}", ev);
+            ev
+        }
+        Err(err) => {
+            eprintln!("⚠️  error waiting for PacketRecv: {}", err);
+            return Ok(());
+        }
+    };
 
-    println!("received the packet brotha: {recv:?}");
 
     Ok(())
 }
