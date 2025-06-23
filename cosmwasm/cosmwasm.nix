@@ -11,15 +11,8 @@ _: {
     }:
     let
       getDeployment =
-        let
-          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
-        in
-        chainId:
-        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
-          (throw "deployment for ${chainId} not found")
-          (throw "many deployments for ${chainId} found")
-          json
-        ).deployments;
+        ucs04-chain-id:
+        (builtins.fromJSON (builtins.readFile ../deployments/deployments.json)).${ucs04-chain-id};
 
       # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
       cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
@@ -573,7 +566,7 @@ _: {
       whitelist-relayers =
         {
           name,
-          chain-id,
+          ucs04-chain-id,
           rpc_url,
           gas_config,
           private_key,
@@ -589,7 +582,7 @@ _: {
               tx \
               whitelist-relayers \
               --rpc-url ${rpc_url} \
-              --contract ${(getDeployment chain-id).core.address} \
+              --contract ${(getDeployment ucs04-chain-id).core.address} \
               ${mk-gas-args gas_config} "$@"
           '';
         };
