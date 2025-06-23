@@ -18,15 +18,8 @@ _: {
       # gitRevToUse = "";
 
       getDeployment =
-        let
-          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
-        in
-        chainId:
-        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
-          (throw "deployment for ${chainId} not found")
-          (throw "many deployments for ${chainId} found")
-          json
-        ).deployments;
+        ucs04-chain-id:
+        (builtins.fromJSON (builtins.readFile ../deployments/deployments.json)).${ucs04-chain-id};
 
       solidity-stringutils = pkgs.fetchFromGitHub {
         owner = "Arachnid";
@@ -519,7 +512,12 @@ _: {
           text = ''
             ${ensureAtRepositoryRoot}
 
-            RUST_LOG=info update-deployments "deployments/deployments.json" ${ucs04-chain-id} --rpc-url ${rpc-url}
+            RUST_LOG=info update-deployments \
+              "deployments/deployments.json" \
+              ${ucs04-chain-id} \
+              --rpc-url ${rpc-url} \
+              --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
+              --ucs03 --ucs00
           '';
         };
 
@@ -584,7 +582,7 @@ _: {
         {
           name,
 
-          chain-id,
+          ucs04-chain-id,
           rpc-url,
           private-key,
 
@@ -600,7 +598,7 @@ _: {
               do
                 cast \
                   send \
-                  ${(getDeployment chain-id).manager} \
+                  ${(getDeployment ucs04-chain-id).manager} \
                   "function grantRole(uint64,address,uint32)" \
                   1 "$relayer" 0 \
                   --private-key ${private-key} \

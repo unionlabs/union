@@ -11,15 +11,8 @@ _: {
     }:
     let
       getDeployment =
-        let
-          json = builtins.fromJSON (builtins.readFile ../deployments/deployments.json);
-        in
-        chainId:
-        (pkgs.lib.lists.findSingle (deployment: deployment.chain_id == chainId)
-          (throw "deployment for ${chainId} not found")
-          (throw "many deployments for ${chainId} found")
-          json
-        ).deployments;
+        ucs04-chain-id:
+        (builtins.fromJSON (builtins.readFile ../deployments/deployments.json)).${ucs04-chain-id};
 
       # minified version of the protos found in https://github.com/CosmWasm/wasmd/tree/2e748fb4b860ee109123827f287949447f2cded7/proto/cosmwasm/wasm/v1
       cosmwasmProtoDefs = pkgs.writeTextDir "/cosmwasm.proto" ''
@@ -141,6 +134,7 @@ _: {
             "trusted-mpt"
             "ethermint"
             "tendermint-bls"
+            "parlia"
             # "movement"
             "state-lens-ics23-mpt"
             # "state-lens-ics23-smt"
@@ -468,6 +462,7 @@ _: {
 
       ucs03-configs = {
         cw20 = {
+          type = "cw20";
           path = "${ucs03-zkgm.release}";
           cw_account_path = "${cw-account.release}";
           token_minter_path = "${cw20-token-minter.release}";
@@ -479,6 +474,7 @@ _: {
           rate_limit_disabled = false;
         };
         osmosis_tokenfactory = {
+          type = "osmosis-tokenfactory";
           rate_limit_disabled = false;
           path = "${ucs03-zkgm.release}";
           cw_account_path = "${cw-account.release}";
@@ -563,7 +559,7 @@ _: {
             RUST_LOG=info \
               cosmwasm-deployer \
               deploy-full \
-              --contracts ${chain-deployments-json args} \
+              --contracts ${chain-contracts-config-json args} \
               ${if permissioned then "--permissioned " else ""} \
               --rpc-url ${rpc_url} \
               ${mk-gas-args gas_config}
@@ -573,7 +569,7 @@ _: {
       whitelist-relayers =
         {
           name,
-          chain-id,
+          ucs04-chain-id,
           rpc_url,
           gas_config,
           private_key,
@@ -589,7 +585,7 @@ _: {
               tx \
               whitelist-relayers \
               --rpc-url ${rpc_url} \
-              --contract ${(getDeployment chain-id).core.address} \
+              --contract ${(getDeployment ucs04-chain-id).core.address} \
               ${mk-gas-args gas_config} "$@"
           '';
         };
@@ -634,9 +630,14 @@ _: {
           '';
         };
 
-      chain-deployments-json =
-        { lightclients, apps, ... }:
-        pkgs.writeText "contracts.json" (
+      chain-contracts-config-json =
+        {
+          ucs04-chain-id,
+          lightclients,
+          apps,
+          ...
+        }:
+        pkgs.writeText "${ucs04-chain-id}.contracts-confg.json" (
           builtins.toJSON {
             core = ibc-union.release;
             lightclient = builtins.listToAttrs (
@@ -649,6 +650,22 @@ _: {
               ) (builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients)
             );
             app = apps;
+          }
+        );
+
+      chain-deployed-contracts-json =
+        {
+          ucs04-chain-id,
+          lightclients,
+          apps,
+          ...
+        }:
+        pkgs.writeText "${ucs04-chain-id}.deployed-contracts.json" (
+          builtins.toJSON {
+            lightclient = map ({ client-type, ... }: client-type) (
+              builtins.filter ({ name, ... }: builtins.elem name lightclients) all-lightclients
+            );
+            app = builtins.attrNames apps;
           }
         );
 
@@ -875,12 +892,13 @@ _: {
         crane.buildWasmContract "cosmwasm/osmosis-tokenfactory-token-minter"
           { };
 
-      # update-deployments-json deployer
       update-deployments-json =
         {
           name,
           rpc_url,
           ucs04-chain-id,
+          lightclients,
+          apps,
           ...
         }:
         pkgs.writeShellApplication {
@@ -891,7 +909,13 @@ _: {
           text = ''
             ${ensureAtRepositoryRoot}
 
-            RUST_LOG=info update-deployments "deployments/deployments.json" ${ucs04-chain-id} --rpc-url ${rpc_url}
+            RUST_LOG=info update-deployments \
+              "deployments/deployments.json" \
+              ${ucs04-chain-id} \
+              --rpc-url ${rpc_url} \
+              ${pkgs.lib.concatMapStringsSep " " (lc: "--lightclient ${lc}") lightclients} \
+              ${if apps ? ucs03 then "--ucs03 --ucs03-minter ${apps.ucs03.type}" else ""} \
+              ${if apps ? ucs00 then "--ucs00" else ""}
           '';
         };
     in
@@ -940,7 +964,8 @@ _: {
                   inherit (chain) name;
                   value = pkgs.mkRootDrv chain.name (
                     {
-                      chain-deployments-json = chain-deployments-json chain;
+                      chain-contracts-config-json = chain-contracts-config-json chain;
+                      chain-deployed-contracts-json = chain-deployed-contracts-json chain;
                       deploy = deploy chain;
                       update-deployments-json = update-deployments-json chain;
                       finalize-deployment = finalize-deployment chain;

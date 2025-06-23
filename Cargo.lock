@@ -16005,6 +16005,7 @@ dependencies = [
  "cometbft-rpc",
  "cosmos-client",
  "cosmwasm-std 2.2.2",
+ "create3",
  "deployments",
  "embed-commit",
  "embed-commit-verifier",
@@ -16014,8 +16015,10 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+ "ucs03-zkgm",
  "ucs04",
  "unionlabs",
+ "voyager-primitives",
 ]
 
 [[package]]

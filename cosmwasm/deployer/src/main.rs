@@ -343,7 +343,7 @@ struct AppPaths {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-#[serde(deny_unknown_fields, rename_all = "snake_case")]
+#[serde(rename_all = "snake_case")]
 pub struct Ucs03Config {
     path: PathBuf,
     token_minter_path: PathBuf,
