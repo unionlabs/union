@@ -1,5 +1,6 @@
 use std::{fmt::Display, num::ParseIntError, ops::Range};
 
+use alloy::primitives::Address;
 use async_nats::jetstream::{
     consumer::{
         pull::{BatchErrorKind, MessagesErrorKind},
@@ -78,6 +79,8 @@ pub enum IndexerError {
         "missing universal chain id: in stream sequence: {0}, consumer_sequence sequence: {1}"
     )]
     NatsMissingUniversalChainId(u64, u64),
+    #[error("no abi for address: {0}")]
+    AbiNoAbiForAddress(Address),
 }
 
 impl From<Report> for IndexerError {

@@ -19,7 +19,8 @@ path = "src/main.rs"
 
 [dependencies]
 # aptos-rest-client  = { workspace = true }
-alloy              = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest"] }
+alloy              = { workspace = true, features = ["eips", "rpc", "rpc-types", "serde", "transports", "transport-http", "providers", "reqwest", "dyn-abi", "json-abi", "eip712"] }
+alloy-primitives   = { workspace = true }
 async-nats         = { version = "0.41.0" }
 axum               = { workspace = true, features = ["macros", "tokio"] }
 backon             = "0.4.4"

@@ -7,6 +7,7 @@ mod block_handle;
 pub mod config;
 mod context;
 mod fetcher_client;
+mod log_parser;
 mod postgres;
 mod provider;
 

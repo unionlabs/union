@@ -8,7 +8,7 @@ use bytes::Bytes;
 use hex::decode;
 use itertools::Itertools;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
-use serde_json::{json, Value};
+use serde_json::Value;
 use sha2::Digest;
 use sqlx::Postgres;
 use time::OffsetDateTime;
@@ -198,31 +198,12 @@ impl<T: FetcherClient> Indexer<T> {
         events: Option<BlockEvents>,
         dedup_message_hash: Option<&MessageHash>,
     ) -> Result<MessageHash, IndexerError> {
-        let events_with_unsupported_event = match events {
-            Some(events) => BlockEvents {
-                events: events
-                    .events
-                    .into_iter()
-                    .chain(vec![BlockEvent::Unsupported(UnsupportedBlockEvent {
-                        event_type: "unsupported-some".to_string(),
-                        raw: json!({ "bla": "blo" }),
-                    })])
-                    .collect_vec(),
-            },
-            None => BlockEvents {
-                events: vec![BlockEvent::Unsupported(UnsupportedBlockEvent {
-                    event_type: "unsupported-none".to_string(),
-                    raw: json!({ "bla": "blo" }),
-                })],
-            },
-        };
-
         let data = serde_json::to_vec(&HubbleEvent {
             version: 1,
             universal_chain_id: self.universal_chain_id.clone(),
             range: range.clone(),
             chunk: None,
-            events: Some(events_with_unsupported_event),
+            events,
         })
         .map_err(|e| IndexerError::InternalError(e.into()))?;
 
@@ -292,7 +273,7 @@ impl From<SupportedBlockEvent> for BlockEvent {
 }
 
 #[warn(clippy::enum_variant_names)]
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Clone)]
 #[serde(tag = "type")]
 pub enum SupportedBlockEvent {
     // using database representation of fields. all these 'record representations' will
@@ -305,6 +286,20 @@ pub enum SupportedBlockEvent {
         #[serde(with = "flexible_u64")]
         height: BlockHeight,
         time: OffsetDateTime,
+    },
+
+    #[serde(rename = "ethereum-decoded-log")]
+    EthereumDecodedLog {
+        internal_chain_id: i32,
+        block_hash: String,
+        height: BlockHeight,
+        log_index: i32,
+        timestamp: OffsetDateTime,
+        transaction_hash: String,
+        transaction_index: i32,
+        transaction_log_index: i32,
+        raw_log: Value,
+        log_to_jsonb: Value,
     },
 
     #[serde(rename = "tendermint-block")]
@@ -350,6 +345,7 @@ impl SupportedBlockEvent {
             SupportedBlockEvent::TendermintTransaction { height, .. } => *height,
             SupportedBlockEvent::TendermintEvent { height, .. } => *height,
             SupportedBlockEvent::EthereumLog { height, .. } => *height,
+            SupportedBlockEvent::EthereumDecodedLog { height, .. } => *height,
         }
     }
 }

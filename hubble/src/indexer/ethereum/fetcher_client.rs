@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use alloy::{
     eips::BlockId,
     network::AnyRpcBlock,
-    primitives::{Address, BloomInput, FixedBytes},
+    primitives::{BloomInput, FixedBytes},
     rpc::types::{BlockTransactionsKind, Filter, Log},
 };
 use axum::async_trait;
@@ -23,9 +23,10 @@ use crate::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },
             context::EthContext,
-            postgres::active_contracts,
+            postgres::{get_abi_registration, AbiRegistration},
             provider::{Provider, RpcProviderId},
         },
+        event::SupportedBlockEvent,
     },
     postgres::{fetch_chain_id_tx, ChainId},
 };
@@ -40,7 +41,7 @@ impl ToLowerHex for FixedBytes<32> {
     }
 }
 
-trait BlockReferenceProvider {
+pub trait BlockReferenceProvider {
     fn block_reference(&self) -> Result<BlockReference, Report>;
 }
 
@@ -70,11 +71,14 @@ pub struct TransactionFilter {
     pub pg_pool: sqlx::PgPool,
 }
 impl TransactionFilter {
-    pub(crate) async fn addresses_at(
+    pub(crate) async fn abi_registration_at(
         &self,
         height: BlockHeight,
-    ) -> Result<Vec<Address>, IndexerError> {
-        Ok(active_contracts(&mut self.pg_pool.begin().await?, self.chain_id.db, height).await?)
+    ) -> Result<AbiRegistration, IndexerError> {
+        Ok(
+            get_abi_registration(&mut self.pg_pool.begin().await?, self.chain_id.db, height)
+                .await?,
+        )
     }
 }
 
@@ -147,21 +151,25 @@ impl EthFetcherClient {
 
         info!("{}: fetch", block_reference);
 
-        let contract_addresses = self
+        let abi_registration = self
             .transaction_filter
-            .addresses_at(block_reference.height)
+            .abi_registration_at(block_reference.height)
             .await?;
         debug!(
-            "{}: contract-addresses: {:?}",
-            block_reference, &contract_addresses
+            "{}: contract-addresses: {}",
+            block_reference, &abi_registration
         );
         // We check for a potential log match, which potentially avoids querying
         // eth_getLogs.
         let bloom = block.header.logs_bloom;
 
-        if contract_addresses.iter().all(|contract_address| {
-            !bloom.contains_input(BloomInput::Raw(&contract_address.into_array()))
-        }) {
+        if abi_registration
+            .addresses()
+            .into_iter()
+            .all(|contract_address| {
+                !bloom.contains_input(BloomInput::Raw(&contract_address.into_array()))
+            })
+        {
             info!("{}: ignored (bloom)", block_reference);
             return Ok(None);
         }
@@ -169,7 +177,7 @@ impl EthFetcherClient {
         // We know now there is a potential match, we still apply a Filter to only
         // get the logs we want.
         let log_filter = Filter::new().select(block.header.hash);
-        let log_filter = log_filter.address(contract_addresses);
+        let log_filter = log_filter.address(abi_registration.addresses());
 
         let logs = self
             .provider
@@ -186,7 +194,7 @@ impl EthFetcherClient {
 
         let events_by_transaction = {
             let mut map: HashMap<(_, _), Vec<Log>> = HashMap::with_capacity(logs.len());
-            for log in logs {
+            for log in &logs {
                 if log.removed {
                     continue;
                 }
@@ -196,7 +204,7 @@ impl EthFetcherClient {
                     log.transaction_index.unwrap(),
                 ))
                 .and_modify(|logs| logs.push(log.clone()))
-                .or_insert(vec![log]);
+                .or_insert(vec![log.clone()]);
             }
             map
         };
@@ -208,10 +216,10 @@ impl EthFetcherClient {
                 let transaction_index: i32 = transaction_index.try_into().unwrap();
 
                 let events: Vec<EventInsert> = logs
-                    .into_iter()
+                    .iter()
                     .enumerate()
                     .map(|(transaction_log_index, log)| {
-                        let data = serde_json::to_value(&log).unwrap();
+                        let data = serde_json::to_value(log).unwrap();
                         EventInsert {
                             data,
                             log_index: log.log_index.expect("log_index").try_into().unwrap(),
@@ -244,6 +252,15 @@ impl EthFetcherClient {
             transactions.len()
         );
 
+        // do ucs transformation
+        let ucs_events = self.transform_logs_to_ucs_events(&abi_registration, block, &logs)?;
+
+        debug!(
+            "{}: fetch => converted (events: {})",
+            block_reference,
+            ucs_events.len()
+        );
+
         Ok(Some(BlockInsert {
             chain_id: self.chain_id,
             hash: block_reference.hash,
@@ -251,7 +268,93 @@ impl EthFetcherClient {
             height: block_reference.height.try_into().unwrap(),
             time: block_reference.timestamp,
             transactions,
+            ucs_events,
         }))
+    }
+
+    fn transform_logs_to_ucs_events(
+        &self,
+        abi_registration: &AbiRegistration,
+        block: &AnyRpcBlock,
+        logs: &[Log],
+    ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
+        // group events by transaction
+        let events_by_transaction = {
+            let mut map: HashMap<_, Vec<Log>> = HashMap::with_capacity(logs.len());
+            for log in logs {
+                if log.removed {
+                    continue;
+                }
+
+                map.entry(log.transaction_index.unwrap())
+                    .and_modify(|logs| logs.push(log.clone()))
+                    .or_insert(vec![log.clone()]);
+            }
+            map
+        };
+
+        Ok(events_by_transaction
+            .into_iter()
+            .sorted_by_key(|(transaction_index, _)| transaction_index.clone())
+            .map(|(_, logs)| {
+                logs.iter()
+                    .sorted_by_key(|e| e.log_index)
+                    .enumerate()
+                    .map(|(transaction_log_index, log)| {
+                        self.transform_log_to_ucs_events(
+                            abi_registration,
+                            block,
+                            transaction_log_index,
+                            log,
+                        )
+                    })
+                    .collect::<Result<Vec<Vec<SupportedBlockEvent>>, IndexerError>>()
+            })
+            .collect::<Result<Vec<Vec<Vec<SupportedBlockEvent>>>, IndexerError>>()?
+            .into_iter()
+            .flatten()
+            .flatten()
+            .collect())
+    }
+
+    fn transform_log_to_ucs_events(
+        &self,
+        abi_registration: &AbiRegistration,
+        block: &AnyRpcBlock,
+        transaction_log_index: usize,
+        log: &Log,
+    ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
+        let decoded = abi_registration.decode(log)?;
+
+        let result = SupportedBlockEvent::EthereumDecodedLog {
+            internal_chain_id: self.chain_id.db,
+            block_hash: block.header.hash.to_lower_hex(),
+            height: block.header.number,
+            log_index: i32::try_from(log.log_index.expect("log index in log"))
+                .expect("log index fits"),
+            timestamp: OffsetDateTime::from_unix_timestamp(
+                block
+                    .header
+                    .timestamp
+                    .try_into()
+                    .expect("timestamp fits in i64"),
+            )
+            .expect("timestamp can be converted"),
+            transaction_hash: log
+                .transaction_hash
+                .expect("transaction-hash in log")
+                .to_string(),
+            transaction_index: i32::try_from(
+                log.transaction_index.expect("transaction-index in log"),
+            )
+            .expect("transaction index fits"),
+            transaction_log_index: i32::try_from(transaction_log_index)
+                .expect("transaction log index fits"),
+            raw_log: serde_json::to_value(log).unwrap(),
+            log_to_jsonb: decoded,
+        };
+
+        Ok(vec![result])
     }
 }
 

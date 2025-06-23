@@ -1,5 +1,5 @@
 use sqlx::{Postgres, Transaction};
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::indexer::{
     api::{BlockHeight, UniversalChainId},
@@ -24,6 +24,9 @@ pub async fn delete_event_data_at_height(
             ),
             delete_cosmos_blocks AS (
                 DELETE FROM v2_cosmos.blocks WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1) AND height = $2
+            ),
+            delete_evm_logs_decoded AS (
+                DELETE FROM v2_evm.logs_decoded WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1) AND height = $2
             )
             DELETE FROM v2_evm.logs WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1) AND height = $2
             ",
@@ -75,7 +78,8 @@ pub async fn handle_block_events(
     let mut change = false;
 
     for block_event in block_events {
-        change = change || handle_block_event(tx, block_event).await?
+        let event_changed_data = handle_block_event(tx, block_event).await?;
+        change |= event_changed_data;
     }
 
     Ok(change)
@@ -85,6 +89,8 @@ pub async fn handle_block_event(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     block_event: &SupportedBlockEvent,
 ) -> sqlx::Result<bool> {
+    trace!("handling: {block_event:?}");
+
     match block_event {
         SupportedBlockEvent::EthereumLog {
             internal_chain_id,
@@ -102,6 +108,44 @@ pub async fn handle_block_event(
             data,
             i64::try_from(*height).expect("height fits"),
             time
+        )
+        .execute(tx.as_mut()),
+        SupportedBlockEvent::EthereumDecodedLog {
+            internal_chain_id,
+            block_hash,
+            height,
+            log_index,
+            timestamp,
+            transaction_hash,
+            transaction_index,
+            transaction_log_index,
+            raw_log,
+            log_to_jsonb,
+        } => sqlx::query!(
+            "
+            INSERT INTO v2_evm.logs_decoded (
+                internal_chain_id,
+                block_hash,
+                height,
+                log_index,
+                timestamp,
+                transaction_hash,
+                transaction_index,
+                transaction_log_index,
+                raw_log,
+                log_to_jsonb)
+            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            ",
+            internal_chain_id,
+            block_hash,
+            i64::try_from(*height).expect("height fits"),
+            log_index,
+            timestamp,
+            transaction_hash,
+            transaction_index,
+            transaction_log_index,
+            raw_log,
+            log_to_jsonb,
         )
         .execute(tx.as_mut()),
         SupportedBlockEvent::TendermintBlock {
