@@ -10,7 +10,7 @@ use alloy::{
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
-use ibc_solidity::Ibc::{self, ChannelOpenConfirm, ConnectionOpenConfirm, IbcEvents, PacketRecv};
+use ibc_solidity::Ibc::{self, CreateClient, ChannelOpenConfirm, ConnectionOpenConfirm, IbcEvents, PacketRecv};
 use serde::{Deserialize, Serialize};
 use unionlabs::primitives::{H160, H256};
 use voyager_sdk::{anyhow, primitives::ChainId};
@@ -150,6 +150,17 @@ impl Module {
             }
         }).await
         .map_err(|_| anyhow::anyhow!("timed out after {:?}", timeout))?
+    }
+    
+    pub async fn wait_for_create_client(
+        &self,
+        timeout: Duration,
+    ) -> anyhow::Result<CreateClient> {
+        self.wait_for_event(|e| match e {
+            IbcEvents::CreateClient(ev) => Some(ev),
+            _ => None,
+        }, timeout)
+        .await
     }
 
     pub async fn wait_for_connection_open_confirm(
