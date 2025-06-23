@@ -9,6 +9,7 @@ import PopularRoutesChart from "./charts/PopularRoutesChart.svelte"
 import TerminalLog from "./charts/TerminalLog.svelte"
 import TransferStats from "./charts/TransferStats.svelte"
 import WalletActivityChart from "./charts/WalletActivityChart.svelte"
+  import NodeHealthChart from "./charts/NodeHealthChart.svelte";
 // Extended transfer type with server pre-computed fields
 type EnhancedTransferListItem = TransferListItem & {
   isTestnetTransfer?: boolean
@@ -114,6 +115,18 @@ let chartData = $state({
     serverUptimeSeconds: 0,
   },
   latencyData: [],
+  nodeHealthData: [] as Array<{
+    chainId: string
+    chainName: string
+    rpcUrl: string
+    rpcType: string
+    status: string
+    responseTimeMs: number
+    lastCheckTime: number
+    latestBlockHeight?: number
+    errorMessage?: string
+    uptime: number
+  }>,
   dataAvailability: {
     hasMinute: false,
     hasHour: false,
@@ -129,6 +142,105 @@ let chainsData = []
 
 // Track if we've received initial data
 let hasInitialData = false
+
+// Transform raw node health data into the format expected by NodeHealthChart
+const processedNodeHealthData = $derived.by(() => {
+  const rawData = chartData.nodeHealthData || []
+  
+  console.log('🔍 NodeHealth Debug:', {
+    rawDataLength: rawData.length,
+    hasRawData: Array.isArray(rawData),
+    firstNode: rawData[0],
+    chartDataKeys: Object.keys(chartData)
+  })
+  
+  if (!Array.isArray(rawData) || rawData.length === 0) {
+    console.log('❌ No node health data available')
+    return {
+      totalNodes: 0,
+      healthyNodes: 0,
+      degradedNodes: 0,
+      unhealthyNodes: 0,
+      avgResponseTime: 0,
+      nodesWithRpcs: [],
+      chainHealthStats: {},
+      dataAvailability: chartData.dataAvailability || {
+        hasMinute: false,
+        hasHour: false,
+        hasDay: false,
+        has7Days: false,
+        has14Days: false,
+        has30Days: false,
+      }
+    }
+  }
+
+  const healthyNodes = rawData.filter(node => node.status === 'healthy').length
+  const degradedNodes = rawData.filter(node => node.status === 'degraded').length
+  const unhealthyNodes = rawData.filter(node => node.status === 'unhealthy').length
+  
+  const totalResponseTime = rawData
+    .filter(node => node.responseTimeMs > 0)
+    .reduce((sum, node) => sum + node.responseTimeMs, 0)
+  const nodesWithResponseTime = rawData.filter(node => node.responseTimeMs > 0).length
+  const avgResponseTime = nodesWithResponseTime > 0 ? totalResponseTime / nodesWithResponseTime : 0
+
+  // Build chain health stats
+  const chainHealthStats: Record<string, {
+    chainName: string
+    healthyNodes: number
+    totalNodes: number
+    avgResponseTime: number
+    uptime: number
+  }> = {}
+  rawData.forEach(node => {
+    if (!chainHealthStats[node.chainId]) {
+      chainHealthStats[node.chainId] = {
+        chainName: node.chainName,
+        healthyNodes: 0,
+        totalNodes: 0,
+        avgResponseTime: 0,
+        uptime: 0
+      }
+    }
+    
+    const stat = chainHealthStats[node.chainId]
+    stat.totalNodes++
+    if (node.status === 'healthy') {
+      stat.healthyNodes++
+    }
+    stat.avgResponseTime = ((stat.avgResponseTime * (stat.totalNodes - 1)) + node.responseTimeMs) / stat.totalNodes
+    stat.uptime = ((stat.uptime * (stat.totalNodes - 1)) + node.uptime) / stat.totalNodes
+  })
+
+  const result = {
+    totalNodes: rawData.length,
+    healthyNodes,
+    degradedNodes,
+    unhealthyNodes,
+    avgResponseTime,
+    nodesWithRpcs: rawData,
+    chainHealthStats,
+    dataAvailability: chartData.dataAvailability || {
+      hasMinute: false,
+      hasHour: false,
+      hasDay: false,
+      has7Days: false,
+      has14Days: false,
+      has30Days: false,
+    }
+  }
+  
+  console.log('✅ Processed NodeHealth Data:', {
+    totalNodes: result.totalNodes,
+    healthyNodes: result.healthyNodes,
+    avgResponseTime: result.avgResponseTime,
+    hasNodesWithRpcs: result.nodesWithRpcs.length,
+    chainStatsCount: Object.keys(result.chainHealthStats).length
+  })
+  
+  return result
+})
 
 function handleChainSelection(fromChain: string | null, toChain: string | null) {
   selectedFromChain = fromChain
@@ -180,10 +292,6 @@ function connectWebSocket() {
       console.log("message", message)
 
       if (message.type === "transfers" && Array.isArray(message.data)) {
-        // Add new transfers - WebSocket sends them with server-side optimizations!
-        // Server pre-computes: testnet flags, display names, truncated addresses, formatted timestamps
-        // Add new transfers - WebSocket sends them with server-side optimizations!
-        // Server pre-computes: testnet flags, display names, truncated addresses, formatted timestamps
         transfers = [...transfers, ...message.data]
         console.log(
           `📦 Received ${message.data.length} new transfers (server-optimized). Total: ${transfers.length}`,
@@ -197,6 +305,7 @@ function connectWebSocket() {
         transferRates = message.data
       } else if (message.type === "chartData" && message.data) {
         // Update chart data from backend
+        console.log("chartData", message.data)
         chartData = message.data
         hasInitialData = true
 
@@ -416,5 +525,10 @@ onDestroy(() => {
   <!-- Latency Chart - full width row -->
   <div class="order-6 lg:order-6 lg:col-span-3 min-h-0">
     <LatencyChart latencyData={chartData.latencyData} />
+  </div>
+  
+  <!-- Node Health Chart - full width row -->
+  <div class="order-7 lg:order-7 lg:col-span-3 min-h-0">
+    <NodeHealthChart nodeHealthData={chartData.nodeHealthData} />
   </div>
 </div>
