@@ -90,7 +90,7 @@ function getStatusBadge(status: string) {
   }
 }
 
-const handleRoleRequest = (reward: any) =>
+const handleRoleRequest = (reward: typeof rewards[number]) =>
   pipe(
     Effect.sync(() => loading[reward.id] = true),
     Effect.flatMap(() => getSupabaseClient()),
@@ -166,6 +166,7 @@ const handleRoleRequest = (reward: any) =>
                       runPromise(handleRoleRequest(reward))
                     }}
                     title="Request role"
+                    aria-label="Request role"
                   >
                     {#if loading[reward.id]}
                       <svg
