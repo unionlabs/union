@@ -1,4 +1,5 @@
 use std::time::Duration;
+use tokio::time::timeout;
 
 use alloy::{
     network::{AnyNetwork, EthereumWallet},
@@ -107,74 +108,87 @@ impl Module {
     async fn wait_for_event<T, F: Fn(IbcEvents) -> Option<T>>(
         &self,
         filter_fn: F,
+        timeout: Duration,
     ) -> anyhow::Result<T> {
-        let mut prev_latest = self.provider.get_block_number().await?;
-        loop {
-            let latest = self.provider.get_block_number().await?;
+        tokio::time::timeout(timeout, async {
 
-            if prev_latest >= latest {
-                tokio::time::sleep(Duration::from_secs(5)).await;
-                continue;
-            }
+            let mut prev_latest = self.provider.get_block_number().await?;
+            loop {
+                let latest = self.provider.get_block_number().await?;
 
-            while prev_latest <= latest {
-                let filter = Filter::new()
-                    .address(alloy::primitives::Address::from(self.ibc_handler_address))
-                    .from_block(prev_latest)
-                    .to_block(prev_latest);
+                if prev_latest >= latest {
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
 
-                // 4) query logs; get_logs returns empty Vec if none
-                let logs = match self.provider.get_logs(&filter).await {
-                    Ok(logs) => logs,
-                    Err(e) => {
-                        return Err(anyhow::anyhow!("get_logs RPC error: {}", e));
-                    }
-                };
+                while prev_latest <= latest {
+                    let filter = Filter::new()
+                        .address(alloy::primitives::Address::from(self.ibc_handler_address))
+                        .from_block(prev_latest)
+                        .to_block(prev_latest);
 
-                for log in logs {
-                    if let Ok(ibc_event) = IbcEvents::decode_log(&log.inner) {
-                        if let Some(event) = filter_fn(ibc_event.data) {
-                            return Ok(event);
+                    // 4) query logs; get_logs returns empty Vec if none
+                    let logs = match self.provider.get_logs(&filter).await {
+                        Ok(logs) => logs,
+                        Err(e) => {
+                            return Err(anyhow::anyhow!("get_logs RPC error: {}", e));
+                        }
+                    };
+
+                    for log in logs {
+                        if let Ok(ibc_event) = IbcEvents::decode_log(&log.inner) {
+                            if let Some(event) = filter_fn(ibc_event.data) {
+                                return Ok(event);
+                            }
                         }
                     }
+
+                    prev_latest += 1u64;
                 }
 
-                prev_latest += 1u64;
+                tokio::time::sleep(Duration::from_secs(5)).await;
             }
-
-            tokio::time::sleep(Duration::from_secs(5)).await;
-        }
+        }).await
+        .map_err(|_| anyhow::anyhow!("timed out after {:?}", timeout))?
     }
 
-    pub async fn wait_for_connection_open_confirm(&self) -> anyhow::Result<ConnectionOpenConfirm> {
-        self.wait_for_event(|f| match f {
-            IbcEvents::ConnectionOpenConfirm(e) => Some(e),
+    pub async fn wait_for_connection_open_confirm(
+        &self,
+        timeout: Duration,
+    ) -> anyhow::Result<ConnectionOpenConfirm> {
+        self.wait_for_event(|e| match e {
+            IbcEvents::ConnectionOpenConfirm(ev) => Some(ev),
             _ => None,
-        })
+        }, timeout)
         .await
     }
 
-    pub async fn wait_for_channel_open_confirm(&self) -> anyhow::Result<ChannelOpenConfirm> {
-        self.wait_for_event(|f| match f {
-            IbcEvents::ChannelOpenConfirm(e) => Some(e),
+    pub async fn wait_for_channel_open_confirm(
+        &self,
+        timeout: Duration,
+    ) -> anyhow::Result<ChannelOpenConfirm> {
+        self.wait_for_event(|e| match e {
+            IbcEvents::ChannelOpenConfirm(ev) => Some(ev),
             _ => None,
-        })
+        }, timeout)
         .await
     }
 
-    pub async fn wait_for_packet_recv(&self, packet_hash: H256) -> anyhow::Result<PacketRecv> {
-        self.wait_for_event(|f| match f {
-            IbcEvents::PacketRecv(e) => {
-                if packet_hash.as_ref() == e.packet_hash.as_slice() {
-                    Some(e)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        })
+    pub async fn wait_for_packet_recv(
+        &self,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> anyhow::Result<PacketRecv> {
+        self.wait_for_event(
+            |e| match e {
+                IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => Some(ev),
+                _ => None,
+            },
+            timeout,
+        )
         .await
     }
+
 
     // async fn submit_transaction(
     //     &self,
