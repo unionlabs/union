@@ -468,10 +468,10 @@ mod tests {
 
     #[test]
     fn calculate_signing_valset_epoch_block_number_works() {
-        let cases: &[(u64, u64)] = &[(50932088, 50931500), (50932089, 50932000)];
+        let cases: &[(u64, u64)] = &[(50932064, 50931000), (50932065, 50932000)];
 
         for &(h, expected) in cases {
-            assert_eq!(calculate_signing_valset_epoch_block_number(h, 21), expected);
+            assert_eq!(calculate_signing_valset_epoch_block_number(h, 7), expected);
         }
     }
 
