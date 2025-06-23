@@ -19,8 +19,14 @@ const { type, onClick }: Props = $props()
 const selectedChain: Option.Option<Chain> = $derived(
   pipe(
     Match.value(type),
-    Match.when("source", () => transferData.sourceChain),
-    Match.when("destination", () => transferData.destinationChain),
+    Match.when("source", () => {
+      void transferData.raw.source
+      return transferData.sourceChain
+    }),
+    Match.when("destination", () => {
+      void transferData.raw.destination
+      return transferData.destinationChain
+    }),
     Match.exhaustive,
   ),
 )
