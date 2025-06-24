@@ -30,4 +30,4 @@ export const VIEM_CHAINS = [
   sei,
   seiTestnet,
   sepolia,
-]
+] as const
