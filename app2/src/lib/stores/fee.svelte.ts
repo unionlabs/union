@@ -553,7 +553,7 @@ const createFeeStore = () => {
       ] as const,
       A.getSomes,
       Unify.unify,
-      A.map(Cause.squash),
+      A.map(Cause.originalError),
       A.map(x => (x as any)?.message),
       A.filter(Predicate.isNotUndefined),
     )
