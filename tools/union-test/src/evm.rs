@@ -1,19 +1,37 @@
-use std::time::Duration;
+use std::{time::Duration, panic::AssertUnwindSafe};
 use tokio::time::timeout;
 
 use alloy::{
-    network::{AnyNetwork, EthereumWallet},
-    providers::{fillers::RecommendedFillers, DynProvider, Provider, ProviderBuilder},
-    rpc::types::Filter,
-    signers::local::LocalSigner,
-    sol_types::SolEventInterface,
+    contract::{Error, RawCallBuilder},
+    transports::TransportError,
+    providers::{
+        fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
+        Provider, ProviderBuilder,
+    },
+    network::{AnyNetwork, EthereumWallet}, primitives::TxHash, rpc::types::{self, AnyReceiptEnvelope, Filter, Log, TransactionReceipt}, signers::local::LocalSigner, sol_types::SolEventInterface    
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
-use ibc_solidity::Ibc::{self, CreateClient, ChannelOpenConfirm, ConnectionOpenConfirm, IbcEvents, PacketRecv};
+use ibc_union_spec::{datagram::Datagram, IbcUnion};
+
+use ibc_solidity::Ibc::{self, CreateClient, ChannelOpenConfirm, ConnectionOpenConfirm, IbcEvents, IbcErrors, PacketRecv};
 use serde::{Deserialize, Serialize};
-use unionlabs::primitives::{H160, H256};
-use voyager_sdk::{anyhow, primitives::ChainId};
+use unionlabs::{primitives::{H160, H256}, ErrorReporter};
+use voyager_sdk::{
+    anyhow::{self, anyhow, bail},
+    into_value,
+    primitives::ChainId};
+    
+use multicall::{Call3, Multicall, MulticallResult};
+// use voyager_sdk::plugin::Plugin::
+// use crate::multicall::{Call3, Multicall, MulticallResult};
+use jsonrpsee::{
+    core::{async_trait, RpcResult},
+    proc_macros::rpc,
+    types::{ErrorObject, ErrorObjectOwned},
+    Extensions, MethodsError,
+};
+use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
 
 #[derive(Debug)]
 pub struct Module {
@@ -199,197 +217,233 @@ impl Module {
         )
         .await
     }
+        /// Send a batch of IBC datagrams on‐chain, then wait for the PacketRecv event matching `packet_hash`.
+    pub async fn send_ibc_transaction(
+        &self,
+        contract: H160,
+        ibc_messages: Vec<(
+            Datagram,
+            RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
+        )>,
+        packet_hash: H256,
+        timeout: Duration,
+    ) -> RpcResult<PacketRecv> {
+        // 1) submit the multicall batch
+        self.send_transaction(contract, ibc_messages).await?;
+
+        // 2) wait for the PacketRecv event we care about
+        let ev = self
+            .wait_for_packet_recv(packet_hash, timeout)
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    format!("timeout or RPC error waiting for PacketRecv: {}", e),
+                    None::<()>,
+                )
+            })?;
+
+        Ok(ev)
+    }
 
 
-    // async fn submit_transaction(
-    //     &self,
-    //     wallet: &LocalSigner<SigningKey>,
-    //     ibc_messages: Vec<Datagram>,
-    // ) -> anyhow::Result<()> {
-    //     let signer = DynProvider::new(
-    //         ProviderBuilder::new()
-    //             .network::<AnyNetwork>()
-    //             .filler(AnyNetwork::recommended_fillers())
-    //             // .filler(<NonceFiller>::default())
-    //             // .filler(ChainIdFiller::default())
-    //             .wallet(EthereumWallet::new(wallet.clone()))
-    //             .connect_provider(self.provider.clone()),
-    //     );
+    async fn submit_transaction(
+        &self,
+        wallet: &LocalSigner<SigningKey>,
+        ibc_messages: Vec<(
+            Datagram,
+            RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
+        )>,
+    ) -> Result<(), TxSubmitError> {
+        let signer = DynProvider::new(
+            ProviderBuilder::new()
+                .network::<AnyNetwork>()
+                .filler(AnyNetwork::recommended_fillers())
+                // .filler(<NonceFiller>::default())
+                // .filler(ChainIdFiller::default())
+                .wallet(EthereumWallet::new(wallet.clone()))
+                .connect_provider(self.provider.clone()),
+        );
 
-    //     if let Some(max_gas_price) = self.max_gas_price {
-    //         let gas_price = self
-    //             .provider
-    //             .get_gas_price()
-    //             .await
-    //             .expect("unable to fetch gas price");
+        if let Some(max_gas_price) = self.max_gas_price {
+            let gas_price = self
+                .provider
+                .get_gas_price()
+                .await
+                .expect("unable to fetch gas price");
 
-    //         if gas_price > max_gas_price {
-    //             panic!("gas price is too high");
-    //         } else {
-    //             println!("gas price {}", gas_price);
-    //         }
-    //     }
+            if gas_price > max_gas_price {
+                warn!(%max_gas_price, %gas_price, "gas price is too high");
 
-    //     let multicall = Multicall::new(self.multicall_address.into(), signer.clone());
+                return Err(TxSubmitError::GasPriceTooHigh {
+                    max: self.max_gas_price.expect("max gas price is set"),
+                    price: gas_price,
+                });
+            } else {
+                info!(%gas_price, "gas price");
+            }
+        }
 
-    //     let ibc = Ibc::new(self.ibc_handler_address.into(), &self.provider);
+        let multicall = Multicall::new(self.multicall_address.into(), signer.clone());
 
-    //     let msgs = process_msgs(
-    //         &ibc,
-    //         ibc_messages,
-    //         self.fee_recipient.unwrap_or(wallet.address()).into(),
-    //     )?;
+        let ibc = Ibc::new(self.ibc_handler_address.into(), &self.provider);
 
-    //     trace!(?msgs);
+        let msg_names = ibc_messages
+            .iter()
+            // .map(|x| (x.0.clone(), x.1.function.name.clone()))
+            .map(|x| (x.0.clone(), x.0.name()))
+            .collect::<Vec<_>>();
 
-    //     let msg_names = msgs
-    //         .iter()
-    //         // .map(|x| (x.0.clone(), x.1.function.name.clone()))
-    //         .map(|x| (x.0.clone(), x.0.name()))
-    //         .collect::<Vec<_>>();
+        let mut call = multicall.multicall(
+            ibc_messages.clone()
+                .into_iter()
+                .map(|(_, call)| Call3 {
+                    target: self.ibc_handler_address.into(),
+                    allowFailure: true,
+                    callData: call.calldata().clone(),
+                })
+                .collect(),
+        );
 
-    //     let mut call = multicall.multicall(
-    //         msgs.clone()
-    //             .into_iter()
-    //             .map(|(_, call)| Call3 {
-    //                 target: self.ibc_handler_address.into(),
-    //                 allowFailure: true,
-    //                 callData: call.calldata().clone(),
-    //             })
-    //             .collect(),
-    //     );
+        info!("submitting evm tx");
+         // estimate gas (batch-too-large → BatchTooLarge)
+        let gas_estimate = call.estimate_gas().await.map_err(|e| {
+            if ErrorReporter(&e).to_string().contains("gas required exceeds") {
+                TxSubmitError::BatchTooLarge
+            } else {
+                TxSubmitError::Estimate(e)
+            }
+        })?;
+        let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
+        info!(
+            gas_multiplier = %self.gas_multiplier,
+            %gas_estimate,
+            %gas_to_use,
+            "gas estimation successful"
+        );
 
-    //     info!("submitting evm tx");
+        if let Some(fixed) = self.fixed_gas_price {
+            call = call.gas_price(fixed);
+        }
 
-    //     let gas_estimate = call.estimate_gas().await.map_err(|e| {
-    //         if ErrorReporter(&e)
-    //             .to_string()
-    //             .contains("gas required exceeds")
-    //         {
-    //             TxSubmitError::BatchTooLarge
-    //         } else {
-    //             TxSubmitError::Estimate(e)
-    //         }
-    //     })?;
+        // send & await receipt
+        match call.gas(gas_to_use).send().await {
+            Ok(ok) => {
+                let tx_hash = <H256>::from(*ok.tx_hash());
+                async move {
+                    let receipt = ok.get_receipt().await?;
+                    info!(%tx_hash, "tx included");
 
-    //     let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
+                    Ok(())
+                }
+                .instrument(info_span!("evm tx", %tx_hash))
+                .await
+            }
 
-    //     info!(
-    //         gas_multiplier = %self.gas_multiplier,
-    //         %gas_estimate,
-    //         %gas_to_use,
-    //         "gas estimatation successful"
-    //     );
+            // insufficient-funds → OutOfGas
+            Err(
+            Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
+            | Error::TransportError(TransportError::ErrorResp(e)),
+        ) if e.message.contains("insufficient funds for gas * price + value") => {
+            error!("out of gas");
+            return Err(TxSubmitError::OutOfGas);
+        }
 
-    //     if let Some(fixed_gas_price) = self.fixed_gas_price {
-    //         call = call.gas_price(fixed_gas_price);
-    //     }
+        Err(
+            Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
+            | Error::TransportError(TransportError::ErrorResp(e)),
+        ) if e.message.contains("oversized data")
+           || e.message.contains("exceeds block gas limit")
+           || e.message.contains("gas required exceeds") => 
+        {
+            if ibc_messages.len() == 1 {
+                error!(error = %e.message, msg = ?ibc_messages[0], "message is too large");
+                return Ok(());
+            } else {
+                warn!(error = %e.message, "batch is too large");
+                return Err(TxSubmitError::BatchTooLarge);
+            }
+        }
 
-    //     match call.gas(gas_to_use).send().await {
-    //         Ok(ok) => {
-    //             let tx_hash = <H256>::from(*ok.tx_hash());
-    //             async move {
-    //                 let receipt = ok.get_receipt().await?;
+        Err(err) => return Err(TxSubmitError::Error(err)),
 
-    //                 info!(%tx_hash, "tx included");
+        }
+    }
 
-    //                 let result = MulticallResult::decode_log_data(
-    //                     receipt
-    //                         .inner
-    //                         .inner
-    //                         .logs()
-    //                         .last()
-    //                         .expect("multicall event should be last log")
-    //                         .data(),
-    //                 )
-    //                 .expect("unable to decode multicall result log");
 
-    //                 info!(
-    //                     gas_used = %receipt.gas_used,
-    //                     batch.size = msg_names.len(),
-    //                     "submitted batched evm messages"
-    //                 );
+    pub async fn send_transaction(
+        &self,
+        contract: H160,
+        msg: Vec<(
+            Datagram,
+            RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
+        )>,
+    ) -> RpcResult<alloy::primitives::FixedBytes<32>> {
+        assert!(!msg.is_empty());
+        let res = self.keyring
+            .with({
+                let msg = msg.clone();
+                move |wallet| -> _ {
+                    AssertUnwindSafe(self.submit_transaction(wallet, msg))
+                    }
+            }).await;
+        
+        match res {
+            Some(Ok(())) => Ok(alloy::primitives::FixedBytes::<32>([0; 32])),
+            Some(Err(e)) => Err(ErrorObject::owned(
+                -1,
+                format!("transaction submission failed: {:?}", e),
+                None::<()>,
+            )),
+            None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
+        }
+    }
+}
 
-    //                 for (idx, (result, (msg, msg_name))) in
-    //                     result._0.into_iter().zip(msg_names).enumerate()
-    //                 {
-    //                     if result.success {
-    //                         info!(
-    //                             msg = msg_name,
-    //                             %idx,
-    //                             data = %into_value(&msg),
-    //                             "evm tx",
-    //                         );
-    //                     } else if let Ok(known_revert) =
-    //                         IbcErrors::abi_decode_validate(&result.returnData)
-    //                     {
-    //                         error!(
-    //                             msg = %msg_name,
-    //                             %idx,
-    //                             revert = ?known_revert,
-    //                             well_known = true,
-    //                             data = %into_value(&msg),
-    //                             "evm message failed",
-    //                         );
-    //                     } else if result.returnData.is_empty() {
-    //                         error!(
-    //                             msg = %msg_name,
-    //                             %idx,
-    //                             revert = %result.returnData,
-    //                             well_known = false,
-    //                             data = %into_value(&msg),
-    //                             "evm message failed with 0x revert, likely an ABI issue",
-    //                         );
-    //                     } else {
-    //                         error!(
-    //                             msg = %msg_name,
-    //                             %idx,
-    //                             revert = %result.returnData,
-    //                             well_known = false,
-    //                             data = %into_value(&msg),
-    //                             "evm message failed",
-    //                         );
-    //                     }
-    //                 }
 
-    //                 Ok(())
-    //             }
-    //             .instrument(info_span!(
-    //                 "evm tx",
-    //                 %tx_hash,
-    //             ))
-    //             .await
-    //         }
-    //         Err(
-    //             Error::PendingTransactionError(PendingTransactionError::TransportError(
-    //                 TransportError::ErrorResp(e),
-    //             ))
-    //             | Error::TransportError(TransportError::ErrorResp(e)),
-    //         ) if e
-    //             .message
-    //             .contains("insufficient funds for gas * price + value") =>
-    //         {
-    //             error!("out of gas");
-    //             Err(TxSubmitError::OutOfGas)
-    //         }
-    //         Err(
-    //             Error::PendingTransactionError(PendingTransactionError::TransportError(
-    //                 TransportError::ErrorResp(e),
-    //             ))
-    //             | Error::TransportError(TransportError::ErrorResp(e)),
-    //         ) if e.message.contains("oversized data")
-    //             || e.message.contains("exceeds block gas limit")
-    //             || e.message.contains("gas required exceeds") =>
-    //         {
-    //             if msgs.len() == 1 {
-    //                 error!(error = %e.message, msg = ?msgs[0], "message is too large");
-    //                 Ok(()) // drop the message
-    //             } else {
-    //                 warn!(error = %e.message, "batch is too large");
-    //                 Err(TxSubmitError::BatchTooLarge)
-    //             }
-    //         }
-    //         Err(err) => Err(TxSubmitError::Error(err)),
-    //     }
-    // }
+pub mod multicall {
+    alloy::sol! {
+        #![sol(rpc)]
+
+        struct Call3 {
+            address target;
+            bool allowFailure;
+            bytes callData;
+        }
+
+        #[derive(Debug)]
+        struct Result {
+            bool success;
+            bytes returnData;
+        }
+
+        #[derive(Debug)]
+        event MulticallResult(Result[]);
+
+        contract Multicall {
+            function multicall(
+                Call3[] calldata calls
+            ) public payable returns (Result[] memory returnData);
+        }
+    }
+}
+
+#[derive(Debug, thiserror::Error)]
+pub enum TxSubmitError {
+    #[error(transparent)]
+    Error(#[from] Error),
+    #[error("error estimating gas")]
+    Estimate(#[source] Error),
+    #[error("error waiting for transaction")]
+    PendingTransactionError(#[from] PendingTransactionError),
+    #[error("out of gas")]
+    OutOfGas,
+    #[error("0x revert")]
+    EmptyRevert(Vec<Datagram>),
+    #[error("gas price is too high: max {max}, price {price}")]
+    GasPriceTooHigh { max: u128, price: u128 },
+    #[error("rpc error (this is just the IbcDatagram conversion functions but i need to make those errors better)")]
+    RpcError(#[from] ErrorObjectOwned),
+    #[error("batch too large")]
+    BatchTooLarge,
 }
