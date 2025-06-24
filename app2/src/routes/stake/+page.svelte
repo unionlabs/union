@@ -6,7 +6,7 @@ import * as Validators from "@unionlabs/sdk/schema/validators.js"
 import * as Staking from "@unionlabs/sdk/Staking.js"
 import { BigDecimal, Cause, Effect, Option as O, pipe, Schema as S } from "effect"
 
-const limit = $state<5 | 10 | 30>(5)
+const limit = $state<5 | 10 | 30>(10)
 const status = $state<Validators.Status | undefined>(undefined)
 
 const arg = $derived(pipe(
