@@ -8,10 +8,18 @@ use voyager_sdk::{primitives::ChainId, anyhow};
 use unionlabs::primitives::Bytes;
 use std::future::Future;
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChannelPair {
     pub src: u32,
     pub dest: u32,
+}
+struct PoolInner {
+    available: HashMap<(ChainId,ChainId), Vec<ChannelPair>>,
+    borrowed:  HashMap<(ChainId,ChainId), Vec<ChannelPair>>,
+}
+
+pub struct ChannelPool {
+    inner: Mutex<PoolInner>,
 }
 
 #[derive(Debug)]
@@ -39,14 +47,14 @@ pub trait ChannelConfirmer {
     ) -> anyhow::Result<ChannelConfirm>;
 }
 
-pub struct ChannelPool {
-    inner: Mutex<HashMap<(ChainId, ChainId), Vec<ChannelPair>>>,
-}
 
 impl ChannelPool {
     pub fn new() -> Arc<Self> {
         Arc::new(ChannelPool {
-            inner: Mutex::new(HashMap::new()),
+            inner: Mutex::new(PoolInner {
+                available: HashMap::new(),
+                borrowed:  HashMap::new(),
+            }),
         })
     }
 
@@ -93,11 +101,11 @@ impl ChannelPool {
                         );
 
                         // Store in forward direction
-                        map.entry((src_chain.clone(), dst_chain.clone()))
+                        map.available.entry((src_chain.clone(), dst_chain.clone()))
                             .or_default()
                             .push(pair);
                         // Store in reverse direction
-                        map.entry((dst_chain.clone(), src_chain.clone()))
+                        map.available.entry((dst_chain.clone(), src_chain.clone()))
                             .or_default()
                             .push(ChannelPair { src: pair.dest, dest: pair.src });
 
@@ -113,13 +121,47 @@ impl ChannelPool {
         Ok(success_count)
     }
 
-    pub async fn get_channel(
+        pub async fn get_channel(
         &self,
         src_chain: &ChainId,
         dst_chain: &ChainId,
     ) -> Option<ChannelPair> {
-        let mut map = self.inner.lock().await;
-        map.get_mut(&(src_chain.clone(), dst_chain.clone()))
-            .and_then(|v| v.pop())
+        let mut inner = self.inner.lock().await;
+        let key = (src_chain.clone(), dst_chain.clone());
+        let pair = inner.available.get_mut(&key).and_then(|v| v.pop());
+        if let Some(p) = pair {
+            inner.borrowed.entry(key.clone()).or_default().push(p);
+            inner.borrowed
+                .entry((key.1.clone(), key.0.clone()))
+                .or_default()
+                .push(ChannelPair { src: p.dest, dest: p.src });
+        }
+        pair
+    }
+
+    pub async fn release_channel(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+        pair: ChannelPair,
+    ) {
+        let mut inner = self.inner.lock().await;
+        let key = (src_chain.clone(), dst_chain.clone());
+        // remove from borrowed forward
+        if let Some(vec) = inner.borrowed.get_mut(&key) {
+            if let Some(i) = vec.iter().position(|x| *x == pair) {
+                vec.swap_remove(i);
+            }
+        }
+        let rev = ChannelPair { src: pair.dest, dest: pair.src };
+        let rev_key = (key.1.clone(), key.0.clone());
+        if let Some(vec) = inner.borrowed.get_mut(&rev_key) {
+            if let Some(i) = vec.iter().position(|x| *x == rev) {
+                vec.swap_remove(i);
+            }
+        }
+        // push back into available both directions
+        inner.available.entry(key.clone()).or_default().push(pair);
+        inner.available.entry(rev_key).or_default().push(rev);
     }
 }
