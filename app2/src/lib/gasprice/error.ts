@@ -32,6 +32,6 @@ export class GasPriceError
    * @since 1.0.0
    */
   get message(): string {
-    return `${this.module}.${this.method}: ${this.description}`
+    return `[GasPriceError] ${this.module}.${this.method}: ${this.description}`
   }
 }
