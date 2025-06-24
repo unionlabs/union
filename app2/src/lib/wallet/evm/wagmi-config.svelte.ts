@@ -1,5 +1,6 @@
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import type { Edition } from "$lib/themes"
+import { VIEM_CHAINS } from "@unionlabs/sdk/constants/viem-chains"
 import { coinbaseWallet, injected, metaMask, safe, walletConnect } from "@wagmi/connectors"
 import {
   createConfig,
@@ -23,197 +24,182 @@ import {
   mainnet,
   scrollSepolia,
   sei,
-  seiDevnet,
   seiTestnet,
   sepolia,
 } from "@wagmi/core/chains"
-
-export const chains = [
-  arbitrumSepolia,
-  berachainTestnetbArtio,
-  bob,
-  bobSepolia,
-  bsc,
-  bscTestnet,
-  corn,
-  cornTestnet,
-  holesky,
-  mainnet,
-  scrollSepolia,
-  sei,
-  seiTestnet,
-  sepolia,
-] as const
-
-export function getChainFromWagmi(chainId: number) {
-  return chains.find((chain) => chain.id === chainId)
-}
+import type { Chain as ViemChain, FallbackTransport, Transport } from "viem"
 
 let wagmiConfig = createWagmiConfigInstance()
+
+type Transports = {
+  [Item in (typeof VIEM_CHAINS)[number] as Item["id"]]: FallbackTransport<Transport[]>
+}
+
+const transports: Transports = {
+  [mainnet.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-mainnet",
+      name: "unstable_connector-injected-mainnet",
+    }),
+    http(`https://rpc.1.ethereum.chain.kitchen`, {
+      name: "Chain Kitchen - Mainnet",
+    }),
+    http(sepolia.rpcUrls.default.http.at(0), {
+      name: "default Mainnet RPC",
+    }),
+  ]),
+  [sepolia.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-sepolia",
+      name: "unstable_connector-injected-sepolia",
+    }),
+    http(`https://rpc.11155111.sepolia.chain.kitchen`, {
+      name: "Chain Kitchen - Sepolia",
+    }),
+    http(sepolia.rpcUrls.default.http.at(0), {
+      name: "default Sepolia RPC",
+    }),
+  ]),
+  [holesky.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-holesky",
+      name: "unstable_connector-injected-holesky",
+    }),
+    http(`https://rpc.17000.holesky.chain.kitchen`, {
+      name: "Chain Kitchen - Holesky",
+    }),
+    http(holesky.rpcUrls.default.http.at(0), {
+      name: "default Holesky RPC",
+    }),
+  ]),
+  [berachainTestnetbArtio.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-berachain",
+      name: "unstable_connector-injected-berachain",
+    }),
+    http(berachainTestnetbArtio.rpcUrls.default.http.at(0), {
+      name: "default Berachain RPC",
+    }),
+  ]),
+  [arbitrumSepolia.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-arbitrum-sepolia",
+      name: "unstable_connector-injected-arbitrum-sepolia",
+    }),
+    http(arbitrumSepolia.rpcUrls.default.http.at(0), {
+      name: "default Arbitrum Sepolia RPC",
+    }),
+  ]),
+  [scrollSepolia.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-scroll-sepolia",
+      name: "unstable_connector-injected-scroll-sepolia",
+    }),
+    http(scrollSepolia.rpcUrls.default.http.at(0), {
+      name: "default Scroll Sepolia RPC",
+    }),
+  ]),
+  [bobSepolia.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-bob-sepolia",
+      name: "unstable_connector-injected-bob-sepolia",
+    }),
+    http(bobSepolia.rpcUrls.default.http.at(0), {
+      name: "default Bob Sepolia RPC",
+    }),
+  ]),
+  [bob.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-bob",
+      name: "unstable_connector-injected-bob",
+    }),
+    http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" }),
+  ]),
+  [corn.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-corn",
+      name: "unstable_connector-injected-corn",
+    }),
+    http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
+  ]),
+  [cornTestnet.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-corn-testnet",
+      name: "unstable_connector-injected-corn-testnet",
+    }),
+    http(cornTestnet.rpcUrls.default.http.at(0), {
+      name: "default Corn Testnet RPC",
+    }),
+  ]),
+  [sei.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-sei",
+      name: "unstable_connector-injected-sei",
+    }),
+    http(sei.rpcUrls.default.http.at(0), { name: "default Sei RPC" }),
+  ]),
+  [seiTestnet.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-sei-testnet",
+      name: "unstable_connector-injected-sei-testnet",
+    }),
+    http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
+  ]),
+  [bsc.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-bsc",
+      name: "unstable_connector-injected-bsc",
+    }),
+    http(bsc.rpcUrls.default.http.at(0), { name: "default BSC RPC" }),
+  ]),
+  [bscTestnet.id]: fallback([
+    unstable_connector(injected, {
+      retryCount: 3,
+      retryDelay: 100,
+      key: "unstable_connector-injected-bsc-testnet",
+      name: "unstable_connector-injected-bsc-testnet",
+    }),
+    http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
+  ]),
+}
 
 function createWagmiConfigInstance() {
   const edition: Edition = uiStore.edition
 
   return createConfig({
-    chains,
+    chains: VIEM_CHAINS,
     cacheTime: 4_000,
     pollingInterval: 4_000,
     syncConnectedChain: true,
     batch: { multicall: true },
     multiInjectedProviderDiscovery: true,
-    transports: {
-      [mainnet.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-mainnet",
-          name: "unstable_connector-injected-mainnet",
-        }),
-        http(`https://rpc.1.ethereum.chain.kitchen`, {
-          name: "Chain Kitchen - Mainnet",
-        }),
-        http(sepolia.rpcUrls.default.http.at(0), {
-          name: "default Mainnet RPC",
-        }),
-      ]),
-      [sepolia.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-sepolia",
-          name: "unstable_connector-injected-sepolia",
-        }),
-        http(`https://rpc.11155111.sepolia.chain.kitchen`, {
-          name: "Chain Kitchen - Sepolia",
-        }),
-        http(sepolia.rpcUrls.default.http.at(0), {
-          name: "default Sepolia RPC",
-        }),
-      ]),
-      [holesky.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-holesky",
-          name: "unstable_connector-injected-holesky",
-        }),
-        http(`https://rpc.17000.holesky.chain.kitchen`, {
-          name: "Chain Kitchen - Holesky",
-        }),
-        http(holesky.rpcUrls.default.http.at(0), {
-          name: "default Holesky RPC",
-        }),
-      ]),
-      [berachainTestnetbArtio.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-berachain",
-          name: "unstable_connector-injected-berachain",
-        }),
-        http(berachainTestnetbArtio.rpcUrls.default.http.at(0), {
-          name: "default Berachain RPC",
-        }),
-      ]),
-      [arbitrumSepolia.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-arbitrum-sepolia",
-          name: "unstable_connector-injected-arbitrum-sepolia",
-        }),
-        http(arbitrumSepolia.rpcUrls.default.http.at(0), {
-          name: "default Arbitrum Sepolia RPC",
-        }),
-      ]),
-      [scrollSepolia.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-scroll-sepolia",
-          name: "unstable_connector-injected-scroll-sepolia",
-        }),
-        http(scrollSepolia.rpcUrls.default.http.at(0), {
-          name: "default Scroll Sepolia RPC",
-        }),
-      ]),
-      [bobSepolia.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-bob-sepolia",
-          name: "unstable_connector-injected-bob-sepolia",
-        }),
-        http(bobSepolia.rpcUrls.default.http.at(0), {
-          name: "default Bob Sepolia RPC",
-        }),
-      ]),
-      [bob.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-bob",
-          name: "unstable_connector-injected-bob",
-        }),
-        http(bob.rpcUrls.default.http.at(0), { name: "default Bob RPC" }),
-      ]),
-      [corn.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-corn",
-          name: "unstable_connector-injected-corn",
-        }),
-        http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
-      ]),
-      [cornTestnet.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-corn-testnet",
-          name: "unstable_connector-injected-corn-testnet",
-        }),
-        http(cornTestnet.rpcUrls.default.http.at(0), {
-          name: "default Corn Testnet RPC",
-        }),
-      ]),
-      [sei.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-sei",
-          name: "unstable_connector-injected-sei",
-        }),
-        http(sei.rpcUrls.default.http.at(0), { name: "default Sei RPC" }),
-      ]),
-      [seiTestnet.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-sei-testnet",
-          name: "unstable_connector-injected-sei-testnet",
-        }),
-        http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
-      ]),
-      [bsc.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-bsc",
-          name: "unstable_connector-injected-bsc",
-        }),
-        http(bsc.rpcUrls.default.http.at(0), { name: "default BSC RPC" }),
-      ]),
-      [bscTestnet.id]: fallback([
-        unstable_connector(injected, {
-          retryCount: 3,
-          retryDelay: 100,
-          key: "unstable_connector-injected-bsc-testnet",
-          name: "unstable_connector-injected-bsc-testnet",
-        }),
-        http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
-      ]),
-    },
+    transports,
     storage: createWagmiStorage({
       serialize,
       deserialize,
@@ -266,4 +252,4 @@ export function getWagmiConfig() {
   return wagmiConfig
 }
 
-export type ConfiguredChainId = (typeof chains)[number]["id"]
+export type ConfiguredChainId = (typeof VIEM_CHAINS)[number]["id"]
