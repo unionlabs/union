@@ -227,8 +227,6 @@ impl Module {
     }
 
 
-
-
     // TODO(aeryz): return the digest
     pub async fn send_transaction(
         &self,
@@ -291,7 +289,7 @@ impl Module {
             Err(e) => return Some(Err(e)),
         };
 
-        println!("tx_result: {tx_result:?}");
+        // println!("tx_result: {tx_result:?}");
 
         // TODO(aeryz): this should be an error
         let send_event = tx_result.tx_result.events.into_iter().find_map(|e| {

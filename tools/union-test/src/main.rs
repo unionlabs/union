@@ -6,7 +6,7 @@ use cosmos::{FeemarketConfig, GasFillerConfig};
 use hex_literal::hex;
 use ibc_union_msg::msg::{ExecuteMsg, MsgCreateClient};
 use ibc_union_spec::{ChannelId, Timestamp, ClientId};
-use protos::cosmos::base::v1beta1::Coin;
+use protos::{cosmos::base::v1beta1::Coin, ibc::core::channel};
 use ucs03_zkgm::com::{
     FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1, OP_FUNGIBLE_ASSET_ORDER,
 };
@@ -15,11 +15,13 @@ use unionlabs::{
     encoding::{Bincode, EncodeAs, EthAbi},
 };
 use voyager_sdk::{anyhow, primitives::ChainId};
+use rand::RngCore;
 
 pub mod cosmos;
 pub mod evm;
+pub mod channel_provider;
 pub mod voyager;
-
+use crate::channel_provider::ChannelConfirm;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     let union_config = cosmos::Config {
@@ -142,37 +144,79 @@ async fn main() -> anyhow::Result<()> {
         }
     };
 
+    let channel_pool = channel_provider::ChannelPool::new();
 
-    voyager::channel_open(
-        union.chain_id.clone(),
-        "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
-            .as_bytes()
-            .into(),
-        hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
-            .to_vec()
-            .into(),
-        connection_id,
-        "ucs03-zkgm-0".into(),
-    )?;
+    for idx in 1..=10 {
+        println!("Attempting to get channel #{}", idx);
+        match channel_pool
+            .get_channel(&union.chain_id, &eth.chain_id)
+            .await
+        {
+            Some(channel) => {
+                println!(
+                    "Channel {}: {} ↔ {}",
+                    idx,
+                    channel.src,
+                    channel.dest,
+                );
+                // … use `channel` here …
+            }
+            None => {
+                eprintln!("⚠️  No more channels available at iteration {}", idx);
+                break; // or `continue`, depending on your logic
+            }
+        }
+    }
 
-    let channel_id = match 
-        eth.wait_for_channel_open_confirm(Duration::from_secs(240)).await
-    {
-        Ok(confirm) => {
-            println!(
-                "✅ got channel confirm: {} ↔ {}",
-                confirm.channel_id,
-                confirm.counterparty_channel_id,
-            );
-            
-            confirm.channel_id.try_into().unwrap()
-            
+
+    let opened = channel_pool
+        .open_channels(
+            voyager::channel_open,                                       // fn pointer
+            |timeout: Duration| {                                        // map to ChannelConfirm
+                let eth = &eth;                                         // capture `eth`
+                async move {
+                    let ev = eth.wait_for_channel_open_confirm(timeout).await?;
+                    Ok(ChannelConfirm {
+                        channel_id: ev.channel_id,
+                        counterparty_channel_id: ev.counterparty_channel_id,
+                    })
+                }
+            },
+            union.chain_id.clone(),
+            "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
+            eth.chain_id.clone(),
+            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
+            connection_id,
+            "ucs03-zkgm-0".into(),
+            5,
+        )
+        .await?;
+    for idx in 1..=10 {
+        println!("Attempting to get channel #{}", idx);
+        match channel_pool
+            .get_channel(&union.chain_id, &eth.chain_id)
+            .await
+        {
+            Some(channel) => {
+                println!(
+                    "Channel {}: {} ↔ {}",
+                    idx,
+                    channel.src,
+                    channel.dest,
+                );
+                // … use `channel` here …
+            }
+            None => {
+                eprintln!("⚠️  No more channels available at iteration {}", idx);
+                break; // or `continue`, depending on your logic
+            }
         }
-        Err(err) => {
-            eprintln!("⚠️  error waiting for channel-open-confirm: {}", err);
-            return Ok(());
-        }
-    };
+    }
+    
+
+    let mut salt_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
+
 
     let cosmos::IbcEvent::WasmPacketSend { packet_hash, .. } = union
         .send_ibc_transaction(
@@ -183,7 +227,7 @@ async fn main() -> anyhow::Result<()> {
                     channel_id,
                     timeout_height: 0u64.into(),
                     timeout_timestamp: Timestamp::from_secs(u32::MAX.into()),
-                    salt: Default::default(),
+                    salt: salt_bytes.into(),
                     instruction: Instruction {
                         version: INSTR_VERSION_1,
                         opcode: OP_FUNGIBLE_ASSET_ORDER,
@@ -234,7 +278,6 @@ async fn main() -> anyhow::Result<()> {
             return Ok(());
         }
     };
-
 
     Ok(())
 }

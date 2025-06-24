@@ -68,6 +68,10 @@ pub fn channel_open(
     connection_id: u32,
     version: String,
 ) -> anyhow::Result<()> {
+    println!(
+        "Opening channel on {}: port_id={}, counterparty_port_id={}, connection_id={}, version={}",
+        chain_id, port_id, counterparty_port_id, connection_id, version
+    );
     Command::new("./target/debug/voyager")
         .args([
             "q",

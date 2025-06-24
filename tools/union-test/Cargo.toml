@@ -9,6 +9,7 @@ repository.workspace = true
 
 [dependencies]
 voyager-sdk = { workspace = true }
+jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 unionlabs = { workspace = true }
 serde = { workspace = true }
 cosmos-client      = { workspace = true }
@@ -18,11 +19,13 @@ tokio              = { workspace = true }
 hex-literal = { workspace = true }
 ibc-union-msg = { workspace = true }
 trusted-mpt-light-client-types = { workspace = true, features = ["serde", "bincode", "ethabi"]}
-
+rand = { version = "0.9.0"}
 alloy              = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
 bip32              = { workspace = true }
 ibc-union-spec = { workspace = true }
 ibc-solidity   = { workspace = true, features = ["serde", "rpc"] }
+tracing            = { workspace = true }
+thiserror          = { workspace = true }
 
 ucs03-zkgm = { workspace = true, features = [ "library" ] }
 cometbft-rpc = { workspace = true }
