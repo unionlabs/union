@@ -15,6 +15,8 @@ import {
   berachainTestnetbArtio,
   bob,
   bobSepolia,
+  bsc,
+  bscTestnet,
   corn,
   cornTestnet,
   holesky,
@@ -31,6 +33,8 @@ export const chains = [
   berachainTestnetbArtio,
   bob,
   bobSepolia,
+  bsc,
+  bscTestnet,
   corn,
   cornTestnet,
   holesky,
@@ -160,7 +164,7 @@ function createWagmiConfigInstance() {
           key: "unstable_connector-injected-corn",
           name: "unstable_connector-injected-corn",
         }),
-        http(bob.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
+        http(corn.rpcUrls.default.http.at(0), { name: "default Corn RPC" }),
       ]),
       [cornTestnet.id]: fallback([
         unstable_connector(injected, {
@@ -169,7 +173,7 @@ function createWagmiConfigInstance() {
           key: "unstable_connector-injected-corn-testnet",
           name: "unstable_connector-injected-corn-testnet",
         }),
-        http(bob.rpcUrls.default.http.at(0), {
+        http(cornTestnet.rpcUrls.default.http.at(0), {
           name: "default Corn Testnet RPC",
         }),
       ]),
@@ -190,6 +194,24 @@ function createWagmiConfigInstance() {
           name: "unstable_connector-injected-sei-testnet",
         }),
         http(seiTestnet.rpcUrls.default.http.at(0), { name: "default Sei Testnet RPC" }),
+      ]),
+      [bsc.id]: fallback([
+        unstable_connector(injected, {
+          retryCount: 3,
+          retryDelay: 100,
+          key: "unstable_connector-injected-bsc",
+          name: "unstable_connector-injected-bsc",
+        }),
+        http(bsc.rpcUrls.default.http.at(0), { name: "default BSC RPC" }),
+      ]),
+      [bscTestnet.id]: fallback([
+        unstable_connector(injected, {
+          retryCount: 3,
+          retryDelay: 100,
+          key: "unstable_connector-injected-bsc-testnet",
+          name: "unstable_connector-injected-bsc-testnet",
+        }),
+        http(bscTestnet.rpcUrls.default.http.at(0), { name: "default BSC Testnet RPC" }),
       ]),
     },
     storage: createWagmiStorage({
