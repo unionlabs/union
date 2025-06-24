@@ -85,6 +85,12 @@
       "tags": ["canonical"]
     }
   },
+  "bsc.97": {
+    "1": {
+      "comments": "babylon.bbn-test-5 channel 7",
+      "tags": ["canonical"]
+    }
+  },
   "corn.21000000": {
     "1": {
       "comments": "babylon.bbn-1 channel 2",

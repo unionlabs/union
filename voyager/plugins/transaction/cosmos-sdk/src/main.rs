@@ -72,6 +72,7 @@ pub struct ModuleInner {
     pub fatal_errors: HashMap<(String, NonZeroU32), Option<String>>,
     pub gas_station_config: Vec<Coin>,
     pub fee_recipient: Option<Bech32<Bytes>>,
+    pub max_tx_size: u32,
 }
 
 impl Deref for Module {
@@ -97,6 +98,7 @@ pub struct Config {
     pub gas_station_config: Vec<Coin>,
     #[serde(default)]
     pub fee_recipient: Option<Bech32<Bytes>>,
+    pub max_tx_size: u32,
 }
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
@@ -239,6 +241,7 @@ impl Plugin for Module {
                 .collect(),
             gas_station_config: config.gas_station_config,
             fee_recipient: config.fee_recipient,
+            max_tx_size: config.max_tx_size,
         })))
     }
 
@@ -332,7 +335,7 @@ impl Module {
     pub async fn do_send_transaction(
         &self,
         msgs: Vec<IbcMessage>,
-    ) -> Option<Result<(), BroadcastTxCommitError>> {
+    ) -> Option<Result<Option<Op<VoyagerMessage>>, BroadcastTxCommitError>> {
         self.keyring
             .with(|signer| {
                 let msgs = msgs.clone();
@@ -367,11 +370,52 @@ impl Module {
                 let batch_size = msgs.len();
                 let msg_names = msgs.iter().map(|x| x.0.name()).collect::<Vec<_>>();
 
+                let approximate_size = msgs.iter().map(|x| x.1.encoded_len()).sum::<usize>();
+
+                info!(
+                    %approximate_size,
+                    max_tx_size = %self.max_tx_size,
+                    "approximate tx size"
+                );
+
                 AssertUnwindSafe(async move {
                     if msgs.is_empty() {
                         info!("no msgs left to submit after filtering out invalid msgs");
-                        return Ok(());
+                        return Ok(None);
                     }
+
+                    if approximate_size > self.max_tx_size as usize {
+                        if msgs.len() == 1 {
+                            error!(
+                                %approximate_size,
+                                max_tx_size = %self.max_tx_size,
+                                msg = msgs.first().unwrap().0.name(),
+                                "message is too large, dropping as it cannot be submitted"
+                            );
+                            return Ok(None);
+                        } else {
+                            warn!(
+                                %approximate_size,
+                                max_tx_size = %self.max_tx_size,
+                                "tx is too large, splitting messages"
+                            );
+
+                            let mut msgs = msgs.into_iter().map(|x| x.0).collect::<Vec<_>>();
+
+                            let new_msgs = msgs.split_off(msgs.len().div_ceil(2));
+
+                            return Ok(Some(seq([
+                                call(PluginMessage::new(
+                                    self.plugin_name(),
+                                    ModuleCall::SubmitTransaction(msgs),
+                                )),
+                                call(PluginMessage::new(
+                                    self.plugin_name(),
+                                    ModuleCall::SubmitTransaction(new_msgs),
+                                )),
+                            ])));
+                        }
+                    };
 
                     match tx_client
                         .broadcast_tx_commit(
@@ -393,7 +437,7 @@ impl Module {
                                 info!(tx_hash = %tx_response.hash, %msg, "cosmos msg");
                             }
 
-                            Ok(())
+                            Ok(None)
                         }
                         Err(err) => {
                             info!(error = %ErrorReporter(&err), "cosmos tx failed");
@@ -497,7 +541,7 @@ impl PluginServer<ModuleCall, Never> for Module {
 
                 match batch_submission_result {
                     None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
-                    Some(Ok(())) => {
+                    Some(Ok(None)) => {
                         for (idx, msg) in msgs.into_iter().enumerate() {
                             info!(
                                 msg = msg.name(),
@@ -508,6 +552,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                         }
                         Ok(noop())
                     }
+                    Some(Ok(Some(op))) => Ok(op),
                     Some(Err(err)) => {
                         match err {
                             _ if let Some(err) = err.as_json_rpc_error() => {
@@ -1182,7 +1227,8 @@ mod tests {
               ],
               "name": "name"
             },
-            "rpc_url": "rpc_url"
+            "rpc_url": "rpc_url",
+            "max_tx_size": 1000000
           }"#;
 
         let config = serde_json::from_str::<Config>(json).unwrap();
@@ -1210,7 +1256,8 @@ mod tests {
                 }),
                 fatal_errors: HashMap::default(),
                 gas_station_config: vec![],
-                fee_recipient: None
+                fee_recipient: None,
+                max_tx_size: 1000000
             }
         );
     }

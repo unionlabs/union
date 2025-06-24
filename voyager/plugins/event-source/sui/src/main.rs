@@ -90,7 +90,7 @@ impl Plugin for Module {
         PluginInfo {
             name: plugin_name(&config.chain_id),
             interest_filter: simple_take_filter(format!(
-                r#"[.. | (."@type"? == "fetch_blocks" or ."@type"? == "fetch_block_range") and ."@value".chain_id == "{}"] | any"#,
+                r#"[.. | (."@type"? == "index" or ."@type"? == "index_range") and ."@value".chain_id == "{}"] | any"#,
                 config.chain_id
             )),
         }
