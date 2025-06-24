@@ -4,6 +4,9 @@
       "babylon.bbn-test-5": {
         "environment": "production"
       },
+      "bsc.97": {
+        "environment": "staging"
+      },
       "corn.21000001": {
         "environment": "production"
       },
