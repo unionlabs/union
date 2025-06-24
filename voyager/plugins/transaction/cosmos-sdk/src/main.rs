@@ -1227,7 +1227,7 @@ mod tests {
               ],
               "name": "name"
             },
-            "rpc_url": "rpc_url"
+            "rpc_url": "rpc_url",
             "max_tx_size": 1000000
           }"#;
 
