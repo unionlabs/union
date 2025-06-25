@@ -327,4 +327,20 @@ export const chainLogoMap = new Map([
       dark: "/logos/chains/dark/SEI.svg",
     },
   ],
+  [
+    "bsc.56",
+    {
+      color: "/logos/chains/color/BSC.svg",
+      light: "/logos/chains/light/BSC.svg",
+      dark: "/logos/chains/dark/BSC.svg",
+    },
+  ],
+  [
+    "bsc.97",
+    {
+      color: "/logos/chains/color/BSC.svg",
+      light: "/logos/chains/light/BSC.svg",
+      dark: "/logos/chains/dark/BSC.svg",
+    },
+  ],
 ])

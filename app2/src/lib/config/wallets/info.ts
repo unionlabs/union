@@ -284,3 +284,67 @@ export const xionTestnet = InternalChainInfo.make(
       "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
   },
 )
+
+export const osmosisTestnet = InternalChainInfo.make({
+  chainId: "osmo-test-5",
+  chainName: "Osmosis Testnet",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
+  rpc: "https://rpc.testnet.osmosis.zone",
+  rest: "https://lcd.testnet.osmosis.zone",
+  bip44: {
+    coinType: 118,
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "osmo",
+    bech32PrefixAccPub: "osmopub",
+    bech32PrefixValAddr: "osmovaloper",
+    bech32PrefixValPub: "osmovaloperpub",
+    bech32PrefixConsAddr: "osmovalcons",
+    bech32PrefixConsPub: "osmovalconspub",
+  },
+  currencies: [
+    {
+      coinDenom: "OSMO",
+      coinMinimalDenom: "uosmo",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+    },
+    {
+      coinDenom: "ION",
+      coinMinimalDenom: "uion",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uion.png",
+    },
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "OSMO",
+      coinMinimalDenom: "uosmo",
+      coinDecimals: 6,
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+      gasPriceStep: {
+        low: 0.0025,
+        average: 0.025,
+        high: 0.04,
+      },
+    },
+  ],
+  stakeCurrency: {
+    coinDenom: "OSMO",
+    coinMinimalDenom: "uosmo",
+    coinDecimals: 6,
+    coinImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+  },
+  features: [],
+  theme: {
+    gradient: "linear-gradient(180deg, rgba(181, 97, 219, 0.32) 0%, rgba(181, 97, 219, 0) 100%)",
+    primaryColor: "#b561db",
+  },
+  image:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
+})
