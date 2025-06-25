@@ -49,7 +49,6 @@ pub struct Config {
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type", content = "config")]
 pub enum GasFillerConfig {
-    // fixed gas filler is it's own config
     Fixed(fixed::GasFiller),
     Feemarket(FeemarketConfig),
 }
@@ -153,7 +152,7 @@ impl Module {
         T: Send + 'static,
     {
         let client = self.rpc.client();
-        // start at the head
+
         let mut height = client.status().await?.sync_info.latest_block_height;
 
         tokio::time::timeout(max_wait, async move {
@@ -177,7 +176,6 @@ impl Module {
 
                         for tx in resp.txs {
                             for raw_ev in tx.tx_result.events.into_iter() {
-                                // decode into your enum
                                 // println!("raw event: {raw_ev:?}");
                                 let event = match CosmosSdkEvent::<IbcEvent>::new(raw_ev) {
                                     Ok(event) => event,
@@ -268,6 +266,29 @@ impl Module {
             max_wait,
         )
         .await
+    }
+
+
+
+    pub async fn wait_for_packet_recv(
+        &self,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::ConnectionConfirm> {
+        // self.wait_for_event(
+        //     |evt| {
+        //         if let IbcEvent::WasmConnectionOpenConfirm {  connection_id, counterparty_connection_id, .. } = evt {
+        //             Some(helpers::ConnectionConfirm {
+        //                 connection_id: connection_id.raw().try_into().unwrap(),
+        //                 counterparty_connection_id: counterparty_connection_id.raw().try_into().unwrap(),
+        //             })
+        //         } else {
+        //             None
+        //         }
+        //     },
+        //     max_wait,
+        // )
+        // .await
+        return Err(anyhow::anyhow!("not implemented yet"));
     }
 
 
@@ -397,14 +418,5 @@ pub enum IbcEvent {
         counterparty_channel_id: ChannelId,
         #[serde(with = "serde_utils::string")]
         connection_id: ConnectionId,
-    },
-
-    #[serde(rename = "channel_open_confirm")]
-    ChannelOpenConfirm {
-        port_id: unionlabs::id::PortId,
-        channel_id: unionlabs::id::ChannelId,
-        counterparty_port_id: unionlabs::id::PortId,
-        counterparty_channel_id: unionlabs::id::ChannelId,
-        connection_id: unionlabs::id::ConnectionId,
     },
 }

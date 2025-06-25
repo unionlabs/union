@@ -26,6 +26,7 @@ ibc-union-spec = { workspace = true }
 ibc-solidity   = { workspace = true, features = ["serde", "rpc"] }
 tracing            = { workspace = true }
 thiserror          = { workspace = true }
+axum                    = { workspace = true, features = ["macros", "tokio", "json"] }
 
 ucs03-zkgm = { workspace = true, features = [ "library" ] }
 cometbft-rpc = { workspace = true }
