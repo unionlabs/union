@@ -1,6 +1,7 @@
 use std::{fmt::Display, num::ParseIntError, ops::Range};
 
 use alloy::primitives::Address;
+use alloy_primitives::FixedBytes;
 use async_nats::jetstream::{
     consumer::{
         pull::{BatchErrorKind, MessagesErrorKind},
@@ -13,11 +14,14 @@ use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
 use sqlx::Postgres;
+use thiserror::Error;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::error;
 
-use crate::indexer::event::BlockEvents;
+use crate::indexer::event::types::{
+    BlockEvents, NatsConsumerSequence, NatsStreamSequence, UniversalChainId,
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum IndexerError {
@@ -66,21 +70,63 @@ pub enum IndexerError {
     #[error("unsupported encoding: {0}")]
     NatsUnsupportedEncoding(String),
     #[error("missing message sequence in stream sequence: {0}, consumer_sequence sequence: {1}")]
-    NatsMissingMessageHeaders(u64, u64),
+    NatsMissingMessageHeaders(NatsStreamSequence, NatsConsumerSequence),
     #[error("missing headers: in stream sequence: {0}, consumer_sequence sequence: {1}")]
-    NatsMissingMessageSequence(u64, u64),
+    NatsMissingMessageSequence(NatsStreamSequence, NatsConsumerSequence),
     #[error("unsupported message sequence:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
-    NatsUnparsableMessageSequence(String, u64, u64, ParseIntError),
+    NatsUnparsableMessageSequence(
+        String,
+        NatsStreamSequence,
+        NatsConsumerSequence,
+        ParseIntError,
+    ),
     #[error("missing message hash: in stream sequence: {0}, consumer_sequence sequence: {1}")]
-    NatsMissingMessageHash(u64, u64),
+    NatsMissingMessageHash(NatsStreamSequence, NatsConsumerSequence),
     #[error("unsupported message hash:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
-    NatsUnparsableMessageHash(String, u64, u64, hex::FromHexError),
+    NatsUnparsableMessageHash(
+        String,
+        NatsStreamSequence,
+        NatsConsumerSequence,
+        hex::FromHexError,
+    ),
     #[error(
         "missing universal chain id: in stream sequence: {0}, consumer_sequence sequence: {1}"
     )]
-    NatsMissingUniversalChainId(u64, u64),
+    NatsMissingUniversalChainId(NatsStreamSequence, NatsConsumerSequence),
     #[error("no abi for address: {0}")]
     AbiNoAbiForAddress(Address),
+    #[error("internal error: cannot map to database domain - {0}: {1}")]
+    InternalCannotMapToDatabaseDomain(String, String),
+    #[error("internal error: cannot map from database domain - {0}: {1}")]
+    InternalCannotMapFromDatabaseDomain(String, String),
+    #[error("cannot parse abi encoded message: {0}")]
+    AbiCannotParse(#[from] AbiParsingError),
+    #[error("internal error: cannot map to event domain - {0}: {1}")]
+    CannotMapToEventDomain(String, String),
+    #[error("internal error: cannot map to event domain; missing key: {0}.{1} (expecting: {2})")]
+    CannotMapToEventDomainMissingKey(String, String, String),
+    #[error(
+        "internal error: cannot map to event domain; unexpected type: {0}.{1} {2} (expecting: {3})"
+    )]
+    CannotMapToEventDomainUnexpectedType(String, String, String, String),
+    #[error(
+        "internal error: cannot map to event domain; about of range: {0}.{1} {2} (expecting: {3})"
+    )]
+    CannotMapToEventDomainOutOfRange(String, String, String, String),
+    #[error("No chain found with universal_chain_id {0}. Add it to the config.chains table before using it in hubble")]
+    MissingChainConfiguration(UniversalChainId),
+}
+
+#[derive(Error, Debug)]
+pub enum AbiParsingError {
+    /// The name of the decoded event is not found in the ABI. This might
+    /// indicate an ABI mismatch.
+    #[error("event not found for given abi")]
+    UnknownEvent { selector: FixedBytes<32> },
+    /// The name of the event IS found in the ABI, yet decoding still failed.
+    /// This might indicate an out-of-date ABI.
+    #[error("could not decode, abi might mismatch data")]
+    DecodingError(#[from] alloy::dyn_abi::Error),
 }
 
 impl From<Report> for IndexerError {
@@ -99,12 +145,31 @@ pub type IndexerId = String;
 pub type BlockHeight = u64;
 pub type BlockHash = String;
 pub type BlockTimestamp = OffsetDateTime;
-pub type UniversalChainId = String;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct BlockRange {
     pub start_inclusive: BlockHeight,
     pub end_exclusive: BlockHeight,
+}
+
+impl From<&BlockRange> for crate::indexer::event::types::Range {
+    fn from(value: &BlockRange) -> Self {
+        Self {
+            start_inclusive: value.start_inclusive,
+            end_exclusive: value.end_exclusive,
+        }
+    }
+}
+
+impl From<&BlockReference> for crate::indexer::event::types::Range {
+    fn from(value: &BlockReference) -> Self {
+        Self {
+            // a range for a single block starts at the block height (inclusive) and ...
+            start_inclusive: value.height,
+            // ends one block after the block height (because it's exclusive).
+            end_exclusive: value.height + 1,
+        }
+    }
 }
 
 impl BlockRange {
