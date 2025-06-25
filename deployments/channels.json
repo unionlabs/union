@@ -58,7 +58,7 @@
     },
     "5": {
       "comments": "osmosis.osmo-test-5 channel 3, official channel but with no relaying guarantees",
-      "tags": ["staging"]
+      "tags": ["canonical"]
     }
   },
   "bob.60808": {
@@ -206,6 +206,12 @@
     },
     "4": {
       "comments": "babylon.bbn-test-5 channel 6",
+      "tags": ["canonical"]
+    }
+  },
+  "union.union-1": {
+    "1": {
+      "comments": "ethereum.1 channel 2",
       "tags": ["canonical"]
     }
   },
