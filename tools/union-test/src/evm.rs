@@ -38,7 +38,6 @@ use crate::helpers;
 pub struct Module {
     pub chain_id: ChainId,
 
-    /// The address of the `IBCHandler` smart contract.
     pub ibc_handler_address: H160,
     pub multicall_address: H160,
 
@@ -62,7 +61,6 @@ pub struct Config {
     pub ibc_handler_address: H160,
     pub multicall_address: H160,
 
-    /// The RPC endpoint for the execution chain.
     pub rpc_url: String,
 
     pub keyring: KeyringConfig,
@@ -70,7 +68,6 @@ pub struct Config {
     #[serde(default)]
     pub max_gas_price: Option<u128>,
 
-    /// Temporary fix for 0g until they fix their eth_feeHistory endpoint
     #[serde(default)]
     pub fixed_gas_price: Option<u128>,
 
@@ -145,7 +142,6 @@ impl Module {
                         .from_block(prev_latest)
                         .to_block(prev_latest);
 
-                    // 4) query logs; get_logs returns empty Vec if none
                     let logs = match self.provider.get_logs(&filter).await {
                         Ok(logs) => logs,
                         Err(e) => {
@@ -217,17 +213,18 @@ impl Module {
         &self,
         packet_hash: H256,
         timeout: Duration,
-    ) -> anyhow::Result<PacketRecv> {
+    ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_event(
             |e| match e {
-                IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => Some(ev),
+                IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => Some(helpers::PacketRecv {
+                    hash: ev.packet_hash,
+                }),
                 _ => None,
             },
             timeout,
         )
         .await
     }
-        /// Send a batch of IBC datagrams on‐chain, then wait for the PacketRecv event matching `packet_hash`.
     pub async fn send_ibc_transaction(
         &self,
         contract: H160,
@@ -237,11 +234,9 @@ impl Module {
         )>,
         packet_hash: H256,
         timeout: Duration,
-    ) -> RpcResult<PacketRecv> {
-        // 1) submit the multicall batch
+    ) -> RpcResult<helpers::PacketRecv> {
         self.send_transaction(contract, ibc_messages).await?;
 
-        // 2) wait for the PacketRecv event we care about
         let ev = self
             .wait_for_packet_recv(packet_hash, timeout)
             .await
@@ -253,7 +248,10 @@ impl Module {
                 )
             })?;
 
-        Ok(ev)
+        Ok(helpers::PacketRecv {
+            hash: ev.hash,
+        })
+        // Ok(ev)
     }
 
 
@@ -269,8 +267,6 @@ impl Module {
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
                 .filler(AnyNetwork::recommended_fillers())
-                // .filler(<NonceFiller>::default())
-                // .filler(ChainIdFiller::default())
                 .wallet(EthereumWallet::new(wallet.clone()))
                 .connect_provider(self.provider.clone()),
         );
@@ -300,7 +296,6 @@ impl Module {
 
         let msg_names = ibc_messages
             .iter()
-            // .map(|x| (x.0.clone(), x.1.function.name.clone()))
             .map(|x| (x.0.clone(), x.0.name()))
             .collect::<Vec<_>>();
 
@@ -316,7 +311,6 @@ impl Module {
         );
 
         info!("submitting evm tx");
-         // estimate gas (batch-too-large → BatchTooLarge)
         let gas_estimate = call.estimate_gas().await.map_err(|e| {
             if ErrorReporter(&e).to_string().contains("gas required exceeds") {
                 TxSubmitError::BatchTooLarge
@@ -336,7 +330,6 @@ impl Module {
             call = call.gas_price(fixed);
         }
 
-        // send & await receipt
         match call.gas(gas_to_use).send().await {
             Ok(ok) => {
                 let tx_hash = <H256>::from(*ok.tx_hash());
@@ -350,7 +343,6 @@ impl Module {
                 .await
             }
 
-            // insufficient-funds → OutOfGas
             Err(
             Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
             | Error::TransportError(TransportError::ErrorResp(e)),
