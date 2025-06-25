@@ -5,6 +5,20 @@ import { runPromise } from "$lib/runtime"
 import { cn } from "$lib/utils"
 import { Option } from "effect"
 import { Effect } from "effect"
+import type { AuthProvider } from "../stores/user.svelte"
+import UnlinkAccountModal from "./UnlinkAccountModal.svelte"
+
+let unlinkModalOpen = $state(false)
+let providerToUnlink = $state<AuthProvider | null>(null)
+
+function handleProviderClick(provider: AuthProvider, isConnected: boolean) {
+  if (isConnected) {
+    providerToUnlink = provider
+    unlinkModalOpen = true
+  } else {
+    runPromise(dashboard.linkIdentity(provider))
+  }
+}
 </script>
 
 <Card class="flex flex-col gap-3 lg:gap-3 lg:w-64">
@@ -16,10 +30,9 @@ import { Effect } from "effect"
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
       onclick={() =>
-      runPromise(
-        Option.isSome(dashboard.connections?.github) && dashboard.connections.github.value
-          ? dashboard.unlinkIdentity("github")
-          : dashboard.linkIdentity("github"),
+      handleProviderClick(
+        "github",
+        Option.isSome(dashboard.connections?.github) && dashboard.connections.github.value,
       )}
     >
       <div class="flex items-center gap-2">
@@ -72,10 +85,10 @@ import { Effect } from "effect"
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
       onclick={() =>
-      runPromise(
-        Option.isSome(dashboard.connections?.twitter) && dashboard.connections.twitter.value
-          ? dashboard.unlinkIdentity("twitter")
-          : dashboard.linkIdentity("twitter"),
+      handleProviderClick(
+        "twitter",
+        Option.isSome(dashboard.connections?.twitter)
+          && dashboard.connections.twitter.value,
       )}
     >
       <div class="flex items-center gap-2">
@@ -128,10 +141,10 @@ import { Effect } from "effect"
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
       onclick={() =>
-      runPromise(
-        Option.isSome(dashboard.connections?.discord) && dashboard.connections.discord.value
-          ? dashboard.unlinkIdentity("discord")
-          : dashboard.linkIdentity("discord"),
+      handleProviderClick(
+        "discord",
+        Option.isSome(dashboard.connections?.discord)
+          && dashboard.connections.discord.value,
       )}
     >
       <div class="flex items-center gap-2">
@@ -181,3 +194,12 @@ import { Effect } from "effect"
     </button>
   </div>
 </Card>
+
+<UnlinkAccountModal
+  isOpen={unlinkModalOpen}
+  onClose={() => {
+    unlinkModalOpen = false
+    providerToUnlink = null
+  }}
+  provider={providerToUnlink}
+/>
