@@ -11,9 +11,10 @@ use crate::{
     indexer::{
         api::{BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, IndexerError},
         ethereum::{
-            fetcher_client::EthFetcherClient, postgres::insert_batch_logs, provider::RpcProviderId,
+            fetcher_client::EthFetcherClient, mapping::legacy::get_legacy_events,
+            provider::RpcProviderId,
         },
-        event::{BlockEvents, SupportedBlockEvent},
+        event::{supported::SupportedBlockEvent, types::BlockEvents},
     },
     postgres::ChainId,
 };
@@ -118,7 +119,7 @@ impl BlockHandle for EthBlockHandle {
 
                 let ucs_events = block_to_insert.ucs_events.clone();
                 // legacy: convert to SupportedBlockEvent::EthereumLog
-                let legacy_events = insert_batch_logs(vec![block_to_insert.into()]).await?;
+                let legacy_events = get_legacy_events(vec![block_to_insert.into()]).await?;
 
                 legacy_events.into_iter().chain(ucs_events).collect()
             }
@@ -152,7 +153,7 @@ impl BlockHandle for EthBlockHandle {
             );
             let ucs_events = block_to_insert.ucs_events.clone();
             // legacy: convert to SupportedBlockEvent::EthereumLog
-            let legacy_events = insert_batch_logs(vec![block_to_insert.into()]).await?;
+            let legacy_events = get_legacy_events(vec![block_to_insert.into()]).await?;
 
             legacy_events.into_iter().chain(ucs_events).collect()
         } else {

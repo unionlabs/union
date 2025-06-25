@@ -17,7 +17,7 @@ use crate::indexer::{
     api::{
         BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, FetchMode, IndexerError,
     },
-    event::BlockEvents,
+    event::types::BlockEvents,
     tendermint::{
         fetcher_client::TmFetcherClient,
         postgres::{

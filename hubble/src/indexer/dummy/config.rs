@@ -3,9 +3,8 @@ use sqlx::PgPool;
 
 use super::dummy::{DummyContext, DummyFetcherClient};
 use crate::indexer::{
-    api::{IndexerId, UniversalChainId},
-    nats::NatsConnection,
-    ConsumerConfig, FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
+    api::IndexerId, event::types::UniversalChainId, nats::NatsConnection, ConsumerConfig,
+    FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
 };
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -17,6 +16,7 @@ pub struct Config {
     pub fixer: FixerConfig,
     pub publisher: PublisherConfig,
     pub consumer: ConsumerConfig,
+    pub drain: bool,
 }
 
 impl Config {
@@ -37,6 +37,7 @@ impl Config {
             self.publisher,
             self.consumer,
             DummyContext { bla: 42 },
+            self.drain,
         ))
     }
 }

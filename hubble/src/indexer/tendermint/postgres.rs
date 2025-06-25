@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 use crate::{
     indexer::{
         api::{BlockHash, BlockHeight, IndexerError},
-        event::SupportedBlockEvent,
+        event::supported::SupportedBlockEvent,
         tendermint::block_handle::{ActiveContracts, EventInFlows},
     },
     postgres::ChainId,
@@ -59,7 +59,7 @@ pub async fn insert_batch_blocks(
             internal_chain_id: b.chain_id.db,
             hash: b.hash.clone(),
             data: b.data.clone(),
-            height: b.height,
+            height: b.height.into(),
             time: b.time,
         })
         .collect_vec())
@@ -74,7 +74,7 @@ pub async fn insert_batch_transactions(
         .map(|t| SupportedBlockEvent::TendermintTransaction {
             internal_chain_id: t.chain_id.db,
             block_hash: t.block_hash.clone(),
-            height: t.block_height,
+            height: t.block_height.into(),
             hash: t.hash.clone(),
             data: t.data.clone(),
             index: t.index,
@@ -95,7 +95,7 @@ pub async fn insert_batch_events(
                 .map(|flow| SupportedBlockEvent::TendermintEvent {
                     internal_chain_id: e.event.chain_id.db,
                     block_hash: e.event.block_hash.clone(),
-                    height: e.event.block_height,
+                    height: e.event.block_height.into(),
                     transaction_hash: e.event.transaction_hash.clone(),
                     index: e.event.block_index,
                     transaction_index: e.event.transaction_index,

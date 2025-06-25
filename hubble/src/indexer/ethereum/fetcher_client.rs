@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use alloy::{
     eips::BlockId,
     network::AnyRpcBlock,
-    primitives::{BloomInput, FixedBytes},
+    primitives::BloomInput,
     rpc::types::{BlockTransactionsKind, Filter, Log},
 };
 use axum::async_trait;
@@ -15,31 +15,20 @@ use tracing::{debug, info, info_span, trace, Instrument};
 
 use crate::{
     indexer::{
-        api::{
-            BlockHeight, BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError,
-        },
+        api::{BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError},
         ethereum::{
+            abi::AbiRegistration,
             block_handle::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },
             context::EthContext,
-            postgres::{get_abi_registration, AbiRegistration},
+            mapping::legacy::ToLowerHex,
+            postgres::get_abi_registration,
             provider::{Provider, RpcProviderId},
         },
-        event::SupportedBlockEvent,
     },
     postgres::{fetch_chain_id_tx, ChainId},
 };
-
-pub trait ToLowerHex {
-    fn to_lower_hex(&self) -> String;
-}
-
-impl ToLowerHex for FixedBytes<32> {
-    fn to_lower_hex(&self) -> String {
-        format!("{:#x}", self)
-    }
-}
 
 pub trait BlockReferenceProvider {
     fn block_reference(&self) -> Result<BlockReference, Report>;
@@ -73,12 +62,14 @@ pub struct TransactionFilter {
 impl TransactionFilter {
     pub(crate) async fn abi_registration_at(
         &self,
-        height: BlockHeight,
+        height: crate::indexer::event::types::BlockHeight,
     ) -> Result<AbiRegistration, IndexerError> {
-        Ok(
-            get_abi_registration(&mut self.pg_pool.begin().await?, self.chain_id.db, height)
-                .await?,
+        get_abi_registration(
+            &mut self.pg_pool.begin().await?,
+            self.chain_id.db.into(),
+            height,
         )
+        .await
     }
 }
 
@@ -153,7 +144,7 @@ impl EthFetcherClient {
 
         let abi_registration = self
             .transaction_filter
-            .abi_registration_at(block_reference.height)
+            .abi_registration_at(block_reference.height.into())
             .await?;
         debug!(
             "{}: contract-addresses: {}",
@@ -270,91 +261,6 @@ impl EthFetcherClient {
             transactions,
             ucs_events,
         }))
-    }
-
-    fn transform_logs_to_ucs_events(
-        &self,
-        abi_registration: &AbiRegistration,
-        block: &AnyRpcBlock,
-        logs: &[Log],
-    ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
-        // group events by transaction
-        let events_by_transaction = {
-            let mut map: HashMap<_, Vec<Log>> = HashMap::with_capacity(logs.len());
-            for log in logs {
-                if log.removed {
-                    continue;
-                }
-
-                map.entry(log.transaction_index.unwrap())
-                    .and_modify(|logs| logs.push(log.clone()))
-                    .or_insert(vec![log.clone()]);
-            }
-            map
-        };
-
-        Ok(events_by_transaction
-            .into_iter()
-            .sorted_by_key(|(transaction_index, _)| transaction_index.clone())
-            .map(|(_, logs)| {
-                logs.iter()
-                    .sorted_by_key(|e| e.log_index)
-                    .enumerate()
-                    .map(|(transaction_log_index, log)| {
-                        self.transform_log_to_ucs_events(
-                            abi_registration,
-                            block,
-                            transaction_log_index,
-                            log,
-                        )
-                    })
-                    .collect::<Result<Vec<Vec<SupportedBlockEvent>>, IndexerError>>()
-            })
-            .collect::<Result<Vec<Vec<Vec<SupportedBlockEvent>>>, IndexerError>>()?
-            .into_iter()
-            .flatten()
-            .flatten()
-            .collect())
-    }
-
-    fn transform_log_to_ucs_events(
-        &self,
-        abi_registration: &AbiRegistration,
-        block: &AnyRpcBlock,
-        transaction_log_index: usize,
-        log: &Log,
-    ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
-        let decoded = abi_registration.decode(log)?;
-
-        let result = SupportedBlockEvent::EthereumDecodedLog {
-            internal_chain_id: self.chain_id.db,
-            block_hash: block.header.hash.to_lower_hex(),
-            height: block.header.number,
-            log_index: i32::try_from(log.log_index.expect("log index in log"))
-                .expect("log index fits"),
-            timestamp: OffsetDateTime::from_unix_timestamp(
-                block
-                    .header
-                    .timestamp
-                    .try_into()
-                    .expect("timestamp fits in i64"),
-            )
-            .expect("timestamp can be converted"),
-            transaction_hash: log
-                .transaction_hash
-                .expect("transaction-hash in log")
-                .to_string(),
-            transaction_index: i32::try_from(
-                log.transaction_index.expect("transaction-index in log"),
-            )
-            .expect("transaction index fits"),
-            transaction_log_index: i32::try_from(transaction_log_index)
-                .expect("transaction log index fits"),
-            raw_log: serde_json::to_value(log).unwrap(),
-            log_to_jsonb: decoded,
-        };
-
-        Ok(vec![result])
     }
 }
 

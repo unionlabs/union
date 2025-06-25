@@ -10,7 +10,7 @@ use super::{
 };
 use crate::indexer::{
     api::{BlockHandle, BlockSelection, FetchMode},
-    event::Range,
+    event::types::Range,
     postgres::block_fix::{
         delete_block_range_to_fix, get_block_fix_status, update_block_range_to_fix_next,
         update_block_range_to_fix_start_and_next,
@@ -25,6 +25,10 @@ enum FixerLoopResult {
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_fixer(&self, fetcher_client: T) -> Result<(), IndexerError> {
+        if self.drain {
+            return Ok(());
+        }
+
         loop {
             match self.run_fixer_loop(&fetcher_client).await {
                 Ok(FixerLoopResult::RunAgain) => {

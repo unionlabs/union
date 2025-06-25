@@ -3,7 +3,8 @@ use sqlx::PgPool;
 use url::Url;
 
 use crate::indexer::{
-    api::{BlockHeight, IndexerId, UniversalChainId},
+    api::{BlockHeight, IndexerId},
+    event::types::UniversalChainId,
     nats::NatsConnection,
     tendermint::{context::TmContext, fetcher_client::TmFetcherClient},
     ConsumerConfig, FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
@@ -30,6 +31,8 @@ pub struct Config {
     pub consumer: ConsumerConfig,
     #[serde(default)]
     pub testnet: bool,
+    #[serde(default)]
+    pub drain: bool,
 }
 
 impl Config {
@@ -56,6 +59,7 @@ impl Config {
                     .unwrap_or(DEFAULT_TRANSACTIONS_MAX_PAGE_SIZE),
                 testnet: self.testnet,
             },
+            self.drain,
         ))
     }
 }
