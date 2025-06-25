@@ -54,6 +54,8 @@ import (
 	feemarketmodule "github.com/skip-mev/feemarket/api/feemarket/feemarket/module/v1"
 	_ "github.com/skip-mev/feemarket/x/feemarket/keeper"
 	feemarkettypes "github.com/skip-mev/feemarket/x/feemarket/types"
+
+	unionstaking "github.com/unionlabs/union/uniond/x/staking"
 )
 
 const UNION_MULTI_SIG = "union1wpm2d4h73pd5d6u3p7rw8707rkenduuckhxcsm"
@@ -285,6 +287,10 @@ var (
 			{
 				Name:   feemarkettypes.ModuleName,
 				Config: appconfig.WrapAny(&feemarketmodule.Module{}),
+			},
+			{
+				Name:   unionstaking.ModuleName,
+				Config: appconfig.WrapAny(&unionstaking.Module{}),
 			},
 		},
 	})

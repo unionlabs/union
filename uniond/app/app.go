@@ -84,6 +84,7 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/unionlabs/union/uniond/docs"
+	unionstaking "github.com/unionlabs/union/uniond/x/staking/keeper"
 )
 
 const (
@@ -147,6 +148,9 @@ type App struct {
 
 	// Fee Market
 	FeeMarketKeeper feemarketkeeper.Keeper
+
+	// Union Staking (proof of possession)
+	UnionStaking unionstaking.Keeper
 
 	// simulation manager
 	sm           *module.SimulationManager
@@ -247,6 +251,7 @@ func New(
 		&app.GroupKeeper,
 		&app.CircuitBreakerKeeper,
 		&app.FeeMarketKeeper,
+		&app.UnionStaking,
 	); err != nil {
 		panic(err)
 	}
