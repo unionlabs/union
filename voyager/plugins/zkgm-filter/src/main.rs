@@ -52,7 +52,11 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::{ChainId, IbcSpec},
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, data, noop, pass::PassResult, Op},
+    vm::{
+        call, data, noop,
+        pass::{PassResult, Ready},
+        Op,
+    },
 };
 
 use crate::{
@@ -433,7 +437,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             provable_height: chain_event.provable_height,
                             event: full_event.clone().try_into().unwrap(),
                         };
-                        Ok((
+                        Ok(Ready::new(
                             vec![idx],
                             data(PluginMessage::new(
                                 voyager_plugin_transaction_batch::plugin_name(&chain_event.counterparty_chain_id),
@@ -457,7 +461,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                     "found zkgm packet"
                                 );
 
-                                Ok((
+                                Ok(Ready::new(
                                     vec![idx],
                                     call(PluginMessage::new(
                                         self.plugin_name(),
@@ -482,7 +486,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                                     packet_hash = %write_ack.packet().hash(),
                                     "not acknowledging protocol filled packet"
                                 );
-                                return Ok((vec![], noop()));
+                                return Ok(Ready::new(vec![], noop()));
                             }
 
                             ready()

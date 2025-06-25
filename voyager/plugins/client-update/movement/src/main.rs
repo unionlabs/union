@@ -207,7 +207,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     op
                 })
                 .enumerate()
-                .map(|(i, op)| (vec![i], op))
+                .map(|(i, op)| Ready::new(vec![i], op))
                 .collect(),
         })
     }

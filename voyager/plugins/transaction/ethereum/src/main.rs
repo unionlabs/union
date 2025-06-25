@@ -44,7 +44,11 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::ChainId,
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, defer, now, pass::PassResult, seq, Op, Visit},
+    vm::{
+        call, defer, now,
+        pass::{PassResult, Ready},
+        seq, Op, Visit,
+    },
 };
 
 use crate::{
@@ -328,7 +332,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     )
                     .visit_op(&mut op);
 
-                    (vec![idx], op)
+                    Ready::new(vec![idx], op)
                 })
                 .collect(),
         })

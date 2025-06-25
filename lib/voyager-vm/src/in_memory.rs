@@ -13,7 +13,7 @@ use unionlabs::ErrorReporter;
 
 use crate::{
     filter::{FilterResult, Interest, InterestFilter},
-    pass::Pass,
+    pass::{OptimizeFurther, Pass, Ready},
     Captures, EnqueueResult, ItemId, Op, Queue, QueueError, QueueMessage,
 };
 
@@ -244,7 +244,11 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
 
             done.append(&mut tagged_optimizer_queue.clone());
 
-            for (parents_idxs, op) in res.ready {
+            for Ready {
+                parents: parents_idxs,
+                op,
+            } in res.ready
+            {
                 let normalized_ops = op.normalize();
 
                 'block: for op in normalized_ops {
@@ -281,7 +285,12 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                 }
             }
 
-            for (parents_idxs, op, tag) in res.optimize_further {
+            for OptimizeFurther {
+                parents: parents_idxs,
+                op,
+                tag,
+            } in res.optimize_further
+            {
                 optimizer_queue.entry(tag.clone()).or_default().insert(
                     self.idx.fetch_add(1, Ordering::SeqCst),
                     Item {

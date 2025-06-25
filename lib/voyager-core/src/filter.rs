@@ -60,46 +60,6 @@ pub fn make_filter(
         .compile(modules)
         .map_err(map_jq_errs)?;
 
-    // let mut ctx = ParseCtx::new(["PLUGIN_NAME".to_owned()].into());
-    // ctx.insert_natives(jaq_core::core());
-    // ctx.insert_defs(jaq_std::std());
-
-    // // parse the filter
-    // let lexed = jaq_syn::Lexer::new(&interest_filter).lex().map_err(|es| {
-    //     anyhow!(es
-    //         .iter()
-    //         .map(|(expect, s)| format!("({}: {s})", expect.as_str()))
-    //         .collect::<Vec<_>>()
-    //         .join(","))
-    // })?;
-
-    // let f = jaq_syn::Parser::new(&lexed)
-    //     .parse(|p| p.module(|p| p.term()))
-    //     .map_err(|es| {
-    //         anyhow!(es
-    //             .iter()
-    //             .map(|(expect, maybe_token)| match maybe_token {
-    //                 Some(token) => {
-    //                     format!("({}, {})", expect.as_str(), token.as_str())
-    //                 }
-    //                 None => format!("({})", expect.as_str()),
-    //             })
-    //             .collect::<Vec<_>>()
-    //             .join(","))
-    //     })?;
-
-    // // compile the filter in the context of the given definitions
-    // let filter = ctx.compile(f.conv(&interest_filter));
-
-    // assert!(
-    //     ctx.errs.is_empty(),
-    //     "{:?}",
-    //     ctx.errs
-    //         .into_iter()
-    //         .map(|x| x.0.to_string())
-    //         .collect::<Vec<_>>()
-    // );
-
     Ok((filter, name))
 }
 

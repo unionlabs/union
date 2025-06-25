@@ -39,7 +39,11 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::{ChainId, ClientType},
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, data, defer, noop, now, pass::PassResult, promise, seq, void, Op, Visit},
+    vm::{
+        call, data, defer, noop, now,
+        pass::{PassResult, Ready},
+        promise, seq, void, Op, Visit,
+    },
     DefaultCmd,
 };
 
@@ -289,7 +293,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     op
                 })
                 .enumerate()
-                .map(|(i, op)| (vec![i], op))
+                .map(|(i, op)| Ready::new(vec![i], op))
                 .collect(),
         })
     }

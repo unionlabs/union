@@ -22,7 +22,7 @@ use sqlx::{
 use tracing::{debug, debug_span, error, info, info_span, instrument, trace, warn, Instrument};
 use voyager_vm::{
     filter::{FilterResult, Interest, InterestFilter},
-    pass::{Pass, PassResult},
+    pass::{OptimizeFurther, Pass, PassResult, Ready},
     BoxDynError, Captures, EnqueueResult, ItemId, Op, QueueError, QueueMessage,
 };
 
@@ -538,7 +538,12 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                 .collect::<Vec<_>>()
         };
 
-        for (parent_idxs, new_msg, tag) in optimize_further {
+        for OptimizeFurther {
+            parents: parent_idxs,
+            op: new_msg,
+            tag,
+        } in optimize_further
+        {
             let parents = get_parent_ids(&parent_idxs);
             trace!(parent_idxs = ?&parent_idxs, parents = ?&parents);
 
@@ -563,7 +568,11 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
 
         let mut ready_insert_into_queue = vec![];
 
-        for (parent_idxs, op) in ready {
+        for Ready {
+            parents: parent_idxs,
+            op,
+        } in ready
+        {
             let normalized_ops = op.normalize();
 
             let parents = get_parent_ids(&parent_idxs);

@@ -53,7 +53,11 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::ChainId,
     rpc::{types::PluginInfo, PluginServer},
-    vm::{call, noop, pass::PassResult, Op, Visit},
+    vm::{
+        call, noop,
+        pass::{PassResult, Ready},
+        Op, Visit,
+    },
     DefaultCmd,
 };
 
@@ -206,7 +210,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .visit_op(&mut op);
 
-                    (vec![idx], op)
+                    Ready::new(vec![idx], op)
                 })
                 .collect(),
         })

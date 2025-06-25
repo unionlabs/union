@@ -28,7 +28,11 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::{ChainId, IbcSpec},
     rpc::{types::PluginInfo, PluginServer},
-    vm::{call, data, pass::PassResult, Op},
+    vm::{
+        call, data,
+        pass::{OptimizeFurther, PassResult, Ready},
+        Op,
+    },
     DefaultCmd,
 };
 
@@ -262,7 +266,7 @@ impl PluginServer<Never, Never> for Module {
             optimize_further: send_wait
                 .into_iter()
                 .map(|(idxs, events)| {
-                    (
+                    OptimizeFurther::new(
                         idxs,
                         data(PluginMessage::new(
                             self.plugin_name(),
@@ -272,7 +276,7 @@ impl PluginServer<Never, Never> for Module {
                     )
                 })
                 .chain(ack_wait.into_iter().map(|(idxs, events)| {
-                    (
+                    OptimizeFurther::new(
                         idxs,
                         data(PluginMessage::new(
                             self.plugin_name(),
@@ -288,7 +292,7 @@ impl PluginServer<Never, Never> for Module {
                     let mut packets = d.into_iter().map(|d| d.packet).collect::<Vec<_>>();
                     packets.sort_by_cached_key(|packet| packet.hash());
 
-                    (
+                    Ready::new(
                         idxs,
                         call(SubmitTx {
                             chain_id: self.chain_id.clone(),
@@ -303,7 +307,7 @@ impl PluginServer<Never, Never> for Module {
                         .sorted_by_cached_key(|(packet, _ack)| packet.hash())
                         .unzip();
 
-                    (
+                    Ready::new(
                         idxs,
                         call(SubmitTx {
                             chain_id: self.chain_id.clone(),

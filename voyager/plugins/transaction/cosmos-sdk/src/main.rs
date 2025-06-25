@@ -45,7 +45,11 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::ChainId,
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, noop, pass::PassResult, seq, BoxDynError, Op, Visit},
+    vm::{
+        call, noop,
+        pass::{PassResult, Ready},
+        seq, BoxDynError, Op, Visit,
+    },
     DefaultCmd,
 };
 
@@ -526,7 +530,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                 .map(|(idx, mut op)| {
                     hook.visit_op(&mut op);
 
-                    (vec![idx], op)
+                    Ready::new(vec![idx], op)
                 })
                 .collect(),
         })

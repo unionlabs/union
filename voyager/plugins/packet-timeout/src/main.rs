@@ -28,7 +28,11 @@ use voyager_sdk::{
     primitives::{ChainId, IbcSpec, QueryHeight},
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
     types::{ProofType, RawClientId},
-    vm::{call, conc, noop, pass::PassResult, seq, Op},
+    vm::{
+        call, conc, noop,
+        pass::{PassResult, Ready},
+        seq, Op,
+    },
     DefaultCmd, ExtensionsExt, VoyagerClient,
 };
 
@@ -130,7 +134,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                             })),
                         )
                     })? {
-                    FullEvent::PacketSend(packet_send) => Ok((
+                    FullEvent::PacketSend(packet_send) => Ok(Ready::new(
                         vec![idx],
                         call(PluginMessage::new(
                             self.plugin_name(),

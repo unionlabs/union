@@ -31,7 +31,11 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::{ChainId, ClientType, IbcInterface, QueryHeight},
     rpc::{types::PluginInfo, PluginServer},
-    vm::{self, pass::PassResult, BoxDynError, Op, Visit},
+    vm::{
+        self,
+        pass::{PassResult, Ready},
+        BoxDynError, Op, Visit,
+    },
     DefaultCmd, ExtensionsExt, VoyagerClient,
 };
 
@@ -158,7 +162,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     op
                 })
                 .enumerate()
-                .map(|(i, op)| (vec![i], op))
+                .map(|(i, op)| Ready::new(vec![i], op))
                 .collect(),
         })
     }

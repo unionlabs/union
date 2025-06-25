@@ -44,7 +44,11 @@ use voyager_sdk::{
     plugin::Plugin,
     primitives::{ChainId, ClientInfo, ClientType, QueryHeight},
     rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
-    vm::{call, conc, data, noop, pass::PassResult, seq, Op},
+    vm::{
+        call, conc, data, noop,
+        pass::{PassResult, Ready},
+        seq, Op,
+    },
     ExtensionsExt, VoyagerClient,
 };
 use wasm_client_type::WasmClientType;
@@ -336,7 +340,7 @@ impl PluginServer<ModuleCall, Never> for Module {
                     op => op,
                 })
                 .enumerate()
-                .map(|(i, op)| (vec![i], op))
+                .map(|(i, op)| Ready::new(vec![i], op))
                 .collect(),
         })
     }

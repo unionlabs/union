@@ -30,7 +30,11 @@ use voyager_sdk::{
     primitives::{ChainId, IbcSpec, QueryHeight},
     rpc::{types::PluginInfo, PluginServer},
     types::RawClientId,
-    vm::{call, conc, data, pass::PassResult, seq, Op},
+    vm::{
+        call, conc, data,
+        pass::{OptimizeFurther, PassResult, Ready},
+        seq, Op,
+    },
     DefaultCmd, ExtensionsExt, VoyagerClient,
 };
 
@@ -528,8 +532,13 @@ impl Module {
                     .chain(optimize_further_union)
                     .chain(ready_v1_errored.into_iter().flatten())
                     .chain(ready_union_errored.into_iter().flatten())
+                    .map(|(parents, op, tag)| OptimizeFurther::new(parents, op, tag))
                     .collect(),
-                ready: ready_v1.into_iter().chain(ready_union).collect(),
+                ready: ready_v1
+                    .into_iter()
+                    .chain(ready_union)
+                    .map(|(parents, op)| Ready::new(parents, op))
+                    .collect(),
             })
         })
     }

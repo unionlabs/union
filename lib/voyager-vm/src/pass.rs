@@ -23,10 +23,37 @@ pub trait Pass<T: QueueMessage>: Send + Sync + Sized {
 pub struct PassResult<T: QueueMessage> {
     /// [`Op`]s that are considered incomplete by this optimization pass and are to be optimized
     /// further.
-    pub optimize_further: Vec<(Vec<usize>, Op<T>, String)>,
+    pub optimize_further: Vec<OptimizeFurther<T>>,
     /// [`Op`]s that are considered complete by this optimization pass. No more passes will be run
     /// on these [`Op`]s, and they will be requeued as "ready" in the queue.
-    pub ready: Vec<(Vec<usize>, Op<T>)>,
+    pub ready: Vec<Ready<T>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct OptimizeFurther<T: QueueMessage> {
+    pub parents: Vec<usize>,
+    pub op: Op<T>,
+    pub tag: String,
+}
+
+impl<T: QueueMessage> OptimizeFurther<T> {
+    pub fn new(parents: Vec<usize>, op: Op<T>, tag: String) -> Self {
+        Self { parents, op, tag }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(bound(serialize = "", deserialize = ""))]
+pub struct Ready<T: QueueMessage> {
+    pub parents: Vec<usize>,
+    pub op: Op<T>,
+}
+
+impl<T: QueueMessage> Ready<T> {
+    pub fn new(parents: Vec<usize>, op: Op<T>) -> Self {
+        Self { parents, op }
+    }
 }
 
 impl<T: QueueMessage> Default for PassResult<T> {
