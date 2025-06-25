@@ -6,10 +6,12 @@ import "forge-std/Script.sol";
 
 import "solady/utils/CREATE3.sol";
 import "solady/utils/LibString.sol";
+import "solady/utils/LibBytes.sol";
 import "@openzeppelin-foundry-upgradeable/Upgrades.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 
+import "../contracts/U.sol";
 import "../contracts/Manager.sol";
 import "../contracts/Multicall.sol";
 import "../contracts/clients/CometblsClient.sol";
@@ -50,6 +52,7 @@ struct UCS03Parameters {
 library LIB_SALT {
     string constant MULTICALL = "lib/multicall-v2";
     string constant UCS03_ZKGM_ERC20_IMPL = "lib/zkgm-erc20-v2";
+    string constant U_IMPL = "lib/u-impl";
 }
 
 library IBC_SALT {
@@ -160,6 +163,14 @@ abstract contract UnionScript is UnionBase {
                 LIB_SALT.UCS03_ZKGM_ERC20_IMPL,
                 abi.encodePacked(type(ZkgmERC20).creationCode),
                 0
+            )
+        );
+    }
+
+    function deployU() internal returns (U) {
+        return U(
+            getDeployer().deploy(
+                LIB_SALT.U_IMPL, abi.encodePacked(type(U).creationCode), 0
             )
         );
     }
@@ -1718,5 +1729,91 @@ contract DeployRoles is UnionScript {
         vm.startBroadcast(privateKey);
         setupRoles(owner, getContracts());
         vm.stopBroadcast();
+    }
+}
+
+contract DeployU is UnionScript, VersionedScript {
+    using LibString for *;
+
+    address immutable deployer;
+    address immutable sender;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+
+        vm.startBroadcast(privateKey);
+        U u = deployU();
+        vm.stopBroadcast();
+
+        console.log("U: ", address(u));
+    }
+}
+
+contract MintU is UnionScript, VersionedScript {
+    using LibString for *;
+    using LibBytes for *;
+
+    address immutable deployer;
+    address immutable sender;
+    uint256 immutable path;
+    uint32 immutable channelId;
+    bytes token;
+    bytes salt;
+
+    constructor() {
+        deployer = vm.envAddress("DEPLOYER");
+        sender = vm.envAddress("SENDER");
+        path = vm.envUint("FORWARD_PATH");
+        token = vm.envBytes("TOKEN");
+        channelId = uint32(vm.envUint("CHANNEL_ID"));
+        salt = vm.envBytes("SALT");
+    }
+
+    function getDeployer() internal view override returns (Deployer) {
+        return Deployer(deployer);
+    }
+
+    function getDeployed(
+        string memory salt
+    ) internal view returns (address) {
+        return CREATE3.predictDeterministicAddress(
+            keccak256(abi.encodePacked(sender.toHexString(), "/", salt)),
+            deployer
+        );
+    }
+
+    function run() public {
+        vm.pauseGasMetering();
+        address auth = getDeployed(IBC_SALT.MANAGER);
+        address zkgm = getDeployed(Protocols.UCS03);
+        address impl = getDeployed(LIB_SALT.U_IMPL);
+        console.log(auth);
+        console.log(zkgm);
+        console.log(impl);
+        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+            implementation: abi.encodePacked(impl),
+            initializer: abi.encodeCall(
+                U.initialize, (auth, zkgm, "Union", "U", 18, salt)
+            )
+        });
+        bytes32 metadataImage =
+            EfficientHashLib.hash(ZkgmLib.encodeFungibleAssetMetadata(metadata));
+        bytes32 wrappedTokenSalt = EfficientHashLib.hash(
+            abi.encode(path, channelId, token, metadataImage)
+        );
+        address wrappedToken =
+            CREATE3.predictDeterministicAddress(wrappedTokenSalt, zkgm);
+        bytes memory wrappedTokenBytes = abi.encodePacked(wrappedToken);
+        console.logBytes(salt);
+        console.log(wrappedToken);
     }
 }
