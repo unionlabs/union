@@ -32,6 +32,7 @@ use jsonrpsee::{
     Extensions, MethodsError,
 };
 use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
+use crate::helpers;
 
 #[derive(Debug)]
 pub struct Module {
@@ -122,7 +123,6 @@ impl Module {
         })
     }
 
-    // TODO(aeryz): timeout brotha
     async fn wait_for_event<T, F: Fn(IbcEvents) -> Option<T>>(
         &self,
         filter_fn: F,
@@ -173,9 +173,11 @@ impl Module {
     pub async fn wait_for_create_client(
         &self,
         timeout: Duration,
-    ) -> anyhow::Result<CreateClient> {
+    ) -> anyhow::Result<helpers::CreateClientConfirm> {
         self.wait_for_event(|e| match e {
-            IbcEvents::CreateClient(ev) => Some(ev),
+            IbcEvents::CreateClient(ev) => Some(helpers::CreateClientConfirm {
+                client_id: ev.client_id,
+            }),
             _ => None,
         }, timeout)
         .await
@@ -184,9 +186,14 @@ impl Module {
     pub async fn wait_for_connection_open_confirm(
         &self,
         timeout: Duration,
-    ) -> anyhow::Result<ConnectionOpenConfirm> {
+    ) -> anyhow::Result<helpers::ConnectionConfirm> {
         self.wait_for_event(|e| match e {
-            IbcEvents::ConnectionOpenConfirm(ev) => Some(ev),
+            IbcEvents::ConnectionOpenConfirm(ev) => {
+                Some(helpers::ConnectionConfirm {
+                    connection_id: ev.connection_id,
+                    counterparty_connection_id: ev.counterparty_connection_id,
+                })
+            }
             _ => None,
         }, timeout)
         .await
@@ -195,9 +202,12 @@ impl Module {
     pub async fn wait_for_channel_open_confirm(
         &self,
         timeout: Duration,
-    ) -> anyhow::Result<ChannelOpenConfirm> {
+    ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
         self.wait_for_event(|e| match e {
-            IbcEvents::ChannelOpenConfirm(ev) => Some(ev),
+            IbcEvents::ChannelOpenConfirm(ev) => Some(helpers::ChannelOpenConfirm {
+                channel_id: ev.channel_id,
+                counterparty_channel_id: ev.counterparty_channel_id,
+            }),
             _ => None,
         }, timeout)
         .await

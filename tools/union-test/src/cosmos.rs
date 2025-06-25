@@ -8,12 +8,13 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
     BroadcastTxCommitError, TxClient,
 };
+use ibc_solidity::Connection;
 use protos::cometbft;
 use tokio::time::timeout;
 use cosmos_sdk_event::CosmosSdkEvent;
 use cometbft::abci::v1::{Event, EventAttribute};
 use cometbft_rpc::rpc_types::{Order, TxResponse};
-use ibc_union_spec::{event::PacketSend, event::CreateClient, ChannelId, ClientId, Timestamp};
+use ibc_union_spec::{event::PacketSend, event::CreateClient, ChannelId, ConnectionId, ClientId, Timestamp};
 use protos::cosmos::base::v1beta1::Coin;
 use serde::{Deserialize, Serialize};
 use unionlabs::{
@@ -21,7 +22,7 @@ use unionlabs::{
     bech32::Bech32,
     encoding::{Encode, Json, Proto},
     google::protobuf::any::mk_any,
-    primitives::{Bytes, H160, H256},
+    primitives::{Bytes, H160, H256, encoding::HexUnprefixed},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -30,7 +31,9 @@ use voyager_sdk::{
     primitives::ChainId,
     vm::BoxDynError,
 };
+use ibc_union_spec::{path::ChannelPath, query::PacketByHash, IbcUnion, Packet};
 
+use crate::helpers;
 
 #[derive(Debug, PartialEq, Clone, Serialize, Deserialize)]
 pub struct Config {
@@ -212,11 +215,52 @@ impl Module {
     pub async fn wait_for_create_client_id(
         &self,
         max_wait: Duration,
-    ) -> anyhow::Result<ClientId> {
+    ) -> anyhow::Result<helpers::CreateClientConfirm> {
         self.wait_for_event(
             |evt| {
                 if let IbcEvent::WasmCreateClient { client_id, .. } = evt {
-                    Some(client_id.clone())
+                    Some(helpers::CreateClientConfirm { client_id: client_id.raw().try_into().unwrap() })
+                } else {
+                    None
+                }
+            },
+            max_wait,
+        )
+        .await
+    }
+
+    pub async fn wait_for_channel_open_confirm(
+        &self,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
+        self.wait_for_event(
+            |evt| {
+                if let IbcEvent::WasmChannelOpenConfirm {  channel_id, counterparty_channel_id, .. } = evt {
+                    Some(helpers::ChannelOpenConfirm {
+                        channel_id: channel_id.raw().try_into().unwrap(),
+                        counterparty_channel_id: counterparty_channel_id.raw().try_into().unwrap(),
+                    })
+                } else {
+                    None
+                }
+            },
+            max_wait,
+        )
+        .await
+    }
+
+
+    pub async fn wait_for_connection_open_confirm(
+        &self,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::ConnectionConfirm> {
+        self.wait_for_event(
+            |evt| {
+                if let IbcEvent::WasmConnectionOpenConfirm {  connection_id, counterparty_connection_id, .. } = evt {
+                    Some(helpers::ConnectionConfirm {
+                        connection_id: connection_id.raw().try_into().unwrap(),
+                        counterparty_connection_id: counterparty_connection_id.raw().try_into().unwrap(),
+                    })
                 } else {
                     None
                 }
@@ -329,5 +373,38 @@ pub enum IbcEvent {
         #[serde(with = "serde_utils::string")]
         client_id: ClientId,
         client_type: String,
+    },
+
+    #[serde(rename = "wasm-connection_open_confirm")]
+    WasmConnectionOpenConfirm {
+        #[serde(with = "serde_utils::string")]
+        connection_id: ConnectionId,
+        #[serde(with = "serde_utils::string")]
+        client_id: ClientId,
+        #[serde(with = "serde_utils::string")]
+        counterparty_client_id: ClientId,
+        #[serde(with = "serde_utils::string")]
+        counterparty_connection_id: ConnectionId,
+    },
+
+    #[serde(rename = "wasm-channel_open_confirm")]
+    WasmChannelOpenConfirm {
+        port_id: Bech32<H256>,
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        counterparty_port_id: Bytes<HexUnprefixed>,
+        #[serde(with = "serde_utils::string")]
+        counterparty_channel_id: ChannelId,
+        #[serde(with = "serde_utils::string")]
+        connection_id: ConnectionId,
+    },
+
+    #[serde(rename = "channel_open_confirm")]
+    ChannelOpenConfirm {
+        port_id: unionlabs::id::PortId,
+        channel_id: unionlabs::id::ChannelId,
+        counterparty_port_id: unionlabs::id::PortId,
+        counterparty_channel_id: unionlabs::id::ChannelId,
+        connection_id: unionlabs::id::ConnectionId,
     },
 }
