@@ -21,6 +21,7 @@ pub mod cosmos;
 pub mod evm;
 pub mod channel_provider;
 pub mod voyager;
+pub mod helpers;
 use crate::channel_provider::ChannelConfirm;
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
@@ -81,7 +82,7 @@ async fn main() -> anyhow::Result<()> {
         "cometbls".into(),
     )?;
 
-    let res = eth.wait_for_create_client(Duration::from_secs(30)).await;
+    let res = eth.wait_for_create_client(Duration::from_secs(45)).await;
 
     let counterparty_client_id = match res {
         Ok(confirm) => {
@@ -104,28 +105,24 @@ async fn main() -> anyhow::Result<()> {
         "trusted/evm/mpt".into(),
     )?;
 
-    let res = union.wait_for_create_client_id(Duration::from_secs(30)).await;
-    let client_id: ClientId = match res {
+    let res = union.wait_for_create_client_id(Duration::from_secs(45)).await;
+    let client_id: u32 = match res {
         Ok(confirm) => {
             println!(
                 "✅ got create client result on Cosmos. client_id: {}",
-                confirm,
+                confirm.client_id,
             );
-            confirm
+            confirm.client_id
         }
         Err(err) => {
             eprintln!("⚠️  error waiting for create-client-confirm: {}", err);
             return Ok(());
         }
     };  
-    let client_id_u32 = client_id
-        .raw()
-        .try_into()
-        .expect("client_id should be convertible to u32");
-
+    
     std::thread::sleep(Duration::from_secs(5));
 
-    voyager::connection_open(union.chain_id.clone(), client_id_u32, counterparty_client_id)?;
+    voyager::connection_open(union.chain_id.clone(), client_id, counterparty_client_id)?;
 
     let res = eth.wait_for_connection_open_confirm(Duration::from_secs(180)).await;
 
@@ -136,7 +133,7 @@ async fn main() -> anyhow::Result<()> {
                 confirm.connection_id,
                 confirm.counterparty_connection_id,
             );
-            confirm.connection_id
+            confirm.counterparty_connection_id
         }
         Err (err) => {
             println!("Error occured when waiting for connection open confirm. Err: {}", err);
@@ -145,29 +142,6 @@ async fn main() -> anyhow::Result<()> {
     };
 
     let channel_pool = channel_provider::ChannelPool::new();
-
-    for idx in 1..=10 {
-        println!("Attempting to get channel #{}", idx);
-        match channel_pool
-            .get_channel(&union.chain_id, &eth.chain_id)
-            .await
-        {
-            Some(channel) => {
-                println!(
-                    "Channel {}: {} ↔ {}",
-                    idx,
-                    channel.src,
-                    channel.dest,
-                );
-                // … use `channel` here …
-            }
-            None => {
-                eprintln!("⚠️  No more channels available at iteration {}", idx);
-                break; // or `continue`, depending on your logic
-            }
-        }
-    }
-
 
     let opened = channel_pool
         .open_channels(
@@ -188,30 +162,31 @@ async fn main() -> anyhow::Result<()> {
             hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
             connection_id,
             "ucs03-zkgm-0".into(),
-            5,
+            1,
+            Duration::from_secs(240) // 1 attempt, 240 seconds timeout
         )
         .await?;
-    for idx in 1..=10 {
-        println!("Attempting to get channel #{}", idx);
-        match channel_pool
-            .get_channel(&union.chain_id, &eth.chain_id)
-            .await
-        {
-            Some(channel) => {
-                println!(
-                    "Channel {}: {} ↔ {}",
-                    idx,
-                    channel.src,
-                    channel.dest,
-                );
-                // … use `channel` here …
-            }
-            None => {
-                eprintln!("⚠️  No more channels available at iteration {}", idx);
-                break; // or `continue`, depending on your logic
-            }
+    
+    println!("Opened {} channels", opened);
+
+    
+    let channel_id: ChannelId = match channel_pool
+        .get_channel(&union.chain_id, &eth.chain_id)
+        .await
+    {
+        Some(channel) => {
+            println!(
+                "Channel {} ↔ {}",
+                channel.src,
+                channel.dest,
+            );
+            channel.src.try_into().unwrap()
         }
-    }
+        None => {
+            eprintln!("⚠️  No more channels available");
+            panic!("no channel to send on");
+        }
+    };
     
 
     let mut salt_bytes = [0u8; 32];
@@ -224,7 +199,7 @@ async fn main() -> anyhow::Result<()> {
                 .unwrap(),
             vec![(
                 Box::new(ucs03_zkgm::msg::ExecuteMsg::Send {
-                    channel_id,
+                    channel_id: channel_id,
                     timeout_height: 0u64.into(),
                     timeout_timestamp: Timestamp::from_secs(u32::MAX.into()),
                     salt: salt_bytes.into(),
@@ -266,7 +241,7 @@ async fn main() -> anyhow::Result<()> {
         .unwrap() else { todo!("unexpected event type") };
 
     let recv = match eth
-        .wait_for_packet_recv(packet_hash, Duration::from_secs(240))
+        .wait_for_packet_recv(packet_hash, Duration::from_secs(280))
         .await
     {
         Ok(ev) => {
@@ -280,4 +255,58 @@ async fn main() -> anyhow::Result<()> {
     };
 
     Ok(())
+}
+
+
+async fn test_channels(
+    pool: &channel_provider::ChannelPool,
+    src: &ChainId,
+    dst: &ChainId,
+    max: usize,
+    release_at: Option<usize>,
+    eth: &evm::Module,
+    union: &cosmos::Module,
+    connection_id: u32,
+) {
+
+    let opened = pool
+        .open_channels(
+            voyager::channel_open,                                    
+            |timeout: Duration| {                                     
+                let eth = &eth;                                        
+                async move {
+                    let ev = eth.wait_for_channel_open_confirm(timeout).await?;
+                    Ok(ChannelConfirm {
+                        channel_id: ev.channel_id,
+                        counterparty_channel_id: ev.counterparty_channel_id,
+                    })
+                }
+            },
+            union.chain_id.clone(),
+            "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
+            eth.chain_id.clone(),
+            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
+            connection_id,
+            "ucs03-zkgm-0".into(),
+            8,
+            Duration::from_secs(240*8) // 8 attempts, 240 seconds each
+        )
+        .await;
+
+    for idx in 1..=max {
+        println!("Attempting to get channel #{}", idx);
+        match pool.get_channel(src, dst).await {
+            Some(channel) => {
+                println!("Channel {}: {} ↔ {}", idx, channel.src, channel.dest);
+                if release_at.map_or(false, |n| n == idx) {
+                    println!("Releasing channel #{}", idx);
+                    pool.release_channel(src, dst, channel).await;
+                }
+            }
+            None => {
+                eprintln!("⚠️  No more channels available at iteration {}", idx);
+                break;
+            }
+        }
+    }
 }
