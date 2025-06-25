@@ -22,7 +22,7 @@ use jsonrpsee::{
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{error, instrument, trace};
+use tracing::{error, instrument, trace, warn};
 use unionlabs::{
     ibc::core::client::height::Height,
     option_unwrap,
@@ -519,7 +519,7 @@ fn rpc_error<E: Error>(
 ) -> impl FnOnce(E) -> ErrorObjectOwned {
     move |e| {
         let message = format!("{message}: {}", ErrorReporter(e));
-        error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
+        warn!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
         ErrorObject::owned(-1, message, data)
     }
 }

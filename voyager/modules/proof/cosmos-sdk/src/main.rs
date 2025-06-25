@@ -14,7 +14,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{error, instrument};
+use tracing::{error, instrument, warn};
 use unionlabs::{
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
@@ -187,7 +187,7 @@ fn rpc_error<E: Error>(
 ) -> impl FnOnce(E) -> ErrorObjectOwned {
     move |e| {
         let message = format!("{message}: {}", ErrorReporter(e));
-        error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
+        warn!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
         ErrorObject::owned(-1, message, data)
     }
 }

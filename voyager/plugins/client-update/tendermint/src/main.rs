@@ -16,7 +16,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use tendermint_light_client_types::Header;
-use tracing::instrument;
+use tracing::{instrument, warn};
 use unionlabs::{
     ibc::core::client::height::Height,
     never::Never,
@@ -275,7 +275,7 @@ fn rpc_error<E: Error>(
 ) -> impl FnOnce(E) -> ErrorObjectOwned {
     move |e| {
         let message = format!("{message}: {}", ErrorReporter(e));
-        // error!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
+        warn!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
         ErrorObject::owned(-1, message, data)
     }
 }
