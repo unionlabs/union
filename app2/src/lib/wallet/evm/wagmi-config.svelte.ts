@@ -27,9 +27,10 @@ import {
   seiTestnet,
   sepolia,
 } from "@wagmi/core/chains"
+import { Option } from "effect"
 import type { Chain as ViemChain, FallbackTransport, Transport } from "viem"
 
-let wagmiConfig = createWagmiConfigInstance()
+let wagmiConfig: Option.Option<ReturnType<typeof createWagmiConfigInstance>> = Option.none()
 
 type Transports = {
   [Item in (typeof VIEM_CHAINS)[number] as Item["id"]]: FallbackTransport<Transport[]>
@@ -191,7 +192,6 @@ const transports: Transports = {
 
 function createWagmiConfigInstance() {
   const edition: Edition = uiStore.edition
-
   return createConfig({
     chains: VIEM_CHAINS,
     cacheTime: 4_000,
@@ -249,7 +249,15 @@ function createWagmiConfigInstance() {
 }
 
 export function getWagmiConfig() {
-  return wagmiConfig
+  if (Option.isNone(wagmiConfig)) {
+    wagmiConfig = Option.some(createWagmiConfigInstance())
+  }
+  return Option.match(wagmiConfig, {
+    onSome: (config) => config,
+    onNone: () => {
+      throw new Error("no wagmi config found")
+    },
+  })
 }
 
 export type ConfiguredChainId = (typeof VIEM_CHAINS)[number]["id"]
