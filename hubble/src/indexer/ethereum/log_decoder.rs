@@ -12,7 +12,10 @@ use crate::{
         ethereum::abi::SolEvent,
         event::{
             header::Header,
-            types::{BlockHash, ChannelId, ConnectionId, PortId, TransactionHash, Version},
+            types::{
+                BlockHash, BlockHeight, CanonicalChainId, ChannelId, ClientId, ClientType,
+                ConnectionId, PortId, TransactionHash, Version,
+            },
         },
     },
     postgres::ChainId,
@@ -94,8 +97,44 @@ impl<'a> LogDecoder<'a> {
         })
     }
 
+    pub fn client_id(&'a self) -> Result<ClientId, IndexerError> {
+        self.get_client_id("clientId")
+    }
+
+    pub fn l1_client_id(&'a self) -> Result<ClientId, IndexerError> {
+        self.get_client_id("l1ClientId")
+    }
+
+    pub fn l2_client_id(&'a self) -> Result<ClientId, IndexerError> {
+        self.get_client_id("l2ClientId")
+    }
+
+    pub fn client_type(&'a self) -> Result<ClientType, IndexerError> {
+        self.get_client_type("clientType")
+    }
+
+    pub fn counterparty_chain_id(&'a self) -> Result<CanonicalChainId, IndexerError> {
+        self.get_chain_id("counterpartyChainId")
+    }
+
+    pub fn l2_chain_id(&'a self) -> Result<CanonicalChainId, IndexerError> {
+        self.get_chain_id("l2ChainId")
+    }
+
+    pub fn counterparty_height(&'a self) -> Result<BlockHeight, IndexerError> {
+        self.get_height("height")
+    }
+
+    pub fn counterparty_client_id(&'a self) -> Result<ClientId, IndexerError> {
+        self.get_client_id("counterpartyClientId")
+    }
+
     pub fn connection_id(&'a self) -> Result<ConnectionId, IndexerError> {
         self.get_connection_id("connectionId")
+    }
+
+    pub fn counterparty_connection_id(&'a self) -> Result<ConnectionId, IndexerError> {
+        self.get_connection_id("counterpartyConnectionId")
     }
 
     pub fn channel_id(&'a self) -> Result<ChannelId, IndexerError> {
@@ -122,6 +161,22 @@ impl<'a> LogDecoder<'a> {
         self.get_version("counterpartyVersion")
     }
 
+    fn get_height(&'a self, key: &str) -> Result<BlockHeight, IndexerError> {
+        Ok(self.get_u64(key, "height")?.into())
+    }
+
+    fn get_client_id(&'a self, key: &str) -> Result<ClientId, IndexerError> {
+        Ok(self.get_u32(key, "client-id")?.into())
+    }
+
+    fn get_client_type(&'a self, key: &str) -> Result<ClientType, IndexerError> {
+        Ok(self.get_string(key, "client-type")?.into())
+    }
+
+    fn get_chain_id(&'a self, key: &str) -> Result<CanonicalChainId, IndexerError> {
+        Ok(self.get_string(key, "chain-id")?.into())
+    }
+
     fn get_connection_id(&'a self, key: &str) -> Result<ConnectionId, IndexerError> {
         Ok(self.get_u32(key, "connection-id")?.into())
     }
@@ -141,6 +196,13 @@ impl<'a> LogDecoder<'a> {
     fn get_u32(&'a self, key: &str, expecting: &str) -> Result<u32, IndexerError> {
         match self.get_value(key, expecting)? {
             DynSolValue::Uint(v, 32) => Ok(v.to::<u32>()),
+            value => Err(self.report_unexpected_type(key, value, expecting)),
+        }
+    }
+
+    fn get_u64(&'a self, key: &str, expecting: &str) -> Result<u64, IndexerError> {
+        match self.get_value(key, expecting)? {
+            DynSolValue::Uint(v, 64) => Ok(v.to::<u64>()),
             value => Err(self.report_unexpected_type(key, value, expecting)),
         }
     }

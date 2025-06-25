@@ -1,0 +1,20 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v2_sync.update_client_test (\n                internal_chain_id,\n                block_hash,\n                height,\n                transaction_hash,\n                client_id,\n                timestamp,\n                counterparty_height\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Bytea",
+        "Int8",
+        "Bytea",
+        "Int4",
+        "Timestamptz",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "2223ae35912e55f709e471c8d7c5eae72b903aeaaafbd9e2a59b690bd45a758e"
+}

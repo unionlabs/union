@@ -12,6 +12,13 @@ use crate::indexer::{
         channel_open_confirm_record::ChannelOpenConfirmRecord,
         channel_open_init_record::ChannelOpenInitRecord,
         channel_open_try_record::ChannelOpenTryRecord,
+        connection_open_ack_record::ConnectionOpenAckRecord,
+        connection_open_confirm_record::ConnectionOpenConfirmRecord,
+        connection_open_init_record::ConnectionOpenInitRecord,
+        connection_open_try_record::ConnectionOpenTryRecord,
+        create_client_record::CreateClientRecord,
+        create_lens_client_record::CreateLensClientRecord,
+        update_client_record::UpdateClientRecord,
     },
 };
 
@@ -54,6 +61,14 @@ pub async fn delete_event_data_at_height(
         ChannelOpenTryRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
         ChannelOpenAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
         ChannelOpenConfirmRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        ConnectionOpenInitRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        ConnectionOpenTryRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        ConnectionOpenAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        ConnectionOpenConfirmRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+            .await?;
+        CreateClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        CreateLensClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        UpdateClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
 
         true
     } else {
@@ -249,6 +264,13 @@ async fn handle_block_event(
         SupportedBlockEvent::ChannelOpenTry { inner } => internal_chain_id.context(inner).handle(tx).await,
         SupportedBlockEvent::ChannelOpenAck { inner } => internal_chain_id.context(inner).handle(tx).await,
         SupportedBlockEvent::ChannelOpenConfirm { inner } => internal_chain_id.context(inner).handle(tx).await,
+        SupportedBlockEvent::ConnectionOpenInit { inner } => internal_chain_id.context(inner).handle(tx).await,
+        SupportedBlockEvent::ConnectionOpenTry { inner } => internal_chain_id.context(inner).handle(tx).await,
+        SupportedBlockEvent::ConnectionOpenAck { inner } => internal_chain_id.context(inner).handle(tx).await,
+        SupportedBlockEvent::ConnectionOpenConfirm { inner } => internal_chain_id.context(inner).handle(tx).await,
+        SupportedBlockEvent::CreateClient { inner } => internal_chain_id.context(inner).handle(tx).await,
+        SupportedBlockEvent::CreateLensClient { inner } => internal_chain_id.context(inner).handle(tx).await,
+        SupportedBlockEvent::UpdateClient { inner } => internal_chain_id.context(inner).handle(tx).await,
     }?;
 
     Ok(true)

@@ -6,7 +6,12 @@ use crate::indexer::event::{
     channel_open_ack_event::ChannelOpenAckEvent,
     channel_open_confirm_event::ChannelOpenConfirmEvent,
     channel_open_init_event::ChannelOpenInitEvent, channel_open_try_event::ChannelOpenTryEvent,
-    types::BlockHeight,
+    connection_open_ack_event::ConnectionOpenAckEvent,
+    connection_open_confirm_event::ConnectionOpenConfirmEvent,
+    connection_open_init_event::ConnectionOpenInitEvent,
+    connection_open_try_event::ConnectionOpenTryEvent, create_client_event::CreateClientEvent,
+    create_lens_client_event::CreateLensClientEvent, types::BlockHeight,
+    update_client_event::UpdateClientEvent,
 };
 
 #[warn(clippy::enum_variant_names)]
@@ -90,6 +95,41 @@ pub enum SupportedBlockEvent {
         #[serde(flatten)]
         inner: ChannelOpenConfirmEvent,
     },
+    #[serde(rename = "connection-open-init")]
+    ConnectionOpenInit {
+        #[serde(flatten)]
+        inner: ConnectionOpenInitEvent,
+    },
+    #[serde(rename = "connection-open-try")]
+    ConnectionOpenTry {
+        #[serde(flatten)]
+        inner: ConnectionOpenTryEvent,
+    },
+    #[serde(rename = "connection-open-ack")]
+    ConnectionOpenAck {
+        #[serde(flatten)]
+        inner: ConnectionOpenAckEvent,
+    },
+    #[serde(rename = "connection-open-confirm")]
+    ConnectionOpenConfirm {
+        #[serde(flatten)]
+        inner: ConnectionOpenConfirmEvent,
+    },
+    #[serde(rename = "create-client")]
+    CreateClient {
+        #[serde(flatten)]
+        inner: CreateClientEvent,
+    },
+    #[serde(rename = "create-lens-client")]
+    CreateLensClient {
+        #[serde(flatten)]
+        inner: CreateLensClientEvent,
+    },
+    #[serde(rename = "update-client")]
+    UpdateClient {
+        #[serde(flatten)]
+        inner: UpdateClientEvent,
+    },
 }
 
 impl SupportedBlockEvent {
@@ -104,6 +144,13 @@ impl SupportedBlockEvent {
             SupportedBlockEvent::ChannelOpenTry { inner, .. } => inner.header.height,
             SupportedBlockEvent::ChannelOpenAck { inner, .. } => inner.header.height,
             SupportedBlockEvent::ChannelOpenConfirm { inner, .. } => inner.header.height,
+            SupportedBlockEvent::ConnectionOpenInit { inner, .. } => inner.header.height,
+            SupportedBlockEvent::ConnectionOpenTry { inner, .. } => inner.header.height,
+            SupportedBlockEvent::ConnectionOpenAck { inner, .. } => inner.header.height,
+            SupportedBlockEvent::ConnectionOpenConfirm { inner, .. } => inner.header.height,
+            SupportedBlockEvent::CreateClient { inner, .. } => inner.header.height,
+            SupportedBlockEvent::CreateLensClient { inner, .. } => inner.header.height,
+            SupportedBlockEvent::UpdateClient { inner, .. } => inner.header.height,
         }
     }
 }

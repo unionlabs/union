@@ -11,9 +11,9 @@ impl<'a> InternalChainIdContext<'a, ChannelOpenConfirmEvent> {
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     ) -> Result<(), IndexerError> {
-       trace!("handle({self:?})");
+        trace!("handle({self:?})");
 
-       ChannelOpenConfirmRecord::try_from(self)?.insert(tx).await?;
+        ChannelOpenConfirmRecord::try_from(self)?.insert(tx).await?;
 
         Ok(())
     }
