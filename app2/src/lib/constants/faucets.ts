@@ -8,4 +8,6 @@ export const EXTERNAL_FAUCETS = {
   "Hoodscan": "https://faucet.hoodscan.io/ ",
   "Circle": "https://faucet.circle.com/",
   "Sei Testnet": "https://www.docs.sei.io/learn/faucet",
+  "BNB Testnet": "https://www.bnbchain.org/en/testnet-faucet",
+  "Osmosis Testnet": "https://faucet.testnet.osmosis.zone/",
 } as Record<string, string>
