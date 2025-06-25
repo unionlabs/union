@@ -4,7 +4,7 @@ import "@openzeppelin-upgradeable/contracts/token/ERC20/ERC20Upgradeable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/Initializable.sol";
 import "@openzeppelin-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import
-"@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
+    "@openzeppelin-upgradeable/contracts/access/manager/AccessManagedUpgradeable.sol";
 
 import "./internal/Versioned.sol";
 
@@ -15,7 +15,7 @@ contract U is
     ERC20Upgradeable,
     Versioned
 {
-    error ERC20Unauthorized();
+    error UDare();
 
     bytes32 internal constant U_STORAGE_SLOT = keccak256(
         abi.encode(uint256(keccak256("union.storage.zkgm.u")) - 1)
@@ -27,11 +27,7 @@ contract U is
         bytes salt;
     }
 
-    function _getUStorage()
-        private
-        pure
-        returns (UStorage storage $)
-    {
+    function _getUStorage() private pure returns (UStorage storage $) {
         bytes32 slot = U_STORAGE_SLOT;
         assembly {
             $.slot := slot
@@ -89,7 +85,7 @@ contract U is
 
     modifier onlyMinter() {
         if (msg.sender != _getUStorage().minter) {
-            revert ERC20Unauthorized();
+            revert UDare();
         }
         _;
     }
