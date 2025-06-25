@@ -17,6 +17,7 @@ anyhow             = { workspace = true }
 base64             = { workspace = true }
 clap               = { workspace = true, features = ["default", "derive", "env", "error-context", "color"] }
 cometbft-rpc       = { workspace = true }
+create3            = { workspace = true }
 deployments        = { workspace = true }
 derive_more        = { workspace = true }
 embed-commit       = { workspace = true }
@@ -24,7 +25,9 @@ hex                = { workspace = true }
 ibc-classic-spec   = { workspace = true }
 ibc-union-spec     = { workspace = true, features = ["serde"] }
 jsonrpsee          = { workspace = true, features = ["client", "full", "tracing"] }
+num_cpus           = "1.16"
 protos             = { workspace = true, features = ["proto_full", "serde"] }
+rand               = "0.8"
 serde              = { workspace = true, features = ["derive"] }
 serde_json         = { workspace = true }
 tokio              = { workspace = true, features = ["macros"] }

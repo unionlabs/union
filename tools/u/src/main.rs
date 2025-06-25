@@ -20,6 +20,7 @@ pub mod codec;
 pub mod deployments;
 pub mod packet;
 pub mod path;
+pub mod vanity;
 pub mod zkgm;
 
 pub const STYLE: Styles = Styles::styled()
@@ -67,6 +68,8 @@ pub enum Cmd {
     Path(path::Cmd),
     #[command(subcommand)]
     Packet(packet::Cmd),
+    #[command(visible_alias = "v", subcommand)]
+    Vanity(vanity::Cmd),
     #[command(visible_alias = "h")]
     Hex {
         /// Decode data instead of encoding it.
@@ -113,6 +116,7 @@ async fn main() -> Result<()> {
         Cmd::Deployments(cmd) => cmd.run(),
         Cmd::Path(cmd) => cmd.run(),
         Cmd::Packet(cmd) => cmd.run(),
+        Cmd::Vanity(cmd) => cmd.run().await,
         Cmd::Hex {
             decode,
             no_prefix,
