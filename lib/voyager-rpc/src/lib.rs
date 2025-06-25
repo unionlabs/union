@@ -348,8 +348,7 @@ pub trait StateModule<V: IbcSpec> {
     #[method(name = "query", with_extensions)]
     async fn query(&self, query: V::Query) -> RpcResult<Value>;
 
-    /// Query a proof of IBC state on this chain, at the specified [`Height`],
-    /// returning the proof as a JSON [`Value`].
+    /// Query IBC state on this chain, at the specified [`Height`], returning the value as a JSON [`Value`].
     #[method(name = "queryIbcState", with_extensions)]
     async fn query_ibc_state(&self, at: Height, path: V::StorePath) -> RpcResult<Value>;
 
@@ -378,8 +377,7 @@ pub trait RawStateModule {
     namespace = "proof",
 )]
 pub trait ProofModule<V: IbcSpec> {
-    /// Query a proof of IBC state on this chain, at the specified [`Height`],
-    /// returning the state as a JSON [`Value`].
+    /// Query a proof of IBC state on this chain, at the specified [`Height`], returning the proof as a JSON [`Value`].
     #[method(name = "queryIbcProof", with_extensions)]
     async fn query_ibc_proof(
         &self,
@@ -444,8 +442,7 @@ pub trait ClientModule {
     async fn encode_proof(&self, proof: Value) -> RpcResult<Bytes>;
 }
 
-/// Client modules provide functionality for interacting with a specific chain
-/// consensus and finality.
+/// Finalitymodules provide functionality for querying the finality information for a specific chain.
 #[rpc(client, server, namespace = "consensus")]
 pub trait FinalityModule {
     /// Query the latest finalized height of this chain.

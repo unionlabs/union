@@ -591,28 +591,7 @@ impl Module {
         };
 
         let continuation = || {
-            let first_seen_at: u64 = SystemTime::now()
-                .duration_since(UNIX_EPOCH)
-                .unwrap()
-                .as_millis()
-                .try_into()
-                .expect("how many milliseconds can there be man");
-
-            let client_id = event.packet.destination_channel.connection.client_id;
-
-            let batchable_event = BatchableEvent::<IbcUnion> {
-                first_seen_at,
-                provable_height: EventProvableHeight::Min(provable_height),
-                event: event.into(),
-            };
-
-            Ok(data(PluginMessage::new(
-                voyager_plugin_transaction_batch::plugin_name(&counterparty_chain_id),
-                voyager_plugin_transaction_batch::data::ModuleData::BatchEventsUnion(EventBatch {
-                    client_id,
-                    events: vec![batchable_event],
-                }),
-            )))
+            Ok(Ready::new(vec![idx], data(Data::IbcEvent(event))).with_after_self(true));
         };
 
         if valid {

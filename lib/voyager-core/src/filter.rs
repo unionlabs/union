@@ -73,7 +73,7 @@ impl InterestFilter<VoyagerMessage> for InterestFilters {
 
         let mut tags = vec![];
 
-        let mut is_after_tag = false;
+        let mut is_after_tag = after_tag.is_none();
 
         for (filter, plugin_name) in &self.filters {
             if is_after_tag {

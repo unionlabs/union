@@ -17397,7 +17397,6 @@ dependencies = [
  "tracing",
  "ucs03-zkgm",
  "unionlabs",
- "voyager-plugin-transaction-batch",
  "voyager-sdk",
 ]
 
