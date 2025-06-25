@@ -1,6 +1,7 @@
 <script lang="ts">
 import Button from "$lib/components/ui/Button.svelte"
 import CountdownTimer from "$lib/components/ui/CountdownTimer.svelte"
+import StepLayout from "../StepLayout.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { runPromise } from "$lib/runtime"
 import { Effect, Option } from "effect"
@@ -64,73 +65,78 @@ function handleLogin(provider: AuthProvider) {
 }
 </script>
 
-<div class="grid grid-cols-2">
-  <div class="flex flex-col gap-6 p-6 z-10 justify-between h-full">
-    <div class="space-y-4">
-      <div>
-        <h1 class="text-4xl font-semibold">
-          Union Airdrop
-        </h1>
-      </div>
-    </div>
-    
-    {#if Option.isSome(dashboard.session)}
-      <div class="space-y-3">
-        <CountdownTimer {targetDate} />
-        <Button
-          size="md"
-          variant="primary"
-          class="flex w-full items-center justify-center gap-3"
-          onclick={onNext}
-        >
-          Claim Rewards
-        </Button>
-      </div>
-    {:else}
-      <div class="space-y-3">
-        <div class="flex items-center gap-3 text-sm text-gray-400">
-          Authenticate to continue
+<StepLayout>
+  {#snippet left()}
+    <div class="flex flex-col gap-6 p-4 z-10 justify-between h-full">
+      <div class="space-y-4">
+        <div>
+          <h1 class="text-4xl font-semibold">
+            Union Airdrop
+          </h1>
         </div>
-        <div class="space-y-2.5">
-          {#each providers as provider (provider.id)}
-            <Button
-              size="md"
-              variant="secondary"
-              class="flex w-full items-center justify-center gap-3 relative hover:translate-y-[1px] transition-all {loading ? 'opacity-70 cursor-not-allowed' : ''}"
-              disabled={loading}
-              onclick={() => handleLogin(provider)}
-            >
-              <svg
-                class="w-5 h-5 {provider.iconColor} {loading ? 'opacity-70' : ''}"
-                viewBox="0 0 24 24"
+      </div>
+      
+      {#if Option.isSome(dashboard.session)}
+        <div class="space-y-3">
+          <CountdownTimer {targetDate} />
+          <Button
+            size="md"
+            variant="primary"
+            class="flex w-full items-center justify-center gap-3"
+            onclick={onNext}
+          >
+            Claim Rewards
+          </Button>
+        </div>
+      {:else}
+        <div class="space-y-3">
+          <div class="flex items-center gap-3 text-sm text-gray-400">
+            Authenticate to continue
+          </div>
+          <div class="space-y-2.5">
+            {#each providers as provider (provider.id)}
+              <Button
+                size="md"
+                variant="secondary"
+                class="flex w-full items-center justify-center gap-3 relative hover:translate-y-[1px] transition-all {loading ? 'opacity-70 cursor-not-allowed' : ''}"
+                disabled={loading}
+                onclick={() => handleLogin(provider)}
               >
-                {@html provider.icon}
-              </svg>
-              <span class={loading ? "opacity-70" : ""}>
-                {provider.name}
-              </span>
-              {#if loading}
-                <div class="absolute right-4 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin">
-                </div>
-              {/if}
-            </Button>
-          {/each}
+                <svg
+                  class="w-5 h-5 {provider.iconColor} {loading ? 'opacity-70' : ''}"
+                  viewBox="0 0 24 24"
+                >
+                  {@html provider.icon}
+                </svg>
+                <span class={loading ? "opacity-70" : ""}>
+                  {provider.name}
+                </span>
+                {#if loading}
+                  <div class="absolute right-4 w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin">
+                  </div>
+                {/if}
+              </Button>
+            {/each}
+          </div>
         </div>
-      </div>
-    {/if}
-  </div>
-  <div class="aspect-square relative flex items-center justify-center">
-    <div class="ball border-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0">
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
-      <span></span>
+      {/if}
     </div>
-    <img src="/images/union-logo-glyph.svg" alt="Union Logo" class="w-24 h-auto border border-zinc-700 bg-zinc-925 rounded-full p-4 pulse-logo relative z-50" />
-  </div>
-</div>
+  {/snippet}
+  
+  {#snippet right()}
+    <div class="aspect-square relative flex items-center justify-center">
+      <div class="ball border-primary absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-0">
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+        <span></span>
+      </div>
+      <img src="/images/union-logo-glyph.svg" alt="Union Logo" class="w-24 h-auto border border-zinc-700 bg-zinc-925 rounded-full p-4 pulse-logo relative z-50" />
+    </div>
+  {/snippet}
+</StepLayout>
 
 <style>
   .ball span{
