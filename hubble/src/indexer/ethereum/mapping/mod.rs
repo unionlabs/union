@@ -18,7 +18,14 @@ mod channel_open_ack_mapping;
 mod channel_open_confirm_mapping;
 mod channel_open_init_mapping;
 mod channel_open_try_mapping;
+mod connection_open_ack_mapping;
+mod connection_open_confirm_mapping;
+mod connection_open_init_mapping;
+mod connection_open_try_mapping;
+mod create_client_mapping;
+mod create_lens_client_mapping;
 pub(crate) mod legacy;
+mod update_client_mapping;
 
 impl EthFetcherClient {
     pub fn transform_logs_to_ucs_events(
@@ -106,6 +113,13 @@ impl EthFetcherClient {
             "ChannelOpenTry" => self.to_channel_open_try(&log_decoder)?,
             "ChannelOpenAck" => self.to_channel_open_ack(&log_decoder)?,
             "ChannelOpenConfirm" => self.to_channel_open_confirm(&log_decoder)?,
+            "ConnectionOpenInit" => self.to_connection_open_init(&log_decoder)?,
+            "ConnectionOpenTry" => self.to_connection_open_try(&log_decoder)?,
+            "ConnectionOpenAck" => self.to_connection_open_ack(&log_decoder)?,
+            "ConnectionOpenConfirm" => self.to_connection_open_confirm(&log_decoder)?,
+            "CreateClient" => self.to_create_client(&log_decoder)?,
+            "CreateLensClient" => self.to_create_lens_client(&log_decoder)?,
+            "UpdateClient" => self.to_update_client(&log_decoder)?,
             name => {
                 warn!("unsupported event: {name} ({log:?})");
                 vec![]

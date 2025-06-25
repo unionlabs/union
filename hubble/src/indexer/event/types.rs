@@ -133,6 +133,36 @@ impl Display for UniversalChainId {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
+pub struct CanonicalChainId(pub String);
+
+impl From<String> for CanonicalChainId {
+    fn from(value: String) -> Self {
+        CanonicalChainId(value)
+    }
+}
+
+impl Display for CanonicalChainId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash)]
+pub struct ClientType(pub String);
+
+impl From<String> for ClientType {
+    fn from(value: String) -> Self {
+        ClientType(value)
+    }
+}
+
+impl Display for ClientType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, PartialOrd, Ord, Copy)]
 pub struct BlockHeight(#[serde(with = "flexible_u64")] pub u64);
 
@@ -251,6 +281,15 @@ impl Display for NatsConsumerSequence {
 pub struct ConnectionId(pub u32);
 
 impl From<u32> for ConnectionId {
+    fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ClientId(pub u32);
+
+impl From<u32> for ClientId {
     fn from(value: u32) -> Self {
         Self(value)
     }

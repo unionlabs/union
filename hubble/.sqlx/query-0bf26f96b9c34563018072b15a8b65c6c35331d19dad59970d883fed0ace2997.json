@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM v2_sync.connection_open_confirm_test\n            WHERE internal_chain_id = $1 AND height = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "0bf26f96b9c34563018072b15a8b65c6c35331d19dad59970d883fed0ace2997"
+}
