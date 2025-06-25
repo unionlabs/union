@@ -48,11 +48,21 @@ impl<T: QueueMessage> OptimizeFurther<T> {
 pub struct Ready<T: QueueMessage> {
     pub parents: Vec<usize>,
     pub op: Op<T>,
+    /// If true, all interest filters before and including self will be skipped when queueing the new op(s).
+    pub after_self: bool,
 }
 
 impl<T: QueueMessage> Ready<T> {
     pub fn new(parents: Vec<usize>, op: Op<T>) -> Self {
-        Self { parents, op }
+        Self {
+            parents,
+            op,
+            after_self: false,
+        }
+    }
+
+    pub fn with_after_self(self, after_self: bool) -> Self {
+        Self { after_self, ..self }
     }
 }
 

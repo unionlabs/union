@@ -64,20 +64,32 @@ pub fn make_filter(
 }
 
 impl InterestFilter<VoyagerMessage> for InterestFilters {
-    fn check_interest<'a>(&'a self, op: &Op<VoyagerMessage>) -> FilterResult<'a> {
+    fn check_interest<'a>(
+        &'a self,
+        op: &Op<VoyagerMessage>,
+        after_tag: Option<&str>,
+    ) -> FilterResult<'a> {
         let msg_json = Val::from(serde_json::to_value(op.clone()).unwrap());
 
         let mut tags = vec![];
 
+        let mut is_after_tag = false;
+
         for (filter, plugin_name) in &self.filters {
-            match run_filter(filter, plugin_name, msg_json.clone()) {
-                Ok(JaqFilterResult::Copy(tag)) => tags.push(tag),
-                Ok(JaqFilterResult::Take(tag)) => {
-                    tags.push(tag);
-                    return FilterResult::Interest(Interest { tags, remove: true });
+            if is_after_tag {
+                match run_filter(filter, plugin_name, msg_json.clone()) {
+                    Ok(JaqFilterResult::Copy(tag)) => tags.push(tag),
+                    Ok(JaqFilterResult::Take(tag)) => {
+                        tags.push(tag);
+                        return FilterResult::Interest(Interest { tags, remove: true });
+                    }
+                    Ok(JaqFilterResult::NoInterest) => {}
+                    Err(_) => {}
                 }
-                Ok(JaqFilterResult::NoInterest) => {}
-                Err(_) => {}
+            } else if let Some(after_tag) = after_tag {
+                if after_tag == plugin_name {
+                    is_after_tag = true;
+                }
             }
         }
 

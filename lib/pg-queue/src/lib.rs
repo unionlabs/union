@@ -305,7 +305,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         let (optimize, ready): (Vec<_>, Vec<_>) =
             op.normalize()
                 .into_iter()
-                .partition_map(|op| match filter.check_interest(&op) {
+                .partition_map(|op| match filter.check_interest(&op, None) {
                     FilterResult::Interest(interest) => Either::Left((op, interest)),
                     FilterResult::NoInterest => Either::Right(op),
                 });
@@ -571,6 +571,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         for Ready {
             parents: parent_idxs,
             op,
+            after_self,
         } in ready
         {
             let normalized_ops = op.normalize();
@@ -579,7 +580,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             trace!(parent_idxs = ?&parent_idxs, parents = ?&parents);
 
             'block: for op in normalized_ops {
-                match filter.check_interest(&op) {
+                match filter.check_interest(&op, after_self.then_some(tag)) {
                     FilterResult::Interest(Interest { tags, remove }) => {
                         for tag in tags {
                             let new_row = sqlx::query(
@@ -742,7 +743,7 @@ where
                 let (optimize, ready): (Vec<_>, Vec<_>) = ops
                     .into_iter()
                     .flat_map(Op::normalize)
-                    .partition_map(|op| match filter.check_interest(&op) {
+                    .partition_map(|op| match filter.check_interest(&op, None) {
                         FilterResult::Interest(tag) => Either::Left((op, tag)),
                         FilterResult::NoInterest => Either::Right(op),
                     });

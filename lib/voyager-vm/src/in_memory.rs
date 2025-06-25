@@ -60,7 +60,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
         let mut ready = self.ready.lock().expect("mutex is poisoned");
 
         for op in op.normalize() {
-            match filter.check_interest(&op) {
+            match filter.check_interest(&op, None) {
                 FilterResult::Interest(Interest { tags, remove }) => {
                     for tag in tags {
                         optimizer_queue.entry(tag.to_owned()).or_default().insert(
@@ -144,7 +144,7 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
                 match res {
                     Ok(ops) => {
                         for op in ops.into_iter().flat_map(Op::normalize) {
-                            match filter.check_interest(&op) {
+                            match filter.check_interest(&op, None) {
                                 FilterResult::Interest(Interest { tags, remove }) => {
                                     for tag in tags {
                                         optimizer_queue.entry(tag.to_owned()).or_default().insert(
@@ -247,12 +247,13 @@ impl<T: QueueMessage> Queue<T> for InMemoryQueue<T> {
             for Ready {
                 parents: parents_idxs,
                 op,
+                after_self,
             } in res.ready
             {
                 let normalized_ops = op.normalize();
 
                 'block: for op in normalized_ops {
-                    match filter.check_interest(&op) {
+                    match filter.check_interest(&op, after_self.then_some(tag)) {
                         FilterResult::Interest(Interest { tags, remove }) => {
                             for tag in tags {
                                 optimizer_queue.entry(tag.to_owned()).or_default().insert(

@@ -2,7 +2,7 @@ use crate::{Op, QueueMessage};
 
 /// A filter to run on [`Op`]s before they're pushed into the queue.
 pub trait InterestFilter<T: QueueMessage>: Send + Sync + Sized + 'static {
-    fn check_interest<'a>(&'a self, op: &Op<T>) -> FilterResult<'a>;
+    fn check_interest<'a>(&'a self, op: &Op<T>, after_tag: Option<&str>) -> FilterResult<'a>;
 }
 
 /// The result of running an [`InterestFilter`] on an [`Op`].
@@ -22,8 +22,8 @@ pub struct Interest<'a> {
 
 /// A noop implementation of an interest filter that never expresses interest in any messages.
 impl<T: QueueMessage> InterestFilter<T> for () {
-    fn check_interest<'a>(&'a self, op: &Op<T>) -> FilterResult<'a> {
-        let _ = op;
+    fn check_interest<'a>(&'a self, op: &Op<T>, after_tag: Option<&str>) -> FilterResult<'a> {
+        let _ = (op, after_tag);
 
         FilterResult::NoInterest
     }

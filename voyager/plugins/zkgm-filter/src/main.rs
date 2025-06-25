@@ -426,27 +426,10 @@ impl PluginServer<ModuleCall, Never> for Module {
                         })?;
 
                     let ready = || {
-                        let first_seen_at: u64 = SystemTime::now()
-                            .duration_since(UNIX_EPOCH)
-                            .unwrap()
-                            .as_millis()
-                            .try_into()
-                            .expect("how many milliseconds can there be man");
-                        let batchable_event = BatchableEvent {
-                            first_seen_at,
-                            provable_height: chain_event.provable_height,
-                            event: full_event.clone().try_into().unwrap(),
-                        };
-                        Ok(Ready::new(
-                            vec![idx],
-                            data(PluginMessage::new(
-                                voyager_plugin_transaction_batch::plugin_name(&chain_event.counterparty_chain_id),
-                                voyager_plugin_transaction_batch::data::ModuleData::BatchEventsUnion(EventBatch {
-                                    client_id: full_event.counterparty_client_id().unwrap(),
-                                    events: vec![batchable_event],
-                                }),
-                            )),
-                        ))
+                        Ok(
+                            Ready::new(vec![idx], data(Data::IbcEvent(chain_event.clone())))
+                                .with_after_self(true),
+                        )
                     };
 
                     match &full_event {
@@ -481,7 +464,9 @@ impl PluginServer<ModuleCall, Never> for Module {
                             }
                         }
                         FullEvent::WriteAck(write_ack) => {
-                            if self.drop_protocol_fill_acks && is_successful_protocol_fill(write_ack) {
+                            if self.drop_protocol_fill_acks
+                                && is_successful_protocol_fill(write_ack)
+                            {
                                 info!(
                                     packet_hash = %write_ack.packet().hash(),
                                     "not acknowledging protocol filled packet"
