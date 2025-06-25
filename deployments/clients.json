@@ -69,6 +69,11 @@
       "client_type": "tendermint",
       "refresh_rate": "500"
     },
+    "9": {
+      "counterparty": "osmosis.osmo-test-5",
+      "client_type": "tendermint",
+      "refresh_rate": "500"
+    },
     "10": {
       "counterparty": "sei.atlantic-2",
       "client_type": "state-lens/ics23/ics23",
@@ -306,6 +311,13 @@
     "2": {
       "counterparty": "babylon.bbn-test-5",
       "client_type": "state-lens/ics23/ics23",
+      "refresh_rate": "500"
+    }
+  },
+  "osmosis.osmo-test-5": {
+    "8": {
+      "counterparty": "babylon.bbn-test-5",
+      "client_type": "tendermint",
       "refresh_rate": "500"
     }
   }
