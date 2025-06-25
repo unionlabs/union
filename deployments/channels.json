@@ -58,7 +58,7 @@
     },
     "5": {
       "comments": "osmosis.osmo-test-5 channel 3, official channel but with no relaying guarantees",
-      "tags": ["staging"]
+      "tags": ["canonical"]
     }
   },
   "bob.60808": {
