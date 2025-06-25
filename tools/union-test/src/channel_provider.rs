@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 use tokio::sync::Mutex;
 use jsonrpsee::{
     core::{async_trait}};
@@ -70,16 +70,18 @@ impl ChannelPool {
         connection_id: u32,
         version: String,
         count: usize,
+        duration: Duration,
     ) -> anyhow::Result<usize>
     where
         F: Fn(ChainId, Bytes, Bytes, u32, String) -> anyhow::Result<()> + Send + Sync,
         C: Fn(Duration) -> Fut + Send + Sync,
         Fut: Future<Output = anyhow::Result<ChannelConfirm>> + Send,
     {
-        let mut map = self.inner.lock().await;
+        let deadline = Instant::now() + duration;
+
         let mut success_count = 0;
 
-        for _ in 0..count {
+        for attempt in 0..count {
             opener(
                 src_chain.clone(),
                 src_port.clone(),
@@ -87,6 +89,11 @@ impl ChannelPool {
                 connection_id,
                 version.clone(),
             )?;
+        }
+        loop {
+            if Instant::now() >= deadline || success_count == count{
+                break;
+            }
 
             match confirmer(Duration::from_secs(240))
                 .await{
@@ -95,11 +102,29 @@ impl ChannelPool {
                             src: confirm.counterparty_channel_id,
                             dest: confirm.channel_id,
                         };
-                        println!(
-                            "✅  channel-open-confirm: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
-                            src_chain, pair.src, dst_chain, pair.dest
-                        );
+                        // grab lock once for check+insert
+                        let mut map = self.inner.lock().await;
+                        let key = (src_chain.clone(), dst_chain.clone());
+                        let rev_key = (dst_chain.clone(), src_chain.clone());
+                        
 
+                        let dup_forward = map
+                            .available
+                            .get(&key)
+                            .map_or(false, |v| v.contains(&pair));
+                        let dup_backward = map
+                            .available
+                            .get(&rev_key)
+                            .map_or(false, |v| {
+                                v.contains(&ChannelPair { src: pair.dest, dest: pair.src })
+                            });
+                        if dup_forward || dup_backward {
+                            // already stored → retry or break
+                            println!("⚠️  duplicate channel pair detected: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
+                                src_chain, pair.src, dst_chain, pair.dest);
+                            drop(map);
+                            continue;
+                        }
                         // Store in forward direction
                         map.available.entry((src_chain.clone(), dst_chain.clone()))
                             .or_default()
@@ -110,12 +135,17 @@ impl ChannelPool {
                             .push(ChannelPair { src: pair.dest, dest: pair.src });
 
                         success_count += 1;
+
+                        println!(
+                            "✅  channel-open-confirm: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
+                            src_chain, pair.src, dst_chain, pair.dest
+                        );
+
                     }
                     Err(err) => {
-                        eprintln!("⚠️  error waiting for channel-open-confirm: {}", err);
+                        println!("⚠️  error waiting for channel-open-confirm: {}", err);
                     }
                 }
-
         }
 
         Ok(success_count)
@@ -147,7 +177,6 @@ impl ChannelPool {
     ) {
         let mut inner = self.inner.lock().await;
         let key = (src_chain.clone(), dst_chain.clone());
-        // remove from borrowed forward
         if let Some(vec) = inner.borrowed.get_mut(&key) {
             if let Some(i) = vec.iter().position(|x| *x == pair) {
                 vec.swap_remove(i);
@@ -160,7 +189,6 @@ impl ChannelPool {
                 vec.swap_remove(i);
             }
         }
-        // push back into available both directions
         inner.available.entry(key.clone()).or_default().push(pair);
         inner.available.entry(rev_key).or_default().push(rev);
     }
