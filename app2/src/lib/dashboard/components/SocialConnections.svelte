@@ -5,8 +5,8 @@ import { runPromise } from "$lib/runtime"
 import { cn } from "$lib/utils"
 import { Option } from "effect"
 import { Effect } from "effect"
-import UnlinkAccountModal from "./UnlinkAccountModal.svelte"
 import type { AuthProvider } from "../stores/user.svelte"
+import UnlinkAccountModal from "./UnlinkAccountModal.svelte"
 
 let unlinkModalOpen = $state(false)
 let providerToUnlink = $state<AuthProvider | null>(null)
@@ -29,7 +29,11 @@ function handleProviderClick(provider: AuthProvider, isConnected: boolean) {
     <!-- GitHub Connection -->
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
-      onclick={() => handleProviderClick("github", Option.isSome(dashboard.connections?.github) && dashboard.connections.github.value)}
+      onclick={() =>
+      handleProviderClick(
+        "github",
+        Option.isSome(dashboard.connections?.github) && dashboard.connections.github.value,
+      )}
     >
       <div class="flex items-center gap-2">
         <span
@@ -80,7 +84,12 @@ function handleProviderClick(provider: AuthProvider, isConnected: boolean) {
     <!-- Twitter Connection -->
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
-      onclick={() => handleProviderClick("twitter", Option.isSome(dashboard.connections?.twitter) && dashboard.connections.twitter.value)}
+      onclick={() =>
+      handleProviderClick(
+        "twitter",
+        Option.isSome(dashboard.connections?.twitter)
+          && dashboard.connections.twitter.value,
+      )}
     >
       <div class="flex items-center gap-2">
         <span
@@ -131,7 +140,12 @@ function handleProviderClick(provider: AuthProvider, isConnected: boolean) {
     <!-- Discord Connection -->
     <button
       class="w-full bg-transparent hover:bg-zinc-900 rounded-lg p-2.5 flex items-center justify-between cursor-pointer transition-colors duration-200 ease-in-out focus:outline-none text-sm font-medium capitalize relative h-11 group"
-      onclick={() => handleProviderClick("discord", Option.isSome(dashboard.connections?.discord) && dashboard.connections.discord.value)}
+      onclick={() =>
+      handleProviderClick(
+        "discord",
+        Option.isSome(dashboard.connections?.discord)
+          && dashboard.connections.discord.value,
+      )}
     >
       <div class="flex items-center gap-2">
         <span

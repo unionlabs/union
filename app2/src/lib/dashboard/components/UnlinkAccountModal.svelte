@@ -22,7 +22,7 @@ let isUnlinking = $state(false)
 let countdownInterval: number | null = null
 
 const providerName = $derived(
-  provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : ""
+  provider ? provider.charAt(0).toUpperCase() + provider.slice(1) : "",
 )
 
 const confirmText = $derived(provider ? `unlink ${provider} and delete my xp` : "")
@@ -63,7 +63,9 @@ function handlePaste(e: Event) {
 }
 
 function handleUnlink() {
-  if (!provider) return
+  if (!provider) {
+    return
+  }
 
   const effect = pipe(
     Effect.sync(() => {
@@ -106,14 +108,16 @@ $effect(() => {
         <div class="bg-rose-950/30 border border-rose-900/50 rounded-lg p-4 mb-6">
           <p class="text-rose-400 font-medium mb-2">⚠️ WARNING</p>
           <p class="text-zinc-300 text-sm">
-            Unlinking your {providerName} account will permanently remove all rewards and XP 
-            associated with this linked account. This action cannot be undone and you will lose 
-            all progress tied to this connection.
+            Unlinking your {providerName} account will permanently remove all rewards and XP
+            associated with this linked account. This action cannot be undone and you will lose all
+            progress tied to this connection.
           </p>
         </div>
 
         <p class="text-zinc-400 text-sm mb-4">
-          To proceed, please type <span class="font-mono bg-zinc-800 px-2 py-1 rounded">{confirmText}</span> exactly as shown:
+          To proceed, please type <span class="font-mono bg-zinc-800 px-2 py-1 rounded">{
+            confirmText
+          }</span> exactly as shown:
         </p>
 
         <input
@@ -147,10 +151,10 @@ $effect(() => {
         <div class="bg-rose-950/30 border border-rose-900/50 rounded-lg p-4 mb-6">
           <p class="text-rose-400 font-medium mb-2">⚠️ THIS ACTION CANNOT BE UNDONE</p>
           <p class="text-zinc-300 text-sm">
-            You are about to permanently unlink your {providerName} account. All rewards, XP, 
-            and achievements associated with this linked account will be lost forever. You will 
-            need to reconnect this account later if you want to use it again, but your previous 
-            rewards and progress will not be restored.
+            You are about to permanently unlink your {providerName} account. All rewards, XP, and
+            achievements associated with this linked account will be lost forever. You will need to
+            reconnect this account later if you want to use it again, but your previous rewards and
+            progress will not be restored.
           </p>
         </div>
 
