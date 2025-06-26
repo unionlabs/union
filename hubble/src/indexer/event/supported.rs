@@ -12,8 +12,8 @@ use crate::indexer::event::{
     connection_open_try_event::ConnectionOpenTryEvent, create_client_event::CreateClientEvent,
     create_lens_client_event::CreateLensClientEvent, packet_ack_event::PacketAckEvent,
     packet_recv_event::PacketRecvEvent, packet_send_event::PacketSendEvent,
-    packet_timeout_event::PacketTimeoutEvent, types::BlockHeight,
-    update_client_event::UpdateClientEvent, write_ack_event::WriteAckEvent,
+    packet_timeout_event::PacketTimeoutEvent, token_bucket_update_event::TokenBucketUpdateEvent,
+    types::BlockHeight, update_client_event::UpdateClientEvent, write_ack_event::WriteAckEvent,
 };
 
 #[warn(clippy::enum_variant_names)]
@@ -157,6 +157,11 @@ pub enum SupportedBlockEvent {
         #[serde(flatten)]
         inner: PacketTimeoutEvent,
     },
+    #[serde(rename = "token-bucket-update")]
+    TokenBucketUpdate {
+        #[serde(flatten)]
+        inner: TokenBucketUpdateEvent,
+    },
 }
 
 impl SupportedBlockEvent {
@@ -183,6 +188,7 @@ impl SupportedBlockEvent {
             SupportedBlockEvent::WriteAck { inner, .. } => inner.header.height,
             SupportedBlockEvent::PacketAck { inner, .. } => inner.header.height,
             SupportedBlockEvent::PacketTimeout { inner, .. } => inner.header.height,
+            SupportedBlockEvent::TokenBucketUpdate { inner, .. } => inner.header.height,
         }
     }
 }
