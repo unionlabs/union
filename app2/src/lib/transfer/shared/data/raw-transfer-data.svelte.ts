@@ -240,6 +240,7 @@ export class RawTransferDataSvelte {
    * @param newAsset The new asset denom to use after flipping
    */
   flip = (newAsset: string) => {
+    return
     // Store current values
     const currentSource = this.source
     const currentDestination = this.destination
