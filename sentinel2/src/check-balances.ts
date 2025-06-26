@@ -112,17 +112,17 @@ export const checkBalances = Effect.repeat(
         if (!probeJson || typeof probeJson.error !== "object") {
           yield* Effect.logError(`SIGNER_BALANCE_PORT_DOWN @ ${portKey}`)
           if (!existingPortIncident) {
-            const inc = yield* triggerIncident(
-              `SIGNER_BALANCE_PORT_DOWN @ ${portKey}`,
-              `no RPC response from ${url}:${port}`,
-              config.betterstack_api_key,
-              config.trigger_betterstack,
-              "SENTINEL@union.build",
-              "SIGNER_BALANCE_PORT_DOWN",
-              "Union",
-              config.isLocal,
-            )
-            markSignerIncident(db, portKey, inc.data.id)
+            // const inc = yield* triggerIncident(
+            //   `SIGNER_BALANCE_PORT_DOWN @ ${portKey}`,
+            //   `no RPC response from ${url}:${port}`,
+            //   config.betterstack_api_key,
+            //   config.trigger_betterstack,
+            //   "SENTINEL@union.build",
+            //   "SIGNER_BALANCE_PORT_DOWN",
+            //   "Union",
+            //   config.isLocal,
+            // )
+            // markSignerIncident(db, portKey, inc.data.id)
           }
           continue
         }
@@ -131,33 +131,33 @@ export const checkBalances = Effect.repeat(
         if (errMsg !== "Parse error") {
           yield* Effect.logError(`SIGNER_BALANCE_RPC_ERROR @ ${portKey}: ${errMsg}`)
           if (!existingPortIncident) {
-            const inc = yield* triggerIncident(
-              `SIGNER_BALANCE_RPC_ERROR @ ${portKey}`,
-              `unexpected RPC error: ${errMsg}`,
-              config.betterstack_api_key,
-              config.trigger_betterstack,
-              "SENTINEL@union.build",
-              "SIGNER_BALANCE_RPC_ERROR",
-              "Union",
-              config.isLocal,
-            )
-            markSignerIncident(db, portKey, inc.data.id)
+            // const inc = yield* triggerIncident(
+            //   `SIGNER_BALANCE_RPC_ERROR @ ${portKey}`,
+            //   `unexpected RPC error: ${errMsg}`,
+            //   config.betterstack_api_key,
+            //   config.trigger_betterstack,
+            //   "SENTINEL@union.build",
+            //   "SIGNER_BALANCE_RPC_ERROR",
+            //   "Union",
+            //   config.isLocal,
+            // )
+            // markSignerIncident(db, portKey, inc.data.id)
           }
           continue
         }
 
         yield* Effect.log(`SIGNER_BALANCE_RPC_OK @ ${portKey}`)
         if (existingPortIncident) {
-          const resolved = yield* resolveIncident(
-            existingPortIncident,
-            config.betterstack_api_key,
-            config.trigger_betterstack,
-            config.isLocal,
-            "Sentinel: RPC back online",
-          )
-          if (resolved) {
-            clearSignerIncident(db, portKey)
-          }
+          // const resolved = yield* resolveIncident(
+          //   existingPortIncident,
+          //   config.betterstack_api_key,
+          //   config.trigger_betterstack,
+          //   config.isLocal,
+          //   "Sentinel: RPC back online",
+          // )
+          // if (resolved) {
+          //   clearSignerIncident(db, portKey)
+          // }
         }
 
         for (const [plugin, expectedThreshold] of Object.entries(plugins)) {
