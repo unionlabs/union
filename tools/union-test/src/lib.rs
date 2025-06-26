@@ -294,7 +294,7 @@ where
         self.dst.send_create_client(self.src.chain_id(), dst_ibc_interface, dst_client_type)?;
         let dst_confirm = self.dst.wait_for_create_client(duration).await?;
         let src_confirm = self.src.wait_for_create_client(duration).await?;
-        
+
         
         Ok((src_confirm, dst_confirm))
     }
@@ -318,6 +318,7 @@ where
 
     pub async fn open_channels(
         &self,
+        send_from_source: bool,
         src_port: Bytes,
         dst_port: Bytes,
         connection_id: u32,
@@ -325,23 +326,50 @@ where
         count: usize,
         duration: Duration,
     ) -> anyhow::Result<usize> {
+        if send_from_source {
+            let opened = self
+                .channel_pool
+                .open_channels(
+                    voyager::channel_open,
+                    |t: Duration| {
+                        async move {
+                            let ev = self.dst.wait_for_open_channel(t).await?;
+                            Ok(ChannelConfirm {
+                                channel_id: ev.channel_id,
+                                counterparty_channel_id: ev.counterparty_channel_id,
+                            })
+                        }
+                    },
+                    self.src.chain_id().clone(),
+                    src_port,
+                    self.dst.chain_id().clone(),
+                    dst_port,
+                    connection_id,
+                    version,
+                    count,
+                    duration,
+                )
+                .await?;
+            return Ok(opened);
+        }
+
         let opened = self
             .channel_pool
             .open_channels(
                 voyager::channel_open,
                 |t: Duration| {
                     async move {
-                        let ev = self.dst.wait_for_open_channel(t).await?;
+                        let ev = self.src.wait_for_open_channel(t).await?;
                         Ok(ChannelConfirm {
                             channel_id: ev.channel_id,
                             counterparty_channel_id: ev.counterparty_channel_id,
                         })
                     }
                 },
-                self.src.chain_id().clone(),
-                src_port,
                 self.dst.chain_id().clone(),
                 dst_port,
+                self.src.chain_id().clone(),
+                src_port,
                 connection_id,
                 version,
                 count,
@@ -358,6 +386,11 @@ where
     pub async fn release_channel(&self, pair: ChannelPair) {
         self.channel_pool.release_channel(self.src.chain_id(), self.dst.chain_id(), pair).await;
     }
+
+    pub async fn get_available_channel_count(&self) -> usize {
+        self.channel_pool.get_available_channel_count(self.src.chain_id(), self.dst.chain_id()).await
+    }
+
 
     // pub async fn send_and_recv(
     //     &self,

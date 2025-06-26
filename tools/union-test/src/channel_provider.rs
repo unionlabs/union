@@ -151,7 +151,7 @@ impl ChannelPool {
         Ok(success_count)
     }
 
-        pub async fn get_channel(
+    pub async fn get_channel(
         &self,
         src_chain: &ChainId,
         dst_chain: &ChainId,
@@ -167,6 +167,16 @@ impl ChannelPool {
                 .push(ChannelPair { src: p.dest, dest: p.src });
         }
         pair
+    }
+
+    pub async fn get_available_channel_count(
+        &self,
+        src_chain: &ChainId,
+        dst_chain: &ChainId,
+    ) -> usize {
+        let inner = self.inner.lock().await;
+        let key = (src_chain.clone(), dst_chain.clone());
+        inner.available.get(&key).map_or(0, |v| v.len())
     }
 
     pub async fn release_channel(
