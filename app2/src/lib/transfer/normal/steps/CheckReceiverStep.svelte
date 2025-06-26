@@ -34,7 +34,7 @@ const updateTimer = () => {
 }
 
 const handleIntersect = () => {
-  targetTime = Date.now() + 5_500
+  targetTime = Date.now() + 10_000
   updateTimer()
   intervalId = window.setInterval(updateTimer, 1000)
 }
