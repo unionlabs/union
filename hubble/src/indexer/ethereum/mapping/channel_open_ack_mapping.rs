@@ -21,7 +21,6 @@ impl EthFetcherClient {
                 port_id: log.event.port_id()?,
                 counterparty_port_id: log.event.counterparty_port_id()?,
                 counterparty_channel_id: log.event.counterparty_channel_id()?,
-                counterparty_version: log.event.counterparty_version()?,
             },
         }])
     }

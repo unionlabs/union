@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::indexer::event::{
     header::Header,
-    types::{ChannelId, ConnectionId, PortId, Version},
+    types::{ChannelId, ConnectionId, PortId},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
@@ -14,5 +14,4 @@ pub struct ChannelOpenConfirmEvent {
     pub port_id: PortId,
     pub counterparty_channel_id: ChannelId,
     pub counterparty_port_id: PortId,
-    pub counterparty_version: Version,
 }

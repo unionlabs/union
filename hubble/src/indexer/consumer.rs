@@ -256,7 +256,7 @@ async fn process<'a>(
             };
 
             update_block_update(tx, new).await?;
-            delete_block(tx, &chain_context, height).await?
+            delete_block(tx, chain_context, height).await?
         }
         Action::Update(message_meta, current, block_events) => {
             let new = BlockUpdate {
@@ -271,8 +271,8 @@ async fn process<'a>(
 
             update_block_update(tx, new).await?;
 
-            delete_block(tx, &chain_context, height).await?;
-            insert_block(tx, &chain_context, block_events).await?
+            delete_block(tx, chain_context, height).await?;
+            insert_block(tx, chain_context, block_events).await?
         }
         Action::Insert(_, new, block_events) => {
             insert_block_update(tx, new).await?;
@@ -280,8 +280,8 @@ async fn process<'a>(
             // we don't have records before introducing nats, so we need to delete be sure no
             // old data exists. ultimately we can generate block-update records for each known
             // block so this it not required
-            delete_block(tx, &chain_context, height).await?;
-            insert_block(tx, &chain_context, block_events).await?
+            delete_block(tx, chain_context, height).await?;
+            insert_block(tx, chain_context, block_events).await?
         }
     })
 }
