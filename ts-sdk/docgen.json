@@ -1,6 +1,17 @@
 {
   "$schema": "../node_modules/@effect/docgen/schema.json",
-  "exclude": ["src/internal/**/*.ts"],
+  "exclude": [
+    "src/aptos/**/*",
+    "src/constants/**/*",
+    "src/cosmos/**/*",
+    "src/evm/**/*",
+    "src/generated/**/*",
+    "src/graphql/**/*",
+    "src/internal/**/*.ts",
+    "src/sui/**/*",
+    "src/ucs03/**/*",
+    "src/utils/**/*"
+  ],
   "srcLink": "https://github.com/unionlabs/union/tree/main/ts-sdk/src/",
   "enforceVersion": false,
   "enforceExamples": false,
@@ -14,17 +25,8 @@
     "target": "ES2022",
     "lib": ["ES2022", "DOM"],
     "paths": {
-      "@unionlabs/sdk": ["../../../effect/src/index.js"],
-      "effect/*": ["../../../effect/src/*.js"],
-      "@effect/ai": ["../../../ai/ai/src/index.js"],
-      "@effect/platform": ["../../../platform/src/index.js"],
-      "@effect/platform/*": ["../../../platform/src/*.js"],
-      "@effect/printer": ["../../../printer/src/index.js"],
-      "@effect/printer/*": ["../../../printer/src/*.js"],
-      "@effect/printer-ansi": ["../../../printer-ansi/src/index.js"],
-      "@effect/printer-ansi/*": ["../../../printer-ansi/src/*.js"],
-      "@effect/typeclass": ["../../../typeclass/src/index.js"],
-      "@effect/typeclass/*": ["../../../typeclass/src/*.js"]
+      "@unionlabs/sdk": ["../ts-sdk/src/index.js"],
+      "@unionlabs/sdk/*": ["../ts-sdk/src/*.js"]
     }
   }
 }
