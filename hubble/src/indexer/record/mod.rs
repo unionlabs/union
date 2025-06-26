@@ -7,10 +7,11 @@ use crate::indexer::{
     api::IndexerError,
     event::types::{
         Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
-        ChannelId, ClientId, ClientType, ConnectionId, Denom, EventIndex, Maker, MakerMsg,
-        MessageHash, MessageSequence, NatsConsumerSequence, NatsStreamSequence, PacketData,
-        PacketHash, PortId, RefillRate, TimeoutTimestamp, TransactionEventIndex, TransactionHash,
-        TransactionIndex, UniversalChainId, Version,
+        ChannelId, ClientId, ClientType, ConnectionId, ContractAddress, Denom, EventIndex, Maker,
+        MakerMsg, MessageHash, MessageSequence, MutationAmount, MutationDirection,
+        NatsConsumerSequence, NatsStreamSequence, PacketData, PacketHash, PortId, RefillRate,
+        TimeoutTimestamp, TransactionEventIndex, TransactionHash, TransactionIndex,
+        UniversalChainId, Version, WalletAddress,
     },
     handler::EventContext,
 };
@@ -32,6 +33,7 @@ pub(crate) mod packet_send_record;
 pub(crate) mod packet_timeout_record;
 pub(crate) mod token_bucket_update_record;
 pub(crate) mod update_client_record;
+pub(crate) mod wallet_mutation_entry_record;
 pub(crate) mod write_ack_record;
 
 /// wrapper required until we've migrated to use universal-chain-ids
@@ -329,5 +331,29 @@ impl Capacity {
 impl RefillRate {
     pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
         Ok(BigDecimal::new(self.0.into(), 0))
+    }
+}
+
+impl ContractAddress {
+    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl WalletAddress {
+    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl MutationAmount {
+    pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        Ok(self.0.into())
+    }
+}
+impl MutationDirection {
+    pub fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(match self {
+            MutationDirection::In => "in".to_string(),
+            MutationDirection::Out => "out".to_string(),
+        })
     }
 }

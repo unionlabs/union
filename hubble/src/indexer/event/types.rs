@@ -472,6 +472,40 @@ pub struct UnsupportedBlockEvent {
     pub raw: serde_json::Value,
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct ContractAddress(pub bytes::Bytes);
+
+impl From<bytes::Bytes> for ContractAddress {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct WalletAddress(pub bytes::Bytes);
+
+impl From<bytes::Bytes> for WalletAddress {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MutationAmount(#[serde(with = "flexible_u64")] pub u64);
+
+impl From<u64> for MutationAmount {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub enum MutationDirection {
+    #[serde(rename = "in")]
+    In,
+    #[serde(rename = "out")]
+    Out,
+}
+
 mod flexible_u64 {
     use super::*;
 

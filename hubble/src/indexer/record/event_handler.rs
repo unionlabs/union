@@ -18,8 +18,9 @@ use crate::indexer::{
         packet_recv_record::PacketRecvRecord, packet_send_record::PacketSendRecord,
         packet_timeout_record::PacketTimeoutRecord,
         token_bucket_update_record::TokenBucketUpdateRecord,
-        update_client_record::UpdateClientRecord, write_ack_record::WriteAckRecord, ChainContext,
-        InternalChainId,
+        update_client_record::UpdateClientRecord,
+        wallet_mutation_entry_record::WalletMutationEntryRecord, write_ack_record::WriteAckRecord,
+        ChainContext, InternalChainId,
     },
 };
 
@@ -76,6 +77,8 @@ pub async fn delete_event_data_at_height(
         PacketAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
         PacketTimeoutRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
         TokenBucketUpdateRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        WalletMutationEntryRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+            .await?;
 
         true
     } else {
@@ -284,6 +287,7 @@ async fn handle_block_event(
         SupportedBlockEvent::PacketAck { inner } => chain_context.with_event(inner).handle(tx).await,
         SupportedBlockEvent::PacketTimeout { inner } => chain_context.with_event(inner).handle(tx).await,
         SupportedBlockEvent::TokenBucketUpdate { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::WalletMutationEntry { inner } => chain_context.with_event(inner).handle(tx).await,
     }?;
 
     Ok(true)
