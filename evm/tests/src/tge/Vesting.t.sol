@@ -22,17 +22,6 @@ contract VestingTests is Test {
     function setUp() public {
         handler = new TestIBCHandler();
         erc20Impl = new ZkgmERC20();
-        zkgm = TestZkgm(
-            payable(
-                address(
-                    new ERC1967Proxy(
-                        address(new TestZkgm(handler, weth, erc20Impl)),
-                        abi.encodeCall(UCS03Zkgm.initialize, (address(this)))
-                    )
-                )
-            )
-        );
-        erc20 = new TestERC20("Ether", "ETH", 18);
         mgr = Manager(
             address(
                 new ERC1967Proxy(
@@ -41,6 +30,17 @@ contract VestingTests is Test {
                 )
             )
         );
+        zkgm = TestZkgm(
+            payable(
+                address(
+                    new ERC1967Proxy(
+                        address(new TestZkgm(handler, weth, erc20Impl)),
+                        abi.encodeCall(UCS03Zkgm.initialize, (address(mgr)))
+                    )
+                )
+            )
+        );
+        erc20 = new TestERC20("Ether", "ETH", 18);
         vestingMgr = VestingManager(
             address(
                 new ERC1967Proxy(
