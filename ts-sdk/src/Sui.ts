@@ -3,7 +3,7 @@
  * @since 2.0.0
  */
 import { bcs } from "@mysten/sui/bcs"
-import { SuiClient, SuiClientOptions } from "@mysten/sui/client"
+import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import { Context, Data, Effect } from "effect"
@@ -11,6 +11,38 @@ import type { Address } from "viem"
 import type { Hex } from "viem"
 import * as internal from "./internal/sui.js"
 import { extractErrorDetails } from "./utils/extract-error-details.js"
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export namespace Sui {
+  /**
+   * @category models
+   * @since 2.0.0
+   */
+  export interface PublicClient {
+    readonly client: SuiClient
+  }
+
+  /**
+   * @category models
+   * @since 2.0.0
+   */
+  export interface WalletClient {
+    readonly client: SuiClient
+    readonly signer: Ed25519Keypair
+  }
+
+  /**
+   * @category models
+   * @since 2.0.0
+   */
+  export interface Channel {
+    readonly ucs03address: Address
+    readonly channelId: number
+  }
+}
 
 /**
  * @category context
@@ -35,7 +67,7 @@ export class FungibleAssetOrderDetails
  */
 export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Sui/ChannelDestination")<
   ChannelDestination,
-  { readonly ucs03address: Address; readonly channelId: number }
+  Sui.Channel
 >() {}
 
 /**
@@ -44,31 +76,8 @@ export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Sui/ChannelD
  */
 export class ChannelSource extends Context.Tag("@unionlabs/sdk/Sui/ChannelSource")<
   ChannelSource,
-  { readonly ucs03address: Address; readonly channelId: number }
+  Sui.Channel
 >() {}
-
-/**
- * @category models
- * @since 2.0.0
- */
-export namespace Sui {
-  /**
-   * @category models
-   * @since 2.0.0
-   */
-  export interface PublicClient {
-    readonly client: SuiClient
-  }
-
-  /**
-   * @category models
-   * @since 2.0.0
-   */
-  export interface WalletClient {
-    readonly client: SuiClient
-    readonly signer: Ed25519Keypair
-  }
-}
 
 /**
  * @category context
@@ -103,6 +112,10 @@ export class PublicClientDestination
   >()
 {
   static Live = internal.publicClientLayer(this)
+  static FromNode = (url: Parameters<typeof getFullnodeUrl>[0]) =>
+    internal.publicClientLayer(this)({
+      url: getFullnodeUrl(url),
+    })
 }
 
 /**
@@ -196,40 +209,6 @@ export class CreateWalletClientError
     cause: CreateWalletClientErrorType
   }>
 {}
-
-/**
- * @category utils
- * @since 2.0.0
- */
-export const createPublicClient = (
-  parameters: SuiClientOptions,
-) =>
-  Effect.try({
-    try: () => new SuiClient(parameters),
-    catch: err =>
-      new CreatePublicClientError({
-        cause: extractErrorDetails(err as CreatePublicClientErrorType),
-      }),
-  })
-
-/**
- * @category utils
- * @since 2.0.0
- */
-export const createWalletClient = (
-  options: SuiClientOptions,
-  signer: Ed25519Keypair,
-) =>
-  Effect.try({
-    try: () => ({
-      client: new SuiClient(options),
-      signer,
-    }),
-    catch: (err) =>
-      new CreateWalletClientError({
-        cause: extractErrorDetails(err as CreateWalletClientErrorType),
-      }),
-  })
 
 /**
  * @category utils

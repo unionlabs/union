@@ -1,6 +1,13 @@
+---
+title: Examples
+---
+
+## Babylon to BOB
+
+```ts twoslash
 import { Effect, pipe } from "effect"
 import { assert } from "effect/Console"
-import * as Sui from "../src/Sui.js"
+import { Sui } from "@unionlabs/sdk"
 
 const TOKEN_ADDRESS = "0x6d756e6f"
 const EXPECTED_RESULT = "0x4c18721deddf1ea8ec97b187aaf067c09111f350d956cb624b7b4002f0c5e246"
@@ -27,3 +34,4 @@ Effect.runPromiseExit(
     )
   }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
+```
