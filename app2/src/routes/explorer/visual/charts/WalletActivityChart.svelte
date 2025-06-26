@@ -36,22 +36,12 @@ interface ActiveWalletRates {
   uniqueTotalWallets: number
 }
 
-interface DataAvailability {
-  hasMinute: boolean
-  hasHour: boolean
-  hasDay: boolean
-  has7Days: boolean
-  has14Days: boolean
-  has30Days: boolean
-}
-
 interface Props {
   activeSenders?: WalletStats[]
   activeReceivers?: WalletStats[]
   activeSendersTimeScale?: Record<string, WalletStats[]>
   activeReceiversTimeScale?: Record<string, WalletStats[]>
   activeWalletRates?: ActiveWalletRates
-  dataAvailability?: DataAvailability
 }
 
 const DEFAULT_WALLET_RATES: ActiveWalletRates = {
@@ -78,22 +68,12 @@ const DEFAULT_WALLET_RATES: ActiveWalletRates = {
   uniqueTotalWallets: 0,
 }
 
-const DEFAULT_DATA_AVAILABILITY: DataAvailability = {
-  hasMinute: false,
-  hasHour: false,
-  hasDay: false,
-  has7Days: false,
-  has14Days: false,
-  has30Days: false,
-}
-
 let {
   activeSenders = [],
   activeReceivers = [],
   activeSendersTimeScale = {},
   activeReceiversTimeScale = {},
   activeWalletRates = DEFAULT_WALLET_RATES,
-  dataAvailability = DEFAULT_DATA_AVAILABILITY,
 }: Props = $props()
 
 // Local item count configuration
@@ -105,12 +85,12 @@ const itemCounts = [
 ]
 
 // State management
-let selectedTimeFrame = $state("1m")
+let selectedTimeFrame = $state("5m")
 let selectedItemCount = $state(5) // Default to 5 items
 
 // Time frame configuration
 const timeFrames = [
-  { key: "1m", label: "1m", field: "LastMin", desc: "last minute" },
+  { key: "5m", label: "5m", field: "LastMin", desc: "last 5 minutes" },
   { key: "1h", label: "1h", field: "LastHour", desc: "last hour" },
   { key: "1d", label: "1d", field: "LastDay", desc: "last day" },
   { key: "7d", label: "7d", field: "Last7d", desc: "last 7 days" },
@@ -213,39 +193,13 @@ function getWalletCounts() {
   }
 }
 
-function isTimeFrameAvailable(timeFrameKey: string): boolean {
-  const availabilityMap: Record<string, keyof DataAvailability> = {
-    "1m": "hasMinute",
-    "1h": "hasHour",
-    "1d": "hasDay",
-    "7d": "has7Days",
-    "14d": "has14Days",
-    "30d": "has30Days",
-  }
 
-  return dataAvailability[availabilityMap[timeFrameKey]] || false
-}
-
-function getFirstAvailableTimeFrame(): string {
-  for (const timeFrame of timeFrames) {
-    if (isTimeFrameAvailable(timeFrame.key)) {
-      return timeFrame.key
-    }
-  }
-  return "1m"
-}
 
 function getPercentageOfTotal(count: number): number {
   return Math.round((count / totalTransfersForTimeframe()) * 100)
 }
 
-// Auto-update selected timeframe when data becomes available
-$effect(() => {
-  const firstAvailable = getFirstAvailableTimeFrame()
-  if (!isTimeFrameAvailable(selectedTimeFrame)) {
-    selectedTimeFrame = firstAvailable
-  }
-})
+
 
 // Debug logging in development
 $effect(() => {
@@ -298,12 +252,9 @@ const selectedTimeFrameInfo = $derived(timeFrames.find(tf => tf.key === selected
                 px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
                 selectedTimeFrame === timeFrame.key
                 ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
-                : isTimeFrameAvailable(timeFrame.key)
-                ? 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-                : 'border-zinc-800 bg-zinc-950 text-zinc-600 cursor-not-allowed'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
                 }
               "
-              disabled={!isTimeFrameAvailable(timeFrame.key)}
               onclick={() => selectedTimeFrame = timeFrame.key}
             >
               {timeFrame.label}

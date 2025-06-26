@@ -36,18 +36,8 @@ interface AssetVolumeData {
   serverUptimeSeconds: number
 }
 
-interface DataAvailability {
-  hasMinute: boolean
-  hasHour: boolean
-  hasDay: boolean
-  has7Days: boolean
-  has14Days: boolean
-  has30Days: boolean
-}
-
 interface Props {
   assetVolumeData?: AssetVolumeData
-  dataAvailability?: DataAvailability
 }
 
 const DEFAULT_ASSET_DATA: AssetVolumeData = {
@@ -59,18 +49,8 @@ const DEFAULT_ASSET_DATA: AssetVolumeData = {
   serverUptimeSeconds: 0,
 }
 
-const DEFAULT_DATA_AVAILABILITY: DataAvailability = {
-  hasMinute: false,
-  hasHour: false,
-  hasDay: false,
-  has7Days: false,
-  has14Days: false,
-  has30Days: false,
-}
-
 let {
   assetVolumeData = DEFAULT_ASSET_DATA,
-  dataAvailability = DEFAULT_DATA_AVAILABILITY,
 }: Props = $props()
 
 // Local item count configuration
@@ -82,14 +62,14 @@ const itemCounts = [
 ]
 
 // State management
-let selectedTimeScale = $state("1m")
+let selectedTimeScale = $state("5m")
 let expandedAsset = $state<string | null>(null)
 let hoveredAsset = $state<string | null>(null)
 let selectedItemCount = $state(5) // Default to 5 items
 
 // Time scale configuration
 const timeScales = [
-  { key: "1m", label: "1m" },
+  { key: "5m", label: "5m" },
   { key: "1h", label: "1h" },
   { key: "1d", label: "1d" },
   { key: "7d", label: "7d" },
@@ -116,13 +96,17 @@ const routeColorsBright = [
 
 // Derived state
 const currentData = $derived.by(() => {
-  const data = assetVolumeData?.assets || []
+  // Use time-scaled data if available, otherwise fall back to main assets array
+  const timeScaleData = assetVolumeData?.assetVolumeTimeScale?.[selectedTimeScale]
+  const data = timeScaleData || assetVolumeData?.assets || []
   const sortedData = [...data].sort((a, b) => b.transferCount - a.transferCount)
   return sortedData.slice(0, selectedItemCount)
 })
 
 const hasData = $derived(currentData.length > 0)
-const isLoading = $derived(!assetVolumeData || assetVolumeData.assets === undefined)
+const isLoading = $derived(
+  !hasData && (!assetVolumeData || !assetVolumeData.assets || assetVolumeData.assets.length === 0),
+)
 
 // Utility functions
 function formatNumber(num: number): string {
@@ -130,7 +114,7 @@ function formatNumber(num: number): string {
     return "0"
   }
   if (num < 1) {
-    return num.toFixed(6)
+    return num.toFixed(10)
   }
   if (num < 1000) {
     return num.toFixed(2)
@@ -178,20 +162,7 @@ function getPercentageOfTotal(asset: Asset): number {
   return total === 0 ? 0 : Math.round((numValue / total) * 100)
 }
 
-function isTimeFrameAvailable(timeFrameKey: string): boolean {
-  // For now, always return true for 1m since that's what we're using
-  // TODO: Implement proper time scale data availability based on dataAvailability prop
-  return timeFrameKey === "1m"
-}
 
-function getFirstAvailableTimeframe(): string {
-  for (const timeScale of timeScales) {
-    if (isTimeFrameAvailable(timeScale.key)) {
-      return timeScale.key
-    }
-  }
-  return "1m"
-}
 
 function toggleAssetExpansion(assetSymbol: string): void {
   expandedAsset = expandedAsset === assetSymbol ? null : assetSymbol
@@ -233,13 +204,7 @@ function calculateRemainingRoutePercentage(routes: AssetRoute[]): number {
   return routes.slice(5).reduce((sum, route) => sum + route.percentage, 0)
 }
 
-// Auto-update selected timeframe when data becomes available
-$effect(() => {
-  const firstAvailable = getFirstAvailableTimeframe()
-  if (!isTimeFrameAvailable(selectedTimeScale)) {
-    selectedTimeScale = firstAvailable
-  }
-})
+
 
 // Debug logging in development
 $effect(() => {
@@ -266,10 +231,8 @@ $effect(() => {
         <span class="text-zinc-600 text-xs">--tf={selectedTimeScale}</span>
       </div>
       <div class="text-xs text-zinc-500">
-        {#if isLoading}
+        {#if !hasData}
           loading...
-        {:else if !hasData}
-          no data yet
         {/if}
       </div>
     </header>
@@ -286,12 +249,9 @@ $effect(() => {
                 px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
                 selectedTimeScale === timeScale.key
                 ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
-                : isTimeFrameAvailable(timeScale.key)
-                ? 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-                : 'border-zinc-800 bg-zinc-950 text-zinc-600 cursor-not-allowed'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
                 }
               "
-              disabled={!isTimeFrameAvailable(timeScale.key)}
               onclick={() => selectedTimeScale = timeScale.key}
             >
               {timeScale.label}
@@ -327,8 +287,8 @@ $effect(() => {
       </div>
 
       <div class="flex-1 flex flex-col">
-        {#if isLoading}
-          <!-- Loading State -->
+        {#if !hasData}
+          <!-- Loading/No Data State - Show Skeletons -->
           <div class="space-y-0.5 flex-1">
             {#each Array(selectedItemCount) as _, index}
               <div class="p-1.5 bg-zinc-900 border border-zinc-800 rounded">
@@ -352,13 +312,6 @@ $effect(() => {
                 </div>
               </div>
             {/each}
-          </div>
-        {:else if !hasData}
-          <!-- No Data State -->
-          <div class="flex-1 flex items-center justify-center">
-            <div class="text-center">
-              <div class="text-zinc-600 font-mono">no_data</div>
-            </div>
           </div>
         {:else}
           <!-- Asset List -->

@@ -37,18 +37,8 @@ interface ChainFlowData {
   serverUptimeSeconds: number
 }
 
-interface DataAvailability {
-  hasMinute: boolean
-  hasHour: boolean
-  hasDay: boolean
-  has7Days: boolean
-  has14Days: boolean
-  has30Days: boolean
-}
-
 interface Props {
   chainFlowData?: ChainFlowData
-  dataAvailability?: DataAvailability
 }
 
 const DEFAULT_CHAIN_DATA: ChainFlowData = {
@@ -59,18 +49,8 @@ const DEFAULT_CHAIN_DATA: ChainFlowData = {
   serverUptimeSeconds: 0,
 }
 
-const DEFAULT_DATA_AVAILABILITY: DataAvailability = {
-  hasMinute: false,
-  hasHour: false,
-  hasDay: false,
-  has7Days: false,
-  has14Days: false,
-  has30Days: false,
-}
-
 let {
   chainFlowData = DEFAULT_CHAIN_DATA,
-  dataAvailability = DEFAULT_DATA_AVAILABILITY,
 }: Props = $props()
 
 // Local item count configuration
@@ -82,7 +62,7 @@ const itemCounts = [
 ]
 
 // State management
-let selectedTimeScale = $state("1m")
+let selectedTimeScale = $state("5m")
 let displayMode = $state<"total" | "outgoing" | "incoming" | "netflow">("total")
 let expandedChain = $state<string | null>(null)
 let hoveredChain = $state<string | null>(null)
@@ -90,7 +70,7 @@ let selectedItemCount = $state(5) // Default to 5 items
 
 // Time scale configuration
 const timeScales = [
-  { key: "1m", label: "1m" },
+  { key: "5m", label: "5m" },
   { key: "1h", label: "1h" },
   { key: "1d", label: "1d" },
   { key: "7d", label: "7d" },
@@ -227,29 +207,7 @@ function getChangeValue(chain: ChainData): number | undefined {
   }
 }
 
-// Check if time frame data is available
-function isTimeFrameAvailable(timeFrameKey: string): boolean {
-  const availabilityMap: Record<string, keyof typeof dataAvailability> = {
-    "1m": "hasMinute",
-    "1h": "hasHour",
-    "1d": "hasDay",
-    "7d": "has7Days",
-    "14d": "has14Days",
-    "30d": "has30Days",
-  }
 
-  return dataAvailability[availabilityMap[timeFrameKey]] || false
-}
-
-// Get the first available timeframe
-function getFirstAvailableTimeframe(): string {
-  for (const timeScale of timeScales) {
-    if (isTimeFrameAvailable(timeScale.key)) {
-      return timeScale.key
-    }
-  }
-  return "1m"
-}
 
 // Toggle chain expansion
 function toggleChainExpansion(chainId: string): void {
@@ -297,13 +255,7 @@ function getAssetIncomingOutgoingWidths(
   }
 }
 
-// Auto-update selected timeframe when data becomes available
-$effect(() => {
-  const firstAvailable = getFirstAvailableTimeframe()
-  if (!isTimeFrameAvailable(selectedTimeScale)) {
-    selectedTimeScale = firstAvailable
-  }
-})
+
 
 // Progress bar calculations for incoming/outgoing split with dynamic center
 function getIncomingOutgoingWidths(
@@ -388,19 +340,16 @@ $effect(() => {
           <!-- Time Frame Selector -->
           <div class="flex flex-wrap gap-0.5">
             {#each timeScales as timeScale}
-              <button
-                class="
-                  px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
-                  selectedTimeScale === timeScale.key
-                  ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
-                  : isTimeFrameAvailable(timeScale.key)
-                  ? 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-                  : 'border-zinc-800 bg-zinc-950 text-zinc-600 cursor-not-allowed'
-                  }
-                "
-                disabled={!isTimeFrameAvailable(timeScale.key)}
-                onclick={() => selectedTimeScale = timeScale.key}
-              >
+                          <button
+              class="
+                px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
+                selectedTimeScale === timeScale.key
+                ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                }
+              "
+              onclick={() => selectedTimeScale = timeScale.key}
+            >
                 {timeScale.label}
               </button>
             {/each}
@@ -532,12 +481,10 @@ $effect(() => {
                       {/if}
                     </div>
                     <div class="text-zinc-300 font-mono font-medium text-xs">
-                      {#if isTimeFrameAvailable(selectedTimeScale)}
-                        {#if getChangeValue(chain) !== undefined}
-                          <span
-                            class="text-xs mr-1 hidden md:inline {getChangeValue(chain) >= 0 ? 'text-green-400' : 'text-red-400'}"
-                          >{formatPercentageChange(getChangeValue(chain))}</span>
-                        {/if}
+                      {#if getChangeValue(chain) !== undefined}
+                        <span
+                          class="text-xs mr-1 hidden md:inline {getChangeValue(chain)! >= 0 ? 'text-green-400' : 'text-red-400'}"
+                        >{formatPercentageChange(getChangeValue(chain))}</span>
                       {/if}
                       {formatCount(getDisplayValue(chain))}
                     </div>
@@ -609,12 +556,10 @@ $effect(() => {
                         {/if}
                       </div>
                     </div>
-                    {#if isTimeFrameAvailable(selectedTimeScale)}
-                      {#if getChangeValue(chain) !== undefined}
-                        <span
-                          class="text-[11px] sm:text-[10px] tabular-nums sm:hidden ml-2 {getChangeValue(chain) >= 0 ? 'text-green-400' : 'text-red-400'}"
-                        >{formatPercentageChange(getChangeValue(chain))}</span>
-                      {/if}
+                    {#if getChangeValue(chain) !== undefined}
+                      <span
+                        class="text-[11px] sm:text-[10px] tabular-nums sm:hidden ml-2 {getChangeValue(chain)! >= 0 ? 'text-green-400' : 'text-red-400'}"
+                      >{formatPercentageChange(getChangeValue(chain))}</span>
                     {/if}
                   </div>
                 </button>

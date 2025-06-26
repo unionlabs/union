@@ -12,36 +12,16 @@ interface RouteData {
   countChange?: number
 }
 
-interface DataAvailability {
-  hasMinute: boolean
-  hasHour: boolean
-  hasDay: boolean
-  has7Days: boolean
-  has14Days: boolean
-  has30Days: boolean
-}
-
 interface Props {
   popularRoutes?: RouteData[]
   popularRoutesTimeScale?: Record<string, RouteData[]>
-  dataAvailability?: DataAvailability
 }
 
 const DEFAULT_ROUTE_DATA: RouteData[] = []
 
-const DEFAULT_DATA_AVAILABILITY: DataAvailability = {
-  hasMinute: false,
-  hasHour: false,
-  hasDay: false,
-  has7Days: false,
-  has14Days: false,
-  has30Days: false,
-}
-
 let {
   popularRoutes = DEFAULT_ROUTE_DATA,
   popularRoutesTimeScale = {},
-  dataAvailability = DEFAULT_DATA_AVAILABILITY,
 }: Props = $props()
 
 // Local item count configuration
@@ -53,12 +33,12 @@ const itemCounts = [
 ]
 
 // State management
-let selectedTimeScale = $state("1m")
+let selectedTimeScale = $state("5m")
 let selectedItemCount = $state(5) // Default to 5 items
 
 // Time scale configuration
 const timeScales = [
-  { key: "1m", label: "1m" },
+  { key: "5m", label: "5m" },
   { key: "1h", label: "1h" },
   { key: "1d", label: "1d" },
   { key: "7d", label: "7d" },
@@ -122,39 +102,13 @@ function formatPercentageChange(change?: number): string {
   return `(${sign}${change.toFixed(1)}%)`
 }
 
-function isTimeFrameAvailable(timeFrameKey: string): boolean {
-  const availabilityMap: Record<string, keyof DataAvailability> = {
-    "1m": "hasMinute",
-    "1h": "hasHour",
-    "1d": "hasDay",
-    "7d": "has7Days",
-    "14d": "has14Days",
-    "30d": "has30Days",
-  }
 
-  return dataAvailability[availabilityMap[timeFrameKey]] || false
-}
-
-function getFirstAvailableTimeframe(): string {
-  for (const timeScale of timeScales) {
-    if (isTimeFrameAvailable(timeScale.key)) {
-      return timeScale.key
-    }
-  }
-  return "1m"
-}
 
 function getPercentageOfTotal(route: RouteData): number {
   return Math.round((route.count / totalTransfersForTimeframe()) * 100)
 }
 
-// Auto-update selected timeframe when data becomes available
-$effect(() => {
-  const firstAvailable = getFirstAvailableTimeframe()
-  if (!isTimeFrameAvailable(selectedTimeScale)) {
-    selectedTimeScale = firstAvailable
-  }
-})
+
 
 // Debug logging in development
 $effect(() => {
@@ -200,12 +154,9 @@ $effect(() => {
                 px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
                 selectedTimeScale === timeScale.key
                 ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
-                : isTimeFrameAvailable(timeScale.key)
-                ? 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-                : 'border-zinc-800 bg-zinc-950 text-zinc-600 cursor-not-allowed'
+                : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
                 }
               "
-              disabled={!isTimeFrameAvailable(timeScale.key)}
               onclick={() => selectedTimeScale = timeScale.key}
             >
               {timeScale.label}
@@ -291,8 +242,7 @@ $effect(() => {
                     </span>
                   </div>
                   <div class="flex items-center space-x-1">
-                    {#if isTimeFrameAvailable(selectedTimeScale)
-                    && route.countChange !== undefined}
+                    {#if route.countChange !== undefined}
                       <span
                         class="text-xs tabular-nums {route.countChange >= 0 ? 'text-green-400' : 'text-red-400'}"
                       >{formatPercentageChange(route.countChange)}</span>

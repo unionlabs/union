@@ -31,14 +31,6 @@ interface NodeHealthSummary {
   avgResponseTime: number
   nodesWithRpcs: NodeData[]
   chainHealthStats: Record<string, ChainHealthStat>
-  dataAvailability: {
-    hasMinute: boolean
-    hasHour: boolean
-    hasDay: boolean
-    has7Days: boolean
-    has14Days: boolean
-    has30Days: boolean
-  }
 }
 
 interface Props {
@@ -53,14 +45,6 @@ const DEFAULT_NODE_HEALTH: NodeHealthSummary = {
   avgResponseTime: 0,
   nodesWithRpcs: [],
   chainHealthStats: {},
-  dataAvailability: {
-    hasMinute: false,
-    hasHour: false,
-    hasDay: false,
-    has7Days: false,
-    has14Days: false,
-    has30Days: false,
-  }
 }
 
 let {
@@ -99,8 +83,8 @@ const currentData = $derived.by(() => {
   switch (selectedSort) {
     case "status":
       data = data.sort((a, b) => {
-        const statusOrder = { healthy: 0, degraded: 1, unhealthy: 2 }
-        return statusOrder[a.status] - statusOrder[b.status]
+        const statusOrder: Record<string, number> = { healthy: 0, degraded: 1, unhealthy: 2 }
+        return (statusOrder[a.status] ?? 999) - (statusOrder[b.status] ?? 999)
       })
       break
     case "response":
@@ -119,7 +103,9 @@ const currentData = $derived.by(() => {
 })
 
 const hasData = $derived(currentData.length > 0)
-const isLoading = $derived(!hasData && nodeHealthData.totalNodes === 0)
+const isLoading = $derived(
+  !hasData && (!nodeHealthData || nodeHealthData.totalNodes === 0),
+)
 
 // Utility functions
 function formatResponseTime(ms: number): string {
@@ -215,10 +201,8 @@ $effect(() => {
         <span class="text-zinc-600 text-xs">--monitor=rpc</span>
       </div>
       <div class="text-xs text-zinc-500">
-        {#if isLoading}
+        {#if !hasData}
           loading...
-        {:else if !hasData}
-          no nodes found
         {:else}
           {healthPercentage}% healthy
         {/if}
@@ -295,8 +279,8 @@ $effect(() => {
       </div>
 
       <div class="flex-1 flex flex-col">
-        {#if isLoading}
-          <!-- Loading State -->
+        {#if !hasData}
+          <!-- Loading/No Data State - Show Skeletons -->
           <div class="space-y-0.5 flex-1">
             {#each Array(5) as _, index}
               <div class="p-1.5 bg-zinc-900 border border-zinc-800 rounded">
@@ -309,25 +293,24 @@ $effect(() => {
                   </div>
                   <div class="flex items-center space-x-1">
                     <Skeleton class="w-8 h-2" />
-                    <Skeleton class="w-10 h-2" />
                   </div>
                 </div>
-                <div class="flex items-center space-x-2">
-                  <Skeleton class="w-full h-1" />
-                  <Skeleton class="w-8 h-2" />
+                <div class="mb-0.5">
+                  <Skeleton class="w-32 h-2" />
+                </div>
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center space-x-2">
+                    <Skeleton class="w-16 h-4" />
+                    <Skeleton class="w-8 h-2" />
+                    <Skeleton class="w-12 h-2" />
+                  </div>
+                  <div class="flex items-center space-x-1">
+                    <Skeleton class="w-8 h-2" />
+                    <Skeleton class="w-8 h-1" />
+                  </div>
                 </div>
               </div>
             {/each}
-          </div>
-        {:else if !hasData}
-          <!-- No Data State -->
-          <div class="flex-1 flex items-center justify-center">
-            <div class="text-center">
-              <div class="text-zinc-600 font-mono">no_nodes_available</div>
-                             <div class="text-zinc-700 text-xs mt-1">
-                 {selectedFilter !== "all" ? `no ${selectedFilter} nodes found` : "no nodes available"}
-               </div>
-            </div>
           </div>
         {:else}
           <!-- Nodes Data -->

@@ -1,5 +1,6 @@
 <script lang="ts">
   // Latency waterfall chart with box plots
+  import Skeleton from "$lib/components/ui/Skeleton.svelte"
   
   let { latencyData = [] } = $props()
   
@@ -77,7 +78,9 @@
     : [])
   
   const hasData = $derived(currentData.length > 0)
-  const isLoading = $derived(!hasData && (!latencyData || latencyData.length === 0))
+  const isLoading = $derived(
+    !hasData && (!latencyData || latencyData.length === 0),
+  )
   
   // Calculate global scale across all visible routes for consistent scrubbing
   const globalScale = $derived(
@@ -101,7 +104,7 @@
     })()
   )
   
-  function formatLatency(seconds) {
+  function formatLatency(seconds: number): string {
     if (seconds < 1) return `${(seconds * 1000).toFixed(0)}ms`
     if (seconds < 10) return `${seconds.toFixed(1)}s`
     if (seconds < 60) return `${seconds.toFixed(0)}s`
@@ -109,16 +112,16 @@
     return `${(seconds / 3600).toFixed(1)}h`
   }
   
-  function formatChainName(name) {
+  function formatChainName(name: string): string {
     return name ? name.toLowerCase().replace(/\s+/g, "_") : "unknown"
   }
   
-  function getPosition(value, minValue, maxValue) {
+  function getPosition(value: number, minValue: number, maxValue: number): number {
     const range = maxValue - minValue || 1
     return ((value - minValue) / range) * 100
   }
   
-  function getRouteScale(item) {
+  function getRouteScale(item: any): { min: number; max: number } {
     // Get all values for this route to find true min/max range
     const allValues = [
       item.packetRecv.p5, item.packetRecv.median, item.packetRecv.p95,
@@ -135,14 +138,14 @@
     }
   }
   
-  function getSqrtPosition(value, minValue, maxValue) {
+  function getSqrtPosition(value: number, minValue: number, maxValue: number): number {
     if (maxValue <= minValue) return 0
     const normalizedValue = Math.max(0, value - minValue)
     const normalizedMax = maxValue - minValue
     return (Math.sqrt(normalizedValue) / Math.sqrt(normalizedMax)) * 100
   }
   
-  function getTimeFromSqrtPosition(position, minValue, maxValue) {
+  function getTimeFromSqrtPosition(position: number, minValue: number, maxValue: number): number {
     if (maxValue <= minValue || isNaN(maxValue) || isNaN(minValue)) return minValue || 0
     const normalizedMax = maxValue - minValue
     const normalizedPosition = Math.max(0, Math.min(1, position / 100))
@@ -150,7 +153,11 @@
     return isNaN(timeValue) ? minValue : timeValue
   }
   
-  function getEventPositions(eventType, routeScale) {
+  function getEventPositions(eventType: any, routeScale: { min: number; max: number }): {
+    p5Pos: number;
+    medianPos: number;
+    p95Pos: number;
+  } {
     const p5Pos = getSqrtPosition(eventType.p5, routeScale.min, routeScale.max)
     const medianPos = getSqrtPosition(eventType.median, routeScale.min, routeScale.max)
     const p95Pos = getSqrtPosition(eventType.p95, routeScale.min, routeScale.max)
@@ -175,8 +182,8 @@
     }
   })
   
-  function handleMouseMove(event, routeIndex) {
-    const rect = event.currentTarget.getBoundingClientRect()
+  function handleMouseMove(event: MouseEvent, routeIndex: number): void {
+    const rect = (event.currentTarget as HTMLElement).getBoundingClientRect()
     const x = event.clientX - rect.left
     const y = event.clientY - rect.top
     const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100))
@@ -213,10 +220,8 @@
       {/if}
     </div>
     <div class="text-xs text-zinc-500">
-      {#if isLoading}
+      {#if !hasData}
         loading...
-      {:else if !hasData}
-        no data yet
       {/if}
     </div>
   </header>
@@ -274,21 +279,70 @@
     </div>
 
     <div class="flex-1 overflow-y-auto">
-      {#if isLoading}
-        <div class="space-y-3">
-          {#each Array(8) as _, index}
-            <div class="flex items-center gap-3">
-              <div class="w-32 h-3 bg-zinc-700 animate-pulse"></div>
-              <div class="flex-1 h-8 bg-zinc-800 animate-pulse"></div>
+      {#if !hasData}
+        <!-- Loading/No Data State - Show Skeletons -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+          {#each Array(4) as _, index}
+            <!-- Mobile skeleton -->
+            <div class="flex flex-col sm:hidden group mb-4">
+              <div class="flex justify-between items-start mb-2">
+                <Skeleton class="w-32 h-3" />
+              </div>
+              
+              <div class="grid grid-cols-3 gap-1 mb-2">
+                {#each Array(3) as _}
+                  <div class="bg-zinc-800 border border-zinc-700 p-2 text-center">
+                    <Skeleton class="w-8 h-2 mb-1 mx-auto" />
+                    <Skeleton class="w-12 h-2 mb-0.5 mx-auto" />
+                    <Skeleton class="w-10 h-2 mb-0.5 mx-auto" />
+                    <Skeleton class="w-12 h-2 mx-auto" />
+                  </div>
+                {/each}
+              </div>
+              
+              <div class="bg-zinc-900 border border-zinc-800 p-2">
+                <div class="space-y-1">
+                  {#each Array(3) as _}
+                    <div class="flex items-center">
+                      <div class="w-full relative h-6">
+                        <Skeleton class="w-full h-1" />
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
+            </div>
+
+            <!-- Desktop skeleton -->
+            <div class="hidden sm:block group mb-6">
+              <div class="flex items-center justify-between mb-2">
+                <Skeleton class="w-40 h-3" />
+              </div>
+              
+              <div class="grid grid-cols-3 gap-2 mb-2">
+                {#each Array(3) as _}
+                  <div class="bg-zinc-800 border border-zinc-700 p-2 text-center">
+                    <Skeleton class="w-10 h-2 mb-1 mx-auto" />
+                    <Skeleton class="w-16 h-2 mb-0.5 mx-auto" />
+                    <Skeleton class="w-14 h-2 mb-0.5 mx-auto" />
+                    <Skeleton class="w-16 h-2 mx-auto" />
+                  </div>
+                {/each}
+              </div>
+              
+              <div class="bg-zinc-900 border border-zinc-800 p-2">
+                <div class="space-y-1">
+                  {#each Array(3) as _}
+                    <div class="flex items-center">
+                      <div class="w-full relative h-6">
+                        <Skeleton class="w-full h-1" />
+                      </div>
+                    </div>
+                  {/each}
+                </div>
+              </div>
             </div>
           {/each}
-        </div>
-      {:else if !hasData}
-        <div class="flex-1 flex items-center justify-center">
-          <div class="text-center">
-            <div class="text-zinc-600 font-mono">no_latency_data</div>
-            <div class="text-zinc-700 text-xs mt-1">waiting for api fix...</div>
-          </div>
         </div>
       {:else}
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
