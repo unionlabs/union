@@ -482,7 +482,7 @@ Common Fields (both versions):
   - Minimum acceptable exchange amount
   - Difference (if less than `baseAmount`) is taken as fee by the relayer
 
-The order can be filled in two ways:
+The order can be filled in three ways:
 
 1. Protocol Fill - If the quote token matches the wrapped version of the base token and base amount >= quote amount:
    - For new assets: Deploy wrapped token contract and mint quote amount to receiver
@@ -495,6 +495,13 @@ The order can be filled in two ways:
    - Base token is transferred/minted to market maker
    - Market maker must handle quote token transfer on behalf of the protocol
 
+3. Solver Fill - Smart contracts that implement the solver interface can programmatically fill orders:
+   - Solver contracts are detected via interface support (ERC165 in Solidity, query in CosmWasm)
+   - Solvers receive full context: packet, order, caller, relayer, relayerMsg, and intent flag
+   - Solvers can implement complex logic like multi-hop swaps, arbitrage, or liquidity aggregation
+   - On failure, solvers return `ACK_ERR_ONLYMAKER` to allow other market makers to fill
+   - Solvers use the same `FILL_TYPE_MARKETMAKER` acknowledgment type as regular market makers
+
 The acknowledgement includes:
 - Fill type (Protocol = `0xB0CAD0` or MarketMaker = `0xD1CEC45E`)
 - Market maker address for MM fills (empty for protocol fills)
@@ -504,6 +511,116 @@ If the order fails or times out:
 - For returning assets: Base token is transferred back to sender
 - Outstanding balances are decreased
 
+#### Solver Interface
+
+FungibleAssetOrderV2 introduces support for solver contracts - smart contracts that can programmatically fill orders with custom logic. This enables sophisticated market-making strategies beyond simple token transfers.
+
+**Solidity Implementation:**
+
+```solidity
+interface ISolver {
+    function solve(
+        IBCPacket calldata packet,
+        FungibleAssetOrderV2 calldata order,
+        address caller,
+        address relayer,
+        bytes calldata relayerMsg,
+        bool intent
+    ) external;
+}
+```
+
+Solver contracts must:
+1. Implement the `ISolver` interface
+2. Support ERC165 interface detection for `type(ISolver).interfaceId`
+3. Handle the `solve()` function call with all order context
+
+**CosmWasm Implementation:**
+
+```rust
+pub enum SolverQuery {
+    IsSolver {},
+}
+
+pub enum SolverMsg {
+    DoSolve {
+        packet: Packet,
+        order: CwFungibleAssetOrderV2,
+        caller: Addr,
+        relayer: Addr,
+        relayer_msg: Bytes,
+        intent: bool,
+    },
+}
+```
+
+CosmWasm solvers must:
+1. Handle the `SolverQuery::IsSolver{}` query (return success to indicate solver capability)
+2. Implement the `SolverMsg::DoSolve` execute handler
+3. Perform the necessary token transfers or logic
+
+**Solver Detection:**
+
+The protocol automatically detects solver contracts:
+- **Solidity**: Uses `ZkgmLib.isSolver(address)` which checks ERC165 interface support
+- **CosmWasm**: Queries the contract with `SolverQuery::IsSolver{}` and checks if the query succeeds
+
+**Execution Flow:**
+
+When a quote token is detected as a solver:
+1. The solver's `solve()` function is called with full context
+2. The solver can perform arbitrary logic (swaps, aggregation, etc.)
+3. On success, normal market maker acknowledgment is returned
+4. On failure, `ACK_ERR_ONLYMAKER` is returned, allowing other market makers to attempt filling
+
+**Use Cases:**
+
+- **Multi-hop Swaps**: Solvers can execute complex swap routes across multiple DEXs
+- **Liquidity Aggregation**: Combine liquidity from multiple sources for better rates
+- **Arbitrage**: Execute arbitrage opportunities while fulfilling user orders
+- **Custom Logic**: Implement protocol-specific market making strategies
+- **Cross-chain Coordination**: Coordinate actions across multiple chains
+
+**Example Solver Implementation:**
+
+```solidity
+contract MultiDEXSolver is ISolver, ERC165 {
+    mapping(uint32 => mapping(bytes => bytes)) quoteTokenFor;
+    mapping(uint32 => bytes) expectedBeneficiary;
+
+    function solve(
+        IBCPacket calldata packet,
+        FungibleAssetOrderV2 calldata order,
+        address caller,
+        address relayer,
+        bytes calldata relayerMsg,
+        bool intent
+    ) external override {
+        require(!intent, "only finalized txs are currently supported");
+        require(relayerMsg == expectedBeneficiary[packet.destinationChannelId], "unexpected beneficiaty");
+        address quoteToken = quoteTokenFor[packet.destinationChannelId][order.baseToken];
+        require(quoteToken != address(0), "unsupported token")
+
+        address receiver = address(bytes20(order.receiver));
+
+        findBestRouteAndTrade(
+            order.baseToken,
+            order.baseAmount,
+            quoteToken,
+            order.quoteAmount,
+            receiver
+        );
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public view override returns (bool)
+    {
+        return interfaceId == type(ISolver).interfaceId
+            || super.supportsInterface(interfaceId);
+    }
+}
+```
+
 
 <Mermaid
   content={`
@@ -512,6 +629,7 @@ sequenceDiagram
     participant A as Chain A
     participant B as Chain B
     participant MM as Market Maker
+    participant Sol as Solver Contract
 
     S ->> A: Submit Transfer Order
     A ->> B: Asset Transfer Order
@@ -522,6 +640,12 @@ sequenceDiagram
         MM ->> B: Fill Order with Quote Token
         B ->> A: MM Fill Ack
         A ->> MM: Transfer Base Token
+    else Solver Fill
+        B ->> Sol: solve(packet, order, context)
+        Sol ->> Sol: Execute Custom Logic
+        Sol ->> B: Complete Execution
+        B ->> A: MM Fill Ack (Solver)
+        A ->> Sol: Transfer Base Token
     end
 `}/>
 

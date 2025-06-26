@@ -1847,7 +1847,7 @@ fn market_maker_fill_v2(
         messages.push(
             wasm_execute(
                 quote_token_str.clone(),
-                &SolverMsg::OnSolve {
+                &SolverMsg::DoSolve {
                     packet,
                     order: order.into(),
                     caller,

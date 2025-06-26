@@ -149,7 +149,7 @@ pub enum ZkgmMsg {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub enum SolverMsg {
-    OnSolve {
+    DoSolve {
         packet: Packet,
         order: CwFungibleAssetOrderV2,
         caller: Addr,
