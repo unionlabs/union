@@ -174,6 +174,10 @@ $effect(() => {
       Option.bind("receiver", () => transferData.derivedReceiver),
       Option.bind("inWallet", ({ destinationChain, receiver }) => {
         const walletaddr = wallets.getAddressForChain(destinationChain)
+        // If no wallet connected, show the warning
+        if (Option.isNone(walletaddr)) {
+          return Option.some(false)
+        }
         return Option.map(walletaddr, x => x.toLowerCase() === receiver.toLowerCase())
       }),
       Option.match({

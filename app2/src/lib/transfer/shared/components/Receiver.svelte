@@ -13,7 +13,6 @@ import { getDerivedReceiverSafe } from "$lib/services/shared"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
 import { wallets } from "$lib/stores/wallets.svelte.ts"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
-import { cn } from "$lib/utils"
 import { clickOutside } from "$lib/utils/actions.ts"
 import type { AddressCanonicalBytes } from "@unionlabs/sdk/schema"
 import { Array as A, Option } from "effect"
@@ -74,22 +73,23 @@ let hasWalletAddress = $derived(
   destinationChain && Option.isSome(wallets.getAddressForChain(destinationChain)),
 )
 
+let autoFilledValue = $state("")
+
 $effect(() => {
   if (destinationChain && destinationChainId) {
-    // First try to use connected wallet if available
-    if (hasWalletAddress) {
-      const address = wallets.getAddressForChain(destinationChain)
-      const addressValue = Option.getOrNull(address)
-      if (addressValue && !transferData.raw.receiver) {
-        transferData.raw.updateField("receiver", addressValue)
-        return
-      }
-    }
+    const walletAddress = wallets.getAddressForChain(destinationChain)
 
-    if (recentAddresses[destinationChainId]?.length > 0) {
-      const mostRecentAddress = recentAddresses[destinationChainId][0]
-      if (mostRecentAddress && !transferData.raw.receiver) {
-        transferData.raw.updateField("receiver", mostRecentAddress)
+    if (Option.isSome(walletAddress)) {
+      // wallet connected - auto-fill receiver if empty
+      if (!transferData.raw.receiver) {
+        transferData.raw.updateField("receiver", walletAddress.value)
+        autoFilledValue = walletAddress.value
+      }
+    } else {
+      // no wallet connected - only clear if receiver matches what we auto-filled
+      if (transferData.raw.receiver === autoFilledValue) {
+        transferData.raw.updateField("receiver", "")
+        autoFilledValue = ""
       }
     }
   }
