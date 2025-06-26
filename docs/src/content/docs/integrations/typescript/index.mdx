@@ -38,7 +38,7 @@ If you need testnet tokens for testing, visit https://app.union.build/faucet and
 
 <Tabs>
   <TabItem label='EVM Based Client'>
-```ts twoslash
+```ts
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient, http } from "@unionlabs/client"
 
@@ -52,7 +52,7 @@ const client = createUnionClient({
   </TabItem>
   
   <TabItem label='Cosmos Based Client'>
-```ts twoslash
+```ts
 import {
   http,
   hexToBytes,
@@ -76,7 +76,7 @@ const client = createUnionClient({
 ```
   </TabItem>
   <TabItem label='Multi-Chain Client'>
-```ts twoslash
+```ts
 import { 
   http, 
   hexToBytes,
@@ -149,7 +149,7 @@ console.info(`Transfer hash: ${transfer.value}`)
 ```
   </TabItem>
   <TabItem label='client.ts'>
-```ts twoslash
+```ts
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient, http } from "@unionlabs/client"
 

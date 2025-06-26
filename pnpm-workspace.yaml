@@ -3,7 +3,3 @@ packages:
   - 'typescript-sdk'
   - 'app2'
   - 'docs'
-
-# Prevent dependencies from being hoisted
-# neverHoist:
-#   - "**/docs/**"
