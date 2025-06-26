@@ -10,12 +10,6 @@ export const publicClientLayer = <
 (
   ...options: ConstructorParameters<typeof SuiClient>
 ): Layer.Layer<Id, Sui.CreatePublicClientError> =>
-  // export const publicClientLayer = <
-  //   T extends Context.Tag<any, Sui.Sui.PublicClient>,
-  // >(tag: T) =>
-  // (
-  //   ...options: ConstructorParameters<typeof SuiClient>
-  // ): Layer.Layer<Sui.Sui.PublicClient, Sui.CreatePublicClientError> =>
   Layer.effect(
     tag,
     pipe(
