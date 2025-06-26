@@ -2,12 +2,11 @@ use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 use tracing::trace;
 
-use crate::indexer::record::InternalChainId;
 use crate::indexer::{
     api::IndexerError,
     event::{create_client_event::CreateClientEvent, types::BlockHeight},
     handler::EventContext,
-    record::ChainContext,
+    record::{ChainContext, InternalChainId},
 };
 
 pub struct CreateClientRecord {
