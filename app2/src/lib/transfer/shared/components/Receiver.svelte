@@ -73,20 +73,23 @@ let hasWalletAddress = $derived(
   destinationChain && Option.isSome(wallets.getAddressForChain(destinationChain)),
 )
 
+let autoFilledValue = $state("")
+
 $effect(() => {
   if (destinationChain && destinationChainId) {
-    // Direct dependency on wallets store - effect re-runs when wallets change
     const walletAddress = wallets.getAddressForChain(destinationChain)
 
     if (Option.isSome(walletAddress)) {
-      // Wallet connected - auto-fill receiver if empty
+      // wallet connected - auto-fill receiver if empty
       if (!transferData.raw.receiver) {
         transferData.raw.updateField("receiver", walletAddress.value)
+        autoFilledValue = walletAddress.value
       }
     } else {
-      // No wallet connected - clear receiver if it has a value
-      if (transferData.raw.receiver) {
+      // no wallet connected - only clear if receiver matches what we auto-filled
+      if (transferData.raw.receiver === autoFilledValue) {
         transferData.raw.updateField("receiver", "")
+        autoFilledValue = ""
       }
     }
   }
