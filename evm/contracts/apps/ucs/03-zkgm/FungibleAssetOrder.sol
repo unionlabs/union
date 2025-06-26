@@ -201,6 +201,84 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         );
     }
 
+    function _marketMakerFillV2(
+        IBCPacket calldata packet,
+        address caller,
+        address relayer,
+        bytes calldata relayerMsg,
+        address quoteToken,
+        address payable receiver,
+        FungibleAssetOrderV2 calldata order,
+        bool intent
+    ) internal returns (bytes memory) {
+        uint256 quoteAmount = order.quoteAmount;
+        // We want the top level handler in onRecvPacket to know we need to
+        // revert for another MM to get a chance to fill. If we revert now
+        // the entire packet would be considered to be "failed" and refunded
+        // at origin, which we want to avoid.
+        // Hence, in case of transfer failure, we yield the ack to notify the onRecvPacket.
+
+        // Special case for gas station where the user is asking for native
+        // gas token. The MM has to provide WETH funds that will be
+        // unwrapped, avoiding us from having to manage msg.value accross
+        // the stack.
+        if (quoteToken == ZkgmLib.NATIVE_TOKEN_ERC_7528_ADDRESS) {
+            if (quoteAmount > 0) {
+                // Transfert to protocol.
+                if (
+                    !WETH.trySafeTransferFrom(caller, address(this), quoteAmount)
+                ) {
+                    return ZkgmLib.ACK_ERR_ONLYMAKER;
+                }
+                // Unwrap and send.
+                WETH.withdraw(quoteAmount);
+                // We allow this call to fail because in such case the MM was
+                // able to provide the funds. A failure ACK will be written and
+                // refund will happen.
+                receiver.sendValue(quoteAmount);
+            }
+        } else {
+            bool solver = ZkgmLib.isSolver(quoteToken);
+            if (solver) {
+                // Even if the quote amount is zero, this may be some sort of
+                // mechanism to interact with a contract, hence, we allows the
+                // call to happen because the solver may constraint the
+                // execution.
+                (bool success,,) = quoteToken.tryCall(
+                    0,
+                    gasleft(),
+                    type(uint16).max,
+                    abi.encodeCall(
+                        ISolver.solve,
+                        (packet, order, caller, relayer, relayerMsg, intent)
+                    )
+                );
+                if (!success) {
+                    return ZkgmLib.ACK_ERR_ONLYMAKER;
+                }
+            } else if (quoteAmount > 0) {
+                if (
+                    !IERC20(quoteToken).trySafeTransferFrom(
+                        caller, receiver, quoteAmount
+                    )
+                ) {
+                    return ZkgmLib.ACK_ERR_ONLYMAKER;
+                }
+            }
+        }
+
+        return ZkgmLib.encodeFungibleAssetOrderAck(
+            FungibleAssetOrderAck({
+                fillType: ZkgmLib.FILL_TYPE_MARKETMAKER,
+                // The relayer has to provide it's maker address using the
+                // relayerMsg. This address is specific to the counterparty
+                // chain and is where the protocol will pay back the base amount
+                // on acknowledgement.
+                marketMaker: relayerMsg
+            })
+        );
+    }
+
     function _deployWrappedTokenV2(
         uint32 channelId,
         uint256 path,
@@ -345,8 +423,15 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
         // if the currently executing packet hash had been registered as sent on
         // the source. In other words, the market maker is unable to lie.
         if (intent) {
-            return _marketMakerFill(
-                caller, relayerMsg, quoteToken, receiver, order.quoteAmount
+            return _marketMakerFillV2(
+                ibcPacket,
+                caller,
+                relayer,
+                relayerMsg,
+                quoteToken,
+                receiver,
+                order,
+                intent
             );
         }
 
@@ -436,8 +521,15 @@ contract UCS03ZkgmFungibleAssetOrderImpl is
             // We also allow market makers to fill orders after finality. This
             // allow orders that combines protocol and mm filling (wrapped vs
             // non wrapped assets).
-            return _marketMakerFill(
-                caller, relayerMsg, quoteToken, receiver, order.quoteAmount
+            return _marketMakerFillV2(
+                ibcPacket,
+                caller,
+                relayer,
+                relayerMsg,
+                quoteToken,
+                receiver,
+                order,
+                intent
             );
         }
     }
