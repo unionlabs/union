@@ -364,7 +364,7 @@ contract ZkgmTests is Test {
         )
     });
 
-    function setUp() public {
+    function setUp() public virtual {
         weth = new TestWETH();
         erc20 = new TestERC20("Test", "T", 18);
         handler = new TestIBCHandler();
@@ -5266,8 +5266,7 @@ contract ZkgmTests is Test {
                         governanceToken: hex"BABE",
                         governanceTokenMetadataImage: bytes32(uint256(0x123)),
                         sender: abi.encodePacked(staker),
-                        validator: validator,
-                        amount: amount
+                        validator: validator
                     })
                 )
             })
@@ -5318,8 +5317,7 @@ contract ZkgmTests is Test {
                         governanceToken: hex"BABE",
                         governanceTokenMetadataImage: bytes32(uint256(0x123)),
                         sender: abi.encodePacked(staker),
-                        validator: validator,
-                        amount: amount
+                        validator: validator
                     })
                 )
             })
@@ -5741,8 +5739,7 @@ contract ZkgmTests is Test {
                                     governanceToken: hex"BABE",
                                     governanceTokenMetadataImage: bytes32(uint256(0x123)),
                                     sender: abi.encodePacked(staker),
-                                    validator: validator,
-                                    amount: amount
+                                    validator: validator
                                 })
                             )
                         })
@@ -6058,8 +6055,7 @@ contract ZkgmTests is Test {
                                     governanceToken: hex"BABE",
                                     governanceTokenMetadataImage: bytes32(uint256(0x123)),
                                     sender: abi.encodePacked(staker),
-                                    validator: validator,
-                                    amount: amount
+                                    validator: validator
                                 })
                             )
                         })
