@@ -21,17 +21,23 @@ use crate::{
             hubble::HubbleEvent,
             supported::SupportedBlockEvent,
             types::{
-                BlockHeight, InternalChainId, MessageHash, MessageSequence, NatsConsumerSequence,
+                BlockHeight, MessageHash, MessageSequence, NatsConsumerSequence,
                 NatsStreamSequence, UniversalChainId,
             },
         },
         nats::MessageMeta,
-        postgres::block_update::{
-            get_block_updates, insert_block_update, max_event_height, update_block_update,
+        postgres::{
+            block_update::{
+                get_block_updates, insert_block_update, max_event_height, update_block_update,
+            },
+            chain_context::fetch_chain_context_for_universal_chain_id,
+            replication_reset::schedule_replication_reset,
         },
-        record::event_handler::{delete_event_data_at_height, handle_block_events},
+        record::{
+            event_handler::{delete_event_data_at_height, handle_block_events},
+            ChainContext,
+        },
     },
-    postgres::{fetch_internal_chain_id_for_universal_chain_id, schedule_replication_reset},
     utils::human_readable::human_readable_bytes,
 };
 
@@ -120,6 +126,10 @@ impl<T: FetcherClient> Indexer<T> {
         debug!("begin");
         let mut tx = self.pg_pool.begin().await?;
 
+        // todo: after splitting hubble load upon begin
+        let chain_context =
+            fetch_chain_context_for_universal_chain_id(&mut tx, &self.universal_chain_id).await?;
+
         debug!(
             "got message {message_meta} with payload size {}",
             payload.len(),
@@ -201,7 +211,7 @@ impl<T: FetcherClient> Indexer<T> {
         let mut did_schedule_replication_reset = false;
 
         for action in actions {
-            let data_changed = process(&mut tx, &action).await?;
+            let data_changed = process(&mut tx, &chain_context, &action).await?;
 
             let should_schedule_reset = !did_schedule_replication_reset
                 && data_changed
@@ -209,12 +219,7 @@ impl<T: FetcherClient> Indexer<T> {
 
             debug!("handling {action} - reset replication => {should_schedule_reset} (d: {did_schedule_replication_reset}, c: {data_changed}, h: {}, m: {max_event_height})", action.height());
             if should_schedule_reset {
-                schedule_replication_reset_for_action(
-                    &mut tx,
-                    &message_meta.universal_chain_id,
-                    action,
-                )
-                .await?;
+                schedule_replication_reset_for_action(&mut tx, &chain_context, action).await?;
 
                 did_schedule_replication_reset = true;
             }
@@ -231,13 +236,12 @@ impl<T: FetcherClient> Indexer<T> {
 // return true if data was changed. this is use to determine if a sync reset is required (will be removed when removing sync process)
 async fn process<'a>(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
+    chain_context: &ChainContext,
     action: &Action<'a>,
 ) -> Result<bool, IndexerError> {
     info!("handling {action}");
 
     let height = action.height();
-    let internal_chain_id =
-        fetch_internal_chain_id_for_universal_chain_id(tx, &action.universal_chain_id()).await?;
 
     Ok(match action {
         Action::Delete(message_meta, current) => {
@@ -252,7 +256,7 @@ async fn process<'a>(
             };
 
             update_block_update(tx, new).await?;
-            delete_block(tx, internal_chain_id, height).await?
+            delete_block(tx, &chain_context, height).await?
         }
         Action::Update(message_meta, current, block_events) => {
             let new = BlockUpdate {
@@ -267,8 +271,8 @@ async fn process<'a>(
 
             update_block_update(tx, new).await?;
 
-            delete_block(tx, internal_chain_id, height).await?;
-            insert_block(tx, internal_chain_id, block_events).await?
+            delete_block(tx, &chain_context, height).await?;
+            insert_block(tx, &chain_context, block_events).await?
         }
         Action::Insert(_, new, block_events) => {
             insert_block_update(tx, new).await?;
@@ -276,40 +280,37 @@ async fn process<'a>(
             // we don't have records before introducing nats, so we need to delete be sure no
             // old data exists. ultimately we can generate block-update records for each known
             // block so this it not required
-            delete_block(tx, internal_chain_id, height).await?;
-            insert_block(tx, internal_chain_id, block_events).await?
+            delete_block(tx, &chain_context, height).await?;
+            insert_block(tx, &chain_context, block_events).await?
         }
     })
 }
 
 async fn delete_block(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
-    internal_chain_id: InternalChainId,
+    chain_context: &ChainContext,
     height: BlockHeight,
 ) -> Result<bool, IndexerError> {
-    delete_event_data_at_height(tx, internal_chain_id, height).await
+    delete_event_data_at_height(tx, chain_context.internal_chain_id, height).await
 }
 
 async fn insert_block(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
-    internal_chain_id: InternalChainId,
+    chain_context: &ChainContext,
     block_events: &[&SupportedBlockEvent],
 ) -> Result<bool, IndexerError> {
-    handle_block_events(tx, internal_chain_id, block_events).await
+    handle_block_events(tx, chain_context, block_events).await
 }
 
 async fn schedule_replication_reset_for_action<'a>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    universal_chain_id: &UniversalChainId,
+    chain_context: &ChainContext,
     action: Action<'a>,
 ) -> Result<(), IndexerError> {
-    let internal_chain_id =
-        fetch_internal_chain_id_for_universal_chain_id(tx, universal_chain_id).await?;
-
     schedule_replication_reset(
         tx,
-        internal_chain_id,
-        action.height().pg_value()?,
+        chain_context,
+        action.height(),
         &format!("block reorg ({action})"),
     )
     .await?;
@@ -338,16 +339,6 @@ impl<'a> Action<'a> {
             Action::Delete(_, block_update) => block_update.height,
             Action::Update(_, block_update, _) => block_update.height,
             Action::Insert(_, block_update, _) => block_update.height,
-        }
-    }
-}
-
-impl<'a> Action<'a> {
-    fn universal_chain_id(&self) -> UniversalChainId {
-        match self {
-            Action::Delete(_, block_update) => block_update.universal_chain_id.clone(),
-            Action::Update(_, block_update, _) => block_update.universal_chain_id.clone(),
-            Action::Insert(_, block_update, _) => block_update.universal_chain_id.clone(),
         }
     }
 }

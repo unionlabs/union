@@ -16,10 +16,10 @@ impl EthFetcherClient {
         Ok(vec![SupportedBlockEvent::CreateLensClient {
             inner: CreateLensClientEvent {
                 header: log.header()?,
-                client_id: log.client_id()?,
-                l1_client_id: log.l1_client_id()?,
-                l2_client_id: log.l2_client_id()?,
-                l2_chain_id: log.l2_chain_id()?,
+                client_id: log.event.client_id()?,
+                l1_client_id: log.event.l1_client_id()?,
+                l2_client_id: log.event.l2_client_id()?,
+                l2_chain_id: log.event.l2_chain_id()?,
             },
         }])
     }
