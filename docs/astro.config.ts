@@ -340,6 +340,11 @@ export default defineConfig({
               link: "/reference/graphql",
               badge: { text: "new", variant: "success" },
             },
+            {
+              label: "Typescript SDK",
+              autogenerate: { directory: "/reference/ts-sdk" },
+              badge: { text: "evolving", variant: "caution" },
+            },
           ],
         },
       ],

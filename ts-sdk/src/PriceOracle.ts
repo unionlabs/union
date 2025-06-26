@@ -1,14 +1,9 @@
 /**
- * Determine pricing of given token representations.
+ * This module provides a service for determining USD pricing of a given chain's gas denomination.
  *
- * TODO:
- * - Use [ExecutionPlan](https://effect.website/blog/releases/effect/316/#executionplan-module)
- *   to fallback to different pricing sources.
- * - Can `Pricing.Default` layer expose the execution plan?
- * - Make mainnet vs testnet distinction.
- * - (optional) Match selection of potential services by chain if source is chain-specific.
- * - (optional) Allow for choosing localized currency such as not to hardcode USD.
+ * @since 2.0.0
  */
+
 import {
   FetchHttpClient,
   HttpClient,
@@ -38,12 +33,22 @@ import { absurd, constTrue, flow, pipe } from "effect/Function"
 import { GAS_DENOMS } from "./constants/gas-denoms.js"
 import { UniversalChainId } from "./schema/chain.js"
 
+/**
+ * @category errors
+ * @since 2.0.0
+ */
 export class PriceError extends Data.TaggedError("@unionlabs/sdk/PriceOracle/PriceError")<{
   message: string
   source: string
   cause?: unknown
 }> {}
 
+/**
+ * Details about the source of pricing data.
+ *
+ * @category models
+ * @since 2.0.0
+ */
 export const PriceSource = S.Struct({
   url: S.URL,
   metadata: S.Option(S.Record({
@@ -51,8 +56,16 @@ export const PriceSource = S.Struct({
     value: S.Any,
   })),
 })
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type PriceSource = typeof PriceSource.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const PriceResult = S.Struct({
   price: S.BigDecimalFromNumber.pipe(
     S.positiveBigDecimal(),
@@ -63,9 +76,19 @@ export const PriceResult = S.Struct({
   ),
   source: PriceSource,
 })
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type PriceResult = typeof PriceResult.Type
 
+/**
+ * @since 2.0.0
+ */
 export declare namespace PriceOracle {
+  /**
+   * @since 2.0.0
+   */
   export interface Service {
     readonly of: (id: UniversalChainId) => Effect.Effect<PriceResult, PriceError>
     readonly ratio: (from: UniversalChainId, to: UniversalChainId) => Effect.Effect<{
@@ -77,6 +100,9 @@ export declare namespace PriceOracle {
   }
 }
 
+/**
+ * @since 2.0.0
+ */
 export class PriceOracle extends Context.Tag("@unionlabs/sdk/PriceOracle")<
   PriceOracle,
   PriceOracle.Service
@@ -602,6 +628,9 @@ export const Band = Layer.effect(
   }),
 )
 
+/**
+ * @since 2.0.0
+ */
 export const LivePlan = ExecutionPlan.make(
   {
     provide: Pyth,
@@ -621,6 +650,9 @@ export const LivePlan = ExecutionPlan.make(
 )
 
 // TODO: rename to just "Executor" 8)
+/**
+ * @since 2.0.0
+ */
 export class PriceOracleExecutor
   extends Effect.Service<PriceOracle>()("@unionlabs/sdk/PriceOracle", { // XXX: is this a sin?
     effect: Effect.gen(function*() {
