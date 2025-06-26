@@ -11,29 +11,46 @@ import { encodeAbiParameters } from "viem"
 import { Hex, HexChecksum } from "./schema/hex.js"
 import * as Ucs03 from "./Ucs03.js"
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 const Version = S.NonNegativeInt
+/**
+ * @category models
+ * @since 2.0.0
+ */
 type Version = typeof Version.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 const OpCode = S.NonNegativeInt
+/**
+ * @category models
+ * @since 2.0.0
+ */
 type OpCode = typeof OpCode.Type
 
-const Operand = S.Union(
-  // [`0x${string}`, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
-  S.Tuple(Hex, S.BigIntFromSelf, S.Struct({ version: Version, opcode: OpCode, operand: Hex })),
-  // [number, number, `0x${string}`]
-  S.Tuple(S.Number, S.Number, Hex),
-  // [bigint, bigint, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
-  S.Tuple(
-    S.BigIntFromSelf,
-    S.BigIntFromSelf,
-    S.BigIntFromSelf,
-    S.Struct({ version: Version, opcode: OpCode, operand: Hex }),
-  ),
-  // [`0x${string}`, boolean, `0x${string}`, `0x${string}`]
+/**
+ * @category models
+ * @since 2.0.0
+ */
+const MultiplexOperand = S.Union(
   S.Tuple(Hex, S.Boolean, Hex, Hex),
-  // [readonly { version: number; opcode: number; operand: `0x${string}`; }[]]
-  S.Tuple(S.Array(S.Struct({ version: Version, opcode: OpCode, operand: Hex }))),
-  // [`0x${string}`, `0x${string}`, `0x${string}`, bigint, string, string, number, bigint, `0x${string}`, bigint]
+)
+/**
+ * @category models
+ * @since 2.0.0
+ */
+type MultiplexOperand = typeof MultiplexOperand.Type
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+const FungibleAssetOrderOperand = S.Union(
   S.Tuple(
     Hex,
     Hex,
@@ -46,13 +63,48 @@ const Operand = S.Union(
     HexChecksum,
     S.BigIntFromSelf,
   ),
+)
+/**
+ * @category models
+ * @since 2.0.0
+ */
+type FungibleAssetOrderOperand = typeof FungibleAssetOrderOperand.Type
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export const Operand = S.Union(
+  // [`0x${string}`, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
+  S.Tuple(Hex, S.BigIntFromSelf, S.Struct({ version: Version, opcode: OpCode, operand: Hex })),
+  // [number, number, `0x${string}`]
+  S.Tuple(S.Number, S.Number, Hex),
+  // [bigint, bigint, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
+  S.Tuple(
+    S.BigIntFromSelf,
+    S.BigIntFromSelf,
+    S.BigIntFromSelf,
+    S.Struct({ version: Version, opcode: OpCode, operand: Hex }),
+  ),
+  MultiplexOperand,
+  // [readonly { version: number; opcode: number; operand: `0x${string}`; }[]]
+  S.Tuple(S.Array(S.Struct({ version: Version, opcode: OpCode, operand: Hex }))),
+  FungibleAssetOrderOperand,
   // [bigint, `0x${string}`]
   S.Tuple(S.BigIntFromSelf, Hex),
   // [readonly `0x${string}`[]]
   S.Tuple(S.NonEmptyArray(Hex)),
 )
-type Operand = typeof Operand.Type
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export type Operand = typeof Operand.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export class Forward extends S.TaggedClass<Forward>()("Forward", {
   opcode: S.Literal(0).pipe(
     S.optional,
@@ -83,6 +135,10 @@ export class Forward extends S.TaggedClass<Forward>()("Forward", {
   ),
 }) {}
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export class Multiplex extends S.TaggedClass<Multiplex>()("Multiplex", {
   opcode: S.Literal(1).pipe(
     S.optional,
@@ -98,9 +154,13 @@ export class Multiplex extends S.TaggedClass<Multiplex>()("Multiplex", {
       decoding: () => 0 as const,
     }),
   ),
-  operand: Operand.pipe(S.itemsCount(4)),
+  operand: MultiplexOperand,
 }) {}
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export class Batch extends S.TaggedClass<Batch>()("Batch", {
   opcode: S.Literal(2).pipe(
     S.optional,
@@ -119,6 +179,10 @@ export class Batch extends S.TaggedClass<Batch>()("Batch", {
   operand: S.NonEmptyArray(S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema)),
 }) {}
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()("FungibleAssetOrder", {
   opcode: S.Literal(3).pipe(
     S.optional,
@@ -134,11 +198,19 @@ export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()("Fun
       decoding: () => 1 as const,
     }),
   ),
-  operand: Operand,
+  operand: FungibleAssetOrderOperand,
 }) {}
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type Schema = Forward | Multiplex | Batch | FungibleAssetOrder
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 type SchemaEncoded =
   | {
     readonly _tag: "Forward"
@@ -155,20 +227,72 @@ type SchemaEncoded =
   }
   | typeof FungibleAssetOrder.Encoded
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const Schema = S.Union(Forward, Multiplex, Batch, FungibleAssetOrder)
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const Instruction = Data.taggedEnum<Instruction>()
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type Instruction = typeof Schema.Type
 
-export const {
-  $match: match,
-  $is: is,
-  Forward: ForwardRaw,
-  Multiplex: MultiplexRaw,
-  Batch: BatchRaw,
-  FungibleAssetOrder: FungibleAssetOrderRaw,
-} = Instruction
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const match = Instruction.$match
+/**
+ * @example
+ * import { Instruction } from "@unionlabs/sdk"
+ * import * as fc from "effect/FastCheck"
+ * import * as Arbitrary from "effect/Arbitrary"
+ *
+ * const m: Instruction.Multiplex = fc.sample(Arbitrary.make(Instruction.Multiplex), 1)[0]
+ * const b: Instruction.Batch = fc.sample(Arbitrary.make(Instruction.Batch), 1)[0]
+ *
+ * const isMultiplex = Instruction.is("Multiplex")
+ *
+ * assert.strictEqual(isMultiplex(m), true)
+ * assert.strictEqual(isMultiplex(b), false)
+ *
+ * @category utils
+ * @since 2.0.0
+ */
+export const is = Instruction.$is
 
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const ForwardRaw = Instruction.Forward
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const MultiplexRaw = Instruction.Multiplex
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const BatchRaw = Instruction.Batch
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const FungibleAssetOrderRaw = Instruction.FungibleAssetOrder
+
+/**
+ * @category utils
+ * @since 2.0.0
+ */
 export const encodeAbi: (_: Instruction) => Hex = Instruction.$match({
   Forward: ({ operand }) =>
     encodeAbiParameters(Ucs03.ForwardAbi(), [
