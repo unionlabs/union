@@ -1,22 +1,77 @@
 diff --git a/bin.cjs b/bin.cjs
-index d38c42763c39fddc36a12edccab423f5c313f55b..a75c28d87b51d6d7dd285b9726be3a010fb68dad 100755
+index d38c42763c39fddc36a12edccab423f5c313f55b..1a43c5ca530ad1ade3568aa7ec0b9edcb09ca5c2 100755
 --- a/bin.cjs
 +++ b/bin.cjs
-@@ -297082,7 +297082,16 @@ var printMeta = (title, order) => MarkdownPrinter.paragraph(
+@@ -297022,7 +297022,7 @@ var MarkdownPrinter = {
+ };
+ var printSince = match2({
+   onNone: () => "",
+-  onSome: (v) => MarkdownPrinter.paragraph(`Added in v${v}`)
++  onSome: (v) => MarkdownPrinter.paragraph(`*Added in [v${v}](https://github.com/unionlabs/union/releases/tag/@unionlabs/sdk@${v})*`)
+ });
+ var printTitle = (s, deprecated, type2) => {
+   const name = s.trim() === "hasOwnProperty" ? `${s} (function)` : s;
+@@ -297039,7 +297039,13 @@ var printSignature = (s) => MarkdownPrinter.paragraph(MarkdownPrinter.bold("Sign
+ var printSignatures = (ss) => MarkdownPrinter.paragraph(MarkdownPrinter.bold("Signature")) + MarkdownPrinter.paragraph(MarkdownPrinter.fence("```ts", ss.join("\n"), "```"));
+ var printExamples = (es) => es.map(
+   ({ body, fences }) => MarkdownPrinter.paragraph(MarkdownPrinter.bold("Example")) + MarkdownPrinter.paragraph(
+-    MarkdownPrinter.fence(fences?.start ?? "```ts", body, fences?.end ?? "```")
++    MarkdownPrinter.fence([
++      "```ts twoslash",
++      "/// <reference types=\"effect\" />",
++      "// @paths: {\"@unionlabs/sdk\": [\"../ts-sdk/src\"], \"@unionlabs/sdk/*\": [\"../ts-sdk/src/*\"]}",
++      "import * as assert from \"node:assert\"",
++      "// ---cut---"
++    ].join("\n"), body, fences?.end ?? "```")
+   )
+ ).join("\n\n");
+ var printStaticMethod = (m) => MarkdownPrinter.paragraph(
+@@ -297070,7 +297076,6 @@ var printProperties = (properties) => map3(
+   (property) => printProperty(property) + "\n\n"
+ ).join("");
+ var printModuleDescription = (module2) => MarkdownPrinter.paragraph(
+-  MarkdownPrinter.h2(printTitle(module2.name, module2.deprecated, "overview")),
+   printDescription(module2.description),
+   printExamples(module2.examples),
+   printSince(module2.since)
+@@ -297082,10 +297087,16 @@ var printMeta = (title, order) => MarkdownPrinter.paragraph(
    `title: ${title}`,
    `
  `,
 -  `nav_order: ${order}`,
-+  `order: ${order}`,
++  `sidebar:`,
+   `
+ `,
+-  `parent: Modules`,
++  `  order: ${order}`,
 +  `
 +`,
 +  `tableOfContents:`,
 +  `
 +`,
 +  `  minHeadingLevel: 1`,
-+  `
-+`,
-+  `  maxHeadingLevel: 3`,
    `
  `,
-   `parent: Modules`,
+   "---"
+@@ -297233,9 +297244,9 @@ var printModule = (module2, order) => gen2(function* (_) {
+     [
+       header,
+       description,
+-      "---\n",
+-      tableOfContents(content),
+-      "---\n",
++      // "---\n",
++      // tableOfContents(content),
++      // "---\n",
+       content
+     ].join("\n")
+   ));
+@@ -297403,7 +297414,7 @@ var parseExample = (body) => {
+   return {
+     body: example?.groups?.body ?? "",
+     fences: {
+-      start: example?.groups?.fenceStart?.trim() ?? "```ts",
++      start: example?.groups?.fenceStart?.trim() ?? "```ts twoslash",
+       end: example?.groups?.fenceEnd?.trim() ?? "```"
+     }
+   };
