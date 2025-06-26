@@ -1,3 +1,8 @@
+/**
+ * This module handles EVM related functionality.
+ *
+ * @since 2.0.0
+ */
 import { Context, Data, Effect } from "effect"
 import { type Address, erc20Abi } from "viem"
 import { GAS_DENOMS } from "./constants/gas-denoms.js"
@@ -326,36 +331,6 @@ export class CreateWalletClientError
     cause: CreateWalletClientErrorType
   }>
 {}
-
-/**
- * @category utils
- * @since 2.0.0
- */
-export const createViemPublicClient = (
-  parameters: PublicClientConfig,
-): Effect.Effect<ViemPublicClient, CreatePublicClientError> =>
-  Effect.try({
-    try: () => createPublicClient(parameters),
-    catch: err =>
-      new CreatePublicClientError({
-        cause: extractErrorDetails(err as CreatePublicClientErrorType),
-      }),
-  })
-
-/**
- * @category utils
- * @since 2.0.0
- */
-export const createViemWalletClient = (
-  parameters: WalletClientConfig,
-): Effect.Effect<ViemWalletClient, CreateWalletClientError> =>
-  Effect.try({
-    try: () => createWalletClient(parameters),
-    catch: err =>
-      new CreateWalletClientError({
-        cause: extractErrorDetails(err as CreateWalletClientErrorType),
-      }),
-  })
 
 /**
  * Read ERC20 token metadata (name, symbol, decimals)
