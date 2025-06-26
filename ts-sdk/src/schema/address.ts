@@ -1,6 +1,6 @@
 import { pipe } from "effect"
 import * as S from "effect/Schema"
-import { isAddress } from "viem"
+import { Address, checksumAddress, isAddress } from "viem"
 import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "./bech32.js"
 import { Hex, HexChecksum, HexFromString } from "./hex.js"
 
@@ -47,7 +47,7 @@ export const AddressAptosDisplay = AddressAptosCanonical
 export const AddressAptosZkgm = AddressAptosCanonical
 
 export const ERC55 = S.NonEmptyString.pipe(
-  S.filter(a => isAddress(a, { strict: true }), {
+  S.filter(a => isAddress(a, { strict: true }) && checksumAddress(a as Address) === a, {
     description: "a string matching ERC-55 in checksum format",
   }),
 )
