@@ -96,3 +96,9 @@ sentinel2/sentinel.db
 # AI
 CLAUDE.md
 .claude/
+
+# ts-sdk
+ts-sdk/build
+ts-sdk/dist
+ts-sdk/docs
+docs/src/content/docs/reference/ts-sdk

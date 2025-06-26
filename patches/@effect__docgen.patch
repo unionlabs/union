@@ -1,0 +1,22 @@
+diff --git a/bin.cjs b/bin.cjs
+index d38c42763c39fddc36a12edccab423f5c313f55b..a75c28d87b51d6d7dd285b9726be3a010fb68dad 100755
+--- a/bin.cjs
++++ b/bin.cjs
+@@ -297082,7 +297082,16 @@ var printMeta = (title, order) => MarkdownPrinter.paragraph(
+   `title: ${title}`,
+   `
+ `,
+-  `nav_order: ${order}`,
++  `order: ${order}`,
++  `
++`,
++  `tableOfContents:`,
++  `
++`,
++  `  minHeadingLevel: 1`,
++  `
++`,
++  `  maxHeadingLevel: 3`,
+   `
+ `,
+   `parent: Modules`,
