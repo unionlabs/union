@@ -14,10 +14,6 @@ const config: ViteUserConfig = {
       concurrent: true,
     },
     include: ["test/**/*.test.ts"],
-    alias: {
-      ["@unionlabs/sdk/test"]: path.join(__dirname, "ts-sdk", "test"),
-      ["@unionlabs/sdk"]: path.join(__dirname, "ts-sdk", "src"),
-    },
   },
 }
 
