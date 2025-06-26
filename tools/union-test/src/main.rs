@@ -102,6 +102,7 @@ async fn main() -> anyhow::Result<()> {
 
     let opened = ctx
         .open_channels(
+            true,
             "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
             hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
             conn_confirm.connection_id,

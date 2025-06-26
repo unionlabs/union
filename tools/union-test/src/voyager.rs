@@ -9,7 +9,7 @@ pub fn create_client(
     ibc_interface: String,
     client_type: String,
 ) -> anyhow::Result<()> {
-    Command::new("./target/debug/voyager")
+    Command::new("/home/kaancaglan/dev/union/target/debug/voyager")
         .args([
             "--config-file-path",
             "voyager/config.jsonc",
@@ -32,7 +32,7 @@ pub fn create_client(
 }
 
 pub fn init_fetch(on: ChainId) -> anyhow::Result<()> {
-    Command::new("./target/debug/voyager")
+    Command::new("/home/kaancaglan/dev/union/target/debug/voyager")
         .args([
             "--config-file-path",
             "voyager/config.jsonc",
@@ -49,7 +49,7 @@ pub fn connection_open(
     client_id: u32,
     counterparty_client_id: u32,
 ) -> anyhow::Result<()> {
-    Command::new("./target/debug/voyager")
+    Command::new("/home/kaancaglan/dev/union/target/debug/voyager")
         .args([
             "--config-file-path",
             "voyager/config.jsonc",
@@ -72,7 +72,7 @@ pub fn channel_open(
         "Opening channel on {}: port_id={}, counterparty_port_id={}, connection_id={}, version={}",
         chain_id, port_id, counterparty_port_id, connection_id, version
     );
-    Command::new("./target/debug/voyager")
+    Command::new("/home/kaancaglan/dev/union/target/debug/voyager")
         .args([
             "q",
             "e",

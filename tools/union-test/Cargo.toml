@@ -33,5 +33,12 @@ cometbft-rpc = { workspace = true }
 cosmos-sdk-event = { workspace = true }
 serde-utils = { workspace = true }
 
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt"] }
+serial_test = "0.5"
+once_cell = "1.17"
+
+
 [lints]
 workspace = true
