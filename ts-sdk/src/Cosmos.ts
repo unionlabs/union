@@ -270,41 +270,6 @@ export function getBalanceNow(
 }
 
 /**
- * Creates a CosmWasmClient from a given RPC endpoint
- *
- * @param rpcEndpoint - The RPC endpoint to connect to
- * @returns An Effect that resolves to a CosmWasmClient
- *
- * @category utils
- * @since 2.0.0
- */
-export const createCosmWasmClient = (rpcEndpoint: string) =>
-  Effect.tryPromise({
-    try: () => CosmWasmClient.connect(rpcEndpoint),
-    catch: error => new ClientError({ cause: extractErrorDetails(error as Error) }),
-  }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
-
-/**
- * Creates a SigningCosmWasmClient from a given RPC endpoint and wallet
- *
- * @param rpcEndpoint - The RPC endpoint to connect to
- * @param signer - The signer to use for transactions
- * @returns An Effect that resolves to a SigningCosmWasmClient
- *
- * @category utils
- * @since 2.0.0
- */
-export const createSigningCosmWasmClient = (
-  rpcEndpoint: string,
-  signer: any,
-  options: SigningCosmWasmClientOptions,
-) =>
-  Effect.tryPromise({
-    try: () => SigningCosmWasmClient.connectWithSigner(rpcEndpoint, signer, options),
-    catch: error => new ClientError({ cause: extractErrorDetails(error as Error) }),
-  }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
-
-/**
  * Error type for HttpRequest execution failures
  *
  * @category errors

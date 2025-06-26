@@ -18,24 +18,31 @@ _: {
         nodePackages_latest.nodejs
         pnpm_10
       ];
+      pnpm = pkgs.pnpm_10;
     in
     {
       packages = {
         docs = mkCi false (
           buildPnpmPackage {
-            src = ./.;
-            srcs = [
-              ./.
-              ./../versions/.
-              ./../deployments/.
-            ];
+            inherit pnpm;
+            # src = ./.;
+            # srcs = [
+            #   ./.
+            #   ./../versions/.
+            #   ./../deployments/.
+            # ];
             extraSrcs = [
+              ../docs
               ../ts-sdk
+              ../scripts
+              ../versions
+              ../deployments
             ];
-            hash = "sha256-lt/GIKw/HGmsNLmw0MpKlcEcnM92HMrGDcrvgVpnSr4=";
+            hash = "sha256-H6c1DM2jPZPAvAMVqsQi3Twnz1znDA7lz7G+bKwPMV8=";
             packageJsonPath = ./package.json;
-            sourceRoot = "docs";
+            # sourceRoot = "docs";
             pnpmWorkspaces = [
+              "docs"
               "@unionlabs/sdk"
             ];
             nativeBuildInputs = deps;
@@ -45,8 +52,13 @@ _: {
               export PUPPETEER_SKIP_DOWNLOAD=1
               export ASTRO_TELEMETRY_DISABLED=1
               export NODE_OPTIONS="--no-warnings"
+              pnpm run docgen
               pnpm --filter=docs build
               runHook postBuild
+            '';
+            installPhase = ''
+              mkdir -p $out
+              cp -r ./docs/dist/* $out
             '';
             doDist = false;
           }

@@ -8,12 +8,13 @@
     "src/generated/**/*",
     "src/graphql/**/*",
     "src/internal/**/*.ts",
+    "src/schema/**/*",
     "src/sui/**/*",
     "src/ucs03/**/*",
     "src/utils/**/*"
   ],
   "srcLink": "https://github.com/unionlabs/union/tree/main/ts-sdk/src/",
-  "enforceVersion": false,
+  "enforceVersion": true,
   "enforceExamples": false,
   "enforceDescriptions": false,
   "examplesCompilerOptions": {
