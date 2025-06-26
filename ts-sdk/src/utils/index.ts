@@ -1,7 +1,6 @@
 import crc32 from "crc/crc32"
 import { Data, Effect, String as Str } from "effect"
 import { fromBytes, fromHex, isHex, toHex } from "viem"
-export { extractErrorDetails } from "./extract-error-details.js"
 
 const CHKSUM_LEN = 4
 
@@ -43,5 +42,3 @@ export const verifySalt = (hex: `0x${string}`): Effect.Effect<boolean> =>
   })
 
 export const ensureHex = <T extends string>(s: T) => (isHex(s) ? s : toHex(s))
-
-export { operationNamesFromDocumentNode } from "./gql.js"
