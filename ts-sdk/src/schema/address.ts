@@ -4,9 +4,19 @@ import { isAddress } from "viem"
 import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "./bech32.js"
 import { Hex, HexChecksum, HexFromString } from "./hex.js"
 
-// For Reference, see: https://docs.union.build/ucs/05
-// We always store bytes arrays as hex-encoded strings
+/**
+ * @remarks
+ * For Reference, see: https://docs.union.build/ucs/05.
+ * We always store bytes arrays as hex-encoded strings.
+ *
+ * @category models
+ * @since 2.0.0
+ */
 export const AddressCanonicalBytes = Hex.pipe(S.brand("CanonicalBytes"))
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type AddressCanonicalBytes = typeof AddressCanonicalBytes.Type
 
 // Cosmos Address Types
@@ -46,11 +56,19 @@ export const AddressAptosCanonical = AddressCanonicalBytes.pipe(S.brand("Address
 export const AddressAptosDisplay = AddressAptosCanonical
 export const AddressAptosZkgm = AddressAptosCanonical
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const ERC55 = S.NonEmptyString.pipe(
   S.filter(a => isAddress(a, { strict: true }), {
     description: "a string matching ERC-55 in checksum format",
   }),
 )
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type ERC55 = typeof ERC55.Type
 
 // TODO: rename me
