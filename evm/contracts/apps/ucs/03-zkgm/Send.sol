@@ -418,9 +418,6 @@ contract UCS03ZkgmSendImpl is Versioned, UCS03ZkgmStore {
         if (!_canUnstake(_stake)) {
             revert ZkgmLib.ErrStakeNotUnstakable();
         }
-        if (_stake.amount != unstake.amount) {
-            revert ZkgmLib.ErrInvalidStakeAmount();
-        }
         if (!_stake.validator.eq(unstake.validator)) {
             revert ZkgmLib.ErrInvalidStakeValidator();
         }

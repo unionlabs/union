@@ -6419,8 +6419,7 @@ contract ZkgmTests is Test {
             governanceToken: bytes("muno"),
             governanceTokenMetadataImage: 0x996be231a091877022ccdbf41da6e2f92e097c0ccc9480f8b3c630e5c2b14ff1,
             sender: abi.encodePacked(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD),
-            validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730",
-            amount: 10
+            validator: hex"756e696f6e76616c6f7065723161737873323935667579376a7068387038657174633272387a78676764633230793776663730"
         });
         Instruction memory inst = Instruction({
             version: ZkgmLib.INSTR_VERSION_0,
