@@ -19,4 +19,5 @@ pub(crate) mod supported;
 pub(crate) mod token_bucket_update_event;
 pub(crate) mod types;
 pub(crate) mod update_client_event;
+pub(crate) mod wallet_mutation_entry_event;
 pub(crate) mod write_ack_event;

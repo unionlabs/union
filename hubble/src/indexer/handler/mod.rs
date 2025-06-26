@@ -16,6 +16,7 @@ pub(crate) mod packet_send_event_handler;
 pub(crate) mod packet_timeout_event_handler;
 pub(crate) mod token_bucket_update_handler;
 pub(crate) mod update_client_handler;
+pub(crate) mod wallet_mutation_entry_event_handler;
 pub(crate) mod write_ack_event_handler;
 
 /// wrapper required until we've migrated to use universal-chain-ids

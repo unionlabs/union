@@ -13,7 +13,8 @@ use crate::indexer::event::{
     create_lens_client_event::CreateLensClientEvent, packet_ack_event::PacketAckEvent,
     packet_recv_event::PacketRecvEvent, packet_send_event::PacketSendEvent,
     packet_timeout_event::PacketTimeoutEvent, token_bucket_update_event::TokenBucketUpdateEvent,
-    types::BlockHeight, update_client_event::UpdateClientEvent, write_ack_event::WriteAckEvent,
+    types::BlockHeight, update_client_event::UpdateClientEvent,
+    wallet_mutation_entry_event::WalletMutationEntryEvent, write_ack_event::WriteAckEvent,
 };
 
 #[warn(clippy::enum_variant_names)]
@@ -162,6 +163,11 @@ pub enum SupportedBlockEvent {
         #[serde(flatten)]
         inner: TokenBucketUpdateEvent,
     },
+    #[serde(rename = "wallet-mutation-entry")]
+    WalletMutationEntry {
+        #[serde(flatten)]
+        inner: WalletMutationEntryEvent,
+    },
 }
 
 impl SupportedBlockEvent {
@@ -189,6 +195,7 @@ impl SupportedBlockEvent {
             SupportedBlockEvent::PacketAck { inner, .. } => inner.header.height,
             SupportedBlockEvent::PacketTimeout { inner, .. } => inner.header.height,
             SupportedBlockEvent::TokenBucketUpdate { inner, .. } => inner.header.height,
+            SupportedBlockEvent::WalletMutationEntry { inner, .. } => inner.header.height,
         }
     }
 }
