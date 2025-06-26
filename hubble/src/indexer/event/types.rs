@@ -305,7 +305,7 @@ impl From<u32> for ChannelId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TimeoutTimestamp(pub u64);
+pub struct TimeoutTimestamp(#[serde(with = "flexible_u64")] pub u64);
 
 impl From<u64> for TimeoutTimestamp {
     fn from(value: u64) -> Self {
@@ -433,6 +433,33 @@ pub struct BlockTimestamp(pub OffsetDateTime);
 
 impl From<OffsetDateTime> for BlockTimestamp {
     fn from(value: OffsetDateTime) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Denom(pub bytes::Bytes);
+
+impl From<bytes::Bytes> for Denom {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Capacity(#[serde(with = "flexible_u64")] pub u64);
+
+impl From<u64> for Capacity {
+    fn from(value: u64) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct RefillRate(#[serde(with = "flexible_u64")] pub u64);
+
+impl From<u64> for RefillRate {
+    fn from(value: u64) -> Self {
         Self(value)
     }
 }

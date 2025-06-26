@@ -6,11 +6,11 @@ use time::OffsetDateTime;
 use crate::indexer::{
     api::IndexerError,
     event::types::{
-        Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, ChannelId,
-        ClientId, ClientType, ConnectionId, EventIndex, Maker, MakerMsg, MessageHash,
-        MessageSequence, NatsConsumerSequence, NatsStreamSequence, PacketData, PacketHash, PortId,
-        TimeoutTimestamp, TransactionEventIndex, TransactionHash, TransactionIndex,
-        UniversalChainId, Version,
+        Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
+        ChannelId, ClientId, ClientType, ConnectionId, Denom, EventIndex, Maker, MakerMsg,
+        MessageHash, MessageSequence, NatsConsumerSequence, NatsStreamSequence, PacketData,
+        PacketHash, PortId, RefillRate, TimeoutTimestamp, TransactionEventIndex, TransactionHash,
+        TransactionIndex, UniversalChainId, Version,
     },
     handler::EventContext,
 };
@@ -30,6 +30,7 @@ pub(crate) mod packet_ack_record;
 pub(crate) mod packet_recv_record;
 pub(crate) mod packet_send_record;
 pub(crate) mod packet_timeout_record;
+pub(crate) mod token_bucket_update_record;
 pub(crate) mod update_client_record;
 pub(crate) mod write_ack_record;
 
@@ -308,6 +309,24 @@ impl BlockTimestamp {
     }
 }
 impl TimeoutTimestamp {
+    pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        Ok(BigDecimal::new(self.0.into(), 0))
+    }
+}
+
+impl Denom {
+    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+
+impl Capacity {
+    pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        Ok(BigDecimal::new(self.0.into(), 0))
+    }
+}
+
+impl RefillRate {
     pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
         Ok(BigDecimal::new(self.0.into(), 0))
     }
