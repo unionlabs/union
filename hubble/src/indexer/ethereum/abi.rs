@@ -72,6 +72,12 @@ pub struct SolEvent {
     pub attributes: HashMap<String, DynSolValue>,
 }
 
+impl Display for SolEvent {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}: {}", self.name, self.keys_as_string())
+    }
+}
+
 pub struct AbiRegistration {
     pub administration: HashMap<Address, Abi>,
 }

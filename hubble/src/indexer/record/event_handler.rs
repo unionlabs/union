@@ -3,10 +3,7 @@ use tracing::{debug, trace};
 
 use crate::indexer::{
     api::IndexerError,
-    event::{
-        supported::SupportedBlockEvent,
-        types::{BlockHeight, InternalChainId},
-    },
+    event::{supported::SupportedBlockEvent, types::BlockHeight},
     record::{
         channel_open_ack_record::ChannelOpenAckRecord,
         channel_open_confirm_record::ChannelOpenConfirmRecord,
@@ -17,8 +14,10 @@ use crate::indexer::{
         connection_open_init_record::ConnectionOpenInitRecord,
         connection_open_try_record::ConnectionOpenTryRecord,
         create_client_record::CreateClientRecord,
-        create_lens_client_record::CreateLensClientRecord,
-        update_client_record::UpdateClientRecord,
+        create_lens_client_record::CreateLensClientRecord, packet_ack_record::PacketAckRecord,
+        packet_recv_record::PacketRecvRecord, packet_send_record::PacketSendRecord,
+        packet_timeout_record::PacketTimeoutRecord, update_client_record::UpdateClientRecord,
+        write_ack_record::WriteAckRecord, ChainContext, InternalChainId,
     },
 };
 
@@ -47,8 +46,8 @@ pub async fn delete_event_data_at_height(
             )
             DELETE FROM v2_evm.logs WHERE internal_chain_id = $1 AND height = $2
             ",
-            internal_chain_id.pg_value()?,
-            height.pg_value()?,
+            internal_chain_id.pg_value_integer()?,
+            height.pg_value_bigint()?,
         )
         .execute(tx.as_mut())
         .await?;
@@ -69,6 +68,11 @@ pub async fn delete_event_data_at_height(
         CreateClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
         CreateLensClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
         UpdateClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        PacketSendRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        PacketRecvRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        WriteAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        PacketAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        PacketTimeoutRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
 
         true
     } else {
@@ -102,8 +106,8 @@ async fn has_event_data_at_height(
         SELECT TRUE AS exists FROM v2_evm.logs WHERE internal_chain_id = $1 AND height = $2
         LIMIT 1
         ",
-        internal_chain_id.pg_value()?,
-        height.pg_value()?,
+        internal_chain_id.pg_value_integer()?,
+        height.pg_value_bigint()?,
     )
     .fetch_optional(tx.as_mut())
     .await?
@@ -113,13 +117,13 @@ async fn has_event_data_at_height(
 
 pub async fn handle_block_events(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    internal_chain_id: InternalChainId,
+    chain_context: &ChainContext,
     block_events: &[&SupportedBlockEvent],
 ) -> Result<bool, IndexerError> {
     let mut any_data_changes = false;
 
     for block_event in block_events {
-        let event_changed_data = handle_block_event(tx, internal_chain_id, block_event).await?;
+        let event_changed_data = handle_block_event(tx, chain_context, block_event).await?;
         any_data_changes |= event_changed_data
     }
 
@@ -128,7 +132,7 @@ pub async fn handle_block_events(
 
 async fn handle_block_event(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    internal_chain_id: InternalChainId,
+    chain_context: &ChainContext,
     block_event: &SupportedBlockEvent,
 ) -> Result<bool, IndexerError> {
     trace!("handling: {block_event:?}");
@@ -148,7 +152,7 @@ async fn handle_block_event(
                 internal_chain_id,
                 block_hash,
                 data,
-                height.pg_value()?,
+                height.pg_value_bigint()?,
                 time
             )
             .execute(tx.as_mut())
@@ -183,7 +187,7 @@ async fn handle_block_event(
             ",
                 internal_chain_id,
                 block_hash,
-                height.pg_value()?,
+                height.pg_value_bigint()?,
                 log_index,
                 timestamp,
                 transaction_hash,
@@ -210,7 +214,7 @@ async fn handle_block_event(
                 internal_chain_id,
                 hash,
                 data,
-                height.pg_value()?,
+                height.pg_value_bigint()?,
                 time
             )
             .execute(tx.as_mut())
@@ -228,7 +232,7 @@ async fn handle_block_event(
             INSERT INTO v2_cosmos.transactions (internal_chain_id, block_hash, height, hash, data, index) 
             VALUES ($1, $2, $3, $4, $5, $6)
             ",
-                internal_chain_id, block_hash, height.pg_value()?, hash, data, index)
+                internal_chain_id, block_hash, height.pg_value_bigint()?, hash, data, index)
             .execute(tx.as_mut())
             .await
             .map(|_| ())
@@ -249,7 +253,7 @@ async fn handle_block_event(
             ",
                 internal_chain_id,
                 block_hash,
-                height.pg_value()?,
+                height.pg_value_bigint()?,
                 transaction_hash as _,
                 index,
                 transaction_index as _,
@@ -260,17 +264,22 @@ async fn handle_block_event(
             .await
             .map(|_| ())
             .map_err(IndexerError::DatabaseError),
-        SupportedBlockEvent::ChannelOpenInit { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::ChannelOpenTry { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::ChannelOpenAck { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::ChannelOpenConfirm { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::ConnectionOpenInit { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::ConnectionOpenTry { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::ConnectionOpenAck { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::ConnectionOpenConfirm { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::CreateClient { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::CreateLensClient { inner } => internal_chain_id.context(inner).handle(tx).await,
-        SupportedBlockEvent::UpdateClient { inner } => internal_chain_id.context(inner).handle(tx).await,
+        SupportedBlockEvent::ChannelOpenInit { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::ChannelOpenTry { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::ChannelOpenAck { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::ChannelOpenConfirm { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::ConnectionOpenInit { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::ConnectionOpenTry { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::ConnectionOpenAck { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::ConnectionOpenConfirm { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::CreateClient { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::CreateLensClient { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::UpdateClient { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::PacketSend { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::PacketRecv { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::WriteAck { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::PacketAck { inner } => chain_context.with_event(inner).handle(tx).await,
+        SupportedBlockEvent::PacketTimeout { inner } => chain_context.with_event(inner).handle(tx).await,
     }?;
 
     Ok(true)

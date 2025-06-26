@@ -1,13 +1,8 @@
 use core::fmt::Debug;
 use std::fmt;
 
-use sqlx::{types::BigDecimal, Error, Postgres};
+use sqlx::{Error, Postgres};
 use valuable::Valuable;
-
-use crate::indexer::{
-    api::IndexerError,
-    event::types::{InternalChainId, UniversalChainId},
-};
 
 /// ChainIds track both the database ID of a chain, as well as some canonical representation for
 /// debug logging.
@@ -52,28 +47,6 @@ impl<'a> ChainIdInner<'a> {
     }
 }
 
-pub async fn fetch_internal_chain_id_for_universal_chain_id(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
-    universal_chain_id: &UniversalChainId,
-) -> Result<InternalChainId, IndexerError> {
-    match sqlx::query!(
-        "
-        SELECT id as internal_chain_id 
-        FROM config.chains c WHERE family || '.' || chain_id = $1 
-        LIMIT 1
-        ",
-        universal_chain_id.pg_value()?,
-    )
-    .fetch_optional(tx.as_mut())
-    .await?
-    {
-        Some(record) => Ok(record.internal_chain_id.into()),
-        None => Err(IndexerError::MissingChainConfiguration(
-            universal_chain_id.clone(),
-        )),
-    }
-}
-
 pub async fn fetch_chain_id_tx(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     canonical: String,
@@ -91,22 +64,4 @@ pub async fn fetch_chain_id_tx(
         Some(record) => Ok(ChainId::new(record.id, canonical.leak(), record.universal_chain_id.expect("universal chain id").leak())),
         None => Err(Error::Protocol("No chain found with chain_id {canonical}. Add it to the config.chains table before using it in hubble".into()))
     }
-}
-
-pub async fn schedule_replication_reset(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
-    chain_id: InternalChainId,
-    height: i64,
-    reason: &str,
-) -> Result<(), IndexerError> {
-    sqlx::query!(
-        "CALL sync.replication_schedule_reset_chain($1, $2, $3);",
-        BigDecimal::from(chain_id.pg_value()?), // function should consume i32. leave it because the syncing will be removed
-        &height,
-        reason
-    )
-    .execute(tx.as_mut())
-    .await?;
-
-    Ok(())
 }

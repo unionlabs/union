@@ -2,12 +2,12 @@ use sqlx::{Postgres, Transaction};
 use time::OffsetDateTime;
 use tracing::trace;
 
+use crate::indexer::record::InternalChainId;
 use crate::indexer::{
     api::IndexerError,
-    event::{
-        connection_open_confirm_event::ConnectionOpenConfirmEvent,
-        types::{BlockHeight, InternalChainId, InternalChainIdContext},
-    },
+    event::{connection_open_confirm_event::ConnectionOpenConfirmEvent, types::BlockHeight},
+    handler::EventContext,
+    record::ChainContext,
 };
 
 pub struct ConnectionOpenConfirmRecord {
@@ -23,18 +23,18 @@ pub struct ConnectionOpenConfirmRecord {
     pub counterparty_connection_id: i32,
 }
 
-impl<'a> TryFrom<&'a InternalChainIdContext<'a, ConnectionOpenConfirmEvent>>
+impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ConnectionOpenConfirmEvent>>
     for ConnectionOpenConfirmRecord
 {
     type Error = IndexerError;
 
     fn try_from(
-        value: &'a InternalChainIdContext<'a, ConnectionOpenConfirmEvent>,
+        value: &'a EventContext<'a, ChainContext, ConnectionOpenConfirmEvent>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            internal_chain_id: value.internal_chain_id.pg_value()?,
+            internal_chain_id: value.context.internal_chain_id.pg_value_integer()?,
             block_hash: value.event.header.block_hash.pg_value()?,
-            height: value.event.header.height.pg_value()?,
+            height: value.event.header.height.pg_value_bigint()?,
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
@@ -95,8 +95,8 @@ impl ConnectionOpenConfirmRecord {
             DELETE FROM v2_sync.connection_open_confirm_test
             WHERE internal_chain_id = $1 AND height = $2
             "#,
-            internal_chain_id.pg_value()?,
-            height.pg_value()?
+            internal_chain_id.pg_value_integer()?,
+            height.pg_value_bigint()?
         )
         .execute(&mut **tx)
         .await?;

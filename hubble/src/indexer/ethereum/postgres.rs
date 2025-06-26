@@ -6,7 +6,7 @@ use sqlx::{Postgres, Transaction};
 use crate::indexer::{
     api::IndexerError,
     ethereum::abi::{Abi, AbiRegistration},
-    event::types::InternalChainId,
+    record::InternalChainId,
 };
 
 pub async fn get_abi_registration(
@@ -22,8 +22,8 @@ pub async fn get_abi_registration(
         AND       $2 between start_height and end_height
         AND       abi IS NOT NULL
         "#,
-        internal_chain_id.pg_value()?,
-        height.pg_value()?,
+        internal_chain_id.pg_value_integer()?,
+        height.pg_value_bigint()?,
     )
     .fetch_all(tx.as_mut())
     .await?

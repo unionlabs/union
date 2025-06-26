@@ -18,10 +18,10 @@ impl EthFetcherClient {
         Ok(vec![SupportedBlockEvent::ConnectionOpenConfirm {
             inner: ConnectionOpenConfirmEvent {
                 header: log.header()?,
-                connection_id: log.connection_id()?,
-                client_id: log.client_id()?,
-                counterparty_client_id: log.counterparty_client_id()?,
-                counterparty_connection_id: log.counterparty_connection_id()?,
+                connection_id: log.event.connection_id()?,
+                client_id: log.event.client_id()?,
+                counterparty_client_id: log.event.counterparty_client_id()?,
+                counterparty_connection_id: log.event.counterparty_connection_id()?,
             },
         }])
     }

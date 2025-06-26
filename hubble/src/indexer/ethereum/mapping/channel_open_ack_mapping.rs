@@ -16,12 +16,12 @@ impl EthFetcherClient {
         Ok(vec![SupportedBlockEvent::ChannelOpenAck {
             inner: ChannelOpenAckEvent {
                 header: log.header()?,
-                connection_id: log.connection_id()?,
-                channel_id: log.channel_id()?,
-                port_id: log.port_id()?,
-                counterparty_port_id: log.counterparty_port_id()?,
-                counterparty_channel_id: log.counterparty_channel_id()?,
-                counterparty_version: log.counterparty_version()?,
+                connection_id: log.event.connection_id()?,
+                channel_id: log.event.channel_id()?,
+                port_id: log.event.port_id()?,
+                counterparty_port_id: log.event.counterparty_port_id()?,
+                counterparty_channel_id: log.event.counterparty_channel_id()?,
+                counterparty_version: log.event.counterparty_version()?,
             },
         }])
     }

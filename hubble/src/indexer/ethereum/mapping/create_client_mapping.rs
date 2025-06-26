@@ -16,9 +16,9 @@ impl EthFetcherClient {
         Ok(vec![SupportedBlockEvent::CreateClient {
             inner: CreateClientEvent {
                 header: log.header()?,
-                client_id: log.client_id()?,
-                client_type: log.client_type()?,
-                counterparty_chain_id: log.counterparty_chain_id()?,
+                client_id: log.event.client_id()?,
+                client_type: log.event.client_type()?,
+                counterparty_chain_id: log.event.counterparty_chain_id()?,
             },
         }])
     }

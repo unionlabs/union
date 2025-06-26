@@ -1,5 +1,5 @@
 use std::{
-    fmt::{self, Display, Formatter},
+    fmt::{self, Display},
     str::FromStr,
 };
 
@@ -295,68 +295,20 @@ impl From<u32> for ClientId {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Copy)]
-pub struct InternalChainId(pub i32);
-
-impl From<i32> for InternalChainId {
-    fn from(value: i32) -> Self {
-        Self(value)
-    }
-}
-
-impl Display for InternalChainId {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.0)
-    }
-}
-
-/// wrapper required until we've migrated to use universal-chain-ids
-pub struct InternalChainIdContext<'a, T> {
-    pub internal_chain_id: InternalChainId,
-    pub event: &'a T,
-}
-
-impl<'a, T> InternalChainIdContext<'a, T> {
-    pub fn new(internal_chain_id: InternalChainId, event: &'a T) -> Self {
-        InternalChainIdContext {
-            internal_chain_id,
-            event,
-        }
-    }
-}
-
-impl<'a, T> Display for InternalChainIdContext<'a, T>
-where
-    T: Display,
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        write!(f, "[chain={}] {}", self.internal_chain_id, self.event)
-    }
-}
-
-impl<'a, T> std::fmt::Debug for InternalChainIdContext<'a, T>
-where
-    T: std::fmt::Debug,
-{
-    fn fmt(&self, f: &mut Formatter<'_>) -> fmt::Result {
-        f.debug_struct("InternalChainIdContext")
-            .field("internal_chain_id", &self.internal_chain_id)
-            .field("event", &self.event)
-            .finish()
-    }
-}
-
-impl InternalChainId {
-    pub fn context<'a, T>(self, event: &'a T) -> InternalChainIdContext<'a, T> {
-        InternalChainIdContext::new(self, event)
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ChannelId(pub u32);
 
 impl From<u32> for ChannelId {
     fn from(value: u32) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct TimeoutTimestamp(pub u64);
+
+impl From<u64> for TimeoutTimestamp {
+    fn from(value: u64) -> Self {
         Self(value)
     }
 }
@@ -392,6 +344,51 @@ impl From<bytes::Bytes> for BlockHash {
 pub struct TransactionHash(pub bytes::Bytes);
 
 impl From<bytes::Bytes> for TransactionHash {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PacketHash(pub bytes::Bytes);
+
+impl From<bytes::Bytes> for PacketHash {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct PacketData(pub bytes::Bytes);
+
+impl From<bytes::Bytes> for PacketData {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Acknowledgement(pub bytes::Bytes);
+
+impl From<bytes::Bytes> for Acknowledgement {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct Maker(pub bytes::Bytes);
+
+impl From<bytes::Bytes> for Maker {
+    fn from(value: bytes::Bytes) -> Self {
+        Self(value)
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct MakerMsg(pub bytes::Bytes);
+
+impl From<bytes::Bytes> for MakerMsg {
     fn from(value: bytes::Bytes) -> Self {
         Self(value)
     }

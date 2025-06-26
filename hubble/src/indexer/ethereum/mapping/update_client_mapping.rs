@@ -3,7 +3,7 @@ use tracing::trace;
 use crate::indexer::{
     api::IndexerError,
     ethereum::{fetcher_client::EthFetcherClient, log_decoder::LogDecoder},
-    event::{update_client_event::UpdateClientEvent, supported::SupportedBlockEvent},
+    event::{supported::SupportedBlockEvent, update_client_event::UpdateClientEvent},
 };
 
 impl EthFetcherClient {
@@ -16,8 +16,8 @@ impl EthFetcherClient {
         Ok(vec![SupportedBlockEvent::UpdateClient {
             inner: UpdateClientEvent {
                 header: log.header()?,
-                client_id: log.client_id()?,
-                counterparty_height: log.counterparty_height()?,
+                client_id: log.event.client_id()?,
+                counterparty_height: log.event.counterparty_height()?,
             },
         }])
     }

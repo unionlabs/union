@@ -2,11 +2,11 @@ use tracing::trace;
 
 use crate::indexer::{
     api::IndexerError,
-    event::{channel_open_try_event::ChannelOpenTryEvent, types::InternalChainIdContext},
-    record::channel_open_try_record::ChannelOpenTryRecord,
+    event::channel_open_try_event::ChannelOpenTryEvent,
+    handler::EventContext,
+    record::{channel_open_try_record::ChannelOpenTryRecord, ChainContext},
 };
-
-impl<'a> InternalChainIdContext<'a, ChannelOpenTryEvent> {
+impl<'a> EventContext<'a, ChainContext, ChannelOpenTryEvent> {
     pub async fn handle(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,

@@ -4,10 +4,9 @@ use tracing::trace;
 
 use crate::indexer::{
     api::IndexerError,
-    event::{
-        channel_open_try_event::ChannelOpenTryEvent,
-        types::{BlockHeight, InternalChainId, InternalChainIdContext},
-    },
+    event::{channel_open_try_event::ChannelOpenTryEvent, types::BlockHeight},
+    handler::EventContext,
+    record::{ChainContext, InternalChainId},
 };
 
 pub struct ChannelOpenTryRecord {
@@ -26,16 +25,16 @@ pub struct ChannelOpenTryRecord {
     pub counterparty_version: String,
 }
 
-impl<'a> TryFrom<&'a InternalChainIdContext<'a, ChannelOpenTryEvent>> for ChannelOpenTryRecord {
+impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ChannelOpenTryEvent>> for ChannelOpenTryRecord {
     type Error = IndexerError;
 
     fn try_from(
-        value: &'a InternalChainIdContext<'a, ChannelOpenTryEvent>,
+        value: &'a EventContext<'a, ChainContext, ChannelOpenTryEvent>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            internal_chain_id: value.internal_chain_id.pg_value()?,
+            internal_chain_id: value.context.internal_chain_id.pg_value_integer()?,
             block_hash: value.event.header.block_hash.pg_value()?,
-            height: value.event.header.height.pg_value()?,
+            height: value.event.header.height.pg_value_bigint()?,
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
@@ -101,8 +100,8 @@ impl ChannelOpenTryRecord {
             DELETE FROM v2_sync.channel_open_try_test
             WHERE internal_chain_id = $1 AND height = $2
             "#,
-            internal_chain_id.pg_value()?,
-            height.pg_value()?
+            internal_chain_id.pg_value_integer()?,
+            height.pg_value_bigint()?
         )
         .execute(&mut **tx)
         .await?;

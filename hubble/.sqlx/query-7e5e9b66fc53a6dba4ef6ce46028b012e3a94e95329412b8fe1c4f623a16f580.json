@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v2_sync.packet_send_test (\n                internal_chain_id,\n                block_hash,\n                height,\n                event_index,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                transaction_event_index,\n                channel_id,\n                packet_hash,\n                source_channel_id,\n                destination_channel_id,\n                timeout_height,\n                timeout_timestamp,\n                data,\n                network\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Bytea",
+        "Int8",
+        "Int4",
+        "Timestamptz",
+        "Bytea",
+        "Int8",
+        "Int8",
+        "Int4",
+        "Bytea",
+        "Int4",
+        "Int4",
+        "Numeric",
+        "Numeric",
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "7e5e9b66fc53a6dba4ef6ce46028b012e3a94e95329412b8fe1c4f623a16f580"
+}

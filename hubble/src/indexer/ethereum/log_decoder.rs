@@ -1,4 +1,4 @@
-use std::fmt::Display;
+use std::{collections::HashMap, fmt::Display};
 
 use alloy::{dyn_abi::DynSolValue, network::AnyRpcBlock, primitives::FixedBytes, rpc::types::Log};
 use bytes::Bytes;
@@ -13,8 +13,9 @@ use crate::{
         event::{
             header::Header,
             types::{
-                BlockHash, BlockHeight, CanonicalChainId, ChannelId, ClientId, ClientType,
-                ConnectionId, PortId, TransactionHash, Version,
+                Acknowledgement, BlockHash, BlockHeight, CanonicalChainId, ChannelId, ClientId,
+                ClientType, ConnectionId, Maker, MakerMsg, PacketData, PacketHash, PortId,
+                TimeoutTimestamp, TransactionHash, Version,
             },
         },
     },
@@ -31,7 +32,7 @@ pub struct LogDecoder<'a> {
 
 impl<'a> Display for LogDecoder<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}: {}", self.event.name, self.keys_as_string())
+        write!(f, "{}: {}", self.event.name, self.event.keys_as_string())
     }
 }
 
@@ -96,148 +97,248 @@ impl<'a> LogDecoder<'a> {
             transaction_event_index: self.transaction_log_index.try_into()?,
         })
     }
+}
 
-    pub fn client_id(&'a self) -> Result<ClientId, IndexerError> {
+impl From<FixedBytes<32>> for BlockHash {
+    fn from(value: FixedBytes<32>) -> Self {
+        Bytes::copy_from_slice(value.as_slice()).into()
+    }
+}
+
+impl From<FixedBytes<32>> for TransactionHash {
+    fn from(value: FixedBytes<32>) -> Self {
+        Bytes::copy_from_slice(value.as_slice()).into()
+    }
+}
+
+impl SolEvent {
+    pub fn client_id(&self) -> Result<ClientId, IndexerError> {
         self.get_client_id("clientId")
     }
 
-    pub fn l1_client_id(&'a self) -> Result<ClientId, IndexerError> {
+    pub fn l1_client_id(&self) -> Result<ClientId, IndexerError> {
         self.get_client_id("l1ClientId")
     }
 
-    pub fn l2_client_id(&'a self) -> Result<ClientId, IndexerError> {
+    pub fn l2_client_id(&self) -> Result<ClientId, IndexerError> {
         self.get_client_id("l2ClientId")
     }
 
-    pub fn client_type(&'a self) -> Result<ClientType, IndexerError> {
+    pub fn client_type(&self) -> Result<ClientType, IndexerError> {
         self.get_client_type("clientType")
     }
 
-    pub fn counterparty_chain_id(&'a self) -> Result<CanonicalChainId, IndexerError> {
+    pub fn counterparty_chain_id(&self) -> Result<CanonicalChainId, IndexerError> {
         self.get_chain_id("counterpartyChainId")
     }
 
-    pub fn l2_chain_id(&'a self) -> Result<CanonicalChainId, IndexerError> {
+    pub fn l2_chain_id(&self) -> Result<CanonicalChainId, IndexerError> {
         self.get_chain_id("l2ChainId")
     }
 
-    pub fn counterparty_height(&'a self) -> Result<BlockHeight, IndexerError> {
+    pub fn counterparty_height(&self) -> Result<BlockHeight, IndexerError> {
         self.get_height("height")
     }
 
-    pub fn counterparty_client_id(&'a self) -> Result<ClientId, IndexerError> {
+    pub fn timeout_height(&self) -> Result<BlockHeight, IndexerError> {
+        self.get_height("timeoutHeight")
+    }
+
+    pub fn timeout_timestamp(&self) -> Result<TimeoutTimestamp, IndexerError> {
+        self.get_timestamp("timeoutTimestamp")
+    }
+
+    pub fn counterparty_client_id(&self) -> Result<ClientId, IndexerError> {
         self.get_client_id("counterpartyClientId")
     }
 
-    pub fn connection_id(&'a self) -> Result<ConnectionId, IndexerError> {
+    pub fn connection_id(&self) -> Result<ConnectionId, IndexerError> {
         self.get_connection_id("connectionId")
     }
 
-    pub fn counterparty_connection_id(&'a self) -> Result<ConnectionId, IndexerError> {
+    pub fn counterparty_connection_id(&self) -> Result<ConnectionId, IndexerError> {
         self.get_connection_id("counterpartyConnectionId")
     }
 
-    pub fn channel_id(&'a self) -> Result<ChannelId, IndexerError> {
+    pub fn channel_id(&self) -> Result<ChannelId, IndexerError> {
         self.get_channel_id("channelId")
     }
 
-    pub fn counterparty_channel_id(&'a self) -> Result<ChannelId, IndexerError> {
+    pub fn source_channel_id(&self) -> Result<ChannelId, IndexerError> {
+        self.get_channel_id("sourceChannelId")
+    }
+
+    pub fn destination_channel_id(&self) -> Result<ChannelId, IndexerError> {
+        self.get_channel_id("destinationChannelId")
+    }
+
+    pub fn counterparty_channel_id(&self) -> Result<ChannelId, IndexerError> {
         self.get_channel_id("counterpartyChannelId")
     }
 
-    pub fn port_id(&'a self) -> Result<PortId, IndexerError> {
+    pub fn port_id(&self) -> Result<PortId, IndexerError> {
         self.get_port_id("portId")
     }
 
-    pub fn counterparty_port_id(&'a self) -> Result<PortId, IndexerError> {
+    pub fn counterparty_port_id(&self) -> Result<PortId, IndexerError> {
         self.get_port_id("counterpartyPortId")
     }
 
-    pub fn version(&'a self) -> Result<Version, IndexerError> {
+    pub fn version(&self) -> Result<Version, IndexerError> {
         self.get_version("version")
     }
 
-    pub fn counterparty_version(&'a self) -> Result<Version, IndexerError> {
+    pub fn counterparty_version(&self) -> Result<Version, IndexerError> {
         self.get_version("counterpartyVersion")
     }
 
-    fn get_height(&'a self, key: &str) -> Result<BlockHeight, IndexerError> {
+    pub fn packet_hash(&self) -> Result<PacketHash, IndexerError> {
+        self.get_packet_hash("packetHash")
+    }
+
+    pub fn data(&self) -> Result<PacketData, IndexerError> {
+        self.get_packet_data("data")
+    }
+
+    pub fn acknowledgement(&self) -> Result<Acknowledgement, IndexerError> {
+        self.get_acknowledgement("acknowledgement")
+    }
+
+    pub fn maker(&self) -> Result<Maker, IndexerError> {
+        self.get_maker("maker")
+    }
+
+    pub fn maker_msg(&self) -> Result<MakerMsg, IndexerError> {
+        self.get_maker_msg("makerMsg")
+    }
+
+    pub fn packet(&self) -> Result<SolEvent, IndexerError> {
+        self.get_packet("packet")
+    }
+
+    fn get_height(&self, key: &str) -> Result<BlockHeight, IndexerError> {
         Ok(self.get_u64(key, "height")?.into())
     }
 
-    fn get_client_id(&'a self, key: &str) -> Result<ClientId, IndexerError> {
+    fn get_timestamp(&self, key: &str) -> Result<TimeoutTimestamp, IndexerError> {
+        Ok(self.get_u64(key, "timestamp")?.into())
+    }
+
+    fn get_client_id(&self, key: &str) -> Result<ClientId, IndexerError> {
         Ok(self.get_u32(key, "client-id")?.into())
     }
 
-    fn get_client_type(&'a self, key: &str) -> Result<ClientType, IndexerError> {
+    fn get_client_type(&self, key: &str) -> Result<ClientType, IndexerError> {
         Ok(self.get_string(key, "client-type")?.into())
     }
 
-    fn get_chain_id(&'a self, key: &str) -> Result<CanonicalChainId, IndexerError> {
+    fn get_chain_id(&self, key: &str) -> Result<CanonicalChainId, IndexerError> {
         Ok(self.get_string(key, "chain-id")?.into())
     }
 
-    fn get_connection_id(&'a self, key: &str) -> Result<ConnectionId, IndexerError> {
+    fn get_connection_id(&self, key: &str) -> Result<ConnectionId, IndexerError> {
         Ok(self.get_u32(key, "connection-id")?.into())
     }
 
-    fn get_channel_id(&'a self, key: &str) -> Result<ChannelId, IndexerError> {
+    fn get_channel_id(&self, key: &str) -> Result<ChannelId, IndexerError> {
         Ok(self.get_u32(key, "channel-id")?.into())
     }
 
-    fn get_port_id(&'a self, key: &str) -> Result<PortId, IndexerError> {
+    fn get_port_id(&self, key: &str) -> Result<PortId, IndexerError> {
         Ok(self.get_bytes(key, "port-id")?.into())
     }
 
-    fn get_version(&'a self, key: &str) -> Result<Version, IndexerError> {
+    fn get_version(&self, key: &str) -> Result<Version, IndexerError> {
         Ok(self.get_string(key, "version")?.into())
     }
 
-    fn get_u32(&'a self, key: &str, expecting: &str) -> Result<u32, IndexerError> {
+    fn get_packet_hash(&self, key: &str) -> Result<PacketHash, IndexerError> {
+        Ok(self.get_bytes(key, "packet-hash")?.into())
+    }
+
+    fn get_packet_data(&self, key: &str) -> Result<PacketData, IndexerError> {
+        Ok(self.get_bytes(key, "packet-data")?.into())
+    }
+
+    fn get_acknowledgement(&self, key: &str) -> Result<Acknowledgement, IndexerError> {
+        Ok(self.get_bytes(key, "acknowledgement")?.into())
+    }
+
+    fn get_maker(&self, key: &str) -> Result<Maker, IndexerError> {
+        Ok(self.get_bytes(key, "maker")?.into())
+    }
+
+    fn get_maker_msg(&self, key: &str) -> Result<MakerMsg, IndexerError> {
+        Ok(self.get_bytes(key, "maker-msg")?.into())
+    }
+
+    pub fn get_packet(&self, key: &str) -> Result<SolEvent, IndexerError> {
+        self.get_event(key, "packet")
+    }
+
+    fn get_u32(&self, key: &str, expecting: &str) -> Result<u32, IndexerError> {
         match self.get_value(key, expecting)? {
             DynSolValue::Uint(v, 32) => Ok(v.to::<u32>()),
             value => Err(self.report_unexpected_type(key, value, expecting)),
         }
     }
 
-    fn get_u64(&'a self, key: &str, expecting: &str) -> Result<u64, IndexerError> {
+    fn get_u64(&self, key: &str, expecting: &str) -> Result<u64, IndexerError> {
         match self.get_value(key, expecting)? {
             DynSolValue::Uint(v, 64) => Ok(v.to::<u64>()),
             value => Err(self.report_unexpected_type(key, value, expecting)),
         }
     }
 
-    fn get_bytes(&'a self, key: &str, expecting: &str) -> Result<Bytes, IndexerError> {
+    fn get_bytes(&self, key: &str, expecting: &str) -> Result<Bytes, IndexerError> {
         match self.get_value(key, expecting)? {
             DynSolValue::Address(address) => Ok(Bytes::copy_from_slice(address.as_slice())),
             DynSolValue::Bytes(bytes) => Ok(Bytes::copy_from_slice(bytes.as_slice())),
+            DynSolValue::FixedBytes(bytes, ..) => Ok(Bytes::copy_from_slice(bytes.as_slice())),
             value => Err(self.report_unexpected_type(key, value, expecting)),
         }
     }
 
-    fn get_string(&'a self, key: &str, expecting: &str) -> Result<String, IndexerError> {
+    fn get_string(&self, key: &str, expecting: &str) -> Result<String, IndexerError> {
         match self.get_value(key, expecting)? {
             DynSolValue::String(string) => Ok(string.clone()),
             value => Err(self.report_unexpected_type(key, value, expecting)),
         }
     }
 
-    fn get_value(&'a self, key: &str, expecting: &str) -> Result<&'a DynSolValue, IndexerError> {
-        self.event
-            .attributes
+    fn get_value(&self, key: &str, expecting: &str) -> Result<&DynSolValue, IndexerError> {
+        self.attributes
             .get(key)
             .ok_or(self.report_missing_key(key, expecting))
+    }
+
+    fn get_event(&self, key: &str, expecting: &str) -> Result<SolEvent, IndexerError> {
+        match self.get_value(key, expecting)? {
+            DynSolValue::CustomStruct {
+                name,
+                prop_names,
+                tuple,
+            } => Ok(SolEvent {
+                name: name.to_string(),
+                attributes: prop_names
+                    .iter()
+                    .zip(tuple)
+                    .map(|(key, value)| (key.clone(), value.clone()))
+                    .collect::<HashMap<String, DynSolValue>>(),
+            }),
+            value => Err(self.report_unexpected_type(key, value, expecting)),
+        }
     }
 
     fn report_missing_key(&self, key: &str, expecting: &str) -> IndexerError {
         trace!(
             "report_missing_key - {}.{key} (expecting: {expecting}, keys: {})",
-            self.event.name,
+            self.name,
             self.keys_as_string(),
         );
 
         IndexerError::CannotMapToEventDomainMissingKey(
-            self.event.name.to_string(),
+            self.name.to_string(),
             key.to_string(),
             expecting.to_string(),
         )
@@ -251,12 +352,12 @@ impl<'a> LogDecoder<'a> {
     ) -> IndexerError {
         trace!(
             "report_unexpected_type - {}.{key} {value:?} (expecting: {expecting}, keys: {})",
-            self.event.name,
+            self.name,
             self.keys_as_string(),
         );
 
         IndexerError::CannotMapToEventDomainUnexpectedType(
-            self.event.name.to_string(),
+            self.name.to_string(),
             key.to_string(),
             format!("{value:?}"),
             expecting.to_string(),
@@ -266,7 +367,7 @@ impl<'a> LogDecoder<'a> {
     // fn report_out_of_range(&self, key: &str, value: &DynSolValue, expecting: &str) -> IndexerError {
     //     trace!(
     //         "report_out_of_range - {}.{key} {value:?} (expecting: {expecting}, keys: {})",
-    //         self.event.name,
+    //         self.name,
     //         self.keys_as_string(),
     //     );
 
@@ -278,19 +379,7 @@ impl<'a> LogDecoder<'a> {
     //     )
     // }
 
-    fn keys_as_string(&self) -> String {
-        self.event.attributes.keys().sorted().join(", ")
-    }
-}
-
-impl From<FixedBytes<32>> for BlockHash {
-    fn from(value: FixedBytes<32>) -> Self {
-        Bytes::copy_from_slice(value.as_slice()).into()
-    }
-}
-
-impl From<FixedBytes<32>> for TransactionHash {
-    fn from(value: FixedBytes<32>) -> Self {
-        Bytes::copy_from_slice(value.as_slice()).into()
+    pub fn keys_as_string(&self) -> String {
+        self.attributes.keys().sorted().join(", ")
     }
 }

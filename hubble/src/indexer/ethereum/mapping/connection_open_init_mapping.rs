@@ -16,9 +16,9 @@ impl EthFetcherClient {
         Ok(vec![SupportedBlockEvent::ConnectionOpenInit {
             inner: ConnectionOpenInitEvent {
                 header: log.header()?,
-                connection_id: log.connection_id()?,
-                client_id: log.client_id()?,
-                counterparty_client_id: log.counterparty_client_id()?,
+                connection_id: log.event.connection_id()?,
+                client_id: log.event.client_id()?,
+                counterparty_client_id: log.event.counterparty_client_id()?,
             },
         }])
     }

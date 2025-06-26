@@ -10,8 +10,10 @@ use crate::indexer::event::{
     connection_open_confirm_event::ConnectionOpenConfirmEvent,
     connection_open_init_event::ConnectionOpenInitEvent,
     connection_open_try_event::ConnectionOpenTryEvent, create_client_event::CreateClientEvent,
-    create_lens_client_event::CreateLensClientEvent, types::BlockHeight,
-    update_client_event::UpdateClientEvent,
+    create_lens_client_event::CreateLensClientEvent, packet_ack_event::PacketAckEvent,
+    packet_recv_event::PacketRecvEvent, packet_send_event::PacketSendEvent,
+    packet_timeout_event::PacketTimeoutEvent, types::BlockHeight,
+    update_client_event::UpdateClientEvent, write_ack_event::WriteAckEvent,
 };
 
 #[warn(clippy::enum_variant_names)]
@@ -130,6 +132,31 @@ pub enum SupportedBlockEvent {
         #[serde(flatten)]
         inner: UpdateClientEvent,
     },
+    #[serde(rename = "packet-send")]
+    PacketSend {
+        #[serde(flatten)]
+        inner: PacketSendEvent,
+    },
+    #[serde(rename = "packet-recv")]
+    PacketRecv {
+        #[serde(flatten)]
+        inner: PacketRecvEvent,
+    },
+    #[serde(rename = "write-ack")]
+    WriteAck {
+        #[serde(flatten)]
+        inner: WriteAckEvent,
+    },
+    #[serde(rename = "packet-ack")]
+    PacketAck {
+        #[serde(flatten)]
+        inner: PacketAckEvent,
+    },
+    #[serde(rename = "packet-timeout")]
+    PacketTimeout {
+        #[serde(flatten)]
+        inner: PacketTimeoutEvent,
+    },
 }
 
 impl SupportedBlockEvent {
@@ -151,6 +178,11 @@ impl SupportedBlockEvent {
             SupportedBlockEvent::CreateClient { inner, .. } => inner.header.height,
             SupportedBlockEvent::CreateLensClient { inner, .. } => inner.header.height,
             SupportedBlockEvent::UpdateClient { inner, .. } => inner.header.height,
+            SupportedBlockEvent::PacketSend { inner, .. } => inner.header.height,
+            SupportedBlockEvent::PacketRecv { inner, .. } => inner.header.height,
+            SupportedBlockEvent::WriteAck { inner, .. } => inner.header.height,
+            SupportedBlockEvent::PacketAck { inner, .. } => inner.header.height,
+            SupportedBlockEvent::PacketTimeout { inner, .. } => inner.header.height,
         }
     }
 }
