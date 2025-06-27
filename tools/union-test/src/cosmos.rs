@@ -272,14 +272,18 @@ impl Module {
 
     pub async fn wait_for_packet_recv(
         &self,
+        packet_hash: H256,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_event(
             |evt| {
-                if let IbcEvent::WasmPacketRecv {  packet_hash, .. } = evt {
-                    Some(helpers::PacketRecv {
-                        packet_hash: *packet_hash
-                    })
+            if let IbcEvent::WasmPacketRecv { packet_hash, .. } = evt {
+                    if packet_hash.as_ref() == packet_hash.as_ref() {
+                        return Some(helpers::PacketRecv {
+                            packet_hash: *packet_hash
+                        });
+                    }
+                        None
                 } else {
                     None
                 }

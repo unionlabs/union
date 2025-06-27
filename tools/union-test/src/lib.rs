@@ -257,10 +257,10 @@ impl ChainEndpoint for cosmos::Module {
 
     async fn wait_for_packet_recv(
         &self,
-        _packet_hash: H256,
-        _timeout: Duration,
+        packet_hash: H256,
+        timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        Err(anyhow::anyhow!("PacketRecv not implemented on Cosmos side"))
+        self.wait_for_packet_recv(packet_hash, timeout).await
     }
 }
 
