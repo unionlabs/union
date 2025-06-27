@@ -1,4 +1,4 @@
-import type {
+import {
   AccountError,
   AchievementError,
   AuthenticationError,
@@ -15,6 +15,18 @@ import type {
   SupabaseError,
   WalletError,
 } from "$lib/dashboard/errors"
+import {
+  SnagAPIError,
+  SnagAuthenticationError,
+  SnagBadRequestError,
+  SnagClientError,
+  SnagConnectionError,
+  SnagInternalServerError,
+  SnagNotFoundError,
+  SnagPermissionDeniedError,
+  SnagRateLimitError,
+  SnagUnprocessableEntityError,
+} from "../snag/errors"
 
 type DashboardError =
   | AuthenticationError
@@ -32,6 +44,16 @@ type DashboardError =
   | EmailLinkError
   | AccountError
   | ExperienceError
+  | SnagClientError
+  | SnagAPIError
+  | SnagBadRequestError
+  | SnagAuthenticationError
+  | SnagPermissionDeniedError
+  | SnagNotFoundError
+  | SnagUnprocessableEntityError
+  | SnagRateLimitError
+  | SnagInternalServerError
+  | SnagConnectionError
 
 class ErrorStore {
   current: DashboardError | null = $state(null)
@@ -46,3 +68,4 @@ class ErrorStore {
 }
 
 export const errorStore = new ErrorStore()
+export type { DashboardError }
