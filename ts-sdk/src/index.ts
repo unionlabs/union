@@ -4,7 +4,7 @@
  * See {@see https://docs.union.build/integrations/typescript/} for additional integration guides and examples.
  *
  * :::caution[Caution]
- * The SDK is undergoing stabilization efforts, starting with the release of `v2.0.0`, to provide a better developer experience. Breaking changes may occur until `v3.0.0` such that chain-agnostic APIs are feature complete.
+ * The SDK is undergoing stabilization efforts, starting with the release of `v2.0.0`, to provide a better developer experience. Breaking changes may occur until `v3.0.0`.
  * :::
  *
  * @since 2.0.0
@@ -51,3 +51,24 @@ export * as Cosmos from "./Cosmos.js"
  * @since 2.0.0
  */
 export * as Instruction from "./Instruction.js"
+
+/**
+ * This module contains GraphQL related to utilities.
+ *
+ * @since 2.0.0
+ */
+export * as Gql from "./Gql.js"
+
+/**
+ * This module contains generic utilities.
+ *
+ * @since 2.0.0
+ */
+export * as Utils from "./Utils.js"
+
+/**
+ * This module handles [Aptos](https://aptosfoundation.org/) chain functionality.
+ *
+ * @since 2.0.0
+ */
+export * as Aptos from "./Aptos.js"
