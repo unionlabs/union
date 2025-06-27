@@ -273,22 +273,20 @@ impl Module {
     pub async fn wait_for_packet_recv(
         &self,
         max_wait: Duration,
-    ) -> anyhow::Result<helpers::ConnectionConfirm> {
-        // self.wait_for_event(
-        //     |evt| {
-        //         if let IbcEvent::WasmConnectionOpenConfirm {  connection_id, counterparty_connection_id, .. } = evt {
-        //             Some(helpers::ConnectionConfirm {
-        //                 connection_id: connection_id.raw().try_into().unwrap(),
-        //                 counterparty_connection_id: counterparty_connection_id.raw().try_into().unwrap(),
-        //             })
-        //         } else {
-        //             None
-        //         }
-        //     },
-        //     max_wait,
-        // )
-        // .await
-        return Err(anyhow::anyhow!("not implemented yet"));
+    ) -> anyhow::Result<helpers::PacketRecv> {
+        self.wait_for_event(
+            |evt| {
+                if let IbcEvent::WasmPacketRecv {  packet_hash, .. } = evt {
+                    Some(helpers::PacketRecv {
+                        packet_hash: *packet_hash
+                    })
+                } else {
+                    None
+                }
+            },
+            max_wait,
+        )
+        .await
     }
 
 
@@ -418,5 +416,14 @@ pub enum IbcEvent {
         counterparty_channel_id: ChannelId,
         #[serde(with = "serde_utils::string")]
         connection_id: ConnectionId,
+    },
+
+    #[serde(rename = "wasm-packet_recv")]
+    WasmPacketRecv {
+        #[serde(with = "serde_utils::string")]
+        channel_id: ChannelId,
+        packet_hash: H256,
+        maker: Bech32<Bytes>,
+        maker_msg: Bytes<HexUnprefixed>,
     },
 }
