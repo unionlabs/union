@@ -101,4 +101,4 @@ CLAUDE.md
 ts-sdk/build
 ts-sdk/dist
 ts-sdk/docs
-docs/src/content/docs/reference/ts-sdk
+docs/src/content/docs/reference/@unionlabs/sdk
