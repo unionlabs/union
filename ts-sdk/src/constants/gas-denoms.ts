@@ -44,6 +44,14 @@ export const BABYLON_METADATA: GasDenomMetadata = {
   decimals: 6,
 } as const
 
+export const OSMOSIS_METADATA: GasDenomMetadata = {
+  address: TokenRawDenom.make("0x756f736d6f"),
+  name: "Osmo",
+  symbol: "OSMO",
+  tickerSymbol: "OSMO",
+  decimals: 6,
+} as const
+
 const UNION_METADATA: GasDenomMetadata = {
   address: TokenRawDenom.make("0x6d756e6f"),
   name: "Union",
@@ -79,6 +87,10 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // Babylon chains
   [UniversalChainId.make("babylon.bbn-test-5")]: BABYLON_METADATA,
   [UniversalChainId.make("babylon.bbn-1")]: BABYLON_METADATA,
+
+  // Osmosis chains
+  [UniversalChainId.make("osmosis.osmo-test-5")]: OSMOSIS_METADATA,
+  [UniversalChainId.make("osmosis.osmosis-1")]: OSMOSIS_METADATA,
 
   // Union chains
   [UniversalChainId.make("union.union-testnet-8")]: UNION_METADATA,
