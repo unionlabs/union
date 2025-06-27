@@ -217,7 +217,7 @@ impl Module {
         self.wait_for_event(
             |e| match e {
                 IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => Some(helpers::PacketRecv {
-                    hash: ev.packet_hash,
+                    packet_hash: ev.packet_hash.try_into().unwrap(),
                 }),
                 _ => None,
             },
@@ -249,7 +249,7 @@ impl Module {
             })?;
 
         Ok(helpers::PacketRecv {
-            hash: ev.hash,
+            packet_hash: ev.packet_hash,
         })
         // Ok(ev)
     }

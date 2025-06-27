@@ -1,6 +1,5 @@
-use alloy::primitives::FixedBytes;
 use ibc_union_spec::{event::PacketSend, event::CreateClient, ChannelId, ConnectionId, ClientId, Timestamp};
-
+use unionlabs::primitives::FixedBytes;
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConnectionConfirm {
     pub connection_id: u32,
@@ -20,5 +19,5 @@ pub struct CreateClientConfirm {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PacketRecv {
-    pub hash: FixedBytes<32>
+    pub packet_hash: FixedBytes<32>
 }
