@@ -12,7 +12,7 @@ patchedDependencies:
     hash: d6d84acfc406c9bb60bb24c691bf474327d6a3a3140be568a3b77e1063897c4e
     path: patches/@cosmjs__tendermint-rpc@0.33.1.patch
   '@effect/docgen':
-    hash: ad66ef0771726976d8c366d1dd430176f98f31cf84ace72b162e97aa1f1a17eb
+    hash: 9371f4db64512e807c1bfc15ded3d0bf11c52e7d0cf19fdeec00474180ace0bf
     path: patches/@effect__docgen.patch
 
 importers:
@@ -21,7 +21,7 @@ importers:
     devDependencies:
       '@effect/docgen':
         specifier: ^0.5.2
-        version: 0.5.2(patch_hash=ad66ef0771726976d8c366d1dd430176f98f31cf84ace72b162e97aa1f1a17eb)(tsx@4.20.3)(typescript@5.8.2)
+        version: 0.5.2(patch_hash=9371f4db64512e807c1bfc15ded3d0bf11c52e7d0cf19fdeec00474180ace0bf)(tsx@4.20.3)(typescript@5.8.2)
       '@effect/language-service':
         specifier: 0.18.0
         version: 0.18.0
@@ -10061,7 +10061,7 @@ snapshots:
       micromatch: 4.0.8
       pkg-entry-points: 1.1.1
 
-  '@effect/docgen@0.5.2(patch_hash=ad66ef0771726976d8c366d1dd430176f98f31cf84ace72b162e97aa1f1a17eb)(tsx@4.20.3)(typescript@5.8.2)':
+  '@effect/docgen@0.5.2(patch_hash=9371f4db64512e807c1bfc15ded3d0bf11c52e7d0cf19fdeec00474180ace0bf)(tsx@4.20.3)(typescript@5.8.2)':
     dependencies:
       '@effect/markdown-toc': 0.1.0
       doctrine: 3.0.0
