@@ -35,6 +35,7 @@
     "@safe-global/safe-apps-sdk": "^9.1.0",
     "@safe-global/safe-gateway-typescript-sdk": "^3.23.1",
     "@scure/base": "^1.2.4",
+    "@snagsolutions/sdk": "0.1.0-alpha.74",
     "@supabase/supabase-js": "^2.49.4",
     "@sveltejs/adapter-static": "^3.0.8",
     "@sveltejs/kit": "^2.21.3",
@@ -70,8 +71,5 @@
     "vfile": "^6.0.3",
     "viem": "^2.27.2",
     "vite": "^6.3.1"
-  },
-  "dependencies": {
-    "@snagsolutions/sdk": "0.1.0-alpha.74"
   }
 }

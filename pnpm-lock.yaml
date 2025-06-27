@@ -36,10 +36,6 @@ importers:
         version: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   app2:
-    dependencies:
-      '@snagsolutions/sdk':
-        specifier: 0.1.0-alpha.74
-        version: 0.1.0-alpha.74
     devDependencies:
       '@aptos-labs/ts-sdk':
         specifier: 1.38.0
@@ -98,6 +94,9 @@ importers:
       '@scure/base':
         specifier: ^1.2.4
         version: 1.2.4
+      '@snagsolutions/sdk':
+        specifier: 0.1.0-alpha.74
+        version: 0.1.0-alpha.74
       '@supabase/supabase-js':
         specifier: ^2.49.4
         version: 2.49.7(bufferutil@4.0.9)(utf-8-validate@5.0.10)
