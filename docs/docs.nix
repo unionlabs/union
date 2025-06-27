@@ -25,12 +25,6 @@ _: {
         docs = mkCi false (
           buildPnpmPackage {
             inherit pnpm;
-            # src = ./.;
-            # srcs = [
-            #   ./.
-            #   ./../versions/.
-            #   ./../deployments/.
-            # ];
             extraSrcs = [
               ../docs
               ../ts-sdk
@@ -40,7 +34,6 @@ _: {
             ];
             hash = "sha256-H6c1DM2jPZPAvAMVqsQi3Twnz1znDA7lz7G+bKwPMV8=";
             packageJsonPath = ./package.json;
-            # sourceRoot = "docs";
             pnpmWorkspaces = [
               "docs"
               "@unionlabs/sdk"
