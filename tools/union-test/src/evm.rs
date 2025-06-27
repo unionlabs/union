@@ -1,14 +1,12 @@
 use std::{time::Duration, panic::AssertUnwindSafe};
+use cosmos_client::rpc::Rpc;
 use tokio::time::timeout;
 
 use alloy::{
-    contract::{Error, RawCallBuilder},
-    transports::TransportError,
-    providers::{
+    contract::{Error, RawCallBuilder, Result}, network::{AnyNetwork, EthereumWallet}, primitives::TxHash, providers::{
         fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
         Provider, ProviderBuilder,
-    },
-    network::{AnyNetwork, EthereumWallet}, primitives::TxHash, rpc::types::{self, AnyReceiptEnvelope, Filter, Log, TransactionReceipt}, signers::local::LocalSigner, sol_types::SolEventInterface    
+    }, rpc::types::{self, AnyReceiptEnvelope, Filter, Log, TransactionReceipt}, signers::local::LocalSigner, sol_types::SolEventInterface, transports::TransportError    
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
@@ -16,7 +14,7 @@ use ibc_union_spec::{datagram::Datagram, IbcUnion};
 
 use ibc_solidity::Ibc::{self, CreateClient, ChannelOpenConfirm, ConnectionOpenConfirm, IbcEvents, IbcErrors, PacketRecv};
 use serde::{Deserialize, Serialize};
-use unionlabs::{primitives::{H160, H256}, ErrorReporter};
+use unionlabs::{primitives::{H160, H256, FixedBytes}, ErrorReporter};
 use voyager_sdk::{
     anyhow::{self, anyhow, bail},
     into_value,
@@ -234,7 +232,7 @@ impl Module {
         )>,
         packet_hash: H256,
         timeout: Duration,
-    ) -> RpcResult<helpers::PacketRecv> {
+    ) -> RpcResult<FixedBytes<32>> {
         self.send_transaction(contract, ibc_messages).await?;
 
         let ev = self
@@ -248,10 +246,7 @@ impl Module {
                 )
             })?;
 
-        Ok(helpers::PacketRecv {
-            packet_hash: ev.packet_hash,
-        })
-        // Ok(ev)
+        Ok(ev.packet_hash)
     }
 
 
