@@ -1,7 +1,7 @@
 syntax = "proto3";
 package union.staking.v1;
 
-option go_package = "union/staking";
+option go_package = "github.com/unionlabs/union/uniond/x/staking/types";
 import "cosmos/staking/v1beta1/tx.proto";
 import "cosmos/msg/v1/msg.proto";
 import "gogoproto/gogo.proto";

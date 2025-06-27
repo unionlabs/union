@@ -13,6 +13,7 @@ import (
 
 func main() {
 	rootCmd := cmd.NewRootCmd()
+	rootCmd.AddCommand(cmd.ProofOfPossession())
 	if err := svrcmd.Execute(rootCmd, clienthelpers.EnvPrefix, app.DefaultNodeHome); err != nil {
 		fmt.Fprintln(rootCmd.OutOrStderr(), err)
 		os.Exit(1)

@@ -65,8 +65,6 @@
               expedited_voting_period = "6s";
             };
             staking.params = {
-              epoch_length = "8";
-              jailed_validator_threshold = "10";
               unbonding_time = "2m";
             };
             slashing.params = {

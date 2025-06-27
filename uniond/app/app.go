@@ -77,12 +77,6 @@ import (
 	ibctransferkeeper "github.com/cosmos/ibc-go/v8/modules/apps/transfer/keeper"
 	ibckeeper "github.com/cosmos/ibc-go/v8/modules/core/keeper"
 
-	_ "github.com/strangelove-ventures/poa"               // import for side-effects
-	_ "github.com/strangelove-ventures/poa/api/module/v1" // import for side-effects
-	_ "github.com/strangelove-ventures/poa/api/v1"        // import for side-effects
-	poakeeper "github.com/strangelove-ventures/poa/keeper"
-	_ "github.com/strangelove-ventures/poa/module" // import for side-effects
-
 	_ "github.com/skip-mev/feemarket/x/feemarket"
 	feemarketkeeper "github.com/skip-mev/feemarket/x/feemarket/keeper"
 	_ "github.com/skip-mev/feemarket/x/feemarket/types"
@@ -90,6 +84,7 @@ import (
 	wasmkeeper "github.com/CosmWasm/wasmd/x/wasm/keeper"
 	tmproto "github.com/cometbft/cometbft/api/cometbft/types/v1"
 	"github.com/unionlabs/union/uniond/docs"
+	unionstaking "github.com/unionlabs/union/uniond/x/staking/keeper"
 )
 
 const (
@@ -151,11 +146,11 @@ type App struct {
 	WasmKeeper       wasmkeeper.Keeper
 	ScopedWasmKeeper capabilitykeeper.ScopedKeeper
 
-	// POA
-	POAKeeper poakeeper.Keeper
-
 	// Fee Market
 	FeeMarketKeeper feemarketkeeper.Keeper
+
+	// Union Staking (proof of possession)
+	UnionStaking unionstaking.Keeper
 
 	// simulation manager
 	sm           *module.SimulationManager
@@ -255,8 +250,8 @@ func New(
 		&app.FeeGrantKeeper,
 		&app.GroupKeeper,
 		&app.CircuitBreakerKeeper,
-		&app.POAKeeper,
 		&app.FeeMarketKeeper,
+		&app.UnionStaking,
 	); err != nil {
 		panic(err)
 	}

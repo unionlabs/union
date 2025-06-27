@@ -27,9 +27,10 @@ require (
 	cosmossdk.io/x/upgrade v0.1.4
 	github.com/CosmWasm/wasmd v0.54.0
 	github.com/CosmWasm/wasmvm/v2 v2.2.1
-	github.com/cometbft/cometbft v1.0.0-alpha.2.0.20240429102542-490e9bc3de65
+	github.com/cometbft/cometbft v1.0.1
 	github.com/cometbft/cometbft/api v1.0.0
 	github.com/cosmos/cosmos-db v1.1.1
+	github.com/cosmos/cosmos-proto v1.0.0-beta.5
 	github.com/cosmos/cosmos-sdk v0.51.0
 	github.com/cosmos/gogoproto v1.7.0
 	github.com/cosmos/ibc-go/modules/capability v1.0.1
@@ -40,7 +41,7 @@ require (
 	github.com/spf13/cobra v1.8.1
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.19.0
-	github.com/strangelove-ventures/poa v0.50.6
+	google.golang.org/grpc v1.70.0
 	google.golang.org/protobuf v1.36.4
 )
 
@@ -83,12 +84,11 @@ require (
 	github.com/consensys/bavard v0.1.13 // indirect
 	github.com/consensys/gnark-crypto v0.0.0-00010101000000-000000000000 // indirect
 	github.com/cosmos/btcutil v1.0.5 // indirect
-	github.com/cosmos/cosmos-proto v1.0.0-beta.5 // indirect
 	github.com/cosmos/go-bip39 v1.0.0 // indirect
 	github.com/cosmos/gogogateway v1.2.0 // indirect
 	github.com/cosmos/iavl v1.2.4 // indirect
 	github.com/cosmos/ics23/go v0.11.0 // indirect
-	github.com/cosmos/ledger-cosmos-go v0.13.3 // indirect
+	github.com/cosmos/ledger-cosmos-go v0.14.0 // indirect
 	github.com/creachadair/atomicfile v0.3.3 // indirect
 	github.com/creachadair/tomledit v0.0.26 // indirect
 	github.com/danieljoos/wincred v1.2.1 // indirect
@@ -226,7 +226,6 @@ require (
 	google.golang.org/genproto v0.0.0-20240701130421-f6361c86f094 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250102185135-69823020774d // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250102185135-69823020774d // indirect
-	google.golang.org/grpc v1.70.0 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
@@ -242,8 +241,6 @@ replace (
 	github.com/skip-mev/feemarket => github.com/unionlabs/feemarket v0.0.0-20250302022351-41d27c4c3661
 )
 
-replace github.com/strangelove-ventures/poa => github.com/unionlabs/poa v0.0.0-20250306233111-2fd246e706c1
-
 replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20250228223503-fa271bbe8508
 
 replace (
@@ -252,13 +249,13 @@ replace (
 )
 
 replace (
-	cosmossdk.io/core => github.com/unionlabs/cosmos-sdk/core v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/store => github.com/unionlabs/cosmos-sdk/store v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk/x/circuit v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk/x/evidence v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk/x/feegrant v0.0.0-20250228163659-0f0e36772bd6
-	cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk/x/nft v0.0.0-20250228163659-0f0e36772bd6
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20250611150258-c03752a2eb52
+	cosmossdk.io/core => github.com/unionlabs/cosmos-sdk/core v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/store => github.com/unionlabs/cosmos-sdk/store v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/x/circuit => github.com/unionlabs/cosmos-sdk/x/circuit v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk/x/evidence v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk/x/feegrant v0.0.0-20250620195423-aec0a7b83e26
+	cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk/x/nft v0.0.0-20250620195423-aec0a7b83e26
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20250620195423-aec0a7b83e26
 )
 
 replace (
