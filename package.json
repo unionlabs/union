@@ -3,9 +3,12 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "changeset-publish": "pnpm codemod && pnpm build && TEST_DIST= pnpm vitest && changeset publish",
+    "changeset-version": "changeset version && node scripts/version.mjs",
     "docgen": "pnpm --recursive --filter @unionlabs/sdk exec docgen && node scripts/docs.mjs"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.29.5",
     "@effect/docgen": "^0.5.2",
     "@effect/language-service": "0.18.0",
     "@effect/typeclass": "^0.35.5",

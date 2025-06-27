@@ -16,9 +16,8 @@ function pkgName(pkg) {
 
 function copyFiles(pkg) {
   const name = pkgName(pkg)
-  // const docs = Path.join("packages", pkg, "docs/modules")
   const docs = Path.join(pkg, "docs/modules")
-  const dest = Path.join("docs", "src", "content", "docs", "reference", pkg)
+  const dest = Path.join("docs", "src", "content", "docs", "reference", pkgName(pkg))
   const files = Fs.readdirSync(docs, { withFileTypes: true })
 
   function handleFiles(root, files) {
@@ -49,10 +48,12 @@ function copyFiles(pkg) {
 }
 
 packages().forEach((pkg, i) => {
-  Fs.rmSync(Path.join("docs", "src", "content", "docs", "reference", pkg), {
+  Fs.rmSync(Path.join("docs", "src", "content", "docs", "reference", pkgName(pkg)), {
     recursive: true,
     force: true,
   })
-  Fs.mkdirSync(Path.join("docs", "src", "content", "docs", "reference", pkg), { recursive: true })
+  Fs.mkdirSync(Path.join("docs", "src", "content", "docs", "reference", pkgName(pkg)), {
+    recursive: true,
+  })
   copyFiles(pkg)
 })

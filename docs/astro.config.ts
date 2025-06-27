@@ -348,7 +348,7 @@ export default defineConfig({
             },
             {
               label: "Typescript SDK",
-              autogenerate: { directory: "/reference/ts-sdk" },
+              autogenerate: { directory: "/reference/@unionlabs/sdk" },
               badge: { text: "evolving", variant: "caution" },
             },
           ],
