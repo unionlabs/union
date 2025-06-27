@@ -54,13 +54,17 @@ pub struct WrappedTokenArgs {
     #[arg(long)]
     token: unionlabs::primitives::Bytes,
 
-    /// Address prefix to match (hex encoded, e.g., "0x1234")
+    /// Address prefix to match (hex encoded or ERC55 checksummed, e.g., "0x1234" or "0xDe5")
     #[arg(long)]
     prefix: Option<String>,
 
-    /// Address suffix to match (hex encoded, e.g., "5678")
+    /// Address suffix to match (hex encoded or ERC55 checksummed, e.g., "5678" or "aD5b")
     #[arg(long)]
     suffix: Option<String>,
+
+    /// Use ERC55 checksummed matching (case-sensitive)
+    #[arg(long)]
+    erc55: bool,
 
     /// Manager/Authority address for U.initialize
     #[arg(long)]
@@ -105,55 +109,65 @@ async fn find_vanity_wrapped_token(args: WrappedTokenArgs) -> Result<()> {
     let zkgm_address: Address = args.zkgm.get().into();
     let impl_address: Address = args.impl_address.get().into();
 
-    let (prefix_bytes, prefix_nibble) = args
-        .prefix
-        .as_ref()
-        .map(|p| {
-            let hex_str = if p.starts_with("0x") || p.starts_with("0X") {
-                &p[2..]
-            } else {
-                p
-            };
+    // For ERC55 mode, we'll store the prefix/suffix as-is for string comparison
+    let erc55_prefix = if args.erc55 { args.prefix.clone() } else { None };
+    let erc55_suffix = if args.erc55 { args.suffix.clone() } else { None };
 
-            if hex_str.len() % 2 == 0 {
-                // Even length - full bytes
-                (hex::decode(hex_str).expect("Invalid hex prefix"), None)
-            } else {
-                // Odd length - last character is a nibble constraint
-                let full_bytes = &hex_str[..hex_str.len() - 1];
-                let nibble_char = hex_str.chars().last().unwrap();
-                let nibble =
-                    u8::from_str_radix(&nibble_char.to_string(), 16).expect("Invalid hex nibble");
-                (
-                    hex::decode(full_bytes).expect("Invalid hex prefix"),
-                    Some(nibble),
-                )
-            }
-        })
-        .unwrap_or((Vec::new(), None));
+    let (prefix_bytes, prefix_nibble) = if !args.erc55 {
+        args.prefix
+            .as_ref()
+            .map(|p| {
+                let hex_str = if p.starts_with("0x") || p.starts_with("0X") {
+                    &p[2..]
+                } else {
+                    p
+                };
 
-    let (suffix_bytes, suffix_leading_nibble) = args
-        .suffix
-        .as_ref()
-        .map(|s| {
-            let hex_str = if s.starts_with("0x") || s.starts_with("0X") {
-                &s[2..]
-            } else {
-                s
-            };
+                if hex_str.len() % 2 == 0 {
+                    // Even length - full bytes
+                    (hex::decode(hex_str).expect("Invalid hex prefix"), None)
+                } else {
+                    // Odd length - last character is a nibble constraint
+                    let full_bytes = &hex_str[..hex_str.len() - 1];
+                    let nibble_char = hex_str.chars().last().unwrap();
+                    let nibble =
+                        u8::from_str_radix(&nibble_char.to_string(), 16).expect("Invalid hex nibble");
+                    (
+                        hex::decode(full_bytes).expect("Invalid hex prefix"),
+                        Some(nibble),
+                    )
+                }
+            })
+            .unwrap_or((Vec::new(), None))
+    } else {
+        (Vec::new(), None)
+    };
 
-            if hex_str.len() % 2 == 0 {
-                // Even length - full bytes
-                (hex::decode(hex_str).expect("Invalid hex suffix"), None)
-            } else {
-                // Odd length - address must end with the literal hex pattern
-                let leading_nibble =
-                    u8::from_str_radix(&hex_str[0..1], 16).expect("Invalid hex nibble");
-                let remaining_bytes = hex::decode(&hex_str[1..]).expect("Invalid hex suffix");
-                (remaining_bytes, Some(leading_nibble))
-            }
-        })
-        .unwrap_or((Vec::new(), None));
+    let (suffix_bytes, suffix_leading_nibble) = if !args.erc55 {
+        args.suffix
+            .as_ref()
+            .map(|s| {
+                let hex_str = if s.starts_with("0x") || s.starts_with("0X") {
+                    &s[2..]
+                } else {
+                    s
+                };
+
+                if hex_str.len() % 2 == 0 {
+                    // Even length - full bytes
+                    (hex::decode(hex_str).expect("Invalid hex suffix"), None)
+                } else {
+                    // Odd length - address must end with the literal hex pattern
+                    let leading_nibble =
+                        u8::from_str_radix(&hex_str[0..1], 16).expect("Invalid hex nibble");
+                    let remaining_bytes = hex::decode(&hex_str[1..]).expect("Invalid hex suffix");
+                    (remaining_bytes, Some(leading_nibble))
+                }
+            })
+            .unwrap_or((Vec::new(), None))
+    } else {
+        (Vec::new(), None)
+    };
 
     println!("Searching for vanity address...");
     println!("Path: {}", args.path);
@@ -167,6 +181,9 @@ async fn find_vanity_wrapped_token(args: WrappedTokenArgs) -> Result<()> {
     }
     if let Some(ref s) = args.suffix {
         println!("Suffix: {}", s);
+    }
+    if args.erc55 {
+        println!("Mode: ERC55 checksummed (case-sensitive)");
     }
     println!("Threads: {}", args.threads);
     println!();
@@ -184,6 +201,9 @@ async fn find_vanity_wrapped_token(args: WrappedTokenArgs) -> Result<()> {
         let name = args.name.clone();
         let symbol = args.symbol.clone();
         let token_bytes = token_bytes.clone();
+        let erc55_prefix = erc55_prefix.clone();
+        let erc55_suffix = erc55_suffix.clone();
+        let erc55_mode = args.erc55;
 
         let handle = thread::spawn(move || -> Option<(Vec<u8>, Address)> {
             let mut rng = rand::thread_rng();
@@ -229,63 +249,90 @@ async fn find_vanity_wrapped_token(args: WrappedTokenArgs) -> Result<()> {
                     let wrapped_token =
                         create3::predict_deterministic_address(zkgm_address, wrapped_token_salt);
 
-                    let address_bytes = wrapped_token.as_slice();
-
-                    let matches_prefix = if prefix_bytes.is_empty() && prefix_nibble.is_none() {
-                        true
-                    } else {
-                        let full_bytes_match = if prefix_bytes.is_empty() {
-                            true
-                        } else if address_bytes.len() < prefix_bytes.len() {
-                            false
+                    let matches = if erc55_mode {
+                        // ERC55 checksummed matching - compare the checksummed string representation
+                        let address_str = wrapped_token.to_string();
+                        
+                        let matches_prefix = if let Some(ref prefix) = erc55_prefix {
+                            let prefix_to_match = if prefix.starts_with("0x") || prefix.starts_with("0X") {
+                                prefix.clone()
+                            } else {
+                                format!("0x{}", prefix)
+                            };
+                            address_str.starts_with(&prefix_to_match)
                         } else {
-                            address_bytes[..prefix_bytes.len()] == prefix_bytes[..]
+                            true
                         };
 
-                        if let Some(nibble) = prefix_nibble {
-                            if address_bytes.len() <= prefix_bytes.len() {
+                        let matches_suffix = if let Some(ref suffix) = erc55_suffix {
+                            address_str.ends_with(suffix)
+                        } else {
+                            true
+                        };
+
+                        matches_prefix && matches_suffix
+                    } else {
+                        // Original byte-level matching
+                        let address_bytes = wrapped_token.as_slice();
+
+                        let matches_prefix = if prefix_bytes.is_empty() && prefix_nibble.is_none() {
+                            true
+                        } else {
+                            let full_bytes_match = if prefix_bytes.is_empty() {
+                                true
+                            } else if address_bytes.len() < prefix_bytes.len() {
                                 false
                             } else {
-                                let byte_to_check = address_bytes[prefix_bytes.len()];
-                                let high_nibble = (byte_to_check >> 4) & 0xF;
-                                full_bytes_match && high_nibble == nibble
-                            }
-                        } else {
-                            full_bytes_match
-                        }
-                    };
+                                address_bytes[..prefix_bytes.len()] == prefix_bytes[..]
+                            };
 
-                    let matches_suffix = if suffix_bytes.is_empty()
-                        && suffix_leading_nibble.is_none()
-                    {
-                        true
-                    } else if let Some(leading_nibble) = suffix_leading_nibble {
-                        let required_bytes = suffix_bytes.len() + 1; // +1 for the nibble
-                        if address_bytes.len() < required_bytes {
+                            if let Some(nibble) = prefix_nibble {
+                                if address_bytes.len() <= prefix_bytes.len() {
+                                    false
+                                } else {
+                                    let byte_to_check = address_bytes[prefix_bytes.len()];
+                                    let high_nibble = (byte_to_check >> 4) & 0xF;
+                                    full_bytes_match && high_nibble == nibble
+                                }
+                            } else {
+                                full_bytes_match
+                            }
+                        };
+
+                        let matches_suffix = if suffix_bytes.is_empty()
+                            && suffix_leading_nibble.is_none()
+                        {
+                            true
+                        } else if let Some(leading_nibble) = suffix_leading_nibble {
+                            let required_bytes = suffix_bytes.len() + 1; // +1 for the nibble
+                            if address_bytes.len() < required_bytes {
+                                false
+                            } else {
+                                let suffix_start = address_bytes.len() - suffix_bytes.len();
+                                let bytes_match = if suffix_bytes.is_empty() {
+                                    true
+                                } else {
+                                    address_bytes[suffix_start..] == suffix_bytes[..]
+                                };
+
+                                let nibble_byte_index = address_bytes.len() - suffix_bytes.len() - 1;
+                                let byte_with_nibble = address_bytes[nibble_byte_index];
+                                let low_nibble = byte_with_nibble & 0xF;
+                                let nibble_matches = low_nibble == leading_nibble;
+
+                                bytes_match && nibble_matches
+                            }
+                        } else if address_bytes.len() < suffix_bytes.len() {
                             false
                         } else {
                             let suffix_start = address_bytes.len() - suffix_bytes.len();
-                            let bytes_match = if suffix_bytes.is_empty() {
-                                true
-                            } else {
-                                address_bytes[suffix_start..] == suffix_bytes[..]
-                            };
+                            address_bytes[suffix_start..] == suffix_bytes[..]
+                        };
 
-                            let nibble_byte_index = address_bytes.len() - suffix_bytes.len() - 1;
-                            let byte_with_nibble = address_bytes[nibble_byte_index];
-                            let low_nibble = byte_with_nibble & 0xF;
-                            let nibble_matches = low_nibble == leading_nibble;
-
-                            bytes_match && nibble_matches
-                        }
-                    } else if address_bytes.len() < suffix_bytes.len() {
-                        false
-                    } else {
-                        let suffix_start = address_bytes.len() - suffix_bytes.len();
-                        address_bytes[suffix_start..] == suffix_bytes[..]
+                        matches_prefix && matches_suffix
                     };
 
-                    if matches_prefix && matches_suffix {
+                    if matches {
                         found.store(true, Ordering::Relaxed);
                         total_attempts.fetch_add(local_attempts, Ordering::Relaxed);
                         return Some((
@@ -344,7 +391,7 @@ async fn find_vanity_wrapped_token(args: WrappedTokenArgs) -> Result<()> {
             elapsed.as_secs_f64()
         );
         println!("Salt: 0x{}", hex::encode(&salt));
-        println!("Wrapped Token Address: {:#x}", wrapped_token);
+        println!("Wrapped Token Address: {}", wrapped_token);
     } else {
         println!("Search was interrupted before finding a match.");
     }
