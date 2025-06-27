@@ -350,25 +350,26 @@ impl Module {
         &self,
         contract: Bech32<H256>,
         funded_msgs: Vec<(Box<impl Encode<Json> + Clone>, Vec<Coin>)>,
-    ) -> Option<Result<IbcEvent, BroadcastTxCommitError>> {
-        let tx_result = match self.send_transaction(contract, funded_msgs).await? {
-            Ok(tx_result) => tx_result,
-            Err(e) => return Some(Err(e)),
-        };
+    ) -> anyhow::Result<H256> {
+        let result = self.send_transaction(contract, funded_msgs).await;
 
-        // println!("tx_result: {tx_result:?}");
+        let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
 
-        // TODO(aeryz): this should be an error
-        let send_event = tx_result.tx_result.events.into_iter().find_map(|e| {
-            if e.ty == "wasm-packet_send" {
-                let event = CosmosSdkEvent::<IbcEvent>::new(e).ok()?.event;
-                Some(event)
-            } else {
-                None
-            }
-        })?;
-
-        Some(Ok(send_event))
+        let send_event = tx_result.tx_result.events
+            .into_iter()
+            .find_map(|e| {
+                if e.ty == "wasm-packet_send" {
+                    CosmosSdkEvent::<IbcEvent>::new(e).ok().map(|e| e.event)
+                } else {
+                    None
+                }
+            })
+            .ok_or_else(|| anyhow!("wasm-packet_send event not found"))?;
+        
+        Ok(match send_event {
+            IbcEvent::WasmPacketSend { packet_hash, .. } => packet_hash,
+            _ => bail!("unexpected event variant"),
+        })
     }
 }
 

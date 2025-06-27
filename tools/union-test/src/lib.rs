@@ -81,7 +81,7 @@ pub trait ChainEndpoint: Send + Sync {
         &self,
         contract: Bech32<H256>,
         funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
-    ) -> Option<Result<IbcEvent, BroadcastTxCommitError>>;
+    ) -> anyhow::Result<H256> ;
 
     async fn wait_for_packet_recv(
         &self,
@@ -173,7 +173,7 @@ impl ChainEndpoint for evm::Module {
         &self,
         contract: Bech32<H256>,
         funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
-    ) -> Option<Result<IbcEvent, BroadcastTxCommitError>>{
+    ) -> anyhow::Result<H256> {
         unimplemented!("Sending IBC packets is not implemented for EVM chains");
     }
 
@@ -268,7 +268,7 @@ impl ChainEndpoint for cosmos::Module {
         &self,
         contract: Bech32<H256>,
         funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
-    ) -> Option<Result<IbcEvent, BroadcastTxCommitError>> {
+    ) -> anyhow::Result<H256>  {
         self.send_ibc_transaction(contract, funded_msgs).await
     }
 
@@ -409,16 +409,18 @@ where
     }
 
 
-    // pub async fn send_and_recv(
-    //     &self,
-    //     packet: ExecuteMsg,
-    //     funds: Vec<Coin>,
-    //     timeout: Duration,
-    // ) -> anyhow::Result<D::PacketRecv> {
-    //     self.src.send_ibc_packet(packet, funds)?;
-    //     let hash = /* TODO: extract hash from packet */ unimplemented!();
-    //     let recv = self.dst.wait_for_packet_recv(hash, timeout).await?;
-    //     Ok(recv)
-    // }
+    pub async fn send_and_recv(
+        &self,
+        contract: Bech32<H256>,
+        funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketRecv> {
+        let packet_hash = self.src.send_ibc_packet(contract, funded_msgs).await;
+        unimplemented!();
+        // let packet_hash = self.dst.wait_for_packet_recv(packet_hash, timeout).await;
+        // let hash = /* TODO: extract hash from packet */ unimplemented!();
+        // let recv = self.dst.wait_for_packet_recv(hash, timeout).await?;
+        // Ok(recv)
+    }
 }
 
