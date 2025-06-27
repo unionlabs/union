@@ -20,7 +20,7 @@ use cosmos_client::BroadcastTxCommitError;
 
 use unionlabs::{primitives::{H160, H256}, ErrorReporter};
 use alloy::{network::AnyNetwork, contract::RawCallBuilder, providers::DynProvider};
-use voyager_sdk::{anyhow, primitives::ChainId};
+use voyager_sdk::{anyhow::{self, Ok}, primitives::ChainId};
 use std::process::Command;
 use axum::async_trait;
 use jsonrpsee::core::RpcResult;
@@ -411,16 +411,17 @@ where
 
     pub async fn send_and_recv(
         &self,
+        send_from_source: bool,
         contract: Bech32<H256>,
         funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        let packet_hash = self.src.send_ibc_packet(contract, funded_msgs).await;
-        unimplemented!();
-        // let packet_hash = self.dst.wait_for_packet_recv(packet_hash, timeout).await;
-        // let hash = /* TODO: extract hash from packet */ unimplemented!();
-        // let recv = self.dst.wait_for_packet_recv(hash, timeout).await?;
-        // Ok(recv)
+        if send_from_source {
+            let packet_hash = self.src.send_ibc_packet(contract, funded_msgs).await?;
+            let recv = self.dst.wait_for_packet_recv(packet_hash, timeout).await?;
+            return Ok(recv);
+        }
+        unimplemented!("Sending IBC packets is not implemented for EVM chains");
     }
 }
 
