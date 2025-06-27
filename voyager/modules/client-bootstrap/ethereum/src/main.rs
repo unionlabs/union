@@ -1,3 +1,5 @@
+#![warn(clippy::unwrap_used)]
+
 use std::ops::Div;
 
 use alloy::providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder};
@@ -135,7 +137,7 @@ impl ClientBootstrapModule for Module {
 
         let beacon_api_client = BeaconApiClient::new(config.beacon_rpc_url);
 
-        let spec = beacon_api_client.spec().await.unwrap();
+        let spec = beacon_api_client.spec().await?;
 
         if spec.preset_base != config.chain_spec {
             bail!(
@@ -166,9 +168,21 @@ impl ClientBootstrapModuleServer for Module {
     ) -> RpcResult<Value> {
         ensure_null(config)?;
 
-        let genesis = self.beacon_api_client.genesis().await.unwrap();
+        let genesis = self.beacon_api_client.genesis().await.map_err(|err| {
+            ErrorObject::owned(
+                -1,
+                ErrorReporter(err).with_message("error fetching beacon genesis"),
+                None::<()>,
+            )
+        })?;
 
-        let spec = self.beacon_api_client.spec().await.unwrap();
+        let spec = self.beacon_api_client.spec().await.map_err(|err| {
+            ErrorObject::owned(
+                -1,
+                ErrorReporter(err).with_message("error fetching beacon spec"),
+                None::<()>,
+            )
+        })?;
 
         let beacon_slot = self
             .beacon_slot_of_execution_block_number(height.height())
@@ -261,7 +275,9 @@ impl ClientBootstrapModuleServer for Module {
             ibc_contract_address: self.ibc_handler_address,
             initial_sync_committee: Some(InitialSyncCommittee {
                 current_sync_committee,
-                next_sync_committee: light_client_update.next_sync_committee.unwrap(),
+                next_sync_committee: light_client_update
+                    .next_sync_committee
+                    .expect("next sync committee should exist"),
             }),
         }))
         .expect("infallible"))
@@ -324,7 +340,13 @@ impl ClientBootstrapModuleServer for Module {
                 .get_proof(self.ibc_handler_address.into(), vec![])
                 .block_id(bootstrap_header.execution.block_number.into())
                 .await
-                .unwrap()
+                .map_err(|err| {
+                    ErrorObject::owned(
+                        -1,
+                        ErrorReporter(err).with_message("error fetching ibc storage root"),
+                        None::<()>,
+                    )
+                })?
                 .storage_hash
                 .0
                 .into(),

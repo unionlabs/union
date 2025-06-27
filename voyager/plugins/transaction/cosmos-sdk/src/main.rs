@@ -533,7 +533,6 @@ impl PluginServer<ModuleCall, Never> for Module {
     }
 
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
-    #[allow(clippy::collapsible_match)]
     async fn call(&self, _: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
             ModuleCall::SubmitTransaction(mut msgs) => {
