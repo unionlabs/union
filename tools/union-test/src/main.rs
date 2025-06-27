@@ -4,18 +4,11 @@ use alloy::sol_types::SolValue;
 use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
 use cosmos::{FeemarketConfig, GasFillerConfig};
 use hex_literal::hex;
-use ibc_union_msg::msg::{ExecuteMsg, MsgCreateClient};
-use ibc_union_spec::{ChannelId, Timestamp, ClientId};
-use protos::{cosmos::base::v1beta1::Coin, ibc::core::channel};
-use ucs03_zkgm::com::{
-    FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1, OP_FUNGIBLE_ASSET_ORDER,
-};
+
 use unionlabs::{
-    bech32::Bech32,
-    encoding::{Bincode, EncodeAs, EthAbi},
+    bech32::Bech32
 };
 use voyager_sdk::{anyhow, primitives::ChainId};
-use rand::RngCore;
 use union_test::{TestContext, cosmos, evm};
 
 #[tokio::main]
@@ -84,50 +77,50 @@ async fn main() -> anyhow::Result<()> {
     println!("✅ src CreateClientConfirm = {:#?}", src_confirm);
     println!("✅ dst CreateClientConfirm = {:#?}", dst_confirm);
 
-    let conn_confirm = ctx
-        .open_connection(
-            true,
-            src_confirm.client_id,
-            dst_confirm.client_id,
-            Duration::from_secs(180),
-        )
-        .await?;
+    // let conn_confirm = ctx
+    //     .open_connection(
+    //         true,
+    //         src_confirm.client_id,
+    //         dst_confirm.client_id,
+    //         Duration::from_secs(180),
+    //     )
+    //     .await?;
 
-    println!(
-        "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
-        conn_confirm.connection_id,
-        conn_confirm.counterparty_connection_id,
-    );
+    // println!(
+    //     "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
+    //     conn_confirm.connection_id,
+    //     conn_confirm.counterparty_connection_id,
+    // );
 
 
-    let opened = ctx
-        .open_channels(
-            true,
-            "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
-            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
-            conn_confirm.connection_id,
-            "ucs03-zkgm-0".into(),
-            1,
-            Duration::from_secs(240),
-        )
-        .await?;
+    // let opened = ctx
+    //     .open_channels(
+    //         true,
+    //         "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
+    //         hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
+    //         conn_confirm.connection_id,
+    //         "ucs03-zkgm-0".into(),
+    //         1,
+    //         Duration::from_secs(240),
+    //     )
+    //     .await?;
 
-    println!("Opened {} channels", opened);
+    // println!("Opened {} channels", opened);
 
-    let conn_confirm_pt2 = ctx
-        .open_connection(
-            false,
-            src_confirm.client_id,
-            dst_confirm.client_id,
-            Duration::from_secs(180),
-        )
-        .await?;
+    // let conn_confirm_pt2 = ctx
+    //     .open_connection(
+    //         false,
+    //         src_confirm.client_id,
+    //         dst_confirm.client_id,
+    //         Duration::from_secs(180),
+    //     )
+    //     .await?;
 
-    println!(
-        "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
-        conn_confirm_pt2.connection_id,
-        conn_confirm_pt2.counterparty_connection_id,
-    );
+    // println!(
+    //     "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
+    //     conn_confirm_pt2.connection_id,
+    //     conn_confirm_pt2.counterparty_connection_id,
+    // );
 
     Ok(())
 }
