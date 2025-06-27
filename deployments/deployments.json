@@ -498,8 +498,8 @@
       "ucs03": {
         "address": "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc",
         "height": 27869895,
-        "commit": "1f93d0b7f6a1bbc2802a3d116d75a79ace3f1bc1",
-        "code_id": 12645,
+        "commit": "d036c2c0c90bbf9e05b53c6efb69f53c2e60d765",
+        "code_id": 12648,
         "minter": {
           "type": "osmosis_tokenfactory",
           "address": "osmo13ulc6pqhm60qnx58ss7s3cft8cqfycexq3uy3dd2v0l8qsnkvk4sj22sn6",
