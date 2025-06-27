@@ -33,4 +33,4 @@ export const getSnagClient = () =>
     })
   })
 
-export type { SnagSolutions } 
+export type { SnagSolutions }

@@ -1,13 +1,12 @@
 import { Effect, pipe } from "effect"
-import { mapSnagError } from "./errors"
 import { getSnagClient } from "./client"
+import { mapSnagError } from "./errors"
 import {
   CreateUserDeviceParams,
   CreateUserMetadataParams,
   validateCreateUserDeviceParams,
   validateCreateUserMetadataParams,
 } from "./schema"
-
 
 /**
  * Creates a user device in Snag for fraud tracking
@@ -57,4 +56,4 @@ export const createUserMetadata = (params: CreateUserMetadataParams) =>
       console.error("Failed to create user metadata:", error)
       return Effect.fail(error)
     }),
-  ) 
+  )

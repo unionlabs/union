@@ -3,43 +3,12 @@ import BaselineCloseIcon from "$lib/components/icons/BaselineCloseIcon.svelte"
 import SharpErrorOutlineIcon from "$lib/components/icons/SharpErrorOutlineIcon.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import Modal from "$lib/components/ui/Modal.svelte"
-import type {
-  AccountError,
-  AchievementError,
-  AuthenticationError,
-  CategoryError,
-  ChainError,
-  DashboardUnknownException,
-  EmailLinkError,
-  ExperienceError,
-  LeaderboardError,
-  MissionError,
-  ProviderLinkError,
-  RewardError,
-  SupabaseClientError,
-  SupabaseError,
-  WalletError,
-} from "$lib/dashboard/errors"
 import { Match, pipe } from "effect"
 import { slide } from "svelte/transition"
+import type { DashboardError } from "../stores/errors.svelte";
 
 interface Props {
-  error:
-    | AuthenticationError
-    | SupabaseClientError
-    | SupabaseError
-    | DashboardUnknownException
-    | AchievementError
-    | LeaderboardError
-    | MissionError
-    | RewardError
-    | WalletError
-    | ProviderLinkError
-    | EmailLinkError
-    | ChainError
-    | CategoryError
-    | AccountError
-    | ExperienceError
+  error: DashboardError
   onClose?: () => void
 }
 
@@ -71,6 +40,17 @@ const getUserFriendlyMessage = pipe(
     CategoryError: (x) => x.message || `Failed to ${x.operation} category data. Please try again.`,
     AccountError: (x) => x.message || `Failed to ${x.operation} account. Please try again.`,
     ExperienceError: (x) => x.message || `Failed to ${x.operation} experience. Please try again.`,
+    // Snag error cases
+    SnagClientError: (x) => x.message || "Snag client error occurred. Please try again.",
+    SnagAPIError: (x) => x.message || "Snag API error occurred. Please try again.",
+    SnagBadRequestError: (x) => x.message || "Invalid request to Snag API.",
+    SnagAuthenticationError: (x) => x.message || "Snag authentication failed.",
+    SnagPermissionDeniedError: (x) => x.message || "Permission denied by Snag API.",
+    SnagNotFoundError: (x) => x.message || "Snag resource not found.",
+    SnagUnprocessableEntityError: (x) => x.message || "Snag API could not process the request.",
+    SnagRateLimitError: (x) => x.message || "Snag API rate limit exceeded. Please try again later.",
+    SnagInternalServerError: (x) => x.message || "Snag API internal server error.",
+    SnagConnectionError: (x) => x.message || "Failed to connect to Snag API.",
   }),
   Match.orElse(() => "An unexpected error occurred."),
 )

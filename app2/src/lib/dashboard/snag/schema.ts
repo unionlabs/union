@@ -1,8 +1,10 @@
 import * as S from "effect/Schema"
 
-export class CreateUserDeviceParams extends S.Class<CreateUserDeviceParams>("CreateUserDeviceParams")({
-  ipAddress: S.String,
-}) {}
+export class CreateUserDeviceParams
+  extends S.Class<CreateUserDeviceParams>("CreateUserDeviceParams")({
+    ipAddress: S.String,
+  })
+{}
 
 export class UserDevice extends S.Class<UserDevice>("UserDevice")({
   id: S.String,
@@ -14,7 +16,6 @@ export class UserDevice extends S.Class<UserDevice>("UserDevice")({
   createdAt: S.String,
 }) {}
 
-// Schema that exactly matches SDK's MetadataCreateParams interface
 export const CreateUserMetadataParams = S.Struct({
   discordUser: S.optionalWith(S.Union(S.String, S.Null), { exact: true }),
   discordUserId: S.optionalWith(S.Union(S.String, S.Null), { exact: true }),
@@ -59,37 +60,20 @@ export class SnagUser extends S.Class<SnagUser>("SnagUser")({
 }) {}
 
 export class UserMetadata extends S.Class<UserMetadata>("UserMetadata")({
-  id: S.String, // Unique identifier for the user metadata
-  websiteId: S.String, // Unique identifier for the website
-  organizationId: S.String, // Unique identifier for the organization
-  walletGroupIdentifier: S.NullishOr(S.String), // Identifier for the user wallet group set via api
-  userGroupId: S.NullishOr(S.String), // Identifier for the user group set via api
+  id: S.String,
+  websiteId: S.String,
+  organizationId: S.String,
+  walletGroupIdentifier: S.NullishOr(S.String),
+  userGroupId: S.NullishOr(S.String),
   userGroup: UserGroup,
   user: SnagUser,
-  createdAt: S.String, // Timestamp when the wallet was created
+  createdAt: S.String,
 }) {}
 
-
-// =============================================================================
-// Validation Helpers
-// =============================================================================
-
-/**
- * Validates and decodes a user device response from the API
- */
 export const validateUserDevice = S.decodeUnknown(UserDevice)
 
-/**
- * Validates and decodes user metadata response from the API
- */
 export const validateUserMetadata = S.decodeUnknown(UserMetadata)
 
-/**
- * Validates create user device parameters
- */
 export const validateCreateUserDeviceParams = S.decodeUnknown(CreateUserDeviceParams)
 
-/**
- * Validates create user metadata parameters  
- */
-export const validateCreateUserMetadataParams = S.decodeUnknown(CreateUserMetadataParams) 
+export const validateCreateUserMetadataParams = S.decodeUnknown(CreateUserMetadataParams)

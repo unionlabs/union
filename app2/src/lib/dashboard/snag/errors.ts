@@ -68,18 +68,21 @@ export class SnagConnectionError extends Data.TaggedError("SnagConnectionError")
 
 export function mapSnagError(error: unknown, operation: string) {
   // Check if it's a Snag SDK APIError here we need to allow null afaik lol
-  if (typeof error === "object" && error !== null && "name" in error && typeof (error as {name: unknown}).name === "string") {
+  if (
+    typeof error === "object" && error !== null && "name" in error
+    && typeof (error as { name: unknown }).name === "string"
+  ) {
     const apiError = error as {
       name: string
       status?: number
       headers?: Record<string, string>
       message?: string
     }
-    
+
     const status = apiError.status || 0
     const headers = apiError.headers || {}
     const message = apiError.message || "Unknown Snag API error"
-    
+
     switch (apiError.name) {
       case "BadRequestError":
         return new SnagBadRequestError({
@@ -156,13 +159,14 @@ export function mapSnagError(error: unknown, operation: string) {
   }
 
   // For non-API errors (network, timeout, etc.)
-  const errorMessage = typeof error === "object" && error !== null && "message" in error && typeof (error as {message: unknown}).message === "string" 
-    ? (error as {message: string}).message 
+  const errorMessage = typeof error === "object" && error !== null && "message" in error
+      && typeof (error as { message: unknown }).message === "string"
+    ? (error as { message: string }).message
     : "Unknown connection error"
-    
+
   return new SnagConnectionError({
     operation,
     cause: error,
     message: errorMessage,
   })
-} 
+}
