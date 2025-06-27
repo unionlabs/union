@@ -11,6 +11,18 @@ import type {
   MissionError,
   ProviderLinkError,
   RewardError,
+  SnagAPIError,
+  SnagAuthenticationError,
+  SnagBadRequestError,
+  SnagClientError,
+  SnagConnectionError,
+  SnagError,
+  SnagInternalServerError,
+  SnagNotFoundError,
+  SnagPermissionDeniedError,
+  SnagRateLimitError,
+  SnagUnprocessableEntityError,
+  SnagUserError,
   SupabaseClientError,
   SupabaseError,
   WalletError,
@@ -32,6 +44,18 @@ type DashboardError =
   | EmailLinkError
   | AccountError
   | ExperienceError
+  | SnagClientError
+  | SnagError
+  | SnagUserError
+  | SnagAPIError
+  | SnagBadRequestError
+  | SnagAuthenticationError
+  | SnagPermissionDeniedError
+  | SnagNotFoundError
+  | SnagUnprocessableEntityError
+  | SnagRateLimitError
+  | SnagInternalServerError
+  | SnagConnectionError
 
 class ErrorStore {
   current: DashboardError | null = $state(null)
