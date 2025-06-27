@@ -36,6 +36,10 @@ importers:
         version: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
   app2:
+    dependencies:
+      '@snagsolutions/sdk':
+        specifier: 0.1.0-alpha.74
+        version: 0.1.0-alpha.74
     devDependencies:
       '@aptos-labs/ts-sdk':
         specifier: 1.38.0
@@ -1404,6 +1408,9 @@ packages:
     resolution: {integrity: sha512-QWLl2P+rsCJeofkDNIT3WFmb6NrRud1SUYW8dIhXK/46XFV8Q/g7Bsvib0Askb0reRLe+WYPeeE+l5cH7SlkuQ==}
     engines: {node: '>=18'}
 
+  '@snagsolutions/sdk@0.1.0-alpha.74':
+    resolution: {integrity: sha512-CGMD/2ytOj+tFU/AIMvzddeX9VYHLtArfUStODA/Ge2ZmRmUrpsCA+uvm38qpQkvbGa4J2URCieSpymzP0rylA==}
+
   '@snyk/github-codeowners@1.1.0':
     resolution: {integrity: sha512-lGFf08pbkEac0NYgVf4hdANpAgApRjNByLXB+WBip3qj1iendOIyAwP2GKkKbQMNVy2r1xxDf0ssfWscoiC+Vw==}
     engines: {node: '>=8.10'}
@@ -1702,6 +1709,12 @@ packages:
 
   '@types/ms@2.1.0':
     resolution: {integrity: sha512-GsCCIZDE/p3i96vtEqx+7dBUGXrc7zeSK3wwPHIaRThS+9OhWIXRqzs4d6k1SVU8g91DrNRWxWUGhp5KXQb2VA==}
+
+  '@types/node-fetch@2.6.12':
+    resolution: {integrity: sha512-8nneRWKCg3rMtF69nLQJnOYUcbafYeFSjqkw3jCRLsqkWFlHaoQrr5mXmofFGOx3DKn7UfmBMyov8ySvLRVldA==}
+
+  '@types/node@18.19.112':
+    resolution: {integrity: sha512-i+Vukt9POdS/MBI7YrrkkI5fMfwFtOjphSmt4WXYLfwqsfr6z/HdCx7LqT9M7JktGob8WNgj8nFB4TbGNE4Cog==}
 
   '@types/node@22.13.14':
     resolution: {integrity: sha512-Zs/Ollc1SJ8nKUAgc7ivOEdIBM8JAKgrqqUYi2J997JuKO7/tpQC+WCetQ1sypiKCQWHdvdg9wBNpUPEWZae7w==}
@@ -2038,6 +2051,10 @@ packages:
       zod:
         optional: true
 
+  abort-controller@3.0.0:
+    resolution: {integrity: sha512-h8lQ8tacZYnR3vNQTgibj+tODHI5/+l06Au2Pcriv/Gmet0eaj4TwWH41sO9wnHDiQsEj19q0drzdWdeAHtweg==}
+    engines: {node: '>=6.5'}
+
   acorn-jsx@5.3.2:
     resolution: {integrity: sha512-rq9s+JNhf0IChjtDXxllJ7g41oZk5SlXtp0LHwyA5cejwn7vKmKp4pPri6YEePv2PU65sAsegbXtIinmDFDXgQ==}
     peerDependencies:
@@ -2054,6 +2071,10 @@ packages:
   agent-base@7.1.3:
     resolution: {integrity: sha512-jRR5wdylq8CkOe6hei19GGZnxM6rBGwFl3Bg0YItGDimvjGtAvdZk4Pu6Cl4u4Igsws4a1fd1Vq3ezrhn4KmFw==}
     engines: {node: '>= 14'}
+
+  agentkeepalive@4.6.0:
+    resolution: {integrity: sha512-kja8j7PjmncONqaTsB8fQ+wE2mSU2DJ9D4XKoJ5PFWIdRMa6SLSN1ff4mOr4jCbfRSsxR4keIiySJU0N9T5hIQ==}
+    engines: {node: '>= 8.0.0'}
 
   aggregate-error@3.1.0:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
@@ -2755,6 +2776,10 @@ packages:
   ethers@5.8.0:
     resolution: {integrity: sha512-DUq+7fHrCg1aPDFCHx6UIPb3nmt2XMpM7Y/g2gLhsl3lIBqeAfOJIl1qEvRf2uq3BiKxmh6Fh5pfp2ieyek7Kg==}
 
+  event-target-shim@5.0.1:
+    resolution: {integrity: sha512-i/2XbnSz/uxRCU6+NdVJgKWDTM427+MqYbkQzD321DuCQJUqOuJKIA0IM2+W2xtYHdKOmZ4dR6fExsd4SXL+WQ==}
+    engines: {node: '>=6'}
+
   eventemitter2@6.4.9:
     resolution: {integrity: sha512-JEPTiaOt9f04oa6NOkc4aH+nVp5I3wEjpHbIPqfgCdD5v5bUzy7xQqwcVO2aDQgOWhI28da57HksMrzK9HlRxg==}
 
@@ -2877,6 +2902,9 @@ packages:
     resolution: {integrity: sha512-gIXjKqtFuWEgzFRJA9WCQeSJLZDjgJUOMCMzxtvFq/37KojM1BFGufqsCy0r4qSQmYLsZYMeyRqzIWOMup03sw==}
     engines: {node: '>=14'}
 
+  form-data-encoder@1.7.2:
+    resolution: {integrity: sha512-qfqtYan3rxrnCk1VYaA4H+Ms9xdpPqvLZa6xmMgFvhO32x7/3J/ExcTd6qpxM0vH2GdMI+poehyBZvqfMTto8A==}
+
   form-data-encoder@4.0.2:
     resolution: {integrity: sha512-KQVhvhK8ZkWzxKxOr56CPulAhH3dobtuQ4+hNQ+HekH/Wp5gSOafqRAeTphQUJAIk0GBvHZgJ2ZGRWd5kphMuw==}
     engines: {node: '>= 18'}
@@ -2884,6 +2912,10 @@ packages:
   form-data@4.0.2:
     resolution: {integrity: sha512-hGfm/slu0ZabnNt4oaRZ6uREyfCj6P4fT/n6A1rGV+Z0VdGXjfOhVUpkn6qVQONHGIFwmveGXyDs75+nr6FM8w==}
     engines: {node: '>= 6'}
+
+  formdata-node@4.4.1:
+    resolution: {integrity: sha512-0iirZp3uVDjVGt9p49aTaqjk84TrglENEDuqfdlZQ1roC9CWlPk6Avf8EEnZNcAqPonwkG35x4n3ww/1THYAeQ==}
+    engines: {node: '>= 12.20'}
 
   fs-extra@10.1.0:
     resolution: {integrity: sha512-oRXApq54ETRj4eMiFzGnHWGy+zo5raudjuxN0b8H7s/RU2oW0Wvsx9O0ACRN/kRq9E8Vu/ReskGB5o3ji+FzHQ==}
@@ -3081,6 +3113,9 @@ packages:
   https-proxy-agent@7.0.6:
     resolution: {integrity: sha512-vK9P5/iUfdl95AI+JVyUuIcVtd4ofvtrOr3HNtM2yxC9bnMbEdp3x01OhQNnjb8IJYi38VlTE3mBXwcfvywuSw==}
     engines: {node: '>= 14'}
+
+  humanize-ms@1.2.1:
+    resolution: {integrity: sha512-Fl70vYtsAFb/C06PTS9dZBo7ihau+Tu/DNCk/OyHhea07S+aeMWpFFkUaXRa8fI+ScZbEI8dfSxwY7gxZ9SAVQ==}
 
   iconv-lite@0.6.3:
     resolution: {integrity: sha512-4fCk79wshMdzMp2rH06qWrJE4iolqLhCUH+OiuIgU++RB0+94NlDL81atO7GX55uUKueo0txHNtvEyI6D7WdMw==}
@@ -3676,6 +3711,11 @@ packages:
 
   node-addon-api@5.1.0:
     resolution: {integrity: sha512-eh0GgfEkpnoWDq+VY8OyvYhFEzBk6jIYbRKdIlyTiAXIVJ8PyBaKb0rp7oDtoddbdoHWhq8wwr+XZ81F1rpNdA==}
+
+  node-domexception@1.0.0:
+    resolution: {integrity: sha512-/jKZoMpw0F8GRwl4/eLROPA3cfcXtLApP0QzLmUT/HuPCZWyB7IY9ZrMeKw2O/nFIqPQB3PVM9aYm0F312AXDQ==}
+    engines: {node: '>=10.5.0'}
+    deprecated: Use your platform's native DOMException instead
 
   node-fetch-native@1.6.6:
     resolution: {integrity: sha512-8Mc2HhqPdlIfedsuZoc3yioPuzp6b+L5jRCRY1QzuWZh2EGJVQrGppC6V6cF0bLdbW0+O2YpqCA25aF/1lvipQ==}
@@ -4565,6 +4605,9 @@ packages:
   uncrypto@0.1.3:
     resolution: {integrity: sha512-Ql87qFHB3s/De2ClA9e0gsnS6zXG27SkTiSJwjCc9MebbfapQfuPzumMIUMi38ezPZVNFcHI9sUIepeQfw8J8Q==}
 
+  undici-types@5.26.5:
+    resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
+
   undici-types@6.20.0:
     resolution: {integrity: sha512-Ny6QZ2Nju20vw1SRHe3d9jVu6gJ+4e3+MMpqu7pqE5HT6WsTSlce++GQmK5UXS8mzV8DSYHrQH+Xrf2jVcuKNg==}
 
@@ -4848,6 +4891,10 @@ packages:
 
   wcwidth@1.0.1:
     resolution: {integrity: sha512-XHPEwS0q6TaxcvG85+8EYkbiCux2XtWG2mkc47Ng2A77BQu9+DqIOJldST4HgPkuea7dvKSj5VgX3P1d4rW8Tg==}
+
+  web-streams-polyfill@4.0.0-beta.3:
+    resolution: {integrity: sha512-QW95TCTaHmsYfHDybGMwO5IJIM93I/6vTRk+daHTWFPhwh+C8Cg7j7XyKrwrj8Ib6vYXe0ocYNrmzY4xAAN6ug==}
+    engines: {node: '>= 14'}
 
   webextension-polyfill@0.10.0:
     resolution: {integrity: sha512-c5s35LgVa5tFaHhrZDnr3FpQpjj1BB+RXhLTYUxGqBVN460HkbM8TBtEqdXWbpTKfzwCcjAZVF7zXCYSKtcp9g==}
@@ -5461,8 +5508,8 @@ snapshots:
     dependencies:
       xstream: 11.14.0
 
-  ? '@cosmjs/tendermint-rpc@0.33.1(patch_hash=d6d84acfc406c9bb60bb24c691bf474327d6a3a3140be568a3b77e1063897c4e)(bufferutil@4.0.9)(utf-8-validate@5.0.10)'
-  : dependencies:
+  '@cosmjs/tendermint-rpc@0.33.1(patch_hash=d6d84acfc406c9bb60bb24c691bf474327d6a3a3140be568a3b77e1063897c4e)(bufferutil@4.0.9)(utf-8-validate@5.0.10)':
+    dependencies:
       '@cosmjs/crypto': 0.33.1
       '@cosmjs/encoding': 0.33.1
       '@cosmjs/json-rpc': 0.33.1
@@ -5489,8 +5536,8 @@ snapshots:
       '@csstools/css-tokenizer': 3.0.4
     optional: true
 
-  ? '@csstools/css-color-parser@3.0.10(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)'
-  : dependencies:
+  '@csstools/css-color-parser@3.0.10(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)':
+    dependencies:
       '@csstools/color-helpers': 5.0.2
       '@csstools/css-calc': 2.1.4(@csstools/css-parser-algorithms@3.0.5(@csstools/css-tokenizer@3.0.4))(@csstools/css-tokenizer@3.0.4)
       '@csstools/css-parser-algorithms': 3.0.5(@csstools/css-tokenizer@3.0.4)
@@ -5536,8 +5583,8 @@ snapshots:
     dependencies:
       effect: 3.16.3
 
-  ? '@effect/vitest@0.23.3(effect@3.16.3)(vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))'
-  : dependencies:
+  '@effect/vitest@0.23.3(effect@3.16.3)(vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))':
+    dependencies:
       effect: 3.16.3
       vitest: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
@@ -6082,8 +6129,8 @@ snapshots:
 
   '@metamask/safe-event-emitter@3.1.2': {}
 
-  ? '@metamask/sdk-communication-layer@0.32.0(cross-fetch@4.1.0)(eciesjs@0.4.14)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.8.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))'
-  : dependencies:
+  '@metamask/sdk-communication-layer@0.32.0(cross-fetch@4.1.0)(eciesjs@0.4.14)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.8.1(bufferutil@4.0.9)(utf-8-validate@5.0.10))':
+    dependencies:
       bufferutil: 4.0.9
       cross-fetch: 4.1.0
       date-fns: 2.30.0
@@ -6496,6 +6543,18 @@ snapshots:
 
   '@sindresorhus/is@7.0.1': {}
 
+  '@snagsolutions/sdk@0.1.0-alpha.74':
+    dependencies:
+      '@types/node': 18.19.112
+      '@types/node-fetch': 2.6.12
+      abort-controller: 3.0.0
+      agentkeepalive: 4.6.0
+      form-data-encoder: 1.7.2
+      formdata-node: 4.4.1
+      node-fetch: 2.7.0
+    transitivePeerDependencies:
+      - encoding
+
   '@snyk/github-codeowners@1.1.0':
     dependencies:
       commander: 4.1.1
@@ -6634,12 +6693,12 @@ snapshots:
     dependencies:
       acorn: 8.15.0
 
-  ? '@sveltejs/adapter-static@3.0.8(@sveltejs/kit@2.21.3(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))'
-  : dependencies:
+  '@sveltejs/adapter-static@3.0.8(@sveltejs/kit@2.21.3(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))':
+    dependencies:
       '@sveltejs/kit': 2.21.3(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
 
-  ? '@sveltejs/kit@2.21.3(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))'
-  : dependencies:
+  '@sveltejs/kit@2.21.3(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))':
+    dependencies:
       '@sveltejs/acorn-typescript': 1.0.5(acorn@8.15.0)
       '@sveltejs/vite-plugin-svelte': 5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
       '@types/cookie': 0.6.0
@@ -6657,8 +6716,8 @@ snapshots:
       vite: 6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
       vitefu: 1.0.6(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
 
-  ? '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))'
-  : dependencies:
+  '@sveltejs/vite-plugin-svelte-inspector@4.0.1(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))':
+    dependencies:
       '@sveltejs/vite-plugin-svelte': 5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
       debug: 4.4.1
       svelte: 5.33.18
@@ -6666,8 +6725,8 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  ? '@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))'
-  : dependencies:
+  '@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))':
+    dependencies:
       '@sveltejs/vite-plugin-svelte-inspector': 4.0.1(@sveltejs/vite-plugin-svelte@5.1.0(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)))(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
       debug: 4.4.1
       deepmerge: 4.3.1
@@ -6780,8 +6839,8 @@ snapshots:
       lodash: 4.17.21
       redent: 3.0.0
 
-  ? '@testing-library/svelte@5.2.7(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))(vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))'
-  : dependencies:
+  '@testing-library/svelte@5.2.7(svelte@5.33.18)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))(vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))':
+    dependencies:
       '@testing-library/dom': 10.4.0
       svelte: 5.33.18
     optionalDependencies:
@@ -6835,6 +6894,15 @@ snapshots:
 
   '@types/ms@2.1.0': {}
 
+  '@types/node-fetch@2.6.12':
+    dependencies:
+      '@types/node': 22.13.14
+      form-data: 4.0.2
+
+  '@types/node@18.19.112':
+    dependencies:
+      undici-types: 5.26.5
+
   '@types/node@22.13.14':
     dependencies:
       undici-types: 6.20.0
@@ -6853,8 +6921,8 @@ snapshots:
     dependencies:
       '@types/node': 22.13.14
 
-  ? '@typescript-eslint/eslint-plugin@8.30.1(@typescript-eslint/parser@8.30.1(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.2))(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.2)'
-  : dependencies:
+  '@typescript-eslint/eslint-plugin@8.30.1(@typescript-eslint/parser@8.30.1(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.2))(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.2)':
+    dependencies:
       '@eslint-community/regexpp': 4.12.1
       '@typescript-eslint/parser': 8.30.1(eslint@9.24.0(jiti@2.4.2))(typescript@5.8.2)
       '@typescript-eslint/scope-manager': 8.30.1
@@ -7035,8 +7103,8 @@ snapshots:
   '@vue/shared@3.5.13':
     optional: true
 
-  ? '@wagmi/connectors@5.7.12(@wagmi/core@2.16.7(@tanstack/query-core@5.74.4)(react@19.1.0)(typescript@5.8.2)(use-sync-external-store@1.4.0(react@19.1.0))(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32)))(bufferutil@4.0.9)(react@19.1.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32))(zod@3.25.32)'
-  : dependencies:
+  '@wagmi/connectors@5.7.12(@wagmi/core@2.16.7(@tanstack/query-core@5.74.4)(react@19.1.0)(typescript@5.8.2)(use-sync-external-store@1.4.0(react@19.1.0))(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32)))(bufferutil@4.0.9)(react@19.1.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32))(zod@3.25.32)':
+    dependencies:
       '@coinbase/wallet-sdk': 4.3.0
       '@metamask/sdk': 0.32.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
       '@safe-global/safe-apps-provider': 0.18.5(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32)
@@ -7074,8 +7142,8 @@ snapshots:
       - utf-8-validate
       - zod
 
-  ? '@wagmi/core@2.16.7(@tanstack/query-core@5.74.4)(react@19.1.0)(typescript@5.8.2)(use-sync-external-store@1.4.0(react@19.1.0))(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32))'
-  : dependencies:
+  '@wagmi/core@2.16.7(@tanstack/query-core@5.74.4)(react@19.1.0)(typescript@5.8.2)(use-sync-external-store@1.4.0(react@19.1.0))(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32))':
+    dependencies:
       eventemitter3: 5.0.1
       mipd: 0.0.7(typescript@5.8.2)
       viem: 2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32)
@@ -7909,6 +7977,10 @@ snapshots:
       typescript: 5.8.2
       zod: 3.25.32
 
+  abort-controller@3.0.0:
+    dependencies:
+      event-target-shim: 5.0.1
+
   acorn-jsx@5.3.2(acorn@8.15.0):
     dependencies:
       acorn: 8.15.0
@@ -7919,6 +7991,10 @@ snapshots:
 
   agent-base@7.1.3:
     optional: true
+
+  agentkeepalive@4.6.0:
+    dependencies:
+      humanize-ms: 1.2.1
 
   aggregate-error@3.1.0:
     dependencies:
@@ -8711,6 +8787,8 @@ snapshots:
       - bufferutil
       - utf-8-validate
 
+  event-target-shim@5.0.1: {}
+
   eventemitter2@6.4.9: {}
 
   eventemitter3@5.0.1: {}
@@ -8811,6 +8889,8 @@ snapshots:
       cross-spawn: 7.0.6
       signal-exit: 4.1.0
 
+  form-data-encoder@1.7.2: {}
+
   form-data-encoder@4.0.2: {}
 
   form-data@4.0.2:
@@ -8819,6 +8899,11 @@ snapshots:
       combined-stream: 1.0.8
       es-set-tostringtag: 2.1.0
       mime-types: 2.1.35
+
+  formdata-node@4.4.1:
+    dependencies:
+      node-domexception: 1.0.0
+      web-streams-polyfill: 4.0.0-beta.3
 
   fs-extra@10.1.0:
     dependencies:
@@ -9098,6 +9183,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
     optional: true
+
+  humanize-ms@1.2.1:
+    dependencies:
+      ms: 2.1.3
 
   iconv-lite@0.6.3:
     dependencies:
@@ -9747,6 +9836,8 @@ snapshots:
   node-addon-api@2.0.2: {}
 
   node-addon-api@5.1.0: {}
+
+  node-domexception@1.0.0: {}
 
   node-fetch-native@1.6.6: {}
 
@@ -10678,6 +10769,8 @@ snapshots:
 
   uncrypto@0.1.3: {}
 
+  undici-types@5.26.5: {}
+
   undici-types@6.20.0: {}
 
   unified@11.0.5:
@@ -10864,8 +10957,8 @@ snapshots:
       - tsx
       - yaml
 
-  ? vite-tsconfig-paths@5.1.4(typescript@5.8.2)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
-  : dependencies:
+  vite-tsconfig-paths@5.1.4(typescript@5.8.2)(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)):
+    dependencies:
       debug: 4.4.0
       globrex: 0.1.2
       tsconfck: 3.1.5(typescript@5.8.2)
@@ -10895,8 +10988,8 @@ snapshots:
     optionalDependencies:
       vite: 6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
 
-  ? vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0)
-  : dependencies:
+  vitest@3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0):
+    dependencies:
       '@vitest/expect': 3.1.2
       '@vitest/mocker': 3.1.2(vite@6.3.1(@types/node@22.13.14)(jiti@2.4.2)(lightningcss@1.29.2)(tsx@4.19.3)(yaml@2.7.0))
       '@vitest/pretty-format': 3.1.2
@@ -10953,8 +11046,8 @@ snapshots:
       xml-name-validator: 5.0.0
     optional: true
 
-  ? wagmi@2.14.16(@tanstack/query-core@5.74.4)(@tanstack/react-query@5.74.4(react@19.1.0))(bufferutil@4.0.9)(react@19.1.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32))(zod@3.25.32)
-  : dependencies:
+  wagmi@2.14.16(@tanstack/query-core@5.74.4)(@tanstack/react-query@5.74.4(react@19.1.0))(bufferutil@4.0.9)(react@19.1.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32))(zod@3.25.32):
+    dependencies:
       '@tanstack/react-query': 5.74.4(react@19.1.0)
       '@wagmi/connectors': 5.7.12(@wagmi/core@2.16.7(@tanstack/query-core@5.74.4)(react@19.1.0)(typescript@5.8.2)(use-sync-external-store@1.4.0(react@19.1.0))(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32)))(bufferutil@4.0.9)(react@19.1.0)(typescript@5.8.2)(utf-8-validate@5.0.10)(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32))(zod@3.25.32)
       '@wagmi/core': 2.16.7(@tanstack/query-core@5.74.4)(react@19.1.0)(typescript@5.8.2)(use-sync-external-store@1.4.0(react@19.1.0))(viem@2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32))
@@ -10994,6 +11087,8 @@ snapshots:
   wcwidth@1.0.1:
     dependencies:
       defaults: 1.0.4
+
+  web-streams-polyfill@4.0.0-beta.3: {}
 
   webextension-polyfill@0.10.0: {}
 

@@ -70,5 +70,8 @@
     "vfile": "^6.0.3",
     "viem": "^2.27.2",
     "vite": "^6.3.1"
+  },
+  "dependencies": {
+    "@snagsolutions/sdk": "0.1.0-alpha.74"
   }
 }
