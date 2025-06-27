@@ -5,21 +5,25 @@ use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
 use cosmos::{Config as CosmosConfig, Module as CosmosModule, FeemarketConfig, GasFillerConfig};
 use hex_literal::hex;
 use ibc_union_msg::msg::{ExecuteMsg, MsgCreateClient};
-use ibc_union_spec::{ChannelId, Timestamp, ClientId};
+use ibc_union_spec::{ChannelId, Timestamp, ClientId, datagram::Datagram};
 use protos::{cosmos::base::v1beta1::Coin, ibc::core::channel};
 use ucs03_zkgm::com::{
     FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1, OP_FUNGIBLE_ASSET_ORDER,
 };
 use unionlabs::{
     bech32::Bech32,
-    encoding::{Bincode, EncodeAs, EthAbi},
-    primitives::Bytes,
+    encoding::{Bincode, EncodeAs, EthAbi, Encode, Json},
+    primitives::{Bytes, FixedBytes},
 };
-use unionlabs::{primitives::{H160, H256}, ErrorReporter};
+use cometbft_rpc::rpc_types::{Order, TxResponse};
+use cosmos_client::BroadcastTxCommitError;
 
+use unionlabs::{primitives::{H160, H256}, ErrorReporter};
+use alloy::{network::AnyNetwork, contract::RawCallBuilder, providers::DynProvider};
 use voyager_sdk::{anyhow, primitives::ChainId};
 use std::process::Command;
 use axum::async_trait;
+use jsonrpsee::core::RpcResult;
 
 pub mod evm;
 pub mod cosmos;
@@ -27,6 +31,7 @@ pub mod channel_provider;
 pub mod voyager;
 pub mod helpers;
 
+use crate::cosmos::IbcEvent;
 use crate::channel_provider::{ChannelPool, ChannelConfirm, ChannelPair};
 
 #[async_trait]
@@ -71,7 +76,12 @@ pub trait ChainEndpoint: Send + Sync {
         timeout: Duration,
     ) -> anyhow::Result<helpers::ChannelOpenConfirm>;
 
-    fn send_ibc_packet(&self, packet: ExecuteMsg, funds: Vec<Coin>) -> anyhow::Result<()>;
+    // TODO: How to handle this for EVM chains?
+    async fn send_ibc_packet(
+        &self,
+        contract: Bech32<H256>,
+        funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
+    ) -> Option<Result<IbcEvent, BroadcastTxCommitError>>;
 
     async fn wait_for_packet_recv(
         &self,
@@ -158,9 +168,13 @@ impl ChainEndpoint for evm::Module {
         self.wait_for_channel_open_confirm(timeout).await
     }
 
-    fn send_ibc_packet(&self, _packet: ExecuteMsg, _funds: Vec<Coin>) -> anyhow::Result<()> {
+    // TODO: How to handle this for EVM chains?
+    async fn send_ibc_packet(
+        &self,
+        contract: Bech32<H256>,
+        funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
+    ) -> Option<Result<IbcEvent, BroadcastTxCommitError>>{
         unimplemented!("Sending IBC packets is not implemented for EVM chains");
-        Ok(())
     }
 
     async fn wait_for_packet_recv(
@@ -250,9 +264,12 @@ impl ChainEndpoint for cosmos::Module {
         self.wait_for_channel_open_confirm(timeout).await
     }
 
-    fn send_ibc_packet(&self, packet: ExecuteMsg, funds: Vec<Coin>) -> anyhow::Result<()> {
-        unimplemented!("Sending IBC packets is not implemented for Cosmos chains");
-        Ok(())
+    async fn send_ibc_packet(
+        &self,
+        contract: Bech32<H256>,
+        funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
+    ) -> Option<Result<IbcEvent, BroadcastTxCommitError>> {
+        self.send_ibc_transaction(contract, funded_msgs).await
     }
 
     async fn wait_for_packet_recv(
@@ -404,3 +421,4 @@ where
     //     Ok(recv)
     // }
 }
+
