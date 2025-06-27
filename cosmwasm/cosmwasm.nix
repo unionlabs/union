@@ -224,10 +224,10 @@ _: {
           private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
           gas_config = {
             type = "fixed";
-            gas_price = "0.05";
+            gas_price = "0.1";
             gas_denom = "uosmo";
-            gas_multiplier = "1.1";
-            max_gas = 10000000;
+            gas_multiplier = "1.2";
+            max_gas = 40000000;
           };
           apps = {
             ucs03 = ucs03-configs.osmosis_tokenfactory // {
