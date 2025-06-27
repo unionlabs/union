@@ -1,5 +1,5 @@
 import { assert, beforeEach, describe, it, vi } from "@effect/vitest"
-import { generateSalt, verifySalt } from "@unionlabs/sdk/utils"
+import { Utils } from "@unionlabs/sdk"
 import { Effect, Either } from "effect"
 
 describe.sequential("Utils", () => {
@@ -11,8 +11,8 @@ describe.sequential("Utils", () => {
       "computes verifiable salt",
       x =>
         Effect.gen(function*() {
-          const salt = yield* generateSalt(x)
-          const verification = yield* verifySalt(salt)
+          const salt = yield* Utils.generateSalt(x)
+          const verification = yield* Utils.verifySalt(salt)
           assert.isTrue(verification)
         }),
     )
@@ -24,7 +24,7 @@ describe.sequential("Utils", () => {
       "fails to compute salt",
       x =>
         Effect.gen(function*() {
-          const result = yield* Effect.either(generateSalt(x))
+          const result = yield* Effect.either(Utils.generateSalt(x))
           assert.isTrue(Either.isRight(result))
         }),
     )
