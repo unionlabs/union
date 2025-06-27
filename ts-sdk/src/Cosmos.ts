@@ -3,11 +3,7 @@
  *
  * @since 2.0.0
  */
-import {
-  CosmWasmClient,
-  SigningCosmWasmClient,
-  type SigningCosmWasmClientOptions,
-} from "@cosmjs/cosmwasm-stargate"
+import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { FetchHttpClient } from "@effect/platform"
 import { HttpClient, HttpClientRequest } from "@effect/platform"
 import { Context, Data, Effect, pipe } from "effect"

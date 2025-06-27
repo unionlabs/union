@@ -5,8 +5,7 @@ import { mnemonicToAccount } from "viem/accounts"
 import { english, generateMnemonic } from "viem/accounts"
 import { holesky, sepolia } from "viem/chains"
 
-import { ucs03abi } from "@unionlabs/sdk/evm/abi"
-import * as Instruction from "@unionlabs/sdk/ucs03/instruction"
+import { Instruction, Ucs03 } from "@unionlabs/sdk"
 import { type Hex, toHex } from "viem"
 
 function generateSalt() {
@@ -108,7 +107,7 @@ describe("Dispatching an Asset Transfer", () => {
 
       const transferHash = await sepoliaWallet.writeContract({
         account: sepoliaWallet.account.address,
-        abi: ucs03abi,
+        abi: Ucs03.Abi,
         chain: sepolia,
         functionName: "send",
         address: holeskyWallet.account.address,
