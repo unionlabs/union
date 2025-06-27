@@ -308,11 +308,10 @@ where
         dst_client_type: &str,
     ) -> anyhow::Result<(helpers::CreateClientConfirm, helpers::CreateClientConfirm)> {
         self.src.send_create_client(self.dst.chain_id(), src_ibc_interface, src_client_type)?;
+        let src_confirm = self.src.wait_for_create_client(duration).await?;
         self.dst.send_create_client(self.src.chain_id(), dst_ibc_interface, dst_client_type)?;
         let dst_confirm = self.dst.wait_for_create_client(duration).await?;
-        let src_confirm = self.src.wait_for_create_client(duration).await?;
 
-        
         Ok((src_confirm, dst_confirm))
     }
 
@@ -418,6 +417,7 @@ where
     ) -> anyhow::Result<helpers::PacketRecv> {
         if send_from_source {
             let packet_hash = self.src.send_ibc_packet(contract, funded_msgs).await?;
+            println!("Packet sent from source chain: {:?}", packet_hash);
             let recv = self.dst.wait_for_packet_recv(packet_hash, timeout).await?;
             return Ok(recv);
         }

@@ -214,6 +214,7 @@ impl Module {
     ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_event(
             |e| match e {
+                // println!("e is: {:?}", e);
                 IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => Some(helpers::PacketRecv {
                     packet_hash: ev.packet_hash.try_into().unwrap(),
                 }),
