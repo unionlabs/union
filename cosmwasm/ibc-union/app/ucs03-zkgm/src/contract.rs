@@ -446,18 +446,32 @@ pub fn verify_fungible_asset_order_v2(
                     }
                 }
 
+                let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
+
+                let mut funds_to_burn = vec![];
+                if !funds.amount_of(base_token_str).is_zero() {
+                    let native_denom = Coin {
+                        denom: base_token_str.to_string(),
+                        amount: base_amount
+                            .try_into()
+                            .map_err(|_| ContractError::AmountOverflow)?,
+                    };
+                    funds.sub(native_denom.clone())?;
+                    funds_to_burn.push(native_denom);
+                }
+
                 // Burn tokens as we are going to unescrow on the counterparty
                 *response = response.clone().add_message(make_wasm_msg(
                     WrappedTokenMsg::BurnTokens {
                         denom: base_token_str.to_string(),
-                        amount: Uint256::from_be_bytes(order.base_amount.to_be_bytes())
+                        amount: base_amount
                             .try_into()
                             .map_err(|_| ContractError::AmountOverflow)?,
                         burn_from_address: minter.clone(),
                         sender: info.sender,
                     },
                     &minter,
-                    vec![],
+                    funds_to_burn,
                 )?);
             } else {
                 // This is a wrapping operation
@@ -3099,6 +3113,19 @@ pub fn verify_fungible_asset_order(
     let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_path)?;
     let is_sending_back_to_same_channel = destination_channel_id == Some(channel_id);
 
+    let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
+    let mut funds_to_attach = vec![];
+    if !base_amount.is_zero() && !funds.amount_of(base_token_str).is_zero() {
+        let native_denom = Coin {
+            denom: base_token_str.to_string(),
+            amount: base_amount
+                .try_into()
+                .map_err(|_| ContractError::AmountOverflow)?,
+        };
+        funds.sub(native_denom.clone())?;
+        funds_to_attach.push(native_denom);
+    }
+
     if is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping {
         // Verify the origin path matches what's in the order
         if origin != order.base_token_path {
@@ -3118,7 +3145,7 @@ pub fn verify_fungible_asset_order(
                 sender: info.sender,
             },
             &minter,
-            vec![],
+            funds_to_attach,
         )?);
     } else {
         if !order.base_token_path.is_zero() {
@@ -3127,8 +3154,6 @@ pub fn verify_fungible_asset_order(
                 expected: U256::ZERO,
             });
         }
-        // Escrow tokens as the counterparty will mint them
-        let base_amount = Uint256::from_be_bytes(order.base_amount.to_be_bytes());
         increase_channel_balance(
             deps.storage,
             channel_id,
@@ -3136,17 +3161,6 @@ pub fn verify_fungible_asset_order(
             base_token_str.to_string(),
             base_amount,
         )?;
-        let mut funds_to_escrow = vec![];
-        if !funds.amount_of(base_token_str).is_zero() {
-            let native_denom = Coin {
-                denom: base_token_str.to_string(),
-                amount: base_amount
-                    .try_into()
-                    .map_err(|_| ContractError::AmountOverflow)?,
-            };
-            funds.sub(native_denom.clone())?;
-            funds_to_escrow.push(native_denom);
-        }
         *response = response.clone().add_message(make_wasm_msg(
             LocalTokenMsg::Escrow {
                 from: info.sender.to_string(),
@@ -3157,7 +3171,7 @@ pub fn verify_fungible_asset_order(
                     .map_err(|_| ContractError::AmountOverflow)?,
             },
             &minter,
-            funds_to_escrow,
+            funds_to_attach,
         )?);
     }
 
