@@ -83,7 +83,7 @@ async fn init_ctx() -> Arc<TestContext<cosmos::Module, evm::Module>> {
     .clone()
 }
 
-async fn open_connection_from_union_to_evm() {
+async fn open_channel_from_union_to_evm() {
     let ctx = init_ctx().await;
     let (src_client, dst_client) = ctx
         .create_clients(
@@ -105,8 +105,32 @@ async fn open_connection_from_union_to_evm() {
         .unwrap();
     assert!(conn.connection_id > 0);
     assert!(conn.counterparty_connection_id > 0);
-    CONN_FROM_UNION_TO_EVM.set(conn).unwrap();
 
+
+    let current_available_count = ctx.get_available_channel_count().await;
+
+    let opened = ctx
+        .open_channels(
+            true,
+           "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
+            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
+            conn.connection_id,
+            "ucs03-zkgm-0".into(),
+            1,
+            Duration::from_secs(240),
+        )
+        .await
+        .unwrap();
+    assert_eq!(opened, 1);
+
+    let available_count_after_open = ctx.get_available_channel_count().await;
+    assert_eq!(current_available_count + 1, available_count_after_open);
+    let pair = ctx.get_channel().await.expect("channel available");
+    let available_count_after_get = ctx.get_available_channel_count().await;
+    assert_eq!(available_count_after_open - 1, available_count_after_get);
+    ctx.release_channel(pair).await;
+    let available_count_after_release = ctx.get_available_channel_count().await;
+    assert_eq!(available_count_after_open, available_count_after_release);
 }
 
 
@@ -137,39 +161,71 @@ async fn open_connection_from_evm_to_union() {
 }
 
 
+// #[tokio::test]
+// #[serial]
+// async fn test_open_channel_from_union_to_evm() {
+//     let ctx = init_ctx().await;
+//     open_connection_from_union_to_evm().await;
+//     let conn = CONN_FROM_UNION_TO_EVM.get().expect("connection available");
+    
+//     let current_available_count = ctx.get_available_channel_count().await;
+
+//     let opened = ctx
+//         .open_channels(
+//             true,
+//            "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
+//             hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
+//             conn.connection_id,
+//             "ucs03-zkgm-0".into(),
+//             1,
+//             Duration::from_secs(240),
+//         )
+//         .await
+//         .unwrap();
+//     assert_eq!(opened, 1);
+
+//     let available_count_after_open = ctx.get_available_channel_count().await;
+//     assert_eq!(current_available_count + 1, available_count_after_open);
+//     let pair = ctx.get_channel().await.expect("channel available");
+//     let available_count_after_get = ctx.get_available_channel_count().await;
+//     assert_eq!(available_count_after_open - 1, available_count_after_get);
+//     ctx.release_channel(pair).await;
+//     let available_count_after_release = ctx.get_available_channel_count().await;
+//     assert_eq!(available_count_after_open, available_count_after_release);
+// }
+
+
+
 #[tokio::test]
 #[serial]
-async fn test_open_channel_from_union_to_evm() {
+async fn test_send_packet_from_union_to_evm() {
     let ctx = init_ctx().await;
-    open_connection_from_union_to_evm().await;
-    let conn = CONN_FROM_UNION_TO_EVM.get().expect("connection available");
+    open_channel_from_union_to_evm().await;
+
+    let available_channel = ctx.get_available_channel_count().await;
+    assert_eq!(available_channel > 0);
     
-    let current_available_count = ctx.get_available_channel_count().await;
-
-    let opened = ctx
-        .open_channels(
-            true,
-           "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
-            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
-            conn.connection_id,
-            "ucs03-zkgm-0".into(),
-            1,
-            Duration::from_secs(240),
-        )
-        .await
-        .unwrap();
-    assert_eq!(opened, 1);
-
-    let available_count_after_open = ctx.get_available_channel_count().await;
-    assert_eq!(current_available_count + 1, available_count_after_open);
     let pair = ctx.get_channel().await.expect("channel available");
-    let available_count_after_get = ctx.get_available_channel_count().await;
-    assert_eq!(available_count_after_open - 1, available_count_after_get);
-    ctx.release_channel(pair).await;
-    let available_count_after_release = ctx.get_available_channel_count().await;
-    assert_eq!(available_count_after_open, available_count_after_release);
-}
+    let src_channel_id = pair.src;
 
+        
+    // let 
+    // let conn = CONN_FROM_UNION_TO_EVM.get().expect("connection available");
+
+    // let packet_hash = ctx
+    //     .send_packet(
+    //         true,
+    //         "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
+    //         hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
+    //         conn.connection_id,
+    //         "ucs03-zkgm-0".into(),
+    //         1,
+    //         Duration::from_secs(240),
+    //     )
+    //     .await
+    //     .unwrap();
+    
+}
 
 #[tokio::test]
 #[serial]
