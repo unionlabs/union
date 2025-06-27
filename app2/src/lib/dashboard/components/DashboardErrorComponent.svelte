@@ -5,7 +5,7 @@ import Button from "$lib/components/ui/Button.svelte"
 import Modal from "$lib/components/ui/Modal.svelte"
 import { Match, pipe } from "effect"
 import { slide } from "svelte/transition"
-import type { DashboardError } from "../stores/errors.svelte";
+import type { DashboardError } from "../stores/errors.svelte"
 
 interface Props {
   error: DashboardError
