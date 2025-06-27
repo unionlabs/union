@@ -32,7 +32,7 @@ _: {
               ../versions
               ../deployments
             ];
-            hash = "sha256-H6c1DM2jPZPAvAMVqsQi3Twnz1znDA7lz7G+bKwPMV8=";
+            hash = "sha256-XTbRDlI80baeADtuT5Cjuwxut3dpGmis+Ckp0cUscFU=";
             packageJsonPath = ./package.json;
             pnpmWorkspaces = [
               "docs"
