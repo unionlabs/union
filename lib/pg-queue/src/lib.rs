@@ -276,6 +276,13 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue (created_at ASC) INCLUDE (id);
 
             CREATE INDEX IF NOT EXISTS index_queue_handle_at ON queue(handle_at DESC) INCLUDE (id);
+
+            CREATE INDEX IF NOT EXISTS optimize_tag_id_idx ON optimize(tag, id);
+
+            VACUUM FULL queue;
+            VACUUM FULL optimize;
+            VACUUM FULL done;
+            VACUUM FULL failed;
             "#,
         )
         .try_for_each(|result| async move {
