@@ -35,7 +35,10 @@ use crate::{
         OP_BATCH, OP_FORWARD, OP_FUNGIBLE_ASSET_ORDER, OP_MULTIPLEX, OP_STAKE, OP_UNSTAKE,
         OP_WITHDRAW_REWARDS, OP_WITHDRAW_STAKE, TAG_ACK_FAILURE, TAG_ACK_SUCCESS,
     },
-    msg::{Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, ZkgmMsg},
+    msg::{
+        Config, ExecuteMsg, InitMsg, PredictWrappedTokenResponse, QueryMsg, SolverMsg, SolverQuery,
+        ZkgmMsg,
+    },
     state::{
         BATCH_EXECUTION_ACKS, CHANNEL_BALANCE, CHANNEL_BALANCE_V2, CONFIG, EXECUTING_PACKET,
         EXECUTING_PACKET_IS_BATCH, EXECUTION_ACK, HASH_TO_FOREIGN_TOKEN, IN_FLIGHT_PACKET,
@@ -1834,6 +1837,104 @@ fn market_maker_fill(
 }
 
 #[allow(clippy::too_many_arguments)]
+fn market_maker_fill_v2(
+    deps: DepsMut,
+    env: Env,
+    funds: &mut Coins,
+    caller: Addr,
+    relayer: Addr,
+    relayer_msg: Bytes,
+    minter: Addr,
+    packet: Packet,
+    order: FungibleAssetOrderV2,
+    intent: bool,
+) -> Result<Response, ContractError> {
+    MARKET_MAKER.save(deps.storage, &relayer_msg)?;
+    let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
+        .map_err(|_| ContractError::InvalidQuoteToken)?;
+    let is_solver = deps
+        .querier
+        .query_wasm_smart::<()>(quote_token_str.clone(), &SolverQuery::IsSolver {})
+        .is_ok();
+    let mut messages = Vec::with_capacity(if is_solver { 1 } else { 2 });
+    if is_solver {
+        messages.push(
+            wasm_execute(
+                quote_token_str.clone(),
+                &SolverMsg::DoSolve {
+                    packet,
+                    order: order.into(),
+                    caller,
+                    relayer,
+                    relayer_msg,
+                    intent,
+                },
+                vec![],
+            )?
+            .into(),
+        )
+    } else {
+        let receiver = deps
+            .api
+            .addr_validate(
+                str::from_utf8(order.receiver.as_ref())
+                    .map_err(|_| ContractError::InvalidReceiver)?,
+            )
+            .map_err(|_| ContractError::UnableToValidateReceiver)?;
+
+        let quote_amount =
+            u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
+
+        /* Gas Station
+
+        Determine the native denom that we transfer to the minter contract.
+        The MM may fill multiple order within the packet, we need to
+        provide each token individually, subtracting from the total funds.
+         */
+        let mut funds_to_escrow = vec![];
+        if !funds.amount_of(&quote_token_str).is_zero() {
+            let native_denom = Coin {
+                denom: quote_token_str.clone(),
+                amount: quote_amount.into(),
+            };
+            funds.sub(native_denom.clone())?;
+            funds_to_escrow.push(native_denom);
+        }
+        if quote_amount > 0 {
+            // Make sure the market maker provide the funds
+            messages.push(make_wasm_msg(
+                LocalTokenMsg::Escrow {
+                    from: caller.to_string(),
+                    denom: quote_token_str.clone(),
+                    recipient: minter.to_string(),
+                    amount: quote_amount.into(),
+                },
+                &minter,
+                funds_to_escrow,
+            )?);
+            // Release the funds to the user
+            messages.push(make_wasm_msg(
+                LocalTokenMsg::Unescrow {
+                    denom: quote_token_str,
+                    recipient: receiver.to_string(),
+                    amount: quote_amount.into(),
+                },
+                minter,
+                vec![],
+            )?);
+        }
+    }
+    Ok(Response::new().add_submessage(SubMsg::reply_always(
+        wasm_execute(
+            &env.contract.address,
+            &ExecuteMsg::InternalBatch { messages },
+            vec![],
+        )?,
+        MM_FILL_REPLY_ID,
+    )))
+}
+
+#[allow(clippy::too_many_arguments)]
 fn execute_fungible_asset_order(
     deps: DepsMut,
     env: Env,
@@ -2064,10 +2165,23 @@ fn execute_fungible_asset_order_v2(
     // Get the token minter contract
     let minter = TOKEN_MINTER.load(deps.storage)?;
 
+    if intent {
+        return market_maker_fill_v2(
+            deps,
+            env.clone(),
+            funds,
+            caller,
+            relayer,
+            relayer_msg,
+            minter,
+            packet,
+            order,
+            intent,
+        );
+    }
     // Convert quote token to string for comparison
     let quote_token_str = String::from_utf8(Vec::from(order.quote_token.clone()))
         .map_err(|_| ContractError::InvalidQuoteToken)?;
-
     // Validate the receiver address
     let receiver = deps
         .api
@@ -2075,27 +2189,11 @@ fn execute_fungible_asset_order_v2(
             str::from_utf8(order.receiver.as_ref()).map_err(|_| ContractError::InvalidReceiver)?,
         )
         .map_err(|_| ContractError::UnableToValidateReceiver)?;
-
-    // Calculate amounts and fee
+    // Calculate amounts
     let base_amount =
         u128::try_from(order.base_amount).map_err(|_| ContractError::AmountOverflow)?;
     let quote_amount =
         u128::try_from(order.quote_amount).map_err(|_| ContractError::AmountOverflow)?;
-
-    if intent {
-        return market_maker_fill(
-            deps,
-            env.clone(),
-            funds,
-            caller,
-            relayer_msg,
-            quote_amount,
-            quote_token_str,
-            minter,
-            receiver,
-        );
-    }
-
     let base_covers_quote = base_amount >= quote_amount;
     let fee_amount = base_amount.saturating_sub(quote_amount);
     let mut messages = Vec::new();
@@ -2173,16 +2271,17 @@ fn execute_fungible_asset_order_v2(
                 }
             } else {
                 // Market Maker Fill
-                return market_maker_fill(
+                return market_maker_fill_v2(
                     deps,
                     env.clone(),
                     funds,
                     caller,
+                    relayer,
                     relayer_msg,
-                    quote_amount,
-                    quote_token_str,
                     minter,
-                    receiver,
+                    packet,
+                    order,
+                    intent,
                 );
             }
         }
@@ -2269,16 +2368,17 @@ fn execute_fungible_asset_order_v2(
                 }
             } else {
                 // Market Maker Fill
-                return market_maker_fill(
+                return market_maker_fill_v2(
                     deps,
                     env.clone(),
                     funds,
                     caller,
+                    relayer,
                     relayer_msg,
-                    quote_amount,
-                    quote_token_str,
                     minter,
-                    receiver,
+                    packet,
+                    order,
+                    intent,
                 );
             }
         }

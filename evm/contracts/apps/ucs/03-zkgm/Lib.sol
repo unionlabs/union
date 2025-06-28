@@ -2,11 +2,13 @@ pragma solidity ^0.8.27;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/utils/introspection/ERC165Checker.sol";
 import "solady/utils/LibBit.sol";
 import "solady/utils/LibString.sol";
 import "solady/utils/LibBytes.sol";
 import "solady/utils/EfficientHashLib.sol";
 import "./IZkgm.sol";
+import "./ISolver.sol";
 
 library ZkgmLib {
     using LibBytes for *;
@@ -614,5 +616,11 @@ library ZkgmLib {
         uint8 version
     ) internal pure returns (bool) {
         return instruction.opcode == opcode && instruction.version == version;
+    }
+
+    function isSolver(
+        address token
+    ) internal view returns (bool) {
+        return ERC165Checker.supportsInterface(token, type(ISolver).interfaceId);
     }
 }

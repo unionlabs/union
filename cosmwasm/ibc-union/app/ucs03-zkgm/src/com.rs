@@ -1,5 +1,7 @@
 use alloy_primitives::U256;
-use unionlabs::primitives::H256;
+use cosmwasm_std::Uint256;
+use serde::{Deserialize, Serialize};
+use unionlabs::primitives::{Bytes, H256};
 
 pub const INSTR_VERSION_0: u8 = 0x00;
 pub const INSTR_VERSION_1: u8 = 0x01;
@@ -164,5 +166,33 @@ alloy_sol_types::sol! {
 
     struct WithdrawRewardsAck {
         uint256 amount;
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub struct CwFungibleAssetOrderV2 {
+    pub sender: Bytes,
+    pub receiver: Bytes,
+    pub base_token: Bytes,
+    pub base_amount: Uint256,
+    pub metadata_type: u8,
+    pub metadata: Bytes,
+    pub quote_token: Bytes,
+    pub quote_amount: Uint256,
+}
+
+impl From<FungibleAssetOrderV2> for CwFungibleAssetOrderV2 {
+    fn from(value: FungibleAssetOrderV2) -> Self {
+        Self {
+            sender: Vec::from(value.sender.0).into(),
+            receiver: Vec::from(value.receiver.0).into(),
+            base_token: Vec::from(value.base_token.0).into(),
+            base_amount: Uint256::from_be_bytes(value.base_amount.to_be_bytes()),
+            metadata_type: value.metadata_type,
+            metadata: Vec::from(value.metadata.0).into(),
+            quote_token: Vec::from(value.quote_token.0).into(),
+            quote_amount: Uint256::from_be_bytes(value.quote_amount.to_be_bytes()),
+        }
     }
 }

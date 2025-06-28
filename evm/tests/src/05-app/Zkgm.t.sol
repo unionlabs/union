@@ -19,6 +19,7 @@ import "../../../contracts/apps/ucs/03-zkgm/IWETH.sol";
 import "../../../contracts/apps/ucs/03-zkgm/Zkgm.sol";
 import "../../../contracts/apps/Base.sol";
 import "../../../contracts/Manager.sol";
+import "../../../contracts/U.sol";
 
 contract TestZkgm is UCS03Zkgm {
     constructor(
@@ -363,7 +364,7 @@ contract ZkgmTests is Test {
         )
     });
 
-    function setUp() public {
+    function setUp() public virtual {
         weth = new TestWETH();
         erc20 = new TestERC20("Test", "T", 18);
         handler = new TestIBCHandler();
@@ -5265,8 +5266,7 @@ contract ZkgmTests is Test {
                         governanceToken: hex"BABE",
                         governanceTokenMetadataImage: bytes32(uint256(0x123)),
                         sender: abi.encodePacked(staker),
-                        validator: validator,
-                        amount: amount
+                        validator: validator
                     })
                 )
             })
@@ -5317,8 +5317,7 @@ contract ZkgmTests is Test {
                         governanceToken: hex"BABE",
                         governanceTokenMetadataImage: bytes32(uint256(0x123)),
                         sender: abi.encodePacked(staker),
-                        validator: validator,
-                        amount: amount
+                        validator: validator
                     })
                 )
             })
@@ -5740,8 +5739,7 @@ contract ZkgmTests is Test {
                                     governanceToken: hex"BABE",
                                     governanceTokenMetadataImage: bytes32(uint256(0x123)),
                                     sender: abi.encodePacked(staker),
-                                    validator: validator,
-                                    amount: amount
+                                    validator: validator
                                 })
                             )
                         })
@@ -6057,8 +6055,7 @@ contract ZkgmTests is Test {
                                     governanceToken: hex"BABE",
                                     governanceTokenMetadataImage: bytes32(uint256(0x123)),
                                     sender: abi.encodePacked(staker),
-                                    validator: validator,
-                                    amount: amount
+                                    validator: validator
                                 })
                             )
                         })
@@ -6305,6 +6302,45 @@ contract ZkgmTests is Test {
         });
         console.log("Image");
         console.logBytes32(image);
+        console.log("Instruction");
+        console.logBytes(ZkgmLib.encodeInstruction(inst));
+    }
+
+    function test_create_foa_v2_preimage_evm_u() public {
+        FungibleAssetMetadata memory metadata = FungibleAssetMetadata({
+            implementation: abi.encodePacked(
+                0x9C968B805a625303Ad43Fce99Ae72306256FE5F9
+            ),
+            initializer: abi.encodeCall(
+                U.initialize,
+                (
+                    address(0x40cDFf51aE7487e0b4A4D6e5f86eB15Fb7c1d9f4),
+                    address(0x5FbE74A283f7954f10AA04C2eDf55578811aeb03),
+                    "Union",
+                    "U",
+                    18,
+                    hex"0b885dae80342524f34d46b19744e304ec88c99a"
+                )
+            )
+        });
+        FungibleAssetOrderV2 memory foa = FungibleAssetOrderV2({
+            sender: abi.encodePacked("union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"),
+            receiver: abi.encodePacked(
+                address(0xBe68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD)
+            ),
+            baseToken: hex"6d756e6f",
+            metadataType: ZkgmLib.FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            metadata: ZkgmLib.encodeFungibleAssetMetadata(metadata),
+            baseAmount: 100,
+            quoteToken: hex"ba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+            quoteAmount: 100
+        });
+        Instruction memory inst = Instruction({
+            version: ZkgmLib.INSTR_VERSION_2,
+            opcode: ZkgmLib.OP_FUNGIBLE_ASSET_ORDER,
+            operand: ZkgmLib.encodeFungibleAssetOrderV2(foa)
+        });
+        console.log("Image");
         console.log("Instruction");
         console.logBytes(ZkgmLib.encodeInstruction(inst));
     }
