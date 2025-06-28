@@ -94,6 +94,21 @@
                 union = e2e.unionNode.node;
               };
             };
+
+            voyager-runs = e2e.mkTestWithDevnetSetup {
+              name = "voyager-runs";
+
+              testScript = ''
+                start_all()
+                voyager.wait_for_console_text('pool timed out while waiting for an open connection')
+                # voyager.wait_until_succeeds('${pkgs.lib.meta.getExe self'.packages.voyager} -c ${./voyager-configs/voyager-config.jsonc} rpc info')
+              '';
+
+              nodes = {
+                # empty node used to communicate with the other nodes
+                client = _: { };
+              };
+            };
           }
         )
       );
