@@ -6,7 +6,7 @@ use crate::indexer::{
     api::IndexerError,
     event::{types::BlockHeight, wallet_mutation_entry_event::WalletMutationEntryEvent},
     handler::EventContext,
-    record::{ChainContext, InternalChainId},
+    record::{ChainContext, InternalChainId, PgValue, PgValueExt},
 };
 
 pub struct WalletMutationEntryRecord {
@@ -16,7 +16,7 @@ pub struct WalletMutationEntryRecord {
     pub timestamp: OffsetDateTime,
     pub transaction_hash: Vec<u8>,
     pub transaction_index: i64,
-    pub transaction_event_index: i64,
+    pub transaction_event_index: Option<i64>,
     // missing event_index
     pub contract_address_canonical: Vec<u8>,
     pub wallet_address_canonical: Vec<u8>,
@@ -33,9 +33,9 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, WalletMutationEntryEvent>>
         value: &'a EventContext<'a, ChainContext, WalletMutationEntryEvent>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            internal_chain_id: value.context.internal_chain_id.pg_value_integer()?,
+            internal_chain_id: value.context.internal_chain_id.pg_value()?,
             block_hash: value.event.header.block_hash.pg_value()?,
-            height: value.event.header.height.pg_value_bigint()?,
+            height: value.event.header.height.pg_value()?,
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
@@ -98,8 +98,8 @@ impl WalletMutationEntryRecord {
             DELETE FROM v2_sync.wallet_mutation_entry_test
             WHERE internal_chain_id = $1 AND height = $2
             "#,
-            internal_chain_id.pg_value_integer()?,
-            height.pg_value_bigint()?
+            internal_chain_id.pg_value()?,
+            height.pg_value()?
         )
         .execute(&mut **tx)
         .await?;

@@ -14,5 +14,6 @@ pub struct Header {
     pub timestamp: BlockTimestamp,
     pub transaction_hash: TransactionHash,
     pub transaction_index: TransactionIndex,
-    pub transaction_event_index: TransactionEventIndex,
+    /// deprecated
+    pub transaction_event_index: Option<TransactionEventIndex>,
 }

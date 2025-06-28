@@ -7228,6 +7228,7 @@ dependencies = [
  "axum 0.6.20",
  "backon",
  "base64 0.21.7",
+ "bech32 0.11.0",
  "bytes",
  "clap 4.5.39",
  "color-eyre",
@@ -7241,6 +7242,7 @@ dependencies = [
  "lz4_flex",
  "prometheus",
  "reqwest 0.11.27",
+ "ruint",
  "serde",
  "serde-utils",
  "serde_json",
@@ -12305,9 +12307,9 @@ dependencies = [
 
 [[package]]
 name = "ruint"
-version = "1.14.0"
+version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "78a46eb779843b2c4f21fac5773e25d6d5b7c8f0922876c91541790d2ca27eef"
+checksum = "11256b5fe8c68f56ac6f39ef0720e592f33d2367a4782740d9c9142e889c7fb4"
 dependencies = [
  "alloy-rlp",
  "ark-ff 0.3.0",

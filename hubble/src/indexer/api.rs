@@ -105,10 +105,8 @@ pub enum IndexerError {
     CannotMapToEventDomain(String, String),
     #[error("internal error: cannot map to event domain; missing key: {0}.{1} (expecting: {2})")]
     CannotMapToEventDomainMissingKey(String, String, String),
-    #[error(
-        "internal error: cannot map to event domain; expecting struct: {0}.{1} (expecting: {2})"
-    )]
-    CannotMapToEventDomainExpectingStruct(String, String, String),
+    #[error("internal error: cannot map to event domain; multiple key: {0}.{1} (expecting: {2})")]
+    CannotMapToEventDomainMultipleKey(String, String, String),
     #[error(
         "internal error: cannot map to event domain; unexpected type: {0}.{1} {2} (expecting: {3})"
     )]

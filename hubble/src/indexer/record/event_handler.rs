@@ -20,7 +20,7 @@ use crate::indexer::{
         token_bucket_update_record::TokenBucketUpdateRecord,
         update_client_record::UpdateClientRecord,
         wallet_mutation_entry_record::WalletMutationEntryRecord, write_ack_record::WriteAckRecord,
-        ChainContext, InternalChainId,
+        ChainContext, InternalChainId, PgValue,
     },
 };
 
@@ -49,8 +49,8 @@ pub async fn delete_event_data_at_height(
             )
             DELETE FROM v2_evm.logs WHERE internal_chain_id = $1 AND height = $2
             ",
-            internal_chain_id.pg_value_integer()?,
-            height.pg_value_bigint()?,
+            internal_chain_id.pg_value()?,
+            height.pg_value()?,
         )
         .execute(tx.as_mut())
         .await?;
@@ -112,8 +112,8 @@ async fn has_event_data_at_height(
         SELECT TRUE AS exists FROM v2_evm.logs WHERE internal_chain_id = $1 AND height = $2
         LIMIT 1
         ",
-        internal_chain_id.pg_value_integer()?,
-        height.pg_value_bigint()?,
+        internal_chain_id.pg_value()?,
+        height.pg_value()?,
     )
     .fetch_optional(tx.as_mut())
     .await?
@@ -158,7 +158,7 @@ async fn handle_block_event(
                 internal_chain_id,
                 block_hash,
                 data,
-                height.pg_value_bigint()?,
+                height.pg_value()?,
                 time
             )
             .execute(tx.as_mut())
@@ -193,7 +193,7 @@ async fn handle_block_event(
             ",
                 internal_chain_id,
                 block_hash,
-                height.pg_value_bigint()?,
+                height.pg_value()?,
                 log_index,
                 timestamp,
                 transaction_hash,
@@ -220,7 +220,7 @@ async fn handle_block_event(
                 internal_chain_id,
                 hash,
                 data,
-                height.pg_value_bigint()?,
+                height.pg_value()?,
                 time
             )
             .execute(tx.as_mut())
@@ -238,7 +238,7 @@ async fn handle_block_event(
             INSERT INTO v2_cosmos.transactions (internal_chain_id, block_hash, height, hash, data, index) 
             VALUES ($1, $2, $3, $4, $5, $6)
             ",
-                internal_chain_id, block_hash, height.pg_value_bigint()?, hash, data, index)
+                internal_chain_id, block_hash, height.pg_value()?, hash, data, index)
             .execute(tx.as_mut())
             .await
             .map(|_| ())
@@ -259,7 +259,7 @@ async fn handle_block_event(
             ",
                 internal_chain_id,
                 block_hash,
-                height.pg_value_bigint()?,
+                height.pg_value()?,
                 transaction_hash as _,
                 index,
                 transaction_index as _,

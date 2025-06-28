@@ -6,7 +6,7 @@ use crate::indexer::{
     api::IndexerError,
     event::{channel_open_confirm_event::ChannelOpenConfirmEvent, types::BlockHeight},
     handler::EventContext,
-    record::{ChainContext, InternalChainId},
+    record::{ChainContext, InternalChainId, PgValue, PgValueExt},
 };
 
 pub struct ChannelOpenConfirmRecord {
@@ -17,7 +17,7 @@ pub struct ChannelOpenConfirmRecord {
     pub timestamp: OffsetDateTime,
     pub transaction_hash: Vec<u8>,
     pub transaction_index: i64,
-    pub transaction_event_index: i64,
+    pub transaction_event_index: Option<i64>,
     pub port_id: Vec<u8>,
     pub channel_id: i32,
     pub connection_id: i32,
@@ -34,10 +34,10 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ChannelOpenConfirmEvent>>
         value: &'a EventContext<'a, ChainContext, ChannelOpenConfirmEvent>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            internal_chain_id: value.context.internal_chain_id.pg_value_integer()?,
+            internal_chain_id: value.context.internal_chain_id.pg_value()?,
             block_hash: value.event.header.block_hash.pg_value()?,
-            height: value.event.header.height.pg_value_bigint()?,
-            event_index: value.event.header.event_index.pg_value_bigint()?,
+            height: value.event.header.height.pg_value()?,
+            event_index: value.event.header.event_index.pg_value()?,
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
@@ -105,8 +105,8 @@ impl ChannelOpenConfirmRecord {
             DELETE FROM v2_sync.channel_open_confirm_test
             WHERE internal_chain_id = $1 AND height = $2
             "#,
-            internal_chain_id.pg_value_integer()?,
-            height.pg_value_bigint()?,
+            internal_chain_id.pg_value()?,
+            height.pg_value()?,
         )
         .execute(&mut **tx)
         .await?;

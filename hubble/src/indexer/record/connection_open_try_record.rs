@@ -6,7 +6,7 @@ use crate::indexer::{
     api::IndexerError,
     event::{connection_open_try_event::ConnectionOpenTryEvent, types::BlockHeight},
     handler::EventContext,
-    record::{ChainContext, InternalChainId},
+    record::{ChainContext, InternalChainId, PgValue},
 };
 
 pub struct ConnectionOpenTryRecord {
@@ -31,9 +31,9 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ConnectionOpenTryEvent>>
         value: &'a EventContext<'a, ChainContext, ConnectionOpenTryEvent>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            internal_chain_id: value.context.internal_chain_id.pg_value_integer()?,
+            internal_chain_id: value.context.internal_chain_id.pg_value()?,
             block_hash: value.event.header.block_hash.pg_value()?,
-            height: value.event.header.height.pg_value_bigint()?,
+            height: value.event.header.height.pg_value()?,
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
@@ -93,8 +93,8 @@ impl ConnectionOpenTryRecord {
             DELETE FROM v2_sync.connection_open_try_test
             WHERE internal_chain_id = $1 AND height = $2
             "#,
-            internal_chain_id.pg_value_integer()?,
-            height.pg_value_bigint()?
+            internal_chain_id.pg_value()?,
+            height.pg_value()?
         )
         .execute(&mut **tx)
         .await?;
