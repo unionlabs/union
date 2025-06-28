@@ -1,6 +1,5 @@
 import { PUBLIC_DATADOG_CLIENT_TOKEN, PUBLIC_GIT_REV } from "$env/static/public"
 import { ENV, SERVICE_NAME } from "$lib/constants"
-import { flattenObject } from "$lib/utils/flattenObject"
 import { datadogLogs, StatusType } from "@datadog/browser-logs"
 import { Array as A, Cause, HashMap, Logger, LogLevel, Match, pipe, Record as R } from "effect"
 
