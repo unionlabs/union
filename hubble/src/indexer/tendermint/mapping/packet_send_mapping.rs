@@ -3,14 +3,11 @@ use tracing::trace;
 use crate::indexer::{
     api::IndexerError,
     event::{packet_send_event::PacketSendEvent, supported::SupportedBlockEvent},
-    tendermint::{event_decoder::EventDecoder, fetcher_client::TmFetcherClient},
+    tendermint::{fetcher_client::TmFetcherClient, mapping::decoder::Decoder},
 };
 
 impl TmFetcherClient {
-    pub fn to_packet_send(
-        &self,
-        log: &EventDecoder,
-    ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
+    pub fn to_packet_send(&self, log: &Decoder) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         trace!("to_packet_send - {log}");
 
         Ok(vec![SupportedBlockEvent::PacketSend {

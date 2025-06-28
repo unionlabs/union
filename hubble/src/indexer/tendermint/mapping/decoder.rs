@@ -53,7 +53,7 @@ impl From<&Event> for TmEvent {
     }
 }
 
-pub struct EventDecoder<'a> {
+pub struct Decoder<'a> {
     pub chain_id: ChainId,
     pub block_header: &'a BlockHeader,
     pub transaction: &'a TxResponse,
@@ -61,13 +61,13 @@ pub struct EventDecoder<'a> {
     pub event_index: usize,
 }
 
-impl<'a> Display for EventDecoder<'a> {
+impl<'a> Display for Decoder<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {}", self.event.name, self.event.keys_as_string())
     }
 }
 
-impl<'a> EventDecoder<'a> {
+impl<'a> Decoder<'a> {
     pub fn header(&'a self) -> Result<Header, IndexerError> {
         Ok(Header {
             universal_chain_id: self.chain_id.universal_chain_id.to_string().into(),

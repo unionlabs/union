@@ -3,13 +3,13 @@ use tracing::trace;
 use crate::indexer::{
     api::IndexerError,
     event::{create_lens_client_event::CreateLensClientEvent, supported::SupportedBlockEvent},
-    tendermint::{event_decoder::EventDecoder, fetcher_client::TmFetcherClient},
+    tendermint::{fetcher_client::TmFetcherClient, mapping::decoder::Decoder},
 };
 
 impl TmFetcherClient {
     pub fn to_create_lens_client(
         &self,
-        log: &EventDecoder,
+        log: &Decoder,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         trace!("to_create_lens_client - {log}");
 

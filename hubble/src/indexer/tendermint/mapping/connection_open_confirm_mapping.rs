@@ -5,13 +5,13 @@ use crate::indexer::{
     event::{
         connection_open_confirm_event::ConnectionOpenConfirmEvent, supported::SupportedBlockEvent,
     },
-    tendermint::{event_decoder::EventDecoder, fetcher_client::TmFetcherClient},
+    tendermint::{fetcher_client::TmFetcherClient, mapping::decoder::Decoder},
 };
 
 impl TmFetcherClient {
     pub fn to_connection_open_confirm(
         &self,
-        log: &EventDecoder,
+        log: &Decoder,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         trace!("to_connection_open_confirm - {log}");
 

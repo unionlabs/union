@@ -2,14 +2,14 @@ use tracing::trace;
 
 use crate::indexer::{
     api::IndexerError,
-    tendermint::{fetcher_client::TmFetcherClient, event_decoder::EventDecoder},
     event::{supported::SupportedBlockEvent, update_client_event::UpdateClientEvent},
+    tendermint::{fetcher_client::TmFetcherClient, mapping::decoder::Decoder},
 };
 
 impl TmFetcherClient {
     pub fn to_update_client(
         &self,
-        log: &EventDecoder,
+        log: &Decoder,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         trace!("to_update_client - {log}");
 

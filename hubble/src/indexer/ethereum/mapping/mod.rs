@@ -9,7 +9,7 @@ use crate::indexer::{
     ethereum::{
         abi::{Abi, AbiRegistration},
         fetcher_client::EthFetcherClient,
-        log_decoder::LogDecoder,
+        mapping::decoder::Decoder,
     },
     event::supported::SupportedBlockEvent,
 };
@@ -24,6 +24,7 @@ mod connection_open_init_mapping;
 mod connection_open_try_mapping;
 mod create_client_mapping;
 mod create_lens_client_mapping;
+mod decoder;
 pub(crate) mod legacy;
 mod packet_ack_mapping;
 mod packet_recv_mapping;
@@ -104,7 +105,7 @@ impl EthFetcherClient {
         log: &Log,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         let event = abi.parse(log)?;
-        let log_decoder = LogDecoder {
+        let log_decoder = Decoder {
             event: &event,
             chain_id: self.chain_id,
             block,

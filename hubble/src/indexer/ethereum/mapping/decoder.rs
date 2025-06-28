@@ -23,7 +23,7 @@ use crate::{
     postgres::ChainId,
 };
 
-pub struct LogDecoder<'a> {
+pub struct Decoder<'a> {
     pub chain_id: ChainId,
     pub block: &'a AnyRpcBlock,
     pub log: &'a Log,
@@ -31,13 +31,13 @@ pub struct LogDecoder<'a> {
     pub event: &'a SolEvent,
 }
 
-impl<'a> Display for LogDecoder<'a> {
+impl<'a> Display for Decoder<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}: {}", self.event.name, self.event.keys_as_string())
     }
 }
 
-impl<'a> LogDecoder<'a> {
+impl<'a> Decoder<'a> {
     pub fn header(&'a self) -> Result<Header, IndexerError> {
         Ok(Header {
             universal_chain_id: self.chain_id.universal_chain_id.to_string().into(),

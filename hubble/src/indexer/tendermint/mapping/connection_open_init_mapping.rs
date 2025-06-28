@@ -3,13 +3,13 @@ use tracing::trace;
 use crate::indexer::{
     api::IndexerError,
     event::{connection_open_init_event::ConnectionOpenInitEvent, supported::SupportedBlockEvent},
-    tendermint::{event_decoder::EventDecoder, fetcher_client::TmFetcherClient},
+    tendermint::{fetcher_client::TmFetcherClient, mapping::decoder::Decoder},
 };
 
 impl TmFetcherClient {
     pub fn to_connection_open_init(
         &self,
-        log: &EventDecoder,
+        log: &Decoder,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         trace!("to_connection_open_init - {log}");
 
