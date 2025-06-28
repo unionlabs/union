@@ -5,6 +5,7 @@ use crate::indexer::{
     api::IndexerError,
     consumer::BlockUpdate,
     event::types::{BlockHeight, Range, UniversalChainId},
+    record::PgValue,
 };
 
 pub async fn get_block_updates(
@@ -64,7 +65,7 @@ pub async fn insert_block_update(
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         ",
         block_update.universal_chain_id.pg_value()?,
-        block_update.height.pg_value_bigint()?,
+        block_update.height.pg_value()?,
         block_update.message_sequence.pg_value()?,
         block_update.delete,
         block_update.message_hash.pg_value()?,
@@ -93,7 +94,7 @@ pub async fn update_block_update(
           AND height = $2
         ",
         block_update.universal_chain_id.pg_value()?,
-        block_update.height.pg_value_bigint()?,
+        block_update.height.pg_value()?,
         block_update.message_sequence.pg_value()?,
         block_update.delete,
         block_update.message_hash.pg_value()?,

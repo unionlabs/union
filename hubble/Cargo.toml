@@ -25,6 +25,7 @@ async-nats         = { version = "0.41.0" }
 axum               = { workspace = true, features = ["macros", "tokio"] }
 backon             = "0.4.4"
 base64             = { workspace = true }
+bech32             = "0.11.0"
 bytes              = { version = "1.10.1" }
 clap               = { workspace = true, features = ["derive", "env", "error-context"] }
 color-eyre         = { workspace = true, features = ["default"] }
@@ -38,6 +39,7 @@ lazy_static        = { workspace = true }
 lz4_flex           = "0.11.3"
 prometheus         = { version = "0.13.4", features = ["process"] }
 reqwest            = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
+ruint              = "1.15.0"
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }

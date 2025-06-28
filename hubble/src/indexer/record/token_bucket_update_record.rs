@@ -6,7 +6,7 @@ use crate::indexer::{
     api::IndexerError,
     event::{token_bucket_update_event::TokenBucketUpdateEvent, types::BlockHeight},
     handler::EventContext,
-    record::{ChainContext, InternalChainId},
+    record::{ChainContext, InternalChainId, PgValue, PgValueExt},
 };
 
 pub struct TokenBucketUpdateRecord {
@@ -17,7 +17,7 @@ pub struct TokenBucketUpdateRecord {
     pub timestamp: OffsetDateTime,
     pub transaction_hash: Vec<u8>,
     pub transaction_index: i64,
-    pub transaction_event_index: i64,
+    pub transaction_event_index: Option<i64>,
     pub denom: Vec<u8>,
     pub capacity: BigDecimal,
     pub refill_rate: BigDecimal,
@@ -32,10 +32,10 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, TokenBucketUpdateEvent>>
         value: &'a EventContext<'a, ChainContext, TokenBucketUpdateEvent>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            internal_chain_id: value.context.internal_chain_id.pg_value_integer()?,
+            internal_chain_id: value.context.internal_chain_id.pg_value()?,
             block_hash: value.event.header.block_hash.pg_value()?,
-            height: value.event.header.height.pg_value_bigint()?,
-            event_index: value.event.header.event_index.pg_value_integer()?,
+            height: value.event.header.height.pg_value()?,
+            event_index: value.event.header.event_index.pg_value()?,
             timestamp: value.event.header.timestamp.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             transaction_index: value.event.header.transaction_index.pg_value()?,
@@ -97,8 +97,8 @@ impl TokenBucketUpdateRecord {
             DELETE FROM v2_sync.token_bucket_update_test
             WHERE internal_chain_id = $1 AND height = $2
             "#,
-            internal_chain_id.pg_value_integer()?,
-            height.pg_value_bigint()?
+            internal_chain_id.pg_value()?,
+            height.pg_value()?
         )
         .execute(&mut **tx)
         .await?;

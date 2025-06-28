@@ -3,7 +3,7 @@ use sqlx::Postgres;
 use crate::indexer::{
     api::IndexerError,
     event::types::UniversalChainId,
-    record::{ChainContext, ChainNetwork},
+    record::{ChainContext, ChainNetwork, PgValue},
 };
 
 pub async fn fetch_chain_context_for_universal_chain_id(

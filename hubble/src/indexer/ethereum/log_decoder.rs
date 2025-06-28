@@ -3,6 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use alloy::{dyn_abi::DynSolValue, network::AnyRpcBlock, primitives::FixedBytes, rpc::types::Log};
 use bytes::Bytes;
 use itertools::Itertools;
+use ruint::Uint;
 use time::OffsetDateTime;
 use tracing::trace;
 
@@ -13,9 +14,9 @@ use crate::{
         event::{
             header::Header,
             types::{
-                Acknowledgement, BlockHash, BlockHeight, CanonicalChainId, ChannelId, ClientId,
-                ClientType, ConnectionId, Maker, MakerMsg, PacketData, PacketHash, PortId,
-                TimeoutTimestamp, TransactionHash, Version,
+                Acknowledgement, BlockHash, BlockHeight, CanonicalChainId, Capacity, ChannelId,
+                ClientId, ClientType, ConnectionId, Denom, Maker, MakerMsg, PacketData, PacketHash,
+                PortId, RefillRate, TimeoutTimestamp, TransactionHash, Version,
             },
         },
     },
@@ -94,7 +95,7 @@ impl<'a> LogDecoder<'a> {
                     )
                 })?
                 .into(),
-            transaction_event_index: self.transaction_log_index.try_into()?,
+            transaction_event_index: Some(self.transaction_log_index.try_into()?),
         })
     }
 }
@@ -200,6 +201,18 @@ impl SolEvent {
         self.get_packet_data("data")
     }
 
+    pub fn denom(&self) -> Result<Denom, IndexerError> {
+        self.get_denom("token")
+    }
+
+    pub fn capacity(&self) -> Result<Capacity, IndexerError> {
+        self.get_capacity("capacity")
+    }
+
+    pub fn refill_rate(&self) -> Result<RefillRate, IndexerError> {
+        self.get_refill_rate("refillRate")
+    }
+
     pub fn acknowledgement(&self) -> Result<Acknowledgement, IndexerError> {
         self.get_acknowledgement("acknowledgement")
     }
@@ -260,6 +273,18 @@ impl SolEvent {
         Ok(self.get_bytes(key, "packet-data")?.into())
     }
 
+    fn get_denom(&self, key: &str) -> Result<Denom, IndexerError> {
+        Ok(self.get_bytes(key, "denom")?.into())
+    }
+
+    fn get_capacity(&self, key: &str) -> Result<Capacity, IndexerError> {
+        Ok(self.get_u256(key, "capacity")?.into())
+    }
+
+    fn get_refill_rate(&self, key: &str) -> Result<RefillRate, IndexerError> {
+        Ok(self.get_u256(key, "refill-rate")?.into())
+    }
+
     fn get_acknowledgement(&self, key: &str) -> Result<Acknowledgement, IndexerError> {
         Ok(self.get_bytes(key, "acknowledgement")?.into())
     }
@@ -290,6 +315,16 @@ impl SolEvent {
         }
     }
 
+    fn get_u256(&self, key: &str, expecting: &str) -> Result<Uint<256, 4>, IndexerError> {
+        match self.get_value(key, expecting)? {
+            #[allow(clippy::useless_conversion)] // DynSolValue::Uint != ruint::Uint
+            DynSolValue::Uint(value, 256) => Uint::try_from(*value).map_err(|_| {
+                self.report_unexpected_type(key, &DynSolValue::Uint(*value, 256), expecting)
+            }),
+            value => Err(self.report_unexpected_type(key, value, expecting)),
+        }
+    }
+
     fn get_bytes(&self, key: &str, expecting: &str) -> Result<Bytes, IndexerError> {
         match self.get_value(key, expecting)? {
             DynSolValue::Address(address) => Ok(Bytes::copy_from_slice(address.as_slice())),
@@ -309,7 +344,7 @@ impl SolEvent {
     fn get_value(&self, key: &str, expecting: &str) -> Result<&DynSolValue, IndexerError> {
         self.attributes
             .get(key)
-            .ok_or(self.report_missing_key(key, expecting))
+            .ok_or_else(|| self.report_missing_key(key, expecting))
     }
 
     fn get_event(&self, key: &str, expecting: &str) -> Result<SolEvent, IndexerError> {

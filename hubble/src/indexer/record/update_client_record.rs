@@ -6,7 +6,7 @@ use crate::indexer::{
     api::IndexerError,
     event::{types::BlockHeight, update_client_event::UpdateClientEvent},
     handler::EventContext,
-    record::{ChainContext, InternalChainId},
+    record::{ChainContext, InternalChainId, PgValue},
 };
 
 pub struct UpdateClientRecord {
@@ -26,13 +26,13 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, UpdateClientEvent>> for Upda
         value: &'a EventContext<'a, ChainContext, UpdateClientEvent>,
     ) -> Result<Self, Self::Error> {
         Ok(Self {
-            internal_chain_id: value.context.internal_chain_id.pg_value_integer()?,
+            internal_chain_id: value.context.internal_chain_id.pg_value()?,
             block_hash: value.event.header.block_hash.pg_value()?,
-            height: value.event.header.height.pg_value_bigint()?,
+            height: value.event.header.height.pg_value()?,
             transaction_hash: value.event.header.transaction_hash.pg_value()?,
             client_id: value.event.client_id.pg_value()?,
             timestamp: value.event.header.timestamp.pg_value()?,
-            counterparty_height: value.event.counterparty_height.pg_value_bigint()?,
+            counterparty_height: value.event.counterparty_height.pg_value()?,
         })
     }
 }
@@ -79,8 +79,8 @@ impl UpdateClientRecord {
             DELETE FROM v2_sync.update_client_test
             WHERE internal_chain_id = $1 AND height = $2
             "#,
-            internal_chain_id.pg_value_integer()?,
-            height.pg_value_bigint()?
+            internal_chain_id.pg_value()?,
+            height.pg_value()?
         )
         .execute(&mut **tx)
         .await?;

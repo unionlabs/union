@@ -29,7 +29,7 @@ use crate::{
         tendermint::{
             block_handle::{BlockDetails, BlockHeader, TmBlockHandle},
             context::TmContext,
-            postgres::{PgBlock, PgEvent, PgTransaction},
+            mapping::legacy::{PgBlock, PgEvent, PgTransaction},
             provider::{Provider, RpcProviderId},
         },
     },
@@ -103,9 +103,9 @@ impl TmFetcherClient {
                         details: match fetch_mode {
                             FetchMode::Lazy => BlockDetails::Lazy(Box::new(meta.into())),
                             FetchMode::Eager => {
-                                let (block, transactions, events) =
+                                let (pg_data, raw_data) =
                                     self.fetch_details(&meta.into(), provider_id).await?;
-                                BlockDetails::Eager(block, transactions, events)
+                                BlockDetails::Eager(pg_data, raw_data)
                             }
                         },
                         tm_client: self.clone(),
@@ -120,7 +120,13 @@ impl TmFetcherClient {
         &self,
         block_header: &BlockHeader,
         provider_id: RpcProviderId,
-    ) -> Result<(PgBlock, Vec<PgTransaction>, Vec<PgEvent>), IndexerError> {
+    ) -> Result<
+        (
+            (PgBlock, Vec<PgTransaction>, Vec<PgEvent>),
+            (BlockHeader, Vec<TxResponse>),
+        ),
+        IndexerError,
+    > {
         let block_reference = block_header.block_reference()?;
 
         info!("{}: fetch details", block_reference);
@@ -202,12 +208,19 @@ impl TmFetcherClient {
         }
     }
 
+    #[allow(clippy::type_complexity)] // remove after migration
     pub fn convert_to_pg_data(
         &self,
         block_header: &BlockHeader,
         block_results: BlockResultsResponse,
         transactions_response: Vec<TxResponse>,
-    ) -> Result<(PgBlock, Vec<PgTransaction>, Vec<PgEvent>), IndexerError> {
+    ) -> Result<
+        (
+            (PgBlock, Vec<PgTransaction>, Vec<PgEvent>),
+            (BlockHeader, Vec<TxResponse>),
+        ),
+        IndexerError,
+    > {
         let (block_id, header, block_reference) = (
             block_header.block_id.clone(),
             block_header.header.clone(),
@@ -235,6 +248,7 @@ impl TmFetcherClient {
 
         let pg_transactions =
             transactions_response
+                .clone()
                 .into_iter()
                 .filter(|tx| tx.tx_result.code.is_ok())
                 .map(|tx| {
@@ -272,6 +286,7 @@ impl TmFetcherClient {
         // add all block events
         pg_events.extend(
             block_results
+                .clone()
                 .events(
                     self.chain_id,
                     block_reference.hash,
@@ -288,7 +303,10 @@ impl TmFetcherClient {
                 }),
         );
 
-        Ok((pg_block, pg_transactions, pg_events))
+        Ok((
+            (pg_block, pg_transactions, pg_events),
+            (block_header.clone(), transactions_response),
+        ))
     }
 
     pub fn handle_err_fetching_metas(
@@ -338,9 +356,9 @@ impl TmFetcherClient {
                     details: match mode {
                         FetchMode::Lazy => BlockDetails::Lazy(Box::new(header)),
                         FetchMode::Eager => {
-                            let (block, transactions, events) =
+                            let (pg_result, raw_result) =
                                 self.fetch_details(&header, provider_id).await?;
-                            BlockDetails::Eager(block, transactions, events)
+                            BlockDetails::Eager(pg_result, raw_result)
                         }
                     },
                     tm_client: self.clone(),
@@ -500,6 +518,7 @@ impl SerdeValueExt for serde_json::Value {
     }
 }
 
+/// Replaces \u0000 from JSON objects and replaces it with \\u0000
 fn replace_escape_chars(val: &mut serde_json::Value) {
     use base64::{engine::general_purpose, Engine as _};
 

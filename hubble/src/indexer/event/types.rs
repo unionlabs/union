@@ -4,8 +4,9 @@ use std::{
 };
 
 use bytes::Bytes;
-use hex::decode;
-use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use hex::{decode, encode};
+use ruint::Uint;
+use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use sha2::Digest;
 use time::OffsetDateTime;
@@ -314,7 +315,7 @@ impl From<u64> for TimeoutTimestamp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PortId(pub bytes::Bytes);
+pub struct PortId(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for PortId {
     fn from(value: bytes::Bytes) -> Self {
@@ -332,7 +333,7 @@ impl From<String> for Version {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct BlockHash(pub bytes::Bytes);
+pub struct BlockHash(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for BlockHash {
     fn from(value: bytes::Bytes) -> Self {
@@ -341,7 +342,7 @@ impl From<bytes::Bytes> for BlockHash {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct TransactionHash(pub bytes::Bytes);
+pub struct TransactionHash(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for TransactionHash {
     fn from(value: bytes::Bytes) -> Self {
@@ -350,7 +351,7 @@ impl From<bytes::Bytes> for TransactionHash {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PacketHash(pub bytes::Bytes);
+pub struct PacketHash(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for PacketHash {
     fn from(value: bytes::Bytes) -> Self {
@@ -359,7 +360,7 @@ impl From<bytes::Bytes> for PacketHash {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct PacketData(pub bytes::Bytes);
+pub struct PacketData(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for PacketData {
     fn from(value: bytes::Bytes) -> Self {
@@ -368,7 +369,7 @@ impl From<bytes::Bytes> for PacketData {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Acknowledgement(pub bytes::Bytes);
+pub struct Acknowledgement(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for Acknowledgement {
     fn from(value: bytes::Bytes) -> Self {
@@ -377,7 +378,7 @@ impl From<bytes::Bytes> for Acknowledgement {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Maker(pub bytes::Bytes);
+pub struct Maker(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for Maker {
     fn from(value: bytes::Bytes) -> Self {
@@ -386,7 +387,7 @@ impl From<bytes::Bytes> for Maker {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MakerMsg(pub bytes::Bytes);
+pub struct MakerMsg(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for MakerMsg {
     fn from(value: bytes::Bytes) -> Self {
@@ -403,12 +404,38 @@ impl From<u64> for EventIndex {
     }
 }
 
+impl TryFrom<usize> for EventIndex {
+    type Error = IndexerError;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        Ok(Self(u64::try_from(value).map_err(|_| {
+            IndexerError::CannotMapToEventDomain("event-index".to_string(), value.to_string())
+        })?))
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TransactionIndex(#[serde(with = "flexible_u64")] pub u64);
+
+impl From<u32> for TransactionIndex {
+    fn from(value: u32) -> Self {
+        Self(value.into())
+    }
+}
 
 impl From<u64> for TransactionIndex {
     fn from(value: u64) -> Self {
         Self(value)
+    }
+}
+
+impl TryFrom<usize> for TransactionIndex {
+    type Error = IndexerError;
+
+    fn try_from(value: usize) -> Result<Self, Self::Error> {
+        Ok(Self(u64::try_from(value).map_err(|_| {
+            IndexerError::CannotMapToEventDomain("transaction-index".to_string(), value.to_string())
+        })?))
     }
 }
 
@@ -429,7 +456,7 @@ impl TryFrom<usize> for TransactionEventIndex {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct BlockTimestamp(pub OffsetDateTime);
+pub struct BlockTimestamp(#[serde(with = "time::serde::rfc3339")] pub OffsetDateTime);
 
 impl From<OffsetDateTime> for BlockTimestamp {
     fn from(value: OffsetDateTime) -> Self {
@@ -438,7 +465,7 @@ impl From<OffsetDateTime> for BlockTimestamp {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Denom(pub bytes::Bytes);
+pub struct Denom(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for Denom {
     fn from(value: bytes::Bytes) -> Self {
@@ -447,19 +474,19 @@ impl From<bytes::Bytes> for Denom {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Capacity(#[serde(with = "flexible_u64")] pub u64);
+pub struct Capacity(pub Uint<256, 4>);
 
-impl From<u64> for Capacity {
-    fn from(value: u64) -> Self {
+impl From<Uint<256, 4>> for Capacity {
+    fn from(value: Uint<256, 4>) -> Self {
         Self(value)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RefillRate(#[serde(with = "flexible_u64")] pub u64);
+pub struct RefillRate(pub Uint<256, 4>);
 
-impl From<u64> for RefillRate {
-    fn from(value: u64) -> Self {
+impl From<Uint<256, 4>> for RefillRate {
+    fn from(value: Uint<256, 4>) -> Self {
         Self(value)
     }
 }
@@ -473,7 +500,7 @@ pub struct UnsupportedBlockEvent {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct ContractAddress(pub bytes::Bytes);
+pub struct ContractAddress(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for ContractAddress {
     fn from(value: bytes::Bytes) -> Self {
@@ -481,7 +508,7 @@ impl From<bytes::Bytes> for ContractAddress {
     }
 }
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct WalletAddress(pub bytes::Bytes);
+pub struct WalletAddress(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 
 impl From<bytes::Bytes> for WalletAddress {
     fn from(value: bytes::Bytes) -> Self {
@@ -490,10 +517,10 @@ impl From<bytes::Bytes> for WalletAddress {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct MutationAmount(#[serde(with = "flexible_u64")] pub u64);
+pub struct MutationAmount(#[serde(with = "flexible_u128")] pub u128);
 
-impl From<u64> for MutationAmount {
-    fn from(value: u64) -> Self {
+impl From<u128> for MutationAmount {
+    fn from(value: u128) -> Self {
         Self(value)
     }
 }
@@ -528,5 +555,54 @@ mod flexible_u64 {
             Value::String(s) => s.parse().map_err(serde::de::Error::custom),
             _ => Err(serde::de::Error::custom("expected number or string")),
         }
+    }
+}
+
+mod flexible_u128 {
+    use super::*;
+
+    pub fn serialize<S>(value: &u128, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&value.to_string())
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<u128, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let value = Value::deserialize(deserializer)?;
+        match value {
+            Value::Number(n) => n
+                .as_u128()
+                .ok_or_else(|| serde::de::Error::custom("invalid number")),
+            Value::String(s) => s.parse().map_err(serde::de::Error::custom),
+            _ => Err(serde::de::Error::custom("expected number or string")),
+        }
+    }
+}
+
+pub mod bytes_as_hex {
+    use super::*;
+
+    pub fn serialize<S>(bytes: &Bytes, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let hex_string = format!("0x{}", encode(bytes));
+        serializer.serialize_str(&hex_string)
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Bytes, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = <&str>::deserialize(deserializer)?;
+        let s = s
+            .strip_prefix("0x")
+            .ok_or_else(|| D::Error::custom("missing 0x prefix"))?;
+        let vec = decode(s).map_err(D::Error::custom)?;
+        Ok(Bytes::from(vec))
     }
 }

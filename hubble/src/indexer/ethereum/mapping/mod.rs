@@ -29,6 +29,7 @@ mod packet_ack_mapping;
 mod packet_recv_mapping;
 mod packet_send_mapping;
 mod packet_timeout_mapping;
+mod token_bucket_update_mapping;
 mod update_client_mapping;
 mod write_ack_mapping;
 
@@ -130,6 +131,7 @@ impl EthFetcherClient {
             "WriteAck" => self.to_write_ack(&log_decoder)?,
             "PacketAck" => self.to_packet_ack(&log_decoder)?,
             "PacketTimeout" => self.to_packet_timeout(&log_decoder)?,
+            "TokenBucketUpdate" => self.to_token_bucket_update(&log_decoder)?,
             name => {
                 warn!("unsupported event: {name} ({log:?})");
                 vec![]

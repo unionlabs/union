@@ -1,4 +1,7 @@
-use std::fmt::{self, Display, Formatter};
+use std::{
+    fmt::{self, Display, Formatter},
+    str::FromStr,
+};
 
 use sqlx::types::BigDecimal;
 use time::OffsetDateTime;
@@ -35,6 +38,26 @@ pub(crate) mod token_bucket_update_record;
 pub(crate) mod update_client_record;
 pub(crate) mod wallet_mutation_entry_record;
 pub(crate) mod write_ack_record;
+
+pub trait PgValue<T, E = IndexerError> {
+    fn pg_value(&self) -> Result<T, E>;
+}
+
+pub trait PgValueExt<T> {
+    fn pg_value(&self) -> Result<Option<T>, IndexerError>;
+}
+
+impl<T, U> PgValueExt<U> for Option<T>
+where
+    T: PgValue<U>,
+{
+    fn pg_value(&self) -> Result<Option<U>, IndexerError> {
+        match self {
+            Some(v) => Ok(Some(v.pg_value()?)),
+            None => Ok(None),
+        }
+    }
+}
 
 /// wrapper required until we've migrated to use universal-chain-ids
 pub struct ChainContext {
@@ -91,8 +114,8 @@ pub enum ChainNetwork {
     Testnet,
 }
 
-impl ChainNetwork {
-    pub fn pg_value(&self) -> Result<String, IndexerError> {
+impl PgValue<String> for ChainNetwork {
+    fn pg_value(&self) -> Result<String, IndexerError> {
         Ok(match self {
             ChainNetwork::Mainnet => "mainnet".to_string(),
             ChainNetwork::Testnet => "testnet".to_string(),
@@ -113,35 +136,39 @@ impl Display for ChainNetwork {
     }
 }
 
-impl UniversalChainId {
-    pub fn pg_value(&self) -> Result<String, IndexerError> {
+impl PgValue<String> for UniversalChainId {
+    fn pg_value(&self) -> Result<String, IndexerError> {
         Ok(self.0.clone())
     }
 }
 
-impl CanonicalChainId {
-    pub fn pg_value(&self) -> Result<String, IndexerError> {
+impl PgValue<String> for CanonicalChainId {
+    fn pg_value(&self) -> Result<String, IndexerError> {
         Ok(self.0.clone())
     }
 }
 
-impl BlockHeight {
-    pub fn pg_value_bigint(self) -> Result<i64, IndexerError> {
+impl PgValue<i64> for BlockHeight {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
         i64::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
-                "block-height".to_string(),
+                "block-height-i64".to_string(),
                 self.0.to_string(),
             )
         })
     }
+}
 
-    pub fn pg_value_numeric(self) -> Result<BigDecimal, IndexerError> {
+// not implementing trait, because sqlx macro gets confused
+// temporary, because we should remove numeric block height values
+impl BlockHeight {
+    fn pg_value_numeric(&self) -> Result<BigDecimal, IndexerError> {
         Ok(self.0.into())
     }
 }
 
-impl ConnectionId {
-    pub fn pg_value(&self) -> Result<i32, IndexerError> {
+impl PgValue<i32> for ConnectionId {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
         i32::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "connection-id".to_string(),
@@ -150,21 +177,24 @@ impl ConnectionId {
         })
     }
 }
-impl InternalChainId {
-    pub fn pg_value_integer(&self) -> Result<i32, IndexerError> {
+impl PgValue<i32> for InternalChainId {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
         Ok(self.0)
     }
+}
+impl InternalChainId {
+    /// temporary to support inconsistency in the datamodel: internal chain id should be `integer` type
     pub fn pg_value_numeric(&self) -> Result<BigDecimal, IndexerError> {
         Ok(self.0.into())
     }
 }
-impl ClientType {
-    pub fn pg_value(&self) -> Result<String, IndexerError> {
+impl PgValue<String> for ClientType {
+    fn pg_value(&self) -> Result<String, IndexerError> {
         Ok(self.0.clone())
     }
 }
-impl ChannelId {
-    pub fn pg_value(&self) -> Result<i32, IndexerError> {
+impl PgValue<i32> for ChannelId {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
         i32::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "channel-id".to_string(),
@@ -173,8 +203,8 @@ impl ChannelId {
         })
     }
 }
-impl ClientId {
-    pub fn pg_value(&self) -> Result<i32, IndexerError> {
+impl PgValue<i32> for ClientId {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
         i32::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "client-id".to_string(),
@@ -183,66 +213,59 @@ impl ClientId {
         })
     }
 }
-impl PortId {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for PortId {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl Version {
-    pub fn pg_value(&self) -> Result<String, IndexerError> {
+impl PgValue<String> for Version {
+    fn pg_value(&self) -> Result<String, IndexerError> {
         Ok(self.0.clone())
     }
 }
-impl BlockHash {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for BlockHash {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl MessageHash {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for MessageHash {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.message_hash.to_vec())
     }
 }
-impl TransactionHash {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for TransactionHash {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl PacketHash {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for PacketHash {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl PacketData {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for PacketData {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl Acknowledgement {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for Acknowledgement {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl Maker {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for Maker {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl MakerMsg {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for MakerMsg {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl EventIndex {
-    pub fn pg_value_bigint(&self) -> Result<i64, IndexerError> {
-        i64::try_from(self.0).map_err(|_| {
-            IndexerError::InternalCannotMapToDatabaseDomain(
-                "event-index-i64".to_string(),
-                self.0.to_string(),
-            )
-        })
-    }
-    pub fn pg_value_integer(&self) -> Result<i32, IndexerError> {
+
+impl PgValue<i32> for EventIndex {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
         i32::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "event-index-i32".to_string(),
@@ -251,9 +274,19 @@ impl EventIndex {
         })
     }
 }
+impl PgValue<i64> for EventIndex {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
+        i64::try_from(self.0).map_err(|_| {
+            IndexerError::InternalCannotMapToDatabaseDomain(
+                "event-index-i64".to_string(),
+                self.0.to_string(),
+            )
+        })
+    }
+}
 
-impl MessageSequence {
-    pub fn pg_value(&self) -> Result<i64, IndexerError> {
+impl PgValue<i64> for MessageSequence {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
         i64::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "message-sequence".to_string(),
@@ -263,8 +296,8 @@ impl MessageSequence {
     }
 }
 
-impl NatsStreamSequence {
-    pub fn pg_value(&self) -> Result<i64, IndexerError> {
+impl PgValue<i64> for NatsStreamSequence {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
         i64::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "nats-stream-sequence".to_string(),
@@ -274,8 +307,8 @@ impl NatsStreamSequence {
     }
 }
 
-impl NatsConsumerSequence {
-    pub fn pg_value(&self) -> Result<i64, IndexerError> {
+impl PgValue<i64> for NatsConsumerSequence {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
         i64::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "nats-consumer-sequence".to_string(),
@@ -285,8 +318,8 @@ impl NatsConsumerSequence {
     }
 }
 
-impl TransactionIndex {
-    pub fn pg_value(&self) -> Result<i64, IndexerError> {
+impl PgValue<i64> for TransactionIndex {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
         i64::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "transaction-index".to_string(),
@@ -295,8 +328,8 @@ impl TransactionIndex {
         })
     }
 }
-impl TransactionEventIndex {
-    pub fn pg_value(&self) -> Result<i64, IndexerError> {
+impl PgValue<i64> for TransactionEventIndex {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
         i64::try_from(self.0).map_err(|_| {
             IndexerError::InternalCannotMapToDatabaseDomain(
                 "transaction-event-index".to_string(),
@@ -305,52 +338,62 @@ impl TransactionEventIndex {
         })
     }
 }
-impl BlockTimestamp {
-    pub fn pg_value(&self) -> Result<OffsetDateTime, IndexerError> {
+impl PgValue<OffsetDateTime> for BlockTimestamp {
+    fn pg_value(&self) -> Result<OffsetDateTime, IndexerError> {
         Ok(self.0)
     }
 }
-impl TimeoutTimestamp {
-    pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+impl PgValue<BigDecimal> for TimeoutTimestamp {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
         Ok(BigDecimal::new(self.0.into(), 0))
     }
 }
 
-impl Denom {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+impl PgValue<Vec<u8>> for Denom {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
 
-impl Capacity {
-    pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+impl PgValue<BigDecimal> for Capacity {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        BigDecimal::from_str(&self.0.to_string()).map_err(|_| {
+            IndexerError::InternalCannotMapToDatabaseDomain(
+                "capacity".to_string(),
+                self.0.to_string(),
+            )
+        })
+    }
+}
+
+impl PgValue<BigDecimal> for RefillRate {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        BigDecimal::from_str(&self.0.to_string()).map_err(|_| {
+            IndexerError::InternalCannotMapToDatabaseDomain(
+                "refill-rate".to_string(),
+                self.0.to_string(),
+            )
+        })
+    }
+}
+
+impl PgValue<Vec<u8>> for ContractAddress {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<Vec<u8>> for WalletAddress {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<BigDecimal> for MutationAmount {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
         Ok(BigDecimal::new(self.0.into(), 0))
     }
 }
-
-impl RefillRate {
-    pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
-        Ok(BigDecimal::new(self.0.into(), 0))
-    }
-}
-
-impl ContractAddress {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
-        Ok(self.0.to_vec())
-    }
-}
-impl WalletAddress {
-    pub fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
-        Ok(self.0.to_vec())
-    }
-}
-impl MutationAmount {
-    pub fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
-        Ok(self.0.into())
-    }
-}
-impl MutationDirection {
-    pub fn pg_value(&self) -> Result<String, IndexerError> {
+impl PgValue<String> for MutationDirection {
+    fn pg_value(&self) -> Result<String, IndexerError> {
         Ok(match self {
             MutationDirection::In => "in".to_string(),
             MutationDirection::Out => "out".to_string(),
