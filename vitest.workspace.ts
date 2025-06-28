@@ -1,3 +1,5 @@
 import { defineWorkspace } from "vitest/config"
 
-export default defineWorkspace(["ts-sdk"])
+export default defineWorkspace([
+  "ts-sdk/vitest.config.ts",
+])

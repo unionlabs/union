@@ -1,9 +1,19 @@
 {
+  "name": "docs",
   "private": true,
   "type": "module",
+  "scripts": {
+    "changeset-publish": "pnpm codemod && pnpm build && TEST_DIST= pnpm vitest && changeset publish",
+    "changeset-version": "changeset version && node scripts/version.mjs",
+    "docgen": "pnpm --recursive --filter @unionlabs/sdk exec docgen && node scripts/docs.mjs"
+  },
   "devDependencies": {
+    "@changesets/cli": "^2.29.5",
+    "@effect/docgen": "^0.5.2",
     "@effect/language-service": "0.18.0",
+    "@effect/typeclass": "^0.35.5",
     "@effect/vitest": "0.23.3",
+    "tsx": "^4.19.4",
     "typescript": "~5.8.2",
     "viem": "^2.26.2",
     "vite": "~6.3.1",
@@ -12,7 +22,8 @@
   "pnpm": {
     "patchedDependencies": {
       "@cosmjs/amino@0.33.1": "patches/@cosmjs__amino@0.33.1.patch",
-      "@cosmjs/tendermint-rpc@0.33.1": "patches/@cosmjs__tendermint-rpc@0.33.1.patch"
+      "@cosmjs/tendermint-rpc@0.33.1": "patches/@cosmjs__tendermint-rpc@0.33.1.patch",
+      "@effect/docgen": "patches/@effect__docgen.patch"
     },
     "onlyBuiltDependencies": ["bufferutil", "utf-8-validate", "esbuild", "keccak", "core-js"]
   }

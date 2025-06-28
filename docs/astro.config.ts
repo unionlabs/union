@@ -5,6 +5,7 @@ import svelte from "@astrojs/svelte"
 import tailwind from "@astrojs/tailwind"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
 import { defineConfig } from "astro/config"
+import ecTwoSlash from "expressive-code-twoslash"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
 import starlightThemeRapide from "starlight-theme-rapide"
@@ -84,6 +85,11 @@ export default defineConfig({
       locales: { root: { label: "English", lang: "en" } },
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/",
+      },
+      expressiveCode: {
+        plugins: [
+          ecTwoSlash(),
+        ],
       },
       social: {
         "github": "https://github.com/unionlabs",
@@ -291,8 +297,8 @@ export default defineConfig({
                   link: "/integrations/getting-started",
                 },
                 {
-                  label: "TypeScript SDK",
-                  link: "/integrations/typescript",
+                  label: "TypeScript",
+                  autogenerate: { directory: "/integrations/typescript" },
                 },
                 {
                   label: "GraphQL",
@@ -339,6 +345,11 @@ export default defineConfig({
               label: "GraphQL",
               link: "/reference/graphql",
               badge: { text: "new", variant: "success" },
+            },
+            {
+              label: "Typescript SDK",
+              autogenerate: { directory: "/reference/@unionlabs/sdk" },
+              badge: { text: "evolving", variant: "caution" },
             },
           ],
         },

@@ -1,39 +1,29 @@
 ---
-import type { NoRepetition } from "#/lib/types.ts"
+import type { NoRepetition } from "#/lib/types"
 import { Code, TabItem, Tabs } from "@astrojs/starlight/components"
-import { commands, type CommandType, type PackageManager } from "./index.ts"
+import type { PackageManager } from "./index.ts"
 
 interface Props {
-  prefix?: string
-  postfix?: string
-  packageId: string
-  command: CommandType
-  pkgManagers: NoRepetition<PackageManager>
+  commands: Record<PackageManager, string>
+  pkgManagers?: PackageManager[] | undefined
 }
 
 const {
-  prefix,
-  postfix,
-  command,
-  packageId,
-  pkgManagers = ["pnpm", "bun", "npm", "yarn"],
+  commands,
+  pkgManagers = ["npm", "pnpm", "bun", "yarn"] as NoRepetition<PackageManager>,
 } = Astro.props
 ---
 
 <Tabs syncKey="pkgManager">
   {
     pkgManagers.map(pkgManager => (
-      <TabItem
-        label={pkgManager}
-        icon={commands[pkgManager].icon}
-      >
+      <TabItem label={pkgManager}>
         <Code
           lang="bash"
+          twoslash={false}
           frame="none"
           class="text-sm sm:text-base size-full"
-          code={`${prefix ?? ""} ${pkgManager} ${
-            commands[pkgManager].commands[command]
-          } ${packageId} ${postfix ?? ""}`.trim()}
+          code={commands[pkgManager]}
         />
       </TabItem>
     ))

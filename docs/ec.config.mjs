@@ -9,7 +9,6 @@ import ecTwoSlash from "expressive-code-twoslash"
  */
 
 /** @type {ModifiedEC} */
-// @ts-expect-error
 export default {
   logger: true,
   frames: {
