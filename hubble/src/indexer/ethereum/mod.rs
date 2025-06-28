@@ -8,7 +8,6 @@ mod block_handle;
 pub mod config;
 mod context;
 mod fetcher_client;
-mod log_decoder;
 mod log_parser;
 mod mapping;
 mod postgres;

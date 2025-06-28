@@ -2,22 +2,22 @@ use tracing::trace;
 
 use crate::indexer::{
     api::IndexerError,
-    ethereum::{fetcher_client::EthFetcherClient, log_decoder::LogDecoder},
+    ethereum::{fetcher_client::EthFetcherClient, mapping::decoder::Decoder},
     event::{supported::SupportedBlockEvent, update_client_event::UpdateClientEvent},
 };
 
 impl EthFetcherClient {
     pub fn to_update_client(
         &self,
-        log: &LogDecoder,
+        decoder: &Decoder,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
-        trace!("to_update_client - {log}");
+        trace!("to_update_client - {decoder}");
 
         Ok(vec![SupportedBlockEvent::UpdateClient {
             inner: UpdateClientEvent {
-                header: log.header()?,
-                client_id: log.event.client_id()?,
-                counterparty_height: log.event.counterparty_height()?,
+                header: decoder.header()?,
+                client_id: decoder.event.client_id()?,
+                counterparty_height: decoder.event.counterparty_height()?,
             },
         }])
     }

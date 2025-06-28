@@ -6,8 +6,8 @@ use crate::indexer::{
     event::supported::SupportedBlockEvent,
     tendermint::{
         block_handle::{ActiveContracts, BlockHeader},
-        event_decoder::EventDecoder,
         fetcher_client::TmFetcherClient,
+        mapping::decoder::Decoder,
     },
 };
 
@@ -21,6 +21,7 @@ mod connection_open_init_mapping;
 mod connection_open_try_mapping;
 mod create_client_mapping;
 mod create_lens_client_mapping;
+mod decoder;
 pub(crate) mod legacy;
 mod packet_ack_mapping;
 mod packet_recv_mapping;
@@ -113,7 +114,7 @@ impl TmFetcherClient {
 
         let event = &event.into();
 
-        let event_decoder = EventDecoder {
+        let event_decoder = Decoder {
             chain_id: self.chain_id,
             block_header,
             transaction,
@@ -135,7 +136,7 @@ impl TmFetcherClient {
 
     fn transform_ibc_event_to_ucs_events(
         &self,
-        event_decoder: &EventDecoder<'_>,
+        event_decoder: &Decoder<'_>,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         trace!("to_ibc_event - {event_decoder}");
 
@@ -166,7 +167,7 @@ impl TmFetcherClient {
 
     fn transform_cw20_event_to_ucs_events(
         &self,
-        event_decoder: &EventDecoder<'_>,
+        event_decoder: &Decoder<'_>,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         trace!("to_cw20_event - {event_decoder}");
 

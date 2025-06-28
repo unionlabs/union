@@ -7,13 +7,13 @@ use crate::indexer::{
         types::{MutationDirection, WalletAddress},
         wallet_mutation_entry_event::WalletMutationEntryEvent,
     },
-    tendermint::{event_decoder::EventDecoder, fetcher_client::TmFetcherClient},
+    tendermint::{fetcher_client::TmFetcherClient, mapping::decoder::Decoder},
 };
 
 impl TmFetcherClient {
     pub fn to_wallet_mutation_entry(
         &self,
-        log: &EventDecoder,
+        log: &Decoder,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         trace!("to_wallet_mutation_entry - {log}");
 
@@ -45,7 +45,7 @@ impl TmFetcherClient {
 
     fn create_event(
         &self,
-        log: &EventDecoder,
+        log: &Decoder,
         wallet_address_canonical: WalletAddress,
         direction: MutationDirection,
     ) -> Result<SupportedBlockEvent, IndexerError> {
