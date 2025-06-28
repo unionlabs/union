@@ -5,7 +5,7 @@ use time::OffsetDateTime;
 
 use crate::indexer::{
     api::{BlockHash, BlockHeight, BlockRange, IndexerId},
-    event::MessageHash,
+    event::types::MessageHash,
 };
 
 pub async fn get_block_range_to_finalize(

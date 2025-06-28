@@ -17,35 +17,45 @@ use super::{
 };
 use crate::{
     indexer::{
-        api::{BlockHeight, UniversalChainId},
-        event::{BlockEvent, HubbleEvent, MessageHash},
-        nats::MessageMeta,
-        postgres::{
-            block_update::{get_block_updates, insert_block_update, update_block_update},
-            event_data::{
-                delete_event_data_at_height, insert_event_data_with_events, max_event_height,
+        event::{
+            hubble::HubbleEvent,
+            supported::SupportedBlockEvent,
+            types::{
+                BlockHeight, MessageHash, MessageSequence, NatsConsumerSequence,
+                NatsStreamSequence, UniversalChainId,
             },
         },
+        nats::MessageMeta,
+        postgres::{
+            block_update::{
+                get_block_updates, insert_block_update, max_event_height, update_block_update,
+            },
+            chain_context::fetch_chain_context_for_universal_chain_id,
+            replication_reset::schedule_replication_reset,
+        },
+        record::{
+            event_handler::{delete_event_data_at_height, handle_block_events},
+            ChainContext,
+        },
     },
-    postgres::{fetch_internal_chain_id_for_universal_chain_id, schedule_replication_reset},
     utils::human_readable::human_readable_bytes,
 };
 
 pub struct BlockUpdate {
     pub universal_chain_id: UniversalChainId,
     pub height: BlockHeight,
-    pub message_sequence: u64,
+    pub message_sequence: MessageSequence,
     pub delete: bool,
     pub message_hash: MessageHash,
-    pub nats_stream_sequence: u64,
-    pub nats_consumer_sequence: u64,
+    pub nats_stream_sequence: NatsStreamSequence,
+    pub nats_consumer_sequence: NatsConsumerSequence,
 }
 
 impl fmt::Display for BlockUpdate {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{}@{} {}[m{}|s{}|c{}] ({})",
+            "{}@{} {}[{}|{}|{}] ({})",
             self.universal_chain_id,
             self.height,
             if self.delete { "-" } else { "+" },
@@ -115,6 +125,10 @@ impl<T: FetcherClient> Indexer<T> {
     ) -> Result<(), IndexerError> {
         debug!("begin");
         let mut tx = self.pg_pool.begin().await?;
+
+        // todo: after splitting hubble load upon begin
+        let chain_context =
+            fetch_chain_context_for_universal_chain_id(&mut tx, &self.universal_chain_id).await?;
 
         debug!(
             "got message {message_meta} with payload size {}",
@@ -197,7 +211,7 @@ impl<T: FetcherClient> Indexer<T> {
         let mut did_schedule_replication_reset = false;
 
         for action in actions {
-            let data_changed = process(&mut tx, &action).await?;
+            let data_changed = process(&mut tx, &chain_context, &action).await?;
 
             let should_schedule_reset = !did_schedule_replication_reset
                 && data_changed
@@ -205,12 +219,7 @@ impl<T: FetcherClient> Indexer<T> {
 
             debug!("handling {action} - reset replication => {should_schedule_reset} (d: {did_schedule_replication_reset}, c: {data_changed}, h: {}, m: {max_event_height})", action.height());
             if should_schedule_reset {
-                schedule_replication_reset_for_action(
-                    &mut tx,
-                    &message_meta.universal_chain_id,
-                    action,
-                )
-                .await?;
+                schedule_replication_reset_for_action(&mut tx, &chain_context, action).await?;
 
                 did_schedule_replication_reset = true;
             }
@@ -227,6 +236,7 @@ impl<T: FetcherClient> Indexer<T> {
 // return true if data was changed. this is use to determine if a sync reset is required (will be removed when removing sync process)
 async fn process<'a>(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
+    chain_context: &ChainContext,
     action: &Action<'a>,
 ) -> Result<bool, IndexerError> {
     info!("handling {action}");
@@ -246,7 +256,7 @@ async fn process<'a>(
             };
 
             update_block_update(tx, new).await?;
-            delete_block(tx, &current.universal_chain_id, height).await?
+            delete_block(tx, chain_context, height).await?
         }
         Action::Update(message_meta, current, block_events) => {
             let new = BlockUpdate {
@@ -261,48 +271,46 @@ async fn process<'a>(
 
             update_block_update(tx, new).await?;
 
-            delete_block(tx, &current.universal_chain_id, height).await?;
-            insert_block(tx, block_events).await?
+            delete_block(tx, chain_context, height).await?;
+            insert_block(tx, chain_context, block_events).await?
         }
-        Action::Insert(message_meta, new, block_events) => {
+        Action::Insert(_, new, block_events) => {
             insert_block_update(tx, new).await?;
 
             // we don't have records before introducing nats, so we need to delete be sure no
             // old data exists. ultimately we can generate block-update records for each known
             // block so this it not required
-            delete_block(tx, &message_meta.universal_chain_id, height).await?;
-            insert_block(tx, block_events).await?
+            delete_block(tx, chain_context, height).await?;
+            insert_block(tx, chain_context, block_events).await?
         }
     })
 }
 
 async fn delete_block(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
-    universal_chain_id: &UniversalChainId,
-    height: u64,
+    chain_context: &ChainContext,
+    height: BlockHeight,
 ) -> Result<bool, IndexerError> {
-    Ok(delete_event_data_at_height(tx, universal_chain_id, height).await?)
+    delete_event_data_at_height(tx, chain_context.internal_chain_id, height).await
 }
 
 async fn insert_block(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
-    block_events: &[&BlockEvent],
+    chain_context: &ChainContext,
+    block_events: &[&SupportedBlockEvent],
 ) -> Result<bool, IndexerError> {
-    Ok(insert_event_data_with_events(tx, block_events).await?)
+    handle_block_events(tx, chain_context, block_events).await
 }
 
 async fn schedule_replication_reset_for_action<'a>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    universal_chain_id: &UniversalChainId,
+    chain_context: &ChainContext,
     action: Action<'a>,
-) -> sqlx::Result<()> {
-    let internal_chain_id =
-        fetch_internal_chain_id_for_universal_chain_id(tx, universal_chain_id).await?;
-
+) -> Result<(), IndexerError> {
     schedule_replication_reset(
         tx,
-        internal_chain_id,
-        i64::try_from(action.height()).expect("height fits"),
+        chain_context,
+        action.height(),
         &format!("block reorg ({action})"),
     )
     .await?;
@@ -313,8 +321,16 @@ async fn schedule_replication_reset_for_action<'a>(
 // what should we do with a block at a specific height.
 enum Action<'a> {
     Delete(&'a MessageMeta, &'a BlockUpdate),
-    Update(&'a MessageMeta, &'a BlockUpdate, &'a Vec<&'a BlockEvent>), // events are guaranteed to belong to the same block height
-    Insert(&'a MessageMeta, BlockUpdate, &'a Vec<&'a BlockEvent>),
+    Update(
+        &'a MessageMeta,
+        &'a BlockUpdate,
+        &'a Vec<&'a SupportedBlockEvent>,
+    ), // events are guaranteed to belong to the same block height
+    Insert(
+        #[allow(dead_code)] &'a MessageMeta,
+        BlockUpdate,
+        &'a Vec<&'a SupportedBlockEvent>,
+    ),
 }
 
 impl<'a> Action<'a> {
@@ -406,19 +422,28 @@ async fn get_message_data(message: &async_nats::jetstream::Message) -> Result<By
 fn get_message_meta(message: &async_nats::jetstream::Message) -> Result<MessageMeta, IndexerError> {
     let (nats_stream_sequence, nats_consumer_sequence) = message
         .info()
-        .map(|meta| (meta.stream_sequence, meta.consumer_sequence))
+        .map(|meta| {
+            (
+                NatsStreamSequence::from(meta.stream_sequence),
+                NatsConsumerSequence::from(meta.consumer_sequence),
+            )
+        })
         .map_err(IndexerError::NatsMetaError)?;
 
     if let Some(header_map) = &message.headers {
         let message_sequence = match header_map.get("Message-Sequence") {
-            Some(message_sequence) => message_sequence.as_str().parse::<u64>().map_err(|e| {
-                IndexerError::NatsUnparsableMessageSequence(
-                    message_sequence.as_str().to_string(),
-                    nats_stream_sequence,
-                    nats_consumer_sequence,
-                    e,
-                )
-            }),
+            Some(message_sequence) => message_sequence
+                .as_str()
+                .parse::<u64>()
+                .map(|s| s.into())
+                .map_err(|e| {
+                    IndexerError::NatsUnparsableMessageSequence(
+                        message_sequence.as_str().to_string(),
+                        nats_stream_sequence,
+                        nats_consumer_sequence,
+                        e,
+                    )
+                }),
             None => Err(IndexerError::NatsMissingMessageSequence(
                 nats_stream_sequence,
                 nats_consumer_sequence,
@@ -441,7 +466,7 @@ fn get_message_meta(message: &async_nats::jetstream::Message) -> Result<MessageM
         }?;
 
         let universal_chain_id = match header_map.get("Universal-Chain-Id") {
-            Some(message_hash) => Ok(message_hash.as_str().to_string()),
+            Some(universal_chain_id) => Ok(universal_chain_id.as_str().to_string().into()),
             None => Err(IndexerError::NatsMissingUniversalChainId(
                 nats_stream_sequence,
                 nats_consumer_sequence,

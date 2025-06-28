@@ -13,7 +13,7 @@ use crate::indexer::{
         BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, FetcherClient,
         IndexerError,
     },
-    event::BlockEvents,
+    event::types::BlockEvents,
 };
 
 #[derive(Clone)]

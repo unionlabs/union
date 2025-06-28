@@ -3,8 +3,9 @@ use sqlx::PgPool;
 use url::Url;
 
 use crate::indexer::{
-    api::{BlockHeight, IndexerId, UniversalChainId},
+    api::{BlockHeight, IndexerId},
     ethereum::{context::EthContext, fetcher_client::EthFetcherClient},
+    event::types::UniversalChainId,
     nats::NatsConnection,
     ConsumerConfig, FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
 };
@@ -26,6 +27,8 @@ pub struct Config {
     pub publisher: PublisherConfig,
     #[serde(default)]
     pub consumer: ConsumerConfig,
+    #[serde(default)]
+    pub drain: bool,
 }
 
 impl Config {
@@ -48,6 +51,7 @@ impl Config {
             EthContext {
                 rpc_urls: self.rpc_urls,
             },
+            self.drain,
         ))
     }
 }
