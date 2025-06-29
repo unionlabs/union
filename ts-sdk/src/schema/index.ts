@@ -12,11 +12,6 @@ export * from "./aggregate-count.js"
  * @category schemas
  * @since 2.0.0
  */
-export * from "./bech32.js"
-/**
- * @category schemas
- * @since 2.0.0
- */
 export * from "./block.js"
 /**
  * @category schemas

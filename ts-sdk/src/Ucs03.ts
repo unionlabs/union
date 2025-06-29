@@ -1,14 +1,20 @@
 /**
- * This module handles interaction with the [UCS03 protocol](https://docs.union.build/ucs/03/).
+ * This module handles interaction with the [UCS03](https://docs.union.build/ucs/03/) protocol.
  *
  * @since 2.0.0
  */
 
+import * as A from "effect/Array"
+import * as Data from "effect/Data"
 import { constant } from "effect/Function"
-import * as internal from "./internal/ucs03.js"
+import * as S from "effect/Schema"
+import { encodeAbiParameters } from "viem"
+import { Hex, HexChecksum } from "./schema/hex.js"
 
 /**
- * @category models
+ * Contract ABI
+ *
+ * @category abis
  * @since 2.0.0
  */
 export const Abi = [
@@ -702,48 +708,346 @@ export const Abi = [
   },
 ] as const
 
+type EnsureExported = Extract<(typeof Abi)[number], { name: "ensureExported" }> extends infer R
+  ? [R] extends [never] ? ["Abi does not contain a function named `ensureExported`"]
+  : R
+  : never
+
+type Input = EnsureExported["inputs"][number]
+
+type StructName = Input extends { internalType: `struct ${infer N extends string}` } ? N : never
+
+type StructMap = {
+  [N in StructName]: Extract<Input, { internalType: `struct ${N}` }> extends infer U
+    ? U extends { components: infer C } ? C : never
+    : never
+}
+
+const byStructName = <const S extends keyof StructMap>(name: S): StructMap[S] => {
+  const isEnsureExported = (a: unknown): a is EnsureExported =>
+    typeof a === "object" && a !== null && "name" in a && a.name === "ensureExported"
+  const isNamed = (
+    a: unknown,
+  ): a is Extract<EnsureExported["inputs"][number], { internalType: `struct ${S}` }> =>
+    typeof a === "object" && a !== null && "internalType" in a
+    && a.internalType === `struct ${name}`
+
+  return Abi
+    .find(isEnsureExported)!
+    .inputs
+    .find(isNamed)!
+    .components as StructMap[S]
+}
+
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const FungibleAssetOrderAbi = constant(byStructName("FungibleAssetOrder"))
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const InstructionAbi = constant(byStructName("Instruction"))
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const ZkgmPacketAbi = constant(byStructName("ZkgmPacket"))
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const ForwardAbi = constant(byStructName("Forward"))
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const MultiplexAbi = constant(byStructName("Multiplex"))
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const BatchAbi = constant(byStructName("Batch"))
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const AckAbi = constant(byStructName("Ack"))
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const BatchAckAbi = constant(byStructName("BatchAck"))
+/**
+ * @category abis
+ * @since 2.0.0
+ */
+export const FungibleAssetOrderAckAbi = constant(byStructName("FungibleAssetOrderAck"))
+
 /**
  * @category models
  * @since 2.0.0
  */
-export const FungibleAssetOrderAbi = constant(internal.fromStruct("FungibleAssetOrder"))
+const Version = S.NonNegativeInt.pipe(
+  S.between(0, 0),
+)
 /**
  * @category models
  * @since 2.0.0
  */
-export const InstructionAbi = constant(internal.fromStruct("Instruction"))
+type Version = typeof Version.Type
+
 /**
  * @category models
  * @since 2.0.0
  */
-export const ZkgmPacketAbi = constant(internal.fromStruct("ZkgmPacket"))
+const OpCode = S.NonNegativeInt
 /**
  * @category models
  * @since 2.0.0
  */
-export const ForwardAbi = constant(internal.fromStruct("Forward"))
+type OpCode = typeof OpCode.Type
+
 /**
  * @category models
  * @since 2.0.0
  */
-export const MultiplexAbi = constant(internal.fromStruct("Multiplex"))
+const MultiplexOperand = S.Union(
+  S.Tuple(Hex, S.Boolean, Hex, Hex),
+)
 /**
  * @category models
  * @since 2.0.0
  */
-export const BatchAbi = constant(internal.fromStruct("Batch"))
+type MultiplexOperand = typeof MultiplexOperand.Type
+
 /**
  * @category models
  * @since 2.0.0
  */
-export const AckAbi = constant(internal.fromStruct("Ack"))
+const FungibleAssetOrderOperand = S.Union(
+  S.Tuple(
+    Hex,
+    Hex,
+    Hex,
+    S.BigIntFromSelf,
+    S.String,
+    S.String,
+    S.Uint8,
+    S.BigIntFromSelf,
+    HexChecksum,
+    S.BigIntFromSelf,
+  ),
+)
 /**
  * @category models
  * @since 2.0.0
  */
-export const BatchAckAbi = constant(internal.fromStruct("BatchAck"))
+type FungibleAssetOrderOperand = typeof FungibleAssetOrderOperand.Type
+
 /**
  * @category models
  * @since 2.0.0
  */
-export const FungibleAssetOrderAckAbi = constant(internal.fromStruct("FungibleAssetOrderAck"))
+export const Operand = S.Union(
+  // [`0x${string}`, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
+  S.Tuple(Hex, S.BigIntFromSelf, S.Struct({ version: Version, opcode: OpCode, operand: Hex })),
+  // [number, number, `0x${string}`]
+  S.Tuple(S.Number, S.Number, Hex),
+  // [bigint, bigint, bigint, { version: number; opcode: number; operand: `0x${string}`; }]
+  S.Tuple(
+    S.BigIntFromSelf,
+    S.BigIntFromSelf,
+    S.BigIntFromSelf,
+    S.Struct({ version: Version, opcode: OpCode, operand: Hex }),
+  ),
+  MultiplexOperand,
+  // [readonly { version: number; opcode: number; operand: `0x${string}`; }[]]
+  S.Tuple(S.Array(S.Struct({ version: Version, opcode: OpCode, operand: Hex }))),
+  FungibleAssetOrderOperand,
+  // [bigint, `0x${string}`]
+  S.Tuple(S.BigIntFromSelf, Hex),
+  // [readonly `0x${string}`[]]
+  S.Tuple(S.NonEmptyArray(Hex)),
+)
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export type Operand = typeof Operand.Type
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export class Forward extends S.TaggedClass<Forward>()("Forward", {
+  opcode: S.Literal(0).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 0 as const,
+      decoding: () => 0 as const,
+    }),
+  ),
+  version: S.Literal(0).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 0 as const,
+      decoding: () => 0 as const,
+    }),
+  ),
+  operand: S.Tuple(
+    // TODO(ehegnes): Check bitwidth constraint
+    S.PositiveBigIntFromSelf.annotations({
+      description: "Path",
+    }),
+    S.PositiveBigIntFromSelf.annotations({
+      description: "Timeout Height",
+    }),
+    S.PositiveBigIntFromSelf.annotations({
+      description: "Timeout Timestamp",
+    }),
+    S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema),
+  ),
+}) {}
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export class Multiplex extends S.TaggedClass<Multiplex>()("Multiplex", {
+  opcode: S.Literal(1).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 1 as const,
+      decoding: () => 1 as const,
+    }),
+  ),
+  version: S.Literal(0).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 0 as const,
+      decoding: () => 0 as const,
+    }),
+  ),
+  operand: MultiplexOperand,
+}) {}
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export class Batch extends S.TaggedClass<Batch>()("Batch", {
+  opcode: S.Literal(2).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 2 as const,
+      decoding: () => 2 as const,
+    }),
+  ),
+  version: S.Literal(0).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 0 as const,
+      decoding: () => 0 as const,
+    }),
+  ),
+  operand: S.NonEmptyArray(S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema)),
+}) {}
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()("FungibleAssetOrder", {
+  opcode: S.Literal(3).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 3 as const,
+      decoding: () => 3 as const,
+    }),
+  ),
+  version: S.Literal(1).pipe(
+    S.optional,
+    S.withDefaults({
+      constructor: () => 1 as const,
+      decoding: () => 1 as const,
+    }),
+  ),
+  operand: FungibleAssetOrderOperand,
+}) {}
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export type Schema = Forward | Multiplex | Batch | FungibleAssetOrder
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+type SchemaEncoded =
+  | {
+    readonly _tag: "Forward"
+    readonly opcode?: 0 | undefined
+    readonly version?: 0 | undefined
+    readonly operand: readonly [bigint, bigint, bigint, SchemaEncoded]
+  }
+  | typeof Multiplex.Encoded
+  | {
+    readonly _tag: "Batch"
+    readonly opcode?: 2 | undefined
+    readonly version?: 0 | undefined
+    readonly operand: A.NonEmptyReadonlyArray<SchemaEncoded>
+  }
+  | typeof FungibleAssetOrder.Encoded
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export const Schema = S.Union(Forward, Multiplex, Batch, FungibleAssetOrder)
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export const Instruction = Data.taggedEnum<Instruction>()
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export type Instruction = typeof Schema.Type
+
+/**
+ * Encodes an {@link Instruction} as as {@link Hex} for dispatching.
+ *
+ * @example
+ *
+ * @category utils
+ * @since 2.0.0
+ */
+export const encode: (_: Instruction) => Hex = Instruction.$match({
+  Forward: ({ operand }) =>
+    encodeAbiParameters(ForwardAbi(), [
+      operand[0],
+      operand[1],
+      operand[2],
+      {
+        opcode: operand[3].opcode,
+        version: operand[3].version,
+        operand: encode(operand[3]),
+      },
+    ]),
+  Multiplex: ({ operand }) => encodeAbiParameters(MultiplexAbi(), operand),
+  Batch: ({ operand }) =>
+    encodeAbiParameters(BatchAbi(), [
+      operand.map((i: Schema) => ({
+        version: i.version,
+        opcode: i.opcode,
+        operand: encode(i),
+      })),
+    ]),
+  FungibleAssetOrder: ({ operand }) => encodeAbiParameters(FungibleAssetOrderAbi(), operand),
+})
