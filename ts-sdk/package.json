@@ -48,6 +48,7 @@
     "babel-plugin-annotate-pure-calls": "^0.5.0",
     "dpdm": "^3.14.0",
     "effect": "3.16.3",
+    "madge": "^8.0.0",
     "ts-patch": "^3.3.0",
     "vitest": "^3.0.5"
   },
