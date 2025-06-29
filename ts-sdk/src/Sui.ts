@@ -1,5 +1,10 @@
 /**
  * This module handles [Sui](https://sui.io/) related functionality.
+ *
+ * :::caution[INCOMPLETE]
+ * This module is incomplete. Functionality may be partial. Breaking changes may be necessary and regular.
+ * :::
+ *
  * @since 2.0.0
  */
 import { bcs } from "@mysten/sui/bcs"
