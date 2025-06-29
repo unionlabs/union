@@ -528,6 +528,7 @@
                 deno
                 nixd
                 procs
+                graphviz
                 emmet-language-server
                 nodePackages_latest.nodejs
                 nodePackages_latest.graphqurl

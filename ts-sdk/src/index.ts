@@ -1,7 +1,7 @@
 /**
  * `@unionlabs/sdk`
  *
- * See {@see https://docs.union.build/integrations/typescript/} for additional integration guides and examples.
+ * See https://docs.union.build/integrations/typescript/ for additional integration guides and examples.
  *
  * :::caution[Caution]
  * The SDK is undergoing stabilization efforts, starting with the release of `v2.0.0`, to provide a better developer experience. Breaking changes may occur until `v3.0.0`.
@@ -11,11 +11,18 @@
  */
 
 /**
- * This module handles interaction with the [UCS03 protocol](https://docs.union.build/ucs/03/).
+ * This module handles interaction with the [UCS03](https://docs.union.build/ucs/03/) protocol.
  *
  * @since 2.0.0
  */
 export * as Ucs03 from "./Ucs03.js"
+
+/**
+ * This module handles interaction with the [UCS05](https://docs.union.build/ucs/05/) standard.
+ *
+ * @since 2.0.0
+ */
+export * as Ucs05 from "./Ucs05.js"
 
 /**
  * This module provides USD pricing of a given chain's native token.
@@ -26,6 +33,10 @@ export * as PriceOracle from "./PriceOracle.js"
 
 /**
  * This module handles [Sui](https://sui.io/) related functionality.
+ *
+ * :::caution[INCOMPLETE]
+ * This module is incomplete. Functionality may be partial. Breaking changes may be necessary and regular.
+ * :::
  *
  * @since 2.0.0
  */
@@ -46,14 +57,7 @@ export * as Evm from "./Evm.js"
 export * as Cosmos from "./Cosmos.js"
 
 /**
- * This module handles construction of the UCS03 instruction.
- *
- * @since 2.0.0
- */
-export * as Instruction from "./Instruction.js"
-
-/**
- * This module contains GraphQL related to utilities.
+ * This module handles [Sui](https://sui.io/) related functionality.
  *
  * @since 2.0.0
  */
@@ -68,6 +72,10 @@ export * as Utils from "./Utils.js"
 
 /**
  * This module handles [Aptos](https://aptosfoundation.org/) chain functionality.
+ *
+ * :::caution[INCOMPLETE]
+ * This module is incomplete. Functionality may be partial. Breaking changes may be necessary and regular.
+ * :::
  *
  * @since 2.0.0
  */
