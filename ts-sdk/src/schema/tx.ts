@@ -1,5 +1,5 @@
 import * as S from "effect/Schema"
-import { Bech32 } from "./bech32.js"
+import * as Address from "./address.js"
 import { Uint128 } from "./uint128.js"
 
 export const Coin = S.Struct({ denom: S.String, amount: Uint128 })
@@ -11,8 +11,8 @@ export const Msg = S.Struct({
 export const MsgExecuteContract = S.extend(
   Msg,
   S.Struct({
-    sender: Bech32,
-    contract: Bech32,
+    sender: Address.Bech32,
+    contract: Address.Bech32,
     msg: S.Any,
     funds: S.Array(Coin),
   }),

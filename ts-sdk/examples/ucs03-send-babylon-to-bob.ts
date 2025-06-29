@@ -1,5 +1,6 @@
 import { Decimal } from "@cosmjs/math"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
+import { Cosmos, Evm } from "@unionlabs/sdk"
 import {
   CosmWasmClientSource,
   createCosmWasmClient,
@@ -7,12 +8,6 @@ import {
   SigningCosmWasmClientContext,
 } from "@unionlabs/sdk/cosmos"
 import { CosmosChannelSource } from "@unionlabs/sdk/cosmos"
-import {
-  createViemPublicClient,
-  EvmChannelDestination,
-  ViemPublicClient,
-  ViemPublicClientDestination,
-} from "@unionlabs/sdk/evm"
 import {
   createCosmosToEvmFungibleAssetOrder,
   Instruction,

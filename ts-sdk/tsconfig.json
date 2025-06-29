@@ -3,9 +3,9 @@
   "include": [],
   "references": [
     // TODO: re-enable me when examples pass static analysis
-    // {
-    //   "path": "tsconfig.examples.json"
-    // },
+    {
+      "path": "tsconfig.examples.json"
+    },
     {
       "path": "tsconfig.src.json"
     },

@@ -1,6 +1,11 @@
 /**
  * This module handles Aptos chain functionality.
  *
+ * :::caution[INCOMPLETE]
+ * This module is incomplete. Functionality may be partial. Breaking changes may be necessary and regular.
+ * :::
+ *
+ * @badge yellow:unfinished
  * @since 2.0.0
  */
 import type {

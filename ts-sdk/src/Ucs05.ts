@@ -1,8 +1,37 @@
+/**
+ * This module handles interaction with the [UCS05](https://docs.union.build/ucs/05/) standard.
+ *
+ * @since 2.0.0
+ */
+
 import { bech32, bytes } from "@scure/base"
 import { Effect, ParseResult, pipe, Schema as S } from "effect"
-import { Address, checksumAddress, isAddress } from "viem"
-import * as Ucs05 from "../Ucs05.js"
-import { Hex, HexChecksum, HexFromString } from "./hex.js"
+import { isAddress } from "viem"
+import { Hex, HexChecksum, HexFromString } from "./schema/hex.js"
+
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export const HRP = S.String.pipe(
+  S.length(
+    {
+      min: 1,
+      max: 83,
+    },
+    {
+      description: "HRP must be between 1 to 83 US-ASCII characters, inclusive",
+    },
+  ),
+  S.pattern(/^[\x21-\x7E]+$/, {
+    description: "HRP characters must be within the range [33-126], inclusive",
+  }),
+)
+/**
+ * @category models
+ * @since 2.0.0
+ */
+export type HRP = typeof HRP.Type
 
 /**
  * @category models
@@ -146,7 +175,7 @@ export const AddressAptosZkgm = AddressAptosCanonical
  * @since 2.0.0
  */
 export const ERC55 = S.NonEmptyString.pipe(
-  S.filter(a => isAddress(a, { strict: true }) && checksumAddress(a as Address) === a, {
+  S.filter(a => isAddress(a, { strict: true }), {
     description: "a string matching ERC-55 in checksum format",
   }),
 )
@@ -181,7 +210,7 @@ export class Bech32DecodeError extends S.TaggedClass<Bech32DecodeError>()("Bech3
  * @since 2.0.0
  */
 export const Bech32FromAddressCanonicalBytesWithPrefix = (
-  prefix: Ucs05.HRP,
+  prefix: HRP,
   options: {
     validateHrp: boolean
   } = {
