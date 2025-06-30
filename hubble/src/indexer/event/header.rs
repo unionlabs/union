@@ -5,7 +5,7 @@ use crate::indexer::event::types::{
     TransactionIndex, UniversalChainId,
 };
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct Header {
     pub universal_chain_id: UniversalChainId,
     pub block_hash: BlockHash,

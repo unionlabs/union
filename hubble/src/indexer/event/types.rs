@@ -5,7 +5,7 @@ use std::{
 
 use bytes::Bytes;
 use hex::{decode, encode};
-use ruint::Uint;
+use ruint::aliases::U256;
 use serde::{de::Error, Deserialize, Deserializer, Serialize, Serializer};
 use serde_json::Value;
 use sha2::Digest;
@@ -474,19 +474,19 @@ impl From<bytes::Bytes> for Denom {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Capacity(pub Uint<256, 4>);
+pub struct Capacity(pub U256);
 
-impl From<Uint<256, 4>> for Capacity {
-    fn from(value: Uint<256, 4>) -> Self {
+impl From<U256> for Capacity {
+    fn from(value: U256) -> Self {
         Self(value)
     }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct RefillRate(pub Uint<256, 4>);
+pub struct RefillRate(pub U256);
 
-impl From<Uint<256, 4>> for RefillRate {
-    fn from(value: Uint<256, 4>) -> Self {
+impl From<U256> for RefillRate {
+    fn from(value: U256) -> Self {
         Self(value)
     }
 }

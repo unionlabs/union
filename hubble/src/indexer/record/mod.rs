@@ -1,7 +1,4 @@
-use std::{
-    fmt::{self, Display, Formatter},
-    str::FromStr,
-};
+use std::fmt::{self, Display, Formatter};
 
 use sqlx::types::BigDecimal;
 use time::OffsetDateTime;
@@ -357,23 +354,13 @@ impl PgValue<Vec<u8>> for Denom {
 
 impl PgValue<BigDecimal> for Capacity {
     fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
-        BigDecimal::from_str(&self.0.to_string()).map_err(|_| {
-            IndexerError::InternalCannotMapToDatabaseDomain(
-                "capacity".to_string(),
-                self.0.to_string(),
-            )
-        })
+        Ok(BigDecimal::new(self.0.into(), 0))
     }
 }
 
 impl PgValue<BigDecimal> for RefillRate {
     fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
-        BigDecimal::from_str(&self.0.to_string()).map_err(|_| {
-            IndexerError::InternalCannotMapToDatabaseDomain(
-                "refill-rate".to_string(),
-                self.0.to_string(),
-            )
-        })
+        Ok(BigDecimal::new(self.0.into(), 0))
     }
 }
 

@@ -16,6 +16,7 @@ pub(crate) mod packet_send_event;
 pub(crate) mod packet_timeout_event;
 pub(crate) mod scheduler;
 pub(crate) mod supported;
+pub(crate) mod test_utils;
 pub(crate) mod token_bucket_update_event;
 pub(crate) mod types;
 pub(crate) mod update_client_event;

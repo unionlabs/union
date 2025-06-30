@@ -3,7 +3,7 @@ use std::{collections::HashMap, fmt::Display};
 use alloy::{dyn_abi::DynSolValue, network::AnyRpcBlock, primitives::FixedBytes, rpc::types::Log};
 use bytes::Bytes;
 use itertools::Itertools;
-use ruint::Uint;
+use ruint::aliases::U256;
 use time::OffsetDateTime;
 use tracing::trace;
 
@@ -315,12 +315,10 @@ impl SolEvent {
         }
     }
 
-    fn get_u256(&self, key: &str, expecting: &str) -> Result<Uint<256, 4>, IndexerError> {
+    fn get_u256(&self, key: &str, expecting: &str) -> Result<U256, IndexerError> {
         match self.get_value(key, expecting)? {
             #[allow(clippy::useless_conversion)] // DynSolValue::Uint != ruint::Uint
-            DynSolValue::Uint(value, 256) => Uint::try_from(*value).map_err(|_| {
-                self.report_unexpected_type(key, &DynSolValue::Uint(*value, 256), expecting)
-            }),
+            DynSolValue::Uint(value, 256) => Ok((*value).into()),
             value => Err(self.report_unexpected_type(key, value, expecting)),
         }
     }
