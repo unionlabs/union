@@ -6,7 +6,6 @@ import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import { Token } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { tick } from "svelte"
-import { fade } from "svelte/transition"
 
 type Props = {
   onSelect: () => void
@@ -116,14 +115,12 @@ async function toggleSearch() {
     <div
       class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-zinc-925 to-transparent pointer-events-none z-10"
       style="opacity: {topFadeOpacity}"
-      transition:fade={{ duration: 150 }}
     >
     </div>
   {/if}
 
   <div
     class="overflow-y-auto flex-grow"
-    in:fade={{ duration: 300 }}
     onscroll={handleScroll}
   >
     <div class="w-full">
@@ -182,7 +179,6 @@ async function toggleSearch() {
     <div
       class="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-zinc-925 to-transparent pointer-events-none"
       style="opacity: {bottomFadeOpacity}"
-      transition:fade={{ duration: 150 }}
     >
     </div>
   {/if}
