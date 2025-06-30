@@ -227,37 +227,35 @@ impl Module {
     pub async fn send_ibc_transaction(
         &self,
         contract: H160,
-        ibc_messages: Vec<(
-            Datagram,
-            RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
-        )>,
+        ibc_messages: Vec<RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>>,
         packet_hash: H256,
         timeout: Duration,
     ) -> RpcResult<FixedBytes<32>> {
         self.send_transaction(contract, ibc_messages).await?;
+        Ok(packet_hash)
+        // let ev = self
+        //     .wait_for_packet_recv(packet_hash, timeout)
+        //     .await
+        //     .map_err(|e| {
+        //         ErrorObject::owned(
+        //             -1,
+        //             format!("timeout or RPC error waiting for PacketRecv: {}", e),
+        //             None::<()>,
+        //         )
+        //     })?;
 
-        let ev = self
-            .wait_for_packet_recv(packet_hash, timeout)
-            .await
-            .map_err(|e| {
-                ErrorObject::owned(
-                    -1,
-                    format!("timeout or RPC error waiting for PacketRecv: {}", e),
-                    None::<()>,
-                )
-            })?;
-
-        Ok(ev.packet_hash)
+        // Ok(ev.packet_hash)
     }
+
+
+
 
 
     async fn submit_transaction(
         &self,
+        ibc_handler_address: H160,
         wallet: &LocalSigner<SigningKey>,
-        ibc_messages: Vec<(
-            Datagram,
-            RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
-        )>,
+        ibc_messages: Vec<RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>>,
     ) -> Result<(), TxSubmitError> {
         let signer = DynProvider::new(
             ProviderBuilder::new()
@@ -288,18 +286,13 @@ impl Module {
 
         let multicall = Multicall::new(self.multicall_address.into(), signer.clone());
 
-        let ibc = Ibc::new(self.ibc_handler_address.into(), &self.provider);
-
-        let msg_names = ibc_messages
-            .iter()
-            .map(|x| (x.0.clone(), x.0.name()))
-            .collect::<Vec<_>>();
+        let ibc = Ibc::new(ibc_handler_address.into(), &self.provider);
 
         let mut call = multicall.multicall(
             ibc_messages.clone()
                 .into_iter()
-                .map(|(_, call)| Call3 {
-                    target: self.ibc_handler_address.into(),
+                .map(|call| Call3 {
+                    target: ibc_handler_address.into(),
                     allowFailure: true,
                     callData: call.calldata().clone(),
                 })
@@ -368,21 +361,47 @@ impl Module {
         }
     }
 
+    pub async fn get_provider(&self) -> DynProvider<AnyNetwork> {
+        let maybe_wallet = self.keyring
+            .with(|wallet| async move {
+                wallet.clone()
+            })
+            .await;
+        let wallet = maybe_wallet
+            .expect("no signers available in keyring");
+
+        // 2) Now that we've got the wallet, build your provider in a normal async call.
+        //    This future lives *outside* the .with, so UnwindSafe is not required here.
+        self.get_provider_with_wallet(&wallet).await
+
+
+        
+    }
+
+    async fn get_provider_with_wallet(
+        &self,
+        wallet: &LocalSigner<SigningKey>,
+    ) -> DynProvider<AnyNetwork> {
+        DynProvider::new(
+            ProviderBuilder::new()
+                .network::<AnyNetwork>()
+                .filler(AnyNetwork::recommended_fillers())
+                .wallet(EthereumWallet::new(wallet.clone()))
+                .connect_provider(self.provider.clone()),
+        )
+    }
 
     pub async fn send_transaction(
         &self,
         contract: H160,
-        msg: Vec<(
-            Datagram,
-            RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
-        )>,
+        msg: Vec<RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>>,
     ) -> RpcResult<alloy::primitives::FixedBytes<32>> {
         assert!(!msg.is_empty());
         let res = self.keyring
             .with({
                 let msg = msg.clone();
                 move |wallet| -> _ {
-                    AssertUnwindSafe(self.submit_transaction(wallet, msg))
+                    AssertUnwindSafe(self.submit_transaction(contract, wallet, msg))
                     }
             }).await;
         
@@ -394,6 +413,27 @@ impl Module {
                 None::<()>,
             )),
             None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
+        }
+    }
+}
+
+pub mod zkgm {
+    alloy::sol! {
+        #![sol(rpc)]
+
+        struct Instruction {
+            uint8 version;
+            uint8 opcode;
+            bytes operand;
+        }
+        contract UCS03Zkgm {
+            function send(
+                uint32 channelId,
+                uint64 timeoutHeight,
+                uint64 timeoutTimestamp,
+                bytes32 salt,
+                Instruction calldata instruction
+            ) public payable;
         }
     }
 }
