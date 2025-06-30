@@ -3,6 +3,8 @@ import {
   berachainTestnetbArtio,
   bob,
   bobSepolia,
+  bsc,
+  bscTestnet,
   corn,
   cornTestnet,
   holesky,
@@ -22,8 +24,10 @@ export const VIEM_CHAINS = [
   cornTestnet,
   holesky,
   mainnet,
+  bsc,
+  bscTestnet,
   scrollSepolia,
   sei,
   seiTestnet,
   sepolia,
-]
+] as const

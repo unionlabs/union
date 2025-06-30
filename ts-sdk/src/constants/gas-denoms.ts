@@ -68,6 +68,14 @@ const XION_METADATA: GasDenomMetadata = {
   decimals: 6,
 } as const
 
+const BNB_METADATA: GasDenomMetadata = {
+  address: TokenRawDenom.make("0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"),
+  name: "BNB",
+  symbol: "BNB",
+  tickerSymbol: "BNB",
+  decimals: 18,
+} as const
+
 export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // Ethereum chains
   [UniversalChainId.make("ethereum.11155111")]: ETH_METADATA,
@@ -105,4 +113,7 @@ export const GAS_DENOMS: Record<UniversalChainId, GasDenomMetadata> = {
   // Corn
   [UniversalChainId.make("corn.21000000")]: CORN_METADATA,
   [UniversalChainId.make("corn.21000001")]: CORN_METADATA,
+
+  // BSC
+  [UniversalChainId.make("bsc.97")]: BNB_METADATA,
 }
