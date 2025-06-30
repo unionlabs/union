@@ -121,11 +121,7 @@ contract TestIBCHandler is IIBCModulePacket {
 }
 
 contract TestERC20 is ERC20 {
-    constructor(
-        string memory name,
-        string memory symbol
-    ) ERC20(name, symbol) {
-    }
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
