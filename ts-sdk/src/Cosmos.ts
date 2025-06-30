@@ -6,8 +6,10 @@
 import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { FetchHttpClient } from "@effect/platform"
 import { HttpClient, HttpClientRequest } from "@effect/platform"
-import { Context, Data, Effect, pipe } from "effect"
-import type { Hex } from "viem"
+import { Context, Data, Effect, Layer, pipe } from "effect"
+import { encodeAbiParameters, type Hex } from "viem"
+import * as Ucs03 from "./Ucs03.js"
+import * as Utils from "./Utils.js"
 
 import { AddressCosmosDisplay } from "./schema/address.js"
 import { extractErrorDetails } from "./utils/extract-error-details.js"
@@ -44,6 +46,47 @@ export namespace Cosmos {
   }
 }
 
+const clientLayer = <
+  Id,
+>(tag: Context.Tag<Id, Cosmos.PublicClient>) =>
+(...options: Parameters<typeof CosmWasmClient.connect>): Layer.Layer<Id, ClientError> =>
+  Layer.effect(
+    tag,
+    pipe(
+      Effect.tryPromise({
+        try: () => CosmWasmClient.connect(...options),
+        catch: error => new ClientError({ cause: extractErrorDetails(error as Error) }),
+      }),
+      Effect.map((client) => ({ client })),
+      Effect.timeout("10 seconds"),
+      Effect.retry({ times: 5 }),
+      Effect.mapError((e) => new ClientError({ cause: e as any })),
+    ),
+  )
+
+export const signingClientLayer = <
+  Id,
+>(tag: Context.Tag<Id, Cosmos.SigningClient>) =>
+(
+  ...options: Parameters<typeof SigningCosmWasmClient.connectWithSigner>
+): Layer.Layer<Id, ClientError> =>
+  Layer.effect(
+    tag,
+    pipe(
+      Effect.tryPromise({
+        try: () => SigningCosmWasmClient.connectWithSigner(...options),
+        catch: error => new ClientError({ cause: extractErrorDetails(error as Error) }),
+      }),
+      Effect.map((client) => ({
+        client,
+        address: "mock_address",
+      })),
+      Effect.timeout("10 seconds"),
+      Effect.retry({ times: 5 }),
+      Effect.mapError((e) => new ClientError({ cause: e as any })),
+    ),
+  )
+
 /**
  * @category context
  * @since 2.0.0
@@ -71,7 +114,9 @@ export class ChannelSource extends Context.Tag("@unionlabs/sdk/Cosmos/ChannelSou
 export class ClientSource extends Context.Tag("@unionlabs/sdk/Cosmos/ClientSource")<
   ClientSource,
   Cosmos.PublicClient
->() {}
+>() {
+  static Live = clientLayer(this)
+}
 
 /**
  * Context for providing a CosmWasmClient for the destination chain
@@ -82,7 +127,9 @@ export class ClientSource extends Context.Tag("@unionlabs/sdk/Cosmos/ClientSourc
 export class ClientDestination extends Context.Tag("@unionlabs/sdk/Cosmos/ClientDestination")<
   ClientDestination,
   Cosmos.PublicClient
->() {}
+>() {
+  static Live = clientLayer(this)
+}
 
 /**
  * A neutral CosmWasmClient that can be used for general-purpose operations
@@ -94,7 +141,9 @@ export class ClientDestination extends Context.Tag("@unionlabs/sdk/Cosmos/Client
 export class ClientContext extends Context.Tag("@unionlabs/sdk/Cosmos/ClientContext")<
   ClientContext,
   Cosmos.PublicClient
->() {}
+>() {
+  static Live = clientLayer(this)
+}
 
 /**
  * Context for providing a SigningCosmWasmClient
@@ -105,7 +154,9 @@ export class ClientContext extends Context.Tag("@unionlabs/sdk/Cosmos/ClientCont
 export class SigningClientContext extends Context.Tag("@unionlabs/sdk/Cosmos/SigningClientContext")<
   SigningClientContext,
   Cosmos.SigningClient
->() {}
+>() {
+  static Live = signingClientLayer(this)
+}
 
 /**
  * @category context
@@ -211,20 +262,22 @@ export const queryContract = <T = unknown>(
  * @since 2.0.0
  */
 export const executeContract = (
-  client: SigningCosmWasmClient,
   senderAddress: string,
   contractAddress: string,
   msg: Record<string, unknown>,
   funds?: ReadonlyArray<{ denom: string; amount: string }>,
 ) =>
-  Effect.tryPromise({
-    try: () => client.execute(senderAddress, contractAddress, msg, "auto", undefined, funds),
-    catch: error =>
-      new ExecuteContractError({
-        cause: extractErrorDetails(error as Error),
-        message: (error as Error).message,
+  Effect.andThen(SigningClientContext, ({ client }) =>
+    pipe(
+      Effect.tryPromise({
+        try: () => client.execute(senderAddress, contractAddress, msg, "auto", undefined, funds),
+        catch: error =>
+          new ExecuteContractError({
+            cause: extractErrorDetails(error as Error),
+            message: (error as Error).message,
+          }),
       }),
-  })
+    ))
 
 /**
  * Wrap CosmWasmClient.getHeight() in an Effect
@@ -556,15 +609,11 @@ export const writeCw20IncreaseAllowance = (
   spenderAddress: string,
   amount: string,
 ) =>
-  Effect.gen(function*() {
-    const client = (yield* SigningClientContext).client
-
-    return yield* executeContract(client, senderAddress, contractAddress, {
-      increase_allowance: {
-        spender: spenderAddress,
-        amount,
-      },
-    })
+  executeContract(senderAddress, contractAddress, {
+    increase_allowance: {
+      spender: spenderAddress,
+      amount,
+    },
   })
 
 /**
@@ -643,4 +692,39 @@ export const predictQuoteToken = (baseToken: string) =>
     })
 
     return result.wrapped_token
+  })
+
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const sendInstruction = (
+  instruction: Ucs03.Instruction,
+  address: string,
+  funds?: ReadonlyArray<{ denom: string; amount: string }>,
+) =>
+  Effect.gen(function*() {
+    const sourceConfig = yield* ChannelSource
+
+    const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
+    const salt = yield* Utils.generateSalt("cosmos")
+
+    return yield* executeContract(
+      address,
+      sourceConfig.ucs03address,
+      {
+        send: {
+          channel_id: sourceConfig.channelId,
+          timeout_height: "0",
+          timeout_timestamp,
+          salt,
+          instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
+            instruction.version,
+            instruction.opcode,
+            Ucs03.encode(instruction),
+          ]),
+        },
+      },
+      funds,
+    )
   })

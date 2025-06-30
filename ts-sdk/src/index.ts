@@ -80,3 +80,10 @@ export * as Utils from "./Utils.js"
  * @since 2.0.0
  */
 export * as Aptos from "./Aptos.js"
+
+/**
+ * This module constructs fungible asset orders for given chains.
+ *
+ * @since 2.0.0
+ */
+export * as FungibleAssetOrder from "./FungibleAssetOrder.js"
