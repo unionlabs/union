@@ -137,18 +137,44 @@ onDestroy(() => {
       </a>
     </div>
   {:else}
-    <div class="flex flex-col justify-center gap-3 px-6 py-4 border-b border-zinc-900">
-      <div class="flex flex-col gap-1">
-        <p class="text-sm font-semibold text-zinc-400">Earn Points</p>
-        <p class="text-xs text-zinc-500">Create an account to start earning</p>
+    <div class="relative overflow-hidden">
+      <!-- Gradient background -->
+      <div class="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent/10">
       </div>
-      <Button
-        variant="secondary"
-        class="w-full"
-        onclick={() => goto("/auth/sign-in")}
-      >
-        Sign in
-      </Button>
+      <div class="absolute inset-0 bg-gradient-to-t from-zinc-900/20 to-transparent"></div>
+
+      <div class="relative flex flex-col gap-4 px-6 py-4 border-b border-zinc-900/50">
+        <div class="flex flex-col justify-between h-[88px]">
+          <div class="flex flex-col gap-1">
+            <h3 class="text-sm font-semibold bg-gradient-to-r from-white to-zinc-200 bg-clip-text text-transparent">
+              Start Earning
+            </h3>
+            <p class="text-xs text-zinc-300">Join the community and unlock rewards</p>
+          </div>
+
+          <div class="flex items-end">
+            <a
+              href="/auth/sign-in"
+              class="group text-xs inline-flex items-center gap-1.5 text-accent hover:text-white transition-all duration-300 font-medium tracking-wide"
+            >
+              <span>Get Started</span>
+              <svg
+                class="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-x-0.5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M13 7l5 5m0 0l-5 5m5-5H6"
+                />
+              </svg>
+            </a>
+          </div>
+        </div>
+      </div>
     </div>
   {/if}
 {/if}
