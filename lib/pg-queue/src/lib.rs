@@ -276,6 +276,8 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             CREATE INDEX IF NOT EXISTS index_queue_created_at ON queue (created_at ASC) INCLUDE (id);
 
             CREATE INDEX IF NOT EXISTS index_queue_handle_at ON queue(handle_at DESC) INCLUDE (id);
+
+            CREATE INDEX IF NOT EXISTS optimize_tag_id_idx ON optimize(tag, id);
             "#,
         )
         .try_for_each(|result| async move {
@@ -284,6 +286,22 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         })
         .instrument(info_span!("init"))
         .await?;
+
+        pool.execute("VACUUM FULL queue")
+            .instrument(info_span!("vacuum"))
+            .await?;
+
+        pool.execute("VACUUM FULL optimize")
+            .instrument(info_span!("vacuum"))
+            .await?;
+
+        pool.execute("VACUUM FULL done")
+            .instrument(info_span!("vacuum"))
+            .await?;
+
+        pool.execute("VACUUM FULL failed")
+            .instrument(info_span!("vacuum"))
+            .await?;
 
         Ok(Self {
             client: pool,

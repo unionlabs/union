@@ -716,24 +716,37 @@ fn is_successful_protocol_fill_ack(acknowledgement: &[u8]) -> bool {
         return false;
     }
 
-    let ack = match FungibleAssetOrderAck::abi_decode_params_validate(&ack.inner_ack) {
-        Ok(ack) => ack,
+    match FungibleAssetOrderAck::abi_decode_params_validate(&ack.inner_ack) {
+        Ok(ack) => ack.fill_type == FILL_TYPE_PROTOCOL,
         Err(_) => match BatchAck::abi_decode_params_validate(&ack.inner_ack) {
-            Ok(BatchAck { acknowledgements }) if acknowledgements.len() == 1 => {
-                let Ok(ack) =
-                    FungibleAssetOrderAck::abi_decode_params_validate(&acknowledgements[0])
-                else {
-                    return false;
-                };
-                ack
+            Ok(BatchAck { acknowledgements }) => {
+                is_successful_protocol_fill_batch_ack(acknowledgements)
             }
-            _ => return false,
+            _ => false,
         },
-    };
+    }
+}
 
-    info!(%ack.fill_type, %ack.market_maker, "fungible asset order ack");
+fn is_successful_protocol_fill_batch_ack(acknowledgements: Vec<alloy::primitives::Bytes>) -> bool {
+    for (idx, ack) in acknowledgements.iter().enumerate() {
+        if let Ok(ack) = FungibleAssetOrderAck::abi_decode_params_validate(ack) {
+            info!(%idx, %ack.fill_type, %ack.market_maker, "fungible asset order ack");
 
-    ack.fill_type == FILL_TYPE_PROTOCOL
+            if ack.fill_type == FILL_TYPE_PROTOCOL {
+                continue;
+            } else {
+                return false;
+            }
+        } else if let Ok(batch_ack) = BatchAck::abi_decode_params_validate(ack) {
+            info!("batch ack");
+
+            is_successful_protocol_fill_batch_ack(batch_ack.acknowledgements);
+        } else {
+            return false;
+        };
+    }
+
+    true
 }
 
 /// NOTE: Assumes the tx contains only one MsgExecuteContract.
@@ -870,6 +883,10 @@ mod tests {
     #[test]
     fn successful_protocol_fill() {
         let ack = hex!("0x0000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000e000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000b0cad000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000");
+
+        assert!(is_successful_protocol_fill_ack(&ack));
+
+        let ack = hex!("0x00000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000018000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000002000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000c000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000b0cad00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000600000000000000000000000000000000000000000000000000000000000b0cad000000000000000000000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000000000000000");
 
         assert!(is_successful_protocol_fill_ack(&ack));
     }

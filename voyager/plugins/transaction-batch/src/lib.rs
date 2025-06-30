@@ -28,9 +28,9 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, IbcSpec, QueryHeight},
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
     types::RawClientId,
-    vm::{call, conc, data, pass::PassResult, seq, Op},
+    vm::{call, conc, data, noop, pass::PassResult, seq, Op},
     DefaultCmd, ExtensionsExt, VoyagerClient,
 };
 
@@ -669,10 +669,19 @@ where
     {
         Ok(ok) => ok,
         Err(err) => {
-            error!(
-                error = %ErrorReporter(err),
-                "error fetching client state meta for client {client_id} on chain {}", module.chain_id
-            );
+            if err.code() == FATAL_JSONRPC_ERROR_CODE {
+                error!(
+                    error = %ErrorReporter(err),
+                    "fatal error fetching client state meta for client {client_id} on chain {}", module.chain_id
+                );
+
+                return Ok((vec![], noop()));
+            } else {
+                error!(
+                    error = %ErrorReporter(err),
+                    "error fetching client state meta for client {client_id} on chain {}", module.chain_id
+                );
+            }
 
             return Err(events
                 .into_iter()
