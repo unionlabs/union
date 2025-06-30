@@ -39,7 +39,7 @@ export const toDisplayName = (
   class={cn(
     "flex flex-col items-start w-full overflow-hidden px-4 py-3 text-left rounded transition-all duration-100 border cursor-pointer",
     "animate-slide-in-right opacity-0",
-    isSelected 
+    isSelected
       ? "bg-zinc-900 border-accent text-white"
       : "bg-zinc-900 border-zinc-800 hover:border-zinc-600 text-zinc-300",
   )}
@@ -84,18 +84,18 @@ export const toDisplayName = (
 </button>
 
 <style>
-  @keyframes slide-in-right {
-    from {
-      opacity: 0;
-      transform: translateX(30px) scale(0.95);
-    }
-    to {
-      opacity: 1;
-      transform: translateX(0) scale(1);
-    }
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95);
   }
-  
-  .animate-slide-in-right {
-    animation: slide-in-right 0.6s ease-out forwards;
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
   }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out forwards;
+}
 </style>

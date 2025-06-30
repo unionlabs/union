@@ -25,11 +25,11 @@ function handleScroll(e: Event) {
   const target = e.target as HTMLElement
   // Gradually fade in over first 30px of scroll
   topFadeOpacity = Math.min(target.scrollTop / 100, 1)
-  
+
   // Gradually fade out bottom fade when near bottom
   const scrollFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight
   bottomFadeOpacity = Math.min(scrollFromBottom / 100, 1)
-  
+
   // Fade out search when near bottom (last 80px), but keep visible if search is open
   searchOpacity = searchOpen ? 1 : Math.min(scrollFromBottom / 50, 1)
 }
@@ -113,13 +113,14 @@ async function toggleSearch() {
 <div class="h-full flex flex-col relative">
   <!-- Top gradient fade -->
   {#if topFadeOpacity > 0}
-    <div 
-      class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-zinc-925 to-transparent pointer-events-none z-10" 
+    <div
+      class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-zinc-925 to-transparent pointer-events-none z-10"
       style="opacity: {topFadeOpacity}"
       transition:fade={{ duration: 150 }}
-    ></div>
+    >
+    </div>
   {/if}
-  
+
   <div
     class="overflow-y-auto flex-grow"
     in:fade={{ duration: 300 }}
@@ -179,15 +180,16 @@ async function toggleSearch() {
 
   {#if bottomFadeOpacity > 0}
     <div
-      class="
-        absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-zinc-925 to-transparent pointer-events-none
-      "
+      class="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-zinc-925 to-transparent pointer-events-none"
       style="opacity: {bottomFadeOpacity}"
       transition:fade={{ duration: 150 }}
     >
     </div>
   {/if}
-  <div class="absolute bottom-0 inset-x-0 z-10 flex justify-end w-full p-4 transition-opacity duration-150 pointer-events-none" style="opacity: {searchOpacity}">
+  <div
+    class="absolute bottom-0 inset-x-0 z-10 flex justify-end w-full p-4 transition-opacity duration-150 pointer-events-none"
+    style="opacity: {searchOpacity}"
+  >
     <div
       class="
         flex items-center rounded overflow-hidden transition-all duration-200 ease-in-out border pointer-events-auto {searchOpen
@@ -209,9 +211,7 @@ async function toggleSearch() {
         </div>
       {/if}
       <button
-        class="
-          flex items-center justify-center h-10 w-10 text-zinc-400 hover:text-zinc-200 flex-shrink-0 transition-all duration-100 cursor-pointer hover:bg-zinc-800 rounded
-        "
+        class="flex items-center justify-center h-10 w-10 text-zinc-400 hover:text-zinc-200 flex-shrink-0 transition-all duration-100 cursor-pointer hover:bg-zinc-800 rounded"
         onclick={toggleSearch}
         aria-label={searchOpen ? "Close search" : "Search assets"}
         disabled={!Option.isSome(transferData.sourceChain)}
