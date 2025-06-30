@@ -5,7 +5,7 @@ use tokio::sync::OnceCell;
 use serial_test::serial;
 use union_test::{   // adjust to your crate name
     TestContext,
-    evm::{self, Config as EvmConfig},
+    evm::{self, Config as EvmConfig, zkgm::UCS03Zkgm, zkgm::Instruction as InstructionEvm},
     cosmos::{self, Config as CosmosConfig},
     helpers::{CreateClientConfirm, ConnectionConfirm, ChannelOpenConfirm},
 };
@@ -27,7 +27,6 @@ use ucs03_zkgm::{self, com::{
     FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1, OP_FUNGIBLE_ASSET_ORDER,
 }};
 use protos::{cosmos::base::v1beta1::Coin, ibc::core::channel};
-
 
 static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::const_new();
 static CLC: OnceCell<CreateClientConfirm>     = OnceCell::const_new();
@@ -202,6 +201,61 @@ async fn _open_connection_from_evm_to_union() {
 //     assert_eq!(available_count_after_open, available_count_after_release);
 // }
 
+
+
+#[tokio::test]
+#[serial]
+async fn test_send_packet_from_evm_to_union() {
+    let ctx = init_ctx().await;
+    open_channel_from_union_to_evm().await;
+
+    let available_channel = ctx.get_available_channel_count().await;
+    assert_eq!(available_channel > 0, true);
+    
+    let pair = ctx.get_channel().await.expect("channel available");
+    let dst_chain_id = pair.dest;
+    let mut salt_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
+
+    let contract = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
+
+    let instruction_from_evm_to_union = InstructionEvm {
+        version: INSTR_VERSION_1,
+        opcode: OP_FUNGIBLE_ASSET_ORDER,
+        operand: FungibleAssetOrder {
+            sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").to_vec().into(),
+            receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2".as_bytes().into(),
+            base_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579").to_vec().into(),
+            base_amount: "1".parse().unwrap(),
+            base_token_symbol: "muno".into(),
+            base_token_name: "muno".into(),
+            base_token_decimals: 6,
+            base_token_path: "1".parse().unwrap(),
+            quote_token:  "muno".into(),
+            quote_amount: "1".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let send_call_struct = UCS03Zkgm::sendCall { 
+        channelId: 1.try_into().unwrap(),
+        timeoutTimestamp: 4294967295000000000u64.into(),
+        timeoutHeight: 0u64.into(),
+        salt: salt_bytes.into(),
+        instruction: instruction_from_evm_to_union.clone(),
+    };
+
+    // let recv_packet_data = ctx.send_and_recv(
+    //     false, // send from source
+    //     contract,
+    //     send_call_struct,
+    //     Duration::from_secs(360),
+    // ).await;
+    // assert!(recv_packet_data.is_ok(), "Failed to send and receive packet: {:?}", recv_packet_data.err());
+
+
+}
 
 
 #[tokio::test]
