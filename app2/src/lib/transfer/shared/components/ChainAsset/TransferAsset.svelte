@@ -11,9 +11,10 @@ type Props = {
   token: Token
   chain: Chain
   selectAsset: (token: Token) => void
+  index: number
 }
 
-let { token, chain, selectAsset }: Props = $props()
+let { token, chain, selectAsset, index }: Props = $props()
 
 let isSelected = $derived(transferData.raw.asset === token.denom)
 
@@ -34,9 +35,13 @@ export const toDisplayName = (
 </script>
 
 <button
+  style="animation-delay: {index * 50}ms;"
   class={cn(
-    "flex flex-col items-start w-full overflow-x-auto px-4 py-3 text-left bg-zinc-900 hover:bg-zinc-800 transition-colors cursor-pointer rounded",
-    isSelected ? "bg-zinc-700 text-white" : "text-zinc-300",
+    "flex flex-col items-start w-full overflow-hidden px-4 py-3 text-left rounded transition-all duration-100 border cursor-pointer",
+    "animate-slide-in-right opacity-0",
+    isSelected
+      ? "bg-zinc-900 border-accent text-white"
+      : "bg-zinc-900 border-zinc-800 hover:border-zinc-600 text-zinc-300",
   )}
   onclick={() => selectAsset(token)}
 >
@@ -77,3 +82,20 @@ export const toDisplayName = (
     </div>
   </div>
 </button>
+
+<style>
+@keyframes slide-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slide-in-right 0.6s ease-out forwards;
+}
+</style>

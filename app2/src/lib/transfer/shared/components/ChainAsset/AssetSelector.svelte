@@ -17,6 +17,22 @@ const { onSelect }: Props = $props()
 let searchQuery = $state("")
 let searchOpen = $state(false)
 let searchInput: HTMLInputElement | null = null
+let topFadeOpacity = $state(0)
+let bottomFadeOpacity = $state(1)
+let searchOpacity = $state(1)
+
+function handleScroll(e: Event) {
+  const target = e.target as HTMLElement
+  // Gradually fade in over first 30px of scroll
+  topFadeOpacity = Math.min(target.scrollTop / 100, 1)
+
+  // Gradually fade out bottom fade when near bottom
+  const scrollFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight
+  bottomFadeOpacity = Math.min(scrollFromBottom / 100, 1)
+
+  // Fade out search when near bottom (last 80px), but keep visible if search is open
+  searchOpacity = searchOpen ? 1 : Math.min(scrollFromBottom / 50, 1)
+}
 
 const isWalletConnected = $derived.by(() => {
   if (Option.isNone(transferData.sourceChain)) {
@@ -95,9 +111,20 @@ async function toggleSearch() {
 </script>
 
 <div class="h-full flex flex-col relative">
+  <!-- Top gradient fade -->
+  {#if topFadeOpacity > 0}
+    <div
+      class="absolute top-0 left-0 right-0 h-12 bg-gradient-to-b from-zinc-925 to-transparent pointer-events-none z-10"
+      style="opacity: {topFadeOpacity}"
+      transition:fade={{ duration: 150 }}
+    >
+    </div>
+  {/if}
+
   <div
     class="overflow-y-auto flex-grow"
     in:fade={{ duration: 300 }}
+    onscroll={handleScroll}
   >
     <div class="w-full">
       {#if Option.isNone(transferData.sourceChain)}
@@ -135,13 +162,14 @@ async function toggleSearch() {
           }
         </div>
       {:else}
-        <div class="flex flex-col gap-1 p-2 pb-16">
-          {#each filteredTokens as token}
+        <div class="flex flex-col gap-1 p-2">
+          {#each filteredTokens as token, index}
             {#key token.denom}
               <TransferAsset
                 chain={transferData.sourceChain.value}
                 {token}
                 {selectAsset}
+                {index}
               />
             {/key}
           {/each}
@@ -150,20 +178,23 @@ async function toggleSearch() {
     </div>
   </div>
 
+  {#if bottomFadeOpacity > 0}
+    <div
+      class="absolute bottom-0 inset-x-0 h-20 bg-gradient-to-t from-zinc-925 to-transparent pointer-events-none"
+      style="opacity: {bottomFadeOpacity}"
+      transition:fade={{ duration: 150 }}
+    >
+    </div>
+  {/if}
   <div
-    class="
-      absolute bottom-0 inset-x-0 z-0 {searchOpen
-      ? 'h-20'
-      : 'h-0'} transition-all bg-gradient-to-t from-zinc-925 to-transparent blur-fade-bottom-up
-    "
+    class="absolute bottom-0 inset-x-0 z-10 flex justify-end w-full p-4 transition-opacity duration-150 pointer-events-none"
+    style="opacity: {searchOpacity}"
   >
-  </div>
-  <div class="absolute bottom-0 inset-x-0 z-10 flex justify-end w-full p-4">
     <div
       class="
-        flex items-center bg-zinc-800 rounded-md shadow-lg overflow-hidden transition-all duration-300 ease-in-out {searchOpen
-        ? 'w-full'
-        : 'w-10'}
+        flex items-center rounded overflow-hidden transition-all duration-200 ease-in-out border pointer-events-auto {searchOpen
+        ? 'w-full bg-zinc-900 border-accent'
+        : 'w-10 bg-zinc-900 border-zinc-800 hover:border-zinc-600'}
       "
     >
       {#if searchOpen}
@@ -174,17 +205,13 @@ async function toggleSearch() {
             placeholder="Search assets..."
             disabled={!Option.isSome(transferData.sourceChain)}
             value={searchQuery}
-            class="bg-transparent border-0 pl-4 pr-2 py-2 h-10 focus:ring-0 w-full text-zinc-100 focus:outline-none focus:ring-0 focus:none"
+            class="bg-transparent border-0 pl-4 pr-2 py-2 h-10 focus:ring-0 w-full text-zinc-100 placeholder-zinc-400 focus:outline-none"
             oninput={(e) => (searchQuery = (e.currentTarget as HTMLInputElement).value)}
           />
         </div>
       {/if}
       <button
-        class="
-          flex items-center justify-center h-10 w-10 {searchOpen
-          ? 'bg-zinc-700 hover:bg-zinc-600'
-          : 'bg-zinc-800 hover:bg-zinc-700'} text-zinc-300 flex-shrink-0 transition-colors duration-300 cursor-pointer
-        "
+        class="flex items-center justify-center h-10 w-10 text-zinc-400 hover:text-zinc-200 flex-shrink-0 transition-all duration-100 cursor-pointer hover:bg-zinc-800 rounded"
         onclick={toggleSearch}
         aria-label={searchOpen ? "Close search" : "Search assets"}
         disabled={!Option.isSome(transferData.sourceChain)}
