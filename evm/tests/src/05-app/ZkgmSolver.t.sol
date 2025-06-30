@@ -23,7 +23,6 @@ import "../../../contracts/Manager.sol";
 import "../../../contracts/U.sol";
 import "./mocks/MockSolver.sol";
 
-// Mock contracts (duplicated from Zkgm.t.sol)
 contract TestZkgm is UCS03Zkgm {
     constructor(
         IIBCModulePacket _ibcHandler,
@@ -124,25 +123,17 @@ contract TestIBCHandler is IIBCModulePacket {
 contract TestERC20 is ERC20 {
     constructor(
         string memory name,
-        string memory symbol,
-        uint8 decimals
+        string memory symbol
     ) ERC20(name, symbol) {
-        _setupDecimals(decimals);
     }
 
     function mint(address to, uint256 amount) external {
         _mint(to, amount);
     }
-
-    function _setupDecimals(
-        uint8 decimals_
-    ) internal {
-        // Note: This is a simplified version for testing
-    }
 }
 
 contract TestWETH is IWETH, TestERC20 {
-    constructor() TestERC20("Wrapped Ether", "WETH", 18) {}
+    constructor() TestERC20("Wrapped Ether", "WETH") {}
 
     function deposit() external payable override {
         _mint(msg.sender, msg.value);
@@ -171,7 +162,6 @@ contract ZkgmSolverTest is Test {
     using LibBytes for bytes;
     using LibString for *;
 
-    // Test infrastructure (duplicated from ZkgmTests)
     TestZkgm zkgm;
     TestIBCHandler handler;
     TestERC20 erc20;
@@ -185,9 +175,8 @@ contract ZkgmSolverTest is Test {
     address uTokenMinter;
 
     function setUp() public {
-        // Set up test infrastructure (duplicated from ZkgmTests)
         weth = new TestWETH();
-        erc20 = new TestERC20("Test", "T", 18);
+        erc20 = new TestERC20("Test", "T");
         handler = new TestIBCHandler();
         erc20Impl = new ZkgmERC20();
         manager = Manager(
