@@ -95,7 +95,7 @@ const calculating = false
   <!-- Always visible -->
   <button
     class={cn(
-      "w-full p-3 flex items-center justify-between bg-transparent transition-colors text-left",
+      "w-full p-3 flex items-center justify-between bg-transparent transition-colors text-left h-10",
       open ? "rounded-t-md" : "rounded-md",
       loading ? "cursor-default" : "hover:bg-zinc-800 cursor-pointer",
     )}

@@ -10,6 +10,7 @@ import FeeDetails from "$lib/transfer/shared/components/FeeDetails.svelte"
 import Receiver from "$lib/transfer/shared/components/Receiver.svelte"
 import { transferData } from "$lib/transfer/shared/data/transfer-data.svelte.ts"
 import type { ContextFlowError } from "$lib/transfer/shared/errors"
+import { debounce } from "$lib/utils"
 import { Match, Option } from "effect"
 
 type Props = {
@@ -39,22 +40,19 @@ function handleChainAssetOpen(isOpen: boolean) {
     feeDetailsOpen = false
     setTimeout(() => {
       chainAssetOpen = true
-    }, 250) // Match the slide duration from FeeDetails
+    }, 100)
   } else {
-    // ChainAsset is closing - just close it, don't auto-open fee details
     chainAssetOpen = false
-    // User can manually click fee details button if they want to see it
   }
 }
 
-// Handle continue button - close fee details first, then proceed
+const debouncedContinue = debounce(() => {
+  onContinue()
+}, 100)
+
 function handleContinueClick() {
-  // Close fee details first for smooth transition
   feeDetailsOpen = false
-  // Wait for fee details slide animation to complete (250ms) + small buffer
-  setTimeout(() => {
-    onContinue()
-  }, 300)
+  debouncedContinue()
 }
 
 const uiStatus = $derived.by(() => {
@@ -114,14 +112,13 @@ const isButtonEnabled = $derived.by(() => !loading)
       isOpen={(v) => handleChainAssetOpen(v)}
     />
     <Amount type="source" />
-    <div class="grow"></div>
     <FeeDetails
       open={feeDetailsOpen}
       onToggle={(newOpen: boolean) => feeDetailsOpen = newOpen}
     />
   </div>
 
-  <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925">
+  <div class="p-4 flex justify-between gap-2 border-t border-zinc-800 sticky bottom-0 bg-zinc-925 mt-auto">
     <div class="flex w-full flex-col items-end">
       <div class="w-full items-end flex gap-2">
         {#if Option.isSome(transferErrors)}
