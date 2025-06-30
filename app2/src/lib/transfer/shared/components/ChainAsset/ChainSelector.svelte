@@ -21,6 +21,7 @@ type ChainWithAvailability = ReturnType<typeof Tuple.make<[Chain, boolean]>>
 
 let topFadeOpacity = $state(0)
 let bottomFadeOpacity = $state(1)
+let hasAnimated = $state(false)
 
 function handleScroll(e: Event) {
   const target = e.target as HTMLElement
@@ -231,6 +232,19 @@ const filteredChains = $derived(
     ),
   ),
 )
+
+// Reset animation state when selector type changes
+$effect(() => {
+  void type // Track the type prop
+  hasAnimated = false
+})
+
+// Set hasAnimated to true after first render with chains
+$effect(() => {
+  if (Option.isSome(filteredChains) && !hasAnimated) {
+    setTimeout(() => { hasAnimated = true }, 1000) // Allow animations to complete
+  }
+})
 </script>
 
 <div>
@@ -246,89 +260,101 @@ const filteredChains = $derived(
         ></div>
       {/if}
       
-      <div class="p-4 grid grid-cols-2 gap-4 max-h-[459px] overflow-y-auto scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700" onscroll={handleScroll}>
-        {#each chainss as chainWithAvailability, index}
+      <div class="flex flex-col gap-1 p-2 max-h-[459px] overflow-y-auto scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700" onscroll={handleScroll}>
+        {#each chainss as chainWithAvailability, index (chainWithAvailability[0].universal_chain_id || index)}
           {@const [chain, hasBucket] = chainWithAvailability}
           {@const status = getChainStatus(chain, hasBucket)}
           {@const chainLogo = chain.universal_chain_id
           ? chainLogoMap.get(chain.universal_chain_id)
           : null}
 
-          <button
-            style="animation-delay: {index * 50}ms;"
+                    <button
+            style={!hasAnimated ? `animation-delay: ${index * 30}ms;` : ""}
             class={cn(
-              "group relative flex flex-col items-center gap-3 justify-start p-3 rounded transition-all duration-100 min-h-[130px] border",
-              "animate-fade-in-up opacity-0",
+              "group relative flex items-center gap-3 w-full px-4 py-3 rounded border",
+              "transition-colors duration-100", // Only animate colors, not opacity/transform
+              !hasAnimated && "animate-fade-in-up",
               status.isSelected
                 ? "bg-zinc-900 border-accent text-white"
                 : status.isDisabled
-                ? "bg-zinc-900/50 border-zinc-800/50 opacity-50 cursor-not-allowed"
+                ? "bg-zinc-900/35 border-zinc-800/40 cursor-not-allowed"
                 : "bg-zinc-900 border-zinc-800 hover:border-zinc-600 cursor-pointer",
             )}
             onclick={() => !status.isDisabled && updateSelectedChain(chain)}
             disabled={status.isDisabled}
-                    >      
-
-            <!-- Chain logo -->
+          >
+                        <!-- Chain content (gets dimmed when disabled) -->
             <div class={cn(
-              "relative w-12 h-12 flex items-center justify-center rounded-full transition-all duration-100",
-              "bg-zinc-800 border border-zinc-700",
+              "flex items-center gap-3 flex-1 min-w-0 transition-all duration-100",
+              status.isDisabled && "opacity-40"
             )}>
-              {#if chainLogo?.color}
-                <img
-                  src={chainLogo.color}
-                  alt={chain.display_name}
-                  class="w-8 h-8 object-contain"
-                />
-              {:else}
-                <!-- Fallback icon for chains without logos -->
-                <div class="w-6 h-6 bg-gradient-to-br from-accent/60 to-accent/80 rounded-full"></div>
-              {/if}
-              
-              <!-- Testnet indicator -->
-              {#if chain.testnet}
-                <div class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-amber-400 rounded-full border border-zinc-900"></div>
-              {/if}
-            </div>
+              <!-- Chain logo -->
+              <div class={cn(
+                "relative w-10 h-10 flex items-center justify-center rounded-full transition-all duration-100 flex-shrink-0",
+                "bg-zinc-800 border border-zinc-700",
+              )}>
+                {#if chainLogo?.color}
+                  <img
+                    src={chainLogo.color}
+                    alt={chain.display_name}
+                    class={cn(
+                      "w-6 h-6 object-contain",
+                      status.isDisabled && "grayscale"
+                    )}
+                  />
+                {:else}
+                  <!-- Fallback icon for chains without logos -->
+                  <div class={cn(
+                    "w-4 h-4 bg-gradient-to-br from-accent/60 to-accent/80 rounded-full",
+                    status.isDisabled && "grayscale"
+                  )}></div>
+                {/if}
+              </div>
 
-            <!-- Chain name with better typography -->
-            <div class="text-center flex-1 flex flex-col justify-center pb-8">
+              <!-- Chain name -->
               <span class={cn(
-                "text-sm font-medium leading-tight",
+                "text-sm font-medium truncate",
                 status.isSelected ? "text-white" : "text-zinc-200",
                 status.isDisabled && "text-zinc-400"
               )}>
-                {chain.display_name.split(' ')[0]}
-              </span>
+                                  {chain.display_name}
+                </span>
             </div>
-
-            <!-- Status indicators -->
-            <div class="absolute bottom-2 left-2 right-2">
-              {#if status.isSourceChain}
-                <div class="text-center text-xs text-accent font-mono">
-                  SOURCE
+                
+            <!-- Status label -->
+            <div class="text-right flex-shrink-0 ml-3">
+                  {#if status.isSourceChain}
+                    <div class="flex items-center gap-1 bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded text-accent">
+                      <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 16 16">
+                        <circle cx="8" cy="8" r="3"/>
+                      </svg>
+                      <span class="text-xs font-mono leading-none">SOURCE</span>
+                    </div>
+                  {:else if chain.universal_chain_id && DISABLED_CHAINS.includes(chain.universal_chain_id)}
+                    <div class="flex items-center gap-1 bg-red-500/10 border border-red-500/20 px-1.5 py-0.5 rounded text-red-400">
+                      <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                        <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+                      </svg>
+                      <span class="text-xs font-mono leading-none">DISABLED</span>
+                    </div>
+                  {:else if type === "destination" && !status.hasRoute && !status.isSourceChain}
+                    <div class="flex items-center gap-1 bg-orange-500/10 border border-orange-500/20 px-1.5 py-0.5 rounded text-orange-400">
+                      <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+                        <path d="M7.002 11a1 1 0 1 1 2 0 1 1 0 0 1-2 0zM7.1 4.995a.905.905 0 1 1 1.8 0l-.35 3.507a.552.552 0 0 1-1.1 0L7.1 4.995z"/>
+                      </svg>
+                      <span class="text-xs font-mono leading-none">NO ROUTE</span>
+                    </div>
+                  {:else if type === "destination" && !status.hasBucket && status.hasRoute && !status.isSourceChain}
+                    <div class="flex items-center gap-1 bg-yellow-500/10 border border-yellow-500/20 px-1.5 py-0.5 rounded text-yellow-400">
+                      <svg class="w-2.5 h-2.5" fill="currentColor" viewBox="0 0 16 16">
+                        <path d="M8 1a2.5 2.5 0 0 1 2.5 2.5V4h-5v-.5A2.5 2.5 0 0 1 8 1zm3.5 3v-.5a3.5 3.5 0 1 0-7 0V4H1v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V4h-3.5zM2 5h12v9a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5z"/>
+                      </svg>
+                      <span class="text-xs font-mono leading-none">LOCKED</span>
+                    </div>
+                  {/if}
                 </div>
-              {:else if chain.universal_chain_id && DISABLED_CHAINS.includes(chain.universal_chain_id)}
-                <div class="text-center text-xs text-zinc-500 font-mono">
-                  DISABLED
-                </div>
-              {:else if type === "destination" && !status.hasRoute && !status.isSourceChain}
-                <div class="text-center text-xs text-zinc-500 font-mono">
-                  NO ROUTE
-                </div>
-              {:else if type === "destination" && !status.hasBucket && status.hasRoute && !status.isSourceChain}
-                <div class="text-center text-xs text-zinc-500 font-mono">
-                  NOT WHITELISTED
-                </div>
-              {:else}
-                <!-- Available/selectable chains -->
-                <div class="text-center text-xs text-zinc-300 font-mono">
-                  AVAILABLE
-                </div>
-              {/if}
-            </div>
-
-
           </button>
         {/each}
       </div>
@@ -356,15 +382,17 @@ const filteredChains = $derived(
   @keyframes fade-in-up {
     from {
       opacity: 0;
-      transform: translateY(20px) scale(0.95);
+      transform: translate3d(0, 20px, 0) scale(0.95);
     }
     to {
       opacity: 1;
-      transform: translateY(0) scale(1);
+      transform: translate3d(0, 0, 0) scale(1);
     }
   }
   
   .animate-fade-in-up {
-    animation: fade-in-up 0.6s ease-out forwards;
+    animation: fade-in-up 0.4s ease-out forwards;
+    will-change: transform, opacity;
+    opacity: 0;
   }
 </style>

@@ -30,8 +30,8 @@ function handleScroll(e: Event) {
   const scrollFromBottom = target.scrollHeight - target.scrollTop - target.clientHeight
   bottomFadeOpacity = Math.min(scrollFromBottom / 100, 1)
   
-  // Fade out search when near bottom (last 80px)
-  searchOpacity = Math.min(scrollFromBottom / 50, 1)
+  // Fade out search when near bottom (last 80px), but keep visible if search is open
+  searchOpacity = searchOpen ? 1 : Math.min(scrollFromBottom / 50, 1)
 }
 
 const isWalletConnected = $derived.by(() => {
@@ -162,12 +162,13 @@ async function toggleSearch() {
         </div>
       {:else}
         <div class="flex flex-col gap-1 p-2">
-          {#each filteredTokens as token}
+          {#each filteredTokens as token, index}
             {#key token.denom}
               <TransferAsset
                 chain={transferData.sourceChain.value}
                 {token}
                 {selectAsset}
+                {index}
               />
             {/key}
           {/each}
