@@ -39,7 +39,7 @@ lazy_static        = { workspace = true }
 lz4_flex           = "0.11.3"
 prometheus         = { version = "0.13.4", features = ["process"] }
 reqwest            = { workspace = true, features = ["json", "blocking", "rustls-tls"] }
-ruint              = "1.15.0"
+ruint              = { version = "1.15.0", features = ["primitive-types", "num-bigint"] }
 serde              = { workspace = true, features = ["derive"] }
 serde-utils        = { workspace = true }
 serde_json         = { workspace = true }

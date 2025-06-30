@@ -5,7 +5,7 @@ use crate::indexer::event::{
     types::{Capacity, Denom, RefillRate},
 };
 
-#[derive(Serialize, Deserialize, Clone, Debug)]
+#[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
 pub struct TokenBucketUpdateEvent {
     #[serde(flatten)]
     pub header: Header,
@@ -16,76 +16,47 @@ pub struct TokenBucketUpdateEvent {
 
 #[cfg(test)]
 mod tests {
-    use bytes::Bytes;
-    use time::OffsetDateTime;
-
     use super::*;
-    use crate::indexer::event::{
-        header::Header,
-        types::{
-            BlockHash, BlockHeight, BlockTimestamp, Capacity, Denom, EventIndex, RefillRate,
-            TransactionEventIndex, TransactionHash, TransactionIndex, UniversalChainId,
-        },
+    use crate::indexer::event::test_utils::test_helpers::{
+        create_test_header, create_token_bucket_test_values, test_json_format,
+        test_roundtrip_serialization,
     };
 
+    /// Creates a test event with unique deterministic values
+    fn create_test_event(suffix: u32) -> TokenBucketUpdateEvent {
+        let header = create_test_header(suffix);
+        let (denom, capacity, refill_rate) = create_token_bucket_test_values(suffix);
+
+        TokenBucketUpdateEvent {
+            header,
+            denom,
+            capacity,
+            refill_rate,
+        }
+    }
+
     #[test]
-    fn test_token_bucket_update_event_json_serialization() {
-        // Create a sample TokenBucketUpdateEvent
-        let event = TokenBucketUpdateEvent {
-            header: Header {
-                universal_chain_id: UniversalChainId("cosmoshub-4".to_string()),
-                block_hash: BlockHash(Bytes::from_static(b"ABC123DEF456")),
-                height: BlockHeight(12345),
-                event_index: EventIndex(0),
-                timestamp: BlockTimestamp(OffsetDateTime::from_unix_timestamp(1640995200).unwrap()),
-                transaction_hash: TransactionHash(Bytes::from_static(b"TX123HASH456")),
-                transaction_index: TransactionIndex(1),
-                transaction_event_index: Some(TransactionEventIndex(2)),
-            },
-            denom: Denom(Bytes::from_static(b"uatom")),
-            capacity: Capacity(1000000.try_into().unwrap()),
-            refill_rate: RefillRate(100.try_into().unwrap()),
-        };
+    fn test_json_serialization() {
+        let event = create_test_event(1);
+        test_roundtrip_serialization(&event);
+    }
 
-        // Test serialization
-        let json_string = serde_json::to_string(&event)
-            .expect("Failed to serialize TokenBucketUpdateEvent to JSON");
-
-        println!("Serialized JSON: {}", json_string);
-
-        // Test deserialization
-        let deserialized_event: TokenBucketUpdateEvent = serde_json::from_str(&json_string)
-            .expect("Failed to deserialize TokenBucketUpdateEvent from JSON");
-
-        // Verify the deserialized event matches the original
-        assert_eq!(event.denom, deserialized_event.denom);
-        assert_eq!(event.capacity, deserialized_event.capacity);
-        assert_eq!(event.refill_rate, deserialized_event.refill_rate);
-        assert_eq!(
-            event.header.universal_chain_id,
-            deserialized_event.header.universal_chain_id
-        );
-        assert_eq!(
-            event.header.block_hash,
-            deserialized_event.header.block_hash
-        );
-        assert_eq!(event.header.height, deserialized_event.header.height);
-        assert_eq!(
-            event.header.event_index,
-            deserialized_event.header.event_index
-        );
-        assert_eq!(event.header.timestamp, deserialized_event.header.timestamp);
-        assert_eq!(
-            event.header.transaction_hash,
-            deserialized_event.header.transaction_hash
-        );
-        assert_eq!(
-            event.header.transaction_index,
-            deserialized_event.header.transaction_index
-        );
-        assert_eq!(
-            event.header.transaction_event_index,
-            deserialized_event.header.transaction_event_index
-        );
+    #[test]
+    fn test_json_format_stability() {
+        let event = create_test_event(42);
+        let expected_json = r#"{
+  "block_hash": "0x424c4f434b5f484153485f3432",
+  "capacity": "0xf426a",
+  "denom": "0x64656e6f6d2d3432",
+  "event_index": "42",
+  "height": "10042",
+  "refill_rate": "0x8e",
+  "timestamp": "2020-09-13T12:27:22Z",
+  "transaction_event_index": "242",
+  "transaction_hash": "0x54585f484153485f3432",
+  "transaction_index": "142",
+  "universal_chain_id": "test-chain-42"
+}"#;
+        test_json_format(&event, expected_json);
     }
 }
