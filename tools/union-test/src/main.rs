@@ -67,7 +67,7 @@ async fn main() -> anyhow::Result<()> {
     };
 
 
-    let src = cosmos::Module::new(cosmos_cfg).await?;
+    let src = cosmos::Module::new(cosmos_cfg.clone()).await?;
     let dst = evm::Module::new(evm_cfg.clone()).await?;
 
     // 3) now hand them to your library’s TestContext
@@ -87,7 +87,7 @@ async fn main() -> anyhow::Result<()> {
             base_token_symbol: "muno".into(),
             base_token_name: "muno".into(),
             base_token_decimals: 6,
-            base_token_path: "0".parse().unwrap(),
+            base_token_path: "1".parse().unwrap(),
             quote_token:  "muno".into(),
             quote_amount: "1".parse().unwrap(),
         }
@@ -97,34 +97,31 @@ async fn main() -> anyhow::Result<()> {
 
     let ucs03_addr_on_evm = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
     let eth = evm::Module::new(evm_cfg.clone()).await?;
+    let union = cosmos::Module::new(cosmos_cfg.clone()).await?;
 
-    let ucs03_zkgm = UCS03Zkgm::new(ucs03_addr_on_evm.into(), eth.get_provider().await);
 
     let send_call_struct = UCS03Zkgm::sendCall { 
         channelId: 1.try_into().unwrap(),
-        timeoutHeight: 4294967295000000000u64.into(),
-        timeoutTimestamp: 0u64.into(),
+        timeoutTimestamp: 4294967295000000000u64.into(),
+        timeoutHeight: 0u64.into(),
         salt: salt_bytes.into(),
         instruction: instruction_from_evm_to_union.clone(),
     };
 
+    
+    let hash_val = eth.send_zkgm_transaction(
+        ucs03_addr_on_evm.into(),
+        send_call_struct
+    ).await;
 
-    let send_call_value = ucs03_zkgm.send(
-        send_call_struct.channelId,
-        send_call_struct.timeoutHeight,
-        send_call_struct.timeoutTimestamp, 
-        send_call_struct.salt, 
-        send_call_struct.instruction
-    );
-    println!("Send Call Value: {:?}", send_call_value);
-    // let send_call_from_evm_to_union = UCS03ZkgmCalls::send( send_call_struct);
+    println!("Hash Value: {:?}", hash_val);
 
-    eth.send_ibc_transaction(
-        hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
-        vec![send_call_value],
-        hex!("000000000000000000000000c0d4f8b1e2f3a5b6c7d8e9f0a1b2c3d4e5f6a7b8").into(),
-        Duration::from_secs(360),
-    );
+    let recv_packet = union.wait_for_packet_recv(
+        hash_val.unwrap(),
+        Duration::from_secs(280),
+    ).await;
+
+    println!("Received Packet: {:?}", recv_packet);
     
     // let contract: Bech32<FixedBytes<32>> = Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
     //     .unwrap();

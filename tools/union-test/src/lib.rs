@@ -33,6 +33,7 @@ pub mod helpers;
 
 use crate::cosmos::IbcEvent;
 use crate::channel_provider::{ChannelPool, ChannelConfirm, ChannelPair};
+use crate::evm::zkgm::UCS03Zkgm;
 
 #[async_trait]
 pub trait ChainEndpoint: Send + Sync {
@@ -88,6 +89,13 @@ pub trait ChainEndpoint: Send + Sync {
         packet_hash: H256,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv>;
+
+    async fn send_zkgm_transaction(
+        &self,
+        contract: H160,
+        send_call_struct: UCS03Zkgm::sendCall,
+    ) -> RpcResult<FixedBytes<32>>;
+
 }
 
 pub trait IbcEventHash {
@@ -175,6 +183,17 @@ impl ChainEndpoint for evm::Module {
         funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
     ) -> anyhow::Result<H256> {
         unimplemented!("Sending IBC packets is not implemented for EVM chains");
+    }
+
+    async fn send_zkgm_transaction(
+        &self,
+        contract: H160,
+        send_call_struct: UCS03Zkgm::sendCall
+    ) -> RpcResult<FixedBytes<32>>{
+        self.send_zkgm_transaction(
+            contract,
+            send_call_struct,
+        ).await
     }
 
     async fn wait_for_packet_recv(
@@ -271,6 +290,17 @@ impl ChainEndpoint for cosmos::Module {
     ) -> anyhow::Result<H256>  {
         self.send_ibc_transaction(contract, funded_msgs).await
     }
+
+
+    async fn send_zkgm_transaction(
+        &self,
+        contract: H160,
+        send_call_struct: UCS03Zkgm::sendCall,
+    ) -> RpcResult<FixedBytes<32>>
+    {
+        unimplemented!("Sending IBC packets is not implemented for EVM chains");
+    }
+
 
     async fn wait_for_packet_recv(
         &self,

@@ -231,32 +231,28 @@ impl Module {
         packet_hash: H256,
         timeout: Duration,
     ) -> RpcResult<FixedBytes<32>> {
-        self.send_transaction(contract, ibc_messages).await?;
-        Ok(packet_hash)
-        // let ev = self
-        //     .wait_for_packet_recv(packet_hash, timeout)
-        //     .await
-        //     .map_err(|e| {
-        //         ErrorObject::owned(
-        //             -1,
-        //             format!("timeout or RPC error waiting for PacketRecv: {}", e),
-        //             None::<()>,
-        //         )
-        //     })?;
+        let hash: H256 = self.send_transaction_ibc(contract, ibc_messages).await?;
+        Ok(hash.into())
+    }
 
-        // Ok(ev.packet_hash)
+
+    pub async fn send_zkgm_transaction(
+        &self,
+        contract: H160,
+        send_call_struct: zkgm::UCS03Zkgm::sendCall,
+    ) -> RpcResult<FixedBytes<32>> {
+        let hash: H256 = self.send_transaction_zkgm(contract, send_call_struct).await?;
+        Ok(hash.into())
     }
 
 
 
-
-
-    async fn submit_transaction(
+    async fn submit_transaction_ibc(
         &self,
         ibc_handler_address: H160,
         wallet: &LocalSigner<SigningKey>,
         ibc_messages: Vec<RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>>,
-    ) -> Result<(), TxSubmitError> {
+    ) -> Result<H256, TxSubmitError> {
         let signer = DynProvider::new(
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
@@ -280,7 +276,7 @@ impl Module {
                     price: gas_price,
                 });
             } else {
-                info!(%gas_price, "gas price");
+                println!("gas price: {}", gas_price);
             }
         }
 
@@ -299,7 +295,7 @@ impl Module {
                 .collect(),
         );
 
-        info!("submitting evm tx");
+        println!("submitting evm tx");
         let gas_estimate = call.estimate_gas().await.map_err(|e| {
             if ErrorReporter(&e).to_string().contains("gas required exceeds") {
                 TxSubmitError::BatchTooLarge
@@ -308,11 +304,9 @@ impl Module {
             }
         })?;
         let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
-        info!(
-            gas_multiplier = %self.gas_multiplier,
-            %gas_estimate,
-            %gas_to_use,
-            "gas estimation successful"
+        println!(
+
+            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}", self.gas_multiplier
         );
 
         if let Some(fixed) = self.fixed_gas_price {
@@ -324,9 +318,9 @@ impl Module {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
                     let receipt = ok.get_receipt().await?;
-                    info!(%tx_hash, "tx included");
+                    println!("tx included: {:?}", tx_hash);
 
-                    Ok(())
+                    Ok(tx_hash)
                 }
                 .instrument(info_span!("evm tx", %tx_hash))
                 .await
@@ -343,17 +337,117 @@ impl Module {
         Err(
             Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
             | Error::TransportError(TransportError::ErrorResp(e)),
-        ) if e.message.contains("oversized data")
+        ) 
+        if e.message.contains("oversized data")
            || e.message.contains("exceeds block gas limit")
            || e.message.contains("gas required exceeds") => 
         {
             if ibc_messages.len() == 1 {
                 error!(error = %e.message, msg = ?ibc_messages[0], "message is too large");
-                return Ok(());
             } else {
                 warn!(error = %e.message, "batch is too large");
-                return Err(TxSubmitError::BatchTooLarge);
             }
+            return Err(TxSubmitError::BatchTooLarge);
+        }
+
+        Err(err) => return Err(TxSubmitError::Error(err)),
+
+        }
+    }
+
+    async fn submit_transaction_zkgm(
+        &self,
+        ucs03_addr_on_evm: H160,
+        wallet: &LocalSigner<SigningKey>,
+        send_call_struct: zkgm::UCS03Zkgm::sendCall
+    ) -> Result<H256, TxSubmitError> {
+        let signer = DynProvider::new(
+            ProviderBuilder::new()
+                .network::<AnyNetwork>()
+                .filler(AnyNetwork::recommended_fillers())
+                .wallet(EthereumWallet::new(wallet.clone()))
+                .connect_provider(self.provider.clone()),
+        );
+
+        if let Some(max_gas_price) = self.max_gas_price {
+            let gas_price = self
+                .provider
+                .get_gas_price()
+                .await
+                .expect("unable to fetch gas price");
+
+            if gas_price > max_gas_price {
+                warn!(%max_gas_price, %gas_price, "gas price is too high");
+
+                return Err(TxSubmitError::GasPriceTooHigh {
+                    max: self.max_gas_price.expect("max gas price is set"),
+                    price: gas_price,
+                });
+            } else {
+                println!("gas price: {}", gas_price);
+            }
+        }
+
+        let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
+        
+        let mut call = ucs03_zkgm.send( 
+            send_call_struct.channelId,
+            send_call_struct.timeoutHeight,
+            send_call_struct.timeoutTimestamp, 
+            send_call_struct.salt,
+            send_call_struct.instruction
+        );
+        println!("submitting evm tx");
+        
+        let gas_estimate = call.estimate_gas().await.map_err(|e| {
+            println!("error estimating gas: {:?}", e);
+            if ErrorReporter(&e).to_string().contains("gas required exceeds") {
+                TxSubmitError::BatchTooLarge
+            } else {
+                TxSubmitError::Estimate(e)
+            }
+        })?;
+
+        let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
+        println!(
+
+            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}", self.gas_multiplier
+        );
+
+        if let Some(fixed) = self.fixed_gas_price {
+            call = call.gas_price(fixed);
+        }
+
+        match call.gas(gas_to_use).send().await {
+            Ok(ok) => {
+                let tx_hash = <H256>::from(*ok.tx_hash());
+                async move {
+                    let receipt = ok.get_receipt().await?;
+                    println!("tx included: {:?}", tx_hash);
+
+                    Ok(tx_hash)
+                }
+                .instrument(info_span!("evm tx", %tx_hash))
+                .await
+            }
+
+            Err(
+            Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
+            | Error::TransportError(TransportError::ErrorResp(e)),
+        ) if e.message.contains("insufficient funds for gas * price + value") => {
+            error!("out of gas");
+            return Err(TxSubmitError::OutOfGas);
+        }
+
+        Err(
+            Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
+            | Error::TransportError(TransportError::ErrorResp(e)),
+        ) 
+        if e.message.contains("oversized data")
+           || e.message.contains("exceeds block gas limit")
+           || e.message.contains("gas required exceeds") => 
+        {
+            return Err(TxSubmitError::BatchTooLarge);
         }
 
         Err(err) => return Err(TxSubmitError::Error(err)),
@@ -391,22 +485,45 @@ impl Module {
         )
     }
 
-    pub async fn send_transaction(
+    pub async fn send_transaction_ibc(
         &self,
         contract: H160,
         msg: Vec<RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>>,
-    ) -> RpcResult<alloy::primitives::FixedBytes<32>> {
+    ) -> RpcResult<FixedBytes<32>> {
         assert!(!msg.is_empty());
         let res = self.keyring
             .with({
                 let msg = msg.clone();
                 move |wallet| -> _ {
-                    AssertUnwindSafe(self.submit_transaction(contract, wallet, msg))
+                    AssertUnwindSafe(self.submit_transaction_ibc(contract, wallet, msg))
                     }
             }).await;
         
         match res {
-            Some(Ok(())) => Ok(alloy::primitives::FixedBytes::<32>([0; 32])),
+            Some(Ok((hash))) => Ok(hash),
+            Some(Err(e)) => Err(ErrorObject::owned(
+                -1,
+                format!("transaction submission failed: {:?}", e),
+                None::<()>,
+            )),
+            None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
+        }
+    }
+
+    pub async fn send_transaction_zkgm(
+        &self,
+        contract: H160,
+        send_call_struct: zkgm::UCS03Zkgm::sendCall
+    ) -> RpcResult<FixedBytes<32>> {
+        let res = self.keyring
+            .with({
+                move |wallet| -> _ {
+                    AssertUnwindSafe(self.submit_transaction_zkgm(contract, wallet, send_call_struct))
+                    }
+            }).await;
+        
+        match res {
+            Some(Ok((hash))) => Ok(hash),
             Some(Err(e)) => Err(ErrorObject::owned(
                 -1,
                 format!("transaction submission failed: {:?}", e),
