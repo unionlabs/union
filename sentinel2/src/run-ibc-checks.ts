@@ -81,7 +81,7 @@ const fetchMissingPackets = (hasuraEndpoint: string, exceedingSla: string) =>
       }
 
       allPackets.push(...page)
-      // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // biome-ignore lint/style/noNonNullAssertion: <explanation>
       const last = page.at(-1)!
 
       cursor = last.sort_order
@@ -154,6 +154,7 @@ export const checkPackets = (
             transfer_error,
             "Union",
             isLocal,
+            true
           )
           markTransferError(db, sla, missingPacket.packet_hash, val.data.id)
         }

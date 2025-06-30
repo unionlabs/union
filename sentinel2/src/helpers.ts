@@ -108,6 +108,7 @@ export const triggerIncident = (
   incidentName: string,
   teamName: string,
   isLocal: boolean,
+  call: boolean = false,
 ) => {
   const remote = Effect.tryPromise<{ data: { id: string } }, Error>({
     try: () =>
@@ -122,7 +123,7 @@ export const triggerIncident = (
           description,
           requester_email: requesterEmail,
           ...(teamName ? { team_name: teamName } : {}),
-          call: false,
+          call: call,
           sms: false,
           email: false,
           name: incidentName,
