@@ -56,7 +56,7 @@ const isChainLoading: boolean = $derived(
         <AddressComponent
           truncate
           class="text-accent"
-          truncateChars={6}
+          truncateChars={8}
           address={transferData.derivedSender.value}
           chain={transferData.sourceChain.value}
         />
@@ -65,7 +65,7 @@ const isChainLoading: boolean = $derived(
         <AddressComponent
           truncate
           class="text-accent"
-          truncateChars={6}
+          truncateChars={8}
           address={transferData.derivedReceiver.value}
           chain={transferData.destinationChain.value}
         />
@@ -128,19 +128,19 @@ const isChainLoading: boolean = $derived(
             {#if chainLogo?.color}
               <div class="flex items-center">
                 <div class="relative size-8 flex items-center justify-center overflow-visible mr-2">
-                  <img
-                    src={chainLogo.color}
-                    alt={selectedChain.value.display_name}
-                    class={cn(
-                      validSelectedAsset && "asset-mask",
-                    )}
-                  >
+                  {#if validSelectedAsset}
+                    <img
+                      src={selectedAsset.value.logo_uri.value}
+                      alt={selectedAsset.value.name}
+                      class="asset-mask"
+                    >
+                  {/if}
                   {#if validSelectedAsset}
                     <div class="absolute inline-flex items-center justify-center w-4 h-4 rounded-full bottom-0 -end-2 bg-clip-text bg-white">
                       <img
                         class="h-4 w-4 object-fill"
-                        src={selectedAsset.value.logo_uri.value}
-                        alt={selectedAsset.value.name}
+                        src={chainLogo.color}
+                        alt={selectedChain.value.display_name}
                       />
                     </div>
                   {/if}
