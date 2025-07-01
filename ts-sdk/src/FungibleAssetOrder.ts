@@ -1,3 +1,9 @@
+/**
+ * This module constructs fungible asset orders for given chains.
+ *
+ * @since 2.0.0
+ */
+
 import { Effect, pipe, Schema as S } from "effect"
 import * as Either from "effect/Either"
 import { constant } from "effect/Function"
@@ -24,6 +30,10 @@ const BaseIntent = S.Struct({
 })
 type BaseIntent = typeof BaseIntent.Type
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const EvmToEvmIntent = pipe(
   S.Struct({
     sender: AddressEvmZkgm,
@@ -33,6 +43,10 @@ export const EvmToEvmIntent = pipe(
   S.extend(BaseIntent),
   S.asSchema,
 )
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type EvmToEvmIntent = typeof EvmToEvmIntent.Type
 /**
  * Creates a fungible asset order from EVM to EVM.
@@ -84,6 +98,10 @@ export const evmToEvm = (intent: EvmToEvmIntent) =>
     })
   })
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const EvmToCosmosIntent = pipe(
   S.Struct({
     sender: AddressEvmZkgm,
@@ -93,6 +111,10 @@ export const EvmToCosmosIntent = pipe(
   S.extend(BaseIntent),
   S.asSchema,
 )
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type EvmToCosmosIntent = typeof EvmToCosmosIntent.Type
 /**
  * Creates a fungible asset order from EVM to Cosmos
@@ -143,6 +165,10 @@ export const evmToCosmos = (intent: EvmToCosmosIntent) =>
     })
   })
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const CosmosToEvmIntent = pipe(
   S.Struct({
     sender: AddressCosmosZkgm,
@@ -156,6 +182,10 @@ export const CosmosToEvmIntent = pipe(
   S.extend(BaseIntent),
   S.asSchema,
 )
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type CosmosToEvmIntent = typeof CosmosToEvmIntent.Type
 /**
  * Creates a fungible asset order from Cosmos to EVM
@@ -170,7 +200,7 @@ export const cosmosToEvm = (intent: CosmosToEvmIntent) =>
 
     const tokenMeta = yield* pipe(
       Cosmos.readCw20TokenInfo(intent.baseToken),
-      Effect.provideService(Cosmos.ClientContext, sourceClient),
+      Effect.provideService(Cosmos.Client, sourceClient),
       Effect.either,
       Effect.map(
         Either.getOrElse(() => ({
@@ -215,6 +245,10 @@ export const cosmosToEvm = (intent: CosmosToEvmIntent) =>
     })
   })
 
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export const CosmosToCosmosIntent = pipe(
   S.Struct({
     sender: AddressCosmosZkgm,
@@ -228,6 +262,10 @@ export const CosmosToCosmosIntent = pipe(
   S.extend(BaseIntent),
   S.asSchema,
 )
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type CosmosToCosmosIntent = typeof CosmosToCosmosIntent.Type
 /**
  * Creates a fungible asset order from Cosmos to Cosmos
@@ -242,7 +280,7 @@ export const cosmosToCosmos = (intent: CosmosToCosmosIntent) =>
 
     const tokenMeta = yield* pipe(
       Cosmos.readCw20TokenInfo(intent.baseToken),
-      Effect.provideService(Cosmos.ClientContext, sourceClient),
+      Effect.provideService(Cosmos.Client, sourceClient),
       Effect.either,
       Effect.map(
         Either.getOrElse(() => ({
@@ -353,7 +391,7 @@ export const cosomsToSui = (intent: {
         decimals: 6,
       }
       : yield* Cosmos.readCw20TokenInfo(intent.baseToken).pipe(
-        Effect.provideService(Cosmos.ClientContext, sourceClient),
+        Effect.provideService(Cosmos.Client, sourceClient),
       )
 
     const quoteToken = yield* Sui.predictQuoteToken(toHex(intent.baseToken))
