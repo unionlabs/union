@@ -225,10 +225,6 @@ contract CometblsClient is
         __Pausable_init();
     }
 
-    function updateTrustingPeriod() external restricted {
-        clientStates[1].trustingPeriod = 1542240000000000;
-    }
-
     function createClient(
         address,
         uint32 clientId,

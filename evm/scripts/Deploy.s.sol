@@ -1475,10 +1475,7 @@ contract DryUpgradeCometblsClient is VersionedScript {
         );
         address newImplementation = address(new CometblsClient(handler));
         vm.prank(owner);
-        cometblsClient.upgradeToAndCall(
-            newImplementation,
-            abi.encodeCall(CometblsClient.updateTrustingPeriod, ())
-        );
+        cometblsClient.upgradeToAndCall(newImplementation, new bytes(0));
     }
 }
 
@@ -1517,10 +1514,7 @@ contract UpgradeCometblsClient is VersionedScript {
         );
         vm.startBroadcast(privateKey);
         address newImplementation = address(new CometblsClient(handler));
-        cometblsClient.upgradeToAndCall(
-            newImplementation,
-            abi.encodeCall(CometblsClient.updateTrustingPeriod, ())
-        );
+        cometblsClient.upgradeToAndCall(newImplementation, new bytes(0));
         vm.stopBroadcast();
     }
 }
