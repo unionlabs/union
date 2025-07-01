@@ -1,4 +1,5 @@
 import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
+import GithubIcon from "$lib/components/icons/GithubIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
 import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
@@ -129,6 +130,12 @@ export const navigation: Array<NavSection> = [
         path: "https://x.com/@union_build",
         title: "@union_build",
         icon: TwitterIcon,
+        external: true,
+      },
+      {
+        path: "https://github.com/unionlabs",
+        title: "@unionlabs",
+        icon: GithubIcon,
         external: true,
       },
     ],
