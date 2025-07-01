@@ -1,6 +1,10 @@
 #![feature(trait_alias)]
 
-use std::{collections::VecDeque, fmt::Debug};
+use std::{
+    collections::VecDeque,
+    error::Error,
+    fmt::{Debug, Display},
+};
 
 use jsonrpsee::{
     self,
@@ -84,6 +88,16 @@ pub fn missing_state(
     data: Option<Value>,
 ) -> impl FnOnce() -> ErrorObjectOwned {
     move || ErrorObject::owned(MISSING_STATE_ERROR_CODE, message, data)
+}
+
+pub fn rpc_error<E: Error>(
+    message: impl Display,
+    data: Option<Value>,
+) -> impl FnOnce(E) -> ErrorObjectOwned {
+    move |e| {
+        let message = format!("{message}: {}", ErrorReporter(e));
+        ErrorObject::owned(-1, message, data)
+    }
 }
 
 /// Convert a `jsonrpsee` [`ErrorObject`] to a `voyager-vm` [`QueueError`].

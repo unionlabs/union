@@ -1,30 +1,26 @@
 // #![warn(clippy::unwrap_used)]
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display},
-    num::{NonZeroU32, ParseIntError},
-};
+use std::num::{NonZeroU32, ParseIntError};
 
 use ibc_classic_spec::{IbcClassic, StorePath};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{error, instrument, warn};
+use tracing::{error, instrument};
 use unionlabs::{
     cosmos::ics23::commitment_proof::CommitmentProof,
     ibc::core::{client::height::Height, commitment::merkle_proof::MerkleProof},
-    option_unwrap, ErrorReporter,
+    option_unwrap,
 };
 use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{types::ProofModuleInfo, ProofModuleServer},
+    rpc::{rpc_error, types::ProofModuleInfo, ProofModuleServer},
     types::ProofType,
 };
 
@@ -176,18 +172,5 @@ impl ProofModuleServer<IbcClassic> for Module {
         };
 
         Ok(Some((into_value(proof), proof_type)))
-    }
-}
-
-// NOTE: For both of the below functions, `message` as a field will override any actual message put in (i.e. `error!("foo", message = "bar")` will print as "bar", not "foo" with an extra field `message = "bar"`.
-
-fn rpc_error<E: Error>(
-    message: impl Display,
-    data: Option<Value>,
-) -> impl FnOnce(E) -> ErrorObjectOwned {
-    move |e| {
-        let message = format!("{message}: {}", ErrorReporter(e));
-        warn!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
-        ErrorObject::owned(-1, message, data)
     }
 }

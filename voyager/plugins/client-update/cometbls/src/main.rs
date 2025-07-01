@@ -26,8 +26,13 @@ use jsonrpsee::{
 };
 use num_bigint::BigUint;
 use serde::{Deserialize, Serialize};
+use serde_json::json;
 use tracing::{debug, error, info, instrument, trace};
-use unionlabs::{bounded::BoundedI64, ibc::core::client::height::Height};
+use unionlabs::{
+    bounded::BoundedI64,
+    ibc::core::client::height::Height,
+    primitives::{encoding::HexUnprefixed, H160},
+};
 use voyager_sdk::{
     anyhow::{self, bail},
     hook::UpdateHook,
@@ -38,7 +43,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{rpc_error, types::PluginInfo, PluginServer, FATAL_JSONRPC_ERROR_CODE},
     vm::{call, data, defer, noop, now, pass::PassResult, promise, seq, void, Op, Visit},
     DefaultCmd,
 };
@@ -151,38 +156,18 @@ impl Module {
     }
 
     #[instrument(skip_all, fields(%from, %to))]
-    async fn find_highest_update_height(&self, from: Height, to: Height) -> Height {
-        let sort = |mut validators: Vec<Validator>| {
-            validators.sort_by(|a, b| {
-                #[allow(clippy::collapsible_else_if)]
-                if a.voting_power == b.voting_power {
-                    if a.address < b.address {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    }
-                } else {
-                    if a.voting_power > b.voting_power {
-                        std::cmp::Ordering::Less
-                    } else {
-                        std::cmp::Ordering::Greater
-                    }
-                }
-            });
-            validators
-                .into_iter()
-                .map(|v| (v.address, v))
-                .collect::<HashMap<_, _>>()
-        };
-
+    async fn find_highest_update_height(&self, from: Height, to: Height) -> RpcResult<Height> {
         let trusted_validators = self
             .cometbft_client
             .all_validators(Some(from.increment().height().try_into().unwrap()))
             .await
-            .unwrap()
+            .map_err(rpc_error(
+                "error fetching trusted validators",
+                Some(json!({"height": from})),
+            ))?
             .validators;
 
-        let trusted_map = sort(trusted_validators);
+        let trusted_map = sort_validators(trusted_validators);
 
         // 1/3 of the trusted power must remain at H+k
         let trusted_power_threshold = trusted_map
@@ -191,6 +176,14 @@ impl Module {
             .sum::<i64>()
             / 3;
 
+        if self
+            .ensure_within_power_threshold(&trusted_map, trusted_power_threshold, to)
+            .await?
+        {
+            info!("{from} to {to} is a valid update, no need to bisect");
+            return Ok(to);
+        }
+
         let mut low = from;
         let mut high = to.increment();
         while low < high {
@@ -198,56 +191,93 @@ impl Module {
 
             info!("fetching between {low} and {high}, mid = {mid}");
 
-            // 1. fetch commit
-            let signed_header = self
-                .cometbft_client
-                .commit(Some(mid.height().try_into().unwrap()))
-                .await
-                .unwrap()
-                .signed_header;
-
-            // 2. fetch untrusted validators
-            let untrusted_validators = self
-                .cometbft_client
-                .all_validators(Some(mid.height().try_into().unwrap()))
-                .await
-                .unwrap()
-                .validators;
-
-            let untrusted_map = sort(untrusted_validators);
-
-            // 2. compute trusted power
-            let mut trusted_power = 0;
-            for sig in signed_header.commit.signatures.iter() {
-                if let CommitSig::Commit {
-                    validator_address, ..
-                } = sig
-                {
-                    let address = validator_address.as_encoding();
-                    match (trusted_map.get(address), untrusted_map.get(address)) {
-                        (Some(trusted_validator), Some(untrusted_validator))
-                            if trusted_validator.voting_power
-                                == untrusted_validator.voting_power =>
-                        {
-                            trusted_power += trusted_validator.voting_power.inner();
-                        }
-                        _ => {}
-                    }
-                }
-            }
-
-            info!(%trusted_power, %trusted_power_threshold);
-
-            // 3. ensure trusted power is higher than threshold
-            if trusted_power > trusted_power_threshold {
+            if self
+                .ensure_within_power_threshold(&trusted_map, trusted_power_threshold, mid)
+                .await?
+            {
                 low = mid.increment();
             } else {
                 high = mid;
             }
         }
 
-        Height::new(low.height() - 1)
+        Ok(Height::new(low.height() - 1))
     }
+
+    async fn ensure_within_power_threshold(
+        &self,
+        trusted_map: &HashMap<H160<HexUnprefixed>, Validator>,
+        trusted_power_threshold: i64,
+        to: Height,
+    ) -> RpcResult<bool> {
+        // 1. fetch commit
+        let signed_header = self
+            .cometbft_client
+            .commit(Some(to.height().try_into().unwrap()))
+            .await
+            .map_err(rpc_error(
+                "error fetching block while bisecting",
+                Some(json!({"height": to})),
+            ))?
+            .signed_header;
+
+        // 2. fetch untrusted validators
+        let untrusted_validators = self
+            .cometbft_client
+            .all_validators(Some(to.height().try_into().unwrap()))
+            .await
+            .unwrap()
+            .validators;
+
+        let untrusted_map = sort_validators(untrusted_validators);
+
+        // 3. compute trusted power
+        let mut trusted_power = 0;
+        for sig in signed_header.commit.signatures.iter() {
+            if let CommitSig::Commit {
+                validator_address, ..
+            } = sig
+            {
+                let address = validator_address.as_encoding();
+                match (trusted_map.get(address), untrusted_map.get(address)) {
+                    (Some(trusted_validator), Some(untrusted_validator))
+                        if trusted_validator.voting_power == untrusted_validator.voting_power =>
+                    {
+                        trusted_power += trusted_validator.voting_power.inner();
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        info!(%trusted_power, %trusted_power_threshold);
+
+        // 4. ensure trusted power is higher than threshold
+        Ok(trusted_power > trusted_power_threshold)
+    }
+}
+
+fn sort_validators(mut validators: Vec<Validator>) -> HashMap<H160<HexUnprefixed>, Validator> {
+    validators.sort_by(|a, b| {
+        #[allow(clippy::collapsible_else_if)]
+        if a.voting_power == b.voting_power {
+            if a.address < b.address {
+                std::cmp::Ordering::Less
+            } else {
+                std::cmp::Ordering::Greater
+            }
+        } else {
+            if a.voting_power > b.voting_power {
+                std::cmp::Ordering::Less
+            } else {
+                std::cmp::Ordering::Greater
+            }
+        }
+    });
+    validators
+        .into_iter()
+        .map(|v| (v.address, v))
+        .collect::<HashMap<_, _>>()
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -322,7 +352,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 let update_to_highest = self
                     .find_highest_update_height(update_from, update_to)
-                    .await;
+                    .await?;
                 if update_to_highest != update_to {
                     let intermediate = call(PluginMessage::new(
                         self.plugin_name(),
@@ -345,21 +375,30 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     .cometbft_client
                     .all_validators(Some(update_from.increment().height().try_into().unwrap()))
                     .await
-                    .unwrap()
+                    .map_err(rpc_error(
+                        "error fetching trusted validators",
+                        Some(json!({"height": update_from})),
+                    ))?
                     .validators;
 
                 let untrusted_validators = self
                     .cometbft_client
                     .all_validators(Some(update_to.height().try_into().unwrap()))
                     .await
-                    .unwrap()
+                    .map_err(rpc_error(
+                        "error fetching untrusted validators",
+                        Some(json!({"height": update_to})),
+                    ))?
                     .validators;
 
                 let signed_header = self
                     .cometbft_client
                     .commit(Some(update_to.height().try_into().unwrap()))
                     .await
-                    .unwrap()
+                    .map_err(rpc_error(
+                        "error fetching signed header",
+                        Some(json!({"height": update_to})),
+                    ))?
                     .signed_header;
 
                 let make_validators_commit = |mut validators: Vec<Validator>| {
@@ -522,7 +561,10 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 
                 let response = galois_rpc::Client::connect(prover_endpoint)
                     .await
-                    .unwrap()
+                    .map_err(rpc_error(
+                        "error connecting to prover endpoint",
+                        Some(json!({"prover_endpoint": prover_endpoint})),
+                    ))?
                     .poll(PollRequest {
                         request: request.clone(),
                     })

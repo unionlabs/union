@@ -33,6 +33,7 @@ use jsonrpsee::{
         client::{BatchResponse, ClientT},
         params::BatchRequestBuilder,
         traits::ToRpcParams,
+        TEN_MB_SIZE_BYTES,
     },
     server::middleware::rpc::RpcServiceT,
     types::{ErrorObject, Response, ResponsePayload},
@@ -77,6 +78,8 @@ pub async fn coordinator_server(
     let coordinator_socket = coordinator_socket_path(name);
 
     let rpc_server = reth_ipc::server::Builder::default()
+        .max_request_body_size(TEN_MB_SIZE_BYTES * 10)
+        .max_response_body_size(TEN_MB_SIZE_BYTES * 10)
         .set_rpc_middleware(
             reth_ipc::server::RpcServiceBuilder::new()
                 .layer(ExtractItemIdServiceLayer)
@@ -126,6 +129,8 @@ pub async fn worker_server<T>(
     trace!("connected to voyager socket");
 
     let ipc_server = reth_ipc::server::Builder::default()
+        .max_request_body_size(TEN_MB_SIZE_BYTES * 10)
+        .max_response_body_size(TEN_MB_SIZE_BYTES * 10)
         .set_rpc_middleware(
             RpcServiceBuilder::new()
                 .layer_fn(move |service| ExtractItemIdService { service })

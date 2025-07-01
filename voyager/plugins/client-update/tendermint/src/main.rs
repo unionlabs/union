@@ -1,27 +1,19 @@
 #![warn(clippy::unwrap_used)]
 
-use std::{
-    collections::VecDeque,
-    error::Error,
-    fmt::{Debug, Display},
-    num::ParseIntError,
-};
+use std::{collections::VecDeque, num::ParseIntError};
 
 use cometbft_types::types::{validator::Validator, validator_set::ValidatorSet};
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use tendermint_light_client_types::Header;
 use tracing::{instrument, warn};
 use unionlabs::{
     ibc::core::client::height::Height,
     never::Never,
     primitives::{encoding::HexUnprefixed, H160},
-    ErrorReporter,
 };
 use voyager_sdk::{
     anyhow::{self, bail},
@@ -34,7 +26,7 @@ use voyager_sdk::{
     },
     plugin::Plugin,
     primitives::{ChainId, ClientType},
-    rpc::{types::PluginInfo, PluginServer},
+    rpc::{rpc_error, types::PluginInfo, PluginServer},
     vm::{data, pass::PassResult, Op, Visit},
     DefaultCmd,
 };
@@ -266,16 +258,5 @@ fn mk_validator_set(
         validators,
         proposer,
         total_voting_power,
-    }
-}
-
-fn rpc_error<E: Error>(
-    message: impl Display,
-    data: Option<Value>,
-) -> impl FnOnce(E) -> ErrorObjectOwned {
-    move |e| {
-        let message = format!("{message}: {}", ErrorReporter(e));
-        warn!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
-        ErrorObject::owned(-1, message, data)
     }
 }
