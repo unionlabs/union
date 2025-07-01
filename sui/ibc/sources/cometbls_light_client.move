@@ -58,7 +58,7 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module ibc::light_client {
+module ibc::cometbls_light_client {
     use std::option::{Self, Option};
     use std::string::{Self, String};
     use sui::table::{Self, Table};
