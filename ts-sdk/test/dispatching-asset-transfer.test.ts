@@ -5,7 +5,7 @@ import { mnemonicToAccount } from "viem/accounts"
 import { english, generateMnemonic } from "viem/accounts"
 import { holesky, sepolia } from "viem/chains"
 
-import { Instruction, Ucs03 } from "@unionlabs/sdk"
+import { Ucs03 } from "@unionlabs/sdk"
 import { type Hex, toHex } from "viem"
 
 function generateSalt() {
@@ -58,52 +58,46 @@ describe("Dispatching an Asset Transfer", () => {
       })
 
       // We're actually enqueuing two transfers, the main transfer, and fee.
-      const instruction = new Instruction.Batch({
-        operand: [
-          // Our main transfer.
-          new Instruction.FungibleAssetOrder({
-            operand: [
-              sepoliaWallet.account.address,
-              holeskyWallet.account.address,
-              WETH_ADDRESS,
-              4n,
-              // symbol
-              "WETH",
-              // name
-              "Wrapped Ether",
-              // decimals
-              18,
-              // path
-              0n,
-              // quote token
-              "0x685a6d912eced4bdd441e58f7c84732ceccbd1e4",
-              // quote amount
-              4n,
-            ],
-          }),
-          // Our fee transfer.
-          new Instruction.FungibleAssetOrder({
-            operand: [
-              sepoliaWallet.account.address,
-              holeskyWallet.account.address,
-              WETH_ADDRESS,
-              1n,
-              // symbol
-              "WETH",
-              // name
-              "Wrapped Ether",
-              // decimals
-              18,
-              // path
-              0n,
-              // quote token
-              "0x685a6d912eced4bdd441e58f7c84732ceccbd1e4",
-              // quote amount
-              0n,
-            ],
-          }),
-        ],
-      })
+      const instruction = Ucs03.Batch.fromOperand([
+        // Our main transfer.
+        Ucs03.FungibleAssetOrder.fromOperand([
+          sepoliaWallet.account.address,
+          holeskyWallet.account.address,
+          WETH_ADDRESS,
+          4n,
+          // symbol
+          "WETH",
+          // name
+          "Wrapped Ether",
+          // decimals
+          18,
+          // path
+          0n,
+          // quote token
+          "0x685a6d912eced4bdd441e58f7c84732ceccbd1e4",
+          // quote amount
+          4n,
+        ]),
+        // Our fee transfer.
+        Ucs03.FungibleAssetOrder.fromOperand([
+          sepoliaWallet.account.address,
+          holeskyWallet.account.address,
+          WETH_ADDRESS,
+          1n,
+          // symbol
+          "WETH",
+          // name
+          "Wrapped Ether",
+          // decimals
+          18,
+          // path
+          0n,
+          // quote token
+          "0x685a6d912eced4bdd441e58f7c84732ceccbd1e4",
+          // quote amount
+          0n,
+        ]),
+      ])
 
       const transferHash = await sepoliaWallet.writeContract({
         account: sepoliaWallet.account.address,
@@ -122,7 +116,7 @@ describe("Dispatching an Asset Transfer", () => {
           {
             opcode: instruction.opcode,
             version: instruction.version,
-            operand: Instruction.encodeAbi(instruction),
+            operand: Ucs03.encode(instruction),
           },
         ],
       })
