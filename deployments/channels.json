@@ -88,6 +88,20 @@
   "bsc.97": {
     "1": {
       "comments": "babylon.bbn-test-5 channel 7",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "637233",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        },
+        "reverse": {
+          "PACKET_RECV": "1569674",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        }
+      },
       "tags": ["canonical"]
     }
   },
@@ -198,6 +212,20 @@
   "sei.1328": {
     "2": {
       "comments": "corn.21000001 channel 3",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "326236",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "1463397",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        }
+      },
       "tags": ["canonical"]
     },
     "3": {
@@ -206,6 +234,20 @@
     },
     "4": {
       "comments": "babylon.bbn-test-5 channel 6",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "938092",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "721546"
+        },
+        "reverse": {
+          "PACKET_RECV": "1463397",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "2116634"
+        }
+      },
       "tags": ["canonical"]
     }
   },
