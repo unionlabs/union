@@ -13,7 +13,7 @@ use jsonrpsee::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use sui_sdk::{
-    rpc_types::{EventFilter, SuiMoveValue, SuiObjectDataOptions, SuiParsedData, SuiTypeTag},
+    rpc_types::{SuiMoveValue, SuiObjectDataOptions, SuiParsedData, SuiTypeTag},
     types::{
         base_types::{ObjectID, SuiAddress},
         dynamic_field::DynamicFieldName,
