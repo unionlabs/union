@@ -85,7 +85,7 @@ onMount(() => {
 >
   <div
     bind:this={highlightElement}
-    class="absolute -z-10 bg-accent rounded-lg transition-all duration-300"
+    class="absolute -z-10 bg-gradient-to-r from-accent/10 to-accent/5 border border-accent/20 rounded-lg transition-all duration-300 ease-out shadow-sm shadow-accent/10"
   >
   </div>
 
@@ -100,86 +100,114 @@ onMount(() => {
         alt="Union"
       />
       {#key uiStore.edition}
-        <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">
-          {uiStore.theme.label}
-        </div>
+        {#if uiStore.edition === "app"}
+          <div class="flex items-center gap-1 bg-accent/10 border border-accent/20 px-1.5 py-1 rounded text-accent hover:bg-accent/20 transition-all duration-200">
+            <span class="text-sm font-mono font-bold leading-none">{uiStore.theme.label}</span>
+          </div>
+        {:else}
+          <div class="bg-accent px-2 py rounded text-sm font-mono font-bold">
+            {uiStore.theme.label}
+          </div>
+        {/if}
       {/key}
     </a>
     <div class="flex flex-col flex-1">
       <ProfileCard />
       {#each navigation as section}
         {#if section.title !== "Developer" || uiStore.showDeveloperPages}
-          <section class="border-zinc-900 p-6 last:flex-1 flex flex-col justify-end">
-            {#if section.title}
-              <h2 class="font-bold text-sm mb-2.5 text-center uppercase text-zinc-600">
-                {section.title}
-              </h2>
-            {/if}
-            <ul class="flex flex-col gap-1">
-              {#each section.items as item}
-                <li>
+          {#if section.title === "More Union"}
+            <!-- Special rendering for More Union section - just icons in a row -->
+            <section class="px-4 py-4 last:flex-1 flex flex-col justify-end">
+              <div class="flex items-center justify-center gap-4">
+                {#each section.items as item}
                   <a
                     href={item.path}
-                    data-path={item.path}
                     target={item.external ? "_blank" : undefined}
                     rel={item.external ? "noopener noreferrer" : undefined}
-                    class={cn(
-                      "relative flex items-center gap-2 px-3 py-2 rounded-lg transition-colors",
-                      isCurrentPath(item.path) ? "" : "dark:hover:bg-zinc-900",
-                    )}
+                    class="flex items-center justify-center w-10 h-10 rounded-lg bg-zinc-900/50 hover:bg-zinc-800 transition-all duration-200 text-zinc-400 hover:text-zinc-200"
+                    title={item.title}
                   >
-                    <item.icon
-                      class={cn(
-                        isCurrentPath(item.path)
-                          ? "size-5 text-white"
-                          : "size-5 zinc-500",
-                      )}
-                    />
-                    {item.title}
-                    {#if item.external}
-                      <ExternalLinkIcon class="size-4 ml-auto text-zinc-500" />
-                    {/if}
+                    <item.icon class="w-5 h-5" />
                   </a>
+                {/each}
+              </div>
+            </section>
+          {:else}
+            <!-- Regular navigation section rendering -->
+            <section class="px-4 py-4 last:flex-1 flex flex-col justify-end">
+              {#if section.title}
+                <h2 class="font-semibold text-xs mb-4 text-left uppercase tracking-wider text-zinc-500 px-3">
+                  {section.title}
+                </h2>
+              {/if}
+              <ul class="flex flex-col gap-0.5">
+                {#each section.items as item}
+                  <li>
+                    <a
+                      href={item.path}
+                      data-path={item.path}
+                      target={item.external ? "_blank" : undefined}
+                      rel={item.external ? "noopener noreferrer" : undefined}
+                      class={cn(
+                        "relative flex items-center gap-3 px-3 py-2.5 mx-1 rounded-lg transition-all duration-200",
+                        isCurrentPath(item.path)
+                          ? "text-white font-medium"
+                          : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900/50",
+                      )}
+                    >
+                      <item.icon
+                        class={cn(
+                          "w-5 h-5 transition-colors duration-200",
+                          isCurrentPath(item.path)
+                            ? "text-accent"
+                            : "text-zinc-500",
+                        )}
+                      />
+                      <span class="text-sm font-medium">{item.title}</span>
+                      {#if item.external}
+                        <ExternalLinkIcon class="w-4 h-4 ml-auto text-zinc-500" />
+                      {/if}
+                    </a>
 
-                  {#if item.subroutes && item.subroutes.length > 0}
-                    <ul class="flex flex-col border-zinc-800 gap-1 pt-2 border-l-1 ml-5 pl-2">
-                      {#each item.subroutes as subroute}
-                        {#if !subroute.editions
-                  || subroute.editions.includes(uiStore.edition)}
-                          <li>
-                            <a
-                              href={subroute.path}
-                              data-path={subroute.path}
-                              class={cn(
-                                "relative flex items-center gap-2 px-3 py-1 rounded-lg transition-colors",
-                                isCurrentPath(subroute.path)
-                                  ? ""
-                                  : "dark:hover:bg-zinc-900",
-                              )}
-                            >
-                              {subroute.title}
-                            </a>
-                          </li>
-                        {/if}
-                      {/each}
-                    </ul>
-                  {/if}
-                </li>
-              {/each}
-            </ul>
-          </section>
+                    {#if item.subroutes && item.subroutes.length > 0}
+                      <ul class="flex flex-col gap-0.5 mt-1 ml-6 border-l border-zinc-800/50 pl-4">
+                        {#each item.subroutes as subroute}
+                          {#if !subroute.editions || subroute.editions.includes(uiStore.edition)}
+                            <li>
+                              <a
+                                href={subroute.path}
+                                data-path={subroute.path}
+                                class={cn(
+                                  "relative flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200",
+                                  isCurrentPath(subroute.path)
+                                    ? "text-white font-medium bg-zinc-800/20"
+                                    : "text-zinc-500 hover:text-zinc-300 hover:bg-zinc-900/30",
+                                )}
+                              >
+                                <span class="text-sm">{subroute.title}</span>
+                              </a>
+                            </li>
+                          {/if}
+                        {/each}
+                      </ul>
+                    {/if}
+                  </li>
+                {/each}
+              </ul>
+            </section>
+          {/if}
         {/if}
       {/each}
     </div>
 
-    <div class="flex flex-col gap-2 p-6 border-t border-zinc-900">
+    <div class="p-4 border-t border-zinc-800/50 bg-zinc-950/30">
       <ConnectWalletButton />
       <!--
-    <Button variant="secondary" onclick={() => uiStore.openSettingsModal()}>
-      <SharpSettingsIcon class="size-5"/>
-      Settings
-    </Button>
-    !-->
+       <Button variant="secondary" onclick={() => uiStore.openSettingsModal()}>
+         <SharpSettingsIcon class="size-5"/>
+         Settings
+       </Button>
+       !-->
     </div>
   </div>
 </div>

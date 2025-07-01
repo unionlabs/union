@@ -8,7 +8,7 @@ import Button from "./Button.svelte"
 
 <Button
   variant="secondary"
-  class="flex items-center"
+  class="flex items-center w-full"
   onclick={() => uiStore.openWalletModal()}
 >
   <SharpWalletIcon class="size-5" />
