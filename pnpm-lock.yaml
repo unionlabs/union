@@ -521,6 +521,9 @@ importers:
       '@cosmjs/cosmwasm-stargate':
         specifier: ^0.33.1
         version: 0.33.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@cosmjs/proto-signing':
+        specifier: ^0.33.0
+        version: 0.33.1
       '@cosmjs/stargate':
         specifier: ^0.33.1
         version: 0.33.1(bufferutil@4.0.9)(utf-8-validate@5.0.10)
@@ -550,7 +553,7 @@ importers:
         version: 7.1.2(graphql@16.10.0)
       viem:
         specifier: ^2
-        version: 2.27.2(bufferutil@4.0.9)(typescript@5.8.2)(utf-8-validate@5.0.10)(zod@3.25.32)
+        version: 2.27.2(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.25.32)
     devDependencies:
       '@babel/cli':
         specifier: ^7.27.2
@@ -566,9 +569,6 @@ importers:
         version: 7.27.1(@babel/core@7.27.4)
       '@cosmjs/math':
         specifier: ^0.33.1
-        version: 0.33.1
-      '@cosmjs/proto-signing':
-        specifier: ^0.33.0
         version: 0.33.1
       '@effect/build-utils':
         specifier: ^0.8.3

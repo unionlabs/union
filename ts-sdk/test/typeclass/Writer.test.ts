@@ -1,8 +1,8 @@
-import * as Writer from "$lib/typeclass/Writer.js"
 import * as ArrayInstances from "@effect/typeclass/data/Array"
 import * as StringInstances from "@effect/typeclass/data/String"
 import * as FlatMap from "@effect/typeclass/FlatMap"
 import { assert, describe, it } from "@effect/vitest"
+import * as Writer from "@unionlabs/sdk/typeclass/Writer"
 import * as A from "effect/Array"
 import { pipe } from "effect/Function"
 

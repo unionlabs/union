@@ -3,12 +3,8 @@
  *
  * @since 2.0.0
  */
-import { Context, Data, Effect } from "effect"
+import { Context, Data, Effect, flow, Layer } from "effect"
 import { type Address, erc20Abi } from "viem"
-import { GAS_DENOMS } from "./constants/gas-denoms.js"
-import * as internal from "./internal/evm.js"
-import { UniversalChainId } from "./schema/chain.js"
-
 import {
   Abi,
   type Account as ViemAccount,
@@ -26,7 +22,11 @@ import {
 } from "viem"
 import type { Hash, WaitForTransactionReceiptTimeoutErrorType } from "viem"
 import type { Hex } from "viem"
+import { GAS_DENOMS } from "./constants/gas-denoms.js"
+import * as internal from "./internal/evm.js"
+import { UniversalChainId } from "./schema/chain.js"
 import * as Ucs03 from "./Ucs03.js"
+import * as Utils from "./Utils.js"
 import { extractErrorDetails } from "./utils/extract-error-details.js"
 
 /**
@@ -226,7 +226,10 @@ export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Evm/ChannelD
   ChannelDestination,
   Evm.Channel
 >() {
-  static Default = this.of
+  static Live = flow(
+    ChannelDestination.of,
+    Layer.succeed(this),
+  )
 }
 
 /**
@@ -237,7 +240,10 @@ export class ChannelSource extends Context.Tag("@unionlabs/sdk/Evm/ChannelSource
   ChannelSource,
   Evm.Channel
 >() {
-  static Default = this.of
+  static Live = flow(
+    ChannelSource.of,
+    Layer.succeed(this),
+  )
 }
 
 /**
@@ -556,5 +562,37 @@ export const increaseErc20Allowance = (
       abi: erc20Abi,
       functionName: "approve",
       args: [spenderAddress, amount],
+    })
+  })
+
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const sendInstruction = (instruction: Ucs03.Instruction) =>
+  Effect.gen(function*() {
+    const walletClient = yield* WalletClient
+    const sourceConfig = yield* ChannelSource
+
+    const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
+    const salt = yield* Utils.generateSalt("evm")
+
+    return yield* writeContract(walletClient.client, {
+      account: walletClient.account,
+      abi: Ucs03.Abi,
+      chain: walletClient.chain,
+      functionName: "send",
+      address: sourceConfig.ucs03address,
+      args: [
+        sourceConfig.channelId,
+        0n,
+        timeoutTimestamp,
+        salt,
+        {
+          opcode: instruction.opcode,
+          version: instruction.version,
+          operand: Ucs03.encode(instruction),
+        },
+      ],
     })
   })
