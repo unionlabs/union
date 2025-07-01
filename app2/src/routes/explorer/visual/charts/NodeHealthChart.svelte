@@ -12,7 +12,6 @@ interface NodeData {
   lastCheckTime: number
   latestBlockHeight?: number
   errorMessage?: string
-  uptime: number // Percentage uptime over last 24h
 }
 
 interface ChainHealthStat {
@@ -20,7 +19,6 @@ interface ChainHealthStat {
   healthyNodes: number
   totalNodes: number
   avgResponseTime: number
-  uptime: number
 }
 
 interface NodeHealthSummary {
@@ -63,7 +61,6 @@ const sortOptions = [
   { value: "chain", label: "Chain" },
   { value: "status", label: "Status" },
   { value: "response", label: "Response" },
-  { value: "uptime", label: "Uptime" },
 ]
 
 // State management
@@ -90,9 +87,6 @@ const currentData = $derived.by(() => {
     case "response":
       data = data.sort((a, b) => (a.responseTimeMs || Infinity) - (b.responseTimeMs || Infinity))
       break
-    case "uptime":
-      data = data.sort((a, b) => b.uptime - a.uptime)
-      break
     case "chain":
     default:
       data = data.sort((a, b) => a.chainName.localeCompare(b.chainName))
@@ -112,10 +106,6 @@ function formatResponseTime(ms: number): string {
   if (ms === 0) return "N/A"
   if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`
   return `${ms}ms`
-}
-
-function formatUptime(uptime: number): string {
-  return `${uptime.toFixed(1)}%`
 }
 
 function formatBlockHeight(height?: number): string {
@@ -304,10 +294,6 @@ $effect(() => {
                     <Skeleton class="w-8 h-2" />
                     <Skeleton class="w-12 h-2" />
                   </div>
-                  <div class="flex items-center space-x-1">
-                    <Skeleton class="w-8 h-2" />
-                    <Skeleton class="w-8 h-1" />
-                  </div>
                 </div>
               </div>
             {/each}
@@ -373,22 +359,6 @@ $effect(() => {
                         #{formatBlockHeight(node.latestBlockHeight)}
                       </span>
                     {/if}
-                  </div>
-
-                  <!-- Uptime -->
-                  <div class="flex items-center space-x-1">
-                    <span class="text-zinc-500 text-xs tabular-nums">
-                      {formatUptime(node.uptime)}
-                    </span>
-                    <div class="w-8 h-1 bg-zinc-800 rounded-full overflow-hidden">
-                      <div
-                        class="h-full transition-all duration-300 {
-                          node.uptime >= 95 ? 'bg-emerald-400' : 
-                          node.uptime >= 80 ? 'bg-amber-400' : 'bg-red-400'
-                        }"
-                        style="width: {Math.min(node.uptime, 100)}%"
-                      ></div>
-                    </div>
                   </div>
                 </div>
 
