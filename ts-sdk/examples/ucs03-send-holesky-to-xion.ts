@@ -1,13 +1,3 @@
----
-title: Examples
----
-
-## Holesky to XION
-
-```ts twoslash
-/// <reference types="effect" />
-/// <reference types="viem" />
-// @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
 // Polyfill for serializing BigInt as string in JSON
 // @ts-ignore
 if (typeof BigInt.prototype.toJSON !== "function") {
@@ -20,14 +10,13 @@ if (typeof BigInt.prototype.toJSON !== "function") {
 // EVM
 import { http, toHex } from "viem"
 import { holesky } from "viem/chains"
-import { privateKeyToAccount } from "viem/accounts"
 // Union
 import { Cosmos, Evm, FungibleAssetOrder, Ucs05 } from "@unionlabs/sdk"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
-import { TokenRawDenom } from "@unionlabs/sdk/schema/token"
-
 import { Effect, pipe } from "effect"
+import { privateKeyToAccount } from "viem/accounts"
+import { TokenRawDenom } from "../src/schema/token.js"
 
 // We will send funds from sender to receiver
 const SENDER = Ucs05.AddressEvmZkgm.make("0xfaebe5bf141cc04a3f0598062b98d2df01ab3c4d")
@@ -82,4 +71,3 @@ const main = pipe(
 Effect.runPromise(main)
   .then(console.log)
   .catch(console.error)
-```

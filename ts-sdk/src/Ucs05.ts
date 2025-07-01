@@ -185,8 +185,17 @@ export const ERC55 = S.NonEmptyString.pipe(
  */
 export type ERC55 = typeof ERC55.Type
 
-// TODO: rename me
+/**
+ * Union of possible valid address schemas.
+ *
+ * @category models
+ * @since 2.0.0
+ */
 export const ValidAddress = S.Union(ERC55, Bech32)
+/**
+ * @category models
+ * @since 2.0.0
+ */
 export type ValidAddress = typeof ValidAddress.Type
 
 /**
