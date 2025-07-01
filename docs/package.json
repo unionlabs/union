@@ -72,7 +72,6 @@
     "starlight-theme-rapide": "^0.2.1",
     "svelte": "^5.2.7",
     "unified": "^11.0.5",
-    "viem": "^2.21.49",
     "vue": "^3.5.13"
   },
   "devDependencies": {
@@ -108,7 +107,6 @@
     "tailwindcss-animate": "^1.0.7",
     "ts-dedent": "^2.2.0",
     "typed-query-selector": "^2.12.0",
-    "typescript": "^5.7.2",
     "unist-util-visit": "^5.0.0",
     "unplugin-icons": "^0.20.1",
     "vite": "^5.4.11"
