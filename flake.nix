@@ -122,6 +122,10 @@
       url = "github:unionlabs/union/release/uniond/v1.1.1";
       flake = false;
     };
+    v1_2_0 = {
+      url = "github:unionlabs/union/prod-415-write-migration-to-mint-u-and-remove-poa";
+      flake = false;
+    };
   };
   outputs =
     inputs@{

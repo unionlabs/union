@@ -1,0 +1,218 @@
+package v1_2_0
+
+import (
+	"context"
+	"fmt"
+	"math/big"
+
+	"cosmossdk.io/math"
+
+	upgradetypes "cosmossdk.io/x/upgrade/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
+	"github.com/cosmos/cosmos-sdk/types/module"
+	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
+	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
+	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
+
+	"github.com/unionlabs/union/uniond/app/upgrades"
+)
+
+const U_BASE_DENOM = "au"
+
+// One U in `au`
+const ONE_U = 1000000000000000000
+
+// Total supply of U (note, not in `au`)
+const U_TOTAL_SUPPLY = 10000000000000
+
+// Union foundation multisig address
+const UNION_FOUNDATION_MUTLI_SIG = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2" // TODO: Update with real address
+
+func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
+	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
+		migrations, err := mm.RunMigrations(ctx, configurator, vm)
+		if err != nil {
+			return nil, err
+		}
+
+		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(UNION_FOUNDATION_MUTLI_SIG)
+		if err != nil {
+			return nil, err
+		}
+
+		// Undelegate existing delegations
+		delegations, err := keepers.StakingKeeper.GetAllDelegations(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, delegation := range delegations {
+			accAddr, err := sdk.AccAddressFromBech32(delegation.DelegatorAddress)
+			if err != nil {
+				return nil, err
+			}
+			valAddr, err := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
+			if err != nil {
+				return nil, err
+			}
+			validator, err := keepers.StakingKeeper.GetValidator(ctx, sdk.ValAddress(valAddr))
+			if err != nil {
+				return nil, err
+			}
+			validator.MinSelfDelegation = math.NewInt(0)
+			keepers.StakingKeeper.SetValidator(ctx, validator)
+
+			_, _, err = keepers.StakingKeeper.Undelegate(ctx, accAddr, valAddr, delegation.Shares)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Mint U
+		uTotalSupply := []sdk.Coin{getUFromU64(U_TOTAL_SUPPLY)}
+		err = keepers.MintKeeper.MintCoins(ctx, uTotalSupply)
+		if err != nil {
+			return nil, err
+		}
+		err = keepers.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, unionFoundationMultiSig, uTotalSupply)
+		if err != nil {
+			return nil, err
+		}
+
+		// Update x/staking
+		stakingParams, err := keepers.StakingKeeper.GetParams(ctx)
+		if err != nil {
+			return nil, err
+		}
+		stakingParams.BondDenom = U_BASE_DENOM
+		stakingParams.MinCommissionRate = math.LegacyMustNewDecFromStr("0.05")
+		err = keepers.StakingKeeper.SetParams(ctx, stakingParams)
+		if err != nil {
+			return nil, err
+		}
+
+		// Update x/mint
+		// NOTE: Keeping inflation set to 0 until TGE
+		mintparams, err := keepers.MintKeeper.Params.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		mintparams.MintDenom = U_BASE_DENOM
+		err = keepers.MintKeeper.Params.Set(ctx, mintparams)
+		if err != nil {
+			return nil, err
+		}
+
+		// Update x/gov
+		govParams, err := keepers.GovKeeper.Params.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		govParams.MinDeposit = []sdk.Coin{getUFromU64(10)}
+		govParams.ExpeditedMinDeposit = []sdk.Coin{getUFromU64(50)}
+		err = keepers.GovKeeper.Params.Set(ctx, govParams)
+		if err != nil {
+			return nil, err
+		}
+
+		// Update x/crisis
+		_, err = keepers.CrisisKeeper.UpdateParams(ctx, &crisistypes.MsgUpdateParams{
+			Authority:   keepers.GovKeeper.GetAuthority(),
+			ConstantFee: getBaseUFromString("1000"),
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+
+		// Update x/feemarket
+		feeMarketParams, err := keepers.FeeMarketKeeper.GetParams(sdkCtx)
+		if err != nil {
+			return nil, err
+		}
+		feeMarketParams.FeeDenom = U_BASE_DENOM
+		feeMarketParams.DistributeFees = false
+		err = keepers.FeeMarketKeeper.SetParams(sdkCtx, feeMarketParams)
+		if err != nil {
+			return nil, err
+		}
+
+		// Redelegate to validators from Union foundation account
+		for _, delegation := range delegations {
+			valAddr, err := sdk.ValAddressFromBech32(delegation.ValidatorAddress)
+			if err != nil {
+				return nil, err
+			}
+			validator, err := keepers.StakingKeeper.GetValidator(ctx, sdk.ValAddress(valAddr))
+			if err != nil {
+				return nil, err
+			}
+			_, err = keepers.StakingKeeper.Delegate(ctx, unionFoundationMultiSig, delegation.Shares.RoundInt(), stakingtypes.Unbonded, validator, true)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		// Burn old tokens
+		burnToken(ctx, *keepers, "muno") // union-testnet-10 gas token
+		burnToken(ctx, *keepers, "upoa") // union-1 and union-testnet-10 PoA token
+		burnToken(ctx, *keepers, "ugas") // union-1 gas token
+
+		return migrations, nil
+	}
+}
+
+func burnToken(ctx context.Context, keepers upgrades.AppKeepers, denom string) error {
+	tokenOwners, err := keepers.BankKeeper.DenomOwners(ctx, &banktypes.QueryDenomOwnersRequest{
+		Denom:      denom,
+		Pagination: nil,
+	})
+	if err != nil {
+		return err
+	}
+	tokenSum := math.ZeroInt()
+	for _, tokenOwner := range tokenOwners.DenomOwners {
+		accAddr, err := sdk.AccAddressFromBech32(tokenOwner.Address)
+		if err != nil {
+			return err
+		}
+		err = keepers.BankKeeper.SendCoinsFromAccountToModule(ctx, accAddr, govtypes.ModuleName, sdk.NewCoins(tokenOwner.Balance))
+
+		if err != nil {
+			return err
+		}
+		tokenSum = tokenSum.Add(tokenOwner.Balance.Amount)
+	}
+	if tokenSum.GT(math.ZeroInt()) {
+		err = keepers.BankKeeper.BurnCoins(ctx, govtypes.ModuleName, sdk.NewCoins(sdk.Coin{
+			Denom:  denom,
+			Amount: tokenSum,
+		}))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func getUFromU64(amount int64) sdk.Coin {
+	res := new(big.Int).Mul(big.NewInt(ONE_U), big.NewInt(amount))
+	return sdk.Coin{
+		Denom:  U_BASE_DENOM,
+		Amount: math.NewIntFromBigInt(res),
+	}
+}
+
+func getBaseUFromString(amount string) sdk.Coin {
+	res, ok := math.NewIntFromString(amount)
+	if !ok {
+		panic(fmt.Sprintf("Failed to create Int from amount: %s", amount))
+	}
+	return sdk.Coin{
+		Denom:  U_BASE_DENOM,
+		Amount: res,
+	}
+}

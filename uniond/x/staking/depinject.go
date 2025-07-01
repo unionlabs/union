@@ -8,7 +8,6 @@ import (
 
 	"cosmossdk.io/core/address"
 	"cosmossdk.io/core/appmodule"
-	"cosmossdk.io/core/store"
 	"cosmossdk.io/depinject"
 
 	"github.com/unionlabs/union/uniond/x/staking/keeper"
@@ -29,7 +28,6 @@ type ModuleInputs struct {
 
 	Config        *Module
 	Cdc           codec.Codec
-	StoreService  store.KVStoreService
 	AddressCodec  address.Codec
 	StakingKeeper types.StakingKeeper
 }
