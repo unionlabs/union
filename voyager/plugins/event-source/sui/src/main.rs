@@ -1,5 +1,6 @@
 use std::{cmp::Ordering, collections::VecDeque};
 
+use call::FetchEvents;
 use ibc_union_spec::{
     event::{
         ChannelMetadata, ChannelOpenAck, ChannelOpenConfirm, ChannelOpenInit, ChannelOpenTry,
@@ -18,7 +19,9 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use sui_sdk::{
-    rpc_types::SuiTransactionBlockResponseOptions, types::base_types::SuiAddress, SuiClientBuilder,
+    rpc_types::{EventFilter, SuiEvent, SuiTransactionBlockResponseOptions},
+    types::base_types::SuiAddress,
+    SuiClientBuilder,
 };
 use tracing::{info, instrument};
 use unionlabs::{ibc::core::client::height::Height, primitives::H256, ErrorReporter};
@@ -26,7 +29,7 @@ use voyager_sdk::{
     hook::simple_take_filter,
     into_value,
     message::{
-        call::{Call, WaitForHeight},
+        call::{Call, WaitForHeight, WaitForHeightRelative},
         data::{ChainEvent, Data, EventProvableHeight},
         PluginMessage, VoyagerMessage,
     },
@@ -123,11 +126,79 @@ impl Module {
         plugin_name(&self.chain_id)
     }
 
+    fn make_full_event(&self, e: SuiEvent) -> Option<events::IbcEvent> {
+        match e.type_.name.as_str() {
+            "CreateClient" => {
+                let create_client: events::CreateClient =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::CreateClient(create_client))
+            }
+            "UpdateClient" => {
+                let update_client: events::UpdateClient =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::UpdateClient(update_client))
+            }
+            "ConnectionOpenInit" => {
+                let connection_open: events::ConnectionOpenInit =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::ConnectionOpenInit(connection_open))
+            }
+            "ConnectionOpenTry" => {
+                let connection_open: events::ConnectionOpenTry =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::ConnectionOpenTry(connection_open))
+            }
+            "ConnectionOpenAck" => {
+                let connection_open: events::ConnectionOpenAck =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::ConnectionOpenAck(connection_open))
+            }
+            "ConnectionOpenConfirm" => {
+                let connection_open: events::ConnectionOpenConfirm =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::ConnectionOpenConfirm(connection_open))
+            }
+            "ChannelOpenInit" => {
+                let channel_open: events::ChannelOpenInit =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::ChannelOpenInit(channel_open))
+            }
+            "ChannelOpenTry" => {
+                let channel_open: events::ChannelOpenTry =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::ChannelOpenTry(channel_open))
+            }
+            "ChannelOpenAck" => {
+                let channel_open: events::ChannelOpenAck =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::ChannelOpenAck(channel_open))
+            }
+            "ChannelOpenConfirm" => {
+                let channel_open: events::ChannelOpenConfirm =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::ChannelOpenConfirm(channel_open))
+            }
+            "PacketSend" => {
+                let channel_open: events::PacketSend =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::PacketSend(channel_open))
+            }
+            "PacketRecv" => {
+                let packet_recv: events::PacketRecv =
+                    serde_json::from_value(e.parsed_json).unwrap();
+                Some(events::IbcEvent::PacketRecv(packet_recv))
+            }
+            "Initiated" => None,
+            e => panic!("unknown: {e}"),
+        }
+    }
+
     async fn fetch_blocks(
         &self,
         voyager_client: &VoyagerClient,
         height: u64,
     ) -> RpcResult<Op<VoyagerMessage>> {
+        // self.sui_client.read_api().get_transactions_stream(query, cursor, descending_order)
         Ok(conc([
             call(PluginMessage::new(
                 self.plugin_name(),
@@ -389,6 +460,83 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
     #[instrument(skip_all, fields(chain_id = %self.chain_id))]
     async fn call(&self, e: &Extensions, msg: ModuleCall) -> RpcResult<Op<VoyagerMessage>> {
         match msg {
+            ModuleCall::FetchEvents(FetchEvents { cursor }) => {
+                info!("fetching events: cursor: {:?}", cursor);
+
+                let mut events = self
+                    .sui_client
+                    .event_api()
+                    .query_events(
+                        EventFilter::MoveEventModule {
+                            package: self.ibc_handler_address.into(),
+                            module: "ibc".parse().unwrap(),
+                        },
+                        cursor,
+                        Some(1),
+                        false,
+                    )
+                    .await
+                    .unwrap();
+
+                if events.data.is_empty() {
+                    Ok(seq([
+                        call(WaitForHeightRelative {
+                            chain_id: self.chain_id.clone(),
+                            height_diff: 10,
+                            finalized: true,
+                        }),
+                        call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(FetchEvents { cursor }),
+                        )),
+                    ]))
+                } else {
+                    assert!(events.data.len() == 1);
+
+                    let tx_hash = events.data[0].id.tx_digest;
+
+                    let event = self.make_full_event(events.data.pop().unwrap());
+
+                    let height = self
+                        .sui_client
+                        .read_api()
+                        .get_transaction_with_options(
+                            tx_hash,
+                            SuiTransactionBlockResponseOptions::new(),
+                        )
+                        .await
+                        .unwrap()
+                        .checkpoint
+                        .unwrap();
+
+                    // do not do anything if the event is `initiated`
+                    if let Some(event) = event {
+                        Ok(conc([
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(MakeFullEvent {
+                                    event,
+                                    tx_hash: H256::new(tx_hash.into_inner()),
+                                    height,
+                                }),
+                            )),
+                            call(PluginMessage::new(
+                                self.plugin_name(),
+                                ModuleCall::from(FetchEvents {
+                                    cursor: events.next_cursor,
+                                }),
+                            )),
+                        ]))
+                    } else {
+                        Ok(call(PluginMessage::new(
+                            self.plugin_name(),
+                            ModuleCall::from(FetchEvents {
+                                cursor: events.next_cursor,
+                            }),
+                        )))
+                    }
+                }
+            }
             ModuleCall::FetchBlocks(FetchBlocks { height }) => {
                 self.fetch_blocks(e.voyager_client()?, height).await
             }
@@ -437,69 +585,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     })
                     .map(|(e, hash)| {
                         println!("event: {e:?}");
-                        let event = match e.type_.name.as_str() {
-                            "CreateClient" => {
-                                let create_client: events::CreateClient =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::CreateClient(create_client)
-                            }
-                            "UpdateClient" => {
-                                let update_client: events::UpdateClient =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::UpdateClient(update_client)
-                            }
-                            "ConnectionOpenInit" => {
-                                let connection_open: events::ConnectionOpenInit =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::ConnectionOpenInit(connection_open)
-                            }
-                            "ConnectionOpenTry" => {
-                                let connection_open: events::ConnectionOpenTry =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::ConnectionOpenTry(connection_open)
-                            }
-                            "ConnectionOpenAck" => {
-                                let connection_open: events::ConnectionOpenAck =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::ConnectionOpenAck(connection_open)
-                            }
-                            "ConnectionOpenConfirm" => {
-                                let connection_open: events::ConnectionOpenConfirm =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::ConnectionOpenConfirm(connection_open)
-                            }
-                            "ChannelOpenInit" => {
-                                let channel_open: events::ChannelOpenInit =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::ChannelOpenInit(channel_open)
-                            }
-                            "ChannelOpenTry" => {
-                                let channel_open: events::ChannelOpenTry =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::ChannelOpenTry(channel_open)
-                            }
-                            "ChannelOpenAck" => {
-                                let channel_open: events::ChannelOpenAck =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::ChannelOpenAck(channel_open)
-                            }
-                            "ChannelOpenConfirm" => {
-                                let channel_open: events::ChannelOpenConfirm =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::ChannelOpenConfirm(channel_open)
-                            }
-                            "PacketSend" => {
-                                let channel_open: events::PacketSend =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::PacketSend(channel_open)
-                            }
-                            "PacketRecv" => {
-                                let packet_recv: events::PacketRecv =
-                                    serde_json::from_value(e.parsed_json).unwrap();
-                                events::IbcEvent::PacketRecv(packet_recv)
-                            }
-                            e => panic!("unknown: {e}"),
-                        };
+                        let event = self.make_full_event(e).unwrap();
 
                         info!("found event: {event:?}");
                         call(PluginMessage::new(

@@ -1,5 +1,6 @@
 use enumorph::Enumorph;
 use macros::model;
+use sui_sdk::types::event::EventID;
 use unionlabs::primitives::H256;
 
 #[model]
@@ -8,7 +9,13 @@ use unionlabs::primitives::H256;
 pub enum ModuleCall {
     FetchTransactions(FetchTransactions),
     FetchBlocks(FetchBlocks),
+    FetchEvents(FetchEvents),
     MakeFullEvent(MakeFullEvent),
+}
+
+#[model]
+pub struct FetchEvents {
+    pub cursor: Option<EventID>,
 }
 
 #[model]
