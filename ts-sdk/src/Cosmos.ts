@@ -3,14 +3,16 @@
  *
  * @since 2.0.0
  */
-import { CosmWasmClient, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
+import { CosmWasmClient, ExecuteResult, SigningCosmWasmClient } from "@cosmjs/cosmwasm-stargate"
 import { FetchHttpClient } from "@effect/platform"
 import { HttpClient, HttpClientRequest } from "@effect/platform"
-import { Context, Data, Effect, Layer, pipe } from "effect"
+import { Context, Data, Effect, flow, Layer, pipe } from "effect"
 import { encodeAbiParameters, type Hex } from "viem"
 import * as Ucs03 from "./Ucs03.js"
 import * as Utils from "./Utils.js"
 
+import { NonEmptyReadonlyArray } from "effect/Array"
+import { dual } from "effect/Function"
 import { AddressCosmosDisplay } from "./schema/address.js"
 import { extractErrorDetails } from "./utils/extract-error-details.js"
 
@@ -33,7 +35,6 @@ export namespace Cosmos {
    */
   export interface SigningClient {
     client: SigningCosmWasmClient
-    address: string // TODO: use brand
   }
 
   /**
@@ -64,7 +65,7 @@ const clientLayer = <
     ),
   )
 
-export const signingClientLayer = <
+const signingClientLayer = <
   Id,
 >(tag: Context.Tag<Id, Cosmos.SigningClient>) =>
 (
@@ -77,10 +78,13 @@ export const signingClientLayer = <
         try: () => SigningCosmWasmClient.connectWithSigner(...options),
         catch: error => new ClientError({ cause: extractErrorDetails(error as Error) }),
       }),
-      Effect.map((client) => ({
-        client,
-        address: "mock_address",
-      })),
+      Effect.tap((client) =>
+        Effect.gen(function*() {
+          const accounts = yield* Effect.tryPromise(() => client.getAccount("bbn1"))
+          yield* Effect.log({ SigningClientAccounts: accounts })
+        })
+      ),
+      Effect.map((client) => ({ client })),
       Effect.timeout("10 seconds"),
       Effect.retry({ times: 5 }),
       Effect.mapError((e) => new ClientError({ cause: e as any })),
@@ -94,7 +98,12 @@ export const signingClientLayer = <
 export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Cosmos/ChannelDestination")<
   ChannelDestination,
   Cosmos.Channel
->() {}
+>() {
+  static Live = flow(
+    ChannelDestination.of,
+    Layer.succeed(this),
+  )
+}
 
 /**
  * @category context
@@ -103,7 +112,12 @@ export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Cosmos/Chann
 export class ChannelSource extends Context.Tag("@unionlabs/sdk/Cosmos/ChannelSource")<
   ChannelSource,
   Cosmos.Channel
->() {}
+>() {
+  static Live = flow(
+    ChannelSource.of,
+    Layer.succeed(this),
+  )
+}
 
 /**
  * Context for providing a CosmWasmClient for the source chain
@@ -138,8 +152,8 @@ export class ClientDestination extends Context.Tag("@unionlabs/sdk/Cosmos/Client
  * @category context
  * @since 2.0.0
  */
-export class ClientContext extends Context.Tag("@unionlabs/sdk/Cosmos/ClientContext")<
-  ClientContext,
+export class Client extends Context.Tag("@unionlabs/sdk/Cosmos/Client")<
+  Client,
   Cosmos.PublicClient
 >() {
   static Live = clientLayer(this)
@@ -151,8 +165,8 @@ export class ClientContext extends Context.Tag("@unionlabs/sdk/Cosmos/ClientCont
  * @category context
  * @since 2.0.0
  */
-export class SigningClientContext extends Context.Tag("@unionlabs/sdk/Cosmos/SigningClientContext")<
-  SigningClientContext,
+export class SigningClient extends Context.Tag("@unionlabs/sdk/Cosmos/SigningClient")<
+  SigningClient,
   Cosmos.SigningClient
 >() {
   static Live = signingClientLayer(this)
@@ -251,7 +265,6 @@ export const queryContract = <T = unknown>(
  * A type-safe wrapper around CosmWasm's executeContract that handles error cases
  * and returns an Effect with proper type inference.
  *
- * @param client - The SigningCosmWasmClient to use for the contract execution
  * @param senderAddress - The address of the sender executing the contract
  * @param contractAddress - The address of the contract to execute
  * @param msg - The execute message to send to the contract
@@ -267,7 +280,7 @@ export const executeContract = (
   msg: Record<string, unknown>,
   funds?: ReadonlyArray<{ denom: string; amount: string }>,
 ) =>
-  Effect.andThen(SigningClientContext, ({ client }) =>
+  Effect.andThen(SigningClient, ({ client }) =>
     pipe(
       Effect.tryPromise({
         try: () => client.execute(senderAddress, contractAddress, msg, "auto", undefined, funds),
@@ -457,7 +470,7 @@ export interface Cw20AllowanceResponse {
  */
 export const readCw20TokenInfo = (contractAddress: string) =>
   Effect.gen(function*() {
-    const client = (yield* ClientContext).client
+    const client = (yield* Client).client
 
     return yield* queryContract<Cw20TokenInfo>(client, contractAddress, { token_info: {} })
   })
@@ -472,7 +485,7 @@ export const readCw20TokenInfo = (contractAddress: string) =>
  */
 export const readCw20TotalSupply = (contractAddress: string) =>
   Effect.gen(function*() {
-    const client = (yield* ClientContext).client
+    const client = (yield* Client).client
     const token_info = yield* queryContract<Cw20TokenInfo>(client, contractAddress, {
       token_info: {},
     })
@@ -551,7 +564,7 @@ export const readCw20TotalSupplyAtHeight = (
  */
 export const readCw20Balance = (contractAddress: string, address: string) =>
   Effect.gen(function*() {
-    const client = (yield* ClientContext).client
+    const client = (yield* Client).client
 
     const response = yield* queryContract<Cw20BalanceResponse>(client, contractAddress, {
       balance: {
@@ -578,7 +591,7 @@ export const readCw20Allowance = (
   spender: AddressCosmosDisplay,
 ) =>
   Effect.gen(function*() {
-    const client = (yield* ClientContext).client
+    const client = (yield* Client).client
 
     const response = yield* queryContract<Cw20AllowanceResponse>(client, contract, {
       allowance: {
@@ -626,10 +639,10 @@ export const writeCw20IncreaseAllowance = (
  */
 export const isDenomNative = (denom: string) =>
   Effect.gen(function*() {
-    const client = (yield* ClientContext).client
+    const client = (yield* Client).client
 
     return yield* readCw20TokenInfo(denom).pipe(
-      Effect.provideService(ClientContext, { client }),
+      Effect.provideService(Client, { client }),
       Effect.map(() => false),
       Effect.catchAllCause(() => Effect.succeed(true)),
     )
@@ -698,33 +711,52 @@ export const predictQuoteToken = (baseToken: string) =>
  * @category utils
  * @since 2.0.0
  */
-export const sendInstruction = (
-  instruction: Ucs03.Instruction,
-  address: string,
-  funds?: ReadonlyArray<{ denom: string; amount: string }>,
-) =>
-  Effect.gen(function*() {
-    const sourceConfig = yield* ChannelSource
+export const sendInstruction: {
+  (
+    instruction: Ucs03.Instruction,
+    address: string,
+    funds?: NonEmptyReadonlyArray<{ denom: string; amount: string }>,
+  ): Effect.Effect<ExecuteResult, ExecuteContractError | Utils.CryptoError, SigningClient>
+  (
+    address: string,
+    funds?: NonEmptyReadonlyArray<{ denom: string; amount: string }>,
+  ): (
+    instruction: Ucs03.Instruction,
+  ) => Effect.Effect<ExecuteResult, ExecuteContractError | Utils.CryptoError, SigningClient>
+} = dual(
+  2,
+  (
+    instruction: Ucs03.Instruction,
+    address: string,
+    funds?: ReadonlyArray<{ denom: string; amount: string }>,
+  ): Effect.Effect<
+    ExecuteResult,
+    ExecuteContractError | Utils.CryptoError,
+    SigningClient | ChannelSource
+  > =>
+    Effect.gen(function*() {
+      const sourceConfig = yield* ChannelSource
 
-    const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
-    const salt = yield* Utils.generateSalt("cosmos")
+      const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
+      const salt = yield* Utils.generateSalt("cosmos")
 
-    return yield* executeContract(
-      address,
-      sourceConfig.ucs03address,
-      {
-        send: {
-          channel_id: sourceConfig.channelId,
-          timeout_height: "0",
-          timeout_timestamp,
-          salt,
-          instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
-            instruction.version,
-            instruction.opcode,
-            Ucs03.encode(instruction),
-          ]),
+      return yield* executeContract(
+        address,
+        sourceConfig.ucs03address,
+        {
+          send: {
+            channel_id: sourceConfig.channelId,
+            timeout_height: "0",
+            timeout_timestamp,
+            salt,
+            instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
+              instruction.version,
+              instruction.opcode,
+              Ucs03.encode(instruction),
+            ]),
+          },
         },
-      },
-      funds,
-    )
-  })
+        funds,
+      )
+    }),
+)

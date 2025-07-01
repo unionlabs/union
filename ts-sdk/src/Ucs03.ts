@@ -909,7 +909,9 @@ export class Forward extends S.TaggedClass<Forward>()("Forward", {
     }),
     S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema),
   ),
-}) {}
+}) {
+  static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
+}
 
 /**
  * @category models
@@ -931,7 +933,9 @@ export class Multiplex extends S.TaggedClass<Multiplex>()("Multiplex", {
     }),
   ),
   operand: MultiplexOperand,
-}) {}
+}) {
+  static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
+}
 
 /**
  * @category models
@@ -953,7 +957,9 @@ export class Batch extends S.TaggedClass<Batch>()("Batch", {
     }),
   ),
   operand: S.NonEmptyArray(S.suspend((): S.Schema<Schema, SchemaEncoded> => Schema)),
-}) {}
+}) {
+  static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
+}
 
 /**
  * @category models
@@ -975,7 +981,9 @@ export class FungibleAssetOrder extends S.TaggedClass<FungibleAssetOrder>()("Fun
     }),
   ),
   operand: FungibleAssetOrderOperand,
-}) {}
+}) {
+  static fromOperand = (operand: typeof this.Type.operand) => this.make({ operand })
+}
 
 /**
  * @category models
