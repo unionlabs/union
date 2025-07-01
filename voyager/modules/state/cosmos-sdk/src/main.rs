@@ -19,7 +19,7 @@ use jsonrpsee::{
 };
 use serde::{Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{error, instrument, warn};
+use tracing::{error, instrument};
 use unionlabs::{
     encoding::{DecodeAs, Proto},
     ibc::core::{
@@ -35,7 +35,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface},
-    rpc::{types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{rpc_error, types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
 
 const IBC_STORE_PATH: &str = "store/ibc/key";
@@ -493,19 +493,6 @@ impl StateModuleServer<IbcClassic> for Module {
                 self.query_next_client_sequence(at).await.map(into_value)
             }
         }
-    }
-}
-
-// NOTE: For both of the below functions, `message` as a field will override any actual message put in (i.e. `error!("foo", message = "bar")` will print as "bar", not "foo" with an extra field `message = "bar"`.
-
-fn rpc_error<E: Error>(
-    message: impl Display,
-    data: Option<Value>,
-) -> impl FnOnce(E) -> ErrorObjectOwned {
-    move |e| {
-        let message = format!("{message}: {}", ErrorReporter(e));
-        warn!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
-        ErrorObject::owned(-1, message, data)
     }
 }
 

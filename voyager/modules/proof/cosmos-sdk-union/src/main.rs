@@ -1,10 +1,6 @@
 #![warn(clippy::unwrap_used)]
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display},
-    num::ParseIntError,
-};
+use std::num::ParseIntError;
 
 use ibc_union_spec::{
     path::{StorePath, IBC_UNION_COSMWASM_COMMITMENT_PREFIX},
@@ -12,7 +8,7 @@ use ibc_union_spec::{
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
+    types::ErrorObject,
     Extensions,
 };
 use serde::{Deserialize, Serialize};
@@ -29,7 +25,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::ProofModule,
     primitives::ChainId,
-    rpc::{types::ProofModuleInfo, ProofModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{rpc_error, types::ProofModuleInfo, ProofModuleServer, FATAL_JSONRPC_ERROR_CODE},
     types::ProofType,
 };
 
@@ -189,18 +185,5 @@ impl ProofModuleServer<IbcUnion> for Module {
         };
 
         Ok(Some((into_value(proof), proof_type)))
-    }
-}
-
-// NOTE: For both of the below functions, `message` as a field will override any actual message put in (i.e. `error!("foo", message = "bar")` will print as "bar", not "foo" with an extra field `message = "bar"`.
-
-fn rpc_error<E: Error>(
-    message: impl Display,
-    data: Option<Value>,
-) -> impl FnOnce(E) -> ErrorObjectOwned {
-    move |e| {
-        let message = format!("{message}: {}", ErrorReporter(e));
-        warn!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
-        ErrorObject::owned(-1, message, data)
     }
 }

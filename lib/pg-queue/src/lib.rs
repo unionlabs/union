@@ -253,7 +253,9 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
                 created_at timestamptz NOT NULL DEFAULT now()
               );
 
-            CREATE TABLE IF NOT EXISTS
+            -- done is unlogged, since we only need "mostly available" data for retroactive debugging etc
+            -- unlogged is much faster for truncate/vacuum/drop
+            CREATE UNLOGGED TABLE IF NOT EXISTS
               done (
                 id BIGINT,
                 item JSONB NOT NULL,
@@ -539,7 +541,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
             .await
             .map_err(Either::Right)?;
         self.metrics.optimize_processing_duration.record(
-            now.duration_since(Instant::now()).as_secs_f64(),
+            Instant::now().duration_since(now).as_secs_f64(),
             &[KeyValue::new("tag".to_owned(), tag.to_owned())],
         );
 

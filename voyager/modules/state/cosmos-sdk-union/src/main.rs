@@ -1,10 +1,6 @@
 // #![warn(clippy::unwrap_used)]
 
-use std::{
-    error::Error,
-    fmt::{Debug, Display},
-    num::{NonZeroU32, NonZeroU8, ParseIntError},
-};
+use std::num::{NonZeroU32, NonZeroU8, ParseIntError};
 
 use cometbft_rpc::rpc_types::Order;
 use cosmos_sdk_event::CosmosSdkEvent;
@@ -16,13 +12,13 @@ use ibc_union_spec::{
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
-    types::{ErrorObject, ErrorObjectOwned},
+    types::ErrorObject,
     Extensions,
 };
 use protos::cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::{json, Value};
-use tracing::{error, instrument, trace, warn};
+use tracing::{error, instrument, trace};
 use unionlabs::{
     ibc::core::client::height::Height,
     option_unwrap,
@@ -33,7 +29,7 @@ use voyager_sdk::{
     anyhow, into_value,
     plugin::StateModule,
     primitives::{ChainId, ClientInfo, ClientType, IbcInterface, IbcSpec},
-    rpc::{types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
+    rpc::{rpc_error, types::StateModuleInfo, StateModuleServer, FATAL_JSONRPC_ERROR_CODE},
 };
 
 #[tokio::main(flavor = "multi_thread")]
@@ -508,19 +504,6 @@ impl StateModuleServer<IbcUnion> for Module {
                 .await
                 .map(into_value),
         }
-    }
-}
-
-// NOTE: For both of the below functions, `message` as a field will override any actual message put in (i.e. `error!("foo", message = "bar")` will print as "bar", not "foo" with an extra field `message = "bar"`.
-
-fn rpc_error<E: Error>(
-    message: impl Display,
-    data: Option<Value>,
-) -> impl FnOnce(E) -> ErrorObjectOwned {
-    move |e| {
-        let message = format!("{message}: {}", ErrorReporter(e));
-        warn!(%message, data = %data.as_ref().unwrap_or(&serde_json::Value::Null));
-        ErrorObject::owned(-1, message, data)
     }
 }
 
