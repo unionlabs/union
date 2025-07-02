@@ -75,7 +75,7 @@ const currentData = $derived.by(() => {
           case "incoming":
             return b.incomingCount - a.incomingCount
           case "netflow":
-            return b.netFlow - a.netFlow
+            return calculateNetFlow(b) - calculateNetFlow(a)
           case "total":
           default:
             return (b.outgoingCount + b.incomingCount) - (a.outgoingCount + a.incomingCount)
@@ -153,7 +153,7 @@ function getDisplayValue(chain: ChainData): number {
     case "incoming":
       return chain.incomingCount
     case "netflow":
-      return chain.netFlow
+      return calculateNetFlow(chain)
     case "total":
     default:
       return chain.outgoingCount + chain.incomingCount
@@ -263,6 +263,16 @@ function getPercentageOfTotal(chain: ChainData): number {
   }
 
   return Math.round((displayValue / total) * 100)
+}
+
+// Calculate correct net flow: incoming - outgoing (proper accounting)
+function calculateNetFlow(chain: ChainData): number {
+  return chain.incomingCount - chain.outgoingCount
+}
+
+// Calculate correct net flow for assets: incoming - outgoing (proper accounting)
+function calculateAssetNetFlow(asset: ChainAsset): number {
+  return asset.incomingCount - asset.outgoingCount
 }
 
 // Debug logging in development
@@ -382,9 +392,9 @@ $effect(() => {
                   <Skeleton class="w-10 h-2" />
                 </div>
                 <div class="flex items-center space-x-1.5 text-xs mb-0.5">
-                  <span class="text-zinc-600">out:</span>
-                  <Skeleton class="w-6 h-2" />
                   <span class="text-zinc-600">in:</span>
+                  <Skeleton class="w-6 h-2" />
+                  <span class="text-zinc-600">out:</span>
                   <Skeleton class="w-6 h-2" />
                   <span class="text-zinc-600">net:</span>
                   <Skeleton class="w-6 h-2" />
@@ -468,19 +478,21 @@ $effect(() => {
 
                   <!-- Flow Details -->
                   <div class="flex items-center space-x-1.5 text-xs mb-0.5">
-                    <span class="text-zinc-600">out:</span>
-                    <span class="text-zinc-400 tabular-nums">{
-                      formatCount(chain.outgoingCount)
-                    }</span>
                     <span class="text-zinc-600">in:</span>
                     <span class="text-zinc-400 tabular-nums">{
                       formatCount(chain.incomingCount)
                     }</span>
+                    <span class="text-zinc-600">out:</span>
+                    <span class="text-zinc-400 tabular-nums">{
+                      formatCount(chain.outgoingCount)
+                    }</span>
                     <span class="text-zinc-600">net:</span>
                     <span
-                      class="tabular-nums {chain.netFlow >= 0 ? 'text-green-400' : 'text-red-400'}"
+                      class="tabular-nums {calculateNetFlow(chain) >= 0 ? 'text-green-400' : 'text-red-400'}"
                     >
-                      {chain.netFlow >= 0 ? "+" : ""}{formatCount(chain.netFlow)}
+                      {calculateNetFlow(chain) >= 0 ? "+" : ""}{
+                        formatCount(calculateNetFlow(chain))
+                      }
                     </span>
                     {#if chain.topAssets && chain.topAssets.length > 0}
                       <span class="text-zinc-600">{chain.topAssets.length}</span>
@@ -576,15 +588,17 @@ $effect(() => {
 
                           <!-- Asset Flow Details -->
                           <div class="flex items-center space-x-1.5 text-xs mb-0.5">
-                            <span class="text-zinc-600">out:</span>
-                            <span class="text-zinc-400">{formatCount(asset.outgoingCount)}</span>
                             <span class="text-zinc-600">in:</span>
                             <span class="text-zinc-400">{formatCount(asset.incomingCount)}</span>
+                            <span class="text-zinc-600">out:</span>
+                            <span class="text-zinc-400">{formatCount(asset.outgoingCount)}</span>
                             <span class="text-zinc-600">net:</span>
                             <span
-                              class="text-zinc-400 {asset.netFlow >= 0 ? 'text-green-400' : 'text-red-400'}"
+                              class="text-zinc-400 {calculateAssetNetFlow(asset) >= 0 ? 'text-green-400' : 'text-red-400'}"
                             >
-                              {asset.netFlow >= 0 ? "+" : ""}{formatCount(asset.netFlow)}
+                              {calculateAssetNetFlow(asset) >= 0 ? "+" : ""}{
+                                formatCount(calculateAssetNetFlow(asset))
+                              }
                             </span>
                             <span class="text-zinc-600">avg:</span>
                             <span class="text-zinc-400">{formatNumber(asset.averageAmount)}</span>

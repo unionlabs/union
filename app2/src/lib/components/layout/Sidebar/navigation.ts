@@ -72,8 +72,8 @@ export const navigation: Array<NavSection> = [
             title: "Find Packet",
           },
           {
-            path: "/explorer/visual",
-            title: "Visualizer",
+            path: "/explorer/orbital",
+            title: "Orbital",
           },
           // {
           //   path: "/explorer/connections",
