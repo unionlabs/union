@@ -217,10 +217,14 @@ export const cosmosToEvm = (intent: CosmosToEvmIntent) =>
       sourceChannelId: intent.sourceChannelId,
     })
 
+    yield* Effect.logTrace("graphqlDenom", JSON.stringify(graphqlDenom, null, 2))
+
     const finalQuoteToken = yield* O.match(graphqlDenom, {
       onSome: Effect.succeed,
-      onNone: () => Evm.predictQuoteToken(toHex(intent.baseToken)),
+      onNone: () => Evm.predictQuoteToken(Utils.ensureHex(intent.baseToken)),
     })
+
+    yield* Effect.logTrace("final quote token", JSON.stringify(finalQuoteToken, null, 2))
 
     // path is source channel when unwrapping, else 0
     const path = O.match(graphqlDenom, {
