@@ -12,7 +12,6 @@ import * as Ucs03 from "./Ucs03.js"
 import * as Utils from "./Utils.js"
 
 import { NonEmptyReadonlyArray } from "effect/Array"
-import { dual } from "effect/Function"
 import { AddressCosmosDisplay } from "./schema/address.js"
 import { extractErrorDetails } from "./utils/extract-error-details.js"
 
@@ -61,7 +60,7 @@ const clientLayer = <
       Effect.map((client) => ({ client })),
       Effect.timeout("10 seconds"),
       Effect.retry({ times: 5 }),
-      Effect.mapError((e) => new ClientError({ cause: e as any })),
+      Effect.mapError((e) => new ClientError({ cause: e as Error })),
     ),
   )
 
@@ -78,16 +77,10 @@ const signingClientLayer = <
         try: () => SigningCosmWasmClient.connectWithSigner(...options),
         catch: error => new ClientError({ cause: extractErrorDetails(error as Error) }),
       }),
-      Effect.tap((client) =>
-        Effect.gen(function*() {
-          const accounts = yield* Effect.tryPromise(() => client.getAccount("bbn1"))
-          yield* Effect.log({ SigningClientAccounts: accounts })
-        })
-      ),
       Effect.map((client) => ({ client })),
       Effect.timeout("10 seconds"),
       Effect.retry({ times: 5 }),
-      Effect.mapError((e) => new ClientError({ cause: e as any })),
+      Effect.mapError((e) => new ClientError({ cause: e as Error })),
     ),
   )
 
@@ -283,7 +276,15 @@ export const executeContract = (
   Effect.andThen(SigningClient, ({ client }) =>
     pipe(
       Effect.tryPromise({
-        try: () => client.execute(senderAddress, contractAddress, msg, "auto", undefined, funds),
+        try: () =>
+          client.execute(
+            senderAddress,
+            contractAddress,
+            msg,
+            "auto",
+            undefined,
+            funds,
+          ),
         catch: error =>
           new ExecuteContractError({
             cause: extractErrorDetails(error as Error),
@@ -711,52 +712,36 @@ export const predictQuoteToken = (baseToken: string) =>
  * @category utils
  * @since 2.0.0
  */
-export const sendInstruction: {
-  (
-    instruction: Ucs03.Instruction,
-    address: string,
-    funds?: NonEmptyReadonlyArray<{ denom: string; amount: string }>,
-  ): Effect.Effect<ExecuteResult, ExecuteContractError | Utils.CryptoError, SigningClient>
-  (
-    address: string,
-    funds?: NonEmptyReadonlyArray<{ denom: string; amount: string }>,
-  ): (
-    instruction: Ucs03.Instruction,
-  ) => Effect.Effect<ExecuteResult, ExecuteContractError | Utils.CryptoError, SigningClient>
-} = dual(
-  2,
-  (
-    instruction: Ucs03.Instruction,
-    address: string,
-    funds?: ReadonlyArray<{ denom: string; amount: string }>,
-  ): Effect.Effect<
-    ExecuteResult,
-    ExecuteContractError | Utils.CryptoError,
-    SigningClient | ChannelSource
-  > =>
-    Effect.gen(function*() {
-      const sourceConfig = yield* ChannelSource
+export const sendInstruction = (
+  instruction: Ucs03.Instruction,
+  address: string,
+  funds?: NonEmptyReadonlyArray<{ denom: string; amount: string }>,
+): Effect.Effect<
+  ExecuteResult,
+  ExecuteContractError | Utils.CryptoError,
+  SigningClient | ChannelSource
+> =>
+  Effect.gen(function*() {
+    const sourceConfig = yield* ChannelSource
+    const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
+    const salt = yield* Utils.generateSalt("cosmos")
 
-      const timeout_timestamp = Utils.getTimeoutInNanoseconds24HoursFromNow().toString()
-      const salt = yield* Utils.generateSalt("cosmos")
-
-      return yield* executeContract(
-        address,
-        sourceConfig.ucs03address,
-        {
-          send: {
-            channel_id: sourceConfig.channelId,
-            timeout_height: "0",
-            timeout_timestamp,
-            salt,
-            instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
-              instruction.version,
-              instruction.opcode,
-              Ucs03.encode(instruction),
-            ]),
-          },
+    return yield* executeContract(
+      address,
+      sourceConfig.ucs03address,
+      {
+        send: {
+          channel_id: sourceConfig.channelId,
+          timeout_height: "0",
+          timeout_timestamp,
+          salt,
+          instruction: encodeAbiParameters(Ucs03.InstructionAbi(), [
+            instruction.version,
+            instruction.opcode,
+            Ucs03.encode(instruction),
+          ]),
         },
-        funds,
-      )
-    }),
-)
+      },
+      funds,
+    )
+  })
