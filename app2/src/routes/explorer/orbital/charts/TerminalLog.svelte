@@ -87,8 +87,6 @@ const getChainDisplayName = (universalChainId: string): string => {
   return displayName
 }
 
-
-
 // Canvas functions
 function setupCanvasContext() {
   if (!ctx) {
