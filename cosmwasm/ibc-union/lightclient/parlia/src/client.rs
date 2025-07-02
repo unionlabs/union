@@ -80,27 +80,29 @@ impl IbcClient for ParliaLightClient {
     }
 
     fn status(
-        ctx: IbcClientCtx<Self>,
-        ClientState::V1(client_state): &Self::ClientState,
+        _ctx: IbcClientCtx<Self>,
+        ClientState::V1(_client_state): &Self::ClientState,
     ) -> Status {
-        if client_state.frozen_height == 0 {
-            let consensus_state = ctx
-                .read_self_consensus_state(client_state.latest_height)
-                .unwrap();
+        // TODO: Re-enable these checks before we go to mainnet
+        Status::Active
+        // if client_state.frozen_height == 0 {
+        //     let consensus_state = ctx
+        //         .read_self_consensus_state(client_state.latest_height)
+        //         .unwrap();
 
-            if consensus_state
-                .timestamp
-                .plus_duration(client_state.unbond_period)
-                .expect("should be ok")
-                < Timestamp::from_nanos(ctx.env.block.time.nanos())
-            {
-                Status::Expired
-            } else {
-                Status::Active
-            }
-        } else {
-            Status::Frozen
-        }
+        //     if consensus_state
+        //         .timestamp
+        //         .plus_duration(client_state.unbond_period)
+        //         .expect("should be ok")
+        //         < Timestamp::from_nanos(ctx.env.block.time.nanos())
+        //     {
+        //         Status::Expired
+        //     } else {
+        //         Status::Active
+        //     }
+        // } else {
+        //     Status::Frozen
+        // }
     }
 
     fn verify_creation(

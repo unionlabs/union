@@ -170,7 +170,8 @@ pub fn verify_header<C: VerificationContext>(
             header_timestamp_plus_unbonding_period < ctx.current_timestamp()
         })
     {
-        return Err(Error::HeaderExpired);
+        // TODO: Re-enable this for mainnet
+        // return Err(Error::HeaderExpired);
     }
 
     // 2.

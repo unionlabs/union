@@ -668,6 +668,12 @@
         "commit": "dd96526681f00b0c5df52f5db74db04043f0e64b",
         "code_id": 102
       },
+      "parlia": {
+        "address": "union132rvexpxlvwqhdepjxz5ct9kzg3xtuzcfzad978pjv079mtzgyzqczckj6",
+        "height": 1594712,
+        "commit": "407710dd0fda19c0c37c17e7f146fb8e4df78f6e",
+        "code_id": 122
+      },
       "state-lens/ics23/mpt": {
         "address": "union1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufs4hj904",
         "height": 354902,

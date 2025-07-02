@@ -26,6 +26,7 @@ pub enum Cmd {
     Ethermint(LightClientCodecCmdArgs),
     Linea(LightClientCodecCmdArgs),
     Movement(LightClientCodecCmdArgs),
+    Parlia(LightClientCodecCmdArgs),
     Scroll(LightClientCodecCmdArgs),
     #[command(visible_alias = "ics23ics23")]
     StateLensIcs23Ics23(LightClientCodecCmdArgs),
@@ -245,6 +246,9 @@ impl Cmd {
             }
             Cmd::Movement(c) => {
                 convert!(movement_light_client_types, c)
+            }
+            Cmd::Parlia(c) => {
+                convert!(parlia_light_client_types, c)
             }
             Cmd::Scroll(c) => {
                 convert!(scroll_light_client_types, c)
