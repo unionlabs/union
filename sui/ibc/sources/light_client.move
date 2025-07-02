@@ -59,33 +59,18 @@
 // TITLE.
 
 module ibc::light_client {
-    use std::option::{Self, Option};
+    use std::option::Option;
     use std::string::{Self, String};
+
     use sui::table::{Self, Table};
-    use sui::clock;
-    use sui::object::{Self, UID};
-    use sui::bcs::{Self, BCS};
+    use sui::clock::Clock;
     use sui::object_bag::{Self, ObjectBag};
-    use ibc::ethabi;
-    use ibc::height::{Self, Height};
+
+    use ibc::height::Height;
     use ibc::create_lens_client_event::CreateLensClientEvent;
-    use ibc::ics23;
-    use ibc::groth16_verifier::{Self, ZKP};
     use ibc::cometbls_light_client;
 
-    const E_INVALID_CLIENT_STATE: u64 = 35100;
-    const E_CONSENSUS_STATE_TIMESTAMP_ZERO: u64 = 35101;
-    const E_SIGNED_HEADER_HEIGHT_NOT_MORE_RECENT: u64 = 35102;
-    const E_SIGNED_HEADER_TIMESTAMP_NOT_MORE_RECENT: u64 = 35103;
-    const E_HEADER_EXCEEDED_TRUSTING_PERIOD: u64 = 35104;
-    const E_HEADER_EXCEEDED_MAX_CLOCK_DRIFT: u64 = 35105;
-    const E_VALIDATORS_HASH_MISMATCH: u64 = 35106;
-    const E_INVALID_ZKP: u64 = 35107;
-    const E_FROZEN_CLIENT: u64 = 35108;
-    const E_INVALID_MISBEHAVIOUR: u64 = 35109;
-    const E_UNIMPLEMENTED: u64 = 35199;
-
-    const E_HEIGHT_NOT_FOUND_ON_CONSENSUS_STATE: u64 = 0x99999;    
+    const E_CLIENT_TYPE_NOT_SUPPORTED: u64 = 1;
 
     public struct LightClientManager has store {
         clients: ObjectBag,
@@ -119,7 +104,7 @@ module ibc::light_client {
             store.clients.add(client_id, client);
             (csb, consb, c_cid, l_event)
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         };
 
         store.client_id_to_type.add(client_id, client_type);
@@ -135,38 +120,36 @@ module ibc::light_client {
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).status()
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
     }
 
-    public(package) fun check_for_misbehaviour(header: vector<u8>): bool {
-        false
-    }
-
-    public(package) fun report_misbehaviour(
+    public(package) fun misbehaviour(
         store: &mut LightClientManager,
         client_id: u32,
-        misbehaviour: vector<u8>
+        misbehaviour: vector<u8>,
+        relayer: address
     ) {
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
-            store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).report_misbehaviour(misbehaviour);
+            store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).misbehaviour(misbehaviour, relayer);
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
     }
 
-    public(package) fun get_timestamp_at_height(store: &LightClientManager, height: u64): u64  {
+    public(package) fun get_timestamp_at_height(store: &LightClientManager, client_id: u32, height: u64): u64  {
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_timestamp_at_height(height)
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
     }
 
     public(package) fun verify_non_membership(
         store: &LightClientManager,
+        client_id: u32,
         height: u64,
         proof: vector<u8>,
         path: vector<u8>
@@ -175,31 +158,35 @@ module ibc::light_client {
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).verify_non_membership(height, proof, path)
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
     }
 
-
-    // public(package) fun verify_header(
-    //     clock: &clock::Clock, header: &Header, consensus_state: &ConsensusState
-    // ) {
-    // }
-
-
     public(package) fun update_client(
-        store: &mut LightClientManager, client_id: u32, clock: &clock::Clock, client_msg: vector<u8>
+        store: &mut LightClientManager,
+        client_id: u32,
+        clock: &Clock,
+        client_msg: vector<u8>,
+        relayer: address,
     ): (vector<u8>, vector<u8>, u64) {
         let client_type = store.client_id_to_type.borrow(client_id);
         if (client_type.bytes() == b"cometbls") {
-            store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).update_client(clock, client_msg)
+            store.clients.borrow_mut<u32, cometbls_light_client::Client>(client_id).update_client(clock, client_msg, relayer)
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
     }
 
     public(package) fun latest_height(
+        store: &LightClientManager,
+        client_id: u32
     ): u64 {
-        0
+        let client_type = store.client_id_to_type.borrow(client_id);
+        if (client_type.bytes() == b"cometbls") {
+            store.clients.borrow<u32, cometbls_light_client::Client>(client_id).latest_height()
+        } else {
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
+        }
     }
 
     public(package) fun verify_membership(
@@ -214,7 +201,7 @@ module ibc::light_client {
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).verify_membership(height, proof, key, value)
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
     }
 
@@ -226,7 +213,7 @@ module ibc::light_client {
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_client_state()
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
     }
 
@@ -239,7 +226,7 @@ module ibc::light_client {
         if (client_type.bytes() == b"cometbls") {
             store.clients.borrow<u32, cometbls_light_client::Client>(client_id).get_consensus_state(height)
         } else {
-            abort 1
+            abort E_CLIENT_TYPE_NOT_SUPPORTED
         }
     }
 }

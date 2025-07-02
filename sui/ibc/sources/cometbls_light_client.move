@@ -168,8 +168,8 @@ module ibc::cometbls_light_client {
         false
     }
 
-    public(package) fun report_misbehaviour(
-        client: &Client, misbehaviour: vector<u8>
+    public(package) fun misbehaviour(
+        client: &Client, misbehaviour: vector<u8>, relayer: address
     ) {
 
     }
@@ -303,7 +303,7 @@ module ibc::cometbls_light_client {
 
 
     public(package) fun update_client(
-        client: &mut Client, clock: &clock::Clock, client_msg: vector<u8>
+        client: &mut Client, clock: &clock::Clock, client_msg: vector<u8>, _relayer: address
     ): (vector<u8>, vector<u8>, u64) {
         // TODO(aeryz): handle consensus state exist case
         let header = decode_header(client_msg);
