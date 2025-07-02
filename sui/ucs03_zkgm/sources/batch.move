@@ -74,75 +74,36 @@ module zkgm::batch {
         batch.instructions
     }
 
-    public fun encode(pack: &Batch): vector<u8> {
-        let mut buf = vector::empty<u8>();
-
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
-        let ack_arr_len = vector::length(&pack.instructions);
-        zkgm_ethabi::encode_uint<u64>(&mut buf, ack_arr_len);
-
-        if (ack_arr_len < 2) {
-            if (ack_arr_len == 1) {
-                zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
-                let instructions_encoded =
-                    instruction::encode(vector::borrow(&pack.instructions, 0));
-                vector::append(&mut buf, instructions_encoded);
-
-                return buf
-            };
-            return buf
-        };
-
-        let initial_stage = 0x20 * (ack_arr_len as u32);
-        let mut idx = 1;
-        let mut prev_val = initial_stage;
-        zkgm_ethabi::encode_uint<u32>(&mut buf, 0x20 * (ack_arr_len as u32));
-        while (idx < ack_arr_len) {
-            let curr_instruction = vector::borrow(&pack.instructions, idx - 1);
-            let prev_length =
-                ((vector::length(instruction::operand(curr_instruction)) / 32) as u32) + 1;
-            zkgm_ethabi::encode_uint<u32>(
-                &mut buf,
-                prev_val + (0x20 * 4) + ((prev_length * 0x20) as u32)
-            );
-            prev_val = prev_val + (4 * 0x20) + (((prev_length * 0x20) as u32));
-            idx = idx + 1;
-        };
-        idx = 0;
-        while (idx < ack_arr_len) {
-            let instructions_encoded =
-                instruction::encode(vector::borrow(&pack.instructions, idx));
-            vector::append(&mut buf, instructions_encoded);
-
-            idx = idx + 1;
-        };
+    public fun encode(batch: &Batch): vector<u8> {
+        let mut buf = vector::empty();
+        zkgm_ethabi::encode_uint(&mut buf, 0x20);
+        zkgm_ethabi::encode_dyn_array!(
+            &mut buf,
+            &batch.instructions,
+            |b, instr| {
+                b.append(instr.encode());
+            }
+        );
 
         buf
     }
 
-    public fun decode(buf: &vector<u8>, index: &mut u64): Batch {
-        let main_arr_length = zkgm_ethabi::decode_uint(buf, index);
-        *index = *index + (0x20 * main_arr_length as u64);
-
-        let mut idx = 0;
-        let mut instructions = vector::empty();
-        while (idx < main_arr_length) {
-            let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
-            let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
-            *index = *index + 0x20;
-            let operand = zkgm_ethabi::decode_bytes(buf, index);
-
-            let instruction = instruction::new((version as u8), (opcode as u8), operand);
-
-            vector::push_back(&mut instructions, instruction);
-            idx = idx + 1;
-        };
-
-        Batch { instructions: instructions }
+    public fun decode(buf: &vector<u8>): Batch {
+        let mut index = 0x20;
+        Batch {
+            instructions: zkgm_ethabi::decode_dyn_array!(
+                buf,
+                &mut index,
+                |b| {
+                    let mut i = 0;
+                    instruction::decode(&b, &mut i)
+                }
+            )
+        }
     }
 
     #[test]
-    fun test_encode_decode() {
+    fun test_encode_decode_batch() {
         let mut decode_idx = 0x20;
         // ---------------- TEST 1 ----------------
         let output =
@@ -166,7 +127,7 @@ module zkgm::batch {
         let ack_data = Batch { instructions: outer_arr };
         let ack_bytes = encode(&ack_data);
         assert!(ack_bytes == output, 0);
-        let ack_data_decoded = decode(&ack_bytes, &mut decode_idx);
+        let ack_data_decoded = decode(&ack_bytes);
         assert!(vector::length(&ack_data_decoded.instructions) == 3, 1);
         assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
         assert!(*vector::borrow(&ack_data_decoded.instructions, 1) == instruction2, 3);
@@ -186,7 +147,7 @@ module zkgm::batch {
         let ack_data2 = Batch { instructions: outer_arr };
         let ack_bytes2 = encode(&ack_data2);
         assert!(ack_bytes2 == output2, 0);
-        let ack_data_decoded = decode(&ack_bytes2, &mut decode_idx);
+        let ack_data_decoded = decode(&ack_bytes2);
         assert!(vector::length(&ack_data_decoded.instructions) == 2, 1);
         assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
         assert!(*vector::borrow(&ack_data_decoded.instructions, 1) == instruction2, 3);
@@ -209,7 +170,7 @@ module zkgm::batch {
         let ack_data3 = Batch { instructions: outer_arr };
         let ack_bytes3 = encode(&ack_data3);
         assert!(ack_bytes3 == output3, 0);
-        let ack_data_decoded = decode(&ack_bytes3, &mut decode_idx);
+        let ack_data_decoded = decode(&ack_bytes3);
         assert!(vector::length(&ack_data_decoded.instructions) == 1, 1);
         assert!(*vector::borrow(&ack_data_decoded.instructions, 0) == instruction1, 2);
 
@@ -222,7 +183,7 @@ module zkgm::batch {
         let ack_data4 = Batch { instructions: outer_arr };
         let ack_bytes4 = encode(&ack_data4);
         assert!(ack_bytes4 == output4, 0);
-        let ack_data_decoded = decode(&ack_bytes4, &mut decode_idx);
+        let ack_data_decoded = decode(&ack_bytes4);
         assert!(vector::length(&ack_data_decoded.instructions) == 0, 1);
 
     }
