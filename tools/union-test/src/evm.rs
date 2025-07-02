@@ -246,122 +246,171 @@ impl Module {
         .await
     }
 
-    async fn submit_ibc_transaction(
+    // async fn submit_transaction_zkgm(
+    //     &self,
+    //     ucs03_addr_on_evm: H160,
+    //     wallet: &LocalSigner<SigningKey>,
+    //     send_call_struct: zkgm::UCS03Zkgm::sendCall,
+    // ) -> Result<H256, TxSubmitError> {
+    //     let signer = DynProvider::new(
+    //         ProviderBuilder::new()
+    //             .network::<AnyNetwork>()
+    //             .filler(AnyNetwork::recommended_fillers())
+    //             .wallet(EthereumWallet::new(wallet.clone()))
+    //             .connect_provider(self.provider.clone()),
+    //     );
+
+    //     if let Some(max_gas_price) = self.max_gas_price {
+    //         let gas_price = self
+    //             .provider
+    //             .get_gas_price()
+    //             .await
+    //             .expect("unable to fetch gas price");
+
+    //         if gas_price > max_gas_price {
+    //             warn!(%max_gas_price, %gas_price, "gas price is too high");
+
+    //             return Err(TxSubmitError::GasPriceTooHigh {
+    //                 max: self.max_gas_price.expect("max gas price is set"),
+    //                 price: gas_price,
+    //             });
+    //         } else {
+    //             println!("gas price: {}", gas_price);
+    //         }
+    //     }
+
+    //     let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
+
+    //     let mut call = ucs03_zkgm.send(
+    //         send_call_struct.channelId,
+    //         send_call_struct.timeoutHeight,
+    //         send_call_struct.timeoutTimestamp,
+    //         send_call_struct.salt,
+    //         send_call_struct.instruction,
+    //     );
+    //     println!("submitting evm tx");
+
+    //     let gas_estimate = call.estimate_gas().await.map_err(|e| {
+    //         println!("error estimating gas: {:?}", e);
+    //         if ErrorReporter(&e)
+    //             .to_string()
+    //             .contains("gas required exceeds")
+    //         {
+    //             TxSubmitError::BatchTooLarge
+    //         } else {
+    //             TxSubmitError::Estimate(e)
+    //         }
+    //     })?;
+
+    //     let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
+    //     println!(
+    //         "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}",
+    //         self.gas_multiplier
+    //     );
+
+    //     if let Some(fixed) = self.fixed_gas_price {
+    //         call = call.gas_price(fixed);
+    //     }
+
+    //     match call.gas(gas_to_use).send().await {
+    //         Ok(ok) => {
+    //             let tx_hash = <H256>::from(*ok.tx_hash());
+    //             async move {
+    //                 let _ = ok.get_receipt().await?;
+    //                 println!("tx included: {:?}", tx_hash);
+
+    //                 Ok(tx_hash)
+    //             }
+    //             .instrument(info_span!("evm tx", %tx_hash))
+    //             .await
+    //         }
+
+    //         Err(
+    //             Error::PendingTransactionError(PendingTransactionError::TransportError(
+    //                 TransportError::ErrorResp(e),
+    //             ))
+    //             | Error::TransportError(TransportError::ErrorResp(e)),
+    //         ) if e
+    //             .message
+    //             .contains("insufficient funds for gas * price + value") =>
+    //         {
+    //             error!("out of gas");
+    //             return Err(TxSubmitError::OutOfGas);
+    //         }
+
+    //         Err(
+    //             Error::PendingTransactionError(PendingTransactionError::TransportError(
+    //                 TransportError::ErrorResp(e),
+    //             ))
+    //             | Error::TransportError(TransportError::ErrorResp(e)),
+    //         ) if e.message.contains("oversized data")
+    //             || e.message.contains("exceeds block gas limit")
+    //             || e.message.contains("gas required exceeds") =>
+    //         {
+    //             return Err(TxSubmitError::BatchTooLarge);
+    //         }
+
+    //         Err(err) => return Err(TxSubmitError::Error(err)),
+    //     }
+    // }
+
+    pub async fn get_provider(&self) -> DynProvider<AnyNetwork> {
+        let maybe_wallet = self
+            .keyring
+            .with(|wallet| async move { wallet.clone() })
+            .await;
+        let wallet = maybe_wallet.expect("no signers available in keyring");
+
+        // 2) Now that we've got the wallet, build your provider in a normal async call.
+        //    This future lives *outside* the .with, so UnwindSafe is not required here.
+        self.get_provider_with_wallet(&wallet).await
+    }
+
+    async fn get_provider_with_wallet(
         &self,
-        ibc_handler_address: H160,
         wallet: &LocalSigner<SigningKey>,
-        msg: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
-    ) -> Result<H256, TxSubmitError> {
-        let signer = DynProvider::new(
+    ) -> DynProvider<AnyNetwork> {
+        DynProvider::new(
             ProviderBuilder::new()
                 .network::<AnyNetwork>()
                 .filler(AnyNetwork::recommended_fillers())
                 .wallet(EthereumWallet::new(wallet.clone()))
                 .connect_provider(self.provider.clone()),
-        );
+        )
+    }
 
-        if let Some(max_gas_price) = self.max_gas_price {
-            let gas_price = self
-                .provider
-                .get_gas_price()
-                .await
-                .expect("unable to fetch gas price");
-
-            if gas_price > max_gas_price {
-                warn!(%max_gas_price, %gas_price, "gas price is too high");
-
-                return Err(TxSubmitError::GasPriceTooHigh {
-                    max: self.max_gas_price.expect("max gas price is set"),
-                    price: gas_price,
-                });
-            } else {
-                println!("gas price: {}", gas_price);
-            }
-        }
-
-        let multicall = Multicall::new(self.multicall_address.into(), signer.clone());
-
-        let mut call = multicall.multicall(
-            [&msg]
-                .clone()
-                .into_iter()
-                .map(|call| Call3 {
-                    target: ibc_handler_address.into(),
-                    allowFailure: true,
-                    callData: call.calldata().clone(),
-                })
-                .collect(),
-        );
-
-        println!("submitting evm tx");
-        let gas_estimate = call.estimate_gas().await.map_err(|e| {
-            if ErrorReporter(&e)
-                .to_string()
-                .contains("gas required exceeds")
-            {
-                TxSubmitError::BatchTooLarge
-            } else {
-                TxSubmitError::Estimate(e)
-            }
-        })?;
-        let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
-        println!(
-            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}",
-            self.gas_multiplier
-        );
-
-        if let Some(fixed) = self.fixed_gas_price {
-            call = call.gas_price(fixed);
-        }
-
-        match call.gas(gas_to_use).send().await {
-            Ok(ok) => {
-                let tx_hash = <H256>::from(*ok.tx_hash());
-                async move {
-                    let _ = ok.get_receipt().await?;
-                    println!("tx included: {:?}", tx_hash);
-
-                    Ok(tx_hash)
+    pub async fn send_ibc_transaction(
+        &self,
+        contract: H160,
+        msg: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
+    ) -> RpcResult<FixedBytes<32>> {
+        let res = self
+            .keyring
+            .with({
+                let msg = msg.clone();
+                move |wallet| -> _ {
+                    AssertUnwindSafe(self.submit_transaction(contract, wallet, msg))
                 }
-                .instrument(info_span!("evm tx", %tx_hash))
-                .await
-            }
+            })
+            .await;
 
-            Err(
-                Error::PendingTransactionError(PendingTransactionError::TransportError(
-                    TransportError::ErrorResp(e),
-                ))
-                | Error::TransportError(TransportError::ErrorResp(e)),
-            ) if e
-                .message
-                .contains("insufficient funds for gas * price + value") =>
-            {
-                error!("out of gas");
-                return Err(TxSubmitError::OutOfGas);
-            }
-
-            Err(
-                Error::PendingTransactionError(PendingTransactionError::TransportError(
-                    TransportError::ErrorResp(e),
-                ))
-                | Error::TransportError(TransportError::ErrorResp(e)),
-            ) if e.message.contains("oversized data")
-                || e.message.contains("exceeds block gas limit")
-                || e.message.contains("gas required exceeds") =>
-            {
-                error!(error = %e.message, msg = ?msg, "message is too large");
-                return Err(TxSubmitError::BatchTooLarge);
-            }
-
-            Err(err) => return Err(TxSubmitError::Error(err)),
+        match res {
+            Some(Ok(hash)) => Ok(hash),
+            Some(Err(e)) => Err(ErrorObject::owned(
+                -1,
+                format!("transaction submission failed: {:?}", e),
+                None::<()>,
+            )),
+            None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
         }
     }
 
-    async fn submit_transaction_zkgm(
+
+    pub async fn submit_transaction(
         &self,
         ucs03_addr_on_evm: H160,
         wallet: &LocalSigner<SigningKey>,
-        send_call_struct: zkgm::UCS03Zkgm::sendCall,
+        mut call: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>
     ) -> Result<H256, TxSubmitError> {
         let signer = DynProvider::new(
             ProviderBuilder::new()
@@ -390,15 +439,6 @@ impl Module {
             }
         }
 
-        let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
-
-        let mut call = ucs03_zkgm.send(
-            send_call_struct.channelId,
-            send_call_struct.timeoutHeight,
-            send_call_struct.timeoutTimestamp,
-            send_call_struct.salt,
-            send_call_struct.instruction,
-        );
         println!("submitting evm tx");
 
         let gas_estimate = call.estimate_gas().await.map_err(|e| {
@@ -463,87 +503,10 @@ impl Module {
 
             Err(err) => return Err(TxSubmitError::Error(err)),
         }
+
+
     }
 
-    pub async fn get_provider(&self) -> DynProvider<AnyNetwork> {
-        let maybe_wallet = self
-            .keyring
-            .with(|wallet| async move { wallet.clone() })
-            .await;
-        let wallet = maybe_wallet.expect("no signers available in keyring");
-
-        // 2) Now that we've got the wallet, build your provider in a normal async call.
-        //    This future lives *outside* the .with, so UnwindSafe is not required here.
-        self.get_provider_with_wallet(&wallet).await
-    }
-
-    async fn get_provider_with_wallet(
-        &self,
-        wallet: &LocalSigner<SigningKey>,
-    ) -> DynProvider<AnyNetwork> {
-        DynProvider::new(
-            ProviderBuilder::new()
-                .network::<AnyNetwork>()
-                .filler(AnyNetwork::recommended_fillers())
-                .wallet(EthereumWallet::new(wallet.clone()))
-                .connect_provider(self.provider.clone()),
-        )
-    }
-
-    pub async fn send_ibc_transaction(
-        &self,
-        contract: H160,
-        msg: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
-    ) -> RpcResult<FixedBytes<32>> {
-        let res = self
-            .keyring
-            .with({
-                let msg = msg.clone();
-                move |wallet| -> _ {
-                    AssertUnwindSafe(self.submit_ibc_transaction(contract, wallet, msg))
-                }
-            })
-            .await;
-
-        match res {
-            Some(Ok(hash)) => Ok(hash),
-            Some(Err(e)) => Err(ErrorObject::owned(
-                -1,
-                format!("transaction submission failed: {:?}", e),
-                None::<()>,
-            )),
-            None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
-        }
-    }
-
-    pub async fn send_transaction_zkgm(
-        &self,
-        contract: H160,
-        send_call_struct: zkgm::UCS03Zkgm::sendCall,
-    ) -> RpcResult<FixedBytes<32>> {
-        let res = self
-            .keyring
-            .with({
-                move |wallet| -> _ {
-                    AssertUnwindSafe(self.submit_transaction_zkgm(
-                        contract,
-                        wallet,
-                        send_call_struct,
-                    ))
-                }
-            })
-            .await;
-
-        match res {
-            Some(Ok(hash)) => Ok(hash),
-            Some(Err(e)) => Err(ErrorObject::owned(
-                -1,
-                format!("transaction submission failed: {:?}", e),
-                None::<()>,
-            )),
-            None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
-        }
-    }
 }
 
 pub mod zkgm {
