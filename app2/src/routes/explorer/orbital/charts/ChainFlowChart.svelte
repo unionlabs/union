@@ -458,7 +458,6 @@ $effect(() => {
                       <span class="text-zinc-200 font-bold">
                         {formatChainName(chain.chainName)}
                       </span>
-                      <span class="text-zinc-600 text-[10px]">({chain.universal_chain_id})</span>
                       {#if chain.topAssets && chain.topAssets.length > 0}
                         <span class="text-zinc-600 text-xs">
                           {expandedChain === chain.universal_chain_id ? "▼" : "▶"}
@@ -569,10 +568,6 @@ $effect(() => {
                             <div class="flex items-center space-x-1">
                               <span class="text-zinc-600">#{assetIndex + 1}</span>
                               <span class="text-zinc-200 font-bold">{asset.assetSymbol}</span>
-                              {#if asset.assetName
-                          && asset.assetName !== asset.assetSymbol}
-                                <span class="text-zinc-500">({asset.assetName})</span>
-                              {/if}
                             </div>
                             <div class="flex items-center space-x-1">
                               <span class="text-zinc-600">vol:</span>
