@@ -58,27 +58,40 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::acknowledgement {
+module zkgm::ack {
     use zkgm::zkgm_ethabi;
 
-    public struct Acknowledgement has copy, drop, store {
+    public struct Ack has copy, drop, store {
         tag: u256,
         inner_ack: vector<u8>
     }
 
-    public fun new(tag: u256, inner_ack: vector<u8>): Acknowledgement {
-        Acknowledgement { tag, inner_ack }
+    const ACK_FAILURE: u256 = 0x0;
+    const ACK_SUCCESS: u256 = 0x1;
+
+    public fun success(inner_ack: vector<u8>): Ack {
+        Ack {
+            tag: ACK_SUCCESS,
+            inner_ack
+        }
     }
 
-    public fun tag(ack: &Acknowledgement): u256 {
+    public fun failure(inner_ack: vector<u8>): Ack {
+        Ack {
+            tag: ACK_FAILURE,
+            inner_ack
+        }
+    }
+
+    public fun tag(ack: &Ack): u256 {
         ack.tag
     }
 
-    public fun inner_ack(ack: &Acknowledgement): &vector<u8> {
+    public fun inner_ack(ack: &Ack): &vector<u8> {
         &ack.inner_ack
     }
 
-    public fun encode(ack: &Acknowledgement): vector<u8> {
+    public fun encode(ack: &Ack): vector<u8> {
         let mut buf = vector::empty<u8>();
         zkgm_ethabi::encode_uint<u256>(&mut buf, ack.tag);
 
@@ -90,19 +103,19 @@ module zkgm::acknowledgement {
         buf
     }
 
-    public fun decode(buf: &vector<u8>): Acknowledgement {
+    public fun decode(buf: &vector<u8>): Ack {
         let mut index = 0x0;
         let tag = zkgm_ethabi::decode_uint(buf, &mut index);
         index = index + 0x20;
         let inner_ack = zkgm_ethabi::decode_bytes(buf, &mut index);
-        Acknowledgement { tag: tag, inner_ack: inner_ack }
+        Ack { tag: tag, inner_ack: inner_ack }
     }
 
     #[test]
     fun test_encode_decode_ack() {
         let output =
             x"000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000768656c6c6c6f6f00000000000000000000000000000000000000000000000000";
-        let ack_data = Acknowledgement { tag: 7788909223344, inner_ack: b"hellloo" };
+        let ack_data = Ack { tag: 7788909223344, inner_ack: b"hellloo" };
 
         let ack_bytes = encode(&ack_data);
         std::debug::print(&ack_bytes);
