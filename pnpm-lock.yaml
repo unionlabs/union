@@ -524,6 +524,9 @@ importers:
       '@cosmjs/tendermint-rpc':
         specifier: ^0.33.1
         version: 0.33.1(patch_hash=d6d84acfc406c9bb60bb24c691bf474327d6a3a3140be568a3b77e1063897c4e)(bufferutil@4.0.9)(utf-8-validate@5.0.10)
+      '@effect/typeclass':
+        specifier: ^0.35.5
+        version: 0.35.5(effect@3.16.3)
       '@mysten/sui':
         specifier: ^1.30.1
         version: 1.30.1(typescript@5.8.3)
