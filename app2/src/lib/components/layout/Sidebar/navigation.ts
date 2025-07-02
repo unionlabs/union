@@ -12,6 +12,7 @@ export interface NavSubItem {
   path: string
   title: string
   editions?: Array<string>
+  new?: boolean
 }
 
 export interface NavItem {
@@ -74,6 +75,7 @@ export const navigation: Array<NavSection> = [
           {
             path: "/explorer/orbital",
             title: "Orbital",
+            new: true,
           },
           // {
           //   path: "/explorer/connections",
