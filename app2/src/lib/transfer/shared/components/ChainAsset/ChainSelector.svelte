@@ -264,7 +264,7 @@ $effect(() => {
       {/if}
 
       <div
-        class="flex flex-col gap-1 p-2 max-h-[459px] overflow-y-auto scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700"
+        class="flex flex-col gap-1 p-2 pb-5 max-h-[459px] overflow-y-auto scrollbar-thin scrollbar-track-zinc-900 scrollbar-thumb-zinc-700"
         onscroll={handleScroll}
       >
         {#each chainss as
