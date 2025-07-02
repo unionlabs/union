@@ -15,9 +15,9 @@ use crate::{
             header::Header,
             types::{
                 Acknowledgement, BlockHash, BlockHeight, CanonicalChainId, Capacity, ChannelId,
-                ClientId, ClientType, ConnectionId, ContractAddress, Denom, Maker, MakerMsg,
-                MutationAmount, PacketData, PacketHash, PortId, RefillRate, TimeoutTimestamp,
-                TransactionHash, Version, WalletAddress,
+                ChannelVersion, ClientId, ClientType, ConnectionId, ContractAddress, Denom, Maker,
+                MakerMsg, MutationAmount, PacketData, PacketHash, PortId, RefillRate,
+                TimeoutTimestamp, TransactionHash, WalletAddress,
             },
         },
         tendermint::block_handle::BlockHeader,
@@ -177,11 +177,11 @@ impl TmEvent {
         self.get_counterparty_port_id("counterparty_port_id")
     }
 
-    pub fn version(&self) -> Result<Version, IndexerError> {
+    pub fn version(&self) -> Result<ChannelVersion, IndexerError> {
         self.get_version("version")
     }
 
-    pub fn counterparty_version(&self) -> Result<Version, IndexerError> {
+    pub fn counterparty_version(&self) -> Result<ChannelVersion, IndexerError> {
         self.get_version("counterparty_version")
     }
 
@@ -276,7 +276,7 @@ impl TmEvent {
         Ok(self.get_bytes(key, "counterparty-port-id")?.into())
     }
 
-    fn get_version(&self, key: &str) -> Result<Version, IndexerError> {
+    fn get_version(&self, key: &str) -> Result<ChannelVersion, IndexerError> {
         Ok(self.get_string(key, "version")?.into())
     }
 

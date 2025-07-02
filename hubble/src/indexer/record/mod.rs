@@ -7,15 +7,25 @@ use crate::indexer::{
     api::IndexerError,
     event::types::{
         Acknowledgement, BlockHash, BlockHeight, BlockTimestamp, CanonicalChainId, Capacity,
-        ChannelId, ClientId, ClientType, ConnectionId, ContractAddress, Denom, EventIndex, Maker,
-        MakerMsg, MessageHash, MessageSequence, MutationAmount, MutationDirection,
-        NatsConsumerSequence, NatsStreamSequence, PacketData, PacketHash, PortId, RefillRate,
-        TimeoutTimestamp, TransactionEventIndex, TransactionHash, TransactionIndex,
-        UniversalChainId, Version, WalletAddress,
+        ChannelId, ChannelVersion, ClientId, ClientType, ConnectionId, ContractAddress, Denom,
+        EventIndex, Maker, MakerMsg, MessageHash, MessageSequence, MutationAmount,
+        MutationDirection, NatsConsumerSequence, NatsStreamSequence, PacketData, PacketHash,
+        PortId, RefillRate, TimeoutTimestamp, TransactionEventIndex, TransactionHash,
+        TransactionIndex, UniversalChainId, WalletAddress,
     },
-    handler::EventContext,
+    handler::{
+        types::{
+            AddressCanonical, AddressDisplay, AddressZkgm, Amount, Fee, InstructionHash,
+            InstructionIndex, InstructionOpcode, InstructionPath, InstructionRootPath,
+            InstructionRootSalt, InstructionType, InstructionVersion, OperandContractAddress,
+            OperandSender, PacketShape, RpcType, TokenDecimals, TokenName, TokenPath, TokenSymbol,
+            TransferIndex, WrapDirection,
+        },
+        EventContext,
+    },
 };
 
+pub(crate) mod channel_meta_data;
 pub(crate) mod channel_open_ack_record;
 pub(crate) mod channel_open_confirm_record;
 pub(crate) mod channel_open_init_record;
@@ -29,7 +39,10 @@ pub(crate) mod create_lens_client_record;
 pub(crate) mod event_handler;
 pub(crate) mod packet_ack_record;
 pub(crate) mod packet_recv_record;
+pub(crate) mod packet_send_decoded_record;
+pub(crate) mod packet_send_instructions_search_record;
 pub(crate) mod packet_send_record;
+pub(crate) mod packet_send_transfers_record;
 pub(crate) mod packet_timeout_record;
 pub(crate) mod token_bucket_update_record;
 pub(crate) mod update_client_record;
@@ -105,7 +118,17 @@ impl Display for InternalChainId {
     }
 }
 
-#[derive(Debug)]
+impl PgValue<String> for RpcType {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(match self {
+            RpcType::Cosmos => "cosmos",
+            RpcType::Evm => "evm",
+        }
+        .to_string())
+    }
+}
+
+#[derive(Debug, Clone)]
 pub enum ChainNetwork {
     Mainnet,
     Testnet,
@@ -116,6 +139,29 @@ impl PgValue<String> for ChainNetwork {
         Ok(match self {
             ChainNetwork::Mainnet => "mainnet".to_string(),
             ChainNetwork::Testnet => "testnet".to_string(),
+        })
+    }
+}
+
+impl From<bool> for ChainNetwork {
+    fn from(value: bool) -> Self {
+        match value {
+            // value is the 'testnet' property on chains table
+            true => ChainNetwork::Testnet,
+            false => ChainNetwork::Mainnet,
+        }
+    }
+}
+
+impl TryFrom<Option<bool>> for ChainNetwork {
+    type Error = IndexerError;
+
+    fn try_from(value: Option<bool>) -> Result<Self, Self::Error> {
+        value.map(|value| value.into()).ok_or_else(|| {
+            IndexerError::InternalCannotMapFromDatabaseDomain(
+                "chain-network".to_string(),
+                "expecting Some, but got None".to_string(),
+            )
         })
     }
 }
@@ -136,6 +182,28 @@ impl Display for ChainNetwork {
 impl PgValue<String> for UniversalChainId {
     fn pg_value(&self) -> Result<String, IndexerError> {
         Ok(self.0.clone())
+    }
+}
+
+impl TryFrom<(Option<String>, Option<String>)> for UniversalChainId {
+    type Error = IndexerError;
+
+    fn try_from(value: (Option<String>, Option<String>)) -> Result<Self, Self::Error> {
+        match value {
+            (Some(family), Some(chain_id)) => Ok(UniversalChainId(format!("{family}.{chain_id}"))),
+            (Some(family), None) => Err(IndexerError::InternalCannotMapFromDatabaseDomain(
+                "universal-chain-id".to_string(),
+                format!("expecting Some chain-id, but got None (family: {family}"),
+            )),
+            (None, Some(chain_id)) => Err(IndexerError::InternalCannotMapFromDatabaseDomain(
+                "universal-chain-id".to_string(),
+                format!("expecting Some family, but got None (chain-id: {chain_id}"),
+            )),
+            (None, None) => Err(IndexerError::InternalCannotMapFromDatabaseDomain(
+                "universal-chain-id".to_string(),
+                "expecting Some family and chain-id, but got None".to_string(),
+            )),
+        }
     }
 }
 
@@ -174,6 +242,34 @@ impl PgValue<i32> for ConnectionId {
         })
     }
 }
+
+impl TryFrom<i32> for ConnectionId {
+    type Error = IndexerError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        u32::try_from(value).map(|value| value.into()).map_err(|_| {
+            IndexerError::InternalCannotMapFromDatabaseDomain(
+                "connection-id".to_string(),
+                "expecting fits in u32, but got {value}".to_string(),
+            )
+        })
+    }
+}
+
+impl TryFrom<Option<i32>> for ConnectionId {
+    type Error = IndexerError;
+
+    fn try_from(value: Option<i32>) -> Result<Self, Self::Error> {
+        match value {
+            Some(value) => value.try_into(),
+            None => Err(IndexerError::InternalCannotMapFromDatabaseDomain(
+                "connection-id".to_string(),
+                "expecting Some, but got None".to_string(),
+            )),
+        }
+    }
+}
+
 impl PgValue<i32> for InternalChainId {
     fn pg_value(&self) -> Result<i32, IndexerError> {
         Ok(self.0)
@@ -190,6 +286,19 @@ impl PgValue<String> for ClientType {
         Ok(self.0.clone())
     }
 }
+impl TryFrom<Option<String>> for ClientType {
+    type Error = IndexerError;
+
+    fn try_from(value: Option<String>) -> Result<Self, Self::Error> {
+        value.map(|value| value.into()).ok_or_else(|| {
+            IndexerError::InternalCannotMapFromDatabaseDomain(
+                "client-type".to_string(),
+                "expecting Some, but got None".to_string(),
+            )
+        })
+    }
+}
+
 impl PgValue<i32> for ChannelId {
     fn pg_value(&self) -> Result<i32, IndexerError> {
         i32::try_from(self.0).map_err(|_| {
@@ -198,6 +307,33 @@ impl PgValue<i32> for ChannelId {
                 self.0.to_string(),
             )
         })
+    }
+}
+
+impl TryFrom<i32> for ChannelId {
+    type Error = IndexerError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        u32::try_from(value).map(|value| value.into()).map_err(|_| {
+            IndexerError::InternalCannotMapFromDatabaseDomain(
+                "client-id".to_string(),
+                "expecting fits in u32, but got {value}".to_string(),
+            )
+        })
+    }
+}
+
+impl TryFrom<Option<i32>> for ChannelId {
+    type Error = IndexerError;
+
+    fn try_from(value: Option<i32>) -> Result<Self, Self::Error> {
+        match value {
+            Some(value) => value.try_into(),
+            None => Err(IndexerError::InternalCannotMapFromDatabaseDomain(
+                "channel-id".to_string(),
+                "expecting Some, but got None".to_string(),
+            )),
+        }
     }
 }
 impl PgValue<i32> for ClientId {
@@ -210,14 +346,68 @@ impl PgValue<i32> for ClientId {
         })
     }
 }
+
+impl TryFrom<i32> for ClientId {
+    type Error = IndexerError;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        u32::try_from(value).map(|value| value.into()).map_err(|_| {
+            IndexerError::InternalCannotMapFromDatabaseDomain(
+                "client-id".to_string(),
+                "expecting fits in u32, but got {value}".to_string(),
+            )
+        })
+    }
+}
+
+impl TryFrom<Option<i32>> for ClientId {
+    type Error = IndexerError;
+
+    fn try_from(value: Option<i32>) -> Result<Self, Self::Error> {
+        match value {
+            Some(value) => value.try_into(),
+            None => Err(IndexerError::InternalCannotMapFromDatabaseDomain(
+                "client-id".to_string(),
+                "expecting Some, but got None".to_string(),
+            )),
+        }
+    }
+}
+
 impl PgValue<Vec<u8>> for PortId {
     fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
         Ok(self.0.to_vec())
     }
 }
-impl PgValue<String> for Version {
+impl TryFrom<Option<Vec<u8>>> for PortId {
+    type Error = IndexerError;
+
+    fn try_from(value: Option<Vec<u8>>) -> Result<Self, Self::Error> {
+        value
+            .map(|value| bytes::Bytes::from(value).into())
+            .ok_or_else(|| {
+                IndexerError::InternalCannotMapFromDatabaseDomain(
+                    "port-id".to_string(),
+                    "expecting Some, but got None".to_string(),
+                )
+            })
+    }
+}
+impl PgValue<String> for ChannelVersion {
     fn pg_value(&self) -> Result<String, IndexerError> {
         Ok(self.0.clone())
+    }
+}
+impl TryFrom<Option<String>> for ChannelVersion {
+    type Error = IndexerError;
+
+    fn try_from(value: Option<String>) -> Result<Self, Self::Error> {
+        value.map(|value| value.into()).ok_or_else(|| {
+            IndexerError::InternalCannotMapFromDatabaseDomain(
+                "channel-version".to_string(),
+                "expecting Some, but got None".to_string(),
+            )
+        })
     }
 }
 impl PgValue<Vec<u8>> for BlockHash {
@@ -385,5 +575,179 @@ impl PgValue<String> for MutationDirection {
             MutationDirection::In => "in".to_string(),
             MutationDirection::Out => "out".to_string(),
         })
+    }
+}
+
+impl PgValue<i32> for TransferIndex {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
+        i32::try_from(self.0).map_err(|_| {
+            IndexerError::InternalCannotMapToDatabaseDomain(
+                "transfer-index".to_string(),
+                self.0.to_string(),
+            )
+        })
+    }
+}
+impl PgValue<Vec<u8>> for AddressZkgm {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<Vec<u8>> for AddressCanonical {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<String> for AddressDisplay {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(self.0.clone())
+    }
+}
+impl PgValue<BigDecimal> for Amount {
+    fn pg_value(&self) -> Result<BigDecimal, IndexerError> {
+        Ok(BigDecimal::new(self.0.into(), 0))
+    }
+}
+impl PgValue<String> for TokenName {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(self.0.clone())
+    }
+}
+impl PgValue<Vec<u8>> for TokenPath {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<String> for TokenSymbol {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(self.0.clone())
+    }
+}
+impl PgValue<i32> for TokenDecimals {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
+        i32::try_from(self.0).map_err(|_| {
+            IndexerError::InternalCannotMapToDatabaseDomain(
+                "token-decimals".to_string(),
+                self.0.to_string(),
+            )
+        })
+    }
+}
+impl PgValue<String> for Fee {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(match self {
+            Fee::Instruction(..) => "instruction",
+            Fee::QuoteDelta(..) => "quote_delta",
+            Fee::QuoteDeltaNegative => "quote_delta_negative",
+            Fee::None => "none",
+            Fee::Swap => "swap",
+        }
+        .to_string())
+    }
+}
+
+impl Fee {
+    pub fn amount(&self) -> Option<Amount> {
+        match self {
+            Fee::Instruction(_, amount, _) => Some(amount.clone()),
+            Fee::QuoteDelta(_, amount, _) => Some(amount.clone()),
+            Fee::QuoteDeltaNegative => None,
+            Fee::None => None,
+            Fee::Swap => None,
+        }
+    }
+}
+
+impl Fee {
+    pub fn token(&self) -> Option<Denom> {
+        match self {
+            Fee::Instruction(denom, _, _) => Some(denom.clone()),
+            Fee::QuoteDelta(denom, _, _) => Some(denom.clone()),
+            Fee::QuoteDeltaNegative => None,
+            Fee::None => None,
+            Fee::Swap => None,
+        }
+    }
+}
+
+impl PgValue<String> for WrapDirection {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(match self {
+            WrapDirection::Wrapping => "wrapping",
+            WrapDirection::Unwrapping => "unwrapping",
+        }
+        .to_string())
+    }
+}
+impl PgValue<String> for PacketShape {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(match self {
+            PacketShape::BatchV0TransferV0Fee => "batch_v0_transfer_v0_fee",
+            PacketShape::TransferV0 => "transfer_v0",
+            PacketShape::BatchV0TransferV1 => "batch_v0_transfer_v1",
+            PacketShape::BatchV0TransferV1Fee => "batch_v0_transfer_v1_fee",
+            PacketShape::TransferV1 => "transfer_v1",
+        }
+        .to_string())
+    }
+}
+impl PgValue<i64> for InstructionIndex {
+    fn pg_value(&self) -> Result<i64, IndexerError> {
+        i64::try_from(self.0).map_err(|_| {
+            IndexerError::InternalCannotMapToDatabaseDomain(
+                "instruction-index".to_string(),
+                self.0.to_string(),
+            )
+        })
+    }
+}
+
+impl PgValue<Vec<u8>> for InstructionHash {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+
+impl PgValue<String> for InstructionType {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(self.0.clone())
+    }
+}
+
+impl PgValue<Vec<u8>> for InstructionRootPath {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<Vec<u8>> for InstructionRootSalt {
+    fn pg_value(&self) -> Result<Vec<u8>, IndexerError> {
+        Ok(self.0.to_vec())
+    }
+}
+impl PgValue<String> for InstructionPath {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(self.0.clone())
+    }
+}
+impl PgValue<i32> for InstructionVersion {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
+        Ok(i32::from(self.0))
+    }
+}
+impl PgValue<i32> for InstructionOpcode {
+    fn pg_value(&self) -> Result<i32, IndexerError> {
+        Ok(i32::from(self.0))
+    }
+}
+// currently stored as text, could be bytea
+impl PgValue<String> for OperandSender {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(format!("0x{}", hex::encode(&self.0)))
+    }
+}
+// currently stored as text, could be bytea
+impl PgValue<String> for OperandContractAddress {
+    fn pg_value(&self) -> Result<String, IndexerError> {
+        Ok(format!("0x{}", hex::encode(&self.0)))
     }
 }

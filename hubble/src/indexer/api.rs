@@ -13,14 +13,19 @@ use async_nats::jetstream::{
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
+use serde_json::Value;
 use sqlx::Postgres;
 use thiserror::Error;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::error;
 
-use crate::indexer::event::types::{
-    BlockEvents, NatsConsumerSequence, NatsStreamSequence, UniversalChainId,
+use crate::indexer::{
+    event::types::{
+        BlockEvents, ChannelId, NatsConsumerSequence, NatsStreamSequence, PacketHash,
+        UniversalChainId,
+    },
+    record::InternalChainId,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -101,6 +106,8 @@ pub enum IndexerError {
     InternalCannotMapFromDatabaseDomain(String, String),
     #[error("cannot parse abi encoded message: {0}")]
     AbiCannotParse(#[from] AbiParsingError),
+    #[error("internal error: cannot map to handler domain - {0}: {1}")]
+    CannotMapToHandlerDomain(String, String),
     #[error("internal error: cannot map to event domain - {0}: {1}")]
     CannotMapToEventDomain(String, String),
     #[error("internal error: cannot map to event domain; missing key: {0}.{1} (expecting: {2})")]
@@ -117,6 +124,22 @@ pub enum IndexerError {
     CannotMapToEventDomainOutOfRange(String, String, String, String),
     #[error("No chain found with universal_chain_id {0}. Add it to the config.chains table before using it in hubble")]
     MissingChainConfiguration(UniversalChainId),
+    #[error(
+        "zkgm decoding: invalid packet - chain: {0}, channel: {1}, packet-hash: {2}, erorr: {3}"
+    )]
+    ZkgmInvalidPacket(InternalChainId, ChannelId, PacketHash, anyhow::Error),
+    #[error("zkgm decoding: expecting 'tree' attribute - chain: {0}, channel: {1}, packet-hash: {2}, in: {3}")]
+    ZkgmExpectingTree(InternalChainId, ChannelId, PacketHash, Value),
+    #[error("zkgm decoding: expecting 'flatten' attribute in - chain: {0}, channel: {1}, packet-hash: {2}, in: {3}")]
+    ZkgmExpectingFlatten(InternalChainId, ChannelId, PacketHash, Value),
+    #[error("zkgm decoding: expecting {0}, in: {1}")]
+    ZkgmExpectingInstructionField(String, String),
+    #[error("hex decoding: expecting 0x decoding {0}: {1}")]
+    HexDecodeErrorExpecting0x(String, String),
+    #[error("hex decoding: expecting hex decoding {0}: {1}")]
+    HexDecodeErrorInvalidHex(String, String),
+    #[error("bech32 decoding: expecting bech32 {0}: {1}")]
+    Bech32DecodeErrorInvalidBech32(String, String),
 }
 
 #[derive(Error, Debug)]

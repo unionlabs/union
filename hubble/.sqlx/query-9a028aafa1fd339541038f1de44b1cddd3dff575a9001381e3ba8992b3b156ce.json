@@ -1,0 +1,125 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT \n            chain.chain_id,\n            chain.family,\n            counterparty_chain.chain_id AS counterparty_chain_id,\n            counterparty_chain.family   AS counterparty_family,\n            connection.client_id,\n            connection.counterparty_client_id,\n            connection.connection_id,\n            connection.counterparty_connection_id,\n            channel.port_id,\n            channel.counterparty_port_id,\n            channel.version             AS channel_version,\n            client.client_type,\n            chain.id                    AS internal_chain_id,\n            counterparty_chain.id       AS internal_counterparty_chain_id,\n            chain.rpc_type,\n            counterparty_chain.rpc_type AS counterparty_rpc_type,\n            chain.testnet               AS chain_testnet,\n            counterparty_chain.testnet  AS counterparty_chain_testnet\n        FROM config.chains chain\n                JOIN (SELECT channel_open_init.internal_chain_id,\n                            channel_open_init.port_id,\n                            channel_open_init.channel_id,\n                            channel_open_init.connection_id,\n                            channel_open_init.counterparty_port_id,\n                            channel_open_init.version\n                    FROM v2_sync.channel_open_init_sync channel_open_init\n                    UNION ALL\n                    SELECT channel_open_try.internal_chain_id,\n                            channel_open_try.port_id,\n                            channel_open_try.channel_id,\n                            channel_open_try.connection_id,\n                            channel_open_try.counterparty_port_id,\n                            channel_open_try.counterparty_version\n                    FROM v2_sync.channel_open_try_sync channel_open_try) channel\n                    ON channel.internal_chain_id = $1 AND channel.channel_id = $2\n                JOIN (SELECT connection_open_ack.internal_chain_id,\n                            connection_open_ack.connection_id,\n                            connection_open_ack.client_id,\n                            connection_open_ack.counterparty_client_id,\n                            connection_open_ack.counterparty_connection_id\n                    FROM v2_sync.connection_open_ack_sync connection_open_ack\n                    UNION ALL\n                    SELECT connection_open_try.internal_chain_id,\n                            connection_open_try.connection_id,\n                            connection_open_try.client_id,\n                            connection_open_try.counterparty_client_id,\n                            connection_open_try.counterparty_connection_id\n                    FROM v2_sync.connection_open_try_sync connection_open_try) connection\n                    ON connection.internal_chain_id = $1 AND channel.connection_id = connection.connection_id\n                JOIN v2_sync.create_client_sync client\n                    ON client.internal_chain_id = $1 AND connection.client_id = client.client_id\n                JOIN config.client_type client_type ON client.client_type = client_type.client_type\n                JOIN config.chain_representations counterparty_chain_representation\n                    ON client.counterparty_chain_id = counterparty_chain_representation.chain_id AND\n                        client_type.ibc_interface = counterparty_chain_representation.ibc_interface\n                JOIN config.chains counterparty_chain\n                    ON counterparty_chain_representation.internal_chain_id = counterparty_chain.id\n        WHERE chain.id = $1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "chain_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "family",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 2,
+        "name": "counterparty_chain_id",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 3,
+        "name": "counterparty_family",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 4,
+        "name": "client_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 5,
+        "name": "counterparty_client_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 6,
+        "name": "connection_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 7,
+        "name": "counterparty_connection_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 8,
+        "name": "port_id",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 9,
+        "name": "counterparty_port_id",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 10,
+        "name": "channel_version",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 11,
+        "name": "client_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 12,
+        "name": "internal_chain_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 13,
+        "name": "internal_counterparty_chain_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 14,
+        "name": "rpc_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 15,
+        "name": "counterparty_rpc_type",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 16,
+        "name": "chain_testnet",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 17,
+        "name": "counterparty_chain_testnet",
+        "type_info": "Bool"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int4"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      null,
+      true,
+      false,
+      false,
+      true,
+      true,
+      true,
+      true
+    ]
+  },
+  "hash": "9a028aafa1fd339541038f1de44b1cddd3dff575a9001381e3ba8992b3b156ce"
+}

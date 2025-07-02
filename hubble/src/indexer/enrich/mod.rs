@@ -1,0 +1,568 @@
+use itertools::Itertools;
+use serde_json::{Map, Value};
+use time::{format_description::well_known::Iso8601, UtcOffset};
+use tracing::{debug, error};
+
+mod ucs03_zkgm_0;
+mod wrapping;
+
+use crate::indexer::{
+    api::IndexerError,
+    enrich::{
+        ucs03_zkgm_0::{packet_ack::decode, PacketHash},
+        wrapping::{wrap_direction_chains, IntermediateChannelIds},
+    },
+    event::types::ChannelId,
+    handler::types::{
+        AddressZkgm, Amount, ChannelMetaData, Fee, Instruction, InstructionHash, InstructionOpcode,
+        InstructionPath, InstructionRootPath, InstructionRootSalt, InstructionVersion, PacketShape,
+        Transfer,
+    },
+    record::{
+        channel_meta_data::get_channel_meta_data,
+        packet_send_decoded_record::PacketSendDecodedRecord,
+        packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
+        packet_send_record::PacketSendRecord,
+        packet_send_transfers_record::PacketSendTransfersRecord, InternalChainId,
+    },
+};
+
+pub async fn enrich(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: PacketSendRecord,
+) -> Result<(), IndexerError> {
+    let internal_chain_id: InternalChainId = record.internal_chain_id.into();
+    let channel_id: ChannelId = record.channel_id.try_into()?;
+    let packet_hash: crate::indexer::event::types::PacketHash =
+        bytes::Bytes::from(record.packet_hash.clone()).into();
+
+    let Some(channel) = get_channel_meta_data(tx, &internal_chain_id, &channel_id).await? else {
+        debug!("no channel details for chain {internal_chain_id} and channel {channel_id}");
+        return Ok(());
+    };
+
+    let channel_version = channel.channel_version.clone();
+
+    // currently using the copied code from the pg extension. refactor later to use original types.
+    let result = match channel_version.0.as_str() {
+        "ucs03-zkgm-0" => match decode(
+            &record.data,
+            None,
+            &PacketHash(record.packet_hash.clone().try_into().unwrap()),
+            Some("all"),
+        ) {
+            Ok(decoded) => decoded,
+            Err(error) => {
+                debug!("invalid packet data channel version for chain {internal_chain_id} and channel {channel_id} and version {channel_version} => {error}");
+                return Err(IndexerError::ZkgmInvalidPacket(
+                    internal_chain_id,
+                    channel_id,
+                    packet_hash,
+                    error,
+                ));
+            }
+        },
+        _ => {
+            debug!("unsupported channel version for chain {internal_chain_id} and channel {channel_id} and version {channel_version}");
+            return Ok(());
+        }
+    };
+
+    let Some(Value::Object(tree)) = result.get("tree") else {
+        error!("expecting 'tree' Object value when decoding: {result}");
+        return Err(IndexerError::ZkgmExpectingTree(
+            internal_chain_id,
+            channel_id,
+            packet_hash,
+            result,
+        ));
+    };
+
+    let Some(Value::Array(flatten)) = result.get("flatten") else {
+        error!("expecting 'flatten' Array value when decoding: {result}");
+        return Err(IndexerError::ZkgmExpectingFlatten(
+            internal_chain_id,
+            channel_id,
+            packet_hash,
+            result,
+        ));
+    };
+
+    let packet_structure = packet_structure(flatten)?;
+    let sort_order = sort_order(&record, &channel)?;
+
+    let packet_send_decoded_record: PacketSendDecodedRecord = (
+        &record,
+        &channel,
+        &Value::Object(tree.clone()),
+        &Value::Array(flatten.clone()),
+        &packet_structure,
+        &sort_order,
+    )
+        .try_into()?;
+    packet_send_decoded_record.insert(tx).await?;
+
+    for transfer in get_transfers(tx, &record, &channel, &packet_structure, flatten).await? {
+        let packet_send_transfers_record: PacketSendTransfersRecord = (
+            &record,
+            &transfer,
+            &channel,
+            &format!("{sort_order}-{:03}", transfer.transfer_index.0),
+        )
+            .try_into()?;
+        packet_send_transfers_record.insert(tx).await?;
+    }
+
+    // insert packet send transaction
+    for instruction in get_instructions(flatten)? {
+        let packet_send_instructions_search_record: PacketSendInstructionsSearchRecord = (
+            &record,
+            &instruction,
+            &channel,
+            &format!("{sort_order}-{}", instruction.sort_order()?),
+        )
+            .try_into()?;
+        packet_send_instructions_search_record.insert(tx).await?;
+    }
+
+    Ok(())
+}
+
+impl Instruction {
+    fn sort_order(&self) -> Result<String, IndexerError> {
+        Ok(self
+            .instruction_path
+            .as_indices()?
+            .iter()
+            .map(|index| format!("{:03}", index))
+            .join("."))
+    }
+}
+
+async fn get_transfers(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    record: &PacketSendRecord,
+    channel: &ChannelMetaData,
+    packet_structure: &str,
+    flatten: &[Value],
+) -> Result<Vec<Transfer>, IndexerError> {
+    let Some(packet_shape) = packet_shape(packet_structure, flatten)? else {
+        return Ok(vec![]);
+    };
+
+    let (transfer_data, fee_data) = match packet_shape {
+        PacketShape::BatchV0TransferV0Fee | PacketShape::BatchV0TransferV1Fee => (
+            InstructionDecoder::from_values_with_index(flatten, 1)?,
+            Some(InstructionDecoder::from_values_with_index(flatten, 2)?),
+        ),
+        PacketShape::BatchV0TransferV1 => (
+            InstructionDecoder::from_values_with_index(flatten, 1)?,
+            None,
+        ),
+        PacketShape::TransferV0 | PacketShape::TransferV1 => (
+            InstructionDecoder::from_values_with_index(flatten, 1)?,
+            None,
+        ),
+    };
+
+    let transfer_index = 0;
+    let sender_zkgm = &AddressZkgm::from_string_0x(
+        transfer_data.get_string("sender")?,
+        channel.rpc_type.clone(),
+    )?;
+    let receiver_zkgm = &AddressZkgm::from_string_0x(
+        transfer_data.get_string("receiver")?,
+        channel.counterparty_rpc_type.clone(),
+    )?;
+    let base_token = transfer_data.get_string("baseToken")?.try_into()?;
+    let base_amount: Amount = transfer_data.get_string("baseAmount")?.try_into()?;
+    let base_token_name = transfer_data.get_string("baseTokenName")?.into();
+    let base_token_path = transfer_data.get_string("baseTokenName")?.try_into()?;
+    let base_token_symbol = transfer_data.get_string("baseTokenSymbol")?.into();
+    let base_token_decimals = transfer_data
+        .get_u32_opt("baseTokenDecimals")?
+        .map(|d| d.into());
+    let quote_token = transfer_data.get_string("quoteToken")?.try_into()?;
+    let quote_amount: Amount = transfer_data.get_string("quoteAmount")?.try_into()?;
+
+    let wrap_direction = wrap_direction_chains(
+        tx,
+        &channel.internal_chain_id,
+        &channel.internal_counterparty_chain_id,
+        &IntermediateChannelIds::default(), // no support for intermediate channel ids.
+        &record.source_channel_id.try_into()?,
+        &record.destination_channel_id.try_into()?,
+        &base_token,
+        &quote_token,
+    )
+    .await?;
+
+    let fee = calculate_fee(
+        fee_data,
+        &base_token,
+        &base_amount,
+        &base_token_name,
+        &quote_amount,
+        &wrap_direction,
+    )?;
+
+    Ok(vec![Transfer {
+        transfer_index: transfer_index.into(),
+        sender_zkgm: sender_zkgm.clone(),
+        sender_canonical: sender_zkgm.try_into()?,
+        sender_display: sender_zkgm.try_into()?,
+        receiver_zkgm: receiver_zkgm.clone(),
+        receiver_canonical: receiver_zkgm.try_into()?,
+        receiver_display: receiver_zkgm.try_into()?,
+        base_token,
+        base_amount,
+        base_token_name,
+        base_token_path,
+        base_token_symbol,
+        base_token_decimals,
+        quote_token,
+        quote_amount,
+        fee,
+        wrap_direction,
+        packet_shape,
+    }])
+}
+
+fn get_instructions(flatten: &[Value]) -> Result<Vec<Instruction>, IndexerError> {
+    flatten
+        .iter()
+        .enumerate()
+        .map(|(instruction_index, instruction)| {
+            let Value::Object(instruction) = instruction else {
+                return Err(IndexerError::ZkgmExpectingInstructionField(
+                    "instruction is object".to_string(),
+                    instruction.to_string(),
+                ));
+            };
+
+            let decoder = InstructionDecoder::from_value(instruction)?;
+
+            Ok(Instruction {
+                instruction_index: instruction_index.try_into()?,
+                instruction_hash: decoder.instruction_hash.clone(),
+                instruction_type: decoder.get_string("_type")?.clone().into(),
+                path: decoder.root_path.clone(),
+                salt: decoder.root_salt.clone(),
+                instruction_path: decoder.instruction_path.clone(),
+                version: decoder.version,
+                opcode: decoder.opcode,
+                operand_sender: decoder.get_string("sender")?.try_into()?,
+                operand_contract_address: decoder.get_string("contract_address")?.try_into()?,
+            })
+        })
+        .collect()
+}
+
+fn calculate_fee(
+    fee_data: Option<InstructionDecoder<'_>>,
+    base_token: &super::event::types::Denom,
+    base_amount: &Amount,
+    base_token_name: &super::handler::types::TokenName,
+    quote_amount: &Amount,
+    wrap_direction: &Option<super::handler::types::WrapDirection>,
+) -> Result<Fee, IndexerError> {
+    let fee = match fee_data {
+        Some(fee_data) => Fee::Instruction(
+            fee_data.get_string("baseToken")?.try_into()?,
+            fee_data.get_string("baseAmount")?.try_into()?,
+            fee_data.get_string("baseTokenName")?.into(),
+        ),
+        None => match *wrap_direction {
+            Some(_) => match &base_amount.cmp(quote_amount) {
+                std::cmp::Ordering::Greater => {
+                    // fee is the difference between base and quote
+                    Fee::QuoteDelta(
+                        base_token.clone(),
+                        base_amount
+                            .clone()
+                            .checked_sub(quote_amount.clone())
+                            .expect("base-amount is greater than quote amount"),
+                        base_token_name.clone(),
+                    )
+                }
+                std::cmp::Ordering::Equal => Fee::None,
+                std::cmp::Ordering::Less => Fee::QuoteDeltaNegative,
+            },
+            None => Fee::Swap,
+        },
+    };
+    Ok(fee)
+}
+
+struct InstructionDecoder<'a> {
+    root_path: InstructionRootPath,
+    root_salt: InstructionRootSalt,
+    instruction_path: InstructionPath,
+    opcode: InstructionOpcode,
+    version: InstructionVersion,
+    instruction_hash: InstructionHash,
+    operand: &'a Map<String, Value>,
+}
+
+impl<'a> InstructionDecoder<'a> {
+    fn from_value(value: &'a Map<String, Value>) -> Result<Self, IndexerError> {
+        let Some(Value::Object(root)) = value.get("_root") else {
+            return Err(IndexerError::ZkgmExpectingInstructionField(
+                "root in value".to_string(),
+                Value::Object(value.clone()).to_string(),
+            ));
+        };
+
+        let Some(Value::Object(operand)) = value.get("operand") else {
+            return Err(IndexerError::ZkgmExpectingInstructionField(
+                "operand in value".to_string(),
+                Value::Object(value.clone()).to_string(),
+            ));
+        };
+
+        let root_path = Self::get_string_from(root, "path")?.try_into()?;
+        let root_salt = Self::get_string_from(root, "salt")?.try_into()?;
+        let index = Self::get_string_from(root, "salt")?.into();
+        let opcode = Self::get_u8_from(value, "opcode")?.into();
+        let version = Self::get_u8_from(value, "version")?.into();
+        let instruction_hash = Self::get_string_from(value, "version")?.try_into()?;
+
+        Ok(Self {
+            root_path,
+            root_salt,
+            instruction_path: index,
+            opcode,
+            version,
+            instruction_hash,
+            operand,
+        })
+    }
+
+    fn from_values_with_index(
+        flatten: &'a [Value],
+        transfer_index: usize,
+    ) -> Result<Self, IndexerError> {
+        let Some(Value::Object(instruction)) = flatten.get(transfer_index) else {
+            return Err(IndexerError::ZkgmExpectingInstructionField(
+                format!("transfer at index {transfer_index}"),
+                flatten.iter().join(", "),
+            ));
+        };
+
+        Self::from_value(instruction)
+    }
+}
+
+impl<'a> InstructionDecoder<'a> {
+    fn get_string(&'a self, key: &str) -> Result<&'a String, IndexerError> {
+        Self::get_string_from(self.operand, key)
+    }
+
+    fn get_u32_opt(&'a self, key: &str) -> Result<Option<u32>, IndexerError> {
+        Self::get_u32_opt_from(self.operand, key)
+    }
+
+    fn get_string_from(
+        from: &'a Map<String, Value>,
+        key: &str,
+    ) -> Result<&'a String, IndexerError> {
+        let Some(Value::String(value)) = from.get(key) else {
+            return Err(IndexerError::ZkgmExpectingInstructionField(
+                format!("{key} field in instruction"),
+                Value::Object(from.clone()).to_string(),
+            ));
+        };
+
+        Ok(value)
+    }
+
+    fn get_u32_opt_from(
+        from: &'a Map<String, Value>,
+        key: &str,
+    ) -> Result<Option<u32>, IndexerError> {
+        Ok(match from.get(key) {
+            Some(node) => {
+                let Value::Number(value) = node else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                let Some(integer) = value.as_i128() else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction is integer"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                let Ok(result) = u32::try_from(integer) else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction is u32 ({value})"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                Some(result)
+            }
+            None => None,
+        })
+    }
+
+    fn get_u8_from(from: &'a Map<String, Value>, key: &str) -> Result<u8, IndexerError> {
+        Ok(match from.get(key) {
+            Some(node) => {
+                let Value::Number(value) = node else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                let Some(integer) = value.as_i128() else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction is integer"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                let Ok(result) = u8::try_from(integer) else {
+                    return Err(IndexerError::ZkgmExpectingInstructionField(
+                        format!("{key} field in instruction is u8 ({value})"),
+                        Value::Object(from.clone()).to_string(),
+                    ));
+                };
+
+                result
+            }
+            None => {
+                return Err(IndexerError::ZkgmExpectingInstructionField(
+                    format!("{key} field in instruction"),
+                    Value::Object(from.clone()).to_string(),
+                ));
+            }
+        })
+    }
+}
+
+fn packet_shape(
+    packet_structure: &str,
+    flatten: &[Value],
+) -> Result<Option<PacketShape>, IndexerError> {
+    Ok(match packet_structure {
+        ":2/0,0:3/0,1:3/0" if has_fee(flatten)? => {
+            // batch with two transfers with fee
+            Some(PacketShape::BatchV0TransferV0Fee)
+        }
+        ":3/0" => {
+            // one transfer
+            Some(PacketShape::TransferV0)
+        }
+        ":2/0,0:3/1" => {
+            // batch with one transfer
+            Some(PacketShape::BatchV0TransferV1)
+        }
+        ":2/0,0:3/1,1:3/1" if has_fee(flatten)? => {
+            // batch with two transfers with fee
+            Some(PacketShape::BatchV0TransferV1Fee)
+        }
+        ":3/1" => {
+            // one transfer
+            Some(PacketShape::TransferV1)
+        }
+        unsupported => {
+            debug!("unsupported packet shape: {unsupported}");
+
+            None
+        }
+    })
+}
+
+/// A batch has a fee if the second instruction of the batch (ie the third instruction, because
+/// the first one is the batch) has a zero quote amount
+fn has_fee(flatten: &[Value]) -> Result<bool, IndexerError> {
+    let Some(Value::Object(instruction)) = flatten.get(2) else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "three instructions".to_string(),
+            flatten.iter().join(", "),
+        ));
+    };
+    let Some(Value::Object(operand)) = instruction.get("operand") else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "operand".to_string(),
+            flatten.iter().join(", "),
+        ));
+    };
+    let Some(Value::String(quote_amount_hex_0x)) = operand.get("quote_amount") else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "quote amount".to_string(),
+            flatten.iter().join(", "),
+        ));
+    };
+    let Some(quote_amount_hex) = quote_amount_hex_0x.strip_prefix("0x") else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "0x".to_string(),
+            flatten.iter().join(", "),
+        ));
+    };
+    let Ok(quote_amount) = hex::decode(quote_amount_hex) else {
+        return Err(IndexerError::ZkgmExpectingInstructionField(
+            "hex value".to_string(),
+            quote_amount_hex.to_string(),
+        ));
+    };
+
+    let is_zero = quote_amount.iter().all(|&b| b == 0);
+
+    Ok(is_zero)
+}
+
+fn packet_structure(flatten: &[Value]) -> Result<String, IndexerError> {
+    flatten
+        .iter()
+        .map(|instruction| {
+            let index = instruction.get("_index").ok_or_else(|| {
+                IndexerError::ZkgmExpectingInstructionField(
+                    "_index".to_string(),
+                    flatten.iter().join(", "),
+                )
+            })?;
+            let opcode = instruction.get("opcode").ok_or_else(|| {
+                IndexerError::ZkgmExpectingInstructionField(
+                    "opcode".to_string(),
+                    flatten.iter().join(", "),
+                )
+            })?;
+            let version = instruction.get("version").ok_or_else(|| {
+                IndexerError::ZkgmExpectingInstructionField(
+                    "version".to_string(),
+                    flatten.iter().join(", "),
+                )
+            })?;
+
+            Ok(format!("{index}:{opcode}/{version},"))
+        })
+        .collect::<Result<String, _>>()
+}
+
+fn sort_order(
+    record: &PacketSendRecord,
+    channel: &ChannelMetaData,
+) -> Result<String, IndexerError> {
+    let timestamp = record
+        .timestamp
+        .to_offset(UtcOffset::UTC)
+        .format(&Iso8601::DEFAULT)
+        .map_err(|e| {
+            IndexerError::InternalCannotMapFromDatabaseDomain(
+                "timestamp".to_string(),
+                format!("cannot convert to ISO8601 UTC: {e}"),
+            )
+        })?;
+
+    let packet_hash: crate::indexer::event::types::PacketHash =
+        bytes::Bytes::from(record.packet_hash.clone()).into();
+    let universal_chain_id = channel.universal_chain_id.clone();
+
+    Ok(format!("{timestamp}-{packet_hash}-{universal_chain_id}"))
+}
