@@ -73,55 +73,153 @@ async fn main() -> anyhow::Result<()> {
     // 3) now hand them to your library’s TestContext
     let ctx = TestContext::new(src, dst).await?;
 
+    // 4) invoke create_clients and inspect the two confirms
+    let (src_confirm, dst_confirm) = ctx
+        .create_clients(
+            Duration::from_secs(45),
+            "ibc-cosmwasm",  
+            "trusted/evm/mpt",
+            "ibc-solidity",
+            "cometbls",
+        )
+        .await?;
+
+    println!("✅ src CreateClientConfirm = {:#?}", src_confirm);
+    println!("✅ dst CreateClientConfirm = {:#?}", dst_confirm);
+
+    let conn_confirm = ctx
+        .open_connection(
+            true,
+            src_confirm.client_id,
+            dst_confirm.client_id,
+            Duration::from_secs(180),
+        )
+        .await?;
+
+    println!(
+        "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
+        conn_confirm.connection_id,
+        conn_confirm.counterparty_connection_id,
+    );
+
+
+    let opened = ctx
+        .open_channels(
+            true,
+            "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c".as_bytes().into(),
+            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").to_vec().into(),
+            conn_confirm.connection_id,
+            "ucs03-zkgm-0".into(),
+            1,
+            Duration::from_secs(240),
+        )
+        .await?;
+
+    println!("Opened {} channels", opened);
+
+    let pair = ctx
+        .get_channel()
+        .await.unwrap();
+        
+    println!("Channel {} ↔ {}", pair.src, pair.dest);
+
     let mut salt_bytes = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt_bytes);
+    let contract: Bech32<FixedBytes<32>> = Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+        .unwrap();
+    let funded_msgs = vec![(
+        Box::new(ucs03_zkgm::msg::ExecuteMsg::Send {
+            channel_id: pair.dest.try_into().unwrap(),
+            timeout_height: 0u64.into(),
+            timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+            salt: salt_bytes.into(),
+            instruction: Instruction {
+                version: INSTR_VERSION_1,
+                opcode: OP_FUNGIBLE_ASSET_ORDER,
+                operand: FungibleAssetOrder {
+                    sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2".as_bytes().into(),
+                    receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").to_vec().into(),
+                    base_token: "muno".as_bytes().into(),
+                    base_amount: "10".parse().unwrap(),
+                    base_token_symbol: "muno".into(),
+                    base_token_name: "muno".into(),
+                    base_token_decimals: 6,
+                    base_token_path: "0".parse().unwrap(),
+                    quote_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579").to_vec().into(),
+                    quote_amount: "10".parse().unwrap(),
+                }
+                .abi_encode_params()
+                .into(),
+            }
+            .abi_encode_params()
+            .into(),
+        }),
+        vec![Coin {
+            denom: "muno".into(),
+            amount: "10".into(),
+        }],
+    )];
 
-    let instruction_from_evm_to_union = InstructionEvm {
-        version: INSTR_VERSION_1,
-        opcode: OP_FUNGIBLE_ASSET_ORDER,
-        operand: FungibleAssetOrder {
-            sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").to_vec().into(),
-            receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2".as_bytes().into(),
-            base_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579").to_vec().into(),
-            base_amount: "1".parse().unwrap(),
-            base_token_symbol: "muno".into(),
-            base_token_name: "muno".into(),
-            base_token_decimals: 6,
-            base_token_path: "1".parse().unwrap(),
-            quote_token:  "muno".into(),
-            quote_amount: "1".parse().unwrap(),
-        }
-        .abi_encode_params()
-        .into(),
-    };
+    let recv_packet_data = ctx.send_and_recv_cosmos(
+        true, // send from source
+        contract,
+        funded_msgs,
+        Duration::from_secs(360),
+    ).await;
+    assert!(recv_packet_data.is_ok(), "Failed to send and receive packet: {:?}", recv_packet_data.err());
+    
 
-    let ucs03_addr_on_evm = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
-    let eth = evm::Module::new(evm_cfg.clone()).await?;
-    let union = cosmos::Module::new(cosmos_cfg.clone()).await?;
-
-
-    let send_call_struct = UCS03Zkgm::sendCall { 
-        channelId: 1.try_into().unwrap(),
-        timeoutTimestamp: 4294967295000000000u64.into(),
-        timeoutHeight: 0u64.into(),
-        salt: salt_bytes.into(),
-        instruction: instruction_from_evm_to_union.clone(),
-    };
 
     
-    let hash_val = eth.send_zkgm_transaction(
-        ucs03_addr_on_evm.into(),
-        send_call_struct
-    ).await;
+    // let mut salt_bytes = [0u8; 32];
+    // rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-    println!("Hash Value: {:?}", hash_val);
+    // let instruction_from_evm_to_union = InstructionEvm {
+    //     version: INSTR_VERSION_1,
+    //     opcode: OP_FUNGIBLE_ASSET_ORDER,
+    //     operand: FungibleAssetOrder {
+    //         sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").to_vec().into(),
+    //         receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2".as_bytes().into(),
+    //         base_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579").to_vec().into(),
+    //         base_amount: "1".parse().unwrap(),
+    //         base_token_symbol: "muno".into(),
+    //         base_token_name: "muno".into(),
+    //         base_token_decimals: 6,
+    //         base_token_path: "1".parse().unwrap(),
+    //         quote_token:  "muno".into(),
+    //         quote_amount: "1".parse().unwrap(),
+    //     }
+    //     .abi_encode_params()
+    //     .into(),
+    // };
 
-    let recv_packet = union.wait_for_packet_recv(
-        hash_val.unwrap(),
-        Duration::from_secs(280),
-    ).await;
+    // let ucs03_addr_on_evm = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
+    // let eth = evm::Module::new(evm_cfg.clone()).await?;
+    // let union = cosmos::Module::new(cosmos_cfg.clone()).await?;
 
-    println!("Received Packet: {:?}", recv_packet);
+
+    // let send_call_struct = UCS03Zkgm::sendCall { 
+    //     channelId: 1.try_into().unwrap(),
+    //     timeoutTimestamp: 4294967295000000000u64.into(),
+    //     timeoutHeight: 0u64.into(),
+    //     salt: salt_bytes.into(),
+    //     instruction: instruction_from_evm_to_union.clone(),
+    // };
+
+    
+    // let hash_val = eth.send_zkgm_transaction(
+    //     ucs03_addr_on_evm.into(),
+    //     send_call_struct
+    // ).await;
+
+    // println!("Hash Value: {:?}", hash_val);
+
+    // let recv_packet = union.wait_for_packet_recv(
+    //     hash_val.unwrap(),
+    //     Duration::from_secs(280),
+    // ).await;
+
+    // println!("Received Packet: {:?}", recv_packet);
     
     // let contract: Bech32<FixedBytes<32>> = Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
     //     .unwrap();
