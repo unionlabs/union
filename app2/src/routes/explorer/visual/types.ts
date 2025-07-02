@@ -10,44 +10,6 @@ export type EnhancedTransferListItem = TransferListItem & {
   receiverDisplay?: string
 }
 
-export interface TransferRates {
-  txPerSecond: number
-  txPer30Seconds: number
-  txPerMinute: number
-  txPerHour: number
-  txPerDay: number
-  txPer7Days: number
-  txPer14Days: number
-  txPer30Days: number
-  totalTracked: number
-  serverUptimeSeconds: number
-}
-
-export interface ActiveWalletRates {
-  sendersLastMin: number
-  sendersLastHour: number
-  sendersLastDay: number
-  sendersLast7d: number
-  sendersLast14d: number
-  sendersLast30d: number
-  receiversLastMin: number
-  receiversLastHour: number
-  receiversLastDay: number
-  receiversLast7d: number
-  receiversLast14d: number
-  receiversLast30d: number
-  totalLastMin: number
-  totalLastHour: number
-  totalLastDay: number
-  totalLast7d: number
-  totalLast14d: number
-  totalLast30d: number
-  uniqueSendersTotal: number
-  uniqueReceiversTotal: number
-  uniqueTotalWallets: number
-  serverUptimeSeconds: number
-}
-
 export interface NodeHealthData {
   totalNodes: number
   healthyNodes: number
@@ -74,33 +36,32 @@ export interface NodeHealthData {
 }
 
 export interface ChainFlowData {
-  chains: any[]
-  chainFlowTimeScale: Record<string, any>
+  chains: ChainData[]
+  chainFlowTimeScale: Record<string, ChainData[]>
   totalOutgoing: number
   totalIncoming: number
   serverUptimeSeconds: number
 }
 
-export interface AssetVolumeData {
-  assets: any[]
-  assetVolumeTimeScale: Record<string, any>
-  totalAssets: number
-  totalVolume: number
-  totalTransfers: number
-  serverUptimeSeconds: number
+export interface LatencyData {
+  sourceName: string
+  destinationName: string
+  packetRecv: { p5: number; median: number; p95: number }
+  writeAck: { p5: number; median: number; p95: number }
+  packetAck: { p5: number; median: number; p95: number }
 }
 
 export interface ChartData {
-  popularRoutes: any[]
-  activeSenders: any[]
-  activeReceivers: any[]
-  currentRates: any
-  popularRoutesTimeScale: Record<string, any>
-  activeSendersTimeScale: Record<string, any>
-  activeReceiversTimeScale: Record<string, any>
+  popularRoutes: RouteData[]
+  activeSenders: WalletStats[]
+  activeReceivers: WalletStats[]
+  currentRates: TransferRates
+  popularRoutesTimeScale: Record<string, RouteData[]>
+  activeSendersTimeScale: Record<string, WalletStats[]>
+  activeReceiversTimeScale: Record<string, WalletStats[]>
   chainFlowData: ChainFlowData
   assetVolumeData: AssetVolumeData
-  latencyData: any[]
+  latencyData: LatencyData[]
   nodeHealthData: NodeHealthData
 }
 
@@ -274,4 +235,38 @@ export interface ChainData {
   netFlowChange?: number
   lastActivity: string
   topAssets?: ChainAsset[]
+}
+
+export interface AssetRoute {
+  fromChain: string
+  toChain: string
+  fromName: string
+  toName: string
+  route: string
+  count: number
+  volume: number
+  percentage: number
+  lastActivity: string
+}
+
+export interface Asset {
+  assetSymbol: string
+  assetName: string
+  transferCount: number
+  totalVolume: number
+  averageAmount: number
+  largestTransfer: number
+  volumeChange?: number
+  countChange?: number
+  lastActivity: string
+  topRoutes: AssetRoute[]
+}
+
+export interface AssetVolumeData {
+  assets: Asset[]
+  assetVolumeTimeScale: Record<string, Asset[]>
+  totalAssets: number
+  totalVolume: number
+  totalTransfers: number
+  serverUptimeSeconds: number
 }

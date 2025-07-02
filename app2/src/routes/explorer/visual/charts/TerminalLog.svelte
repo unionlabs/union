@@ -417,6 +417,6 @@ onMount(() => {
       bind:this={canvas}
       class="w-full h-full cursor-default pointer-events-none"
       style="background: transparent;"
-    />
+    ></canvas>
   </div>
 </Card>

@@ -322,7 +322,7 @@ function handleMouseLeave() {
         {#if selectedSource || selectedDestination}
           <button
             class="px-2 py-1 text-xs font-mono border border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300 transition-colors"
-            on:click={() => {
+            onclick={() => {
               selectedSource = ""
               selectedDestination = ""
             }}
@@ -450,8 +450,8 @@ function handleMouseLeave() {
                 <div class="space-y-1 relative bg-zinc-900 border border-zinc-800 p-2">
                   <div
                     class="relative w-full h-full"
-                    on:mousemove={(e) => handleMouseMove(e, index)}
-                    on:mouseleave={handleMouseLeave}
+                    onmousemove={(e) => handleMouseMove(e, index)}
+                    onmouseleave={handleMouseLeave}
                   >
                     {#if hoveredRoute === index}
                       <div
@@ -534,8 +534,8 @@ function handleMouseLeave() {
                 <div class="space-y-1 relative bg-zinc-900 border border-zinc-800 p-2">
                   <div
                     class="relative w-full h-full"
-                    on:mousemove={(e) => handleMouseMove(e, index)}
-                    on:mouseleave={handleMouseLeave}
+                    onmousemove={(e) => handleMouseMove(e, index)}
+                    onmouseleave={handleMouseLeave}
                   >
                     {#if hoveredRoute === index}
                       <div

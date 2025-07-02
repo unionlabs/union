@@ -5,15 +5,7 @@ import type { TransferListItem } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { onMount } from "svelte"
 import { initializeCanvasWithCleanup } from "../canvasInit"
-
-type EnhancedTransferListItem = TransferListItem & {
-  isTestnetTransfer?: boolean
-  formattedTimestamp?: string
-  routeKey?: string
-  senderDisplay?: string
-  receiverDisplay?: string
-}
-
+import type { EnhancedTransferListItem } from "../types"
 interface Particle {
   id: string
   x: number
@@ -29,7 +21,6 @@ interface Particle {
   color: string
   size: number
 }
-
 interface ChainNode {
   x: number
   y: number
@@ -40,8 +31,8 @@ interface ChainNode {
   displayName: string
   glowColor: string
   glowIntensity: number
-  lastActivity: number // Timestamp of last activity
-  fadeLevel: number // 0-1, how faded the node is (0 = fully faded, 1 = fully bright)
+  lastActivity: number
+  fadeLevel: number
 }
 
 let {
@@ -54,9 +45,9 @@ let {
 
 // Color configuration
 const COLORS = {
-  chainActive: "#ffffff", // Bright white for active chains
-  chainDefault: "#e4e4e7", // Normal state
-  chainFaded: "#52525b", // Faded inactive chains
+  chainActive: "#ffffff",
+  chainDefault: "#e4e4e7",
+  chainFaded: "#52525b",
   chainSelected: "#4bb7c3",
   chainHit: "#ffffff",
   particle: "#fbbf24",
@@ -69,19 +60,16 @@ const COLORS = {
   uiTextMuted: "#6b7280",
 } as const
 
-// Performance constants
 const PARTICLE_SPEED = 0.03
 const TARGET_FPS = 120
 const FRAME_INTERVAL = 1000 / TARGET_FPS
 const MAX_PARTICLES = 200
 const MOUSE_CHECK_INTERVAL = 5
 
-// Fade system constants
-const FADE_DELAY = 3000 // Start fading after 3 seconds of inactivity
-const FADE_DURATION = 5000 // Take 5 seconds to fully fade
-const MIN_FADE_LEVEL = 0.2 // Don't fade completely (30% minimum brightness)
+const FADE_DELAY = 3000
+const FADE_DURATION = 5000
+const MIN_FADE_LEVEL = 0.2
 
-// Responsive sizing functions
 const getChainNodeSize = () => {
   const baseSize = Math.min(canvasWidth, canvasHeight) * 0.02
   return Math.max(5, Math.min(18, baseSize))
@@ -92,7 +80,6 @@ const getParticleSize = () => {
   return Math.max(0.1, Math.min(4, baseSize))
 }
 
-// State variables
 let canvas: HTMLCanvasElement
 let ctx: CanvasRenderingContext2D
 let animationFrame: number
@@ -332,10 +319,7 @@ function animate(currentTime = 0) {
     drawConnections()
   }
 
-  // Draw particles
   drawParticles()
-
-  // Update and draw chain nodes
   updateAndDrawNodes()
 
   animationFrame = requestAnimationFrame(animate)
@@ -588,6 +572,6 @@ onMount(() => {
       bind:this={canvas}
       class="w-full h-full"
       style="background: transparent;"
-    />
+    ></canvas>
   </div>
 </Card>
