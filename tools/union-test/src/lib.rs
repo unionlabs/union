@@ -400,6 +400,7 @@ where
     }
 
     pub async fn send_and_recv<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
         source_chain: &Src,
         contract: Src::Contract,
         msg: Src::Msg,

@@ -107,8 +107,12 @@ async fn open_channel_from_union_to_evm() {
     CLC.set(src_client.clone()).unwrap();
     DLC.set(dst_client.clone()).unwrap();
 
+    // let conn = ctx
+    //     .open_connection(true, src_client.client_id, dst_client.client_id, Duration::from_secs(180))
+    //     .await
+    //     .unwrap();
     let conn = ctx
-        .open_connection(true, src_client.client_id, dst_client.client_id, Duration::from_secs(180))
+        .open_connection::<cosmos::Module, evm::Module>(&ctx.src, src_client.client_id, &ctx.dst, dst_client.client_id, Duration::from_secs(180))
         .await
         .unwrap();
     assert!(conn.connection_id > 0);
@@ -159,7 +163,7 @@ async fn _open_connection_from_evm_to_union() {
     // DLC.set(dst_client.clone()).unwrap();
 
     let conn = ctx
-        .open_connection(false, src_client.client_id, dst_client.client_id, Duration::from_secs(180))
+        .open_connection::<evm::Module, cosmos::Module>(&ctx.dst, dst_client.client_id, &ctx.src, src_client.client_id, Duration::from_secs(180))
         .await
         .unwrap();
     assert!(conn.connection_id > 0);
@@ -276,13 +280,8 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     rand::thread_rng().fill_bytes(&mut salt_bytes);
     let contract: Bech32<FixedBytes<32>> = Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
         .unwrap();
-    let funded_msgs = vec![(
-        Box::new(ucs03_zkgm::msg::ExecuteMsg::Send {
-            channel_id: src_chain_id.try_into().unwrap(),
-            timeout_height: 0u64.into(),
-            timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-            salt: salt_bytes.into(),
-            instruction: Instruction {
+
+    let instruction_cosmos = Instruction {
                 version: INSTR_VERSION_1,
                 opcode: OP_FUNGIBLE_ASSET_ORDER,
                 operand: FungibleAssetOrder {
@@ -296,25 +295,33 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
                     base_token_path: "0".parse().unwrap(),
                     quote_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579").to_vec().into(),
                     quote_amount: "10".parse().unwrap(),
-                }
-                .abi_encode_params()
-                .into(),
-            }
+                }.abi_encode_params().into(),
+            };
+    
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: src_chain_id.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos
             .abi_encode_params()
             .into(),
-        }),
-        vec![Coin {
-            denom: "muno".into(),
-            amount: "10".into(),
-        }],
-    )];
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);;
 
+    let funds = vec![Coin{
+        denom: "muno".into(),
+        amount: "10".into(),
+    }];
+
+    
     // TODO: Here we should check the muno balance of sender account
     // Also token balanceOf the receiver account
-    let recv_packet_data = ctx.send_and_recv_cosmos(
-        true,
+    let recv_packet_data = ctx.send_and_recv::<cosmos::Module, evm::Module>(
+        &ctx.src,
         contract,
-        funded_msgs,
+        (bin_msg, funds).into(),
+        &ctx.dst,
         Duration::from_secs(360),
     ).await;
     assert!(recv_packet_data.is_ok(), "Failed to send and receive packet: {:?}", recv_packet_data.err());
@@ -346,22 +353,32 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         .into(),
     };
 
-    let send_call_struct = UCS03Zkgm::sendCall { 
-        channelId: dst_chain_id.try_into().unwrap(),
-        timeoutTimestamp: 4294967295000000000u64.into(),
-        timeoutHeight: 0u64.into(),
-        salt: salt_bytes.into(),
-        instruction: instruction_from_evm_to_union.clone(),
-    };
 
     // TODO: Here we should check the muno balance of sender account
     // Also token balanceOf the receiver account
-    let recv_packet_data = ctx.send_and_recv_eth(
-        false,
+
+    let evm_provider = ctx.dst.get_provider().await;
+
+    let ucs03_zkgm = UCS03Zkgm::new(contract.into(), evm_provider);
+
+    let mut call = ucs03_zkgm.send(
+        dst_chain_id.try_into().unwrap(),
+        4294967295000000000u64.into(),
+        0u64.into(),
+        salt_bytes.into(),
+        instruction_from_evm_to_union.clone(),
+    );
+    let call = call.with_cloned_provider();
+    let recv_packet_data = ctx.send_and_recv::<evm::Module, cosmos::Module>(
+        &ctx.dst,
         contract.into(),
-        send_call_struct,
+        call,
+        &ctx.src,
         Duration::from_secs(360),
     ).await;
+
+
+
     assert!(recv_packet_data.is_ok(), "Failed to send and receive packet: {:?}", recv_packet_data.err());
     // TODO: Here we should check the muno balance of sender account
     // Also token balanceOf the receiver account
