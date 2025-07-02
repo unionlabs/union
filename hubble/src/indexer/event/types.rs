@@ -305,6 +305,12 @@ impl From<u32> for ChannelId {
     }
 }
 
+impl Display for ChannelId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct TimeoutTimestamp(#[serde(with = "flexible_u64")] pub u64);
 
@@ -324,11 +330,17 @@ impl From<bytes::Bytes> for PortId {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
-pub struct Version(pub String);
+pub struct ChannelVersion(pub String);
 
-impl From<String> for Version {
+impl From<String> for ChannelVersion {
     fn from(value: String) -> Self {
         Self(value)
+    }
+}
+
+impl Display for ChannelVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -356,6 +368,12 @@ pub struct PacketHash(#[serde(with = "bytes_as_hex")] pub bytes::Bytes);
 impl From<bytes::Bytes> for PacketHash {
     fn from(value: bytes::Bytes) -> Self {
         Self(value)
+    }
+}
+
+impl fmt::Display for PacketHash {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "0x{}", hex::encode(&self.0))
     }
 }
 

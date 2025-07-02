@@ -9,6 +9,7 @@ use crate::indexer::{
     record::{ChainContext, InternalChainId, PgValue, PgValueExt},
 };
 
+#[derive(Clone)]
 pub struct PacketSendRecord {
     pub internal_chain_id: i32,
     pub block_hash: Vec<u8>,

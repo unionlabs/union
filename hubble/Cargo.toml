@@ -24,6 +24,7 @@ alloy-primitives   = { workspace = true }
 async-nats         = { version = "0.41.0" }
 axum               = { workspace = true, features = ["macros", "tokio"] }
 backon             = "0.4.4"
+base58 = "0.2.0"
 base64             = { workspace = true }
 bech32             = "0.11.0"
 bytes              = { version = "1.10.1" }
@@ -33,6 +34,7 @@ cometbft-rpc       = { workspace = true }
 embed-commit       = { workspace = true }
 futures            = { workspace = true, features = ["async-await"] }
 hex                = { workspace = true }
+hex-literal = "0.4"
 itertools          = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lazy_static        = { workspace = true }
@@ -56,6 +58,10 @@ tracing-subscriber = { workspace = true, features = ["env-filter", "json", "trac
 unionlabs          = { workspace = true, features = ["ethabi"] }
 url                = { version = "2.5.4", features = ["serde"] }
 valuable           = { version = "0.1.1", features = ["derive"] }
+alloy-sol-types   = { workspace = true }
+anyhow = { workspace = true }
+sha3 = { workspace = true }
+
 
 [target.'cfg(not(target_env = "msvc"))'.dependencies]
 tikv-jemallocator = "0.5"

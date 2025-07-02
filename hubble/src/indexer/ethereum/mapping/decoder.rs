@@ -15,8 +15,8 @@ use crate::{
             header::Header,
             types::{
                 Acknowledgement, BlockHash, BlockHeight, CanonicalChainId, Capacity, ChannelId,
-                ClientId, ClientType, ConnectionId, Denom, Maker, MakerMsg, PacketData, PacketHash,
-                PortId, RefillRate, TimeoutTimestamp, TransactionHash, Version,
+                ChannelVersion, ClientId, ClientType, ConnectionId, Denom, Maker, MakerMsg,
+                PacketData, PacketHash, PortId, RefillRate, TimeoutTimestamp, TransactionHash,
             },
         },
     },
@@ -185,11 +185,11 @@ impl SolEvent {
         self.get_port_id("counterpartyPortId")
     }
 
-    pub fn version(&self) -> Result<Version, IndexerError> {
+    pub fn version(&self) -> Result<ChannelVersion, IndexerError> {
         self.get_version("version")
     }
 
-    pub fn counterparty_version(&self) -> Result<Version, IndexerError> {
+    pub fn counterparty_version(&self) -> Result<ChannelVersion, IndexerError> {
         self.get_version("counterpartyVersion")
     }
 
@@ -261,7 +261,7 @@ impl SolEvent {
         Ok(self.get_bytes(key, "port-id")?.into())
     }
 
-    fn get_version(&self, key: &str) -> Result<Version, IndexerError> {
+    fn get_version(&self, key: &str) -> Result<ChannelVersion, IndexerError> {
         Ok(self.get_string(key, "version")?.into())
     }
 

@@ -15,7 +15,10 @@ use crate::indexer::{
         connection_open_try_record::ConnectionOpenTryRecord,
         create_client_record::CreateClientRecord,
         create_lens_client_record::CreateLensClientRecord, packet_ack_record::PacketAckRecord,
-        packet_recv_record::PacketRecvRecord, packet_send_record::PacketSendRecord,
+        packet_recv_record::PacketRecvRecord, packet_send_decoded_record::PacketSendDecodedRecord,
+        packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
+        packet_send_record::PacketSendRecord,
+        packet_send_transfers_record::PacketSendTransfersRecord,
         packet_timeout_record::PacketTimeoutRecord,
         token_bucket_update_record::TokenBucketUpdateRecord,
         update_client_record::UpdateClientRecord,
@@ -79,6 +82,15 @@ pub async fn delete_event_data_at_height(
         TokenBucketUpdateRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
         WalletMutationEntryRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
             .await?;
+        PacketSendDecodedRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        PacketSendTransfersRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+            .await?;
+        PacketSendInstructionsSearchRecord::delete_by_chain_and_height(
+            tx,
+            internal_chain_id,
+            height,
+        )
+        .await?;
 
         true
     } else {

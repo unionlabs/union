@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM v2_sync.packet_send_transfers_test\n            WHERE internal_chain_id = $1 AND height = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "bdda9df10b3a6bb19bbe158df2023ed9ab461e23fe0ec33adced3cfbbc674b51"
+}

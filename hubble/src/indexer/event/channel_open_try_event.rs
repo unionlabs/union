@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::indexer::event::{
     header::Header,
-    types::{ChannelId, ConnectionId, PortId, Version},
+    types::{ChannelId, ChannelVersion, ConnectionId, PortId},
 };
 
 #[derive(Serialize, Deserialize, Clone, Debug, PartialEq, Eq)]
@@ -14,7 +14,7 @@ pub struct ChannelOpenTryEvent {
     pub port_id: PortId,
     pub counterparty_channel_id: ChannelId,
     pub counterparty_port_id: PortId,
-    pub counterparty_version: Version,
+    pub counterparty_version: ChannelVersion,
 }
 
 #[cfg(test)]
@@ -25,7 +25,7 @@ mod tests {
             create_channel_test_values, create_test_header, test_json_format,
             test_roundtrip_serialization,
         },
-        types::Version,
+        types::ChannelVersion,
     };
 
     /// Creates a test ChannelOpenTryEvent with unique deterministic values
@@ -41,7 +41,7 @@ mod tests {
             port_id,
             counterparty_channel_id,
             counterparty_port_id,
-            counterparty_version: Version(format!("counterparty-version-{}", suffix)),
+            counterparty_version: ChannelVersion(format!("counterparty-version-{}", suffix)),
         }
     }
 

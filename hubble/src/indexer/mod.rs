@@ -2,6 +2,7 @@ pub mod api;
 // pub mod aptos;
 mod consumer;
 pub mod dummy;
+mod enrich;
 pub mod ethereum;
 pub mod event;
 mod fetcher;
