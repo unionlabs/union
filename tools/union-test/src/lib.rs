@@ -311,6 +311,11 @@ impl ChainEndpoint for cosmos::Module {
     }
 }
 
+pub enum ContractAddr {
+    Cosmos(Bech32<H256>),
+    Evm(H160),
+}
+
 pub struct TestContext<S: ChainEndpoint, D: ChainEndpoint> {
     pub src: S,
     pub dst: D,
@@ -438,20 +443,47 @@ where
     }
 
 
-    pub async fn send_and_recv(
+    pub async fn send_and_recv_cosmos(
         &self,
         send_from_source: bool,
         contract: Bech32<H256>,
-        funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
+        msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
         if send_from_source {
-            let packet_hash = self.src.send_ibc_packet(contract, funded_msgs).await?;
+            let packet_hash = self.src.send_ibc_packet(contract, msgs).await?;
             println!("Packet sent from source chain: {:?}", packet_hash);
             let recv = self.dst.wait_for_packet_recv(packet_hash, timeout).await?;
             return Ok(recv);
         }
-        unimplemented!("Sending IBC packets is not implemented for EVM chains");
+        let packet_hash = self.dst.send_ibc_packet(contract, msgs).await?;
+        println!("Packet sent from destination chain: {:?}", packet_hash);
+        let recv = self.src.wait_for_packet_recv(packet_hash, timeout).await?;
+        return Ok(recv);
+        
     }
+
+
+    pub async fn send_and_recv_eth(
+        &self,
+        send_from_source: bool,
+        contract: H160,
+        msgs: UCS03Zkgm::sendCall,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketRecv> {
+        if send_from_source {
+            let packet_hash = self.src.send_zkgm_transaction(contract, msgs).await?;
+            println!("Packet sent from source chain: {:?}", packet_hash);
+            let recv = self.dst.wait_for_packet_recv(packet_hash, timeout).await?;
+            return Ok(recv);
+        }
+        let packet_hash = self.dst.send_zkgm_transaction(contract, msgs).await?;
+        println!("Packet sent from destination chain: {:?}", packet_hash);
+        let recv = self.src.wait_for_packet_recv(packet_hash, timeout).await?;
+        return Ok(recv);
+        
+    }
+
+
 }
 
