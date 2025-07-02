@@ -12,9 +12,7 @@ var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
 	CreateUpgradeHandler: CreateUpgradeHandler,
 	StoreUpgrades: store.StoreUpgrades{
-		Added: []string{
-			"unionstaking",
-		},
+		Added:   []string{},
 		Renamed: []store.StoreRename{},
 		Deleted: []string{
 			"poa",
