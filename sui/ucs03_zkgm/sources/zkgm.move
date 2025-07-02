@@ -66,7 +66,9 @@ module zkgm::zkgm_relay {
     use zkgm::forward::{Self, Forward};
     use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
     use zkgm::fungible_asset_order_ack::{Self};
-    use zkgm::ack::{Self, Ack};
+    use zkgm::ack;
+    use zkgm::batch::{Self, Batch};
+    use zkgm::batch_ack;
     use sui::clock::Clock;
     
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
@@ -86,6 +88,7 @@ module zkgm::zkgm_relay {
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
     const ACK_SUCCESS: u256 = 1;
     const ACK_FAILURE: u256 = 0;
+
     const INSTR_VERSION_0: u8 = 0x00;
     const INSTR_VERSION_1: u8 = 0x01;
 
@@ -93,6 +96,10 @@ module zkgm::zkgm_relay {
     const OP_MULTIPLEX: u8 = 0x01;
     const OP_BATCH: u8 = 0x02;
     const OP_FUNGIBLE_ASSET_ORDER: u8 = 0x03;
+    const OP_STAKE: u8 = 0x04;
+    const OP_UNSTAKE: u8 = 0x05;
+    const OP_WITHDRAW_STAKE: u8 = 0x06;
+    const OP_WITHDRAW_REWARDS: u8 = 0x07;
 
     const FILL_TYPE_PROTOCOL: u256 = 0xB0CAD0;
     const FILL_TYPE_MARKETMAKER: u256 = 0xD1CEC45E;
@@ -123,7 +130,10 @@ module zkgm::zkgm_relay {
     const E_NO_COIN_IN_BAG: u64 = 23;
     const E_CHANNEL_BALANCE_PAIR_NOT_FOUND: u64 = 25;
     const E_ANOTHER_TOKEN_IS_REGISTERED: u64 = 26;
+    const E_INVALID_BATCH_INSTRUCTION: u64 = 27;
+    const E_BATCH_MUST_BE_SYNC: u64 = 28;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
+
 
     public struct IbcAppWitness has drop {}
 
@@ -450,7 +460,7 @@ module zkgm::zkgm_relay {
 
     public entry fun recv_packet<T>(
         ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
+        zkgm: &mut RelayStore,
         clock: &clock::Clock,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
@@ -474,9 +484,7 @@ module zkgm::zkgm_relay {
                 packet_timeout_heights[i],
                 packet_timeout_timestamps[i],
             ));
-            acks.push_back(process_receive<T>(
-                ibc_store,
-                relay_store,
+            acks.push_back(zkgm.process_receive<T>(
                 clock,                
                 packets[i],
                 relayer,
@@ -501,8 +509,7 @@ module zkgm::zkgm_relay {
     }
 
     fun process_receive<T>(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
+        zkgm: &mut RelayStore,
         clock: &clock::Clock,
         packet: Packet,
         relayer: address,
@@ -514,9 +521,7 @@ module zkgm::zkgm_relay {
         let zkgm_packet = zkgm_packet::decode(raw_zkgm_packet);
 
         let (ack, err) =
-            execute_internal<T>(
-                ibc_store,
-                relay_store,
+            zkgm.execute_internal<T>(
                 packet,
                 relayer,
                 relayer_msg,
@@ -545,12 +550,11 @@ module zkgm::zkgm_relay {
     }
 
     fun execute_internal<T>(
-        ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
+        zkgm: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
-        _salt: vector<u8>,
+        salt: vector<u8>,
         path: u256,
         instruction: Instruction,
         intent: bool,
@@ -563,9 +567,7 @@ module zkgm::zkgm_relay {
                 match (version) {
                     INSTR_VERSION_1 => {
                         // TODO(aeryz): fix
-                        execute_fungible_asset_order<T>(
-                            ibc_store,
-                            relay_store,
+                        zkgm.execute_fungible_asset_order<T>(
                             ibc_packet,
                             relayer,
                             relayer_msg,
@@ -578,7 +580,22 @@ module zkgm::zkgm_relay {
                     _ => (vector::empty(), E_UNSUPPORTED_VERSION)
                 }
             },
-            OP_BATCH => (vector::empty(), E_NO_BATCH_OPERATION),
+            OP_BATCH => {
+                if (version != INSTR_VERSION_0) {
+                    return (vector::empty(), E_UNSUPPORTED_VERSION)  
+                };
+
+                zkgm.execute_batch<T>(
+                    ibc_packet,
+                    relayer,
+                    relayer_msg,
+                    salt,
+                    path,
+                    batch::decode(instruction.operand()),
+                    intent,
+                    ctx,                    
+                )
+            },
             OP_FORWARD => (vector::empty(), E_NO_EXECUTE_OPERATION),
             OP_MULTIPLEX => (vector::empty(), E_NO_MULTIPLEX_OPERATION),
             _ => (vector::empty(), E_UNKNOWN_SYSCALL)
@@ -698,9 +715,56 @@ module zkgm::zkgm_relay {
         ).encode(), 0)
     }
 
+    fun execute_batch<T>(
+        zkgm: &mut RelayStore,
+        ibc_packet: Packet,
+        relayer: address,
+        relayer_msg: vector<u8>,
+        salt: vector<u8>,
+        path: u256,
+        batch: Batch,
+        intent: bool,
+        ctx: &mut TxContext
+    ): (vector<u8>, u64) {
+        let l = batch.instructions().length();
+        let mut acks = vector::empty();
+
+        let mut i = 0;
+        while (i < l) {
+            let instruction = batch.instructions()[i];  
+            if (!is_allowed_batch_instruction(instruction.opcode())) {
+                return (vector::empty(), E_INVALID_BATCH_INSTRUCTION);
+            };
+
+            let (ack, err) = zkgm.execute_internal<T>(
+                ibc_packet,
+                relayer,
+                relayer_msg,
+                derive_batch_salt(i, salt),
+                path,
+                instruction,
+                intent,
+                ctx
+            );
+
+            if (err != 0) {
+                return (vector::empty(), err)
+            };
+
+            if (ack.is_empty()) {
+                return (vector::empty(), E_BATCH_MUST_BE_SYNC)
+            } else if (ack == ACK_ERR_ONLYMAKER){
+                return (ack, 0)
+            };
+
+            acks.push_back(ack);
+        };
+
+        (batch_ack::new(acks).encode(), 0)
+    }
+
 
     fun execute_fungible_asset_order<T>(
-        ibc_store: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
@@ -1467,5 +1531,22 @@ module zkgm::zkgm_relay {
             *forward::instruction(&forward_packet), 
             ctx
         )
+    }
+
+    fun is_allowed_batch_instruction(
+        opcode: u8
+    ): bool {
+        opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
+            || opcode == OP_STAKE || opcode == OP_UNSTAKE
+            || opcode == OP_WITHDRAW_STAKE
+    }
+
+    fun derive_batch_salt(
+        index: u64,
+        salt: vector<u8>
+    ): vector<u8> {
+        let mut data: vector<u8> = bcs::to_bytes(&(index as u256));
+        data.append(salt);
+        hash::keccak256(&data)
     }
 }

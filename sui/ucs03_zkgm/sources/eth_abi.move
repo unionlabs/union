@@ -272,15 +272,54 @@ module zkgm::zkgm_ethabi {
         result
     }
 
+    /// decode array of dynamic-sized data (string[], SomeDynStruct[])
+    public macro fun decode_dyn_array<$T>(
+        $buf: &vector<u8>,
+        $index: &mut u64,
+        $decode_fn: |vector<u8>| -> $T
+    ): vector<$T> {
+        let original_index = *$index;
+
+        let vec_len = (decode_uint($buf, $index) as u64);
+
+        let mut result = vector::empty();
+        let mut i = 0;
+
+        let mut item_indices = vector::empty();
+        
+        while (i < vec_len) {
+            let item_index = (decode_uint($buf, $index) as u64);
+            item_indices.push_back(item_index);
+            i = i + 1;
+        };
+
+        let offset = original_index + 0x20;
+
+        let mut i = 0;
+        while (i < vec_len) {            
+            let end = if (i == vec_len - 1) {
+                vector::length($buf) - offset
+            } else {
+                item_indices[i + 1]
+            };
+            // std::debug::print(&(end + offset));
+            // std::debug::print(&vec_len);
+            result.push_back($decode_fn(vector_slice($buf, item_indices[i] + offset, end + offset)));
+            i = i + 1;
+        };
+
+        result
+    }
+
     /// encode array of dynamic-sized data (string[], SomeDynStruct[])
     public macro fun encode_dyn_array<$T: copy>(
         $buf: &mut vector<u8>,
         $vec: &vector<$T>,
         $encode_fn: |&mut vector<u8>, &$T|
     ) {
-        let rest_buf = vector::empty();
+        let mut rest_buf = vector::empty();
 
-        let i = 0;
+        let mut i = 0;
         let len = vector::length($vec);
         encode_uint($buf, len);
 
