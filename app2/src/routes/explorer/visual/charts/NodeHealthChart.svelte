@@ -195,8 +195,6 @@ const avgResponseTime = $derived(
       <div class="text-xs text-zinc-500">
         {#if !hasData}
           loading...
-        {:else}
-          {healthPercentage}% healthy
         {/if}
       </div>
     </header>
