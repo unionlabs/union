@@ -2,40 +2,7 @@
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { Option, pipe } from "effect"
-
-interface AssetRoute {
-  fromChain: string
-  toChain: string
-  fromName: string
-  toName: string
-  route: string
-  count: number
-  volume: number
-  percentage: number
-  lastActivity: string
-}
-
-interface Asset {
-  assetSymbol: string
-  assetName: string
-  transferCount: number
-  totalVolume: number
-  averageAmount: number
-  largestTransfer: number
-  volumeChange?: number
-  countChange?: number
-  lastActivity: string
-  topRoutes: AssetRoute[]
-}
-
-interface AssetVolumeData {
-  assets: Asset[]
-  assetVolumeTimeScale: Record<string, Asset[]>
-  totalAssets: number
-  totalVolume: number
-  totalTransfers: number
-  serverUptimeSeconds: number
-}
+import type { Asset, AssetRoute, AssetVolumeData } from "../types"
 
 interface Props {
   assetVolumeData: Option.Option<AssetVolumeData>

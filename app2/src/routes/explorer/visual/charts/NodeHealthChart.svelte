@@ -86,8 +86,7 @@ function formatBlockHeight(height?: number): string {
   if (!height) {
     return "N/A"
   }
-  // Show full block height - no abbreviation since it's critical for debugging
-  return height.toLocaleString() // Adds commas for readability (e.g., 1,234,567)
+  return height.toLocaleString()
 }
 
 function getStatusColor(status: string): string {
