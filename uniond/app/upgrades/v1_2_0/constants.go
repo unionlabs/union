@@ -11,5 +11,13 @@ const UpgradeName = "v1.2.0"
 var Upgrade = upgrades.Upgrade{
 	UpgradeName:          UpgradeName,
 	CreateUpgradeHandler: CreateUpgradeHandler,
-	StoreUpgrades:        store.StoreUpgrades{},
+	StoreUpgrades: store.StoreUpgrades{
+		Added: []string{
+			"unionstaking",
+		},
+		Renamed: []store.StoreRename{},
+		Deleted: []string{
+			"poa",
+		},
+	},
 }

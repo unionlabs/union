@@ -10,8 +10,8 @@ import (
 	upgradetypes "cosmossdk.io/x/upgrade/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	"github.com/cosmos/cosmos-sdk/types/module"
-	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
-	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
+	// crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
+	// minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 
 	"github.com/unionlabs/union/uniond/app/upgrades"
 )
@@ -32,56 +32,56 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 
-		// Mint U
-		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(UNION_FOUNDATION_MUTLI_SIG)
-		uTotalSupply := []sdk.Coin{getUFromU64(U_TOTAL_SUPPLY)}
-		keepers.MintKeeper.MintCoins(ctx, uTotalSupply)
-		keepers.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, unionFoundationMultiSig, uTotalSupply)
+		// // Mint U
+		// unionFoundationMultiSig, err := sdk.AccAddressFromBech32(UNION_FOUNDATION_MUTLI_SIG)
+		// uTotalSupply := []sdk.Coin{getUFromU64(U_TOTAL_SUPPLY)}
+		// keepers.MintKeeper.MintCoins(ctx, uTotalSupply)
+		// keepers.BankKeeper.SendCoinsFromModuleToAccount(ctx, minttypes.ModuleName, unionFoundationMultiSig, uTotalSupply)
 
-		// Update x/staking
-		stakingParams, err := keepers.StakingKeeper.GetParams(ctx)
-		if err != nil {
-			return nil, err
-		}
-		stakingParams.BondDenom = U_BASE_DENOM
-		stakingParams.MinCommissionRate = math.LegacyMustNewDecFromStr("0.05")
-		err = keepers.StakingKeeper.SetParams(ctx, stakingParams)
-		if err != nil {
-			return nil, err
-		}
+		// // Update x/staking
+		// stakingParams, err := keepers.StakingKeeper.GetParams(ctx)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// stakingParams.BondDenom = U_BASE_DENOM
+		// stakingParams.MinCommissionRate = math.LegacyMustNewDecFromStr("0.05")
+		// err = keepers.StakingKeeper.SetParams(ctx, stakingParams)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		// Update x/mint
-		mintParams, err := keepers.MintKeeper.Params.Get(ctx)
-		if err != nil {
-			return nil, err
-		}
-		mintParams.MintDenom = U_BASE_DENOM
-		// TODO: Update mint params for U tokenomics
-		err = keepers.MintKeeper.Params.Set(ctx, mintParams)
-		if err != nil {
-			return nil, err
-		}
+		// // Update x/mint
+		// mintParams, err := keepers.MintKeeper.Params.Get(ctx)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// mintParams.MintDenom = U_BASE_DENOM
+		// // TODO: Update mint params for U tokenomics
+		// err = keepers.MintKeeper.Params.Set(ctx, mintParams)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		// Update x/gov
-		govParams, err := keepers.GovKeeper.Params.Get(ctx)
-		if err != nil {
-			return nil, err
-		}
-		govParams.MinDeposit = []sdk.Coin{getUFromU64(10)}
-		govParams.ExpeditedMinDeposit = []sdk.Coin{getUFromU64(50)}
-		err = keepers.GovKeeper.Params.Set(ctx, govParams)
-		if err != nil {
-			return nil, err
-		}
+		// // Update x/gov
+		// govParams, err := keepers.GovKeeper.Params.Get(ctx)
+		// if err != nil {
+		// 	return nil, err
+		// }
+		// govParams.MinDeposit = []sdk.Coin{getUFromU64(10)}
+		// govParams.ExpeditedMinDeposit = []sdk.Coin{getUFromU64(50)}
+		// err = keepers.GovKeeper.Params.Set(ctx, govParams)
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		// Update x/crisis
-		_, err = keepers.CrisisKeeper.UpdateParams(ctx, &crisistypes.MsgUpdateParams{
-			Authority:   keepers.GovKeeper.GetAuthority(),
-			ConstantFee: getBaseUFromString("1000"),
-		})
-		if err != nil {
-			return nil, err
-		}
+		// // Update x/crisis
+		// _, err = keepers.CrisisKeeper.UpdateParams(ctx, &crisistypes.MsgUpdateParams{
+		// 	Authority:   keepers.GovKeeper.GetAuthority(),
+		// 	ConstantFee: getBaseUFromString("1000"),
+		// })
+		// if err != nil {
+		// 	return nil, err
+		// }
 
 		return migrations, nil
 	}
