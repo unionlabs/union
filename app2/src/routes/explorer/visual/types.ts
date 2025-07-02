@@ -105,142 +105,141 @@ export interface ChartData {
 }
 
 export interface NodeData {
-    chainId: string
-    chainName: string
-    rpcUrl: string
-    rpcType: string
-    status: string // "healthy", "degraded", "unhealthy"
-    responseTimeMs: number
-    lastCheckTime: number
-    latestBlockHeight?: number
-    errorMessage?: string
-  }
-  
-  export interface ChainHealthStat {
-    chainName: string
-    healthyNodes: number
-    totalNodes: number
-    avgResponseTime: number
-  }
-  
-  export interface NodeHealthSummary {
-    totalNodes: number
-    healthyNodes: number
-    degradedNodes: number
-    unhealthyNodes: number
-    avgResponseTime: number
-    nodesWithRpcs: NodeData[]
-    chainHealthStats: Record<string, ChainHealthStat>
-  }
+  chainId: string
+  chainName: string
+  rpcUrl: string
+  rpcType: string
+  status: string // "healthy", "degraded", "unhealthy"
+  responseTimeMs: number
+  lastCheckTime: number
+  latestBlockHeight?: number
+  errorMessage?: string
+}
 
-  export interface WalletStats {
-    count: number
-    address: string
-    displayAddress: string
-    lastActivity: string
-  }
-  
-  export interface ActiveWalletRates {
-    sendersLastMin: number
-    sendersLastHour: number
-    sendersLastDay: number
-    sendersLast7d: number
-    sendersLast14d: number
-    sendersLast30d: number
-  
-    receiversLastMin: number
-    receiversLastHour: number
-    receiversLastDay: number
-    receiversLast7d: number
-    receiversLast14d: number
-    receiversLast30d: number
-  
-    totalLastMin: number
-    totalLastHour: number
-    totalLastDay: number
-    totalLast7d: number
-    totalLast14d: number
-    totalLast30d: number
-  
-    uniqueSendersTotal: number
-    uniqueReceiversTotal: number
-    uniqueTotalWallets: number
-  }
+export interface ChainHealthStat {
+  chainName: string
+  healthyNodes: number
+  totalNodes: number
+  avgResponseTime: number
+}
 
-  export interface TransferRates {
-    txPerMinute: number
-    txPerHour: number
-    txPerDay: number
-    txPer7Days: number
-    txPer14Days: number
-    txPer30Days: number
-    txPerMinuteChange?: number
-    txPerHourChange?: number
-    txPerDayChange?: number
-    txPer7DaysChange?: number
-    txPer14DaysChange?: number
-    txPer30DaysChange?: number
-    totalTracked: number
-    serverUptimeSeconds: number
-  }
-  
-  export interface ActiveWalletRates {
-    sendersLastMin: number
-    sendersLastHour: number
-    sendersLastDay: number
-    sendersLast7d: number
-    sendersLast14d: number
-    sendersLast30d: number
-    sendersLastMinChange?: number
-    sendersLastHourChange?: number
-    sendersLastDayChange?: number
-    sendersLast7dChange?: number
-    sendersLast14dChange?: number
-    sendersLast30dChange?: number
-    receiversLastMin: number
-    receiversLastHour: number
-    receiversLastDay: number
-    receiversLast7d: number
-    receiversLast14d: number
-    receiversLast30d: number
-    receiversLastMinChange?: number
-    receiversLastHourChange?: number
-    receiversLastDayChange?: number
-    receiversLast7dChange?: number
-    receiversLast14dChange?: number
-    receiversLast30dChange?: number
-    totalLastMin: number
-    totalLastHour: number
-    totalLastDay: number
-    totalLast7d: number
-    totalLast14d: number
-    totalLast30d: number
-    totalLastMinChange?: number
-    totalLastHourChange?: number
-    totalLastDayChange?: number
-    totalLast7dChange?: number
-    totalLast14dChange?: number
-    totalLast30dChange?: number
-    uniqueSendersTotal: number
-    uniqueReceiversTotal: number
-    uniqueTotalWallets: number
-    serverUptimeSeconds: number
-  }
-  
-  export interface LogEntry {
-    id: number
-    timestamp: string
-    type: string
-    message: string
-    sourceChain: string
-    destChain: string
-    hash: string
-    sender?: string | undefined
-    receiver?: string | undefined
-    sourceChainId?: string | undefined
-    destChainId?: string | undefined
-  }
+export interface NodeHealthSummary {
+  totalNodes: number
+  healthyNodes: number
+  degradedNodes: number
+  unhealthyNodes: number
+  avgResponseTime: number
+  nodesWithRpcs: NodeData[]
+  chainHealthStats: Record<string, ChainHealthStat>
+}
 
+export interface WalletStats {
+  count: number
+  address: string
+  displayAddress: string
+  lastActivity: string
+}
+
+export interface ActiveWalletRates {
+  sendersLastMin: number
+  sendersLastHour: number
+  sendersLastDay: number
+  sendersLast7d: number
+  sendersLast14d: number
+  sendersLast30d: number
+
+  receiversLastMin: number
+  receiversLastHour: number
+  receiversLastDay: number
+  receiversLast7d: number
+  receiversLast14d: number
+  receiversLast30d: number
+
+  totalLastMin: number
+  totalLastHour: number
+  totalLastDay: number
+  totalLast7d: number
+  totalLast14d: number
+  totalLast30d: number
+
+  uniqueSendersTotal: number
+  uniqueReceiversTotal: number
+  uniqueTotalWallets: number
+}
+
+export interface TransferRates {
+  txPerMinute: number
+  txPerHour: number
+  txPerDay: number
+  txPer7Days: number
+  txPer14Days: number
+  txPer30Days: number
+  txPerMinuteChange?: number
+  txPerHourChange?: number
+  txPerDayChange?: number
+  txPer7DaysChange?: number
+  txPer14DaysChange?: number
+  txPer30DaysChange?: number
+  totalTracked: number
+  serverUptimeSeconds: number
+}
+
+export interface ActiveWalletRates {
+  sendersLastMin: number
+  sendersLastHour: number
+  sendersLastDay: number
+  sendersLast7d: number
+  sendersLast14d: number
+  sendersLast30d: number
+  sendersLastMinChange?: number
+  sendersLastHourChange?: number
+  sendersLastDayChange?: number
+  sendersLast7dChange?: number
+  sendersLast14dChange?: number
+  sendersLast30dChange?: number
+  receiversLastMin: number
+  receiversLastHour: number
+  receiversLastDay: number
+  receiversLast7d: number
+  receiversLast14d: number
+  receiversLast30d: number
+  receiversLastMinChange?: number
+  receiversLastHourChange?: number
+  receiversLastDayChange?: number
+  receiversLast7dChange?: number
+  receiversLast14dChange?: number
+  receiversLast30dChange?: number
+  totalLastMin: number
+  totalLastHour: number
+  totalLastDay: number
+  totalLast7d: number
+  totalLast14d: number
+  totalLast30d: number
+  totalLastMinChange?: number
+  totalLastHourChange?: number
+  totalLastDayChange?: number
+  totalLast7dChange?: number
+  totalLast14dChange?: number
+  totalLast30dChange?: number
+  uniqueSendersTotal: number
+  uniqueReceiversTotal: number
+  uniqueTotalWallets: number
+  serverUptimeSeconds: number
+}
+
+export interface LogEntry {
+  id: number
+  timestamp: string
+  type: string
+  message: string
+  sourceChain: string
+  destChain: string
+  hash: string
+  sender?: string | undefined
+  receiver?: string | undefined
+  sourceChainId?: string | undefined
+  destChainId?: string | undefined
+}
 
 export interface RouteData {
   route: string

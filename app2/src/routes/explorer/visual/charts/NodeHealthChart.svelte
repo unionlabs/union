@@ -271,8 +271,8 @@ const avgResponseTime = $derived(
       <div class="flex-1 flex flex-col">
         {#if !hasData}
           <!-- Loading/No Data State - Show Skeletons -->
-          <div class="space-y-0.5 flex-1">
-            {#each Array(5) as _, index}
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-1 flex-1">
+            {#each Array(6) as _, index}
               <div class="p-1.5 bg-zinc-900 border border-zinc-800 rounded">
                 <div class="flex items-center justify-between mb-0.5">
                   <div class="flex items-center space-x-1 text-xs">
@@ -300,7 +300,7 @@ const avgResponseTime = $derived(
           </div>
         {:else}
           <!-- Nodes Data -->
-          <div class="space-y-1 flex-1 overflow-y-auto">
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-1 flex-1 overflow-y-auto">
             {#each currentData as node, index}
               <article class="p-2 sm:p-1.5 bg-zinc-900 border border-zinc-800 rounded">
                 <!-- Node Header -->
@@ -313,11 +313,6 @@ const avgResponseTime = $derived(
                     <span class="text-zinc-600">•</span>
                     <span class="text-zinc-400 text-xs">
                       {node.rpcType}
-                    </span>
-                  </div>
-                  <div class="flex items-center space-x-1">
-                    <span class="text-xs text-zinc-500 tabular-nums">
-                      {formatLastCheckTime(node.lastCheckTime)}
                     </span>
                   </div>
                 </div>
