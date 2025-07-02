@@ -4,7 +4,7 @@ import { runFork, runPromise } from "$lib/runtime"
 import type { AuthChangeEvent, Session, User } from "@supabase/supabase-js"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Duration, Effect, Fiber, Option, pipe } from "effect"
-import { getSupabaseClient } from "../client"
+import { SupabaseClient } from "../client"
 import { AuthenticationError, SupabaseError } from "../errors"
 import { hasProviderLinked } from "../helpers"
 import { invokeTick } from "../queries/private"
@@ -159,10 +159,10 @@ export class Dashboard {
    * @private
    */
   private listenToAuth() {
-    runPromise(
-      pipe(
-        getSupabaseClient(),
-        Effect.flatMap((client) =>
+    runPromise(pipe(
+      SupabaseClient,
+      Effect.andThen((client) =>
+        pipe(
           Effect.tryPromise({
             try: async () => {
               const { data, error } = await client.auth.getSession()
@@ -171,34 +171,33 @@ export class Dashboard {
               }
               return { data }
             },
-            catch: (error) =>
+            catch: (cause) =>
               new SupabaseError({
                 operation: "getSession",
-                cause: error,
+                cause,
               }),
-          })
-        ),
-        Effect.tap(({ data }) =>
-          Effect.sync(() => {
-            this.session = Option.fromNullable(data.session)
-            this.handleAuthChange(data.session)
-          })
-        ),
-        Effect.flatMap(() => getSupabaseClient()),
-        Effect.flatMap((client) =>
-          Effect.sync(() => {
-            client.auth.onAuthStateChange((event: AuthChangeEvent, session: Session | null) => {
-              this.session = Option.fromNullable(session)
-              this.handleAuthChange(session)
+          }),
+          Effect.tap(({ data }) =>
+            Effect.sync(() => {
+              this.session = Option.fromNullable(data.session)
+              this.handleAuthChange(data.session)
             })
-          })
-        ),
-        Effect.catchAll((error) => {
-          errorStore.showError(new AuthenticationError({ cause: error, operation: "auth" }))
-          return Effect.void
-        }),
+          ),
+          Effect.andThen(() =>
+            Effect.sync(() => {
+              client.auth.onAuthStateChange((_event: AuthChangeEvent, session: Session | null) => {
+                this.session = Option.fromNullable(session)
+                this.handleAuthChange(session)
+              })
+            })
+          ),
+          Effect.catchAll((error) => {
+            errorStore.showError(new AuthenticationError({ cause: error, operation: "auth" }))
+            return Effect.void
+          }),
+        )
       ),
-    )
+    ))
   }
 
   /**
@@ -209,18 +208,13 @@ export class Dashboard {
     this.stopTickPolling()
 
     this.tickFiber = runFork(
-      Effect.forever(
-        pipe(
-          Effect.succeed(this.userId),
-          Effect.flatMap((userId) =>
-            Option.match(userId, {
-              onNone: () => Effect.void,
-              onSome: (id) => Effect.map(invokeTick(id), () => void 0),
-            })
-          ),
-          Effect.delay(Duration.minutes(4)),
-        ),
-      ) as Effect.Effect<never, Error, never>,
+      pipe(
+        this.userId,
+        Effect.flatMap((id) => Effect.map(invokeTick(id), () => void 0)),
+        Effect.catchAll(() => Effect.void),
+        Effect.delay(Duration.minutes(4)),
+        Effect.forever,
+      ),
     )
   }
 
@@ -333,7 +327,7 @@ export class Dashboard {
    */
   login(provider: AuthProvider) {
     return pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>
@@ -344,19 +338,19 @@ export class Dashboard {
                 skipBrowserRedirect: true,
               },
             }),
-          catch: (error) =>
+          catch: (cause) =>
             new SupabaseError({
               operation: "signInWithOAuth",
-              cause: error,
+              cause,
             }),
         })
       ),
-      Effect.flatMap(({ data, error }) =>
-        error
+      Effect.flatMap(({ data, error: cause }) =>
+        cause
           ? Effect.fail(
             new SupabaseError({
               operation: "signInWithOAuth",
-              cause: error,
+              cause,
             }),
           )
           : Effect.succeed(data)
@@ -383,7 +377,7 @@ export class Dashboard {
    */
   logout() {
     return pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.auth.signOut(),
@@ -394,12 +388,12 @@ export class Dashboard {
             }),
         })
       ),
-      Effect.flatMap(({ error }) =>
-        error
+      Effect.flatMap(({ error: cause }) =>
+        cause
           ? Effect.fail(
             new SupabaseError({
               operation: "signOut",
-              cause: error,
+              cause,
             }),
           )
           : Effect.void
@@ -425,7 +419,7 @@ export class Dashboard {
    */
   linkIdentity(provider: AuthProvider) {
     return pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>
@@ -438,19 +432,19 @@ export class Dashboard {
                 skipBrowserRedirect: true,
               },
             }),
-          catch: (error) =>
+          catch: (cause) =>
             new SupabaseError({
               operation: "linkIdentity",
-              cause: error,
+              cause,
             }),
         })
       ),
-      Effect.flatMap(({ data, error }) =>
-        error
+      Effect.flatMap(({ data, error: cause }) =>
+        cause
           ? Effect.fail(
             new SupabaseError({
               operation: "linkIdentity",
-              cause: error,
+              cause,
             }),
           )
           : Effect.succeed(data)
@@ -476,14 +470,14 @@ export class Dashboard {
    */
   private refreshSession() {
     return Effect.gen(function*(this: Dashboard) {
-      const client = yield* getSupabaseClient()
+      const client = yield* SupabaseClient
 
       const { data: { session }, error } = yield* Effect.tryPromise({
         try: () => client.auth.refreshSession(),
-        catch: (error) =>
+        catch: (cause) =>
           new SupabaseError({
             operation: "refreshSession",
-            cause: error,
+            cause,
           }),
       })
 
@@ -509,7 +503,7 @@ export class Dashboard {
    */
   unlinkIdentity(provider: AuthProvider) {
     return Effect.gen(function*(this: Dashboard) {
-      const client = yield* getSupabaseClient()
+      const client = yield* SupabaseClient
 
       const user = Option.getOrUndefined(this.user) as User | undefined
       if (!user) {
@@ -577,7 +571,7 @@ export class Dashboard {
    */
   deleteAccount() {
     return pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>

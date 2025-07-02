@@ -1,4 +1,5 @@
 import { ENV } from "$lib/constants"
+import { SupabaseClient } from "$lib/dashboard/client"
 import { GasPriceMap } from "$lib/gasprice"
 import { GraphQL } from "$lib/graphql/service"
 import * as Datadog from "$lib/logging/datadog"
@@ -18,6 +19,7 @@ export default Layer.mergeAll(
   GraphQL.Default,
   GasPriceMap.Default,
   PriceOracleExecutor.Default,
+  SupabaseClient.Default(),
   Logger.replace(
     Logger.defaultLogger,
     Logger.zip(

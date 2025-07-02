@@ -1,4 +1,3 @@
-import { getSupabaseClient } from "$lib/dashboard/client"
 import { CACHE_VERSION } from "$lib/dashboard/config"
 import { SupabaseError } from "$lib/dashboard/errors"
 import { submitWalletVerification } from "$lib/dashboard/queries/private"
@@ -11,6 +10,7 @@ import { Chain } from "@unionlabs/sdk/schema"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Data, Effect, Option, pipe } from "effect"
 import type { Hash } from "viem"
+import { SupabaseClient } from "../client"
 
 const allegianceMessage =
   "I'm signing this message to prove account ownership and to pledge allegiance to zkgm."
@@ -57,7 +57,7 @@ const complete = (): StateResult => ({
 export const addCosmosWallet = (
   state: AddCosmosWalletState,
   selectedChains: Array<string | null>,
-): Effect.Effect<StateResult, never, never> => {
+): Effect.Effect<StateResult, never, SupabaseClient> => {
   return AddCosmosWalletState.$match(state, {
     SwitchChain: ({ chain }) =>
       pipe(
@@ -138,61 +138,64 @@ export const addCosmosWallet = (
 
     Verifying: ({ address, chain, signature, message }) =>
       pipe(
-        getSupabaseClient(),
-        Effect.flatMap((client) => Effect.tryPromise(() => client.auth.refreshSession())),
-        Effect.flatMap(({ data: { session } }) => {
-          if (!session?.user.id) {
-            return Effect.fail(
-              new SupabaseError({
-                cause: "No authenticated user found",
-                operation: "authVerification",
-              }),
-            )
-          }
+        SupabaseClient,
+        Effect.andThen((client) =>
+          pipe(
+            Effect.tryPromise(() => client.auth.refreshSession()),
+            Effect.flatMap(({ data: { session } }) => {
+              if (!session?.user.id) {
+                return Effect.fail(
+                  new SupabaseError({
+                    cause: "No authenticated user found",
+                    operation: "authVerification",
+                  }),
+                )
+              }
 
-          return submitWalletVerification({
-            id: session.user.id,
-            address,
-            chainId: `cosmos:${chain.chain_id}`,
-            message,
-            signature: JSON.stringify(signature),
-            selectedChains,
-          })
-        }),
-        Effect.flatMap((response) => {
-          if (Option.isNone(response)) {
-            return Effect.fail(
-              new WalletVerificationError({
-                cause: "Wallet verification failed",
-                operation: "verify",
-              }),
-            )
-          }
+              return submitWalletVerification({
+                id: session.user.id,
+                address,
+                chainId: `cosmos:${chain.chain_id}`,
+                message,
+                signature: JSON.stringify(signature),
+                selectedChains,
+              })
+            }),
+            Effect.flatMap((response) => {
+              if (Option.isNone(response)) {
+                return Effect.fail(
+                  new WalletVerificationError({
+                    cause: "Wallet verification failed",
+                    operation: "verify",
+                  }),
+                )
+              }
 
-          return Effect.succeed(response.value)
-        }),
-        Effect.flatMap(() => getSupabaseClient()),
-        Effect.flatMap((client) => Effect.tryPromise(() => client.auth.getSession())),
-        Effect.flatMap(({ data: { session } }) => {
-          if (!session?.user.id) {
-            return Effect.fail(
-              new WalletVerificationError({
-                cause: "No user ID found",
-                operation: "verify",
-              }),
-            )
-          }
+              return Effect.succeed(response.value)
+            }),
+            Effect.andThen(() => Effect.tryPromise(() => client.auth.getSession())),
+            Effect.flatMap(({ data: { session } }) => {
+              if (!session?.user.id) {
+                return Effect.fail(
+                  new WalletVerificationError({
+                    cause: "No user ID found",
+                    operation: "verify",
+                  }),
+                )
+              }
 
-          return Effect.succeed(ok(Updating(), "Wallet verified. Updating data..."))
-        }),
-        Effect.catchAll((error) =>
-          Effect.succeed(
-            fail(
-              "Failed to verify wallet. Please try again.",
-              new WalletVerificationError({
-                cause: extractErrorDetails(error),
-                operation: "verify",
-              }),
+              return Effect.succeed(ok(Updating(), "Wallet verified. Updating data..."))
+            }),
+            Effect.catchAll((error) =>
+              Effect.succeed(
+                fail(
+                  "Failed to verify wallet. Please try again.",
+                  new WalletVerificationError({
+                    cause: extractErrorDetails(error),
+                    operation: "verify",
+                  }),
+                ),
+              )
             ),
           )
         ),
@@ -200,43 +203,47 @@ export const addCosmosWallet = (
 
     Updating: () =>
       pipe(
-        getSupabaseClient(),
-        Effect.flatMap((client) => Effect.tryPromise(() => client.auth.getSession())),
-        Effect.flatMap(({ data: { session } }) => {
-          if (!session?.user.id) {
-            return Effect.fail(
-              new WalletVerificationError({
-                cause: "No user ID found",
-                operation: "update",
-              }),
-            )
-          }
+        SupabaseClient,
+        Effect.andThen((client) =>
+          pipe(
+            Effect.tryPromise(() => client.auth.getSession()),
+            Effect.flatMap(({ data: { session } }) => {
+              if (!session?.user.id) {
+                return Effect.fail(
+                  new WalletVerificationError({
+                    cause: "No user ID found",
+                    operation: "update",
+                  }),
+                )
+              }
 
-          return pipe(
-            clearLocalStorageCacheEntry("wallets", `${CACHE_VERSION}:${session.user.id}`),
-            Effect.mapError((error) =>
-              new WalletVerificationError({
-                cause: extractErrorDetails(error),
-                operation: "update",
-              })
-            ),
-            Effect.flatMap(() => Effect.sleep("3 seconds")),
-            Effect.flatMap(() =>
-              Effect.sync(() => {
-                Option.map(dashboard.wallets, (store: WalletStore) => store.refresh())
-                return complete()
-              })
-            ),
-          )
-        }),
-        Effect.catchAll((error) =>
-          Effect.succeed(
-            fail(
-              "Failed to update wallet data",
-              new WalletVerificationError({
-                cause: extractErrorDetails(error),
-                operation: "update",
-              }),
+              return pipe(
+                clearLocalStorageCacheEntry("wallets", `${CACHE_VERSION}:${session.user.id}`),
+                Effect.mapError((error) =>
+                  new WalletVerificationError({
+                    cause: extractErrorDetails(error),
+                    operation: "update",
+                  })
+                ),
+                Effect.flatMap(() => Effect.sleep("3 seconds")),
+                Effect.flatMap(() =>
+                  Effect.sync(() => {
+                    Option.map(dashboard.wallets, (store: WalletStore) => store.refresh())
+                    return complete()
+                  })
+                ),
+              )
+            }),
+            Effect.catchAll((error) =>
+              Effect.succeed(
+                fail(
+                  "Failed to update wallet data",
+                  new WalletVerificationError({
+                    cause: extractErrorDetails(error),
+                    operation: "update",
+                  }),
+                ),
+              )
             ),
           )
         ),

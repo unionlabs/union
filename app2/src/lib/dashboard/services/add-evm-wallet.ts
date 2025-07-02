@@ -1,4 +1,3 @@
-import { getSupabaseClient } from "$lib/dashboard/client"
 import { CACHE_VERSION } from "$lib/dashboard/config"
 import { SupabaseError } from "$lib/dashboard/errors"
 import { submitWalletVerification } from "$lib/dashboard/queries/private"
@@ -12,6 +11,7 @@ import { signMessage } from "@wagmi/core"
 import { Data, Effect, Option, pipe } from "effect"
 import { Siwe } from "ox"
 import type { Chain, Hash, WalletClient } from "viem"
+import { SupabaseClient } from "../client"
 
 export class WalletVerificationError extends Data.TaggedError("WalletVerificationError")<{
   cause: unknown
@@ -65,7 +65,7 @@ const complete = (): StateResult => ({
 export const addEvmWallet = (
   state: AddEvmWalletState,
   walletClient: WalletClient,
-): Effect.Effect<StateResult, never, never> => {
+): Effect.Effect<StateResult, never, SupabaseClient> => {
   return AddEvmWalletState.$match(state, {
     SwitchChain: ({ chain }) =>
       pipe(
@@ -131,7 +131,7 @@ export const addEvmWallet = (
 
     Verifying: ({ address, chain, signature, message }) =>
       pipe(
-        getSupabaseClient(),
+        SupabaseClient,
         Effect.flatMap((client) => Effect.tryPromise(() => client.auth.refreshSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
@@ -152,7 +152,7 @@ export const addEvmWallet = (
             selectedChains: null,
           })
         }),
-        Effect.flatMap(() => getSupabaseClient()),
+        Effect.flatMap(() => SupabaseClient),
         Effect.flatMap((client) => Effect.tryPromise(() => client.auth.getSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {
@@ -181,7 +181,7 @@ export const addEvmWallet = (
 
     Updating: () =>
       pipe(
-        getSupabaseClient(),
+        SupabaseClient,
         Effect.flatMap((client) => Effect.tryPromise(() => client.auth.getSession())),
         Effect.flatMap(({ data: { session } }) => {
           if (!session?.user.id) {

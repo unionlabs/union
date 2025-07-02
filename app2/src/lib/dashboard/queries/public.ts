@@ -1,7 +1,6 @@
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Effect, Option, pipe } from "effect"
-import { getSupabaseClient } from "../client"
-import type { Entity } from "../client"
+import { type Entity, SupabaseClient } from "../client"
 import { CACHE_VERSION, STALE, TTL } from "../config"
 import {
   AchievementError,
@@ -30,7 +29,7 @@ export const getChains = () =>
     TTL,
     STALE,
     pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("chains").select("*"),
@@ -57,7 +56,7 @@ export const getAvailableAchievements = () =>
     TTL,
     STALE,
     pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>
@@ -92,7 +91,7 @@ export const getAvailableLevels = () =>
     TTL,
     STALE,
     pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>
@@ -123,7 +122,7 @@ export const getCategories = () =>
     TTL,
     STALE,
     pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("categories").select("*"),
@@ -150,7 +149,7 @@ export const getLeaderboard = () =>
     TTL,
     STALE,
     pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>
@@ -182,7 +181,7 @@ export const getAvailableMissions = () =>
     TTL,
     STALE,
     pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () =>
@@ -213,7 +212,7 @@ export const getAvailableRewards = () =>
     TTL,
     STALE,
     pipe(
-      getSupabaseClient(),
+      SupabaseClient,
       Effect.flatMap((client) =>
         Effect.tryPromise({
           try: () => client.from("rewards").select("*"),
