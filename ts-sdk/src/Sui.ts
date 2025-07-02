@@ -11,7 +11,7 @@ import { bcs } from "@mysten/sui/bcs"
 import { getFullnodeUrl, SuiClient } from "@mysten/sui/client"
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
-import { Context, Data, Effect } from "effect"
+import { Context, Data, Effect, flow, Layer } from "effect"
 import type { Address } from "viem"
 import type { Hex } from "viem"
 import * as internal from "./internal/sui.js"
@@ -73,7 +73,12 @@ export class FungibleAssetOrderDetails
 export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Sui/ChannelDestination")<
   ChannelDestination,
   Sui.Channel
->() {}
+>() {
+  static Live = flow(
+    ChannelDestination.of,
+    Layer.succeed(this),
+  )
+}
 
 /**
  * @category context
@@ -82,7 +87,12 @@ export class ChannelDestination extends Context.Tag("@unionlabs/sdk/Sui/ChannelD
 export class ChannelSource extends Context.Tag("@unionlabs/sdk/Sui/ChannelSource")<
   ChannelSource,
   Sui.Channel
->() {}
+>() {
+  static Live = flow(
+    ChannelDestination.of,
+    Layer.succeed(this),
+  )
+}
 
 /**
  * @category context
@@ -93,6 +103,10 @@ export class PublicClient extends Context.Tag("@unionlabs/sdk/Sui/PublicClient")
   Sui.PublicClient
 >() {
   static Live = internal.publicClientLayer(this)
+  static FromNode = (url: Parameters<typeof getFullnodeUrl>[0]) =>
+    internal.publicClientLayer(this)({
+      url: getFullnodeUrl(url),
+    })
 }
 
 /**
@@ -104,6 +118,10 @@ export class PublicClientSource extends Context.Tag("@unionlabs/sdk/Sui/PublicCl
   Sui.PublicClient
 >() {
   static Live = internal.publicClientLayer(this)
+  static FromNode = (url: Parameters<typeof getFullnodeUrl>[0]) =>
+    internal.publicClientLayer(this)({
+      url: getFullnodeUrl(url),
+    })
 }
 
 /**
