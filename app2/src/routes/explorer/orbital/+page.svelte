@@ -1,6 +1,7 @@
 <script lang="ts">
 import { Option, pipe } from "effect"
 import { onDestroy, onMount } from "svelte"
+import { transactionAudio } from "./audio"
 import AssetVolumeChart from "./charts/AssetVolumeChart.svelte"
 import ChainFlowChart from "./charts/ChainFlowChart.svelte"
 import LatencyChart from "./charts/LatencyChart.svelte"
@@ -80,6 +81,11 @@ function connectWebSocket() {
 
       if (message.type === "transfer" && message.data) {
         transfers = [...transfers, message.data]
+        transactionAudio.playSound(
+          1,
+          message.data.source_chain.universal_chain_id,
+          message.data.destination_chain.universal_chain_id,
+        )
       } else if (message.type === "rates" && message.data) {
         console.log("rates", message.data)
         transferRates = Option.some(message.data)

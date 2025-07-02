@@ -3,7 +3,7 @@ import Card from "$lib/components/ui/Card.svelte"
 import { chains } from "$lib/stores/chains.svelte"
 import { Option } from "effect"
 import { onMount } from "svelte"
-import { transactionAudio } from "../audio"
+
 import { initializeCanvasWithCleanup } from "../canvasInit"
 import type { EnhancedTransferListItem, LogEntry } from "../types"
 
@@ -85,29 +85,6 @@ const getChainDisplayName = (universalChainId: string): string => {
 
   chainDisplayNameCache.set(universalChainId, displayName)
   return displayName
-}
-
-const shouldPlaySound = (transfer: EnhancedTransferListItem): boolean => {
-  if (!hasFilter) {
-    return true
-  }
-
-  const sourceId = transfer.source_chain?.universal_chain_id
-  const destId = transfer.destination_chain?.universal_chain_id
-
-  if (selectedFromChain && selectedToChain) {
-    return sourceId === selectedFromChain && destId === selectedToChain
-  }
-
-  if (selectedFromChain) {
-    return sourceId === selectedFromChain || destId === selectedFromChain
-  }
-
-  if (selectedToChain) {
-    return sourceId === selectedToChain || destId === selectedToChain
-  }
-
-  return true
 }
 
 // Canvas functions
@@ -334,16 +311,6 @@ $effect(() => {
     const newTransfers = transfers.slice(processedCount)
 
     newTransfers.forEach((transfer) => {
-      if (shouldPlaySound(transfer)) {
-        requestAnimationFrame(() => {
-          transactionAudio.playSound(
-            1,
-            transfer.source_chain?.universal_chain_id,
-            transfer.destination_chain?.universal_chain_id,
-          )
-        })
-      }
-
       const sourceChain = transfer.sourceDisplayName || transfer.source_chain?.display_name
         || "unknown"
       const destChain = transfer.destinationDisplayName || transfer.destination_chain?.display_name
