@@ -594,6 +594,7 @@ importers:
       vitest:
         specifier: ^3.0.5
         version: 3.1.2(@types/debug@4.1.12)(@types/node@22.13.14)(happy-dom@17.4.4)(jiti@2.4.2)(jsdom@26.1.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))(lightningcss@1.29.2)(tsx@4.20.3)(yaml@2.7.0)
+    publishDirectory: dist
 
   typescript-sdk:
     dependencies:
