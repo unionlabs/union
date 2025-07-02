@@ -10,6 +10,7 @@ import PopularRoutesChart from "./charts/PopularRoutesChart.svelte"
 import TerminalLog from "./charts/TerminalLog.svelte"
 import TransferStats from "./charts/TransferStats.svelte"
 import WalletActivityChart from "./charts/WalletActivityChart.svelte"
+import { transactionAudio } from "./audio"
 import type { ActiveWalletRates, ChartData, EnhancedTransferListItem, TransferRates } from "./types"
 
 const WS_URL = "wss://ws.union.build/ws"
@@ -80,6 +81,11 @@ function connectWebSocket() {
 
       if (message.type === "transfer" && message.data) {
         transfers = [...transfers, message.data]
+        transactionAudio.playSound(
+            1,
+            message.data.source_chain.universal_chain_id,
+            message.data.destination_chain.universal_chain_id,
+          )
       } else if (message.type === "rates" && message.data) {
         console.log("rates", message.data)
         transferRates = Option.some(message.data)
