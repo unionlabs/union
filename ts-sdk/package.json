@@ -11,6 +11,12 @@
     "url": "https://github.com/unionlabs/union.git",
     "directory": "ts-sdk"
   },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true,
+    "directory": "dist",
+    "linkDirectory": false
+  },
   "exports": {
     "./package.json": "./package.json",
     ".": "./src/index.ts",
