@@ -132,7 +132,7 @@ const isChainLoading: boolean = $derived(
                     <img
                       src={selectedAsset.value.logo_uri.value}
                       alt={selectedAsset.value.name}
-                      class="asset-mask"
+                      class="h-8 w-8 asset-mask"
                     >
                   {/if}
                   {#if validSelectedAsset}
