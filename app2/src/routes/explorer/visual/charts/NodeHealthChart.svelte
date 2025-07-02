@@ -1,55 +1,15 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
-
-interface NodeData {
-  chainId: string
-  chainName: string
-  rpcUrl: string
-  rpcType: string
-  status: string // "healthy", "degraded", "unhealthy"
-  responseTimeMs: number
-  lastCheckTime: number
-  latestBlockHeight?: number
-  errorMessage?: string
-}
-
-interface ChainHealthStat {
-  chainName: string
-  healthyNodes: number
-  totalNodes: number
-  avgResponseTime: number
-}
-
-interface NodeHealthSummary {
-  totalNodes: number
-  healthyNodes: number
-  degradedNodes: number
-  unhealthyNodes: number
-  avgResponseTime: number
-  nodesWithRpcs: NodeData[]
-  chainHealthStats: Record<string, ChainHealthStat>
-}
+import { Option, pipe } from "effect"
+import type { NodeHealthSummary } from "../types"
 
 interface Props {
-  nodeHealthData?: NodeHealthSummary
+  nodeHealthData: Option.Option<NodeHealthSummary>
 }
 
-const DEFAULT_NODE_HEALTH: NodeHealthSummary = {
-  totalNodes: 0,
-  healthyNodes: 0,
-  degradedNodes: 0,
-  unhealthyNodes: 0,
-  avgResponseTime: 0,
-  nodesWithRpcs: [],
-  chainHealthStats: {},
-}
+let { nodeHealthData }: Props = $props()
 
-let {
-  nodeHealthData = DEFAULT_NODE_HEALTH,
-}: Props = $props()
-
-// Local display configuration
 const displayOptions = [
   { value: "all", label: "All" },
   { value: "healthy", label: "Healthy" },
@@ -69,47 +29,63 @@ let selectedSort = $state("chain")
 
 // Derived state
 const currentData = $derived.by(() => {
-  let data = [...(nodeHealthData.nodesWithRpcs || [])] // Create a copy to avoid mutation
-  
-  // Filter by status
-  if (selectedFilter !== "all") {
-    data = data.filter(node => node.status === selectedFilter)
-  }
-  
-  // Sort data
-  switch (selectedSort) {
-    case "status":
-      data = data.sort((a, b) => {
-        const statusOrder: Record<string, number> = { healthy: 0, degraded: 1, unhealthy: 2 }
-        return (statusOrder[a.status] ?? 999) - (statusOrder[b.status] ?? 999)
-      })
-      break
-    case "response":
-      data = data.sort((a, b) => (a.responseTimeMs || Infinity) - (b.responseTimeMs || Infinity))
-      break
-    case "chain":
-    default:
-      data = data.sort((a, b) => a.chainName.localeCompare(b.chainName))
-      break
-  }
-  
-  return data
+  return pipe(
+    nodeHealthData,
+    Option.match({
+      onNone: () => [],
+      onSome: (data) => {
+        let nodes = [...data.nodesWithRpcs] // Create a copy to avoid mutation
+
+        // Filter by status
+        if (selectedFilter !== "all") {
+          nodes = nodes.filter(node => node.status === selectedFilter)
+        }
+
+        // Sort data
+        switch (selectedSort) {
+          case "status":
+            nodes = nodes.sort((a, b) => {
+              const statusOrder: Record<string, number> = { healthy: 0, degraded: 1, unhealthy: 2 }
+              return (statusOrder[a.status] ?? 999) - (statusOrder[b.status] ?? 999)
+            })
+            break
+          case "response":
+            nodes = nodes.sort((a, b) =>
+              (a.responseTimeMs || Infinity) - (b.responseTimeMs || Infinity)
+            )
+            break
+          case "chain":
+          default:
+            nodes = nodes.sort((a, b) => a.chainName.localeCompare(b.chainName))
+            break
+        }
+
+        return nodes
+      },
+    }),
+  )
 })
 
 const hasData = $derived(currentData.length > 0)
 const isLoading = $derived(
-  !hasData && (!nodeHealthData || nodeHealthData.totalNodes === 0),
+  !hasData && Option.isNone(nodeHealthData),
 )
 
 // Utility functions
 function formatResponseTime(ms: number): string {
-  if (ms === 0) return "N/A"
-  if (ms >= 1000) return `${(ms / 1000).toFixed(1)}s`
+  if (ms === 0) {
+    return "N/A"
+  }
+  if (ms >= 1000) {
+    return `${(ms / 1000).toFixed(1)}s`
+  }
   return `${ms}ms`
 }
 
 function formatBlockHeight(height?: number): string {
-  if (!height) return "N/A"
+  if (!height) {
+    return "N/A"
+  }
   // Show full block height - no abbreviation since it's critical for debugging
   return height.toLocaleString() // Adds commas for readability (e.g., 1,234,567)
 }
@@ -152,33 +128,60 @@ function shortenRpcUrl(url: string): string {
 function formatLastCheckTime(timestamp: number): string {
   const now = Date.now() / 1000
   const diff = now - timestamp
-  
-  if (diff < 60) return "just now"
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`
+
+  if (diff < 60) {
+    return "just now"
+  }
+  if (diff < 3600) {
+    return `${Math.floor(diff / 60)}m ago`
+  }
+  if (diff < 86400) {
+    return `${Math.floor(diff / 3600)}h ago`
+  }
   return `${Math.floor(diff / 86400)}d ago`
 }
 
 // Health percentage calculation
 const healthPercentage = $derived(() => {
-  if (nodeHealthData.totalNodes === 0) return 0
-  return Math.round((nodeHealthData.healthyNodes / nodeHealthData.totalNodes) * 100)
+  return pipe(
+    nodeHealthData,
+    Option.match({
+      onNone: () => 0,
+      onSome: (data) => {
+        if (data.totalNodes === 0) {
+          return 0
+        }
+        return Math.round((data.healthyNodes / data.totalNodes) * 100)
+      },
+    }),
+  )
 })
 
-// Debug logging in development
-$effect(() => {
-  if (import.meta.env.DEV) {
-    console.log("NodeHealthChart data:", {
-      hasData,
-      isLoading,
-      totalNodes: nodeHealthData.totalNodes,
-      healthyNodes: nodeHealthData.healthyNodes,
-      currentDataLength: currentData.length,
-      selectedFilter,
-      selectedSort,
-    })
-  }
-})
+// Helper derived values for template
+const healthyNodes = $derived(
+  pipe(nodeHealthData, Option.getOrElse(() => ({ healthyNodes: 0 })), (data) => data.healthyNodes),
+)
+const degradedNodes = $derived(
+  pipe(
+    nodeHealthData,
+    Option.getOrElse(() => ({ degradedNodes: 0 })),
+    (data) => data.degradedNodes,
+  ),
+)
+const unhealthyNodes = $derived(
+  pipe(
+    nodeHealthData,
+    Option.getOrElse(() => ({ unhealthyNodes: 0 })),
+    (data) => data.unhealthyNodes,
+  ),
+)
+const avgResponseTime = $derived(
+  pipe(
+    nodeHealthData,
+    Option.getOrElse(() => ({ avgResponseTime: 0 })),
+    (data) => data.avgResponseTime,
+  ),
+)
 </script>
 
 <Card class="h-full p-0">
@@ -204,16 +207,16 @@ $effect(() => {
       <div class="px-2 py-1 border-b border-zinc-800">
         <div class="flex flex-wrap gap-2 text-xs">
           <span class="text-emerald-400">
-            ●{nodeHealthData.healthyNodes} healthy
+            ●{healthyNodes} healthy
           </span>
           <span class="text-orange-400">
-            ●{nodeHealthData.degradedNodes} degraded
+            ●{degradedNodes} degraded
           </span>
           <span class="text-red-400">
-            ●{nodeHealthData.unhealthyNodes} unhealthy
+            ●{unhealthyNodes} unhealthy
           </span>
           <span class="text-zinc-500">
-            avg: {formatResponseTime(nodeHealthData.avgResponseTime)}
+            avg: {formatResponseTime(avgResponseTime)}
           </span>
         </div>
       </div>
@@ -324,9 +327,9 @@ $effect(() => {
 
                 <!-- RPC URL -->
                 <div class="mb-0.5">
-                  <a 
-                    href={node.rpcUrl} 
-                    target="_blank" 
+                  <a
+                    href={node.rpcUrl}
+                    target="_blank"
                     rel="noopener noreferrer"
                     class="text-xs text-zinc-400 hover:text-zinc-300 transition-colors font-mono break-all"
                     title={node.rpcUrl}
@@ -339,7 +342,7 @@ $effect(() => {
                 <div class="flex items-center justify-between">
                   <div class="flex items-center space-x-2">
                     <!-- Status -->
-                    <span 
+                    <span
                       class="px-1.5 py-0.5 text-xs font-medium rounded-sm {getStatusBgColor(node.status)} {getStatusColor(node.status)}"
                       title={node.errorMessage || node.status}
                     >
@@ -395,4 +398,4 @@ $effect(() => {
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: #71717a;
 }
-</style> 
+</style>

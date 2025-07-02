@@ -1,6 +1,7 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { Option, pipe } from "effect"
 
 interface AssetRoute {
   fromChain: string
@@ -37,7 +38,7 @@ interface AssetVolumeData {
 }
 
 interface Props {
-  assetVolumeData?: AssetVolumeData
+  assetVolumeData: Option.Option<AssetVolumeData>
 }
 
 const DEFAULT_ASSET_DATA: AssetVolumeData = {
@@ -50,7 +51,7 @@ const DEFAULT_ASSET_DATA: AssetVolumeData = {
 }
 
 let {
-  assetVolumeData = DEFAULT_ASSET_DATA,
+  assetVolumeData,
 }: Props = $props()
 
 // Local item count configuration
@@ -94,21 +95,26 @@ const routeColorsBright = [
   "bg-red-400",
 ] as const
 
-// Derived state
+// Derived state using Effect Option patterns
 const currentData = $derived.by(() => {
-  // Use time-scaled data if available, otherwise fall back to main assets array
-  const timeScaleData = assetVolumeData?.assetVolumeTimeScale?.[selectedTimeScale]
-  const data = timeScaleData || assetVolumeData?.assets || []
-  const sortedData = [...data].sort((a, b) => b.transferCount - a.transferCount)
-  return sortedData.slice(0, selectedItemCount)
+  return pipe(
+    assetVolumeData,
+    Option.map((data) => {
+      // Use time-scaled data if available, otherwise fall back to main assets array
+      const timeScaleData = data.assetVolumeTimeScale?.[selectedTimeScale]
+      const assets = timeScaleData || data.assets || []
+      const sortedData = [...assets].sort((a, b) => b.transferCount - a.transferCount)
+      return sortedData.slice(0, selectedItemCount)
+    }),
+    Option.getOrElse(() => []),
+  )
 })
 
 const hasData = $derived(currentData.length > 0)
 const isLoading = $derived(
-  !hasData && (!assetVolumeData || !assetVolumeData.assets || assetVolumeData.assets.length === 0),
+  !hasData && Option.isNone(assetVolumeData),
 )
 
-// Utility functions
 function formatNumber(num: number): string {
   if (num === 0) {
     return "0"
@@ -135,14 +141,6 @@ function formatPercentage(num: number): string {
   return (num > 0 ? "+" : "") + num.toFixed(2) + "%"
 }
 
-function formatTime(dateString: string): string {
-  try {
-    return new Date(dateString).toLocaleTimeString()
-  } catch {
-    return "N/A"
-  }
-}
-
 function getDisplayValue(asset: Asset): string {
   return asset.transferCount.toString()
 }
@@ -161,8 +159,6 @@ function getPercentageOfTotal(asset: Asset): number {
 
   return total === 0 ? 0 : Math.round((numValue / total) * 100)
 }
-
-
 
 function toggleAssetExpansion(assetSymbol: string): void {
   expandedAsset = expandedAsset === assetSymbol ? null : assetSymbol
@@ -204,8 +200,6 @@ function calculateRemainingRoutePercentage(routes: AssetRoute[]): number {
   return routes.slice(5).reduce((sum, route) => sum + route.percentage, 0)
 }
 
-
-
 // Debug logging in development
 $effect(() => {
   if (import.meta.env.DEV) {
@@ -213,8 +207,7 @@ $effect(() => {
       hasData,
       isLoading,
       currentDataLength: currentData.length,
-      assetsLength: assetVolumeData?.assets?.length || 0,
-      totalAssets: assetVolumeData?.totalAssets || 0,
+      hasAssetVolumeData: Option.isSome(assetVolumeData),
       selectedItemCount: selectedItemCount,
     })
   }

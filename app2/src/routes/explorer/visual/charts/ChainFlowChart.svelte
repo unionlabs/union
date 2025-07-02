@@ -1,34 +1,8 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
-
-// Interface for assets flowing through a chain
-interface ChainAsset {
-  assetSymbol: string
-  assetName: string
-  outgoingCount: number
-  incomingCount: number
-  netFlow: number
-  totalVolume: number
-  averageAmount: number
-  percentage: number
-  lastActivity: string
-}
-
-// Interface for chain data with assets
-interface ChainData {
-  universal_chain_id: string
-  chainName: string
-  outgoingCount: number
-  incomingCount: number
-  netFlow: number
-  outgoingChange?: number
-  incomingChange?: number
-  netFlowChange?: number
-  lastActivity: string
-  topAssets?: ChainAsset[]
-}
-
+import { Option, pipe } from "effect"
+import type { ChainAsset, ChainData } from "../types"
 interface ChainFlowData {
   chains: ChainData[]
   chainFlowTimeScale: Record<string, ChainData[]>
@@ -36,21 +10,12 @@ interface ChainFlowData {
   totalIncoming: number
   serverUptimeSeconds: number
 }
-
 interface Props {
-  chainFlowData?: ChainFlowData
-}
-
-const DEFAULT_CHAIN_DATA: ChainFlowData = {
-  chains: [],
-  chainFlowTimeScale: {},
-  totalOutgoing: 0,
-  totalIncoming: 0,
-  serverUptimeSeconds: 0,
+  chainFlowData: Option.Option<ChainFlowData>
 }
 
 let {
-  chainFlowData = DEFAULT_CHAIN_DATA,
+  chainFlowData,
 }: Props = $props()
 
 // Local item count configuration
@@ -86,42 +51,48 @@ const displayModes = [
   { key: "netflow", label: "net" },
 ] as const
 
-// Get current data based on selected time scale
+// Get current data based on selected time scale using Effect Option patterns
 const currentData = $derived.by(() => {
-  let data = []
-  if (
-    chainFlowData.chainFlowTimeScale
-    && chainFlowData.chainFlowTimeScale[selectedTimeScale]
-    && chainFlowData.chainFlowTimeScale[selectedTimeScale].length > 0
-  ) {
-    data = chainFlowData.chainFlowTimeScale[selectedTimeScale]
-  } else {
-    data = chainFlowData.chains
-  }
+  return pipe(
+    chainFlowData,
+    Option.map((data) => {
+      let chainData = []
+      if (
+        data.chainFlowTimeScale
+        && data.chainFlowTimeScale[selectedTimeScale]
+        && data.chainFlowTimeScale[selectedTimeScale].length > 0
+      ) {
+        chainData = data.chainFlowTimeScale[selectedTimeScale]
+      } else {
+        chainData = data.chains
+      }
 
-  // Sort based on display mode
-  const sortedData = [...(data || [])].sort((a, b) => {
-    switch (displayMode) {
-      case "outgoing":
-        return b.outgoingCount - a.outgoingCount
-      case "incoming":
-        return b.incomingCount - a.incomingCount
-      case "netflow":
-        return b.netFlow - a.netFlow
-      case "total":
-      default:
-        return (b.outgoingCount + b.incomingCount) - (a.outgoingCount + a.incomingCount)
-    }
-  })
+      // Sort based on display mode
+      const sortedData = [...(chainData || [])].sort((a, b) => {
+        switch (displayMode) {
+          case "outgoing":
+            return b.outgoingCount - a.outgoingCount
+          case "incoming":
+            return b.incomingCount - a.incomingCount
+          case "netflow":
+            return b.netFlow - a.netFlow
+          case "total":
+          default:
+            return (b.outgoingCount + b.incomingCount) - (a.outgoingCount + a.incomingCount)
+        }
+      })
 
-  // Limit to selected number for display
-  return sortedData?.slice(0, selectedItemCount) || []
+      // Limit to selected number for display
+      return sortedData?.slice(0, selectedItemCount) || []
+    }),
+    Option.getOrElse(() => []),
+  )
 })
 
 // Derived state
 const hasData = $derived(currentData.length > 0)
 const isLoading = $derived(
-  !hasData && (!chainFlowData || !chainFlowData.chains || chainFlowData.chains.length === 0),
+  !hasData && Option.isNone(chainFlowData),
 )
 
 // Utility functions
@@ -207,8 +178,6 @@ function getChangeValue(chain: ChainData): number | undefined {
   }
 }
 
-
-
 // Toggle chain expansion
 function toggleChainExpansion(chainId: string): void {
   expandedChain = expandedChain === chainId ? null : chainId
@@ -255,8 +224,6 @@ function getAssetIncomingOutgoingWidths(
   }
 }
 
-
-
 // Progress bar calculations for incoming/outgoing split with dynamic center
 function getIncomingOutgoingWidths(
   chain: ChainData,
@@ -302,11 +269,10 @@ function getPercentageOfTotal(chain: ChainData): number {
 $effect(() => {
   if (typeof window !== "undefined" && window.location.hostname === "localhost") {
     console.log("ChainFlowChart data:", {
-      chainFlowData,
+      hasChainFlowData: Option.isSome(chainFlowData),
       hasData,
       isLoading,
       currentDataLength: currentData.length,
-      chainsLength: chainFlowData.chains?.length || 0,
     })
   }
 })
@@ -340,16 +306,16 @@ $effect(() => {
           <!-- Time Frame Selector -->
           <div class="flex flex-wrap gap-0.5">
             {#each timeScales as timeScale}
-                          <button
-              class="
-                px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
-                selectedTimeScale === timeScale.key
-                ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
-                : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
-                }
-              "
-              onclick={() => selectedTimeScale = timeScale.key}
-            >
+              <button
+                class="
+                  px-2 py-1 text-xs font-mono border transition-colors min-h-[32px] {
+                  selectedTimeScale === timeScale.key
+                  ? 'border-zinc-500 bg-zinc-800 text-zinc-200 font-medium'
+                  : 'border-zinc-700 bg-zinc-900 text-zinc-400 hover:border-zinc-600 hover:text-zinc-300'
+                  }
+                "
+                onclick={() => selectedTimeScale = timeScale.key}
+              >
                 {timeScale.label}
               </button>
             {/each}
@@ -443,8 +409,18 @@ $effect(() => {
           <div class="flex-1 flex items-center justify-center">
             <div class="text-center">
               <div class="text-zinc-600 font-mono">
-                {#if chainFlowData && chainFlowData.chains}
-                  no_data_yet • {chainFlowData.chains.length} chains available
+                {#if Option.isSome(chainFlowData)}
+                  {
+                    pipe(
+                      chainFlowData,
+                      Option.map(data =>
+                        data.chains?.length > 0
+                          ? `no_data_yet • ${data.chains.length} chains available`
+                          : "no_chain_data_available"
+                      ),
+                      Option.getOrElse(() => "waiting_for_server..."),
+                    )
+                  }
                 {:else}
                   waiting_for_server...
                 {/if}

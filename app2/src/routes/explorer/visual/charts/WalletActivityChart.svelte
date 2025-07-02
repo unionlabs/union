@@ -1,79 +1,23 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
-
-interface WalletStats {
-  count: number
-  address: string
-  displayAddress: string
-  lastActivity: string
-}
-
-interface ActiveWalletRates {
-  sendersLastMin: number
-  sendersLastHour: number
-  sendersLastDay: number
-  sendersLast7d: number
-  sendersLast14d: number
-  sendersLast30d: number
-
-  receiversLastMin: number
-  receiversLastHour: number
-  receiversLastDay: number
-  receiversLast7d: number
-  receiversLast14d: number
-  receiversLast30d: number
-
-  totalLastMin: number
-  totalLastHour: number
-  totalLastDay: number
-  totalLast7d: number
-  totalLast14d: number
-  totalLast30d: number
-
-  uniqueSendersTotal: number
-  uniqueReceiversTotal: number
-  uniqueTotalWallets: number
-}
+import { Option, pipe } from "effect"
+import type { ActiveWalletRates, WalletStats } from "../types"
 
 interface Props {
-  activeSenders?: WalletStats[]
-  activeReceivers?: WalletStats[]
-  activeSendersTimeScale?: Record<string, WalletStats[]>
-  activeReceiversTimeScale?: Record<string, WalletStats[]>
-  activeWalletRates?: ActiveWalletRates
-}
-
-const DEFAULT_WALLET_RATES: ActiveWalletRates = {
-  sendersLastMin: 0,
-  sendersLastHour: 0,
-  sendersLastDay: 0,
-  sendersLast7d: 0,
-  sendersLast14d: 0,
-  sendersLast30d: 0,
-  receiversLastMin: 0,
-  receiversLastHour: 0,
-  receiversLastDay: 0,
-  receiversLast7d: 0,
-  receiversLast14d: 0,
-  receiversLast30d: 0,
-  totalLastMin: 0,
-  totalLastHour: 0,
-  totalLastDay: 0,
-  totalLast7d: 0,
-  totalLast14d: 0,
-  totalLast30d: 0,
-  uniqueSendersTotal: 0,
-  uniqueReceiversTotal: 0,
-  uniqueTotalWallets: 0,
+  activeSenders: Option.Option<WalletStats[]>
+  activeReceivers: Option.Option<WalletStats[]>
+  activeSendersTimeScale: Option.Option<Record<string, WalletStats[]>>
+  activeReceiversTimeScale: Option.Option<Record<string, WalletStats[]>>
+  activeWalletRates: Option.Option<ActiveWalletRates>
 }
 
 let {
-  activeSenders = [],
-  activeReceivers = [],
-  activeSendersTimeScale = {},
-  activeReceiversTimeScale = {},
-  activeWalletRates = DEFAULT_WALLET_RATES,
+  activeSenders,
+  activeReceivers,
+  activeSendersTimeScale,
+  activeReceiversTimeScale,
+  activeWalletRates,
 }: Props = $props()
 
 // Local item count configuration
@@ -98,43 +42,45 @@ const timeFrames = [
   { key: "30d", label: "30d", field: "Last30d", desc: "last 30 days" },
 ] as const
 
-// Derived state
+// Derived state using Effect Option patterns
 const currentSenders = $derived.by(() => {
-  let data = []
-  if (
-    activeSendersTimeScale && activeSendersTimeScale[selectedTimeFrame]
-    && activeSendersTimeScale[selectedTimeFrame].length > 0
-  ) {
-    data = activeSendersTimeScale[selectedTimeFrame]
-  } else {
-    data = activeSenders
-  }
-
-  return data?.slice(0, selectedItemCount) || []
+  return pipe(
+    activeSendersTimeScale,
+    Option.flatMap((timeScaleData) => {
+      if (timeScaleData[selectedTimeFrame] && timeScaleData[selectedTimeFrame].length > 0) {
+        return Option.some(timeScaleData[selectedTimeFrame])
+      }
+      return activeSenders
+    }),
+    Option.getOrElse(() => []),
+    (data) => data.slice(0, selectedItemCount),
+  )
 })
 
 const currentReceivers = $derived.by(() => {
-  let data = []
-  if (
-    activeReceiversTimeScale && activeReceiversTimeScale[selectedTimeFrame]
-    && activeReceiversTimeScale[selectedTimeFrame].length > 0
-  ) {
-    data = activeReceiversTimeScale[selectedTimeFrame]
-  } else {
-    data = activeReceivers
-  }
-
-  return data?.slice(0, selectedItemCount) || []
+  return pipe(
+    activeReceiversTimeScale,
+    Option.flatMap((timeScaleData) => {
+      if (timeScaleData[selectedTimeFrame] && timeScaleData[selectedTimeFrame].length > 0) {
+        return Option.some(timeScaleData[selectedTimeFrame])
+      }
+      return activeReceivers
+    }),
+    Option.getOrElse(() => []),
+    (data) => data.slice(0, selectedItemCount),
+  )
 })
 
 const chartData = $derived({
   activeSenders: currentSenders,
   activeReceivers: currentReceivers,
-  activeWalletRates,
+  activeWalletRates: pipe(activeWalletRates, Option.getOrElse(() => undefined)),
 })
 
 const hasData = $derived(currentSenders.length > 0 || currentReceivers.length > 0)
-const isLoading = $derived(!hasData && activeSenders.length === 0 && activeReceivers.length === 0)
+const isLoading = $derived(
+  !hasData && Option.isNone(activeSenders) && Option.isNone(activeReceivers),
+)
 
 // Get total transfer count for percentage calculation
 const totalTransfersForTimeframe = $derived(() => {
@@ -142,19 +88,6 @@ const totalTransfersForTimeframe = $derived(() => {
   const receiverSum = currentReceivers.reduce((sum, receiver) => sum + receiver.count, 0)
   return Math.max(senderSum, receiverSum, 1)
 })
-
-// Get max count for progress bar visual scaling
-const maxSenderCount = $derived(
-  chartData.activeSenders.length > 0
-    ? Math.max(...chartData.activeSenders.map(sender => sender.count))
-    : 1,
-)
-
-const maxReceiverCount = $derived(
-  chartData.activeReceivers.length > 0
-    ? Math.max(...chartData.activeReceivers.map(receiver => receiver.count))
-    : 1,
-)
 
 // Utility functions
 function formatAddress(address: string): string {
@@ -193,13 +126,9 @@ function getWalletCounts() {
   }
 }
 
-
-
 function getPercentageOfTotal(count: number): number {
   return Math.round((count / totalTransfersForTimeframe()) * 100)
 }
-
-
 
 // Debug logging in development
 $effect(() => {
@@ -209,8 +138,9 @@ $effect(() => {
       isLoading,
       currentSendersLength: currentSenders.length,
       currentReceiversLength: currentReceivers.length,
-      activeSendersLength: activeSenders?.length || 0,
-      activeReceiversLength: activeReceivers?.length || 0,
+      hasActiveSenders: Option.isSome(activeSenders),
+      hasActiveReceivers: Option.isSome(activeReceivers),
+      hasActiveWalletRates: Option.isSome(activeWalletRates),
       selectedItemCount: selectedItemCount,
     })
   }

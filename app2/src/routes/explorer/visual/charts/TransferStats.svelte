@@ -1,147 +1,101 @@
 <script lang="ts">
-// TransferStats with data availability and wallet info
 import Card from "$lib/components/ui/Card.svelte"
+import { Option, pipe } from "effect"
 import { transactionAudio } from "../audio"
-
-interface TransferRates {
-  txPerMinute: number
-  txPerHour: number
-  txPerDay: number
-  txPer7Days: number
-  txPer14Days: number
-  txPer30Days: number
-  txPerMinuteChange?: number
-  txPerHourChange?: number
-  txPerDayChange?: number
-  txPer7DaysChange?: number
-  txPer14DaysChange?: number
-  txPer30DaysChange?: number
-  totalTracked: number
-  serverUptimeSeconds: number
-}
-
-interface ActiveWalletRates {
-  sendersLastMin: number
-  sendersLastHour: number
-  sendersLastDay: number
-  sendersLast7d: number
-  sendersLast14d: number
-  sendersLast30d: number
-  sendersLastMinChange?: number
-  sendersLastHourChange?: number
-  sendersLastDayChange?: number
-  sendersLast7dChange?: number
-  sendersLast14dChange?: number
-  sendersLast30dChange?: number
-  receiversLastMin: number
-  receiversLastHour: number
-  receiversLastDay: number
-  receiversLast7d: number
-  receiversLast14d: number
-  receiversLast30d: number
-  receiversLastMinChange?: number
-  receiversLastHourChange?: number
-  receiversLastDayChange?: number
-  receiversLast7dChange?: number
-  receiversLast14dChange?: number
-  receiversLast30dChange?: number
-  totalLastMin: number
-  totalLastHour: number
-  totalLastDay: number
-  totalLast7d: number
-  totalLast14d: number
-  totalLast30d: number
-  totalLastMinChange?: number
-  totalLastHourChange?: number
-  totalLastDayChange?: number
-  totalLast7dChange?: number
-  totalLast14dChange?: number
-  totalLast30dChange?: number
-  uniqueSendersTotal: number
-  uniqueReceiversTotal: number
-  uniqueTotalWallets: number
-  serverUptimeSeconds: number
-}
+import type { ActiveWalletRates, TransferRates } from "../types"
 
 interface Props {
-  transferRates?: TransferRates | null
-  activeWalletRates?: ActiveWalletRates | null
+  transferRates: Option.Option<TransferRates>
+  activeWalletRates: Option.Option<ActiveWalletRates>
   connectionStatus?: "connecting" | "connected" | "disconnected" | "error"
 }
 
-const DEFAULT_TRANSFER_RATES: TransferRates = {
-  txPerMinute: 0,
-  txPerHour: 0,
-  txPerDay: 0,
-  txPer7Days: 0,
-  txPer14Days: 0,
-  txPer30Days: 0,
-  totalTracked: 0,
-  serverUptimeSeconds: 0,
-}
-
-const DEFAULT_WALLET_RATES: ActiveWalletRates = {
-  sendersLastMin: 0,
-  sendersLastHour: 0,
-  sendersLastDay: 0,
-  sendersLast7d: 0,
-  sendersLast14d: 0,
-  sendersLast30d: 0,
-  receiversLastMin: 0,
-  receiversLastHour: 0,
-  receiversLastDay: 0,
-  receiversLast7d: 0,
-  receiversLast14d: 0,
-  receiversLast30d: 0,
-  totalLastMin: 0,
-  totalLastHour: 0,
-  totalLastDay: 0,
-  totalLast7d: 0,
-  totalLast14d: 0,
-  totalLast30d: 0,
-  uniqueSendersTotal: 0,
-  uniqueReceiversTotal: 0,
-  uniqueTotalWallets: 0,
-  serverUptimeSeconds: 0,
-}
-
 let {
-  transferRates = null,
-  activeWalletRates = null,
-  connectionStatus = "disconnected",
+  transferRates,
+  activeWalletRates,
 }: Props = $props()
 
-// Helper function to format percentage changes
-function formatPercentageChange(change?: number): string {
-  if (change === undefined || change === null || !isFinite(change)) {
-    return ""
-  }
-  const sign = change >= 0 ? "+" : ""
-  return `(${sign}${change.toFixed(1)}%)`
-}
+const rates = $derived(transferRates)
+const wallets = $derived(activeWalletRates)
 
-// Default empty state
-let rates = $derived(
-  transferRates || DEFAULT_TRANSFER_RATES,
+// Individual field derivations - no fake defaults, just clean Option handling
+const txPerMinute = $derived(
+  pipe(rates, Option.map(r => r.txPerMinute), Option.getOrElse(() => "-")),
+)
+const txPerHour = $derived(pipe(rates, Option.map(r => r.txPerHour), Option.getOrElse(() => "-")))
+const txPerDay = $derived(pipe(rates, Option.map(r => r.txPerDay), Option.getOrElse(() => "-")))
+const txPer7Days = $derived(pipe(rates, Option.map(r => r.txPer7Days), Option.getOrElse(() => "-")))
+const txPer30Days = $derived(
+  pipe(rates, Option.map(r => r.txPer30Days), Option.getOrElse(() => "-")),
 )
 
-let wallets = $derived(
-  activeWalletRates || DEFAULT_WALLET_RATES,
+const sendersLastMin = $derived(
+  pipe(wallets, Option.map(w => w.sendersLastMin), Option.getOrElse(() => "-")),
+)
+const sendersLastHour = $derived(
+  pipe(wallets, Option.map(w => w.sendersLastHour), Option.getOrElse(() => "-")),
+)
+const sendersLastDay = $derived(
+  pipe(wallets, Option.map(w => w.sendersLastDay), Option.getOrElse(() => "-")),
+)
+const sendersLast7d = $derived(
+  pipe(wallets, Option.map(w => w.sendersLast7d), Option.getOrElse(() => "-")),
+)
+const sendersLast30d = $derived(
+  pipe(wallets, Option.map(w => w.sendersLast30d), Option.getOrElse(() => "-")),
+)
+
+const receiversLastMin = $derived(
+  pipe(wallets, Option.map(w => w.receiversLastMin), Option.getOrElse(() => "-")),
+)
+const receiversLastHour = $derived(
+  pipe(wallets, Option.map(w => w.receiversLastHour), Option.getOrElse(() => "-")),
+)
+const receiversLastDay = $derived(
+  pipe(wallets, Option.map(w => w.receiversLastDay), Option.getOrElse(() => "-")),
+)
+const receiversLast7d = $derived(
+  pipe(wallets, Option.map(w => w.receiversLast7d), Option.getOrElse(() => "-")),
+)
+const receiversLast30d = $derived(
+  pipe(wallets, Option.map(w => w.receiversLast30d), Option.getOrElse(() => "-")),
+)
+
+const totalLastMin = $derived(
+  pipe(wallets, Option.map(w => w.totalLastMin), Option.getOrElse(() => "-")),
+)
+const totalLastHour = $derived(
+  pipe(wallets, Option.map(w => w.totalLastHour), Option.getOrElse(() => "-")),
+)
+const totalLastDay = $derived(
+  pipe(wallets, Option.map(w => w.totalLastDay), Option.getOrElse(() => "-")),
+)
+const totalLast7d = $derived(
+  pipe(wallets, Option.map(w => w.totalLast7d), Option.getOrElse(() => "-")),
+)
+const totalLast30d = $derived(
+  pipe(wallets, Option.map(w => w.totalLast30d), Option.getOrElse(() => "-")),
 )
 
 // Format uptime for display
-let uptimeDisplay = $derived(() => {
-  const seconds = rates.serverUptimeSeconds
-  if (seconds < 60) {
-    return `${seconds}s`
-  }
-  if (seconds < 3600) {
-    return `${Math.floor(seconds / 60)}m`
-  }
-  if (seconds < 86400) {
-    return `${Math.floor(seconds / 3600)}h`
-  }
-  return `${Math.floor(seconds / 86400)}d`
+const uptimeDisplay = $derived(() => {
+  return pipe(
+    rates,
+    Option.map(r => r.serverUptimeSeconds),
+    Option.map(seconds => {
+      if (seconds < 60) {
+        return `${seconds}s`
+      }
+      if (seconds < 3600) {
+        return `${Math.floor(seconds / 60)}m`
+      }
+      if (seconds < 86400) {
+        return `${Math.floor(seconds / 3600)}h`
+      }
+      return `${Math.floor(seconds / 86400)}d`
+    }),
+    Option.getOrElse(() => "0s"),
+  )
 })
 
 let isMuted = $state(!transactionAudio.isEnabled())
@@ -156,18 +110,6 @@ const toggleMute = async () => {
     isMuted = true
   }
 }
-
-// Debug logging in development
-$effect(() => {
-  if (import.meta.env.DEV) {
-    console.log("TransferStats data:", {
-      hasTransferRates: !!transferRates,
-      hasWalletRates: !!activeWalletRates,
-      connectionStatus,
-      uptimeSeconds: rates.serverUptimeSeconds,
-    })
-  }
-})
 </script>
 
 <Card class="h-full p-0">
@@ -263,68 +205,33 @@ $effect(() => {
           <div class="space-y-0.5">
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">5m:</span>
-              <div class="text-right">
-                {#if rates.txPerMinuteChange}
-                  <span
-                    class="text-[11px] sm:text-[10px] mr-1 {rates.txPerMinuteChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(rates.txPerMinuteChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[11px] sm:text-[10px]">
-                  {rates.txPerMinute}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[11px] sm:text-[10px]">
+                {txPerMinute}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">1h:</span>
-              <div class="text-right">
-                {#if rates.txPerHourChange}
-                  <span
-                    class="text-[10px] mr-1 {rates.txPerHourChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(rates.txPerHourChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {rates.txPerHour}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {txPerHour}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">1d:</span>
-              <div class="text-right">
-                {#if rates.txPerDayChange}
-                  <span
-                    class="text-[10px] mr-1 {rates.txPerDayChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(rates.txPerDayChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {rates.txPerDay}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {txPerDay}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">7d:</span>
-              <div class="text-right">
-                {#if rates.txPer7DaysChange}
-                  <span
-                    class="text-[10px] mr-1 {rates.txPer7DaysChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(rates.txPer7DaysChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {rates.txPer7Days}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {txPer7Days}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">30d:</span>
-              <div class="text-right">
-                {#if rates.txPer30DaysChange}
-                  <span
-                    class="text-[10px] mr-1 {rates.txPer30DaysChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(rates.txPer30DaysChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {rates.txPer30Days}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {txPer30Days}
+              </span>
             </div>
           </div>
         </section>
@@ -335,68 +242,33 @@ $effect(() => {
           <div class="space-y-0.5">
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">5m:</span>
-              <div class="text-right">
-                {#if wallets.sendersLastMinChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.sendersLastMinChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.sendersLastMinChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.sendersLastMin}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {sendersLastMin}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">1h:</span>
-              <div class="text-right">
-                {#if wallets.sendersLastHourChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.sendersLastHourChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.sendersLastHourChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.sendersLastHour}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {sendersLastHour}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">1d:</span>
-              <div class="text-right">
-                {#if wallets.sendersLastDayChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.sendersLastDayChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.sendersLastDayChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.sendersLastDay}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {sendersLastDay}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">7d:</span>
-              <div class="text-right">
-                {#if wallets.sendersLast7dChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.sendersLast7dChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.sendersLast7dChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.sendersLast7d}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {sendersLast7d}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">30d:</span>
-              <div class="text-right">
-                {#if wallets.sendersLast30dChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.sendersLast30dChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.sendersLast30dChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.sendersLast30d}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {sendersLast30d}
+              </span>
             </div>
           </div>
         </section>
@@ -407,68 +279,33 @@ $effect(() => {
           <div class="space-y-0.5">
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">5m:</span>
-              <div class="text-right">
-                {#if wallets.receiversLastMinChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.receiversLastMinChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.receiversLastMinChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.receiversLastMin}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {receiversLastMin}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">1h:</span>
-              <div class="text-right">
-                {#if wallets.receiversLastHourChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.receiversLastHourChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.receiversLastHourChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.receiversLastHour}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {receiversLastHour}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">1d:</span>
-              <div class="text-right">
-                {#if wallets.receiversLastDayChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.receiversLastDayChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.receiversLastDayChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.receiversLastDay}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {receiversLastDay}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">7d:</span>
-              <div class="text-right">
-                {#if wallets.receiversLast7dChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.receiversLast7dChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.receiversLast7dChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.receiversLast7d}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {receiversLast7d}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">30d:</span>
-              <div class="text-right">
-                {#if wallets.receiversLast30dChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.receiversLast30dChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.receiversLast30dChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.receiversLast30d}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {receiversLast30d}
+              </span>
             </div>
           </div>
         </section>
@@ -479,68 +316,33 @@ $effect(() => {
           <div class="space-y-0.5">
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">5m:</span>
-              <div class="text-right">
-                {#if wallets.totalLastMinChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.totalLastMinChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.totalLastMinChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.totalLastMin}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {totalLastMin}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">1h:</span>
-              <div class="text-right">
-                {#if wallets.totalLastHourChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.totalLastHourChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.totalLastHourChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.totalLastHour}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {totalLastHour}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">1d:</span>
-              <div class="text-right">
-                {#if wallets.totalLastDayChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.totalLastDayChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.totalLastDayChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.totalLastDay}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {totalLastDay}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">7d:</span>
-              <div class="text-right">
-                {#if wallets.totalLast7dChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.totalLast7dChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.totalLast7dChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.totalLast7d}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {totalLast7d}
+              </span>
             </div>
             <div class="flex justify-between font-mono items-center">
               <span class="text-zinc-400">30d:</span>
-              <div class="text-right">
-                {#if wallets.totalLast30dChange}
-                  <span
-                    class="text-[10px] mr-1 {wallets.totalLast30dChange >= 0 ? 'text-green-400' : 'text-red-400'}"
-                  >{formatPercentageChange(wallets.totalLast30dChange)}</span>
-                {/if}
-                <span class="text-zinc-100 tabular-nums text-[10px]">
-                  {wallets.totalLast30d}
-                </span>
-              </div>
+              <span class="text-zinc-100 tabular-nums text-[10px]">
+                {totalLast30d}
+              </span>
             </div>
           </div>
         </section>
@@ -551,9 +353,6 @@ $effect(() => {
     <footer class="p-2 border-t border-zinc-800">
       <div class="text-[9px] text-zinc-400 font-mono leading-relaxed">
         <span class="text-zinc-300">info:</span> rolling timeframes show activity within each period
-        <span class="text-zinc-300">%:</span> change vs previous period
-        <span class="text-green-400">(+)</span> increase
-        <span class="text-red-400">(-)</span> decrease
       </div>
     </footer>
   </div>

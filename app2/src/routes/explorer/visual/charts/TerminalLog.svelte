@@ -1,36 +1,11 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import { chains } from "$lib/stores/chains.svelte"
-import type { TransferListItem } from "@unionlabs/sdk/schema"
 import { Option } from "effect"
 import { onMount } from "svelte"
 import { transactionAudio } from "../audio"
 import { initializeCanvasWithCleanup } from "../canvasInit"
-
-// Extended transfer type with server pre-computed fields
-type EnhancedTransferListItem = TransferListItem & {
-  isTestnetTransfer?: boolean
-  sourceDisplayName?: string
-  destinationDisplayName?: string
-  formattedTimestamp?: string
-  routeKey?: string
-  senderDisplay?: string
-  receiverDisplay?: string
-}
-
-interface LogEntry {
-  id: number
-  timestamp: string
-  type: string
-  message: string
-  sourceChain: string
-  destChain: string
-  hash: string
-  sender?: string | undefined
-  receiver?: string | undefined
-  sourceChainId?: string | undefined
-  destChainId?: string | undefined
-}
+import type { EnhancedTransferListItem, LogEntry } from "../types"
 
 let {
   transfers = [],

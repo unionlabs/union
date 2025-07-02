@@ -1,27 +1,19 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
-
-interface RouteData {
-  route: string
-  count: number
-  fromChain: string
-  toChain: string
-  fromName: string
-  toName: string
-  countChange?: number
-}
+import { Option, pipe } from "effect"
+import type { RouteData } from "../types"
 
 interface Props {
-  popularRoutes?: RouteData[]
-  popularRoutesTimeScale?: Record<string, RouteData[]>
+  popularRoutes: Option.Option<RouteData[]>
+  popularRoutesTimeScale: Option.Option<Record<string, RouteData[]>>
 }
 
 const DEFAULT_ROUTE_DATA: RouteData[] = []
 
 let {
-  popularRoutes = DEFAULT_ROUTE_DATA,
-  popularRoutesTimeScale = {},
+  popularRoutes,
+  popularRoutesTimeScale,
 }: Props = $props()
 
 // Local item count configuration
@@ -46,24 +38,25 @@ const timeScales = [
   { key: "30d", label: "30d" },
 ] as const
 
-// Derived state
+// Derived state using Effect Option patterns
 const currentData = $derived.by(() => {
-  let data = []
-  if (
-    popularRoutesTimeScale && popularRoutesTimeScale[selectedTimeScale]
-    && popularRoutesTimeScale[selectedTimeScale].length > 0
-  ) {
-    data = popularRoutesTimeScale[selectedTimeScale]
-  } else {
-    data = popularRoutes
-  }
-
-  // Limit to selected number for display
-  return data?.slice(0, selectedItemCount) || []
+  return pipe(
+    popularRoutesTimeScale,
+    Option.flatMap((timeScaleData) => {
+      if (timeScaleData[selectedTimeScale] && timeScaleData[selectedTimeScale].length > 0) {
+        return Option.some(timeScaleData[selectedTimeScale])
+      }
+      return popularRoutes
+    }),
+    Option.getOrElse(() => DEFAULT_ROUTE_DATA),
+    (data) => data.slice(0, selectedItemCount),
+  )
 })
 
 const hasData = $derived(currentData.length > 0)
-const isLoading = $derived(!hasData && popularRoutes.length === 0)
+const isLoading = $derived(
+  !hasData && Option.isNone(popularRoutes),
+)
 
 // Get total transfer count for percentage calculation
 const totalTransfersForTimeframe = $derived(() => {
@@ -102,26 +95,9 @@ function formatPercentageChange(change?: number): string {
   return `(${sign}${change.toFixed(1)}%)`
 }
 
-
-
 function getPercentageOfTotal(route: RouteData): number {
   return Math.round((route.count / totalTransfersForTimeframe()) * 100)
 }
-
-
-
-// Debug logging in development
-$effect(() => {
-  if (import.meta.env.DEV) {
-    console.log("PopularRoutesChart data:", {
-      hasData,
-      isLoading,
-      currentDataLength: currentData.length,
-      routesLength: popularRoutes?.length || 0,
-      selectedItemCount: selectedItemCount,
-    })
-  }
-})
 </script>
 
 <Card class="h-full p-0">
