@@ -5,10 +5,7 @@
         "environment": "production"
       },
       "bsc.97": {
-        "environment": "staging"
-      },
-      "osmosis.osmo-test-5": {
-        "environment": "staging"
+        "environment": "production"
       },
       "corn.21000001": {
         "environment": "production"
@@ -20,7 +17,7 @@
         "environment": "production"
       },
       "osmosis.osmo-test-5": {
-        "environment": "staging"
+        "environment": "production"
       },
       "sei.1328": {
         "environment": "production"
