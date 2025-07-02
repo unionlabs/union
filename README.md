@@ -38,7 +38,7 @@ The upgradability of contracts on other chains, connections, token configuration
 | [`evm`](./evm)                                        | [EVM] smart contract stack                           | [Solidity]            |
 | [`app`](./app2)                                       | [app.union.build]                                    | [TypeScript] [Svelte] |
 | [`site`](./site)                                      | [union.build]                                        | [TypeScript] [Astro]  |
-| [`TypeScript SDK`](./typescript-sdk)                  | TypeScript SDK for interacting with Union            | [TypeScript]          |
+| [`TypeScript SDK`](./ts-sdk)                  | TypeScript SDK for interacting with Union            | [TypeScript]          |
 
 ## Quickstart
 
