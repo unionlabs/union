@@ -10,33 +10,26 @@ export type Entity<T extends keyof (Database["public"]["Tables"] & Database["pub
 export type SupabaseOptions = NonNullable<Parameters<typeof createClient<Database>>[2]>
 
 export class SupabaseClient extends Effect.Service<SupabaseClient>()("SupabaseClient", {
-  scoped: (options?: SupabaseOptions | undefined) =>
-    Effect.gen(function*() {
-      const url = yield* S.decode(S.URL)(PUBLIC_SUPABASE_URL).pipe(
-        Effect.mapError((cause) =>
-          new SupabaseClientError({
-            operation: "init",
-            message: "Could not decode PUBLIC_SUPABASE_URL to URL",
-            cause,
-          })
-        ),
-      )
-      const anonKey = yield* S.decode(S.NonEmptyString)(PUBLIC_SUPABASE_ANON_KEY).pipe(
-        Effect.mapError((cause) =>
-          new SupabaseClientError({
-            operation: "init",
-            message: "Could not decode PUBLIC_SUPABASE_ANON_KEY to non-empty string",
-            cause,
-          })
-        ),
-      )
+  scoped: Effect.fnUntraced(function*(options?: SupabaseOptions | undefined) {
+    const url = yield* S.decode(S.URL)(PUBLIC_SUPABASE_URL).pipe(
+      Effect.mapError((cause) =>
+        new SupabaseClientError({
+          operation: "init",
+          message: "Could not decode PUBLIC_SUPABASE_URL to URL",
+          cause,
+        })
+      ),
+    )
+    const anonKey = yield* S.decode(S.NonEmptyString)(PUBLIC_SUPABASE_ANON_KEY).pipe(
+      Effect.mapError((cause) =>
+        new SupabaseClientError({
+          operation: "init",
+          message: "Could not decode PUBLIC_SUPABASE_ANON_KEY to non-empty string",
+          cause,
+        })
+      ),
+    )
 
-      return createClient<Database>(url.toString(), anonKey, {
-        ...options,
-        auth: {
-          ...options?.auth,
-          autoRefreshToken: true,
-        },
-      })
-    }),
+    return createClient<Database>(url.toString(), anonKey, options)
+  }),
 }) {}

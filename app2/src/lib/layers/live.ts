@@ -19,7 +19,7 @@ export default Layer.mergeAll(
   GraphQL.Default,
   GasPriceMap.Default,
   PriceOracleExecutor.Default,
-  SupabaseClient.Default(),
+  SupabaseClient.Default({ auth: { autoRefreshToken: true } }),
   Logger.replace(
     Logger.defaultLogger,
     Logger.zip(
