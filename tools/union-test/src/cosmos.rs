@@ -1,6 +1,13 @@
-use std::panic::AssertUnwindSafe;
-use std::{num::NonZeroU8, num::NonZeroU32, time::Duration, sync::Arc, str::FromStr};
+use std::{
+    num::{NonZeroU32, NonZeroU8},
+    panic::AssertUnwindSafe,
+    str::FromStr,
+    sync::Arc,
+    time::Duration,
+};
 
+use cometbft::abci::v1::{Event, EventAttribute};
+use cometbft_rpc::rpc_types::{Order, TxResponse};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
     gas::{any, feemarket, fixed},
@@ -8,21 +15,23 @@ use cosmos_client::{
     wallet::{LocalSigner, WalletT},
     BroadcastTxCommitError, TxClient,
 };
-use ibc_solidity::Connection;
-use protos::cometbft;
-use tokio::time::timeout;
 use cosmos_sdk_event::CosmosSdkEvent;
-use cometbft::abci::v1::{Event, EventAttribute};
-use cometbft_rpc::rpc_types::{Order, TxResponse};
-use ibc_union_spec::{event::PacketSend, event::CreateClient, ChannelId, ConnectionId, ClientId, Timestamp};
-use protos::cosmos::base::v1beta1::Coin;
+use ibc_solidity::Connection;
+use ibc_union_spec::{
+    event::{CreateClient, PacketSend},
+    path::ChannelPath,
+    query::PacketByHash,
+    ChannelId, ClientId, ConnectionId, IbcUnion, Packet, Timestamp,
+};
+use protos::{cometbft, cosmos::base::v1beta1::Coin};
 use serde::{Deserialize, Serialize};
+use tokio::time::timeout;
 use unionlabs::{
     self,
     bech32::Bech32,
     encoding::{Encode, Json, Proto},
     google::protobuf::any::mk_any,
-    primitives::{Bytes, H160, H256, encoding::HexUnprefixed},
+    primitives::{encoding::HexUnprefixed, Bytes, H160, H256},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -31,7 +40,6 @@ use voyager_sdk::{
     primitives::ChainId,
     vm::BoxDynError,
 };
-use ibc_union_spec::{path::ChannelPath, query::PacketByHash, IbcUnion, Packet};
 
 use crate::helpers;
 
@@ -142,11 +150,7 @@ impl Module {
         })
     }
 
-    async fn wait_for_event<T, F>(
-        &self,
-        mut filter_fn: F,
-        max_wait: Duration,
-    ) -> anyhow::Result<T>
+    async fn wait_for_event<T, F>(&self, mut filter_fn: F, max_wait: Duration) -> anyhow::Result<T>
     where
         F: FnMut(&IbcEvent) -> Option<T> + Send + 'static,
         T: Send + 'static,
@@ -217,7 +221,9 @@ impl Module {
         self.wait_for_event(
             |evt| {
                 if let IbcEvent::WasmCreateClient { client_id, .. } = evt {
-                    Some(helpers::CreateClientConfirm { client_id: client_id.raw().try_into().unwrap() })
+                    Some(helpers::CreateClientConfirm {
+                        client_id: client_id.raw().try_into().unwrap(),
+                    })
                 } else {
                     None
                 }
@@ -233,7 +239,12 @@ impl Module {
     ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
         self.wait_for_event(
             |evt| {
-                if let IbcEvent::WasmChannelOpenConfirm {  channel_id, counterparty_channel_id, .. } = evt {
+                if let IbcEvent::WasmChannelOpenConfirm {
+                    channel_id,
+                    counterparty_channel_id,
+                    ..
+                } = evt
+                {
                     Some(helpers::ChannelOpenConfirm {
                         channel_id: channel_id.raw().try_into().unwrap(),
                         counterparty_channel_id: counterparty_channel_id.raw().try_into().unwrap(),
@@ -247,17 +258,24 @@ impl Module {
         .await
     }
 
-
     pub async fn wait_for_connection_open_confirm(
         &self,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
         self.wait_for_event(
             |evt| {
-                if let IbcEvent::WasmConnectionOpenConfirm {  connection_id, counterparty_connection_id, .. } = evt {
+                if let IbcEvent::WasmConnectionOpenConfirm {
+                    connection_id,
+                    counterparty_connection_id,
+                    ..
+                } = evt
+                {
                     Some(helpers::ConnectionConfirm {
                         connection_id: connection_id.raw().try_into().unwrap(),
-                        counterparty_connection_id: counterparty_connection_id.raw().try_into().unwrap(),
+                        counterparty_connection_id: counterparty_connection_id
+                            .raw()
+                            .try_into()
+                            .unwrap(),
                     })
                 } else {
                     None
@@ -268,8 +286,6 @@ impl Module {
         .await
     }
 
-
-
     pub async fn wait_for_packet_recv(
         &self,
         packet_hash: H256,
@@ -277,13 +293,13 @@ impl Module {
     ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_event(
             |evt| {
-            if let IbcEvent::WasmPacketRecv { packet_hash, .. } = evt {
+                if let IbcEvent::WasmPacketRecv { packet_hash, .. } = evt {
                     if packet_hash.as_ref() == packet_hash.as_ref() {
                         return Some(helpers::PacketRecv {
-                            packet_hash: *packet_hash
+                            packet_hash: *packet_hash,
                         });
                     }
-                        None
+                    None
                 } else {
                     None
                 }
@@ -293,30 +309,26 @@ impl Module {
         .await
     }
 
-
     // TODO(aeryz): return the digest
     pub async fn send_transaction(
         &self,
         contract: Bech32<H256>,
-        funded_msgs: Vec<(Box<impl Encode<Json> + Clone>, Vec<Coin>)>,
+        msg: (Vec<u8>, Vec<Coin>),
     ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
-        assert!(!funded_msgs.is_empty());
         self.keyring
             .with(|signer| {
                 let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
 
-                let batch_size = funded_msgs.len();
-
                 AssertUnwindSafe(async move {
                     match tx_client
                         .broadcast_tx_commit(
-                            funded_msgs
+                            [msg]
                                 .iter()
                                 .map(|(x, funds)| {
                                     mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
                                         sender: signer.address().to_string(),
                                         contract: contract.to_string(),
-                                        msg: x.clone().encode(),
+                                        msg: x.clone(),
                                         funds: funds.clone(),
                                     })
                                 })
@@ -330,7 +342,6 @@ impl Module {
                             info!(
                                 tx_hash = %tx_response.hash,
                                 gas_used = %tx_response.tx_result.gas_used,
-                                batch.size = %batch_size,
                                 "submitted cosmos transaction"
                             );
 
@@ -349,13 +360,15 @@ impl Module {
     pub async fn send_ibc_transaction(
         &self,
         contract: Bech32<H256>,
-        funded_msgs: Vec<(Box<impl Encode<Json> + Clone>, Vec<Coin>)>,
+        msg: (Vec<u8>, Vec<Coin>),
     ) -> anyhow::Result<H256> {
-        let result = self.send_transaction(contract, funded_msgs).await;
+        let result = self.send_transaction(contract, msg).await;
 
         let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
 
-        let send_event = tx_result.tx_result.events
+        let send_event = tx_result
+            .tx_result
+            .events
             .into_iter()
             .find_map(|e| {
                 if e.ty == "wasm-packet_send" {
@@ -365,7 +378,7 @@ impl Module {
                 }
             })
             .ok_or_else(|| anyhow!("wasm-packet_send event not found"))?;
-        
+
         Ok(match send_event {
             IbcEvent::WasmPacketSend { packet_hash, .. } => packet_hash,
             _ => bail!("unexpected event variant"),

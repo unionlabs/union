@@ -1,26 +1,25 @@
-use std::{time::Duration, panic::AssertUnwindSafe};
-use cosmos_client::rpc::Rpc;
-use tokio::time::timeout;
+use std::{panic::AssertUnwindSafe, time::Duration};
 
 use alloy::{
-    contract::{Error, RawCallBuilder, Result}, network::{AnyNetwork, EthereumWallet}, primitives::TxHash, providers::{
+    contract::{Error, RawCallBuilder, Result},
+    network::{AnyNetwork, EthereumWallet},
+    primitives::TxHash,
+    providers::{
         fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
         Provider, ProviderBuilder,
-    }, rpc::types::{self, AnyReceiptEnvelope, Filter, Log, TransactionReceipt}, signers::local::LocalSigner, sol_types::SolEventInterface, transports::TransportError    
+    },
+    rpc::types::{self, AnyReceiptEnvelope, Filter, Log, TransactionReceipt},
+    signers::local::LocalSigner,
+    sol_types::SolEventInterface,
+    transports::TransportError,
 };
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
+use cosmos_client::rpc::Rpc;
+use ibc_solidity::Ibc::{
+    self, ChannelOpenConfirm, ConnectionOpenConfirm, CreateClient, IbcErrors, IbcEvents, PacketRecv,
+};
 use ibc_union_spec::{datagram::Datagram, IbcUnion};
-
-use ibc_solidity::Ibc::{self, CreateClient, ChannelOpenConfirm, ConnectionOpenConfirm, IbcEvents, IbcErrors, PacketRecv};
-use serde::{Deserialize, Serialize};
-use unionlabs::{primitives::{H160, H256, FixedBytes}, ErrorReporter};
-use voyager_sdk::{
-    anyhow::{self, anyhow, bail},
-    into_value,
-    primitives::ChainId};
-    
-use multicall::{Call3, Multicall, MulticallResult};
 // use voyager_sdk::plugin::Plugin::
 // use crate::multicall::{Call3, Multicall, MulticallResult};
 use jsonrpsee::{
@@ -29,7 +28,20 @@ use jsonrpsee::{
     types::{ErrorObject, ErrorObjectOwned},
     Extensions, MethodsError,
 };
+use multicall::{Call3, Multicall, MulticallResult};
+use serde::{Deserialize, Serialize};
+use tokio::time::timeout;
 use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
+use unionlabs::{
+    primitives::{FixedBytes, H160, H256},
+    ErrorReporter,
+};
+use voyager_sdk::{
+    anyhow::{self, anyhow, bail},
+    into_value,
+    primitives::ChainId,
+};
+
 use crate::helpers;
 
 #[derive(Debug)]
@@ -124,7 +136,6 @@ impl Module {
         timeout: Duration,
     ) -> anyhow::Result<T> {
         tokio::time::timeout(timeout, async {
-
             let mut prev_latest = self.provider.get_block_number().await?;
             loop {
                 let latest = self.provider.get_block_number().await?;
@@ -160,20 +171,24 @@ impl Module {
 
                 tokio::time::sleep(Duration::from_secs(5)).await;
             }
-        }).await
+        })
+        .await
         .map_err(|_| anyhow::anyhow!("timed out after {:?}", timeout))?
     }
-    
+
     pub async fn wait_for_create_client(
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::CreateClientConfirm> {
-        self.wait_for_event(|e| match e {
-            IbcEvents::CreateClient(ev) => Some(helpers::CreateClientConfirm {
-                client_id: ev.client_id,
-            }),
-            _ => None,
-        }, timeout)
+        self.wait_for_event(
+            |e| match e {
+                IbcEvents::CreateClient(ev) => Some(helpers::CreateClientConfirm {
+                    client_id: ev.client_id,
+                }),
+                _ => None,
+            },
+            timeout,
+        )
         .await
     }
 
@@ -181,15 +196,16 @@ impl Module {
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
-        self.wait_for_event(|e| match e {
-            IbcEvents::ConnectionOpenConfirm(ev) => {
-                Some(helpers::ConnectionConfirm {
+        self.wait_for_event(
+            |e| match e {
+                IbcEvents::ConnectionOpenConfirm(ev) => Some(helpers::ConnectionConfirm {
                     connection_id: ev.connection_id,
                     counterparty_connection_id: ev.counterparty_connection_id,
-                })
-            }
-            _ => None,
-        }, timeout)
+                }),
+                _ => None,
+            },
+            timeout,
+        )
         .await
     }
 
@@ -197,13 +213,16 @@ impl Module {
         &self,
         timeout: Duration,
     ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
-        self.wait_for_event(|e| match e {
-            IbcEvents::ChannelOpenConfirm(ev) => Some(helpers::ChannelOpenConfirm {
-                channel_id: ev.channel_id,
-                counterparty_channel_id: ev.counterparty_channel_id,
-            }),
-            _ => None,
-        }, timeout)
+        self.wait_for_event(
+            |e| match e {
+                IbcEvents::ChannelOpenConfirm(ev) => Some(helpers::ChannelOpenConfirm {
+                    channel_id: ev.channel_id,
+                    counterparty_channel_id: ev.counterparty_channel_id,
+                }),
+                _ => None,
+            },
+            timeout,
+        )
         .await
     }
 
@@ -215,43 +234,23 @@ impl Module {
         self.wait_for_event(
             |e| match e {
                 // println!("e is: {:?}", e);
-                IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => Some(helpers::PacketRecv {
-                    packet_hash: ev.packet_hash.try_into().unwrap(),
-                }),
+                IbcEvents::PacketRecv(ev) if ev.packet_hash.as_slice() == packet_hash.as_ref() => {
+                    Some(helpers::PacketRecv {
+                        packet_hash: ev.packet_hash.try_into().unwrap(),
+                    })
+                }
                 _ => None,
             },
             timeout,
         )
         .await
     }
-    pub async fn send_ibc_transaction(
-        &self,
-        contract: H160,
-        ibc_messages: Vec<RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>>,
-        packet_hash: H256,
-        timeout: Duration,
-    ) -> RpcResult<FixedBytes<32>> {
-        let hash: H256 = self.send_transaction_ibc(contract, ibc_messages).await?;
-        Ok(hash.into())
-    }
 
-
-    pub async fn send_zkgm_transaction(
-        &self,
-        contract: H160,
-        send_call_struct: zkgm::UCS03Zkgm::sendCall,
-    ) -> RpcResult<FixedBytes<32>> {
-        let hash: H256 = self.send_transaction_zkgm(contract, send_call_struct).await?;
-        Ok(hash.into())
-    }
-
-
-
-    async fn submit_transaction_ibc(
+    async fn submit_ibc_transaction(
         &self,
         ibc_handler_address: H160,
         wallet: &LocalSigner<SigningKey>,
-        ibc_messages: Vec<RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>>,
+        msg: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
         let signer = DynProvider::new(
             ProviderBuilder::new()
@@ -282,10 +281,9 @@ impl Module {
 
         let multicall = Multicall::new(self.multicall_address.into(), signer.clone());
 
-        let ibc = Ibc::new(ibc_handler_address.into(), &self.provider);
-
         let mut call = multicall.multicall(
-            ibc_messages.clone()
+            [&msg]
+                .clone()
                 .into_iter()
                 .map(|call| Call3 {
                     target: ibc_handler_address.into(),
@@ -297,7 +295,10 @@ impl Module {
 
         println!("submitting evm tx");
         let gas_estimate = call.estimate_gas().await.map_err(|e| {
-            if ErrorReporter(&e).to_string().contains("gas required exceeds") {
+            if ErrorReporter(&e)
+                .to_string()
+                .contains("gas required exceeds")
+            {
                 TxSubmitError::BatchTooLarge
             } else {
                 TxSubmitError::Estimate(e)
@@ -305,8 +306,8 @@ impl Module {
         })?;
         let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
         println!(
-
-            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}", self.gas_multiplier
+            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}",
+            self.gas_multiplier
         );
 
         if let Some(fixed) = self.fixed_gas_price {
@@ -317,7 +318,7 @@ impl Module {
             Ok(ok) => {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
-                    let receipt = ok.get_receipt().await?;
+                    let _ = ok.get_receipt().await?;
                     println!("tx included: {:?}", tx_hash);
 
                     Ok(tx_hash)
@@ -327,31 +328,32 @@ impl Module {
             }
 
             Err(
-            Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
-            | Error::TransportError(TransportError::ErrorResp(e)),
-        ) if e.message.contains("insufficient funds for gas * price + value") => {
-            error!("out of gas");
-            return Err(TxSubmitError::OutOfGas);
-        }
-
-        Err(
-            Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
-            | Error::TransportError(TransportError::ErrorResp(e)),
-        ) 
-        if e.message.contains("oversized data")
-           || e.message.contains("exceeds block gas limit")
-           || e.message.contains("gas required exceeds") => 
-        {
-            if ibc_messages.len() == 1 {
-                error!(error = %e.message, msg = ?ibc_messages[0], "message is too large");
-            } else {
-                warn!(error = %e.message, "batch is too large");
+                Error::PendingTransactionError(PendingTransactionError::TransportError(
+                    TransportError::ErrorResp(e),
+                ))
+                | Error::TransportError(TransportError::ErrorResp(e)),
+            ) if e
+                .message
+                .contains("insufficient funds for gas * price + value") =>
+            {
+                error!("out of gas");
+                return Err(TxSubmitError::OutOfGas);
             }
-            return Err(TxSubmitError::BatchTooLarge);
-        }
 
-        Err(err) => return Err(TxSubmitError::Error(err)),
+            Err(
+                Error::PendingTransactionError(PendingTransactionError::TransportError(
+                    TransportError::ErrorResp(e),
+                ))
+                | Error::TransportError(TransportError::ErrorResp(e)),
+            ) if e.message.contains("oversized data")
+                || e.message.contains("exceeds block gas limit")
+                || e.message.contains("gas required exceeds") =>
+            {
+                error!(error = %e.message, msg = ?msg, "message is too large");
+                return Err(TxSubmitError::BatchTooLarge);
+            }
 
+            Err(err) => return Err(TxSubmitError::Error(err)),
         }
     }
 
@@ -359,7 +361,7 @@ impl Module {
         &self,
         ucs03_addr_on_evm: H160,
         wallet: &LocalSigner<SigningKey>,
-        send_call_struct: zkgm::UCS03Zkgm::sendCall
+        send_call_struct: zkgm::UCS03Zkgm::sendCall,
     ) -> Result<H256, TxSubmitError> {
         let signer = DynProvider::new(
             ProviderBuilder::new()
@@ -389,19 +391,22 @@ impl Module {
         }
 
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
-        
-        let mut call = ucs03_zkgm.send( 
+
+        let mut call = ucs03_zkgm.send(
             send_call_struct.channelId,
             send_call_struct.timeoutHeight,
-            send_call_struct.timeoutTimestamp, 
+            send_call_struct.timeoutTimestamp,
             send_call_struct.salt,
-            send_call_struct.instruction
+            send_call_struct.instruction,
         );
         println!("submitting evm tx");
-        
+
         let gas_estimate = call.estimate_gas().await.map_err(|e| {
             println!("error estimating gas: {:?}", e);
-            if ErrorReporter(&e).to_string().contains("gas required exceeds") {
+            if ErrorReporter(&e)
+                .to_string()
+                .contains("gas required exceeds")
+            {
                 TxSubmitError::BatchTooLarge
             } else {
                 TxSubmitError::Estimate(e)
@@ -410,8 +415,8 @@ impl Module {
 
         let gas_to_use = ((gas_estimate as f64) * self.gas_multiplier) as u64;
         println!(
-
-            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}", self.gas_multiplier
+            "gas estimate: {gas_estimate}, gas to use: {gas_to_use}, gas multiplier: {}",
+            self.gas_multiplier
         );
 
         if let Some(fixed) = self.fixed_gas_price {
@@ -422,7 +427,7 @@ impl Module {
             Ok(ok) => {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
-                    let receipt = ok.get_receipt().await?;
+                    let _ = ok.get_receipt().await?;
                     println!("tx included: {:?}", tx_hash);
 
                     Ok(tx_hash)
@@ -432,44 +437,44 @@ impl Module {
             }
 
             Err(
-            Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
-            | Error::TransportError(TransportError::ErrorResp(e)),
-        ) if e.message.contains("insufficient funds for gas * price + value") => {
-            error!("out of gas");
-            return Err(TxSubmitError::OutOfGas);
-        }
+                Error::PendingTransactionError(PendingTransactionError::TransportError(
+                    TransportError::ErrorResp(e),
+                ))
+                | Error::TransportError(TransportError::ErrorResp(e)),
+            ) if e
+                .message
+                .contains("insufficient funds for gas * price + value") =>
+            {
+                error!("out of gas");
+                return Err(TxSubmitError::OutOfGas);
+            }
 
-        Err(
-            Error::PendingTransactionError(PendingTransactionError::TransportError(TransportError::ErrorResp(e)))
-            | Error::TransportError(TransportError::ErrorResp(e)),
-        ) 
-        if e.message.contains("oversized data")
-           || e.message.contains("exceeds block gas limit")
-           || e.message.contains("gas required exceeds") => 
-        {
-            return Err(TxSubmitError::BatchTooLarge);
-        }
+            Err(
+                Error::PendingTransactionError(PendingTransactionError::TransportError(
+                    TransportError::ErrorResp(e),
+                ))
+                | Error::TransportError(TransportError::ErrorResp(e)),
+            ) if e.message.contains("oversized data")
+                || e.message.contains("exceeds block gas limit")
+                || e.message.contains("gas required exceeds") =>
+            {
+                return Err(TxSubmitError::BatchTooLarge);
+            }
 
-        Err(err) => return Err(TxSubmitError::Error(err)),
-
+            Err(err) => return Err(TxSubmitError::Error(err)),
         }
     }
 
     pub async fn get_provider(&self) -> DynProvider<AnyNetwork> {
-        let maybe_wallet = self.keyring
-            .with(|wallet| async move {
-                wallet.clone()
-            })
+        let maybe_wallet = self
+            .keyring
+            .with(|wallet| async move { wallet.clone() })
             .await;
-        let wallet = maybe_wallet
-            .expect("no signers available in keyring");
+        let wallet = maybe_wallet.expect("no signers available in keyring");
 
         // 2) Now that we've got the wallet, build your provider in a normal async call.
         //    This future lives *outside* the .with, so UnwindSafe is not required here.
         self.get_provider_with_wallet(&wallet).await
-
-
-        
     }
 
     async fn get_provider_with_wallet(
@@ -485,22 +490,23 @@ impl Module {
         )
     }
 
-    pub async fn send_transaction_ibc(
+    pub async fn send_ibc_transaction(
         &self,
         contract: H160,
-        msg: Vec<RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>>,
+        msg: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> RpcResult<FixedBytes<32>> {
-        assert!(!msg.is_empty());
-        let res = self.keyring
+        let res = self
+            .keyring
             .with({
                 let msg = msg.clone();
                 move |wallet| -> _ {
-                    AssertUnwindSafe(self.submit_transaction_ibc(contract, wallet, msg))
-                    }
-            }).await;
-        
+                    AssertUnwindSafe(self.submit_ibc_transaction(contract, wallet, msg))
+                }
+            })
+            .await;
+
         match res {
-            Some(Ok((hash))) => Ok(hash),
+            Some(Ok(hash)) => Ok(hash),
             Some(Err(e)) => Err(ErrorObject::owned(
                 -1,
                 format!("transaction submission failed: {:?}", e),
@@ -513,17 +519,23 @@ impl Module {
     pub async fn send_transaction_zkgm(
         &self,
         contract: H160,
-        send_call_struct: zkgm::UCS03Zkgm::sendCall
+        send_call_struct: zkgm::UCS03Zkgm::sendCall,
     ) -> RpcResult<FixedBytes<32>> {
-        let res = self.keyring
+        let res = self
+            .keyring
             .with({
                 move |wallet| -> _ {
-                    AssertUnwindSafe(self.submit_transaction_zkgm(contract, wallet, send_call_struct))
-                    }
-            }).await;
-        
+                    AssertUnwindSafe(self.submit_transaction_zkgm(
+                        contract,
+                        wallet,
+                        send_call_struct,
+                    ))
+                }
+            })
+            .await;
+
         match res {
-            Some(Ok((hash))) => Ok(hash),
+            Some(Ok(hash)) => Ok(hash),
             Some(Err(e)) => Err(ErrorObject::owned(
                 -1,
                 format!("transaction submission failed: {:?}", e),
@@ -554,7 +566,6 @@ pub mod zkgm {
         }
     }
 }
-
 
 pub mod multicall {
     alloy::sol! {

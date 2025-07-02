@@ -1,42 +1,29 @@
-use std::{str::FromStr, time::Duration, sync::Arc};
+use std::{sync::Arc, time::Duration};
 
-use alloy::sol_types::SolValue;
-use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
-use cosmos::{Config as CosmosConfig, Module as CosmosModule, FeemarketConfig, GasFillerConfig};
-use hex_literal::hex;
-use ibc_union_msg::msg::{ExecuteMsg, MsgCreateClient};
-use ibc_union_spec::{ChannelId, Timestamp, ClientId, datagram::Datagram};
-use protos::{cosmos::base::v1beta1::Coin, ibc::core::channel};
-use ucs03_zkgm::com::{
-    FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1, OP_FUNGIBLE_ASSET_ORDER,
-};
+use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
+use axum::async_trait;
+use protos::cosmos::base::v1beta1::Coin;
 use unionlabs::{
     bech32::Bech32,
-    encoding::{Bincode, EncodeAs, EthAbi, Encode, Json},
-    primitives::{Bytes, FixedBytes},
+    primitives::{Bytes, H160, H256},
 };
-use cometbft_rpc::rpc_types::{Order, TxResponse};
-use cosmos_client::BroadcastTxCommitError;
+use voyager_sdk::{
+    anyhow::{self, Ok},
+    primitives::ChainId,
+};
 
-use unionlabs::{primitives::{H160, H256}, ErrorReporter};
-use alloy::{network::AnyNetwork, contract::RawCallBuilder, providers::DynProvider};
-use voyager_sdk::{anyhow::{self, Ok}, primitives::ChainId};
-use std::process::Command;
-use axum::async_trait;
-use jsonrpsee::core::RpcResult;
-
-pub mod evm;
-pub mod cosmos;
 pub mod channel_provider;
-pub mod voyager;
+pub mod cosmos;
+pub mod evm;
 pub mod helpers;
+pub mod voyager;
 
-use crate::cosmos::IbcEvent;
-use crate::channel_provider::{ChannelPool, ChannelConfirm, ChannelPair};
-use crate::evm::zkgm::UCS03Zkgm;
+use crate::channel_provider::{ChannelConfirm, ChannelPair, ChannelPool};
 
 #[async_trait]
 pub trait ChainEndpoint: Send + Sync {
+    type Msg;
+    type Contract;
 
     fn chain_id(&self) -> &ChainId;
 
@@ -54,7 +41,6 @@ pub trait ChainEndpoint: Send + Sync {
 
     fn send_open_connection(
         &self,
-        counterparty: &ChainId,
         client_id: u32,
         counterparty_client_id: u32,
     ) -> anyhow::Result<()>;
@@ -78,24 +64,17 @@ pub trait ChainEndpoint: Send + Sync {
     ) -> anyhow::Result<helpers::ChannelOpenConfirm>;
 
     // TODO: How to handle this for EVM chains?
-    async fn send_ibc_packet(
+    async fn send_ibc_transaction(
         &self,
-        contract: Bech32<H256>,
-        funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
-    ) -> anyhow::Result<H256> ;
+        contract: Self::Contract,
+        msg: Self::Msg,
+    ) -> anyhow::Result<H256>;
 
     async fn wait_for_packet_recv(
         &self,
         packet_hash: H256,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv>;
-
-    async fn send_zkgm_transaction(
-        &self,
-        contract: H160,
-        send_call_struct: UCS03Zkgm::sendCall,
-    ) -> RpcResult<FixedBytes<32>>;
-
 }
 
 pub trait IbcEventHash {
@@ -104,6 +83,8 @@ pub trait IbcEventHash {
 
 #[async_trait]
 impl ChainEndpoint for evm::Module {
+    type Msg = RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>;
+    type Contract = H160;
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -133,15 +114,10 @@ impl ChainEndpoint for evm::Module {
 
     fn send_open_connection(
         &self,
-        counterparty: &ChainId,
         client_id: u32,
         counterparty_client_id: u32,
     ) -> anyhow::Result<()> {
-        voyager::connection_open(
-            self.chain_id.clone(),
-            client_id,
-            counterparty_client_id,
-        )?;
+        voyager::connection_open(self.chain_id.clone(), client_id, counterparty_client_id)?;
         Ok(())
     }
 
@@ -177,23 +153,14 @@ impl ChainEndpoint for evm::Module {
     }
 
     // TODO: How to handle this for EVM chains?
-    async fn send_ibc_packet(
+    async fn send_ibc_transaction(
         &self,
-        contract: Bech32<H256>,
-        funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
+        contract: Self::Contract,
+        msg: Self::Msg,
     ) -> anyhow::Result<H256> {
-        unimplemented!("Sending IBC packets is not implemented for EVM chains");
-    }
-
-    async fn send_zkgm_transaction(
-        &self,
-        contract: H160,
-        send_call_struct: UCS03Zkgm::sendCall
-    ) -> RpcResult<FixedBytes<32>>{
-        self.send_zkgm_transaction(
-            contract,
-            send_call_struct,
-        ).await
+        self.send_ibc_transaction(contract, msg)
+            .await
+            .map_err(Into::into)
     }
 
     async fn wait_for_packet_recv(
@@ -211,6 +178,8 @@ impl IbcEventHash for ibc_solidity::Ibc::PacketRecv {
 
 #[async_trait]
 impl ChainEndpoint for cosmos::Module {
+    type Msg = (Vec<u8>, Vec<Coin>);
+    type Contract = Bech32<H256>;
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -240,15 +209,10 @@ impl ChainEndpoint for cosmos::Module {
 
     fn send_open_connection(
         &self,
-        counterparty: &ChainId,
         client_id: u32,
         counterparty_client_id: u32,
     ) -> anyhow::Result<()> {
-        voyager::connection_open(
-            self.chain_id.clone(),
-            client_id,
-            counterparty_client_id,
-        )?;
+        voyager::connection_open(self.chain_id.clone(), client_id, counterparty_client_id)?;
         Ok(())
     }
 
@@ -283,24 +247,13 @@ impl ChainEndpoint for cosmos::Module {
         self.wait_for_channel_open_confirm(timeout).await
     }
 
-    async fn send_ibc_packet(
+    async fn send_ibc_transaction(
         &self,
         contract: Bech32<H256>,
-        funded_msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
-    ) -> anyhow::Result<H256>  {
-        self.send_ibc_transaction(contract, funded_msgs).await
+        msg: Self::Msg,
+    ) -> anyhow::Result<H256> {
+        self.send_ibc_transaction(contract, msg).await
     }
-
-
-    async fn send_zkgm_transaction(
-        &self,
-        contract: H160,
-        send_call_struct: UCS03Zkgm::sendCall,
-    ) -> RpcResult<FixedBytes<32>>
-    {
-        unimplemented!("Sending IBC packets is not implemented for EVM chains");
-    }
-
 
     async fn wait_for_packet_recv(
         &self,
@@ -331,7 +284,11 @@ where
         voyager::init_fetch(src.chain_id().clone())?;
         voyager::init_fetch(dst.chain_id().clone())?;
         let channel_pool = ChannelPool::new();
-        Ok(Self { src, dst, channel_pool })
+        Ok(Self {
+            src,
+            dst,
+            channel_pool,
+        })
     }
 
     pub async fn create_clients(
@@ -342,29 +299,27 @@ where
         dst_ibc_interface: &str,
         dst_client_type: &str,
     ) -> anyhow::Result<(helpers::CreateClientConfirm, helpers::CreateClientConfirm)> {
-        self.src.send_create_client(self.dst.chain_id(), src_ibc_interface, src_client_type)?;
+        self.src
+            .send_create_client(self.dst.chain_id(), src_ibc_interface, src_client_type)?;
         let src_confirm = self.src.wait_for_create_client(duration).await?;
-        self.dst.send_create_client(self.src.chain_id(), dst_ibc_interface, dst_client_type)?;
+        self.dst
+            .send_create_client(self.src.chain_id(), dst_ibc_interface, dst_client_type)?;
         let dst_confirm = self.dst.wait_for_create_client(duration).await?;
 
         Ok((src_confirm, dst_confirm))
     }
 
-    pub async fn open_connection(
+    pub async fn open_connection<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
-        send_from_source: bool,
+        src: &Src,
         src_client_id: u32,
+        dst: &Dst,
         dst_client_id: u32,
         duration: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
-        if send_from_source {
-            self.src.send_open_connection(self.dst.chain_id(), src_client_id, dst_client_id)?;
-            let conn = self.dst.wait_for_open_connection(duration).await?;
-            return Ok(conn);
-        } 
-        self.dst.send_open_connection(self.src.chain_id(), dst_client_id, src_client_id)?;
-        let conn = self.src.wait_for_open_connection(duration).await?;
-        Ok(conn)
+        src.send_open_connection(src_client_id, dst_client_id)?;
+        let conn = dst.wait_for_open_connection(duration).await?;
+        return Ok(conn);
     }
 
     pub async fn open_channels(
@@ -382,14 +337,12 @@ where
                 .channel_pool
                 .open_channels(
                     voyager::channel_open,
-                    |t: Duration| {
-                        async move {
-                            let ev = self.dst.wait_for_open_channel(t).await?;
-                            Ok(ChannelConfirm {
-                                channel_id: ev.channel_id,
-                                counterparty_channel_id: ev.counterparty_channel_id,
-                            })
-                        }
+                    |t: Duration| async move {
+                        let ev = self.dst.wait_for_open_channel(t).await?;
+                        Ok(ChannelConfirm {
+                            channel_id: ev.channel_id,
+                            counterparty_channel_id: ev.counterparty_channel_id,
+                        })
                     },
                     self.src.chain_id().clone(),
                     src_port,
@@ -408,14 +361,12 @@ where
             .channel_pool
             .open_channels(
                 voyager::channel_open,
-                |t: Duration| {
-                    async move {
-                        let ev = self.src.wait_for_open_channel(t).await?;
-                        Ok(ChannelConfirm {
-                            channel_id: ev.channel_id,
-                            counterparty_channel_id: ev.counterparty_channel_id,
-                        })
-                    }
+                |t: Duration| async move {
+                    let ev = self.src.wait_for_open_channel(t).await?;
+                    Ok(ChannelConfirm {
+                        channel_id: ev.channel_id,
+                        counterparty_channel_id: ev.counterparty_channel_id,
+                    })
                 },
                 self.dst.chain_id().clone(),
                 dst_port,
@@ -431,59 +382,33 @@ where
     }
 
     pub async fn get_channel(&self) -> Option<ChannelPair> {
-        self.channel_pool.get_channel(self.src.chain_id(), self.dst.chain_id()).await
+        self.channel_pool
+            .get_channel(self.src.chain_id(), self.dst.chain_id())
+            .await
     }
 
     pub async fn release_channel(&self, pair: ChannelPair) {
-        self.channel_pool.release_channel(self.src.chain_id(), self.dst.chain_id(), pair).await;
+        self.channel_pool
+            .release_channel(self.src.chain_id(), self.dst.chain_id(), pair)
+            .await;
     }
 
     pub async fn get_available_channel_count(&self) -> usize {
-        self.channel_pool.get_available_channel_count(self.src.chain_id(), self.dst.chain_id()).await
+        self.channel_pool
+            .get_available_channel_count(self.src.chain_id(), self.dst.chain_id())
+            .await
     }
 
-
-    pub async fn send_and_recv_cosmos(
-        &self,
-        send_from_source: bool,
-        contract: Bech32<H256>,
-        msgs: Vec<(Box<impl Encode<Json> + Clone + Send>, Vec<Coin>)>,
+    pub async fn send_and_recv<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        if send_from_source {
-            let packet_hash = self.src.send_ibc_packet(contract, msgs).await?;
-            println!("Packet sent from source chain: {:?}", packet_hash);
-            let recv = self.dst.wait_for_packet_recv(packet_hash, timeout).await?;
-            return Ok(recv);
-        }
-        let packet_hash = self.dst.send_ibc_packet(contract, msgs).await?;
-        println!("Packet sent from destination chain: {:?}", packet_hash);
-        let recv = self.src.wait_for_packet_recv(packet_hash, timeout).await?;
-        return Ok(recv);
-        
+        let packet_hash = source_chain.send_ibc_transaction(contract, msg).await?;
+        destination_chain
+            .wait_for_packet_recv(packet_hash, timeout)
+            .await
     }
-
-
-    pub async fn send_and_recv_eth(
-        &self,
-        send_from_source: bool,
-        contract: H160,
-        msgs: UCS03Zkgm::sendCall,
-        timeout: Duration,
-    ) -> anyhow::Result<helpers::PacketRecv> {
-        if send_from_source {
-            let packet_hash = self.src.send_zkgm_transaction(contract, msgs).await?;
-            println!("Packet sent from source chain: {:?}", packet_hash);
-            let recv = self.dst.wait_for_packet_recv(packet_hash, timeout).await?;
-            return Ok(recv);
-        }
-        let packet_hash = self.dst.send_zkgm_transaction(contract, msgs).await?;
-        println!("Packet sent from destination chain: {:?}", packet_hash);
-        let recv = self.src.wait_for_packet_recv(packet_hash, timeout).await?;
-        return Ok(recv);
-        
-    }
-
-
 }
-
