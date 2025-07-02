@@ -13,10 +13,43 @@ const isCurrentPath = (path: string) => {
   if (page.url.pathname === path) {
     return true
   }
-  // Check if current path is a subroute of the navigation item
-  // For example, /explorer/packets/123 should highlight /explorer/packets
-  if (path !== "/" && page.url.pathname.startsWith(`${path}/`)) {
-    return true
+
+  // Use navigation structure to determine if current path is a child of this navigation item
+  for (const section of navigation) {
+    for (const item of section.items) {
+      // Check if this is the item we're testing
+      if (item.path === path) {
+        // Check if current path is a child of any of this item's subroutes
+        if (item.subroutes) {
+          for (const subroute of item.subroutes) {
+            if (
+              page.url.pathname === subroute.path
+              || (subroute.path !== "/" && page.url.pathname.startsWith(`${subroute.path}/`))
+            ) {
+              return true
+            }
+          }
+        }
+        // Also check if current path is directly under this main item
+        if (path !== "/" && page.url.pathname.startsWith(`${path}/`)) {
+          return true
+        }
+        break
+      }
+
+      // Check if this is a subroute we're testing
+      if (item.subroutes) {
+        for (const subroute of item.subroutes) {
+          if (subroute.path === path) {
+            // For subroutes, only highlight if exact match or direct child
+            if (path !== "/" && page.url.pathname.startsWith(`${path}/`)) {
+              return true
+            }
+            break
+          }
+        }
+      }
+    }
   }
 
   return false
@@ -185,6 +218,13 @@ onMount(() => {
                                 )}
                               >
                                 <span class="text-sm">{subroute.title}</span>
+                                {#if subroute.new}
+                                  <span
+                                    class="ml-auto bg-accent/10 border border-accent/20 px-1.5 py-0.5 rounded text-accent text-xs font-mono font-bold leading-none"
+                                  >
+                                    NEW
+                                  </span>
+                                {/if}
                               </a>
                             </li>
                           {/if}
