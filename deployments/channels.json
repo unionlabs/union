@@ -26,20 +26,6 @@
   "babylon.bbn-test-5": {
     "3": {
       "comments": "corn.21000001 channel 1",
-      "fees": {
-        "forward": {
-          "PACKET_RECV": "1095972",
-          "PACKET_SEND_LC_UPDATE_L0": "321174",
-          "PACKET_SEND_LC_UPDATE_L1": "519141",
-          "PACKET_SEND_LC_UPDATE_L2": "2116634"
-        },
-        "reverse": {
-          "PACKET_RECV": "215268",
-          "PACKET_SEND_LC_UPDATE_L0": "394498",
-          "PACKET_SEND_LC_UPDATE_L1": "519141",
-          "PACKET_SEND_LC_UPDATE_L2": "885936"
-        }
-      },
       "tags": ["canonical"]
     },
     "4": {
@@ -58,6 +44,16 @@
     },
     "5": {
       "comments": "osmosis.osmo-test-5 channel 3, official channel but with no relaying guarantees",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "917981",
+          "PACKET_SEND_LC_UPDATE_L0": "5128061"
+        },
+        "reverse": {
+          "PACKET_RECV": "810553",
+          "PACKET_SEND_LC_UPDATE_L0": "2116634"
+        }
+      },
       "tags": ["canonical"]
     }
   },
@@ -212,20 +208,6 @@
   "sei.1328": {
     "2": {
       "comments": "corn.21000001 channel 3",
-      "fees": {
-        "forward": {
-          "PACKET_RECV": "326236",
-          "PACKET_SEND_LC_UPDATE_L0": "321174",
-          "PACKET_SEND_LC_UPDATE_L1": "519141",
-          "PACKET_SEND_LC_UPDATE_L2": "2116634"
-        },
-        "reverse": {
-          "PACKET_RECV": "1463397",
-          "PACKET_SEND_LC_UPDATE_L0": "321174",
-          "PACKET_SEND_LC_UPDATE_L1": "519141",
-          "PACKET_SEND_LC_UPDATE_L2": "2116634"
-        }
-      },
       "tags": ["canonical"]
     },
     "3": {
