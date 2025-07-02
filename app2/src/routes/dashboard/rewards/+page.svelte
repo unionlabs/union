@@ -1,7 +1,7 @@
 <script lang="ts">
 import Card from "$lib/components/ui/Card.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
-import { getSupabaseClient } from "$lib/dashboard/client"
+import { SupabaseClient } from "$lib/dashboard/client"
 import RewardStats from "$lib/dashboard/components/RewardStats.svelte"
 import { requestRole } from "$lib/dashboard/queries/private"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
@@ -93,7 +93,7 @@ function getStatusBadge(status: string) {
 const handleRoleRequest = (reward: typeof rewards[number]) =>
   pipe(
     Effect.sync(() => loading[reward.id] = true),
-    Effect.flatMap(() => getSupabaseClient()),
+    Effect.flatMap(() => SupabaseClient),
     Effect.flatMap((client) => Effect.tryPromise(() => client.auth.getSession())),
     Effect.flatMap(({ data: { session } }) => {
       if (!session?.user.id) {

@@ -1,4 +1,4 @@
-import { runFork } from "$lib/runtime"
+import { type AppContext, runFork } from "$lib/runtime"
 import { extractErrorDetails } from "@unionlabs/sdk/utils"
 import { Data, Effect, Option, pipe } from "effect"
 
@@ -84,13 +84,13 @@ const writeCache = <A>(
     ),
   )
 
-export function withLocalStorageCacheStale<A>(
+export function withLocalStorageCacheStale<A, R extends AppContext>(
   namespace: string,
   key: string,
   ttlMs: number,
   staleMs: number,
-  effect: Effect.Effect<A, never, never>,
-): Effect.Effect<A, CacheError, never> {
+  effect: Effect.Effect<A, never, R>,
+): Effect.Effect<A, CacheError, R> {
   return pipe(
     readCache<A>(namespace, key),
     Effect.flatMap((entryOpt) =>
