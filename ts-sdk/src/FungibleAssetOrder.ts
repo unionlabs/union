@@ -373,7 +373,7 @@ export const suiToCosmos = (intent: {
  *
  * @since 2.0.0
  */
-export const cosomsToSui = (intent: {
+export const cosmosToSui = (intent: {
   sender: AddressCosmosZkgm
   receiver: string
   baseToken: string
