@@ -92,6 +92,7 @@ impl EthFetcherClient {
         };
 
         let mut events = self.to_ucs_events(abi, block, transaction_log_index, log)?;
+
         events.push(self.to_decoded_log(abi, block, transaction_log_index, log)?);
 
         Ok(events)
@@ -105,6 +106,7 @@ impl EthFetcherClient {
         log: &Log,
     ) -> Result<Vec<SupportedBlockEvent>, IndexerError> {
         let event = abi.parse(log)?;
+
         let log_decoder = Decoder {
             event: &event,
             chain_id: self.chain_id,
