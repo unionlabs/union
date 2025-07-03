@@ -82,8 +82,8 @@ pub trait IbcEventHash {
 }
 
 #[async_trait]
-impl ChainEndpoint for evm::Module {
-    type Msg = RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>;
+impl<'a> ChainEndpoint for evm::Module<'a> {
+    type Msg = RawCallBuilder<&'a DynProvider<AnyNetwork>, AnyNetwork>;
     type Contract = H160;
 
     fn chain_id(&self) -> &ChainId {

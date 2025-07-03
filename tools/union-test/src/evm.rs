@@ -1,4 +1,4 @@
-use std::{panic::AssertUnwindSafe, time::Duration};
+use std::{marker::PhantomData, panic::AssertUnwindSafe, time::Duration};
 
 use alloy::{
     contract::{Error, RawCallBuilder, Result},
@@ -45,7 +45,7 @@ use voyager_sdk::{
 use crate::helpers;
 
 #[derive(Debug)]
-pub struct Module {
+pub struct Module<'a> {
     pub chain_id: ChainId,
 
     pub ibc_handler_address: H160,
@@ -60,6 +60,8 @@ pub struct Module {
     pub fixed_gas_price: Option<u128>,
 
     pub gas_multiplier: f64,
+
+    pub _marker: PhantomData<&'a ()>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -84,7 +86,7 @@ pub struct Config {
     pub gas_multiplier: f64,
 }
 
-impl Module {
+impl<'a> Module<'a> {
     pub async fn new(config: Config) -> anyhow::Result<Self> {
         let provider = DynProvider::new(
             ProviderBuilder::new()
@@ -127,6 +129,7 @@ impl Module {
             max_gas_price: config.max_gas_price,
             fixed_gas_price: config.fixed_gas_price,
             gas_multiplier: config.gas_multiplier,
+            _marker: PhantomData,
         })
     }
 
@@ -382,7 +385,7 @@ impl Module {
     pub async fn send_ibc_transaction(
         &self,
         contract: H160,
-        msg: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>,
+        msg: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> RpcResult<FixedBytes<32>> {
         let res = self
             .keyring
@@ -405,12 +408,11 @@ impl Module {
         }
     }
 
-
     pub async fn submit_transaction(
         &self,
         ucs03_addr_on_evm: H160,
         wallet: &LocalSigner<SigningKey>,
-        mut call: RawCallBuilder<DynProvider<AnyNetwork>, AnyNetwork>
+        mut call: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
         let signer = DynProvider::new(
             ProviderBuilder::new()
@@ -503,10 +505,7 @@ impl Module {
 
             Err(err) => return Err(TxSubmitError::Error(err)),
         }
-
-
     }
-
 }
 
 pub mod zkgm {
