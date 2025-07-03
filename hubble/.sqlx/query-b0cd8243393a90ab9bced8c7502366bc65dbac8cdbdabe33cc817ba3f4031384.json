@@ -1,0 +1,24 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO v2_sync.token_bucket_update_sync (\n                internal_chain_id,\n                block_hash,\n                height,\n                event_index,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                transaction_event_index,\n                denom,\n                capacity,\n                refill_rate\n            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Bytea",
+        "Int8",
+        "Int4",
+        "Timestamptz",
+        "Bytea",
+        "Int8",
+        "Int8",
+        "Bytea",
+        "Numeric",
+        "Numeric"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "b0cd8243393a90ab9bced8c7502366bc65dbac8cdbdabe33cc817ba3f4031384"
+}

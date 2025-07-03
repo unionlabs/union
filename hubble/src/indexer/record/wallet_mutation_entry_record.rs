@@ -54,7 +54,7 @@ impl WalletMutationEntryRecord {
 
         sqlx::query!(
             r#"
-            INSERT INTO v2_sync.wallet_mutation_entry_test (
+            INSERT INTO v2_sync.wallet_mutation_entry_sync (
                 internal_chain_id,
                 block_hash,
                 height,
@@ -95,7 +95,7 @@ impl WalletMutationEntryRecord {
 
         let result = sqlx::query!(
             r#"
-            DELETE FROM v2_sync.wallet_mutation_entry_test
+            DELETE FROM v2_sync.wallet_mutation_entry_sync
             WHERE internal_chain_id = $1 AND height = $2
             "#,
             internal_chain_id.pg_value()?,
