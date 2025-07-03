@@ -2007,6 +2007,39 @@ dependencies = [
 ]
 
 [[package]]
+name = "base-light-client-types"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "bincode 2.0.1",
+ "ethereum-light-client-types",
+ "hex-literal",
+ "ibc-union-spec",
+ "rlp",
+ "serde",
+ "serde-utils",
+ "sha3",
+ "unionlabs",
+]
+
+[[package]]
+name = "base-verifier"
+version = "0.0.0"
+dependencies = [
+ "alloy-sol-types",
+ "base-light-client-types",
+ "evm-storage-verifier",
+ "hex",
+ "hex-literal",
+ "ibc-union-spec",
+ "rlp",
+ "sha3",
+ "ssz",
+ "thiserror 2.0.12",
+ "unionlabs",
+]
+
+[[package]]
 name = "base-x"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"

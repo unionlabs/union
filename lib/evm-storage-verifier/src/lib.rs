@@ -101,6 +101,38 @@ pub fn verify_account_storage_root(
     }
 }
 
+/// Verifies if the `code_hash` of a contract can be verified against the state `root`.
+///
+/// * `root`: Light client update's (attested/finalized) execution block's state root.
+/// * `address`: Address of the contract.
+/// * `proof`: Proof of storage.
+/// * `code_hash`: Bytecode hash of the contract.
+///
+/// NOTE: You must not trust the `root` unless you verified it by calling [`validate_light_client_update`].
+pub fn verify_account_code_hash(
+    root: H256,
+    address: &H160,
+    proof: impl IntoIterator<Item = impl AsRef<[u8]>>,
+    code_hash: &H256,
+) -> Result<(), Error> {
+    match get_node(root, address.as_ref(), proof)? {
+        Some(account) => {
+            let account = rlp::decode::<Account>(account.as_ref()).map_err(Error::RlpDecode)?;
+            ensure(
+                &account.code_hash == code_hash,
+                Error::ValueMismatch {
+                    expected: code_hash.as_ref().into(),
+                    actual: account.code_hash.into(),
+                },
+            )?;
+            Ok(())
+        }
+        None => Err(Error::ValueMissing {
+            value: address.as_ref().into(),
+        })?,
+    }
+}
+
 fn get_node(
     root: H256,
     key: impl AsRef<[u8]>,
