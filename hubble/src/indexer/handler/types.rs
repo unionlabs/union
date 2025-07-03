@@ -75,8 +75,8 @@ pub struct Instruction {
     pub instruction_path: InstructionPath,
     pub version: InstructionVersion,
     pub opcode: InstructionOpcode,
-    pub operand_sender: OperandSender,
-    pub operand_contract_address: OperandContractAddress,
+    pub operand_sender: Option<OperandSender>,
+    pub operand_contract_address: Option<OperandContractAddress>,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -194,6 +194,12 @@ impl From<&String> for InstructionPath {
     }
 }
 
+impl Display for InstructionPath {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Copy)]
 pub struct InstructionVersion(pub u8);
 
@@ -203,12 +209,24 @@ impl From<u8> for InstructionVersion {
     }
 }
 
+impl Display for InstructionVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Copy)]
 pub struct InstructionOpcode(pub u8);
 
 impl From<u8> for InstructionOpcode {
     fn from(value: u8) -> Self {
         Self(value)
+    }
+}
+
+impl Display for InstructionOpcode {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.0)
     }
 }
 
@@ -327,15 +345,65 @@ impl AddressZkgm {
     }
 }
 
-fn string_0x_to_bytes(string_0x: &str, context: &str) -> Result<Bytes, IndexerError> {
+pub fn string_0x_to_bytes(string_0x: &str, context: &str) -> Result<Bytes, IndexerError> {
     let hex_str = string_0x.strip_prefix("0x").ok_or_else(|| {
         IndexerError::HexDecodeErrorExpecting0x(context.to_string(), string_0x.to_string())
     })?;
-    let vec = hex::decode(hex_str).map_err(|_| {
+
+    // Pad with leading zero if hex string has odd number of characters
+    let hex_str_padded = if hex_str.len() % 2 == 1 {
+        format!("0{}", hex_str)
+    } else {
+        hex_str.to_string()
+    };
+
+    let vec = hex::decode(hex_str_padded).map_err(|_| {
         IndexerError::HexDecodeErrorInvalidHex(context.to_string(), string_0x.to_string())
     })?;
 
     Ok(Bytes::from(vec))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_0x_to_bytes_odd_nibbles() {
+        // Test odd number of nibbles - should pad with leading zero
+        let result = string_0x_to_bytes("0x0", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x00]));
+
+        let result = string_0x_to_bytes("0xf", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x0f]));
+
+        let result = string_0x_to_bytes("0x123", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x01, 0x23]));
+    }
+
+    #[test]
+    fn test_string_0x_to_bytes_even_nibbles() {
+        // Test even number of nibbles - should work as before
+        let result = string_0x_to_bytes("0x00", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x00]));
+
+        let result = string_0x_to_bytes("0xff", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0xff]));
+
+        let result = string_0x_to_bytes("0x1234", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x12, 0x34]));
+    }
+
+    #[test]
+    fn test_string_0x_to_bytes_error_cases() {
+        // Test missing 0x prefix
+        let result = string_0x_to_bytes("123", "test");
+        assert!(result.is_err());
+
+        // Test invalid hex characters
+        let result = string_0x_to_bytes("0xgg", "test");
+        assert!(result.is_err());
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -353,11 +421,17 @@ impl TryFrom<&AddressZkgm> for AddressCanonical {
     fn try_from(value: &AddressZkgm) -> Result<Self, Self::Error> {
         Ok(match value.1 {
             RpcType::Cosmos => bech32::decode(std::str::from_utf8(&value.0).map_err(|_| {
-                IndexerError::Bech32DecodeErrorInvalidBech32("denom".to_string(), encode(&value.0))
+                IndexerError::Bech32DecodeErrorInvalidBech32(
+                    "denom not utf8".to_string(),
+                    encode(&value.0),
+                )
             })?)
             .map(|(_, data)| Bytes::from(data).into())
             .map_err(|_| {
-                IndexerError::Bech32DecodeErrorInvalidBech32("denom".to_string(), encode(&value.0))
+                IndexerError::Bech32DecodeErrorInvalidBech32(
+                    "denom not bech".to_string(),
+                    encode(&value.0),
+                )
             })?,
             RpcType::Evm => value.0.clone().into(),
         })

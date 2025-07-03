@@ -123,6 +123,7 @@ impl<T: FetcherClient> Indexer<T> {
         message_meta: MessageMeta,
         payload: Bytes,
     ) -> Result<(), IndexerError> {
+        let start_time = std::time::Instant::now();
         debug!("begin");
         let mut tx = self.pg_pool.begin().await?;
 
@@ -228,7 +229,8 @@ impl<T: FetcherClient> Indexer<T> {
         debug!("commit");
         tx.commit().await?;
 
-        debug!("done");
+        let duration = start_time.elapsed();
+        info!("done (took {:.2}ms)", duration.as_secs_f64() * 1000.0);
         Ok(())
     }
 }

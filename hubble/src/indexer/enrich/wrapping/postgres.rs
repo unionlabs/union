@@ -1,4 +1,4 @@
-use tracing::debug;
+use tracing::trace;
 
 use crate::indexer::{
     api::IndexerError,
@@ -10,7 +10,7 @@ pub async fn get_ibc_interface_and_ucs03(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     internal_chain_id: &InternalChainId,
 ) -> Result<(IbcInterface, ContractAddressDisplay, Option<Minter>), IndexerError> {
-    debug!("get_ibc_interface_and_ucs03: {internal_chain_id}");
+    trace!("get_ibc_interface_and_ucs03: {internal_chain_id}");
 
     let ibc_interface = sqlx::query!(
         "

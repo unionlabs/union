@@ -46,9 +46,6 @@ pub async fn delete_event_data_at_height(
             ),
             delete_cosmos_blocks AS (
                 DELETE FROM v2_cosmos.blocks WHERE internal_chain_id = $1 AND height = $2
-            ),
-            delete_evm_logs_decoded AS (
-                DELETE FROM v2_evm.logs_decoded WHERE internal_chain_id = $1 AND height = $2
             )
             DELETE FROM v2_evm.logs WHERE internal_chain_id = $1 AND height = $2
             ",
@@ -177,47 +174,6 @@ async fn handle_block_event(
             .await
             .map(|_| ())
             .map_err(IndexerError::DatabaseError),
-        SupportedBlockEvent::EthereumDecodedLog {
-                internal_chain_id,
-                block_hash,
-                height,
-                log_index,
-                timestamp,
-                transaction_hash,
-                transaction_index,
-                transaction_log_index,
-                raw_log,
-                log_to_jsonb,
-            } => sqlx::query!(
-                "
-            INSERT INTO v2_evm.logs_decoded (
-                internal_chain_id,
-                block_hash,
-                height,
-                log_index,
-                timestamp,
-                transaction_hash,
-                transaction_index,
-                transaction_log_index,
-                raw_log,
-                log_to_jsonb)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-            ",
-                internal_chain_id,
-                block_hash,
-                height.pg_value()?,
-                log_index,
-                timestamp,
-                transaction_hash,
-                transaction_index,
-                transaction_log_index,
-                raw_log,
-                log_to_jsonb,
-            )
-            .execute(tx.as_mut())
-            .await
-            .map(|_| ())
-            .map_err(IndexerError::DatabaseError),
         SupportedBlockEvent::TendermintBlock {
                 internal_chain_id,
                 hash,
@@ -282,6 +238,11 @@ async fn handle_block_event(
             .await
             .map(|_| ())
             .map_err(IndexerError::DatabaseError),
+        SupportedBlockEvent::EthereumDecodedLog { .. } => {
+            trace!("ignore decoded log");
+
+            Ok(())
+        },
         SupportedBlockEvent::ChannelOpenInit { inner } => chain_context.with_event(inner).handle(tx).await,
         SupportedBlockEvent::ChannelOpenTry { inner } => chain_context.with_event(inner).handle(tx).await,
         SupportedBlockEvent::ChannelOpenAck { inner } => chain_context.with_event(inner).handle(tx).await,
