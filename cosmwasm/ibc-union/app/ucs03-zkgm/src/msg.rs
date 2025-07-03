@@ -4,6 +4,8 @@ use serde::{Deserialize, Serialize};
 use ucs03_zkgm_token_minter_api::TokenMinterInitMsg;
 use unionlabs::primitives::{Bytes, H256};
 
+use crate::com::CwFungibleAssetOrderV2;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields, rename_all = "snake_case")]
 pub struct InitMsg {
@@ -142,6 +144,25 @@ pub enum ZkgmMsg {
         market_maker: Addr,
         market_maker_msg: Bytes,
     },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum SolverMsg {
+    DoSolve {
+        packet: Packet,
+        order: CwFungibleAssetOrderV2,
+        caller: Addr,
+        relayer: Addr,
+        relayer_msg: Bytes,
+        intent: bool,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields, rename_all = "snake_case")]
+pub enum SolverQuery {
+    IsSolver {},
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
