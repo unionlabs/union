@@ -395,8 +395,8 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     let mut call = ucs03_zkgm
         .send(
             dst_chain_id.try_into().unwrap(),
-            4294967295000000000u64.into(),
             0u64.into(),
+            4294967295000000000u64.into(),
             salt_bytes.into(),
             instruction_from_evm_to_union.clone(),
         )
