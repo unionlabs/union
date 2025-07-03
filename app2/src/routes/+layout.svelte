@@ -48,6 +48,9 @@ onMount(() => {
   keyboardShortcuts.addShortcut(["ctrl", "option", "shift", "keyf"], () => {
     uiStore.filterWhitelist = !uiStore.filterWhitelist
   })
+  keyboardShortcuts.addShortcut(["cmd", "option", "shift", "keyo"], () => {
+    uiStore.openSettingsModal()
+  })
 })
 
 let viewportWidth = $state(0)

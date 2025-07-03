@@ -1,5 +1,7 @@
 import { page } from "$app/state"
 import base64Icon from "$lib/config/base64.txt?raw"
+import { GraphQL } from "$lib/graphql/service"
+import * as AppRuntime from "$lib/runtime"
 import { themes } from "$lib/themes"
 import type { Edition, Theme } from "$lib/themes"
 import { Match, Option, pipe, Record as R, String as Str } from "effect"
@@ -74,6 +76,15 @@ class UiStore {
     this.walletModalOpen = false
     this.settingsModalOpen = false
     this.errorsModalOpen = false
+  }
+
+  get graphqlEndpoint(): string {
+    return AppRuntime.runSync(GraphQL.getEndpoint)
+  }
+
+  set graphqlEndpoint(s: string) {
+    console.log("[[UI Store] set graphqlEndpoint", s)
+    AppRuntime.runPromise(GraphQL.updateEndpoint(s))
   }
 
   openWalletModal() {
