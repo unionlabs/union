@@ -136,13 +136,17 @@ fn wrap_evm(
     base_denom: &Denom,
     deployer: &ContractAddress,
 ) -> Result<Denom, IndexerError> {
-    Ok(bytes::Bytes::from(create3_0_1(
+    let result = create3_0_1(
         &intermediate_channel_ids.0,
         receiver_channel_id.0.into(),
         base_denom.0.as_ref(),
         deployer.0.as_ref(),
-    ))
-    .into())
+    ).map_err(|e| IndexerError::WrapperPredictionError(
+        "create3".to_string(),
+        e.to_string(),
+    ))?;
+    
+    Ok(bytes::Bytes::from(result).into())
 }
 
 fn wrap_cosmos(
@@ -151,27 +155,35 @@ fn wrap_cosmos(
     base_denom: &Denom,
     minter: &Minter,
 ) -> Result<Denom, IndexerError> {
-    Ok(match minter {
-        Minter::Cw20(minter_address_display) => bytes::Bytes::from(instantiate2_0_1(
-            &intermediate_channel_ids.0,
-            receiver_channel_id.0.into(),
-            base_denom.0.as_ref(),
-            minter_address_display
-                .to_contract_address_assume_bech32()?
-                .0
-                .as_ref(),
-        ))
-        .into(),
-        Minter::OsmosisTokenfactory(minter_address_display) => {
-            bytes::Bytes::from(predict_osmosis_wrapper_0_1(
+    let result = match minter {
+        Minter::Cw20(minter_address_display) => {
+            instantiate2_0_1(
                 &intermediate_channel_ids.0,
                 receiver_channel_id.0.into(),
                 base_denom.0.as_ref(),
-                minter_address_display.0.as_ref(),
-            ))
-            .into()
+                minter_address_display
+                    .to_contract_address_assume_bech32()?
+                    .0
+                    .as_ref(),
+            ).map_err(|e| IndexerError::WrapperPredictionError(
+                "instantiate2".to_string(),
+                e.to_string(),
+            ))?
+        },
+        Minter::OsmosisTokenfactory(minter_address_display) => {
+            predict_osmosis_wrapper_0_1(
+                &intermediate_channel_ids.0,
+                receiver_channel_id.0.into(),
+                base_denom.0.as_ref(),
+                &minter_address_display.0,
+            ).map_err(|e| IndexerError::WrapperPredictionError(
+                "osmosis".to_string(),
+                e.to_string(),
+            ))?
         }
-    })
+    };
+
+    Ok(bytes::Bytes::from(result).into())
 }
 
 pub struct IntermediateChannelIds(Bytes);

@@ -1,11 +1,18 @@
 #![allow(dead_code)] // migrated from postgres; will refactor later
 use alloy_primitives::Address;
+use thiserror::Error;
+
+#[derive(Error, Debug)]
+pub enum Erc55Error {
+    #[error("Invalid address length: expected 20 bytes, got {0}")]
+    InvalidAddressLength(usize),
+}
 
 /// specification: https://eips.ethereum.org/EIPS/eip-55
-pub fn erc55_to_checksum_0_1(address: &[u8]) -> String {
-    let address: Address = address.try_into().expect("address is not 20 bytes long");
+pub fn erc55_to_checksum_0_1(address: &[u8]) -> Result<String, Erc55Error> {
+    let address: Address = address.try_into().map_err(|_| Erc55Error::InvalidAddressLength(address.len()))?;
 
-    address.to_checksum(None)
+    Ok(address.to_checksum(None))
 }
 
 #[cfg(test)]
@@ -13,7 +20,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn testcases_from_spec() {
+    fn testcases_from_spec() -> Result<(), Box<dyn std::error::Error>> {
         let test_cases = [
             // All caps
             "0x52908400098527886E0F7030069857D2E4169EE7",
@@ -28,14 +35,37 @@ mod tests {
             "0xD1220A0cf47c7B9Be7A2E6BA89F429762e7b9aDb",
         ];
 
-        test_cases.iter().for_each(|&address| {
-            test(address);
-        });
+        for &address in &test_cases {
+            test(address)?;
+        }
+        Ok(())
     }
 
-    fn test(expected: &str) {
-        let address = hex::decode(expected.trim_start_matches("0x")).unwrap();
-        let checksum = erc55_to_checksum_0_1(&address);
+    fn test(expected: &str) -> Result<(), Box<dyn std::error::Error>> {
+        let address = hex::decode(expected.trim_start_matches("0x"))?;
+        let checksum = erc55_to_checksum_0_1(&address)?;
         assert_eq!(checksum, expected);
+        Ok(())
+    }
+
+    #[test]
+    fn test_invalid_address_length() {
+        // Test with address that's too short (19 bytes instead of 20)
+        let invalid_address = vec![0u8; 19];
+        let result = erc55_to_checksum_0_1(&invalid_address);
+        
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            Erc55Error::InvalidAddressLength(len) => assert_eq!(len, 19),
+        }
+
+        // Test with address that's too long (21 bytes instead of 20)
+        let invalid_address = vec![0u8; 21];
+        let result = erc55_to_checksum_0_1(&invalid_address);
+        
+        assert!(result.is_err());
+        match result.unwrap_err() {
+            Erc55Error::InvalidAddressLength(len) => assert_eq!(len, 21),
+        }
     }
 }
