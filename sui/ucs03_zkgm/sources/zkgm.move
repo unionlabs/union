@@ -978,7 +978,6 @@ module zkgm::zkgm_relay {
             abort E_NO_BATCH_OPERATION
         } else if (instruction::opcode(&instruction) == OP_FORWARD) {
             assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
             verify_forward<T>(
                 ibc_store,
                 relay_store,
@@ -986,7 +985,7 @@ module zkgm::zkgm_relay {
                 metadata,
                 sender,
                 channel_id,
-                forward::decode(instruction::operand(&instruction), &mut decode_idx),
+                forward::decode(instruction::operand(&instruction)),
                 ctx
             )
         } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
@@ -1276,13 +1275,12 @@ module zkgm::zkgm_relay {
             },
             OP_FORWARD => {
                 assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-                let mut idx = 0;
                 zkgm.acknowledge_forward<T>(
                     ibc,
                     ibc_packet,
                     relayer,
                     salt,
-                    forward::decode(instruction.operand(), &mut idx),
+                    forward::decode(instruction.operand()),
                     success,
                     inner_ack,
                     ctx,
@@ -1417,7 +1415,7 @@ module zkgm::zkgm_relay {
         relayer: address,
         ctx: &mut TxContext
     ) {
-        let packet =
+        let ibc_packet =
             packet::new(
                 packet_source_channel,
                 packet_destination_channel,
@@ -1426,35 +1424,35 @@ module zkgm::zkgm_relay {
                 packet_timeout_timestamp
             );
 
+        let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
+
+        if (is_forwarded_packet(zkgm_packet.salt())) {
+            let packet_hash = commitment::commit_packet(&ibc_packet)  ;
+            if (zkgm.in_flight_packet.contains(packet_hash)) {
+                let parent = zkgm.in_flight_packet.remove(packet_hash);
+                ibc_store.write_acknowledgement(
+                    parent,
+                    ack::failure(ACK_EMPTY).encode(),
+                    IbcAppWitness {}
+                );
+                return
+            };
+        };
+
         ibc_store.timeout_packet(
-            packet,
+            ibc_packet,
             proof,
             proof_height
         );
 
-        let packet_hash = commitment::commit_packet(&packet);
-
-        let parent = zkgm.in_flight_packet.borrow(packet_hash);
-        if (packet::timeout_timestamp(parent) != 0 ||
-            packet::timeout_height(parent) != 0) {
-                let ack = ack::failure(ACK_EMPTY);
-                ibc::write_acknowledgement(ibc_store, *parent, ack::encode(&ack), IbcAppWitness {});
-                add_or_update_table<vector<u8>, Packet>(
-                    &mut zkgm.in_flight_packet,
-                    packet_hash,
-                    packet::default()
-                );
-        } else {
-            let zkgm_packet = zkgm_packet::decode(&packet_data);
-            zkgm.timeout_internal<T>(
-                ibc_store,
-                packet,
-                relayer,
-                zkgm_packet::path(&zkgm_packet),
-                zkgm_packet::instruction(&zkgm_packet),
-                ctx
-            )
-        }
+        zkgm.timeout_internal<T>(
+            ibc_store,
+            ibc_packet,
+            relayer,
+            zkgm_packet.path(),
+            zkgm_packet.instruction(),
+            ctx,
+        );
     }
 
     fun timeout_internal<T>(
@@ -1467,33 +1465,72 @@ module zkgm::zkgm_relay {
         ctx: &mut TxContext
     ) {
         let version = instruction::version(&instruction);
-        if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
-            assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
-            let order = fungible_asset_order::decode(instruction::operand(&instruction));
-            zkgm.timeout_fungible_asset_order<T>(
+
+        match (instruction.opcode()) {
+            OP_FUNGIBLE_ASSET_ORDER => {
+                if (version == INSTR_VERSION_1) {
+                    zkgm.timeout_fungible_asset_order<T>(
+                        ibc_store,
+                        ibc_packet,
+                        path,
+                        fungible_asset_order::decode(instruction.operand()),
+                        ctx
+                    );
+                } else {
+                    abort E_UNSUPPORTED_VERSION
+                };
+                      
+            },
+            OP_BATCH => {
+                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+                zkgm.timeout_batch<T>(
+                    ibc_store,
+                    ibc_packet,
+                    relayer,
+                    path,
+                    batch::decode(instruction.operand()),
+                    ctx
+                );
+            },
+            OP_FORWARD => {
+                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+                zkgm.timeout_forward<T>(
+                    ibc_store,
+                    ibc_packet,
+                    relayer,
+                    path,
+                    forward::decode(instruction.operand()),
+                    ctx
+                );
+            },
+            OP_MULTIPLEX => {
+                abort E_NO_MULTIPLEX_OPERATION
+            },
+            _ => abort E_UNKNOWN_SYSCALL
+        };
+    }
+
+    fun timeout_batch<T>(
+        zkgm: &mut RelayStore,
+        ibc_store: &mut ibc::IBCStore,
+        packet: Packet,
+        relayer: address,
+        path: u256,
+        batch: Batch,
+        ctx: &mut TxContext
+    ) {
+        let l = batch.instructions().length();
+        let mut i = 0;
+        while (i < l) {
+            zkgm.timeout_internal<T>(
                 ibc_store,
-                ibc_packet,
-                path,
-                order,
-                ctx
-            )
-        } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            abort E_NO_BATCH_OPERATION
-        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            zkgm.timeout_forward<T>(
-                ibc_store,
-                ibc_packet,
+                packet,
                 relayer,
                 path,
-                forward::decode(instruction::operand(&instruction), &mut decode_idx),
+                batch.instructions()[i],
                 ctx
-            )
-        } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            abort E_NO_MULTIPLEX_OPERATION
-        } else {
-            abort E_UNKNOWN_SYSCALL
+            );
+            i = i + 1;
         }
     }
 
@@ -1550,7 +1587,7 @@ module zkgm::zkgm_relay {
             packet, 
             relayer, 
             path, 
-            *forward::instruction(&forward_packet), 
+            *forward_packet.instruction(), 
             ctx
         )
     }
