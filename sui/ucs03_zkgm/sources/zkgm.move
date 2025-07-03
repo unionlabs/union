@@ -1274,30 +1274,25 @@ module zkgm::zkgm_relay {
                     ctx
                 )
             },
-            _ => abort 1
+            OP_FORWARD => {
+                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+                let mut idx = 0;
+                zkgm.acknowledge_forward<T>(
+                    ibc,
+                    ibc_packet,
+                    relayer,
+                    salt,
+                    forward::decode(instruction.operand(), &mut idx),
+                    success,
+                    inner_ack,
+                    ctx,
+                );
+            },
+            OP_MULTIPLEX => {
+                abort E_NO_MULTIPLEX_OPERATION
+            },            
+            _ => abort E_UNKNOWN_SYSCALL
         };
-        if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
-
-        } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            abort E_NO_BATCH_OPERATION
-        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            let mut decode_idx = 0x20;
-            zkgm.acknowledge_forward<T>(
-                ibc,
-                ibc_packet,
-                relayer,
-                salt,
-                forward::decode(instruction::operand(&instruction), &mut decode_idx),
-                success,
-                inner_ack,
-                ctx
-            )
-        } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            abort E_NO_MULTIPLEX_OPERATION
-        } else {
-            abort E_UNKNOWN_SYSCALL
-        }
     }
 
     fun acknowledge_batch<T>(
@@ -1400,9 +1395,9 @@ module zkgm::zkgm_relay {
             ibc,
             ibc_packet,
             relayer,
-            forward::path(&forward_packet),
+            forward_packet.path(),
             salt,
-            *forward::instruction(&forward_packet),
+            *forward_packet.instruction(),
             success,
             ack,
             ctx
