@@ -916,11 +916,9 @@ module zkgm::zkgm_relay {
         );
     }
 
-
-
     public entry fun send<T>(
+        zkgm: &mut RelayStore,
         ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
         clock: &Clock,
         coin: Coin<T>,
         metadata: &CoinMetadata<T>,
@@ -935,11 +933,10 @@ module zkgm::zkgm_relay {
     ) {
         let instruction = instruction::new(version, opcode, operand);
         let sender = tx_context::sender(ctx);
-        verify_internal<T>(ibc_store, relay_store, coin, metadata, sender, channel_id, 0, instruction, ctx);
+        zkgm.verify_internal<T>(ibc_store, coin, metadata, sender, channel_id, 0, instruction, ctx);
 
         let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
-        ibc::send_packet(
-            ibc_store,
+        ibc_store.send_packet(
             clock,
             channel_id,
             timeout_height,
@@ -949,9 +946,10 @@ module zkgm::zkgm_relay {
             ctx
         );
     }
+
     fun verify_internal<T>(
-        ibc_store: &mut ibc::IBCStore,
         relay_store: &mut RelayStore,
+        ibc_store: &mut ibc::IBCStore,
         coin: Coin<T>,
         metadata: &CoinMetadata<T>,
         sender: address,
@@ -960,38 +958,40 @@ module zkgm::zkgm_relay {
         instruction: Instruction,
         ctx: &mut TxContext
     ){
-        let version = instruction::version(&instruction);
-        if (instruction::opcode(&instruction) == OP_FUNGIBLE_ASSET_ORDER) {
-            assert!(version == INSTR_VERSION_1, E_UNSUPPORTED_VERSION);
-            verify_fungible_asset_order<T>(
-                ibc_store,
-                relay_store,
-                coin,
-                metadata,
-                sender,
-                channel_id,
-                path,
-                fungible_asset_order::decode(instruction::operand(&instruction)),
-                ctx
-            )
-        } else if (instruction::opcode(&instruction) == OP_BATCH) {
-            abort E_NO_BATCH_OPERATION
-        } else if (instruction::opcode(&instruction) == OP_FORWARD) {
-            assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
-            verify_forward<T>(
-                ibc_store,
-                relay_store,
-                coin,
-                metadata,
-                sender,
-                channel_id,
-                forward::decode(instruction::operand(&instruction)),
-                ctx
-            )
-        } else if (instruction::opcode(&instruction) == OP_MULTIPLEX) {
-            abort E_NO_MULTIPLEX_OPERATION
-        } else {
-            abort E_UNKNOWN_SYSCALL
+        let version = instruction.version();
+        match (instruction.opcode()) {
+            OP_FUNGIBLE_ASSET_ORDER => {
+                if (version == INSTR_VERSION_1) {
+                    zkgm.verify_fungible_asset_order<T>(
+                        coin,
+                        metadata,
+                        sender,
+                        channel_id,
+                        path,
+                        fungible_asset_order::decode(instruction.operand()),
+                        ctx
+                    );
+                } else {
+                    abort E_UNSUPPORTED_VERSION;
+                };
+            },
+            OP_BATCH => {
+                
+            },
+            OP_FORWARD => {
+                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+                zkgm.verify_forward<T>(
+                    ibc_store,
+                    coin,
+                    metadata,
+                    sender,
+                    channel_id,
+                    forward::decode(instruction.operand())
+                    ctx,
+                );
+            },
+            OP_MULTIPLEX => abort E_NO_MULTIPLEX_OPERATION,
+            _ => abort E_UNKNOWN_SYSCALL,
         };
     }
 
@@ -1037,8 +1037,7 @@ module zkgm::zkgm_relay {
     }
 
     fun verify_fungible_asset_order<T>(
-        _ibc_store: &mut ibc::IBCStore,
-        relay_store: &mut RelayStore,
+        zkgm: &mut RelayStore,
         coin: Coin<T>,
         metadata: &CoinMetadata<T>,
         _sender: address,
@@ -1047,13 +1046,13 @@ module zkgm::zkgm_relay {
         order: FungibleAssetOrder,
         _ctx: &mut TxContext
     ){
+        let base_token = *order.base_token();
+        let base_amount = order.base_amount();
+        let token_name = order.base_token_name();
+        let token_symbol = order.base_token_symbol();
+        let token_decimals = order.base_token_decimals();
 
-        let base_token = fungible_asset_order::base_token(&order);
-        let base_amount = fungible_asset_order::base_amount(&order);
-        let token_name = fungible_asset_order::base_token_name(&order);
-        let token_symbol = fungible_asset_order::base_token_symbol(&order);
-        let token_decimals = fungible_asset_order::base_token_decimals(&order);
-
+        // TODO(aeryz): handle gas station here
         if (token_name != coin::get_name(metadata)) {
             abort E_INVALID_ASSET_NAME
         };
@@ -1066,14 +1065,14 @@ module zkgm::zkgm_relay {
             abort E_INVALID_ASSET_DECIMAL
         };
 
-        if(balance::value(coin::balance(&coin)) != base_amount as u64){
+        if(coin.balance().value() != base_amount as u64){
             abort E_INVALID_BASE_AMOUNT
         };
 
         
         let mut origin = 0;    
-        if(relay_store.token_origin.contains(*base_token)) {
-            origin = *relay_store.token_origin.borrow(*base_token);
+        if (zkgm.token_origin.contains(base_token)) {
+            origin = *relay_store.token_origin.borrow(base_token);
         };
 
         let (intermediate_channel_path, destination_channel_id) =
@@ -1082,34 +1081,35 @@ module zkgm::zkgm_relay {
         let wrapped_token = compute_salt(
             intermediate_channel_path,
             channel_id,
-            *fungible_asset_order::quote_token(&order)
+            *order.quote_token()
         );
 
         let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_channel_path);
         let is_sending_back_to_same_channel = destination_channel_id == channel_id;
         let is_unwrapping = base_token == wrapped_token;
-        let base_token_path = fungible_asset_order::base_token_path(&order);
-        if (is_inverse_intermediate_path && is_sending_back_to_same_channel && is_unwrapping) {
+        let base_token_path = order.base_token_path();
+        if (is_inverse_intermediate_path
+            && is_sending_back_to_same_channel
+            && is_unwrapping) {
+
             if(origin != base_token_path) {
                 abort E_INVALID_ASSET_ORIGIN
             };
-            let capability = get_treasury_cap<T>(relay_store);
+            let capability = zkgm.get_treasury_cap<T>();
             coin::burn<T>(capability, coin);
         } else {
             if (base_token_path != 0) {
                 abort E_INVALID_ASSET_ORIGIN
             };
-            increase_outstanding(
-                relay_store, 
+            zkgm.increase_outstanding(
                 channel_id, 
                 path, 
                 *base_token, 
-                fungible_asset_order::base_amount(&order)
+                order.base_amount()
             );
-            // There can not be a scenario where base_token == NATIVE_TOKEN_ERC_7528_ADDRESS
-            // And here if i don't do anything, the COIN will be ours anyway. We just need to 
-            // merge that one
-            save_coin_to_bag<T>(relay_store, coin);
+            zkgm.save_coin_to_bag<T>(coin);
+
+            // TODO(aeryz): handle gas station here
         }   
 
     }
@@ -1124,18 +1124,13 @@ module zkgm::zkgm_relay {
         forward_packet: Forward,
         ctx: &mut TxContext
     ){
-        let instruction = forward::instruction(&forward_packet);
-        let opcode = instruction::opcode(instruction);
+        let instruction = forward_packet.instruction();
 
-        let is_allowed_forward = opcode == OP_MULTIPLEX || 
-                            opcode == OP_BATCH || 
-                            opcode == OP_FUNGIBLE_ASSET_ORDER;
-        if(!is_allowed_forward) {
+        if(!is_allowed_forward(instruction.opcode())) {
             abort E_ERR_INVALID_FORWARD_INSTRUCTION
         };
-        verify_internal<T>(
+        zkgm.verify_internal<T>(
             ibc_store,
-            relay_store,
             coin,
             metadata,
             sender,
@@ -1598,6 +1593,14 @@ module zkgm::zkgm_relay {
         opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
             || opcode == OP_STAKE || opcode == OP_UNSTAKE
             || opcode == OP_WITHDRAW_STAKE
+    }
+
+    fun is_allowed_forward(
+        opcode: u8
+    ): bool {        
+        opcode == OP_MULTIPLEX || 
+            opcode == OP_BATCH || 
+            opcode == OP_FUNGIBLE_ASSET_ORDER
     }
 
     fun is_forwarded_packet(mut salt: vector<u8>): bool {
