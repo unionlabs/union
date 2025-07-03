@@ -3,7 +3,7 @@ use std::fmt;
 use bytes::Bytes;
 use hex::encode;
 use serde::{Deserialize, Serialize};
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::indexer::{
     api::IndexerError,
@@ -106,25 +106,38 @@ fn wrap_is_same_as_predict_wrapped_address(
     contract_address_display: &ContractAddressDisplay,
     minter: &Option<Minter>,
 ) -> Result<bool, IndexerError> {
-    Ok(match (destination_ibc_interface, minter) {
-        (IbcInterface::IbcSolidity, _) => {
+    let (wrapped, quote) = match (destination_ibc_interface, minter) {
+        (IbcInterface::IbcSolidity, _) => (
             wrap_evm(
                 intermediate_channel_ids,
                 receiver_channel_id,
                 base_denom,
                 &contract_address_display.to_contract_address_assume_hex()?,
-            )? == *quote_denom
-        }
-        (IbcInterface::IbcCosmwasm, Some(minter)) => {
+            ),
+            Ok(quote_denom.clone()), // evm wrapped address is a normal evm address
+        ),
+        (IbcInterface::IbcCosmwasm, Some(minter)) => (
             wrap_cosmos(
                 intermediate_channel_ids,
                 receiver_channel_id,
                 base_denom,
                 minter,
-            )? == quote_denom.to_bech32_decoded()?
-        }
+            ),
+            match minter {
+                Minter::Cw20(_) => quote_denom.to_bech32_decoded(), // cw20 wrapper is a bech32 encoded address => to canoncial
+                Minter::OsmosisTokenfactory(_) => Ok(quote_denom.clone()), // osmosis wrapped address is something like 'factory/osmo13ulc6pq etc'
+            },
+        ),
         (IbcInterface::IbcCosmwasm, None) => {
             debug!("no minter configured for {contract_address_display}");
+            return Ok(false);
+        }
+    };
+
+    Ok(match (wrapped, quote) {
+        (Ok(wrapped), Ok(quote)) => wrapped == quote,
+        (wrapped, quote) => {
+            trace!("cannot wrap: {wrapped:?} - {quote:?}");
             false
         }
     })
@@ -189,11 +202,17 @@ impl Default for IntermediateChannelIds {
 impl Denom {
     fn to_bech32_decoded(&self) -> Result<Denom, IndexerError> {
         bech32::decode(std::str::from_utf8(&self.0).map_err(|_| {
-            IndexerError::Bech32DecodeErrorInvalidBech32("denom".to_string(), encode(&self.0))
+            IndexerError::Bech32DecodeErrorInvalidBech32(
+                "denom not utf8".to_string(),
+                encode(&self.0),
+            )
         })?)
         .map(|(_, data)| Bytes::from(data).into())
         .map_err(|_| {
-            IndexerError::Bech32DecodeErrorInvalidBech32("denom".to_string(), encode(&self.0))
+            IndexerError::Bech32DecodeErrorInvalidBech32(
+                "denom not bech32".to_string(),
+                encode(&self.0),
+            )
         })
     }
 }

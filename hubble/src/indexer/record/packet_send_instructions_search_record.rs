@@ -6,7 +6,7 @@ use crate::indexer::{
     api::IndexerError,
     event::types::BlockHeight,
     handler::types::{ChannelMetaData, Instruction},
-    record::{packet_send_record::PacketSendRecord, InternalChainId, PgValue},
+    record::{packet_send_record::PacketSendRecord, InternalChainId, PgValue, PgValueExt},
 };
 
 pub struct PacketSendInstructionsSearchRecord {
@@ -25,8 +25,8 @@ pub struct PacketSendInstructionsSearchRecord {
     pub instruction_path: String,
     pub version: i32,
     pub opcode: i32,
-    pub operand_sender: String,
-    pub operand_contract_address: String,
+    pub operand_sender: Option<String>,
+    pub operand_contract_address: Option<String>,
     pub network: String,
     pub counterparty_network: String,
     pub sort_order: String,

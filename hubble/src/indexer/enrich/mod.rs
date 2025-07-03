@@ -1,6 +1,6 @@
 use itertools::Itertools;
 use serde_json::{Map, Value};
-use time::{format_description::well_known::Iso8601, UtcOffset};
+use time::{macros::format_description, UtcOffset};
 use tracing::{debug, error};
 
 mod ucs03_zkgm_0;
@@ -14,9 +14,9 @@ use crate::indexer::{
     },
     event::types::ChannelId,
     handler::types::{
-        AddressZkgm, Amount, ChannelMetaData, Fee, Instruction, InstructionHash, InstructionOpcode,
-        InstructionPath, InstructionRootPath, InstructionRootSalt, InstructionVersion, PacketShape,
-        Transfer,
+        string_0x_to_bytes, AddressZkgm, Amount, ChannelMetaData, Fee, Instruction,
+        InstructionHash, InstructionOpcode, InstructionPath, InstructionRootPath,
+        InstructionRootSalt, InstructionVersion, PacketShape, Transfer,
     },
     record::{
         channel_meta_data::get_channel_meta_data,
@@ -119,7 +119,7 @@ pub async fn enrich(
             &record,
             &instruction,
             &channel,
-            &format!("{sort_order}-{}", instruction.sort_order()?),
+            &instruction.sort_order(&sort_order)?,
         )
             .try_into()?;
         packet_send_instructions_search_record.insert(tx).await?;
@@ -129,13 +129,16 @@ pub async fn enrich(
 }
 
 impl Instruction {
-    fn sort_order(&self) -> Result<String, IndexerError> {
-        Ok(self
-            .instruction_path
-            .as_indices()?
-            .iter()
-            .map(|index| format!("{:03}", index))
-            .join("."))
+    fn sort_order(&self, packet_sort_order: &str) -> Result<String, IndexerError> {
+        let indices = self.instruction_path.as_indices()?;
+
+        Ok(match indices.is_empty() {
+            true => packet_sort_order.to_string(),
+            false => indices
+                .iter()
+                .map(|index| format!("{packet_sort_order}-{:03}", index))
+                .join("."),
+        })
     }
 }
 
@@ -177,7 +180,7 @@ async fn get_transfers(
     let base_token = transfer_data.get_string("baseToken")?.try_into()?;
     let base_amount: Amount = transfer_data.get_string("baseAmount")?.try_into()?;
     let base_token_name = transfer_data.get_string("baseTokenName")?.into();
-    let base_token_path = transfer_data.get_string("baseTokenName")?.try_into()?;
+    let base_token_path = transfer_data.get_string("baseTokenPath")?.try_into()?;
     let base_token_symbol = transfer_data.get_string("baseTokenSymbol")?.into();
     let base_token_decimals = transfer_data
         .get_u32_opt("baseTokenDecimals")?
@@ -240,7 +243,7 @@ fn get_instructions(flatten: &[Value]) -> Result<Vec<Instruction>, IndexerError>
                 ));
             };
 
-            let decoder = InstructionDecoder::from_value(instruction)?;
+            let decoder = InstructionDecoder::from_map(instruction)?;
 
             Ok(Instruction {
                 instruction_index: instruction_index.try_into()?,
@@ -251,8 +254,14 @@ fn get_instructions(flatten: &[Value]) -> Result<Vec<Instruction>, IndexerError>
                 instruction_path: decoder.instruction_path.clone(),
                 version: decoder.version,
                 opcode: decoder.opcode,
-                operand_sender: decoder.get_string("sender")?.try_into()?,
-                operand_contract_address: decoder.get_string("contract_address")?.try_into()?,
+                operand_sender: decoder
+                    .get_string_opt("sender")?
+                    .map(|s| s.try_into())
+                    .transpose()?,
+                operand_contract_address: decoder
+                    .get_string_opt("contract_address")?
+                    .map(|s| s.try_into())
+                    .transpose()?,
             })
         })
         .collect()
@@ -305,7 +314,18 @@ struct InstructionDecoder<'a> {
 }
 
 impl<'a> InstructionDecoder<'a> {
-    fn from_value(value: &'a Map<String, Value>) -> Result<Self, IndexerError> {
+    fn from_value(value: &'a Value) -> Result<Self, IndexerError> {
+        let Value::Object(map) = value else {
+            return Err(IndexerError::ZkgmExpectingInstructionField(
+                "instruction is Object ({value})".to_string(),
+                value.to_string(),
+            ));
+        };
+
+        Self::from_map(map)
+    }
+
+    fn from_map(value: &'a Map<String, Value>) -> Result<Self, IndexerError> {
         let Some(Value::Object(root)) = value.get("_root") else {
             return Err(IndexerError::ZkgmExpectingInstructionField(
                 "root in value".to_string(),
@@ -322,15 +342,15 @@ impl<'a> InstructionDecoder<'a> {
 
         let root_path = Self::get_string_from(root, "path")?.try_into()?;
         let root_salt = Self::get_string_from(root, "salt")?.try_into()?;
-        let index = Self::get_string_from(root, "salt")?.into();
+        let instruction_path = Self::get_string_from(value, "_index")?.into();
         let opcode = Self::get_u8_from(value, "opcode")?.into();
         let version = Self::get_u8_from(value, "version")?.into();
-        let instruction_hash = Self::get_string_from(value, "version")?.try_into()?;
+        let instruction_hash = Self::get_string_from(value, "_instruction_hash")?.try_into()?;
 
         Ok(Self {
             root_path,
             root_salt,
-            instruction_path: index,
+            instruction_path,
             opcode,
             version,
             instruction_hash,
@@ -342,7 +362,7 @@ impl<'a> InstructionDecoder<'a> {
         flatten: &'a [Value],
         transfer_index: usize,
     ) -> Result<Self, IndexerError> {
-        let Some(Value::Object(instruction)) = flatten.get(transfer_index) else {
+        let Some(instruction) = flatten.get(transfer_index) else {
             return Err(IndexerError::ZkgmExpectingInstructionField(
                 format!("transfer at index {transfer_index}"),
                 flatten.iter().join(", "),
@@ -358,6 +378,10 @@ impl<'a> InstructionDecoder<'a> {
         Self::get_string_from(self.operand, key)
     }
 
+    fn get_string_opt(&'a self, key: &str) -> Result<Option<&'a String>, IndexerError> {
+        Self::get_string_opt_from(self.operand, key)
+    }
+
     fn get_u32_opt(&'a self, key: &str) -> Result<Option<u32>, IndexerError> {
         Self::get_u32_opt_from(self.operand, key)
     }
@@ -366,14 +390,37 @@ impl<'a> InstructionDecoder<'a> {
         from: &'a Map<String, Value>,
         key: &str,
     ) -> Result<&'a String, IndexerError> {
-        let Some(Value::String(value)) = from.get(key) else {
-            return Err(IndexerError::ZkgmExpectingInstructionField(
-                format!("{key} field in instruction"),
-                Value::Object(from.clone()).to_string(),
-            ));
-        };
+        Ok(match from.get(key) {
+            Some(Value::String(value)) => value,
+            Some(unsupported) => {
+                return Err(IndexerError::ZkgmExpectingInstructionField(
+                    format!("{key} field in instruction is string ({unsupported})"),
+                    Value::Object(from.clone()).to_string(),
+                ));
+            }
+            None => {
+                return Err(IndexerError::ZkgmExpectingInstructionField(
+                    format!("{key} field in instruction"),
+                    Value::Object(from.clone()).to_string(),
+                ));
+            }
+        })
+    }
 
-        Ok(value)
+    fn get_string_opt_from(
+        from: &'a Map<String, Value>,
+        key: &str,
+    ) -> Result<Option<&'a String>, IndexerError> {
+        Ok(match from.get(key) {
+            Some(Value::String(value)) => Some(value),
+            Some(unsupported) => {
+                return Err(IndexerError::ZkgmExpectingInstructionField(
+                    format!("{key} field in instruction is string ({unsupported})"),
+                    Value::Object(from.clone()).to_string(),
+                ));
+            }
+            None => None,
+        })
     }
 
     fn get_u32_opt_from(
@@ -414,21 +461,21 @@ impl<'a> InstructionDecoder<'a> {
             Some(node) => {
                 let Value::Number(value) = node else {
                     return Err(IndexerError::ZkgmExpectingInstructionField(
-                        format!("{key} field in instruction"),
+                        format!("{key} field in instruction is number ({node})"),
                         Value::Object(from.clone()).to_string(),
                     ));
                 };
 
                 let Some(integer) = value.as_i128() else {
                     return Err(IndexerError::ZkgmExpectingInstructionField(
-                        format!("{key} field in instruction is integer"),
+                        format!("{key} field in instruction is integer ({value})"),
                         Value::Object(from.clone()).to_string(),
                     ));
                 };
 
                 let Ok(result) = u8::try_from(integer) else {
                     return Err(IndexerError::ZkgmExpectingInstructionField(
-                        format!("{key} field in instruction is u8 ({value})"),
+                        format!("{key} field in instruction is u8 ({integer})"),
                         Value::Object(from.clone()).to_string(),
                     ));
                 };
@@ -484,33 +531,22 @@ fn has_fee(flatten: &[Value]) -> Result<bool, IndexerError> {
     let Some(Value::Object(instruction)) = flatten.get(2) else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "three instructions".to_string(),
-            flatten.iter().join(", "),
+            Value::Array(flatten.to_vec()).to_string(),
         ));
     };
     let Some(Value::Object(operand)) = instruction.get("operand") else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "operand".to_string(),
-            flatten.iter().join(", "),
+            Value::Array(flatten.to_vec()).to_string(),
         ));
     };
-    let Some(Value::String(quote_amount_hex_0x)) = operand.get("quote_amount") else {
+    let Some(Value::String(quote_amount_hex_0x)) = operand.get("quoteAmount") else {
         return Err(IndexerError::ZkgmExpectingInstructionField(
             "quote amount".to_string(),
-            flatten.iter().join(", "),
+            Value::Array(flatten.to_vec()).to_string(),
         ));
     };
-    let Some(quote_amount_hex) = quote_amount_hex_0x.strip_prefix("0x") else {
-        return Err(IndexerError::ZkgmExpectingInstructionField(
-            "0x".to_string(),
-            flatten.iter().join(", "),
-        ));
-    };
-    let Ok(quote_amount) = hex::decode(quote_amount_hex) else {
-        return Err(IndexerError::ZkgmExpectingInstructionField(
-            "hex value".to_string(),
-            quote_amount_hex.to_string(),
-        ));
-    };
+    let quote_amount = string_0x_to_bytes(quote_amount_hex_0x, "quote amount")?;
 
     let is_zero = quote_amount.iter().all(|&b| b == 0);
 
@@ -521,28 +557,16 @@ fn packet_structure(flatten: &[Value]) -> Result<String, IndexerError> {
     flatten
         .iter()
         .map(|instruction| {
-            let index = instruction.get("_index").ok_or_else(|| {
-                IndexerError::ZkgmExpectingInstructionField(
-                    "_index".to_string(),
-                    flatten.iter().join(", "),
-                )
-            })?;
-            let opcode = instruction.get("opcode").ok_or_else(|| {
-                IndexerError::ZkgmExpectingInstructionField(
-                    "opcode".to_string(),
-                    flatten.iter().join(", "),
-                )
-            })?;
-            let version = instruction.get("version").ok_or_else(|| {
-                IndexerError::ZkgmExpectingInstructionField(
-                    "version".to_string(),
-                    flatten.iter().join(", "),
-                )
-            })?;
+            let decoder = InstructionDecoder::from_value(instruction)?;
 
-            Ok(format!("{index}:{opcode}/{version},"))
+            let instruction_path = decoder.instruction_path;
+            let opcode = decoder.opcode;
+            let version = decoder.version;
+
+            Ok(format!("{instruction_path}:{opcode}/{version}"))
         })
-        .collect::<Result<String, _>>()
+        .collect::<Result<Vec<_>, _>>()
+        .map(|strings| strings.join(","))
 }
 
 fn sort_order(
@@ -552,11 +576,13 @@ fn sort_order(
     let timestamp = record
         .timestamp
         .to_offset(UtcOffset::UTC)
-        .format(&Iso8601::DEFAULT)
+        .format(&format_description!(
+            "[year][month][day][hour][minute][second]"
+        ))
         .map_err(|e| {
             IndexerError::InternalCannotMapFromDatabaseDomain(
                 "timestamp".to_string(),
-                format!("cannot convert to ISO8601 UTC: {e}"),
+                format!("cannot convert to YYYYMMDDHHMMSS UTC: {e}"),
             )
         })?;
 
