@@ -1,3 +1,9 @@
+/// <reference types="effect" />
+/// <reference types="viem" />
+/// <reference types="@cosmjs/proto-signing" />
+/// <reference types="@cosmjs/stargate" />
+// @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
+
 // @ts-ignore
 BigInt["prototype"].toJSON = function() {
   return this.toString()

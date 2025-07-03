@@ -1,6 +1,40 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@layer base, starlight, theme, components, utilities;
+
+@import '@astrojs/starlight-tailwind';
+@import 'tailwindcss/theme.css' layer(theme);
+@import 'tailwindcss/utilities.css' layer(utilities);
+
+@theme {
+	/*
+	Configure your Tailwind theme that will be used by Starlight.
+	https://starlight.astro.build/guides/css-and-tailwind/#styling-starlight-with-tailwind
+	*/
+	        /* accent: { */
+          /* DEFAULT: "hsl(var(--accent) / <alpha-value>)", */
+          /* foreground: "hsl(var(--accent-foreground) / <alpha-value>)", */
+          /* // DEFAULT: "#A0ECFD", */
+          /* 50: "#FAFEFF", */
+          /* 100: "#F0FCFF", */
+          /* 200: "#DCF8FE", */
+          /* 300: "#C8F4FE", */
+          /* 400: "#B4F0FD", */
+          /* 500: "#A0ECFD", */
+          /* 600: "#5FDFFC", */
+          /* 700: "#1ED2FA", */
+          /* 800: "#04ACD2", */
+          /* 900: "#037791", */
+          /* 950: "#025C70", */
+        /* }, */
+  --color-accent-500: "#A0ECFD";
+  --color-accent-950: "#025C70";
+
+  --font-mono: "Jet Brains Mono";
+}
+
+/*
+Add additional Tailwind styles to this file:
+https://tailwindcss.com/docs/adding-custom-styles#using-custom-css
+*/
 
 @layer base {
   :root {
@@ -65,11 +99,11 @@
   }
 }
 
-@layer base {
-  * {
-    @apply border-border;
-  }
-  body {
+/* @layer base { */
+  /* * { */
+    /* @apply border-border; */
+  /* } */
+  /* body { */
     /* @apply bg-background text-foreground; */
-  }
-}
+  /* } */
+/* } */
