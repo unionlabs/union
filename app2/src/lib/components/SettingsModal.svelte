@@ -58,12 +58,21 @@ function handleSave() {
     </div>
 
     <div>
-      <label
-        for="graphqlEndpoint"
-        class="block text-sm font-medium uppercase text-zinc-500"
-      >
-        GraphQL Endpoint
-      </label>
+      <div class="flex w-full justify-between">
+        <label
+          for="graphqlEndpoint"
+          class="block text-sm font-medium uppercase text-zinc-500"
+        >
+          GraphQL Endpoint
+        </label>
+        <Button
+          variant="inline"
+          class="text-sm font-medium"
+          onclick={() => uiStore.clearGqlCache()}
+        >
+          Clear Cache
+        </Button>
+      </div>
       <input
         id="graphqlEndpoint"
         type="text"

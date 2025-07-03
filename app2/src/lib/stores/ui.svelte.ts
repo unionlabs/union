@@ -83,8 +83,11 @@ class UiStore {
   }
 
   set graphqlEndpoint(s: string) {
-    console.log("[[UI Store] set graphqlEndpoint", s)
     AppRuntime.runPromise(GraphQL.updateEndpoint(s))
+  }
+
+  clearGqlCache() {
+    AppRuntime.runSync(GraphQL.resetCache)
   }
 
   openWalletModal() {

@@ -250,6 +250,14 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
       fetch: fetchCached,
       updateEndpoint: (url: string) => SubscriptionRef.set(endpoint, url),
       getEndpoint: SubscriptionRef.get(endpoint),
+      resetCache: Effect.sync(() => {
+        localStorage.removeItem("quota_check")
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith("graphql")) {
+            localStorage.removeItem(key)
+          }
+        })
+      }),
     } as const
   }),
   accessors: true,
@@ -274,6 +282,7 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
         fetch: absurd as unknown as any,
         updateEndpoint: absurd as unknown as any,
         getEndpoint: absurd as unknown as any,
+        resetCache: absurd as unknown as any,
       })
     }),
   )
