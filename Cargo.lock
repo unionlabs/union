@@ -17093,6 +17093,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-finality-module-base"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-finality-module-berachain"
 version = "0.0.0"
 dependencies = [

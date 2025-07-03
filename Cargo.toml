@@ -149,6 +149,7 @@ members = [
   # "voyager/modules/proof/movement",
   "voyager/modules/proof/sui",
 
+  # "voyager/modules/client/base",
   "voyager/modules/client/bob",
   "voyager/modules/client/arbitrum",
   "voyager/modules/client/cometbls",
@@ -163,6 +164,7 @@ members = [
   "voyager/modules/client/sui",
   "voyager/modules/client/trusted-mpt",
 
+  # "voyager/modules/client-bootstrap/base",
   "voyager/modules/client-bootstrap/bob",
   "voyager/modules/client-bootstrap/arbitrum",
   "voyager/modules/client-bootstrap/cometbls",
@@ -177,6 +179,7 @@ members = [
   "voyager/modules/client-bootstrap/state-lens/ics23-ics23",
   "voyager/modules/client-bootstrap/sui",
 
+  "voyager/modules/finality/base",
   "voyager/modules/finality/bob",
   "voyager/modules/finality/arbitrum",
   "voyager/modules/finality/berachain",
@@ -188,6 +191,7 @@ members = [
   "voyager/modules/finality/trusted-evm",
   "voyager/modules/finality/sui",
 
+  # "voyager/plugins/client-update/base",
   "voyager/plugins/client-update/bob",
   "voyager/plugins/client-update/arbitrum",
   "voyager/plugins/client-update/berachain",
