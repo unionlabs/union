@@ -1,4 +1,6 @@
-// Polyfill for serializing BigInt as string in JSON
+/// <reference types="effect" />
+/// <reference types="viem" />
+// @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
 // @ts-ignore
 if (typeof BigInt.prototype.toJSON !== "function") {
   // @ts-ignore
@@ -14,9 +16,9 @@ import { holesky } from "viem/chains"
 import { Cosmos, Evm, FungibleAssetOrder, Ucs05 } from "@unionlabs/sdk"
 import { UniversalChainId } from "@unionlabs/sdk/schema/chain"
 import { ChannelId } from "@unionlabs/sdk/schema/channel"
+import { TokenRawDenom } from "@unionlabs/sdk/schema/token"
 import { Effect, pipe } from "effect"
 import { privateKeyToAccount } from "viem/accounts"
-import { TokenRawDenom } from "../src/schema/token.js"
 
 // We will send funds from sender to receiver
 const SENDER = Ucs05.AddressEvmZkgm.make("0xfaebe5bf141cc04a3f0598062b98d2df01ab3c4d")
