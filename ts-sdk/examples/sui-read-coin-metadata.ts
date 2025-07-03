@@ -1,3 +1,5 @@
+/// <reference types="effect" />
+// @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
 // @ts-ignore
 BigInt["prototype"].toJSON = function() {
   return this.toString()
