@@ -6,14 +6,16 @@ use alloy::{
     primitives::BloomInput,
     rpc::types::{BlockTransactionsKind, Filter, Log},
 };
+use alloy_primitives::Address;
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use itertools::Itertools;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
-use tracing::{debug, info, info_span, trace, Instrument};
+use tracing::{debug, error, info, info_span, trace, warn, Instrument};
 
 use crate::{
+    github_client::GitCommitHash,
     indexer::{
         api::{BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError},
         ethereum::{
@@ -23,9 +25,12 @@ use crate::{
             },
             context::EthContext,
             mapping::legacy::ToLowerHex,
-            postgres::get_abi_registration,
+            postgres::{
+                ensure_abi_dependency, generated_abi, get_abi_registration, update_contract_abi,
+            },
             provider::{Provider, RpcProviderId},
         },
+        record::InternalChainId,
     },
     postgres::{fetch_chain_id_tx, ChainId},
 };
@@ -70,6 +75,36 @@ impl TransactionFilter {
             height,
         )
         .await
+    }
+
+    pub(crate) async fn update_contract_abi(
+        &self,
+        internal_chain_id: InternalChainId,
+        contract: Address,
+        abi: String,
+    ) -> Result<bool, IndexerError> {
+        let mut tx = self.pg_pool.begin().await?;
+        let result = update_contract_abi(&mut tx, internal_chain_id, contract, abi).await?;
+        tx.commit().await?;
+        Ok(result)
+    }
+
+    pub(crate) async fn register_abi_dependency(
+        &self,
+        commit: GitCommitHash,
+    ) -> Result<bool, IndexerError> {
+        let mut tx = self.pg_pool.begin().await?;
+        let result = ensure_abi_dependency(&mut tx, commit).await?;
+        tx.commit().await?;
+        Ok(result)
+    }
+
+    pub(crate) async fn generated_abi(
+        &self,
+        commit: GitCommitHash,
+        description: String,
+    ) -> Result<Option<String>, IndexerError> {
+        generated_abi(&mut self.pg_pool.begin().await?, commit, description).await
     }
 }
 
@@ -244,7 +279,70 @@ impl EthFetcherClient {
         );
 
         // do ucs transformation
-        let ucs_events = self.transform_logs_to_ucs_events(&abi_registration, block, &logs)?;
+        let ucs_events = match self.transform_logs_to_ucs_events(&abi_registration, block, &logs) {
+            Ok(events) => Ok(events),
+            Err(IndexerError::AbiCannotParse(
+                err,
+                internal_chain_id,
+                contract,
+                description,
+                commit,
+            )) => {
+                match self
+                    .transaction_filter
+                    .generated_abi(commit.clone(), description.clone())
+                    .await?
+                {
+                    Some(abi) => {
+                        match self
+                            .transaction_filter
+                            .update_contract_abi(internal_chain_id, contract, abi)
+                            .await
+                        {
+                            Ok(true) => {
+                                info!("error decoding message ({err}): contract abi updated")
+                            }
+                            Ok(false) => {
+                                warn!("error decoding message ({err}): contract abi already up to date")
+                            }
+                            Err(err) => {
+                                error!("error decoding message ({err}): cannot update contract abi")
+                            }
+                        }
+                    }
+                    None => {
+                        info!("error decoding message ({err}): no abi definition found with commit {commit} => ensure it's registered");
+
+                        match self
+                            .transaction_filter
+                            .register_abi_dependency(commit.clone())
+                            .await
+                        {
+                            Ok(true) => {
+                                info!("error decoding message ({err}): ensured that abi dependency ({commit}) is registered")
+                            }
+                            Ok(false) => {
+                                warn!(
+                                    "error decoding message: abi dependency was already registered"
+                                )
+                            }
+                            Err(err) => {
+                                error!("error registering abi dependency: {err}");
+                            }
+                        };
+                    }
+                };
+
+                Err(IndexerError::AbiCannotParse(
+                    err,
+                    internal_chain_id,
+                    contract,
+                    description,
+                    commit,
+                ))
+            }
+            Err(other) => Err(other),
+        }?;
 
         debug!(
             "{}: fetch => converted (events: {})",

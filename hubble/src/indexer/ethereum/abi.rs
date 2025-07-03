@@ -12,13 +12,21 @@ use alloy_primitives::B256;
 use itertools::Itertools;
 use serde_json::Value;
 
-use crate::indexer::{
-    api::{AbiParsingError, IndexerError},
-    ethereum::log_parser::Parser,
+use crate::{
+    github_client::GitCommitHash,
+    indexer::{
+        api::{AbiParsingError, IndexerError},
+        ethereum::log_parser::Parser,
+        record::InternalChainId,
+    },
 };
 
 pub struct Abi {
+    pub internal_chain_id: InternalChainId,
+    pub address: Address,
+    pub description: String,
     pub definition: String,
+    pub commit: GitCommitHash,
 }
 
 impl Abi {
@@ -39,16 +47,34 @@ impl Abi {
             serde_json::from_str(&self.definition).expect("deserializing json abi failed");
 
         let selector = log.topics().first().unwrap();
-        let definition = abi.events().find(|e| e.selector().0 == selector.0).ok_or(
-            AbiParsingError::UnknownEvent {
+        let definition = abi
+            .events()
+            .find(|e| e.selector().0 == selector.0)
+            .ok_or(AbiParsingError::UnknownEvent {
                 selector: *selector,
-            },
-        )?;
+            })
+            .map_err(|err| {
+                IndexerError::AbiCannotParse(
+                    err,
+                    self.internal_chain_id.clone(),
+                    self.address.clone(),
+                    self.description.clone(),
+                    self.commit.clone(),
+                )
+            })?;
 
         let topics = log.topics().iter().map(|t| B256::from_slice(&t.0));
         let decoded = definition
             .decode_log_parts(topics, &log.data().data)
-            .map_err(AbiParsingError::DecodingError)?;
+            .map_err(|err| {
+                IndexerError::AbiCannotParse(
+                    AbiParsingError::DecodingError(err),
+                    self.internal_chain_id.clone(),
+                    self.address.clone(),
+                    self.description.clone(),
+                    self.commit.clone(),
+                )
+            })?;
         let indexed = definition.inputs.iter().filter(|e| e.indexed);
         let body = definition.inputs.iter().filter(|e| !e.indexed);
 

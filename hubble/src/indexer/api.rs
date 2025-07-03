@@ -20,12 +20,15 @@ use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::error;
 
-use crate::indexer::{
-    event::types::{
-        BlockEvents, ChannelId, NatsConsumerSequence, NatsStreamSequence, PacketHash,
-        UniversalChainId,
+use crate::{
+    github_client::GitCommitHash,
+    indexer::{
+        event::types::{
+            BlockEvents, ChannelId, NatsConsumerSequence, NatsStreamSequence, PacketHash,
+            UniversalChainId,
+        },
+        record::InternalChainId,
     },
-    record::InternalChainId,
 };
 
 #[derive(Debug, thiserror::Error)]
@@ -98,14 +101,26 @@ pub enum IndexerError {
         "missing universal chain id: in stream sequence: {0}, consumer_sequence sequence: {1}"
     )]
     NatsMissingUniversalChainId(NatsStreamSequence, NatsConsumerSequence),
+    #[error("invalid commit hash for abi: {0}")]
+    InvalidCommitHashForAbi(String),
     #[error("no abi for address: {0}")]
     AbiNoAbiForAddress(Address),
     #[error("internal error: cannot map to database domain - {0}: {1}")]
     InternalCannotMapToDatabaseDomain(String, String),
     #[error("internal error: cannot map from database domain - {0}: {1}")]
     InternalCannotMapFromDatabaseDomain(String, String),
-    #[error("cannot parse abi encoded message: {0}")]
-    AbiCannotParse(#[from] AbiParsingError),
+    #[error("cannot parse hex: {0}")]
+    CannotParseHex(#[from] alloy::hex::FromHexError),
+    #[error(
+        "cannot parse abi encoded message: {0} chain: {1}, contract: {2} ({3}) (with commit {4})"
+    )]
+    AbiCannotParse(
+        AbiParsingError,
+        InternalChainId,
+        Address,
+        String,
+        GitCommitHash,
+    ),
     #[error("internal error: cannot map to handler domain - {0}: {1}")]
     CannotMapToHandlerDomain(String, String),
     #[error("internal error: cannot map to event domain - {0}: {1}")]
