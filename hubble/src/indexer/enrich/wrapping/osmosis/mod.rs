@@ -76,10 +76,10 @@ mod tests {
         let minter = "test_minter";
 
         let result = predict_osmosis_wrapper_0_1(&invalid_path, 1, original_token, minter);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
-            OsmosisError::InvalidChannelIdsLength => {},
+            OsmosisError::InvalidChannelIdsLength => {}
             _ => panic!("Expected InvalidChannelIdsLength error"),
         }
     }

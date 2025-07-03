@@ -141,11 +141,9 @@ fn wrap_evm(
         receiver_channel_id.0.into(),
         base_denom.0.as_ref(),
         deployer.0.as_ref(),
-    ).map_err(|e| IndexerError::WrapperPredictionError(
-        "create3".to_string(),
-        e.to_string(),
-    ))?;
-    
+    )
+    .map_err(|e| IndexerError::WrapperPredictionError("create3".to_string(), e.to_string()))?;
+
     Ok(bytes::Bytes::from(result).into())
 }
 
@@ -156,31 +154,25 @@ fn wrap_cosmos(
     minter: &Minter,
 ) -> Result<Denom, IndexerError> {
     let result = match minter {
-        Minter::Cw20(minter_address_display) => {
-            instantiate2_0_1(
-                &intermediate_channel_ids.0,
-                receiver_channel_id.0.into(),
-                base_denom.0.as_ref(),
-                minter_address_display
-                    .to_contract_address_assume_bech32()?
-                    .0
-                    .as_ref(),
-            ).map_err(|e| IndexerError::WrapperPredictionError(
-                "instantiate2".to_string(),
-                e.to_string(),
-            ))?
-        },
-        Minter::OsmosisTokenfactory(minter_address_display) => {
-            predict_osmosis_wrapper_0_1(
-                &intermediate_channel_ids.0,
-                receiver_channel_id.0.into(),
-                base_denom.0.as_ref(),
-                &minter_address_display.0,
-            ).map_err(|e| IndexerError::WrapperPredictionError(
-                "osmosis".to_string(),
-                e.to_string(),
-            ))?
-        }
+        Minter::Cw20(minter_address_display) => instantiate2_0_1(
+            &intermediate_channel_ids.0,
+            receiver_channel_id.0.into(),
+            base_denom.0.as_ref(),
+            minter_address_display
+                .to_contract_address_assume_bech32()?
+                .0
+                .as_ref(),
+        )
+        .map_err(|e| {
+            IndexerError::WrapperPredictionError("instantiate2".to_string(), e.to_string())
+        })?,
+        Minter::OsmosisTokenfactory(minter_address_display) => predict_osmosis_wrapper_0_1(
+            &intermediate_channel_ids.0,
+            receiver_channel_id.0.into(),
+            base_denom.0.as_ref(),
+            &minter_address_display.0,
+        )
+        .map_err(|e| IndexerError::WrapperPredictionError("osmosis".to_string(), e.to_string()))?,
     };
 
     Ok(bytes::Bytes::from(result).into())

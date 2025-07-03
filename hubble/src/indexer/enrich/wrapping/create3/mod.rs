@@ -160,10 +160,10 @@ mod tests {
         let deployer = b"test_deployer";
 
         let result = create3_0_1(&invalid_path, 1, wrapped_token, deployer);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
-            Create3Error::InvalidChannelIdsLength => {},
+            Create3Error::InvalidChannelIdsLength => {}
         }
     }
 }
