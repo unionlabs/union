@@ -10,7 +10,9 @@ pub enum Erc55Error {
 
 /// specification: https://eips.ethereum.org/EIPS/eip-55
 pub fn erc55_to_checksum_0_1(address: &[u8]) -> Result<String, Erc55Error> {
-    let address: Address = address.try_into().map_err(|_| Erc55Error::InvalidAddressLength(address.len()))?;
+    let address: Address = address
+        .try_into()
+        .map_err(|_| Erc55Error::InvalidAddressLength(address.len()))?;
 
     Ok(address.to_checksum(None))
 }
@@ -53,7 +55,7 @@ mod tests {
         // Test with address that's too short (19 bytes instead of 20)
         let invalid_address = vec![0u8; 19];
         let result = erc55_to_checksum_0_1(&invalid_address);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
             Erc55Error::InvalidAddressLength(len) => assert_eq!(len, 19),
@@ -62,7 +64,7 @@ mod tests {
         // Test with address that's too long (21 bytes instead of 20)
         let invalid_address = vec![0u8; 21];
         let result = erc55_to_checksum_0_1(&invalid_address);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
             Erc55Error::InvalidAddressLength(len) => assert_eq!(len, 21),

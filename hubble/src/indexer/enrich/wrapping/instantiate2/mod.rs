@@ -128,10 +128,10 @@ mod tests {
         let creator = b"test_creator";
 
         let result = instantiate2_0_1(&invalid_path, 1, original_token, creator);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
-            Instantiate2Error::InvalidChannelIdsLength => {},
+            Instantiate2Error::InvalidChannelIdsLength => {}
             _ => panic!("Expected InvalidChannelIdsLength error"),
         }
     }

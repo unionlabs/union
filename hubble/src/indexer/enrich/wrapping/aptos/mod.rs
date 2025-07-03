@@ -91,7 +91,7 @@ mod tests {
         let creator = b"test_creator";
 
         let result = predict_aptos_wrapper_0_1(&path, invalid_channel_id, unwrapped_token, creator);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
             AptosError::InvalidReceiverChannelId(id) => assert_eq!(id, -1),
@@ -108,10 +108,10 @@ mod tests {
         let creator = b"test_creator";
 
         let result = predict_aptos_wrapper_0_1(&invalid_path, channel_id, unwrapped_token, creator);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
-            AptosError::InvalidChannelIdsLength => {},
+            AptosError::InvalidChannelIdsLength => {}
             _ => panic!("Expected InvalidChannelIdsLength error"),
         }
     }

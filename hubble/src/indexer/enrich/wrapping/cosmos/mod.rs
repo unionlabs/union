@@ -43,7 +43,10 @@ pub fn predict_cosmos_wrapper_0_1(
     let token_hash_base58 = token_hash.to_base58();
 
     if token_hash_base58.len() > MAX_DENOM_LENGTH {
-        return Err(CosmosError::TokenHashTooLong(token_hash_base58.len(), MAX_DENOM_LENGTH));
+        return Err(CosmosError::TokenHashTooLong(
+            token_hash_base58.len(),
+            MAX_DENOM_LENGTH,
+        ));
     }
 
     Ok(token_hash_base58.into())
@@ -82,7 +85,7 @@ mod tests {
         let invalid_channel_id = -1i64; // Negative value should fail conversion to u32
 
         let result = predict_cosmos_wrapper_0_1(&[], invalid_channel_id, unwrapped_token);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
             CosmosError::InvalidReceiverChannelId(id) => assert_eq!(id, -1),
@@ -97,10 +100,10 @@ mod tests {
         let unwrapped_token = b"test";
 
         let result = predict_cosmos_wrapper_0_1(&invalid_path, 1, unwrapped_token);
-        
+
         assert!(result.is_err());
         match result.unwrap_err() {
-            CosmosError::InvalidChannelIdsLength => {},
+            CosmosError::InvalidChannelIdsLength => {}
             _ => panic!("Expected InvalidChannelIdsLength error"),
         }
     }
@@ -110,14 +113,20 @@ mod tests {
         // Note: This test might be hard to trigger in practice since the hash is always 32 bytes
         // and base58 encoding typically produces strings shorter than 44 characters.
         // But the validation is there for safety, so we document the test case.
-        
+
         // For now, let's test that normal cases don't trigger the error
         let unwrapped_token = b"test_token_that_should_work_fine";
         let result = predict_cosmos_wrapper_0_1(&[], 1, unwrapped_token);
-        
-        assert!(result.is_ok(), "Normal token should not trigger length error");
-        
+
+        assert!(
+            result.is_ok(),
+            "Normal token should not trigger length error"
+        );
+
         let token_hash = result.unwrap();
-        assert!(token_hash.len() <= 44, "Result should be within length limits");
+        assert!(
+            token_hash.len() <= 44,
+            "Result should be within length limits"
+        );
     }
 }
