@@ -67,6 +67,7 @@ members = [
 
   "lib/ibc-solidity",
 
+  "lib/base-verifier",
   "lib/bob-verifier",
   "lib/arbitrum-verifier",
   "lib/cometbls-groth16-verifier",
@@ -77,6 +78,7 @@ members = [
   "lib/scroll-verifier",
   "lib/tendermint-verifier",
 
+  "lib/base-light-client-types",
   "lib/bob-light-client-types",
   "lib/arbitrum-light-client-types",
   "lib/berachain-light-client-types",
@@ -319,6 +321,9 @@ sui-verifier                  = { path = "lib/sui-verifier", default-features = 
 parlia-light-client-types = { path = "lib/parlia-light-client-types", default-features = false }
 parlia-types              = { path = "lib/parlia-types", default-features = false }
 parlia-verifier           = { path = "lib/parlia-verifier", default-features = false }
+
+base-light-client-types = { path = "lib/base-light-client-types", default-features = false }
+base-verifier           = { path = "lib/base-verifier", default-features = false }
 
 bob-light-client-types = { path = "lib/bob-light-client-types", default-features = false }
 bob-verifier           = { path = "lib/bob-verifier", default-features = false }
