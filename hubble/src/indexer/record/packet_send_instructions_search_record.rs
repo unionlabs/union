@@ -79,7 +79,7 @@ impl PacketSendInstructionsSearchRecord {
 
         sqlx::query!(
             r#"
-            INSERT INTO v2_sync.packet_send_instructions_search_test (
+            INSERT INTO v2_sync.packet_send_instructions_search_sync (
                 internal_chain_id,
                 internal_counterparty_chain_id,
                 height,
@@ -141,7 +141,7 @@ impl PacketSendInstructionsSearchRecord {
 
         let result = sqlx::query!(
             r#"
-            DELETE FROM v2_sync.packet_send_instructions_search_test
+            DELETE FROM v2_sync.packet_send_instructions_search_sync
             WHERE internal_chain_id = $1 AND height = $2
             "#,
             internal_chain_id.pg_value()?,

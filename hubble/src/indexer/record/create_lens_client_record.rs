@@ -51,7 +51,7 @@ impl CreateLensClientRecord {
 
         sqlx::query!(
             r#"
-            INSERT INTO v2_sync.create_lens_client_test (
+            INSERT INTO v2_sync.create_lens_client_sync (
                 internal_chain_id,
                 block_hash,
                 height,
@@ -90,7 +90,7 @@ impl CreateLensClientRecord {
 
         let result = sqlx::query!(
             r#"
-            DELETE FROM v2_sync.create_lens_client_test
+            DELETE FROM v2_sync.create_lens_client_sync
             WHERE internal_chain_id = $1 AND height = $2
             "#,
             internal_chain_id.pg_value()?,

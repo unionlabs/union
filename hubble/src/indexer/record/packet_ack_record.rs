@@ -55,7 +55,7 @@ impl PacketAckRecord {
 
         sqlx::query!(
             r#"
-            INSERT INTO v2_sync.packet_ack_test (
+            INSERT INTO v2_sync.packet_ack_sync (
                 internal_chain_id,
                 block_hash,
                 height,
@@ -100,7 +100,7 @@ impl PacketAckRecord {
 
         let result = sqlx::query!(
             r#"
-            DELETE FROM v2_sync.packet_ack_test
+            DELETE FROM v2_sync.packet_ack_sync
             WHERE internal_chain_id = $1 AND height = $2
             "#,
             internal_chain_id.pg_value()?,

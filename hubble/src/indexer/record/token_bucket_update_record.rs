@@ -53,7 +53,7 @@ impl TokenBucketUpdateRecord {
 
         sqlx::query!(
             r#"
-            INSERT INTO v2_sync.token_bucket_update_test (
+            INSERT INTO v2_sync.token_bucket_update_sync (
                 internal_chain_id,
                 block_hash,
                 height,
@@ -94,7 +94,7 @@ impl TokenBucketUpdateRecord {
 
         let result = sqlx::query!(
             r#"
-            DELETE FROM v2_sync.token_bucket_update_test
+            DELETE FROM v2_sync.token_bucket_update_sync
             WHERE internal_chain_id = $1 AND height = $2
             "#,
             internal_chain_id.pg_value()?,
