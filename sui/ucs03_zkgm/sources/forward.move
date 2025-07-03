@@ -97,31 +97,25 @@ module zkgm::forward {
         buf
     }
 
-    public fun decode(buf: &vector<u8>, index: &mut u64): Forward {
-        let path = zkgm_ethabi::decode_uint(buf, index);
-        let timeout_height = zkgm_ethabi::decode_uint(buf, index);
-        let timeout_timestamp = zkgm_ethabi::decode_uint(buf, index);
-        *index = *index + 0x20;
-
-        let version = (zkgm_ethabi::decode_uint(buf, index) as u8);
-        let opcode = (zkgm_ethabi::decode_uint(buf, index) as u8);
-        *index = *index + 0x20;
-        let operand = zkgm_ethabi::decode_bytes(buf, index);
-
-        let instruction = instruction::new(version, opcode, operand);
+    public fun decode(buf: &vector<u8>): Forward {
+        let mut index = 0;
+        let path = zkgm_ethabi::decode_uint(buf, &mut index);
+        let timeout_height = zkgm_ethabi::decode_uint(buf, &mut index);
+        let timeout_timestamp = zkgm_ethabi::decode_uint(buf, &mut index);
+        index = index + 0x20;
 
         Forward {
             path: (path as u256),
             timeout_height: (timeout_height as u64),
             timeout_timestamp: (timeout_timestamp as u64),
-            instruction: instruction
+            instruction: instruction::decode(buf, &mut index)
         }
     }
 
     #[test]
     fun test_encode_decode_forward_packet() {
         let output =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000003700000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";
+            x"000000000000000000000000000000000000000000000000000000000000002c000000000000000000000000000000000000000000000000000000000000003700000000000000000000000000000000000000000000000000000000000000420000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000006f00000000000000000000000000000000000000000000000000000000000000de0000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000007968656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6468656c6c6f20776f726c6400000000000000";
 
         let instruction =
             instruction::new(
@@ -138,12 +132,9 @@ module zkgm::forward {
         };
 
         let ack_bytes = encode(&forward_data);
-        std::debug::print(&std::string::utf8(b"ack bytes: "));
-        std::debug::print(&ack_bytes);
         assert!(ack_bytes == output, 0);
 
-        let mut decode_idx = 0x20;
-        let forward_data_decoded = decode(&ack_bytes, &mut decode_idx);
+        let forward_data_decoded = decode(&ack_bytes);
         assert!(forward_data_decoded.path == forward_data.path, 0);
         assert!(forward_data_decoded.timeout_height == forward_data.timeout_height, 1);
         assert!(
