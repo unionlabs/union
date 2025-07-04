@@ -1,11 +1,15 @@
-import { URLS } from "$lib/constants"
+import { ENV } from "$lib/constants"
+import * as SvelteConfigProvider from "$lib/services/SvelteConfigProvider.js"
 import { PersistedCache, Persistence } from "@effect/experimental"
 import { KeyValueStore } from "@effect/platform"
 import { operationNamesFromDocumentNode } from "@unionlabs/sdk/utils"
 import {
+  absurd,
   Array as A,
+  Config,
   Duration,
   Effect,
+  ExecutionPlan,
   Exit,
   Hash,
   HashMap,
@@ -17,6 +21,8 @@ import {
   pipe,
   PrimaryKey,
   Schema as S,
+  Stream,
+  SubscriptionRef,
 } from "effect"
 import type { TadaDocumentNode } from "gql.tada"
 import { type ArgumentNode, type DirectiveNode, Kind, print } from "graphql"
@@ -109,11 +115,32 @@ export class GraphQLRequest extends S.TaggedRequest<GraphQLRequest>()("GraphQLRe
   }
 }
 
+const ConfigPlan = ExecutionPlan.make(
+  { provide: SvelteConfigProvider.SearchParams },
+  { provide: SvelteConfigProvider.StaticPublic },
+)
+
 export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
   scoped: Effect.gen(function*() {
     const { timeToLive } = yield* GraphQLCache
 
-    const client = new GraphQLClient(URLS().GRAPHQL)
+    const defaultEndpoint = yield* Config.string("GRAPHQL_ENDPOINT").pipe(
+      Effect.withExecutionPlan(ConfigPlan),
+      Effect.catchTag(
+        "ConfigError",
+        () =>
+          pipe(
+            Match.value(ENV()),
+            Match.when("DEVELOPMENT", () => "https://development.graphql.union.build/v1/graphql"),
+            Match.orElse(() => "https://graphql.union.build/v1/graphql"),
+            Effect.succeed,
+          ),
+      ),
+    )
+
+    const endpoint = yield* SubscriptionRef.make(defaultEndpoint)
+
+    const client = new GraphQLClient(defaultEndpoint)
 
     const fetch = <D, V extends Variables = Variables>(options: {
       document: TadaDocumentNode<D, V>
@@ -207,10 +234,33 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
       },
     )
 
+    yield* pipe(
+      endpoint.changes,
+      Stream.mapEffect((url) =>
+        Effect.sync(() => {
+          client.setEndpoint(url)
+        })
+      ),
+      Stream.tap((a) => Effect.log("Updated GQL endpoint:", a)),
+      Stream.runDrain,
+      Effect.forkDaemon,
+    )
+
     return {
       fetch: fetchCached,
+      updateEndpoint: (url: string) => SubscriptionRef.set(endpoint, url),
+      getEndpoint: SubscriptionRef.get(endpoint),
+      resetCache: Effect.sync(() => {
+        localStorage.removeItem("quota_check")
+        Object.keys(localStorage).forEach(key => {
+          if (key.startsWith("graphql")) {
+            localStorage.removeItem(key)
+          }
+        })
+      }),
     } as const
   }),
+  accessors: true,
   dependencies: [
     GraphQLCache.Default,
     Persistence.layerResultKeyValueStore.pipe(
@@ -229,9 +279,10 @@ export class GraphQL extends Effect.Service<GraphQL>()("app/GraphQL", {
       // const Schema = yield* Effect.promise(() => import("effect/Schema"))
 
       return new GraphQL({
-        fetch: () => {
-          throw new Error("unimplemented")
-        },
+        fetch: absurd as unknown as any,
+        updateEndpoint: absurd as unknown as any,
+        getEndpoint: absurd as unknown as any,
+        resetCache: absurd as unknown as any,
       })
     }),
   )

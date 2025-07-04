@@ -1,7 +1,10 @@
 <script lang="ts">
 import { page } from "$app/state"
 import ExternalLinkIcon from "$lib/components/icons/ExternalLinkIcon.svelte"
+import SharpSettingsIcon from "$lib/components/icons/SharpSettingsIcon.svelte"
+import Button from "$lib/components/ui/Button.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
+import { ENV } from "$lib/constants.js"
 import ProfileCard from "$lib/dashboard/components/SideCard.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
 import { cn } from "$lib/utils"
@@ -241,13 +244,19 @@ onMount(() => {
     </div>
 
     <div class="p-4 border-t border-zinc-800/50 bg-zinc-950/30">
-      <ConnectWalletButton />
       <!--
-       <Button variant="secondary" onclick={() => uiStore.openSettingsModal()}>
-         <SharpSettingsIcon class="size-5"/>
-         Settings
-       </Button>
-       !-->
+      {#if ENV() !== "PRODUCTION"}
+        <Button
+          variant="secondary"
+          class="w-full mb-2"
+          onclick={() => uiStore.openSettingsModal()}
+        >
+          <SharpSettingsIcon class="size-5" />
+          Settings
+        </Button>
+      {/if}
+      -->
+      <ConnectWalletButton />
     </div>
   </div>
 </div>

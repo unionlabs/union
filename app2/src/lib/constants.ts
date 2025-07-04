@@ -14,15 +14,4 @@ export const ENV = (): Environment =>
     ? "DEVELOPMENT"
     : "DEVELOPMENT"
 
-export const URLS = () => {
-  const GRAPHQL_BASE = ENV() === "DEVELOPMENT"
-    ? "development.graphql.union.build"
-    : "graphql.union.build"
-
-  return {
-    GRAPHQL: `https://${GRAPHQL_BASE}/v1/graphql`,
-    GRAPHQL_REST: `https://${GRAPHQL_BASE}/api/rest`,
-  }
-}
-
 export const MAX_MOBILE_SIZE = 768 // in pixels (TODO: use rem)
