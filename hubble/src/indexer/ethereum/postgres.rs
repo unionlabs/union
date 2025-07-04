@@ -5,15 +5,15 @@ use crate::{
     github_client::GitCommitHash,
     indexer::{
         api::IndexerError,
-        ethereum::abi::{Abi, AbiRegistration},
+        ethereum::abi::{Abi, AbiRegistration, GeneratedAbi},
         record::{InternalChainId, PgValue},
     },
 };
 
 pub async fn get_abi_registration(
     tx: &mut Transaction<'_, Postgres>,
-    internal_chain_id: InternalChainId,
-    height: crate::indexer::event::types::BlockHeight,
+    internal_chain_id: &InternalChainId,
+    height: &crate::indexer::event::types::BlockHeight,
 ) -> Result<AbiRegistration, IndexerError> {
     let result = sqlx::query!(
         r#"
@@ -51,7 +51,7 @@ pub async fn get_abi_registration(
 
 pub async fn ensure_abi_dependency(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    commit: GitCommitHash,
+    commit: &GitCommitHash,
 ) -> Result<bool, IndexerError> {
     let result = sqlx::query!(
         "
@@ -69,28 +69,33 @@ pub async fn ensure_abi_dependency(
 
 pub async fn generated_abi(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    commit: GitCommitHash,
-    description: String,
-) -> Result<Option<String>, IndexerError> {
+    commit: &GitCommitHash,
+    description: &String,
+) -> Result<Option<GeneratedAbi>, IndexerError> {
     Ok(sqlx::query!(
         "
-            SELECT data ->> $2 AS abi
-            FROM abi.download
-            WHERE commit = $1;
+            SELECT abi, command
+            FROM abi.contract
+            WHERE commit = $1
+              AND contract = REPLACE($2, '/', '-'); -- deployments use '/', but abis don't
             ",
         &commit.0,
         description,
     )
     .fetch_optional(tx.as_mut())
     .await?
-    .and_then(|record| record.abi))
+    .map(|record| GeneratedAbi {
+        abi: record.abi.expect("abi"),
+        command: record.command.expect("command"),
+    }))
 }
 
 pub async fn update_contract_abi(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    internal_chain_id: InternalChainId,
-    contract: Address,
-    abi: String,
+    internal_chain_id: &InternalChainId,
+    contract: &Address,
+    description: &String,
+    generated_abi: &GeneratedAbi,
 ) -> Result<bool, IndexerError> {
     // sqlx bug workaround: temporarily disable client_min_messages to suppress NOTICE messages
     sqlx::query!("SET LOCAL client_min_messages = WARNING")
@@ -100,14 +105,17 @@ pub async fn update_contract_abi(
     let result = sqlx::query!(
         "
             UPDATE v2_evm.contracts
-            SET abi = $1
-            WHERE internal_chain_id = $2 
-            AND address = $3 
+            SET abi = $1, version = $2
+            WHERE internal_chain_id = $3 
+            AND address = $4 
+            AND description = $5
             AND abi <> $1
         ",
-        abi,
+        generated_abi.abi,
+        generated_abi.command,
         internal_chain_id.0,
         format!("{:#x}", contract),
+        description,
     )
     .execute(tx.as_mut())
     .await?;
