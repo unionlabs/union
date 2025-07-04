@@ -69,6 +69,20 @@ module zkgm::forward {
         instruction: Instruction
     }
 
+    public fun new(
+        path: u256,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        instruction: Instruction
+    ): Forward {
+        Forward {
+            path,
+            timeout_height,
+            timeout_timestamp,
+            instruction,
+        }
+    }
+
     public fun path(forward: &Forward): u256 {
         forward.path
     }
