@@ -535,7 +535,7 @@ _: {
               ${ucs04-chain-id} \
               --rpc-url ${rpc-url} \
               --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
-              --ucs03 --ucs00
+              --ucs03 --ucs00 "$@"
           '';
         };
 
