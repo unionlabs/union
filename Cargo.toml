@@ -149,7 +149,7 @@ members = [
   # "voyager/modules/proof/movement",
   "voyager/modules/proof/sui",
 
-  # "voyager/modules/client/base",
+  "voyager/modules/client/base",
   "voyager/modules/client/bob",
   "voyager/modules/client/arbitrum",
   "voyager/modules/client/cometbls",
@@ -164,7 +164,7 @@ members = [
   "voyager/modules/client/sui",
   "voyager/modules/client/trusted-mpt",
 
-  # "voyager/modules/client-bootstrap/base",
+  "voyager/modules/client-bootstrap/base",
   "voyager/modules/client-bootstrap/bob",
   "voyager/modules/client-bootstrap/arbitrum",
   "voyager/modules/client-bootstrap/cometbls",

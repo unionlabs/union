@@ -154,6 +154,13 @@ impl ClientType {
     /// [Bob]: https://github.com/ethereum-optimism/optimism/blob/v1.7.2/packages/contracts-bedrock/src/L1/L2OutputOracle.sol
     pub const BOB: &'static str = "bob";
 
+    /// A client tracking the state of the [Base] optimistic L2, settling on
+    /// Ethereum, verified by verifying the L2 settlement on the L1.
+    ///
+    /// [Base]: https://www.base.org
+    /// [L2 settlement]: https://github.com/base/contracts
+    pub const BASE: &'static str = "base";
+
     pub const SUI: &'static str = "sui";
 
     /// A client tracking the state of a chain with [Parlia] consensus, verified by verifying the [fast finality].
