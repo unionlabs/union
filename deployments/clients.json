@@ -278,6 +278,11 @@
       "counterparty": "sei.atlantic-2",
       "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "5000"
+    },
+    "7": {
+      "counterparty": "osmosis.osmo-test-5",
+      "client_type": "tendermint",
+      "refresh_rate": "500"
     }
   },
   "sei.atlantic-2": {
@@ -327,6 +332,11 @@
   "osmosis.osmo-test-5": {
     "8": {
       "counterparty": "babylon.bbn-test-5",
+      "client_type": "tendermint",
+      "refresh_rate": "500"
+    },
+    "10": {
+      "counterparty": "xion.xion-testnet-2",
       "client_type": "tendermint",
       "refresh_rate": "500"
     }

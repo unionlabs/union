@@ -293,6 +293,20 @@
         }
       },
       "tags": ["canonical"]
+    },
+    "19": {
+      "comments": "osmosis.osmo-test-5 channel 4",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "810553",
+          "PACKET_SEND_LC_UPDATE_L0": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "810553",
+          "PACKET_SEND_LC_UPDATE_L0": "2116634"
+        }
+      },
+      "tags": ["canonical"]
     }
   }
 }
