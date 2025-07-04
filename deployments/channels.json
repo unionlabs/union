@@ -99,6 +99,24 @@
         }
       },
       "tags": ["canonical"]
+    },
+    "3": {
+      "comments": "sei.1328 channel 5",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "637233",
+          "PACKET_SEND_LC_UPDATE_L0": "394498",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        },
+        "reverse": {
+          "PACKET_RECV": "938092",
+          "PACKET_SEND_LC_UPDATE_L0": "321174",
+          "PACKET_SEND_LC_UPDATE_L1": "519141",
+          "PACKET_SEND_LC_UPDATE_L2": "721546"
+        }
+      },
+      "tags": ["canonical"]
     }
   },
   "corn.21000000": {
@@ -254,6 +272,20 @@
           "PACKET_SEND_LC_UPDATE_L0": "394498",
           "PACKET_SEND_LC_UPDATE_L1": "519141",
           "PACKET_SEND_LC_UPDATE_L2": "1028227"
+        }
+      },
+      "tags": ["canonical"]
+    },
+    "19": {
+      "comments": "osmosis.osmo-test-5 channel 4",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "810553",
+          "PACKET_SEND_LC_UPDATE_L0": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "810553",
+          "PACKET_SEND_LC_UPDATE_L0": "2116634"
         }
       },
       "tags": ["canonical"]

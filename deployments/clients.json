@@ -278,6 +278,11 @@
       "counterparty": "sei.atlantic-2",
       "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "5000"
+    },
+    "7": {
+      "counterparty": "osmosis.osmo-test-5",
+      "client_type": "tendermint",
+      "refresh_rate": "500"
     }
   },
   "sei.atlantic-2": {
@@ -300,6 +305,16 @@
       "counterparty": "babylon.bbn-test-5",
       "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "500"
+    },
+    "11": {
+      "counterparty": "ethereum.17000",
+      "client_type": "state-lens/ics23/mpt",
+      "refresh_rate": "500"
+    },
+    "12": {
+      "counterparty": "bsc.97",
+      "client_type": "state-lens/ics23/mpt",
+      "refresh_rate": "5000"
     }
   },
   "bsc.97": {
@@ -312,11 +327,21 @@
       "counterparty": "babylon.bbn-test-5",
       "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "500"
+    },
+    "4": {
+      "counterparty": "sei.atlantic-2",
+      "client_type": "state-lens/ics23/ics23",
+      "refresh_rate": "500"
     }
   },
   "osmosis.osmo-test-5": {
     "8": {
       "counterparty": "babylon.bbn-test-5",
+      "client_type": "tendermint",
+      "refresh_rate": "500"
+    },
+    "10": {
+      "counterparty": "xion.xion-testnet-2",
       "client_type": "tendermint",
       "refresh_rate": "500"
     }
