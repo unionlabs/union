@@ -198,7 +198,6 @@ impl Module {
         voyager_client: &VoyagerClient,
         height: u64,
     ) -> RpcResult<Op<VoyagerMessage>> {
-        // self.sui_client.read_api().get_transactions_stream(query, cursor, descending_order)
         Ok(conc([
             call(PluginMessage::new(
                 self.plugin_name(),
