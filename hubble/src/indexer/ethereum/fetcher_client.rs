@@ -19,7 +19,7 @@ use crate::{
     indexer::{
         api::{BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError},
         ethereum::{
-            abi::AbiRegistration,
+            abi::{AbiRegistration, GeneratedAbi},
             block_handle::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },
@@ -67,11 +67,11 @@ pub struct TransactionFilter {
 impl TransactionFilter {
     pub(crate) async fn abi_registration_at(
         &self,
-        height: crate::indexer::event::types::BlockHeight,
+        height: &crate::indexer::event::types::BlockHeight,
     ) -> Result<AbiRegistration, IndexerError> {
         get_abi_registration(
             &mut self.pg_pool.begin().await?,
-            self.chain_id.db.into(),
+            &self.chain_id.db.into(),
             height,
         )
         .await
@@ -79,19 +79,27 @@ impl TransactionFilter {
 
     pub(crate) async fn update_contract_abi(
         &self,
-        internal_chain_id: InternalChainId,
-        contract: Address,
-        abi: String,
+        internal_chain_id: &InternalChainId,
+        contract: &Address,
+        description: &String,
+        generated_abi: &GeneratedAbi,
     ) -> Result<bool, IndexerError> {
         let mut tx = self.pg_pool.begin().await?;
-        let result = update_contract_abi(&mut tx, internal_chain_id, contract, abi).await?;
+        let result = update_contract_abi(
+            &mut tx,
+            internal_chain_id,
+            contract,
+            description,
+            generated_abi,
+        )
+        .await?;
         tx.commit().await?;
         Ok(result)
     }
 
     pub(crate) async fn register_abi_dependency(
         &self,
-        commit: GitCommitHash,
+        commit: &GitCommitHash,
     ) -> Result<bool, IndexerError> {
         let mut tx = self.pg_pool.begin().await?;
         let result = ensure_abi_dependency(&mut tx, commit).await?;
@@ -101,9 +109,9 @@ impl TransactionFilter {
 
     pub(crate) async fn generated_abi(
         &self,
-        commit: GitCommitHash,
-        description: String,
-    ) -> Result<Option<String>, IndexerError> {
+        commit: &GitCommitHash,
+        description: &String,
+    ) -> Result<Option<GeneratedAbi>, IndexerError> {
         generated_abi(&mut self.pg_pool.begin().await?, commit, description).await
     }
 }
@@ -179,7 +187,7 @@ impl EthFetcherClient {
 
         let abi_registration = self
             .transaction_filter
-            .abi_registration_at(block_reference.height.into())
+            .abi_registration_at(&block_reference.height.into())
             .await?;
         debug!(
             "{}: contract-addresses: {}",
@@ -290,13 +298,18 @@ impl EthFetcherClient {
             )) => {
                 match self
                     .transaction_filter
-                    .generated_abi(commit.clone(), description.clone())
+                    .generated_abi(&commit, &description)
                     .await?
                 {
-                    Some(abi) => {
+                    Some(generated_abi) => {
                         match self
                             .transaction_filter
-                            .update_contract_abi(internal_chain_id, contract, abi)
+                            .update_contract_abi(
+                                &internal_chain_id,
+                                &contract,
+                                &description,
+                                &generated_abi,
+                            )
                             .await
                         {
                             Ok(true) => {
@@ -315,7 +328,7 @@ impl EthFetcherClient {
 
                         match self
                             .transaction_filter
-                            .register_abi_dependency(commit.clone())
+                            .register_abi_dependency(&commit)
                             .await
                         {
                             Ok(true) => {

@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT abi, command\n            FROM abi.contract\n            WHERE commit = $1\n              AND contract = REPLACE($2, '/', '-'); -- deployments use '/', but abis don't\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "abi",
+        "type_info": "Text"
+      },
+      {
+        "ordinal": 1,
+        "name": "command",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Bytea",
+        "Text"
+      ]
+    },
+    "nullable": [
+      true,
+      true
+    ]
+  },
+  "hash": "33855e461db0174a47f097067cf8ba303703d4033a0a249dfd1736c85311c864"
+}

@@ -128,3 +128,8 @@ impl Display for AbiRegistration {
         write!(f, "{}", addresses.join(", "))
     }
 }
+
+pub struct GeneratedAbi {
+    pub abi: String,
+    pub command: String,
+}
