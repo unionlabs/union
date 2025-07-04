@@ -159,7 +159,7 @@ impl ClientType {
     ///
     /// [Base]: https://www.base.org
     /// [L2 settlement]: https://github.com/base/contracts
-    pub const BASE: &'static str = "bob";
+    pub const BASE: &'static str = "base";
 
     pub const SUI: &'static str = "sui";
 

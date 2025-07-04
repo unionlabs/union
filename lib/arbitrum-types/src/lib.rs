@@ -161,8 +161,8 @@ mod tests {
         assert_eq!(
             read_latest_node_created(solidity_slot::U256::from_be_bytes(hex_literal::hex!(
                 "000000000143dd37000000000000011c00000000000001120000000000000111"
-            )),),
+            ))),
             0x000000000000011c,
-        )
+        );
     }
 }

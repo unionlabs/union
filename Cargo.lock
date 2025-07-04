@@ -16271,6 +16271,23 @@ dependencies = [
 ]
 
 [[package]]
+name = "voyager-client-bootstrap-module-base"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "base-light-client-types",
+ "embed-commit",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "serde",
+ "serde_json",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
 name = "voyager-client-bootstrap-module-bob"
 version = "0.0.0"
 dependencies = [
