@@ -149,7 +149,7 @@ members = [
   # "voyager/modules/proof/movement",
   "voyager/modules/proof/sui",
 
-  # "voyager/modules/client/base",
+  "voyager/modules/client/base",
   "voyager/modules/client/bob",
   "voyager/modules/client/arbitrum",
   "voyager/modules/client/cometbls",
