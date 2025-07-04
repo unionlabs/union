@@ -327,6 +327,11 @@
       "counterparty": "babylon.bbn-test-5",
       "client_type": "state-lens/ics23/ics23",
       "refresh_rate": "500"
+    },
+    "4": {
+      "counterparty": "sei.atlantic-2",
+      "client_type": "state-lens/ics23/ics23",
+      "refresh_rate": "500"
     }
   },
   "osmosis.osmo-test-5": {
