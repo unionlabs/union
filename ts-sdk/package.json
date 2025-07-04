@@ -21,6 +21,7 @@
     "./package.json": "./package.json",
     ".": "./src/index.ts",
     "./*": "./src/*.ts",
+    "./examples/*": "./examples/*.ts",
     "./internal/*": null
   },
   "scripts": {
