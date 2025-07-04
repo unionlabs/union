@@ -73,6 +73,7 @@ module zkgm::zkgm_relay {
     
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
 
+    use std::option::{Self, Option};
     use std::string::{Self, String};
     use sui::table::{Self, Table};
     use ibc::commitment;
@@ -107,6 +108,11 @@ module zkgm::zkgm_relay {
 
     const FORWARD_SALT_MAGIC: u256 = 0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
 
+    public struct BasicCoinMetadata has copy, drop {
+        name: String,
+        symbol: String,
+        decimals: u8,
+    }
 
     // Errors
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
@@ -137,7 +143,6 @@ module zkgm::zkgm_relay {
     const E_ACK_AND_PACKET_LENGTH_MISMATCH: u64 = 29;
     const E_INVALID_FORWARD_DESTINATION_CHANNEL_ID: u64 = 30;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
-
 
     public struct IbcAppWitness has drop {}
 
@@ -261,6 +266,103 @@ module zkgm::zkgm_relay {
             channel_id,
             proof_ack,
             proof_height,
+            IbcAppWitness {}
+        );
+    }
+
+    public entry fun send_with_coin<T>(
+        zkgm: &mut RelayStore,
+        ibc_store: &mut ibc::IBCStore,
+        clock: &Clock,
+        coin: Coin<T>,
+        metadata: &CoinMetadata<T>,
+        channel_id: u32,
+        timeout_height: u64,
+        timeout_timestamp: u64,
+        salt: vector<u8>,
+        version: u8,
+        opcode: u8,
+        operand: vector<u8>,
+        ctx: &mut TxContext
+    ) {
+        let instruction = instruction::new(version, opcode, operand);
+        let sender = ctx.sender();
+        let coin = zkgm.verify_internal<T>(
+            ibc_store,
+            option::some(coin),
+            option::some(BasicCoinMetadata {
+                name: coin::get_name(metadata),
+                symbol: string::from_ascii(coin::get_symbol(metadata)),
+                decimals: coin::get_decimals(metadata)
+            }),
+            sender,
+            channel_id,
+            0,
+            instruction,
+            ctx
+        );
+        // This guarantees that the coin is used by some instruction
+        coin.destroy_none();
+
+        let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
+        ibc_store.send_packet(
+            clock,
+            channel_id,
+            timeout_height,
+            timeout_timestamp,
+            zkgm_packet::encode(&zkgm_pack),
+            IbcAppWitness {},
+            ctx
+        );
+    }
+
+    public entry fun recv_packet<T>(
+        ibc_store: &mut ibc::IBCStore,
+        zkgm: &mut RelayStore,
+        clock: &clock::Clock,
+        packet_source_channels: vector<u32>,
+        packet_destination_channels: vector<u32>,
+        packet_data: vector<vector<u8>>,
+        packet_timeout_heights: vector<u64>,
+        packet_timeout_timestamps: vector<u64>,
+        proof: vector<u8>,
+        proof_height: u64,
+        relayer: address,
+        relayer_msgs: vector<vector<u8>>,
+        ctx: &mut TxContext
+    ) {
+        let mut packets = vector::empty();
+        let mut acks = vector::empty();
+        let mut i = 0;
+        while (i < packet_source_channels.length()) {
+            packets.push_back(packet::new(
+                packet_source_channels[i],
+                packet_destination_channels[i],
+                packet_data[i],
+                packet_timeout_heights[i],
+                packet_timeout_timestamps[i],
+            ));
+            acks.push_back(zkgm.process_receive<T>(
+                ibc_store,
+                clock,                
+                packets[i],
+                relayer,
+                relayer_msgs[i],
+                false,
+                ctx
+            ));
+            i = i + 1;
+        };
+
+        ibc::recv_packet(
+            ibc_store,
+            clock,
+            packets,
+            relayer,
+            relayer_msgs,
+            proof,
+            proof_height,
+            acks,
             IbcAppWitness {}
         );
     }
@@ -504,60 +606,9 @@ module zkgm::zkgm_relay {
         };
     }
 
-    public entry fun recv_packet<T>(
-        ibc_store: &mut ibc::IBCStore,
-        zkgm: &mut RelayStore,
-        clock: &clock::Clock,
-        packet_source_channels: vector<u32>,
-        packet_destination_channels: vector<u32>,
-        packet_data: vector<vector<u8>>,
-        packet_timeout_heights: vector<u64>,
-        packet_timeout_timestamps: vector<u64>,
-        proof: vector<u8>,
-        proof_height: u64,
-        relayer: address,
-        relayer_msgs: vector<vector<u8>>,
-        ctx: &mut TxContext
-    ) {
-        let mut packets = vector::empty();
-        let mut acks = vector::empty();
-        let mut i = 0;
-        while (i < packet_source_channels.length()) {
-            packets.push_back(packet::new(
-                packet_source_channels[i],
-                packet_destination_channels[i],
-                packet_data[i],
-                packet_timeout_heights[i],
-                packet_timeout_timestamps[i],
-            ));
-            acks.push_back(zkgm.process_receive<T>(
-                ibc_store,
-                clock,                
-                packets[i],
-                relayer,
-                relayer_msgs[i],
-                false,
-                ctx
-            ));
-            i = i + 1;
-        };
-
-        ibc::recv_packet(
-            ibc_store,
-            clock,
-            packets,
-            relayer,
-            relayer_msgs,
-            proof,
-            proof_height,
-            acks,
-            IbcAppWitness {}
-        );
-    }
-
     fun process_receive<T>(
         zkgm: &mut RelayStore,
-        ibc: &mut IBCStore,
+        ibc: &mut ibc::IBCStore,
         clock: &clock::Clock,
         packet: Packet,
         relayer: address,
@@ -601,7 +652,7 @@ module zkgm::zkgm_relay {
 
     fun execute_internal<T>(
         zkgm: &mut RelayStore,
-        ibc: &mut IBCStore,
+        ibc: &mut ibc::IBCStore,
         clock: &Clock,
         ibc_packet: Packet,
         relayer: address,
@@ -639,6 +690,7 @@ module zkgm::zkgm_relay {
 
                 zkgm.execute_batch<T>(
                     ibc,
+                    clock,
                     ibc_packet,
                     relayer,
                     relayer_msg,
@@ -694,7 +746,7 @@ module zkgm::zkgm_relay {
         ).encode(), 0)
     }
 
-    public fun compute_salt(path: u256, channel: u32, base_token: vector<u8>): vector<u8> {
+    fun compute_salt(path: u256, channel: u32, base_token: vector<u8>): vector<u8> {
         let mut data: vector<u8> = bcs::to_bytes(&path);
         data.append(bcs::to_bytes(&channel));
         data.append(base_token);
@@ -702,7 +754,7 @@ module zkgm::zkgm_relay {
         hash::keccak256(&data)
     }
 
-    public fun distribute_coin<T>(
+    fun distribute_coin<T>(
         relay_store: &mut RelayStore,
         receiver: address,
         amount: u64,
@@ -719,7 +771,7 @@ module zkgm::zkgm_relay {
         transfer::public_transfer(transferred_coin, receiver);
     }
 
-    public fun protocol_fill_mint<T>(
+    fun protocol_fill_mint<T>(
         relay_store: &mut RelayStore,
         channel_id: u32,
         path: u256,
@@ -749,7 +801,7 @@ module zkgm::zkgm_relay {
         ).encode(), 0)
     }
 
-    public fun protocol_fill_unescrow<T>(
+    fun protocol_fill_unescrow<T>(
         zkgm: &mut RelayStore,
         channel_id: u32,
         path: u256,
@@ -813,16 +865,16 @@ module zkgm::zkgm_relay {
         // Instead, they must first fill on destination the orders, awaits finality
         // to settle the forward, then cascade acknowledge.
         if (intent) {
-            return (E_ACK_ERR_ONLYMAKER, 0)
+            return (ACK_ERR_ONLYMAKER, 0)
         };
 
-        let (tail_path, previous_destination_channel_id) = dequeue_channel_from_path(forward.path);
+        let (tail_path, previous_destination_channel_id) = dequeue_channel_from_path(forward.path());
         let (continuation_path, next_source_channel_id) = dequeue_channel_from_path(tail_path);
         if (ibc_packet.destination_channel_id() != previous_destination_channel_id) {
             return (vector::empty(), E_INVALID_FORWARD_DESTINATION_CHANNEL_ID)
         };
 
-        let instruction = if (continuation_path == 0) {
+        let next_instruction = if (continuation_path == 0) {
             *forward.instruction()
         } else {
             instruction::new(
@@ -833,7 +885,7 @@ module zkgm::zkgm_relay {
                     forward.timeout_height(),
                     forward.timeout_timestamp(),
                     *forward.instruction(),
-                )
+                ).encode()
             )
         };
 
@@ -851,14 +903,14 @@ module zkgm::zkgm_relay {
                     next_source_channel_id,
                 ),
                 next_instruction
-            ),encode(),
+            ).encode(),
             IbcAppWitness {},
             ctx
         );
 
         // Guaranteed to be unique by the above sendPacket
         let commitment_key = commitment::batch_packets_commitment_key(
-            commitment::commit_packet(sent_packet)
+            commitment::commit_packet(&sent_packet)
         );
         zkgm.in_flight_packet.add(commitment_key, ibc_packet);
 
@@ -996,7 +1048,8 @@ module zkgm::zkgm_relay {
             table.add(key, value);
         }
     }
-    public fun channel_balance(
+
+    fun channel_balance(
         relay_store: &mut RelayStore,
         channel_id: u32,
         path: u256,
@@ -1068,67 +1121,48 @@ module zkgm::zkgm_relay {
         );
     }
 
-    public entry fun send<T>(
-        zkgm: &mut RelayStore,
-        ibc_store: &mut ibc::IBCStore,
-        clock: &Clock,
-        coin: Coin<T>,
-        metadata: &CoinMetadata<T>,
-        channel_id: u32,
-        timeout_height: u64,
-        timeout_timestamp: u64,
-        salt: vector<u8>,
-        version: u8,
-        opcode: u8,
-        operand: vector<u8>,
-        ctx: &mut TxContext
-    ) {
-        let instruction = instruction::new(version, opcode, operand);
-        let sender = tx_context::sender(ctx);
-        zkgm.verify_internal<T>(ibc_store, coin, metadata, sender, channel_id, 0, instruction, ctx);
-
-        let zkgm_pack = zkgm_packet::new(salt, 0, instruction);
-        ibc_store.send_packet(
-            clock,
-            channel_id,
-            timeout_height,
-            timeout_timestamp,
-            zkgm_packet::encode(&zkgm_pack),
-            IbcAppWitness {},
-            ctx
-        );
-    }
-
     fun verify_internal<T>(
         zkgm: &mut RelayStore,
         ibc_store: &mut ibc::IBCStore,
-        coin: Coin<T>,
-        metadata: &CoinMetadata<T>,
+        coin: Option<Coin<T>>,
+        metadata: Option<BasicCoinMetadata>,
         sender: address,
         channel_id: u32,
         path: u256,
         instruction: Instruction,
         ctx: &mut TxContext
-    ){
+    ): Option<Coin<T>> {
         let version = instruction.version();
         match (instruction.opcode()) {
             OP_FUNGIBLE_ASSET_ORDER => {
                 if (version == INSTR_VERSION_1) {
+                    assert!(coin.is_some() && metadata.is_some(), 1);
                     zkgm.verify_fungible_asset_order<T>(
-                        coin,
-                        metadata,
+                        coin.destroy_some(),
+                        metadata.destroy_some(),
                         sender,
                         channel_id,
                         path,
                         fungible_asset_order::decode(instruction.operand()),
                         ctx
                     );
+                    option::none<Coin<T>>()
                 } else {
-                    abort E_UNSUPPORTED_VERSION;
-                };
+                    abort E_UNSUPPORTED_VERSION
+                }
             },
             OP_BATCH => {
-                
+                assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
+                zkgm.verify_batch<T>(
+                    ibc_store,
+                    coin,
+                    metadata,
+                    sender,
+                    channel_id,
+                    path,
+                    batch::decode(instruction.operand()),
+                    ctx,
+                )
             },
             OP_FORWARD => {
                 assert!(version == INSTR_VERSION_0, E_UNSUPPORTED_VERSION);
@@ -1140,11 +1174,11 @@ module zkgm::zkgm_relay {
                     channel_id,
                     forward::decode(instruction.operand()),
                     ctx,
-                );
+                )
             },
             OP_MULTIPLEX => abort E_NO_MULTIPLEX_OPERATION,
             _ => abort E_UNKNOWN_SYSCALL,
-        };
+        }
     }
 
     fun get_treasury_cap<T>(
@@ -1190,7 +1224,7 @@ module zkgm::zkgm_relay {
     fun verify_fungible_asset_order<T>(
         zkgm: &mut RelayStore,
         coin: Coin<T>,
-        metadata: &CoinMetadata<T>,
+        metadata: BasicCoinMetadata,
         _sender: address,
         channel_id: u32,
         path: u256,
@@ -1204,15 +1238,15 @@ module zkgm::zkgm_relay {
         let token_decimals = order.base_token_decimals();
 
         // TODO(aeryz): handle gas station here
-        if (token_name != coin::get_name(metadata)) {
+        if (token_name != metadata.name) {
             abort E_INVALID_ASSET_NAME
         };
 
-        if (token_symbol != string::from_ascii(coin::get_symbol(metadata))) {
+        if (token_symbol != metadata.symbol) {
             abort E_INVALID_ASSET_SYMBOL
         };
 
-        if (token_decimals != coin::get_decimals(metadata)) {
+        if (token_decimals != metadata.decimals) {
             abort E_INVALID_ASSET_DECIMAL
         };
 
@@ -1268,13 +1302,13 @@ module zkgm::zkgm_relay {
     fun verify_forward<T>(
         zkgm: &mut RelayStore,
         ibc_store: &mut ibc::IBCStore,
-        coin: Coin<T>,
-        metadata: &CoinMetadata<T>,
+        coin: Option<Coin<T>>,
+        metadata: Option<BasicCoinMetadata>,
         sender: address,
         channel_id: u32,
         forward_packet: Forward,
         ctx: &mut TxContext
-    ){
+    ): Option<Coin<T>> {
         let instruction = forward_packet.instruction();
 
         if(!is_allowed_forward(instruction.opcode())) {
@@ -1289,9 +1323,44 @@ module zkgm::zkgm_relay {
             forward_packet.path(),
             *instruction,
             ctx
-        );
+        )
     }
 
+    fun verify_batch<T>(
+        zkgm: &mut RelayStore,
+        ibc_store: &mut ibc::IBCStore,
+        mut coin: Option<Coin<T>>,
+        metadata: Option<BasicCoinMetadata>,
+        sender: address,
+        channel_id: u32,
+        path: u256,
+        batch: Batch,
+        ctx: &mut TxContext
+    ): Option<Coin<T>> {
+        let l = batch.instructions().length();
+        let mut i = 0;
+        while (i < l) {
+            let instruction = batch.instructions()[i];
+            if (is_allowed_batch_instruction(instruction.opcode())) {
+                abort E_INVALID_BATCH_INSTRUCTION;      
+            };
+
+            coin = zkgm.verify_internal<T>(
+                ibc_store,
+                coin,
+                metadata,
+                sender,
+                channel_id,
+                path,
+                instruction,
+                ctx
+            );
+
+            i = i + 1;
+        };
+
+        coin
+    }
 
     fun on_acknowledge_packet<T>(
         zkgm: &mut RelayStore,
@@ -1656,6 +1725,7 @@ module zkgm::zkgm_relay {
             opcode == OP_FUNGIBLE_ASSET_ORDER
     }
 
+    // TODO(aeryz): test this
     fun is_forwarded_packet(mut salt: vector<u8>): bool {
         salt.reverse();
         let salt_u256 = bcs::new(salt).peel_u256();
@@ -1670,6 +1740,23 @@ module zkgm::zkgm_relay {
         let mut data: vector<u8> = bcs::to_bytes(&(index as u256));
         data.append(salt);
         hash::keccak256(&data)
+    }
+
+    fun derive_forward_salt(
+        salt: vector<u8>
+    ): vector<u8> {
+        tint_forward_salt(hash::keccak256(&salt))
+    }
+
+    // TODO(aeryz): test this
+    fun tint_forward_salt(
+        mut salt: vector<u8>
+    ): vector<u8> {
+        salt.reverse();
+        let salt_u256 = bcs::new(salt).peel_u256();
+
+        let salt = FORWARD_SALT_MAGIC | (salt_u256 & (FORWARD_SALT_MAGIC ^ 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF));
+        bcs::to_bytes(&salt)
     }
 
     fun dequeue_channel_from_path(
