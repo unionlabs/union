@@ -1,16 +1,28 @@
 ---
-title: "TypeScript SDK"
+title: "Getting Started"
 ---
 import { Tabs, TabItem } from '@astrojs/starlight/components'
 import PackageManager from '#/components/package-manager/PackageManager.astro'
 
 ## Installation
 
-<PackageManager
-  command='add'
-  packageId='@unionlabs/client'
-  pkgManagers={['bun','pnpm','npm','yarn']}
-/>
+<Tabs syncKey="package-manager">
+<TabItem label="pnpm" icon="pnpm">
+```sh
+pnpm add @unionlabs/sdk@^2
+```
+</TabItem>
+<TabItem label="yarn" icon="seti:yarn">
+```sh
+yarn add @unionlabs/sdk@^2
+```
+</TabItem>
+<TabItem label="npm" icon="seti:npm">
+```sh
+npm install @unionlabs/sdk@^2
+```
+</TabItem>
+</Tabs>
 
 The Union Client is TypeScript-first and framework agnostic.
 At [app.union.build](https://app.union.build) we use [Svelte](https://svelte.dev) but you can use any framework or no frameworks at all.
@@ -26,7 +38,7 @@ If you need testnet tokens for testing, visit https://app.union.build/faucet and
 
 <Tabs>
   <TabItem label='EVM Based Client'>
-```ts twoslash
+```ts
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient, http } from "@unionlabs/client"
 
@@ -40,7 +52,7 @@ const client = createUnionClient({
   </TabItem>
   
   <TabItem label='Cosmos Based Client'>
-```ts twoslash
+```ts
 import {
   http,
   hexToBytes,
@@ -64,7 +76,7 @@ const client = createUnionClient({
 ```
   </TabItem>
   <TabItem label='Multi-Chain Client'>
-```ts twoslash
+```ts
 import { 
   http, 
   hexToBytes,
@@ -137,7 +149,7 @@ console.info(`Transfer hash: ${transfer.value}`)
 ```
   </TabItem>
   <TabItem label='client.ts'>
-```ts twoslash
+```ts
 import { privateKeyToAccount } from "viem/accounts"
 import { createUnionClient, http } from "@unionlabs/client"
 
@@ -152,13 +164,3 @@ export const unionClient = createUnionClient({
 ```
   </TabItem>
 </Tabs>
-
-Run the above example
-
-<PackageManager
-  packageId='tsx'
-  command='dynamic'
-  postfix='main.ts'
-  prefix='PRIVATE_KEY=""'
-  pkgManagers={['bun','pnpm','npm','yarn']}
-/>

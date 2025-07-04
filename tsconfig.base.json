@@ -30,7 +30,6 @@
     "noImplicitThis": true,
     "noUncheckedIndexedAccess": false,
     "strictNullChecks": true,
-    "baseUrl": ".",
     "target": "ES2022",
     "module": "NodeNext",
     "incremental": true,
@@ -40,11 +39,6 @@
         "name": "@effect/language-service",
         "transform": "@effect/language-service/transform"
       }
-    ],
-    "paths": {
-      "@unionlabs/sdk": ["./ts-sdk/src/index.js"],
-      "@unionlabs/sdk/*": ["./ts-sdk/src/*.js", "./ts-sdk/src/*/index.js"],
-      "@unionlabs/client": ["./typescript-sdk/src/mod.js"]
-    }
+    ]
   }
 }

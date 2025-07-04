@@ -2,9 +2,10 @@ import react from "@astrojs/react"
 import sitemap from "@astrojs/sitemap"
 import starlight from "@astrojs/starlight"
 import svelte from "@astrojs/svelte"
-import tailwind from "@astrojs/tailwind"
 import starlightUtils from "@lorenzo_lewis/starlight-utils"
+import tailwindcss from "@tailwindcss/vite"
 import { defineConfig } from "astro/config"
+import ecTwoSlash from "expressive-code-twoslash"
 import starlightHeadingBadges from "starlight-heading-badges"
 import starlightLinksValidator from "starlight-links-validator"
 import starlightThemeRapide from "starlight-theme-rapide"
@@ -26,9 +27,7 @@ export default defineConfig({
   site: SITE_URL,
   output: "static",
   experimental: {
-    serverIslands: true,
     clientPrerender: true,
-    directRenderScript: true,
     contentIntellisense: true,
   },
   trailingSlash: "ignore",
@@ -50,6 +49,7 @@ export default defineConfig({
         compiler: "astro",
         autoInstall: true,
       }),
+      tailwindcss(),
     ],
     ssr: {
       noExternal: ["monaco-editor"],
@@ -85,11 +85,12 @@ export default defineConfig({
       editLink: {
         baseUrl: "https://github.com/unionlabs/union/edit/main/docs/",
       },
-      social: {
-        "github": "https://github.com/unionlabs",
-        "discord": "https://discord.union.build",
-        "x.com": "https://x.com/union_build",
-      },
+      expressiveCode: true,
+      social: [
+        { icon: "github", label: "GitHub", href: "https://github.com/unionlabs" },
+        { icon: "discord", label: "Discord", href: "https://discord.union.build" },
+        { icon: "x.com", label: "X", href: "https://x.com/union_build" },
+      ],
       logo: {
         alt: "Union Logo",
         replacesTitle: true,
@@ -291,8 +292,8 @@ export default defineConfig({
                   link: "/integrations/getting-started",
                 },
                 {
-                  label: "TypeScript SDK",
-                  link: "/integrations/typescript",
+                  label: "TypeScript",
+                  autogenerate: { directory: "/integrations/typescript" },
                 },
                 {
                   label: "GraphQL",
@@ -340,6 +341,11 @@ export default defineConfig({
               link: "/reference/graphql",
               badge: { text: "new", variant: "success" },
             },
+            {
+              label: "Typescript SDK",
+              autogenerate: { directory: "/reference/@unionlabs/sdk" },
+              badge: { text: "evolving", variant: "caution" },
+            },
           ],
         },
       ],
@@ -357,15 +363,10 @@ export default defineConfig({
         "./src/styles/index.css",
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
-        "./src/styles/starlight.css",
         "./node_modules/katex/dist/katex.min.css",
       ],
     }),
     sitemap(),
-    tailwind({
-      applyBaseStyles: false,
-      configFile: "tailwind.config.ts",
-    }),
     svelte(),
     react({
       include: ["**/react/**"],

@@ -1,0 +1,28 @@
+---
+title: Examples
+---
+
+---
+import Code from '#/components/Code.astro'
+import CC from '#/components/CollapsibleCode.astro'
+import { AnchorHeading } from '@astrojs/starlight/components';
+
+## UCS03 Send Funds
+
+<CC
+  samples={[
+    { title: "Babylon → BOB", path: "../../../ts-sdk/examples/ucs03-send-babylon-to-bob.ts" },
+    { title: "Holesky → Xion", path: "../../../ts-sdk/examples/ucs03-send-holesky-to-xion.ts" },
+  ]}
+/>
+
+
+## Sui
+
+<CC
+  samples={[
+    { title: "Get Quote Token", path: "../../../ts-sdk/examples/sui-get-quote-token.ts" },
+    { title: "Get Channel Balance", path: "../../../ts-sdk/examples/sui-get-channel-balance.ts" },
+    { title: "Read Coin Metadata", path: "../../../ts-sdk/examples/sui-read-coin-metadata.ts" },
+  ]}
+/>
