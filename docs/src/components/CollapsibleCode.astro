@@ -2,19 +2,19 @@
 import Code from "#/components/Code.astro"
 import { getFileContent } from "#/lib/node-utilities.js"
 import AnchorHeading from "@astrojs/starlight/components/AnchorHeading.astro"
+import type { ComponentProps } from "astro/types"
 import * as A from "effect/Array"
 import { pipe } from "effect/Function"
-import * as R from "effect/Record"
 
 interface Props {
   samples: {
     title: string
     path: string
   }[]
-  heading?: number | undefined
+  heading?: ComponentProps<typeof AnchorHeading>["level"] | undefined
 }
 
-const { samples, heading = 2 } = Astro.props
+const { samples, heading = 4 } = Astro.props
 
 const resolved = await Promise.all(pipe(
   samples,
@@ -22,15 +22,18 @@ const resolved = await Promise.all(pipe(
     getFileContent({ filepath: path }).then((code) => ({ title, code }) as const)
   ),
 ))
-
-console.log({ resolved })
 ---
 
 {
   resolved.map(({ title, code }) => (
     <>
-      <details class="collapsible-code">
-        <summary>{title}</summary>
+      <details>
+        <summary class="flex">
+          <AnchorHeading
+            level={heading}
+            id={title}
+          >{title}</AnchorHeading>
+        </summary>
         <Code
           {code}
           meta="twoslash"
@@ -43,12 +46,7 @@ console.log({ resolved })
 }
 
 <style is:global>
-details.collapsible-code summary {
-  cursor: pointer;
-  padding: .2rem 0;
-  font-weight: 600;
-}
-details.collapsible-code[open] summary {
-  margin-bottom: .5rem;
+.sl-heading-wrapper {
+display: inline-block;
 }
 </style>
