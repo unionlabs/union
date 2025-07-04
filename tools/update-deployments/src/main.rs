@@ -117,7 +117,7 @@ async fn do_main() -> Result<()> {
                 height = core.height,
                 commit = %core.commit,
                 code_id = core.extra.code_id,
-                "updating core"
+                "updated core"
             );
 
             for (client_type, info) in lightclient {
@@ -130,7 +130,7 @@ async fn do_main() -> Result<()> {
                     height = info.height,
                     commit = %info.commit,
                     code_id = info.extra.code_id,
-                    "updating lightclient {client_type}"
+                    "updated lightclient {client_type}"
                 );
             }
 
@@ -151,7 +151,7 @@ async fn do_main() -> Result<()> {
                     height = ucs00.height,
                     commit = %ucs00.commit,
                     code_id = ucs00.extra.code_id,
-                    "updating app ucs00"
+                    "updated app ucs00"
                 );
             } else {
                 app.ucs00 = None;
@@ -213,7 +213,7 @@ async fn do_main() -> Result<()> {
                     height = ucs03.height,
                     commit = %ucs03.commit,
                     code_id = ucs03.extra.code_id,
-                    "updating app ucs03"
+                    "updated app ucs03"
                 );
             } else {
                 app.ucs03 = None;
@@ -223,7 +223,7 @@ async fn do_main() -> Result<()> {
             deployer,
             sender,
             manager: _,
-            multicall: _,
+            multicall,
             core,
             lightclient,
             app,
@@ -231,6 +231,18 @@ async fn do_main() -> Result<()> {
             let provider = alloy::providers::ProviderBuilder::new_with_network::<AnyNetwork>()
                 .connect(&args.rpc_url)
                 .await?;
+
+            if args.update_deployment_heights {
+                multicall.height =
+                    get_init_height(&provider, multicall.address, args.eth_get_logs_window).await?;
+            }
+            core.commit = get_commit_evm(&provider, core.address).await?;
+            info!(
+                address = %core.address,
+                height = core.height,
+                commit = %core.commit,
+                "updated multicall"
+            );
 
             // always write core
             if args.update_deployment_heights {
@@ -242,7 +254,7 @@ async fn do_main() -> Result<()> {
                 address = %core.address,
                 height = core.height,
                 commit = %core.commit,
-                "updating core"
+                "updated core"
             );
 
             for client_type in &args.lightclient {
@@ -263,7 +275,7 @@ async fn do_main() -> Result<()> {
                     address = %info.address,
                     height = info.height,
                     commit = %info.commit,
-                    "updating lightclient {client_type}"
+                    "updated lightclient {client_type}"
                 );
             }
 
@@ -285,7 +297,7 @@ async fn do_main() -> Result<()> {
                     address = %ucs00.address,
                     height = ucs00.height,
                     commit = %ucs00.commit,
-                    "updating app ucs00"
+                    "updated app ucs00"
                 );
             } else {
                 app.ucs00 = None;
@@ -307,7 +319,7 @@ async fn do_main() -> Result<()> {
                     address = %ucs03.address,
                     height = ucs03.height,
                     commit = %ucs03.commit,
-                    "updating app ucs03"
+                    "updated app ucs03"
                 );
             } else {
                 app.ucs03 = None;

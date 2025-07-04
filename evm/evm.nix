@@ -370,6 +370,24 @@ _: {
           verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
           verifier-url = mkTenderlyVerifierUrl chain-id;
         }
+        rec {
+          chain-id = "84532";
+          ucs04-chain-id = "base.84532";
+
+          name = "base-sepolia";
+          rpc-url = "https://sepolia.base.org";
+          private-key = ''"$(op item get deployer --vault union-testnet-10 --field evm-private-key --reveal)"'';
+          weth = "0x4200000000000000000000000000000000000006";
+          rate-limit-enabled = "false";
+
+          native-token-name = "Ether";
+          native-token-symbol = "ETH";
+          native-token-decimals = 18;
+
+          verifier = "etherscan";
+          verification-key = ''"$(op item get tenderly --vault union-testnet-10 --field contract-verification-api-key --reveal)"'';
+          verifier-url = mkTenderlyVerifierUrl chain-id;
+        }
         # {
         #   network = "0g-testnet";
         #   rpc-url = "https://evmrpc-testnet.0g.ai";
@@ -517,7 +535,7 @@ _: {
               ${ucs04-chain-id} \
               --rpc-url ${rpc-url} \
               --lightclient cometbls --lightclient state-lens/ics23/ics23 --lightclient state-lens/ics23/mpt \
-              --ucs03 --ucs00
+              --ucs03 --ucs00 "$@"
           '';
         };
 
