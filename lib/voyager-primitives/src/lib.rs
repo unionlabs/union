@@ -228,6 +228,12 @@ impl ConsensusType {
     /// [BSC]: https://bnbchain.org
     pub const PARLIA: &'static str = "parlia";
 
+    /// [Base] optimistic L2, settling on Ethereum with a custom OP stack settlement.
+    ///
+    /// [Base]: https://www.base.org
+    /// [custom OP stack]: https://github.com/base/contracts
+    pub const BASE: &'static str = "base";
+
     // lots more to come - near, linea, polygon - stay tuned
 }
 
