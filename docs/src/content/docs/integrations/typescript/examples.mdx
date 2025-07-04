@@ -2,49 +2,27 @@
 title: Examples
 ---
 
+---
 import Code from '#/components/Code.astro'
 import CC from '#/components/CollapsibleCode.astro'
 import { AnchorHeading } from '@astrojs/starlight/components';
 
-## Send
-
-import babylonToBob from '../../../../../../ts-sdk/examples/ucs03-send-babylon-to-bob.ts?raw';
-import holeskyToXion from '../../../../../../ts-sdk/examples/ucs03-send-holesky-to-xion.ts?raw';
+## UCS03 Send Funds
 
 <CC
   samples={[
     { title: "Babylon → BOB", path: "../../../ts-sdk/examples/ucs03-send-babylon-to-bob.ts" },
+    { title: "Holesky → Xion", path: "../../../ts-sdk/examples/ucs03-send-holesky-to-xion.ts" },
   ]}
-  heading={2}
 />
-
-<details>
-<summary>Babylon &rarr; BOB</summary>
-<Code meta="twoslash" code={babylonToBob} lang="ts" />
-</details>
-<details>
-<summary>Holesky &rarr; Xion</summary>
-<Code meta="twoslash" code={holeskyToXion} lang="ts" />
-</details>
 
 
 ## Sui
 
-import suiGetQuoteToken from '../../../../../../ts-sdk/examples/sui-get-quote-token.ts?raw';
-import suiGetChannelBalance from '../../../../../../ts-sdk/examples/sui-get-channel-balance.ts?raw';
-import suiReadCoinMetadata from '../../../../../../ts-sdk/examples/sui-read-coin-metadata.ts?raw';
-
-<details>
-<summary>Get Quote Token</summary>
-<Code meta="twoslash" code={suiGetQuoteToken} lang="ts" />
-</details>
-
-<details>
-<summary>Get Channel Balance</summary>
-<Code meta="twoslash" code={suiGetChannelBalance} lang="ts" />
-</details>
-
-<details>
-<summary>Read Coin Metadata</summary>
-<Code meta="twoslash" code={suiReadCoinMetadata} lang="ts" />
-</details>
+<CC
+  samples={[
+    { title: "Get Quote Token", path: "../../../ts-sdk/examples/sui-get-quote-token.ts" },
+    { title: "Get Channel Balance", path: "../../../ts-sdk/examples/sui-get-channel-balance.ts" },
+    { title: "Read Coin Metadata", path: "../../../ts-sdk/examples/sui-read-coin-metadata.ts" },
+  ]}
+/>

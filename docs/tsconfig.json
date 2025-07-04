@@ -3,6 +3,11 @@
     "astro/tsconfigs/strict",
     "astro/tsconfigs/base"
   ],
+  "references": [
+    {
+      "path": "../ts-sdk"
+    }
+  ],
   "compilerOptions": {
     "verbatimModuleSyntax": true,
     "lib": [
