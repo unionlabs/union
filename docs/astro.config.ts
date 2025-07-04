@@ -363,7 +363,6 @@ export default defineConfig({
         "./src/styles/index.css",
         "./src/styles/fonts.css",
         "./src/styles/tailwind.css",
-        "./src/styles/starlight.css",
         "./node_modules/katex/dist/katex.min.css",
       ],
     }),
