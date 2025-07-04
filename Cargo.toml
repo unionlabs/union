@@ -99,6 +99,7 @@ members = [
   "cosmwasm/deployer",
 
   "cosmwasm/ibc-union/lightclient/arbitrum",
+  "cosmwasm/ibc-union/lightclient/base",
   "cosmwasm/ibc-union/lightclient/berachain",
   "cosmwasm/ibc-union/lightclient/bob",
   "cosmwasm/ibc-union/lightclient/cometbls",
