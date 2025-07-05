@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM v2_sync.create_client_sync\n            WHERE internal_chain_id = $1 AND height = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "e86ea3c29721baa463c52379ef80a2a5c32430682ed884972e9e0775a7229b28"
+}

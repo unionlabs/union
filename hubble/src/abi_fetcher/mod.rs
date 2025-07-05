@@ -10,7 +10,7 @@ mod postgres;
 
 #[derive(Clone, Debug)]
 pub struct AbiDependency {
-    commit: GitCommitHash,
+    pub commit: GitCommitHash,
 }
 
 impl Display for AbiDependency {

@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            DELETE FROM v2_sync.token_bucket_update_sync\n            WHERE internal_chain_id = $1 AND height = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Int8"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "195da67de4206e89395b1024e58c87a744c357d05ea24df766798f28746eb6f3"
+}

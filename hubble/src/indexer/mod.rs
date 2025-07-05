@@ -2,14 +2,17 @@ pub mod api;
 // pub mod aptos;
 mod consumer;
 pub mod dummy;
+mod enrich;
 pub mod ethereum;
 pub mod event;
 mod fetcher;
 mod finalizer;
 mod fixer;
+mod handler;
 pub mod nats;
 mod postgres;
 mod publisher;
+mod record;
 pub mod tendermint;
 
 use std::{future::Future, time::Duration};
@@ -23,7 +26,7 @@ use serde::{Deserialize, Deserializer};
 use tokio::{task::JoinSet, time::sleep};
 use tracing::{error, info, info_span, Instrument};
 
-use crate::indexer::{api::UniversalChainId, nats::NatsConnection};
+use crate::indexer::{event::types::UniversalChainId, nats::NatsConnection};
 
 enum EndOfRunResult {
     Exit,
@@ -43,6 +46,7 @@ pub struct Indexer<T: FetcherClient> {
     pub publisher_config: PublisherConfig,
     pub consumer_config: ConsumerConfig,
     pub context: T::Context,
+    pub drain: bool,
 }
 
 #[derive(Clone, Debug, serde::Deserialize)]
@@ -304,6 +308,7 @@ where
         publisher_config: PublisherConfig,
         consumer_config: ConsumerConfig,
         context: T::Context,
+        drain: bool,
     ) -> Self {
         Indexer {
             pg_pool,
@@ -317,6 +322,7 @@ where
             publisher_config,
             consumer_config,
             context,
+            drain,
         }
     }
 
@@ -486,7 +492,7 @@ impl<T: BlockHandle> HappyRangeFetcher<T> for T {
                     return Err(IndexerError::ErrorReadingBlock(
                         expected_block_height,
                         range,
-                        error.into(),
+                        Box::new(error.into()),
                     ));
                 }
                 None => {
@@ -503,7 +509,9 @@ impl<T: BlockHandle> HappyRangeFetcher<T> for T {
             error!("{}: too many blocks", range);
             return Err(match result {
                 Ok(block) => IndexerError::TooManyBlocks(range, block.reference()),
-                Err(error) => IndexerError::TooManyBlocksError(range, Report::from(error)),
+                Err(error) => {
+                    IndexerError::TooManyBlocksError(range, Box::new(Report::from(error)))
+                }
             });
         }
 

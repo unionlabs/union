@@ -1,84 +1,124 @@
-use alloy::{network::AnyRpcBlock, primitives::Address};
-use itertools::Itertools;
-use serde::{Deserialize, Serialize};
+use alloy::primitives::Address;
 use sqlx::{Postgres, Transaction};
-use time::OffsetDateTime;
 
 use crate::{
+    github_client::GitCommitHash,
     indexer::{
-        api::{BlockHash, BlockHeight, IndexerError},
-        ethereum::block_handle::{BlockInsert, TransactionInsert},
-        event::BlockEvent,
+        api::IndexerError,
+        ethereum::abi::{Abi, AbiRegistration, GeneratedAbi},
+        record::{InternalChainId, PgValue},
     },
-    postgres::ChainId,
 };
 
-pub struct PgLog {
-    pub chain_id: ChainId,
-    pub block_hash: BlockHash,
-    pub height: BlockHeight,
-    pub time: OffsetDateTime,
-    pub data: PgLogData,
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct PgLogData {
-    pub transactions: Vec<TransactionInsert>,
-    pub header: AnyRpcBlock,
-}
-
-impl From<BlockInsert> for PgLog {
-    fn from(block: BlockInsert) -> Self {
-        PgLog {
-            chain_id: block.chain_id,
-            block_hash: block.hash.clone(),
-            height: block.height.try_into().unwrap(),
-            time: block.time,
-            data: PgLogData {
-                header: block.header,
-                transactions: block.transactions,
-            },
-        }
-    }
-}
-
-pub async fn insert_batch_logs(
-    logs: impl IntoIterator<Item = PgLog>,
-) -> Result<Vec<BlockEvent>, IndexerError> {
-    Ok(logs
-        .into_iter()
-        .map(|l| BlockEvent::EthereumLog {
-            internal_chain_id: l.chain_id.db,
-            block_hash: l.block_hash.clone(),
-            data: serde_json::to_value(&l.data).expect("data should be json serializable"),
-            height: l.height,
-            time: l.time,
-        })
-        .collect_vec())
-}
-
-pub async fn active_contracts(
+pub async fn get_abi_registration(
     tx: &mut Transaction<'_, Postgres>,
-    internal_chain_id: i32,
-    height: BlockHeight,
-) -> sqlx::Result<Vec<Address>> {
-    let height: i64 = height.try_into().unwrap();
-
+    internal_chain_id: &InternalChainId,
+    height: &crate::indexer::event::types::BlockHeight,
+) -> Result<AbiRegistration, IndexerError> {
     let result = sqlx::query!(
         r#"
-        SELECT    address
+        SELECT    internal_chain_id, address, abi, description, commit
         FROM      v2_evm.contracts
         WHERE     internal_chain_id = $1
         AND       $2 between start_height and end_height
+        AND       abi IS NOT NULL
         "#,
-        internal_chain_id,
-        height,
+        internal_chain_id.pg_value()?,
+        height.pg_value()?,
     )
     .fetch_all(tx.as_mut())
     .await?
     .into_iter()
-    .map(|record| record.address.parse().expect("address to be valid"))
+    .map(|record| {
+        Ok(Abi {
+            internal_chain_id: record.internal_chain_id.into(),
+            address: record.address.parse::<Address>()?,
+            definition: record.abi.expect("abi not null"),
+            description: record.description.expect("description not null"),
+            commit: GitCommitHash::from_slice(record.commit.as_slice())
+                .map_err(IndexerError::InvalidCommitHashForAbi)?,
+        })
+    })
+    .collect::<Result<Vec<Abi>, IndexerError>>()?
+    .into_iter()
+    .map(|a| (a.address, a))
     .collect();
 
-    Ok(result)
+    Ok(AbiRegistration {
+        administration: result,
+    })
+}
+
+pub async fn ensure_abi_dependency(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    commit: &GitCommitHash,
+) -> Result<bool, IndexerError> {
+    let result = sqlx::query!(
+        "
+            INSERT INTO abi.dependency(commit)
+            VALUES ($1)
+            ON CONFLICT DO NOTHING;
+            ",
+        &commit.0,
+    )
+    .execute(tx.as_mut())
+    .await?;
+
+    Ok(result.rows_affected() > 0)
+}
+
+pub async fn generated_abi(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    commit: &GitCommitHash,
+    description: &String,
+) -> Result<Option<GeneratedAbi>, IndexerError> {
+    Ok(sqlx::query!(
+        "
+            SELECT abi, command
+            FROM abi.contract
+            WHERE commit = $1
+              AND contract = REPLACE($2, '/', '-'); -- deployments use '/', but abis don't
+            ",
+        &commit.0,
+        description,
+    )
+    .fetch_optional(tx.as_mut())
+    .await?
+    .map(|record| GeneratedAbi {
+        abi: record.abi.expect("abi"),
+        command: record.command.expect("command"),
+    }))
+}
+
+pub async fn update_contract_abi(
+    tx: &mut sqlx::Transaction<'_, Postgres>,
+    internal_chain_id: &InternalChainId,
+    contract: &Address,
+    description: &String,
+    generated_abi: &GeneratedAbi,
+) -> Result<bool, IndexerError> {
+    // sqlx bug workaround: temporarily disable client_min_messages to suppress NOTICE messages
+    sqlx::query!("SET LOCAL client_min_messages = WARNING")
+        .execute(tx.as_mut())
+        .await?;
+
+    let result = sqlx::query!(
+        "
+            UPDATE v2_evm.contracts
+            SET abi = $1, version = $2
+            WHERE internal_chain_id = $3 
+            AND address = $4 
+            AND description = $5
+            AND abi <> $1
+        ",
+        generated_abi.abi,
+        generated_abi.command,
+        internal_chain_id.0,
+        format!("{:#x}", contract),
+        description,
+    )
+    .execute(tx.as_mut())
+    .await?;
+
+    Ok(result.rows_affected() > 0)
 }

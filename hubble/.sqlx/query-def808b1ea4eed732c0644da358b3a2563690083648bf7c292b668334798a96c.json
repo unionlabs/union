@@ -1,0 +1,22 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT GREATEST(\n            (SELECT MAX(height) FROM hubble.block_update WHERE universal_chain_id = $1),\n            (SELECT MAX(height) FROM v2_cosmos.events WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1)),\n            (SELECT MAX(height) FROM v2_cosmos.transactions WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1)),\n            (SELECT MAX(height) FROM v2_cosmos.blocks WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1)),\n            (SELECT MAX(height) FROM v2_evm.logs WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1))\n        ) AS max_height\n         ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "max_height",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "def808b1ea4eed732c0644da358b3a2563690083648bf7c292b668334798a96c"
+}
