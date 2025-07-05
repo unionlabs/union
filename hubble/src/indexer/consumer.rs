@@ -17,7 +17,6 @@ use super::{
 };
 use crate::{
     indexer::{
-        api::IndexerId,
         event::{
             hubble::HubbleEvent,
             supported::SupportedBlockEvent,
@@ -32,6 +31,7 @@ use crate::{
                 get_block_updates, insert_block_update, max_event_height, update_block_update,
             },
             chain_context::fetch_chain_context_for_universal_chain_id,
+            lock::try_lock_block,
             replication_reset::{schedule_enrich_reset, schedule_replication_reset},
         },
         record::{
@@ -155,7 +155,7 @@ impl<T: FetcherClient> Indexer<T> {
                 .collect();
 
         // blocks that we already received and updated by this message
-        let updates = block_updates
+        let updates_and_deletes = block_updates
             .values()
             // only consider updating a block when the message sequence is before this message
             .filter(|block_update| block_update.message_sequence < message_meta.message_sequence)
@@ -194,11 +194,18 @@ impl<T: FetcherClient> Indexer<T> {
             })
             .collect_vec();
 
-        let actions = updates
+        let actions = updates_and_deletes
             .into_iter()
             .chain(inserts.into_iter())
             .sorted_by_key(|action| action.height())
             .collect_vec();
+
+        // lock the blocks, so we're not interfering with the enrich process
+        // the message will be nacked if one of the locks fail. they'll be
+        // picked up later
+        for action in &actions {
+            try_lock_block(&mut tx, action.universal_chain_id(), action.height()).await?;
+        }
 
         // fetch the maximum height of currently stored data. we should trigger a sync when
         // changing data at or before this height
@@ -251,14 +258,8 @@ impl<T: FetcherClient> Indexer<T> {
 
             debug!("handling {action} - reset enrich => {should_schedule_enrich_reset} (d: {did_schedule_enrich_reset}, c: {changes}, h: {action_height}, m: {max_event_height})");
             if should_schedule_enrich_reset {
-                schedule_enrich_reset_for_action(
-                    &mut tx,
-                    &self.indexer_id,
-                    action,
-                    max_event_height,
-                    &changes,
-                )
-                .await?;
+                schedule_enrich_reset_for_action(&mut tx, action, max_event_height, &changes)
+                    .await?;
 
                 did_schedule_enrich_reset = true;
             }
@@ -413,14 +414,13 @@ async fn schedule_replication_reset_for_action<'a>(
 
 async fn schedule_enrich_reset_for_action<'a>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    indexer_id: &IndexerId,
     action: &Action<'a>,
     end_inclusive: &BlockHeight,
     changes: &Changes,
 ) -> Result<(), IndexerError> {
     schedule_enrich_reset(
         tx,
-        indexer_id,
+        action.universal_chain_id(),
         &Range::new_from_start_inclusive_end_inclusive(&action.height(), end_inclusive),
         &format!("{action} => {changes}"),
     )
@@ -450,6 +450,14 @@ impl<'a> Action<'a> {
             Action::Delete(_, block_update) => block_update.height,
             Action::Update(_, block_update, _) => block_update.height,
             Action::Insert(_, block_update, _) => block_update.height,
+        }
+    }
+
+    fn universal_chain_id(&'a self) -> &'a UniversalChainId {
+        match &self {
+            Action::Delete(message_meta, _) => &message_meta.universal_chain_id,
+            Action::Update(message_meta, _, _) => &message_meta.universal_chain_id,
+            Action::Insert(message_meta, _, _) => &message_meta.universal_chain_id,
         }
     }
 }

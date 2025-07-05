@@ -1,8 +1,8 @@
 use sqlx::Postgres;
 
 use crate::indexer::{
-    api::{IndexerError, IndexerId},
-    event::types::{BlockHeight, Range},
+    api::IndexerError,
+    event::types::{BlockHeight, Range, UniversalChainId},
     record::{ChainContext, PgValue},
 };
 
@@ -26,7 +26,7 @@ pub async fn schedule_replication_reset(
 
 pub async fn schedule_enrich_reset(
     tx: &mut sqlx::Transaction<'_, Postgres>,
-    indexer_id: &IndexerId,
+    universal_chain_id: &UniversalChainId,
     range: &Range,
     reason: &str,
 ) -> Result<(), IndexerError> {
@@ -35,9 +35,9 @@ pub async fn schedule_enrich_reset(
 
     sqlx::query!(
         "
-        INSERT INTO hubble.block_enrich (indexer_id, start_height, end_height, reason)
+        INSERT INTO hubble.block_enrich (universal_chain_id, start_height, end_height, reason)
         VALUES ($1, $2, $3, $4);",
-        indexer_id,
+        universal_chain_id.pg_value()?,
         start_inclusive.pg_value()?,
         end_exclusive.pg_value()?,
         reason,
