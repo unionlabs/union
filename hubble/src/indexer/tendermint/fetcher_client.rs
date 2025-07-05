@@ -198,12 +198,12 @@ impl TmFetcherClient {
                     );
                     Ok(())
                 },
-                false => Err(IndexerError::ProviderError(eyre!("provider: {:?} at height {} block_results tx events: {} <> transactions events: {}",
+                false => Err(IndexerError::ProviderError(Box::new(eyre!("provider: {:?} at height {} block_results tx events: {} <> transactions events: {}",
                     provider_id,
                     block_results.height,
                     block_tx_event_count,
                     txs_event_count
-                )
+                ))
             ))},
         }
     }
@@ -231,11 +231,13 @@ impl TmFetcherClient {
             chain_id: self.chain_id,
             hash: block_id
                 .hash
-                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
+                .ok_or(IndexerError::ProviderError(Box::new(eyre!(
+                    "expected hash"
+                ))))?
                 .to_string(),
             height: header.height.inner().try_into().unwrap(),
             time: OffsetDateTime::from_unix_timestamp_nanos(header.time.as_unix_nanos().into())
-                .map_err(|err| IndexerError::ProviderError(err.into()))?,
+                .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?,
             data: serde_json::to_value(&header)
                 .unwrap()
                 .replace_escape_chars(),

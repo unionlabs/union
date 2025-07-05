@@ -492,7 +492,7 @@ impl<T: BlockHandle> HappyRangeFetcher<T> for T {
                     return Err(IndexerError::ErrorReadingBlock(
                         expected_block_height,
                         range,
-                        error.into(),
+                        Box::new(error.into()),
                     ));
                 }
                 None => {
@@ -509,7 +509,9 @@ impl<T: BlockHandle> HappyRangeFetcher<T> for T {
             error!("{}: too many blocks", range);
             return Err(match result {
                 Ok(block) => IndexerError::TooManyBlocks(range, block.reference()),
-                Err(error) => IndexerError::TooManyBlocksError(range, Report::from(error)),
+                Err(error) => {
+                    IndexerError::TooManyBlocksError(range, Box::new(Report::from(error)))
+                }
             });
         }
 

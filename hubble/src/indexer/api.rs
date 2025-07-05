@@ -38,21 +38,21 @@ pub enum IndexerError {
     #[error("received unexpected height {0} (range {1}): expecting {2}")]
     UnexpectedHeightRange(BlockHeight, BlockRange, BlockHeight),
     #[error("error reading block {0} (range {1}): {2}")]
-    ErrorReadingBlock(BlockHeight, BlockRange, Report),
+    ErrorReadingBlock(BlockHeight, BlockRange, Box<Report>),
     #[error("expected to receive block {0} (range {1})")]
     MissingBlock(BlockHeight, BlockRange),
     #[error("received block while not expecting more (range {0}): {1}")]
     TooManyBlocks(BlockRange, BlockReference),
     #[error("received error while not expecting more (range {0}): {1}")]
-    TooManyBlocksError(BlockRange, Report),
+    TooManyBlocksError(BlockRange, Box<Report>),
     #[error("no block at: {0}")]
     NoBlock(BlockSelection),
     #[error("database error: {0}")]
     DatabaseError(sqlx::Error),
     #[error("provider error: {0}")]
-    ProviderError(Report),
+    ProviderError(Box<Report>),
     #[error("internal error: {0}")]
-    InternalError(Report),
+    InternalError(Box<Report>),
     #[error("nats publish error: {0}")]
     NatsPublishError(#[from] async_nats::error::Error<PublishErrorKind>),
     #[error("nats consumer error: {0}")]
@@ -86,7 +86,7 @@ pub enum IndexerError {
         String,
         NatsStreamSequence,
         NatsConsumerSequence,
-        ParseIntError,
+        Box<ParseIntError>,
     ),
     #[error("missing message hash: in stream sequence: {0}, consumer_sequence sequence: {1}")]
     NatsMissingMessageHash(NatsStreamSequence, NatsConsumerSequence),
@@ -95,7 +95,7 @@ pub enum IndexerError {
         String,
         NatsStreamSequence,
         NatsConsumerSequence,
-        hex::FromHexError,
+        Box<hex::FromHexError>,
     ),
     #[error(
         "missing universal chain id: in stream sequence: {0}, consumer_sequence sequence: {1}"
@@ -115,7 +115,7 @@ pub enum IndexerError {
         "cannot parse abi encoded message: {0} chain: {1}, contract: {2} ({3}) (with commit {4})"
     )]
     AbiCannotParse(
-        AbiParsingError,
+        Box<AbiParsingError>,
         InternalChainId,
         Address,
         String,
@@ -142,7 +142,7 @@ pub enum IndexerError {
     #[error(
         "zkgm decoding: invalid packet - chain: {0}, channel: {1}, packet-hash: {2}, erorr: {3}"
     )]
-    ZkgmInvalidPacket(InternalChainId, ChannelId, PacketHash, anyhow::Error),
+    ZkgmInvalidPacket(InternalChainId, ChannelId, PacketHash, Box<anyhow::Error>),
     #[error("zkgm decoding: expecting 'tree' attribute - chain: {0}, channel: {1}, packet-hash: {2}, in: {3}")]
     ZkgmExpectingTree(InternalChainId, ChannelId, PacketHash, Value),
     #[error("zkgm decoding: expecting 'flatten' attribute in - chain: {0}, channel: {1}, packet-hash: {2}, in: {3}")]
@@ -173,7 +173,7 @@ pub enum AbiParsingError {
 
 impl From<Report> for IndexerError {
     fn from(error: Report) -> Self {
-        Self::InternalError(error)
+        Self::InternalError(Box::new(error))
     }
 }
 

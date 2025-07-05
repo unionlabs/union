@@ -4,18 +4,18 @@ use crate::indexer::{
     api::IndexerError,
     event::channel_open_ack_event::ChannelOpenAckEvent,
     handler::EventContext,
-    record::{channel_open_ack_record::ChannelOpenAckRecord, ChainContext},
+    record::{
+        change_counter::Changes, channel_open_ack_record::ChannelOpenAckRecord, ChainContext,
+    },
 };
 
 impl<'a> EventContext<'a, ChainContext, ChannelOpenAckEvent> {
     pub async fn handle(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    ) -> Result<(), IndexerError> {
+    ) -> Result<Changes, IndexerError> {
         trace!("handle({self:?})");
 
-        ChannelOpenAckRecord::try_from(self)?.insert(tx).await?;
-
-        Ok(())
+        ChannelOpenAckRecord::try_from(self)?.insert(tx).await
     }
 }

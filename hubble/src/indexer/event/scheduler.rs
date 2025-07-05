@@ -50,7 +50,7 @@ impl<T: FetcherClient> Indexer<T> {
             chunk: None,
             events,
         })
-        .map_err(|e| IndexerError::InternalError(e.into()))?;
+        .map_err(|e| IndexerError::InternalError(Box::new(e.into())))?;
 
         let message_hash = MessageHash::new(&data);
         debug!("event_hash: {message_hash}");

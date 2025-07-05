@@ -69,12 +69,14 @@ impl BlockReferenceProvider for BlockHeader {
             hash: self
                 .block_id
                 .hash
-                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
+                .ok_or(IndexerError::ProviderError(Box::new(eyre!(
+                    "expected hash"
+                ))))?
                 .to_string(),
             timestamp: OffsetDateTime::from_unix_timestamp_nanos(
                 self.header.time.as_unix_nanos().into(),
             )
-            .map_err(|err| IndexerError::ProviderError(err.into()))?,
+            .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?,
         })
     }
 }
@@ -86,12 +88,14 @@ impl BlockReferenceProvider for BlockMeta {
             hash: self
                 .block_id
                 .hash
-                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
+                .ok_or(IndexerError::ProviderError(Box::new(eyre!(
+                    "expected hash"
+                ))))?
                 .to_string(),
             timestamp: OffsetDateTime::from_unix_timestamp_nanos(
                 self.header.time.as_unix_nanos().into(),
             )
-            .map_err(|err| IndexerError::ProviderError(err.into()))?,
+            .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?,
         })
     }
 }

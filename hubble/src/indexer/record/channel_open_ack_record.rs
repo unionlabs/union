@@ -6,7 +6,10 @@ use crate::indexer::{
     api::IndexerError,
     event::{channel_open_ack_event::ChannelOpenAckEvent, types::BlockHeight},
     handler::EventContext,
-    record::{ChainContext, InternalChainId, PgValue, PgValueExt},
+    record::{
+        change_counter::{Changes, HasKind, RecordKind},
+        ChainContext, InternalChainId, PgValue, PgValueExt,
+    },
 };
 
 pub struct ChannelOpenAckRecord {
@@ -23,6 +26,12 @@ pub struct ChannelOpenAckRecord {
     pub counterparty_channel_id: i32,
     pub counterparty_port_id: Vec<u8>,
     pub connection_id: i32,
+}
+
+impl HasKind for ChannelOpenAckRecord {
+    fn kind() -> RecordKind {
+        RecordKind::ChannelOpenAck
+    }
 }
 
 impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ChannelOpenAckEvent>> for ChannelOpenAckRecord {
@@ -50,7 +59,10 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ChannelOpenAckEvent>> for Ch
 }
 
 impl ChannelOpenAckRecord {
-    pub async fn insert(&self, tx: &mut Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    pub async fn insert(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<Changes, IndexerError> {
         trace!("insert({})", self.height);
 
         sqlx::query!(
@@ -88,14 +100,14 @@ impl ChannelOpenAckRecord {
         .execute(&mut **tx)
         .await?;
 
-        Ok(())
+        Ok(Changes::with_single_insert::<Self>())
     }
 
     pub async fn delete_by_chain_and_height(
         tx: &mut Transaction<'_, Postgres>,
         internal_chain_id: InternalChainId,
         height: BlockHeight,
-    ) -> Result<u64, IndexerError> {
+    ) -> Result<Changes, IndexerError> {
         trace!("delete_by_chain_and_height({internal_chain_id}, {height})");
 
         let result = sqlx::query!(
@@ -109,6 +121,6 @@ impl ChannelOpenAckRecord {
         .execute(&mut **tx)
         .await?;
 
-        Ok(result.rows_affected())
+        Ok(Changes::with_deletes::<Self>(result.rows_affected()))
     }
 }

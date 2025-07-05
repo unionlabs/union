@@ -6,7 +6,11 @@ use crate::indexer::{
     api::IndexerError,
     event::types::BlockHeight,
     handler::types::{ChannelMetaData, Transfer},
-    record::{packet_send_record::PacketSendRecord, InternalChainId, PgValue, PgValueExt},
+    record::{
+        change_counter::{Changes, HasKind, RecordKind},
+        packet_send_record::PacketSendRecord,
+        InternalChainId, PgValue, PgValueExt,
+    },
 };
 
 pub struct PacketSendTransfersRecord {
@@ -50,6 +54,11 @@ pub struct PacketSendTransfersRecord {
     pub sort_order: String,
     pub network: String,
     pub counterparty_network: String,
+}
+impl HasKind for PacketSendTransfersRecord {
+    fn kind() -> RecordKind {
+        RecordKind::PacketSendTransfers
+    }
 }
 
 impl TryFrom<(&PacketSendRecord, &Transfer, &ChannelMetaData, &String)>
@@ -111,7 +120,10 @@ impl TryFrom<(&PacketSendRecord, &Transfer, &ChannelMetaData, &String)>
 }
 
 impl PacketSendTransfersRecord {
-    pub async fn insert(&self, tx: &mut Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    pub async fn insert(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<Changes, IndexerError> {
         trace!("insert({})", self.height);
 
         // let x = &self.quote_token[..];
@@ -213,14 +225,14 @@ impl PacketSendTransfersRecord {
         .execute(&mut **tx)
         .await?;
 
-        Ok(())
+        Ok(Changes::with_single_insert::<Self>())
     }
 
     pub async fn delete_by_chain_and_height(
         tx: &mut Transaction<'_, Postgres>,
         internal_chain_id: InternalChainId,
         height: BlockHeight,
-    ) -> Result<u64, IndexerError> {
+    ) -> Result<Changes, IndexerError> {
         trace!("delete_by_chain_and_height({internal_chain_id}, {height})");
 
         let result = sqlx::query!(
@@ -234,6 +246,6 @@ impl PacketSendTransfersRecord {
         .execute(&mut **tx)
         .await?;
 
-        Ok(result.rows_affected())
+        Ok(Changes::with_deletes::<Self>(result.rows_affected()))
     }
 }

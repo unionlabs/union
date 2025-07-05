@@ -5,18 +5,20 @@ use crate::indexer::{
     enrich::enrich,
     event::packet_send_event::PacketSendEvent,
     handler::EventContext,
-    record::{packet_send_record::PacketSendRecord, ChainContext},
+    record::{change_counter::Changes, packet_send_record::PacketSendRecord, ChainContext},
 };
 impl<'a> EventContext<'a, ChainContext, PacketSendEvent> {
     pub async fn handle(
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-    ) -> Result<(), IndexerError> {
+    ) -> Result<Changes, IndexerError> {
         trace!("handle({self:?})");
 
         let record = PacketSendRecord::try_from(self)?;
-        record.insert(tx).await?;
+        let mut changes = Changes::default();
+        changes += record.insert(tx).await?;
+        changes += enrich(tx, record).await?;
 
-        enrich(tx, record).await
+        Ok(changes)
     }
 }

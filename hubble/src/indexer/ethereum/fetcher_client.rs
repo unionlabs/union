@@ -47,7 +47,7 @@ impl BlockReferenceProvider for AnyRpcBlock {
             timestamp: OffsetDateTime::from_unix_timestamp(
                 self.header.timestamp.try_into().unwrap(),
             )
-            .map_err(|err| IndexerError::ProviderError(err.into()))?,
+            .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?,
         })
     }
 }
@@ -217,7 +217,7 @@ impl EthFetcherClient {
             .provider
             .get_logs(&log_filter, Some(provider_id))
             .await
-            .map_err(|err| IndexerError::ProviderError(err.into()))?
+            .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?
             .response;
 
         // The bloom filter returned a false positive, and we don't actually have matching logs.

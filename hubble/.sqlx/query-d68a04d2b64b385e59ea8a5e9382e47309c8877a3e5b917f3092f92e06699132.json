@@ -1,0 +1,19 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n                INSERT INTO v2_cosmos.transactions (internal_chain_id, block_hash, height, hash, data, index) \n                VALUES ($1, $2, $3, $4, $5, $6)\n                ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Int4",
+        "Text",
+        "Int8",
+        "Text",
+        "Jsonb",
+        "Int4"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "d68a04d2b64b385e59ea8a5e9382e47309c8877a3e5b917f3092f92e06699132"
+}
