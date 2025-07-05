@@ -15,6 +15,6 @@ mod provider;
 
 impl From<RpcError<TransportErrorKind>> for IndexerError {
     fn from(error: RpcError<TransportErrorKind>) -> Self {
-        Self::ProviderError(Report::from(error))
+        Self::ProviderError(Box::new(Report::from(error)))
     }
 }

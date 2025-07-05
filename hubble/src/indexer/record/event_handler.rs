@@ -5,6 +5,7 @@ use crate::indexer::{
     api::IndexerError,
     event::{supported::SupportedBlockEvent, types::BlockHeight},
     record::{
+        change_counter::{Changes, LegacyRecord},
         channel_open_ack_record::ChannelOpenAckRecord,
         channel_open_confirm_record::ChannelOpenConfirmRecord,
         channel_open_init_record::ChannelOpenInitRecord,
@@ -14,15 +15,18 @@ use crate::indexer::{
         connection_open_init_record::ConnectionOpenInitRecord,
         connection_open_try_record::ConnectionOpenTryRecord,
         create_client_record::CreateClientRecord,
-        create_lens_client_record::CreateLensClientRecord, packet_ack_record::PacketAckRecord,
-        packet_recv_record::PacketRecvRecord, packet_send_decoded_record::PacketSendDecodedRecord,
+        create_lens_client_record::CreateLensClientRecord,
+        packet_ack_record::PacketAckRecord,
+        packet_recv_record::PacketRecvRecord,
+        packet_send_decoded_record::PacketSendDecodedRecord,
         packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
         packet_send_record::PacketSendRecord,
         packet_send_transfers_record::PacketSendTransfersRecord,
         packet_timeout_record::PacketTimeoutRecord,
         token_bucket_update_record::TokenBucketUpdateRecord,
         update_client_record::UpdateClientRecord,
-        wallet_mutation_entry_record::WalletMutationEntryRecord, write_ack_record::WriteAckRecord,
+        wallet_mutation_entry_record::WalletMutationEntryRecord,
+        write_ack_record::WriteAckRecord,
         ChainContext, InternalChainId, PgValue,
     },
 };
@@ -31,10 +35,14 @@ pub async fn delete_event_data_at_height(
     tx: &mut Transaction<'_, Postgres>,
     internal_chain_id: InternalChainId,
     height: BlockHeight,
-) -> Result<bool, IndexerError> {
+) -> Result<Changes, IndexerError> {
     debug!("delete_event_data_at_height: {internal_chain_id}@{height}");
-    let deleted = if has_event_data_at_height(tx, internal_chain_id, height).await? {
+    let mut changes = Changes::default();
+
+    if has_event_data_at_height(tx, internal_chain_id, height).await? {
         debug!("delete_event_data_at_height: {internal_chain_id}@{height} => deleting");
+
+        changes += Changes::with_single_delete::<LegacyRecord>(); // count doesn't matter, we'll delete these tables once we're in production
 
         sqlx::query!(
             "
@@ -59,43 +67,68 @@ pub async fn delete_event_data_at_height(
         // on the update strategy. Maybe we'll first fetch all existing records to see the impact
         // of deleting them. then we'll have references to all records, so we can delete them
         // one by one.
-        ChannelOpenInitRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        ChannelOpenTryRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        ChannelOpenAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        ChannelOpenConfirmRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        ConnectionOpenInitRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        ConnectionOpenTryRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        ConnectionOpenAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        ConnectionOpenConfirmRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+
+        changes += ChannelOpenInitRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
             .await?;
-        CreateClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        CreateLensClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        UpdateClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        PacketSendRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        PacketRecvRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        WriteAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        PacketAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        PacketTimeoutRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        TokenBucketUpdateRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        WalletMutationEntryRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
-            .await?;
-        PacketSendDecodedRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
-        PacketSendTransfersRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
-            .await?;
-        PacketSendInstructionsSearchRecord::delete_by_chain_and_height(
+        changes +=
+            ChannelOpenTryRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            ChannelOpenAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            ChannelOpenConfirmRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            ConnectionOpenInitRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            ConnectionOpenTryRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            ConnectionOpenAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            ConnectionOpenConfirmRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            CreateClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            CreateLensClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            UpdateClientRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            PacketSendRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            PacketRecvRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            WriteAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            PacketAckRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            PacketTimeoutRecord::delete_by_chain_and_height(tx, internal_chain_id, height).await?;
+        changes +=
+            TokenBucketUpdateRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            WalletMutationEntryRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            PacketSendDecodedRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes +=
+            PacketSendTransfersRecord::delete_by_chain_and_height(tx, internal_chain_id, height)
+                .await?;
+        changes += PacketSendInstructionsSearchRecord::delete_by_chain_and_height(
             tx,
             internal_chain_id,
             height,
         )
         .await?;
-
-        true
     } else {
         debug!("delete_event_data_at_height: {internal_chain_id}@{height} => nothing to delete");
-        false
     };
 
-    Ok(deleted)
+    Ok(changes)
 }
 
 async fn has_event_data_at_height(
@@ -134,67 +167,70 @@ pub async fn handle_block_events(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     chain_context: &ChainContext,
     block_events: &[&SupportedBlockEvent],
-) -> Result<bool, IndexerError> {
-    let mut any_data_changes = false;
+) -> Result<Changes, IndexerError> {
+    let mut changes = Changes::default();
 
     for block_event in block_events {
-        let event_changed_data = handle_block_event(tx, chain_context, block_event).await?;
-        any_data_changes |= event_changed_data
+        changes += handle_block_event(tx, chain_context, block_event).await?;
     }
 
-    Ok(any_data_changes)
+    Ok(changes)
 }
 
 async fn handle_block_event(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     chain_context: &ChainContext,
     block_event: &SupportedBlockEvent,
-) -> Result<bool, IndexerError> {
+) -> Result<Changes, IndexerError> {
     trace!("handling: {block_event:?}");
 
-    match block_event {
+    Ok(match block_event {
         SupportedBlockEvent::EthereumLog {
                         internal_chain_id,
                         block_hash,
                         data,
                         height,
                         time,
-            } => sqlx::query!(
-                "
-            INSERT INTO v2_evm.logs (internal_chain_id, block_hash, data, height, time)
-            VALUES ($1, $2, $3, $4, $5)
-            ",
-                internal_chain_id,
-                block_hash,
-                data,
-                height.pg_value()?,
-                time
-            )
-            .execute(tx.as_mut())
-            .await
-            .map(|_| ())
-            .map_err(IndexerError::DatabaseError),
+            } => {
+                sqlx::query!(
+                    "
+                INSERT INTO v2_evm.logs (internal_chain_id, block_hash, data, height, time)
+                VALUES ($1, $2, $3, $4, $5)
+                ",
+                    internal_chain_id,
+                    block_hash,
+                    data,
+                    height.pg_value()?,
+                    time
+                )
+                .execute(tx.as_mut())
+                .await
+                .map(|_| Changes::with_single_insert::<LegacyRecord>())
+                .map_err(IndexerError::DatabaseError)?
+            },
         SupportedBlockEvent::TendermintBlock {
                 internal_chain_id,
                 hash,
                 data,
                 height,
                 time,
-            } => sqlx::query!(
-                "
-            INSERT INTO v2_cosmos.blocks (internal_chain_id, hash, data, height, time)
-            VALUES ($1, $2, $3, $4, $5)
-            ",
-                internal_chain_id,
-                hash,
-                data,
-                height.pg_value()?,
-                time
-            )
-            .execute(tx.as_mut())
-            .await
-            .map(|_| ())
-            .map_err(IndexerError::DatabaseError),
+            } => {
+                sqlx::query!(
+                    "
+                INSERT INTO v2_cosmos.blocks (internal_chain_id, hash, data, height, time)
+                VALUES ($1, $2, $3, $4, $5)
+                ",
+                    internal_chain_id,
+                    hash,
+                    data,
+                    height.pg_value()?,
+                    time
+                )
+                .execute(tx.as_mut())
+                .await
+                .map(|_| Changes::with_single_insert::<LegacyRecord>())
+                .map_err(IndexerError::DatabaseError)?
+            },
         SupportedBlockEvent::TendermintTransaction {
                 internal_chain_id,
                 block_hash,
@@ -202,15 +238,17 @@ async fn handle_block_event(
                 hash,
                 data,
                 index,
-            } => sqlx::query!("
-            INSERT INTO v2_cosmos.transactions (internal_chain_id, block_hash, height, hash, data, index) 
-            VALUES ($1, $2, $3, $4, $5, $6)
-            ",
-                internal_chain_id, block_hash, height.pg_value()?, hash, data, index)
-            .execute(tx.as_mut())
-            .await
-            .map(|_| ())
-            .map_err(IndexerError::DatabaseError),
+            } => {
+                sqlx::query!("
+                INSERT INTO v2_cosmos.transactions (internal_chain_id, block_hash, height, hash, data, index) 
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ",
+                    internal_chain_id, block_hash, height.pg_value()?, hash, data, index)
+                .execute(tx.as_mut())
+                .await
+                .map(|_| Changes::with_single_insert::<LegacyRecord>())
+                .map_err(IndexerError::DatabaseError)?
+            },
         SupportedBlockEvent::TendermintEvent {
                 internal_chain_id,
                 block_hash,
@@ -221,47 +259,82 @@ async fn handle_block_event(
                 data,
                 time,
                 flow,
-            } =>     sqlx::query!("
-            INSERT INTO v2_cosmos.events (internal_chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time, flow)
-            VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-            ",
-                internal_chain_id,
-                block_hash,
-                height.pg_value()?,
-                transaction_hash as _,
-                index,
-                transaction_index as _,
-                data,
-                time,
-                flow)
-            .execute(tx.as_mut())
-            .await
-            .map(|_| ())
-            .map_err(IndexerError::DatabaseError),
+            } => {
+                sqlx::query!("
+                INSERT INTO v2_cosmos.events (internal_chain_id, block_hash, height, transaction_hash, index, transaction_index, data, time, flow)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+                ",
+                    internal_chain_id,
+                    block_hash,
+                    height.pg_value()?,
+                    transaction_hash as _,
+                    index,
+                    transaction_index as _,
+                    data,
+                    time,
+                    flow)
+                .execute(tx.as_mut())
+                .await
+                .map(|_| Changes::with_single_insert::<LegacyRecord>())
+                .map_err(IndexerError::DatabaseError)?
+            },
         SupportedBlockEvent::EthereumDecodedLog { .. } => {
             trace!("ignore decoded log");
-
-            Ok(())
+            Changes::default()
         },
-        SupportedBlockEvent::ChannelOpenInit { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::ChannelOpenTry { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::ChannelOpenAck { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::ChannelOpenConfirm { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::ConnectionOpenInit { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::ConnectionOpenTry { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::ConnectionOpenAck { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::ConnectionOpenConfirm { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::CreateClient { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::CreateLensClient { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::UpdateClient { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::PacketSend { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::PacketRecv { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::WriteAck { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::PacketAck { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::PacketTimeout { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::TokenBucketUpdate { inner } => chain_context.with_event(inner).handle(tx).await,
-        SupportedBlockEvent::WalletMutationEntry { inner } => chain_context.with_event(inner).handle(tx).await,
-    }?;
-
-    Ok(true)
+        SupportedBlockEvent::ChannelOpenInit { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::ChannelOpenTry { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::ChannelOpenAck { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::ChannelOpenConfirm { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::ConnectionOpenInit { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::ConnectionOpenTry { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::ConnectionOpenAck { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::ConnectionOpenConfirm { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::CreateClient { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::CreateLensClient { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::UpdateClient { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::PacketSend { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::PacketRecv { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::WriteAck { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::PacketAck { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::PacketTimeout { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::TokenBucketUpdate { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+        SupportedBlockEvent::WalletMutationEntry { inner } => {
+            chain_context.with_event(inner).handle(tx).await?
+        },
+    })
 }

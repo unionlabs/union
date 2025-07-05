@@ -161,7 +161,7 @@ impl<T: FetcherClient> Indexer<T> {
             }
             Err(error) => {
                 warn!("error trying to fetch block range to finalize ({error}) => retry later");
-                Err(IndexerError::ProviderError(error))
+                Err(IndexerError::ProviderError(Box::new(error)))
             }
         }
     }

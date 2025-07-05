@@ -21,6 +21,18 @@ pub struct Range {
     pub end_exclusive: u64,
 }
 
+impl Range {
+    pub fn new_from_start_inclusive_end_inclusive(
+        start_inclusive: &BlockHeight,
+        end_inclusive: &BlockHeight,
+    ) -> Self {
+        Self {
+            start_inclusive: start_inclusive.0,
+            end_exclusive: end_inclusive.0 + 1,
+        }
+    }
+}
+
 impl Display for Range {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "[{},{})", self.start_inclusive, self.end_exclusive)

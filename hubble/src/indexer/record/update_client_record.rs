@@ -6,7 +6,10 @@ use crate::indexer::{
     api::IndexerError,
     event::{types::BlockHeight, update_client_event::UpdateClientEvent},
     handler::EventContext,
-    record::{ChainContext, InternalChainId, PgValue},
+    record::{
+        change_counter::{Changes, HasKind, RecordKind},
+        ChainContext, InternalChainId, PgValue,
+    },
 };
 
 pub struct UpdateClientRecord {
@@ -17,6 +20,11 @@ pub struct UpdateClientRecord {
     pub client_id: i32,
     pub timestamp: OffsetDateTime,
     pub counterparty_height: i64,
+}
+impl HasKind for UpdateClientRecord {
+    fn kind() -> RecordKind {
+        RecordKind::UpdateClient
+    }
 }
 
 impl<'a> TryFrom<&'a EventContext<'a, ChainContext, UpdateClientEvent>> for UpdateClientRecord {
@@ -38,7 +46,10 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, UpdateClientEvent>> for Upda
 }
 
 impl UpdateClientRecord {
-    pub async fn insert(&self, tx: &mut Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    pub async fn insert(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<Changes, IndexerError> {
         trace!("insert({})", self.height);
 
         sqlx::query!(
@@ -64,14 +75,14 @@ impl UpdateClientRecord {
         .execute(&mut **tx)
         .await?;
 
-        Ok(())
+        Ok(Changes::with_single_insert::<Self>())
     }
 
     pub async fn delete_by_chain_and_height(
         tx: &mut Transaction<'_, Postgres>,
         internal_chain_id: InternalChainId,
         height: BlockHeight,
-    ) -> Result<u64, IndexerError> {
+    ) -> Result<Changes, IndexerError> {
         trace!("delete_by_chain_and_height({internal_chain_id}, {height})");
 
         let result = sqlx::query!(
@@ -85,6 +96,6 @@ impl UpdateClientRecord {
         .execute(&mut **tx)
         .await?;
 
-        Ok(result.rows_affected())
+        Ok(Changes::with_deletes::<Self>(result.rows_affected()))
     }
 }

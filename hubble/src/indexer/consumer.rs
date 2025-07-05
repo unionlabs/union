@@ -17,12 +17,13 @@ use super::{
 };
 use crate::{
     indexer::{
+        api::IndexerId,
         event::{
             hubble::HubbleEvent,
             supported::SupportedBlockEvent,
             types::{
                 BlockHeight, MessageHash, MessageSequence, NatsConsumerSequence,
-                NatsStreamSequence, UniversalChainId,
+                NatsStreamSequence, Range, UniversalChainId,
             },
         },
         nats::MessageMeta,
@@ -31,9 +32,10 @@ use crate::{
                 get_block_updates, insert_block_update, max_event_height, update_block_update,
             },
             chain_context::fetch_chain_context_for_universal_chain_id,
-            replication_reset::schedule_replication_reset,
+            replication_reset::{schedule_enrich_reset, schedule_replication_reset},
         },
         record::{
+            change_counter::{Changes, RecordKind},
             event_handler::{delete_event_data_at_height, handle_block_events},
             ChainContext,
         },
@@ -200,29 +202,65 @@ impl<T: FetcherClient> Indexer<T> {
 
         // fetch the maximum height of currently stored data. we should trigger a sync when
         // changing data at or before this height
-        let max_event_height = max_event_height(&mut tx, &message_meta.universal_chain_id).await?;
+        let max_event_height = &max_event_height(&mut tx, &message_meta.universal_chain_id).await?;
         debug!(
             "handling {message_meta} - actions: {} (max_event_height: {max_event_height})",
             actions.len()
         );
+
+        // there are two kinds of resets:
+        // - replication-reset: handled by sync postgres cron jobs (legacy)
+        // - enrich-reset: handled by hubble (based on events)
 
         // keep track if we've already scheduled a replication reset. we don't need to schedule another
         // one thereafter, because we're processing blocks from low to high
         // replication resets will be removed once all events are directly inserted
         let mut did_schedule_replication_reset = false;
 
-        for action in actions {
-            let data_changed = process(&mut tx, &chain_context, &action).await?;
+        // keep track if we've already scheduled an enrich reset. we don't need to schedule another
+        // one thereafter, because we're processing blocks from low to high enrich resets will be
+        // removed once all events are directly inserted
+        let mut did_schedule_enrich_reset = false;
 
-            let should_schedule_reset = !did_schedule_replication_reset
-                && data_changed
-                && action.height() <= max_event_height;
+        for action in &actions {
+            let changes = process(&mut tx, &chain_context, action).await?;
 
-            debug!("handling {action} - reset replication => {should_schedule_reset} (d: {did_schedule_replication_reset}, c: {data_changed}, h: {}, m: {max_event_height})", action.height());
-            if should_schedule_reset {
+            let action_height = &action.height();
+            let did_change_before_or_at_latest_height = action_height <= max_event_height;
+
+            // --------------------------------
+            // legacy: notify postgres sync job
+            // --------------------------------
+            let should_schedule_replication_reset = !did_schedule_replication_reset
+                && changes.has_changes_for(&[RecordKind::Legacy])
+                && did_change_before_or_at_latest_height;
+
+            debug!("handling {action} - reset replication => {should_schedule_replication_reset} (d: {did_schedule_replication_reset}, c: {changes}, h: {action_height}, m: {max_event_height})");
+            if should_schedule_replication_reset {
                 schedule_replication_reset_for_action(&mut tx, &chain_context, action).await?;
 
                 did_schedule_replication_reset = true;
+            }
+
+            // ---------------
+            // notify enricher
+            // ---------------
+            let should_schedule_enrich_reset = !did_schedule_enrich_reset
+                && changes.has_changes_matching(should_trigger_enrich_reset)
+                && did_change_before_or_at_latest_height;
+
+            debug!("handling {action} - reset enrich => {should_schedule_enrich_reset} (d: {did_schedule_enrich_reset}, c: {changes}, h: {action_height}, m: {max_event_height})");
+            if should_schedule_enrich_reset {
+                schedule_enrich_reset_for_action(
+                    &mut tx,
+                    &self.indexer_id,
+                    action,
+                    max_event_height,
+                    &changes,
+                )
+                .await?;
+
+                did_schedule_enrich_reset = true;
             }
         }
 
@@ -235,17 +273,58 @@ impl<T: FetcherClient> Indexer<T> {
     }
 }
 
+// filter on changes that affect enrichment
+fn should_trigger_enrich_reset(kind: RecordKind) -> bool {
+    use RecordKind::*;
+    match kind {
+        // ignore legacy record changes
+        Legacy => false,
+        // connection details are used in enrichement
+        ChannelOpenInit => true,
+        ChannelOpenTry => true,
+        ChannelOpenAck => true,
+        ChannelOpenConfirm => true,
+        // connection details are used in enrichement
+        ConnectionOpenInit => true,
+        ConnectionOpenTry => true,
+        ConnectionOpenAck => true,
+        ConnectionOpenConfirm => true,
+        // client details are used in enrichement
+        CreateClient => true,
+        // lens-client does not affect enrichment
+        CreateLensClient => false,
+        // client updates do not affect enrichment
+        UpdateClient => false,
+        // packet-send is enriched upon insertion
+        PacketSend => false,
+        // non-send packet events are not enriched
+        PacketRecv => false,
+        WriteAck => false,
+        PacketAck => false,
+        PacketTimeout => false,
+        // not related to packets
+        TokenBucketUpdate => false,
+        WalletMutationEntry => false,
+        // ignore enriched records
+        PacketSendDecoded => false,
+        PacketSendTransfers => false,
+        PacketSendInstructionsSearch => false,
+    }
+}
+
 // return true if data was changed. this is use to determine if a sync reset is required (will be removed when removing sync process)
 async fn process<'a>(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
     chain_context: &ChainContext,
     action: &Action<'a>,
-) -> Result<bool, IndexerError> {
+) -> Result<Changes, IndexerError> {
+    let start_time = std::time::Instant::now();
+
     info!("handling {action}");
 
     let height = action.height();
 
-    Ok(match action {
+    let result = Ok(match action {
         Action::Delete(message_meta, current) => {
             let new = BlockUpdate {
                 universal_chain_id: current.universal_chain_id.clone(),
@@ -273,8 +352,8 @@ async fn process<'a>(
 
             update_block_update(tx, new).await?;
 
-            delete_block(tx, chain_context, height).await?;
-            insert_block(tx, chain_context, block_events).await?
+            delete_block(tx, chain_context, height).await?
+                + insert_block(tx, chain_context, block_events).await?
         }
         Action::Insert(_, new, block_events) => {
             insert_block_update(tx, new).await?;
@@ -282,17 +361,29 @@ async fn process<'a>(
             // we don't have records before introducing nats, so we need to delete be sure no
             // old data exists. ultimately we can generate block-update records for each known
             // block so this it not required
-            delete_block(tx, chain_context, height).await?;
-            insert_block(tx, chain_context, block_events).await?
+            delete_block(tx, chain_context, height).await?
+                + insert_block(tx, chain_context, block_events).await?
         }
-    })
+    });
+
+    let duration = start_time.elapsed();
+    info!(
+        "handling {action} - done (took {:.2}ms) - {}",
+        duration.as_secs_f64() * 1000.0,
+        match &result {
+            Ok(changes) => format!("changes: {changes}"),
+            Err(err) => format!("error: {err}"),
+        },
+    );
+
+    result
 }
 
 async fn delete_block(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
     chain_context: &ChainContext,
     height: BlockHeight,
-) -> Result<bool, IndexerError> {
+) -> Result<Changes, IndexerError> {
     delete_event_data_at_height(tx, chain_context.internal_chain_id, height).await
 }
 
@@ -300,20 +391,38 @@ async fn insert_block(
     tx: &mut sqlx::Transaction<'static, sqlx::Postgres>,
     chain_context: &ChainContext,
     block_events: &[&SupportedBlockEvent],
-) -> Result<bool, IndexerError> {
+) -> Result<Changes, IndexerError> {
     handle_block_events(tx, chain_context, block_events).await
 }
 
 async fn schedule_replication_reset_for_action<'a>(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     chain_context: &ChainContext,
-    action: Action<'a>,
+    action: &Action<'a>,
 ) -> Result<(), IndexerError> {
     schedule_replication_reset(
         tx,
         chain_context,
         action.height(),
         &format!("block reorg ({action})"),
+    )
+    .await?;
+
+    Ok(())
+}
+
+async fn schedule_enrich_reset_for_action<'a>(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    indexer_id: &IndexerId,
+    action: &Action<'a>,
+    end_inclusive: &BlockHeight,
+    changes: &Changes,
+) -> Result<(), IndexerError> {
+    schedule_enrich_reset(
+        tx,
+        indexer_id,
+        &Range::new_from_start_inclusive_end_inclusive(&action.height(), end_inclusive),
+        &format!("{action} => {changes}"),
     )
     .await?;
 
@@ -443,7 +552,7 @@ fn get_message_meta(message: &async_nats::jetstream::Message) -> Result<MessageM
                         message_sequence.as_str().to_string(),
                         nats_stream_sequence,
                         nats_consumer_sequence,
-                        e,
+                        Box::new(e),
                     )
                 }),
             None => Err(IndexerError::NatsMissingMessageSequence(
@@ -458,7 +567,7 @@ fn get_message_meta(message: &async_nats::jetstream::Message) -> Result<MessageM
                     message_hash.as_str().to_string(),
                     nats_stream_sequence,
                     nats_consumer_sequence,
-                    e,
+                    Box::new(e),
                 )
             }),
             None => Err(IndexerError::NatsMissingMessageHash(

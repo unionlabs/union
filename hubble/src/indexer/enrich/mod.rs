@@ -19,7 +19,7 @@ use crate::indexer::{
         InstructionRootSalt, InstructionVersion, PacketShape, Transfer,
     },
     record::{
-        channel_meta_data::get_channel_meta_data,
+        change_counter::Changes, channel_meta_data::get_channel_meta_data,
         packet_send_decoded_record::PacketSendDecodedRecord,
         packet_send_instructions_search_record::PacketSendInstructionsSearchRecord,
         packet_send_record::PacketSendRecord,
@@ -30,7 +30,9 @@ use crate::indexer::{
 pub async fn enrich(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     record: PacketSendRecord,
-) -> Result<(), IndexerError> {
+) -> Result<Changes, IndexerError> {
+    let mut changes = Changes::default();
+
     let internal_chain_id: InternalChainId = record.internal_chain_id.into();
     let channel_id: ChannelId = record.channel_id.try_into()?;
     let packet_hash: crate::indexer::event::types::PacketHash =
@@ -38,7 +40,7 @@ pub async fn enrich(
 
     let Some(channel) = get_channel_meta_data(tx, &internal_chain_id, &channel_id).await? else {
         debug!("no channel details for chain {internal_chain_id} and channel {channel_id}");
-        return Ok(());
+        return Ok(changes);
     };
 
     let channel_version = channel.channel_version.clone();
@@ -58,13 +60,13 @@ pub async fn enrich(
                     internal_chain_id,
                     channel_id,
                     packet_hash,
-                    error,
+                    Box::new(error),
                 ));
             }
         },
         _ => {
             debug!("unsupported channel version for chain {internal_chain_id} and channel {channel_id} and version {channel_version}");
-            return Ok(());
+            return Ok(changes);
         }
     };
 
@@ -100,7 +102,7 @@ pub async fn enrich(
         &sort_order,
     )
         .try_into()?;
-    packet_send_decoded_record.insert(tx).await?;
+    changes += packet_send_decoded_record.insert(tx).await?;
 
     for transfer in get_transfers(tx, &record, &channel, &packet_structure, flatten).await? {
         let packet_send_transfers_record: PacketSendTransfersRecord = (
@@ -110,7 +112,7 @@ pub async fn enrich(
             &format!("{sort_order}-{:03}", transfer.transfer_index.0),
         )
             .try_into()?;
-        packet_send_transfers_record.insert(tx).await?;
+        changes += packet_send_transfers_record.insert(tx).await?;
     }
 
     // insert packet send transaction
@@ -122,10 +124,10 @@ pub async fn enrich(
             &instruction.sort_order(&sort_order)?,
         )
             .try_into()?;
-        packet_send_instructions_search_record.insert(tx).await?;
+        changes += packet_send_instructions_search_record.insert(tx).await?;
     }
 
-    Ok(())
+    Ok(changes)
 }
 
 impl Instruction {

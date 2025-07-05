@@ -1,0 +1,17 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO hubble.block_enrich (indexer_id, start_height, end_height, reason)\n        VALUES ($1, $2, $3, $4);",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8",
+        "Int8",
+        "Text"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "cde5c85d7016008884a5ed1b2c84426eb31b06b2529103b89925f1e4dcd3a6fe"
+}

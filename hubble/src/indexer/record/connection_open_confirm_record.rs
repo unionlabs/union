@@ -6,7 +6,10 @@ use crate::indexer::{
     api::IndexerError,
     event::{connection_open_confirm_event::ConnectionOpenConfirmEvent, types::BlockHeight},
     handler::EventContext,
-    record::{ChainContext, InternalChainId, PgValue},
+    record::{
+        change_counter::{Changes, HasKind, RecordKind},
+        ChainContext, InternalChainId, PgValue,
+    },
 };
 
 pub struct ConnectionOpenConfirmRecord {
@@ -20,6 +23,11 @@ pub struct ConnectionOpenConfirmRecord {
     pub client_id: i32,
     pub counterparty_client_id: i32,
     pub counterparty_connection_id: i32,
+}
+impl HasKind for ConnectionOpenConfirmRecord {
+    fn kind() -> RecordKind {
+        RecordKind::ConnectionOpenConfirm
+    }
 }
 
 impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ConnectionOpenConfirmEvent>>
@@ -47,7 +55,10 @@ impl<'a> TryFrom<&'a EventContext<'a, ChainContext, ConnectionOpenConfirmEvent>>
 }
 
 impl ConnectionOpenConfirmRecord {
-    pub async fn insert(&self, tx: &mut Transaction<'_, Postgres>) -> Result<(), IndexerError> {
+    pub async fn insert(
+        &self,
+        tx: &mut Transaction<'_, Postgres>,
+    ) -> Result<Changes, IndexerError> {
         trace!("insert({})", self.height);
 
         sqlx::query!(
@@ -79,14 +90,14 @@ impl ConnectionOpenConfirmRecord {
         .execute(&mut **tx)
         .await?;
 
-        Ok(())
+        Ok(Changes::with_single_insert::<Self>())
     }
 
     pub async fn delete_by_chain_and_height(
         tx: &mut Transaction<'_, Postgres>,
         internal_chain_id: InternalChainId,
         height: BlockHeight,
-    ) -> Result<u64, IndexerError> {
+    ) -> Result<Changes, IndexerError> {
         trace!("delete_by_chain_and_height({internal_chain_id}, {height})");
 
         let result = sqlx::query!(
@@ -100,6 +111,6 @@ impl ConnectionOpenConfirmRecord {
         .execute(&mut **tx)
         .await?;
 
-        Ok(result.rows_affected())
+        Ok(Changes::with_deletes::<Self>(result.rows_affected()))
     }
 }

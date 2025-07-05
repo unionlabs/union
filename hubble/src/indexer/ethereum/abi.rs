@@ -55,9 +55,9 @@ impl Abi {
             })
             .map_err(|err| {
                 IndexerError::AbiCannotParse(
-                    err,
-                    self.internal_chain_id.clone(),
-                    self.address.clone(),
+                    Box::new(err),
+                    self.internal_chain_id,
+                    self.address,
                     self.description.clone(),
                     self.commit.clone(),
                 )
@@ -68,9 +68,9 @@ impl Abi {
             .decode_log_parts(topics, &log.data().data)
             .map_err(|err| {
                 IndexerError::AbiCannotParse(
-                    AbiParsingError::DecodingError(err),
-                    self.internal_chain_id.clone(),
-                    self.address.clone(),
+                    Box::new(AbiParsingError::DecodingError(err)),
+                    self.internal_chain_id,
+                    self.address,
                     self.description.clone(),
                     self.commit.clone(),
                 )

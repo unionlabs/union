@@ -25,6 +25,7 @@ use crate::indexer::{
     },
 };
 
+pub(crate) mod change_counter;
 pub(crate) mod channel_meta_data;
 pub(crate) mod channel_open_ack_record;
 pub(crate) mod channel_open_confirm_record;
