@@ -200,7 +200,10 @@ mod tests {
                 .expect("Failed to rollback transaction");
 
             // Try to acquire the same lock in a new transaction - this will FAIL with session locks
-            let mut tx2 = pool.begin().await.expect("Failed to begin second transaction");
+            let mut tx2 = pool
+                .begin()
+                .await
+                .expect("Failed to begin second transaction");
             let result = try_lock_block(&mut tx2, &chain_id, block_height).await;
 
             // This demonstrates the problem: the lock is still held even though the transaction was rolled back
@@ -209,7 +212,9 @@ mod tests {
                 "Lock should still be held (demonstrating the problem with session-scoped locks)"
             );
 
-            tx2.rollback().await.expect("Failed to rollback second transaction");
+            tx2.rollback()
+                .await
+                .expect("Failed to rollback second transaction");
 
             // We need to manually release the session lock
             let lock_key = calculate_lock_key(&chain_id, block_height);
@@ -252,7 +257,10 @@ mod tests {
                 .expect("Failed to rollback transaction");
 
             // Try to acquire the same lock in a new transaction - this should SUCCEED with transaction locks
-            let mut tx2 = pool.begin().await.expect("Failed to begin second transaction");
+            let mut tx2 = pool
+                .begin()
+                .await
+                .expect("Failed to begin second transaction");
             let result = try_lock_block(&mut tx2, &chain_id, block_height).await;
 
             // This verifies the fix: the lock should be available since the previous transaction was rolled back
@@ -261,7 +269,9 @@ mod tests {
                 "Lock should be available after previous transaction rollback (verifying transaction-scoped behavior)"
             );
 
-            tx2.rollback().await.expect("Failed to rollback second transaction");
+            tx2.rollback()
+                .await
+                .expect("Failed to rollback second transaction");
         }
 
         // Test: Transaction-scoped locks should be released on commit
@@ -273,12 +283,13 @@ mod tests {
                 .expect("First lock attempt should succeed");
 
             // Commit transaction - with transaction locks, the lock is automatically released
-            tx1.commit()
-                .await
-                .expect("Failed to commit transaction");
+            tx1.commit().await.expect("Failed to commit transaction");
 
             // Try to acquire the same lock in a new transaction - this should SUCCEED with transaction locks
-            let mut tx2 = pool.begin().await.expect("Failed to begin second transaction");
+            let mut tx2 = pool
+                .begin()
+                .await
+                .expect("Failed to begin second transaction");
             let result = try_lock_block(&mut tx2, &chain_id, block_height).await;
 
             // This verifies the fix: the lock should be available since the previous transaction was committed
@@ -287,7 +298,9 @@ mod tests {
                 "Lock should be available after previous transaction commit (verifying transaction-scoped behavior)"
             );
 
-            tx2.rollback().await.expect("Failed to rollback second transaction");
+            tx2.rollback()
+                .await
+                .expect("Failed to rollback second transaction");
         }
 
         pool.close().await;

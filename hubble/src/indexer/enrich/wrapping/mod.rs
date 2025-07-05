@@ -124,7 +124,7 @@ fn wrap_is_same_as_predict_wrapped_address(
                 minter,
             ),
             match minter {
-                Minter::Cw20(_) => quote_denom.to_bech32_decoded(), // cw20 wrapper is a bech32 encoded address => to canoncial
+                Minter::Cw20(_) => quote_denom.to_bech32_decoded(), // cw20 wrapper is a bech32 encoded address => to canonical
                 Minter::OsmosisTokenfactory(_) => Ok(quote_denom.clone()), // osmosis wrapped address is something like 'factory/osmo13ulc6pq etc'
             },
         ),

@@ -79,7 +79,7 @@ impl Serialize for BatchPacketAck {
 
         if self.instructions.len() != self.acknowledgements.len() {
             return Err(S::Error::custom(format!(
-                "instructions count {} <> acknowlegements count {}",
+                "instructions count {} <> acknowledgements count {}",
                 &self.instructions.len(),
                 self.acknowledgements.len()
             )));
