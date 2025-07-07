@@ -36,7 +36,7 @@ cometbft-rpc       = { workspace = true }
 embed-commit       = { workspace = true }
 futures            = { workspace = true, features = ["async-await"] }
 hex                = { workspace = true }
-hex-literal        = "0.4"
+hex-literal        = { workspace = true }
 itertools          = { workspace = true }
 jsonrpsee          = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
 lazy_static        = { workspace = true }
