@@ -1,13 +1,19 @@
-import { getFullnodeUrl } from "@mysten/sui/client"
+/**
+ * @title Mint Token Write
+ */
+/// <reference types="effect" />
+// @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
+// @ts-ignore
+BigInt["prototype"].toJSON = function() {
+  return this.toString()
+}
+// ---cut---
+/*
 import { Ed25519Keypair } from "@mysten/sui/keypairs/ed25519"
 import { Transaction } from "@mysten/sui/transactions"
 import { Effect } from "effect"
 import { createSuiPublicClient } from "../src/sui/client.js"
 import { writeContract } from "../src/sui/contract.js"
-// @ts-ignore
-BigInt["prototype"].toJSON = function() {
-  return this.toString()
-}
 const MNEMONIC = process.env.MNEMONIC || "memo memo memo"
 
 Effect.runPromiseExit(
@@ -44,3 +50,4 @@ Effect.runPromiseExit(
     console.info("Transaction result:", result)
   }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
+*/
