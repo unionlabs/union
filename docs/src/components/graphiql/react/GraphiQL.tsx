@@ -26,7 +26,7 @@ const DEFAULT_QUERY = dedent(/* GraphQL */ `
       receiver_canonical
       base_amount
       base_token_meta {
-        // denom
+        # denom
         representations { name symbol decimals }
       }
       source_universal_chain_id

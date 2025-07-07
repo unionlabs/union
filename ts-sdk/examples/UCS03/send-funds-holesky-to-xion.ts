@@ -1,3 +1,8 @@
+/**
+ * @title Send Funds Holesky → Xion
+ * @description Example transfer from Holesky to Xion.
+ * @badge ✓:success
+ */
 /// <reference types="effect" />
 /// <reference types="viem" />
 // @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}

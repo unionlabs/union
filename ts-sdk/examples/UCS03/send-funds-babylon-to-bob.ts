@@ -1,3 +1,8 @@
+/**
+ * @title Babylon → BOB
+ * @description Example transfer from Babylon to BOB.
+ * @badge ✓:success
+ */
 /// <reference types="effect" />
 /// <reference types="viem" />
 /// <reference types="@cosmjs/proto-signing" />
