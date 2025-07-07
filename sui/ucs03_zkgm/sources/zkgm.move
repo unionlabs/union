@@ -59,31 +59,32 @@
 // TITLE.
 
 module zkgm::zkgm_relay {
+    use std::option::{Self, Option};
+    use std::string::{Self, String};
+    use std::type_name::{Self};
+
+    use sui::balance::{Self};
+    use sui::bcs;
+    use sui::clock::Clock; 
+    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
+    use sui::event;
+    use sui::hash;
+    use sui::object_bag::{Self, ObjectBag};
+    use sui::table::{Self, Table};
+
+    use ibc::commitment;
     use ibc::ibc;
     use ibc::packet::{Self, Packet};
-    use zkgm::instruction::{Self, Instruction};
-    use zkgm::zkgm_packet::{Self};
-    use zkgm::forward::{Self, Forward};
-    use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
-    use zkgm::fungible_asset_order_ack::{Self};
+
     use zkgm::ack;
     use zkgm::batch::{Self, Batch};
     use zkgm::batch_ack;
-    use sui::clock::Clock;
-    
-    use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
-
-    use std::option::{Self, Option};
-    use std::string::{Self, String};
-    use sui::table::{Self, Table};
-    use ibc::commitment;
-    use sui::bcs;
-    use sui::clock;
-    use sui::event;
-    use sui::object_bag::{Self, ObjectBag};
-    use std::type_name::{Self};
-    use sui::balance::{Self};
-    use sui::hash::{Self};
+    use zkgm::forward::{Self, Forward};
+    use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
+    use zkgm::fungible_asset_order_ack;
+    use zkgm::helper;
+    use zkgm::instruction::{Self, Instruction};
+    use zkgm::zkgm_packet;
 
     // Constants
     const VERSION: vector<u8> = b"ucs03-zkgm-0";
@@ -106,8 +107,6 @@ module zkgm::zkgm_relay {
     const FILL_TYPE_MARKETMAKER: u256 = 0xD1CEC45E;
     const ACK_EMPTY: vector<u8> = x"";
 
-    const FORWARD_SALT_MAGIC: u256 = 0xC0DE00000000000000000000000000000000000000000000000000000000BABE;
-
     public struct BasicCoinMetadata has copy, drop {
         name: String,
         symbol: String,
@@ -116,7 +115,6 @@ module zkgm::zkgm_relay {
 
     // Errors
     const ACK_ERR_ONLYMAKER: vector<u8> = b"DEADC0DE";
-    const E_INVALID_HOPS: u64 = 2;
     const E_INVALID_IBC_VERSION: u64 = 3;
     const E_INFINITE_GAME: u64 = 4;
     const E_UNSUPPORTED_VERSION: u64 = 5;
@@ -319,7 +317,7 @@ module zkgm::zkgm_relay {
     public entry fun recv_packet<T>(
         ibc_store: &mut ibc::IBCStore,
         zkgm: &mut RelayStore,
-        clock: &clock::Clock,
+        clock: &Clock,
         packet_source_channels: vector<u32>,
         packet_destination_channels: vector<u32>,
         packet_data: vector<vector<u8>>,
@@ -437,7 +435,7 @@ module zkgm::zkgm_relay {
 
         let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
 
-        if (is_forwarded_packet(zkgm_packet.salt())) {
+        if (helper::is_forwarded_packet(zkgm_packet.salt())) {
             let packet_hash = commitment::commit_packet(&ibc_packet)  ;
             if (zkgm.in_flight_packet.contains(packet_hash)) {
                 let parent = zkgm.in_flight_packet.remove(packet_hash);
@@ -487,129 +485,10 @@ module zkgm::zkgm_relay {
         relay_store.type_name_t_to_capability.add(string::from_ascii(key), capability)
     }
 
-    fun is_valid_version(version_bytes: String): bool {
-        version_bytes == string::utf8(VERSION)
-    }
-
-    fun update_channel_path(path: u256, next_channel_id: u32): u256 {
-        if (path == 0) {
-            return (next_channel_id as u256)
-        };
-        let next_hop_index = ((fls(path) / 32) as u8) + 1;
-        if (next_hop_index > 7) {
-            abort E_INVALID_HOPS
-        };
-
-        let next_channel = (((next_channel_id as u256) << (next_hop_index * 32)) as u256)
-            | path;
-        (next_channel as u256)
-    }
-
-    fun reverse_channel_path(mut path: u256): u256 {
-        let mut reversed_path = 0;
-        loop {
-            // body always runs once
-            let (tail, head) = pop_channel_from_path(path);
-            reversed_path = update_channel_path(reversed_path, head);
-            path = tail;
-            // exit once path == 0
-            if (path == 0) {
-                break
-            }
-        };
-        reversed_path
-    }
-
-
-    fun pop_channel_from_path(path: u256) : (u256, u32){
-        if (path == 0) {
-            return (0, 0)
-        };
-        let current_hop_index = ((fls(path) / 32)) as u8;
-        let clear_shift = ((8-current_hop_index) * 32) as u8;
-        return (
-            (path << clear_shift) >> clear_shift,
-            (path >> (current_hop_index * 32)) as u32
-        )
-
-    }
-
-    /// Find last set (most significant bit).
-    /// Returns the index of the most significant bit of `x`.
-    /// If `x` is zero, returns 256.
-    fun fls(mut x: u256): u256 {
-        if (x == 0) {
-            return 256
-        };
-
-        let mut r: u256 = 0;
-
-        // Check higher 128 bits
-        if (x > 0xffffffffffffffffffffffffffffffff) {
-            r = 128;
-            x = x >> 128;
-        };
-
-        // Check higher 64 bits
-        if (x > 0xffffffffffffffff) {
-            r = r + 64;
-            x = x >> 64;
-        };
-
-        // Check higher 32 bits
-        if (x > 0xffffffff) {
-            r = r + 32;
-            x = x >> 32;
-        };
-
-        // Check higher 16 bits
-        if (x > 0xffff) {
-            r = r + 16;
-            x = x >> 16;
-        };
-
-        // Check higher 8 bits
-        if (x > 0xff) {
-            r = r + 8;
-            x = x >> 8;
-        };
-
-        // Check higher 4 bits
-        if (x > 0xf) {
-            r = r + 4;
-            x = x >> 4;
-        };
-
-        // Check higher 2 bits
-        if (x > 0x3) {
-            r = r + 2;
-            x = x >> 2;
-        };
-
-        // Check higher 1 bit
-        if (x > 0x1) {
-            r = r + 1;
-        };
-
-        r
-    }
-
-    fun save_token_origin(
-        zkgm: &mut RelayStore,
-        wrapped_token: vector<u8>,
-        path: u256,
-        channel_id: u32
-    ) {
-        let updated_channel_path = update_channel_path(path, channel_id);
-        if (!zkgm.token_origin.contains(wrapped_token)) {
-            zkgm.token_origin.add(wrapped_token, updated_channel_path);
-        };
-    }
-
     fun process_receive<T>(
         zkgm: &mut RelayStore,
         ibc: &mut ibc::IBCStore,
-        clock: &clock::Clock,
+        clock: &Clock,
         packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
@@ -816,7 +695,7 @@ module zkgm::zkgm_relay {
 
         if (zkgm.decrease_outstanding(
             channel_id,
-            reverse_channel_path(path), 
+            helper::reverse_channel_path(path), 
             quote_token, 
             (quote_amount + fee)as u256
         ) != 0) {
@@ -854,7 +733,7 @@ module zkgm::zkgm_relay {
         intent: bool,
         ctx: &mut TxContext
     ): (vector<u8>, u64) {
-        if (!is_allowed_forward(forward.instruction().opcode())) {
+        if (!helper::is_allowed_forward(forward.instruction().opcode())) {
             return (vector::empty(), E_INVALID_FORWARD_INSTRUCTION)
         };
 
@@ -868,8 +747,8 @@ module zkgm::zkgm_relay {
             return (ACK_ERR_ONLYMAKER, 0)
         };
 
-        let (tail_path, previous_destination_channel_id) = dequeue_channel_from_path(forward.path());
-        let (continuation_path, next_source_channel_id) = dequeue_channel_from_path(tail_path);
+        let (tail_path, previous_destination_channel_id) = helper::dequeue_channel_from_path(forward.path());
+        let (continuation_path, next_source_channel_id) = helper::dequeue_channel_from_path(tail_path);
         if (ibc_packet.destination_channel_id() != previous_destination_channel_id) {
             return (vector::empty(), E_INVALID_FORWARD_DESTINATION_CHANNEL_ID)
         };
@@ -895,9 +774,9 @@ module zkgm::zkgm_relay {
             forward.timeout_height(),
             forward.timeout_timestamp(),
             zkgm_packet::new(
-                derive_forward_salt(salt),
-                update_channel_path(
-                    update_channel_path(
+                helper::derive_forward_salt(salt),
+                helper::update_channel_path(
+                    helper::update_channel_path(
                         path, previous_destination_channel_id,
                     ),
                     next_source_channel_id,
@@ -936,7 +815,7 @@ module zkgm::zkgm_relay {
         let mut i = 0;
         while (i < l) {
             let instruction = batch.instructions()[i];  
-            if (!is_allowed_batch_instruction(instruction.opcode())) {
+            if (!helper::is_allowed_batch_instruction(instruction.opcode())) {
                 return (vector::empty(), E_INVALID_BATCH_INSTRUCTION);
             };
 
@@ -946,7 +825,7 @@ module zkgm::zkgm_relay {
                 ibc_packet,
                 relayer,
                 relayer_msg,
-                derive_batch_salt(i, salt),
+                helper::derive_batch_salt(i, salt),
                 path,
                 instruction,
                 intent,
@@ -1181,46 +1060,6 @@ module zkgm::zkgm_relay {
         }
     }
 
-    fun get_treasury_cap<T>(
-        zkgm: &mut RelayStore
-    ): &mut TreasuryCap<T> {
-        let typename_t = type_name::get<T>();
-        let key = string::from_ascii(typename_t.into_string());
-        if (!zkgm.type_name_t_to_capability.contains(key)) {
-            abort E_NO_TREASURY_CAPABILITY             
-        };
-        zkgm.type_name_t_to_capability.borrow_mut(key)
-    }
-
-    fun claim_wrapped_denom<T>(
-        relay_store: &mut RelayStore,
-        wrapped_denom: vector<u8>
-    ): bool {
-        let typename_t = type_name::get<T>();
-        let key = string::from_ascii(type_name::into_string(typename_t));
-        if (!relay_store.wrapped_denom_to_t.contains(wrapped_denom)) {
-            relay_store.wrapped_denom_to_t.add(wrapped_denom, key);
-            true
-        } else {
-            let claimed_key = relay_store.wrapped_denom_to_t.borrow(wrapped_denom);
-            claimed_key == key
-        }
-    }
-
-    fun save_coin_to_bag<T>(
-        relay_store: &mut RelayStore,
-        coin: Coin<T>
-    ) {
-        let typename_t = type_name::get<T>();
-        let key = type_name::into_string(typename_t);
-        if(relay_store.bag_to_coin.contains(string::from_ascii(key))) {
-            let self_coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
-            coin::join(self_coin, coin)
-        } else{
-            relay_store.bag_to_coin.add(string::from_ascii(key), coin)
-        }
-    }
-
     fun verify_fungible_asset_order<T>(
         zkgm: &mut RelayStore,
         coin: Coin<T>,
@@ -1261,7 +1100,7 @@ module zkgm::zkgm_relay {
         };
 
         let (intermediate_channel_path, destination_channel_id) =
-            pop_channel_from_path(origin);
+            helper::pop_channel_from_path(origin);
 
         let wrapped_token = compute_salt(
             intermediate_channel_path,
@@ -1269,7 +1108,7 @@ module zkgm::zkgm_relay {
             *order.quote_token()
         );
 
-        let is_inverse_intermediate_path = path == reverse_channel_path(intermediate_channel_path);
+        let is_inverse_intermediate_path = path == helper::reverse_channel_path(intermediate_channel_path);
         let is_sending_back_to_same_channel = destination_channel_id == channel_id;
         let is_unwrapping = base_token == wrapped_token;
         let base_token_path = order.base_token_path();
@@ -1311,7 +1150,7 @@ module zkgm::zkgm_relay {
     ): Option<Coin<T>> {
         let instruction = forward_packet.instruction();
 
-        if(!is_allowed_forward(instruction.opcode())) {
+        if(!helper::is_allowed_forward(instruction.opcode())) {
             abort E_INVALID_FORWARD_INSTRUCTION
         };
         zkgm.verify_internal<T>(
@@ -1341,7 +1180,7 @@ module zkgm::zkgm_relay {
         let mut i = 0;
         while (i < l) {
             let instruction = batch.instructions()[i];
-            if (is_allowed_batch_instruction(instruction.opcode())) {
+            if (helper::is_allowed_batch_instruction(instruction.opcode())) {
                 abort E_INVALID_BATCH_INSTRUCTION;      
             };
 
@@ -1371,7 +1210,7 @@ module zkgm::zkgm_relay {
         ctx: &mut TxContext,
     ) {
         let zkgm_packet = zkgm_packet::decode(ibc_packet.data());
-        if (is_forwarded_packet(zkgm_packet.salt())) {
+        if (helper::is_forwarded_packet(zkgm_packet.salt())) {
             let packet_hash = commitment::commit_packet(&ibc_packet);
 
             if (zkgm.in_flight_packet.contains(packet_hash)) {
@@ -1491,7 +1330,7 @@ module zkgm::zkgm_relay {
                 ibc_packet,
                 relayer,
                 path,
-                derive_batch_salt(i, salt),
+                helper::derive_batch_salt(i, salt),
                 batch.instructions()[i],
                 success,
                 syscall_ack,
@@ -1709,60 +1548,59 @@ module zkgm::zkgm_relay {
         )
     }
 
-    fun is_allowed_batch_instruction(
-        opcode: u8
+    fun get_treasury_cap<T>(
+        zkgm: &mut RelayStore
+    ): &mut TreasuryCap<T> {
+        let typename_t = type_name::get<T>();
+        let key = string::from_ascii(typename_t.into_string());
+        if (!zkgm.type_name_t_to_capability.contains(key)) {
+            abort E_NO_TREASURY_CAPABILITY             
+        };
+        zkgm.type_name_t_to_capability.borrow_mut(key)
+    }
+
+    fun claim_wrapped_denom<T>(
+        relay_store: &mut RelayStore,
+        wrapped_denom: vector<u8>
     ): bool {
-        opcode == OP_MULTIPLEX || opcode == OP_FUNGIBLE_ASSET_ORDER
-            || opcode == OP_STAKE || opcode == OP_UNSTAKE
-            || opcode == OP_WITHDRAW_STAKE
+        let typename_t = type_name::get<T>();
+        let key = string::from_ascii(typename_t.into_string());
+        if (!relay_store.wrapped_denom_to_t.contains(wrapped_denom)) {
+            relay_store.wrapped_denom_to_t.add(wrapped_denom, key);
+            true
+        } else {
+            let claimed_key = relay_store.wrapped_denom_to_t.borrow(wrapped_denom);
+            claimed_key == key
+        }
     }
 
-    fun is_allowed_forward(
-        opcode: u8
-    ): bool {        
-        opcode == OP_MULTIPLEX || 
-            opcode == OP_BATCH || 
-            opcode == OP_FUNGIBLE_ASSET_ORDER
+    fun save_coin_to_bag<T>(
+        relay_store: &mut RelayStore,
+        coin: Coin<T>
+    ) {
+        let typename_t = type_name::get<T>();
+        let key = type_name::into_string(typename_t);
+        if(relay_store.bag_to_coin.contains(string::from_ascii(key))) {
+            let self_coin = relay_store.bag_to_coin.borrow_mut(string::from_ascii(key));
+            coin::join(self_coin, coin)
+        } else{
+            relay_store.bag_to_coin.add(string::from_ascii(key), coin)
+        }
     }
 
-    // TODO(aeryz): test this
-    fun is_forwarded_packet(mut salt: vector<u8>): bool {
-        salt.reverse();
-        let salt_u256 = bcs::new(salt).peel_u256();
-
-        (salt_u256 & FORWARD_SALT_MAGIC) == FORWARD_SALT_MAGIC
+    fun is_valid_version(version_bytes: String): bool {
+        version_bytes == string::utf8(VERSION)
     }
 
-    fun derive_batch_salt(
-        index: u64,
-        salt: vector<u8>
-    ): vector<u8> {
-        let mut data: vector<u8> = bcs::to_bytes(&(index as u256));
-        data.append(salt);
-        hash::keccak256(&data)
-    }
-
-    fun derive_forward_salt(
-        salt: vector<u8>
-    ): vector<u8> {
-        tint_forward_salt(hash::keccak256(&salt))
-    }
-
-    // TODO(aeryz): test this
-    fun tint_forward_salt(
-        mut salt: vector<u8>
-    ): vector<u8> {
-        salt.reverse();
-        let salt_u256 = bcs::new(salt).peel_u256();
-
-        let salt = FORWARD_SALT_MAGIC | (salt_u256 & (FORWARD_SALT_MAGIC ^ 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF));
-        bcs::to_bytes(&salt)
-    }
-
-    fun dequeue_channel_from_path(
+    fun save_token_origin(
+        zkgm: &mut RelayStore,
+        wrapped_token: vector<u8>,
         path: u256,
-    ): (u256, u32) {
-        (path >> 32, path as u32)
+        channel_id: u32
+    ) {
+        let updated_channel_path = helper::update_channel_path(path, channel_id);
+        if (!zkgm.token_origin.contains(wrapped_token)) {
+            zkgm.token_origin.add(wrapped_token, updated_channel_path);
+        };
     }
-
 }
