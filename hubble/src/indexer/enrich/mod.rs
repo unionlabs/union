@@ -12,12 +12,13 @@ use crate::indexer::{
         ucs03_zkgm_0::{packet_ack::decode, PacketHash},
         wrapping::{wrap_direction_chains, IntermediateChannelIds},
     },
-    event::types::ChannelId,
+    event::types::{BlockHeight, ChannelId, UniversalChainId},
     handler::types::{
         string_0x_to_bytes, AddressZkgm, Amount, ChannelMetaData, Fee, Instruction,
         InstructionHash, InstructionOpcode, InstructionPath, InstructionRootPath,
         InstructionRootSalt, InstructionVersion, PacketShape, Transfer,
     },
+    postgres::chain_context::fetch_chain_context_for_universal_chain_id,
     record::{
         change_counter::Changes, channel_meta_data::get_channel_meta_data,
         packet_send_decoded_record::PacketSendDecodedRecord,
@@ -26,6 +27,36 @@ use crate::indexer::{
         packet_send_transfers_record::PacketSendTransfersRecord, InternalChainId,
     },
 };
+
+pub async fn delete_enriched_data_for_block(
+    tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    universal_chain_id: &UniversalChainId,
+    height: &BlockHeight,
+) -> Result<Changes, IndexerError> {
+    let chain_context = fetch_chain_context_for_universal_chain_id(tx, universal_chain_id).await?;
+
+    let mut changes = Changes::default();
+    changes += PacketSendDecodedRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+    changes += PacketSendTransfersRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+    changes += PacketSendInstructionsSearchRecord::delete_by_chain_and_height(
+        tx,
+        chain_context.internal_chain_id,
+        *height,
+    )
+    .await?;
+
+    Ok(changes)
+}
 
 pub async fn enrich(
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,

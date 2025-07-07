@@ -1,3 +1,4 @@
+pub(crate) mod block_enrich;
 pub(crate) mod block_fix;
 pub(crate) mod block_status;
 pub(crate) mod block_update;

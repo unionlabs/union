@@ -4,7 +4,10 @@ use tracing::trace;
 
 use crate::indexer::{
     api::IndexerError,
-    event::{packet_send_event::PacketSendEvent, types::BlockHeight},
+    event::{
+        packet_send_event::PacketSendEvent,
+        types::{BlockHeight, UniversalChainId},
+    },
     handler::EventContext,
     record::{
         change_counter::{Changes, HasKind, RecordKind},
@@ -113,6 +116,65 @@ impl PacketSendRecord {
         .await?;
 
         Ok(Changes::with_single_insert::<Self>())
+    }
+
+    pub async fn find_by_chain_and_height(
+        tx: &mut Transaction<'_, Postgres>,
+        universal_chain_id: &UniversalChainId,
+        height: &BlockHeight,
+    ) -> Result<Vec<PacketSendRecord>, IndexerError> {
+        trace!("find_by_chain_and_height({universal_chain_id}, {height})");
+
+        sqlx::query!(
+            r#"
+            SELECT
+                internal_chain_id,
+                block_hash,
+                height,
+                event_index,
+                timestamp,
+                transaction_hash,
+                transaction_index,
+                transaction_event_index,
+                channel_id,
+                packet_hash,
+                source_channel_id,
+                destination_channel_id,
+                timeout_height,
+                timeout_timestamp,
+                data,
+                network
+            FROM v2_sync.packet_send_sync
+            WHERE internal_chain_id = (SELECT id FROM config.chains WHERE family || '.' || chain_id = $1) AND height = $2
+            "#,
+            universal_chain_id.pg_value()?,
+            height.pg_value()?
+        )
+        .fetch_all(tx.as_mut())
+        .await?
+        .into_iter()
+        .map(|record| {
+            Ok(PacketSendRecord {
+                // error handling can be removed when setting 'NOT NULL' property on columns
+                internal_chain_id: record.internal_chain_id.ok_or_else(||IndexerError::InternalCannotMapFromDatabaseDomain("internal_chain_id".to_string(), "packet_send_sync".to_string()))?,
+                block_hash: record.block_hash.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("block_hash".to_string(), "packet_send_sync".to_string()))?,
+                height: record.height.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("height".to_string(), "packet_send_sync".to_string()))?,
+                event_index: record.event_index.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("event_index".to_string(), "packet_send_sync".to_string()))?,
+                timestamp: record.timestamp.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("timestamp".to_string(), "packet_send_sync".to_string()))?,
+                transaction_hash: record.transaction_hash.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("transaction_hash".to_string(), "packet_send_sync".to_string()))?,
+                transaction_index: record.transaction_index.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("transaction_index".to_string(), "packet_send_sync".to_string()))?,
+                transaction_event_index: record.transaction_event_index,
+                channel_id: record.channel_id.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("channel_id".to_string(), "packet_send_sync".to_string()))?,
+                packet_hash: record.packet_hash.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("packet_hash".to_string(), "packet_send_sync".to_string()))?,
+                source_channel_id: record.source_channel_id.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("source_channel_id".to_string(), "packet_send_sync".to_string()))?,
+                destination_channel_id: record.destination_channel_id.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("destination_channel_id".to_string(), "packet_send_sync".to_string()))?,
+                timeout_height: record.timeout_height.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("timeout_height".to_string(), "packet_send_sync".to_string()))?,
+                timeout_timestamp: record.timeout_timestamp.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("timeout_timestamp".to_string(), "packet_send_sync".to_string()))?,
+                data: record.data.ok_or_else(||IndexerError::InternalCannotMapToDatabaseDomain("data".to_string(), "packet_send_sync".to_string()))?,
+                network: record.network,
+            })
+        })
+        .collect::<Result<Vec<PacketSendRecord>, IndexerError>>()
     }
 
     pub async fn delete_by_chain_and_height(

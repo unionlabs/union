@@ -3,6 +3,7 @@ pub mod api;
 mod consumer;
 pub mod dummy;
 mod enrich;
+mod enricher;
 pub mod ethereum;
 pub mod event;
 mod fetcher;
@@ -45,6 +46,7 @@ pub struct Indexer<T: FetcherClient> {
     pub fixer_config: FixerConfig,
     pub publisher_config: PublisherConfig,
     pub consumer_config: ConsumerConfig,
+    pub enricher_config: EnricherConfig,
     pub context: T::Context,
     pub drain: bool,
 }
@@ -291,6 +293,54 @@ impl Default for FixerConfig {
     }
 }
 
+#[derive(Clone, Debug, serde::Deserialize)]
+pub struct EnricherConfig {
+    // sleep time (in seconds) when there is nothing to enrich.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_later_sleep_seconds",
+        default = "EnricherConfig::default_retry_later_sleep",
+        deserialize_with = "EnricherConfig::deserialize_seconds"
+    )]
+    pub retry_later_sleep: Duration,
+
+    // sleep time (in seconds) when there is an error.
+    // default: 5 seconds
+    #[serde(
+        rename = "retry_error_sleep_seconds",
+        default = "EnricherConfig::default_retry_error_sleep",
+        deserialize_with = "EnricherConfig::deserialize_seconds"
+    )]
+    pub retry_error_sleep: Duration,
+}
+
+impl EnricherConfig {
+    pub fn default_retry_later_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    pub fn default_retry_error_sleep() -> Duration {
+        Duration::from_secs(5)
+    }
+
+    fn deserialize_seconds<'de, D>(deserializer: D) -> Result<Duration, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let seconds = u64::deserialize(deserializer)?;
+        Ok(Duration::from_secs(seconds))
+    }
+}
+
+impl Default for EnricherConfig {
+    fn default() -> Self {
+        EnricherConfig {
+            retry_later_sleep: EnricherConfig::default_retry_later_sleep(),
+            retry_error_sleep: EnricherConfig::default_retry_error_sleep(),
+        }
+    }
+}
+
 impl<T> Indexer<T>
 where
     T: FetcherClient,
@@ -307,6 +357,7 @@ where
         fixer_config: FixerConfig,
         publisher_config: PublisherConfig,
         consumer_config: ConsumerConfig,
+        enricher_config: EnricherConfig,
         context: T::Context,
         drain: bool,
     ) -> Self {
@@ -321,6 +372,7 @@ where
             fixer_config,
             publisher_config,
             consumer_config,
+            enricher_config,
             context,
             drain,
         }
@@ -355,6 +407,13 @@ where
                     join_set.spawn(
                         async move { self_clone.run_fixer(fetcher_client_clone).await }
                             .instrument(info_span!("fixer")),
+                    );
+
+                    let self_clone = self.clone();
+                    let fetcher_client_clone = fetcher_client.clone();
+                    join_set.spawn(
+                        async move { self_clone.run_enricher(fetcher_client_clone).await }
+                            .instrument(info_span!("enricher")),
                     );
 
                     let self_clone = self.clone();

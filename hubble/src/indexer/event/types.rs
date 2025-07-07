@@ -13,7 +13,7 @@ use time::OffsetDateTime;
 
 use crate::indexer::{api::IndexerError, event::supported::SupportedBlockEvent};
 
-#[derive(serde::Serialize, serde::Deserialize, Clone)]
+#[derive(serde::Serialize, serde::Deserialize, Clone, Debug)]
 pub struct Range {
     #[serde(with = "flexible_u64")]
     pub start_inclusive: u64,
@@ -179,6 +179,11 @@ impl Display for ClientType {
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Hash, PartialOrd, Ord, Copy)]
 pub struct BlockHeight(#[serde(with = "flexible_u64")] pub u64);
 
+impl BlockHeight {
+    pub fn next(&self) -> Self {
+        Self(self.0 + 1)
+    }
+}
 impl TryFrom<i64> for BlockHeight {
     type Error = IndexerError;
 

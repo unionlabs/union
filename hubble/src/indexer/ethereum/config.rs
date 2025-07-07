@@ -7,7 +7,7 @@ use crate::indexer::{
     ethereum::{context::EthContext, fetcher_client::EthFetcherClient},
     event::types::UniversalChainId,
     nats::NatsConnection,
-    ConsumerConfig, FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
+    ConsumerConfig, EnricherConfig, FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
 };
 
 const DEFAULT_CHUNK_SIZE: usize = 200;
@@ -27,6 +27,8 @@ pub struct Config {
     pub publisher: PublisherConfig,
     #[serde(default)]
     pub consumer: ConsumerConfig,
+    #[serde(default)]
+    pub enricher: EnricherConfig,
     #[serde(default)]
     pub drain: bool,
 }
@@ -48,6 +50,7 @@ impl Config {
             self.fixer,
             self.publisher,
             self.consumer,
+            self.enricher,
             EthContext {
                 rpc_urls: self.rpc_urls,
             },
