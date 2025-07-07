@@ -334,24 +334,6 @@ module zkgm::zkgm_ethabi {
 
     public fun decode_string(buf: &vector<u8>, index: &mut u64): String {
         string::utf8(decode_bytes(buf, index))
-        // // Read the first 32 bytes to get the length of the string
-        // let mut len_bytes = vector_slice(buf, *index, *index + 32);
-
-        // vector::reverse(&mut len_bytes); // Reverse the bytes to big-endian
-        // let str_len: u256 = bcs::new(len_bytes).peel_u256();
-
-        // *index = *index + 32; // Move the index forward after reading the length
-
-        // // // Read the actual string bytes
-        // let str_bytes = vector_slice(buf, *index, *index + (str_len as u64));
-        // *index = *index + (str_len as u64); // Move the index forward after reading the string
-
-        // // Calculate padding to skip (align to 32-byte boundary)
-        // let padding_len = (32 - ((str_len as u64) % 32)) % 32;
-        // *index = *index + padding_len; // Skip the padding bytes
-
-        // // Convert the string bytes back to a String
-        // string::utf8(str_bytes)
     }
 
     // Decoding an Ethereum address (20 bytes)
