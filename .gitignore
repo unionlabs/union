@@ -102,5 +102,5 @@ ts-sdk/build
 ts-sdk/dist
 ts-sdk/docs
 docs/src/content/docs/reference/@unionlabs/sdk
-docs/src/content/docs/integrations/typescript/examples/
-!docs/src/content/docs/integrations/typescript/examples/index.md
+docs/src/content/docs/integrations/typescript/examples/*
+!docs/src/content/docs/integrations/typescript/examples/index.mdx
