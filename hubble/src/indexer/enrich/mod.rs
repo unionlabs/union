@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use serde_json::{Map, Value};
 use time::{macros::format_description, UtcOffset};
-use tracing::{debug, error};
+use tracing::{debug, error, info};
 
 mod ucs03_zkgm_0;
 mod wrapping;
@@ -14,8 +14,8 @@ use crate::indexer::{
     },
     event::types::{BlockHeight, ChannelId, UniversalChainId},
     handler::types::{
-        string_0x_to_bytes, AddressZkgm, Amount, ChannelMetaData, Fee, Instruction,
-        InstructionHash, InstructionOpcode, InstructionPath, InstructionRootPath,
+        string_0x_to_bytes, AddressCanonical, AddressZkgm, Amount, ChannelMetaData, Fee,
+        Instruction, InstructionHash, InstructionOpcode, InstructionPath, InstructionRootPath,
         InstructionRootSalt, InstructionVersion, PacketShape, Transfer,
     },
     postgres::chain_context::fetch_chain_context_for_universal_chain_id,
@@ -196,7 +196,7 @@ async fn get_transfers(
             None,
         ),
         PacketShape::TransferV0 | PacketShape::TransferV1 => (
-            InstructionDecoder::from_values_with_index(flatten, 1)?,
+            InstructionDecoder::from_values_with_index(flatten, 0)?,
             None,
         ),
     };
@@ -242,13 +242,24 @@ async fn get_transfers(
         &wrap_direction,
     )?;
 
+    info!("packet_hash: {}", hex::encode(record.packet_hash.clone()));
+    info!("message: {}", flatten.iter().join(","));
+    info!("sender: {sender_zkgm:?}");
+    info!("receiver: {receiver_zkgm:?}");
+
     Ok(vec![Transfer {
         transfer_index: transfer_index.into(),
         sender_zkgm: sender_zkgm.clone(),
-        sender_canonical: sender_zkgm.try_into()?,
+        sender_canonical: sender_zkgm.try_into().unwrap_or_else(
+            |_| // TODO: fallback to be compatible with pg implementation. we should actually not expose this packet as a transfer
+                AddressCanonical::from(sender_zkgm.bytes()),
+        ),
         sender_display: sender_zkgm.try_into()?,
         receiver_zkgm: receiver_zkgm.clone(),
-        receiver_canonical: receiver_zkgm.try_into()?,
+        receiver_canonical: receiver_zkgm.try_into().unwrap_or_else(
+            |_| // TODO: fallback to be compatible with pg implementation. we should actually not expose this packet as a transfer
+                AddressCanonical::from(receiver_zkgm.bytes()),
+        ),
         receiver_display: receiver_zkgm.try_into()?,
         base_token,
         base_amount,
