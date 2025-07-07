@@ -7,6 +7,7 @@ import { CosmWasmClient, ExecuteResult, SigningCosmWasmClient } from "@cosmjs/co
 import { FetchHttpClient } from "@effect/platform"
 import { HttpClient, HttpClientRequest } from "@effect/platform"
 import { Context, Data, Effect, flow, Layer, pipe } from "effect"
+import * as O from "effect/Option"
 import { encodeAbiParameters, type Hex } from "viem"
 import * as Ucs03 from "./Ucs03.js"
 import * as Utils from "./Utils.js"
@@ -242,17 +243,25 @@ export class GetBalanceError extends Data.TaggedError("@unionlabs/sdk/Cosmos/Get
  * @since 2.0.0
  */
 export const queryContract = <T = unknown>(
-  client: CosmWasmClient,
   contractAddress: string,
   queryMsg: Record<string, unknown>,
 ) =>
-  Effect.tryPromise({
-    try: async () => {
-      const result = await client.queryContractSmart(contractAddress, queryMsg)
-      return result as T
-    },
-    catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
-  }).pipe(Effect.timeout("10 seconds"), Effect.retry({ times: 5 }))
+  pipe(
+    Client,
+    Effect.andThen(({ client }) =>
+      pipe(
+        Effect.tryPromise({
+          try: async () => {
+            const result = await client.queryContractSmart(contractAddress, queryMsg)
+            return result as T
+          },
+          catch: error => new QueryContractError({ cause: extractErrorDetails(error as Error) }),
+        }),
+      )
+    ),
+    Effect.timeout("10 seconds"),
+    Effect.retry({ times: 5 }),
+  )
 
 /**
  * A type-safe wrapper around CosmWasm's executeContract that handles error cases
@@ -470,11 +479,7 @@ export interface Cw20AllowanceResponse {
  * @since 2.0.0
  */
 export const readCw20TokenInfo = (contractAddress: string) =>
-  Effect.gen(function*() {
-    const client = (yield* Client).client
-
-    return yield* queryContract<Cw20TokenInfo>(client, contractAddress, { token_info: {} })
-  })
+  queryContract<Cw20TokenInfo>(contractAddress, { token_info: {} })
 
 /**
  * Read CW20 token total_supply
@@ -485,13 +490,12 @@ export const readCw20TokenInfo = (contractAddress: string) =>
  * @since 2.0.0
  */
 export const readCw20TotalSupply = (contractAddress: string) =>
-  Effect.gen(function*() {
-    const client = (yield* Client).client
-    const token_info = yield* queryContract<Cw20TokenInfo>(client, contractAddress, {
+  pipe(
+    queryContract<Cw20TokenInfo>(contractAddress, {
       token_info: {},
-    })
-    return token_info.total_supply
-  })
+    }),
+    Effect.map(x => x.total_supply),
+  )
 
 /**
  * Read the balance of a CW20 token for a specific address
@@ -564,17 +568,14 @@ export const readCw20TotalSupplyAtHeight = (
  * @since 2.0.0
  */
 export const readCw20Balance = (contractAddress: string, address: string) =>
-  Effect.gen(function*() {
-    const client = (yield* Client).client
-
-    const response = yield* queryContract<Cw20BalanceResponse>(client, contractAddress, {
+  pipe(
+    queryContract<Cw20BalanceResponse>(contractAddress, {
       balance: {
         address,
       },
-    })
-
-    return response.balance
-  })
+    }),
+    Effect.map(x => x.balance),
+  )
 
 /**
  * Read the allowance of a CW20 token for a specific addresses
@@ -591,18 +592,15 @@ export const readCw20Allowance = (
   owner: AddressCosmosDisplay,
   spender: AddressCosmosDisplay,
 ) =>
-  Effect.gen(function*() {
-    const client = (yield* Client).client
-
-    const response = yield* queryContract<Cw20AllowanceResponse>(client, contract, {
+  pipe(
+    queryContract<Cw20AllowanceResponse>(contract, {
       allowance: {
         owner: owner,
         spender: spender,
       },
-    })
-
-    return response.allowance
-  })
+    }),
+    Effect.map(x => x.allowance),
+  )
 
 /**
  * Increase the allowance of a CW20 token for a specific spender.
@@ -654,19 +652,18 @@ export const isDenomNative = (denom: string) =>
  * @since 2.0.0
  */
 export const channelBalance = (path: bigint, token: string) =>
-  Effect.gen(function*() {
-    const client = (yield* ClientDestination).client
-    const config = yield* ChannelDestination
-
-    const result = yield* queryContract(client, config.ucs03address, {
-      get_channel_balance: {
-        channel_id: config.channelId,
-        path: path,
-        denom: token,
-      },
-    })
-    return result
-  })
+  pipe(
+    ChannelDestination,
+    Effect.andThen((config) =>
+      queryContract(config.ucs03address, {
+        get_channel_balance: {
+          channel_id: config.channelId,
+          path: path,
+          denom: token,
+        },
+      })
+    ),
+  )
 
 /**
  * @category utils
@@ -675,17 +672,23 @@ export const channelBalance = (path: bigint, token: string) =>
 export const channelBalanceAtHeight = (rest: string, path: bigint, token: string, height: number) =>
   Effect.gen(function*() {
     const config = yield* ChannelDestination
-    const resp = yield* queryContractSmartAtHeight<{ data: string }>(rest, config.ucs03address, {
-      get_channel_balance: {
-        channel_id: config.channelId,
-        path,
-        denom: token,
+    const resp = yield* queryContractSmartAtHeight<{ data: string | undefined }>(
+      rest,
+      config.ucs03address,
+      {
+        get_channel_balance: {
+          channel_id: config.channelId,
+          path,
+          denom: token,
+        },
       },
-    }, height).pipe(
+      height,
+    ).pipe(
+      Effect.tap((resp) => Effect.log({ resp })),
       Effect.provide(FetchHttpClient.layer),
       Effect.tapErrorCause((cause) => Effect.logError("cosmos.channelBalanceAtHeight", cause)),
     )
-    return resp.data
+    return yield* O.fromNullable(resp.data)
   })
 
 /**
@@ -693,20 +696,19 @@ export const channelBalanceAtHeight = (rest: string, path: bigint, token: string
  * @since 2.0.0
  */
 export const predictQuoteToken = (baseToken: string) =>
-  Effect.gen(function*() {
-    const client = (yield* ClientDestination).client
-    const config = yield* ChannelDestination
-
-    const result = yield* queryContract<{ wrapped_token: Hex }>(client, config.ucs03address, {
-      predict_wrapped_token: {
-        path: "0",
-        channel_id: config.channelId,
-        token: baseToken,
-      },
-    })
-
-    return result.wrapped_token
-  })
+  pipe(
+    ChannelDestination,
+    Effect.andThen((config) =>
+      queryContract<{ wrapped_token: Hex }>(config.ucs03address, {
+        predict_wrapped_token: {
+          path: "0",
+          channel_id: config.channelId,
+          token: baseToken,
+        },
+      })
+    ),
+    Effect.map(x => x.wrapped_token),
+  )
 
 /**
  * @category utils

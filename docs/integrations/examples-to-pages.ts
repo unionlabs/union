@@ -1,34 +1,33 @@
 import type { StarlightPlugin } from "@astrojs/starlight/types"
 import * as A from "effect/Array"
 import { pipe } from "effect/Function"
-import * as R from "effect/Record"
 import * as Glob from "glob"
 import * as NFS from "node:fs"
 import * as Path from "node:path"
 import { Project, ScriptTarget, SyntaxKind } from "ts-morph"
 
-const yaml = (o: Record<string, unknown>, n = 0): string =>
+const toYaml = (o: Record<string, unknown>, n = 0): string =>
   Object.entries(o)
     .filter(([, v]) => v !== undefined && v !== "")
     .map(([k, v]) =>
       typeof v === "object"
-        ? " ".repeat(n) + k + ":\n" + yaml(v as Record<string, unknown>, n + 2)
+        ? " ".repeat(n) + k + ":\n" + toYaml(v as Record<string, unknown>, n + 2)
         : " ".repeat(n) + `${k}: ${String(v).replace(/\n/g, " ")}`
     )
     .join("\n")
 
 interface Options {
   readonly baseDir: string | string[]
-  /** Glob patterns or literal paths (relative to your repo root). */
   readonly entryPoints: string[]
-  /** Sub‑folder under `src/content/docs/` (default `examples`).   */
-  readonly outDir?: string
+  readonly outDir: string
+  readonly clean?: boolean | undefined
 }
 
 export default function examplesToPages({
   baseDir,
   entryPoints,
-  outDir = "examples",
+  outDir,
+  clean,
 }: Options): StarlightPlugin {
   if (!entryPoints?.length) {
     throw new Error("[examples‑to‑pages] entryPoints is required")
@@ -39,14 +38,23 @@ export default function examplesToPages({
     A.map((xs) => Path.resolve(xs)),
   )
 
-  console.log({ bases })
-
   return {
     name: "starlight-examples-to-pages",
     hooks: {
       async "config:setup"({ command, logger }) {
         if (command !== "build" && command !== "dev") {
           return
+        }
+
+        if (clean) {
+          const dir = Path.join(process.cwd(), outDir)
+          console.log(`Cleaning ${dir}...`)
+          const files = NFS.promises.glob(`${dir}/*`)
+          for await (const file of files) {
+            if (!file.endsWith("index.mdx")) {
+              await NFS.promises.rm(file, { force: true, recursive: true })
+            }
+          }
         }
 
         const files = await Glob.glob(entryPoints, {
@@ -87,12 +95,14 @@ export default function examplesToPages({
               }
               : undefined
 
+            const yaml = toYaml({
+              title,
+              description,
+              sidebar,
+            })
+
             const body = `---\n`
-              + yaml({
-                title,
-                description,
-                sidebar,
-              })
+              + yaml
               + `\n---\n\n`
               + `${summary}\n`
               + "```ts twoslash\n"

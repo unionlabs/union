@@ -1,5 +1,5 @@
 /**
- * @title Babylon → BOB
+ * @title Send Funds Babylon → BOB
  * @description Example transfer from Babylon to BOB.
  * @badge ✓:success
  */
