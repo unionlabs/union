@@ -367,8 +367,11 @@ export default defineConfig({
           entryPoints: [
             "../ts-sdk/examples/UCS03/*.ts",
             "../ts-sdk/examples/Sui/*.ts",
+            "../ts-sdk/examples/EVM/*.ts",
+            "../ts-sdk/examples/Cosmos/*.ts",
           ],
           outDir: "./src/content/docs/integrations/typescript/examples",
+          clean: true,
         }),
         starlightThemeRapide(),
         starlightUtils({

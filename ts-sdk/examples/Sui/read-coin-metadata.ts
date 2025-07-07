@@ -1,6 +1,5 @@
 /**
  * @title Read Coin Metadata
- * @descirption Read Sui coin metadata.
  * @badge WIP:caution
  */
 /// <reference types="effect" />

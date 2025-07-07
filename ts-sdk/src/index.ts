@@ -87,3 +87,10 @@ export * as Aptos from "./Aptos.js"
  * @since 2.0.0
  */
 export * as FungibleAssetOrder from "./FungibleAssetOrder.js"
+
+/**
+ * This module contains utility types.
+ *
+ * @since 2.0.0
+ */
+export * as Types from "./Types.js"
