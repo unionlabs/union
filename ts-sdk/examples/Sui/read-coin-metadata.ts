@@ -1,3 +1,8 @@
+/**
+ * @title Read Coin Metadata
+ * @descirption Read Sui coin metadata.
+ * @badge WIP:caution
+ */
 /// <reference types="effect" />
 // @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
 // @ts-ignore

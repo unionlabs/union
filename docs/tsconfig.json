@@ -69,7 +69,8 @@
     "svelte.config.js",
     "tailwind.config.ts",
     "postcss.config.cjs",
-    "markdown.config.ts"
+    "markdown.config.ts",
+    "typedoc-example-pages.mjs"
   ],
   "exclude": [
     "_",
