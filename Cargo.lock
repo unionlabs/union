@@ -2007,6 +2007,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "base-client"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "hex-literal",
+ "tokio",
+ "tracing",
+ "tracing-subscriber",
+ "unionlabs",
+]
+
+[[package]]
 name = "base-light-client"
 version = "0.0.0"
 dependencies = [
@@ -16779,6 +16791,29 @@ dependencies = [
  "jsonrpsee 0.25.1",
  "macros",
  "serde",
+ "tokio",
+ "tracing",
+ "unionlabs",
+ "voyager-sdk",
+]
+
+[[package]]
+name = "voyager-client-update-plugin-base"
+version = "0.0.0"
+dependencies = [
+ "alloy",
+ "base-client",
+ "base-light-client-types",
+ "base-verifier",
+ "embed-commit",
+ "enumorph",
+ "ethereum-light-client-types",
+ "futures",
+ "ibc-union-spec",
+ "jsonrpsee 0.25.1",
+ "macros",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "unionlabs",

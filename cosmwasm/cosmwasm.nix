@@ -107,8 +107,8 @@ _: {
           };
           # lightclients = pkgs.lib.lists.remove "cometbls" (builtins.attrNames all-lightclients);
           lightclients = [
-            "sui"
-            "trusted-mpt"
+            # "sui"
+            # "trusted-mpt"
           ];
         }
         {
@@ -128,6 +128,7 @@ _: {
           bech32_prefix = "union";
           lightclients = [
             "arbitrum"
+            "base"
             "bob"
             "berachain"
             "ethereum"
@@ -372,6 +373,11 @@ _: {
 
       # directory => {}
       all-lightclients = [
+        {
+          name = "base";
+          dir = "base";
+          client-type = "base";
+        }
         {
           name = "bob";
           dir = "bob";

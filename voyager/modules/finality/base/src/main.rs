@@ -4,7 +4,6 @@ use alloy::{
     eips::BlockId,
     network::AnyNetwork,
     providers::{layers::CacheLayer, DynProvider, Provider, ProviderBuilder},
-    sol,
 };
 use jsonrpsee::{
     core::{async_trait, RpcResult},
@@ -12,7 +11,7 @@ use jsonrpsee::{
     Extensions,
 };
 use serde::{Deserialize, Serialize};
-use tracing::{debug, instrument};
+use tracing::instrument;
 use unionlabs::{ibc::core::client::height::Height, primitives::H160, ErrorReporter};
 use voyager_sdk::{
     anyhow,
@@ -21,8 +20,6 @@ use voyager_sdk::{
     rpc::{types::FinalityModuleInfo, FinalityModuleServer},
     ExtensionsExt,
 };
-
-use crate::DisputeGameFactory::gameAtIndexReturn;
 
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
@@ -94,50 +91,6 @@ impl FinalityModule for Module {
     }
 }
 
-impl Module {
-    #[instrument(skip_all, fields(%l1_block_number))]
-    async fn get_l2_block_number_of_l1_block_number(&self, l1_block_number: u64) -> RpcResult<u64> {
-        let c =
-            DisputeGameFactory::new(self.l1_dispute_game_factory_proxy.into(), &self.l1_provider);
-
-        let count = c
-            .gameCount()
-            .block(l1_block_number.into())
-            .call()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
-
-        debug!(%count);
-
-        let gameAtIndexReturn { proxy_, .. } = c
-            .gameAtIndex(
-                count
-                    .checked_sub(alloy::primitives::U256::from(1_u64))
-                    .expect("count should be non-zero"),
-            )
-            .block(l1_block_number.into())
-            .call()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
-
-        debug!(%proxy_);
-
-        let proxy = FaultDisputeGame::new(proxy_, &self.l1_provider);
-        let block_number = proxy
-            .l2BlockNumber()
-            .block(l1_block_number.into())
-            .call()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
-
-        debug!(%block_number);
-
-        Ok(block_number
-            .try_into()
-            .expect("block number should be > u64::MAX"))
-    }
-}
-
 #[async_trait]
 impl FinalityModuleServer for Module {
     /// Query the latest finalized height of this chain.
@@ -150,9 +103,20 @@ impl FinalityModuleServer for Module {
                 .query_latest_height(self.l1_chain_id.clone(), true)
                 .await?;
 
-            let block_number = self
-                .get_l2_block_number_of_l1_block_number(l1_latest_height.height())
-                .await?;
+            let block_number = base_client::finalized_l2_block_number_of_l1_block_number(
+                &self.l1_provider,
+                self.l1_dispute_game_factory_proxy,
+                l1_latest_height.height(),
+            )
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e)
+                        .with_message("error fetching finalized l2 execution block of l1 height"),
+                    None::<()>,
+                )
+            })?;
 
             Ok(Height::new(block_number))
         } else {
@@ -178,9 +142,20 @@ impl FinalityModuleServer for Module {
                 .query_latest_height(self.l1_chain_id.clone(), true)
                 .await?;
 
-            let block_number = self
-                .get_l2_block_number_of_l1_block_number(l1_latest_height.height())
-                .await?;
+            let block_number = base_client::finalized_l2_block_number_of_l1_block_number(
+                &self.l1_provider,
+                self.l1_dispute_game_factory_proxy,
+                l1_latest_height.height(),
+            )
+            .await
+            .map_err(|e| {
+                ErrorObject::owned(
+                    -1,
+                    ErrorReporter(e)
+                        .with_message("error fetching finalized l2 execution block of l1 height"),
+                    None::<()>,
+                )
+            })?;
 
             let block = self
                 .l2_provider
@@ -203,22 +178,5 @@ impl FinalityModuleServer for Module {
                 .map(|b| Timestamp::from_secs(b.expect("block exists").header.timestamp))
                 .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
         }
-    }
-}
-
-sol! {
-    #![sol(rpc)]
-
-    contract DisputeGameFactory {
-        type Timestamp is uint64;
-        type GameType is uint32;
-
-        function gameCount() returns (uint256 gameCount);
-        function gameAtIndex(uint256 _index)
-                returns (GameType gameType_, Timestamp timestamp_, address proxy_);
-    }
-
-    interface FaultDisputeGame {
-        function l2BlockNumber() returns (uint256 l2BlockNumber);
     }
 }

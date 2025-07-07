@@ -12,8 +12,8 @@ repository   = { workspace = true }
 workspace = true
 
 [dependencies]
-alloy = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws", "contract"] }
-# bob-client             = { workspace = true }
+alloy          = { workspace = true, features = ["rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws", "contract"] }
+base-client    = { workspace = true }
 embed-commit   = { workspace = true }
 ibc-union-spec = { workspace = true, features = ["serde", "ethabi"] }
 jsonrpsee      = { workspace = true, features = ["macros", "server", "tracing"] }

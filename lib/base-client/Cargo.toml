@@ -1,0 +1,22 @@
+[package]
+name    = "base-client"
+version = "0.0.0"
+
+authors      = { workspace = true }
+edition      = { workspace = true }
+license-file = "LICENSE"
+publish      = { workspace = true }
+repository   = { workspace = true }
+
+[lints]
+workspace = true
+
+[dependencies]
+alloy     = { workspace = true, features = ["sol-types", "contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+tracing   = { workspace = true, features = ["attributes"] }
+unionlabs = { workspace = true, features = ["ethabi"] }
+
+[dev-dependencies]
+hex-literal        = { workspace = true }
+tokio              = { workspace = true, features = ["full"] }
+tracing-subscriber = { workspace = true, features = ["env-filter"] }
