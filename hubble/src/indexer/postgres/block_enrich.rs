@@ -46,7 +46,7 @@ pub async fn block_enrich_status(
     .map(|record| {
         Ok(BlockEnrichStatus {
             id: record.id,
-            range: Range::new_from_start_inclusive_end_inclusive(
+            range: Range::new_from_start_inclusive_end_exclusive(
                 &record.start_height.try_into()?,
                 &record.end_height.try_into()?,
             ),
@@ -163,7 +163,7 @@ pub async fn block_enrich_status(
                          RETURNING id, start_height, end_height",
                         universal_chain_id.pg_value()?,
                         i64::try_from(range.start_inclusive).map_err(|_| IndexerError::InternalCannotMapFromDatabaseDomain("start_height".to_string(), range.start_inclusive.to_string()))?,
-                        i64::try_from(range.end_exclusive - 1).map_err(|_| IndexerError::InternalCannotMapFromDatabaseDomain("end_height".to_string(), (range.end_exclusive - 1).to_string()))?,
+                        i64::try_from(range.end_exclusive).map_err(|_| IndexerError::InternalCannotMapFromDatabaseDomain("end_height".to_string(), range.end_exclusive.to_string()))?,
                         format!("merging: {}", ids.iter().map(|id|id.to_string()).join(","))
                     )
                     .fetch_one(tx.as_mut())
@@ -171,7 +171,7 @@ pub async fn block_enrich_status(
 
                     new_records.push(BlockEnrichStatus {
                         id: record.id,
-                        range: Range::new_from_start_inclusive_end_inclusive(
+                        range: Range::new_from_start_inclusive_end_exclusive(
                             &record.start_height.try_into()?,
                             &record.end_height.try_into()?,
                         ),

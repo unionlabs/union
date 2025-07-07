@@ -343,6 +343,10 @@ impl AddressZkgm {
             rpc_type,
         ))
     }
+
+    pub fn bytes(&self) -> Bytes {
+        self.0.clone()
+    }
 }
 
 pub fn string_0x_to_bytes(string_0x: &str, context: &str) -> Result<Bytes, IndexerError> {
