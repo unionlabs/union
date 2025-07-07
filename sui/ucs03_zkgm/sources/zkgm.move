@@ -69,6 +69,7 @@ module zkgm::zkgm_relay {
     use sui::coin::{Self, Coin, TreasuryCap, CoinMetadata};
     use sui::event;
     use sui::hash;
+    use sui::object::UID;
     use sui::object_bag::{Self, ObjectBag};
     use sui::table::{Self, Table};
 
@@ -107,7 +108,13 @@ module zkgm::zkgm_relay {
     const FILL_TYPE_MARKETMAKER: u256 = 0xD1CEC45E;
     const ACK_EMPTY: vector<u8> = x"";
 
-    public struct BasicCoinMetadata has copy, drop {
+    public struct TreasuryCapWithMetadata<phantom T> has key, store {
+        id: UID,
+        cap: TreasuryCap<T>,
+        metadata: BasicCoinMetadata,
+    }
+
+    public struct BasicCoinMetadata has copy, drop, store {
         name: String,
         symbol: String,
         decimals: u8,
@@ -473,16 +480,28 @@ module zkgm::zkgm_relay {
     }
 
     public entry fun register_capability<T>(
-        relay_store: &mut RelayStore,
-        mut capability: TreasuryCap<T>
+        zkgm: &mut RelayStore,
+        mut capability: TreasuryCap<T>,
+        metadata: &CoinMetadata<T>,
+        ctx: &mut TxContext,
     ) {
         let supply = coin::supply(&mut capability);
         if (balance::supply_value(supply) != 0 ) {
             abort 0
         };
+
+        let metadata = BasicCoinMetadata {          
+            name: coin::get_name(metadata),
+            symbol: string::from_ascii(coin::get_symbol(metadata)),
+            decimals: coin::get_decimals(metadata)
+        };
+
         let typename_t = type_name::get<T>();
-        let key = type_name::into_string(typename_t);
-        relay_store.type_name_t_to_capability.add(string::from_ascii(key), capability)
+        zkgm.type_name_t_to_capability.add(string::from_ascii(typename_t.into_string()), TreasuryCapWithMetadata {
+            id: object::new(ctx),
+            cap: capability,
+            metadata
+        });
     }
 
     fun process_receive<T>(
@@ -548,7 +567,6 @@ module zkgm::zkgm_relay {
             OP_FUNGIBLE_ASSET_ORDER => {
                 match (version) {
                     INSTR_VERSION_1 => {
-                        // TODO(aeryz): fix
                         zkgm.execute_fungible_asset_order<T>(
                             ibc_packet,
                             relayer,
@@ -651,24 +669,26 @@ module zkgm::zkgm_relay {
     }
 
     fun protocol_fill_mint<T>(
-        relay_store: &mut RelayStore,
+        zkgm: &mut RelayStore,
         channel_id: u32,
         path: u256,
         wrapped_token: vector<u8>,
         receiver: address,
         relayer: address,
-        base_amount: u64,
-        quote_amount: u64,
+        order: &FungibleAssetOrder,
         ctx: &mut TxContext
     ): (vector<u8>, u64) {
-        let fee = base_amount - quote_amount;
+        let base_amount = order.base_amount();
+        let quote_amount = order.quote_amount();
+
+        let fee = (order.base_amount() - order.quote_amount()) as u64;
         // if this token is minted for the first time, then we need to ensure that its always minting the same T
-        if (!relay_store.claim_wrapped_denom<T>(wrapped_token)) {
+        if (!zkgm.claim_wrapped_denom<T>(wrapped_token, order)) {
             return (vector::empty(), E_ANOTHER_TOKEN_IS_REGISTERED); 
         };
-        let capability = relay_store.get_treasury_cap<T>();
+        let capability = zkgm.get_treasury_cap<T>();
         if (quote_amount > 0) {
-            coin::mint_and_transfer<T>(capability, quote_amount, receiver, ctx);
+            coin::mint_and_transfer<T>(capability, quote_amount as u64, receiver, ctx);
         };
         if (fee > 0){
             coin::mint_and_transfer<T>(capability, fee, relayer, ctx);
@@ -892,8 +912,7 @@ module zkgm::zkgm_relay {
                 wrapped_token, 
                 receiver, 
                 relayer, 
-                base_amount as u64, 
-                quote_amount as u64, 
+                &order,
                 ctx
             )
         } else if (order.base_token_path() != 0 && base_amount_covers_quote_amount) {
@@ -1556,20 +1575,29 @@ module zkgm::zkgm_relay {
         if (!zkgm.type_name_t_to_capability.contains(key)) {
             abort E_NO_TREASURY_CAPABILITY             
         };
-        zkgm.type_name_t_to_capability.borrow_mut(key)
+        &mut zkgm.type_name_t_to_capability.borrow_mut<String, TreasuryCapWithMetadata<T>>(key).cap
     }
 
     fun claim_wrapped_denom<T>(
-        relay_store: &mut RelayStore,
-        wrapped_denom: vector<u8>
+        zkgm: &mut RelayStore,
+        wrapped_denom: vector<u8>,
+        order: &FungibleAssetOrder,
     ): bool {
         let typename_t = type_name::get<T>();
         let key = string::from_ascii(typename_t.into_string());
-        if (!relay_store.wrapped_denom_to_t.contains(wrapped_denom)) {
-            relay_store.wrapped_denom_to_t.add(wrapped_denom, key);
+        if (!zkgm.wrapped_denom_to_t.contains(wrapped_denom)) {
+            let metadata = zkgm.type_name_t_to_capability.borrow<String, TreasuryCapWithMetadata<T>>(key).metadata;
+
+            if (metadata.name != order.base_token_name()
+                || metadata.symbol != order.base_token_symbol()
+                || metadata.decimals != order.base_token_decimals()) {
+                return false
+            };
+            
+            zkgm.wrapped_denom_to_t.add(wrapped_denom, key);
             true
         } else {
-            let claimed_key = relay_store.wrapped_denom_to_t.borrow(wrapped_denom);
+            let claimed_key = zkgm.wrapped_denom_to_t.borrow(wrapped_denom);
             claimed_key == key
         }
     }
