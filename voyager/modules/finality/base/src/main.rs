@@ -22,8 +22,6 @@ use voyager_sdk::{
     ExtensionsExt,
 };
 
-use crate::DisputeGameFactory::gameAtIndexReturn;
-
 #[tokio::main(flavor = "multi_thread")]
 async fn main() {
     Module::run().await
@@ -94,50 +92,6 @@ impl FinalityModule for Module {
     }
 }
 
-impl Module {
-    #[instrument(skip_all, fields(%l1_block_number))]
-    async fn get_l2_block_number_of_l1_block_number(&self, l1_block_number: u64) -> RpcResult<u64> {
-        let c =
-            DisputeGameFactory::new(self.l1_dispute_game_factory_proxy.into(), &self.l1_provider);
-
-        let count = c
-            .gameCount()
-            .block(l1_block_number.into())
-            .call()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
-
-        debug!(%count);
-
-        let gameAtIndexReturn { proxy_, .. } = c
-            .gameAtIndex(
-                count
-                    .checked_sub(alloy::primitives::U256::from(1_u64))
-                    .expect("count should be non-zero"),
-            )
-            .block(l1_block_number.into())
-            .call()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
-
-        debug!(%proxy_);
-
-        let proxy = FaultDisputeGame::new(proxy_, &self.l1_provider);
-        let block_number = proxy
-            .l2BlockNumber()
-            .block(l1_block_number.into())
-            .call()
-            .await
-            .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))?;
-
-        debug!(%block_number);
-
-        Ok(block_number
-            .try_into()
-            .expect("block number should be > u64::MAX"))
-    }
-}
-
 #[async_trait]
 impl FinalityModuleServer for Module {
     /// Query the latest finalized height of this chain.
@@ -203,22 +157,5 @@ impl FinalityModuleServer for Module {
                 .map(|b| Timestamp::from_secs(b.expect("block exists").header.timestamp))
                 .map_err(|err| ErrorObject::owned(-1, ErrorReporter(err).to_string(), None::<()>))
         }
-    }
-}
-
-sol! {
-    #![sol(rpc)]
-
-    contract DisputeGameFactory {
-        type Timestamp is uint64;
-        type GameType is uint32;
-
-        function gameCount() returns (uint256 gameCount);
-        function gameAtIndex(uint256 _index)
-                returns (GameType gameType_, Timestamp timestamp_, address proxy_);
-    }
-
-    interface FaultDisputeGame {
-        function l2BlockNumber() returns (uint256 l2BlockNumber);
     }
 }
