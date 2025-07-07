@@ -3,7 +3,7 @@
  *
  * @since 2.0.0
  */
-import { Context, Data, Effect, flow, Layer } from "effect"
+import { Context, Data, Effect, flow, Layer, pipe } from "effect"
 import { type Address, erc20Abi } from "viem"
 import {
   Abi,
@@ -209,14 +209,18 @@ export const writeContract = <
     TFunctionName
   > = ContractFunctionArgs<TAbi, "nonpayable" | "payable", TFunctionName>,
 >(
-  client: ViemWalletClient,
   params: WriteContractParameters<TAbi, TFunctionName, TArgs>,
 ) =>
-  Effect.tryPromise({
-    try: () => client.writeContract(params),
-    catch: error =>
-      new WriteContractError({ cause: extractErrorDetails(error as WriteContractErrorType) }),
-  })
+  pipe(
+    WalletClient,
+    Effect.andThen(({ client }) =>
+      Effect.tryPromise({
+        try: () => client.writeContract(params),
+        catch: error =>
+          new WriteContractError({ cause: extractErrorDetails(error as WriteContractErrorType) }),
+      })
+    ),
+  )
 
 /**
  * @category context
@@ -555,7 +559,7 @@ export const increaseErc20Allowance = (
   Effect.gen(function*() {
     const walletClient = yield* WalletClient
 
-    return yield* writeContract(walletClient.client, {
+    return yield* writeContract({
       account: walletClient.account,
       chain: walletClient.chain,
       address: tokenAddress,
@@ -577,7 +581,7 @@ export const sendInstruction = (instruction: Ucs03.Instruction) =>
     const timeoutTimestamp = Utils.getTimeoutInNanoseconds24HoursFromNow()
     const salt = yield* Utils.generateSalt("evm")
 
-    return yield* writeContract(walletClient.client, {
+    return yield* writeContract({
       account: walletClient.account,
       abi: Ucs03.Abi,
       chain: walletClient.chain,

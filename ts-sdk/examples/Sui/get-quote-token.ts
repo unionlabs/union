@@ -1,5 +1,6 @@
 /**
  * @title Get Quote Token
+ * @badge WIP:caution
  */
 /// <reference types="effect" />
 // @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
