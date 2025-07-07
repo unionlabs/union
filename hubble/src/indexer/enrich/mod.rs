@@ -242,11 +242,6 @@ async fn get_transfers(
         &wrap_direction,
     )?;
 
-    info!("packet_hash: {}", hex::encode(record.packet_hash.clone()));
-    info!("message: {}", flatten.iter().join(","));
-    info!("sender: {sender_zkgm:?}");
-    info!("receiver: {receiver_zkgm:?}");
-
     Ok(vec![Transfer {
         transfer_index: transfer_index.into(),
         sender_zkgm: sender_zkgm.clone(),
