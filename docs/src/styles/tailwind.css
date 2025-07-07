@@ -127,6 +127,7 @@
 }
 
 :root {
+  --sl-sidebar-width: 24rem;
   --sl-content-width: 48rem;
   --sl-text-h1: 1.8125rem;
   --sl-white: #f9f9f9;

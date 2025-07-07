@@ -11,6 +11,7 @@ import starlightLinksValidator from "starlight-links-validator"
 import starlightThemeRapide from "starlight-theme-rapide"
 import Icons from "unplugin-icons/vite"
 import { loadEnv } from "vite"
+import examplesToPages from "./integrations/examples-to-pages.js"
 import { markdownConfiguration } from "./markdown.config.ts"
 
 const SITE_URL = "https://docs.union.build"
@@ -285,15 +286,26 @@ export default defineConfig({
               ],
             },
             {
+              label: "Typescript SDK",
+              items: [
+                {
+                  label: "Getting Started",
+                  link: "/integrations/typescript",
+                },
+                {
+                  label: "Examples",
+                  autogenerate: {
+                    directory: "/integrations/typescript/examples",
+                  },
+                },
+              ],
+            },
+            {
               label: "Integrations",
               items: [
                 {
                   label: "Getting Started",
                   link: "/integrations/getting-started",
-                },
-                {
-                  label: "TypeScript",
-                  autogenerate: { directory: "/integrations/typescript" },
                 },
                 {
                   label: "GraphQL",
@@ -350,6 +362,14 @@ export default defineConfig({
         },
       ],
       plugins: [
+        examplesToPages({
+          baseDir: "../ts-sdk/examples",
+          entryPoints: [
+            "../ts-sdk/examples/UCS03/*.ts",
+            "../ts-sdk/examples/Sui/*.ts",
+          ],
+          outDir: "./src/content/docs/integrations/typescript/examples",
+        }),
         starlightThemeRapide(),
         starlightUtils({
           multiSidebar: {

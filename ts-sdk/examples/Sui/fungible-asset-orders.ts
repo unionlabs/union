@@ -1,8 +1,13 @@
+/**
+ * @title Get All Coins
+ */
+/// <reference types="effect" />
+// @paths: {"@unionlabs/sdk": ["../ts-sdk/src"], "@unionlabs/sdk/*": ["../ts-sdk/src/*"]}
 // @ts-ignore
+/*
 BigInt["prototype"].toJSON = function() {
   return this.toString()
 }
-// ---cut---
 import { Decimal } from "@cosmjs/math"
 import { DirectSecp256k1HdWallet } from "@cosmjs/proto-signing"
 import { Cosmos, FungibleAssetOrder, Sui, Ucs03, Ucs05 } from "@unionlabs/sdk"
@@ -116,3 +121,6 @@ Effect.runPromiseExit(
     yield* Effect.log("Encoded:", encoded2)
   }),
 ).then(exit => console.log(JSON.stringify(exit, null, 2)))
+
+// ---cut---
+*/
