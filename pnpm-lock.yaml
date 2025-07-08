@@ -32,8 +32,8 @@ importers:
         specifier: ^0.5.2
         version: 0.5.2(patch_hash=9371f4db64512e807c1bfc15ded3d0bf11c52e7d0cf19fdeec00474180ace0bf)(tsx@4.20.3)(typescript@5.8.3)
       '@effect/language-service':
-        specifier: 0.18.0
-        version: 0.18.0
+        specifier: 0.23.5
+        version: 0.23.5
       '@effect/typeclass':
         specifier: ^0.35.5
         version: 0.35.5(effect@3.16.3)
@@ -1347,8 +1347,8 @@ packages:
       lmdb:
         optional: true
 
-  '@effect/language-service@0.18.0':
-    resolution: {integrity: sha512-Wk7x6W7pI5C9ix/7xE2Ad9ruWrk26uJuc8IgVzxH98AoiHO1G0f8Cblj6N1WaLB0PTyQoQPmrNsIII2Th6ywuw==}
+  '@effect/language-service@0.23.5':
+    resolution: {integrity: sha512-aQN24eziWuqK/EdFhhZ2Jr/CZgYxNfsP9r7DT7jCYgJWhZ8HPO39hyHcij14cMv41ZM8j0p8lmBnHYZwYN1Wyg==}
 
   '@effect/markdown-toc@0.1.0':
     resolution: {integrity: sha512-IRfvvwqQLabVTIw9hhIj4scOGIYPfa13QuEFv+dBWE6p47R+RR0J8jQvfDINFf0Vn80XXVjNRtZxkZpkKXLx2A==}
@@ -10759,7 +10759,7 @@ snapshots:
       effect: 3.16.3
       uuid: 11.1.0
 
-  '@effect/language-service@0.18.0': {}
+  '@effect/language-service@0.23.5': {}
 
   '@effect/markdown-toc@0.1.0':
     dependencies:

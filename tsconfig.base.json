@@ -37,7 +37,16 @@
     "plugins": [
       {
         "name": "@effect/language-service",
-        "transform": "@effect/language-service/transform"
+        "transform": "@effect/language-service/transform",
+        "diagnostics": true,
+        "diagnosticSeverity": {
+          "floatingEffect": "error"
+        },
+        "quickinfo": true,
+        "completions": true,
+        "goto": true,
+        "allowedDuplicatedPackages": [],
+        "namespaceImportPackages": ["effect", "@effect/*"]
       }
     ]
   }

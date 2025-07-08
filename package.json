@@ -12,7 +12,7 @@
     "@cosmjs/proto-signing": "~0.33.1",
     "@cosmjs/stargate": "~0.33.1",
     "@effect/docgen": "^0.5.2",
-    "@effect/language-service": "0.18.0",
+    "@effect/language-service": "0.23.5",
     "@effect/typeclass": "^0.35.5",
     "@effect/vitest": "0.23.3",
     "tsx": "^4.19.4",
