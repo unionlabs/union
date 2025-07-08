@@ -23,19 +23,23 @@ use ibc_union_spec::{
     query::PacketByHash,
     ChannelId, ClientId, ConnectionId, IbcUnion, Packet, Timestamp,
 };
-use protos::{cometbft, cosmos::base::v1beta1::Coin};
+use ucs03_zkgm::msg::{QueryMsg, PredictWrappedTokenResponse};
+use protos::{cometbft, cosmos::base::v1beta1::Coin, cosmwasm::{
+    wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
+}};
 use serde::{Deserialize, Serialize};
 use tokio::time::timeout;
+use voyager_sdk::serde_json;
 use unionlabs::{
     self,
     bech32::Bech32,
     encoding::{Encode, Json, Proto},
     google::protobuf::any::mk_any,
-    primitives::{encoding::HexUnprefixed, Bytes, H160, H256},
+    primitives::{encoding::HexUnprefixed, Bytes, H160, H256, U256},
     ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow::{self, anyhow, bail},
+    anyhow::{self, anyhow, bail, Context},
     jsonrpsee::tracing::info,
     primitives::ChainId,
     vm::BoxDynError,
@@ -308,6 +312,49 @@ impl Module {
         )
         .await
     }
+
+    pub async fn predict_wrapped_token(
+        &self,
+        contract: Bech32<H256>,
+        channel_id: ChannelId,
+        token: Vec<u8>,
+    ) -> anyhow::Result<String> {
+        // build the query payload
+        let msg = QueryMsg::PredictWrappedToken {
+            path: "0".to_string(),
+            channel_id,
+            token: token.into(),
+        };
+        let req = QuerySmartContractStateRequest {
+            address: contract.to_string(),
+            query_data: serde_json::to_vec(&msg)
+                .context("serializing PredictWrappedToken QueryMsg")?,
+        };
+
+        // execute the ABCI query
+        let raw = self
+            .rpc
+            .client()
+            .grpc_abci_query::<_, QuerySmartContractStateResponse>(
+                "/cosmwasm.wasm.v1.Query/SmartContractState",
+                &req,
+                None,
+                false,
+            )
+            .await?
+            .into_result()?
+            .unwrap()
+            .data;
+
+        let resp: PredictWrappedTokenResponse =
+            serde_json::from_slice(&raw)
+                .context("deserializing PredictWrappedTokenResponse")?;
+
+        // let addr: H160 = H160::from_str(&resp.wrapped_token)
+        //     .context("parsing wrapped_token into H160")?;
+        Ok(resp.wrapped_token)
+    }
+
 
     // TODO(aeryz): return the digest
     pub async fn send_transaction(

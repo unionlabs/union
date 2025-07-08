@@ -8,9 +8,10 @@ use unionlabs::{
     primitives::{Bytes, H160, H256},
 };
 use voyager_sdk::{
-    anyhow::{self, Ok},
+    anyhow::{self},
     primitives::ChainId,
 };
+use ibc_union_spec::{ChannelId};
 
 pub mod channel_provider;
 pub mod cosmos;
@@ -22,8 +23,9 @@ use crate::channel_provider::{ChannelConfirm, ChannelPair, ChannelPool};
 
 #[async_trait]
 pub trait ChainEndpoint: Send + Sync {
-    type Msg;
-    type Contract;
+    type Msg: Clone;
+    type Contract: Clone;
+    type PredictWrappedTokenResponse;
 
     fn chain_id(&self) -> &ChainId;
 
@@ -33,6 +35,15 @@ pub trait ChainEndpoint: Send + Sync {
         ibc_interface: &str,
         client_type: &str,
     ) -> anyhow::Result<()>;
+
+
+    async fn predict_wrapped_token(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+    ) -> anyhow::Result<Self::PredictWrappedTokenResponse>;
+
 
     async fn wait_for_create_client(
         &self,
@@ -85,6 +96,7 @@ pub trait IbcEventHash {
 impl<'a> ChainEndpoint for evm::Module<'a> {
     type Msg = RawCallBuilder<&'a DynProvider<AnyNetwork>, AnyNetwork>;
     type Contract = H160;
+    type PredictWrappedTokenResponse = H160;
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -103,6 +115,16 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
             client_type.to_string(),
         )?;
         Ok(())
+    }
+
+
+    async fn predict_wrapped_token(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+    ) -> anyhow::Result<Self::PredictWrappedTokenResponse>{
+        self.predict_wrapped_token(contract, channel, token).await
     }
 
     async fn wait_for_create_client(
@@ -152,7 +174,6 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         self.wait_for_channel_open_confirm(timeout).await
     }
 
-    // TODO: How to handle this for EVM chains?
     async fn send_ibc_transaction(
         &self,
         contract: Self::Contract,
@@ -180,6 +201,7 @@ impl IbcEventHash for ibc_solidity::Ibc::PacketRecv {
 impl ChainEndpoint for cosmos::Module {
     type Msg = (Vec<u8>, Vec<Coin>);
     type Contract = Bech32<H256>;
+    type PredictWrappedTokenResponse = String;
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -221,6 +243,15 @@ impl ChainEndpoint for cosmos::Module {
         timeout: Duration,
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
         self.wait_for_connection_open_confirm(timeout).await
+    }
+
+    async fn predict_wrapped_token(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+    ) -> anyhow::Result<Self::PredictWrappedTokenResponse>{
+        self.predict_wrapped_token(contract, channel, token).await
     }
 
     fn send_open_channel(
@@ -273,6 +304,7 @@ pub struct TestContext<S: ChainEndpoint, D: ChainEndpoint> {
     pub src: S,
     pub dst: D,
     pub channel_pool: Arc<ChannelPool>,
+    pub channel_count: usize
 }
 
 impl<S, D> TestContext<S, D>
@@ -280,14 +312,20 @@ where
     S: ChainEndpoint + 'static,
     D: ChainEndpoint + 'static,
 {
-    pub async fn new(src: S, dst: D) -> anyhow::Result<Self> {
+    pub async fn new(src: S, dst: D, channel_count: usize) -> anyhow::Result<Self> {
         voyager::init_fetch(src.chain_id().clone())?;
         voyager::init_fetch(dst.chain_id().clone())?;
         let channel_pool = ChannelPool::new();
+        println!(
+            "Creating test context for {} and {}. Init_fetch called for both chains.",
+            src.chain_id(),
+            dst.chain_id()
+        );
         Ok(Self {
             src,
             dst,
             channel_pool,
+            channel_count
         })
     }
 
@@ -399,6 +437,18 @@ where
             .await
     }
 
+    pub async fn predict_wrapped_token<Src: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+    ) -> anyhow::Result<Src::PredictWrappedTokenResponse>{
+        source_chain
+            .predict_wrapped_token(contract, channel, token)
+            .await
+    }
+
     pub async fn send_and_recv<Src: ChainEndpoint, Dst: ChainEndpoint>(
         &self,
         source_chain: &Src,
@@ -407,9 +457,60 @@ where
         destination_chain: &Dst,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
-        let packet_hash = source_chain.send_ibc_transaction(contract, msg).await?;
-        destination_chain
-            .wait_for_packet_recv(packet_hash, timeout)
+        let packet_hash = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone())
             .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            },
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash
+        );
+        match destination_chain.wait_for_packet_recv(packet_hash, timeout).await {
+            Ok(evt) => Ok(evt),
+            Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
+        }
+
+    }
+
+
+    pub async fn send_and_recv_with_retry<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        max_retries: usize,
+        retry_delay: Duration,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::PacketRecv> {
+        let mut attempt = 0;
+        println!(
+            "Starting send_and_recv_with_retry with max_retries: {}, retry_delay: {:?}",
+            max_retries, retry_delay
+        );
+        loop {
+            attempt += 1;
+            match self.send_and_recv(source_chain, contract.clone(), msg.clone(), destination_chain, timeout).await {
+                Ok(result) => return Ok(result),
+                Err(e)  => {
+                    if attempt < max_retries {
+                        println!("Attempt {} failed: {}. Retrying...", attempt, e);
+                        tokio::time::sleep(retry_delay).await;
+                    } else {
+                        return Err(e);
+                    }
+                }
+            }
+        }
     }
 }
