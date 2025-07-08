@@ -80,18 +80,18 @@ impl TryFrom<(&PacketSendRecord, &Instruction, &ChannelMetaData, &String)>
 }
 
 impl PacketSendInstructionsSearchRecord {
-    pub async fn insert(
-        &self,
+    pub async fn insert_batch(
         tx: &mut Transaction<'_, Postgres>,
+        records: &[PacketSendInstructionsSearchRecord],
     ) -> Result<Changes, IndexerError> {
-        trace!("insert({})", self.height);
+        trace!("insert_batch({} records)", records.len());
 
-        // let x = &self.quote_token[..];
-        // let x: Option<&[u8]> = self.fee_token.map(|f| &f[..]);
+        if records.is_empty() {
+            return Ok(Changes::default());
+        }
 
-        sqlx::query!(
-            r#"
-            INSERT INTO v2_sync.packet_send_instructions_search_sync (
+        let mut query_builder = sqlx::QueryBuilder::new(
+            "INSERT INTO v2_sync.packet_send_instructions_search_sync (
                 internal_chain_id,
                 internal_counterparty_chain_id,
                 height,
@@ -115,33 +115,36 @@ impl PacketSendInstructionsSearchRecord {
                 network,
                 counterparty_network,
                 sort_order
-            ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
-            "#,
-            self.internal_chain_id,
-            self.internal_counterparty_chain_id,
-            self.height,
-            &self.packet_hash[..],
-            &self.transaction_hash[..],
-            &self.block_hash[..],
-            self.timestamp,
-            self.instruction_index,
-            &self.instruction_hash[..],
-            self.instruction_type,
-            &self.path[..],
-            &self.salt[..],
-            self.instruction_path,
-            self.version,
-            self.opcode,
-            self.operand_sender,
-            self.operand_contract_address,
-            self.network,
-            self.counterparty_network,
-            self.sort_order,
-        )
-        .execute(&mut **tx)
-        .await?;
+            ) ",
+        );
 
-        Ok(Changes::with_single_insert::<Self>())
+        query_builder.push_values(records, |mut b, record| {
+            b.push_bind(record.internal_chain_id)
+                .push_bind(record.internal_counterparty_chain_id)
+                .push_bind(record.height)
+                .push_bind(&record.packet_hash[..])
+                .push_bind(&record.transaction_hash[..])
+                .push_bind(&record.block_hash[..])
+                .push_bind(record.timestamp)
+                .push_bind(record.instruction_index)
+                .push_bind(&record.instruction_hash[..])
+                .push_bind(&record.instruction_type)
+                .push_bind(&record.path[..])
+                .push_bind(&record.salt[..])
+                .push_bind(&record.instruction_path)
+                .push_bind(record.version)
+                .push_bind(record.opcode)
+                .push_bind(&record.operand_sender)
+                .push_bind(&record.operand_contract_address)
+                .push_bind(&record.network)
+                .push_bind(&record.counterparty_network)
+                .push_bind(&record.sort_order);
+        });
+
+        let query = query_builder.build();
+        query.execute(&mut **tx).await?;
+
+        Ok(Changes::with_inserts::<Self>(records.len() as u64))
     }
 
     pub async fn delete_by_chain_and_height(

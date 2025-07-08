@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use serde_json::{Map, Value};
 use time::{macros::format_description, UtcOffset};
-use tracing::{debug, error, info};
+use tracing::{debug, error};
 
 mod ucs03_zkgm_0;
 mod wrapping;
@@ -147,16 +147,20 @@ pub async fn enrich(
     }
 
     // insert packet send transaction
-    for instruction in get_instructions(flatten)? {
-        let packet_send_instructions_search_record: PacketSendInstructionsSearchRecord = (
-            &record,
-            &instruction,
-            &channel,
-            &instruction.sort_order(&sort_order)?,
-        )
-            .try_into()?;
-        changes += packet_send_instructions_search_record.insert(tx).await?;
-    }
+    let instructions = get_instructions(flatten)?
+        .into_iter()
+        .map(|instruction| {
+            (
+                &record,
+                &instruction,
+                &channel,
+                &instruction.sort_order(&sort_order)?,
+            )
+                .try_into()
+        })
+        .collect::<Result<Vec<PacketSendInstructionsSearchRecord>, IndexerError>>()?;
+
+    changes += PacketSendInstructionsSearchRecord::insert_batch(tx, &instructions).await?;
 
     Ok(changes)
 }
