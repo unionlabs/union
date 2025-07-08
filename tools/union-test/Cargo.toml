@@ -27,7 +27,8 @@ ibc-solidity   = { workspace = true, features = ["serde", "rpc"] }
 tracing            = { workspace = true }
 thiserror          = { workspace = true }
 axum                    = { workspace = true, features = ["macros", "tokio", "json"] }
-
+ethers = { version = "1.0.2", default-features = true, features = ["ethers-solc"] }
+cw20            = "2.0.0"
 ucs03-zkgm = { workspace = true, features = [ "library" ] }
 cometbft-rpc = { workspace = true }
 cosmos-sdk-event = { workspace = true }

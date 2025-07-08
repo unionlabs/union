@@ -1,4 +1,4 @@
-use ibc_union_spec::{event::PacketSend, event::CreateClient, ChannelId, ConnectionId, ClientId, Timestamp};
+use ibc_union_spec::{event::CreateClient, ChannelId, ConnectionId, ClientId, Timestamp};
 use unionlabs::primitives::FixedBytes;
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConnectionConfirm {
@@ -19,5 +19,10 @@ pub struct CreateClientConfirm {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PacketRecv {
+    pub packet_hash: FixedBytes<32>
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct PacketSend {
     pub packet_hash: FixedBytes<32>
 }
