@@ -415,20 +415,21 @@ impl TryFrom<&AddressZkgm> for AddressDisplay {
     fn try_from(value: &AddressZkgm) -> Result<Self, Self::Error> {
         Ok(match value.1 {
             RpcType::Cosmos => {
-                let utf8_str = std::str::from_utf8(&value.0).map_err(|_| {
-                    IndexerError::Bech32DecodeErrorInvalidBech32(
-                        "address-display".to_string(),
-                        encode(&value.0),
-                    )
-                })?;
-
-                // If the string contains null bytes, output as hex instead
-                // TODO: this is to be identical to the postgres implementation.
-                // we should fail (and not convert the packet to a transfer).
-                if utf8_str.contains('\0') {
-                    format!("0x{}", hex::encode(value.0.clone())).into()
-                } else {
-                    utf8_str.to_string().into()
+                match std::str::from_utf8(&value.0) {
+                    Ok(utf8_str) => {
+                        // If the string contains null bytes, output as hex instead
+                        // TODO: this is to be identical to the postgres implementation.
+                        // we should fail (and not convert the packet to a transfer).
+                        if utf8_str.contains('\0') {
+                            format!("0x{}", hex::encode(value.0.clone())).into()
+                        } else {
+                            utf8_str.to_string().into()
+                        }
+                    }
+                    Err(_) => {
+                        // Fallback to hex encoding if from_utf8 fails
+                        format!("0x{}", hex::encode(value.0.clone())).into()
+                    }
                 }
             }
             RpcType::Evm => format!("0x{}", hex::encode(value.0.clone())).into(),
@@ -685,5 +686,27 @@ mod tests {
         assert_eq!(address_str, hex_string.to_lowercase());
 
         println!("EVM address converted to hex: {}", address_str);
+    }
+
+    #[test]
+    fn test_cosmos_zkgm_address_to_address_display_invalid_utf8() {
+        // Test conversion with invalid UTF-8 bytes (should fallback to hex)
+        let invalid_utf8_bytes = vec![0xFF, 0xFE, 0xFD]; // Invalid UTF-8 sequence
+        let zkgm_address = AddressZkgm(invalid_utf8_bytes.clone().into(), RpcType::Cosmos);
+
+        let result = AddressDisplay::try_from(&zkgm_address);
+
+        // Should succeed and return hex format due to invalid UTF-8
+        let display = result.expect("Conversion should succeed");
+        let address_str = display.0.as_str();
+
+        // Should be hex-encoded due to invalid UTF-8
+        assert!(address_str.starts_with("0x"));
+        assert_eq!(
+            address_str,
+            format!("0x{}", hex::encode(invalid_utf8_bytes))
+        );
+
+        println!("Invalid UTF-8 address converted to hex: {}", address_str);
     }
 }
