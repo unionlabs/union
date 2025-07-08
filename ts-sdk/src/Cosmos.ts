@@ -327,19 +327,25 @@ export function getChainHeight(
  * @category utils
  * @since 2.0.0
  */
-export function getBalanceNow(
-  client: CosmWasmClient,
-  address: string,
+export const getBalanceNow = Effect.fn("getBalanceNow")((
+  address: `${string}1${string}`,
   denom: string,
-) {
-  return Effect.tryPromise({
-    try: () => client.getBalance(address, denom),
-    catch: (err) => new GetBalanceError({ cause: extractErrorDetails(err as Error) }),
-  }).pipe(
-    Effect.timeout("10 seconds"),
-    Effect.retry({ times: 5 }),
+) =>
+  pipe(
+    Client,
+    Effect.andThen(({ client }) =>
+      Effect.tryPromise({
+        try: () => client.getBalance(address, denom),
+        catch: (err) => new GetBalanceError({ cause: extractErrorDetails(err as Error) }),
+      })
+    ),
   )
-}
+)
+
+// .pipe(
+//     Effect.timeout("10 seconds"),
+//     Effect.retry({ times: 5 }),
+//   )
 
 /**
  * Error type for HttpRequest execution failures
