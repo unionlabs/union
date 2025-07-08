@@ -368,48 +368,6 @@ pub fn string_0x_to_bytes(string_0x: &str, context: &str) -> Result<Bytes, Index
     Ok(Bytes::from(vec))
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_string_0x_to_bytes_odd_nibbles() {
-        // Test odd number of nibbles - should pad with leading zero
-        let result = string_0x_to_bytes("0x0", "test").unwrap();
-        assert_eq!(result, Bytes::from(vec![0x00]));
-
-        let result = string_0x_to_bytes("0xf", "test").unwrap();
-        assert_eq!(result, Bytes::from(vec![0x0f]));
-
-        let result = string_0x_to_bytes("0x123", "test").unwrap();
-        assert_eq!(result, Bytes::from(vec![0x01, 0x23]));
-    }
-
-    #[test]
-    fn test_string_0x_to_bytes_even_nibbles() {
-        // Test even number of nibbles - should work as before
-        let result = string_0x_to_bytes("0x00", "test").unwrap();
-        assert_eq!(result, Bytes::from(vec![0x00]));
-
-        let result = string_0x_to_bytes("0xff", "test").unwrap();
-        assert_eq!(result, Bytes::from(vec![0xff]));
-
-        let result = string_0x_to_bytes("0x1234", "test").unwrap();
-        assert_eq!(result, Bytes::from(vec![0x12, 0x34]));
-    }
-
-    #[test]
-    fn test_string_0x_to_bytes_error_cases() {
-        // Test missing 0x prefix
-        let result = string_0x_to_bytes("123", "test");
-        assert!(result.is_err());
-
-        // Test invalid hex characters
-        let result = string_0x_to_bytes("0xgg", "test");
-        assert!(result.is_err());
-    }
-}
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct AddressCanonical(#[serde(with = "bytes_as_hex")] pub Bytes);
 
@@ -456,15 +414,23 @@ impl TryFrom<&AddressZkgm> for AddressDisplay {
 
     fn try_from(value: &AddressZkgm) -> Result<Self, Self::Error> {
         Ok(match value.1 {
-            RpcType::Cosmos => std::str::from_utf8(&value.0)
-                .map_err(|_| {
+            RpcType::Cosmos => {
+                let utf8_str = std::str::from_utf8(&value.0).map_err(|_| {
                     IndexerError::Bech32DecodeErrorInvalidBech32(
-                        "denom".to_string(),
+                        "address-display".to_string(),
                         encode(&value.0),
                     )
-                })?
-                .to_string()
-                .into(),
+                })?;
+
+                // If the string contains null bytes, output as hex instead
+                // TODO: this is to be identical to the postgres implementation.
+                // we should fail (and not convert the packet to a transfer).
+                if utf8_str.contains('\0') {
+                    format!("0x{}", hex::encode(value.0.clone())).into()
+                } else {
+                    utf8_str.to_string().into()
+                }
+            }
             RpcType::Evm => format!("0x{}", hex::encode(value.0.clone())).into(),
         })
     }
@@ -605,5 +571,119 @@ pub mod bytes_as_hex {
             .ok_or_else(|| D::Error::custom("missing 0x prefix"))?;
         let vec = decode(s).map_err(D::Error::custom)?;
         Ok(Bytes::from(vec))
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_string_0x_to_bytes_odd_nibbles() {
+        // Test odd number of nibbles - should pad with leading zero
+        let result = string_0x_to_bytes("0x0", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x00]));
+
+        let result = string_0x_to_bytes("0xf", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x0f]));
+
+        let result = string_0x_to_bytes("0x123", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x01, 0x23]));
+    }
+
+    #[test]
+    fn test_string_0x_to_bytes_even_nibbles() {
+        // Test even number of nibbles - should work as before
+        let result = string_0x_to_bytes("0x00", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x00]));
+
+        let result = string_0x_to_bytes("0xff", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0xff]));
+
+        let result = string_0x_to_bytes("0x1234", "test").unwrap();
+        assert_eq!(result, Bytes::from(vec![0x12, 0x34]));
+    }
+
+    #[test]
+    fn test_string_0x_to_bytes_error_cases() {
+        // Test missing 0x prefix
+        let result = string_0x_to_bytes("123", "test");
+        assert!(result.is_err());
+
+        // Test invalid hex characters
+        let result = string_0x_to_bytes("0xgg", "test");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_cosmos_zkgm_address_to_address_display_with_null_bytes() {
+        // Test conversion of a specific hex string to AddressDisplay
+        // This hex string ends with "00" which is a null byte that causes database issues
+        let hex_string = "0x78696f6e313830306e78686f6731316661686d6473727278617335706d373733686e777077393765356300";
+        let bytes = string_0x_to_bytes(hex_string, "test_address").unwrap();
+        let zkgm_address = AddressZkgm(bytes, RpcType::Cosmos);
+
+        let result = AddressDisplay::try_from(&zkgm_address);
+
+        // We expect this to succeed and return hex format due to null byte
+        let display = result.expect("Conversion should succeed");
+        let address_str = display.0.as_str();
+
+        // With null bytes, should be hex-encoded
+        assert!(address_str.starts_with("0x"));
+        assert_eq!(address_str, hex_string);
+
+        // Verify no null bytes in the final output
+        assert!(!address_str.contains('\0'));
+
+        println!("Address with null byte converted to hex: {}", address_str);
+    }
+
+    #[test]
+    fn test_cosmos_zkgm_address_to_address_display_no_null_bytes() {
+        // Test conversion of a hex string without null bytes (should remain as UTF-8 string)
+        let hex_string = "0x78696f6e313830306e78686f6731316661686d6473727278617335706d373733686e777077393765356301";
+        let bytes = string_0x_to_bytes(hex_string, "test_address").unwrap();
+        let zkgm_address = AddressZkgm(bytes, RpcType::Cosmos);
+
+        let result = AddressDisplay::try_from(&zkgm_address);
+
+        // We expect this to succeed and return UTF-8 format
+        let display = result.expect("Conversion should succeed");
+        let address_str = display.0.as_str();
+
+        // Without null bytes, should remain as UTF-8 string
+        assert!(!address_str.starts_with("0x"));
+        assert!(!address_str.contains('\0'));
+        assert_eq!(
+            address_str,
+            "xion1800nxhog11fahmdsrrxas5pm773hnwpw97e5c\u{1}"
+        );
+
+        println!(
+            "Address without null byte remains as UTF-8: {}",
+            address_str
+        );
+    }
+
+    #[test]
+    fn test_evm_zkgm_address_to_address_display() {
+        // Test conversion of EVM address to AddressDisplay
+        // EVM addresses should always be hex-encoded regardless of content
+        let hex_string = "0x742d35Cc6634C0532925a3b8D4ee7c9c2b1e732A";
+        let bytes = string_0x_to_bytes(hex_string, "test_address").unwrap();
+        let zkgm_address = AddressZkgm(bytes, RpcType::Evm);
+
+        let result = AddressDisplay::try_from(&zkgm_address);
+
+        // EVM addresses should always succeed and be hex-encoded
+        let display = result.expect("EVM conversion should succeed");
+        let address_str = display.0.as_str();
+
+        // EVM addresses should always be hex format
+        assert!(address_str.starts_with("0x"));
+        assert_eq!(address_str, hex_string.to_lowercase());
+
+        println!("EVM address converted to hex: {}", address_str);
     }
 }
