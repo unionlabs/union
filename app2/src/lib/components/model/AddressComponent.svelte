@@ -49,8 +49,8 @@ const getExplorerUrl = () => {
   // Replace {address} placeholder if it exists, otherwise append the address
   const addressUrl = explorer.address_url.toString()
   return addressUrl.includes("{address}")
-    ? addressUrl.replace("{address}", displayAddress)
-    : `${addressUrl}${displayAddress}`
+    ? addressUrl.replace("{address}", fullDisplayAddress)
+    : `${addressUrl}${fullDisplayAddress}`
 }
 
 const explorerUrl = $derived(getExplorerUrl())
