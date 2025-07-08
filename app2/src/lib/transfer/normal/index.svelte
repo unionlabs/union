@@ -229,10 +229,7 @@ $effect(() => {
           Steps.SubmitInstruction({
             instruction,
             intent: context.intents[0],
-            native: Option.map(context.native, (native) => ({
-              baseToken: native.baseToken,
-              amount: native.amount,
-            })),
+            funds: Option.isSome(context.funds) ? Option.some(context.funds.value) : Option.none(),
           }),
           Steps.WaitForIndex({ intent: context.intents[0] }),
         )
