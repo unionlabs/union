@@ -560,15 +560,15 @@
     "core": {
       "address": "osmo1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqata4fx",
       "height": 39452782,
-      "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
-      "code_id": 1712
+      "commit": "cd4759ddf0dbc5b42aad19aaf26839d3dfd021f7",
+      "code_id": 1719
     },
     "lightclient": {
       "cometbls": {
         "address": "osmo1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqedn9g8",
         "height": 39452789,
-        "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
-        "code_id": 1713
+        "commit": "cd4759ddf0dbc5b42aad19aaf26839d3dfd021f7",
+        "code_id": 1720
       },
       "state-lens/ics23/mpt": {
         "address": "osmo1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufsyy5f76",
