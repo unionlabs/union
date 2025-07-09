@@ -181,6 +181,11 @@
       "counterparty": "ethereum.1",
       "client_type": "state-lens/ics23/mpt",
       "refresh_rate": "500"
+    },
+    "6": {
+      "counterparty": "osmosis.osmosis-1",
+      "client_type": "tendermint",
+      "refresh_rate": "500"
     }
   },
   "bob.60808": {
@@ -342,6 +347,13 @@
     },
     "10": {
       "counterparty": "xion.xion-testnet-2",
+      "client_type": "tendermint",
+      "refresh_rate": "500"
+    }
+  },
+  "osmosis.osmosis-1": {
+    "1": {
+      "counterparty": "babylon.bbn-1",
       "client_type": "tendermint",
       "refresh_rate": "500"
     }
