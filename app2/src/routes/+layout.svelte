@@ -3,10 +3,11 @@ import "../app.css"
 import { page } from "$app/state"
 import DevInfo from "$lib/components/DevInfo.svelte"
 import ErrorsModal from "$lib/components/ErrorsModal.svelte"
-import Header from "$lib/components/layout/Header/index.svelte"
-import Sidebar from "$lib/components/layout/Sidebar/index.svelte"
+import AppHeader from "$lib/components/layout/AppHeader/index.svelte"
+import AppNav from "$lib/components/layout/AppNav/index.svelte"
 import Seo from "$lib/components/Seo.svelte"
 import SettingsModal from "$lib/components/SettingsModal.svelte"
+import LoadingBar from "$lib/components/ui/LoadingBar.svelte"
 import Wallet from "$lib/components/ui/Wallet/index.svelte"
 import { ENV, MAX_MOBILE_SIZE } from "$lib/constants"
 import { chainsQuery } from "$lib/queries/chains.svelte"
@@ -136,30 +137,31 @@ $effect(() => {
   bind:clientWidth={viewportWidth}
   style="--color-accent: {uiStore.theme.accent}"
 >
-  <aside
-    class={cn(
-      "fixed left-0 bottom-0 top-0 dark:bg-zinc-950 shadow overflow-hidden border-r border-zinc-900 max-h-dvh z-0",
-      fullPageSidebar ? "right-0" : "w-64",
-    )}
-    hidden={hideSidebar}
-  >
-    <Sidebar />
-  </aside>
+  <!-- Loading bar at the very top -->
+  <LoadingBar />
+
+  <!-- AppNav Component - replaces the old Sidebar -->
+  {#if !hideSidebar}
+    <AppNav />
+  {/if}
 
   <!-- Main content area: Has margin to clear fixed sidebar -->
   <main
     class={cn(
-      "fixed min-h-svh grow right-0 top-0 bottom-0 z-0",
+      "fixed min-h-svh grow right-0 top-0 bottom-0 z-10",
       fullPageSidebar ? "w-0" : null,
-      hideSidebar ? "left-0" : "left-64",
+      hideSidebar ? "left-0" : "left-16", // AppNav is 64px wide when collapsed, 256px when expanded
     )}
     hidden={fullPageSidebar}
   >
-    <div class="sticky top-0 z-20">
-      <Header showNavigation={isMobile} />
+    <div class="sticky top-0 z-110">
+      <AppHeader
+        chains={new Set([1, 56])}
+        showNavigation={isMobile}
+      />
     </div>
 
-    <div class="absolute top-16 left-0 right-0 bottom-0 flex-1 z-0 overflow-scroll">
+    <div class="absolute top-26 left-0 right-0 bottom-0 flex-1 z-0 overflow-scroll">
       {@render children()}
     </div>
   </main>

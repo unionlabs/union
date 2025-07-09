@@ -2,7 +2,7 @@
 import { goto } from "$app/navigation"
 import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
 import Button from "$lib/components/ui/Button.svelte"
-import ProgressBar from "$lib/components/ui/ProgressBar.svelte"
+
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import { dashboard } from "$lib/dashboard/stores/user.svelte"
 import { uiStore } from "$lib/stores/ui.svelte"
@@ -68,15 +68,68 @@ onDestroy(() => {
         class="hover:bg-zinc-900 flex flex-col gap-4 px-6 py-4 border-b border-zinc-900"
       >
         <div class="flex items-center gap-3">
-          {#if Option.isSome(dashboard.identity.avatar)}
-            <img
-              src={dashboard.identity.avatar.value}
-              alt=""
-              class="w-12 h-12 rounded-full ring-1 ring-zinc-700"
-            />
-          {:else}
-            <Skeleton class="w-12 h-12 rounded-full" />
-          {/if}
+          <!-- Avatar with Circular Progress Ring -->
+          <div class="relative">
+            {#if Option.isSome(dashboard.identity.avatar)}
+              <!-- Progress Ring Background -->
+              <svg
+                class="absolute inset-0 w-12 h-12 -rotate-90"
+                viewBox="0 0 48 48"
+              >
+                <circle
+                  cx="24"
+                  cy="24"
+                  r="22"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  class="text-zinc-800"
+                />
+                {#if Option.isSome(dashboard.experience)
+              && Option.isSome(dashboard.experience.value.progress)}
+                  <!-- Progress Ring -->
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="22"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-dasharray={`${2 * Math.PI * 22}`}
+                    stroke-dashoffset={`${
+                      2 * Math.PI * 22 * (1 - dashboard.experience.value.progress.value / 100)
+                    }`}
+                    class="text-accent transition-all duration-500 ease-out"
+                  />
+                {/if}
+              </svg>
+              <img
+                src={dashboard.identity.avatar.value}
+                alt=""
+                class="relative w-12 h-12 rounded-full"
+              />
+            {:else}
+              <div class="relative">
+                <svg
+                  class="absolute inset-0 w-12 h-12 -rotate-90"
+                  viewBox="0 0 48 48"
+                >
+                  <circle
+                    cx="24"
+                    cy="24"
+                    r="22"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    class="text-zinc-800"
+                  />
+                </svg>
+                <Skeleton class="relative w-12 h-12 rounded-full" />
+              </div>
+            {/if}
+          </div>
+
           <div class="flex flex-col gap-1 min-h-[52px] justify-center w-full">
             <div class="h-5">
               {#if Option.isSome(dashboard.identity.username)}
@@ -125,14 +178,6 @@ onDestroy(() => {
               {/if}
             </div>
           </div>
-        </div>
-        <div class="h-2">
-          {#if Option.isSome(dashboard.experience)
-          && Option.isSome(dashboard.experience.value.progress)}
-            <ProgressBar progress={dashboard.experience.value.progress.value} />
-          {:else}
-            <Skeleton class="h-2 w-full" />
-          {/if}
         </div>
       </a>
     </div>
