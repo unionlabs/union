@@ -119,7 +119,7 @@
         }
       },
       "sla": {
-        "forward": "PT17H",
+        "forward": "PT29H",
         "reverse": "PT20M"
       },
       "tags": ["canonical"]
