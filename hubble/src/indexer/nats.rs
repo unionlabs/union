@@ -17,8 +17,10 @@ use lz4_flex::compress_prepend_size;
 use tracing::{debug, info};
 
 use crate::indexer::{
-    api::{IndexerError, UniversalChainId},
-    event::MessageHash,
+    api::IndexerError,
+    event::types::{
+        MessageHash, MessageSequence, NatsConsumerSequence, NatsStreamSequence, UniversalChainId,
+    },
 };
 
 #[derive(Clone)]
@@ -130,17 +132,17 @@ impl NatsConnection {
 pub struct MessageMeta {
     pub subject: String,
     pub universal_chain_id: UniversalChainId,
-    pub message_sequence: u64,
+    pub message_sequence: MessageSequence,
     pub message_hash: MessageHash,
-    pub nats_stream_sequence: u64,
-    pub nats_consumer_sequence: u64,
+    pub nats_stream_sequence: NatsStreamSequence,
+    pub nats_consumer_sequence: NatsConsumerSequence,
 }
 
 impl fmt::Display for MessageMeta {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(
             f,
-            "{} [m{}|s{}|c{}] ({})",
+            "{} [{}|{}|{}] ({})",
             self.subject,
             self.message_sequence,
             self.nats_stream_sequence,

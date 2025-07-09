@@ -1,10 +1,8 @@
 use core::fmt::Debug;
 use std::fmt;
 
-use sqlx::{types::BigDecimal, Error, Postgres};
+use sqlx::{Error, Postgres};
 use valuable::Valuable;
-
-use crate::indexer::api::UniversalChainId;
 
 /// ChainIds track both the database ID of a chain, as well as some canonical representation for
 /// debug logging.
@@ -23,11 +21,16 @@ pub type ChainId = ChainIdInner<'static>;
 pub struct ChainIdInner<'a> {
     pub db: i32,
     pub canonical: &'a str,
+    pub universal_chain_id: &'a str,
 }
 
 impl<'a> fmt::Display for ChainIdInner<'a> {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.canonical)
+        write!(
+            f,
+            "{} ({} - {})",
+            self.canonical, self.db, self.universal_chain_id
+        )
     }
 }
 
@@ -35,28 +38,12 @@ impl<'a> fmt::Display for ChainIdInner<'a> {
 impl Copy for ChainIdInner<'static> {}
 
 impl<'a> ChainIdInner<'a> {
-    pub fn new(db: i32, canonical: &'a str) -> Self {
-        Self { db, canonical }
-    }
-}
-
-pub async fn fetch_internal_chain_id_for_universal_chain_id(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
-    universal_chain_id: &UniversalChainId,
-) -> sqlx::Result<i32> {
-    match sqlx::query!(
-        "
-        SELECT id as internal_chain_id 
-        FROM config.chains c WHERE family || '.' || chain_id = $1 
-        LIMIT 1
-        ",
-        universal_chain_id
-    )
-    .fetch_optional(tx.as_mut())
-    .await?
-    {
-        Some(record) => Ok(record.internal_chain_id),
-        None => Err(Error::Protocol("No chain found with universal_chain_id {universal_chain_id}. Add it to the config.chains table before using it in hubble".into()))
+    pub fn new(db: i32, canonical: &'a str, universal_chain_id: &'a str) -> Self {
+        Self {
+            db,
+            canonical,
+            universal_chain_id,
+        }
     }
 }
 
@@ -65,31 +52,16 @@ pub async fn fetch_chain_id_tx(
     canonical: String,
 ) -> sqlx::Result<ChainId> {
     match sqlx::query!(
-        "SELECT id FROM config.chains WHERE chain_id = $1 LIMIT 1",
+        "SELECT 
+            id, 
+            family || '.' || chain_id as universal_chain_id
+        FROM config.chains WHERE chain_id = $1 LIMIT 1",
         canonical.to_string()
     )
     .fetch_optional(tx.as_mut())
     .await?
     {
-        Some(chain_id) => Ok(ChainId::new(chain_id.id, canonical.leak())),
+        Some(record) => Ok(ChainId::new(record.id, canonical.leak(), record.universal_chain_id.expect("universal chain id").leak())),
         None => Err(Error::Protocol("No chain found with chain_id {canonical}. Add it to the config.chains table before using it in hubble".into()))
     }
-}
-
-pub async fn schedule_replication_reset(
-    tx: &mut sqlx::Transaction<'_, Postgres>,
-    chain_id: i32,
-    height: i64,
-    reason: &str,
-) -> sqlx::Result<()> {
-    sqlx::query!(
-        "CALL sync.replication_schedule_reset_chain($1, $2, $3);",
-        BigDecimal::from(chain_id),
-        &height,
-        reason
-    )
-    .execute(tx.as_mut())
-    .await?;
-
-    Ok(())
 }

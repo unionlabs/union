@@ -1,18 +1,19 @@
-use itertools::Itertools;
-use sqlx::Postgres;
+use sqlx::{Postgres, Transaction};
+use tracing::debug;
 
 use crate::indexer::{
-    api::{BlockHeight, UniversalChainId},
+    api::IndexerError,
     consumer::BlockUpdate,
-    event::Range,
+    event::types::{BlockHeight, Range, UniversalChainId},
+    record::PgValue,
 };
 
 pub async fn get_block_updates(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     universal_chain_id: &UniversalChainId,
     range: &Range,
-) -> sqlx::Result<Vec<BlockUpdate>> {
-    Ok(sqlx::query!(
+) -> Result<Vec<BlockUpdate>, IndexerError> {
+    sqlx::query!(
         "
         SELECT b.universal_chain_id,
                b.height,
@@ -26,31 +27,31 @@ pub async fn get_block_updates(
         AND    b.height BETWEEN $2 AND $3
         FOR UPDATE
         ",
-        universal_chain_id,
+        universal_chain_id.clone().pg_value()?,
         i64::try_from(range.start_inclusive).expect("start fits"),
         i64::try_from(range.end_exclusive - 1).expect("end fits"), // BETWEEN is inclusive
     )
     .fetch_all(tx.as_mut())
     .await?
     .into_iter()
-    .map(|r| BlockUpdate {
-        universal_chain_id: r.universal_chain_id,
-        height: BlockHeight::try_from(r.height).expect("height fits"),
-        message_sequence: u64::try_from(r.message_sequence).expect("message_sequence fits"),
-        delete: r.delete,
-        message_hash: r.message_hash.into(),
-        nats_stream_sequence: u64::try_from(r.nats_stream_sequence)
-            .expect("nats_stream_sequence fits"),
-        nats_consumer_sequence: u64::try_from(r.nats_consumer_sequence)
-            .expect("nats_consumer_sequence fits"),
+    .map(|r| {
+        Ok(BlockUpdate {
+            universal_chain_id: r.universal_chain_id.into(),
+            height: r.height.try_into()?,
+            message_sequence: r.message_sequence.try_into()?,
+            delete: r.delete,
+            message_hash: r.message_hash.into(),
+            nats_stream_sequence: r.nats_stream_sequence.try_into()?,
+            nats_consumer_sequence: r.nats_consumer_sequence.try_into()?,
+        })
     })
-    .collect_vec())
+    .collect::<Result<Vec<_>, IndexerError>>()
 }
 
 pub async fn insert_block_update(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     block_update: &BlockUpdate,
-) -> sqlx::Result<()> {
+) -> Result<(), IndexerError> {
     sqlx::query!(
         "
         INSERT INTO hubble.block_update (
@@ -63,13 +64,13 @@ pub async fn insert_block_update(
             nats_consumer_sequence
         ) VALUES ($1, $2, $3, $4, $5, $6, $7)
         ",
-        block_update.universal_chain_id,
-        i64::try_from(block_update.height).expect("height fits"),
-        i64::try_from(block_update.message_sequence).expect("message_sequence fits"),
+        block_update.universal_chain_id.pg_value()?,
+        block_update.height.pg_value()?,
+        block_update.message_sequence.pg_value()?,
         block_update.delete,
-        Vec::<u8>::from(block_update.message_hash.clone()),
-        i64::try_from(block_update.nats_stream_sequence).expect("nats_stream_sequence fits"),
-        i64::try_from(block_update.nats_consumer_sequence).expect("nats_consumer_sequence fits"),
+        block_update.message_hash.pg_value()?,
+        block_update.nats_stream_sequence.pg_value()?,
+        block_update.nats_consumer_sequence.pg_value()?,
     )
     .execute(tx.as_mut())
     .await?;
@@ -80,7 +81,7 @@ pub async fn insert_block_update(
 pub async fn update_block_update(
     tx: &mut sqlx::Transaction<'_, Postgres>,
     block_update: BlockUpdate,
-) -> sqlx::Result<()> {
+) -> Result<(), IndexerError> {
     sqlx::query!(
         "
         UPDATE hubble.block_update
@@ -92,16 +93,40 @@ pub async fn update_block_update(
         WHERE universal_chain_id = $1 
           AND height = $2
         ",
-        block_update.universal_chain_id,
-        i64::try_from(block_update.height).expect("height fits"),
-        i64::try_from(block_update.message_sequence).expect("message_sequence fits"),
+        block_update.universal_chain_id.pg_value()?,
+        block_update.height.pg_value()?,
+        block_update.message_sequence.pg_value()?,
         block_update.delete,
-        Vec::<u8>::from(block_update.message_hash),
-        i64::try_from(block_update.nats_stream_sequence).expect("nats_stream_sequence fits"),
-        i64::try_from(block_update.nats_consumer_sequence).expect("nats_consumer_sequence fits"),
+        block_update.message_hash.pg_value()?,
+        block_update.nats_stream_sequence.pg_value()?,
+        block_update.nats_consumer_sequence.pg_value()?,
     )
     .execute(tx.as_mut())
     .await?;
 
     Ok(())
+}
+
+pub async fn max_event_height(
+    tx: &mut Transaction<'_, Postgres>,
+    universal_chain_id: &UniversalChainId,
+) -> Result<BlockHeight, IndexerError> {
+    debug!("max_event_height: {universal_chain_id}");
+
+    sqlx::query!(
+        "
+        SELECT GREATEST(
+            (SELECT MAX(height) FROM hubble.block_update WHERE universal_chain_id = $1),
+            (SELECT MAX(height) FROM v2_cosmos.events WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1)),
+            (SELECT MAX(height) FROM v2_cosmos.transactions WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1)),
+            (SELECT MAX(height) FROM v2_cosmos.blocks WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1)),
+            (SELECT MAX(height) FROM v2_evm.logs WHERE internal_chain_id = (SELECT id FROM config.chains c WHERE c.family || '.' || c.chain_id = $1))
+        ) AS max_height
+         ",
+        universal_chain_id.pg_value()?,
+    )
+    .fetch_optional(tx.as_mut())
+    .await?
+    .map(|record| record.max_height.unwrap_or_default().try_into())
+    .unwrap_or(Ok(0.into()))
 }

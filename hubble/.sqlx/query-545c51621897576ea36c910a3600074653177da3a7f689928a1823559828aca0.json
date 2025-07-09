@@ -1,0 +1,34 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT \n                id, \n                start_height, \n                end_height\n            FROM hubble.block_enrich\n            WHERE universal_chain_id = $1\n            FOR UPDATE SKIP LOCKED\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "start_height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 2,
+        "name": "end_height",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "545c51621897576ea36c910a3600074653177da3a7f689928a1823559828aca0"
+}

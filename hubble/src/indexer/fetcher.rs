@@ -29,6 +29,10 @@ enum RunToTipLoopResult {
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_fetcher(&self, fetcher_client: T) -> Result<(), IndexerError> {
+        if self.drain {
+            return Ok(());
+        }
+
         self.run_to_finalized(&fetcher_client)
             .instrument(info_span!("run-to-finalized"))
             .await?;

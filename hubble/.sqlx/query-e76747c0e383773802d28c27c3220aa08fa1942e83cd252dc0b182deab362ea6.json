@@ -1,0 +1,113 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                internal_chain_id,\n                block_hash,\n                height,\n                event_index,\n                timestamp,\n                transaction_hash,\n                transaction_index,\n                transaction_event_index,\n                channel_id,\n                packet_hash,\n                source_channel_id,\n                destination_channel_id,\n                timeout_height,\n                timeout_timestamp,\n                data,\n                network\n            FROM v2_sync.packet_send_sync\n            WHERE internal_chain_id = (SELECT id FROM config.chains WHERE family || '.' || chain_id = $1) AND height = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "internal_chain_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "block_hash",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 2,
+        "name": "height",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 3,
+        "name": "event_index",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 4,
+        "name": "timestamp",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "transaction_hash",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 6,
+        "name": "transaction_index",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 7,
+        "name": "transaction_event_index",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 8,
+        "name": "channel_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 9,
+        "name": "packet_hash",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 10,
+        "name": "source_channel_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 11,
+        "name": "destination_channel_id",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 12,
+        "name": "timeout_height",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 13,
+        "name": "timeout_timestamp",
+        "type_info": "Numeric"
+      },
+      {
+        "ordinal": 14,
+        "name": "data",
+        "type_info": "Bytea"
+      },
+      {
+        "ordinal": 15,
+        "name": "network",
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Text",
+        "Int8"
+      ]
+    },
+    "nullable": [
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false
+    ]
+  },
+  "hash": "e76747c0e383773802d28c27c3220aa08fa1942e83cd252dc0b182deab362ea6"
+}

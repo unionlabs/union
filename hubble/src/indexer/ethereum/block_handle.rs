@@ -5,15 +5,16 @@ use futures::{stream::FuturesOrdered, Stream};
 use serde::{Deserialize, Serialize};
 use sqlx::Postgres;
 use time::OffsetDateTime;
-use tracing::debug;
+use tracing::{debug, trace};
 
 use crate::{
     indexer::{
         api::{BlockHandle, BlockRange, BlockReference, BlockSelection, FetchMode, IndexerError},
         ethereum::{
-            fetcher_client::EthFetcherClient, postgres::insert_batch_logs, provider::RpcProviderId,
+            fetcher_client::EthFetcherClient, mapping::legacy::get_legacy_events,
+            provider::RpcProviderId,
         },
-        event::BlockEvents,
+        event::{supported::SupportedBlockEvent, types::BlockEvents},
     },
     postgres::ChainId,
 };
@@ -33,6 +34,9 @@ pub struct BlockInsert {
     pub height: i32,
     pub time: OffsetDateTime,
     pub transactions: Vec<TransactionInsert>,
+    // passing the ucs events to keep the existing flow
+    // BlockInsert can be removed once legacy events are deprecated
+    pub ucs_events: Vec<SupportedBlockEvent>,
 }
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -113,7 +117,11 @@ impl BlockHandle for EthBlockHandle {
                     block_to_insert.transactions.len()
                 );
 
-                insert_batch_logs(vec![block_to_insert.into()]).await?
+                let ucs_events = block_to_insert.ucs_events.clone();
+                // legacy: convert to SupportedBlockEvent::EthereumLog
+                let legacy_events = get_legacy_events(vec![block_to_insert.into()]).await?;
+
+                legacy_events.into_iter().chain(ucs_events).collect()
             }
             None => {
                 debug!("{}: block without transactions => ignore", reference);
@@ -122,9 +130,10 @@ impl BlockHandle for EthBlockHandle {
             }
         };
 
-        debug!("{}: done", reference);
+        trace!("{}: insert => events: {:?}", reference, events);
+        debug!("{}: insert => done", reference);
 
-        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
+        Ok((!events.is_empty()).then_some(events.into()))
     }
 
     async fn update(
@@ -142,12 +151,19 @@ impl BlockHandle for EthBlockHandle {
                 reference,
                 block_to_insert.transactions.len()
             );
-            insert_batch_logs(vec![block_to_insert.into()]).await?
+            let ucs_events = block_to_insert.ucs_events.clone();
+            // legacy: convert to SupportedBlockEvent::EthereumLog
+            let legacy_events = get_legacy_events(vec![block_to_insert.into()]).await?;
+
+            legacy_events.into_iter().chain(ucs_events).collect()
         } else {
             debug!("{}: block without transactions => delete", reference);
             vec![]
         };
 
-        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
+        trace!("{}: update => events: {:?}", reference, events);
+        debug!("{}: update => done", reference);
+
+        Ok((!events.is_empty()).then_some(events.into()))
     }
 }

@@ -175,12 +175,12 @@ impl Provider {
 
 impl From<tonic::Status> for IndexerError {
     fn from(error: tonic::Status) -> Self {
-        Self::ProviderError(Report::from(error))
+        Self::ProviderError(Box::new(Report::from(error)))
     }
 }
 
 impl From<tonic::transport::Error> for IndexerError {
     fn from(error: tonic::transport::Error) -> Self {
-        Self::ProviderError(Report::from(error))
+        Self::ProviderError(Box::new(Report::from(error)))
     }
 }

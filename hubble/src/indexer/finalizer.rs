@@ -10,7 +10,7 @@ use crate::indexer::{
         BlockHandle, BlockHeight, BlockRange, BlockReference, BlockSelection, FetchMode,
         FetcherClient, IndexerError,
     },
-    event::{BlockEvents, MessageHash, Range},
+    event::types::{BlockEvents, MessageHash, Range},
     postgres::block_status::{
         delete_block_status, get_block_range_to_finalize, get_block_status_hash,
         get_next_block_to_monitor, update_block_status,
@@ -25,6 +25,10 @@ enum FinalizerLoopResult {
 
 impl<T: FetcherClient> Indexer<T> {
     pub async fn run_finalizer(&self, fetcher_client: T) -> Result<(), IndexerError> {
+        if self.drain {
+            return Ok(());
+        }
+
         loop {
             match self.run_finalizer_loop(&fetcher_client).await {
                 Ok(FinalizerLoopResult::RunAgain) => {
@@ -157,7 +161,7 @@ impl<T: FetcherClient> Indexer<T> {
             }
             Err(error) => {
                 warn!("error trying to fetch block range to finalize ({error}) => retry later");
-                Err(IndexerError::ProviderError(error))
+                Err(IndexerError::ProviderError(Box::new(error)))
             }
         }
     }

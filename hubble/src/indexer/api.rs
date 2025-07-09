@@ -1,5 +1,7 @@
 use std::{fmt::Display, num::ParseIntError, ops::Range};
 
+use alloy::primitives::Address;
+use alloy_primitives::FixedBytes;
 use async_nats::jetstream::{
     consumer::{
         pull::{BatchErrorKind, MessagesErrorKind},
@@ -11,12 +13,23 @@ use async_nats::jetstream::{
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use futures::Stream;
+use serde_json::Value;
 use sqlx::Postgres;
+use thiserror::Error;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
 use tracing::error;
 
-use crate::indexer::event::BlockEvents;
+use crate::{
+    github_client::GitCommitHash,
+    indexer::{
+        event::types::{
+            self, BlockEvents, ChannelId, NatsConsumerSequence, NatsStreamSequence, PacketHash,
+            UniversalChainId,
+        },
+        record::InternalChainId,
+    },
+};
 
 #[derive(Debug, thiserror::Error)]
 pub enum IndexerError {
@@ -25,21 +38,21 @@ pub enum IndexerError {
     #[error("received unexpected height {0} (range {1}): expecting {2}")]
     UnexpectedHeightRange(BlockHeight, BlockRange, BlockHeight),
     #[error("error reading block {0} (range {1}): {2}")]
-    ErrorReadingBlock(BlockHeight, BlockRange, Report),
+    ErrorReadingBlock(BlockHeight, BlockRange, Box<Report>),
     #[error("expected to receive block {0} (range {1})")]
     MissingBlock(BlockHeight, BlockRange),
     #[error("received block while not expecting more (range {0}): {1}")]
     TooManyBlocks(BlockRange, BlockReference),
     #[error("received error while not expecting more (range {0}): {1}")]
-    TooManyBlocksError(BlockRange, Report),
+    TooManyBlocksError(BlockRange, Box<Report>),
     #[error("no block at: {0}")]
     NoBlock(BlockSelection),
     #[error("database error: {0}")]
     DatabaseError(sqlx::Error),
     #[error("provider error: {0}")]
-    ProviderError(Report),
+    ProviderError(Box<Report>),
     #[error("internal error: {0}")]
-    InternalError(Report),
+    InternalError(Box<Report>),
     #[error("nats publish error: {0}")]
     NatsPublishError(#[from] async_nats::error::Error<PublishErrorKind>),
     #[error("nats consumer error: {0}")]
@@ -65,24 +78,104 @@ pub enum IndexerError {
     #[error("unsupported encoding: {0}")]
     NatsUnsupportedEncoding(String),
     #[error("missing message sequence in stream sequence: {0}, consumer_sequence sequence: {1}")]
-    NatsMissingMessageHeaders(u64, u64),
+    NatsMissingMessageHeaders(NatsStreamSequence, NatsConsumerSequence),
     #[error("missing headers: in stream sequence: {0}, consumer_sequence sequence: {1}")]
-    NatsMissingMessageSequence(u64, u64),
+    NatsMissingMessageSequence(NatsStreamSequence, NatsConsumerSequence),
     #[error("unsupported message sequence:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
-    NatsUnparsableMessageSequence(String, u64, u64, ParseIntError),
+    NatsUnparsableMessageSequence(
+        String,
+        NatsStreamSequence,
+        NatsConsumerSequence,
+        Box<ParseIntError>,
+    ),
     #[error("missing message hash: in stream sequence: {0}, consumer_sequence sequence: {1}")]
-    NatsMissingMessageHash(u64, u64),
+    NatsMissingMessageHash(NatsStreamSequence, NatsConsumerSequence),
     #[error("unsupported message hash:{0} in stream sequence: {1}, consumer_sequence sequence: {2} ({3})")]
-    NatsUnparsableMessageHash(String, u64, u64, hex::FromHexError),
+    NatsUnparsableMessageHash(
+        String,
+        NatsStreamSequence,
+        NatsConsumerSequence,
+        Box<hex::FromHexError>,
+    ),
     #[error(
         "missing universal chain id: in stream sequence: {0}, consumer_sequence sequence: {1}"
     )]
-    NatsMissingUniversalChainId(u64, u64),
+    NatsMissingUniversalChainId(NatsStreamSequence, NatsConsumerSequence),
+    #[error("invalid commit hash for abi: {0}")]
+    InvalidCommitHashForAbi(String),
+    #[error("no abi for address: {0}")]
+    AbiNoAbiForAddress(Address),
+    #[error("internal error: cannot map to database domain - {0}: {1}")]
+    InternalCannotMapToDatabaseDomain(String, String),
+    #[error("internal error: cannot map from database domain - {0}: {1}")]
+    InternalCannotMapFromDatabaseDomain(String, String),
+    #[error("cannot parse hex: {0}")]
+    CannotParseHex(#[from] alloy::hex::FromHexError),
+    #[error(
+        "cannot parse abi encoded message: {0} chain: {1}, contract: {2} ({3}) (with commit {4})"
+    )]
+    AbiCannotParse(
+        Box<AbiParsingError>,
+        InternalChainId,
+        Address,
+        String,
+        GitCommitHash,
+    ),
+    #[error("internal error: cannot map to handler domain - {0}: {1}")]
+    CannotMapToHandlerDomain(String, String),
+    #[error("internal error: cannot map to event domain - {0}: {1}")]
+    CannotMapToEventDomain(String, String),
+    #[error("internal error: cannot map to event domain; missing key: {0}.{1} (expecting: {2})")]
+    CannotMapToEventDomainMissingKey(String, String, String),
+    #[error("internal error: cannot map to event domain; multiple key: {0}.{1} (expecting: {2})")]
+    CannotMapToEventDomainMultipleKey(String, String, String),
+    #[error(
+        "internal error: cannot map to event domain; unexpected type: {0}.{1} {2} (expecting: {3})"
+    )]
+    CannotMapToEventDomainUnexpectedType(String, String, String, String),
+    #[error(
+        "internal error: cannot map to event domain; about of range: {0}.{1} {2} (expecting: {3})"
+    )]
+    CannotMapToEventDomainOutOfRange(String, String, String, String),
+    #[error("No chain found with universal_chain_id {0}. Add it to the config.chains table before using it in hubble")]
+    MissingChainConfiguration(UniversalChainId),
+    #[error(
+        "zkgm decoding: invalid packet - chain: {0}, channel: {1}, packet-hash: {2}, error: {3}"
+    )]
+    ZkgmInvalidPacket(InternalChainId, ChannelId, PacketHash, Box<anyhow::Error>),
+    #[error("zkgm decoding: expecting 'tree' attribute - chain: {0}, channel: {1}, packet-hash: {2}, in: {3}")]
+    ZkgmExpectingTree(InternalChainId, ChannelId, PacketHash, Value),
+    #[error("zkgm decoding: expecting 'flatten' attribute in - chain: {0}, channel: {1}, packet-hash: {2}, in: {3}")]
+    ZkgmExpectingFlatten(InternalChainId, ChannelId, PacketHash, Value),
+    #[error("zkgm decoding: expecting {0}, in: {1}")]
+    ZkgmExpectingInstructionField(String, String),
+    #[error("hex decoding: expecting 0x decoding {0}: {1}")]
+    HexDecodeErrorExpecting0x(String, String),
+    #[error("hex decoding: expecting hex decoding {0}: {1}")]
+    HexDecodeErrorInvalidHex(String, String),
+    #[error("bech32 decoding: expecting bech32 {0}: {1}")]
+    Bech32DecodeErrorInvalidBech32(String, String),
+    #[error("wrapper prediction error in {0}: {1}")]
+    WrapperPredictionError(String, String),
+    #[error("could not acquire lock for chain {0} block {1} (already held by another process)")]
+    LockAcquisitionFailed(UniversalChainId, types::BlockHeight),
+}
+
+#[derive(Error, Debug)]
+pub enum AbiParsingError {
+    /// The name of the decoded event is not found in the ABI. This might
+    /// indicate an ABI mismatch.
+    #[error("event not found for given abi")]
+    UnknownEvent { selector: FixedBytes<32> },
+    /// The name of the event IS found in the ABI, yet decoding still failed.
+    /// This might indicate an out-of-date ABI.
+    #[error("could not decode, abi might mismatch data")]
+    DecodingError(#[from] alloy::dyn_abi::Error),
 }
 
 impl From<Report> for IndexerError {
     fn from(error: Report) -> Self {
-        Self::InternalError(error)
+        Self::InternalError(Box::new(error))
     }
 }
 
@@ -96,12 +189,31 @@ pub type IndexerId = String;
 pub type BlockHeight = u64;
 pub type BlockHash = String;
 pub type BlockTimestamp = OffsetDateTime;
-pub type UniversalChainId = String;
 
 #[derive(Clone, Debug, serde::Deserialize, serde::Serialize)]
 pub struct BlockRange {
     pub start_inclusive: BlockHeight,
     pub end_exclusive: BlockHeight,
+}
+
+impl From<&BlockRange> for crate::indexer::event::types::Range {
+    fn from(value: &BlockRange) -> Self {
+        Self {
+            start_inclusive: value.start_inclusive,
+            end_exclusive: value.end_exclusive,
+        }
+    }
+}
+
+impl From<&BlockReference> for crate::indexer::event::types::Range {
+    fn from(value: &BlockReference) -> Self {
+        Self {
+            // a range for a single block starts at the block height (inclusive) and ...
+            start_inclusive: value.height,
+            // ends one block after the block height (because it's exclusive).
+            end_exclusive: value.height + 1,
+        }
+    }
 }
 
 impl BlockRange {

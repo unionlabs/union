@@ -3,10 +3,11 @@ use sqlx::PgPool;
 use url::Url;
 
 use crate::indexer::{
-    api::{BlockHeight, IndexerId, UniversalChainId},
+    api::{BlockHeight, IndexerId},
+    event::types::UniversalChainId,
     nats::NatsConnection,
     tendermint::{context::TmContext, fetcher_client::TmFetcherClient},
-    ConsumerConfig, FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
+    ConsumerConfig, EnricherConfig, FinalizerConfig, FixerConfig, Indexer, PublisherConfig,
 };
 
 const DEFAULT_CHUNK_SIZE: usize = 20;
@@ -29,7 +30,11 @@ pub struct Config {
     #[serde(default)]
     pub consumer: ConsumerConfig,
     #[serde(default)]
+    pub enricher: EnricherConfig,
+    #[serde(default)]
     pub testnet: bool,
+    #[serde(default)]
+    pub drain: bool,
 }
 
 impl Config {
@@ -49,6 +54,7 @@ impl Config {
             self.fixer,
             self.publisher,
             self.consumer,
+            self.enricher,
             TmContext {
                 rpc_urls: self.rpc_urls,
                 tx_search_max_page_size: self
@@ -56,6 +62,7 @@ impl Config {
                     .unwrap_or(DEFAULT_TRANSACTIONS_MAX_PAGE_SIZE),
                 testnet: self.testnet,
             },
+            self.drain,
         ))
     }
 }

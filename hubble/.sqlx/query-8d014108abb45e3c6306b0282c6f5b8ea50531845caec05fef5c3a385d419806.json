@@ -1,0 +1,14 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            INSERT INTO abi.dependency(commit)\n            VALUES ($1)\n            ON CONFLICT DO NOTHING;\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Bytea"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "8d014108abb45e3c6306b0282c6f5b8ea50531845caec05fef5c3a385d419806"
+}

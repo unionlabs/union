@@ -1,6 +1,9 @@
+pub(crate) mod block_enrich;
 pub(crate) mod block_fix;
 pub(crate) mod block_status;
 pub(crate) mod block_update;
-pub(crate) mod event_data;
+pub(crate) mod chain_context;
 pub(crate) mod indexer_status;
+pub(crate) mod lock;
 pub(crate) mod nats;
+pub(crate) mod replication_reset;

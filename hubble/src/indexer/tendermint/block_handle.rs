@@ -3,7 +3,7 @@ use std::collections::{HashMap, HashSet};
 use axum::async_trait;
 use color_eyre::eyre::{eyre, Report};
 use cometbft_rpc::{
-    rpc_types::{BlockMeta, BlockResponse, CommitResponse},
+    rpc_types::{BlockMeta, BlockResponse, CommitResponse, TxResponse},
     types::types::{block_id::BlockId, header::Header},
 };
 use futures::Stream;
@@ -17,13 +17,14 @@ use crate::indexer::{
     api::{
         BlockHandle, BlockRange, BlockReference, BlockReferenceProvider, FetchMode, IndexerError,
     },
-    event::BlockEvents,
+    event::types::BlockEvents,
     tendermint::{
         fetcher_client::TmFetcherClient,
-        postgres::{
-            active_contracts, insert_batch_blocks, insert_batch_events, insert_batch_transactions,
-            PgBlock, PgEvent, PgTransaction,
+        mapping::legacy::{
+            insert_batch_blocks, insert_batch_events, insert_batch_transactions, PgBlock, PgEvent,
+            PgTransaction,
         },
+        postgres::active_contracts,
         provider::RpcProviderId,
     },
 };
@@ -68,12 +69,14 @@ impl BlockReferenceProvider for BlockHeader {
             hash: self
                 .block_id
                 .hash
-                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
+                .ok_or(IndexerError::ProviderError(Box::new(eyre!(
+                    "expected hash"
+                ))))?
                 .to_string(),
             timestamp: OffsetDateTime::from_unix_timestamp_nanos(
                 self.header.time.as_unix_nanos().into(),
             )
-            .map_err(|err| IndexerError::ProviderError(err.into()))?,
+            .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?,
         })
     }
 }
@@ -85,20 +88,26 @@ impl BlockReferenceProvider for BlockMeta {
             hash: self
                 .block_id
                 .hash
-                .ok_or(IndexerError::ProviderError(eyre!("expected hash")))?
+                .ok_or(IndexerError::ProviderError(Box::new(eyre!(
+                    "expected hash"
+                ))))?
                 .to_string(),
             timestamp: OffsetDateTime::from_unix_timestamp_nanos(
                 self.header.time.as_unix_nanos().into(),
             )
-            .map_err(|err| IndexerError::ProviderError(err.into()))?,
+            .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?,
         })
     }
 }
 
+#[allow(clippy::large_enum_variant)]
 #[derive(Clone)]
 pub enum BlockDetails {
     Lazy(Box<BlockHeader>),
-    Eager(PgBlock, Vec<PgTransaction>, Vec<PgEvent>),
+    Eager(
+        (PgBlock, Vec<PgTransaction>, Vec<PgEvent>),
+        (BlockHeader, Vec<TxResponse>),
+    ),
 }
 
 #[derive(Clone)]
@@ -113,9 +122,15 @@ pub struct TmBlockHandle {
 impl TmBlockHandle {
     async fn get_block_insert(
         &self,
-    ) -> Result<(PgBlock, Vec<PgTransaction>, Vec<PgEvent>), Report> {
+    ) -> Result<
+        (
+            (PgBlock, Vec<PgTransaction>, Vec<PgEvent>),
+            (BlockHeader, Vec<TxResponse>),
+        ),
+        Report,
+    > {
         Ok(match self.details.clone() {
-            BlockDetails::Eager(block, transactions, events) => (block, transactions, events),
+            BlockDetails::Eager(pg_data, raw_data) => (pg_data, raw_data),
             BlockDetails::Lazy(block_header) => {
                 self.tm_client
                     .fetch_details(&block_header, self.provider_id)
@@ -297,7 +312,8 @@ impl BlockHandle for TmBlockHandle {
         let reference = self.reference();
         debug!("{}: inserting", reference);
 
-        let (block, transactions, events) = self.get_block_insert().await?;
+        let ((block, transactions, events), (raw_block_header, raw_transactions)) =
+            self.get_block_insert().await?;
 
         let active_contracts = active_contracts(tx, self.internal_chain_id, block.height).await?;
         trace!("{reference}: active contracts: {}", active_contracts.len());
@@ -337,6 +353,12 @@ impl BlockHandle for TmBlockHandle {
                 insert_batch_blocks(vec![block]).await?,
                 insert_batch_transactions(filtered_transactions).await?,
                 insert_batch_events(filtered_events).await?,
+                self.tm_client.transform_to_ucs_events(
+                    &reference,
+                    &active_contracts,
+                    &raw_block_header,
+                    &raw_transactions,
+                )?,
             ]
             .into_iter()
             .flatten()
@@ -349,7 +371,7 @@ impl BlockHandle for TmBlockHandle {
 
         debug!("{}: done", reference);
 
-        Ok((!events.is_empty()).then_some(BlockEvents::new(events)))
+        Ok((!events.is_empty()).then_some(events.into()))
     }
 
     async fn update(

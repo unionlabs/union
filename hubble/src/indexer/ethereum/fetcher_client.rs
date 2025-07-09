@@ -3,44 +3,39 @@ use std::{collections::HashMap, fmt::Display};
 use alloy::{
     eips::BlockId,
     network::AnyRpcBlock,
-    primitives::{Address, BloomInput, FixedBytes},
+    primitives::BloomInput,
     rpc::types::{BlockTransactionsKind, Filter, Log},
 };
+use alloy_primitives::Address;
 use axum::async_trait;
 use color_eyre::eyre::Report;
 use itertools::Itertools;
 use time::OffsetDateTime;
 use tokio::task::JoinSet;
-use tracing::{debug, info, info_span, trace, Instrument};
+use tracing::{debug, error, info, info_span, trace, warn, Instrument};
 
 use crate::{
+    github_client::GitCommitHash,
     indexer::{
-        api::{
-            BlockHeight, BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError,
-        },
+        api::{BlockReference, BlockSelection, FetchMode, FetcherClient, IndexerError},
         ethereum::{
+            abi::{AbiRegistration, GeneratedAbi},
             block_handle::{
                 BlockDetails, BlockInsert, EthBlockHandle, EventInsert, TransactionInsert,
             },
             context::EthContext,
-            postgres::active_contracts,
+            mapping::legacy::ToLowerHex,
+            postgres::{
+                ensure_abi_dependency, generated_abi, get_abi_registration, update_contract_abi,
+            },
             provider::{Provider, RpcProviderId},
         },
+        record::InternalChainId,
     },
     postgres::{fetch_chain_id_tx, ChainId},
 };
 
-pub trait ToLowerHex {
-    fn to_lower_hex(&self) -> String;
-}
-
-impl ToLowerHex for FixedBytes<32> {
-    fn to_lower_hex(&self) -> String {
-        format!("{:#x}", self)
-    }
-}
-
-trait BlockReferenceProvider {
+pub trait BlockReferenceProvider {
     fn block_reference(&self) -> Result<BlockReference, Report>;
 }
 
@@ -52,7 +47,7 @@ impl BlockReferenceProvider for AnyRpcBlock {
             timestamp: OffsetDateTime::from_unix_timestamp(
                 self.header.timestamp.try_into().unwrap(),
             )
-            .map_err(|err| IndexerError::ProviderError(err.into()))?,
+            .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?,
         })
     }
 }
@@ -70,11 +65,54 @@ pub struct TransactionFilter {
     pub pg_pool: sqlx::PgPool,
 }
 impl TransactionFilter {
-    pub(crate) async fn addresses_at(
+    pub(crate) async fn abi_registration_at(
         &self,
-        height: BlockHeight,
-    ) -> Result<Vec<Address>, IndexerError> {
-        Ok(active_contracts(&mut self.pg_pool.begin().await?, self.chain_id.db, height).await?)
+        height: &crate::indexer::event::types::BlockHeight,
+    ) -> Result<AbiRegistration, IndexerError> {
+        get_abi_registration(
+            &mut self.pg_pool.begin().await?,
+            &self.chain_id.db.into(),
+            height,
+        )
+        .await
+    }
+
+    pub(crate) async fn update_contract_abi(
+        &self,
+        internal_chain_id: &InternalChainId,
+        contract: &Address,
+        description: &String,
+        generated_abi: &GeneratedAbi,
+    ) -> Result<bool, IndexerError> {
+        let mut tx = self.pg_pool.begin().await?;
+        let result = update_contract_abi(
+            &mut tx,
+            internal_chain_id,
+            contract,
+            description,
+            generated_abi,
+        )
+        .await?;
+        tx.commit().await?;
+        Ok(result)
+    }
+
+    pub(crate) async fn register_abi_dependency(
+        &self,
+        commit: &GitCommitHash,
+    ) -> Result<bool, IndexerError> {
+        let mut tx = self.pg_pool.begin().await?;
+        let result = ensure_abi_dependency(&mut tx, commit).await?;
+        tx.commit().await?;
+        Ok(result)
+    }
+
+    pub(crate) async fn generated_abi(
+        &self,
+        commit: &GitCommitHash,
+        description: &String,
+    ) -> Result<Option<GeneratedAbi>, IndexerError> {
+        generated_abi(&mut self.pg_pool.begin().await?, commit, description).await
     }
 }
 
@@ -147,21 +185,25 @@ impl EthFetcherClient {
 
         info!("{}: fetch", block_reference);
 
-        let contract_addresses = self
+        let abi_registration = self
             .transaction_filter
-            .addresses_at(block_reference.height)
+            .abi_registration_at(&block_reference.height.into())
             .await?;
         debug!(
-            "{}: contract-addresses: {:?}",
-            block_reference, &contract_addresses
+            "{}: contract-addresses: {}",
+            block_reference, &abi_registration
         );
         // We check for a potential log match, which potentially avoids querying
         // eth_getLogs.
         let bloom = block.header.logs_bloom;
 
-        if contract_addresses.iter().all(|contract_address| {
-            !bloom.contains_input(BloomInput::Raw(&contract_address.into_array()))
-        }) {
+        if abi_registration
+            .addresses()
+            .into_iter()
+            .all(|contract_address| {
+                !bloom.contains_input(BloomInput::Raw(&contract_address.into_array()))
+            })
+        {
             info!("{}: ignored (bloom)", block_reference);
             return Ok(None);
         }
@@ -169,13 +211,13 @@ impl EthFetcherClient {
         // We know now there is a potential match, we still apply a Filter to only
         // get the logs we want.
         let log_filter = Filter::new().select(block.header.hash);
-        let log_filter = log_filter.address(contract_addresses);
+        let log_filter = log_filter.address(abi_registration.addresses());
 
         let logs = self
             .provider
             .get_logs(&log_filter, Some(provider_id))
             .await
-            .map_err(|err| IndexerError::ProviderError(err.into()))?
+            .map_err(|err| IndexerError::ProviderError(Box::new(err.into())))?
             .response;
 
         // The bloom filter returned a false positive, and we don't actually have matching logs.
@@ -186,7 +228,7 @@ impl EthFetcherClient {
 
         let events_by_transaction = {
             let mut map: HashMap<(_, _), Vec<Log>> = HashMap::with_capacity(logs.len());
-            for log in logs {
+            for log in &logs {
                 if log.removed {
                     continue;
                 }
@@ -196,7 +238,7 @@ impl EthFetcherClient {
                     log.transaction_index.unwrap(),
                 ))
                 .and_modify(|logs| logs.push(log.clone()))
-                .or_insert(vec![log]);
+                .or_insert(vec![log.clone()]);
             }
             map
         };
@@ -208,10 +250,10 @@ impl EthFetcherClient {
                 let transaction_index: i32 = transaction_index.try_into().unwrap();
 
                 let events: Vec<EventInsert> = logs
-                    .into_iter()
+                    .iter()
                     .enumerate()
                     .map(|(transaction_log_index, log)| {
-                        let data = serde_json::to_value(&log).unwrap();
+                        let data = serde_json::to_value(log).unwrap();
                         EventInsert {
                             data,
                             log_index: log.log_index.expect("log_index").try_into().unwrap(),
@@ -244,6 +286,83 @@ impl EthFetcherClient {
             transactions.len()
         );
 
+        // do ucs transformation
+        let ucs_events = match self.transform_logs_to_ucs_events(&abi_registration, block, &logs) {
+            Ok(events) => Ok(events),
+            Err(IndexerError::AbiCannotParse(
+                err,
+                internal_chain_id,
+                contract,
+                description,
+                commit,
+            )) => {
+                match self
+                    .transaction_filter
+                    .generated_abi(&commit, &description)
+                    .await?
+                {
+                    Some(generated_abi) => {
+                        match self
+                            .transaction_filter
+                            .update_contract_abi(
+                                &internal_chain_id,
+                                &contract,
+                                &description,
+                                &generated_abi,
+                            )
+                            .await
+                        {
+                            Ok(true) => {
+                                info!("error decoding message ({err}): contract abi updated")
+                            }
+                            Ok(false) => {
+                                warn!("error decoding message ({err}): contract abi already up to date")
+                            }
+                            Err(err) => {
+                                error!("error decoding message ({err}): cannot update contract abi")
+                            }
+                        }
+                    }
+                    None => {
+                        info!("error decoding message ({err}): no abi definition found with commit {commit} => ensure it's registered");
+
+                        match self
+                            .transaction_filter
+                            .register_abi_dependency(&commit)
+                            .await
+                        {
+                            Ok(true) => {
+                                info!("error decoding message ({err}): ensured that abi dependency ({commit}) is registered")
+                            }
+                            Ok(false) => {
+                                warn!(
+                                    "error decoding message: abi dependency was already registered"
+                                )
+                            }
+                            Err(err) => {
+                                error!("error registering abi dependency: {err}");
+                            }
+                        };
+                    }
+                };
+
+                Err(IndexerError::AbiCannotParse(
+                    err,
+                    internal_chain_id,
+                    contract,
+                    description,
+                    commit,
+                ))
+            }
+            Err(other) => Err(other),
+        }?;
+
+        debug!(
+            "{}: fetch => converted (events: {})",
+            block_reference,
+            ucs_events.len()
+        );
+
         Ok(Some(BlockInsert {
             chain_id: self.chain_id,
             hash: block_reference.hash,
@@ -251,6 +370,7 @@ impl EthFetcherClient {
             height: block_reference.height.try_into().unwrap(),
             time: block_reference.timestamp,
             transactions,
+            ucs_events,
         }))
     }
 }
@@ -276,6 +396,7 @@ impl FetcherClient for EthFetcherClient {
             let mut tx = pg_pool.begin().await?;
 
             let chain_id = fetch_chain_id_tx(&mut tx, chain_id.to_string()).await?;
+            info!("fetched chain-id from database: {}", chain_id);
 
             tx.commit().await?;
 

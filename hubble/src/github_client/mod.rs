@@ -6,7 +6,7 @@ pub mod commit_details;
 pub mod download;
 
 #[derive(Clone, Debug)]
-pub struct GitCommitHash([u8; 20]);
+pub struct GitCommitHash(pub [u8; 20]);
 
 impl GitCommitHash {
     pub fn from_slice(commit: &[u8]) -> Result<Self, String> {

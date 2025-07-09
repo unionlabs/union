@@ -138,6 +138,11 @@
                 default = null;
                 description = "Testnet (default false)";
               };
+              options.drain = mkOption {
+                type = types.nullOr types.bool;
+                default = null;
+                description = "Drain events: stop emitting events, so all events can be read from the stream (default false)";
+              };
               options.tx_search_max_page_size = mkOption {
                 type = types.int;
                 description = "Maximum number of transactions to fetch in one page";
