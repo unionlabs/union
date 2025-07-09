@@ -43,7 +43,7 @@
       "tags": ["canonical"]
     },
     "5": {
-      "comments": "osmosis.osmo-test-5 channel 3, official channel but with no relaying guarantees",
+      "comments": "osmosis.osmo-test-5 channel 3",
       "fees": {
         "forward": {
           "PACKET_RECV": "917981",
@@ -201,6 +201,26 @@
           "PACKET_SEND_LC_UPDATE_L1": "519141",
           "PACKET_SEND_LC_UPDATE_L2": "2116634"
         }
+      },
+      "tags": ["canonical"]
+    }
+  },
+  "osmosis.osmosis-1": {
+    "1": {
+      "comments": "babylon.bbn-1 channel 4",
+      "fees": {
+        "forward": {
+          "PACKET_RECV": "810553",
+          "PACKET_SEND_LC_UPDATE_L0": "2116634"
+        },
+        "reverse": {
+          "PACKET_RECV": "917981",
+          "PACKET_SEND_LC_UPDATE_L0": "5128061"
+        }
+      },
+      "sla": {
+        "forward": "PT20M",
+        "reverse": "PT20M"
       },
       "tags": ["canonical"]
     }

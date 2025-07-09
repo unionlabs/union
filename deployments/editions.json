@@ -40,6 +40,9 @@
       },
       "ethereum.1": {
         "environment": "production"
+      },
+      "osmosis.osmosis-1": {
+        "environment": "staging"
       }
     }
   }
