@@ -1,5 +1,6 @@
 import DiscordIcon from "$lib/components/icons/DiscordIcon.svelte"
 import GithubIcon from "$lib/components/icons/GithubIcon.svelte"
+import HistoryIcon from "$lib/components/icons/HistoryIcon.svelte"
 import OrbitIcon from "$lib/components/icons/OrbitIcon.svelte"
 import OutlineControlPointDuplicate from "$lib/components/icons/OutlineControlPointDuplicate.svelte"
 import SharpChannelsIcon from "$lib/components/icons/SharpChannelsIcon.svelte"
@@ -7,7 +8,6 @@ import SharpDashboardIcon from "$lib/components/icons/SharpDashboardIcon.svelte"
 import SharpStakeIcon from "$lib/components/icons/SharpStakeIcon.svelte"
 import SharpTransferIcon from "$lib/components/icons/SharpTransferIcon.svelte"
 import TwitterIcon from "$lib/components/icons/TwitterIcon.svelte"
-import HistoryIcon from "$lib/components/icons/HistoryIcon.svelte"
 import type { Component } from "svelte"
 
 export interface NavSubItem {
@@ -30,8 +30,6 @@ export interface NavSection {
   items: Array<NavItem>
 }
 
-
-// Export navigation in the old format for backward compatibility
 export const navigation: Array<NavSection> = [
   {
     items: [
@@ -39,26 +37,23 @@ export const navigation: Array<NavSection> = [
         path: "/transfer",
         title: "Transfer",
         icon: SharpTransferIcon,
-        // No subroutes - this is just a direct link
       },
       {
         path: "/transfer/multisig",
-        title: "Keplr Multisig", 
+        title: "Keplr Multisig",
         icon: OutlineControlPointDuplicate,
-        // No subroutes - this is just a direct link
       },
       {
         path: "/transfers",
         title: "History",
         icon: HistoryIcon,
-        // No subroutes - this is just a direct link
       },
     ],
   },
   {
     items: [
       {
-        path: "/explorer", // This path won't be used since it's not a link
+        path: "/explorer",
         title: "Explorer",
         icon: SharpChannelsIcon,
         subroutes: [
@@ -67,7 +62,7 @@ export const navigation: Array<NavSection> = [
             title: "Transfers",
           },
           {
-            path: "/explorer/packets", 
+            path: "/explorer/packets",
             title: "Packets",
           },
           {
@@ -84,7 +79,6 @@ export const navigation: Array<NavSection> = [
         path: "/explorer/orbital",
         title: "Orbital",
         icon: OrbitIcon,
-        // No subroutes - this is just a direct link
       },
     ],
   },

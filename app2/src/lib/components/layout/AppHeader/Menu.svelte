@@ -1,67 +1,67 @@
 <script lang="ts">
-  import { beforeNavigate } from '$app/navigation'
-  import { navigation } from '../AppNav/config'
-  import { uiStore } from '$lib/stores/ui.svelte'
-  import { slide } from 'svelte/transition'
-  import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
-  import Skeleton from "$lib/components/ui/Skeleton.svelte"
-  import { dashboard } from "$lib/dashboard/stores/user.svelte"
-  import { Option } from "effect"
-  import { onDestroy, onMount } from "svelte"
+import { beforeNavigate } from "$app/navigation"
+import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import { Option } from "effect"
+import { onDestroy, onMount } from "svelte"
+import { slide } from "svelte/transition"
+import { navigation } from "../AppNav/config"
 
-  interface Props {
-    onclose: () => void
+interface Props {
+  onclose: () => void
+}
+
+const { onclose }: Props = $props()
+
+let isNewUser = $state(false)
+let intervalId: ReturnType<typeof setInterval>
+let expandedSections = $state<Set<string>>(new Set())
+
+function toggleSection(itemTitle: string) {
+  if (expandedSections.has(itemTitle)) {
+    expandedSections.delete(itemTitle)
+  } else {
+    expandedSections.add(itemTitle)
   }
-  
-  const { onclose }: Props = $props()
+  expandedSections = new Set(expandedSections) // Trigger reactivity
+}
 
-  let isNewUser = $state(false)
-  let intervalId: ReturnType<typeof setInterval>
-  let expandedSections = $state<Set<string>>(new Set())
-
-  function toggleSection(itemTitle: string) {
-    if (expandedSections.has(itemTitle)) {
-      expandedSections.delete(itemTitle)
-    } else {
-      expandedSections.add(itemTitle)
-    }
-    expandedSections = new Set(expandedSections) // Trigger reactivity
-  }
-
-  function checkIfNewUser() {
-    Option.match(dashboard.user, {
-      onNone: () => {
-        isNewUser = false
-      },
-      onSome: (user) => {
-        const createdAt = new Date(user.created_at).getTime()
-        const oneHourAgo = Date.now() - (60 * 10 * 1000)
-        isNewUser = createdAt > oneHourAgo
-      },
-    })
-  }
-
-  $effect(() => {
-    if (Option.isSome(dashboard.user)) {
-      checkIfNewUser()
-    }
+function checkIfNewUser() {
+  Option.match(dashboard.user, {
+    onNone: () => {
+      isNewUser = false
+    },
+    onSome: (user) => {
+      const createdAt = new Date(user.created_at).getTime()
+      const oneHourAgo = Date.now() - (60 * 10 * 1000)
+      isNewUser = createdAt > oneHourAgo
+    },
   })
+}
 
-  onMount(() => {
+$effect(() => {
+  if (Option.isSome(dashboard.user)) {
     checkIfNewUser()
-    intervalId = setInterval(checkIfNewUser, 60 * 1000)
-  })
+  }
+})
 
-  onDestroy(() => {
-    if (intervalId) {
-      clearInterval(intervalId)
-    }
-  })
+onMount(() => {
+  checkIfNewUser()
+  intervalId = setInterval(checkIfNewUser, 60 * 1000)
+})
 
-  beforeNavigate(onclose)
+onDestroy(() => {
+  if (intervalId) {
+    clearInterval(intervalId)
+  }
+})
+
+beforeNavigate(onclose)
 </script>
 
-<div 
+<div
   class="md:hidden border-b border-zinc-900 bg-zinc-950"
   transition:slide={{ duration: 200 }}
 >
@@ -94,7 +94,10 @@
           <div class="relative">
             {#if Option.isSome(dashboard.identity.avatar)}
               <!-- Progress Ring Background -->
-              <svg class="absolute inset-0 w-14 h-14 -rotate-90 -top-1 -left-1" viewBox="0 0 56 56">
+              <svg
+                class="absolute inset-0 w-14 h-14 -rotate-90 -top-1 -left-1"
+                viewBox="0 0 56 56"
+              >
                 <circle
                   cx="28"
                   cy="28"
@@ -104,7 +107,8 @@
                   stroke-width="2"
                   class="text-zinc-700"
                 />
-                {#if Option.isSome(dashboard.experience) && Option.isSome(dashboard.experience.value.progress)}
+                {#if Option.isSome(dashboard.experience)
+              && Option.isSome(dashboard.experience.value.progress)}
                   <!-- Progress Ring -->
                   <circle
                     cx="28"
@@ -115,7 +119,9 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-dasharray={`${2 * Math.PI * 26}`}
-                    stroke-dashoffset={`${2 * Math.PI * 26 * (1 - dashboard.experience.value.progress.value / 100)}`}
+                    stroke-dashoffset={`${
+                      2 * Math.PI * 26 * (1 - dashboard.experience.value.progress.value / 100)
+                    }`}
                     class="text-accent transition-all duration-500 ease-out"
                   />
                 {/if}
@@ -127,7 +133,10 @@
               />
             {:else}
               <div class="relative">
-                <svg class="absolute inset-0 w-14 h-14 -rotate-90 -top-1 -left-1" viewBox="0 0 56 56">
+                <svg
+                  class="absolute inset-0 w-14 h-14 -rotate-90 -top-1 -left-1"
+                  viewBox="0 0 56 56"
+                >
                   <circle
                     cx="28"
                     cy="28"
@@ -142,10 +151,11 @@
               </div>
             {/if}
             {#if isNewUser}
-              <div class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full animate-pulse z-20"></div>
+              <div class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full animate-pulse z-20">
+              </div>
             {/if}
           </div>
-          
+
           <div class="flex flex-col gap-1 min-w-0 flex-1">
             <div class="h-5">
               {#if Option.isSome(dashboard.identity.username)}
@@ -160,16 +170,26 @@
               {#if Option.isSome(dashboard.experience)}
                 <div class="flex flex-col gap-1">
                   <p class="text-xs text-zinc-400 h-4">
-                    {#if Option.isSome(dashboard.experience.value.current) && Option.isSome(dashboard.experience.value.level)}
-                      Lvl {dashboard.experience.value.current.value.level} - {dashboard.experience.value.level.value}
+                    {#if Option.isSome(dashboard.experience.value.current)
+                  && Option.isSome(dashboard.experience.value.level)}
+                      Lvl {dashboard.experience.value.current.value.level} - {
+                        dashboard.experience.value.level.value
+                      }
                     {:else}
                       <Skeleton class="h-4 w-32" />
                     {/if}
                   </p>
                   <p class="text-xs text-zinc-500 h-4">
                     {#if Option.isSome(dashboard.experience.value.current)}
-                      {(dashboard.experience.value.current.value.current_xp ?? 0).toLocaleString()}
-                      / {((dashboard.experience.value.current.value.current_xp ?? 0) + (dashboard.experience.value.current.value.xp_required ?? 0)).toLocaleString()} XP
+                      {
+                        (dashboard.experience.value.current.value.current_xp ?? 0)
+                        .toLocaleString()
+                      }
+                      / {
+                        ((dashboard.experience.value.current.value.current_xp ?? 0)
+                        + (dashboard.experience.value.current.value.xp_required ?? 0))
+                        .toLocaleString()
+                      } XP
                     {:else}
                       <Skeleton class="h-4 w-40" />
                     {/if}
@@ -188,7 +208,8 @@
     {:else}
       <!-- Unauthenticated state -->
       <div class="relative overflow-hidden border-b border-zinc-900">
-        <div class="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent/10"></div>
+        <div class="absolute inset-0 bg-gradient-to-br from-accent/5 via-transparent to-accent/10">
+        </div>
         <div class="absolute inset-0 bg-gradient-to-t from-zinc-900/20 to-transparent"></div>
 
         <div class="relative px-4 py-4">
@@ -198,8 +219,18 @@
             onclick={onclose}
           >
             <div class="w-12 h-12 rounded-full bg-gradient-to-br from-accent/20 to-accent/40 flex items-center justify-center flex-shrink-0">
-              <svg class="w-6 h-6 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                class="w-6 h-6 text-accent"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             </div>
             <div class="flex flex-col gap-1">
@@ -221,7 +252,7 @@
             {section.title}
           </div>
         {/if}
-        
+
         {#each section.items as item}
           {#if item.subroutes}
             <!-- Expandable item with subroutes -->
@@ -232,18 +263,26 @@
               <item.icon class="w-5 h-5 flex-shrink-0" />
               <span class="flex-1">{item.title}</span>
               <!-- Chevron icon -->
-              <svg 
+              <svg
                 class="w-4 h-4 transition-transform duration-200 {expandedSections.has(item.title) ? 'rotate-180' : ''}"
-                fill="none" 
-                stroke="currentColor" 
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
               </svg>
             </button>
 
             {#if expandedSections.has(item.title)}
-              <div class="ml-8 space-y-1 overflow-hidden" transition:slide={{ duration: 200 }}>
+              <div
+                class="ml-8 space-y-1 overflow-hidden"
+                transition:slide={{ duration: 200 }}
+              >
                 {#each item.subroutes as subroute}
                   {#if !subroute.editions || subroute.editions.includes(uiStore.edition)}
                     <a
@@ -253,7 +292,9 @@
                     >
                       <span>{subroute.title}</span>
                       {#if subroute.new}
-                        <span class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                        <span
+                          class="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800"
+                        >
                           New
                         </span>
                       {/if}
@@ -274,9 +315,21 @@
               <item.icon class="w-5 h-5 flex-shrink-0" />
               <span>{item.title}</span>
               {#if item.external}
-                <svg class="w-3 h-3 ml-auto" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z" clip-rule="evenodd" />
-                  <path fill-rule="evenodd" d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z" clip-rule="evenodd" />
+                <svg
+                  class="w-3 h-3 ml-auto"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fill-rule="evenodd"
+                    d="M4.25 5.5a.75.75 0 00-.75.75v8.5c0 .414.336.75.75.75h8.5a.75.75 0 00.75-.75v-4a.75.75 0 011.5 0v4A2.25 2.25 0 0112.75 17h-8.5A2.25 2.25 0 012 14.75v-8.5A2.25 2.25 0 014.25 4h5a.75.75 0 010 1.5h-5z"
+                    clip-rule="evenodd"
+                  />
+                  <path
+                    fill-rule="evenodd"
+                    d="M6.194 12.753a.75.75 0 001.06.053L16.5 4.44v2.81a.75.75 0 001.5 0v-4.5a.75.75 0 00-.75-.75h-4.5a.75.75 0 000 1.5h2.553l-9.056 8.194a.75.75 0 00-.053 1.06z"
+                    clip-rule="evenodd"
+                  />
                 </svg>
               {/if}
             </a>

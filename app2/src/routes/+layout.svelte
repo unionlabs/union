@@ -155,10 +155,7 @@ $effect(() => {
     hidden={fullPageSidebar}
   >
     <div class="sticky top-0 z-110">
-      <AppHeader
-        chains={new Set([1, 56])}
-        showNavigation={isMobile}
-      />
+      <AppHeader />
     </div>
 
     <div class="absolute top-26 left-0 right-0 bottom-0 flex-1 z-0 overflow-scroll">

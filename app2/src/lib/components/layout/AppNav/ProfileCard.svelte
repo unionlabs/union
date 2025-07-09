@@ -1,45 +1,45 @@
 <script lang="ts">
-  import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
-  import Skeleton from "$lib/components/ui/Skeleton.svelte"
-  import { dashboard } from "$lib/dashboard/stores/user.svelte"
-  import { uiStore } from "$lib/stores/ui.svelte"
-  import { Option } from "effect"
-  import { onDestroy, onMount } from "svelte"
+import SpinnerIcon from "$lib/components/icons/SpinnerIcon.svelte"
+import Skeleton from "$lib/components/ui/Skeleton.svelte"
+import { dashboard } from "$lib/dashboard/stores/user.svelte"
+import { uiStore } from "$lib/stores/ui.svelte"
+import { Option } from "effect"
+import { onDestroy, onMount } from "svelte"
 
-  let { expanded = false }: { expanded?: boolean } = $props()
+let { expanded = false }: { expanded?: boolean } = $props()
 
-  let isNewUser = $state(false)
-  let intervalId: ReturnType<typeof setInterval>
+let isNewUser = $state(false)
+let intervalId: ReturnType<typeof setInterval>
 
-  function checkIfNewUser() {
-    Option.match(dashboard.user, {
-      onNone: () => {
-        isNewUser = false
-      },
-      onSome: (user) => {
-        const createdAt = new Date(user.created_at).getTime()
-        const oneHourAgo = Date.now() - (60 * 10 * 1000)
-        isNewUser = createdAt > oneHourAgo
-      },
-    })
-  }
-
-  $effect(() => {
-    if (Option.isSome(dashboard.user)) {
-      checkIfNewUser()
-    }
+function checkIfNewUser() {
+  Option.match(dashboard.user, {
+    onNone: () => {
+      isNewUser = false
+    },
+    onSome: (user) => {
+      const createdAt = new Date(user.created_at).getTime()
+      const oneHourAgo = Date.now() - (60 * 10 * 1000)
+      isNewUser = createdAt > oneHourAgo
+    },
   })
+}
 
-  onMount(() => {
+$effect(() => {
+  if (Option.isSome(dashboard.user)) {
     checkIfNewUser()
-    intervalId = setInterval(checkIfNewUser, 60 * 1000)
-  })
+  }
+})
 
-  onDestroy(() => {
-    if (intervalId) {
-      clearInterval(intervalId)
-    }
-  })
+onMount(() => {
+  checkIfNewUser()
+  intervalId = setInterval(checkIfNewUser, 60 * 1000)
+})
+
+onDestroy(() => {
+  if (intervalId) {
+    clearInterval(intervalId)
+  }
+})
 </script>
 
 {#if uiStore.edition === "app"}
@@ -65,12 +65,13 @@
         href="/dashboard"
         class="inline-flex items-center rounded-lg hover:bg-zinc-800 transition-colors duration-200 w-full"
       >
-        <!-- Avatar with Circular Progress Ring - fixed position like nav icons -->
         <span class="relative inline-block">
           <div class="m-2 flex h-8 w-8 items-center justify-center flex-shrink-0 relative">
             {#if Option.isSome(dashboard.identity.avatar)}
-              <!-- Progress Ring Background - larger than avatar to be visible -->
-              <svg class="absolute inset-0 w-10 h-10 -rotate-90 -top-1 -left-1" viewBox="0 0 40 40">
+              <svg
+                class="absolute inset-0 w-10 h-10 -rotate-90 -top-1 -left-1"
+                viewBox="0 0 40 40"
+              >
                 <circle
                   cx="20"
                   cy="20"
@@ -80,8 +81,8 @@
                   stroke-width="2"
                   class="text-zinc-700"
                 />
-                {#if Option.isSome(dashboard.experience) && Option.isSome(dashboard.experience.value.progress)}
-                  <!-- Progress Ring -->
+                {#if Option.isSome(dashboard.experience)
+              && Option.isSome(dashboard.experience.value.progress)}
                   <circle
                     cx="20"
                     cy="20"
@@ -91,7 +92,9 @@
                     stroke-width="2"
                     stroke-linecap="round"
                     stroke-dasharray={`${2 * Math.PI * 18}`}
-                    stroke-dashoffset={`${2 * Math.PI * 18 * (1 - dashboard.experience.value.progress.value / 100)}`}
+                    stroke-dashoffset={`${
+                      2 * Math.PI * 18 * (1 - dashboard.experience.value.progress.value / 100)
+                    }`}
                     class="text-accent transition-all duration-500 ease-out"
                   />
                 {/if}
@@ -103,7 +106,10 @@
               />
             {:else}
               <div class="relative">
-                <svg class="absolute inset-0 w-10 h-10 -rotate-90 -top-1 -left-1" viewBox="0 0 40 40">
+                <svg
+                  class="absolute inset-0 w-10 h-10 -rotate-90 -top-1 -left-1"
+                  viewBox="0 0 40 40"
+                >
                   <circle
                     cx="20"
                     cy="20"
@@ -118,12 +124,12 @@
               </div>
             {/if}
             {#if isNewUser}
-              <div class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full animate-pulse z-20"></div>
+              <div class="absolute -top-0.5 -right-0.5 w-3 h-3 bg-accent rounded-full animate-pulse z-20">
+              </div>
             {/if}
           </div>
         </span>
 
-        <!-- Text content - appears when expanded -->
         {#if expanded}
           <div class="flex w-full flex-col gap-1 whitespace-nowrap px-2 min-w-0">
             {#if Option.isSome(dashboard.identity.username)}
@@ -133,10 +139,14 @@
             {:else}
               <Skeleton class="h-4 w-20" />
             {/if}
-            
-            {#if Option.isSome(dashboard.experience) && Option.isSome(dashboard.experience.value.current) && Option.isSome(dashboard.experience.value.level)}
+
+            {#if Option.isSome(dashboard.experience)
+          && Option.isSome(dashboard.experience.value.current)
+          && Option.isSome(dashboard.experience.value.level)}
               <p class="text-xs text-zinc-400">
-                Lvl {dashboard.experience.value.current.value.level} - {dashboard.experience.value.level.value}
+                Lvl {dashboard.experience.value.current.value.level} - {
+                  dashboard.experience.value.level.value
+                }
               </p>
             {:else}
               <Skeleton class="h-3 w-16" />
@@ -146,25 +156,32 @@
       </a>
     </div>
   {:else}
-    <!-- Unauthenticated state -->
     <div class="overflow-hidden">
       <a
         href="/auth/sign-in"
         class="inline-flex items-center rounded-lg hover:bg-zinc-800 transition-colors duration-200 w-full"
         title="Sign In"
       >
-        <!-- Icon - fixed position -->
         <span class="relative inline-block">
           <div class="m-2 flex h-8 w-8 items-center justify-center flex-shrink-0">
             <div class="w-8 h-8 rounded-full bg-gradient-to-br from-accent/20 to-accent/40 flex items-center justify-center">
-              <svg class="w-4 h-4 text-accent" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+              <svg
+                class="w-4 h-4 text-accent"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+                />
               </svg>
             </div>
           </div>
         </span>
 
-        <!-- Text content - appears when expanded -->
         {#if expanded}
           <div class="flex w-full flex-col gap-1 whitespace-nowrap px-2">
             <p class="text-sm font-semibold text-white">Start Earning</p>
@@ -174,4 +191,4 @@
       </a>
     </div>
   {/if}
-{/if} 
+{/if}
