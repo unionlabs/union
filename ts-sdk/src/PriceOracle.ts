@@ -10,22 +10,30 @@
  * - (optional) Allow for choosing localized currency such as not to hardcode USD.
  */
 import {
+  FetchHttpClient,
+  HttpClient,
+  HttpClientRequest,
+  HttpClientResponse,
+} from "@effect/platform"
+import {
   Array as A,
   BigDecimal,
   Context,
   Data,
+  DateTime,
   Effect,
   ExecutionPlan,
   Layer,
   Match,
   Number as N,
   Option as O,
+  ParseResult,
   Record as R,
   Schedule,
   Schema as S,
   Stream,
 } from "effect"
-import { flow, pipe } from "effect/Function"
+import { absurd, constTrue, flow, pipe } from "effect/Function"
 import { GAS_DENOMS } from "./constants/gas-denoms.js"
 import { UniversalChainId } from "./schema/chain.js"
 
@@ -68,7 +76,7 @@ export class PriceOracle extends Context.Tag("@unionlabs/sdk/PriceOracle")<
   PriceOracle.Service
 >() {}
 
-const Pyth = Layer.effect(
+export const Pyth = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
     const symbolFromId = Effect.fn("symbolFromId")(
@@ -214,7 +222,7 @@ const Pyth = Layer.effect(
 /**
  * https://app.redstone.finance
  */
-const Redstone = Layer.effect(
+export const Redstone = Layer.effect(
   PriceOracle,
   Effect.gen(function*() {
     const DATA_SERVICE_ID = "redstone-primary-prod"
@@ -243,10 +251,6 @@ const Redstone = Layer.effect(
       getRegistryState,
       Effect.map(flow(
         x => x.nodes,
-        x => {
-          console.log({ nodes: x })
-          return x
-        },
         R.values,
         A.filter(x => x.dataServiceId === DATA_SERVICE_ID),
         A.map(x => x.evmAddress),
@@ -259,7 +263,7 @@ const Redstone = Layer.effect(
           Effect.tryPromise({
             try: () =>
               requestDataPackages({
-                dataServiceId: "redstone-primary-prod", // production-grade service
+                dataServiceId: DATA_SERVICE_ID, // production-grade service
                 dataPackagesIds: [symbol],
                 uniqueSignersCount: 2, // security via multiple signers
                 maxTimestampDeviationMS: 60 * 1000, // tolerate 1 min clock skew
@@ -367,6 +371,149 @@ const Redstone = Layer.effect(
   }),
 )
 
+export const Band = Layer.effect(
+  PriceOracle,
+  Effect.gen(function*() {
+    const DEFAULT_REST = "https://laozi1.bandchain.org/api" // Laozi main‑net
+    const DEFAULT_ASK = 4
+    const DEFAULT_MIN = 3
+
+    const BandPriceRaw = S.Struct({
+      symbol: S.NonEmptyString.pipe(),
+      multiplier: S.PositiveBigInt,
+      px: S.PositiveBigInt,
+      request_id: S.PositiveBigInt,
+      resolve_time: S.NonEmptyString,
+    })
+
+    const BandPriceFromSelf = S.Struct({
+      symbol: S.NonEmptyString.pipe(),
+      price: S.PositiveBigDecimalFromSelf,
+      multiplier: S.PositiveBigIntFromSelf,
+      px: S.PositiveBigIntFromSelf,
+      request_id: S.PositiveBigIntFromSelf,
+      resolve_time: S.DateTimeUtcFromSelf,
+    })
+
+    const BandPrice = S.transformOrFail(
+      BandPriceRaw,
+      BandPriceFromSelf,
+      {
+        decode: (fromA, _options, ast, _fromI) =>
+          Effect.gen(function*() {
+            const resolve_time = yield* DateTime.make(new Date(Number(fromA.resolve_time) * 1000))
+              .pipe(
+                Effect.mapError((e) => new ParseResult.Type(ast, fromA, e.message)),
+              )
+            const price = yield* BigDecimal.divide(
+              BigDecimal.fromBigInt(fromA.px),
+              BigDecimal.fromBigInt(fromA.multiplier),
+            ).pipe(
+              Effect.mapError((e) => new ParseResult.Type(ast, fromA, e.message)),
+            )
+
+            return {
+              ...fromA,
+              price,
+              resolve_time,
+            } as const
+          }),
+        encode: (toI) => {
+          // TODO: unimplemented
+          return Effect.succeed(toI) as unknown as Effect.Effect<any, never, never>
+        },
+        strict: true,
+      },
+    )
+
+    const of: PriceOracle.Service["of"] = Effect.fn("of")((id) =>
+      Effect.gen(function*() {
+        const symbol = yield* pipe(
+          R.get(GAS_DENOMS, id),
+          Effect.mapError(() =>
+            new PriceError({
+              message: `ID ${id} does not exist in GAS_DENOMS`,
+            })
+          ),
+          Effect.map(x => x.tickerSymbol),
+        )
+
+        const params = new URLSearchParams({
+          symbols: symbol.toUpperCase(), // endpoint accepts repeated ?symbols=
+          ask_count: DEFAULT_ASK.toString(),
+          min_count: DEFAULT_MIN.toString(),
+        })
+
+        const httpClient = yield* pipe(
+          HttpClient.HttpClient,
+          Effect.map(HttpClient.withTracerDisabledWhen(constTrue)),
+          Effect.map(HttpClient.filterStatusOk),
+          Effect.map(HttpClient.mapRequest(HttpClientRequest.prependUrl(DEFAULT_REST))),
+          Effect.mapError((cause) =>
+            new PriceError({
+              message: "Failed to initialize HttpClient",
+              cause,
+            })
+          ),
+          Effect.provide(FetchHttpClient.layer),
+        )
+
+        const { price_results } = yield* pipe(
+          httpClient.get(`/oracle/v1/request_prices`, {
+            urlParams: params,
+          }),
+          Effect.flatMap(HttpClientResponse.schemaBodyJson(S.Struct({
+            price_results: S.Array(BandPrice),
+          }))),
+          Effect.mapError((cause) =>
+            new PriceError({
+              message: `Failed to fetch price feed for ${symbol}`,
+              cause,
+            })
+          ),
+        )
+
+        const price = (yield* A.isNonEmptyReadonlyArray(price_results)
+          ? Effect.succeed(A.headNonEmpty(price_results))
+          : new PriceError({
+            message: `No results for symbol ${symbol}`,
+          })).price
+
+        return PriceResult.make({
+          price,
+          source: {
+            url: new URL("https://www.bandprotocol.com/"),
+          },
+        })
+      })
+    )
+
+    return PriceOracle.of({
+      ratio: Effect.fn(function*(a, b) {
+        const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
+        const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
+          Effect.map(BigDecimal.round({ scale: 4, mode: "from-zero" })),
+          Effect.tap((x) => Effect.logDebug(`Dividing ${ofA.price} by ${ofB.price} to get ${x}`)),
+          Effect.mapError((cause) =>
+            new PriceError({
+              message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+              cause,
+            })
+          ),
+        )
+
+        return {
+          ratio,
+          source: ofA.source,
+          destination: ofB.source,
+        } as const
+      }),
+      stream: absurd as unknown as any,
+      of,
+    })
+  }),
+)
+
 export const LivePlan = ExecutionPlan.make(
   {
     provide: Pyth,
@@ -375,6 +522,11 @@ export const LivePlan = ExecutionPlan.make(
   },
   {
     provide: Redstone,
+    attempts: 2,
+    schedule: Schedule.exponential("100 millis", 1.5),
+  },
+  {
+    provide: Band,
     attempts: 2,
     schedule: Schedule.exponential("100 millis", 1.5),
   },
