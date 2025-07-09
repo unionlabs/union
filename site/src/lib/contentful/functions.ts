@@ -1,8 +1,4 @@
 import { env } from "#/lib/constants/env.ts"
-import { ContentfulLivePreview } from "@contentful/live-preview"
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
-import { BLOCKS, type Document, INLINES, MARKS } from "@contentful/rich-text-types"
-import { createClient, type Entry } from "contentful"
 
 export type ConfigOptions = {
   locale: string
@@ -19,9 +15,7 @@ export function initializeContentfulLivePreview({
   debugMode,
   subscriptions,
 }: ConfigOptions) {
-  const contentfulClient = createClient({
     space: env.CONTENTFUL_SPACE_ID,
-    host: "preview.contentful.com",
     accessToken: env.CONTENTFUL_ACCESS_TOKEN,
   })
   ContentfulLivePreview.init({
@@ -31,7 +25,6 @@ export function initializeContentfulLivePreview({
     enableInspectorMode: true,
   })
 
-  contentfulClient
     .getEntry(entryId)
     .then(entry => {
       fields.forEach(fieldId => {
@@ -95,7 +88,6 @@ export function setupLivePreview({
             [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) => `<th>${next(node.content)}</th>`,
             [BLOCKS["QUOTE"]]: (node, next) => `<blockquote>${next(node.content)}</blockquote>`,
             [BLOCKS["PARAGRAPH"]]: (node, next) =>
-              `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">iiii${
                 next(node.content)
               }</p>`,
             [BLOCKS["UL_LIST"]]: (node, next) => `<ul>${next(node.content)}</ul>`,
@@ -146,7 +138,6 @@ export function findElementByDataAttribute({
     return
   }
   return document.querySelector(
-    `[data-contentful-entry-id="${entryId}"][data-contentful-field-id="${fieldId}"]`,
   )
 }
 
@@ -231,7 +222,6 @@ export function displayFieldData<T extends Entry>({
       [BLOCKS["TABLE_HEADER_CELL"]]: (node, next) => `<th>${next(node.content)}</th>`,
       [BLOCKS["QUOTE"]]: (node, next) => `<blockquote>${next(node.content)}</blockquote>`,
       [BLOCKS["PARAGRAPH"]]: (node, next) =>
-        `<p data-contentful-field-id="content" data-contentful-entry-id="${entryId}">${
           next(node.content)
         }</p>`,
       [BLOCKS["EMBEDDED_ASSET"]]: asset => {

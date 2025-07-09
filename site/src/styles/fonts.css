@@ -1,10 +1,12 @@
 @font-face {
+  font-display: swap;
   font-family: "Supermolot";
   font-display: swap;
   src: url("/fonts/TT-Supermolot-Neue-Variable.ttf") format("truetype");
 }
 
 @font-face {
+  font-display: swap;
   font-family: "Inter var";
   font-style: normal;
   font-weight: 100 900;
@@ -13,6 +15,7 @@
 }
 
 @font-face {
+  font-display: swap;
   font-family: "Inter var";
   font-style: italic;
   font-weight: 100 900;
@@ -21,6 +24,7 @@
 }
 
 @font-face {
+  font-display: swap;
   font-family: "JetBrains Mono";
   font-style: normal;
   font-weight: 100 900;
@@ -29,6 +33,7 @@
 }
 
 @font-face {
+  font-display: swap;
   font-family: "JetBrains Mono";
   font-style: italic;
   font-weight: 100 900;

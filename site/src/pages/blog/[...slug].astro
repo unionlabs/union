@@ -3,9 +3,6 @@ import ContainedSection from "#/components/ContainedSection.astro"
 import Layout from "#/layouts/Layout.astro"
 import type { BlogPost } from "#/lib/types.ts"
 import { toISODate, saneDateTime } from "#/lib/utilities.ts"
-import { contentfulClient } from "#/lib/contentful/client.ts"
-import { ContentfulLivePreview } from "@contentful/live-preview"
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
 
 export const prerender = false
 
@@ -13,7 +10,6 @@ const { slug } = Astro.params
 
 const {
   items: [blogPost]
-} = await contentfulClient.getEntries<BlogPost>({
   limit: 1,
   "fields.slug": slug,
   content_type: "blog",
@@ -51,8 +47,6 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
   <ContainedSection className="flex flex-col pt-4">
     <div class="max-w-2xl self-center md:text-lg text-gray-300">
       <h1
-        data-contentful-field-id="title"
-        data-contentful-entry-id={entryId}
         class="text-white text-3xl sm:text-4xl font-bold mb-0 font-supermolot uppercase"
         {...ContentfulLivePreview.getProps({ entryId, fieldId: "title" })}
       >
@@ -61,8 +55,6 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
       <div class="flex gap-x-3 mt-1.5 font-bold">
         <time
           class="text-lg font-mono text-accent-500 font mono"
-          data-contentful-field-id="date"
-          data-contentful-entry-id={entryId}
           datetime={toISODate(blogPost.fields.date)}
           {...ContentfulLivePreview.getProps({ entryId, fieldId: "date" })}
         >
@@ -70,8 +62,6 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
         </time>
         <p
           class="m-0 font-lg font-mono uppercase"
-          data-contentful-field-id="author"
-          data-contentful-entry-id={entryId}
           {...ContentfulLivePreview.getProps({ entryId, fieldId: "author" })}
         >
           {blogPost.fields.author}
@@ -81,16 +71,12 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
         class="my-3"
         loading="eager"
         alt={coverFields.title}
-        data-contentful-field-id="cover"
-        data-contentful-entry-id={entryId}
         src={`${imageUrl}?fit=fill&f=center&fm=avif&w=1344&h=706`}
         {...ContentfulLivePreview.getProps({ entryId, fieldId: "cover" })}
       />
       <p>
         <em
           class="hidden"
-          data-contentful-entry-id={entryId}
-          data-contentful-field-id="description"
           {...ContentfulLivePreview.getProps({
             entryId,
             fieldId: "description",
@@ -101,8 +87,6 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
       </p>
       <article
         class="font-mono"
-        data-contentful-field-id="content"
-        data-contentful-entry-id={entryId}
         set:html={documentToHtmlString(blogPost.fields.content)}
         {...ContentfulLivePreview.getProps({ entryId, fieldId: "content" })}
       />
@@ -111,13 +95,10 @@ const imageUrl = imageWithProtocol(coverFields.file.url)
 </Layout>
 
 <script>
-  import { initializeContentfulLivePreview } from "#/lib/contentful/functions.ts";
 
   const subscriptions: Array<VoidFunction> = [];
 
   document.addEventListener("DOMContentLoaded", async (event) => {
-    const emElement = document.querySelector("h1[data-contentful-entry-id]");
-    const entryId = emElement?.dataset.contentfulEntryId;
     if (!entryId) return;
     initializeContentfulLivePreview({
       entryId,

@@ -1,159 +1,77 @@
 ---
-import "#/styles/fonts.css"
-import "#/styles/reset.css"
-import "#/styles/tailwind.css"
-import { Head } from "astro-capo"
-import { AstroFont } from "astro-font"
-import { SEO } from "astro-seo"
+import Header from '../components/Header.astro';
+import Footer from '../components/Footer.astro';
+import NetworkLoader from '../components/NetworkLoader.svelte';
 
-const BASE_URL = import.meta.env.PROD ? import.meta.env.SITE : ""
-
-interface Props {
-  url?: string
-  title?: string
-  image?: string
-  description?: string
-  // pages that don't have text content don't need to load fonts
-  loadFonts?: boolean
-}
-
-const {
-  url = "https://union.build",
-  title = "Union",
-  image = "/og.png",
-  description = "The Modular ZK Interoperability Layer",
-  loadFonts = true,
-} = Astro.props
-
-const fontWeights = [100, 200, 300, 400, 500, 600, 700, 800, 900]
-
-/**
- * og spec: 1200x630, .png
- * docs: https://github.com/o-az/imageine
- */
-const openGraphImage = `${image}?fit=fill&f=center&fm=png&w=1200&h=630`
+// Environment configuration
+const siteUrl = import.meta.env.SITE_URL || "http://localhost:4321";
+const disableContentful = import.meta.env.PUBLIC_DISABLE_CONTENTFUL || "true";
 ---
-
 <!DOCTYPE html>
-<script client:only>
-// native ViewTransitions flash on page changes in some cases.
-  // astro does not provide an option to use the fallback client router,
-  // so we manually remove the ViewTransition API from the document
-  // such that astro will use the fallback ClientRouter
-  // https://github.com/withastro/astro/blob/74ef2feb3a6a68e45a0cbfe60a61e90af6b4e923/packages/astro/src/transitions/router.ts#L37
-  // @ts-expect-error
-  document.startViewTransition = false
-</script>
 <html lang="en">
-  <Head>
-    <meta charset="utf-8" />
-    <SEO
-      title={title}
-      description={description}
-      openGraph={{
-        basic: {
-          url,
-          title,
-          image: openGraphImage,
-          type: "website",
-        },
-        optional: {
-          locale: "en_US",
-          siteName: "Union",
-          description,
-        },
-        image: { url: openGraphImage, alt: "Union Logo" },
-      }}
-      twitter={{
-        title,
-        image: openGraphImage,
-        site: "@union_build",
-        description,
-        imageAlt: "Union Logo",
-        creator: "@union_build",
-        card: "summary_large_image",
-      }}
-      extend={{
-        link: [
-          {
-            rel: "manifest",
-            href: "/manifest.webmanifest",
-            crossorigin: "use-credentials",
-          },
-          {
-            rel: "apple-touch-icon",
-            href: `${BASE_URL}/apple-touch-icon.png`,
-          },
-          {
-            rel: "alternate",
-            type: "application/rss+xml",
-            title: "Union",
-            href: `${Astro.site}rss.xml`,
-          },
-          {
-            rel: "icon",
-            sizes: "16x16",
-            type: "image/png",
-            href: `${BASE_URL}/favicon-16x16.png`,
-          },
-          {
-            rel: "icon",
-            sizes: "32x32",
-            type: "image/png",
-            href: `${BASE_URL}/favicon-32x32.png`,
-          },
-          {
-            rel: "icon",
-            type: "image/svg+xml",
-            href: `${BASE_URL}/favicon.svg`,
-          },
-          {
-            rel: "icon",
-            href: `${BASE_URL}/favicon.ico`,
-          },
-          { rel: "sitemap", href: "/sitemap-index.xml" },
-        ],
-        meta: [
-          { name: "robots", content: "index, follow" },
-          {
-            name: "viewport",
-            content: "width=device-width, initial-scale=1.0",
-          },
-        ],
-      }}
-    />
-    {
-      loadFonts && (
-        <AstroFont
-          config={[
-            {
-              name: "Inter var",
-              src: fontWeights.map((weight) => ({
-                path: "/fonts/InterVariable.woff2",
-                style: "normal",
-                weight,
-              })),
-              preload: true,
-              display: "swap",
-              fallback: "sans-serif",
-            },
-            {
-              name: "JetBrains Mono",
-              src: fontWeights.map((weight) => ({
-                path: "/fonts/JetBrainsMono[wght].woff2",
-                style: "normal",
-                weight,
-              })),
-              preload: true,
-              display: "swap",
-              fallback: "sans-serif",
-            },
-          ]}
-        />
-      )
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Union Labs</title>
+  
+  <!-- Inline critical CSS -->
+  <style>
+    .network-warning {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      padding: 1rem;
+      background: #ffecb3;
+      color: #333;
+      text-align: center;
+      z-index: 10000;
     }
-  </Head>
-  <body class="font-sans flex flex-col items-stretch flex-1 bg-black text-white not-content">
-    <slot />
-  </body>
+  </style>
+  
+  <script>
+    // Client-side environment variables
+    window.__env = {
+      SITE_URL: "${siteUrl}",
+      PUBLIC_DISABLE_CONTENTFUL: "${disableContentful}"
+    };
+  </script>
+</head>
+<body>
+  <NetworkLoader client:load />
+  
+  <div id="slow-network-warning" class="network-warning">
+    ⚠️ Slow network detected. Loading simplified content...
+  </div>
+  
+  <Header />
+  <slot />
+  <Footer />
+  
+  <script>
+    // Network handling
+    document.addEventListener('DOMContentLoaded', () => {
+      const LOAD_TIMEOUT = 10000;
+      const loader = document.getElementById('global-loader');
+      const warning = document.getElementById('slow-network-warning');
+      
+      if (!loader) return;
+      
+      // Handle timeout
+      const timeoutId = setTimeout(() => {
+        if (document.readyState !== 'complete') {
+          loader.style.display = 'none';
+          if (warning) warning.style.display = 'block';
+        }
+      }, LOAD_TIMEOUT);
+      
+      // Handle successful load
+      window.addEventListener('load', () => {
+        clearTimeout(timeoutId);
+        loader.style.display = 'none';
+      });
+    });
+  </script>
+</body>
 </html>

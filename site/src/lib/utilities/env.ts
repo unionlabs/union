@@ -1,10 +1,3 @@
-// src/lib/utilities.ts
-export function raise(message: string): never {
-  console.warn(message);
-  throw new Error(message);
-}
-
-// Fallback for missing env variables
 export function getEnvVar(name: string, defaultValue: string = ""): string {
   if (typeof process !== "undefined" && process.env[name]) {
     return process.env[name]!;

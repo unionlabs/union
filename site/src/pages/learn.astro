@@ -1,15 +1,12 @@
 ---
 import AnimationLayout from "#/layouts/AnimationLayout.astro"
-import type { LearningPageFields } from "#/lib/contentful/types.ts"
 import DeepDiveSection from "../components/sections/DeepDiveSection.astro"
-import { contentfulClient } from "../lib/contentful/client.ts"
 
 export const prerender = false
 
 let learningData: LearningPageFields | null = null
 let error: string | null = null
 try {
-  const landingEntries = await contentfulClient.getEntries<LearningPageFields>({
     content_type: "learn",
   })
 

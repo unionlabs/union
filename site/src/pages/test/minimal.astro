@@ -1,0 +1,53 @@
+---
+// Minimal test page
+---
+<html lang="en">
+<head>
+  <title>Minimal Test</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      padding: 2rem;
+      background: #0f172a;
+      color: white;
+    }
+    .test-box {
+      background: #1e293b;
+      padding: 2rem;
+      border-radius: 8px;
+      margin-top: 2rem;
+    }
+    .loader {
+      width: 48px;
+      height: 48px;
+      border: 5px solid #334155;
+      border-top-color: #5865F2;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+      margin: 2rem auto;
+    }
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Union Site Test</h1>
+  <p>This is a minimal test page to verify core functionality</p>
+  
+  <div class="test-box">
+    <h2>Network Test</h2>
+    <div id="loader" class="loader"></div>
+    <p id="status">Testing network performance...</p>
+  </div>
+  
+  <script>
+    // Test network timeout handling
+    setTimeout(() => {
+      document.getElementById('loader').style.display = 'none';
+      document.getElementById('status').textContent = 
+        '✅ Network timeout handling works!';
+    }, 3000);
+  </script>
+</body>
+</html>

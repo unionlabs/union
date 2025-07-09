@@ -6,6 +6,9 @@ export let model: string
 let canvas: HTMLCanvasElement
 
 onMount(() => {
+import('@splinetool/runtime').then(module => {
+    SplineRuntime = module.Runtime;
+  });
   const app = new Application(canvas)
   app.load(model)
 })

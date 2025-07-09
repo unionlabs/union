@@ -1,5 +1,3 @@
-import { documentToHtmlString } from "@contentful/rich-text-html-renderer"
-import { BLOCKS, MARKS } from "@contentful/rich-text-types"
 
 const defaultOptions = {
   renderMark: {

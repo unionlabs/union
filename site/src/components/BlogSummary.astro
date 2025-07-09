@@ -3,12 +3,10 @@ import ButtonA from "#/components/ButtonA.astro"
 import Card from "#/components/Card.astro"
 import TextA from "#/components/TextA.astro"
 import H3 from "#/components/typography/h3.astro"
-import { contentfulClient } from "#/lib/contentful/client.ts"
 import type { BlogPost } from "#/lib/types.ts"
 
 const BLOG_POST_COUNT = 4
 
-const blogEntries = await contentfulClient.getEntries<BlogPost>({
   content_type: "blog",
   // @ts-expect-error
   order: "-fields.date",

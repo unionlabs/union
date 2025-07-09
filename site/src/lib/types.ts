@@ -1,5 +1,4 @@
 import type { ImageMetadata } from "astro"
-import type { EntryFieldTypes } from "contentful"
 
 export type MaybePromise<T> = T | Promise<T>
 
