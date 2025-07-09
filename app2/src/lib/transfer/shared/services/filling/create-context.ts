@@ -1,5 +1,6 @@
 import type { FeeIntent } from "$lib/stores/fee.svelte.ts"
 import { uiStore } from "$lib/stores/ui.svelte.ts"
+import { isValidBech32ContractAddress } from "@unionlabs/client"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms.ts"
 import type {
   AddressCanonicalBytes,
@@ -39,10 +40,12 @@ export type Allowance = {
 
 export type TransferContext = {
   intents: Array<Intent>
-  native: Option.Option<{
-    baseToken: TokenRawDenom | string
-    amount: TokenRawAmount
-  }>
+  funds: Option.Option<
+    Array<{
+      baseToken: TokenRawDenom | string
+      amount: TokenRawAmount
+    }>
+  >
   allowances: Option.Option<Array<Allowance>>
   instruction: Option.Option<Instruction>
   // XXX: where is message fulfilled?
@@ -59,7 +62,7 @@ export const createContext = (args: TransferArgs): Option.Option<TransferContext
       return intents.length > 0
         ? Option.some({
           intents,
-          native: calculateNativeValue(intents, args),
+          funds: calculateNativeValue(intents, args),
           allowances: Option.none(),
           instruction: Option.none(),
           message: Option.none(),
@@ -154,23 +157,38 @@ const parseBaseAmount = (amount: string): Option.Option<TokenRawAmount> => {
 const calculateNativeValue = (
   intents: Intent[],
   args: TransferArgs,
-): Option.Option<{ baseToken: TokenRawDenom | string; amount: TokenRawAmount }> => {
-  return Option.fromNullable(GAS_DENOMS[args.sourceChain.universal_chain_id]).pipe(
-    Option.flatMap(chainGasDenom => {
-      const nativeToken = normalizeToken(chainGasDenom.address, args.sourceChain.rpc_type)
-      const nativeIntents = intents.filter(intent =>
-        normalizeToken(intent.baseToken, args.sourceChain.rpc_type) === nativeToken
-      )
+): Option.Option<Array<{ baseToken: TokenRawDenom | string; amount: TokenRawAmount }>> => {
+  const nativeTokensMap = new Map<string, bigint>()
 
-      const totalAmount = nativeIntents.reduce((sum, intent) => sum + intent.baseAmount, 0n)
+  for (const intent of intents) {
+    const normalizedToken = normalizeToken(intent.baseToken, args.sourceChain.rpc_type)
+
+    if (!isValidBech32ContractAddress(normalizedToken)) {
+      const currentAmount = nativeTokensMap.get(normalizedToken) || 0n
+      nativeTokensMap.set(normalizedToken, currentAmount + intent.baseAmount)
+    }
+  }
+
+  const chainGasDenom = GAS_DENOMS[args.sourceChain.universal_chain_id]
+  if (chainGasDenom) {
+    const nativeToken = normalizeToken(chainGasDenom.address, args.sourceChain.rpc_type)
+    const nativeIntents = intents.filter(intent =>
+      normalizeToken(intent.baseToken, args.sourceChain.rpc_type) === nativeToken
+    )
+
+    const totalAmount = nativeIntents.reduce((sum, intent) => sum + intent.baseAmount, 0n)
+    if (totalAmount > 0n) {
       const preferredBaseToken = nativeIntents.at(-1)?.baseToken || nativeToken
+      const currentAmount = nativeTokensMap.get(preferredBaseToken) || 0n
+      nativeTokensMap.set(preferredBaseToken, currentAmount + totalAmount)
+    }
+  }
 
-      return totalAmount > 0n
-        ? Option.some({
-          baseToken: preferredBaseToken,
-          amount: totalAmount as TokenRawAmount,
-        })
-        : Option.none()
-    }),
-  )
+  // Convert map to array
+  const nativeFunds = Array.from(nativeTokensMap.entries()).map(([token, amount]) => ({
+    baseToken: token,
+    amount: amount as TokenRawAmount,
+  }))
+
+  return nativeFunds.length > 0 ? Option.some(nativeFunds) : Option.none()
 }

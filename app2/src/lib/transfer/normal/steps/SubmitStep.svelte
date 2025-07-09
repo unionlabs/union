@@ -179,7 +179,9 @@ export const submit = Effect.gen(function*() {
               operand: encodeAbi(step.instruction),
             },
           ],
-          ...(Option.isSome(step.native) ? { value: step.native.value.amount } : {}),
+          ...(Option.isSome(step.funds) && step.funds.value.length > 0
+            ? { value: step.funds.value[0].amount }
+            : {}),
         })
       ),
       setEts,
@@ -227,13 +229,11 @@ export const submit = Effect.gen(function*() {
               ]),
             },
           },
-          Option.isSome(step.native)
-            ? [
-              {
-                denom: step.native.value.baseToken,
-                amount: step.native.value.amount.toString(),
-              },
-            ]
+          Option.isSome(step.funds) && step.funds.value.length > 0
+            ? step.funds.value.map(fund => ({
+              denom: fund.baseToken,
+              amount: fund.amount.toString(),
+            }))
             : undefined,
         )
       ),

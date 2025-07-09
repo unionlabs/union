@@ -27,10 +27,12 @@ export type Steps = Data.TaggedEnum<{
   SubmitInstruction: {
     readonly instruction: Instruction
     readonly intent: Intent
-    readonly native: Option.Option<{
-      baseToken: string
-      amount: bigint
-    }>
+    readonly funds: Option.Option<
+      Array<{
+        baseToken: string
+        amount: bigint
+      }>
+    >
   }
   WaitForIndex: {
     readonly intent: Intent
