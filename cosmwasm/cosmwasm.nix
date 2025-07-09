@@ -242,6 +242,29 @@ _: {
           ];
         }
         {
+          chain-id = "osmosis-1";
+          ucs04-chain-id = "osmosis.osmosis-1";
+          name = "osmosis";
+          rpc_url = "https://osmosis-rpc.publicnode.com:443";
+          private_key = ''"$(op item get deployer --vault union-testnet-10 --field cosmos-private-key --reveal)"'';
+          gas_config = {
+            type = "fixed";
+            gas_price = "0.005";
+            gas_denom = "uosmo";
+            gas_multiplier = "1.1";
+            max_gas = 60000000;
+          };
+          apps = {
+            ucs03 = ucs03-configs.osmosis_tokenfactory;
+          };
+          bech32_prefix = "osmo";
+          lightclients = [
+            "cometbls"
+            "tendermint"
+            "state-lens-ics23-mpt"
+          ];
+        }
+        {
           chain-id = "bbn-test-5";
           ucs04-chain-id = "babylon.bbn-test-5";
           name = "babylon-testnet";
@@ -637,7 +660,7 @@ _: {
           apps,
           ...
         }:
-        pkgs.writeText "${ucs04-chain-id}.contracts-confg.json" (
+        pkgs.writeText "${ucs04-chain-id}.contracts-config.json" (
           builtins.toJSON {
             core = ibc-union.release;
             lightclient = builtins.listToAttrs (
