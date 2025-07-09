@@ -108,7 +108,9 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                 )
               ),
               Effect.map((a) => ({
-                value: GasPrice.BaseGasPrice(BigDecimal.make(a, 18)),
+                value: GasPrice.AtomicGasPrice(BigDecimal.fromBigInt(a)),
+                minimalDenom: "wei",
+                denom: viemChain.nativeCurrency.symbol,
                 additiveFee,
                 decimals: 18,
               })),
@@ -154,13 +156,16 @@ export class GasPriceMap extends LayerMap.Service<GasPriceMap>()("GasPriceByChai
                         O.map(x => x.average),
                       )),
                     O.let("decimals", () => x.coinDecimals),
-                    O.map(({ average, decimals }) =>
+                    O.let("minimalDenom", () => x.coinMinimalDenom),
+                    O.let("denom", () => x.coinDenom),
+                    O.map(({ average, decimals, minimalDenom, denom }) =>
                       pipe(
                         BigDecimal.unsafeFromNumber(average),
-                        BigDecimal.multiply(BigDecimal.make(1n, decimals)),
-                        GasPrice.BaseGasPrice,
+                        GasPrice.AtomicGasPrice,
                         (value) => ({
                           value,
+                          minimalDenom,
+                          denom,
                           additiveFee: O.none<GasPrice.AtomicGasPrice>(),
                           decimals,
                         }),

@@ -29,11 +29,13 @@ export declare namespace GasPrice {
    */
   export interface Service {
     readonly of: Effect.Effect<{
-      value: BaseGasPrice
+      value: AtomicGasPrice
       /**
-       * e.g. L1 fee on BOB
+       * e.g. L1 settlement fee on BOB
        */
       additiveFee: O.Option<AtomicGasPrice>
+      minimalDenom: string
+      denom: string
       decimals: number
     }, GasPriceError>
   }

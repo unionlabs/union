@@ -155,8 +155,24 @@ const calculating = false
                 {#snippet content()}
                   <div class="text-sm">
                     <div class="font-semibold text-white mb-2">{item.label}</div>
-                    <div class="text-zinc-300 mb-4">{item.description}</div>
-                    <!-- <div>{@html item.steps.calc}</div> -->
+                    <div class="text-zinc-300 mb-2">{item.description}</div>
+                    <div class="bg-zinc-900 p-2 font-mono">
+                      {#each item.steps.calc as [label, op, amount]}
+                        <div class="flex items-baseline">
+                          <span class="whitespace-nowrap">{@html label}</span>
+                          <span
+                            aria-hidden="true"
+                            class="
+                              flex-1 mx-2 border-b border-dotted border-gray-500
+                              h-[0.15em] self-baseline
+                            "
+                          ></span>
+                          <span class="whitespace-nowrap text-right">
+                            {@html op}&nbsp;{@html amount}
+                          </span>
+                        </div>
+                      {/each}
+                    </div>
                   </div>
                 {/snippet}
               </Tooltip>
@@ -196,3 +212,9 @@ const calculating = false
     </div>
   {/if}
 </div>
+
+<style is:global>
+:global .batch-savings {
+ color: var(--color-green-300) !important;
+}
+</style>
