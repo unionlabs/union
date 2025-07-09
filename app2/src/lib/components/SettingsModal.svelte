@@ -18,6 +18,7 @@ let tempShowDeveloperChainDetails = $state(settingsStore.showDeveloperChainDetai
 let tempMainnetOnly = $state(settingsStore.mainnetOnly)
 let tempShowZeroBalances = $state(uiStore.showZeroBalances)
 let tempShowDeveloperPages = $state(uiStore.showDeveloperPages)
+let tempGraphqlEndpoint = $state(uiStore.graphqlEndpoint)
 
 function handleSave() {
   settingsStore.pageLimit = tempPageLimit
@@ -26,6 +27,7 @@ function handleSave() {
   settingsStore.mainnetOnly = tempMainnetOnly
   uiStore.showZeroBalances = tempShowZeroBalances
   uiStore.showDeveloperPages = tempShowDeveloperPages
+  uiStore.graphqlEndpoint = tempGraphqlEndpoint
   onClose()
 }
 </script>
@@ -41,7 +43,7 @@ function handleSave() {
     <div class="space-y-2">
       <label
         for="pageLimit"
-        class="block text-sm font-medium"
+        class="block text-sm font-medium uppercase text-zinc-500"
       >
         Items per page
       </label>
@@ -51,6 +53,30 @@ function handleSave() {
         min="1"
         max="100"
         bind:value={tempPageLimit}
+        class="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md"
+      />
+    </div>
+
+    <div>
+      <div class="flex w-full justify-between">
+        <label
+          for="graphqlEndpoint"
+          class="block text-sm font-medium uppercase text-zinc-500"
+        >
+          GraphQL Endpoint
+        </label>
+        <Button
+          variant="inline"
+          class="text-sm font-medium"
+          onclick={() => uiStore.clearGqlCache()}
+        >
+          Clear Cache
+        </Button>
+      </div>
+      <input
+        id="graphqlEndpoint"
+        type="text"
+        bind:value={tempGraphqlEndpoint}
         class="w-full px-3 py-2 bg-zinc-800 border border-zinc-700 rounded-md"
       />
     </div>
