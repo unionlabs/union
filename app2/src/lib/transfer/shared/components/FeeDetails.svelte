@@ -156,15 +156,20 @@ const calculating = false
                   <div class="text-sm">
                     <div class="font-semibold text-white mb-2">{item.label}</div>
                     <div class="text-zinc-300 mb-2">{item.description}</div>
-                    <div class="bg-zinc-900 p-2 font-mono">
+                    <div class="bg-zinc-900 p-2 font-mono rounded-sm">
                       {#each item.steps.calc as [label, op, amount]}
                         <div class="flex items-baseline">
                           <span class="whitespace-nowrap">{@html label}</span>
                           <span
                             aria-hidden="true"
                             class="
-                              flex-1 mx-2 border-b border-dotted border-gray-500
-                              h-[0.15em] self-baseline
+                              text-zinc-500
+                              flex-1 mx-2
+                              h-[0.22em] /* ≈ dot diameter */
+                              translate-y-[0.11em] /* push down half its height */
+                              bg-[radial-gradient(currentColor_1px,_transparent_1px)]
+                              bg-[length:4px_4px]
+                              bg-repeat-space
                             "
                           ></span>
                           <span class="whitespace-nowrap text-right">
