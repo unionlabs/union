@@ -554,6 +554,50 @@
       }
     }
   },
+  "osmosis.osmosis-1": {
+    "ibc_interface": "ibc-cosmwasm",
+    "deployer": "osmo10c4yqddv6w7sphruvhxs5v0es8r9fcj5ed3yx7",
+    "core": {
+      "address": "osmo1hnuj8f6d3wy3fcprt55vddv7v2650t6uudnvd2hukqrteeam8wjqata4fx",
+      "height": 39452782,
+      "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
+      "code_id": 1712
+    },
+    "lightclient": {
+      "cometbls": {
+        "address": "osmo1e8awsylm62n844vm2v34qg8t0yx52ajtza8a65w4nqk2ylpsjmkqedn9g8",
+        "height": 39452789,
+        "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
+        "code_id": 1713
+      },
+      "state-lens/ics23/mpt": {
+        "address": "osmo1s0svr7djd5yyqfj79w52ux9y0sgfdd6ljf7kzfx80a469al2gufsyy5f76",
+        "height": 39452949,
+        "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
+        "code_id": 1714
+      },
+      "tendermint": {
+        "address": "osmo1eqmxvqcrh5k0uckrtnqs8fy6k5d672whvk4gh03at5j0r5ay7lzqstzzrn",
+        "height": 39452958,
+        "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
+        "code_id": 1715
+      }
+    },
+    "app": {
+      "ucs03": {
+        "address": "osmo1336jj8ertl8h7rdvnz4dh5rqahd09cy0x43guhsxx6xyrztx292qs2uecc",
+        "height": 39452974,
+        "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
+        "code_id": 1718,
+        "minter": {
+          "type": "osmosis_tokenfactory",
+          "address": "osmo13ulc6pqhm60qnx58ss7s3cft8cqfycexq3uy3dd2v0l8qsnkvk4sj22sn6",
+          "commit": "6f21166bb1afe0620cc95644d9f9a511bd6ad6ac",
+          "code_id": 1716
+        }
+      }
+    }
+  },
   "sei.1328": {
     "ibc_interface": "ibc-solidity",
     "deployer": "0x6dd4e0224d46b60d86e57c9e5980589e9818020f",
