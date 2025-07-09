@@ -82,9 +82,12 @@ module zkgm::zkgm_relay {
     use zkgm::batch_ack;
     use zkgm::forward::{Self, Forward};
     use zkgm::fungible_asset_order::{Self, FungibleAssetOrder};
+    use zkgm::fungible_asset_metadata::{Self, FungibleAssetMetadata};
+    use zkgm::fungible_asset_order_v2::{Self, FungibleAssetOrderV2};
     use zkgm::fungible_asset_order_ack;
     use zkgm::helper;
     use zkgm::instruction::{Self, Instruction};
+    use zkgm::sui_fungible_asset_metadata;
     use zkgm::zkgm_packet;
 
     // Constants
@@ -94,6 +97,7 @@ module zkgm::zkgm_relay {
 
     const INSTR_VERSION_0: u8 = 0x00;
     const INSTR_VERSION_1: u8 = 0x01;
+    const INSTR_VERSION_2: u8 = 0x02;
 
     const OP_FORWARD: u8 = 0x00;
     const OP_MULTIPLEX: u8 = 0x01;
@@ -107,11 +111,16 @@ module zkgm::zkgm_relay {
     const FILL_TYPE_PROTOCOL: u256 = 0xB0CAD0;
     const FILL_TYPE_MARKETMAKER: u256 = 0xD1CEC45E;
     const ACK_EMPTY: vector<u8> = x"";
+    
+    const FUNGIBLE_ASSET_METADATA_TYPE_IMAGE: u8 = 0x00;
+    const FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE: u8 = 0x01;
+    const FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP: u8 = 0x02;
 
     public struct TreasuryCapWithMetadata<phantom T> has key, store {
         id: UID,
         cap: TreasuryCap<T>,
         metadata: BasicCoinMetadata,
+        owner: address
     }
 
     public struct BasicCoinMetadata has copy, drop, store {
@@ -147,6 +156,10 @@ module zkgm::zkgm_relay {
     const E_BATCH_MUST_BE_SYNC: u64 = 28;
     const E_ACK_AND_PACKET_LENGTH_MISMATCH: u64 = 29;
     const E_INVALID_FORWARD_DESTINATION_CHANNEL_ID: u64 = 30;
+    const E_INVALID_METADATA_TYPE: u64 = 31;
+    const E_UNWRAP_BASE_AMOUNT_SMALLER_THAN_QUOTE_AMOUNT: u64 = 32;
+    const E_UNWRAP_METADATA_INVALID: u64 = 33;
+    const E_UNAUTHORIZED: u64 = 34;
     const E_NOT_IMPLEMENTED: u64 = 333222111;
 
     public struct IbcAppWitness has drop {}
@@ -155,6 +168,7 @@ module zkgm::zkgm_relay {
         id: UID,
         in_flight_packet: Table<vector<u8>, Packet>,
         channel_balance: Table<ChannelBalancePair, u256>,
+        channel_balance_v2: Table<ChannelBalancePairV2, u256>,
         token_origin: Table<vector<u8>, u256>,
         type_name_t_to_capability: ObjectBag,
         bag_to_coin: ObjectBag,
@@ -167,6 +181,13 @@ module zkgm::zkgm_relay {
         token: vector<u8>
     }
 
+    public struct ChannelBalancePairV2 has copy, drop, store {
+        channel: u32,
+        path: u256,
+        token: vector<u8>,
+        metadata_image: vector<u8>,
+    }
+
     fun init(ctx: &mut TxContext) {
         let id = object::new(ctx);
 
@@ -174,6 +195,7 @@ module zkgm::zkgm_relay {
             id: id,
             in_flight_packet: table::new(ctx),
             channel_balance: table::new(ctx),
+            channel_balance_v2: table::new(ctx),
             token_origin: table::new(ctx),
             type_name_t_to_capability: object_bag::new(ctx),
             bag_to_coin: object_bag::new(ctx),
@@ -483,8 +505,13 @@ module zkgm::zkgm_relay {
         zkgm: &mut RelayStore,
         mut capability: TreasuryCap<T>,
         metadata: &CoinMetadata<T>,
+        owner: address,
         ctx: &mut TxContext,
     ) {
+        if (owner != @0x0) {
+            assert!(ctx.sender() == owner, E_UNAUTHORIZED);         
+        };
+    
         let supply = coin::supply(&mut capability);
         if (balance::supply_value(supply) != 0 ) {
             abort 0
@@ -500,7 +527,8 @@ module zkgm::zkgm_relay {
         zkgm.type_name_t_to_capability.add(string::from_ascii(typename_t.into_string()), TreasuryCapWithMetadata {
             id: object::new(ctx),
             cap: capability,
-            metadata
+            metadata,
+            owner
         });
     }
 
@@ -565,20 +593,18 @@ module zkgm::zkgm_relay {
 
         match (instruction.opcode()) {
             OP_FUNGIBLE_ASSET_ORDER => {
-                match (version) {
-                    INSTR_VERSION_1 => {
-                        zkgm.execute_fungible_asset_order<T>(
-                            ibc_packet,
-                            relayer,
-                            relayer_msg,
-                            path,
-                            fungible_asset_order::decode(instruction.operand()),
-                            intent,
-                            ctx
-                        )
-                    },
-                    _ => (vector::empty(), E_UNSUPPORTED_VERSION)
-                }
+                if (version != INSTR_VERSION_2) {
+                    return (vector::empty(), E_UNSUPPORTED_VERSION)  
+                };
+                zkgm.execute_fungible_asset_order_v2<T>(
+                    ibc_packet,
+                    relayer,
+                    relayer_msg,
+                    path,
+                    fungible_asset_order_v2::decode(instruction.operand()),
+                    intent,
+                    ctx
+                )
             },
             OP_BATCH => {
                 if (version != INSTR_VERSION_0) {
@@ -651,6 +677,24 @@ module zkgm::zkgm_relay {
         hash::keccak256(&data)
     }
 
+    fun compute_salt_v2(path: u256, channel: u32, base_token: vector<u8>, metadata: vector<u8>): vector<u8> {
+        let mut data: vector<u8> = bcs::to_bytes(&path);
+        data.append(bcs::to_bytes(&channel));
+        data.append(base_token);
+        data.append(hash::keccak256(&metadata));
+
+        hash::keccak256(&data)
+    }
+
+    fun compute_salt_from_metadata_image_v2(path: u256, channel: u32, base_token: vector<u8>, metadata_image: vector<u8>): vector<u8> {
+        let mut data: vector<u8> = bcs::to_bytes(&path);
+        data.append(bcs::to_bytes(&channel));
+        data.append(base_token);
+        data.append(metadata_image);
+
+        hash::keccak256(&data)
+    }
+
     fun distribute_coin<T>(
         relay_store: &mut RelayStore,
         receiver: address,
@@ -675,7 +719,8 @@ module zkgm::zkgm_relay {
         wrapped_token: vector<u8>,
         receiver: address,
         relayer: address,
-        order: &FungibleAssetOrder,
+        order: &FungibleAssetOrderV2,
+        metadata: Option<FungibleAssetMetadata>,
         ctx: &mut TxContext
     ): (vector<u8>, u64) {
         let base_amount = order.base_amount();
@@ -683,7 +728,7 @@ module zkgm::zkgm_relay {
 
         let fee = (order.base_amount() - order.quote_amount()) as u64;
         // if this token is minted for the first time, then we need to ensure that its always minting the same T
-        if (!zkgm.claim_wrapped_denom<T>(wrapped_token, order)) {
+        if (!zkgm.claim_wrapped_denom<T>(wrapped_token, metadata, order)) {
             return (vector::empty(), E_ANOTHER_TOKEN_IS_REGISTERED); 
         };
         let capability = zkgm.get_treasury_cap<T>();
@@ -692,6 +737,48 @@ module zkgm::zkgm_relay {
         };
         if (fee > 0){
             coin::mint_and_transfer<T>(capability, fee, relayer, ctx);
+        };
+
+        (fungible_asset_order_ack::new(
+            FILL_TYPE_PROTOCOL,
+            ACK_EMPTY
+        ).encode(), 0)
+    }
+
+    fun protocol_fill_unescrow_v2<T>(
+        zkgm: &mut RelayStore,
+        channel_id: u32,
+        path: u256,
+        quote_token: vector<u8>,
+        metadata_image: vector<u8>,
+        receiver: address,
+        relayer: address,
+        base_amount: u64,
+        quote_amount: u64,
+        ctx: &mut TxContext
+    ): (vector<u8>, u64) {
+        let fee = base_amount - quote_amount;
+
+        // If the base token path is being unwrapped, it's going to be non-zero.
+        if (zkgm.decrease_outstanding_v2(
+            channel_id,
+            helper::reverse_channel_path(path), 
+            quote_token, 
+            metadata_image,
+            base_amount as u256
+        ) != 0) {
+            return (vector::empty(), 0);
+        };
+
+        // TODO(aeryz): handle quote_token == NATIVE_TOKEN_ERC_7528_ADDRESS for gas station
+
+        // Here we just need to split our coins to the receiver and the relayer
+        if(quote_amount > 0) {
+            zkgm.distribute_coin<T>(receiver, quote_amount, ctx)
+        };
+
+        if(fee > 0){
+            zkgm.distribute_coin<T>(relayer, fee, ctx)
         };
 
         (fungible_asset_order_ack::new(
@@ -869,19 +956,24 @@ module zkgm::zkgm_relay {
     }
 
 
-    fun execute_fungible_asset_order<T>(
+    fun execute_fungible_asset_order_v2<T>(
         zkgm: &mut RelayStore,
         ibc_packet: Packet,
         relayer: address,
         relayer_msg: vector<u8>,
         path: u256,
-        order: FungibleAssetOrder,
+        order: FungibleAssetOrderV2,
         intent: bool,
         ctx: &mut TxContext
     ): (vector<u8>, u64) {
         let quote_token = *order.quote_token();
         let receiver = bcs::new(*order.receiver()).peel_address();
 
+        // For intent packets, the protocol is not allowed to provide any fund
+        // as the packet has not been checked for membership poof. Instead, we
+        // know the market maker will be repaid on the source chain, if and only
+        // if the currently executing packet hash had been registered as sent on
+        // the source. In other words, the market maker is unable to lie.
         if (intent) {
             return zkgm.market_maker_fill<T>(
                 relayer_msg,
@@ -892,17 +984,61 @@ module zkgm::zkgm_relay {
             );
         };
 
-        let wrapped_token = compute_salt(
-            path,
-            ibc_packet.destination_channel_id(),
-            *order.base_token()
-        );
-        let base_amount = order.base_amount();
-        let quote_amount = order.quote_amount();
-        let base_amount_covers_quote_amount = base_amount >= quote_amount;
+        let base_amount_covers_quote_amount = order.base_amount() >= order.quote_amount();
+
+        let (wrapped_token, metadata) = match (order.metadata_type()) {
+            FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE => {
+                let wrapped_token = compute_salt_v2(
+                    path,
+                    ibc_packet.destination_channel_id(),
+                    *order.base_token(),
+                    *order.metadata()
+                );
+                let metadata = fungible_asset_metadata::decode(order.metadata());
+                (wrapped_token, option::some(metadata))
+                
+            },
+            FUNGIBLE_ASSET_METADATA_TYPE_IMAGE => {
+                // we expect the metadata to be a 32-byte hash
+                if (order.metadata().length() != 32) {
+                    return (vector::empty(), E_UNWRAP_METADATA_INVALID)
+                };
+                let wrapped_token = compute_salt_from_metadata_image_v2(
+                    path,
+                    ibc_packet.destination_channel_id(),
+                    *order.base_token(),
+                    *order.metadata()
+                );
+                (wrapped_token, option::none())
+            },
+            FUNGIBLE_ASSET_METADATA_TYPE_IMAGE_UNWRAP => {
+                if (!base_amount_covers_quote_amount) {
+                    return (vector::empty(), E_UNWRAP_BASE_AMOUNT_SMALLER_THAN_QUOTE_AMOUNT)   
+                };
+
+                // we expect the metadata to be a 32-byte hash
+                if (order.metadata().length() != 32) {
+                    return (vector::empty(), E_UNWRAP_METADATA_INVALID)
+                };
+
+                // TODO: add rate limit here later
+                return zkgm.protocol_fill_unescrow_v2<T>(
+                    ibc_packet.destination_channel_id(), 
+                    path, 
+                    quote_token, 
+                    *order.metadata(),
+                    receiver, 
+                    relayer, 
+                    order.base_amount() as u64, 
+                    order.quote_amount() as u64, 
+                    ctx
+                )
+            },
+            _ => return (vector::empty(), E_INVALID_METADATA_TYPE)
+        };
 
         if (quote_token == wrapped_token && base_amount_covers_quote_amount) {
-            // TODO: add rate limit here later
+            // TODO: rate limit
             zkgm.save_token_origin(wrapped_token, path, ibc_packet.destination_channel_id());
             
             // We expect the token to be deployed already here and the treasury cap is registered previously with type T
@@ -913,26 +1049,18 @@ module zkgm::zkgm_relay {
                 receiver, 
                 relayer, 
                 &order,
+                metadata,
                 ctx
             )
-        } else if (order.base_token_path() != 0 && base_amount_covers_quote_amount) {
-            // TODO: add rate limit here later
-            zkgm.protocol_fill_unescrow<T>(
-                ibc_packet.destination_channel_id(), 
-                path, 
-                quote_token, 
-                receiver, 
-                relayer, 
-                base_amount as u64, 
-                quote_amount as u64, 
-                ctx
-            )
-        } else {
+        } else {            
+            // We also allow market makers to fill orders after finality. This
+            // allow orders that combines protocol and mm filling (wrapped vs
+            // non wrapped assets).
             zkgm.market_maker_fill<T>(
                 relayer_msg, 
                 quote_token, 
                 receiver, 
-                quote_amount as u64,
+                order.quote_amount() as u64,
                 ctx
             )
         }
@@ -964,7 +1092,38 @@ module zkgm::zkgm_relay {
         };
         *relay_store.channel_balance.borrow(pair)
     }
-    
+
+    fun decrease_outstanding_v2(
+        relay_store: &mut RelayStore,
+        channel: u32,
+        path: u256,
+        token: vector<u8>,
+        metadata_image: vector<u8>,
+        amount: u256
+    ): u64 {
+        let pair = ChannelBalancePairV2 {
+            channel,
+            path,
+            token,
+            metadata_image,    
+        };
+        if(!relay_store.channel_balance_v2.contains(pair)) {
+            return E_CHANNEL_BALANCE_PAIR_NOT_FOUND
+        };
+        let channel_balance = *relay_store.channel_balance_v2.borrow(pair);
+        if (channel_balance < amount) {
+            return E_INVALID_AMOUNT
+        };
+        let new_balance = channel_balance - amount;
+        add_or_update_table<ChannelBalancePairV2, u256>(
+            &mut relay_store.channel_balance_v2,
+            pair,
+            new_balance
+        );
+
+        0
+    }
+        
     fun decrease_outstanding(
         relay_store: &mut RelayStore,
         channel_id: u32,
@@ -1581,16 +1740,28 @@ module zkgm::zkgm_relay {
     fun claim_wrapped_denom<T>(
         zkgm: &mut RelayStore,
         wrapped_denom: vector<u8>,
-        order: &FungibleAssetOrder,
+        metadata: Option<FungibleAssetMetadata>,
+        order: &FungibleAssetOrderV2,
     ): bool {
         let typename_t = type_name::get<T>();
         let key = string::from_ascii(typename_t.into_string());
         if (!zkgm.wrapped_denom_to_t.contains(wrapped_denom)) {
-            let metadata = zkgm.type_name_t_to_capability.borrow<String, TreasuryCapWithMetadata<T>>(key).metadata;
+            if (metadata.is_none()) {
+                // Means a hash is provided. We can't do the necessary checks when we don't know the full
+                // metadata.
+                return false                
+            };
 
-            if (metadata.name != order.base_token_name()
-                || metadata.symbol != order.base_token_symbol()
-                || metadata.decimals != order.base_token_decimals()) {
+            let metadata = metadata.destroy_some();
+            let sui_metadata = sui_fungible_asset_metadata::decode(*metadata.initializer());
+        
+            let t = zkgm.type_name_t_to_capability.borrow<String, TreasuryCapWithMetadata<T>>(key);
+
+            if (t.metadata.name != sui_metadata.name()
+                || t.metadata.symbol != sui_metadata.symbol()
+                || t.metadata.decimals != sui_metadata.decimals()
+                || t.owner != sui_metadata.owner()
+                || bcs::new(*metadata.implementation()).peel_vec_u8() == typename_t.into_string().into_bytes()) {
                 return false
             };
             
