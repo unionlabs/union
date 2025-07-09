@@ -3,6 +3,7 @@ import SharpChevronDownIcon from "$lib/components/icons/SharpChevronDownIcon.sve
 import SharpGasIcon from "$lib/components/icons/SharpGasIcon.svelte"
 import SharpInfoIcon from "$lib/components/icons/SharpInfoIcon.svelte"
 import Anchor from "$lib/components/ui/A.svelte"
+import Label from "$lib/components/ui/Label.svelte"
 import Skeleton from "$lib/components/ui/Skeleton.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import * as AppRuntime from "$lib/runtime"
@@ -51,13 +52,12 @@ const calculating = false
     {/snippet}
 
     {#snippet content()}
-      <div class="text-sm">
+      <div class="flex flex-col gap-4">
         {#each R.toEntries(props.sources) as [k, v]}
-          <div class="size-3.5 uppercase text-zinc-500 mb-1 tracking-wide">{k}</div>
-          <Anchor
-            class="font-semibold text-white mb-2"
-            href={v.url.toString()}
-          >{v.url}</Anchor>
+          <section>
+            <Label>{k}</Label>
+            <Anchor href={v.url.toString()}>{v.url}</Anchor>
+          </section>
         {/each}
       </div>
     {/snippet}
@@ -153,10 +153,10 @@ const calculating = false
                 {/snippet}
 
                 {#snippet content()}
-                  <div class="text-sm">
-                    <div class="font-semibold text-white mb-2">{item.label}</div>
-                    <div class="text-zinc-300 mb-2">{item.description}</div>
-                    <div class="bg-zinc-900 p-2 font-mono rounded-sm">
+                  <div class="flex flex-col text-base">
+                    <h2 class="text-white font-bold text-lg">{item.label}</h2>
+                    <div class="text-zinc-300 mb-4">{item.description}</div>
+                    <div class="bg-zinc-900 p-2 font-mono rounded-sm text-sm">
                       {#each item.steps.calc as [label, op, amount]}
                         <div class="flex items-baseline">
                           <span class="whitespace-nowrap">{@html label}</span>

@@ -212,10 +212,7 @@ const createFeeStore = () => {
           [
             `${self.gasPrice.minimalDenom} &rarr; ${self.gasPrice.denom}`,
             "&divide;",
-            `${BigDecimal.format(div)}`,
-            // `${
-            //   JSON.stringify(a.toJSON())
-            // } atomic gas units &times; 10<sup>${gasDecimals}</sup> = ${result} base gas units`,
+            `10<sup>${-div.scale}</sup>`,
           ],
         ],
       ]
@@ -232,7 +229,7 @@ const createFeeStore = () => {
           result,
           [
             [
-              "Gas Fee",
+              "Gas",
               "=",
               `${BigDecimal.format(gasUnits)}`,
               //     `${JSON.stringify(gasUnits.toJSON())} gas multiplier &times; ${
@@ -240,7 +237,7 @@ const createFeeStore = () => {
               // } atomic gas price = ${JSON.stringify(result.toJSON())} atomic gas units`],
             ],
             [
-              `Gas (${self.gasPrice.minimalDenom})`,
+              `Gas Price (${self.gasPrice.minimalDenom})`,
               "&times;",
               `${BigDecimal.format(self.gasPrice.value)}`,
               //     `${JSON.stringify(gasUnits.toJSON())} gas multiplier &times; ${
