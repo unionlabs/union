@@ -14,6 +14,7 @@ import {
 import { clearLocalStorageCacheEntry, withLocalStorageCacheStale } from "../services/cache"
 import { errorStore } from "../stores/errors.svelte"
 import { retryForever } from "./retry"
+import type { SnagDevicePayload, SnagMetadataPayload } from "./types"
 
 export type UserAchievement = Entity<"user_achievements">
 export type UserExperience = Entity<"leaderboard">
@@ -324,5 +325,84 @@ export const submitWalletVerification = (
           )
         ),
       )
+    }),
+  )
+
+export const createSnagUserDevice = (payload: SnagDevicePayload) =>
+  pipe(
+    SupabaseClient,
+    Effect.flatMap((client) =>
+      Effect.tryPromise({
+        try: () =>
+          client.functions.invoke("snag-user-device", {
+            method: "POST",
+            body: payload,
+          }),
+        catch: (error) =>
+          new SupabaseError({
+            operation: "createSnagUserDevice",
+            cause: extractErrorDetails(error as Error),
+          }),
+      })
+    ),
+    Effect.retry(retryForever),
+    Effect.flatMap(response => {
+      if (response.error) {
+        const errorDetails = extractErrorDetails(response.error)
+        return Effect.zipRight(
+          Effect.logError("Snag user device creation function returned an error in its response.", {
+            error: errorDetails,
+          }),
+          Effect.fail(
+            new SupabaseError({ operation: "createSnagUserDevice", cause: errorDetails }),
+          ),
+        )
+      }
+      return Effect.succeed(response.data)
+    }),
+    Effect.catchAll((error) => {
+      errorStore.showError(new SupabaseError({ cause: error, operation: "createSnagUserDevice" }))
+      return Effect.succeed(void 0)
+    }),
+  )
+
+export const createSnagUserMetadata = (payload: SnagMetadataPayload) =>
+  pipe(
+    SupabaseClient,
+    Effect.flatMap((client) =>
+      Effect.tryPromise({
+        try: () =>
+          client.functions.invoke("snag-user-metadata", {
+            method: "POST",
+            body: payload,
+          }),
+        catch: (error) =>
+          new SupabaseError({
+            operation: "createSnagUserMetadata",
+            cause: extractErrorDetails(error as Error),
+          }),
+      })
+    ),
+    Effect.retry(retryForever),
+    Effect.flatMap(response => {
+      if (response.error) {
+        const errorDetails = extractErrorDetails(response.error)
+        return Effect.zipRight(
+          Effect.logError(
+            "Snag user metadata creation function returned an error in its response.",
+            {
+              error: errorDetails,
+            },
+          ),
+          Effect.fail(
+            new SupabaseError({ operation: "createSnagUserMetadata", cause: errorDetails }),
+          ),
+        )
+      }
+      return Effect.succeed(response.data)
+    }),
+    Effect.catchAll((error) => {
+      errorStore.showError(new SupabaseError({ cause: error, operation: "createSnagUserMetadata" }))
+      return Effect.succeed(void 0)
     }),
   )
