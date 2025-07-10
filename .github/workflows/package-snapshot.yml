@@ -4,8 +4,8 @@ on:
     branches: [main, next-minor, next-major]
     paths:
       - 'ts-sdk/**'
-      - './changeset/**'
-  workflow_dispatch:
+      - '.changeset/**'
+  workflow_dispatch: {}
 
 permissions: {}
 
@@ -29,6 +29,12 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#ts-sdk
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - uses: pnpm/action-setup@v3
+        with:
+          version: 10
+          run_install: false
       - name: Create snapshot
         id: snapshot
-        run: pnpx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./result
+        run: pnpm dlx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./result
