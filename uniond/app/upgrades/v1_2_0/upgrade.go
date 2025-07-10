@@ -12,6 +12,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/module"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	crisistypes "github.com/cosmos/cosmos-sdk/x/crisis/types"
+	distributiontypes "github.com/cosmos/cosmos-sdk/x/distribution/types"
 	govtypes "github.com/cosmos/cosmos-sdk/x/gov/types"
 	minttypes "github.com/cosmos/cosmos-sdk/x/mint/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -57,6 +58,16 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			if err != nil {
 				return nil, err
 			}
+
+			_, err = keepers.DistributionKeeper.WithdrawDelegationRewards(ctx, accAddr, valAddr)
+			if err != nil {
+				return nil, err
+			}
+			_, err = keepers.DistributionKeeper.WithdrawValidatorCommission(ctx, valAddr)
+			if err != nil {
+				return nil, err
+			}
+
 			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
 				return nil, err
@@ -158,6 +169,9 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			if err != nil {
 				return nil, err
 			}
+
+			keepers.DistributionKeeper.SetValidatorOutstandingRewards(ctx, valAddr, distributiontypes.ValidatorOutstandingRewards{})
+
 			_, err = keepers.StakingKeeper.Delegate(ctx, unionFoundationMultiSig, delegation.Shares.RoundInt(), stakingtypes.Unbonded, validator, true)
 			if err != nil {
 				return nil, err
