@@ -1,7 +1,10 @@
-name: Snapshot
+name: NPM Snapshot
 on:
   pull_request:
     branches: [main, next-minor, next-major]
+    paths:
+      - 'ts-sdk/**'
+      - './changeset/**'
   workflow_dispatch:
 
 permissions: {}
@@ -14,12 +17,18 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Install dependencies
-        uses: ./.github/actions/setup
-      - name: Run codemods
-        run: pnpm codemod
-      - name: Build package
-        run: pnpm build
+        with:
+          lfs: true
+      - uses: cachix/install-nix-action@v31
+        with:
+          extra_nix_config: |
+            trusted-public-keys = cache.nixos.org-1:6NCHdD59X431o0gWypbMrAURkbJ16ZPMQFGspcDShjY= cache.garnix.io:CTFPyKSLcx5RMJKfLo5EEPUObbA78b0YQ2DTCJXqr9g= union.cachix.org-1:TV9o8jexzNVbM1VNBOq9fu8NK+hL6ZhOyOh0quATy+M=
+            trusted-substituters = https://cache.nixos.org https://cache.garnix.io https://union.cachix.org
+      - name: Fetch from Cache
+        env:
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
+        run: |
+          nix build .#ts-sdk
       - name: Create snapshot
         id: snapshot
-        run: pnpx pkg-pr-new@0.0.28 publish --pnpm --comment=off ./packages/* ./packages/ai/*
+        run: pnpx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./result
