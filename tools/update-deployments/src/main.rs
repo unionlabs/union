@@ -181,6 +181,8 @@ async fn do_main() -> Result<()> {
                             .transpose()?
                             .unwrap();
 
+                        info!(%minter_address, "ucs03 minter");
+
                         let minter = match args.ucs03_minter.unwrap() {
                             Ucs03Minter::Cw20 => Minter::Cw20 {
                                 address: minter_address,
