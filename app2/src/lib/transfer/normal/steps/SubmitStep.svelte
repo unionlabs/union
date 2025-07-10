@@ -27,6 +27,7 @@ import type { SubmitInstruction } from "$lib/transfer/normal/steps/steps.ts"
 import * as WriteCosmos from "$lib/transfer/shared/services/write-cosmos.ts"
 import * as WriteEvm from "$lib/transfer/shared/services/write-evm.ts"
 import { isValidBech32ContractAddress } from "$lib/utils"
+import { Ucs03 } from "@unionlabs/sdk"
 import { GAS_DENOMS } from "@unionlabs/sdk/constants/gas-denoms"
 import type { ExecuteContractError } from "@unionlabs/sdk/cosmos"
 import {
@@ -36,7 +37,6 @@ import {
   CreateViemWalletClientError,
   WriteContractError,
 } from "@unionlabs/sdk/evm"
-import { ucs03abi } from "@unionlabs/sdk/evm/abi"
 import { instructionAbi } from "@unionlabs/sdk/evm/abi"
 import type {
   CosmosAddressEncodeError,
@@ -44,7 +44,7 @@ import type {
   TransactionHash,
 } from "@unionlabs/sdk/schema"
 import { encodeAbi } from "@unionlabs/sdk/ucs03/instruction.ts"
-import { CryptoError, extractErrorDetails, generateSalt } from "@unionlabs/sdk/utils"
+import { CryptoError, extractErrorDetails, generateSalt } from "@unionlabs/sdk/utils/index"
 import { getTimeoutInNanoseconds24HoursFromNow } from "@unionlabs/sdk/utils/timeout.ts"
 import { http } from "@wagmi/core"
 import { Array as Arr, Cause, Effect, Exit, Match, Option, Predicate, Unify } from "effect"
@@ -166,7 +166,7 @@ export const submit = Effect.gen(function*() {
           chain: viemChain,
           account: connectorClient.account,
           address: step.intent.channel.source_port_id,
-          abi: ucs03abi,
+          abi: Ucs03.Abi,
           functionName: "send",
           args: [
             step.intent.channel.source_channel_id,

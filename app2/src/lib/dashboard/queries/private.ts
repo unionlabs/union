@@ -1,4 +1,4 @@
-import { extractErrorDetails } from "@unionlabs/sdk/utils"
+import { extractErrorDetails } from "@unionlabs/sdk/utils/index"
 import { Effect, Option, pipe } from "effect"
 import { SupabaseClient } from "../client"
 import type { Entity } from "../client"
