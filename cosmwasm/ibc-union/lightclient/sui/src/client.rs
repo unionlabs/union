@@ -81,10 +81,17 @@ impl IbcClient for SuiLightClient {
 
     fn status(
         _ctx: ibc_union_light_client::IbcClientCtx<Self>,
-        _client_state: &Self::ClientState,
+        client_state: &Self::ClientState,
     ) -> Status {
-        Status::Active
+        let ClientState::V1(cs) = client_state;
+        
+        if cs.frozen_height.height() != 0 {
+            Status::Frozen
+        } else {
+            Status::Active
+        }
     }
+
 
     fn verify_creation(
         _caller: cosmwasm_std::Addr,
@@ -164,6 +171,7 @@ impl IbcClient for SuiLightClient {
 }
 
 pub enum CommitteeStore {}
+
 impl Store for CommitteeStore {
     const PREFIX: Prefix = Prefix::new(b"committee");
 
@@ -172,6 +180,7 @@ impl Store for CommitteeStore {
 }
 
 impl KeyCodec<u64> for CommitteeStore {
+
     fn encode_key(key: &u64) -> depolama::Bytes {
         key.to_be_bytes().into()
     }
