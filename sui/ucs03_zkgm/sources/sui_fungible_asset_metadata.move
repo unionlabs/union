@@ -67,7 +67,9 @@ module zkgm::sui_fungible_asset_metadata {
         name: String,
         symbol: String,
         decimals: u8,
-        owner: address
+        owner: address,
+        icon_url: Option<String>,
+        description: String,
     }
 
     public(package) fun new(
@@ -75,12 +77,16 @@ module zkgm::sui_fungible_asset_metadata {
         symbol: String,
         decimals: u8,
         owner: address,
+        icon_url: Option<String>,
+        description: String,
     ): SuiFungibleAssetMetadata {
         SuiFungibleAssetMetadata {
             name,
             symbol,
             decimals,
             owner,
+            icon_url,
+            description,
         }
     }
 
@@ -93,6 +99,8 @@ module zkgm::sui_fungible_asset_metadata {
             string::utf8(b.peel_vec_u8()),
             b.peel_u8(),
             b.peel_address(),
+            b.peel_option!(|b| string::utf8(b.peel_vec_u8())),
+            string::utf8(b.peel_vec_u8()),
         )
     }
 
@@ -110,5 +118,13 @@ module zkgm::sui_fungible_asset_metadata {
 
     public(package) fun owner(m: &SuiFungibleAssetMetadata): address {
         m.owner
+    }
+
+    public(package) fun icon_url(m: &SuiFungibleAssetMetadata): &Option<String> {
+        &m.icon_url
+    }
+
+    public(package) fun description(m: &SuiFungibleAssetMetadata): &String {
+        &m.description
     }
 }
