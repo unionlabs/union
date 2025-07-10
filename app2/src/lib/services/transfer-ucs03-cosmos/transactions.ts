@@ -3,7 +3,7 @@ import { executeCosmWasmInstructions } from "$lib/services/transfer-ucs03-cosmos
 import { isValidBech32ContractAddress } from "$lib/utils"
 import { cosmosStore } from "$lib/wallet/cosmos"
 import type { ValidTransfer } from "@unionlabs/sdk/schema"
-import { generateSalt } from "@unionlabs/sdk/utils"
+import { generateSalt } from "@unionlabs/sdk/utils/index"
 import { Effect } from "effect"
 import { fromHex, isHex } from "viem"
 

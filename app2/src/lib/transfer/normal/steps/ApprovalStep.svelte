@@ -37,7 +37,7 @@ import {
   type NotACosmosChainError,
   TokenRawDenom,
 } from "@unionlabs/sdk/schema"
-import { ensureHex } from "@unionlabs/sdk/utils"
+import { ensureHex } from "@unionlabs/sdk/utils/index"
 import { Array as Arr, Cause, Data, Effect, Exit, Match, Option, Schema } from "effect"
 import { constVoid, pipe } from "effect/Function"
 import { erc20Abi, fromHex, http } from "viem"
