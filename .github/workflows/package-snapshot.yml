@@ -29,6 +29,11 @@ jobs:
           ENVIRONMENT: ${{ env.ENVIRONMENT }}
         run: |
           nix build .#ts-sdk
+      - name: Make writable snapshot copy
+        run: |
+          rm -rf ./snapshot-pkg
+          rsync -a --copy-links ./result/dist ./snapshot-pkg/
+          chmod -R u+w ./snapshot-pkg            # ensure we can edit files
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
       - uses: pnpm/action-setup@v3
@@ -37,4 +42,4 @@ jobs:
           run_install: false
       - name: Create snapshot
         id: snapshot
-        run: pnpm dlx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./result/dist
+        run: pnpm dlx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./snapshot-pkg
