@@ -59,7 +59,7 @@ export const verifySalt = (hex: `0x${string}`): Effect.Effect<boolean> =>
   })
 
 /**
- * Enusre input is hex encoded (e.g. `0x${string}`), otherwise encode as hex.
+ * Ensure input is hex encoded (e.g. `0x${string}`), otherwise encode as hex.
  *
  * @category utils
  * @since 2.0.0
