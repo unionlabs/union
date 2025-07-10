@@ -37,4 +37,4 @@ jobs:
           run_install: false
       - name: Create snapshot
         id: snapshot
-        run: pnpm dlx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./result
+        run: pnpm dlx pkg-pr-new@0.0.54 publish --pnpm --comment=off ./result/dist
