@@ -1,6 +1,7 @@
 import {
   babylonMainnet,
   babylonTestnet,
+  osmosisMainnet,
   osmosisTestnet,
   unionTestnet,
   xionTestnet,
@@ -13,4 +14,5 @@ export const chainInfoMap: Record<string, InternalChainInfo> = {
   [babylonMainnet.chainId]: babylonMainnet,
   [xionTestnet.chainId]: xionTestnet,
   [osmosisTestnet.chainId]: osmosisTestnet,
+  [osmosisMainnet.chainId]: osmosisMainnet,
 }
