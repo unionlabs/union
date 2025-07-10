@@ -9,6 +9,7 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
 	crisiskeeper "github.com/cosmos/cosmos-sdk/x/crisis/keeper"
+	distributionkeeper "github.com/cosmos/cosmos-sdk/x/distribution/keeper"
 	govkeeper "github.com/cosmos/cosmos-sdk/x/gov/keeper"
 	mintkeeper "github.com/cosmos/cosmos-sdk/x/mint/keeper"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
@@ -17,14 +18,15 @@ import (
 )
 
 type AppKeepers struct {
-	AuthKeeper      authkeeper.AccountKeeper
-	BankKeeper      bankkeeper.Keeper
-	ConsensusKeeper *consensuskeeper.Keeper
-	CrisisKeeper    crisiskeeper.Keeper
-	FeeMarketKeeper feemarketkeeper.Keeper
-	GovKeeper       govkeeper.Keeper
-	MintKeeper      mintkeeper.Keeper
-	StakingKeeper   *stakingkeeper.Keeper
+	AuthKeeper         authkeeper.AccountKeeper
+	BankKeeper         bankkeeper.Keeper
+	ConsensusKeeper    *consensuskeeper.Keeper
+	CrisisKeeper       crisiskeeper.Keeper
+	DistributionKeeper distributionkeeper.Keeper
+	FeeMarketKeeper    feemarketkeeper.Keeper
+	GovKeeper          govkeeper.Keeper
+	MintKeeper         mintkeeper.Keeper
+	StakingKeeper      *stakingkeeper.Keeper
 }
 
 // source: https://github.com/osmosis-labs/osmosis/blob/c783ef52af8617d3ec613d9ce9035386ba8d4a49/app/upgrades/types.go#L24

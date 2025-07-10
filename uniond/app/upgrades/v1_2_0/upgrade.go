@@ -57,7 +57,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			if err != nil {
 				return nil, err
 			}
-			validator, err := keepers.StakingKeeper.GetValidator(ctx, sdk.ValAddress(valAddr))
+			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
 				return nil, err
 			}
@@ -128,13 +128,21 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 
 		sdkCtx := sdk.UnwrapSDKContext(ctx)
 
+		// Update x/distribution
+		distrParams, err := keepers.DistributionKeeper.Params.Get(ctx)
+		if err != nil {
+			return nil, err
+		}
+		distrParams.CommunityTax = math.LegacyMustNewDecFromStr("1")
+		keepers.DistributionKeeper.Params.Set(ctx, distrParams)
+
 		// Update x/feemarket
 		feeMarketParams, err := keepers.FeeMarketKeeper.GetParams(sdkCtx)
 		if err != nil {
 			return nil, err
 		}
 		feeMarketParams.FeeDenom = U_BASE_DENOM
-		feeMarketParams.DistributeFees = false
+		feeMarketParams.DistributeFees = true
 		err = keepers.FeeMarketKeeper.SetParams(sdkCtx, feeMarketParams)
 		if err != nil {
 			return nil, err
@@ -146,7 +154,7 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			if err != nil {
 				return nil, err
 			}
-			validator, err := keepers.StakingKeeper.GetValidator(ctx, sdk.ValAddress(valAddr))
+			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
 				return nil, err
 			}
