@@ -231,3 +231,17 @@ export const getAvailableRewards = () =>
       }),
     ),
   )
+
+export const getUserIPAddress = () =>
+  Effect.tryPromise({
+    try: async () => {
+      const response = await fetch("https://api.ipify.org?format=json")
+      const data = await response.json()
+      return data.ip
+    },
+    catch: (error) =>
+      new SupabaseError({
+        operation: "getUserIPAddress",
+        cause: extractErrorDetails(error as Error),
+      }),
+  })
