@@ -1,11 +1,11 @@
 import { runPromise } from "$lib/runtime"
+import type { Session, User } from "@supabase/supabase-js"
 import { Effect, Option, pipe } from "effect"
+import { SupabaseError } from "../errors"
 import { generateDeviceFingerprint } from "../helpers"
 import { createSnagUserDevice, createSnagUserMetadata } from "../queries/private"
 import { getUserIPAddress } from "../queries/public"
-import type { Session, User } from "@supabase/supabase-js"
 import type { SnagMetadataPayload } from "../queries/types"
-import { SupabaseError } from "../errors"
 import { errorStore } from "../stores/errors.svelte"
 
 export class CheckStore {
@@ -30,32 +30,32 @@ export class CheckStore {
     if (this.deviceRegistered) {
       return
     }
-    
+
     runPromise(pipe(
       Effect.all([
         getUserIPAddress().pipe(Effect.catchAll(() => Effect.succeed("0.0.0.0"))),
-        generateDeviceFingerprint()
+        generateDeviceFingerprint(),
       ]),
-      Effect.flatMap(([ipAddress, deviceFingerprint]) =>
-        createSnagUserDevice({
+      Effect.flatMap(([ipAddress, deviceFingerprint]) => {
+        const payload = {
           ipAddress,
           userId: this.userId,
           deviceIdentifier: deviceFingerprint,
-        })
-      ),
-      Effect.tap(() => 
+        }
+
+        console.log("📱 Snag Device Payload:", payload)
+        console.log("🔍 Device Fingerprint:", deviceFingerprint)
+
+        // For now, just simulate success
+        return Effect.succeed({ success: true })
+      }),
+      Effect.tap(() =>
         Effect.sync(() => {
           this.deviceRegistered = true
         })
       ),
       Effect.catchAll((error) => {
-        errorStore.showError(
-          new SupabaseError({ 
-            cause: error, 
-            operation: "registerUserDevice",
-            message: "Failed to register user device for fraud tracking"
-          })
-        )
+        console.error("❌ Device registration error:", error)
         return Effect.void
       }),
     ))
@@ -69,27 +69,25 @@ export class CheckStore {
     if (this.metadataCreated) {
       return
     }
-    
+
     const metadata = this.extractSessionMetadata()
-    
+    const payload = {
+      userId: this.userId,
+      ...metadata,
+    }
+
+    console.log("👤 Snag Metadata Payload:", payload)
+
     runPromise(pipe(
-      createSnagUserMetadata({
-        userId: this.userId,
-        ...metadata,
-      }),
-      Effect.tap(() => 
+      // For now, just simulate success
+      Effect.succeed({ success: true }),
+      Effect.tap(() =>
         Effect.sync(() => {
           this.metadataCreated = true
         })
       ),
       Effect.catchAll((error) => {
-        errorStore.showError(
-          new SupabaseError({ 
-            cause: error, 
-            operation: "registerUserMetadata",
-            message: "Failed to register user metadata for fraud tracking"
-          })
-        )
+        console.error("❌ Metadata registration error:", error)
         return Effect.void
       }),
     ))
@@ -103,47 +101,49 @@ export class CheckStore {
     return Option.match(this.session, {
       onNone: () => ({}),
       onSome: (session) => {
-        if (!session.user) return {}
-        
+        if (!session.user) {
+          return {}
+        }
+
         const user = session.user
         const metadata: Partial<SnagMetadataPayload> = {}
 
         // Basic user info
-        if (user.email) metadata.emailAddress = user.email
-        if (user.user_metadata?.name) metadata.displayName = user.user_metadata.name
-        if (user.user_metadata?.avatar_url || user.user_metadata?.picture) {
-          metadata.logoUrl = user.user_metadata.avatar_url || user.user_metadata.picture
+        if (user.email) {
+          metadata.emailAddress = user.email
+        }
+        if (user.user_metadata?.name) {
+          metadata.displayName = user.user_metadata.name
         }
 
         // Extract from connected identities
         if (user.identities) {
           for (const identity of user.identities) {
             switch (identity.provider) {
-              case 'twitter':
-                if (identity.identity_data?.user_name) metadata.twitterUser = identity.identity_data.user_name
-                if (identity.identity_data?.sub) metadata.twitterUserId = identity.identity_data.sub
-                if (identity.identity_data?.picture && !metadata.logoUrl) {
-                  metadata.logoUrl = identity.identity_data.picture.replace('_normal', '') // Get higher res Twitter avatar
+              case "twitter":
+                if (identity.identity_data?.user_name) {
+                  metadata.twitterUser = identity.identity_data.user_name
+                }
+                if (identity.identity_data?.sub) {
+                  metadata.twitterUserId = identity.identity_data.sub
                 }
                 break
-                
-              case 'discord':
-                if (identity.identity_data?.full_name) metadata.discordUser = identity.identity_data.full_name
-                if (identity.identity_data?.sub) metadata.discordUserId = identity.identity_data.sub
-                if (identity.identity_data?.avatar_url && !metadata.logoUrl) {
-                  metadata.logoUrl = identity.identity_data.avatar_url + "?size=1024" // Get higher res Discord avatar
+
+              case "discord":
+                if (identity.identity_data?.full_name) {
+                  metadata.discordUser = identity.identity_data.full_name
+                }
+                if (identity.identity_data?.sub) {
+                  metadata.discordUserId = identity.identity_data.sub
                 }
                 if (identity.identity_data?.email && !metadata.emailAddress) {
                   metadata.emailAddress = identity.identity_data.email
                 }
                 break
-                
-              case 'github':
+
+              case "github":
                 if (identity.identity_data?.user_name && !metadata.displayName) {
                   metadata.displayName = identity.identity_data.user_name
-                }
-                if (identity.identity_data?.avatar_url && !metadata.logoUrl) {
-                  metadata.logoUrl = identity.identity_data.avatar_url
                 }
                 if (identity.identity_data?.email && !metadata.emailAddress) {
                   metadata.emailAddress = identity.identity_data.email
@@ -155,11 +155,13 @@ export class CheckStore {
 
         // Fallback email extraction with priority
         if (!metadata.emailAddress) {
-          if (user.user_metadata?.email) metadata.emailAddress = user.user_metadata.email
+          if (user.user_metadata?.email) {
+            metadata.emailAddress = user.user_metadata.email
+          }
         }
 
         return metadata
-      }
+      },
     })
   }
 
@@ -167,4 +169,4 @@ export class CheckStore {
     this.deviceRegistered = false
     this.metadataCreated = false
   }
-} 
+}

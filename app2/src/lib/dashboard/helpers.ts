@@ -59,12 +59,8 @@ export const generateDeviceFingerprint = (): Effect.Effect<string, never, never>
       || (navigator as unknown as { platform?: string }).platform || "unknown"
     }`,
     `cookieEnabled:${navigator.cookieEnabled}`,
-    `doNotTrack:${navigator.doNotTrack}`,
-    `screenRes:${screen.width}x${screen.height}`,
     `colorDepth:${screen.colorDepth}`,
-    `pixelRatio:${window.devicePixelRatio}`,
     `timezone:${Intl.DateTimeFormat().resolvedOptions().timeZone}`,
-    `timezoneOffset:${new Date().getTimezoneOffset()}`,
     `cores:${navigator.hardwareConcurrency || "unknown"}`,
     `memory:${(navigator as unknown as Record<string, unknown>).deviceMemory || "unknown"}`,
     `touchSupport:${navigator.maxTouchPoints || 0}`,
@@ -101,26 +97,16 @@ export const generateDeviceFingerprint = (): Effect.Effect<string, never, never>
     const audioContext = new (window.AudioContext
       || (window as unknown as Record<string, unknown>)
         .webkitAudioContext as typeof AudioContext)()
-    const oscillator = audioContext.createOscillator()
-    const analyser = audioContext.createAnalyser()
-    const gainNode = audioContext.createGain()
 
-    oscillator.connect(analyser)
-    analyser.connect(gainNode)
-    gainNode.connect(audioContext.destination)
+    // Use more stable audio context properties instead of frequency analysis
+    const sampleRate = audioContext.sampleRate
+    const baseLatency = audioContext.baseLatency || 0
+    const outputLatency = audioContext.outputLatency || 0
+    const state = audioContext.state
 
-    oscillator.frequency.value = 1000
-    oscillator.start()
-
-    const frequencyData = new Uint8Array(analyser.frequencyBinCount)
-    analyser.getByteFrequencyData(frequencyData)
-
-    const result = `audio:${Array.from(frequencyData.slice(0, 10)).join(",")}`
-
-    oscillator.stop()
     audioContext.close()
 
-    return result
+    return `audio:${sampleRate}-${baseLatency}-${outputLatency}-${state}`
   }).pipe(
     Effect.catchAll(() => Effect.succeed("audio:error")),
   )
@@ -167,13 +153,20 @@ export const generateDeviceFingerprint = (): Effect.Effect<string, never, never>
       getAudioFingerprint,
       getFontFingerprint,
     ]),
-    Effect.map(([basicInfo, canvas, webgl, audio, fonts]) => [
-      ...basicInfo,
-      canvas,
-      webgl,
-      audio,
-      fonts,
-    ]),
+    Effect.map(([basicInfo, canvas, webgl, audio, fonts]) => {
+      const components = [
+        ...basicInfo,
+        canvas,
+        webgl,
+        audio,
+        fonts,
+      ]
+      console.log("🔧 Fingerprint components:", components)
+      return components
+    }),
     Effect.flatMap(createHash),
+    Effect.tap((fingerprint) =>
+      Effect.sync(() => console.log("🔍 Generated fingerprint:", fingerprint))
+    ),
   )
 }
