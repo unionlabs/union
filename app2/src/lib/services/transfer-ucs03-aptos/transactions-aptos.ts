@@ -1,6 +1,6 @@
 import { getAccount } from "$lib/services/transfer-ucs03-aptos/account.ts"
 import type { Chain, ValidTransfer } from "@unionlabs/sdk/schema"
-import { generateSalt } from "@unionlabs/sdk/utils"
+import { generateSalt } from "@unionlabs/sdk/utils/index"
 import { Effect } from "effect"
 import type { Hash, WaitForTransactionReceiptErrorType, WriteContractErrorType } from "viem"
 import { getPublicClient } from "../aptos/clients.ts"
