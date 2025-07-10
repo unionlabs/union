@@ -15,7 +15,7 @@ import {
   ViemPublicClient,
 } from "@unionlabs/sdk/evm"
 import type { AddressCanonicalBytes, AddressCosmosCanonical, Chain } from "@unionlabs/sdk/schema"
-import { ensureHex } from "@unionlabs/sdk/utils"
+import { ensureHex } from "@unionlabs/sdk/utils/index"
 import { Data, Effect, Match, Option } from "effect"
 import { type Address, fromHex, http, isHex } from "viem"
 
