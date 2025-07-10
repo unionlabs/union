@@ -1,9 +1,6 @@
-import {
-  AddressCosmosZkgm,
-  Bech32,
-  Bech32FromAddressCanonicalBytesWithPrefix,
-  HexFromString,
-} from "@unionlabs/sdk/schema"
+import { AddressCosmosZkgm } from "@unionlabs/sdk/schema/address"
+import { HexFromString } from "@unionlabs/sdk/schema/hex"
+import { Bech32, Bech32FromAddressCanonicalBytesWithPrefix } from "@unionlabs/sdk/Ucs05"
 import { Either, Schema as S } from "effect"
 import { isHex } from "viem"
 import { assert, describe, it } from "vitest"

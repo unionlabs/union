@@ -1,0 +1,27 @@
+---
+title: Typescript SDK Examples
+sidebar:
+  hidden: true
+---
+
+import { getCollection } from 'astro:content'
+
+This section lists all example files under `examples/`.
+
+<ul>
+  {(await getCollection('docs'))
+    .filter(entry =>
+      entry.id.startsWith('integrations/typescript/examples/') &&
+      entry.id !== 'integrations/typescript/examples/index.mdx'
+    )
+    .sort((a, b) => a.id.localeCompare(b.id))
+    .map(entry => {
+      const relative = entry.id.replace('integrations/typescript/examples/', '')
+      return (
+        <li>
+          <a href={`/docs/${entry.slug}`}>{relative}</a>
+        </li>
+      )
+    })}
+</ul>
+
