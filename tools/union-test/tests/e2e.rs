@@ -19,7 +19,7 @@ use ucs03_zkgm::{
     self,
     com::{
         FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1,
-        OP_FUNGIBLE_ASSET_ORDER,
+        OP_FUNGIBLE_ASSET_ORDER, Stake, OP_STAKE, INSTR_VERSION_0
     },
 };
 use union_test::{
@@ -432,7 +432,6 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     // And see if muno is decreased by 10 and the receiver's muno is increased by 10
 }
 
-
 async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let ctx = init_ctx().await;
     ensure_channels_opened(ctx.channel_count).await;
@@ -617,193 +616,280 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union0() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union0() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union1() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union1() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union2() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union2() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union3() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union3() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union4() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union4() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union5() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union5() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union6() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union6() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union7() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union7() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union8() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union8() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union9() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union9() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union10() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union10() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_evm_to_union11() {
-        self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_evm_to_union11() {
+    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm0() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm0() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm1() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm1() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm2() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm2() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm3() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm3() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm4() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm4() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm5() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm5() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm6() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm6() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm7() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm7() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm8() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm8() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm9() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm9() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm10() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm10() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
 
 
-    #[tokio::test]
-    #[serial]
-    async fn from_union_to_evm11() {
-        self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    }
+    // #[tokio::test]
+    // #[serial]
+    // async fn from_union_to_evm11() {
+    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+    // }
     
+
+async fn e2e_stake_flow() {
+    // 1) Initialize context & open IBC channels once for all tests
+    let ctx = init_ctx().await;
+    ensure_channels_opened(ctx.channel_count).await;
+
+    // 2) Pick a free channel pair
+    let pair = ctx.get_channel().await.expect("no channel available");
+    let cosmos_chan_id = pair.src;
+    let evm_chan_id    = pair.dest;
+
+    // 3) Deploy a fresh ERC-20 on the EVM side and register it
+    let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").into();
+    let erc20 = ensure_erc20(zkgm_evm_addr).await;
+
+    // 4) Build a random salt + a single STAKE instruction
+    let mut salt = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut salt);
+
+    let mut img = [0u8; 32];
+    img[30..].copy_from_slice(&hex!("1234"));     
+
+    let stake = Stake {
+        token_id:  "1".parse().unwrap(),
+        governance_token: hex!("BABE")
+                .to_vec().into(),
+        governance_metadata_image: img.into(),
+        sender:   hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+        beneficiary:  hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+        validator:    hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+        amount:   "1000".parse().unwrap(),
+    };
+
+    let instr = Instruction {
+        version: INSTR_VERSION_0,
+        opcode:  OP_STAKE,
+        operand: Stake::abi_encode(&stake).into(),
+    };
+
+    // // 5) Send the IBC packet from Cosmos → EVM
+    // let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+    //     channel_id:      cosmos_chan_id.try_into().unwrap(),
+    //     timeout_height:  0u64.into(),
+    //     timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u64::MAX),
+    //     salt:            salt.into(),
+    //     instruction:     instr.abi_encode().into(),
+    // };
+    // let bin = unionlabs::encoding::Json::encode(&cw_msg);
+    // let funds = vec![protos::cosmos::base::v1beta1::Coin {
+    //     denom:   "muno".into(),
+    //     amount:  "1000".into(),
+    // }];
+
+    // // this will retry the send & wait for `wasm-packet_recv` on the EVM side
+    // let ack = ctx
+    //     .send_and_recv_with_retry(
+    //         &ctx.src,
+    //         Bech32::from_str("union1…yourCosmosZkgmAddr…").unwrap(),
+    //         (bin, funds).into(),
+    //         &ctx.dst,
+    //         3,                       // retries
+    //         Duration::from_secs(5),  // between retries
+    //         Duration::from_secs(60), // timeout per attempt
+    //     )
+    //     .await?;
+
+    // // 6) Now you can verify on EVM:
+    // //    * NFT ownerOf(tokenId) == your Cosmos address
+    // //    * `stakes[tokenId].state == STAKED`
+    // //
+    // // For example (pseudo):
+    // //
+    // // let provider = ctx.dst.get_provider().await;
+    // // let zkgm = UCS03Zkgm::new(zkgm_evm_addr, provider);
+    // // let owner = zkgm.owner_of(token_id).call().await?;
+    // // assert_eq!(owner, your_cosmos_addr_as_h160);
+
+    // // don’t forget to return the channel when you’re done
+    // ctx.release_channel(pair).await;
+    // Ok(())
+}

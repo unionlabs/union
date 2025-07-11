@@ -16,21 +16,20 @@ use rand::RngCore;
 use ucs03_zkgm::{
     self,
     com::{
-        FungibleAssetOrder, FungibleAssetOrderV2, Instruction, INSTR_VERSION_1,
-        OP_FUNGIBLE_ASSET_ORDER,
+        FungibleAssetMetadata, FungibleAssetOrder, FungibleAssetOrderV2, Instruction, Stake, FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_FUNGIBLE_ASSET_ORDER, OP_STAKE
     }, contract::ZKGM_CW_ACCOUNT_LABEL,
 };
 use union_test::{
-    cosmos,
-    evm::{
+    channel_provider::ChannelPair, cosmos, evm::{
         self,
         zkgm::{
             Instruction as InstructionEvm,
             UCS03Zkgm::{self, UCS03ZkgmCalls},
+            GovernanceToken
         },
-        zkgmerc20::ZkgmERC20
-    },
-    TestContext,
+        zkgmerc20::ZkgmERC20,
+
+    }, TestContext
 };
 use serde::{Deserialize, Serialize};
 use voyager_sdk::{
@@ -38,7 +37,8 @@ use voyager_sdk::{
 use unionlabs::{
     bech32::Bech32,
     encoding::{Encode, Json},
-    primitives::{FixedBytes, H160},
+    primitives::{FixedBytes, H160, U256},
+    ethereum::keccak256
 };
 use ethers::utils::hex;
 use voyager_sdk::{anyhow, primitives::ChainId};
@@ -107,7 +107,7 @@ async fn main() -> anyhow::Result<()> {
             .unwrap();
 
     println!("Bech32 Address: {}", approve_contract);
-    panic!("panicked");
+    
     let cosmos_cfg = cosmos::Config {
         chain_id: ChainId::new("union-devnet-1"),
         ibc_host_contract_address: Bech32::from_str(
@@ -155,48 +155,9 @@ async fn main() -> anyhow::Result<()> {
     let dst = evm::Module::new(evm_cfg.clone()).await?;
 
 
-    let signer = dst.get_provider().await;
-
-    // let zkgmerc20 = ZkgmERC20::new(
-    //     hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA").into(),
-    //     signer
-    // );
-
-
-    // let mut call = zkgmerc20.initialize(
-    //     hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").into(),
-    //     hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").into(),
-    //     "ZKGMERC20".into(),
-    //     "ZKGM".into(),
-    //     18
-    // );
-
-    // let gas_estimate = call.estimate_gas().await?;
-
-
-    // let gas_to_use = ((gas_estimate as f64) * 2.2) as u64;
-
-    // call.gas(gas_to_use).send().await?;
-
-    // zkgmerc20.mint(
-    //     hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").into(),
-    //     "1000000000000000000".parse().unwrap()
-    // ).send().await?;
-
-
-
-    panic!("panicked");
-
     // 3) now hand them to your library’s TestContext
     let ctx = TestContext::new(src, dst, 1).await?;
 
-    let val = ctx.predict_wrapped_token::<evm::Module>(
-        &ctx.dst,
-        hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5").into(),
-        ChannelId::new(NonZero::new(3).unwrap()),
-        "muno".into(),
-    ).await;
-    println!("Wrapped Token: {:?}", val);
     // 4) invoke create_clients and inspect the two confirms
     let (src_confirm, dst_confirm) = ctx
         .create_clients(
@@ -238,7 +199,7 @@ async fn main() -> anyhow::Result<()> {
             conn_confirm.connection_id,
             "ucs03-zkgm-0".into(),
             1,
-            Duration::from_secs(240),
+            Duration::from_secs(360),
         )
         .await?;
 
@@ -246,9 +207,203 @@ async fn main() -> anyhow::Result<()> {
 
     let pair = ctx.get_channel().await.unwrap();
 
-    println!("Channel {} ↔ {}", pair.src, pair.dest);
+    let init_call = ZkgmERC20::InitializeParams {
+        authority: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").into(),
+        minter: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").into(),
+        name: "muno".into(),
+        symbol: "muno".into(),
+        decimals: 6u8.into(),
+    };
+    let img_metadata = FungibleAssetMetadata {
+        implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA").to_vec().into(),
+        initializer: init_call.abi_encode_params().into(),
+    }.abi_encode_params();
+    let img = keccak256(&img_metadata);
 
+    // panic!("panicked");
+
+    // let pair = ChannelPair {
+    //     src: 1.try_into().unwrap(),
+    //     dest: 1.try_into().unwrap(),
+    // };
+    println!("Channel {} ↔ {}", pair.src, pair.dest);
+    
+    let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
+    let spender = hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD");
+
+    // // let gov_token_addr = hex!("a513f3a432f575f1e8579cc456badac9c78d8b08");
+    let governance_token: GovernanceToken = ctx.dst
+        .setup_governance_token(zkgm_evm_addr.into(), spender.into(), pair.dest, img)
+        .await?;
+
+    println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
+    println!("✅ governance_token.metadataImage registered at: {:?}", governance_token.metadataImage);
+
+    // println!("✅ Governance token registered at: {:?}", deployed_erc20_addr);
+    /*
+✅ Governance token registered at: FixedBytes<20>(0x6c2bcc9c340595143c31b4e2b238ae8f0c04e572)
+✅ Governance token registered at: FixedBytes<20>(0xa513f3a432f575f1e8579cc456badac9c78d8b08) */
+
+    // let snake_nft = ctx.dst.predict_stake_manager_address(zkgm_evm_addr.into()).await?;
+    
+    // println!("✅ Stake manager address: {:?}", snake_nft);
+
+    // // ctx.dst.basic_erc721_mint(snake_nft, U256::from(1u32), spender.into()).await?;
+
+
+
+    let mut salt = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut salt);
+
+
+
+
+    let quote_token_addr  = ctx.predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
+        &ctx.dst,
+        zkgm_evm_addr.into(),
+        ChannelId::new(NonZero::new(pair.dest).unwrap()),
+        "muno".into(),
+        img.into(),
+    ).await.unwrap();
+
+    println!("✅ Quote token address: {:?}", quote_token_addr);
+    // panic!("panicked");
+
+
+    // sending muno here
     let mut salt_bytes = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut salt_bytes);
+
+
+
+    let contract: Bech32<FixedBytes<32>> =
+        Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+            .unwrap();
+
+
+    let instruction_cosmos = Instruction {
+        version: INSTR_VERSION_2,
+        opcode: OP_FUNGIBLE_ASSET_ORDER,
+        operand: FungibleAssetOrderV2 {
+            sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+                .as_bytes()
+                .into(),
+            receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                .to_vec()
+                .into(),
+            base_token: "muno".as_bytes().into(),
+            base_amount: "10".parse().unwrap(),
+            metadata_type: FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+            metadata: img_metadata.into(),
+            quote_token: quote_token_addr.as_ref().to_vec().into(),
+            quote_amount: "10".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let cw_msg = ucs03_zkgm::msg::ExecuteMsg::Send {
+        channel_id: pair.src.try_into().unwrap(),
+        timeout_height: 0u64.into(),
+        timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+        salt: salt_bytes.into(),
+        instruction: instruction_cosmos.abi_encode_params().into(),
+    };
+    let bin_msg: Vec<u8> = Encode::<Json>::encode(&cw_msg);
+
+    let funds = vec![Coin {
+        denom: "muno".into(),
+        amount: "10".into(),
+    }];
+
+    // TODO: Here we should check the muno balance of sender account
+    // Also token balanceOf the receiver account
+    let recv_packet_data = ctx
+        .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
+            &ctx.src,
+            contract,
+            (bin_msg, funds).into(),
+            &ctx.dst,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+        )
+        .await;
+
+    println!("Received packet data: {:?}", recv_packet_data);
+
+    //appropve here
+    println!("Calling approve on quote token: {:?}", quote_token_addr); // 0xc7484B8b13FdE71A7203876359f1484808DCCc4A
+
+    let approve_tx_hash = ctx
+        .dst
+        .zkgmerc20_approve(
+            quote_token_addr.into(),
+            zkgm_evm_addr.into(),
+            U256::from(5u64),
+        )
+        .await?;
+
+    println!("✅ Approve tx hash: {:?}", approve_tx_hash);
+    println!("IMG: {:?}", img);
+
+    let instruction_from_evm_to_union = InstructionEvm {
+        version: INSTR_VERSION_0,
+        opcode:  OP_STAKE,
+        operand: Stake {
+            token_id:  "1".parse().unwrap(),
+            // governance_token: governance_token.unwrappedToken,
+            // governance_metadata_image: governance_token.metadataImage,
+            governance_token: b"muno".into(),
+            governance_metadata_image: img.into(),
+            sender:   hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                    .to_vec()
+                    .into(),
+            beneficiary:  hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                    .to_vec()
+                    .into(),
+            validator:    hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+                    .to_vec()
+                    .into(),
+            amount:   "1".parse().unwrap(),
+        }
+        .abi_encode_params()
+        .into(),
+    };
+
+    let evm_provider = ctx.dst.get_provider().await;
+
+    let ucs03_zkgm = UCS03Zkgm::new(zkgm_evm_addr.into(), evm_provider);
+
+    rand::thread_rng().fill_bytes(&mut salt);
+    let mut call = ucs03_zkgm
+        .send(
+            pair.dest.try_into().unwrap(),
+            0u64.into(),
+            4294967295000000000u64.into(),
+            salt.into(),
+            instruction_from_evm_to_union.clone(),
+        )
+        .clear_decoder();
+    // let call = call.with_cloned_provider();
+    let recv_packet_data = ctx
+        .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
+            &ctx.dst,
+            zkgm_evm_addr.into(),
+            call,
+            &ctx.src,
+            3,
+            Duration::from_secs(20),
+            Duration::from_secs(720),
+        )
+        .await;
+
+    println!("Received packet data: {:?}", recv_packet_data);
+    
+    panic!("panicked");
+    
+    
+    let mut salt_bytes: [u8; 32] = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt_bytes);
     let contract: Bech32<FixedBytes<32>> =
         Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
