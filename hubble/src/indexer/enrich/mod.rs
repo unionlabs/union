@@ -1,7 +1,7 @@
 use itertools::Itertools;
 use serde_json::{Map, Value};
 use time::{macros::format_description, UtcOffset};
-use tracing::{debug, error};
+use tracing::{debug, error, warn};
 
 mod ucs03_zkgm_0;
 mod wrapping;
@@ -86,13 +86,8 @@ pub async fn enrich(
         ) {
             Ok(decoded) => decoded,
             Err(error) => {
-                debug!("invalid packet data channel version for chain {internal_chain_id} and channel {channel_id} and version {channel_version} => {error}");
-                return Err(IndexerError::ZkgmInvalidPacket(
-                    internal_chain_id,
-                    channel_id,
-                    packet_hash,
-                    Box::new(error),
-                ));
+                warn!("invalid packet data - chain {internal_chain_id} / channel {channel_id} / version {channel_version} with packet-hash: {} and data: {} => {error}", hex::encode(&record.packet_hash), hex::encode(&record.data));
+                return Ok(changes);
             }
         },
         _ => {
