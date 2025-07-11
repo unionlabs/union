@@ -84,8 +84,8 @@ impl IbcClient for SuiLightClient {
         client_state: &Self::ClientState,
     ) -> Status {
         let ClientState::V1(cs) = client_state;
-        
-        if cs.frozen_height.height() != 0 {
+
+        if cs.frozen_height != 0 {
             Status::Frozen
         } else {
             Status::Active
