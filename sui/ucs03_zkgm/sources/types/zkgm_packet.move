@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,25 +58,66 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-// module zkgm::fungible_token {
-//     use sui::coin::{Self};
+module zkgm::zkgm_packet {
+    use zkgm::zkgm_ethabi;
+    use zkgm::instruction::{Self, Instruction};
 
-//     // one time witness
-//     public struct FUNGIBLE_TOKEN has drop {}
+    public struct ZkgmPacket has copy, drop, store {
+        salt: vector<u8>,
+        path: u256,
+        instruction: Instruction
+    }
 
-//     fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
-//         let (treasury_cap, metadata) =
-//             coin::create_currency<FUNGIBLE_TOKEN>(
-//                 witness,
-//                 (@decimals.to_u256()) as u8,
-//                 b"muno",
-//                 b"muno",
-//                 b"zkgm token created by voyager",
-//                 option::none(),
-//                 ctx
-//             );
+    public fun salt(zkgm_pack: &ZkgmPacket): vector<u8> {
+        zkgm_pack.salt
+    }
 
-//         transfer::public_share_object(metadata);
-//         transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
-//     }
-// }
+    public fun path(zkgm_pack: &ZkgmPacket): u256 {
+        zkgm_pack.path
+    }
+
+    public fun instruction(zkgm_pack: &ZkgmPacket): Instruction {
+        zkgm_pack.instruction
+    }
+
+    public fun new(salt: vector<u8>, path: u256, instruction: Instruction): ZkgmPacket {
+        ZkgmPacket { salt, path, instruction }
+    }
+
+    public fun encode(packet: &ZkgmPacket): vector<u8> {
+        let mut buf = vector::empty<u8>();
+        zkgm_ethabi::encode_bytes32(&mut buf, &packet.salt);
+        zkgm_ethabi::encode_uint<u256>(&mut buf, packet.path);
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
+
+        vector::append(&mut buf, instruction::encode(&packet.instruction));
+
+        buf
+    }
+
+    public fun decode(buf: &vector<u8>): ZkgmPacket {
+        let mut index = 0;
+
+        ZkgmPacket {
+            salt: zkgm_ethabi::decode_bytes32(buf, &mut index),
+            path: zkgm_ethabi::decode_uint(buf, &mut index),
+            instruction: instruction::decode(buf, &mut (index + 0x20)),
+        }
+    }
+
+    #[test]
+    fun test_encode_decode() {
+        let encoded =
+            x"414141414141414141414141414141414141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000084141414141414141000000000000000000000000000000000000000000000000";
+        let packet = decode(&encoded);
+        let expected_packet =
+            new(
+                b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+                100,
+                instruction::new(10, 20, b"AAAAAAAA")
+            );
+
+        assert!(packet == expected_packet, 1);
+        assert!(encode(&packet) == encoded, 1);
+    }
+}
