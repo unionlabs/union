@@ -16,7 +16,7 @@
   let menu = $state(false)
   </script>
   
-  <header class="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-zinc-900 px-2 py-2 md:px-4 bg-zinc-950">
+  <header class="flex h-14 shrink-0 items-center justify-between gap-4 border-b border-zinc-900 px-2 py-2 md:px-4 bg-zinc-950 md:hidden">
     <div class="mr-auto flex flex-1 flex-shrink-0 items-center justify-start gap-3">
       <a
         href="/"
@@ -58,7 +58,7 @@
   {/if}
   
   <!-- Old Header with Breadcrumbs (Bottom) -->
-  <header class="flex items-center h-12 gap-4 px-2 md:px-4 border-b border-zinc-900 bg-zinc-950">
+  <header class="flex items-center h-12 md:h-16 gap-4 px-2 md:px-4 border-b border-zinc-900 bg-zinc-950">
     <Breadcrumbs />
     <div class="grow"></div>
     <div class="flex items-center gap-3">
