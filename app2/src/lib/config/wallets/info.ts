@@ -348,3 +348,77 @@ export const osmosisTestnet = InternalChainInfo.make({
   image:
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
 })
+
+export const osmosisMainnet = InternalChainInfo.make({
+  rpc: "https://rpc-osmosis.keplr.app",
+  rest: "https://lcd-osmosis.keplr.app",
+  chainId: "osmosis-1",
+  chainName: "Osmosis",
+  chainSymbolImageUrl:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
+  stakeCurrency: {
+    coinDenom: "OSMO",
+    coinMinimalDenom: "uosmo",
+    coinDecimals: 6,
+    coinGeckoId: "osmosis",
+    coinImageUrl:
+      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+  },
+  walletUrl: "https://app.osmosis.zone",
+  walletUrlForStaking: "https://wallet.keplr.app/chains/osmosis",
+  bip44: {
+    coinType: 118,
+  },
+  bech32Config: {
+    bech32PrefixAccAddr: "osmo",
+    bech32PrefixAccPub: "osmopub",
+    bech32PrefixValAddr: "osmovaloper",
+    bech32PrefixValPub: "osmovaloperpub",
+    bech32PrefixConsAddr: "osmovalcons",
+    bech32PrefixConsPub: "osmovalconspub",
+  },
+  currencies: [
+    {
+      coinDenom: "OSMO",
+      coinMinimalDenom: "uosmo",
+      coinDecimals: 6,
+      coinGeckoId: "osmosis",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+    },
+    {
+      coinDenom: "ION",
+      coinMinimalDenom: "uion",
+      coinDecimals: 6,
+      coinGeckoId: "ion",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uion.png",
+    },
+  ],
+  feeCurrencies: [
+    {
+      coinDenom: "OSMO",
+      coinMinimalDenom: "uosmo",
+      coinDecimals: 6,
+      coinGeckoId: "osmosis",
+      coinImageUrl:
+        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+      gasPriceStep: {
+        low: 0.0025,
+        average: 0.025,
+        high: 0.04,
+      },
+    },
+  ],
+  features: [
+    "cosmwasm",
+    "osmosis-txfees",
+    "osmosis-base-fee-beta",
+  ],
+  theme: {
+    gradient: "linear-gradient(180deg, rgba(181, 97, 219, 0.32) 0%, rgba(181, 97, 219, 0) 100%)",
+    primaryColor: "#b561db",
+  },
+  image:
+    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
+})
