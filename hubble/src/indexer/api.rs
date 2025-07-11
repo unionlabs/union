@@ -139,10 +139,6 @@ pub enum IndexerError {
     CannotMapToEventDomainOutOfRange(String, String, String, String),
     #[error("No chain found with universal_chain_id {0}. Add it to the config.chains table before using it in hubble")]
     MissingChainConfiguration(UniversalChainId),
-    #[error(
-        "zkgm decoding: invalid packet - chain: {0}, channel: {1}, packet-hash: {2}, error: {3}"
-    )]
-    ZkgmInvalidPacket(InternalChainId, ChannelId, PacketHash, Box<anyhow::Error>),
     #[error("zkgm decoding: expecting 'tree' attribute - chain: {0}, channel: {1}, packet-hash: {2}, in: {3}")]
     ZkgmExpectingTree(InternalChainId, ChannelId, PacketHash, Value),
     #[error("zkgm decoding: expecting 'flatten' attribute in - chain: {0}, channel: {1}, packet-hash: {2}, in: {3}")]
