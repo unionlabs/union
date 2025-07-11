@@ -18,7 +18,6 @@ ibc = { local = "../ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-decimals = "_"
 ibc      = "_"
 zkgm     = "_"
 
@@ -32,7 +31,6 @@ zkgm     = "_"
 # Local = { local = "../path/to/dev-build" }
 
 [dev-addresses]
-decimals = "0x20"
 ibc      = "0x22222"
 zkgm     = "0x4444444444444"
 

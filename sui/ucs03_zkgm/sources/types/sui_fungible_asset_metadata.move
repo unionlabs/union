@@ -4,11 +4,11 @@
 // Parameters
 
 // Licensor:             Union.fi, Labs Inc.
-// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory
+// Licensed Work:        All files under https://github.com/unionlabs/union's sui subdirectory                      
 //                       The Licensed Work is (c) 2024 Union.fi, Labs Inc.
 // Change Date:          Four years from the date the Licensed Work is published.
 // Change License:       Apache-2.0
-//
+// 
 
 // For information about alternative licensing arrangements for the Licensed Work,
 // please contact info@union.build.
@@ -58,25 +58,73 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-// module zkgm::fungible_token {
-//     use sui::coin::{Self};
+module zkgm::sui_fungible_asset_metadata {
+    use std::string::{Self, String};
 
-//     // one time witness
-//     public struct FUNGIBLE_TOKEN has drop {}
+    use sui::bcs;
 
-//     fun init(witness: FUNGIBLE_TOKEN, ctx: &mut TxContext) {
-//         let (treasury_cap, metadata) =
-//             coin::create_currency<FUNGIBLE_TOKEN>(
-//                 witness,
-//                 (@decimals.to_u256()) as u8,
-//                 b"muno",
-//                 b"muno",
-//                 b"zkgm token created by voyager",
-//                 option::none(),
-//                 ctx
-//             );
+    public struct SuiFungibleAssetMetadata has copy, drop {
+        name: String,
+        symbol: String,
+        decimals: u8,
+        owner: address,
+        icon_url: Option<String>,
+        description: String,
+    }
 
-//         transfer::public_share_object(metadata);
-//         transfer::public_transfer(treasury_cap, tx_context::sender(ctx))
-//     }
-// }
+    public(package) fun new(
+        name: String,
+        symbol: String,
+        decimals: u8,
+        owner: address,
+        icon_url: Option<String>,
+        description: String,
+    ): SuiFungibleAssetMetadata {
+        SuiFungibleAssetMetadata {
+            name,
+            symbol,
+            decimals,
+            owner,
+            icon_url,
+            description,
+        }
+    }
+
+    public(package) fun decode(
+        buf: vector<u8>,
+    ): SuiFungibleAssetMetadata {
+        let mut b = bcs::new(buf);
+        new(
+            string::utf8(b.peel_vec_u8()),
+            string::utf8(b.peel_vec_u8()),
+            b.peel_u8(),
+            b.peel_address(),
+            b.peel_option!(|b| string::utf8(b.peel_vec_u8())),
+            string::utf8(b.peel_vec_u8()),
+        )
+    }
+
+    public(package) fun name(m: &SuiFungibleAssetMetadata): &String {
+        &m.name
+    }
+
+    public(package) fun symbol(m: &SuiFungibleAssetMetadata): &String {
+        &m.symbol
+    }
+
+    public(package) fun decimals(m: &SuiFungibleAssetMetadata): u8 {
+        m.decimals
+    }
+
+    public(package) fun owner(m: &SuiFungibleAssetMetadata): address {
+        m.owner
+    }
+
+    public(package) fun icon_url(m: &SuiFungibleAssetMetadata): &Option<String> {
+        &m.icon_url
+    }
+
+    public(package) fun description(m: &SuiFungibleAssetMetadata): &String {
+        &m.description
+    }
+}

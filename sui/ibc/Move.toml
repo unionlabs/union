@@ -1,6 +1,7 @@
 [package]
 edition = "2024.beta" # edition = "legacy" to use legacy (pre-2024) Move
 name    = "ibc"
+published-at = "0x098727571dc2ce469280ecf9ac4c98f62270acba7cbd2acb7d9a541bdd30ffe3"
 # license = ""           # e.g., "MIT", "GPL", "Apache 2.0"
 # authors = ["..."]      # e.g., ["Joe Smith (joesmith@noemail.com)", "John Snow (johnsnow@noemail.com)"]
 

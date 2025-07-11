@@ -80,52 +80,36 @@ module zkgm::fungible_asset_order_ack {
 
     public fun encode(ack: &FungibleAssetOrderAck): vector<u8> {
         let mut buf = vector::empty<u8>();
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x20);
         zkgm_ethabi::encode_uint<u256>(&mut buf, ack.fill_type);
+        // `market_maker` offset
+        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x40);
 
-        let version_offset = 0x40;
-        zkgm_ethabi::encode_uint<u32>(&mut buf, version_offset);
-
-        zkgm_ethabi::encode_vector!<u8>(
+        zkgm_ethabi::encode_bytes(
             &mut buf,
             &ack.market_maker,
-            |some_variable, data| {
-                zkgm_ethabi::encode_uint<u8>(some_variable, *data);
-            }
         );
         buf
     }
 
     public fun decode(buf: &vector<u8>): FungibleAssetOrderAck {
-        let mut index = 0x20;
-        let fill_type = zkgm_ethabi::decode_uint(buf, &mut index);
-        index = index + 0x20;
-        let market_maker =
-            zkgm_ethabi::decode_vector!<u8>(
-                buf,
-                &mut index,
-                |buf, index| {
-                    (zkgm_ethabi::decode_uint(buf, index) as u8)
-                }
-            );
-
-        FungibleAssetOrderAck { fill_type: fill_type, market_maker: market_maker }
+        let mut index = 0;
+        FungibleAssetOrderAck {
+            fill_type: zkgm_ethabi::decode_uint(buf, &mut index),
+            market_maker: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+        }
     }
 
     #[test]
-    fun test_encode_decode_asset_transfer_ack() {
+    fun test_encode_decode() {
         let output =
-            x"0000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000007157f2addb00000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000700000000000000000000000000000000000000000000000000000000000000680000000000000000000000000000000000000000000000000000000000000065000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006c000000000000000000000000000000000000000000000000000000000000006f000000000000000000000000000000000000000000000000000000000000006f";
+            x"00000000000000000000000000000000000000000000000000000000001e84800000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000006761736466736e6564666c6561736e64666c656e6173646c66656e6173656c646e6c6561736e64666c65616e7364666c656e6173646c65666e616c73656e64666c656e61736466656c6e61736c6564666c6561736e64666c656e61736c6465666e6c65616e73646600000000000000000000000000000000000000000000000000";
         let ack_data = FungibleAssetOrderAck {
-            fill_type: 7788909223344,
-            market_maker: b"hellloo"
+            fill_type: 2000000,
+            market_maker: b"asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf"
         };
 
-        let ack_bytes = encode(&ack_data);
-        assert!(ack_bytes == output, 0);
-
-        let ack_data_decoded = decode(&ack_bytes);
-        assert!(ack_data_decoded.fill_type == 7788909223344, 1);
-        assert!(ack_data_decoded.market_maker == b"hellloo", 3);
+        let decoded = decode(&output);
+        assert!(decoded == ack_data, 1);
+        assert!(encode(&decoded) == output, 2);
     }
 }
