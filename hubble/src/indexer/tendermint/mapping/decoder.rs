@@ -194,7 +194,7 @@ impl TmEvent {
     }
 
     pub fn denom(&self) -> Result<Denom, IndexerError> {
-        self.get_denom("token")
+        self.get_denom("denom")
     }
 
     pub fn capacity(&self) -> Result<Capacity, IndexerError> {
