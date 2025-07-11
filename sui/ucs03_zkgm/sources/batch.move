@@ -88,12 +88,12 @@ module zkgm::batch {
         buf
     }
 
+    #[allow(unused_mut_ref)]
     public fun decode(buf: &vector<u8>): Batch {
-        let mut index = 0x20;
         Batch {
             instructions: zkgm_ethabi::decode_dyn_array!(
                 buf,
-                &mut index,
+                &mut 0x20,
                 |b| {
                     let mut i = 0;
                     instruction::decode(&b, &mut i)

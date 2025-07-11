@@ -273,6 +273,7 @@ module zkgm::zkgm_ethabi {
     }
 
     /// decode array of dynamic-sized data (string[], SomeDynStruct[])
+    #[allow(unused_mut_ref)]
     public macro fun decode_dyn_array<$T>(
         $buf: &vector<u8>,
         $index: &mut u64,

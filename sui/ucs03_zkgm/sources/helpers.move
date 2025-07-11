@@ -58,6 +58,7 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
+#[allow(unused_const)]
 module zkgm::helper {
     use sui::bcs;
     use sui::hash;
