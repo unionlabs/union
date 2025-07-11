@@ -69,13 +69,13 @@
 // }
 
 module zkgm::stake {
-    public struct Stake has copy, drop, store {
-        token_id: u256,
-        governance_token: vector<u8>,
-        governance_token_metadata_image: vector<u8>,
-        sender: vector<u8>,
-        beneficiary: vector<u8>,
-        validator: vector<u8>,
-        amount: u256
-    }
+    // public struct Stake has copy, drop, store {
+    //     token_id: u256,
+    //     governance_token: vector<u8>,
+    //     governance_token_metadata_image: vector<u8>,
+    //     sender: vector<u8>,
+    //     beneficiary: vector<u8>,
+    //     validator: vector<u8>,
+    //     amount: u256
+    // }
 }
