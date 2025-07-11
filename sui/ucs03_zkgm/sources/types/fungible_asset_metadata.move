@@ -58,68 +58,75 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::zkgm_packet {
+module zkgm::fungible_asset_metadata {
     use zkgm::zkgm_ethabi;
-    use zkgm::instruction::{Self, Instruction};
 
-    public struct ZkgmPacket has copy, drop, store {
-        salt: vector<u8>,
-        path: u256,
-        instruction: Instruction
+    public struct FungibleAssetMetadata has copy, drop, store {
+        implementation: vector<u8>,
+        initializer: vector<u8>,
     }
 
-    public fun salt(zkgm_pack: &ZkgmPacket): vector<u8> {
-        zkgm_pack.salt
+    public fun new(
+        implementation: vector<u8>,
+        initializer: vector<u8>,
+    ): FungibleAssetMetadata {
+        FungibleAssetMetadata {
+            implementation,
+            initializer
+        }
     }
 
-    public fun path(zkgm_pack: &ZkgmPacket): u256 {
-        zkgm_pack.path
+    public fun implementation(metadata: &FungibleAssetMetadata): &vector<u8> {
+        &metadata.implementation
     }
 
-    public fun instruction(zkgm_pack: &ZkgmPacket): Instruction {
-        zkgm_pack.instruction
+    public fun initializer(metadata: &FungibleAssetMetadata): &vector<u8> {
+        &metadata.initializer
     }
 
-    public fun new(salt: vector<u8>, path: u256, instruction: Instruction): ZkgmPacket {
-        ZkgmPacket { salt, path, instruction }
-    }
+    public fun encode(metadata: &FungibleAssetMetadata): vector<u8> {
+        let mut buf = vector::empty();
 
-    public fun encode(packet: &ZkgmPacket): vector<u8> {
-        let mut buf = vector::empty<u8>();
-        zkgm_ethabi::encode_bytes32(&mut buf, &packet.salt);
-        zkgm_ethabi::encode_uint<u256>(&mut buf, packet.path);
-        zkgm_ethabi::encode_uint<u8>(&mut buf, 0x60);
+        let mut implementation = vector::empty();
+        zkgm_ethabi::encode_bytes(&mut implementation, &metadata.implementation);
 
-        let ins_buf = instruction::encode(&packet.instruction);
-        vector::append(&mut buf, ins_buf);
+        let mut initializer = vector::empty();
+        zkgm_ethabi::encode_bytes(&mut initializer, &metadata.initializer);
+
+            
+        let mut dyn_offset: u64 = 0x20 * 2;
+
+        // `implementation` offset
+        zkgm_ethabi::encode_uint(&mut buf, dyn_offset);
+        dyn_offset = dyn_offset + implementation.length();
+
+        // `initializer` offset
+        zkgm_ethabi::encode_uint(&mut buf, dyn_offset);
+
+        buf.append(implementation);
+        buf.append(initializer);
 
         buf
     }
 
-    public fun decode(buf: &vector<u8>): ZkgmPacket {
+    public fun decode(buf: &vector<u8>): FungibleAssetMetadata {
         let mut index = 0;
-        let salt = zkgm_ethabi::decode_bytes32(buf, &mut index);
-        let path = zkgm_ethabi::decode_uint(buf, &mut index);
-        // skipping the pointer
-        index = index + 0x20;
-        let instruction = instruction::decode(buf, &mut index);
-
-        ZkgmPacket { salt: salt, path: path, instruction: instruction }
+        FungibleAssetMetadata {
+            implementation: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+            initializer: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+        }
     }
-
+    
     #[test]
-    fun test_encode_zkgm_packet() {
-        let encoded =
-            x"414141414141414141414141414141414141414141414141414141414141414100000000000000000000000000000000000000000000000000000000000000640000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000a0000000000000000000000000000000000000000000000000000000000000014000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000084141414141414141000000000000000000000000000000000000000000000000";
-        let packet = decode(&encoded);
-        let expected_packet =
-            new(
-                b"AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
-                100,
-                instruction::new(10, 20, b"AAAAAAAA")
-            );
+    fun test_encode_decode() {
+        let encoded = x"000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000000000000000021313233656c6e656c6e6176656c6e76626c656e61736c6765316c3265336e6c656e00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006761736466736e6564666c6561736e64666c656e6173646c66656e6173656c646e6c6561736e64666c65616e7364666c656e6173646c65666e616c73656e64666c656e61736466656c6e61736c6564666c6561736e64666c656e61736c6465666e6c65616e73646600000000000000000000000000000000000000000000000000";
+        let expected_metadata = FungibleAssetMetadata {
+            implementation: b"123elnelnavelnvblenaslge1l2e3nlen",
+            initializer: b"asdfsnedfleasndflenasdlfenaseldnleasndfleansdflenasdlefnalsendflenasdfelnasledfleasndflenasldefnleansdf",
+        };
 
-        assert!(packet == expected_packet, 1);
-        assert!(encode(&packet) == encoded, 1);
+        let metadata = decode(&encoded);
+        assert!(metadata == expected_metadata, 1);
+        assert!(encode(&metadata) == encoded, 1);
     }
 }

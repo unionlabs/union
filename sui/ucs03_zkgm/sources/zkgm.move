@@ -1349,8 +1349,7 @@ module zkgm::zkgm_relay {
         ctx: &mut TxContext
     ) {
         let l = batch.instructions().length();
-        let mut idx = 0;
-        let batch_ack = batch_ack::decode(&ack, &mut idx);
+        let batch_ack = batch_ack::decode(&ack);
 
         let mut i = 0;
         while (i < l) {

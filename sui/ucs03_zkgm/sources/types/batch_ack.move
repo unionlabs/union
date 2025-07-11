@@ -58,61 +58,54 @@
 // MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, NON-INFRINGEMENT, AND
 // TITLE.
 
-module zkgm::fungible_asset_metadata {
+module zkgm::batch_ack {
     use zkgm::zkgm_ethabi;
 
-    public struct FungibleAssetMetadata has copy, drop, store {
-        implementation: vector<u8>,
-        initializer: vector<u8>,
+    public struct BatchAck has copy, drop, store {
+        acknowledgements: vector<vector<u8>>
     }
 
-    public fun new(
-        implementation: vector<u8>,
-        initializer: vector<u8>,
-    ): FungibleAssetMetadata {
-        FungibleAssetMetadata {
-            implementation,
-            initializer
-        }
+    public fun new(acknowledgements: vector<vector<u8>>): BatchAck {
+        BatchAck { acknowledgements }
     }
 
-    public fun implementation(metadata: &FungibleAssetMetadata): &vector<u8> {
-        &metadata.implementation
+    public fun acknowledgements(batch_ack: &BatchAck): vector<vector<u8>> {
+        batch_ack.acknowledgements
     }
 
-    public fun initializer(metadata: &FungibleAssetMetadata): &vector<u8> {
-        &metadata.initializer
-    }
-
-    public fun encode(metadata: &FungibleAssetMetadata): vector<u8> {
+    public fun encode(ack: &BatchAck): vector<u8> {
         let mut buf = vector::empty();
-
-        let mut implementation = vector::empty();
-        zkgm_ethabi::encode_bytes(&mut implementation, &metadata.implementation);
-
-        let mut initializer = vector::empty();
-        zkgm_ethabi::encode_bytes(&mut initializer, &metadata.initializer);
-
-            
-        let mut dyn_offset: u64 = 0x20 * 2;
-
-        zkgm_ethabi::encode_uint(&mut buf, dyn_offset);
-        dyn_offset = dyn_offset + implementation.length();
-
-        zkgm_ethabi::encode_uint(&mut buf, dyn_offset);
-
-        buf.append(implementation);
-        buf.append(initializer);
+        zkgm_ethabi::encode_uint(&mut buf, 0x20);
+        zkgm_ethabi::encode_dyn_array!(
+            &mut buf,
+            &ack.acknowledgements,
+            |b, elem| zkgm_ethabi::encode_bytes(b, elem)
+        );
 
         buf
     }
 
-    public fun decode(buf: &vector<u8>): FungibleAssetMetadata {
-        let mut index = 0;
-        FungibleAssetMetadata {
-            implementation: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
-            initializer: zkgm_ethabi::decode_bytes_from_offset(buf, &mut index),
+    public fun decode(buf: &vector<u8>): BatchAck {
+        let mut index = 0x20; 
+        BatchAck {
+            acknowledgements: zkgm_ethabi::decode_dyn_array!(buf, &mut index, |b| zkgm_ethabi::decode_bytes(&b, &mut 0))
         }
     }
-    
+
+    #[test]
+    fun test_encode_decode() {
+        let output = x"00000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000a000000000000000000000000000000000000000000000000000000000000000e0000000000000000000000000000000000000000000000000000000000000000568656c6c6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002686900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000046865686500000000000000000000000000000000000000000000000000000000";
+
+        let expected_ack = BatchAck {
+            acknowledgements: vector[
+                b"hello",
+                b"hi",
+                b"hehe",
+            ],
+        };
+
+        let ack = decode(&output);
+        assert!(ack == expected_ack, 1);
+        assert!(encode(&ack) == output, 1);
+    }
 }
