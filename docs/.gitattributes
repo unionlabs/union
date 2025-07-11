@@ -1,3 +1,0 @@
-.webp filter=lfs diff=lfs merge=lfs -text
-.avif filter=lfs diff=lfs merge=lfs -text
-.gif filter=lfs diff=lfs merge=lfs -text

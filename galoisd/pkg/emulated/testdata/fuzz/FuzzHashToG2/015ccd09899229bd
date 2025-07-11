@@ -1,3 +1,0 @@
-go test fuzz v1
-[]byte("\x00о\xeb@\xe5\xb1")
-[]byte("c\xbf(p\xb0")

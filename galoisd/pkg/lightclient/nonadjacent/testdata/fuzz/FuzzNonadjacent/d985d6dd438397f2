@@ -1,2 +1,0 @@
-go test fuzz v1
-int64(22)

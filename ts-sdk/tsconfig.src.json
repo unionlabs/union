@@ -1,9 +1,0 @@
-{
-  "extends": "../tsconfig.base.json",
-  "include": ["src"],
-  "compilerOptions": {
-    "outDir": "dist/src",
-    "noErrorTruncation": true,
-    "rootDir": "src"
-  }
-}

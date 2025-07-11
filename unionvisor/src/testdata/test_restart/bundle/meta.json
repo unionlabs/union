@@ -1,5 +1,0 @@
-{
-  "binary_name": "uniond",
-  "fallback_version": "genesis",
-  "versions_directory": "bins"
-}

@@ -1,9 +1,0 @@
-{
-  "data": {
-    "timestamp": "1970-02-02T00:01:40.000000000Z",
-    "root": {
-      "hash": "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAABE="
-    },
-    "next_validators_hash": "00000000000000000000000000000000000000000000000000000000000000aa"
-  }
-}
