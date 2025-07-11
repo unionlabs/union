@@ -1,11 +1,11 @@
 use std::{sync::Arc, time::Duration};
 
-use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
+use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider, primitives::Bytes as AlloyBytes};
 use axum::async_trait;
 use protos::cosmos::base::v1beta1::Coin;
 use unionlabs::{
     bech32::Bech32,
-    primitives::{Bytes, H160, H256},
+    primitives::{Bytes, H160, H256, FixedBytes},
 };
 use voyager_sdk::{
     anyhow::{self},
@@ -26,6 +26,7 @@ pub trait ChainEndpoint: Send + Sync {
     type Msg: Clone;
     type Contract: Clone;
     type PredictWrappedTokenResponse;
+    type PredictWrappedTokenFromMetadataImageV2Response;
 
     fn chain_id(&self) -> &ChainId;
 
@@ -43,6 +44,14 @@ pub trait ChainEndpoint: Send + Sync {
         channel: ChannelId,
         token: Vec<u8>,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse>;
+
+    async fn predict_wrapped_token_from_metadata_image_v2(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata_image: FixedBytes<32>,
+    ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>;
 
 
     async fn wait_for_create_client(
@@ -97,6 +106,7 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
     type Msg = RawCallBuilder<&'a DynProvider<AnyNetwork>, AnyNetwork>;
     type Contract = H160;
     type PredictWrappedTokenResponse = H160;
+    type PredictWrappedTokenFromMetadataImageV2Response = H160;
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -125,6 +135,21 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         token: Vec<u8>,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse>{
         self.predict_wrapped_token(contract, channel, token).await
+    }
+
+    async fn predict_wrapped_token_from_metadata_image_v2(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata_image: FixedBytes<32>,
+    ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>{
+        self.predict_wrapped_token_from_metadata_image_v2(
+            contract, 
+            channel, 
+            token, 
+            metadata_image
+        ).await
     }
 
     async fn wait_for_create_client(
@@ -202,6 +227,7 @@ impl ChainEndpoint for cosmos::Module {
     type Msg = (Vec<u8>, Vec<Coin>);
     type Contract = Bech32<H256>;
     type PredictWrappedTokenResponse = String;
+    type PredictWrappedTokenFromMetadataImageV2Response = String;
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -252,6 +278,16 @@ impl ChainEndpoint for cosmos::Module {
         token: Vec<u8>,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse>{
         self.predict_wrapped_token(contract, channel, token).await
+    }
+
+    async fn predict_wrapped_token_from_metadata_image_v2(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata_image: FixedBytes<32>,
+    ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>{
+        unimplemented!("predict_wrapped_token_from_metadata_image_v2 is not implemented for Cosmos chains")
     }
 
     fn send_open_channel(
@@ -446,6 +482,20 @@ where
     ) -> anyhow::Result<Src::PredictWrappedTokenResponse>{
         source_chain
             .predict_wrapped_token(contract, channel, token)
+            .await
+    }
+
+
+    pub async fn predict_wrapped_token_from_metadata_image_v2<Src: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata_image: FixedBytes<32>,
+    ) -> anyhow::Result<Src::PredictWrappedTokenFromMetadataImageV2Response>{
+        source_chain
+            .predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image)
             .await
     }
 

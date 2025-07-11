@@ -95,7 +95,7 @@ impl ChannelPool {
                 break;
             }
 
-            match confirmer(Duration::from_secs(240))
+            match confirmer(Duration::from_secs(360))
                 .await{
                     Ok(confirm) => {
                         let pair = ChannelPair {
