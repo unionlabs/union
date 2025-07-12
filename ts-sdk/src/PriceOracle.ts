@@ -39,11 +39,16 @@ import { UniversalChainId } from "./schema/chain.js"
 
 export class PriceError extends Data.TaggedError("@unionlabs/sdk/PriceOracle/PriceError")<{
   message: string
+  source: string
   cause?: unknown
 }> {}
 
 export const PriceSource = S.Struct({
   url: S.URL,
+  details: S.Option(S.Record({
+    key: S.NonEmptyString,
+    value: S.Any,
+  })),
 })
 export type PriceSource = typeof PriceSource.Type
 
@@ -87,6 +92,7 @@ export const Pyth = Layer.effect(
           Effect.mapError((cause) =>
             new PriceError({
               message: `No price ID mapping for ${id}`,
+              source: "Pyth",
               cause,
             })
           ),
@@ -98,6 +104,7 @@ export const Pyth = Layer.effect(
       catch: (cause) =>
         new PriceError({
           message: "Unable to import Hermes client.",
+          source: "Pyth",
           cause,
         }),
     })
@@ -114,6 +121,7 @@ export const Pyth = Layer.effect(
           catch: (cause) =>
             new PriceError({
               message: `Failed to fetch pricing feed for ${symbol}.`,
+              source: "Pyth",
               cause,
             }),
         }),
@@ -147,6 +155,7 @@ export const Pyth = Layer.effect(
             (cause) =>
               new PriceError({
                 message: `Failed to capture feed ID for ${symbol}.`,
+                source: "Pyth",
                 cause,
               }),
           ),
@@ -162,30 +171,57 @@ export const Pyth = Layer.effect(
             catch: (cause) =>
               new PriceError({
                 message: `Failed to fetch price for feed ID ${id}`,
+                source: "Pyth",
                 cause,
               }),
           }),
-          Effect.map(
-            ({ parsed }) => {
-              const { price: { price, expo } } = (parsed as NonNullable<typeof parsed>)[0]
-              return +price * Math.pow(10, expo)
-            },
+          Effect.flatMap(
+            ({ parsed }) =>
+              Effect.gen(function*() {
+                const safeParsed = yield* pipe(
+                  O.fromNullable(parsed),
+                  O.flatMap(A.head),
+                  Effect.mapError(() =>
+                    new PriceError({
+                      message: "Could not derive parsed data",
+                      source: "Pyth",
+                    })
+                  ),
+                )
+                const { price: { price, expo }, metadata } = safeParsed
+                const exp = BigDecimal.make(1n, -expo)
+                return yield* pipe(
+                  BigDecimal.fromString(price),
+                  O.map(BigDecimal.multiply(exp)),
+                  Effect.mapError(() =>
+                    new PriceError({
+                      message: "Could not derive BigDecimal from string",
+                      source: "Pyth",
+                    })
+                  ),
+                  Effect.map((price) => ({
+                    price,
+                    metadata,
+                  })),
+                )
+              }),
           ),
         ),
     )
 
-    // XXX: reduce cache
+    // XXX: reduce cache (?)
     const of: PriceOracle.Service["of"] = yield* Effect.cachedFunction(flow(
       symbolFromId,
       Effect.flatMap(feedIdOf),
       Effect.flatMap(({ id, url }) =>
         pipe(
           getLatestPriceUpdate(id),
-          Effect.map((price) =>
+          Effect.map(({ price, metadata }) =>
             PriceResult.make({
-              price: BigDecimal.unsafeFromNumber(price),
+              price: price,
               source: PriceSource.make({
                 url: new URL(url),
+                details: O.some(metadata),
               }),
             })
           ),
@@ -196,7 +232,7 @@ export const Pyth = Layer.effect(
 
     return PriceOracle.of({
       of,
-      stream: () => Stream.fail(new PriceError({ message: "not implemented" })),
+      stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "Pyth" })),
       ratio: Effect.fn(function*(a, b) {
         const [ofA, ofB] = yield* Effect.all([of(a), of(b)], { concurrency: 2 })
         const ratio = yield* BigDecimal.divide(ofA.price, ofB.price).pipe(
@@ -205,6 +241,7 @@ export const Pyth = Layer.effect(
           Effect.mapError((cause) =>
             new PriceError({
               message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+              source: "Pyth",
               cause,
             })
           ),
@@ -232,6 +269,7 @@ export const Redstone = Layer.effect(
       catch: (cause) =>
         new PriceError({
           message: "Unable to import Redstone SDK.",
+          source: "Redstone",
           cause,
         }),
     })
@@ -242,6 +280,7 @@ export const Redstone = Layer.effect(
         catch: (cause) =>
           new PriceError({
             message: "Could not fetch Redstone registry state",
+            source: "Redstone",
             cause,
           }),
       }),
@@ -256,7 +295,7 @@ export const Redstone = Layer.effect(
         A.map(x => x.evmAddress),
       )),
     ))
-    const getDataPackagesForSymbol = Effect.fn("getDataPackagesForSymbol")((symbol: string) =>
+    const getDataPackagesForSymbol = yield* Effect.cachedFunction((symbol: string) =>
       pipe(
         getAuthorizedSigners,
         Effect.andThen((authorizedSigners) =>
@@ -272,6 +311,7 @@ export const Redstone = Layer.effect(
             catch: (cause) =>
               new PriceError({
                 message: `Could not fetch data packages for ${symbol}`,
+                source: "Redstone",
                 cause,
               }),
           })
@@ -289,6 +329,7 @@ export const Redstone = Layer.effect(
             Effect.mapError(() =>
               new PriceError({
                 message: `No data package returned for ${symbol}`,
+                source: "Redstone",
               })
             ),
           )
@@ -307,6 +348,7 @@ export const Redstone = Layer.effect(
           Effect.mapError(() =>
             new PriceError({
               message: "Data points is an empty array",
+              source: "Redstone",
             })
           ),
           Effect.map(xs => A.reduce(xs, 0, (acc, x) => acc + x) / A.length(xs)),
@@ -317,6 +359,7 @@ export const Redstone = Layer.effect(
             Effect.mapError(() =>
               new PriceError({
                 message: `Could not parse ${x} to a BigDecimal`,
+                source: "Redstone",
               })
             ),
           )
@@ -329,6 +372,7 @@ export const Redstone = Layer.effect(
         Effect.mapError(() =>
           new PriceError({
             message: `ID ${id} does not exist in GAS_DENOMS`,
+            source: "Redstone",
           })
         ),
         Effect.map(x => x.tickerSymbol),
@@ -339,6 +383,7 @@ export const Redstone = Layer.effect(
               price,
               source: {
                 url: new URL(`https://app.redstone.finance/app/token/${symbol}/`),
+                details: O.none(),
               },
             })),
           )
@@ -355,6 +400,7 @@ export const Redstone = Layer.effect(
           Effect.mapError((cause) =>
             new PriceError({
               message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+              source: "Redstone",
               cause,
             })
           ),
@@ -366,7 +412,13 @@ export const Redstone = Layer.effect(
           destination: ofB.source,
         } as const
       }),
-      stream: () => Stream.fail(new PriceError({ message: "not implemented" })),
+      stream: () =>
+        Stream.fail(
+          new PriceError({
+            message: "not implemented",
+            source: "Redstone",
+          }),
+        ),
     })
   }),
 )
@@ -433,6 +485,7 @@ export const Band = Layer.effect(
           Effect.mapError(() =>
             new PriceError({
               message: `ID ${id} does not exist in GAS_DENOMS`,
+              source: "Band",
             })
           ),
           Effect.map(x => x.tickerSymbol),
@@ -452,6 +505,7 @@ export const Band = Layer.effect(
           Effect.mapError((cause) =>
             new PriceError({
               message: "Failed to initialize HttpClient",
+              source: "Band",
               cause,
             })
           ),
@@ -468,6 +522,7 @@ export const Band = Layer.effect(
           Effect.mapError((cause) =>
             new PriceError({
               message: `Failed to fetch price feed for ${symbol}`,
+              source: "Band",
               cause,
             })
           ),
@@ -477,12 +532,14 @@ export const Band = Layer.effect(
           ? Effect.succeed(A.headNonEmpty(price_results))
           : new PriceError({
             message: `No results for symbol ${symbol}`,
+            source: "Band",
           })).price
 
         return PriceResult.make({
           price,
           source: {
             url: new URL("https://www.bandprotocol.com/"),
+            details: O.none(),
           },
         })
       })
@@ -497,6 +554,7 @@ export const Band = Layer.effect(
           Effect.mapError((cause) =>
             new PriceError({
               message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+              source: "Band",
               cause,
             })
           ),
