@@ -611,6 +611,7 @@
         "treefmt-nix": "treefmt-nix",
         "v1_0_0": "v1_0_0",
         "v1_1_0": "v1_1_0",
+        "v1_2_0": "v1_2_0",
         "wasmd": "wasmd"
       }
     },
@@ -765,6 +766,23 @@
       "original": {
         "owner": "unionlabs",
         "ref": "release/uniond/v1.1.1",
+        "repo": "union",
+        "type": "github"
+      }
+    },
+    "v1_2_0": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1751416049,
+        "narHash": "sha256-NI/2xFbgXeVGtmCSEbIduFJbtNV96gWBSqPgYxmD/bU=",
+        "owner": "unionlabs",
+        "repo": "union",
+        "rev": "af79f467a86d9cef3f7c9d2f8dc890c003e1730b",
+        "type": "github"
+      },
+      "original": {
+        "owner": "unionlabs",
+        "ref": "prod-415-write-migration-to-mint-u-and-remove-poa",
         "repo": "union",
         "type": "github"
       }
