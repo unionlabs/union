@@ -16,7 +16,6 @@ use jsonrpsee::{
 use move_core_types_sui::{
     account_address::AccountAddress,
     ident_str,
-    identifier::Identifier as MoveIdentifier,
     language_storage::{StructTag, TypeTag},
 };
 use serde::{Deserialize, Serialize};
@@ -28,7 +27,7 @@ use sui_sdk::{
         SuiTransactionBlockResponse, SuiTransactionBlockResponseOptions, SuiTypeTag,
     },
     types::{
-        base_types::{ObjectID, SequenceNumber, SuiAddress},
+        base_types::{ObjectID, ObjectRef, SequenceNumber, SuiAddress},
         crypto::{DefaultHash, SignatureScheme, SuiKeyPair, SuiSignature},
         dynamic_field::DynamicFieldName,
         programmable_transaction_builder::ProgrammableTransactionBuilder,
@@ -47,11 +46,11 @@ use ucs03_zkgm::com::{
     FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
 };
 use unionlabs::{
-    primitives::{encoding::HexPrefixed, Bytes, H256, U256},
+    primitives::{encoding::HexPrefixed, Bytes, H256},
     ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow,
+    anyhow::{self, anyhow},
     hook::SubmitTxHook,
     message::{data::Data, PluginMessage, VoyagerMessage},
     plugin::Plugin,
@@ -78,6 +77,12 @@ async fn main() {
     Module::run().await
 }
 
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ZkgmConfig {
+    /// ID of the `wrapped_token_to_t` mapping
+    wrapped_token_to_t: ObjectID,
+}
+
 #[derive(Clone)]
 pub struct Module {
     pub chain_id: ChainId,
@@ -93,6 +98,8 @@ pub struct Module {
     pub keyring: ConcurrentKeyring<SuiAddress, Arc<SuiKeyPair>>,
 
     pub ibc_store_initial_seq: SequenceNumber,
+
+    pub zkgm_config: ZkgmConfig,
 }
 
 impl Plugin for Module {
@@ -146,6 +153,7 @@ impl Plugin for Module {
                 }),
             ),
             ibc_store: config.ibc_store,
+            zkgm_config: config.zkgm_config,
         })
     }
 
@@ -171,6 +179,8 @@ pub struct Config {
     pub ibc_store: SuiAddress,
 
     pub keyring: KeyringConfig,
+
+    pub zkgm_config: ZkgmConfig,
 }
 
 fn plugin_name(chain_id: &ChainId) -> String {
@@ -230,9 +240,9 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
                     let sender = SuiAddress::from(&pk.public());
                     let msgs = msgs.clone();
                     AssertUnwindSafe(async move {
-                        let msgs = process_msgs(self, pk, msgs, sender).await;
-
                         let mut ptb = ProgrammableTransactionBuilder::new();
+
+                        let msgs = process_msgs(self, &mut ptb, pk, msgs, sender).await;
 
                         for (contract_addr, _, module, entry_fn, arguments, type_args) in
                             msgs.into_iter()
@@ -283,6 +293,7 @@ impl PluginServer<ModuleCall, ModuleCallback> for Module {
 #[allow(clippy::type_complexity)]
 async fn process_msgs(
     module: &Module,
+    ptb: &mut ProgrammableTransactionBuilder,
     pk: &Arc<SuiKeyPair>,
     msgs: Vec<Datagram>,
     fee_recipient: SuiAddress,
@@ -566,12 +577,14 @@ async fn process_msgs(
 
                 let coin_t = register_token_if_zkgm(
                     module,
+                    ptb,
                     pk,
                     &data.packets[0],
                     &module_info,
                     store_initial_seq,
                 )
-                .await;
+                .await
+                .unwrap();
 
                 let (
                     source_channels,
@@ -592,15 +605,6 @@ async fn process_msgs(
                         )
                     })
                     .collect::<(Vec<_>, Vec<_>, Vec<_>, Vec<_>, Vec<_>)>();
-
-                println!(
-                    "{:?}, {:?}, {:?}, {:?}, {:?}",
-                    source_channels,
-                    dest_channels,
-                    packet_data,
-                    timeout_heights,
-                    timeout_timestamps
-                );
 
                 (
                     module_info.latest_address,
@@ -669,48 +673,73 @@ struct SuiFungibleAssetMetadata {
     description: String,
 }
 
+/// Deploy and register the token if needed in `ZKGM`
 async fn register_token_if_zkgm(
     module: &Module,
+    ptb: &mut ProgrammableTransactionBuilder,
     pk: &Arc<SuiKeyPair>,
     packet: &ibc_union_spec::Packet,
     module_info: &ModuleInfo,
     store_initial_seq: SequenceNumber,
-) -> Option<TypeTag> {
+) -> anyhow::Result<Option<TypeTag>> {
     let Ok(zkgm_packet) = ZkgmPacket::abi_decode_params(&packet.data) else {
-        return None;
+        return Ok(None);
     };
 
     let Ok(fao) = FungibleAssetOrderV2::abi_decode_params(&zkgm_packet.instruction.operand) else {
-        return None;
+        return Ok(None);
     };
 
-    let (metadata_image, coin_metadata) =
-        if fao.metadata_type == FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE {
-            // TODO(aeryz): we could drop this packet as well since we know that its gonna fail
-            let Ok(metadata) = FungibleAssetMetadata::abi_decode_params(&fao.metadata) else {
-                return None;
-            };
-
-            println!("{}", metadata.initializer);
-
-            // TODO(aeryz): we can also drop here
-            let sui_metadata: SuiFungibleAssetMetadata =
-                bcs::from_bytes(&metadata.initializer).unwrap();
-
-            if sui_metadata.owner != H256::<HexPrefixed>::default() {
-                return None;
-            }
-
-            (
-                Keccak256::new()
-                    .chain_update(&fao.metadata)
-                    .finalize()
-                    .to_vec(),
-                sui_metadata,
-            )
-        } else {
-            return None;
+    let (metadata_image, coin_metadata) = if fao.metadata_type
+        == FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE
+    {
+        // TODO(aeryz): we could drop this packet as well since we know that its gonna fail
+        let Ok(metadata) = FungibleAssetMetadata::abi_decode_params(&fao.metadata) else {
+            return Err(anyhow!("invalid metadata"));
         };
+
+        // TODO(aeryz): we can also drop here
+        let sui_metadata: SuiFungibleAssetMetadata =
+            bcs::from_bytes(&metadata.initializer).map_err(|_| anyhow!("invalid metadata"))?;
+
+        if sui_metadata.owner != H256::<HexPrefixed>::default() {
+            return Ok(None);
+        }
+
+        (
+            Keccak256::new()
+                .chain_update(&fao.metadata)
+                .finalize()
+                .to_vec(),
+            Some(sui_metadata),
+        )
+    } else if fao.metadata_type == FUNGIBLE_ASSET_METADATA_TYPE_IMAGE {
+        // otherwise, the metadata must be an image
+        if fao.metadata.len() != 32 {
+            return Err(anyhow!("invalid metadata"));
+        }
+
+        (fao.metadata.into(), None)
+    } else {
+        // This means the transfer is an unwrap. Hence the `quote_token` must already be in the form `address::module::name`
+        // which defines the coin type `T`.
+        let quote_token = String::from_utf8(fao.quote_token.into())
+            .map_err(|_| anyhow!("in the unwrap case, the quote token must be a utf8 string"))?;
+        let fields: Vec<&str> = quote_token.split("::").collect();
+        if fields.len() != 3 {
+            panic!("a registered token must be always in `address::module_name::name` form");
+        }
+
+        return Ok(Some(
+            StructTag {
+                address: AccountAddress::from_str(fields[0]).expect("address is valid"),
+                module: Identifier::new(fields[1]).expect("module name is valid"),
+                name: Identifier::new(fields[2]).expect("name is valid"),
+                type_params: vec![],
+            }
+            .into(),
+        ));
+    };
 
     let wrapped_token = predict_wrapped_denom(
         zkgm_packet.path.to_le_bytes().into(),
@@ -719,250 +748,77 @@ async fn register_token_if_zkgm(
         metadata_image,
     );
 
-    if fao.quote_token != wrapped_token {
-        return None;
+    // A wrapped token is only registered once, and once it's being received in the SUI side.
+    // `wrapped_token` is set to the given coin type. If there's already a coin type with this
+    // `wrapped_token`, we have to use that.
+    if let Some(wrapped_token_t) = get_registered_wrapped_token(module, &wrapped_token).await? {
+        return Ok(Some(wrapped_token_t));
     }
 
-    if let Some(wrapped_token_t) = module
-        .sui_client
-        .read_api()
-        .get_dynamic_field_object(
-            ObjectID::from_str(
-                "0xa9afebf911f6493be34a8ab596b5487b5d1f5fac0e8015035182981957f694aa",
-            )
-            .unwrap(),
-            DynamicFieldName {
-                type_: TypeTag::Vector(Box::new(TypeTag::U8)),
-                value: serde_json::to_value(&wrapped_token).expect("serde will work"),
-            },
-        )
-        .await
-        .unwrap()
-        .data
-    {
-        match wrapped_token_t.content.expect("content always exists") {
-            SuiParsedData::MoveObject(object) => {
-                let SuiMoveValue::String(field_value) = object
-                    .fields
-                    .field_value("value")
-                    .expect("token has a `value` field")
-                else {
-                    panic!("token has type `String`");
-                };
+    let Some(coin_metadata) = coin_metadata else {
+        return Err(anyhow!(
+            "the coin is going to be received for the first time, so the metadata must be provided"
+        ));
+    };
+    let (treasury_ref, metadata_ref, coin_t) =
+        publish_new_coin(module, pk, coin_metadata.decimals).await?;
 
-                debug!("the token is already registered");
+    // updating name, symbol, icon_url and the description since we don't have these in the published binary right now
+    // TODO(aeryz): we should generate the move binary to contain the necessary data and don't do these calls
+    call_coin_setter(
+        ptb,
+        "update_name",
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        coin_metadata.name,
+    )
+    .await?;
 
-                let fields: Vec<&str> = field_value.split("::").collect();
-                assert!(fields.len() == 3);
+    call_coin_setter(
+        ptb,
+        "update_symbol",
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        coin_metadata.symbol,
+    )
+    .await?;
 
-                return Some(
-                    StructTag {
-                        address: AccountAddress::from_str(fields[0]).expect("address is valid"),
-                        module: Identifier::new(fields[1]).expect("module name is valid"),
-                        name: Identifier::new(fields[2]).expect("name is valid"),
-                        type_params: vec![],
-                    }
-                    .into(),
-                );
-            }
-            SuiParsedData::Package(_) => panic!("this should never be a package"),
-        }
-    }
-
-    let mut bytecode = TOKEN_BYTECODE[0].to_vec();
-    // 31 because it will be followed by a u8 (decimals)
-    bytecode.extend_from_slice(&[0; 31]);
-    bytecode.extend_from_slice(&coin_metadata.decimals.to_be_bytes());
-    bytecode.extend_from_slice(TOKEN_BYTECODE[1]);
-
-    let mut ptb = ProgrammableTransactionBuilder::new();
-
-    let res = ptb.command(Command::Publish(
-        vec![bytecode],
-        vec![
-            ObjectID::from_str("0x1").unwrap(),
-            ObjectID::from_str("0x2").unwrap(),
-        ],
-    ));
-
-    let arg = ptb
-        .input(CallArg::Pure(
-            bcs::to_bytes(&SuiAddress::from(&pk.public())).unwrap(),
-        ))
-        .unwrap();
-    let _ = ptb.command(Command::TransferObjects(vec![res.clone()], arg));
-
-    let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
-
-    println!("tx response: {transaction_response:?}");
-
-    tokio::time::sleep(Duration::from_secs(1)).await;
-    let object_changes = module
-        .sui_client
-        .read_api()
-        .get_transaction_with_options(
-            transaction_response.digest,
-            SuiTransactionBlockResponseOptions::new().with_object_changes(),
-        )
-        .await
-        .unwrap()
-        .object_changes
-        .unwrap();
-    let (treasury_ref, coin_t) = object_changes
-        .iter()
-        .find_map(|o| match &o {
-            ObjectChange::Created {
-                object_type: StructTag {
-                    name, type_params, ..
-                },
-                ..
-            } => {
-                if name.as_ident_str() == ident_str!("TreasuryCap") {
-                    Some((o.object_ref(), type_params[0].clone()))
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        })
-        .unwrap();
-
-    let metadata_ref = object_changes
-        .iter()
-        .find_map(|o| match &o {
-            ObjectChange::Created {
-                object_type: StructTag { name, .. },
-                ..
-            } => {
-                if name.as_ident_str() == ident_str!("CoinMetadata") {
-                    Some(o.object_ref())
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        })
-        .unwrap();
-
-    let mut ptb = ProgrammableTransactionBuilder::new();
-    let arguments = [
-        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
-            .unwrap(),
-        ptb.input(CallArg::Object(ObjectArg::SharedObject {
-            id: metadata_ref.0,
-            initial_shared_version: metadata_ref.1,
-            mutable: true,
-        }))
-        .unwrap(),
-        ptb.input(CallArg::Pure(bcs::to_bytes(&coin_metadata.name).unwrap()))
-            .unwrap(),
-    ];
-    ptb.command(Command::move_call(
-        ObjectID::from_str("0x2").unwrap(),
-        ident_str!("coin").into(),
-        ident_str!("update_name").into(),
-        vec![coin_t.clone()],
-        arguments.to_vec(),
-    ));
-
-    let arguments = [
-        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
-            .unwrap(),
-        ptb.input(CallArg::Object(ObjectArg::SharedObject {
-            id: metadata_ref.0,
-            initial_shared_version: metadata_ref.1,
-            mutable: true,
-        }))
-        .unwrap(),
-        ptb.input(CallArg::Pure(bcs::to_bytes(&coin_metadata.symbol).unwrap()))
-            .unwrap(),
-    ];
-    ptb.command(Command::move_call(
-        ObjectID::from_str("0x2").unwrap(),
-        ident_str!("coin").into(),
-        ident_str!("update_symbol").into(),
-        vec![coin_t.clone()],
-        arguments.to_vec(),
-    ));
-
-    let arguments = [
-        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
-            .unwrap(),
-        ptb.input(CallArg::Object(ObjectArg::SharedObject {
-            id: metadata_ref.0,
-            initial_shared_version: metadata_ref.1,
-            mutable: true,
-        }))
-        .unwrap(),
-        ptb.input(CallArg::Pure(
-            bcs::to_bytes(&coin_metadata.description).unwrap(),
-        ))
-        .unwrap(),
-    ];
-    ptb.command(Command::move_call(
-        ObjectID::from_str("0x2").unwrap(),
-        ident_str!("coin").into(),
-        ident_str!("update_description").into(),
-        vec![coin_t.clone()],
-        arguments.to_vec(),
-    ));
+    call_coin_setter(
+        ptb,
+        "update_description",
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+        coin_metadata.description,
+    )
+    .await?;
 
     if let Some(icon_url) = coin_metadata.icon_url {
-        let arguments = [
-            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
-                .unwrap(),
-            ptb.input(CallArg::Object(ObjectArg::SharedObject {
-                id: metadata_ref.0,
-                initial_shared_version: metadata_ref.1,
-                mutable: true,
-            }))
-            .unwrap(),
-            ptb.input(CallArg::Pure(bcs::to_bytes(&icon_url).unwrap()))
-                .unwrap(),
-        ];
-        ptb.command(Command::move_call(
-            ObjectID::from_str("0x2").unwrap(),
-            ident_str!("coin").into(),
-            ident_str!("update_icon_url").into(),
-            vec![coin_t.clone()],
-            arguments.to_vec(),
-        ));
+        call_coin_setter(
+            ptb,
+            "update_icon_url",
+            treasury_ref,
+            metadata_ref,
+            coin_t.clone(),
+            icon_url,
+        )
+        .await?;
     }
 
-    let arguments = [
-        ptb.input(CallArg::Object(ObjectArg::SharedObject {
-            id: module_info.stores[0].into(),
-            initial_shared_version: store_initial_seq,
-            mutable: true,
-        }))
-        .unwrap(),
-        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
-            .unwrap(),
-        ptb.input(CallArg::Object(ObjectArg::SharedObject {
-            id: metadata_ref.0,
-            initial_shared_version: metadata_ref.1,
-            mutable: true,
-        }))
-        .unwrap(),
-        // owner is 0x0
-        ptb.input(CallArg::Pure(
-            H256::<HexPrefixed>::default().into_bytes().to_vec(),
-        ))
-        .unwrap(),
-    ];
-    ptb.command(Command::move_call(
-        module_info.latest_address.into(),
-        Identifier::new(module_info.module_name.clone()).unwrap(),
-        ident_str!("register_capability").into(),
-        vec![coin_t.clone()],
-        arguments.to_vec(),
-    ));
+    // We are finally registering the token before calling the recv
+    register_capability(
+        ptb,
+        module_info,
+        store_initial_seq,
+        treasury_ref,
+        metadata_ref,
+        coin_t.clone(),
+    )
+    .await?;
 
-    let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
-
-    println!("register tx: {transaction_response}");
-
-    Some(coin_t)
+    Ok(Some(coin_t))
 }
 
 struct SuiQuery<'a> {
@@ -1164,6 +1020,214 @@ pub async fn send_transactions(
     })?;
 
     Ok(transaction_response)
+}
+
+async fn get_registered_wrapped_token(
+    module: &Module,
+    wrapped_token: &[u8],
+) -> anyhow::Result<Option<TypeTag>> {
+    if let Some(wrapped_token_t) = module
+        .sui_client
+        .read_api()
+        .get_dynamic_field_object(
+            module.zkgm_config.wrapped_token_to_t,
+            DynamicFieldName {
+                type_: TypeTag::Vector(Box::new(TypeTag::U8)),
+                value: serde_json::to_value(&wrapped_token).expect("serde will work"),
+            },
+        )
+        .await
+        .map_err(|_| anyhow!("wrapped_token_to_t is expected to return some data"))?
+        .data
+    {
+        match wrapped_token_t.content.expect("content always exists") {
+            SuiParsedData::MoveObject(object) => {
+                let SuiMoveValue::String(field_value) = object
+                    .fields
+                    .field_value("value")
+                    .expect("token has a `value` field")
+                else {
+                    panic!("token must have the type `String`, this voyager might be outdated");
+                };
+
+                debug!("the token is already registered");
+
+                let fields: Vec<&str> = field_value.split("::").collect();
+                if fields.len() != 3 {
+                    panic!(
+                        "a registered token must be always in `address::module_name::name` form"
+                    );
+                }
+
+                return Ok(Some(
+                    StructTag {
+                        address: AccountAddress::from_str(fields[0]).expect("address is valid"),
+                        module: Identifier::new(fields[1]).expect("module name is valid"),
+                        name: Identifier::new(fields[2]).expect("name is valid"),
+                        type_params: vec![],
+                    }
+                    .into(),
+                ));
+            }
+            SuiParsedData::Package(_) => panic!("this should never be a package"),
+        }
+    } else {
+        Ok(None)
+    }
+}
+
+async fn publish_new_coin(
+    module: &Module,
+    pk: &Arc<SuiKeyPair>,
+    decimals: u8,
+) -> anyhow::Result<(ObjectRef, ObjectRef, TypeTag)> {
+    // There is no wrapped token
+    let mut bytecode = TOKEN_BYTECODE[0].to_vec();
+    // 31 because it will be followed by a u8 (decimals)
+    bytecode.extend_from_slice(&[0; 31]);
+    bytecode.extend_from_slice(&decimals.to_be_bytes());
+    bytecode.extend_from_slice(TOKEN_BYTECODE[1]);
+
+    let mut ptb = ProgrammableTransactionBuilder::new();
+
+    let res = ptb.command(Command::Publish(
+        vec![bytecode],
+        vec![
+            ObjectID::from_str("0x1").unwrap(),
+            ObjectID::from_str("0x2").unwrap(),
+        ],
+    ));
+
+    let arg = ptb
+        .input(CallArg::Pure(
+            bcs::to_bytes(&SuiAddress::from(&pk.public())).unwrap(),
+        ))
+        .unwrap();
+    let _ = ptb.command(Command::TransferObjects(vec![res.clone()], arg));
+
+    let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
+
+    tokio::time::sleep(Duration::from_secs(1)).await;
+    let object_changes = module
+        .sui_client
+        .read_api()
+        .get_transaction_with_options(
+            transaction_response.digest,
+            SuiTransactionBlockResponseOptions::new().with_object_changes(),
+        )
+        .await
+        .unwrap()
+        .object_changes
+        .unwrap();
+    let (treasury_ref, coin_t) = object_changes
+        .iter()
+        .find_map(|o| match &o {
+            ObjectChange::Created {
+                object_type: StructTag {
+                    name, type_params, ..
+                },
+                ..
+            } => {
+                if name.as_ident_str() == ident_str!("TreasuryCap") {
+                    Some((o.object_ref(), type_params[0].clone()))
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .unwrap();
+
+    let metadata_ref = object_changes
+        .iter()
+        .find_map(|o| match &o {
+            ObjectChange::Created {
+                object_type: StructTag { name, .. },
+                ..
+            } => {
+                if name.as_ident_str() == ident_str!("CoinMetadata") {
+                    Some(o.object_ref())
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .unwrap();
+
+    Ok((treasury_ref, metadata_ref, coin_t))
+}
+
+async fn call_coin_setter<T: Serialize>(
+    ptb: &mut ProgrammableTransactionBuilder,
+    function: &'static str,
+    treasury_ref: ObjectRef,
+    metadata_ref: ObjectRef,
+    coin_t: TypeTag,
+    data: T,
+) -> anyhow::Result<()> {
+    let arguments: Vec<Argument> = [
+        CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)),
+        CallArg::Object(ObjectArg::SharedObject {
+            id: metadata_ref.0,
+            initial_shared_version: metadata_ref.1,
+            mutable: true,
+        }),
+        CallArg::Pure(bcs::to_bytes(&data).unwrap()),
+    ]
+    .into_iter()
+    .map(|arg| ptb.input(arg).unwrap())
+    .collect();
+
+    let _ = ptb.command(Command::move_call(
+        ObjectID::from_str("0x2").unwrap(),
+        ident_str!("coin").into(),
+        ident_str!(function).into(),
+        vec![coin_t],
+        arguments.to_vec(),
+    ));
+
+    Ok(())
+}
+
+async fn register_capability(
+    ptb: &mut ProgrammableTransactionBuilder,
+    module_info: &ModuleInfo,
+    initial_seq: SequenceNumber,
+    treasury_ref: ObjectRef,
+    metadata_ref: ObjectRef,
+    coin_t: TypeTag,
+) -> anyhow::Result<()> {
+    let arguments = [
+        ptb.input(CallArg::Object(ObjectArg::SharedObject {
+            id: module_info.stores[0].into(),
+            initial_shared_version: initial_seq,
+            mutable: true,
+        }))
+        .unwrap(),
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
+            .unwrap(),
+        ptb.input(CallArg::Object(ObjectArg::SharedObject {
+            id: metadata_ref.0,
+            initial_shared_version: metadata_ref.1,
+            mutable: true,
+        }))
+        .unwrap(),
+        // owner is 0x0
+        ptb.input(CallArg::Pure(
+            H256::<HexPrefixed>::default().into_bytes().to_vec(),
+        ))
+        .unwrap(),
+    ];
+    ptb.command(Command::move_call(
+        module_info.latest_address.into(),
+        Identifier::new(module_info.module_name.clone()).unwrap(),
+        ident_str!("register_capability").into(),
+        vec![coin_t.clone()],
+        arguments.to_vec(),
+    ));
+
+    Ok(())
 }
 
 /*
