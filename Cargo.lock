@@ -15699,6 +15699,7 @@ dependencies = [
  "anyhow",
  "arbitrum-light-client-types",
  "base64 0.21.7",
+ "bcs",
  "berachain-light-client-types",
  "bob-light-client-types",
  "clap 4.5.39",

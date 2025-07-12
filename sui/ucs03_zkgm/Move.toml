@@ -18,8 +18,8 @@ ibc = { local = "../ibc" }
 # Override = { local = "../conflicting/version", override = true }
 
 [addresses]
-ibc      = "_"
-zkgm     = "_"
+ibc      = "0x3d182a16cd2facb03088ad7dac0bbd1522cfd454c3168614ee5d7633c610812e"
+zkgm     = "0x0"
 
 # Named addresses will be accessible in Move as `@name`. They're also exported:
 # for example, `std = "0x1"` is exported by the Standard Library.
@@ -37,3 +37,41 @@ zkgm     = "0x4444444444444"
 # The dev-addresses section allows overwriting named addresses for the `--test`
 # and `--dev` modes.
 # alice = "0xB0B"
+#
+# # ──────────────────────────────────────────────────────────┤
+# │ Created Objects:                                                                                                                                                                                                   │
+# │  ┌──                                                                                                                                                                                                               │
+# │  │ ObjectID: 0463e435bfb27fa72801cdf0fdc4601c3f9b3f9a14a15e40d7fc74e6c5df2e72:                                                                                                                                    │
+# │  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                                                                                      │
+# │  │ Owner: Shared( 494212486 )                                                                                                                                                                                      │
+# │  │ ObjectType: 0x915a1b433251395d81f0e266cf4d6822be2631237b4704ae920ecfc664e10c8::zkgm_relay::RelayStore                                                                                                           │
+# │  │ Version: 494212486                                                                                                                                                                                              │
+# │  │ Digest: BqcQcdwSgCyYYF1DERxmQxgdV8rAnM1Fo9VLe2wogXHf                                                                                                                                                            │
+# │  └──                                                                                                                                                                                                               │
+# │  ┌──                                                                                                                                                                                                               │
+# │  │ ObjectID: 0x8144c725153c457752a1e7b75e1d85424897dcc893557d099b6aaf031e8bc564:                                                                                                                                    │
+# │  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                                                                                      │
+# │  │ Owner: Account Address ( 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b )                                                                                                                   │
+# │  │ ObjectType: 0x2::package::UpgradeCap                                                                                                                                                                            │
+# │  │ Version: 494212486                                                                                                                                                                                              │
+# │  │ Digest: 3Ni9zMjp2pbv5W42mvF6rdeYLzYPL2WMbk57dYDenoEM                                                                                                                                                            │
+# │  └──                                                                                                                                                                                                               │
+# │ Mutated Objects:                                                                                                                                                                                                   │
+# │  ┌──                                                                                                                                                                                                               │
+# │  │ ObjectID: 0x45a37316e97dcf0cfd96f0269bf780e7d0fa39b257f7a58942d0576e66b6aacd                                                                                                                                    │
+# │  │ Sender: 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b                                                                                                                                      │
+# │  │ Owner: Account Address ( 0x232a4f7eb4c2abf5061316704373fd4bffbd297729406d9d04012931405f590b )                                                                                                                   │
+# │  │ ObjectType: 0x2::coin::Coin<0x2::sui::SUI>                                                                                                                                                                      │
+# │  │ Version: 494212486                                                                                                                                                                                              │
+# │  │ Digest: AfLpTGwKBvSpkEMiXJQo9L2zFMy8VXJ76WvqdYHLRQEG                                                                                                                                                            │
+# │  └──                                                                                                                                                                                                               │
+# │ Published Objects:                                                                                                                                                                                                 │
+# │  ┌──                                                                                                                                                                                                               │
+# │  │ PackageID: 0x0915a1b433251395d81f0e266cf4d6822be2631237b4704ae920ecfc664e10c8                                                                                                                                   │
+# │  │ Version: 1                                                                                                                                                                                                      │
+# │  │ Digest: 5W9GZdQxvf5wpod3ncD7xUdpdKQceezVVoZUp1jiJmey                                                                                                                                                            │
+# │  │ Modules: ack, batch, batch_ack, forward, fungible_asset_metadata, fungible_asset_order, fungible_asset_order_ack, helper, instruction, stake, sui_fungible_asset_metadata, zkgm_ethabi, zkgm_packet, zkgm_relay │
+# │  └──                                                                                                                                                                                                               │
+#
+# 0xfc597c40b172bf134f87c89c740e32ddb4cd76e8bfe12315990498fc5be6415e
+# ╰────────────

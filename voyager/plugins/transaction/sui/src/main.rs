@@ -42,7 +42,10 @@ use sui_sdk::{
     SuiClient, SuiClientBuilder,
 };
 use tracing::{debug, info, instrument};
-use ucs03_zkgm::com::{FungibleAssetOrder, ZkgmPacket};
+use ucs03_zkgm::com::{
+    FungibleAssetMetadata, FungibleAssetOrderV2, ZkgmPacket, FUNGIBLE_ASSET_METADATA_TYPE_IMAGE,
+    FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE,
+};
 use unionlabs::{
     primitives::{encoding::HexPrefixed, Bytes, H256, U256},
     ErrorReporter,
@@ -329,6 +332,7 @@ async fn process_msgs(
                     }),
                     CallArg::Pure(bcs::to_bytes(&data.client_id).unwrap()),
                     CallArg::Pure(bcs::to_bytes(&data.client_message).unwrap()),
+                    CallArg::Pure(H256::<HexPrefixed>::default().into_bytes().to_vec()),
                 ],
                 vec![],
             ),
@@ -520,7 +524,6 @@ async fn process_msgs(
                             initial_shared_version: module.ibc_store_initial_seq,
                             mutable: true,
                         }),
-                        CallArg::Pure(bcs::to_bytes(&port_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.channel_id).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_ack).unwrap()),
                         CallArg::Pure(bcs::to_bytes(&data.proof_height).unwrap()),
@@ -641,13 +644,29 @@ async fn process_msgs(
     data
 }
 
-fn predict_wrapped_denom(path: H256, channel: ChannelId, base_token: Vec<u8>) -> Vec<u8> {
+fn predict_wrapped_denom(
+    path: H256,
+    channel: ChannelId,
+    base_token: Vec<u8>,
+    metadata_image: Vec<u8>,
+) -> Vec<u8> {
     let mut buf = vec![];
     bcs::serialize_into(&mut buf, &path).expect("works");
     bcs::serialize_into(&mut buf, &channel.raw()).expect("works");
     buf.extend_from_slice(&base_token);
+    buf.extend_from_slice(&metadata_image);
 
     Keccak256::new().chain_update(buf).finalize().to_vec()
+}
+
+#[derive(Deserialize)]
+struct SuiFungibleAssetMetadata {
+    name: String,
+    symbol: String,
+    decimals: u8,
+    owner: H256,
+    icon_url: Option<String>,
+    description: String,
 }
 
 async fn register_token_if_zkgm(
@@ -661,14 +680,43 @@ async fn register_token_if_zkgm(
         return None;
     };
 
-    let Ok(fao) = FungibleAssetOrder::abi_decode_params(&zkgm_packet.instruction.operand) else {
+    let Ok(fao) = FungibleAssetOrderV2::abi_decode_params(&zkgm_packet.instruction.operand) else {
         return None;
     };
 
+    let (metadata_image, coin_metadata) =
+        if fao.metadata_type == FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE {
+            // TODO(aeryz): we could drop this packet as well since we know that its gonna fail
+            let Ok(metadata) = FungibleAssetMetadata::abi_decode_params(&fao.metadata) else {
+                return None;
+            };
+
+            println!("{}", metadata.initializer);
+
+            // TODO(aeryz): we can also drop here
+            let sui_metadata: SuiFungibleAssetMetadata =
+                bcs::from_bytes(&metadata.initializer).unwrap();
+
+            if sui_metadata.owner != H256::<HexPrefixed>::default() {
+                return None;
+            }
+
+            (
+                Keccak256::new()
+                    .chain_update(&fao.metadata)
+                    .finalize()
+                    .to_vec(),
+                sui_metadata,
+            )
+        } else {
+            return None;
+        };
+
     let wrapped_token = predict_wrapped_denom(
-        fao.base_token_path.to_le_bytes().into(),
+        zkgm_packet.path.to_le_bytes().into(),
         packet.destination_channel_id,
         fao.base_token.to_vec(),
+        metadata_image,
     );
 
     if fao.quote_token != wrapped_token {
@@ -724,7 +772,7 @@ async fn register_token_if_zkgm(
     let mut bytecode = TOKEN_BYTECODE[0].to_vec();
     // 31 because it will be followed by a u8 (decimals)
     bytecode.extend_from_slice(&[0; 31]);
-    bytecode.extend_from_slice(&fao.base_token_decimals.to_be_bytes());
+    bytecode.extend_from_slice(&coin_metadata.decimals.to_be_bytes());
     bytecode.extend_from_slice(TOKEN_BYTECODE[1]);
 
     let mut ptb = ProgrammableTransactionBuilder::new();
@@ -732,29 +780,24 @@ async fn register_token_if_zkgm(
     let res = ptb.command(Command::Publish(
         vec![bytecode],
         vec![
-            ObjectID::from_str(
-                "0x0000000000000000000000000000000000000000000000000000000000000001",
-            )
-            .unwrap(),
-            ObjectID::from_str(
-                "0x0000000000000000000000000000000000000000000000000000000000000002",
-            )
-            .unwrap(),
+            ObjectID::from_str("0x1").unwrap(),
+            ObjectID::from_str("0x2").unwrap(),
         ],
     ));
+
     let arg = ptb
         .input(CallArg::Pure(
             bcs::to_bytes(&SuiAddress::from(&pk.public())).unwrap(),
         ))
         .unwrap();
-    let _ = ptb.command(Command::TransferObjects(vec![res], arg));
+    let _ = ptb.command(Command::TransferObjects(vec![res.clone()], arg));
 
     let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
 
     println!("tx response: {transaction_response:?}");
 
     tokio::time::sleep(Duration::from_secs(1)).await;
-    let (treasury_ref, coin_t) = module
+    let object_changes = module
         .sui_client
         .read_api()
         .get_transaction_with_options(
@@ -764,8 +807,9 @@ async fn register_token_if_zkgm(
         .await
         .unwrap()
         .object_changes
-        .unwrap()
-        .into_iter()
+        .unwrap();
+    let (treasury_ref, coin_t) = object_changes
+        .iter()
         .find_map(|o| match &o {
             ObjectChange::Created {
                 object_type: StructTag {
@@ -783,7 +827,107 @@ async fn register_token_if_zkgm(
         })
         .unwrap();
 
+    let metadata_ref = object_changes
+        .iter()
+        .find_map(|o| match &o {
+            ObjectChange::Created {
+                object_type: StructTag { name, .. },
+                ..
+            } => {
+                if name.as_ident_str() == ident_str!("CoinMetadata") {
+                    Some(o.object_ref())
+                } else {
+                    None
+                }
+            }
+            _ => None,
+        })
+        .unwrap();
+
     let mut ptb = ProgrammableTransactionBuilder::new();
+    let arguments = [
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
+            .unwrap(),
+        ptb.input(CallArg::Object(ObjectArg::SharedObject {
+            id: metadata_ref.0,
+            initial_shared_version: metadata_ref.1,
+            mutable: true,
+        }))
+        .unwrap(),
+        ptb.input(CallArg::Pure(bcs::to_bytes(&coin_metadata.name).unwrap()))
+            .unwrap(),
+    ];
+    ptb.command(Command::move_call(
+        ObjectID::from_str("0x2").unwrap(),
+        ident_str!("coin").into(),
+        ident_str!("update_name").into(),
+        vec![coin_t.clone()],
+        arguments.to_vec(),
+    ));
+
+    let arguments = [
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
+            .unwrap(),
+        ptb.input(CallArg::Object(ObjectArg::SharedObject {
+            id: metadata_ref.0,
+            initial_shared_version: metadata_ref.1,
+            mutable: true,
+        }))
+        .unwrap(),
+        ptb.input(CallArg::Pure(bcs::to_bytes(&coin_metadata.symbol).unwrap()))
+            .unwrap(),
+    ];
+    ptb.command(Command::move_call(
+        ObjectID::from_str("0x2").unwrap(),
+        ident_str!("coin").into(),
+        ident_str!("update_symbol").into(),
+        vec![coin_t.clone()],
+        arguments.to_vec(),
+    ));
+
+    let arguments = [
+        ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
+            .unwrap(),
+        ptb.input(CallArg::Object(ObjectArg::SharedObject {
+            id: metadata_ref.0,
+            initial_shared_version: metadata_ref.1,
+            mutable: true,
+        }))
+        .unwrap(),
+        ptb.input(CallArg::Pure(
+            bcs::to_bytes(&coin_metadata.description).unwrap(),
+        ))
+        .unwrap(),
+    ];
+    ptb.command(Command::move_call(
+        ObjectID::from_str("0x2").unwrap(),
+        ident_str!("coin").into(),
+        ident_str!("update_description").into(),
+        vec![coin_t.clone()],
+        arguments.to_vec(),
+    ));
+
+    if let Some(icon_url) = coin_metadata.icon_url {
+        let arguments = [
+            ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
+                .unwrap(),
+            ptb.input(CallArg::Object(ObjectArg::SharedObject {
+                id: metadata_ref.0,
+                initial_shared_version: metadata_ref.1,
+                mutable: true,
+            }))
+            .unwrap(),
+            ptb.input(CallArg::Pure(bcs::to_bytes(&icon_url).unwrap()))
+                .unwrap(),
+        ];
+        ptb.command(Command::move_call(
+            ObjectID::from_str("0x2").unwrap(),
+            ident_str!("coin").into(),
+            ident_str!("update_icon_url").into(),
+            vec![coin_t.clone()],
+            arguments.to_vec(),
+        ));
+    }
 
     let arguments = [
         ptb.input(CallArg::Object(ObjectArg::SharedObject {
@@ -794,15 +938,24 @@ async fn register_token_if_zkgm(
         .unwrap(),
         ptb.input(CallArg::Object(ObjectArg::ImmOrOwnedObject(treasury_ref)))
             .unwrap(),
-    ]
-    .to_vec();
-
+        ptb.input(CallArg::Object(ObjectArg::SharedObject {
+            id: metadata_ref.0,
+            initial_shared_version: metadata_ref.1,
+            mutable: true,
+        }))
+        .unwrap(),
+        // owner is 0x0
+        ptb.input(CallArg::Pure(
+            H256::<HexPrefixed>::default().into_bytes().to_vec(),
+        ))
+        .unwrap(),
+    ];
     ptb.command(Command::move_call(
         module_info.latest_address.into(),
         Identifier::new(module_info.module_name.clone()).unwrap(),
         ident_str!("register_capability").into(),
         vec![coin_t.clone()],
-        arguments,
+        arguments.to_vec(),
     ));
 
     let transaction_response = send_transactions(module, pk, ptb.finish()).await.unwrap();
