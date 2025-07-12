@@ -176,7 +176,7 @@ pre .query {
   /* we need to place a fake and un-selectable copy of the error which _isn't_ broken out
   /* behind the actual error message.
 
-  /* This sections keeps both of those two in in sync  */
+  /* This sections keeps both of those two in sync  */
 
 pre .error,
 pre .error-behind {
