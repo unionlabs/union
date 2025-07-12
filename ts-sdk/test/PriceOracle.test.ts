@@ -36,7 +36,7 @@ describe.skipIf(IN_NIX_BUILD)("PriceOracle (Live)", () => {
     ] as const,
   )("%s > of", ([label, layer]) =>
     Effect.gen(function*() {
-      const id = UniversalChainId.make("osmosis.osmo-test-5")
+      const id = UniversalChainId.make("ethereum.11155111")
       const pricing = yield* PriceOracle.pipe(
         Effect.provide(layer),
       )

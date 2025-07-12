@@ -32,6 +32,7 @@ import {
   Schedule,
   Schema as S,
   Stream,
+  Struct,
 } from "effect"
 import { absurd, constTrue, flow, pipe } from "effect/Function"
 import { GAS_DENOMS } from "./constants/gas-denoms.js"
@@ -45,7 +46,7 @@ export class PriceError extends Data.TaggedError("@unionlabs/sdk/PriceOracle/Pri
 
 export const PriceSource = S.Struct({
   url: S.URL,
-  details: S.Option(S.Record({
+  metadata: S.Option(S.Record({
     key: S.NonEmptyString,
     value: S.Any,
   })),
@@ -188,7 +189,17 @@ export const Pyth = Layer.effect(
                     })
                   ),
                 )
-                const { price: { price, expo }, metadata } = safeParsed
+                const { price: { price, expo }, metadata: _metadata, ema_price } = safeParsed
+                const metadata = pipe(
+                  Struct.evolve(_metadata, {
+                    prev_publish_time: (x) => x ? new Date(x * 1000).toISOString() : null,
+                    proof_available_time: (x) => x ? new Date(x * 1000).toISOString() : null,
+                  }),
+                  x => ({
+                    ...x,
+                    confidence: `±${(+ema_price.conf / Math.pow(10, 8))}`,
+                  }),
+                )
                 const exp = BigDecimal.make(1n, -expo)
                 return yield* pipe(
                   BigDecimal.fromString(price),
@@ -221,7 +232,7 @@ export const Pyth = Layer.effect(
               price: price,
               source: PriceSource.make({
                 url: new URL(url),
-                details: O.some(metadata),
+                metadata: O.some(metadata),
               }),
             })
           ),
@@ -319,41 +330,40 @@ export const Redstone = Layer.effect(
       )
     )
 
-    const priceOfSymbol = Effect.fn("getDataPackageByChain")((symbol: string) =>
-      pipe(
-        getDataPackagesForSymbol(symbol),
-        Effect.flatMap((r) =>
-          pipe(
-            r[symbol], // don't know why R.get isn't valid here
-            O.fromNullable,
-            Effect.mapError(() =>
-              new PriceError({
-                message: `No data package returned for ${symbol}`,
-                source: "Redstone",
-              })
-            ),
-          )
+    const priceOfSymbol = Effect.fn("getDataPackageByChain")(function*(symbol: string) {
+      const packages = yield* getDataPackagesForSymbol(symbol)
+
+      const signedPackages = yield* pipe(
+        packages[symbol],
+        O.fromNullable,
+        Effect.mapError(() =>
+          new PriceError({
+            message: `No data package returned for ${symbol}`,
+            source: "Redstone",
+          })
         ),
-        Effect.flatMap(flow(
-          A.flatMap(x => x.dataPackage.dataPoints),
-          A.map(x => x.toObj().value),
-          A.filterMap(
-            Match.type<number | string>().pipe(
-              Match.when(Match.number, O.some<number>),
-              Match.when(Match.string, N.parse),
-              Match.exhaustive,
-            ),
+      )
+
+      const price = yield* pipe(
+        signedPackages,
+        A.flatMap(x => x.dataPackage.dataPoints),
+        A.map(x => x.toObj().value),
+        A.filterMap(
+          Match.type<number | string>().pipe(
+            Match.when(Match.number, O.some<number>),
+            Match.when(Match.string, N.parse),
+            Match.exhaustive,
           ),
-          O.liftPredicate(A.isNonEmptyArray),
-          Effect.mapError(() =>
-            new PriceError({
-              message: "Data points is an empty array",
-              source: "Redstone",
-            })
-          ),
-          Effect.map(xs => A.reduce(xs, 0, (acc, x) => acc + x) / A.length(xs)),
-        )),
-        Effect.flatMap(x =>
+        ),
+        O.liftPredicate(A.isNonEmptyArray),
+        Effect.mapError(() =>
+          new PriceError({
+            message: "Data points is an empty array",
+            source: "Redstone",
+          })
+        ),
+        Effect.map(xs => A.reduce(xs, 0, (acc, x) => acc + x) / A.length(xs)),
+        Effect.flatMap((x) =>
           pipe(
             BigDecimal.safeFromNumber(x),
             Effect.mapError(() =>
@@ -365,7 +375,21 @@ export const Redstone = Layer.effect(
           )
         ),
       )
-    )
+
+      const metadata = pipe(
+        signedPackages,
+        A.map(x => x.toObj()),
+        A.map(Struct.omit("dataPoints")),
+        A.map(Struct.omit("dataPackageId")),
+        (datapoints) => ({ datapoints }),
+      )
+
+      return ({
+        price,
+        metadata,
+      }) as const
+    })
+
     const of: PriceOracle.Service["of"] = Effect.fn("of")((id) =>
       pipe(
         R.get(GAS_DENOMS, id),
@@ -379,11 +403,11 @@ export const Redstone = Layer.effect(
         Effect.flatMap((symbol) =>
           pipe(
             priceOfSymbol(symbol),
-            Effect.map((price) => ({
+            Effect.map(({ price, metadata }) => ({
               price,
               source: {
                 url: new URL(`https://app.redstone.finance/app/token/${symbol}/`),
-                details: O.none(),
+                metadata: O.some(metadata),
               },
             })),
           )
@@ -528,18 +552,24 @@ export const Band = Layer.effect(
           ),
         )
 
-        const price = (yield* A.isNonEmptyReadonlyArray(price_results)
+        const resolved = yield* A.isNonEmptyReadonlyArray(price_results)
           ? Effect.succeed(A.headNonEmpty(price_results))
           : new PriceError({
             message: `No results for symbol ${symbol}`,
             source: "Band",
-          })).price
+          })
+
+        const price = resolved.price
+        const metadata = {
+          request_id: resolved.request_id,
+          resolve_time: resolved.resolve_time,
+        } as const
 
         return PriceResult.make({
           price,
           source: {
-            url: new URL("https://www.bandprotocol.com/"),
-            details: O.none(),
+            url: new URL(`https://data.bandprotocol.com/symbol/${symbol}`),
+            metadata: O.some(metadata),
           },
         })
       })
@@ -603,7 +633,7 @@ export class PriceOracleExecutor
             Effect.andThen((oracle) => oracle.of(id)),
             Effect.withExecutionPlan(LivePlan),
           ),
-        stream: () => Stream.fail(new PriceError({ message: "not implemented" })),
+        stream: () => Stream.fail(new PriceError({ message: "not implemented", source: "" })),
         ratio: (from: UniversalChainId, to: UniversalChainId) =>
           pipe(
             ctx,
@@ -622,6 +652,7 @@ export class PriceOracleExecutor
         catch: (cause) =>
           new PriceError({
             message: `Could not import "effect/FastCheck"`,
+            source: "Test",
             cause,
           }),
       })
@@ -631,6 +662,7 @@ export class PriceOracleExecutor
         catch: (cause) =>
           new PriceError({
             message: `Could not import "effect/Arbitrary"`,
+            source: "Test",
             cause,
           }),
       })
@@ -657,6 +689,7 @@ export class PriceOracleExecutor
           Effect.mapError((cause) =>
             new PriceError({
               message: `Could not divide ${ofA.price} by ${ofB.price}.`,
+              source: "Test",
               cause,
             })
           ),
