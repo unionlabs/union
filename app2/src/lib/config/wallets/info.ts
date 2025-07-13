@@ -10,8 +10,8 @@ export const unionTestnet = InternalChainInfo.make({
   },
   chainSymbolImageUrl:
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union-testnet/chain.png",
-  rest: "https://rest.union-testnet-10.union.chain.cooking",
-  rpc: "https://rpc.union-testnet-10.union.chain.cooking",
+  rest: "https://rest.union-testnet-10.union.chain.kitchen",
+  rpc: "https://rpc.union-testnet-10.union.chain.kitchen",
   bip44: {
     coinType: 118,
   },
@@ -69,8 +69,8 @@ export const babylonMainnet = InternalChainInfo.make({
   chainName: "Babylon Genesis",
   chainSymbolImageUrl:
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
-  rpc: "https://rpc-babylon.keplr.app",
-  rest: "https://lcd-babylon.keplr.app",
+  rpc: "https://rpc.bbn-1.babylon.chain.kitchen",
+  rest: "https://rest.bbn-1.babylon.chain.kitchen",
   walletUrlForStaking: "https://wallet.keplr.app/chains/babylon-genesis",
   bip44: {
     coinType: 118,
@@ -139,8 +139,8 @@ export const babylonTestnet = InternalChainInfo.make({
   chainName: "Babylon Phase-2 Testnet",
   chainSymbolImageUrl:
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
-  rpc: "https://babylon-testnet-rpc.nodes.guru",
-  rest: "https://babylon-testnet-api.nodes.guru",
+  rpc: "https://rpc.bbn-test-5.babylon.chain.kitchen/",
+  rest: "https://rest.bbn-test-5.babylon.chain.kitchen/",
   nodeProvider: {
     name: "NodesGuru",
     email: "security@nodes.guru",
@@ -221,8 +221,8 @@ export const babylonTestnet = InternalChainInfo.make({
 
 export const xionTestnet = InternalChainInfo.make(
   {
-    rpc: "https://rpc.xion-testnet-2.burnt.com/",
-    rest: "https://api.xion-testnet-2.burnt.com/",
+    rpc: "https://rpc.xion-testnet-2.xion.chain.kitchen",
+    rest: "https://rest.xion-testnet-2.xion.chain.kitchen",
     chainId: "xion-testnet-2",
     chainName: "Xion Testnet",
     chainSymbolImageUrl:
@@ -290,8 +290,8 @@ export const osmosisTestnet = InternalChainInfo.make({
   chainName: "Osmosis Testnet",
   chainSymbolImageUrl:
     "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
-  rpc: "https://rpc.testnet.osmosis.zone",
-  rest: "https://lcd.testnet.osmosis.zone",
+  rpc: "https://rpc.osmo-test-5.osmosis.chain.kitchen",
+  rest: "https://rest.osmo-test-5.osmosis.chain.kitchen",
   bip44: {
     coinType: 118,
   },
@@ -350,8 +350,8 @@ export const osmosisTestnet = InternalChainInfo.make({
 })
 
 export const osmosisMainnet = InternalChainInfo.make({
-  rpc: "https://rpc-osmosis.keplr.app",
-  rest: "https://lcd-osmosis.keplr.app",
+  rpc: "https://rpc.osmosis.zone/",
+  rest: "https://lcd.osmosis.zone/",
   chainId: "osmosis-1",
   chainName: "Osmosis",
   chainSymbolImageUrl:
