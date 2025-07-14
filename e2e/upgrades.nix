@@ -69,7 +69,7 @@ in
       ${upgradeTo "v1.1.0" 10}
       ${upgradeTo "v1.2.0" 20}
       union.wait_until_succeeds('[[ $(curl "http://localhost:26660/block" --fail --silent | ${pkgs.lib.meta.getExe pkgs.jq} ".result.block.header.height | tonumber > 40") == "true" ]]', timeout=120)
-      
+
     '';
 
     nodes = {
