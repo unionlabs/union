@@ -248,9 +248,9 @@ async fn main() -> anyhow::Result<()> {
 ✅ Governance token registered at: FixedBytes<20>(0x6c2bcc9c340595143c31b4e2b238ae8f0c04e572)
 ✅ Governance token registered at: FixedBytes<20>(0xa513f3a432f575f1e8579cc456badac9c78d8b08) */
 
-    // let snake_nft = ctx.dst.predict_stake_manager_address(zkgm_evm_addr.into()).await?;
+    let snake_nft = ctx.dst.predict_stake_manager_address(zkgm_evm_addr.into()).await?;
     
-    // println!("✅ Stake manager address: {:?}", snake_nft);
+    println!("✅ Stake manager address: {:?}", snake_nft);
 
     // // ctx.dst.basic_erc721_mint(snake_nft, U256::from(1u32), spender.into()).await?;
 
@@ -341,12 +341,12 @@ async fn main() -> anyhow::Result<()> {
 
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
     println!("IMG: {:?}", img);
-
+    let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_0,
         opcode:  OP_STAKE,
         operand: Stake {
-            token_id:  "2".parse().unwrap(),
+            token_id:  "7".parse().unwrap(),
             // governance_token: governance_token.unwrappedToken,
             // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
@@ -357,8 +357,7 @@ async fn main() -> anyhow::Result<()> {
             beneficiary:  hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
                     .to_vec()
                     .into(),
-            validator:    b"unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej"
-                    .into(),
+            validator:    given_validator.as_bytes().into(),
             amount:   "1".parse().unwrap(),
         }
         .abi_encode_params()
@@ -381,14 +380,13 @@ async fn main() -> anyhow::Result<()> {
         .clear_decoder();
     // let call = call.with_cloned_provider();
     let recv_packet_data = ctx
-        .send_and_recv_with_retry::<evm::Module, cosmos::Module>(
+        .send_and_recv_stake::<evm::Module, cosmos::Module>(
             &ctx.dst,
             zkgm_evm_addr.into(),
             call,
             &ctx.src,
-            3,
-            Duration::from_secs(20),
-            Duration::from_secs(720),
+            Duration::from_secs(360),
+            given_validator.to_string()
         )
         .await;
 
