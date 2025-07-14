@@ -1,46 +1,45 @@
 [package]
-name = "union-test"
-version = "0.1.0"
-authors.workspace = true
-edition.workspace = true
+authors.workspace      = true
+edition.workspace      = true
 license-file.workspace = true
-publish.workspace = true
-repository.workspace = true
+name                   = "union-test"
+publish.workspace      = true
+repository.workspace   = true
+version                = "0.1.0"
 
 [dependencies]
-voyager-sdk = { workspace = true }
+alloy                          = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
+axum                           = { workspace = true, features = ["macros", "tokio", "json"] }
+bip32                          = { workspace = true }
+cometbft-rpc                   = { workspace = true }
+concurrent-keyring             = { workspace = true }
+cosmos-client                  = { workspace = true }
+cosmos-sdk-event               = { workspace = true }
+cosmwasm-std                   = { workspace = true }
+cw20                           = "2.0.0"
+ethers                         = { version = "1.0.2", default-features = true, features = ["ethers-solc"] }
+hex-literal                    = { workspace = true }
+ibc-solidity                   = { workspace = true, features = ["serde", "rpc"] }
+ibc-union-msg                  = { workspace = true }
+ibc-union-spec                 = { workspace = true }
 jsonrpsee                      = { workspace = true, features = ["tracing", "ws-client", "http-client"] }
-unionlabs = { workspace = true }
-serde = { workspace = true }
-cosmos-client      = { workspace = true }
-concurrent-keyring = { workspace = true }
-protos             = { workspace = true }
-tokio              = { workspace = true }
-hex-literal = { workspace = true }
-ibc-union-msg = { workspace = true }
-trusted-mpt-light-client-types = { workspace = true, features = ["serde", "bincode", "ethabi"]}
-rand = { version = "0.9.0"}
-alloy              = { workspace = true, features = ["contract", "network", "providers", "signers", "signer-local", "rpc", "rpc-types", "transports", "transport-http", "transport-ws", "reqwest", "provider-ws"] }
-bip32              = { workspace = true }
-ibc-union-spec = { workspace = true }
-ibc-solidity   = { workspace = true, features = ["serde", "rpc"] }
-tracing            = { workspace = true }
-thiserror          = { workspace = true }
-axum                    = { workspace = true, features = ["macros", "tokio", "json"] }
-ethers = { version = "1.0.2", default-features = true, features = ["ethers-solc"] }
-cw20            = "2.0.0"
-ucs03-zkgm = { workspace = true, features = [ "library" ] }
-cometbft-rpc = { workspace = true }
-cosmos-sdk-event = { workspace = true }
-serde-utils = { workspace = true }
-cosmwasm-std    = { workspace = true }
-
+protos                         = { workspace = true }
+rand                           = { version = "0.9.0" }
+serde                          = { workspace = true }
+serde-utils                    = { workspace = true }
+thiserror                      = { workspace = true }
+tokio                          = { workspace = true }
+tracing                        = { workspace = true }
+trusted-mpt-light-client-types = { workspace = true, features = ["serde", "bincode", "ethabi"] }
+ucs03-zkgm                     = { workspace = true, features = ["library"] }
+unionlabs                      = { workspace = true }
+voyager-sdk                    = { workspace = true }
 
 
 [dev-dependencies]
-tokio = { version = "1", features = ["macros", "rt"] }
+once_cell   = "1.17"
 serial_test = "0.5"
-once_cell = "1.17"
+tokio       = { version = "1", features = ["macros", "rt"] }
 
 
 [lints]
