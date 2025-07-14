@@ -8,10 +8,10 @@ use cosmos::{FeemarketConfig, GasFillerConfig};
 use hex_literal::hex;
 use alloy::hex::decode as hex_decode;
 
-use protos::{cosmos::base::v1beta1::Coin, ibc::core::channel};
-use rand::{RngCore, Rng};
+use protos::{cosmos::base::v1beta1::Coin};
+use rand::{RngCore};
 use serial_test::serial;
-use tokio::sync::{Mutex, OnceCell};
+use tokio::sync::{OnceCell};
 use std::num::NonZero;
 use ibc_union_spec::{ChannelId};
 use cw20::{Cw20ExecuteMsg};
@@ -23,20 +23,17 @@ use ucs03_zkgm::{
     },
 };
 use union_test::{
-    cosmos::{self, Config as CosmosConfig},
-    evm::{self, zkgm::Instruction as InstructionEvm, zkgm::UCS03Zkgm, Config as EvmConfig, zkgmerc20::ZkgmERC20},
-    helpers::{ChannelOpenConfirm, ConnectionConfirm, CreateClientConfirm},
-    ContractAddr,
-    // adjust to your crate name
+    cosmos::{self},
+    evm::{self, zkgm::Instruction as InstructionEvm, zkgm::UCS03Zkgm, zkgmerc20::ZkgmERC20},
     TestContext,
 };
 use unionlabs::{
     bech32::Bech32,
-    encoding::{Bincode, Encode, EncodeAs, EthAbi, Json},
+    encoding::{Encode, Json},
     primitives::{FixedBytes, H160, U256},
     ethereum::keccak256
 };
-use voyager_sdk::{anyhow, primitives::ChainId};
+use voyager_sdk::{primitives::ChainId};
 
 static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::const_new();
 static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
@@ -53,6 +50,7 @@ async fn ensure_erc20(spender: H160) -> H160 {
                .deploy_basic_erc20(spender)
                .await
                .expect("failed to deploy ERC20")
+            
         })
         .await
         .clone()
@@ -89,6 +87,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
             multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
             rpc_url: "http://localhost:8545".into(),
+            ws_url: "ws://localhost:8546".into(),
             keyring: KeyringConfig {
                 name: "alice".into(),
                 keys: vec![KeyringConfigEntry::Raw {
@@ -98,12 +97,12 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
                 }],
             },
             max_gas_price: None,
-            fixed_gas_price: None,
+            fixed_gas_price: Some(20_000_000_000u64.into()),
             gas_multiplier: 2.0,
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 3; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 2; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -185,69 +184,6 @@ async fn ensure_channels_opened(channel_count: usize) {
         .await;
 }
 
-async fn open_channel_from_union_to_evm(channel_count: usize) {
-    let ctx = init_ctx().await;
-    let (src_client, dst_client) = ctx
-        .create_clients(
-            Duration::from_secs(60),
-            "ibc-cosmwasm",
-            "trusted/evm/mpt",
-            "ibc-solidity",
-            "cometbls",
-        )
-        .await
-        .unwrap();
-
-    assert!(src_client.client_id > 0);
-    assert!(dst_client.client_id > 0);
-
-    // let conn = ctx
-    //     .open_connection(true, src_client.client_id, dst_client.client_id, Duration::from_secs(180))
-    //     .await
-    //     .unwrap();
-    let conn = ctx
-        .open_connection::<cosmos::Module, evm::Module>(
-            &ctx.src,
-            src_client.client_id,
-            &ctx.dst,
-            dst_client.client_id,
-            Duration::from_secs(180),
-        )
-        .await
-        .unwrap();
-    assert!(conn.connection_id > 0);
-    assert!(conn.counterparty_connection_id > 0);
-
-    let current_available_count = ctx.get_available_channel_count().await;
-
-    let opened = ctx
-        .open_channels(
-            true,
-            "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
-                .as_bytes()
-                .into(),
-            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
-                .to_vec()
-                .into(),
-            conn.counterparty_connection_id,
-            "ucs03-zkgm-0".into(),
-            channel_count,
-            Duration::from_secs(240),
-        )
-        .await
-        .unwrap();
-    assert_eq!(opened, 1);
-
-    let available_count_after_open = ctx.get_available_channel_count().await;
-    assert_eq!(current_available_count + 1, available_count_after_open);
-    let pair = ctx.get_channel().await.expect("channel available");
-    let available_count_after_get = ctx.get_available_channel_count().await;
-    assert_eq!(available_count_after_open - 1, available_count_after_get);
-    ctx.release_channel(pair).await;
-    let available_count_after_release = ctx.get_available_channel_count().await;
-    assert_eq!(available_count_after_open, available_count_after_release);
-}
-
 async fn _open_connection_from_evm_to_union() {
     let ctx = init_ctx().await;
     let (src_client, dst_client) = ctx
@@ -300,7 +236,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
 
 
     let mut salt_bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+    rand::rng().fill_bytes(&mut salt_bytes);
     let contract: Bech32<FixedBytes<32>> =
         Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
             .unwrap();
@@ -365,7 +301,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     // Also token balanceOf the receiver account
     // And see if muno is decreased by 10 and the receiver's muno is increased by 10
 
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+    rand::rng().fill_bytes(&mut salt_bytes);
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
@@ -399,7 +335,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
 
     let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider);
 
-    let mut call = ucs03_zkgm
+    let call = ucs03_zkgm
         .send(
             dst_chain_id.try_into().unwrap(),
             0u64.into(),
@@ -468,7 +404,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     println!("Quote token address: {:?}", quote_token_addr);
     println!("deployed_erc20 address: {:?}", deployed_erc20);
     let mut salt_bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+    rand::rng().fill_bytes(&mut salt_bytes);
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
@@ -498,7 +434,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider);
 
 
-    let mut call = ucs03_zkgm
+    let call = ucs03_zkgm
         .send(
             dst_chain_id.try_into().unwrap(),
             0u64.into(),
@@ -548,6 +484,12 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         (approve_msg_bin, vec![]).into()
     ).await;
     
+    assert!(
+        approve_recv_packet_data.is_some(),
+        "Failed to send approve transaction: {:?}",
+        approve_recv_packet_data
+    );
+
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
@@ -641,18 +583,12 @@ async fn test_stake_from_evm_to_union() {
         eth_zkgm_contract.into(), pair.dest, img).await;
 
     assert!(governance_token.is_ok(), "Failed to setup governance token: {:?}", governance_token.err());
-    let governance_token = governance_token.unwrap();
-    println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
-
-    let snake_nft = ctx.dst.predict_stake_manager_address(eth_zkgm_contract.into()).await;
-    assert!(snake_nft.is_ok(), "Failed to predict stake manager address");
-    let snake_nft = snake_nft.unwrap();
-    
-    println!("✅ Stake manager address: {:?}", snake_nft);
+    // let governance_token = governance_token.unwrap();
+    // println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
 
 
     let mut salt_bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+    rand::rng().fill_bytes(&mut salt_bytes);
 
     let quote_token_addr  = ctx.predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
         &ctx.dst,
@@ -733,12 +669,12 @@ async fn test_stake_from_evm_to_union() {
 
     assert!(
         approve_tx_hash.is_ok(),
-        "Failed to send approve transaction"
+        "Failed to send approve transaction: {:?}", approve_tx_hash.err()
     );
 
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
-    let mut buf = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut buf);
+    let mut buf: [u8; 32] = [0u8; 32];
+    rand::rng().fill_bytes(&mut buf);
 
     let random_token_id = U256::from_be_bytes(buf).into();
     println!("✅ random_token_id: {:?}", random_token_id);
@@ -766,8 +702,8 @@ async fn test_stake_from_evm_to_union() {
 
     let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider);
 
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
-    let mut call = ucs03_zkgm
+    rand::rng().fill_bytes(&mut salt_bytes);
+    let call = ucs03_zkgm
         .send(
             pair.dest.try_into().unwrap(),
             0u64.into(),
@@ -790,6 +726,26 @@ async fn test_stake_from_evm_to_union() {
 
     assert!(recv_packet_data.is_ok(), "Failed to send and receive packet for stake request: {:?}", recv_packet_data.err());
     println!("Received packet data: {:?}", recv_packet_data);
+
+
+    // Check random_token_id is ours or not now
+    
+    let snake_nft = ctx.dst.predict_stake_manager_address(eth_zkgm_contract.into()).await;
+    assert!(snake_nft.is_ok(), "Failed to predict stake manager address");
+    let snake_nft = snake_nft.unwrap();
+    
+    println!("✅ Stake manager address: {:?}, random_token_id: {:?}", snake_nft, random_token_id);
+
+
+    // let is_ours = ctx.dst.nft_owner_of(
+    //     snake_nft,
+    //     hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+    //             .to_vec()
+    //             .into(),
+    //             random_token_id.into()
+    //         ).await;
+    // assert!(is_ours.is_ok() && is_ours.unwrap(), 
+    //     "Failed to check NFT ownership after stake request: {:?}", is_ours.err());
 }
 
 
@@ -813,188 +769,3 @@ async fn test_stake_from_evm_to_union() {
     async fn from_evm_to_union_stake() {
         self::test_stake_from_evm_to_union().await;
     }
-    
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union1() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union2() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union3() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union4() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union5() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union6() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union7() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union8() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union9() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union10() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_evm_to_union11() {
-    //     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm0() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm1() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm2() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm3() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm4() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm5() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm6() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm7() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm8() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm9() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm10() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }
-    
-
-
-    // #[tokio::test]
-    // #[serial]
-    // async fn from_union_to_evm11() {
-    //     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-    // }

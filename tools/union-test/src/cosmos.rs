@@ -311,16 +311,9 @@ impl Module {
         validator_filter: String,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::Delegate> {
-        // `move` here ensures we *move* validator_filter into the closure,
-        // rather than borrow it.
-        println!("wait for delegate cagrildi, eventi bekliyoruz simdi");
         self.wait_for_event(
             move |evt| {
-                println!("Checking event: {:?}", evt);
-                if let ModuleEvent::Delegate { validator, amount, .. } = evt {
-                    println!("Delegate event came!! : {validator}, amount: {amount:?}");
-                    println!("Validator filter: {validator_filter}, are they equal? {}", validator == &validator_filter);
-                    // compare by reference, since `validator` is a &String here
+                if let ModuleEvent::Delegate { validator, .. } = evt {
                     if validator == &validator_filter {
                         Some(helpers::Delegate {
                             validator: validator.clone(),
