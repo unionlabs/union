@@ -32,6 +32,33 @@ function getConnectionStatus(fromChain: string, toChain: string): boolean {
 
   return Math.abs(hash) % 2 === 0 // Random true/false
 }
+
+// Generate diagonal delay for animation (from top-right and bottom-left corners toward center)
+function getDiagonalDelay(fromIndex: number, toIndex: number): number {
+  const totalRows = sortedChains.length
+  const totalColumns = sortedChains.length
+
+  // Calculate distance from top-right corner (0, totalColumns-1)
+  const distanceFromTopRight = fromIndex + (totalColumns - 1 - toIndex)
+
+  // Calculate distance from bottom-left corner (totalRows-1, 0)
+  const distanceFromBottomLeft = (totalRows - 1 - fromIndex) + toIndex
+
+  // Use the minimum distance (closest corner)
+  const minDistance = Math.min(distanceFromTopRight, distanceFromBottomLeft)
+
+  return minDistance * 20 // 20ms delay per diagonal level
+}
+
+// Generate delay for row labels (all at once)
+function getRowLabelDelay(fromIndex: number): number {
+  return 0 // All rows fade in simultaneously
+}
+
+// Generate delay for column labels (all at once)
+function getColumnLabelDelay(toIndex: number): number {
+  return 0 // All columns fade in simultaneously
+}
 </script>
 
 {#if sortedChains.length === 0}
@@ -49,11 +76,14 @@ function getConnectionStatus(fromChain: string, toChain: string): boolean {
                 Host — Tracking
               </div>
             </th>
-            {#each sortedChains as toChain}
+            {#each sortedChains as toChain, toIndex}
               <th class="top-0 sticky z-10 max-w-8 h-[160px] bg-zinc-900">
                 <div class="h-[160px] pt-2 border-l border-zinc-800">
                   <div class="transform rotate-90 z-20">
-                    <div class="w-[160px] flex items-start justify-start pl-2">
+                    <div
+                      class="w-[160px] flex items-start justify-start pl-2 animate-fade-in"
+                      style="animation-delay: {getColumnLabelDelay(toIndex)}ms;"
+                    >
                       <ChainComponent
                         chain={toChain}
                         class="text-xs"
@@ -66,23 +96,33 @@ function getConnectionStatus(fromChain: string, toChain: string): boolean {
           </tr>
         </thead>
         <tbody>
-          {#each sortedChains as fromChain}
+          {#each sortedChains as fromChain, fromIndex}
             <tr>
               <td class="sticky left-0 bg-zinc-900 z-10 min-w-[160px]">
                 <div class="border-t border-zinc-800 flex items-center h-8 pl-2">
-                  <ChainComponent
-                    chain={fromChain}
-                    class="text-xs"
-                  />
+                  <div
+                    class="animate-fade-in"
+                    style="animation-delay: {getRowLabelDelay(fromIndex)}ms;"
+                  >
+                    <ChainComponent
+                      chain={fromChain}
+                      class="text-xs"
+                    />
+                  </div>
                 </div>
               </td>
-              {#each sortedChains as toChain}
+              {#each sortedChains as toChain, toIndex}
                 <td class="border-zinc-800 p-0 w-8 h-8">
                   {#if fromChain.universal_chain_id === toChain.universal_chain_id}
-                    <div class="w-full h-full bg-zinc-900"></div>
+                    <div
+                      class="w-full h-full bg-zinc-900 animate-scale-in"
+                      style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
+                    >
+                    </div>
                   {:else}
                     <div
-                      class="w-full h-full border-t-1 border-l-1 border-zinc-900 {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'bg-green-500' : 'bg-red-500'}"
+                      class="w-full h-full border-t-1 border-l-1 border-zinc-900 animate-scale-in {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'bg-green-500' : 'bg-red-500'}"
+                      style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
                       title="{fromChain.display_name} → {toChain.display_name}: {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'Connected' : 'Disconnected'}"
                     >
                     </div>
@@ -105,15 +145,52 @@ function getConnectionStatus(fromChain: string, toChain: string): boolean {
 }
 
 :global(.overflow-auto::-webkit-scrollbar-track) {
-  background: #374151;
+  background: #27272a;
 }
 
 :global(.overflow-auto::-webkit-scrollbar-thumb) {
-  background: #6b7280;
+  background: #52525b;
   border-radius: 4px;
 }
 
 :global(.overflow-auto::-webkit-scrollbar-thumb:hover) {
-  background: #9ca3af;
+  background: #71717a;
+}
+
+/* Scale in animation for matrix cells */
+@keyframes scale-in {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.animate-scale-in {
+  animation: scale-in 0.6s ease-out forwards;
+  transform: scale(0);
+  opacity: 0;
+}
+
+/* Fade in animation for headers */
+@keyframes fade-in {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.6s ease-out forwards;
+  opacity: 0;
 }
 </style>
