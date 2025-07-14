@@ -32,6 +32,14 @@ export const chainLogoMap = new Map([
     },
   ],
   [
+    "base.84532",
+    {
+      color: "/logos/chains/color/BASE.svg",
+      light: "/logos/chains/light/BASE.svg",
+      dark: "/logos/chains/dark/BASE.svg",
+    },
+  ],
+  [
     "berachain.80084",
     {
       color: "/logos/chains/color/BERACHAIN.svg",
@@ -41,6 +49,22 @@ export const chainLogoMap = new Map([
   ],
   [
     "berachain.80085",
+    {
+      color: "/logos/chains/color/BERACHAIN.svg",
+      light: "/logos/chains/light/BERACHAIN.svg",
+      dark: "/logos/chains/dark/BERACHAIN.svg",
+    },
+  ],
+  [
+    "berachain.80094",
+    {
+      color: "/logos/chains/color/BERACHAIN.svg",
+      light: "/logos/chains/light/BERACHAIN.svg",
+      dark: "/logos/chains/dark/BERACHAIN.svg",
+    },
+  ],
+  [
+    "berachain.80069",
     {
       color: "/logos/chains/color/BERACHAIN.svg",
       light: "/logos/chains/light/BERACHAIN.svg",
