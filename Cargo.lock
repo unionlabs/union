@@ -4765,6 +4765,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "cw20-wrapped-tokenfactory"
+version = "0.0.0"
+dependencies = [
+ "cosmwasm-schema 2.2.2",
+ "cosmwasm-std 2.2.2",
+ "cw-storage-plus 2.0.0",
+ "cw20",
+ "embed-commit",
+ "frissitheto",
+ "thiserror 2.0.12",
+ "token-factory-api",
+]
+
+[[package]]
 name = "darling"
 version = "0.14.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
