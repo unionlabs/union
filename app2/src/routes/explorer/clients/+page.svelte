@@ -1,6 +1,8 @@
 <script lang="ts">
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import Label from "$lib/components/ui/Label.svelte"
+import LongMonoWord from "$lib/components/ui/LongMonoWord.svelte"
 import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { clientsQuery } from "$lib/queries/clients.svelte.ts"
 import { runFork, runFork$ } from "$lib/runtime"
@@ -168,73 +170,79 @@ function getColumnLabelDelay(toIndex: number): number {
                       {/snippet}
 
                       {#snippet content()}
-                        <div class="p-3 space-y-2">
-                          <div class="font-semibold text-sm">
-                            {fromChain.display_name} → {toChain.display_name}
+                        <section>
+                          <div class="flex gap-2 items-center text-lg text-white font-bold">
+                            <div>{fromChain.display_name}</div>
+                            <div>→</div>
+                            <div>{toChain.display_name}</div>
                           </div>
+                        </section>
 
-                          {#if !tooltipData.hasClient}
-                            <div class="text-zinc-400 text-xs">No client found</div>
-                          {:else if tooltipData.client}
-                            {@const clientData = tooltipData.client}
+                        {#if !tooltipData.hasClient}
+                          <section>
+                            <Label>Status</Label>
+                            <div class="text-red-400">No client found</div>
+                          </section>
+                        {:else if tooltipData.client}
+                          {@const clientData = tooltipData.client}
 
-                            <div class="space-y-1 text-xs">
-                              <div>
-                                <span class="text-zinc-400">Client ID:</span> {clientData.client_id}
-                              </div>
+                          <section>
+                            <Label>Client ID</Label>
+                            <LongMonoWord>{clientData.client_id}</LongMonoWord>
+                          </section>
 
-                              {#if clientData.status && Option.isSome(clientData.status)}
-                                {@const status = clientData.status.value}
-
-                                {#if Option.isSome(status.height)}
-                                  <div>
-                                    <span class="text-zinc-400">Height:</span> {status.height.value}
-                                  </div>
-                                {/if}
-
-                                {#if Option.isSome(status.counterparty_height)}
-                                  <div>
-                                    <span class="text-zinc-400">Counterparty Height:</span>
-                                    {status.counterparty_height.value}
-                                  </div>
-                                {/if}
-
-                                {#if Option.isSome(status.timestamp)}
-                                  <div>
-                                    <span class="text-zinc-400">Updated:</span>
-                                    {new Date(status.timestamp.value).toLocaleString()}
-                                  </div>
-                                {/if}
-                              {/if}
-
-                              {#if clientData.chain && Option.isSome(clientData.chain)
-                      && Option.isSome(clientData.chain.value.status)}
-                                {@const chainStatus = clientData.chain.value.status.value}
-                                {#if Option.isSome(chainStatus.status)}
-                                  <div>
-                                    <span class="text-zinc-400">Chain Status:</span>
-                                    {chainStatus.status.value}
-                                  </div>
-                                {/if}
-                              {/if}
-
-                              {#if clientData.counterparty_chain
-                      && Option.isSome(clientData.counterparty_chain)
-                      && Option.isSome(
-                        clientData.counterparty_chain.value.status,
-                      )}
-                                {@const counterpartyStatus =
-                      clientData.counterparty_chain.value.status.value}
-                                {#if Option.isSome(counterpartyStatus.status)}
-                                  <div>
-                                    <span class="text-zinc-400">Counterparty Status:</span>
-                                    {counterpartyStatus.status.value}
-                                  </div>
-                                {/if}
-                              {/if}
+                          <section>
+                            <Label>Status</Label>
+                            <div class="{hasStatus ? 'text-green-400' : 'text-red-400'}">
+                              {hasStatus ? 'Active' : 'Inactive'}
                             </div>
+                          </section>
+
+                          {#if clientData.status && Option.isSome(clientData.status)}
+                            {@const status = clientData.status.value}
+
+                            {#if Option.isSome(status.height)}
+                              <section>
+                                <Label>Height</Label>
+                                <LongMonoWord>{status.height.value}</LongMonoWord>
+                              </section>
+                            {/if}
+
+                            {#if Option.isSome(status.counterparty_height)}
+                              <section>
+                                <Label>Counterparty Height</Label>
+                                <LongMonoWord>{status.counterparty_height.value}</LongMonoWord>
+                              </section>
+                            {/if}
+
+                            {#if Option.isSome(status.timestamp)}
+                              <section>
+                                <Label>Last Updated</Label>
+                                <div>{new Date(status.timestamp.value).toLocaleString()}</div>
+                              </section>
+                            {/if}
                           {/if}
-                        </div>
+
+                          {#if clientData.chain && Option.isSome(clientData.chain) && Option.isSome(clientData.chain.value.status)}
+                            {@const chainStatus = clientData.chain.value.status.value}
+                            {#if Option.isSome(chainStatus.status)}
+                              <section>
+                                <Label>Chain Status</Label>
+                                <div>{chainStatus.status.value}</div>
+                              </section>
+                            {/if}
+                          {/if}
+
+                          {#if clientData.counterparty_chain && Option.isSome(clientData.counterparty_chain) && Option.isSome(clientData.counterparty_chain.value.status)}
+                            {@const counterpartyStatus = clientData.counterparty_chain.value.status.value}
+                            {#if Option.isSome(counterpartyStatus.status)}
+                              <section>
+                                <Label>Counterparty Status</Label>
+                                <div>{counterpartyStatus.status.value}</div>
+                              </section>
+                            {/if}
+                          {/if}
+                        {/if}
                       {/snippet}
                     </Tooltip>
                   {/if}
