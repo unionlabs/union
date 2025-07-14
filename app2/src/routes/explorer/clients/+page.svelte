@@ -106,14 +106,14 @@ function getColumnLabelDelay(toIndex: number): number {
       <table class="border-collapse">
         <thead>
           <tr class="">
-            <th class="top-0 sticky left-0 bg-zinc-900 z-30 p-2 text-xs font-medium text-zinc-300">
+            <th class="top-0 sticky left-0 bg-zinc-925 z-30 p-2 text-xs font-medium text-zinc-300">
               <div class="transform -rotate-45">
                 Host — Tracking
               </div>
             </th>
             {#each sortedChains as toChain, toIndex}
-              <th class="top-0 sticky z-10 max-w-8 h-[160px] bg-zinc-900">
-                <div class="h-[160px] pt-2 border-l border-zinc-800">
+              <th class="top-0 sticky z-10 max-w-8 h-[160px] bg-zinc-925">
+                <div class="h-[160px] pt-2 border-l border-zinc-900">
                   <div class="transform rotate-90 z-20">
                     <div
                       class="w-[160px] flex items-start justify-start pl-2 animate-fade-in"
@@ -133,8 +133,8 @@ function getColumnLabelDelay(toIndex: number): number {
         <tbody>
           {#each sortedChains as fromChain, fromIndex}
             <tr>
-              <td class="sticky left-0 bg-zinc-900 z-10 min-w-[160px]">
-                <div class="border-t border-zinc-800 flex items-center h-8 pl-2">
+              <td class="sticky left-0 bg-zinc-925 z-10 min-w-[160px]">
+                <div class="border-t border-zinc-900 flex items-center h-8 pl-2">
                   <div
                     class="animate-fade-in"
                     style="animation-delay: {getRowLabelDelay(fromIndex)}ms;"
@@ -147,8 +147,13 @@ function getColumnLabelDelay(toIndex: number): number {
                 </div>
               </td>
               {#each sortedChains as toChain, toIndex}
-                <td class="border-zinc-800 p-0 w-8 h-8">
+                <td class="border-zinc-900 p-0 w-8 h-8">
                   {#if fromChain.universal_chain_id === toChain.universal_chain_id}
+                    <div
+                      class="w-8 h-8 animate-scale-in border-t border-l border-zinc-900 bg-zinc-925"
+                      style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
+                    >
+                    </div>
                   {:else}
                     {@const client = getClientStatus(
                 fromChain.universal_chain_id,
@@ -163,7 +168,7 @@ function getColumnLabelDelay(toIndex: number): number {
                     <Tooltip>
                       {#snippet trigger()}
                         <div
-                          class="w-8 h-8 animate-scale-in border-t border-l border-zinc-800 {hasStatus ? 'bg-green-500' : 'bg-red-500'}"
+                          class="w-8 h-8 animate-scale-in border-t border-l border-zinc-900 {hasStatus ? 'bg-accent' : 'bg-zinc-925'}"
                           style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
                         >
                         </div>
@@ -190,14 +195,6 @@ function getColumnLabelDelay(toIndex: number): number {
                             <Label>Client ID</Label>
                             <LongMonoWord>{clientData.client_id}</LongMonoWord>
                           </section>
-
-                          <section>
-                            <Label>Status</Label>
-                            <div class="{hasStatus ? 'text-green-400' : 'text-red-400'}">
-                              {hasStatus ? 'Active' : 'Inactive'}
-                            </div>
-                          </section>
-
                           {#if clientData.status && Option.isSome(clientData.status)}
                             {@const status = clientData.status.value}
 
@@ -223,7 +220,8 @@ function getColumnLabelDelay(toIndex: number): number {
                             {/if}
                           {/if}
 
-                          {#if clientData.chain && Option.isSome(clientData.chain) && Option.isSome(clientData.chain.value.status)}
+                          {#if clientData.chain && Option.isSome(clientData.chain)
+                  && Option.isSome(clientData.chain.value.status)}
                             {@const chainStatus = clientData.chain.value.status.value}
                             {#if Option.isSome(chainStatus.status)}
                               <section>
@@ -233,8 +231,11 @@ function getColumnLabelDelay(toIndex: number): number {
                             {/if}
                           {/if}
 
-                          {#if clientData.counterparty_chain && Option.isSome(clientData.counterparty_chain) && Option.isSome(clientData.counterparty_chain.value.status)}
-                            {@const counterpartyStatus = clientData.counterparty_chain.value.status.value}
+                          {#if clientData.counterparty_chain
+                  && Option.isSome(clientData.counterparty_chain)
+                  && Option.isSome(clientData.counterparty_chain.value.status)}
+                            {@const counterpartyStatus =
+                  clientData.counterparty_chain.value.status.value}
                             {#if Option.isSome(counterpartyStatus.status)}
                               <section>
                                 <Label>Counterparty Status</Label>
@@ -254,15 +255,6 @@ function getColumnLabelDelay(toIndex: number): number {
       </table>
     </div>
   </div>
-
-  {#if Option.isSome(clientsStore.data)}
-    <div class="mt-8 p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
-      <h2 class="text-lg font-semibold text-zinc-300 mb-4">Query Response</h2>
-      <pre class="text-xs text-zinc-400 overflow-auto max-h-96 p-4 bg-zinc-950 rounded">
-{JSON.stringify(Option.getOrElse(clientsStore.data, () => []), null, 2)}
-      </pre>
-    </div>
-  {/if}
 {/if}
 
 <style>
