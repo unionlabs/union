@@ -1,6 +1,6 @@
 use std::{sync::Arc, time::Duration};
 
-use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider, primitives::Bytes as AlloyBytes};
+use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
 use axum::async_trait;
 use protos::cosmos::base::v1beta1::Coin;
 use unionlabs::{
@@ -130,8 +130,8 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
 
     async fn wait_for_delegate(
         &self,
-        validator: String,
-        timeout: Duration
+        _validator: String,
+        _timeout: Duration
     ) -> anyhow::Result<helpers::Delegate>{
         unimplemented!("wait_for_delegate is not implemented for Cosmos chains")
     }
@@ -316,20 +316,20 @@ impl ChainEndpoint for cosmos::Module {
 
     async fn predict_wrapped_token_from_metadata_image_v2(
         &self,
-        contract: Self::Contract,
-        channel: ChannelId,
-        token: Vec<u8>,
-        metadata_image: FixedBytes<32>,
+        _contract: Self::Contract,
+        _channel: ChannelId,
+        _token: Vec<u8>,
+        _metadata_image: FixedBytes<32>,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>{
         unimplemented!("predict_wrapped_token_from_metadata_image_v2 is not implemented for Cosmos chains")
     }
 
     async fn predict_wrapped_token_v2(
         &self,
-        contract: Self::Contract,
-        channel: ChannelId,
-        token: Vec<u8>,
-        metadata: FungibleAssetMetadata
+        _contract: Self::Contract,
+        _channel: ChannelId,
+        _token: Vec<u8>,
+        _metadata: FungibleAssetMetadata
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
         unimplemented!("predict_wrapped_token_v2 is not implemented for Cosmos chains")
     }

@@ -1,4 +1,3 @@
-use ibc_union_spec::{event::CreateClient, ChannelId, ConnectionId, ClientId, Timestamp};
 use unionlabs::primitives::FixedBytes;
 #[derive(Debug, Clone, PartialEq)]
 pub struct ConnectionConfirm {

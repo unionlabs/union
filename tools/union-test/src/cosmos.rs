@@ -1,12 +1,9 @@
 use std::{
     num::{NonZeroU32, NonZeroU8},
     panic::AssertUnwindSafe,
-    str::FromStr,
-    sync::Arc,
     time::Duration,
 };
 
-use cometbft::abci::v1::{Event, EventAttribute};
 use cometbft_rpc::rpc_types::{Order, TxResponse};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
 use cosmos_client::{
@@ -16,27 +13,20 @@ use cosmos_client::{
     BroadcastTxCommitError, TxClient,
 };
 use cosmos_sdk_event::CosmosSdkEvent;
-use ibc_solidity::Connection;
 use ibc_union_spec::{
-    event::{CreateClient, PacketSend},
-    path::ChannelPath,
-    query::PacketByHash,
-    ChannelId, ClientId, ConnectionId, IbcUnion, Packet, Timestamp,
+    ChannelId, ClientId, ConnectionId, Timestamp,
 };
 use ucs03_zkgm::msg::{QueryMsg, PredictWrappedTokenResponse};
-use protos::{cometbft, cosmos::base::v1beta1::Coin, cosmwasm::{
+use protos::{cosmos::base::v1beta1::Coin, cosmwasm::{
     wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 }};
-use cosmwasm_std::Coin as CosmwasmCoin;
 use serde::{Deserialize, Serialize};
-use tokio::time::timeout;
 use voyager_sdk::serde_json;
 use unionlabs::{
     self,
     bech32::Bech32,
-    encoding::{Encode, Json, Proto},
     google::protobuf::any::mk_any,
-    primitives::{encoding::HexUnprefixed, Bytes, H160, H256, U256},
+    primitives::{encoding::HexUnprefixed, Bytes, H160, H256},
     ErrorReporter,
 };
 use voyager_sdk::{
@@ -188,11 +178,11 @@ impl Module {
                                 // println!("raw event: {raw_ev:?}");
                                 let event = match CosmosSdkEvent::<ModuleEvent>::new(raw_ev) {
                                     Ok(event) => event,
-                                    Err(cosmos_sdk_event::Error::Deserialize(error)) => {
+                                    Err(cosmos_sdk_event::Error::Deserialize(_error)) => {
                                         // println!("unable to parse event: {error}");
                                         continue;
                                     }
-                                    Err(err) => {
+                                    Err(_err) => {
                                         // println!("error parsing event: {}", ErrorReporter(err));
                                         continue;
                                     }
@@ -306,7 +296,7 @@ impl Module {
                             packet_hash: *packet_hash,
                         });
                     // }
-                    None
+                    // None
                 } else {
                     None
                 }

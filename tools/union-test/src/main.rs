@@ -1,23 +1,18 @@
 use std::{str::FromStr, time::Duration};
 
-use alloy::{contract::RawCallBuilder, network::AnyNetwork, sol_types::SolValue, sol_types::SolCall,
-providers::{
-        fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
-        Provider, ProviderBuilder,
-    },};
+use alloy::{sol_types::SolValue, sol_types::SolCall};
 use concurrent_keyring::{KeyringConfig, KeyringConfigEntry};
 use cosmos::{FeemarketConfig, GasFillerConfig};
-use ethers::solc::{Artifact, Solc};
 use hex_literal::hex;
 use ibc_union_spec::ChannelId;
 use std::num::NonZero;
-use protos::{cosmos::base::v1beta1::Coin, ibc::core::channel};
+use protos::{cosmos::base::v1beta1::Coin};
 use rand::RngCore;
 use ucs03_zkgm::{
     self,
     com::{
-        FungibleAssetMetadata, FungibleAssetOrder, FungibleAssetOrderV2, Instruction, Stake, FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_FUNGIBLE_ASSET_ORDER, OP_STAKE
-    }, contract::ZKGM_CW_ACCOUNT_LABEL,
+        FungibleAssetMetadata, FungibleAssetOrderV2, Instruction, Stake, FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_2, OP_FUNGIBLE_ASSET_ORDER, OP_STAKE
+    },
 };
 
 use union_test::{
@@ -25,26 +20,20 @@ use union_test::{
         self,
         zkgm::{
             Instruction as InstructionEvm,
-            UCS03Zkgm::{self, UCS03ZkgmCalls},
-            GovernanceToken, FungibleAssetMetadata as FungibleAssetMetadataEvm
+            UCS03Zkgm::{self}
         },
         zkgmerc20::ZkgmERC20,
 
     }, TestContext
 };
-use serde::{Deserialize, Serialize};
-use voyager_sdk::{
-    serde_json};
 use unionlabs::{
     bech32::Bech32,
     encoding::{Encode, Json},
-    primitives::{FixedBytes, H160, U256},
+    primitives::{FixedBytes, U256},
     ethereum::keccak256
 };
 use ethers::utils::hex;
 use voyager_sdk::{anyhow, primitives::ChainId};
-use anyhow::Result;
-use ethers::abi::{self, Token};
 
 // async fn deploy_basic_erc20(module: &evm::Module<'_>) -> Result<H160> {
 //     // 1) Your compiled bytecode (creation code) as hex
@@ -233,11 +222,11 @@ async fn main() -> anyhow::Result<()> {
     };
     // println!("Channel {} ↔ {}", pair.src, pair.dest);
     
-    let spender = hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD");
+    // let spender = hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD");
 
     // // let gov_token_addr = hex!("a513f3a432f575f1e8579cc456badac9c78d8b08");
     // let governance_token: GovernanceToken = ctx.dst
-    //     .setup_governance_token(zkgm_evm_addr.into(), spender.into(), pair.dest, img)
+    //     .setup_governance_token(zkgm_evm_addr.into(),  pair.dest, img)
     //     .await?;
 
     // println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
@@ -255,7 +244,7 @@ async fn main() -> anyhow::Result<()> {
     // // ctx.dst.basic_erc721_mint(snake_nft, U256::from(1u32), spender.into()).await?;
 
     let mut salt = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt);
+    rand::rng().fill_bytes(&mut salt);
 
     let quote_token_addr  = ctx.predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
         &ctx.dst,
@@ -270,7 +259,7 @@ async fn main() -> anyhow::Result<()> {
 
     // sending muno here
     let mut salt_bytes = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
+    rand::rng().fill_bytes(&mut salt_bytes);
 
     let contract: Bech32<FixedBytes<32>> =
         Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
@@ -341,6 +330,7 @@ async fn main() -> anyhow::Result<()> {
 
     println!("✅ Approve tx hash: {:?}", approve_tx_hash);
     println!("IMG: {:?}", img);
+    
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_0,
@@ -368,8 +358,8 @@ async fn main() -> anyhow::Result<()> {
 
     let ucs03_zkgm = UCS03Zkgm::new(zkgm_evm_addr.into(), evm_provider);
 
-    rand::thread_rng().fill_bytes(&mut salt);
-    let mut call = ucs03_zkgm
+    rand::rng().fill_bytes(&mut salt);
+    let call = ucs03_zkgm
         .send(
             pair.dest.try_into().unwrap(),
             0u64.into(),
@@ -394,67 +384,67 @@ async fn main() -> anyhow::Result<()> {
     // union tarafinda delegate eventi aricaz
     // nft de verdigim tokenid benim mi diye bakcaz
 
-    panic!("panicked");
+    // panic!("panicked");
     
     
-    let mut salt_bytes: [u8; 32] = [0u8; 32];
-    rand::thread_rng().fill_bytes(&mut salt_bytes);
-    let contract: Bech32<FixedBytes<32>> =
-        Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
-            .unwrap();
-    let funded_msg = (
-        Encode::<Json>::encode(ucs03_zkgm::msg::ExecuteMsg::Send {
-            channel_id: pair.dest.try_into().unwrap(),
-            timeout_height: 0u64.into(),
-            timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
-            salt: salt_bytes.into(),
-            instruction: Instruction {
-                version: INSTR_VERSION_1,
-                opcode: OP_FUNGIBLE_ASSET_ORDER,
-                operand: FungibleAssetOrder {
-                    sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-                        .as_bytes()
-                        .into(),
-                    receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
-                        .to_vec()
-                        .into(),
-                    base_token: "muno".as_bytes().into(),
-                    base_amount: "10".parse().unwrap(),
-                    base_token_symbol: "muno".into(),
-                    base_token_name: "muno".into(),
-                    base_token_decimals: 6,
-                    base_token_path: "0".parse().unwrap(),
-                    quote_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579")
-                        .to_vec()
-                        .into(),
-                    quote_amount: "10".parse().unwrap(),
-                }
-                .abi_encode_params()
-                .into(),
-            }
-            .abi_encode_params()
-            .into(),
-        }),
-        vec![Coin {
-            denom: "muno".into(),
-            amount: "10".into(),
-        }],
-    );
+    // let mut salt_bytes: [u8; 32] = [0u8; 32];
+    // rand::rng().fill_bytes(&mut salt_bytes);
+    // let contract: Bech32<FixedBytes<32>> =
+    //     Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+    //         .unwrap();
+    // let funded_msg = (
+    //     Encode::<Json>::encode(ucs03_zkgm::msg::ExecuteMsg::Send {
+    //         channel_id: pair.dest.try_into().unwrap(),
+    //         timeout_height: 0u64.into(),
+    //         timeout_timestamp: voyager_sdk::primitives::Timestamp::from_secs(u32::MAX.into()),
+    //         salt: salt_bytes.into(),
+    //         instruction: Instruction {
+    //             version: INSTR_VERSION_1,
+    //             opcode: OP_FUNGIBLE_ASSET_ORDER,
+    //             operand: FungibleAssetOrder {
+    //                 sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+    //                     .as_bytes()
+    //                     .into(),
+    //                 receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+    //                     .to_vec()
+    //                     .into(),
+    //                 base_token: "muno".as_bytes().into(),
+    //                 base_amount: "10".parse().unwrap(),
+    //                 base_token_symbol: "muno".into(),
+    //                 base_token_name: "muno".into(),
+    //                 base_token_decimals: 6,
+    //                 base_token_path: "0".parse().unwrap(),
+    //                 quote_token: hex!("16628cB81ffDA9B8470e16299eFa5F76bF45A579")
+    //                     .to_vec()
+    //                     .into(),
+    //                 quote_amount: "10".parse().unwrap(),
+    //             }
+    //             .abi_encode_params()
+    //             .into(),
+    //         }
+    //         .abi_encode_params()
+    //         .into(),
+    //     }),
+    //     vec![Coin {
+    //         denom: "muno".into(),
+    //         amount: "10".into(),
+    //     }],
+    // );
 
-    let packet_hash = ctx.src.send_ibc_transaction(contract, funded_msg).await?;
-    let recv_packet_data = ctx
-        .dst
-        .wait_for_packet_recv(packet_hash, Duration::from_secs(360))
-        .await;
+    // let packet_hash = ctx.src.send_ibc_transaction(contract, funded_msg).await?;
+    // let recv_packet_data = ctx
+    //     .dst
+    //     .wait_for_packet_recv(packet_hash, Duration::from_secs(360))
+    //     .await;
 
-    assert!(
-        recv_packet_data.is_ok(),
-        "Failed to send and receive packet: {:?}",
-        recv_packet_data.err()
-    );
+    // assert!(
+    //     recv_packet_data.is_ok(),
+    //     "Failed to send and receive packet: {:?}",
+    //     recv_packet_data.err()
+    // );
 
     // let mut salt_bytes = [0u8; 32];
-    // rand::thread_rng().fill_bytes(&mut salt_bytes);
+    // rand::rng().fill_bytes(&mut salt_bytes);
 
     // let instruction_from_evm_to_union = InstructionEvm {
     //     version: INSTR_VERSION_1,
@@ -770,7 +760,7 @@ async fn main() -> anyhow::Result<()> {
 //     };
 
 //     let mut salt_bytes = [0u8; 32];
-//     rand::thread_rng().fill_bytes(&mut salt_bytes);
+//     rand::rng().fill_bytes(&mut salt_bytes);
 
 //     let cosmos::IbcEvent::WasmPacketSend { packet_hash, .. } = union
 //         .send_ibc_transaction(
