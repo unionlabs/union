@@ -34,79 +34,66 @@ function getConnectionStatus(fromChain: string, toChain: string): boolean {
 }
 </script>
 
-<div class="p-6">
-  <h1 class="text-2xl font-bold mb-6 text-white">Client Connections Matrix</h1>
-
-  {#if sortedChains.length === 0}
-    <div class="flex items-center justify-center h-64">
-      <div class="text-gray-400">Loading chains...</div>
-    </div>
-  {:else}
-    <div class="overflow-auto max-h-screen">
-      <div class="inline-block min-w-full">
-        <table class="border-collapse">
-          <thead>
-            <tr>
-              <th class="sticky top-0 left-0 bg-gray-800 z-20 p-2 border border-gray-600 text-xs font-medium text-gray-300 min-w-[200px]">
-                From / To
-              </th>
-              {#each sortedChains as toChain}
-                <th class="sticky top-0 bg-gray-800 z-10 p-1 border border-gray-600 min-w-[60px] max-w-[60px]">
-                  <div class="transform -rotate-90 origin-center whitespace-nowrap h-[200px] flex items-center justify-center">
-                    <ChainComponent
-                      chain={toChain}
-                      class="text-xs"
-                    />
+{#if sortedChains.length === 0}
+  <div class="flex items-center justify-center h-64">
+    <div class="text-zinc-400">Loading chains...</div>
+  </div>
+{:else}
+  <div class="overflow-auto max-h-full">
+    <div class="inline-block min-w-full">
+      <table class="border-collapse">
+        <thead>
+          <tr>
+            <th class="sticky top-0 left-0 bg-zinc-900 z-20 p-2 border border-zinc-800 text-xs font-medium text-zinc-300">
+              From / To
+            </th>
+            {#each sortedChains as toChain}
+              <th class="sticky top-0 z-10 p-1 border border-zinc-800 max-w-8 h-[160px] bg-zinc-900">
+                <div class="h-[160px] pt-2">
+                  <div class="transform rotate-90 z-20">
+                    <div class="w-[160px] flex items-start justify-start">
+                      <ChainComponent
+                        chain={toChain}
+                        class="text-xs"
+                      />
+                    </div>
                   </div>
-                </th>
-              {/each}
-            </tr>
-          </thead>
-          <tbody>
-            {#each sortedChains as fromChain}
-              <tr>
-                <td class="sticky left-0 bg-gray-800 z-10 p-2 border border-gray-600 min-w-[200px]">
+                </div>
+              </th>
+            {/each}
+          </tr>
+        </thead>
+        <tbody>
+          {#each sortedChains as fromChain}
+            <tr class="max-h-8">
+              <td class="sticky left-0 bg-zinc-900 z-10 p-1 border border-zinc-800">
+                <div class="min-w-[160px]">
                   <ChainComponent
                     chain={fromChain}
                     class="text-xs"
                   />
+                </div>
+              </td>
+              {#each sortedChains as toChain}
+                <td class="border border-zinc-800 p-0 w-8 h-8">
+                  {#if fromChain.universal_chain_id === toChain.universal_chain_id}
+                    <div class="w-full h-full bg-zinc-900"></div>
+                  {:else}
+                    <div
+                      class="w-full h-full {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'bg-green-500' : 'bg-red-500'}"
+                      title="{fromChain.display_name} → {toChain.display_name}: {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'Connected' : 'Disconnected'}"
+                    >
+                    </div>
+                  {/if}
                 </td>
-                {#each sortedChains as toChain}
-                  <td class="border border-gray-600 p-0 w-15 h-15">
-                    {#if fromChain.universal_chain_id === toChain.universal_chain_id}
-                      <div class="w-full h-full bg-gray-700"></div>
-                    {:else}
-                      <div
-                        class="w-full h-full {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'bg-green-500' : 'bg-red-500'}"
-                        title="{fromChain.display_name} → {toChain.display_name}: {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'Connected' : 'Disconnected'}"
-                      >
-                      </div>
-                    {/if}
-                  </td>
-                {/each}
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
+              {/each}
+            </tr>
+          {/each}
+        </tbody>
+      </table>
     </div>
-
-    <div class="mt-6 flex items-center gap-4 text-sm text-gray-300">
-      <div class="flex items-center gap-2">
-        <div class="w-4 h-4 bg-green-500"></div>
-        <span>Connected</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <div class="w-4 h-4 bg-red-500"></div>
-        <span>Disconnected</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <div class="w-4 h-4 bg-gray-700"></div>
-        <span>Self (no connection)</span>
-      </div>
-    </div>
-  {/if}
-</div>
+  </div>
+{/if}
 
 <style>
 /* Custom scrollbar styling */
