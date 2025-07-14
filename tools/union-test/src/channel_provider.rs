@@ -81,7 +81,7 @@ impl ChannelPool {
 
         let mut success_count = 0;
 
-        for attempt in 0..count {
+        for _attempt in 0..count {
             opener(
                 src_chain.clone(),
                 src_port.clone(),

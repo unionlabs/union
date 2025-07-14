@@ -1,14 +1,13 @@
 use std::{marker::PhantomData, str::FromStr, panic::AssertUnwindSafe, time::Duration};
 
 use alloy::{
-    contract::{self, Error, RawCallBuilder, Result},
+    contract::{Error, RawCallBuilder, Result},
     network::{AnyNetwork, EthereumWallet},
-    primitives::{Bytes as AlloyBytes, TxHash},
     providers::{
-        fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
+        fillers::RecommendedFillers, DynProvider, PendingTransactionError,
         Provider, ProviderBuilder,
     },
-    rpc::types::{self, AnyReceiptEnvelope, Filter, Log, TransactionReceipt},
+    rpc::types::{Filter},
     signers::local::LocalSigner,
     sol_types::SolEventInterface,
     transports::TransportError,
@@ -17,36 +16,25 @@ use ethers::abi::{self, Token};
 
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
-use cosmos_client::rpc::Rpc;
-use ibc_solidity::Ibc::{
-    self, ChannelOpenConfirm, ConnectionOpenConfirm, CreateClient, IbcErrors, IbcEvents, PacketRecv,
-};
-use ibc_union_spec::{datagram::Datagram, IbcUnion, ChannelId};
-// use voyager_sdk::plugin::Plugin::
-// use crate::multicall::{Call3, Multicall, MulticallResult};
+use ibc_solidity::Ibc::{IbcEvents};
+use ibc_union_spec::{datagram::Datagram, ChannelId};
 use jsonrpsee::{
-    core::{async_trait, RpcResult},
-    proc_macros::rpc,
+    core::{RpcResult},
     types::{ErrorObject, ErrorObjectOwned},
-    Extensions, MethodsError,
 };
-use multicall::{Call3, Multicall, MulticallResult};
 use serde::{Deserialize, Serialize};
-use tokio::time::timeout;
-use tracing::{error, info, info_span, instrument, trace, warn, Instrument};
+use tracing::{error, info_span, warn, Instrument};
 use unionlabs::{
-    primitives::{Bytes, FixedBytes, H160, H256, U256},
+    primitives::{FixedBytes, H160, H256, U256},
     ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow::{self, anyhow, bail},
-    into_value,
+    anyhow::{self},
     primitives::ChainId,
 };
 
 use crate::{evm::zkgm::GovernanceToken, helpers};
 use ethers::utils::hex as ethers_hex;
-use hex_literal::hex;
 
 #[derive(Debug)]
 pub struct Module<'a> {
@@ -280,7 +268,7 @@ impl<'a> Module<'a> {
         let signer = self.get_provider().await;
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
         // let path: U256 = ::from(0);
-        let mut call = ucs03_zkgm.predictWrappedToken(
+        let call = ucs03_zkgm.predictWrappedToken(
             U256::from(0u32).into(),
             channel.raw().try_into().unwrap(),
             token.into()
@@ -301,7 +289,7 @@ impl<'a> Module<'a> {
     ) -> anyhow::Result<H160> {
         let signer = self.get_provider().await;
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
-        let mut call = ucs03_zkgm.predictWrappedTokenV2(
+        let call = ucs03_zkgm.predictWrappedTokenV2(
             U256::from(0u32).into(),
             channel.raw().try_into().unwrap(),
             token.into(),
@@ -323,7 +311,7 @@ impl<'a> Module<'a> {
     ) -> anyhow::Result<H160> {
         let signer = self.get_provider().await;
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
-        let mut call = ucs03_zkgm.predictWrappedTokenFromMetadataImageV2(
+        let call = ucs03_zkgm.predictWrappedTokenFromMetadataImageV2(
             U256::from(0u32).into(),
             channel.raw().try_into().unwrap(),
             token.into(),
@@ -523,9 +511,9 @@ impl<'a> Module<'a> {
         let provider = self.get_provider().await;
 
         let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
-        let actualOwner = erc.ownerOf(token_id.into()).call().await?;
+        let actual_owner = erc.ownerOf(token_id.into()).call().await?;
         let owner_addr: alloy::primitives::Address = owner.into();
-        return Ok(actualOwner == owner_addr);
+        return Ok(actual_owner == owner_addr);
     }
     
     pub async fn basic_erc721_transfer_from(
@@ -568,12 +556,12 @@ impl<'a> Module<'a> {
         let mut call = RawCallBuilder::new_raw_deploy(
             provider.clone(),     // your DynProvider<AnyNetwork>
             code.into(),          // the bytecode
-        ).nonce(nonce);;
+        ).nonce(nonce);
 
         println!("[deploy_basic_erc20] before gas. Nonce: {}", nonce);
         // 4) Estimate gas + buffer
         let gas_est = call.estimate_gas().await?;
-        call = call.gas(((gas_est as f64 * 2.2) as u64));
+        call = call.gas((gas_est as f64 * 2.2) as u64);
         println!("[deploy_basic_erc20] Estimated gas: {}", gas_est);
         // 5) Send & await receipt
         let pending = call.send().await?;
@@ -591,7 +579,7 @@ impl<'a> Module<'a> {
 
     pub async fn send_ibc_transaction(
         &self,
-        contract: H160,
+        _contract: H160,
         msg: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> RpcResult<FixedBytes<32>> {
         let res = self
@@ -599,7 +587,7 @@ impl<'a> Module<'a> {
             .with({
                 let msg = msg.clone();
                 move |wallet| -> _ {
-                    AssertUnwindSafe(self.submit_transaction(contract, wallet, msg))
+                    AssertUnwindSafe(self.submit_transaction( wallet, msg))
                 }
             })
             .await;
@@ -617,18 +605,9 @@ impl<'a> Module<'a> {
 
     pub async fn submit_transaction(
         &self,
-        ucs03_addr_on_evm: H160,
-        wallet: &LocalSigner<SigningKey>,
+        _wallet: &LocalSigner<SigningKey>,
         mut call: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
     ) -> Result<H256, TxSubmitError> {
-        let signer = DynProvider::new(
-            ProviderBuilder::new()
-                .network::<AnyNetwork>()
-                .filler(AnyNetwork::recommended_fillers())
-                .wallet(EthereumWallet::new(wallet.clone()))
-                .connect_provider(self.provider.clone()),
-        );
-
         if let Some(max_gas_price) = self.max_gas_price {
             let gas_price = self
                 .provider
@@ -716,7 +695,7 @@ impl<'a> Module<'a> {
                 {
                     println!("Idk whats happening");
                     // let tx_req = call.clone().into_tx_request();
-                    return Err(TxSubmitError::PendingTransactionError((PendingTransactionError::FailedToRegister)));
+                    return Err(TxSubmitError::PendingTransactionError(PendingTransactionError::FailedToRegister));
 
                     // // 1) Build and sign the raw transaction
                     // let tx_req = call.clone().into_tx_request();
@@ -768,7 +747,7 @@ impl<'a> Module<'a> {
         zkgm_addr: H160,
         channel_id: u32,
         metadata_image: FixedBytes<32>,
-    ) -> anyhow::Result<(GovernanceToken)> {
+    ) -> anyhow::Result<GovernanceToken> {
         // 1) build a typed alloy client
         let provider = self.get_provider().await;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
