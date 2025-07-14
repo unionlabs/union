@@ -1,5 +1,5 @@
-import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import type { Client, Clients } from "$lib/queries/clients.svelte"
+import type { FetchDecodeGraphqlError } from "$lib/utils/queries"
 import { Option } from "effect"
 import type { TimeoutException } from "effect/Cause"
 

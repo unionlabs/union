@@ -87,8 +87,8 @@ export const navigation: Array<NavSection> = [
           // },
           {
             path: "/explorer/clients",
-            title: "Clients"
-          }
+            title: "Clients",
+          },
         ],
       },
     ],
