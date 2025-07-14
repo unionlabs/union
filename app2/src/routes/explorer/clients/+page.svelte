@@ -1,7 +1,12 @@
 <script lang="ts">
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
+import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import { clientsQuery } from "$lib/queries/clients.svelte.ts"
+import { runFork, runFork$ } from "$lib/runtime"
 import { chains } from "$lib/stores/chains.svelte"
-import { Option } from "effect"
+import { clientsStore } from "$lib/stores/clients.svelte"
+import { Fiber, Option } from "effect"
+import { onMount } from "svelte"
 
 // Get chains from the store, sorted alphabetically by universal chain ID
 const sortedChains = $derived(
@@ -15,22 +20,92 @@ const sortedChains = $derived(
   ),
 )
 
-// Generate random connection status for each chain pair
-function getConnectionStatus(fromChain: string, toChain: string): boolean {
-  if (fromChain === toChain) {
-    return false // No self-connections
+let fiber: Fiber.Fiber<any, any>
+
+// Fetch clients data on mount
+onMount(() => {
+  runFork$(() => clientsQuery())
+})
+
+// Get client status between two chains
+function getClientStatus(fromChainId: string, toChainId: string) {
+  if (fromChainId === toChainId) {
+    return null // No self-connections
   }
 
-  // Use a deterministic random based on chain names for consistency
-  const seed = fromChain + toChain
-  let hash = 0
-  for (let i = 0; i < seed.length; i++) {
-    const char = seed.charCodeAt(i)
-    hash = ((hash << 5) - hash) + char
-    hash = hash & hash // Convert to 32bit integer
+  return clientsStore.data.pipe(
+    Option.map(clients => {
+      // Find client from fromChain to toChain
+      const client = clients.find(c =>
+        c.universal_chain_id === fromChainId
+        && c.counterparty_universal_chain_id === toChainId
+      )
+      return client || null
+    }),
+    Option.getOrElse(() => null),
+  )
+}
+
+// Check if client has active status (has height)
+function hasActiveStatus(client: any) {
+  return client?.status && Option.isSome(client.status)
+    ? Option.isSome(client.status.value.height)
+    : false
+}
+
+// Generate tooltip content for client status
+function getTooltipContent(
+  fromChainId: string,
+  toChainId: string,
+  fromChainName: string,
+  toChainName: string,
+) {
+  const client = getClientStatus(fromChainId, toChainId)
+
+  if (!client) {
+    return `${fromChainName} → ${toChainName}: No client found`
   }
 
-  return Math.abs(hash) % 2 === 0 // Random true/false
+  const statusInfo = []
+
+  if (client.client_id) {
+    statusInfo.push(`Client ID: ${client.client_id}`)
+  }
+
+  if (client.status && Option.isSome(client.status)) {
+    const status = client.status.value
+
+    if (Option.isSome(status.height)) {
+      statusInfo.push(`Height: ${status.height.value}`)
+    }
+
+    if (Option.isSome(status.counterparty_height)) {
+      statusInfo.push(`Counterparty Height: ${status.counterparty_height.value}`)
+    }
+
+    if (Option.isSome(status.timestamp)) {
+      statusInfo.push(`Timestamp: ${new Date(status.timestamp.value).toLocaleString()}`)
+    }
+  }
+
+  if (client.chain && Option.isSome(client.chain) && Option.isSome(client.chain.value.status)) {
+    const chainStatus = client.chain.value.status.value
+    if (Option.isSome(chainStatus.status)) {
+      statusInfo.push(`Chain Status: ${chainStatus.status.value}`)
+    }
+  }
+
+  if (
+    client.counterparty_chain && Option.isSome(client.counterparty_chain)
+    && Option.isSome(client.counterparty_chain.value.status)
+  ) {
+    const counterpartyStatus = client.counterparty_chain.value.status.value
+    if (Option.isSome(counterpartyStatus.status)) {
+      statusInfo.push(`Counterparty Status: ${counterpartyStatus.status.value}`)
+    }
+  }
+
+  return `${fromChainName} → ${toChainName}:\n${statusInfo.join("\n")}`
 }
 
 // Generate diagonal delay for animation (from top-right and bottom-left corners toward center)
@@ -66,6 +141,9 @@ function getColumnLabelDelay(toIndex: number): number {
     <div class="text-zinc-400">Loading chains...</div>
   </div>
 {:else}
+  {#if Option.isSome(clientsStore.error)}
+    <ErrorComponent error={clientsStore.error.value} />
+  {/if}
   <div class="overflow-auto max-h-full">
     <div class="inline-block min-w-full">
       <table class="border-collapse">
@@ -120,10 +198,20 @@ function getColumnLabelDelay(toIndex: number): number {
                     >
                     </div>
                   {:else}
+                    {@const client = getClientStatus(
+                fromChain.universal_chain_id,
+                toChain.universal_chain_id,
+              )}
+                    {@const hasStatus = client && hasActiveStatus(client)}
                     <div
-                      class="w-full h-full border-t-1 border-l-1 border-zinc-900 animate-scale-in {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'bg-green-500' : 'bg-red-500'}"
+                      class="w-full h-full border-t-1 border-l-1 border-zinc-900 animate-scale-in {hasStatus ? 'bg-green-500' : 'bg-red-500'}"
                       style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
-                      title="{fromChain.display_name} → {toChain.display_name}: {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'Connected' : 'Disconnected'}"
+                      title={getTooltipContent(
+                        fromChain.universal_chain_id,
+                        toChain.universal_chain_id,
+                        fromChain.display_name,
+                        toChain.display_name,
+                      )}
                     >
                     </div>
                   {/if}
@@ -135,6 +223,15 @@ function getColumnLabelDelay(toIndex: number): number {
       </table>
     </div>
   </div>
+
+  {#if Option.isSome(clientsStore.data)}
+    <div class="mt-8 p-4 bg-zinc-900 border border-zinc-800 rounded-lg">
+      <h2 class="text-lg font-semibold text-zinc-300 mb-4">Query Response</h2>
+      <pre class="text-xs text-zinc-400 overflow-auto max-h-96 p-4 bg-zinc-950 rounded">
+{JSON.stringify(Option.getOrElse(clientsStore.data, () => []), null, 2)}
+      </pre>
+    </div>
+  {/if}
 {/if}
 
 <style>
