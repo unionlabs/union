@@ -43,15 +43,17 @@ function getConnectionStatus(fromChain: string, toChain: string): boolean {
     <div class="inline-block min-w-full">
       <table class="border-collapse">
         <thead>
-          <tr>
-            <th class="sticky top-0 left-0 bg-zinc-900 z-20 p-2 border border-zinc-800 text-xs font-medium text-zinc-300">
-              From / To
+          <tr class="">
+            <th class="top-0 sticky left-0 bg-zinc-900 z-30 p-2 text-xs font-medium text-zinc-300">
+              <div class="transform -rotate-45">
+                Host — Tracking
+              </div>
             </th>
             {#each sortedChains as toChain}
-              <th class="sticky top-0 z-10 p-1 border border-zinc-800 max-w-8 h-[160px] bg-zinc-900">
-                <div class="h-[160px] pt-2">
+              <th class="top-0 sticky z-10 max-w-8 h-[160px] bg-zinc-900">
+                <div class="h-[160px] pt-2 border-l border-zinc-800">
                   <div class="transform rotate-90 z-20">
-                    <div class="w-[160px] flex items-start justify-start">
+                    <div class="w-[160px] flex items-start justify-start pl-2">
                       <ChainComponent
                         chain={toChain}
                         class="text-xs"
@@ -65,9 +67,9 @@ function getConnectionStatus(fromChain: string, toChain: string): boolean {
         </thead>
         <tbody>
           {#each sortedChains as fromChain}
-            <tr class="max-h-8">
-              <td class="sticky left-0 bg-zinc-900 z-10 p-1 border border-zinc-800">
-                <div class="min-w-[160px]">
+            <tr>
+              <td class="sticky left-0 bg-zinc-900 z-10 min-w-[160px]">
+                <div class="border-t border-zinc-800 flex items-center h-8 pl-2">
                   <ChainComponent
                     chain={fromChain}
                     class="text-xs"
@@ -75,12 +77,12 @@ function getConnectionStatus(fromChain: string, toChain: string): boolean {
                 </div>
               </td>
               {#each sortedChains as toChain}
-                <td class="border border-zinc-800 p-0 w-8 h-8">
+                <td class="border-zinc-800 p-0 w-8 h-8">
                   {#if fromChain.universal_chain_id === toChain.universal_chain_id}
                     <div class="w-full h-full bg-zinc-900"></div>
                   {:else}
                     <div
-                      class="w-full h-full {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'bg-green-500' : 'bg-red-500'}"
+                      class="w-full h-full border-t-1 border-l-1 border-zinc-900 {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'bg-green-500' : 'bg-red-500'}"
                       title="{fromChain.display_name} → {toChain.display_name}: {getConnectionStatus(fromChain.universal_chain_id, toChain.universal_chain_id) ? 'Connected' : 'Disconnected'}"
                     >
                     </div>
