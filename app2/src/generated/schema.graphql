@@ -240,6 +240,8 @@ type v2_client_type {
   sort_order: String
   universal_chain_id: String
   status: v2_client_status_type
+  chain: v2_chain_type!
+  counterparty_chain: v2_chain_type!
 }
 
 input v2_clients_args {
