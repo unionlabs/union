@@ -104,7 +104,7 @@
       type = "github";
       owner = "unionlabs";
       repo = "cosmos-sdk";
-      ref = "v0.50.11-cometblsv1";
+      ref = "v0.50.13-cometblsv1";
       flake = false;
     };
 
