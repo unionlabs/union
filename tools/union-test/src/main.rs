@@ -1,6 +1,6 @@
 use std::{str::FromStr, time::Duration};
 
-use alloy::{contract::RawCallBuilder, network::AnyNetwork, sol_types::SolValue,
+use alloy::{contract::RawCallBuilder, network::AnyNetwork, sol_types::SolValue, sol_types::SolCall,
 providers::{
         fillers::RecommendedFillers, layers::CacheLayer, DynProvider, PendingTransactionError,
         Provider, ProviderBuilder,
@@ -19,13 +19,14 @@ use ucs03_zkgm::{
         FungibleAssetMetadata, FungibleAssetOrder, FungibleAssetOrderV2, Instruction, Stake, FUNGIBLE_ASSET_METADATA_TYPE_PREIMAGE, INSTR_VERSION_0, INSTR_VERSION_1, INSTR_VERSION_2, OP_FUNGIBLE_ASSET_ORDER, OP_STAKE
     }, contract::ZKGM_CW_ACCOUNT_LABEL,
 };
+
 use union_test::{
     channel_provider::ChannelPair, cosmos, evm::{
         self,
         zkgm::{
             Instruction as InstructionEvm,
             UCS03Zkgm::{self, UCS03ZkgmCalls},
-            GovernanceToken
+            GovernanceToken, FungibleAssetMetadata as FungibleAssetMetadataEvm
         },
         zkgmerc20::ZkgmERC20,
 
@@ -159,85 +160,88 @@ async fn main() -> anyhow::Result<()> {
     let ctx = TestContext::new(src, dst, 1).await?;
 
     // 4) invoke create_clients and inspect the two confirms
-    let (src_confirm, dst_confirm) = ctx
-        .create_clients(
-            Duration::from_secs(45),
-            "ibc-cosmwasm",
-            "trusted/evm/mpt",
-            "ibc-solidity",
-            "cometbls",
-        )
-        .await?;
+    // let (src_confirm, dst_confirm) = ctx
+    //     .create_clients(
+    //         Duration::from_secs(45),
+    //         "ibc-cosmwasm",
+    //         "trusted/evm/mpt",
+    //         "ibc-solidity",
+    //         "cometbls",
+    //     )
+    //     .await?;
 
-    println!("✅ src CreateClientConfirm = {:#?}", src_confirm);
-    println!("✅ dst CreateClientConfirm = {:#?}", dst_confirm);
+    // println!("✅ src CreateClientConfirm = {:#?}", src_confirm);
+    // println!("✅ dst CreateClientConfirm = {:#?}", dst_confirm);
 
-    let conn_confirm = ctx
-        .open_connection::<cosmos::Module, evm::Module>(
-            &ctx.src,
-            src_confirm.client_id,
-            &ctx.dst,
-            dst_confirm.client_id,
-            Duration::from_secs(180),
-        )
-        .await?;
+    // let conn_confirm = ctx
+    //     .open_connection::<cosmos::Module, evm::Module>(
+    //         &ctx.src,
+    //         src_confirm.client_id,
+    //         &ctx.dst,
+    //         dst_confirm.client_id,
+    //         Duration::from_secs(180),
+    //     )
+    //     .await?;
 
-    println!(
-        "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
-        conn_confirm.connection_id, conn_confirm.counterparty_connection_id,
-    );
+    // println!(
+    //     "✅ ConnectionOpenConfirm = src {} ↔ dst {}",
+    //     conn_confirm.connection_id, conn_confirm.counterparty_connection_id,
+    // );
 
-    let opened = ctx
-        .open_channels(
-            true,
-            "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
-                .as_bytes()
-                .into(),
-            hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
-                .to_vec()
-                .into(),
-            conn_confirm.connection_id,
-            "ucs03-zkgm-0".into(),
-            1,
-            Duration::from_secs(360),
-        )
-        .await?;
+    // let opened = ctx
+    //     .open_channels(
+    //         true,
+    //         "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
+    //             .as_bytes()
+    //             .into(),
+    //         hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
+    //             .to_vec()
+    //             .into(),
+    //         conn_confirm.connection_id,
+    //         "ucs03-zkgm-0".into(),
+    //         1,
+    //         Duration::from_secs(360),
+    //     )
+    //     .await?;
 
-    println!("Opened {} channels", opened);
+    // println!("Opened {} channels", opened);
 
-    let pair = ctx.get_channel().await.unwrap();
+    // let pair = ctx.get_channel().await.unwrap();
 
-    let init_call = ZkgmERC20::InitializeParams {
-        authority: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").into(),
-        minter: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD").into(),
-        name: "muno".into(),
-        symbol: "muno".into(),
-        decimals: 6u8.into(),
+
+    let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
+    let init_call = ZkgmERC20::initializeCall {
+        _authority: hex!("6C1D11bE06908656D16EBFf5667F1C45372B7c89").into(),
+        _minter: zkgm_evm_addr.into(),
+        _name: "muno".into(),
+        _symbol: "muno".into(),
+        _decimals: 6u8.into(),
     };
     let img_metadata = FungibleAssetMetadata {
         implementation: hex!("999709eB04e8A30C7aceD9fd920f7e04EE6B97bA").to_vec().into(),
-        initializer: init_call.abi_encode_params().into(),
+        initializer: init_call.abi_encode().into(),
     }.abi_encode_params();
+
+
     let img = keccak256(&img_metadata);
 
     // panic!("panicked");
 
-    // let pair = ChannelPair {
-    //     src: 1.try_into().unwrap(),
-    //     dest: 1.try_into().unwrap(),
-    // };
-    println!("Channel {} ↔ {}", pair.src, pair.dest);
+    let pair = ChannelPair {
+        src: 1.try_into().unwrap(),
+        dest: 1.try_into().unwrap(),
+    };
+    // println!("Channel {} ↔ {}", pair.src, pair.dest);
     
-    let zkgm_evm_addr = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
     let spender = hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD");
 
     // // let gov_token_addr = hex!("a513f3a432f575f1e8579cc456badac9c78d8b08");
-    let governance_token: GovernanceToken = ctx.dst
-        .setup_governance_token(zkgm_evm_addr.into(), spender.into(), pair.dest, img)
-        .await?;
+    // let governance_token: GovernanceToken = ctx.dst
+    //     .setup_governance_token(zkgm_evm_addr.into(), spender.into(), pair.dest, img)
+    //     .await?;
 
-    println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
-    println!("✅ governance_token.metadataImage registered at: {:?}", governance_token.metadataImage);
+    // println!("✅ governance_token.unwrappedToken registered at: {:?}", governance_token.unwrappedToken);
+    // println!("✅ governance_token.metadataImage registered at: {:?}", governance_token.metadataImage);
 
     // println!("✅ Governance token registered at: {:?}", deployed_erc20_addr);
     /*
@@ -250,13 +254,8 @@ async fn main() -> anyhow::Result<()> {
 
     // // ctx.dst.basic_erc721_mint(snake_nft, U256::from(1u32), spender.into()).await?;
 
-
-
     let mut salt = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt);
-
-
-
 
     let quote_token_addr  = ctx.predict_wrapped_token_from_metadata_image_v2::<evm::Module>(
         &ctx.dst,
@@ -269,17 +268,13 @@ async fn main() -> anyhow::Result<()> {
     println!("✅ Quote token address: {:?}", quote_token_addr);
     // panic!("panicked");
 
-
     // sending muno here
     let mut salt_bytes = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut salt_bytes);
 
-
-
     let contract: Bech32<FixedBytes<32>> =
         Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
             .unwrap();
-
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_2,
@@ -340,7 +335,7 @@ async fn main() -> anyhow::Result<()> {
         .zkgmerc20_approve(
             quote_token_addr.into(),
             zkgm_evm_addr.into(),
-            U256::from(5u64),
+            U256::from(100000000000u64),
         )
         .await?;
 
@@ -351,7 +346,7 @@ async fn main() -> anyhow::Result<()> {
         version: INSTR_VERSION_0,
         opcode:  OP_STAKE,
         operand: Stake {
-            token_id:  "1".parse().unwrap(),
+            token_id:  "2".parse().unwrap(),
             // governance_token: governance_token.unwrappedToken,
             // governance_metadata_image: governance_token.metadataImage,
             governance_token: b"muno".into(),
@@ -362,8 +357,7 @@ async fn main() -> anyhow::Result<()> {
             beneficiary:  hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
                     .to_vec()
                     .into(),
-            validator:    hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
-                    .to_vec()
+            validator:    b"unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej"
                     .into(),
             amount:   "1".parse().unwrap(),
         }
@@ -399,7 +393,9 @@ async fn main() -> anyhow::Result<()> {
         .await;
 
     println!("Received packet data: {:?}", recv_packet_data);
-    
+    // union tarafinda delegate eventi aricaz
+    // nft de verdigim tokenid benim mi diye bakcaz
+
     panic!("panicked");
     
     

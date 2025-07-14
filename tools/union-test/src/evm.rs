@@ -292,6 +292,27 @@ impl<'a> Module<'a> {
         Ok(wrapped_token)
     }
 
+    pub async fn predict_wrapped_token_v2(
+        &self,
+        ucs03_addr_on_evm: H160,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata: zkgm::FungibleAssetMetadata,
+    ) -> anyhow::Result<H160> {
+        let signer = self.get_provider().await;
+        let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), signer);
+        let mut call = ucs03_zkgm.predictWrappedTokenV2(
+            U256::from(0u32).into(),
+            channel.raw().try_into().unwrap(),
+            token.into(),
+            metadata.into()
+        );   
+
+        let ret = call.call().await;
+        let unwrapped = ret.unwrap();
+        let wrapped_token: H160 = unwrapped._0.into();
+        Ok(wrapped_token)
+    }
 
     pub async fn predict_wrapped_token_from_metadata_image_v2(
         &self,
@@ -820,6 +841,12 @@ pub mod zkgm {
             bytes operand;
         }
 
+        struct FungibleAssetMetadata {
+            bytes implementation;
+            bytes initializer;
+        }
+
+
         contract ZkgmERC721 {
             function mint(uint256 tokenId, address to ) external;
 
@@ -867,6 +894,13 @@ pub mod zkgm {
                 uint32 channel,
                 bytes calldata token,
                 bytes32 metadataImage
+            ) public returns (address, bytes32);
+
+            function predictWrappedTokenV2(
+                uint256 path,
+                uint32 channel,
+                bytes calldata token,
+                FungibleAssetMetadata calldata metadata
             ) public returns (address, bytes32);
         }
     }

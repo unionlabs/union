@@ -19,6 +19,7 @@ pub mod evm;
 pub mod helpers;
 pub mod voyager;
 
+use crate::evm::zkgm::FungibleAssetMetadata;
 use crate::channel_provider::{ChannelConfirm, ChannelPair, ChannelPool};
 
 #[async_trait]
@@ -51,6 +52,14 @@ pub trait ChainEndpoint: Send + Sync {
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
+    ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>;
+
+    async fn predict_wrapped_token_v2(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata: FungibleAssetMetadata
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>;
 
 
@@ -150,6 +159,16 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
             token, 
             metadata_image
         ).await
+    }
+
+    async fn predict_wrapped_token_v2(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata: FungibleAssetMetadata
+    ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
+        self.predict_wrapped_token_v2(contract, channel, token, metadata).await
     }
 
     async fn wait_for_create_client(
@@ -289,6 +308,17 @@ impl ChainEndpoint for cosmos::Module {
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>{
         unimplemented!("predict_wrapped_token_from_metadata_image_v2 is not implemented for Cosmos chains")
     }
+
+    async fn predict_wrapped_token_v2(
+        &self,
+        contract: Self::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata: FungibleAssetMetadata
+    ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
+        unimplemented!("predict_wrapped_token_v2 is not implemented for Cosmos chains")
+    }
+
 
     fn send_open_channel(
         &self,
@@ -496,6 +526,19 @@ where
     ) -> anyhow::Result<Src::PredictWrappedTokenFromMetadataImageV2Response>{
         source_chain
             .predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image)
+            .await
+    }
+
+    pub async fn predict_wrapped_token_v2<Src: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        channel: ChannelId,
+        token: Vec<u8>,
+        metadata: FungibleAssetMetadata
+    ) -> anyhow::Result<Src::PredictWrappedTokenFromMetadataImageV2Response>{
+        source_chain
+            .predict_wrapped_token_v2(contract, channel, token, metadata)
             .await
     }
 
