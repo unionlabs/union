@@ -1,5 +1,8 @@
 import { InternalChainInfo } from "$lib/services/cosmos/chain-info/internal-chain-info"
 
+// Base URL for images to avoid repetition (DRY principle)
+const IMAGE_BASE_URL = "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images";
+
 export const unionTestnet = InternalChainInfo.make({
   chainId: "union-testnet-10",
   chainName: "Union Testnet",
@@ -8,8 +11,7 @@ export const unionTestnet = InternalChainInfo.make({
     email: "ben@union.build",
     website: "https://explorer.testnet-9.union.build",
   },
-  chainSymbolImageUrl:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union-testnet/chain.png",
+  chainSymbolImageUrl: `${IMAGE_BASE_URL}/union-testnet/chain.png`,
   rest: "https://rest.union-testnet-10.union.chain.kitchen",
   rpc: "https://rpc.union-testnet-10.union.chain.kitchen",
   bip44: {
@@ -28,8 +30,7 @@ export const unionTestnet = InternalChainInfo.make({
       coinDenom: "UNO",
       coinMinimalDenom: "muno",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union-testnet/chain.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/union-testnet/chain.png`,
     },
   ],
   feeCurrencies: [
@@ -42,16 +43,14 @@ export const unionTestnet = InternalChainInfo.make({
         average: 0.025,
         high: 0.04,
       },
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union-testnet/chain.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/union-testnet/chain.png`,
     },
   ],
   stakeCurrency: {
     coinDenom: "UNO",
     coinMinimalDenom: "muno",
     coinDecimals: 6,
-    coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/union-testnet/chain.png",
+    coinImageUrl: `${IMAGE_BASE_URL}/union-testnet/chain.png`,
   },
   features: [
     "cosmwasm",
@@ -60,6 +59,7 @@ export const unionTestnet = InternalChainInfo.make({
     primaryColor: "#fff",
     gradient: "linear-gradient(180deg, rgba(255, 255, 255, 0.32) 0%, rgba(255, 255, 255, 0) 100%)",
   },
+  // Note: This image URL has a different base path, so it's not using the constant.
   image:
     "https://raw.githubusercontent.com/cosmos/chain-registry/master/testnets/uniontestnet/images/union.png",
 })
@@ -67,8 +67,7 @@ export const unionTestnet = InternalChainInfo.make({
 export const babylonMainnet = InternalChainInfo.make({
   chainId: "bbn-1",
   chainName: "Babylon Genesis",
-  chainSymbolImageUrl:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+  chainSymbolImageUrl: `${IMAGE_BASE_URL}/bbn/chain.png`,
   rpc: "https://rpc.bbn-1.babylon.chain.kitchen",
   rest: "https://rest.bbn-1.babylon.chain.kitchen",
   walletUrlForStaking: "https://wallet.keplr.app/chains/babylon-genesis",
@@ -89,15 +88,13 @@ export const babylonMainnet = InternalChainInfo.make({
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
       coinGeckoId: "babylon",
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/bbn/chain.png`,
     },
     {
       coinDenom: "LBTC",
       coinMinimalDenom: "ibc/89EE10FCF78800B572BAAC7080AEFA301B5F3BBC51C5371E907EB129C5B900E7",
       coinDecimals: 8,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/LBTC.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/bbn/LBTC.png`,
     },
   ],
   feeCurrencies: [
@@ -106,8 +103,7 @@ export const babylonMainnet = InternalChainInfo.make({
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
       coinGeckoId: "babylon",
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/bbn/chain.png`,
       gasPriceStep: {
         low: 0.007,
         average: 0.007,
@@ -120,8 +116,7 @@ export const babylonMainnet = InternalChainInfo.make({
     coinMinimalDenom: "ubbn",
     coinDecimals: 6,
     coinGeckoId: "babylon",
-    coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+    coinImageUrl: `${IMAGE_BASE_URL}/bbn/chain.png`,
   },
   features: [
     "cosmwasm",
@@ -130,17 +125,16 @@ export const babylonMainnet = InternalChainInfo.make({
     gradient: "linear-gradient(180deg, rgba(247,119,26, 0.32) 0%, rgba(247,119,26, 0) 100%)",
     primaryColor: "#f7771a",
   },
-  image:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn/chain.png",
+  image: `${IMAGE_BASE_URL}/bbn/chain.png`,
 })
 
 export const babylonTestnet = InternalChainInfo.make({
   chainId: "bbn-test-5",
   chainName: "Babylon Phase-2 Testnet",
-  chainSymbolImageUrl:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
-  rpc: "https://rpc.bbn-test-5.babylon.chain.kitchen/",
-  rest: "https://rest.bbn-test-5.babylon.chain.kitchen/",
+  chainSymbolImageUrl: `${IMAGE_BASE_URL}/bbn-test/chain.png`,
+  // FIX: Removed trailing slashes for consistency
+  rpc: "https://rpc.bbn-test-5.babylon.chain.kitchen",
+  rest: "https://rest.bbn-test-5.babylon.chain.kitchen",
   nodeProvider: {
     name: "NodesGuru",
     email: "security@nodes.guru",
@@ -162,29 +156,25 @@ export const babylonTestnet = InternalChainInfo.make({
       coinDenom: "BABY",
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/bbn-test/chain.png`,
     },
     {
       coinDenom: "eBABY",
       coinMinimalDenom: "ebbn",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/eBABY.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/bbn-test/eBABY.png`,
     },
     {
       coinDenom: "LBTC",
       coinMinimalDenom: "ibc/13A78C8607F1ABD49DA5EC474262E3D69312A797FB0026BC4F9961D74EB6E066",
       coinDecimals: 8,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/LBTC.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/bbn-test/LBTC.png`,
     },
     {
       coinDenom: "tcBABY",
       coinMinimalDenom: "cbbn",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/tcBABY.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/bbn-test/tcBABY.png`,
     },
   ],
   feeCurrencies: [
@@ -192,8 +182,7 @@ export const babylonTestnet = InternalChainInfo.make({
       coinDenom: "BABY",
       coinMinimalDenom: "ubbn",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/bbn-test/chain.png`,
       gasPriceStep: {
         low: 0.007,
         average: 0.007,
@@ -201,12 +190,12 @@ export const babylonTestnet = InternalChainInfo.make({
       },
     },
   ],
+  // FIX: Changed stake currency from 'tBABY' to 'BABY' for consistency.
   stakeCurrency: {
-    coinDenom: "tBABY",
+    coinDenom: "BABY",
     coinMinimalDenom: "ubbn",
     coinDecimals: 6,
-    coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
+    coinImageUrl: `${IMAGE_BASE_URL}/bbn-test/chain.png`,
   },
   features: [
     "cosmwasm",
@@ -215,8 +204,7 @@ export const babylonTestnet = InternalChainInfo.make({
     gradient: "linear-gradient(180deg, rgba(247,119,26, 0.32) 0%, rgba(247,119,26, 0) 100%)",
     primaryColor: "#f7771a",
   },
-  image:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/bbn-test/chain.png",
+  image: `${IMAGE_BASE_URL}/bbn-test/chain.png`,
 })
 
 export const xionTestnet = InternalChainInfo.make(
@@ -225,14 +213,12 @@ export const xionTestnet = InternalChainInfo.make(
     rest: "https://rest.xion-testnet-2.xion.chain.kitchen",
     chainId: "xion-testnet-2",
     chainName: "Xion Testnet",
-    chainSymbolImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+    chainSymbolImageUrl: `${IMAGE_BASE_URL}/xion-testnet/chain.png`,
     stakeCurrency: {
       coinDenom: "XION",
       coinMinimalDenom: "uxion",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/xion-testnet/chain.png`,
     },
     bip44: {
       coinType: 118,
@@ -250,8 +236,7 @@ export const xionTestnet = InternalChainInfo.make(
         coinDenom: "XION",
         coinMinimalDenom: "uxion",
         coinDecimals: 6,
-        coinImageUrl:
-          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+        coinImageUrl: `${IMAGE_BASE_URL}/xion-testnet/chain.png`,
       },
     ],
     feeCurrencies: [
@@ -259,8 +244,7 @@ export const xionTestnet = InternalChainInfo.make(
         coinDenom: "XION",
         coinMinimalDenom: "uxion",
         coinDecimals: 6,
-        coinImageUrl:
-          "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+        coinImageUrl: `${IMAGE_BASE_URL}/xion-testnet/chain.png`,
         gasPriceStep: {
           low: 0.001,
           average: 0.001,
@@ -280,16 +264,14 @@ export const xionTestnet = InternalChainInfo.make(
       gradient: "linear-gradient(180deg, rgba(50, 129, 250, 0.32) 0%, rgba(50, 129, 250, 0) 100%)",
       primaryColor: "#3281fa",
     },
-    image:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/xion-testnet/chain.png",
+    image: `${IMAGE_BASE_URL}/xion-testnet/chain.png`,
   },
 )
 
 export const osmosisTestnet = InternalChainInfo.make({
   chainId: "osmo-test-5",
   chainName: "Osmosis Testnet",
-  chainSymbolImageUrl:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
+  chainSymbolImageUrl: `${IMAGE_BASE_URL}/osmosis/chain.png`,
   rpc: "https://rpc.osmo-test-5.osmosis.chain.kitchen",
   rest: "https://rest.osmo-test-5.osmosis.chain.kitchen",
   bip44: {
@@ -308,15 +290,13 @@ export const osmosisTestnet = InternalChainInfo.make({
       coinDenom: "OSMO",
       coinMinimalDenom: "uosmo",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/osmosis/uosmo.png`,
     },
     {
       coinDenom: "ION",
       coinMinimalDenom: "uion",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uion.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/osmosis/uion.png`,
     },
   ],
   feeCurrencies: [
@@ -324,8 +304,7 @@ export const osmosisTestnet = InternalChainInfo.make({
       coinDenom: "OSMO",
       coinMinimalDenom: "uosmo",
       coinDecimals: 6,
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/osmosis/uosmo.png`,
       gasPriceStep: {
         low: 0.0025,
         average: 0.025,
@@ -337,16 +316,14 @@ export const osmosisTestnet = InternalChainInfo.make({
     coinDenom: "OSMO",
     coinMinimalDenom: "uosmo",
     coinDecimals: 6,
-    coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+    coinImageUrl: `${IMAGE_BASE_URL}/osmosis/uosmo.png`,
   },
   features: [],
   theme: {
     gradient: "linear-gradient(180deg, rgba(181, 97, 219, 0.32) 0%, rgba(181, 97, 219, 0) 100%)",
     primaryColor: "#b561db",
   },
-  image:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
+  image: `${IMAGE_BASE_URL}/osmosis/chain.png`,
 })
 
 export const osmosisMainnet = InternalChainInfo.make({
@@ -354,15 +331,13 @@ export const osmosisMainnet = InternalChainInfo.make({
   rest: "https://lcd.osmosis.zone/",
   chainId: "osmosis-1",
   chainName: "Osmosis",
-  chainSymbolImageUrl:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
+  chainSymbolImageUrl: `${IMAGE_BASE_URL}/osmosis/chain.png`,
   stakeCurrency: {
     coinDenom: "OSMO",
     coinMinimalDenom: "uosmo",
     coinDecimals: 6,
     coinGeckoId: "osmosis",
-    coinImageUrl:
-      "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+    coinImageUrl: `${IMAGE_BASE_URL}/osmosis/uosmo.png`,
   },
   walletUrl: "https://app.osmosis.zone",
   walletUrlForStaking: "https://wallet.keplr.app/chains/osmosis",
@@ -383,16 +358,14 @@ export const osmosisMainnet = InternalChainInfo.make({
       coinMinimalDenom: "uosmo",
       coinDecimals: 6,
       coinGeckoId: "osmosis",
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/osmosis/uosmo.png`,
     },
     {
       coinDenom: "ION",
       coinMinimalDenom: "uion",
       coinDecimals: 6,
       coinGeckoId: "ion",
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uion.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/osmosis/uion.png`,
     },
   ],
   feeCurrencies: [
@@ -401,8 +374,7 @@ export const osmosisMainnet = InternalChainInfo.make({
       coinMinimalDenom: "uosmo",
       coinDecimals: 6,
       coinGeckoId: "osmosis",
-      coinImageUrl:
-        "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/uosmo.png",
+      coinImageUrl: `${IMAGE_BASE_URL}/osmosis/uosmo.png`,
       gasPriceStep: {
         low: 0.0025,
         average: 0.025,
@@ -419,6 +391,5 @@ export const osmosisMainnet = InternalChainInfo.make({
     gradient: "linear-gradient(180deg, rgba(181, 97, 219, 0.32) 0%, rgba(181, 97, 219, 0) 100%)",
     primaryColor: "#b561db",
   },
-  image:
-    "https://raw.githubusercontent.com/chainapsis/keplr-chain-registry/main/images/osmosis/chain.png",
+  image: `${IMAGE_BASE_URL}/osmosis/chain.png`,
 })
