@@ -33,6 +33,8 @@ ucs03-zkgm = { workspace = true, features = [ "library" ] }
 cometbft-rpc = { workspace = true }
 cosmos-sdk-event = { workspace = true }
 serde-utils = { workspace = true }
+cosmwasm-std    = { workspace = true }
+
 
 
 [dev-dependencies]

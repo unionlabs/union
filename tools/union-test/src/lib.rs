@@ -104,6 +104,13 @@ pub trait ChainEndpoint: Send + Sync {
         packet_hash: H256,
         timeout: Duration,
     ) -> anyhow::Result<helpers::PacketRecv>;
+
+
+    async fn wait_for_delegate(
+        &self,
+        validator: String,
+        timeout: Duration,
+    ) -> anyhow::Result<helpers::Delegate>;
 }
 
 pub trait IbcEventHash {
@@ -119,6 +126,14 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
+    }
+
+    async fn wait_for_delegate(
+        &self,
+        validator: String,
+        timeout: Duration
+    ) -> anyhow::Result<helpers::Delegate>{
+        unimplemented!("wait_for_delegate is not implemented for Cosmos chains")
     }
 
     fn send_create_client(
@@ -359,6 +374,14 @@ impl ChainEndpoint for cosmos::Module {
     ) -> anyhow::Result<helpers::PacketRecv> {
         self.wait_for_packet_recv(packet_hash, timeout).await
     }
+
+    async fn wait_for_delegate(
+        &self,
+        validator: String,
+        timeout: Duration
+    ) -> anyhow::Result<helpers::Delegate>{
+        self.wait_for_delegate(validator, timeout).await
+    }
 }
 
 pub enum ContractAddr {
@@ -572,8 +595,41 @@ where
             Ok(evt) => Ok(evt),
             Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
         }
-
     }
+
+    pub async fn send_and_recv_stake<Src: ChainEndpoint, Dst: ChainEndpoint>(
+        &self,
+        source_chain: &Src,
+        contract: Src::Contract,
+        msg: Src::Msg,
+        destination_chain: &Dst,
+        timeout: Duration,
+        validator: String
+    ) -> anyhow::Result<helpers::Delegate> {
+        let packet_hash = match source_chain
+            .send_ibc_transaction(contract.clone(), msg.clone())
+            .await
+        {
+            Ok(hash) => {
+                println!("send_ibc_tx succeeded with hash: {:?}", hash);
+                hash
+            },
+            Err(e) => {
+                anyhow::bail!("send_ibc_transaction failed: {:?}", e);
+            }
+        };
+        println!(
+            "Packet sent from {} to {} with hash: {}",
+            source_chain.chain_id(),
+            destination_chain.chain_id(),
+            packet_hash
+        );
+
+        match destination_chain.wait_for_delegate(validator, timeout).await{
+            Ok(evt) => Ok(evt),
+            Err(e) => anyhow::bail!("wait_for_packet_recv failed: {:?}", e),
+        }
+    } 
 
 
     pub async fn send_and_recv_with_retry<Src: ChainEndpoint, Dst: ChainEndpoint>(

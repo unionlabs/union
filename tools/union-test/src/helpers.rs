@@ -26,3 +26,9 @@ pub struct PacketRecv {
 pub struct PacketSend {
     pub packet_hash: FixedBytes<32>
 }
+
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct Delegate {
+    pub validator: String
+}

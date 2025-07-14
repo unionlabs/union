@@ -27,6 +27,7 @@ use ucs03_zkgm::msg::{QueryMsg, PredictWrappedTokenResponse};
 use protos::{cometbft, cosmos::base::v1beta1::Coin, cosmwasm::{
     wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 }};
+use cosmwasm_std::Coin as CosmwasmCoin;
 use serde::{Deserialize, Serialize};
 use tokio::time::timeout;
 use voyager_sdk::serde_json;
@@ -156,12 +157,12 @@ impl Module {
 
     async fn wait_for_event<T, F>(&self, mut filter_fn: F, max_wait: Duration) -> anyhow::Result<T>
     where
-        F: FnMut(&IbcEvent) -> Option<T> + Send + 'static,
+        F: FnMut(&ModuleEvent) -> Option<T> + Send + 'static,
         T: Send + 'static,
     {
         let client = self.rpc.client();
 
-        let mut height = client.status().await?.sync_info.latest_block_height;
+        let mut height = client.status().await?.sync_info.latest_block_height - 10;
 
         tokio::time::timeout(max_wait, async move {
             loop {
@@ -185,7 +186,7 @@ impl Module {
                         for tx in resp.txs {
                             for raw_ev in tx.tx_result.events.into_iter() {
                                 // println!("raw event: {raw_ev:?}");
-                                let event = match CosmosSdkEvent::<IbcEvent>::new(raw_ev) {
+                                let event = match CosmosSdkEvent::<ModuleEvent>::new(raw_ev) {
                                     Ok(event) => event,
                                     Err(cosmos_sdk_event::Error::Deserialize(error)) => {
                                         // println!("unable to parse event: {error}");
@@ -224,7 +225,7 @@ impl Module {
     ) -> anyhow::Result<helpers::CreateClientConfirm> {
         self.wait_for_event(
             |evt| {
-                if let IbcEvent::WasmCreateClient { client_id, .. } = evt {
+                if let ModuleEvent::WasmCreateClient { client_id, .. } = evt {
                     Some(helpers::CreateClientConfirm {
                         client_id: client_id.raw().try_into().unwrap(),
                     })
@@ -243,7 +244,7 @@ impl Module {
     ) -> anyhow::Result<helpers::ChannelOpenConfirm> {
         self.wait_for_event(
             |evt| {
-                if let IbcEvent::WasmChannelOpenConfirm {
+                if let ModuleEvent::WasmChannelOpenConfirm {
                     channel_id,
                     counterparty_channel_id,
                     ..
@@ -268,7 +269,7 @@ impl Module {
     ) -> anyhow::Result<helpers::ConnectionConfirm> {
         self.wait_for_event(
             |evt| {
-                if let IbcEvent::WasmConnectionOpenConfirm {
+                if let ModuleEvent::WasmConnectionOpenConfirm {
                     connection_id,
                     counterparty_connection_id,
                     ..
@@ -292,18 +293,51 @@ impl Module {
 
     pub async fn wait_for_packet_recv(
         &self,
-        packet_hash: H256,
+        packet_hash_param: H256,
         max_wait: Duration,
     ) -> anyhow::Result<helpers::PacketRecv> {
+        println!("Waiting for packet recv event with hash: {packet_hash_param:?}");
         self.wait_for_event(
-            |evt| {
-                if let IbcEvent::WasmPacketRecv { packet_hash, .. } = evt {
-                    if packet_hash.as_ref() == packet_hash.as_ref() {
+            move |evt| {
+                if let ModuleEvent::WasmPacketRecv { packet_hash, .. } = evt {
+                    println!("Packet recv event came with hash: {packet_hash:?}");
+                    // if packet_hash.as_ref() == packet_hash_param.as_ref() {
                         return Some(helpers::PacketRecv {
                             packet_hash: *packet_hash,
                         });
-                    }
+                    // }
                     None
+                } else {
+                    None
+                }
+            },
+            max_wait,
+        )
+        .await
+    }
+
+    pub async fn wait_for_delegate(
+        &self,
+        validator_filter: String,
+        max_wait: Duration,
+    ) -> anyhow::Result<helpers::Delegate> {
+        // `move` here ensures we *move* validator_filter into the closure,
+        // rather than borrow it.
+        println!("wait for delegate cagrildi, eventi bekliyoruz simdi");
+        self.wait_for_event(
+            move |evt| {
+                println!("Checking event: {:?}", evt);
+                if let ModuleEvent::Delegate { validator, amount, .. } = evt {
+                    println!("Delegate event came!! : {validator}, amount: {amount:?}");
+                    println!("Validator filter: {validator_filter}, are they equal? {}", validator == &validator_filter);
+                    // compare by reference, since `validator` is a &String here
+                    if validator == &validator_filter {
+                        Some(helpers::Delegate {
+                            validator: validator.clone(),
+                        })
+                    } else {
+                        None
+                    }
                 } else {
                     None
                 }
@@ -419,7 +453,7 @@ impl Module {
             .into_iter()
             .find_map(|e| {
                 if e.ty == "wasm-packet_send" {
-                    CosmosSdkEvent::<IbcEvent>::new(e).ok().map(|e| e.event)
+                    CosmosSdkEvent::<ModuleEvent>::new(e).ok().map(|e| e.event)
                 } else {
                     None
                 }
@@ -427,15 +461,22 @@ impl Module {
             .ok_or_else(|| anyhow!("wasm-packet_send event not found"))?;
 
         Ok(match send_event {
-            IbcEvent::WasmPacketSend { packet_hash, .. } => packet_hash,
+            ModuleEvent::WasmPacketSend { packet_hash, .. } => packet_hash,
             _ => bail!("unexpected event variant"),
         })
     }
 }
 
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
-pub enum IbcEvent {
+pub enum ModuleEvent {
+    #[serde(rename = "delegate")]
+    Delegate { 
+        validator: String, 
+        amount: String
+    },
+
     #[serde(rename = "wasm-packet_send")]
     WasmPacketSend {
         #[serde(with = "serde_utils::string")]
