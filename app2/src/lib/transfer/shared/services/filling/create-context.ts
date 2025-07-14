@@ -160,16 +160,22 @@ const calculateNativeValue = (
 ): Option.Option<Array<{ baseToken: TokenRawDenom | string; amount: TokenRawAmount }>> => {
   const nativeTokensMap = new Map<string, bigint>()
 
+  const chainGasDenom = GAS_DENOMS[args.sourceChain.universal_chain_id]
+
   for (const intent of intents) {
     const normalizedToken = normalizeToken(intent.baseToken, args.sourceChain.rpc_type)
 
-    if (!isValidBech32ContractAddress(normalizedToken)) {
+    const isNativeToken = args.sourceChain.rpc_type === "evm"
+      ? chainGasDenom
+        && normalizedToken === normalizeToken(chainGasDenom.address, args.sourceChain.rpc_type)
+      : !isValidBech32ContractAddress(normalizedToken)
+
+    if (isNativeToken) {
       const currentAmount = nativeTokensMap.get(normalizedToken) || 0n
       nativeTokensMap.set(normalizedToken, currentAmount + intent.baseAmount)
     }
   }
 
-  const chainGasDenom = GAS_DENOMS[args.sourceChain.universal_chain_id]
   if (chainGasDenom) {
     const nativeToken = normalizeToken(chainGasDenom.address, args.sourceChain.rpc_type)
     const nativeIntents = intents.filter(intent =>
