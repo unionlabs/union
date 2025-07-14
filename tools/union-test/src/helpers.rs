@@ -13,21 +13,20 @@ pub struct ChannelOpenConfirm {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct CreateClientConfirm {
-    pub client_id: u32
+    pub client_id: u32,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PacketRecv {
-    pub packet_hash: FixedBytes<32>
+    pub packet_hash: FixedBytes<32>,
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PacketSend {
-    pub packet_hash: FixedBytes<32>
+    pub packet_hash: FixedBytes<32>,
 }
-
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Delegate {
-    pub validator: String
+    pub validator: String,
 }

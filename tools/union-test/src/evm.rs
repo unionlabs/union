@@ -1,25 +1,27 @@
-use std::{marker::PhantomData, str::FromStr, panic::AssertUnwindSafe, time::Duration};
+use std::{marker::PhantomData, panic::AssertUnwindSafe, str::FromStr, time::Duration};
 
 use alloy::{
     contract::{Error, RawCallBuilder, Result},
     network::{AnyNetwork, EthereumWallet},
     providers::{
-        fillers::RecommendedFillers, DynProvider, PendingTransactionError,
-        Provider, ProviderBuilder,
+        fillers::RecommendedFillers, DynProvider, PendingTransactionError, Provider,
+        ProviderBuilder,
     },
-    rpc::types::{Filter},
+    rpc::types::Filter,
     signers::local::LocalSigner,
     sol_types::SolEventInterface,
     transports::TransportError,
 };
-use ethers::abi::{self, Token};
-
 use bip32::secp256k1::ecdsa::{self, SigningKey};
 use concurrent_keyring::{ConcurrentKeyring, KeyringConfig, KeyringEntry};
-use ibc_solidity::Ibc::{IbcEvents};
+use ethers::{
+    abi::{self, Token},
+    utils::hex as ethers_hex,
+};
+use ibc_solidity::Ibc::IbcEvents;
 use ibc_union_spec::{datagram::Datagram, ChannelId};
 use jsonrpsee::{
-    core::{RpcResult},
+    core::RpcResult,
     types::{ErrorObject, ErrorObjectOwned},
 };
 use serde::{Deserialize, Serialize};
@@ -33,8 +35,7 @@ use voyager_sdk::{
     primitives::ChainId,
 };
 
-use crate::{helpers};
-use ethers::utils::hex as ethers_hex;
+use crate::helpers;
 
 #[derive(Debug)]
 pub struct Module<'a> {
@@ -272,8 +273,8 @@ impl<'a> Module<'a> {
         let call = ucs03_zkgm.predictWrappedToken(
             U256::from(0u32).into(),
             channel.raw().try_into().unwrap(),
-            token.into()
-        );   
+            token.into(),
+        );
 
         let ret = call.call().await;
         let unwrapped = ret.unwrap();
@@ -294,8 +295,8 @@ impl<'a> Module<'a> {
             U256::from(0u32).into(),
             channel.raw().try_into().unwrap(),
             token.into(),
-            metadata.into()
-        );   
+            metadata.into(),
+        );
 
         let ret = call.call().await;
         let unwrapped = ret.unwrap();
@@ -316,8 +317,8 @@ impl<'a> Module<'a> {
             U256::from(0u32).into(),
             channel.raw().try_into().unwrap(),
             token.into(),
-            metadata_image.into()
-        );   
+            metadata_image.into(),
+        );
 
         let ret = call.call().await;
         let unwrapped = ret.unwrap();
@@ -457,7 +458,6 @@ impl<'a> Module<'a> {
                 .connect_provider(self.provider.clone()),
         )
     }
-        
 
     pub async fn basic_erc721_mint(
         &self,
@@ -481,7 +481,7 @@ impl<'a> Module<'a> {
         let provider = self.get_provider().await;
         let erc = zkgmerc20::ZkgmERC20::new(contract.into(), provider.clone());
         let pending = erc.approve(spender.into(), amount.into()).send().await?;
-        let tx_hash = <H256>::from(*pending.tx_hash()); 
+        let tx_hash = <H256>::from(*pending.tx_hash());
         println!("pending: {:?}", pending);
 
         let _receipt = pending.get_receipt().await?;
@@ -516,7 +516,7 @@ impl<'a> Module<'a> {
         let owner_addr: alloy::primitives::Address = owner.into();
         return Ok(actual_owner == owner_addr);
     }
-    
+
     pub async fn basic_erc721_transfer_from(
         &self,
         contract: H160,
@@ -526,20 +526,20 @@ impl<'a> Module<'a> {
     ) -> anyhow::Result<H256> {
         let provider = self.get_provider().await;
         let erc = basic_erc721::BasicERC721::new(contract.into(), provider.clone());
-        let pending = erc.transferFrom(from.into(), to.into(), token_id.into()).send().await?;
+        let pending = erc
+            .transferFrom(from.into(), to.into(), token_id.into())
+            .send()
+            .await?;
         let tx_hash = <H256>::from(*pending.tx_hash());
         Ok(tx_hash)
     }
 
     pub async fn deploy_basic_erc20(&self, spender: H160) -> anyhow::Result<H160> {
-        const BYTECODE: &str = "0x608060405234801561000f575f5ffd5b50604051610b91380380610b9183398101604081905261002e916102f0565b6040518060400160405280600481526020016311dbdb1960e21b8152506040518060400160405280600381526020016211d31160ea1b815250816003908161007691906103c1565b50600461008382826103c1565b50505061009633836100a860201b60201c565b6100a13382846100e5565b50506104a0565b6001600160a01b0382166100d65760405163ec442f0560e01b81525f60048201526024015b60405180910390fd5b6100e15f83836100f7565b5050565b6100f2838383600161021d565b505050565b6001600160a01b038316610121578060025f828254610116919061047b565b909155506101919050565b6001600160a01b0383165f90815260208190526040902054818110156101735760405163391434e360e21b81526001600160a01b038516600482015260248101829052604481018390526064016100cd565b6001600160a01b0384165f9081526020819052604090209082900390555b6001600160a01b0382166101ad576002805482900390556101cb565b6001600160a01b0382165f9081526020819052604090208054820190555b816001600160a01b0316836001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8360405161021091815260200190565b60405180910390a3505050565b6001600160a01b0384166102465760405163e602df0560e01b81525f60048201526024016100cd565b6001600160a01b03831661026f57604051634a1406b160e11b81525f60048201526024016100cd565b6001600160a01b038085165f90815260016020908152604080832093871683529290522082905580156102ea57826001600160a01b0316846001600160a01b03167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925846040516102e191815260200190565b60405180910390a35b50505050565b5f5f60408385031215610301575f5ffd5b825160208401519092506001600160a01b038116811461031f575f5ffd5b809150509250929050565b634e487b7160e01b5f52604160045260245ffd5b600181811c9082168061035257607f821691505b60208210810361037057634e487b7160e01b5f52602260045260245ffd5b50919050565b601f8211156100f257805f5260205f20601f840160051c8101602085101561039b5750805b601f840160051c820191505b818110156103ba575f81556001016103a7565b5050505050565b81516001600160401b038111156103da576103da61032a565b6103ee816103e8845461033e565b84610376565b6020601f821160018114610420575f83156104095750848201515b5f19600385901b1c1916600184901b1784556103ba565b5f84815260208120601f198516915b8281101561044f578785015182556020948501946001909201910161042f565b508482101561046c57868401515f19600387901b60f8161c191681555b50505050600190811b01905550565b8082018082111561049a57634e487b7160e01b5f52601160045260245ffd5b92915050565b6106e4806104ad5f395ff3fe608060405234801561000f575f5ffd5b5060043610610090575f3560e01c8063313ce56711610063578063313ce567146100fa57806370a082311461010957806395d89b4114610131578063a9059cbb14610139578063dd62ed3e1461014c575f5ffd5b806306fdde0314610094578063095ea7b3146100b257806318160ddd146100d557806323b872dd146100e7575b5f5ffd5b61009c610184565b6040516100a99190610554565b60405180910390f35b6100c56100c03660046105a4565b610214565b60405190151581526020016100a9565b6002545b6040519081526020016100a9565b6100c56100f53660046105cc565b61022d565b604051601281526020016100a9565b6100d9610117366004610606565b6001600160a01b03165f9081526020819052604090205490565b61009c610250565b6100c56101473660046105a4565b61025f565b6100d961015a366004610626565b6001600160a01b039182165f90815260016020908152604080832093909416825291909152205490565b60606003805461019390610657565b80601f01602080910402602001604051908101604052809291908181526020018280546101bf90610657565b801561020a5780601f106101e15761010080835404028352916020019161020a565b820191905f5260205f20905b8154815290600101906020018083116101ed57829003601f168201915b5050505050905090565b5f3361022181858561026c565b60019150505b92915050565b5f3361023a85828561027e565b6102458585856102ff565b506001949350505050565b60606004805461019390610657565b5f336102218185856102ff565b610279838383600161035c565b505050565b6001600160a01b038381165f908152600160209081526040808320938616835292905220545f198110156102f957818110156102eb57604051637dc7a0d960e11b81526001600160a01b038416600482015260248101829052604481018390526064015b60405180910390fd5b6102f984848484035f61035c565b50505050565b6001600160a01b03831661032857604051634b637e8f60e11b81525f60048201526024016102e2565b6001600160a01b0382166103515760405163ec442f0560e01b81525f60048201526024016102e2565b61027983838361042e565b6001600160a01b0384166103855760405163e602df0560e01b81525f60048201526024016102e2565b6001600160a01b0383166103ae57604051634a1406b160e11b81525f60048201526024016102e2565b6001600160a01b038085165f90815260016020908152604080832093871683529290522082905580156102f957826001600160a01b0316846001600160a01b03167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b9258460405161042091815260200190565b60405180910390a350505050565b6001600160a01b038316610458578060025f82825461044d919061068f565b909155506104c89050565b6001600160a01b0383165f90815260208190526040902054818110156104aa5760405163391434e360e21b81526001600160a01b038516600482015260248101829052604481018390526064016102e2565b6001600160a01b0384165f9081526020819052604090209082900390555b6001600160a01b0382166104e457600280548290039055610502565b6001600160a01b0382165f9081526020819052604090208054820190555b816001600160a01b0316836001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8360405161054791815260200190565b60405180910390a3505050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b038116811461059f575f5ffd5b919050565b5f5f604083850312156105b5575f5ffd5b6105be83610589565b946020939093013593505050565b5f5f5f606084860312156105de575f5ffd5b6105e784610589565b92506105f560208501610589565b929592945050506040919091013590565b5f60208284031215610616575f5ffd5b61061f82610589565b9392505050565b5f5f60408385031215610637575f5ffd5b61064083610589565b915061064e60208401610589565b90509250929050565b600181811c9082168061066b57607f821691505b60208210810361068957634e487b7160e01b5f52602260045260245ffd5b50919050565b8082018082111561022757634e487b7160e01b5f52601160045260245ffdfea26469706673582212207cfaf374f2b49d6608fed1bc9f4e741950ec2c77f36bb3d89258c5218167ab4764736f6c634300081e0033"; 
-            let mut code = ethers_hex::decode(BYTECODE.trim_start_matches("0x"))?;
-            let initial_supply = ethers::types::U256::from_dec_str("1000000000000000000")?;
-            let spender = ethers::types::Address::from_str(&spender.to_string())?;
-            let encoded = abi::encode(&[
-                Token::Uint(initial_supply.into()),
-                Token::Address(spender),
-            ]);
+        const BYTECODE: &str = "0x608060405234801561000f575f5ffd5b50604051610b91380380610b9183398101604081905261002e916102f0565b6040518060400160405280600481526020016311dbdb1960e21b8152506040518060400160405280600381526020016211d31160ea1b815250816003908161007691906103c1565b50600461008382826103c1565b50505061009633836100a860201b60201c565b6100a13382846100e5565b50506104a0565b6001600160a01b0382166100d65760405163ec442f0560e01b81525f60048201526024015b60405180910390fd5b6100e15f83836100f7565b5050565b6100f2838383600161021d565b505050565b6001600160a01b038316610121578060025f828254610116919061047b565b909155506101919050565b6001600160a01b0383165f90815260208190526040902054818110156101735760405163391434e360e21b81526001600160a01b038516600482015260248101829052604481018390526064016100cd565b6001600160a01b0384165f9081526020819052604090209082900390555b6001600160a01b0382166101ad576002805482900390556101cb565b6001600160a01b0382165f9081526020819052604090208054820190555b816001600160a01b0316836001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8360405161021091815260200190565b60405180910390a3505050565b6001600160a01b0384166102465760405163e602df0560e01b81525f60048201526024016100cd565b6001600160a01b03831661026f57604051634a1406b160e11b81525f60048201526024016100cd565b6001600160a01b038085165f90815260016020908152604080832093871683529290522082905580156102ea57826001600160a01b0316846001600160a01b03167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b925846040516102e191815260200190565b60405180910390a35b50505050565b5f5f60408385031215610301575f5ffd5b825160208401519092506001600160a01b038116811461031f575f5ffd5b809150509250929050565b634e487b7160e01b5f52604160045260245ffd5b600181811c9082168061035257607f821691505b60208210810361037057634e487b7160e01b5f52602260045260245ffd5b50919050565b601f8211156100f257805f5260205f20601f840160051c8101602085101561039b5750805b601f840160051c820191505b818110156103ba575f81556001016103a7565b5050505050565b81516001600160401b038111156103da576103da61032a565b6103ee816103e8845461033e565b84610376565b6020601f821160018114610420575f83156104095750848201515b5f19600385901b1c1916600184901b1784556103ba565b5f84815260208120601f198516915b8281101561044f578785015182556020948501946001909201910161042f565b508482101561046c57868401515f19600387901b60f8161c191681555b50505050600190811b01905550565b8082018082111561049a57634e487b7160e01b5f52601160045260245ffd5b92915050565b6106e4806104ad5f395ff3fe608060405234801561000f575f5ffd5b5060043610610090575f3560e01c8063313ce56711610063578063313ce567146100fa57806370a082311461010957806395d89b4114610131578063a9059cbb14610139578063dd62ed3e1461014c575f5ffd5b806306fdde0314610094578063095ea7b3146100b257806318160ddd146100d557806323b872dd146100e7575b5f5ffd5b61009c610184565b6040516100a99190610554565b60405180910390f35b6100c56100c03660046105a4565b610214565b60405190151581526020016100a9565b6002545b6040519081526020016100a9565b6100c56100f53660046105cc565b61022d565b604051601281526020016100a9565b6100d9610117366004610606565b6001600160a01b03165f9081526020819052604090205490565b61009c610250565b6100c56101473660046105a4565b61025f565b6100d961015a366004610626565b6001600160a01b039182165f90815260016020908152604080832093909416825291909152205490565b60606003805461019390610657565b80601f01602080910402602001604051908101604052809291908181526020018280546101bf90610657565b801561020a5780601f106101e15761010080835404028352916020019161020a565b820191905f5260205f20905b8154815290600101906020018083116101ed57829003601f168201915b5050505050905090565b5f3361022181858561026c565b60019150505b92915050565b5f3361023a85828561027e565b6102458585856102ff565b506001949350505050565b60606004805461019390610657565b5f336102218185856102ff565b610279838383600161035c565b505050565b6001600160a01b038381165f908152600160209081526040808320938616835292905220545f198110156102f957818110156102eb57604051637dc7a0d960e11b81526001600160a01b038416600482015260248101829052604481018390526064015b60405180910390fd5b6102f984848484035f61035c565b50505050565b6001600160a01b03831661032857604051634b637e8f60e11b81525f60048201526024016102e2565b6001600160a01b0382166103515760405163ec442f0560e01b81525f60048201526024016102e2565b61027983838361042e565b6001600160a01b0384166103855760405163e602df0560e01b81525f60048201526024016102e2565b6001600160a01b0383166103ae57604051634a1406b160e11b81525f60048201526024016102e2565b6001600160a01b038085165f90815260016020908152604080832093871683529290522082905580156102f957826001600160a01b0316846001600160a01b03167f8c5be1e5ebec7d5bd14f71427d1e84f3dd0314c0f7b2291e5b200ac8c7c3b9258460405161042091815260200190565b60405180910390a350505050565b6001600160a01b038316610458578060025f82825461044d919061068f565b909155506104c89050565b6001600160a01b0383165f90815260208190526040902054818110156104aa5760405163391434e360e21b81526001600160a01b038516600482015260248101829052604481018390526064016102e2565b6001600160a01b0384165f9081526020819052604090209082900390555b6001600160a01b0382166104e457600280548290039055610502565b6001600160a01b0382165f9081526020819052604090208054820190555b816001600160a01b0316836001600160a01b03167fddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef8360405161054791815260200190565b60405180910390a3505050565b602081525f82518060208401528060208501604085015e5f604082850101526040601f19601f83011684010191505092915050565b80356001600160a01b038116811461059f575f5ffd5b919050565b5f5f604083850312156105b5575f5ffd5b6105be83610589565b946020939093013593505050565b5f5f5f606084860312156105de575f5ffd5b6105e784610589565b92506105f560208501610589565b929592945050506040919091013590565b5f60208284031215610616575f5ffd5b61061f82610589565b9392505050565b5f5f60408385031215610637575f5ffd5b61064083610589565b915061064e60208401610589565b90509250929050565b600181811c9082168061066b57607f821691505b60208210810361068957634e487b7160e01b5f52602260045260245ffd5b50919050565b8082018082111561022757634e487b7160e01b5f52601160045260245ffdfea26469706673582212207cfaf374f2b49d6608fed1bc9f4e741950ec2c77f36bb3d89258c5218167ab4764736f6c634300081e0033";
+        let mut code = ethers_hex::decode(BYTECODE.trim_start_matches("0x"))?;
+        let initial_supply = ethers::types::U256::from_dec_str("1000000000000000000")?;
+        let spender = ethers::types::Address::from_str(&spender.to_string())?;
+        let encoded = abi::encode(&[Token::Uint(initial_supply.into()), Token::Address(spender)]);
 
         code.extend(&encoded);
         let provider = self.get_provider().await;
@@ -549,15 +549,14 @@ impl<'a> Module<'a> {
             .with(|w| async move { w.address() })
             .await
             .unwrap();
-        let nonce = provider
-            .get_transaction_count(from.into())
-            .await?;
+        let nonce = provider.get_transaction_count(from.into()).await?;
 
         // 3) Build a *deploy* call
         let mut call = RawCallBuilder::new_raw_deploy(
-            provider.clone(),     // your DynProvider<AnyNetwork>
-            code.into(),          // the bytecode
-        ).nonce(nonce);
+            provider.clone(), // your DynProvider<AnyNetwork>
+            code.into(),      // the bytecode
+        )
+        .nonce(nonce);
 
         println!("[deploy_basic_erc20] before gas. Nonce: {}", nonce);
         // 4) Estimate gas + buffer
@@ -577,7 +576,6 @@ impl<'a> Module<'a> {
         Ok(address.into())
     }
 
-
     pub async fn send_ibc_transaction(
         &self,
         _contract: H160,
@@ -587,9 +585,7 @@ impl<'a> Module<'a> {
             .keyring
             .with({
                 let msg = msg.clone();
-                move |wallet| -> _ {
-                    AssertUnwindSafe(self.submit_transaction( wallet, msg))
-                }
+                move |wallet| -> _ { AssertUnwindSafe(self.submit_transaction(wallet, msg)) }
             })
             .await;
 
@@ -690,50 +686,43 @@ impl<'a> Module<'a> {
                 return Err(TxSubmitError::BatchTooLarge);
             }
 
-            Err(Error::PendingTransactionError(
-                PendingTransactionError::FailedToRegister
-            )) =>
-                {
-                    println!("Idk whats happening");
-                    // let tx_req = call.clone().into_tx_request();
-                    return Err(TxSubmitError::PendingTransactionError(PendingTransactionError::FailedToRegister));
+            Err(Error::PendingTransactionError(PendingTransactionError::FailedToRegister)) => {
+                println!("Idk whats happening");
+                // let tx_req = call.clone().into_tx_request();
+                return Err(TxSubmitError::PendingTransactionError(
+                    PendingTransactionError::FailedToRegister,
+                ));
 
-                    // // 1) Build and sign the raw transaction
-                    // let tx_req = call.clone().into_tx_request();
-                    // let sig = wallet.sign_transaction(&tx_req).await
-                    //     .map_err(TxSubmitError::Error)?;
-                    // let raw_tx = sig.rlp();
+                // // 1) Build and sign the raw transaction
+                // let tx_req = call.clone().into_tx_request();
+                // let sig = wallet.sign_transaction(&tx_req).await
+                //     .map_err(TxSubmitError::Error)?;
+                // let raw_tx = sig.rlp();
 
-                    // let pending = signer
-                    //     .provider()
-                    //     .send_raw_transaction(raw_tx.into())
-                    //     .await
-                    //     .map_err(TxSubmitError::Error)?;
+                // let pending = signer
+                //     .provider()
+                //     .send_raw_transaction(raw_tx.into())
+                //     .await
+                //     .map_err(TxSubmitError::Error)?;
 
-                    // let tx_hash = pending.tx_hash();
+                // let tx_hash = pending.tx_hash();
 
-                    // // 3) Manual poll loop
-                    // loop {
-                    //     if let Some(receipt) = self.provider.get_transaction_receipt(tx_hash).await
-                    //         .map_err(TxSubmitError::Error)?
-                    //     {
-                    //         return Ok(tx_hash);
-                    //     }
-                    //     tokio::time::sleep(Duration::from_secs(1)).await;
-                    // }
-                }
-
-            
+                // // 3) Manual poll loop
+                // loop {
+                //     if let Some(receipt) = self.provider.get_transaction_receipt(tx_hash).await
+                //         .map_err(TxSubmitError::Error)?
+                //     {
+                //         return Ok(tx_hash);
+                //     }
+                //     tokio::time::sleep(Duration::from_secs(1)).await;
+                // }
+            }
 
             Err(err) => return Err(TxSubmitError::Error(err)),
         }
     }
 
-
-    pub async fn predict_stake_manager_address(
-        &self,
-        zkgm_addr: H160,
-    ) -> anyhow::Result<H160> {
+    pub async fn predict_stake_manager_address(&self, zkgm_addr: H160) -> anyhow::Result<H160> {
         // 1) build a typed alloy client
         let provider = self.get_provider().await;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
@@ -742,7 +731,7 @@ impl<'a> Module<'a> {
         let ret = zkgm.predictStakeManagerAddress().call().await?;
         Ok(ret.into())
     }
-    
+
     pub async fn setup_governance_token(
         &self,
         zkgm_addr: H160,
@@ -752,9 +741,9 @@ impl<'a> Module<'a> {
         // 1) build a typed alloy client
         let provider = self.get_provider().await;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
-        
+
         // let pending = zkgm
-        //     .registerGovernanceToken(channel_id, 
+        //     .registerGovernanceToken(channel_id,
         //         zkgm::GovernanceToken {
         //             unwrappedToken: b"muno".into(),
         //             metadataImage: metadata_image.into(),
@@ -773,19 +762,22 @@ impl<'a> Module<'a> {
         // Ok(tx_hash)
         // 3) call registerGovernanceToken(...)
         match zkgm
-            .registerGovernanceToken(channel_id, 
+            .registerGovernanceToken(
+                channel_id,
                 zkgm::GovernanceToken {
                     unwrappedToken: b"muno".into(),
                     metadataImage: metadata_image.into(),
-                },)
+                },
+            )
             .send()
-            .await {
+            .await
+        {
             Ok(pending) => {
                 let tx_hash = <H256>::from(*pending.tx_hash());
                 let _receipt = pending.get_receipt().await?;
                 println!("tx included: {:?}", tx_hash);
                 return Ok(tx_hash);
-            } 
+            }
             Err(e) => {
                 println!("Error registering governance token: {:?}", e);
                 return Err(TxSubmitError::Error(e));
@@ -799,8 +791,6 @@ impl<'a> Module<'a> {
         //     zkgm.getGovernanceToken(channel_id).call().await?;
         // Ok(ret.governanceToken)
     }
-
-
 }
 
 pub mod zkgm {
@@ -848,7 +838,7 @@ pub mod zkgm {
                 bytes32 salt,
                 Instruction calldata instruction
             ) public payable;
-            
+
             function registerGovernanceToken(
                 uint32 channelId,
                 GovernanceToken calldata govToken
@@ -859,7 +849,7 @@ pub mod zkgm {
             ) external view returns (address wrappedGovernanceToken, GovernanceToken governanceToken);
 
             function predictStakeManagerAddress() public view returns (ZkgmERC721) ;
-            
+
             function predictWrappedToken(
                 uint256 path,
                 uint32 channel,
@@ -926,7 +916,6 @@ pub mod zkgmerc20 {
         }
     }
 }
-
 
 pub mod multicall {
     alloy::sol! {

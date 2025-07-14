@@ -1,6 +1,6 @@
 use std::process::Command;
 
-use unionlabs::{primitives::Bytes};
+use unionlabs::primitives::Bytes;
 use voyager_sdk::{anyhow, primitives::ChainId, serde_json::json};
 
 pub fn create_client(

@@ -13,15 +13,13 @@ use cosmos_client::{
     BroadcastTxCommitError, TxClient,
 };
 use cosmos_sdk_event::CosmosSdkEvent;
-use ibc_union_spec::{
-    ChannelId, ClientId, ConnectionId, Timestamp,
+use ibc_union_spec::{ChannelId, ClientId, ConnectionId, Timestamp};
+use protos::{
+    cosmos::base::v1beta1::Coin,
+    cosmwasm::wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
 };
-use ucs03_zkgm::msg::{QueryMsg, PredictWrappedTokenResponse};
-use protos::{cosmos::base::v1beta1::Coin, cosmwasm::{
-    wasm::v1::{QuerySmartContractStateRequest, QuerySmartContractStateResponse},
-}};
 use serde::{Deserialize, Serialize};
-use voyager_sdk::serde_json;
+use ucs03_zkgm::msg::{PredictWrappedTokenResponse, QueryMsg};
 use unionlabs::{
     self,
     bech32::Bech32,
@@ -33,6 +31,7 @@ use voyager_sdk::{
     anyhow::{self, anyhow, bail, Context},
     jsonrpsee::tracing::info,
     primitives::ChainId,
+    serde_json,
     vm::BoxDynError,
 };
 
@@ -292,9 +291,9 @@ impl Module {
                 if let ModuleEvent::WasmPacketRecv { packet_hash, .. } = evt {
                     println!("Packet recv event came with hash: {packet_hash:?}");
                     // if packet_hash.as_ref() == packet_hash_param.as_ref() {
-                        return Some(helpers::PacketRecv {
-                            packet_hash: *packet_hash,
-                        });
+                    return Some(helpers::PacketRecv {
+                        packet_hash: *packet_hash,
+                    });
                     // }
                     // None
                 } else {
@@ -364,14 +363,12 @@ impl Module {
             .data;
 
         let resp: PredictWrappedTokenResponse =
-            serde_json::from_slice(&raw)
-                .context("deserializing PredictWrappedTokenResponse")?;
+            serde_json::from_slice(&raw).context("deserializing PredictWrappedTokenResponse")?;
 
         // let addr: H160 = H160::from_str(&resp.wrapped_token)
         //     .context("parsing wrapped_token into H160")?;
         Ok(resp.wrapped_token)
     }
-
 
     // TODO(aeryz): return the digest
     pub async fn send_transaction(
@@ -450,15 +447,11 @@ impl Module {
     }
 }
 
-
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case", tag = "type", content = "attributes")]
 pub enum ModuleEvent {
     #[serde(rename = "delegate")]
-    Delegate { 
-        validator: String, 
-        amount: String
-    },
+    Delegate { validator: String, amount: String },
 
     #[serde(rename = "wasm-packet_send")]
     WasmPacketSend {

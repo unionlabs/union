@@ -1,12 +1,14 @@
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{Duration, Instant};
+use std::{
+    collections::HashMap,
+    future::Future,
+    sync::Arc,
+    time::{Duration, Instant},
+};
+
+use jsonrpsee::core::async_trait;
 use tokio::sync::Mutex;
-use jsonrpsee::{
-    core::{async_trait}};
-use voyager_sdk::{primitives::ChainId, anyhow};
 use unionlabs::primitives::Bytes;
-use std::future::Future;
+use voyager_sdk::{anyhow, primitives::ChainId};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ChannelPair {
@@ -14,8 +16,8 @@ pub struct ChannelPair {
     pub dest: u32,
 }
 struct PoolInner {
-    available: HashMap<(ChainId,ChainId), Vec<ChannelPair>>,
-    borrowed:  HashMap<(ChainId,ChainId), Vec<ChannelPair>>,
+    available: HashMap<(ChainId, ChainId), Vec<ChannelPair>>,
+    borrowed: HashMap<(ChainId, ChainId), Vec<ChannelPair>>,
 }
 
 pub struct ChannelPool {
@@ -47,13 +49,12 @@ pub trait ChannelConfirmer {
     ) -> anyhow::Result<ChannelConfirm>;
 }
 
-
 impl ChannelPool {
     pub fn new() -> Arc<Self> {
         Arc::new(ChannelPool {
             inner: Mutex::new(PoolInner {
                 available: HashMap::new(),
-                borrowed:  HashMap::new(),
+                borrowed: HashMap::new(),
             }),
         })
     }
@@ -91,61 +92,60 @@ impl ChannelPool {
             )?;
         }
         loop {
-            if Instant::now() >= deadline || success_count == count{
+            if Instant::now() >= deadline || success_count == count {
                 break;
             }
 
-            match confirmer(Duration::from_secs(360))
-                .await{
-                    Ok(confirm) => {
-                        let pair = ChannelPair {
-                            src: confirm.counterparty_channel_id,
-                            dest: confirm.channel_id,
-                        };
-                        // grab lock once for check+insert
-                        let mut map = self.inner.lock().await;
-                        let key = (src_chain.clone(), dst_chain.clone());
-                        let rev_key = (dst_chain.clone(), src_chain.clone());
-                        
+            match confirmer(Duration::from_secs(360)).await {
+                Ok(confirm) => {
+                    let pair = ChannelPair {
+                        src: confirm.counterparty_channel_id,
+                        dest: confirm.channel_id,
+                    };
+                    // grab lock once for check+insert
+                    let mut map = self.inner.lock().await;
+                    let key = (src_chain.clone(), dst_chain.clone());
+                    let rev_key = (dst_chain.clone(), src_chain.clone());
 
-                        let dup_forward = map
-                            .available
-                            .get(&key)
-                            .map_or(false, |v| v.contains(&pair));
-                        let dup_backward = map
-                            .available
-                            .get(&rev_key)
-                            .map_or(false, |v| {
-                                v.contains(&ChannelPair { src: pair.dest, dest: pair.src })
-                            });
-                        if dup_forward || dup_backward {
-                            // already stored → retry or break
-                            println!("⚠️  duplicate channel pair detected: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
+                    let dup_forward = map.available.get(&key).map_or(false, |v| v.contains(&pair));
+                    let dup_backward = map.available.get(&rev_key).map_or(false, |v| {
+                        v.contains(&ChannelPair {
+                            src: pair.dest,
+                            dest: pair.src,
+                        })
+                    });
+                    if dup_forward || dup_backward {
+                        // already stored → retry or break
+                        println!("⚠️  duplicate channel pair detected: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
                                 src_chain, pair.src, dst_chain, pair.dest);
-                            drop(map);
-                            continue;
-                        }
-                        // Store in forward direction
-                        map.available.entry((src_chain.clone(), dst_chain.clone()))
-                            .or_default()
-                            .push(pair);
-                        // Store in reverse direction
-                        map.available.entry((dst_chain.clone(), src_chain.clone()))
-                            .or_default()
-                            .push(ChannelPair { src: pair.dest, dest: pair.src });
+                        drop(map);
+                        continue;
+                    }
+                    // Store in forward direction
+                    map.available
+                        .entry((src_chain.clone(), dst_chain.clone()))
+                        .or_default()
+                        .push(pair);
+                    // Store in reverse direction
+                    map.available
+                        .entry((dst_chain.clone(), src_chain.clone()))
+                        .or_default()
+                        .push(ChannelPair {
+                            src: pair.dest,
+                            dest: pair.src,
+                        });
 
-                        success_count += 1;
+                    success_count += 1;
 
-                        println!(
+                    println!(
                             "✅  channel-open-confirm: src_chain={}, src_channel={}, dst_chain={}, dst_channel={}",
                             src_chain, pair.src, dst_chain, pair.dest
                         );
-
-                    }
-                    Err(err) => {
-                        println!("⚠️  error waiting for channel-open-confirm: {}", err);
-                    }
                 }
+                Err(err) => {
+                    println!("⚠️  error waiting for channel-open-confirm: {}", err);
+                }
+            }
         }
 
         Ok(success_count)
@@ -161,10 +161,14 @@ impl ChannelPool {
         let pair = inner.available.get_mut(&key).and_then(|v| v.pop());
         if let Some(p) = pair {
             inner.borrowed.entry(key.clone()).or_default().push(p);
-            inner.borrowed
+            inner
+                .borrowed
                 .entry((key.1.clone(), key.0.clone()))
                 .or_default()
-                .push(ChannelPair { src: p.dest, dest: p.src });
+                .push(ChannelPair {
+                    src: p.dest,
+                    dest: p.src,
+                });
         }
         pair
     }
@@ -192,7 +196,10 @@ impl ChannelPool {
                 vec.swap_remove(i);
             }
         }
-        let rev = ChannelPair { src: pair.dest, dest: pair.src };
+        let rev = ChannelPair {
+            src: pair.dest,
+            dest: pair.src,
+        };
         let rev_key = (key.1.clone(), key.0.clone());
         if let Some(vec) = inner.borrowed.get_mut(&rev_key) {
             if let Some(i) = vec.iter().position(|x| *x == rev) {
