@@ -2,7 +2,7 @@ use core::f64;
 use std::{
     borrow::Borrow,
     cmp::Eq,
-    collections::HashMap,
+    collections::{BTreeMap, HashMap},
     fmt::Write,
     future::Future,
     hash::Hash,
@@ -70,6 +70,8 @@ pub struct PgQueueConfig {
     pub retryable_error_expo_backoff_max: f64,
     #[serde(default = "default_retryable_error_expo_backoff_multiplier")]
     pub retryable_error_expo_backoff_multiplier: f64,
+    #[serde(default)]
+    pub vacuum_on_boot: bool,
 }
 
 pub const fn default_max_connections() -> u32 {
@@ -205,6 +207,115 @@ impl<T: QueueMessage> PgQueue<T> {
         .await?
         .transpose()
     }
+
+    pub async fn stats(&self) -> Result<Stats, sqlx::Error> {
+        sqlx::query(
+            r#"
+            SELECT
+              (
+                SELECT
+                  count(*) as total
+                FROM
+                  queue
+              ) TOTAL,
+              (
+                SELECT
+                  count(*) as ready
+                FROM
+                  queue
+                WHERE
+                  handle_at < now()
+              ) ready,
+              (
+                WITH t AS (
+                  SELECT
+                    tag,
+                    count(*)
+                  FROM
+                    optimize
+                  GROUP BY
+                    tag
+                )
+                SELECT
+                  coalesce(
+                    json_object_agg(tag, count),
+                    '{}'::json
+                  )
+                FROM
+                  t
+              ) optimize
+            "#,
+        )
+        .try_map(|row| Stats::from_row(&row))
+        .fetch_one(&self.client)
+        .await
+    }
+
+    pub async fn truncate(&self, tables: Tables) -> Result<(), sqlx::Error> {
+        if tables.queue {
+            sqlx::query(r"TRUNCATE queue").execute(&self.client).await?;
+        }
+
+        if tables.optimize {
+            sqlx::query(r"TRUNCATE optimize")
+                .execute(&self.client)
+                .await?;
+        }
+
+        if tables.done {
+            sqlx::query(r"TRUNCATE done").execute(&self.client).await?;
+        }
+
+        if tables.failed {
+            sqlx::query(r"TRUNCATE failed")
+                .execute(&self.client)
+                .await?;
+        }
+
+        Ok(())
+    }
+
+    pub async fn vacuum(&self, tables: Tables) -> Result<(), sqlx::Error> {
+        if tables.queue {
+            sqlx::query(r"VACUUM FULL queue")
+                .execute(&self.client)
+                .await?;
+        }
+
+        if tables.optimize {
+            sqlx::query(r"VACUUM FULL optimize")
+                .execute(&self.client)
+                .await?;
+        }
+
+        if tables.done {
+            sqlx::query(r"VACUUM FULL done")
+                .execute(&self.client)
+                .await?;
+        }
+
+        if tables.failed {
+            sqlx::query(r"VACUUM FULL failed")
+                .execute(&self.client)
+                .await?;
+        }
+
+        Ok(())
+    }
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow)]
+pub struct Stats {
+    pub total: i64,
+    pub ready: i64,
+    pub optimize: Json<BTreeMap<String, u64>>,
+}
+
+pub struct Tables {
+    pub queue: bool,
+    pub optimize: bool,
+    pub done: bool,
+    pub failed: bool,
 }
 
 impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
@@ -228,6 +339,7 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         let retryable_error_expo_backoff_multiplier =
             config.retryable_error_expo_backoff_multiplier;
         let retryable_error_expo_backoff_max = config.retryable_error_expo_backoff_max;
+        let vacuum_on_boot = config.vacuum_on_boot;
 
         let pool = config.into_pg_pool().await?;
 
@@ -289,30 +401,26 @@ impl<T: QueueMessage> voyager_vm::Queue<T> for PgQueue<T> {
         .instrument(info_span!("init"))
         .await?;
 
-        pool.execute("VACUUM FULL queue")
-            .instrument(info_span!("vacuum"))
-            .await?;
-
-        pool.execute("VACUUM FULL optimize")
-            .instrument(info_span!("vacuum"))
-            .await?;
-
-        pool.execute("VACUUM FULL done")
-            .instrument(info_span!("vacuum"))
-            .await?;
-
-        pool.execute("VACUUM FULL failed")
-            .instrument(info_span!("vacuum"))
-            .await?;
-
-        Ok(Self {
+        let this = Self {
             client: pool,
             optimize_batch_limit,
             retryable_error_expo_backoff_max,
             retryable_error_expo_backoff_multiplier,
             metrics: Metrics::new(),
             __marker: PhantomData,
-        })
+        };
+
+        if vacuum_on_boot {
+            this.vacuum(Tables {
+                queue: true,
+                optimize: true,
+                done: true,
+                failed: true,
+            })
+            .await?;
+        }
+
+        Ok(this)
     }
 
     async fn enqueue<'a, Filter: InterestFilter<T>>(

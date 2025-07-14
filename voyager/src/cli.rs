@@ -162,6 +162,31 @@ pub enum QueueCmd {
         rest_url: Option<String>,
     },
 
+    #[command(alias = "s")]
+    Stats,
+
+    Truncate {
+        #[arg(long)]
+        queue: bool,
+        #[arg(long)]
+        optimize: bool,
+        #[arg(long)]
+        done: bool,
+        #[arg(long)]
+        failed: bool,
+    },
+
+    Vacuum {
+        #[arg(long)]
+        queue: bool,
+        #[arg(long)]
+        optimize: bool,
+        #[arg(long)]
+        done: bool,
+        #[arg(long)]
+        failed: bool,
+    },
+
     // History {
     //     id: PgId,
     //     #[arg(long, default_value_t = result_unwrap!(Pg32::new(10)))]

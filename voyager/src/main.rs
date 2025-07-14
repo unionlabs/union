@@ -19,7 +19,7 @@ use ibc_classic_spec::IbcClassic;
 use ibc_union_spec::IbcUnion;
 use pg_queue::{
     default_max_connections, default_min_connections, default_retryable_error_expo_backoff_max,
-    default_retryable_error_expo_backoff_multiplier, PgQueueConfig,
+    default_retryable_error_expo_backoff_multiplier, PgQueueConfig, Tables,
 };
 use reqwest::Url;
 use schemars::gen::{SchemaGenerator, SchemaSettings};
@@ -169,6 +169,7 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                         ),
                         retryable_error_expo_backoff_multiplier:
                             default_retryable_error_expo_backoff_multiplier(),
+                        vacuum_on_boot: false,
                     }),
                     optimizer_delay_milliseconds: 100,
                     ipc_client_request_timeout: Duration::new(60, 0),
@@ -298,6 +299,43 @@ async fn do_main(app: cli::App) -> anyhow::Result<()> {
                     let rest_url = get_rest_url(rest_url);
 
                     send_enqueue(&rest_url, op).await?;
+                }
+                QueueCmd::Stats => {
+                    let stats = db()?.await?.stats().await?;
+
+                    print_json(&stats);
+                }
+                QueueCmd::Truncate {
+                    queue,
+                    optimize,
+                    done,
+                    failed,
+                } => {
+                    db()?
+                        .await?
+                        .truncate(Tables {
+                            queue,
+                            optimize,
+                            done,
+                            failed,
+                        })
+                        .await?;
+                }
+                QueueCmd::Vacuum {
+                    queue,
+                    optimize,
+                    done,
+                    failed,
+                } => {
+                    db()?
+                        .await?
+                        .vacuum(Tables {
+                            queue,
+                            optimize,
+                            done,
+                            failed,
+                        })
+                        .await?;
                 }
                 // NOTE: Temporarily disabled until i figure out a better way to implement this with the new queue design
                 // cli::QueueCmd::History { id, max_depth } => {
