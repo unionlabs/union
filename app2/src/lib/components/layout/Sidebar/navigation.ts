@@ -85,10 +85,10 @@ export const navigation: Array<NavSection> = [
           //   path: "/explorer/channels",
           //   title: "Channels"
           // },
-          // {
-          //   path: "/explorer/clients",
-          //   title: "Clients"
-          // }
+          {
+            path: "/explorer/clients",
+            title: "Clients"
+          }
         ],
       },
     ],
