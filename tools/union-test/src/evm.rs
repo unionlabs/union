@@ -33,7 +33,7 @@ use voyager_sdk::{
     primitives::ChainId,
 };
 
-use crate::{evm::zkgm::GovernanceToken, helpers};
+use crate::{helpers};
 use ethers::utils::hex as ethers_hex;
 
 #[derive(Debug)]
@@ -66,6 +66,7 @@ pub struct Config {
     pub multicall_address: H160,
 
     pub rpc_url: String,
+    pub ws_url: String,
 
     pub keyring: KeyringConfig,
 
@@ -483,7 +484,7 @@ impl<'a> Module<'a> {
         let tx_hash = <H256>::from(*pending.tx_hash()); 
         println!("pending: {:?}", pending);
 
-        // let receipt = pending.get_receipt().await?;
+        let _receipt = pending.get_receipt().await?;
         // println!("PENDING receipt: {:?}", receipt);
         println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
         Ok(tx_hash)
@@ -747,27 +748,56 @@ impl<'a> Module<'a> {
         zkgm_addr: H160,
         channel_id: u32,
         metadata_image: FixedBytes<32>,
-    ) -> anyhow::Result<GovernanceToken> {
+    ) -> Result<H256, TxSubmitError> {
         // 1) build a typed alloy client
         let provider = self.get_provider().await;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
         
+        // let pending = zkgm
+        //     .registerGovernanceToken(channel_id, 
+        //         zkgm::GovernanceToken {
+        //             unwrappedToken: b"muno".into(),
+        //             metadataImage: metadata_image.into(),
+        //         },)
+        //     .send()
+        //     .await?;
+
+        // let tx_hash = <H256>::from(*pending.tx_hash());
+        // let provider = self.get_provider().await;
+        // let receipt = loop {
+        //     if let Some(r) = provider.get_transaction_receipt(tx_hash.into).await? {
+        //         break r;
+        //     }
+        //     tokio::time::sleep(Duration::from_secs(1)).await;
+        // };
+        // Ok(tx_hash)
         // 3) call registerGovernanceToken(...)
-        let pending = zkgm
+        match zkgm
             .registerGovernanceToken(channel_id, 
                 zkgm::GovernanceToken {
                     unwrappedToken: b"muno".into(),
                     metadataImage: metadata_image.into(),
                 },)
             .send()
-            .await?;
+            .await {
+            Ok(pending) => {
+                let tx_hash = <H256>::from(*pending.tx_hash());
+                let _receipt = pending.get_receipt().await?;
+                println!("tx included: {:?}", tx_hash);
+                return Ok(tx_hash);
+            } 
+            Err(e) => {
+                println!("Error registering governance token: {:?}", e);
+                return Err(TxSubmitError::Error(e));
+            }
+        }
         // wait for inclusion…
-        let _receipt = pending.get_receipt().await?;
+        // let _receipt = pending.get_receipt().await?;
 
-        // 4) now query back the registered token address
-        let ret=
-            zkgm.getGovernanceToken(channel_id).call().await?;
-        Ok(ret.governanceToken)
+        // // 4) now query back the registered token address
+        // let ret=
+        //     zkgm.getGovernanceToken(channel_id).call().await?;
+        // Ok(ret.governanceToken)
     }
 
 

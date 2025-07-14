@@ -128,6 +128,7 @@ async fn main() -> anyhow::Result<()> {
         ibc_handler_address: hex!("ed2af2aD7FE0D92011b26A2e5D1B4dC7D12A47C5").into(),
         multicall_address: hex!("84c4c2ee43ccfd523af9f78740256e0f60d38068").into(),
         rpc_url: "http://localhost:8545".into(),
+        ws_url  : "ws://localhost:8546".into(),
         keyring: KeyringConfig {
             name: "alice".into(),
             keys: vec![KeyringConfigEntry::Raw {
