@@ -252,7 +252,7 @@ const tooltipClasses = $derived(
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->
 <div
-  class="inline-block cursor-pointer"
+  class="cursor-pointer"
   data-tooltip-trigger
   onmouseenter={onTriggerEnter}
   onmouseleave={onTriggerLeave}

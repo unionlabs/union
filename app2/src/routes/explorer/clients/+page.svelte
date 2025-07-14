@@ -1,6 +1,7 @@
 <script lang="ts">
 import ChainComponent from "$lib/components/model/ChainComponent.svelte"
 import ErrorComponent from "$lib/components/model/ErrorComponent.svelte"
+import Tooltip from "$lib/components/ui/Tooltip.svelte"
 import { clientsQuery } from "$lib/queries/clients.svelte.ts"
 import { runFork, runFork$ } from "$lib/runtime"
 import { chains } from "$lib/stores/chains.svelte"
@@ -53,59 +54,13 @@ function hasActiveStatus(client: any) {
     : false
 }
 
-// Generate tooltip content for client status
-function getTooltipContent(
-  fromChainId: string,
-  toChainId: string,
-  fromChainName: string,
-  toChainName: string,
-) {
+// Generate tooltip data for client status
+function getTooltipData(fromChainId: string, toChainId: string) {
   const client = getClientStatus(fromChainId, toChainId)
-
-  if (!client) {
-    return `${fromChainName} → ${toChainName}: No client found`
+  return {
+    client,
+    hasClient: !!client,
   }
-
-  const statusInfo = []
-
-  if (client.client_id) {
-    statusInfo.push(`Client ID: ${client.client_id}`)
-  }
-
-  if (client.status && Option.isSome(client.status)) {
-    const status = client.status.value
-
-    if (Option.isSome(status.height)) {
-      statusInfo.push(`Height: ${status.height.value}`)
-    }
-
-    if (Option.isSome(status.counterparty_height)) {
-      statusInfo.push(`Counterparty Height: ${status.counterparty_height.value}`)
-    }
-
-    if (Option.isSome(status.timestamp)) {
-      statusInfo.push(`Timestamp: ${new Date(status.timestamp.value).toLocaleString()}`)
-    }
-  }
-
-  if (client.chain && Option.isSome(client.chain) && Option.isSome(client.chain.value.status)) {
-    const chainStatus = client.chain.value.status.value
-    if (Option.isSome(chainStatus.status)) {
-      statusInfo.push(`Chain Status: ${chainStatus.status.value}`)
-    }
-  }
-
-  if (
-    client.counterparty_chain && Option.isSome(client.counterparty_chain)
-    && Option.isSome(client.counterparty_chain.value.status)
-  ) {
-    const counterpartyStatus = client.counterparty_chain.value.status.value
-    if (Option.isSome(counterpartyStatus.status)) {
-      statusInfo.push(`Counterparty Status: ${counterpartyStatus.status.value}`)
-    }
-  }
-
-  return `${fromChainName} → ${toChainName}:\n${statusInfo.join("\n")}`
 }
 
 // Generate diagonal delay for animation (from top-right and bottom-left corners toward center)
@@ -192,28 +147,96 @@ function getColumnLabelDelay(toIndex: number): number {
               {#each sortedChains as toChain, toIndex}
                 <td class="border-zinc-800 p-0 w-8 h-8">
                   {#if fromChain.universal_chain_id === toChain.universal_chain_id}
-                    <div
-                      class="w-full h-full bg-zinc-900 animate-scale-in"
-                      style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
-                    >
-                    </div>
                   {:else}
                     {@const client = getClientStatus(
                 fromChain.universal_chain_id,
                 toChain.universal_chain_id,
               )}
                     {@const hasStatus = client && hasActiveStatus(client)}
-                    <div
-                      class="w-full h-full border-t-1 border-l-1 border-zinc-900 animate-scale-in {hasStatus ? 'bg-green-500' : 'bg-red-500'}"
-                      style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
-                      title={getTooltipContent(
-                        fromChain.universal_chain_id,
-                        toChain.universal_chain_id,
-                        fromChain.display_name,
-                        toChain.display_name,
+                    {@const tooltipData = getTooltipData(
+                fromChain.universal_chain_id,
+                toChain.universal_chain_id,
+              )}
+
+                    <Tooltip>
+                      {#snippet trigger()}
+                        <div
+                          class="w-8 h-8 animate-scale-in border-t border-l border-zinc-800 {hasStatus ? 'bg-green-500' : 'bg-red-500'}"
+                          style="animation-delay: {getDiagonalDelay(fromIndex, toIndex)}ms;"
+                        >
+                        </div>
+                      {/snippet}
+
+                      {#snippet content()}
+                        <div class="p-3 space-y-2">
+                          <div class="font-semibold text-sm">
+                            {fromChain.display_name} → {toChain.display_name}
+                          </div>
+
+                          {#if !tooltipData.hasClient}
+                            <div class="text-zinc-400 text-xs">No client found</div>
+                          {:else if tooltipData.client}
+                            {@const clientData = tooltipData.client}
+
+                            <div class="space-y-1 text-xs">
+                              <div>
+                                <span class="text-zinc-400">Client ID:</span> {clientData.client_id}
+                              </div>
+
+                              {#if clientData.status && Option.isSome(clientData.status)}
+                                {@const status = clientData.status.value}
+
+                                {#if Option.isSome(status.height)}
+                                  <div>
+                                    <span class="text-zinc-400">Height:</span> {status.height.value}
+                                  </div>
+                                {/if}
+
+                                {#if Option.isSome(status.counterparty_height)}
+                                  <div>
+                                    <span class="text-zinc-400">Counterparty Height:</span>
+                                    {status.counterparty_height.value}
+                                  </div>
+                                {/if}
+
+                                {#if Option.isSome(status.timestamp)}
+                                  <div>
+                                    <span class="text-zinc-400">Updated:</span>
+                                    {new Date(status.timestamp.value).toLocaleString()}
+                                  </div>
+                                {/if}
+                              {/if}
+
+                              {#if clientData.chain && Option.isSome(clientData.chain)
+                      && Option.isSome(clientData.chain.value.status)}
+                                {@const chainStatus = clientData.chain.value.status.value}
+                                {#if Option.isSome(chainStatus.status)}
+                                  <div>
+                                    <span class="text-zinc-400">Chain Status:</span>
+                                    {chainStatus.status.value}
+                                  </div>
+                                {/if}
+                              {/if}
+
+                              {#if clientData.counterparty_chain
+                      && Option.isSome(clientData.counterparty_chain)
+                      && Option.isSome(
+                        clientData.counterparty_chain.value.status,
                       )}
-                    >
-                    </div>
+                                {@const counterpartyStatus =
+                      clientData.counterparty_chain.value.status.value}
+                                {#if Option.isSome(counterpartyStatus.status)}
+                                  <div>
+                                    <span class="text-zinc-400">Counterparty Status:</span>
+                                    {counterpartyStatus.status.value}
+                                  </div>
+                                {/if}
+                              {/if}
+                            </div>
+                          {/if}
+                        </div>
+                      {/snippet}
+                    </Tooltip>
                   {/if}
                 </td>
               {/each}
