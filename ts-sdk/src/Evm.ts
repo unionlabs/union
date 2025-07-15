@@ -22,6 +22,7 @@ import {
 } from "viem"
 import type { Hash, WaitForTransactionReceiptTimeoutErrorType } from "viem"
 import type { Hex } from "viem"
+import { publicActionsL2 } from "viem/op-stack"
 import { GAS_DENOMS } from "./constants/gas-denoms.js"
 import * as internal from "./internal/evm.js"
 import { UniversalChainId } from "./schema/chain.js"
@@ -600,3 +601,29 @@ export const sendInstruction = (instruction: Ucs03.Instruction) =>
       ],
     })
   })
+
+/**
+ * @category utils
+ * @since 2.0.0
+ */
+export const estimateL1Fee = pipe(
+  PublicClient,
+  Effect.andThen(({ client }) =>
+    Effect.tryPromise({
+      try: () =>
+        client
+          .extend(publicActionsL2())
+          .estimateL1Fee({
+            account: "0x0000000000000000000000000000000000000000",
+            chain: undefined,
+          }),
+      catch: cause =>
+        new GasPriceError({
+          module: "Evm",
+          method: "additiveFee",
+          description: `Could not calculate L1 fee for ${id}`,
+          cause,
+        }),
+    })
+  ),
+)
