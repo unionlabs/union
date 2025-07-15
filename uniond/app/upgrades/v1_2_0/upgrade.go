@@ -3,7 +3,6 @@ package v1_2_0
 import (
 	"context"
 	"fmt"
-	gomath "math"
 	"math/big"
 
 	"cosmossdk.io/math"
@@ -24,13 +23,13 @@ import (
 const U_BASE_DENOM = "au"
 
 // One U in `au`
-const ONE_U = 10e18.(int64)
+const ONE_U = 1_000_000_000_000_000_000
 
 // Total supply of U (note, not in `au`)
 const U_TOTAL_SUPPLY = 10_000_000_000
 
 // Union foundation multisig address
-const UNION_FOUNDATION_MULTI_SIG = "union1cpz5fhesgjcv2q0640uxtyur5ju65av6r8fem0"
+const UNION_FOUNDATION_MULTI_SIG = "union1cpz5fhesgjcv2q0640uxtyur5ju65av6r8fem0" // NOTE: Must add branch logic for mainnet before running migration
 
 func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
