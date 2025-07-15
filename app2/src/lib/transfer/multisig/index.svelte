@@ -167,7 +167,7 @@ beforeNavigate(newTransfer)
 
 <Card
   divided
-  class="max-w-sm w-full mt-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden transition-transform duration-500"
+  class="max-w-sm w-full md:mt-24 relative self-center flex flex-col justify-between min-h-[450px] overflow-hidden transition-transform duration-500"
 >
   <div class="w-full">
     <StepProgressBar

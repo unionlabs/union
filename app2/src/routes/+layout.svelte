@@ -156,10 +156,10 @@ $effect(() => {
     hidden={fullPageSidebar}
   >
     <div class="sticky top-0 z-20">
-      <Header showNavigation={isMobile} />
+      <Header />
     </div>
 
-    <div class="absolute top-16 left-0 right-0 bottom-0 flex-1 z-0 overflow-scroll">
+    <div class="absolute top-28 md:top-16 left-0 right-0 bottom-0 flex-1 z-0 overflow-scroll">
       {@render children()}
     </div>
   </main>
