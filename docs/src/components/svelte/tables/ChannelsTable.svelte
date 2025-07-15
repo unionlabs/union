@@ -32,7 +32,6 @@ const curlCommand = graphqlQueryToCurl({
  */
 const rowsPerPage = 10
 let pageNumber = $state(0)
-let toggleRowIcon = $state("jsonSvg")
 const promise = $state(fetchChannels())
 
 let search = $state("")
@@ -40,9 +39,9 @@ const debouncedSearch = new Debounced(() => search.trim(), 1_000)
 
 function filterRows(rows: Array<Array<string>>, inputSearch: string) {
   try {
-    return rows.filter(row =>
-      row.some(cell => cell?.toLowerCase()?.includes(inputSearch.toLowerCase()))
-    )
+    return rows.filter(row => {
+      return row.some(cell => cell?.toString()?.toLowerCase()?.includes(inputSearch.toLowerCase()))
+    })
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : error
     console.error(errorMessage)
@@ -153,7 +152,7 @@ async function attachContent(event: MouseEvent, rowIndex: number, version: unkno
         placeholder="Search"
         bind:value={search}
         class={cn(
-          "py-1 px-2 rounded-sm focus:outline-accent-200 focus-visible:ring-0 w-full my-auto outline outline-1 outline-neutral-500/70",
+          "py-1 px-2 rounded-sm focus:outline-accent-200 focus-visible:ring-0 w-full my-auto outline outline-neutral-500/70 bg-background text-foreground",
         )}
       />
     </div>
