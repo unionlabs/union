@@ -3,6 +3,7 @@ package v1_2_0
 import (
 	"context"
 	"fmt"
+	gomath "math"
 	"math/big"
 
 	"cosmossdk.io/math"
@@ -23,10 +24,10 @@ import (
 const U_BASE_DENOM = "au"
 
 // One U in `au`
-const ONE_U = 1e18
+const ONE_U = 10e18.(int64)
 
 // Total supply of U (note, not in `au`)
-const U_TOTAL_SUPPLY = 10000000000
+const U_TOTAL_SUPPLY = 10_000_000_000
 
 // Union foundation multisig address
 const UNION_FOUNDATION_MULTI_SIG = "union1cpz5fhesgjcv2q0640uxtyur5ju65av6r8fem0"
