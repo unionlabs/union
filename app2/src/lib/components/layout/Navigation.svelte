@@ -12,10 +12,10 @@ interface Props {
   variant?: "animated" | "static"
 }
 
-const { 
-  onItemClick, 
-  class: className = "", 
-  variant = "static"
+const {
+  onItemClick,
+  class: className = "",
+  variant = "static",
 }: Props = $props()
 
 let highlightElement: HTMLElement
@@ -43,7 +43,7 @@ const updateHighlightPosition = () => {
     if (bestMatch) {
       const rect = (bestMatch as HTMLElement).getBoundingClientRect()
       const containerRect = navigationContainer.getBoundingClientRect()
-      
+
       if (containerRect.width > 0 && containerRect.height > 0) {
         highlightElement.style.top = `${rect.top - containerRect.top}px`
         highlightElement.style.left = `${rect.left - containerRect.left}px`
@@ -118,20 +118,25 @@ const isCurrentPath = (path: string) => {
 }
 
 const hasActiveSubroute = (item: any) => {
-  if (!item.subroutes) return false
-  
-  return item.subroutes.some((subroute: any) => 
-    $page.url.pathname === subroute.path ||
-    (subroute.path !== "/" && $page.url.pathname.startsWith(`${subroute.path}/`))
+  if (!item.subroutes) {
+    return false
+  }
+
+  return item.subroutes.some((subroute: any) =>
+    $page.url.pathname === subroute.path
+    || (subroute.path !== "/" && $page.url.pathname.startsWith(`${subroute.path}/`))
   )
 }
 
 let isMoreUnionFirst = $derived(
-  navigation.findIndex(section => section.title === "More Union") === 0
+  navigation.findIndex(section => section.title === "More Union") === 0,
 )
 </script>
 
-<div class={cn("flex flex-col relative", className)} bind:this={navigationContainer}>
+<div
+  class={cn("flex flex-col relative", className)}
+  bind:this={navigationContainer}
+>
   {#if variant === "animated"}
     <div
       bind:this={highlightElement}
@@ -139,7 +144,7 @@ let isMoreUnionFirst = $derived(
     >
     </div>
   {/if}
-  
+
   {#each navigation as section, index}
     {#if section.title !== "Developer" || uiStore.showDeveloperPages}
       {#if section.title === "More Union"}
@@ -239,4 +244,4 @@ let isMoreUnionFirst = $derived(
       {/if}
     {/if}
   {/each}
-</div> 
+</div>
