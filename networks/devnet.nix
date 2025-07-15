@@ -433,24 +433,20 @@
           devnet-osmosis-home = mkCi false devnet-osmosis.devnet-home;
 
           # FIXME: This shouldn't be defined in this file
-          devnet-eth-config = pkgs.linkFarm "devnet-eth-config" [
+          devnet-eth-config = pkgs.linkFarm "devnet-eth-config" ([
             {
               name = "genesis.json";
               path = "${./genesis/devnet-eth/genesis.json}";
             }
             {
-              name = "dev-key0.prv";
-              path = "${./genesis/devnet-eth/dev-key0.prv}";
-            }
-            {
-              name = "dev-key1.prv";
-              path = "${./genesis/devnet-eth/dev-key1.prv}";
-            }
-            {
               name = "dev-jwt.prv";
               path = "${./genesis/devnet-eth/dev-jwt.prv}";
             }
-          ];
+            ] ++ 
+            builtins.map (i: {
+              name = "dev-key${toString i}.prv";
+              path = "${./genesis/devnet-eth/dev-key${toString i}.prv}";
+            }) (lib.lists.range 0 7));
         }
         // (mkArionBuild "full-dev-setup" (system == "x86_64-linux"))
         // (mkArionBuild "voyager-queue" false)
