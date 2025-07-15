@@ -23,7 +23,7 @@ import (
 const U_BASE_DENOM = "au"
 
 // One U in `au`
-const ONE_U = 1000000000000000000
+const ONE_U = 1e18
 
 // Total supply of U (note, not in `au`)
 const U_TOTAL_SUPPLY = 10000000000000
