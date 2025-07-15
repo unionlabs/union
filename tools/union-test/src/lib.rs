@@ -30,6 +30,7 @@ pub trait ChainEndpoint: Send + Sync {
     type Contract: Clone;
     type PredictWrappedTokenResponse;
     type PredictWrappedTokenFromMetadataImageV2Response;
+    type ProviderType;
 
     fn chain_id(&self) -> &ChainId;
 
@@ -45,6 +46,7 @@ pub trait ChainEndpoint: Send + Sync {
         contract: Self::Contract,
         channel: ChannelId,
         token: Vec<u8>,
+        provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse>;
 
     async fn predict_wrapped_token_from_metadata_image_v2(
@@ -53,6 +55,7 @@ pub trait ChainEndpoint: Send + Sync {
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
+        provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>;
 
     async fn predict_wrapped_token_v2(
@@ -61,6 +64,7 @@ pub trait ChainEndpoint: Send + Sync {
         channel: ChannelId,
         token: Vec<u8>,
         metadata: FungibleAssetMetadata,
+        provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>;
 
     async fn wait_for_create_client(
@@ -122,6 +126,7 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
     type Contract = H160;
     type PredictWrappedTokenResponse = H160;
     type PredictWrappedTokenFromMetadataImageV2Response = H160;
+    type ProviderType = DynProvider<AnyNetwork>;
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -155,8 +160,9 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         contract: Self::Contract,
         channel: ChannelId,
         token: Vec<u8>,
+        provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse> {
-        self.predict_wrapped_token(contract, channel, token).await
+        self.predict_wrapped_token(contract, channel, token, provider).await
     }
 
     async fn predict_wrapped_token_from_metadata_image_v2(
@@ -165,8 +171,9 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
+        provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
-        self.predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image)
+        self.predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image, provider)
             .await
     }
 
@@ -176,8 +183,9 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         channel: ChannelId,
         token: Vec<u8>,
         metadata: FungibleAssetMetadata,
+        provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
-        self.predict_wrapped_token_v2(contract, channel, token, metadata)
+        self.predict_wrapped_token_v2(contract, channel, token, metadata, provider)
             .await
     }
 
@@ -257,6 +265,7 @@ impl ChainEndpoint for cosmos::Module {
     type Contract = Bech32<H256>;
     type PredictWrappedTokenResponse = String;
     type PredictWrappedTokenFromMetadataImageV2Response = String;
+    type ProviderType = DynProvider<AnyNetwork>; // TODO: handle this later.
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -305,8 +314,9 @@ impl ChainEndpoint for cosmos::Module {
         contract: Self::Contract,
         channel: ChannelId,
         token: Vec<u8>,
+        _provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse> {
-        self.predict_wrapped_token(contract, channel, token).await
+        self.predict_wrapped_token(contract, channel, token,).await
     }
 
     async fn predict_wrapped_token_from_metadata_image_v2(
@@ -315,6 +325,7 @@ impl ChainEndpoint for cosmos::Module {
         _channel: ChannelId,
         _token: Vec<u8>,
         _metadata_image: FixedBytes<32>,
+        _provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
         unimplemented!(
             "predict_wrapped_token_from_metadata_image_v2 is not implemented for Cosmos chains"
@@ -327,6 +338,7 @@ impl ChainEndpoint for cosmos::Module {
         _channel: ChannelId,
         _token: Vec<u8>,
         _metadata: FungibleAssetMetadata,
+        _provider: Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
         unimplemented!("predict_wrapped_token_v2 is not implemented for Cosmos chains")
     }
@@ -528,9 +540,10 @@ where
         contract: Src::Contract,
         channel: ChannelId,
         token: Vec<u8>,
+        provider: Src::ProviderType,
     ) -> anyhow::Result<Src::PredictWrappedTokenResponse> {
         source_chain
-            .predict_wrapped_token(contract, channel, token)
+            .predict_wrapped_token(contract, channel, token, provider)
             .await
     }
 
@@ -541,9 +554,10 @@ where
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
+        provider: Src::ProviderType,
     ) -> anyhow::Result<Src::PredictWrappedTokenFromMetadataImageV2Response> {
         source_chain
-            .predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image)
+            .predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image, provider)
             .await
     }
 
@@ -554,9 +568,10 @@ where
         channel: ChannelId,
         token: Vec<u8>,
         metadata: FungibleAssetMetadata,
+        provider: Src::ProviderType,
     ) -> anyhow::Result<Src::PredictWrappedTokenFromMetadataImageV2Response> {
         source_chain
-            .predict_wrapped_token_v2(contract, channel, token, metadata)
+            .predict_wrapped_token_v2(contract, channel, token, metadata, provider)
             .await
     }
 

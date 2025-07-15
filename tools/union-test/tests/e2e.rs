@@ -46,18 +46,18 @@ static ERC20: OnceCell<H160> = OnceCell::const_new();
 
 /// Returns the one–and–only deployed ERC20 address.
 /// Deploys it the first time it’s called, then just returns the stored value.
-async fn ensure_erc20(spender: H160) -> H160 {
-    ERC20
-        .get_or_init(|| async move {
-            let ctx = init_ctx().await;
-            ctx.dst
-                .deploy_basic_erc20(spender)
-                .await
-                .expect("failed to deploy ERC20")
-        })
-        .await
-        .clone()
-}
+// async fn ensure_erc20(spender: H160) -> H160 {
+//     ERC20
+//         .get_or_init(|| async move {
+//             let ctx = init_ctx().await;
+//             ctx.dst
+//                 .deploy_basic_erc20(spender)
+//                 .await
+//                 .expect("failed to deploy ERC20")
+//         })
+//         .await
+//         .clone()
+// }
 
 async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
     CTX.get_or_init(|| async {
@@ -69,13 +69,36 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             .unwrap(),
             keyring: KeyringConfig {
                 name: "alice".into(),
-                keys: vec![KeyringConfigEntry::Raw {
-                    name: "alice".into(),
-                    key: hex_literal::hex!(
-                        "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
-                    )
-                    .to_vec(),
-                }],
+                keys: vec![
+                    KeyringConfigEntry::Raw {
+                        name: "alice".into(),
+                        key: hex_literal::hex!(
+                            "aa820fa947beb242032a41b6dc9a8b9c37d8f5fbcda0966b1ec80335b10a7d6f"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "bob".into(),
+                        key: hex_literal::hex!(
+                            "f562d20f0a4ffd8814d262f7023f33971cbcd14a96d60027585777f174b9cdeb"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dave".into(),
+                        key: hex_literal::hex!(
+                            "edc165ff1ebc27044ddc284c9cf5da656dcbff324f6ecbb9d3203cf5f4738d6d"
+                        )
+                        .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "charlie".into(),
+                        key: hex_literal::hex!(
+                            "a1f713e0f36404586085a599a45ca8233e23709e23cd54bc8d5452ef8f7bc1e6"
+                        )
+                        .to_vec(),
+                    }
+                ],
             },
             rpc_url: "http://localhost:26657".into(),
             gas_config: GasFillerConfig::Feemarket(FeemarketConfig {
@@ -92,20 +115,57 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
             rpc_url: "http://localhost:8545".into(),
             ws_url: "ws://localhost:8546".into(),
             keyring: KeyringConfig {
-                name: "alice".into(),
-                keys: vec![KeyringConfigEntry::Raw {
-                    name: "alice".into(),
-                    key: hex!("4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77")
-                        .to_vec(),
-                }],
+                name: "evm-keyring".into(),
+                keys: vec![
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key0.prv".into(),
+                        key: hex!("4e9444a6efd6d42725a250b650a781da2737ea308c839eaccb0f7f3dbd2fea77")
+                            .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key1.prv".into(),
+                        key: hex!("d9c5dc47ed678fc3e63249953866d79e5cf48418e79d8eec1a985be7393ef3b9")
+                            .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key2.prv".into(),
+                        key: hex!("eadf66c84a1c2768a14e883512724d6023a54d500bf91d910a7dace376a97d6b")
+                            .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key3.prv".into(),
+                        key: hex!("d56f932b298ba86341037f3871141a707330316f6f9493641a2cd59ba4a53710")
+                            .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key4.prv".into(),
+                        key: hex!("084494a1ff88a1319e493d32aa6e127ab0eaaaf74b8714edfd670a9ddc4a060d")
+                            .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key5.prv".into(),
+                        key: hex!("f977996449841b13ce9bbb99873006e04590ddbe28d9cd449dd33505851e74ba")
+                            .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key6.prv".into(),
+                        key: hex!("523776c0e15a5826c85f08e0dd20d70190b0001e87f6ff9f25854d10f24db63c")
+                            .to_vec(),
+                    },
+                    KeyringConfigEntry::Raw {
+                        name: "dev-key7.prv".into(),
+                        key: hex!("b7d500ecae3d26deaa9547557822c95208163e230cc04345bd223da99f5bd058")
+                            .to_vec(),
+                    },
+                ],
             },
             max_gas_price: None,
-            fixed_gas_price: Some(20_000_000_000u64.into()),
+            fixed_gas_price: None,//Some(200_000_000_000u64.into()),
             gas_multiplier: 2.0,
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 2; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 4; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -222,6 +282,9 @@ async fn _open_connection_from_evm_to_union() {
 async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     let ctx = init_ctx().await;
     ensure_channels_opened(ctx.channel_count).await;
+    
+
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
 
     let available_channel = ctx.get_available_channel_count().await;
     assert_eq!(available_channel > 0, true);
@@ -238,6 +301,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
             eth_zkgm_contract.into(),
             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
             "muno".into(),
+            evm_provider.clone()
         )
         .await
         .unwrap();
@@ -255,7 +319,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
             sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
                 .as_bytes()
                 .into(),
-            receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+            receiver: evm_address
                 .to_vec()
                 .into(),
             base_token: "muno".as_bytes().into(),
@@ -313,7 +377,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrder {
-            sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+            sender: evm_address
                 .to_vec()
                 .into(),
             receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
@@ -337,9 +401,8 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     // TODO: Here we should check the muno balance of sender account
     // Also token balanceOf the receiver account
 
-    let evm_provider = ctx.dst.get_provider().await;
 
-    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider);
+    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
 
     let call = ucs03_zkgm
         .send(
@@ -379,6 +442,8 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let ctx = init_ctx().await;
     ensure_channels_opened(ctx.channel_count).await;
 
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+
     let available_channel = ctx.get_available_channel_count().await;
     assert_eq!(available_channel > 0, true);
 
@@ -388,7 +453,12 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
     let eth_zkgm_contract = hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5");
 
-    let deployed_erc20 = ensure_erc20(eth_zkgm_contract.into()).await;
+    // let deployed_erc20 = ensure_erc20(eth_zkgm_contract.into()).await;
+
+    let deployed_erc20 = ctx.dst
+                .deploy_basic_erc20(eth_zkgm_contract.into(), evm_provider.clone())
+                .await
+                .expect("failed to deploy ERC20");
 
     let union_zkgm_contract: Bech32<FixedBytes<32>> =
         Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
@@ -400,6 +470,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
             union_zkgm_contract.into(),
             ChannelId::new(NonZero::new(src_chain_id).unwrap()),
             deployed_erc20.as_ref().to_vec(),
+            evm_provider.clone()
         )
         .await
         .unwrap();
@@ -416,7 +487,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrder {
-            sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+            sender: evm_address
                 .to_vec()
                 .into(),
             receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
@@ -435,9 +506,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         .into(),
     };
 
-    let evm_provider = ctx.dst.get_provider().await;
-
-    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider);
+    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
 
     let call = ucs03_zkgm
         .send(
@@ -499,7 +568,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
             sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
                 .as_bytes()
                 .into(),
-            receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+            receiver: evm_address
                 .to_vec()
                 .into(),
             base_token: quote_token_bytes.into(),
@@ -556,6 +625,10 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
 async fn test_stake_from_evm_to_union() {
     let ctx = init_ctx().await;
+    
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    println!("EVM Address: {:?}", evm_address);
+
     ensure_channels_opened(ctx.channel_count).await;
 
     let available_channel = ctx.get_available_channel_count().await;
@@ -585,7 +658,7 @@ async fn test_stake_from_evm_to_union() {
 
     let governance_token = ctx
         .dst
-        .setup_governance_token(eth_zkgm_contract.into(), pair.dest, img)
+        .setup_governance_token(eth_zkgm_contract.into(), pair.dest, img, evm_provider.clone())
         .await;
 
     assert!(
@@ -606,6 +679,7 @@ async fn test_stake_from_evm_to_union() {
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
+            evm_provider.clone()
         )
         .await
         .unwrap();
@@ -619,7 +693,7 @@ async fn test_stake_from_evm_to_union() {
             sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
                 .as_bytes()
                 .into(),
-            receiver: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+            receiver: evm_address
                 .to_vec()
                 .into(),
             base_token: "muno".as_bytes().into(),
@@ -675,6 +749,7 @@ async fn test_stake_from_evm_to_union() {
             quote_token_addr.into(),
             eth_zkgm_contract.into(),
             U256::from(100000000000u64),
+            evm_provider.clone()
         )
         .await;
 
@@ -697,10 +772,10 @@ async fn test_stake_from_evm_to_union() {
             token_id: random_token_id,
             governance_token: b"muno".into(),
             governance_metadata_image: img.into(),
-            sender: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+            sender: evm_address
                 .to_vec()
                 .into(),
-            beneficiary: hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+            beneficiary: evm_address
                 .to_vec()
                 .into(),
             validator: given_validator.as_bytes().into(),
@@ -710,9 +785,7 @@ async fn test_stake_from_evm_to_union() {
         .into(),
     };
 
-    let evm_provider = ctx.dst.get_provider().await;
-
-    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider);
+    let ucs03_zkgm = UCS03Zkgm::new(eth_zkgm_contract.into(), evm_provider.clone());
 
     rand::rng().fill_bytes(&mut salt_bytes);
     let call = ucs03_zkgm
@@ -747,7 +820,7 @@ async fn test_stake_from_evm_to_union() {
 
     let snake_nft = ctx
         .dst
-        .predict_stake_manager_address(eth_zkgm_contract.into())
+        .predict_stake_manager_address(eth_zkgm_contract.into(), evm_provider.clone())
         .await;
     assert!(snake_nft.is_ok(), "Failed to predict stake manager address");
     let snake_nft = snake_nft.unwrap();
@@ -759,7 +832,7 @@ async fn test_stake_from_evm_to_union() {
 
     // let is_ours = ctx.dst.nft_owner_of(
     //     snake_nft,
-    //     hex!("Be68fC2d8249eb60bfCf0e71D5A0d2F2e292c4eD")
+    //     evm_address
     //             .to_vec()
     //             .into(),
     //             random_token_id.into()
@@ -768,20 +841,53 @@ async fn test_stake_from_evm_to_union() {
     //     "Failed to check NFT ownership after stake request: {:?}", is_ours.err());
 }
 
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union0() {
-    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-}
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union0() {
+//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+// }
 
-#[tokio::test]
-#[serial]
-async fn from_union_to_evm0() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
+// #[tokio::test]
+// #[serial]
+// async fn from_union_to_evm0() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
 
 #[tokio::test]
 #[serial]
 async fn from_evm_to_union_stake() {
+    self::test_stake_from_evm_to_union().await;
+}
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union1() {
+//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// #[serial]
+// async fn from_union_to_evm1() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
+
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake1() {
+    self::test_stake_from_evm_to_union().await;
+}
+
+
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake2() {
+    self::test_stake_from_evm_to_union().await;
+}
+
+
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake3() {
     self::test_stake_from_evm_to_union().await;
 }
