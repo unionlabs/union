@@ -26,7 +26,7 @@ const U_BASE_DENOM = "au"
 const ONE_U = 1e18
 
 // Total supply of U (note, not in `au`)
-const U_TOTAL_SUPPLY = 10000000000000
+const U_TOTAL_SUPPLY = 10000000000
 
 // Union foundation multisig address
 const UNION_FOUNDATION_MULTI_SIG = "union1cpz5fhesgjcv2q0640uxtyur5ju65av6r8fem0"
