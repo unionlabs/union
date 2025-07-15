@@ -29,7 +29,7 @@ const ONE_U = 1000000000000000000
 const U_TOTAL_SUPPLY = 10000000000000
 
 // Union foundation multisig address
-const UNION_FOUNDATION_MULTI_SIG = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2" // TODO: Update with real address
+const UNION_FOUNDATION_MULTI_SIG = "union1cpz5fhesgjcv2q0640uxtyur5ju65av6r8fem0"
 
 func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
