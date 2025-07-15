@@ -1,11 +1,12 @@
 use std::{marker::PhantomData, panic::AssertUnwindSafe, str::FromStr, time::Duration};
 
 use alloy::{
+    transports::RpcError,
     contract::{Error, RawCallBuilder, Result},
     network::{AnyNetwork, EthereumWallet},
     providers::{
         fillers::RecommendedFillers, DynProvider, PendingTransactionError, Provider,
-        ProviderBuilder,
+        ProviderBuilder, PendingTransaction
     },
     rpc::types::Filter,
     signers::local::LocalSigner,
@@ -31,7 +32,7 @@ use unionlabs::{
     ErrorReporter,
 };
 use voyager_sdk::{
-    anyhow::{self},
+    anyhow::{self, Context},
     primitives::ChainId,
 };
 
@@ -305,6 +306,7 @@ impl<'a> Module<'a> {
         Ok(wrapped_token)
     }
 
+
     pub async fn predict_wrapped_token_from_metadata_image_v2(
         &self,
         ucs03_addr_on_evm: H160,
@@ -464,6 +466,35 @@ impl<'a> Module<'a> {
         )
     }
 
+    pub async fn wait_for_tx_inclusion(
+        &self,
+        provider: &DynProvider<AnyNetwork>,
+        tx_hash: H256,
+    ) -> anyhow::Result<(), TxSubmitError> {
+        let mut attempts = 0;
+        loop {
+            let maybe_rcpt = provider
+                .get_transaction_receipt(tx_hash.into())
+                .await
+                .map_err(|rpc_err| {
+                    TxSubmitError::InclusionError
+                })?;
+  
+            if let Some(rcpt) = maybe_rcpt {
+                println!("✅ tx {tx_hash:?} mined in block {:?}", rcpt.block_number);
+                return Ok(());
+            }
+            if attempts < 5 {
+                attempts += 1;
+                println!("receipt not yet available, retry {attempts}/3…");
+                tokio::time::sleep(Duration::from_secs(3)).await;
+                continue;
+            }
+            return Err(TxSubmitError::BatchTooLarge);
+        }
+    }
+
+
     pub async fn zkgmerc20_approve(
         &self,
         contract: H160,
@@ -477,8 +508,32 @@ impl<'a> Module<'a> {
         let tx_hash = <H256>::from(*pending.tx_hash());
         println!("pending: {:?}", pending);
 
-        let _receipt = pending.get_receipt().await?;
-        // println!("PENDING receipt: {:?}", receipt);
+        // let _receipt = pending.get_receipt().await?;
+        self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+        // let mut attempts = 0;
+        // loop {
+        //     match provider.get_transaction_receipt(tx_hash.into()).await {
+        //         Ok(Some(receipt)) => {
+        //             println!("✅ got receipt in block");
+        //             break;
+        //         }
+        //         Ok(None) if attempts < 3 => {
+        //             attempts += 1;
+        //             println!("receipt not found yet, retry {}/3…", attempts);
+        //             tokio::time::sleep(Duration::from_secs(3)).await;
+        //         }
+        //         Ok(None) => {
+        //             return Err(anyhow::anyhow!(
+        //                 "receipt never showed up after 3 attempts"
+        //             ));
+        //         }
+        //         Err(e) => {
+        //             // map an RPC error into your own error enum if you like:
+        //             return Err(anyhow::anyhow!("RPC error fetching receipt: {:?}", e));
+        //         }
+        //     }
+        // }
+
         println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
         Ok(tx_hash)
     }
@@ -566,7 +621,11 @@ impl<'a> Module<'a> {
         // 5) Send & await receipt
         let pending = call.send().await?;
         println!("[deploy_basic_erc20] pending: {:?}", pending);
+        
+        let tx_hash = *pending.tx_hash();
+        self.wait_for_tx_inclusion(&provider, tx_hash.into()).await?;
         let receipt = pending.get_receipt().await?;
+
         println!("[deploy_basic_erc20] receipt: {:?}", receipt);
 
         // 6) Extract the new contract address
@@ -652,6 +711,7 @@ impl<'a> Module<'a> {
             Ok(ok) => {
                 let tx_hash = <H256>::from(*ok.tx_hash());
                 async move {
+                    self.wait_for_tx_inclusion(&self.provider, tx_hash).await?;
                     // let _ = ok.get_receipt().await?;
                     println!("tx included: {:?}", tx_hash);
 
@@ -747,54 +807,19 @@ impl<'a> Module<'a> {
         // let (_,provider) = self.get_provider().await;
         let zkgm = zkgm::UCS03Zkgm::new(zkgm_addr.into(), provider.clone());
 
-        // let pending = zkgm
-        //     .registerGovernanceToken(channel_id,
-        //         zkgm::GovernanceToken {
-        //             unwrappedToken: b"muno".into(),
-        //             metadataImage: metadata_image.into(),
-        //         },)
-        //     .send()
-        //     .await?;
-
-        // let tx_hash = <H256>::from(*pending.tx_hash());
-        // let (_,provider) = self.get_provider().await;
-        // let receipt = loop {
-        //     if let Some(r) = provider.get_transaction_receipt(tx_hash.into).await? {
-        //         break r;
-        //     }
-        //     tokio::time::sleep(Duration::from_secs(1)).await;
-        // };
-        // Ok(tx_hash)
-        // 3) call registerGovernanceToken(...)
-        match zkgm
-            .registerGovernanceToken(
-                channel_id,
+        let pending = zkgm
+            .registerGovernanceToken(channel_id,
                 zkgm::GovernanceToken {
                     unwrappedToken: b"muno".into(),
                     metadataImage: metadata_image.into(),
-                },
-            )
+                },)
             .send()
-            .await
-        {
-            Ok(pending) => {
-                let tx_hash = <H256>::from(*pending.tx_hash());
-                let _receipt = pending.get_receipt().await?;
-                println!("tx included: {:?}", tx_hash);
-                return Ok(tx_hash);
-            }
-            Err(e) => {
-                println!("Error registering governance token: {:?}", e);
-                return Err(TxSubmitError::Error(e));
-            }
-        }
-        // wait for inclusion…
-        // let _receipt = pending.get_receipt().await?;
+            .await?;
 
-        // // 4) now query back the registered token address
-        // let ret=
-        //     zkgm.getGovernanceToken(channel_id).call().await?;
-        // Ok(ret.governanceToken)
+        let tx_hash = <H256>::from(*pending.tx_hash());
+
+        self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+        Ok(tx_hash)
     }
 }
 
@@ -959,6 +984,8 @@ pub enum TxSubmitError {
     PendingTransactionError(#[from] PendingTransactionError),
     #[error("out of gas")]
     OutOfGas,
+    #[error("inclusion never happened")]
+    InclusionError,
     #[error("0x revert")]
     EmptyRevert(Vec<Datagram>),
     #[error("gas price is too high: max {max}, price {price}")]
@@ -967,4 +994,7 @@ pub enum TxSubmitError {
     RpcError(#[from] ErrorObjectOwned),
     #[error("batch too large")]
     BatchTooLarge,
+    #[error("rpc transport error waiting for receipt: {0}")]
+    RpcTransport(#[from] RpcError<TransportError>),
+
 }

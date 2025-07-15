@@ -165,7 +165,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 4; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 7; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -625,7 +625,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
 
 async fn test_stake_from_evm_to_union() {
     let ctx = init_ctx().await;
-    
+
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
     println!("EVM Address: {:?}", evm_address);
 
@@ -741,7 +741,7 @@ async fn test_stake_from_evm_to_union() {
     );
 
     println!("Received packet data: {:?}", recv_packet_data);
-    println!("Calling approve on quote token: {:?}", quote_token_addr);
+    println!("Calling approve on quote token: {:?} -> from account: {:?}", quote_token_addr, evm_address);
 
     let approve_tx_hash = ctx
         .dst
@@ -755,8 +755,8 @@ async fn test_stake_from_evm_to_union() {
 
     assert!(
         approve_tx_hash.is_ok(),
-        "Failed to send approve transaction: {:?}",
-        approve_tx_hash.err()
+        "Failed to send approve transaction: {:?}, from_account: {:?}",
+        approve_tx_hash.err(), evm_address
     );
 
     let given_validator = "unionvaloper1qp4uzhet2sd9mrs46kemse5dt9ncz4k3xuz7ej";
@@ -826,8 +826,8 @@ async fn test_stake_from_evm_to_union() {
     let snake_nft = snake_nft.unwrap();
 
     println!(
-        "✅ Stake manager address: {:?}, random_token_id: {:?}",
-        snake_nft, random_token_id
+        "✅ Stake manager address: {:?}, random_token_id: {:?}, evm_address: {:?}",
+        snake_nft, random_token_id, evm_address
     );
 
     // let is_ours = ctx.dst.nft_owner_of(
@@ -889,5 +889,23 @@ async fn from_evm_to_union_stake2() {
 #[tokio::test]
 #[serial]
 async fn from_evm_to_union_stake3() {
+    self::test_stake_from_evm_to_union().await;
+}
+
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake4() {
+    self::test_stake_from_evm_to_union().await;
+}
+
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake5() {
+    self::test_stake_from_evm_to_union().await;
+}
+
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union_stake6() {
     self::test_stake_from_evm_to_union().await;
 }
