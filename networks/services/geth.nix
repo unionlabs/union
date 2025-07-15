@@ -16,16 +16,16 @@ let
         --password /dev/null ${config}/dev-key1.prv
       geth account import --datadir "$ETH_DATADIR" \
         --password /dev/null ${config}/dev-key2.prv
-      geth account import --datadir "$ETH_DATADIR" \
-        --password /dev/null ${config}/dev-key3.prv
-      geth account import --datadir "$ETH_DATADIR" \
-        --password /dev/null ${config}/dev-key4.prv
-      geth account import --datadir "$ETH_DATADIR" \
-        --password /dev/null ${config}/dev-key5.prv
-      geth account import --datadir "$ETH_DATADIR" \
-        --password /dev/null ${config}/dev-key6.prv
-      geth account import --datadir "$ETH_DATADIR" \
-        --password /dev/null ${config}/dev-key7.prv
+      # geth account import --datadir "$ETH_DATADIR" \
+      #   --password /dev/null ${config}/dev-key3.prv
+      # geth account import --datadir "$ETH_DATADIR" \
+      #   --password /dev/null ${config}/dev-key4.prv
+      # geth account import --datadir "$ETH_DATADIR" \
+      #   --password /dev/null ${config}/dev-key5.prv
+      # geth account import --datadir "$ETH_DATADIR" \
+      #   --password /dev/null ${config}/dev-key6.prv
+      # geth account import --datadir "$ETH_DATADIR" \
+      #   --password /dev/null ${config}/dev-key7.prv
 
       geth \
         --vmdebug \
