@@ -22,6 +22,7 @@
             ...
           }:
           let
+            full-e2e = import ./full-e2e.nix { inherit e2e pkgs; };
             epoch-staking = import ./epoch-staking.nix { inherit e2e pkgs dbg; };
             upgrades = import ./upgrades.nix {
               inherit e2e pkgs;
@@ -33,6 +34,9 @@
             # Disabled
             # TODO: Fix Ensure Blocks Workflow unionlabs/union#2067
             # ensure-blocks = import ./ensure-blocks/ensure-blocks.nix { inherit e2e networks pkgs nixpkgs crane; };
+            #
+            # Tests from ./full-e2e.nix
+            inherit (full-e2e) voyager-queue-works;
 
             # Tests from ./epoch-staking.nix
             inherit (epoch-staking) epoch-completes;
