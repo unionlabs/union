@@ -140,6 +140,7 @@ func (app *App) setPostHandler() error {
 			AccountKeeper:   app.AccountKeeper,
 			BankKeeper:      app.BankKeeper,
 			FeeMarketKeeper: &app.FeeMarketKeeper,
+			StakingKeeper:   app.StakingKeeper,
 		},
 	)
 	if err != nil {

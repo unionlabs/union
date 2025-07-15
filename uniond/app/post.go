@@ -12,6 +12,7 @@ type PostHandlerOptions struct {
 	AccountKeeper   feemarketpost.AccountKeeper
 	BankKeeper      feemarketpost.BankKeeper
 	FeeMarketKeeper feemarketpost.FeeMarketKeeper
+	StakingKeeper   feemarketpost.StakingKeeper
 }
 
 func NewPostHandler(options PostHandlerOptions) (sdk.PostHandler, error) {
@@ -27,11 +28,16 @@ func NewPostHandler(options PostHandlerOptions) (sdk.PostHandler, error) {
 		return nil, errorsmod.Wrap(sdkerrors.ErrLogic, "feemarket keeper is required for post builder")
 	}
 
+	if options.StakingKeeper == nil {
+		return nil, errorsmod.Wrap(sdkerrors.ErrLogic, "staking keeper is required for post builder")
+	}
+
 	postDecorators := []sdk.PostDecorator{
 		feemarketpost.NewFeeMarketDeductDecorator(
 			options.AccountKeeper,
 			options.BankKeeper,
 			options.FeeMarketKeeper,
+			options.StakingKeeper,
 		),
 	}
 
