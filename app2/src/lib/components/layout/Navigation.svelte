@@ -148,8 +148,10 @@ let isMoreUnionFirst = $derived(
   {#each navigation as section, index}
     {#if section.title !== "Developer" || uiStore.showDeveloperPages}
       {#if section.title === "More Union"}
+        <!-- Spacer to push social icons to bottom -->
+        <div class="flex-1"></div>
         <!-- Special rendering for More Union section - just icons in a row -->
-        <section class="px-4 py-4 last:flex-1 flex flex-col justify-end {!isMoreUnionFirst && index > 0 ? 'border-t border-zinc-800/50' : ''}">
+        <section class="px-4 py-4 flex flex-col justify-end {!isMoreUnionFirst && index > 0 ? 'border-t border-zinc-800/50' : ''}">
           <div class="flex items-center justify-center gap-4">
             {#each section.items as item}
               <a

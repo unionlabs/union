@@ -11,9 +11,11 @@ const { onclose }: Props = $props()
 </script>
 
 <div
-  class="md:hidden border-b border-zinc-900 bg-zinc-950"
+  class="md:hidden bg-zinc-950 min-h-[calc(100vh-3.5rem)] flex flex-col"
   transition:slide={{ duration: 200 }}
 >
   <ProfileCard />
-  <Navigation />
+  <div class="flex-1 overflow-y-auto flex flex-col">
+    <Navigation class="flex-1" />
+  </div>
 </div>
