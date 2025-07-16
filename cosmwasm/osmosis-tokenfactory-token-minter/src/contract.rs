@@ -237,6 +237,7 @@ fn wrapped_create_denom(
     Ok(Response::new().add_messages(vec![
         CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
             subdenom: subdenom.to_owned(),
+            metadata: None,
         }),
         // We are using stargate for now instead of `Any` to be safe in case we would want to
         // deploy on < wasmvm 2 chain that uses Osmosis' Token Factory
@@ -281,6 +282,7 @@ fn wrapped_create_denom_v2(
     Ok(Response::new().add_messages(vec![
         CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
             subdenom: subdenom.to_owned(),
+            metadata: None,
         }),
         // We are using stargate for now instead of `Any` to be safe in case we would want to
         // deploy on < wasmvm 2 chain that uses Osmosis' Token Factory
@@ -511,6 +513,7 @@ mod tests {
             &[
                 CosmosMsg::Custom(TokenFactoryMsg::CreateDenom {
                     subdenom: "helloworld".into(),
+                    metadata: None,
                 }),
                 // We are using stargate for now instead of `Any` to be safe in case we would want to
                 // deploy on < wasmvm 2 chain that uses Osmosis' Token Factory

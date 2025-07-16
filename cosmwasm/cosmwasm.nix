@@ -901,6 +901,8 @@ _: {
 
       cw20-base = crane.buildWasmContract "cosmwasm/cw20-base" { };
 
+      cw20-wrapped-tokenfactory = crane.buildWasmContract "cosmwasm/cw20-wrapped-tokenfactory" { };
+
       ibc-union = crane.buildWasmContract "cosmwasm/ibc-union/core" { };
 
       multicall = crane.buildWasmContract "cosmwasm/multicall" { };
@@ -949,6 +951,7 @@ _: {
             bytecode-base
             ucs03-zkgm
             cw20-base
+            cw20-wrapped-tokenfactory
             cosmwasm-deployer
             cw20-token-minter
             osmosis-tokenfactory-token-minter

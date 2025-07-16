@@ -59,6 +59,14 @@ pub struct ChangeAdminMsg {
 }
 
 #[cw_serde]
+pub struct ForceTransferMsg {
+    pub denom: String,
+    pub amount: Uint128,
+    pub from_address: Addr,
+    pub to_address: Addr,
+}
+
+#[cw_serde]
 #[derive(Enumorph)]
 pub enum TokenFactoryMsg {
     /// CreateDenom creates a new factory denom, of denomination:
@@ -77,6 +85,8 @@ pub enum TokenFactoryMsg {
     #[enumorph(ignore)]
     CreateDenom {
         subdenom: String,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        metadata: Option<Metadata>,
     },
 
     ChangeAdmin(ChangeAdminMsg),
@@ -84,6 +94,8 @@ pub enum TokenFactoryMsg {
     MintTokens(MintTokensMsg),
 
     BurnTokens(BurnTokensMsg),
+
+    ForceTransfer(ForceTransferMsg),
 }
 
 /// This maps to `cosmos.bank.v1beta1.Metadata`.

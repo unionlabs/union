@@ -250,6 +250,7 @@ members = [
   "cosmwasm/ucs03-zkgm-token-minter-api",
   "cosmwasm/osmosis-tokenfactory-token-owner",
   "cosmwasm/cw20-base",
+  "cosmwasm/cw20-wrapped-tokenfactory",
   "lib/scroll-types",
   "lib/fork-schedules",
   "lib/depolama",

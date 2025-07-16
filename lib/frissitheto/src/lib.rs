@@ -3,7 +3,7 @@
 
 use std::num::NonZeroU32;
 
-use cosmwasm_std::{DepsMut, Response, StdError};
+use cosmwasm_std::{CustomMsg, DepsMut, Response, StdError};
 use serde::{Deserialize, Serialize};
 
 /// The storage prefix that the current state version is stored under.
@@ -47,16 +47,16 @@ impl<Init, Migrate> UpgradeMsg<Init, Migrate> {
     /// # Panics
     ///
     /// This function will panic if the state version cannot be decoded.
-    pub fn run<E: From<UpgradeError> + From<StdError>>(
+    pub fn run<E: From<UpgradeError> + From<StdError>, T: CustomMsg>(
         self,
         mut deps: DepsMut,
-        init_f: impl FnOnce(DepsMut, Init) -> Result<(Response, Option<NonZeroU32>), E>,
+        init_f: impl FnOnce(DepsMut, Init) -> Result<(Response<T>, Option<NonZeroU32>), E>,
         migrate_f: impl FnOnce(
             DepsMut,
             Migrate,
             NonZeroU32,
-        ) -> Result<(Response, Option<NonZeroU32>), E>,
-    ) -> Result<Response, E> {
+        ) -> Result<(Response<T>, Option<NonZeroU32>), E>,
+    ) -> Result<Response<T>, E> {
         let state_version = deps.storage.get(STATE_VERSION);
         match state_version {
             Some(state_version) => match self {
@@ -156,7 +156,7 @@ pub enum InitStateVersionError {
 mod tests {
     use std::collections::BTreeMap;
 
-    use cosmwasm_std::{testing::mock_dependencies, MemoryStorage, Storage};
+    use cosmwasm_std::{testing::mock_dependencies, Empty, MemoryStorage, Storage};
 
     use super::*;
 
@@ -210,7 +210,7 @@ mod tests {
         let mut deps = mock_dependencies();
 
         UpgradeMsg::<(), ()>::Init(())
-            .run(
+            .run::<_, Empty>(
                 deps.as_mut(),
                 |deps, ()| {
                     deps.storage.set(&[], &[1]);
@@ -231,7 +231,7 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let res = UpgradeMsg::<(), ()>::Init(())
-            .run(
+            .run::<_, Empty>(
                 deps.as_mut(),
                 |deps, ()| {
                     deps.storage.set(&[], &[1]);
@@ -260,7 +260,7 @@ mod tests {
         let mut deps = mock_dependencies();
 
         UpgradeMsg::<(), ()>::Init(())
-            .run(
+            .run::<_, Empty>(
                 deps.as_mut(),
                 |deps, ()| {
                     deps.storage.set(&[], &[1]);
@@ -272,7 +272,7 @@ mod tests {
             .unwrap();
 
         let res = UpgradeMsg::<(), ()>::Migrate(())
-            .run(
+            .run::<_, Empty>(
                 deps.as_mut(),
                 |_, ()| unreachable!(),
                 |deps, (), _version| {
@@ -303,7 +303,7 @@ mod tests {
         let mut deps = mock_dependencies();
 
         UpgradeMsg::<(), ()>::Init(())
-            .run(
+            .run::<_, Empty>(
                 deps.as_mut(),
                 |deps, ()| {
                     deps.storage.set(&[], &[1]);
@@ -315,7 +315,7 @@ mod tests {
             .unwrap();
 
         let err = UpgradeMsg::<(), ()>::Init(())
-            .run::<Error>(
+            .run::<Error, Empty>(
                 deps.as_mut(),
                 |_, ()| unreachable!(),
                 |_, (), _| unreachable!(),
@@ -330,7 +330,7 @@ mod tests {
         let mut deps = mock_dependencies();
 
         let err = UpgradeMsg::<(), ()>::Migrate(())
-            .run(
+            .run::<_, Empty>(
                 deps.as_mut(),
                 |_, ()| unreachable!(),
                 |deps, (), _version| {
