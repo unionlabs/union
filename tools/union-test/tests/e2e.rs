@@ -165,7 +165,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 7; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 11; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -841,17 +841,17 @@ async fn test_stake_from_evm_to_union() {
     //     "Failed to check NFT ownership after stake request: {:?}", is_ours.err());
 }
 
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union0() {
-//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-// }
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union0() {
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+}
 
-// #[tokio::test]
-// #[serial]
-// async fn from_union_to_evm0() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-// }
+#[tokio::test]
+#[serial]
+async fn from_union_to_evm0() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
 
 #[tokio::test]
 #[serial]
@@ -860,17 +860,17 @@ async fn from_evm_to_union_stake() {
 }
 
 
-// #[tokio::test]
-// #[serial]
-// async fn from_evm_to_union1() {
-//     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
-// }
+#[tokio::test]
+#[serial]
+async fn from_evm_to_union1() {
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
+}
 
-// #[tokio::test]
-// #[serial]
-// async fn from_union_to_evm1() {
-//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-// }
+#[tokio::test]
+#[serial]
+async fn from_union_to_evm1() {
+    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+}
 
 #[tokio::test]
 #[serial]
