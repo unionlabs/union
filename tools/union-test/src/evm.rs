@@ -466,6 +466,7 @@ impl<'a> Module<'a> {
         )
     }
 
+
     pub async fn wait_for_tx_inclusion(
         &self,
         provider: &DynProvider<AnyNetwork>,
@@ -486,14 +487,23 @@ impl<'a> Module<'a> {
             }
             if attempts < 5 {
                 attempts += 1;
-                println!("receipt not yet available, retry {attempts}/3…");
-                tokio::time::sleep(Duration::from_secs(3)).await;
+                println!("receipt not yet available, retry {attempts}/5…");
+                tokio::time::sleep(Duration::from_secs(4)).await;
                 continue;
             }
             return Err(TxSubmitError::BatchTooLarge);
         }
     }
 
+
+    fn is_nonce_too_low(&self, e: &Error) -> bool {
+        if let Error::TransportError(TransportError::ErrorResp(rpc)) = e {
+            println!("Nonce is too low, error entered here.: {:?}", rpc);
+            rpc.message.contains("nonce too low")
+        } else {
+            false
+        }
+    }
 
     pub async fn zkgmerc20_approve(
         &self,
@@ -502,40 +512,39 @@ impl<'a> Module<'a> {
         amount: U256,
         provider: DynProvider<AnyNetwork>
     ) -> anyhow::Result<H256> {
-        // let (_,provider) = self.get_provider().await;
+        let mut attempts = 0;
         let erc = zkgmerc20::ZkgmERC20::new(contract.into(), provider.clone());
-        let pending = erc.approve(spender.into(), amount.into()).send().await?;
-        let tx_hash = <H256>::from(*pending.tx_hash());
-        println!("pending: {:?}", pending);
+        loop {
+            attempts += 1;
+            let pending = erc.approve(spender.into(), amount.into()).send().await;
 
-        // let _receipt = pending.get_receipt().await?;
-        self.wait_for_tx_inclusion(&provider, tx_hash).await?;
-        // let mut attempts = 0;
-        // loop {
-        //     match provider.get_transaction_receipt(tx_hash.into()).await {
-        //         Ok(Some(receipt)) => {
-        //             println!("✅ got receipt in block");
-        //             break;
-        //         }
-        //         Ok(None) if attempts < 3 => {
-        //             attempts += 1;
-        //             println!("receipt not found yet, retry {}/3…", attempts);
-        //             tokio::time::sleep(Duration::from_secs(3)).await;
-        //         }
-        //         Ok(None) => {
-        //             return Err(anyhow::anyhow!(
-        //                 "receipt never showed up after 3 attempts"
-        //             ));
-        //         }
-        //         Err(e) => {
-        //             // map an RPC error into your own error enum if you like:
-        //             return Err(anyhow::anyhow!("RPC error fetching receipt: {:?}", e));
-        //         }
-        //     }
-        // }
+            match pending {
+                Ok(pending) => {
+                    let tx_hash = <H256>::from(*pending.tx_hash());
+                    println!("pending: {:?}", pending);
+                    self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+                    println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
+                    return Ok(tx_hash);
+                }
+                 Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
+                    println!("Nonce too low, retrying... Attempt: {attempts}");
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    continue;
+                 }
 
-        println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
-        Ok(tx_hash)
+                Err(err) => {
+                    return Err(err.into());
+                }
+            }
+        }
+        // let pending = erc.approve(spender.into(), amount.into()).send().await?;
+        // let tx_hash = <H256>::from(*pending.tx_hash());
+        // println!("pending: {:?}", pending);
+
+        // self.wait_for_tx_inclusion(&provider, tx_hash).await?;
+
+        // println!("Approved spender: {spender:?} for amount: {amount:?} on contract: {contract:?}");
+        // Ok(tx_hash)
     }
 
     pub async fn basic_erc721_approve(
@@ -597,42 +606,48 @@ impl<'a> Module<'a> {
         let encoded = abi::encode(&[Token::Uint(initial_supply.into()), Token::Address(spender)]);
 
         code.extend(&encoded);
-        // let (_,provider) = self.get_provider().await;
 
         let from = self
             .keyring
             .with(|w| async move { w.address() })
             .await
             .unwrap();
-        let nonce = provider.get_transaction_count(from.into()).await?;
 
-        // 3) Build a *deploy* call
-        let mut call = RawCallBuilder::new_raw_deploy(
-            provider.clone(), // your DynProvider<AnyNetwork>
-            code.into(),      // the bytecode
-        )
-        .nonce(nonce);
+        let mut attempts = 0;
+        loop {
+            attempts += 1;
+                // let nonce = provider.get_transaction_count(from.into()).await?;
 
-        println!("[deploy_basic_erc20] before gas. Nonce: {}", nonce);
-        // 4) Estimate gas + buffer
-        let gas_est = call.estimate_gas().await?;
-        call = call.gas((gas_est as f64 * 2.2) as u64);
-        println!("[deploy_basic_erc20] Estimated gas: {}", gas_est);
-        // 5) Send & await receipt
-        let pending = call.send().await?;
-        println!("[deploy_basic_erc20] pending: {:?}", pending);
+            let mut call = RawCallBuilder::new_raw_deploy(
+                provider.clone(), // your DynProvider<AnyNetwork>
+                code.clone().into(),      // the bytecode
+            );
+            let gas_est = call.estimate_gas().await?;
+            call = call.gas((gas_est as f64 * 2.2) as u64);
+            let pending = call.send().await;
+            match pending {
+                Ok(pending) => {
+                    let tx_hash = *pending.tx_hash();
+                    self.wait_for_tx_inclusion(&provider, tx_hash.into()).await?;
+                    let receipt = pending.get_receipt().await?;
+
+
+                    let address = receipt
+                        .contract_address
+                        .expect("deploy didn’t return an address");
+                    return Ok(address.into());
+                }
+                Err(err) if attempts < 5 && self.is_nonce_too_low(&err) => {
+                    println!("Nonce too low, retrying... Attempt: {attempts}");
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    continue;
+                }
+                Err(err) => {
+                    return Err(anyhow::anyhow!("Failed to deploy contract: {:?}", err).into());
+                }
         
-        let tx_hash = *pending.tx_hash();
-        self.wait_for_tx_inclusion(&provider, tx_hash.into()).await?;
-        let receipt = pending.get_receipt().await?;
-
-        println!("[deploy_basic_erc20] receipt: {:?}", receipt);
-
-        // 6) Extract the new contract address
-        let address = receipt
-            .contract_address
-            .expect("deploy didn’t return an address");
-        Ok(address.into())
+            }
+        }
     }
 
     pub async fn send_ibc_transaction(
