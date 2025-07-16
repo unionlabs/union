@@ -2,9 +2,8 @@
 import { PUBLIC_GIT_REV, PUBLIC_LAST_MODIFIED_EPOCH } from "$env/static/public"
 import { ENV } from "$lib/constants"
 import { Number as N, Option as O, pipe, Schema as S, String as Str } from "effect"
-import Button from "./ui/Button.svelte"
 
-let isVisible = true
+let isVisible = $state(true)
 
 const revision = O.liftPredicate(PUBLIC_GIT_REV, Str.isNonEmpty)
 const lastModified = pipe(
@@ -35,8 +34,8 @@ const lastModified = pipe(
     <button
       class="p-0 text-white transition-colors cursor-pointer"
       onclick={() => isVisible = false}
-    > 
+    >
       x
-  </button>
+    </button>
   </div>
 {/if}
