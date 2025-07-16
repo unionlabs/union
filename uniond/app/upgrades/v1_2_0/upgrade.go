@@ -2,7 +2,6 @@ package v1_2_0
 
 import (
 	"context"
-	"fmt"
 	"math/big"
 
 	"cosmossdk.io/math"
@@ -236,16 +235,5 @@ func getUFromU64(amount int64) sdk.Coin {
 	return sdk.Coin{
 		Denom:  U_BASE_DENOM,
 		Amount: math.NewIntFromBigInt(res),
-	}
-}
-
-func getBaseUFromString(amount string) sdk.Coin {
-	res, ok := math.NewIntFromString(amount)
-	if !ok {
-		panic(fmt.Sprintf("Failed to create Int from amount: %s", amount))
-	}
-	return sdk.Coin{
-		Denom:  U_BASE_DENOM,
-		Amount: res,
 	}
 }
