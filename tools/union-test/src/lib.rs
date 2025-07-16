@@ -2,6 +2,7 @@ use std::{sync::Arc, time::Duration};
 
 use alloy::{contract::RawCallBuilder, network::AnyNetwork, providers::DynProvider};
 use axum::async_trait;
+use ethers::middleware::signer;
 use ibc_union_spec::ChannelId;
 use protos::cosmos::base::v1beta1::Coin;
 use unionlabs::{
@@ -12,6 +13,7 @@ use voyager_sdk::{
     anyhow::{self},
     primitives::ChainId,
 };
+use cosmos_client::wallet::LocalSigner;
 
 pub mod channel_provider;
 pub mod cosmos;
@@ -46,7 +48,7 @@ pub trait ChainEndpoint: Send + Sync {
         contract: Self::Contract,
         channel: ChannelId,
         token: Vec<u8>,
-        provider: Self::ProviderType,
+        provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse>;
 
     async fn predict_wrapped_token_from_metadata_image_v2(
@@ -55,7 +57,7 @@ pub trait ChainEndpoint: Send + Sync {
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
-        provider: Self::ProviderType,
+        provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>;
 
     async fn predict_wrapped_token_v2(
@@ -64,7 +66,7 @@ pub trait ChainEndpoint: Send + Sync {
         channel: ChannelId,
         token: Vec<u8>,
         metadata: FungibleAssetMetadata,
-        provider: Self::ProviderType,
+        provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response>;
 
     async fn wait_for_create_client(
@@ -101,6 +103,7 @@ pub trait ChainEndpoint: Send + Sync {
         &self,
         contract: Self::Contract,
         msg: Self::Msg,
+        signer: &Self::ProviderType,
     ) -> anyhow::Result<H256>;
 
     async fn wait_for_packet_recv(
@@ -160,7 +163,7 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         contract: Self::Contract,
         channel: ChannelId,
         token: Vec<u8>,
-        provider: Self::ProviderType,
+        provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse> {
         self.predict_wrapped_token(contract, channel, token, provider).await
     }
@@ -171,7 +174,7 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
-        provider: Self::ProviderType,
+        provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
         self.predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image, provider)
             .await
@@ -183,7 +186,7 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         channel: ChannelId,
         token: Vec<u8>,
         metadata: FungibleAssetMetadata,
-        provider: Self::ProviderType,
+        provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
         self.predict_wrapped_token_v2(contract, channel, token, metadata, provider)
             .await
@@ -240,8 +243,9 @@ impl<'a> ChainEndpoint for evm::Module<'a> {
         &self,
         contract: Self::Contract,
         msg: Self::Msg,
+        signer: &Self::ProviderType,
     ) -> anyhow::Result<H256> {
-        self.send_ibc_transaction(contract, msg)
+        self.send_ibc_transaction(contract, msg, signer)
             .await
             .map_err(Into::into)
     }
@@ -265,7 +269,7 @@ impl ChainEndpoint for cosmos::Module {
     type Contract = Bech32<H256>;
     type PredictWrappedTokenResponse = String;
     type PredictWrappedTokenFromMetadataImageV2Response = String;
-    type ProviderType = DynProvider<AnyNetwork>; // TODO: handle this later.
+    type ProviderType = LocalSigner;
 
     fn chain_id(&self) -> &ChainId {
         &self.chain_id
@@ -314,7 +318,7 @@ impl ChainEndpoint for cosmos::Module {
         contract: Self::Contract,
         channel: ChannelId,
         token: Vec<u8>,
-        _provider: Self::ProviderType,
+        _provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenResponse> {
         self.predict_wrapped_token(contract, channel, token,).await
     }
@@ -325,7 +329,7 @@ impl ChainEndpoint for cosmos::Module {
         _channel: ChannelId,
         _token: Vec<u8>,
         _metadata_image: FixedBytes<32>,
-        _provider: Self::ProviderType,
+        _provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
         unimplemented!(
             "predict_wrapped_token_from_metadata_image_v2 is not implemented for Cosmos chains"
@@ -338,7 +342,7 @@ impl ChainEndpoint for cosmos::Module {
         _channel: ChannelId,
         _token: Vec<u8>,
         _metadata: FungibleAssetMetadata,
-        _provider: Self::ProviderType,
+        _provider: &Self::ProviderType,
     ) -> anyhow::Result<Self::PredictWrappedTokenFromMetadataImageV2Response> {
         unimplemented!("predict_wrapped_token_v2 is not implemented for Cosmos chains")
     }
@@ -371,8 +375,9 @@ impl ChainEndpoint for cosmos::Module {
         &self,
         contract: Bech32<H256>,
         msg: Self::Msg,
+        signer: &Self::ProviderType,
     ) -> anyhow::Result<H256> {
-        self.send_ibc_transaction(contract, msg).await
+        self.send_ibc_transaction(contract, msg, &signer).await
     }
 
     async fn wait_for_packet_recv(
@@ -540,7 +545,7 @@ where
         contract: Src::Contract,
         channel: ChannelId,
         token: Vec<u8>,
-        provider: Src::ProviderType,
+        provider: &Src::ProviderType,
     ) -> anyhow::Result<Src::PredictWrappedTokenResponse> {
         source_chain
             .predict_wrapped_token(contract, channel, token, provider)
@@ -554,7 +559,7 @@ where
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
-        provider: Src::ProviderType,
+        provider: &Src::ProviderType,
     ) -> anyhow::Result<Src::PredictWrappedTokenFromMetadataImageV2Response> {
         source_chain
             .predict_wrapped_token_from_metadata_image_v2(contract, channel, token, metadata_image, provider)
@@ -568,7 +573,7 @@ where
         channel: ChannelId,
         token: Vec<u8>,
         metadata: FungibleAssetMetadata,
-        provider: Src::ProviderType,
+        provider: &Src::ProviderType,
     ) -> anyhow::Result<Src::PredictWrappedTokenFromMetadataImageV2Response> {
         source_chain
             .predict_wrapped_token_v2(contract, channel, token, metadata, provider)
@@ -582,9 +587,10 @@ where
         msg: Src::Msg,
         destination_chain: &Dst,
         timeout: Duration,
+        signer: &Src::ProviderType,
     ) -> anyhow::Result<helpers::PacketRecv> {
         let packet_hash = match source_chain
-            .send_ibc_transaction(contract.clone(), msg.clone())
+            .send_ibc_transaction(contract.clone(), msg.clone(), signer)
             .await
         {
             Ok(hash) => {
@@ -618,9 +624,10 @@ where
         destination_chain: &Dst,
         timeout: Duration,
         validator: String,
+        signer: Src::ProviderType,
     ) -> anyhow::Result<helpers::Delegate> {
         let packet_hash = match source_chain
-            .send_ibc_transaction(contract.clone(), msg.clone())
+            .send_ibc_transaction(contract.clone(), msg.clone(), &signer)
             .await
         {
             Ok(hash) => {
@@ -656,7 +663,8 @@ where
         max_retries: usize,
         retry_delay: Duration,
         timeout: Duration,
-    ) -> anyhow::Result<helpers::PacketRecv> {
+        signer: &Src::ProviderType,
+    ) -> anyhow::Result<helpers::PacketRecv>  {
         let mut attempt = 0;
         println!(
             "Starting send_and_recv_with_retry with max_retries: {}, retry_delay: {:?}",
@@ -671,6 +679,7 @@ where
                     msg.clone(),
                     destination_chain,
                     timeout,
+                    signer
                 )
                 .await
             {

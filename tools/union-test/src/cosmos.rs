@@ -370,60 +370,63 @@ impl Module {
         Ok(resp.wrapped_token)
     }
 
+    pub async fn get_signer(&self) -> (Bech32<H160>, &LocalSigner) {
+        // Clone the LocalSigner inside the closure so we return an owned LocalSigner
+        let signer = self
+            .keyring
+            .with(|s| async move { s})
+            .await
+            .expect("no signers available in keyring");
+
+        let address = signer.address();
+        (address, signer)
+    }
+
+
+
     // TODO(aeryz): return the digest
     pub async fn send_transaction(
         &self,
         contract: Bech32<H256>,
         msg: (Vec<u8>, Vec<Coin>),
+        signer: &LocalSigner
     ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
-        self.keyring
-            .with(|signer| {
-                let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
+        // let (address, signer) = self.get_signer().await;
+        let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
 
-                AssertUnwindSafe(async move {
-                    match tx_client
-                        .broadcast_tx_commit(
-                            [msg]
-                                .iter()
-                                .map(|(x, funds)| {
-                                    mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
-                                        sender: signer.address().to_string(),
-                                        contract: contract.to_string(),
-                                        msg: x.clone(),
-                                        funds: funds.clone(),
-                                    })
-                                })
-                                .collect::<Vec<_>>(),
-                            "memo",
-                            true,
-                        )
-                        .await
-                    {
-                        Ok(tx_response) => {
-                            info!(
-                                tx_hash = %tx_response.hash,
-                                gas_used = %tx_response.tx_result.gas_used,
-                                "submitted cosmos transaction"
-                            );
+        let signer_address = signer.address();
+        // run the broadcast
+        let outcome = tx_client
+            .broadcast_tx_commit(
+                [msg]
+                    .iter()
+                    .map(|(x, funds)| {
+                        mk_any(&protos::cosmwasm::wasm::v1::MsgExecuteContract {
+                            sender: signer_address.to_string(),
+                            contract: contract.to_string(),
+                            msg: x.clone(),
+                            funds: funds.clone(),
+                        })
+                    })
+                    .collect::<Vec<_>>(),
+                "memo",
+                true,
+            )
+            .await;
 
-                            Ok(tx_response)
-                        }
-                        Err(err) => {
-                            info!(error = %ErrorReporter(&err), "cosmos tx failed");
-                            Err(err)
-                        }
-                    }
-                })
-            })
-            .await
+        // wrap it back into an Option
+        Some(outcome)
+
     }
 
     pub async fn send_ibc_transaction(
         &self,
         contract: Bech32<H256>,
         msg: (Vec<u8>, Vec<Coin>),
+        signer: &LocalSigner,
     ) -> anyhow::Result<H256> {
-        let result = self.send_transaction(contract, msg).await;
+        // let (address, signer) = self.get_signer().await;
+        let result = self.send_transaction(contract, msg, signer).await;
 
         let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
 

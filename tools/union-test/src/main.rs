@@ -145,6 +145,7 @@ async fn main() -> anyhow::Result<()> {
     // 3) now hand them to your library’s TestContext
     let ctx = TestContext::new(src, dst, 1).await?;
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
 
     // 4) invoke create_clients and inspect the two confirms
     // let (src_confirm, dst_confirm) = ctx
@@ -255,7 +256,7 @@ async fn main() -> anyhow::Result<()> {
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
-            evm_provider.clone()
+            &evm_provider
         )
         .await
         .unwrap();
@@ -317,6 +318,7 @@ async fn main() -> anyhow::Result<()> {
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
+            cosmos_provider
         )
         .await;
 
@@ -383,6 +385,7 @@ async fn main() -> anyhow::Result<()> {
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
+            evm_provider
         )
         .await;
 
