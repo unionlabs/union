@@ -74,6 +74,24 @@ sol! {
         bytes quoteToken;
         uint256 quoteAmount;
     }
+
+    #[derive(Debug)]
+    struct FungibleAssetOrderV2 {
+        bytes sender;
+        bytes receiver;
+        bytes base_token;
+        uint256 base_amount;
+        uint8 metadata_type;
+        bytes metadata;
+        bytes quote_token;
+        uint256 quote_amount;
+    }
+
+    #[derive(Serialize, Debug)]
+    struct FungibleAssetMetadata {
+        bytes implementation;
+        bytes initializer;
+    }
 }
 
 impl Serialize for Instruction {
@@ -96,6 +114,59 @@ impl Serialize for Instruction {
     }
 }
 
+impl Serialize for FungibleAssetOrderV2 {
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        // Create a struct with the standard fields plus _metadata
+        let mut state = serializer.serialize_struct("FungibleAssetOrderV2", 9)?;
+
+        // Serialize all standard fields
+        state.serialize_field("sender", &self.sender)?;
+        state.serialize_field("receiver", &self.receiver)?;
+        state.serialize_field("base_token", &self.base_token)?;
+        state.serialize_field("base_amount", &self.base_amount)?;
+        state.serialize_field("metadata_type", &self.metadata_type)?;
+        state.serialize_field("metadata", &self.metadata)?;
+        state.serialize_field("quote_token", &self.quote_token)?;
+        state.serialize_field("quote_amount", &self.quote_amount)?;
+
+        // Add _metadata field based on metadata_type
+        let metadata_value = match self.metadata_type {
+            0 => serde_json::json!({
+                "_type": "Image",
+                "image": self.metadata
+            }),
+            1 => {
+                // Decode metadata into FungibleAssetMetadata
+                match <FungibleAssetMetadata>::abi_decode_sequence(&self.metadata) {
+                    Ok(decoded) => serde_json::json!({
+                        "_type": "Preimage",
+                        "implementation": decoded.implementation,
+                        "initializer": decoded.initializer
+                    }),
+                    Err(_) => serde_json::json!({
+                        "_type": "Preimage",
+                        "error": "failed to decode metadata"
+                    }),
+                }
+            }
+            2 => serde_json::json!({
+                "_type": "ImageUnwrap",
+                "image": self.metadata
+            }),
+            _ => serde_json::json!({
+                "_type": "Unknown",
+                "raw_metadata": self.metadata
+            }),
+        };
+
+        state.serialize_field("_metadata", &metadata_value)?;
+        state.end()
+    }
+}
+
 impl Instruction {
     pub fn decode_operand(&self) -> Result<Operand> {
         Ok(match (self.version, self.opcode) {
@@ -110,11 +181,15 @@ impl Instruction {
             )),
             (0, OP_FUNGIBLE_ASSET_TRANSFER) => Operand::FungibleAssetOrder(FungibleAssetOrder::V0(
                 <FungibleAssetOrderV0>::abi_decode_sequence(&self.operand)
-                    .context("decoding FungibleAssetOrder")?,
+                    .context("decoding FungibleAssetOrderV0")?,
             )),
             (1, OP_FUNGIBLE_ASSET_TRANSFER) => Operand::FungibleAssetOrder(FungibleAssetOrder::V1(
                 <FungibleAssetOrderV1>::abi_decode_sequence(&self.operand)
-                    .context("decoding FungibleAssetOrder")?,
+                    .context("decoding FungibleAssetOrderV1")?,
+            )),
+            (2, OP_FUNGIBLE_ASSET_TRANSFER) => Operand::FungibleAssetOrder(FungibleAssetOrder::V2(
+                <FungibleAssetOrderV2>::abi_decode_sequence(&self.operand)
+                    .context("decoding FungibleAssetOrderV2")?,
             )),
             _ => Operand::Unsupported {
                 data: self.operand.clone(),
@@ -146,6 +221,7 @@ pub enum Batch {
 pub enum FungibleAssetOrder {
     V0(FungibleAssetOrderV0),
     V1(FungibleAssetOrderV1),
+    V2(FungibleAssetOrderV2),
 }
 
 #[derive(Serialize, Debug)]
@@ -233,6 +309,286 @@ mod tests {
               },
               "path": "0x0",
               "salt": "0xdddde7c9642e7ecbb7bbe659eff187e8ee6691fd7c840b09a89ec6b126caaaaa"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_fungible_asset_transfer_v2_packet_metadata_type_image() {
+        let json = decode(&hex::decode("b4536add4924363adf36c5525508616d702ea6c1e60b6544cd1b542f761a02ab0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000002600000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000002200000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a34797432673200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed00000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000020457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db6192800000000000000000000000000000000000000000000000000000000000000014ba53d2414765913e7b0b47c3ab3fc1e81006e7ba000000000000000000000000").unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_metadata": {
+                    "_type": "Image",
+                    "image": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280"
+                  },
+                  "_type": "FungibleAssetOrder",
+                  "base_amount": "0x64",
+                  "base_token": "0x6d756e6f",
+                  "metadata": "0x457af738e378cb8e744d0dfef10649e127afd4b54efea50c07782464db619280",
+                  "metadata_type": 0,
+                  "quote_amount": "0x64",
+                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732"
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb4536add4924363adf36c5525508616d702ea6c1e60b6544cd1b542f761a02ab"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_fungible_asset_transfer_v2_packet_metadata_type_preimage() {
+        let json = decode(&hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae780000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000003000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000000000000000000004800000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000016000000000000000000000000000000000000000000000000000000000000001a00000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000001e000000000000000000000000000000000000000000000000000000000000004400000000000000000000000000000000000000000000000000000000000000064000000000000000000000000000000000000000000000000000000000000002c756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a34797432673200000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed00000000000000000000000000000000000000000000000000000000000000000000000000000000000000046d756e6f0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000002400000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000149c968b805a625303ad43fce99ae72306256fe5f9000000000000000000000000000000000000000000000000000000000000000000000000000000000000018499f0385300000000000000000000000040cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f40000000000000000000000005fbe74a283f7954f10aa04c2edf55578811aeb0300000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000005556e696f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140b885dae80342524f34d46b19744e304ec88c99a000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000014ba53d2414765913e7b0b47c3ab3fc1e81006e7ba000000000000000000000000").unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "FungibleAssetOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "base_token": "0x6d756e6f",
+                  "base_amount": "0x64",
+                  "metadata_type": 1,
+                  "metadata": "0x0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000008000000000000000000000000000000000000000000000000000000000000000149c968b805a625303ad43fce99ae72306256fe5f9000000000000000000000000000000000000000000000000000000000000000000000000000000000000018499f0385300000000000000000000000040cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f40000000000000000000000005fbe74a283f7954f10aa04c2edf55578811aeb0300000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000005556e696f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140b885dae80342524f34d46b19744e304ec88c99a00000000000000000000000000000000000000000000000000000000000000000000000000000000",
+                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quote_amount": "0x64",
+                  "_metadata": {
+                    "_type": "Preimage",
+                    "implementation": "0x9c968b805a625303ad43fce99ae72306256fe5f9",
+                    "initializer": "0x99f0385300000000000000000000000040cdff51ae7487e0b4a4d6e5f86eb15fb7c1d9f40000000000000000000000005fbe74a283f7954f10aa04c2edf55578811aeb0300000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000001200000000000000000000000000000000000000000000000000000000000001400000000000000000000000000000000000000000000000000000000000000005556e696f6e0000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001550000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000140b885dae80342524f34d46b19744e304ec88c99a000000000000000000000000"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_fungible_asset_transfer_v2_packet_metadata_type_image_unwrap() {
+        // Create a V2 packet with metadata_type = 2 (ImageUnwrap) using real hex encoding
+        // replace with hex once packet is on chain
+        use alloy_sol_types::SolType;
+
+        let v2_order = FungibleAssetOrderV2 {
+            sender: alloy_sol_types::private::Bytes::from(hex::decode("756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732").unwrap()),
+            receiver: alloy_sol_types::private::Bytes::from(hex::decode("be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap()),
+            base_token: alloy_sol_types::private::Bytes::from(hex::decode("6d756e6f").unwrap()),
+            base_amount: alloy_sol_types::private::U256::from(100u64),
+            metadata_type: 2,
+            metadata: alloy_sol_types::private::Bytes::from(hex::decode("cafebabecafebabecafebabecafebabecafebabe").unwrap()),
+            quote_token: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()),
+            quote_amount: alloy_sol_types::private::U256::from(100u64),
+        };
+
+        let instruction = Instruction {
+            version: 2,
+            opcode: OP_FUNGIBLE_ASSET_TRANSFER,
+            operand: <FungibleAssetOrderV2>::abi_encode_sequence(&v2_order).into(),
+        };
+
+        let salt_bytes =
+            hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78")
+                .unwrap();
+        let mut salt_array = [0u8; 32];
+        salt_array.copy_from_slice(&salt_bytes);
+
+        let zkgm_packet = ZkgmPacket {
+            salt: alloy_sol_types::private::FixedBytes::from(salt_array),
+            path: alloy_sol_types::private::U256::from(0u64),
+            instruction,
+        };
+
+        let encoded = <ZkgmPacket>::abi_encode_sequence(&zkgm_packet);
+        let hex_string = hex::encode(encoded);
+
+        // Use the generated hex for the test
+        let json = decode(&hex::decode(hex_string).unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "FungibleAssetOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "base_token": "0x6d756e6f",
+                  "base_amount": "0x64",
+                  "metadata_type": 2,
+                  "metadata": "0xcafebabecafebabecafebabecafebabecafebabe",
+                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quote_amount": "0x64",
+                  "_metadata": {
+                    "_type": "ImageUnwrap",
+                    "image": "0xcafebabecafebabecafebabecafebabecafebabe"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_fungible_asset_transfer_v2_packet_unsupported_metadata_type() {
+        // Create a V2 packet with metadata_type = 99 (unsupported) using real hex encoding
+        use alloy_sol_types::SolType;
+
+        let v2_order = FungibleAssetOrderV2 {
+            sender: alloy_sol_types::private::Bytes::from(hex::decode("756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732").unwrap()),
+            receiver: alloy_sol_types::private::Bytes::from(hex::decode("be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap()),
+            base_token: alloy_sol_types::private::Bytes::from(hex::decode("6d756e6f").unwrap()),
+            base_amount: alloy_sol_types::private::U256::from(100u64),
+            metadata_type: 99,
+            metadata: alloy_sol_types::private::Bytes::from(hex::decode("deadbeefdeadbeefdeadbeefdeadbeefdeadbeef").unwrap()),
+            quote_token: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()),
+            quote_amount: alloy_sol_types::private::U256::from(100u64),
+        };
+
+        let instruction = Instruction {
+            version: 2,
+            opcode: OP_FUNGIBLE_ASSET_TRANSFER,
+            operand: <FungibleAssetOrderV2>::abi_encode_sequence(&v2_order).into(),
+        };
+
+        let salt_bytes =
+            hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78")
+                .unwrap();
+        let mut salt_array = [0u8; 32];
+        salt_array.copy_from_slice(&salt_bytes);
+
+        let zkgm_packet = ZkgmPacket {
+            salt: alloy_sol_types::private::FixedBytes::from(salt_array),
+            path: alloy_sol_types::private::U256::from(0u64),
+            instruction,
+        };
+
+        let encoded = <ZkgmPacket>::abi_encode_sequence(&zkgm_packet);
+        let hex_string = hex::encode(encoded);
+
+        // Use the generated hex for the test
+        let json = decode(&hex::decode(hex_string).unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "FungibleAssetOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "base_token": "0x6d756e6f",
+                  "base_amount": "0x64",
+                  "metadata_type": 99,
+                  "metadata": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef",
+                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quote_amount": "0x64",
+                  "_metadata": {
+                    "_type": "Unknown",
+                    "raw_metadata": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
+            })
+        );
+    }
+
+    #[test]
+    fn test_parse_ucs03_zkgm_0_with_fungible_asset_transfer_v2_packet_unparseable_metadata() {
+        // Create a V2 packet with metadata_type = 1 but invalid metadata that cannot be parsed
+        use alloy_sol_types::SolType;
+
+        let v2_order = FungibleAssetOrderV2 {
+            sender: alloy_sol_types::private::Bytes::from(hex::decode("756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732").unwrap()),
+            receiver: alloy_sol_types::private::Bytes::from(hex::decode("be68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed").unwrap()),
+            base_token: alloy_sol_types::private::Bytes::from(hex::decode("6d756e6f").unwrap()),
+            base_amount: alloy_sol_types::private::U256::from(100u64),
+            metadata_type: 1,
+            metadata: alloy_sol_types::private::Bytes::from(hex::decode("deadbeef").unwrap()), // Invalid/too short for FungibleAssetMetadata
+            quote_token: alloy_sol_types::private::Bytes::from(hex::decode("ba53d2414765913e7b0b47c3ab3fc1e81006e7ba").unwrap()),
+            quote_amount: alloy_sol_types::private::U256::from(100u64),
+        };
+
+        let instruction = Instruction {
+            version: 2,
+            opcode: OP_FUNGIBLE_ASSET_TRANSFER,
+            operand: <FungibleAssetOrderV2>::abi_encode_sequence(&v2_order).into(),
+        };
+
+        let salt_bytes =
+            hex::decode("b515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78")
+                .unwrap();
+        let mut salt_array = [0u8; 32];
+        salt_array.copy_from_slice(&salt_bytes);
+
+        let zkgm_packet = ZkgmPacket {
+            salt: alloy_sol_types::private::FixedBytes::from(salt_array),
+            path: alloy_sol_types::private::U256::from(0u64),
+            instruction,
+        };
+
+        let encoded = <ZkgmPacket>::abi_encode_sequence(&zkgm_packet);
+        let hex_string = hex::encode(encoded);
+
+        // Use the generated hex for the test
+        let json = decode(&hex::decode(hex_string).unwrap()).unwrap();
+
+        dbg!(serde_json::to_string(&json).unwrap());
+
+        assert_eq!(
+            json,
+            json!({
+              "instruction": {
+                "opcode": 3,
+                "operand": {
+                  "_type": "FungibleAssetOrder",
+                  "sender": "0x756e696f6e316a6b397073796876676b72743263756d7a386579746c6c323234346d326e6e7a347974326732",
+                  "receiver": "0xbe68fc2d8249eb60bfcf0e71d5a0d2f2e292c4ed",
+                  "base_token": "0x6d756e6f",
+                  "base_amount": "0x64",
+                  "metadata_type": 1,
+                  "metadata": "0xdeadbeef",
+                  "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
+                  "quote_amount": "0x64",
+                  "_metadata": {
+                    "_type": "Preimage",
+                    "error": "failed to decode metadata"
+                  }
+                },
+                "version": 2
+              },
+              "path": "0x0",
+              "salt": "0xb515a7377bc2f8914aa44085a2d9f9800dec88985123ea2e1a9be5fa4775ae78"
             })
         );
     }
