@@ -1,4 +1,5 @@
 <script lang="ts">
+import { afterNavigate } from "$app/navigation"
 import Banner from "$lib/components/ui/Banner.svelte"
 import Button from "$lib/components/ui/Button.svelte"
 import ConnectWalletButton from "$lib/components/ui/ConnectWalletButton.svelte"
@@ -9,6 +10,7 @@ import CopyLink from "./CopyLink.svelte"
 import Menu from "./Menu.svelte"
 
 let menu = $state(false)
+afterNavigate(() => menu = false)
 </script>
 
 <header class="bg-zinc-950">

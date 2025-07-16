@@ -15,5 +15,5 @@ const { onclose }: Props = $props()
   transition:slide={{ duration: 200 }}
 >
   <ProfileCard />
-  <Navigation onItemClick={onclose} />
+  <Navigation />
 </div>
