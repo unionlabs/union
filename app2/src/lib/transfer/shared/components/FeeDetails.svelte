@@ -57,6 +57,14 @@ const calculating = false
           <section>
             <Label>{k}</Label>
             <Anchor href={v.url.toString()}>{v.url}</Anchor>
+            {#if O.isSome(v.metadata)}
+              <details class="mt-2">
+                <summary><Label class="inline-flex">Details</Label></summary>
+                <div class="font-mono text-zinc-300 text-xs rounded-sm bg-zinc-900 overflow-x-scroll">
+                  <pre>{JSON.stringify(v.metadata.value, null, 2)}</pre>
+                </div>
+              </details>
+            {/if}
           </section>
         {/each}
       </div>
