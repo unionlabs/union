@@ -129,6 +129,10 @@ fn decode_inner_ack(operand: &Operand, ack: &Bytes) -> Result<InnerAck> {
             <FungibleAssetOrderAck>::abi_decode_sequence(ack)
                 .context("decoding FungibleAssetOrderAck V1")?,
         ),
+        Operand::FungibleAssetOrder(FungibleAssetOrder::V2(_)) => InnerAck::FungibleAssetOrder(
+            <FungibleAssetOrderAck>::abi_decode_sequence(ack)
+                .context("decoding FungibleAssetOrderAck V2")?,
+        ),
         Operand::Unsupported { data: _ } => InnerAck::Unsupported { data: ack.clone() },
     })
 }
