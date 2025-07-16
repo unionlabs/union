@@ -29,7 +29,8 @@ const ONE_U = 1_000_000_000_000_000_000
 const U_TOTAL_SUPPLY = 10_000_000_000
 
 // Union foundation multisig address
-const UNION_FOUNDATION_MULTI_SIG = "union1cpz5fhesgjcv2q0640uxtyur5ju65av6r8fem0" // NOTE: Must add branch logic for mainnet before running migration
+const FOUNDATION_TESTNET_SIG = "union1cpz5fhesgjcv2q0640uxtyur5ju65av6r8fem0"
+const UNION_TESTNET = "union-testnet-10"
 
 func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
 	return func(ctx context.Context, plan upgradetypes.Plan, vm module.VersionMap) (module.VersionMap, error) {
@@ -38,7 +39,12 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			return nil, err
 		}
 
-		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(UNION_FOUNDATION_MULTI_SIG)
+		// NOTE: must expand map with mainnet address
+		unionFoundationSigMap := map[string]string{
+			UNION_TESTNET: FOUNDATION_TESTNET_SIG,
+		}
+
+		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(unionFoundationSigMap[UNION_TESTNET])
 		if err != nil {
 			return nil, err
 		}
