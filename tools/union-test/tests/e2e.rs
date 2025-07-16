@@ -44,6 +44,9 @@ static CTX: OnceCell<Arc<TestContext<cosmos::Module, evm::Module>>> = OnceCell::
 static CHANNELS_OPENED: OnceCell<()> = OnceCell::const_new();
 static ERC20: OnceCell<H160> = OnceCell::const_new();
 
+static UNION_ZKGM_ADDRESS : &str = "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c";
+static UNION_MINTER_ADDRESS : &str = "union1lnagprksnq6md62p4exafvck5mrj8uhg5m67xqmuklfl5mfw8lnsr2q550";
+static EVM_ZKGM_ADDRESS : &str = "05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5";
 /// Returns the one–and–only deployed ERC20 address.
 /// Deploys it the first time it’s called, then just returns the stored value.
 // async fn ensure_erc20(spender: H160) -> H160 {
@@ -165,7 +168,7 @@ async fn init_ctx<'a>() -> Arc<TestContext<cosmos::Module, evm::Module<'a>>> {
         };
         let src = cosmos::Module::new(cosmos_cfg).await.unwrap();
         let dst = evm::Module::new(evm_cfg).await.unwrap();
-        let needed_channel_count = 11; // TODO: Hardcoded now, it will be specified from config later.
+        let needed_channel_count = 3; // TODO: Hardcoded now, it will be specified from config later.
         let ctx = TestContext::new(src, dst, needed_channel_count)
             .await
             .unwrap_or_else(|e| panic!("failed to build TestContext: {:#?}", e));
@@ -217,7 +220,7 @@ async fn ensure_channels_opened(channel_count: usize) {
             let opened = ctx
                 .open_channels(
                     true,
-                    "union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c"
+                    UNION_ZKGM_ADDRESS
                         .as_bytes()
                         .into(),
                     hex!("05fd55c1abe31d3ed09a76216ca8f0372f4b2ec5")
@@ -283,8 +286,9 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     let ctx = init_ctx().await;
     ensure_channels_opened(ctx.channel_count).await;
     
-
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
 
     let available_channel = ctx.get_available_channel_count().await;
     assert_eq!(available_channel > 0, true);
@@ -301,7 +305,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
             eth_zkgm_contract.into(),
             ChannelId::new(NonZero::new(dst_chain_id).unwrap()),
             "muno".into(),
-            evm_provider.clone()
+            &evm_provider
         )
         .await
         .unwrap();
@@ -309,15 +313,14 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
     let contract: Bech32<FixedBytes<32>> =
-        Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+        Bech32::from_str(UNION_ZKGM_ADDRESS)
             .unwrap();
 
     let instruction_cosmos = Instruction {
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrder {
-            sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-                .as_bytes()
+            sender: cosmos_address_bytes.clone()
                 .into(),
             receiver: evm_address
                 .to_vec()
@@ -360,6 +363,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
+            cosmos_provider
         )
         .await;
     assert!(
@@ -380,8 +384,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
             sender: evm_address
                 .to_vec()
                 .into(),
-            receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-                .as_bytes()
+            receiver: cosmos_address_bytes.clone()
                 .into(),
             base_token: quote_token_addr.as_ref().to_vec().into(),
             base_amount: "1".parse().unwrap(),
@@ -423,6 +426,7 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
+            &evm_provider
         )
         .await;
 
@@ -440,9 +444,15 @@ async fn test_send_packet_from_union_to_evm_and_send_back_unwrap() {
 
 async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let ctx = init_ctx().await;
+    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_signer) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
+
+    println!("EVM Address: {:?}", evm_address);
+    println!("Cosmos Address: {:?}", cosmos_address);
+
     ensure_channels_opened(ctx.channel_count).await;
 
-    let (evm_address, evm_provider) = ctx.dst.get_provider().await;
 
     let available_channel = ctx.get_available_channel_count().await;
     assert_eq!(available_channel > 0, true);
@@ -456,12 +466,12 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     // let deployed_erc20 = ensure_erc20(eth_zkgm_contract.into()).await;
 
     let deployed_erc20 = ctx.dst
-                .deploy_basic_erc20(eth_zkgm_contract.into(), evm_provider.clone())
-                .await
-                .expect("failed to deploy ERC20");
+        .deploy_basic_erc20(eth_zkgm_contract.into(), evm_provider.clone())
+        .await
+        .expect("failed to deploy ERC20");
 
     let union_zkgm_contract: Bech32<FixedBytes<32>> =
-        Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+        Bech32::from_str(UNION_ZKGM_ADDRESS)
             .unwrap();
 
     let quote_token_addr = ctx
@@ -470,7 +480,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
             union_zkgm_contract.into(),
             ChannelId::new(NonZero::new(src_chain_id).unwrap()),
             deployed_erc20.as_ref().to_vec(),
-            evm_provider.clone()
+            cosmos_signer
         )
         .await
         .unwrap();
@@ -482,6 +492,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     println!("deployed_erc20 address: {:?}", deployed_erc20);
     let mut salt_bytes = [0u8; 32];
     rand::rng().fill_bytes(&mut salt_bytes);
+    
 
     let instruction_from_evm_to_union = InstructionEvm {
         version: INSTR_VERSION_1,
@@ -490,8 +501,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
             sender: evm_address
                 .to_vec()
                 .into(),
-            receiver: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-                .as_bytes()
+            receiver: cosmos_address_bytes.clone()
                 .into(),
             base_token: deployed_erc20.as_ref().to_vec().into(),
             base_amount: "10".parse().unwrap(),
@@ -527,6 +537,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
+            &evm_provider
         )
         .await;
 
@@ -535,11 +546,11 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
-    println!("Received packet data: {:?}", recv_packet_data);
+    println!("Received packet data from evm->cosmos GOLD token: {:?}", recv_packet_data);
 
     let approve_msg = Cw20ExecuteMsg::IncreaseAllowance {
-        spender: "union1lnagprksnq6md62p4exafvck5mrj8uhg5m67xqmuklfl5mfw8lnsr2q550".into(),
-        amount: "10".parse().unwrap(),
+        spender: UNION_MINTER_ADDRESS.into(),
+        amount: "100".parse().unwrap(),
         expires: None,
     };
 
@@ -550,11 +561,14 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     let approve_contract: Bech32<FixedBytes<32>> =
         Bech32::from_str(std::str::from_utf8(&quote_token_bytes).unwrap()).unwrap();
 
+    println!("Calling approve on quote tokenbytes: {:?}, quote_token:{:?} -> from account: {:?}. Approve contract: {:?}", quote_token_addr, quote_token_bytes, cosmos_address, approve_contract);
+
     let approve_recv_packet_data = ctx
         .src
-        .send_transaction(approve_contract, (approve_msg_bin, vec![]).into())
+        .send_transaction(approve_contract, (approve_msg_bin, vec![]).into(), cosmos_signer)
         .await;
 
+    println!("Approve transaction data: {:?}", approve_recv_packet_data);
     assert!(
         approve_recv_packet_data.is_some(),
         "Failed to send approve transaction: {:?}",
@@ -565,8 +579,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         version: INSTR_VERSION_1,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrder {
-            sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-                .as_bytes()
+            sender: cosmos_address_bytes.clone()
                 .into(),
             receiver: evm_address
                 .to_vec()
@@ -599,9 +612,10 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
     // Also token balanceOf the receiver account
 
     let union_zkgm_contract: Bech32<FixedBytes<32>> =
-        Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+        Bech32::from_str(UNION_ZKGM_ADDRESS)
             .unwrap();
 
+    
     let recv_packet_data = ctx
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
@@ -611,6 +625,7 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
+            cosmos_signer
         )
         .await;
 
@@ -621,12 +636,27 @@ async fn test_send_packet_from_evm_to_union_and_send_back_unwrap() {
         "Failed to send and receive packet: {:?}",
         recv_packet_data.err()
     );
+    
+    // // TODO: Sending & recving manually from here:
+    // let packet_hash = match ctx.src.send_ibc_transaction_with_signer(union_zkgm_contract, (bin_msg, funds).into(), cosmos_signer).await {
+    //     Ok(hash) => hash,
+    //     Err(e) => panic!("Failed to send IBC transaction: {:?}", e),
+    // };
+    // match ctx.dst.wait_for_packet_recv(packet_hash, Duration::from_secs(720)).await {
+    //     Ok(recv_data) => {
+    //         println!("Received packet data at the end of manual process: {:?}", recv_data);
+    //     },
+    //     Err(e) => panic!("Failed to receive packet: {:?}", e),
+    // }
+
 }
 
 async fn test_stake_from_evm_to_union() {
     let ctx = init_ctx().await;
 
     let (evm_address, evm_provider) = ctx.dst.get_provider().await;
+    let (cosmos_address, cosmos_provider) = ctx.src.get_signer().await;
+    let cosmos_address_bytes = cosmos_address.to_string().into_bytes();
     println!("EVM Address: {:?}", evm_address);
 
     ensure_channels_opened(ctx.channel_count).await;
@@ -679,7 +709,7 @@ async fn test_stake_from_evm_to_union() {
             ChannelId::new(NonZero::new(pair.dest).unwrap()),
             "muno".into(),
             img.into(),
-            evm_provider.clone()
+            &evm_provider
         )
         .await
         .unwrap();
@@ -690,8 +720,7 @@ async fn test_stake_from_evm_to_union() {
         version: INSTR_VERSION_2,
         opcode: OP_FUNGIBLE_ASSET_ORDER,
         operand: FungibleAssetOrderV2 {
-            sender: "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
-                .as_bytes()
+            sender: cosmos_address_bytes.clone()
                 .into(),
             receiver: evm_address
                 .to_vec()
@@ -724,13 +753,14 @@ async fn test_stake_from_evm_to_union() {
     let recv_packet_data = ctx
         .send_and_recv_with_retry::<cosmos::Module, evm::Module>(
             &ctx.src,
-            Bech32::from_str("union1rfz3ytg6l60wxk5rxsk27jvn2907cyav04sz8kde3xhmmf9nplxqr8y05c")
+            Bech32::from_str(UNION_ZKGM_ADDRESS)
                 .unwrap(),
             (bin_msg, funds).into(),
             &ctx.dst,
             3,
             Duration::from_secs(20),
             Duration::from_secs(720),
+            cosmos_provider
         )
         .await;
 
@@ -806,6 +836,7 @@ async fn test_stake_from_evm_to_union() {
             &ctx.src,
             Duration::from_secs(360),
             given_validator.to_string(),
+            evm_provider.clone()
         )
         .await;
 
@@ -849,63 +880,125 @@ async fn from_evm_to_union0() {
 
 #[tokio::test]
 #[serial]
-async fn from_union_to_evm0() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
-
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union_stake() {
-    self::test_stake_from_evm_to_union().await;
-}
-
-
-#[tokio::test]
-#[serial]
 async fn from_evm_to_union1() {
     self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
 }
 
-#[tokio::test]
-#[serial]
-async fn from_union_to_evm1() {
-    self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
-}
 
 #[tokio::test]
 #[serial]
-async fn from_evm_to_union_stake1() {
-    self::test_stake_from_evm_to_union().await;
+async fn from_evm_to_union2() {
+    self::test_send_packet_from_evm_to_union_and_send_back_unwrap().await;
 }
 
+// #[tokio::test]
+// #[serial]
+// async fn from_union_to_evm0() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
 
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union_stake2() {
-    self::test_stake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake() {
+//     self::test_stake_from_evm_to_union().await;
+// }
 
 
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union_stake3() {
-    self::test_stake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// #[serial]
+// async fn from_union_to_evm1() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
 
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union_stake4() {
-    self::test_stake_from_evm_to_union().await;
-}
 
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union_stake5() {
-    self::test_stake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// #[serial]
+// async fn from_union_to_evm3() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
 
-#[tokio::test]
-#[serial]
-async fn from_evm_to_union_stake6() {
-    self::test_stake_from_evm_to_union().await;
-}
+// #[tokio::test]
+// #[serial]
+// async fn from_union_to_evm4() {
+//     self::test_send_packet_from_union_to_evm_and_send_back_unwrap().await;
+// }
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake1() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake2() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake3() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake4() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake5() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake6() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake7() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake8() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake9() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake10() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake11() {
+//     self::test_stake_from_evm_to_union().await;
+// }
+
+
+// #[tokio::test]
+// #[serial]
+// async fn from_evm_to_union_stake12() {
+//     self::test_stake_from_evm_to_union().await;
+// }

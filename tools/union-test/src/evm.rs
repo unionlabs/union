@@ -267,7 +267,7 @@ impl<'a> Module<'a> {
         ucs03_addr_on_evm: H160,
         channel: ChannelId,
         token: Vec<u8>,
-        provider: DynProvider<AnyNetwork>
+        provider: &DynProvider<AnyNetwork>
     ) -> anyhow::Result<H160> {
         // let (_,signer) = self.get_provider().await;
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
@@ -290,7 +290,7 @@ impl<'a> Module<'a> {
         channel: ChannelId,
         token: Vec<u8>,
         metadata: zkgm::FungibleAssetMetadata,
-        provider: DynProvider<AnyNetwork>
+        provider: &DynProvider<AnyNetwork>
     ) -> anyhow::Result<H160> {
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
         let call = ucs03_zkgm.predictWrappedTokenV2(
@@ -313,7 +313,7 @@ impl<'a> Module<'a> {
         channel: ChannelId,
         token: Vec<u8>,
         metadata_image: FixedBytes<32>,
-        provider: DynProvider<AnyNetwork>
+        provider: &DynProvider<AnyNetwork>
     ) -> anyhow::Result<H160> {
         let ucs03_zkgm = zkgm::UCS03Zkgm::new(ucs03_addr_on_evm.into(), provider);
         let call = ucs03_zkgm.predictWrappedTokenFromMetadataImageV2(
@@ -654,6 +654,7 @@ impl<'a> Module<'a> {
         &self,
         _contract: H160,
         msg: RawCallBuilder<&DynProvider<AnyNetwork>, AnyNetwork>,
+        _provider: &DynProvider<AnyNetwork>
     ) -> RpcResult<FixedBytes<32>> {
         let res = self
             .keyring
