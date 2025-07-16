@@ -30,6 +30,9 @@ const U_TOTAL_SUPPLY = 10_000_000_000
 
 // Union foundation multisig address
 const FOUNDATION_TESTNET_SIG = "union1cpz5fhesgjcv2q0640uxtyur5ju65av6r8fem0"
+const DEVNET_SIG = "union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2"
+
+const UNION_DEVNET = "union-minimal-devnet-1"
 const UNION_TESTNET = "union-testnet-10"
 
 func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, keepers *upgrades.AppKeepers) upgradetypes.UpgradeHandler {
@@ -42,9 +45,11 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		// NOTE: must expand map with mainnet address
 		unionFoundationSigMap := map[string]string{
 			UNION_TESTNET: FOUNDATION_TESTNET_SIG,
+			UNION_DEVNET:  DEVNET_SIG,
 		}
 
-		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(unionFoundationSigMap[UNION_TESTNET])
+		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		unionFoundationMultiSig, err := sdk.AccAddressFromBech32(unionFoundationSigMap[sdkCtx.ChainID()])
 		if err != nil {
 			return nil, err
 		}
@@ -137,13 +142,13 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		// Update x/crisis
 		_, err = keepers.CrisisKeeper.UpdateParams(ctx, &crisistypes.MsgUpdateParams{
 			Authority:   keepers.GovKeeper.GetAuthority(),
-			ConstantFee: getBaseUFromString("1000"),
+			ConstantFee: getUFromU64(1),
 		})
 		if err != nil {
 			return nil, err
 		}
 
-		sdkCtx := sdk.UnwrapSDKContext(ctx)
+		sdkCtx = sdk.UnwrapSDKContext(ctx)
 
 		// Update x/distribution
 		distrParams, err := keepers.DistributionKeeper.Params.Get(ctx)
