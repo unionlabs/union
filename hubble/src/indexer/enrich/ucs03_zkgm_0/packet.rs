@@ -157,8 +157,8 @@ impl Serialize for FungibleAssetOrderV2 {
                 "image": self.metadata
             }),
             _ => serde_json::json!({
-                "_type": "Unknown",
-                "raw_metadata": self.metadata
+                "_type": "Unsupported",
+                "data": self.metadata
             }),
         };
 
@@ -511,8 +511,8 @@ mod tests {
                   "quote_token": "0xba53d2414765913e7b0b47c3ab3fc1e81006e7ba",
                   "quote_amount": "0x64",
                   "_metadata": {
-                    "_type": "Unknown",
-                    "raw_metadata": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
+                    "_type": "Unsupported",
+                    "data": "0xdeadbeefdeadbeefdeadbeefdeadbeefdeadbeef"
                   }
                 },
                 "version": 2
