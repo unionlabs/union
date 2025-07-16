@@ -6779,109 +6779,6 @@
         }
       }
     },
-    "/poa/v1/authority": {
-      "get": {
-        "tags": [
-          "Query"
-        ],
-        "description": "POA Authority",
-        "operationId": "Query_PoaAuthority",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryPoaAuthorityResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Default error response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Status"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/poa/v1/consensus_power": {
-      "get": {
-        "tags": [
-          "Query"
-        ],
-        "description": "ConsensusPower returns the current consensus power of a validator.",
-        "operationId": "Query_ConsensusPower",
-        "parameters": [
-          {
-            "name": "validatorAddress",
-            "in": "query",
-            "description": "validator_address is the address of the validator",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/QueryConsensusPowerResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Default error response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Status"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/poa/v1/pending_validators": {
-      "get": {
-        "tags": [
-          "Query"
-        ],
-        "description": "PendingValidators returns currently pending validators of the module.",
-        "operationId": "Query_PendingValidators",
-        "responses": {
-          "200": {
-            "description": "OK",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PendingValidatorsResponse"
-                }
-              }
-            }
-          },
-          "default": {
-            "description": "Default error response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Status"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/feemarket/v1/gas_price/{denom}": {
       "get": {
         "tags": [
@@ -9060,77 +8957,28 @@
       "Validator": {
         "type": "object",
         "properties": {
-          "operatorAddress": {
+          "address": {
             "type": "string",
-            "description": "operator_address defines the address of the validator's operator; bech\n encoded in JSON."
+            "format": "bytes"
           },
-          "consensusPubkey": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/GoogleProtobufAny"
-              }
-            ],
-            "description": "consensus_pubkey is the consensus public key of the validator, as a\n Protobuf Any."
+          "pubKey": {
+            "$ref": "#/components/schemas/PublicKey"
           },
-          "jailed": {
-            "type": "boolean",
-            "description": "jailed defined whether the validator has been jailed from bonded status or\n not."
+          "votingPower": {
+            "type": "string"
           },
-          "status": {
-            "type": "integer",
-            "description": "status is the validator status (bonded/unbonding/unbonded).",
-            "format": "enum"
+          "proposerPriority": {
+            "type": "string"
           },
-          "tokens": {
+          "pubKeyBytes": {
             "type": "string",
-            "description": "tokens define the delegated tokens (incl. self-delegation)."
+            "format": "bytes"
           },
-          "delegatorShares": {
-            "type": "string",
-            "description": "delegator_shares defines total shares issued to a validator's delegators."
-          },
-          "description": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Description"
-              }
-            ],
-            "description": "description defines the description terms for the validator."
-          },
-          "unbondingHeight": {
-            "type": "string",
-            "description": "unbonding_height defines, if unbonding, the height at which this validator\n has begun unbonding."
-          },
-          "unbondingTime": {
-            "type": "string",
-            "description": "unbonding_time defines, if unbonding, the min time for the validator to\n complete unbonding.",
-            "format": "date-time"
-          },
-          "commission": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/Commission"
-              }
-            ],
-            "description": "commission defines the commission parameters."
-          },
-          "minSelfDelegation": {
-            "type": "string",
-            "description": "min_self_delegation is the validator's self declared minimum self\n delegation.\n\n Since: cosmos-sdk 0.46"
-          },
-          "unbondingOnHoldRefCount": {
-            "type": "string",
-            "description": "strictly positive if this validator's unbonding has been stopped by\n external modules"
-          },
-          "unbondingIds": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            },
-            "description": "list of unbonding ids, each uniquely identifying an unbonding of this\n validator"
+          "pubKeyType": {
+            "type": "string"
           }
         },
-        "description": "Validator defines a validator, together with the total amount of the\n Validator's bond shares and their exchange rate to coins. Slashing results in\n a decrease in the exchange rate, allowing correct calculation of future\n undelegations without iterating over delegators. When coins are delegated to\n this validator, the validator is credited with a delegation whose number of\n bond shares is based on the amount of coins delegated divided by the current\n exchange rate. Voting power can be calculated as total bonded shares\n multiplied by exchange rate."
+        "description": "Validator represents a node participating in the consensus protocol."
       },
       "ValidatorSet": {
         "type": "object",
@@ -11680,102 +11528,6 @@
           }
         },
         "description": "QueryUpgradedConsensusStateResponse is the response type for the Query/UpgradedConsensusState\n RPC method."
-      },
-      "Commission": {
-        "type": "object",
-        "properties": {
-          "commissionRates": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/CommissionRates"
-              }
-            ],
-            "description": "commission_rates defines the initial commission rates to be used for\n creating a validator."
-          },
-          "updateTime": {
-            "type": "string",
-            "description": "update_time is the last time the commission rate was changed.",
-            "format": "date-time"
-          }
-        },
-        "description": "Commission defines commission parameters for a given validator."
-      },
-      "CommissionRates": {
-        "type": "object",
-        "properties": {
-          "rate": {
-            "type": "string",
-            "description": "rate is the commission rate charged to delegators, as a fraction."
-          },
-          "maxRate": {
-            "type": "string",
-            "description": "max_rate defines the maximum commission rate which validator can ever\n charge, as a fraction."
-          },
-          "maxChangeRate": {
-            "type": "string",
-            "description": "max_change_rate defines the maximum daily increase of the validator\n commission, as a fraction."
-          }
-        },
-        "description": "CommissionRates defines the initial commission rates to be used for creating\n a validator."
-      },
-      "Description": {
-        "type": "object",
-        "properties": {
-          "moniker": {
-            "type": "string",
-            "description": "moniker defines a human-readable name for the validator."
-          },
-          "identity": {
-            "type": "string",
-            "description": "identity defines an optional identity signature (ex. UPort or Keybase)."
-          },
-          "website": {
-            "type": "string",
-            "description": "website defines an optional website link."
-          },
-          "securityContact": {
-            "type": "string",
-            "description": "security_contact defines an optional email for security contact."
-          },
-          "details": {
-            "type": "string",
-            "description": "details define other optional details."
-          }
-        },
-        "description": "Description defines a validator description."
-      },
-      "PendingValidatorsResponse": {
-        "type": "object",
-        "properties": {
-          "pending": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/Validator"
-            },
-            "description": "Pending is the returned pending validators from the module"
-          }
-        },
-        "description": "QueryPendingValidatorResponse is the response type for the Query/PendingValidators RPC method."
-      },
-      "QueryConsensusPowerResponse": {
-        "type": "object",
-        "properties": {
-          "consensusPower": {
-            "type": "string",
-            "description": "consensus_power is the returned consensus power from the BFT consensus mechanism"
-          }
-        },
-        "description": "QueryConsensusPowerResponse is the response type for the Query/ConsensusPowerRequest RPC method."
-      },
-      "QueryPoaAuthorityResponse": {
-        "type": "object",
-        "properties": {
-          "authority": {
-            "type": "string",
-            "description": "authority is the module authority address"
-          }
-        },
-        "description": "QueryPoaAuthorityResponse is the response type for the Query/QueryPoaAuthorityRequest RPC method."
       },
       "GasPriceResponse": {
         "type": "object",

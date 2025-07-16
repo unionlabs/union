@@ -269,6 +269,7 @@ files.extend-exclude = [
 "Sublist"                 = "Sublist"
 "Subo"                    = "Subo"
 "Subtrie"                 = "Subtrie"
+"TGE"                     = "TGE"
 "TOCTOU"                  = "TOCTOU"
 "Tada"                    = "Tada"
 "Tempdirs"                = "Tempdirs"

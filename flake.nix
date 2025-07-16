@@ -104,7 +104,7 @@
       type = "github";
       owner = "unionlabs";
       repo = "cosmos-sdk";
-      ref = "v0.50.11-cometblsv1";
+      ref = "v0.50.13-cometblsv1";
       flake = false;
     };
 
@@ -120,6 +120,10 @@
     };
     v1_1_0 = {
       url = "github:unionlabs/union/release/uniond/v1.1.1";
+      flake = false;
+    };
+    v1_2_0 = {
+      url = "github:unionlabs/union/prod-415-write-migration-to-mint-u-and-remove-poa";
       flake = false;
     };
   };

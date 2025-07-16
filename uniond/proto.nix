@@ -8,9 +8,7 @@ _: {
   perSystem =
     {
       pkgs,
-      self',
       proto,
-      ibc-go,
       ensureAtRepositoryRoot,
       mkCi,
       ...
@@ -45,13 +43,6 @@ _: {
             doCheck = false;
 
             vendorHash = "sha256-nfeqVsPMQz7EL+qWxFzRukCE3YqXErhS9urRaJo44Fg=";
-          };
-
-          poa = pkgs.fetchFromGitHub {
-            owner = "unionlabs";
-            repo = "poa";
-            rev = "2fd246e706c1d0926fc958978e99c5455b7cb330";
-            hash = "sha256-CRTnzQJXaA0FZKjAibEdJisSvY5rVBmtTURfwOdSTSs=";
           };
 
           feemarket = pkgs.fetchFromGitHub {
@@ -93,6 +84,9 @@ _: {
 
               find ${proto.uniond} -type f -regex ".*proto" | \
               while read -r file; do
+                if [[ $file == *"union/staking/module/v1/module.proto" ]]; then
+                  continue
+                fi
                 relpath="$(sed 's#/nix/store/.*-uniond/proto##' <<< $file)"
                 echo "Generating protobuf for $file"
                 mkdir -p "$out/openapi$relpath"
@@ -105,7 +99,6 @@ _: {
                   -I"${proto.ibc-go}/proto" \
                   -I"${proto.ics23}/proto" \
                   -I"${proto.cometbls}/proto" \
-                  -I"${poa}/proto" \
                   -I"${feemarket}/proto" \
                   --gocosmos_out $out \
                   --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
@@ -113,33 +106,6 @@ _: {
                   "$file"
                   echo "Done generating for $file"
               done
-
-              find ${poa}/proto -type f -regex ".*proto" | \
-              while read -r file; do
-                if [[ $file == *"strangelove_ventures/poa/module/v1/module.proto" ]]; then
-                  continue
-                fi
-
-                relpath="$(sed 's#/nix/store/.*-uniond/proto##' <<< $file)"
-                echo "Generating protobuf for $file"
-                mkdir -p "$out/openapi$relpath"
-                protoc \
-                  -I"${proto.uniond}" \
-                  -I"${proto.gogoproto}" \
-                  -I"${proto.googleapis}" \
-                  -I"$(pwd)/cosmos-sdk/proto" \
-                  -I"${proto.cosmosproto}/proto" \
-                  -I"${proto.ibc-go}/proto" \
-                  -I"${proto.ics23}/proto" \
-                  -I"${proto.cometbls}/proto" \
-                  -I"${poa}/proto" \
-                  -I"${feemarket}/proto" \
-                  --gocosmos_out $out \
-                  --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
-                  --openapi_out=$out/openapi$relpath \
-                  "$file"
-                  echo "Done generating for $file"
-                done
 
               find ${feemarket}/proto -type f -regex ".*proto" | \
               while read -r file; do
@@ -159,7 +125,6 @@ _: {
                   -I"${proto.ibc-go}/proto" \
                   -I"${proto.ics23}/proto" \
                   -I"${proto.cometbls}/proto" \
-                  -I"${poa}/proto" \
                   -I"${feemarket}/proto" \
                   --gocosmos_out $out \
                   --gocosmos_opt=plugins=interfacetype+grpc,Mgoogle/protobuf/any.proto=github.com/cosmos/cosmos-sdk/codec/types,Mgoogle/protobuf/duration.proto=time \
@@ -240,7 +205,6 @@ _: {
                   -I"$(pwd)/cosmos-sdk/proto" \
                   -I"${proto.cosmosproto}/proto" \
                   -I"${proto.cometbls}/proto" \
-                  -I"${poa}/proto" \
                   -I"${feemarket}/proto" \
                   --openapi_out=$out/openapi$query_file \
                   "$query_file"

@@ -36,6 +36,7 @@ require (
 	github.com/cosmos/ibc-go/modules/capability v1.0.1
 	github.com/cosmos/ibc-go/v8 v8.5.1
 	github.com/gorilla/mux v1.8.1
+	github.com/grpc-ecosystem/grpc-gateway v1.16.0
 	github.com/skip-mev/feemarket v1.1.1
 	github.com/spf13/cast v1.7.1
 	github.com/spf13/cobra v1.8.1
@@ -129,7 +130,6 @@ require (
 	github.com/gorilla/handlers v1.5.2 // indirect
 	github.com/gorilla/websocket v1.5.3 // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.4.0 // indirect
-	github.com/grpc-ecosystem/grpc-gateway v1.16.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
 	github.com/hashicorp/go-getter v1.7.5 // indirect
@@ -238,7 +238,7 @@ require (
 
 replace (
 	github.com/skip-mev/chaintestutil => github.com/unionlabs/chaintestutil v0.0.0-20250302021446-4a21a73faf94
-	github.com/skip-mev/feemarket => github.com/unionlabs/feemarket v0.0.0-20250302022351-41d27c4c3661
+	github.com/skip-mev/feemarket => github.com/unionlabs/feemarket v0.0.0-20250715203232-09b3cdf73dc1
 )
 
 replace github.com/CosmWasm/wasmd => github.com/unionlabs/wasmd v0.0.0-20250228223503-fa271bbe8508
@@ -255,7 +255,7 @@ replace (
 	cosmossdk.io/x/evidence => github.com/unionlabs/cosmos-sdk/x/evidence v0.0.0-20250620195423-aec0a7b83e26
 	cosmossdk.io/x/feegrant => github.com/unionlabs/cosmos-sdk/x/feegrant v0.0.0-20250620195423-aec0a7b83e26
 	cosmossdk.io/x/nft => github.com/unionlabs/cosmos-sdk/x/nft v0.0.0-20250620195423-aec0a7b83e26
-	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20250620195423-aec0a7b83e26
+	github.com/cosmos/cosmos-sdk => github.com/unionlabs/cosmos-sdk v0.0.0-20250702205753-ca7679acbcc5
 )
 
 replace (
