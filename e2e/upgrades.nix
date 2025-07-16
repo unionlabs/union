@@ -74,11 +74,15 @@ in
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking delegations union1jk9psyhvgkrt2cumz8eytll2244m2nnz4yt2g2 --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.pagination.total | tonumber == 4') == true ]]")
 
       # Ensure vals have 0 delegations
-      print(union.succeed("docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking delegations union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m --output json | ${pkgs.lib.meta.getExe pkgs.jq} ."))
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking delegations union1qp4uzhet2sd9mrs46kemse5dt9ncz4k3hjst5m --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.delegation_responses') == null ]]")
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking delegations union1d348dktd9nz0y6afzh3az5j39qahc93cmwkdjf --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.delegation_responses') == null ]]")
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking delegations union1asxs295fuy7jph8p8eqtc2r8zxggdc204s7unx --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.delegation_responses') == null ]]")
       union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query staking delegations union1fktal7292h36h7glff5edq59vpdfn7504duw5m --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.delegation_responses') == null ]]")
+
+      # Ensure legacy tokens are burnt
+      union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query bank denom-owners muno --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.denom_owners') == null ]]")
+      union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query bank denom-owners ugas --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.denom_owners') == null ]]")
+      union.succeed("[[ $(docker exec devnet-union-minimal-union-minimal-0-1 ${unionvisorBin} -l off --root ./.unionvisor call --bundle ${bundle} -- query bank denom-owners upoa --output json | ${pkgs.lib.meta.getExe pkgs.jq} '.denom_owners') == null ]]")
     '';
 
     nodes = {
