@@ -664,15 +664,57 @@ impl<'a> Module<'a> {
             })
             .await;
 
-        match res {
-            Some(Ok(hash)) => Ok(hash),
-            Some(Err(e)) => Err(ErrorObject::owned(
+    match res {
+        Some(Ok(tx_hash)) => {
+            let receipt_with = self.provider
+                .get_transaction_receipt(tx_hash.into())
+                .await
+                .map_err(|e| ErrorObjectOwned::owned(
+                    -1,
+                    format!("failed to fetch receipt: {:?}", e),
+                    None::<()>,
+                ))?
+                .ok_or_else(|| ErrorObjectOwned::owned(
+                    -1,
+                    "receipt not found",
+                    None::<()>,
+                ))?;
+
+            let logs = &receipt_with
+                .inner
+                .inner
+                .inner
+                .receipt
+                .logs;        
+
+            for raw in logs {
+                if let Ok(alloy_log) = IbcEvents::decode_log(&raw.inner) {
+                    if let IbcEvents::PacketSend(ev) = alloy_log.data {
+                        return Ok(ev.packet_hash.into());
+                    }
+                }
+            }
+
+            Err(ErrorObjectOwned::owned(
                 -1,
-                format!("transaction submission failed: {:?}", e),
+                "no PacketSend event found in transaction",
                 None::<()>,
-            )),
-            None => Err(ErrorObject::owned(-1, "no signers available", None::<()>)),
+            ))
         }
+
+        Some(Err(e)) => Err(ErrorObjectOwned::owned(
+            -1,
+            format!("transaction submission failed: {:?}", e),
+            None::<()>,
+        )),
+
+        None => Err(ErrorObjectOwned::owned(
+            -1,
+            "no signers available",
+            None::<()>,
+        )),
+    }
+
     }
 
     pub async fn submit_transaction(

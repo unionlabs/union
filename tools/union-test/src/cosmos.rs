@@ -290,12 +290,12 @@ impl Module {
             move |evt| {
                 if let ModuleEvent::WasmPacketRecv { packet_hash, .. } = evt {
                     println!("Packet recv event came with hash: {packet_hash:?}");
-                    // if packet_hash.as_ref() == packet_hash_param.as_ref() {
-                    return Some(helpers::PacketRecv {
-                        packet_hash: *packet_hash,
-                    });
-                    // }
-                    // None
+                    if packet_hash.as_ref() == packet_hash_param.as_ref() {
+                        return Some(helpers::PacketRecv {
+                            packet_hash: *packet_hash,
+                        });
+                    }
+                    None
                 } else {
                     None
                 }
@@ -371,7 +371,6 @@ impl Module {
     }
 
     pub async fn get_signer(&self) -> (Bech32<H160>, &LocalSigner) {
-        // Clone the LocalSigner inside the closure so we return an owned LocalSigner
         let signer = self
             .keyring
             .with(|s| async move { s})
@@ -383,6 +382,38 @@ impl Module {
     }
 
 
+    pub async fn send_transaction_with_retry(
+        &self,
+        contract: Bech32<H256>,
+        msg: (Vec<u8>, Vec<Coin>),
+        signer: &LocalSigner,
+    ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
+        let max_retries = 5;
+        for attempt in 1..=max_retries {
+            let outcome = self.send_transaction(contract.clone(), msg.clone(), signer).await;
+
+            if let Some(Ok(_)) = &outcome {
+                return outcome;
+            }
+
+            if let Some(Err(err)) = &outcome {
+                if self.is_sequence_mismatch(err) && attempt < max_retries {
+                    tracing::warn!(
+                        "send_transaction attempt {}/{} failed with sequence mismatch, {:?}",
+                        attempt, max_retries, err
+                    );
+                    tokio::time::sleep(Duration::from_secs(5)).await;
+                    continue;
+                } else {
+                    return outcome;
+                }
+            }
+
+        }
+
+        None
+    }
+
 
     // TODO(aeryz): return the digest
     pub async fn send_transaction(
@@ -391,7 +422,6 @@ impl Module {
         msg: (Vec<u8>, Vec<Coin>),
         signer: &LocalSigner
     ) -> Option<Result<TxResponse, BroadcastTxCommitError>> {
-        // let (address, signer) = self.get_signer().await;
         let tx_client = TxClient::new(signer, &self.rpc, &self.gas_config);
 
         let signer_address = signer.address();
@@ -419,13 +449,24 @@ impl Module {
 
     }
 
+    /// Helper to detect the ABCI “account sequence mismatch” error.
+    fn is_sequence_mismatch(&self, err: &BroadcastTxCommitError) -> bool {
+    // You’ll want to match exactly on the gRPC error variant—
+    // here we just do a string-contains on the log.
+    match err {
+        BroadcastTxCommitError::Query(grpc_err) => {
+            grpc_err.log.contains("account sequence mismatch")
+        }
+        _ => false,
+    }
+}
+
     pub async fn send_ibc_transaction(
         &self,
         contract: Bech32<H256>,
         msg: (Vec<u8>, Vec<Coin>),
         signer: &LocalSigner,
     ) -> anyhow::Result<H256> {
-        // let (address, signer) = self.get_signer().await;
         let result = self.send_transaction(contract, msg, signer).await;
 
         let tx_result = result.ok_or_else(|| anyhow!("failed to send transaction"))??;
