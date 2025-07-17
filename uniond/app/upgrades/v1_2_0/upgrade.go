@@ -61,7 +61,12 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 		}
 
 		for idx, delegation := range delegations {
-			fmt.Printf("%d, DelegatorAddress: %s, ValidatorAddress: %s, Shares: %s", idx, delegation.DelegatorAddress, delegation.ValidatorAddress, delegation.Shares)
+			sdkCtx.Logger().Info(
+				"idx", idx,
+				"DelegatorAddress", delegation.DelegatorAddress,
+				"ValidatorAddress", delegation.ValidatorAddress,
+				"Shares", delegation.Shares,
+			)
 
 			accAddr, err := sdk.AccAddressFromBech32(delegation.DelegatorAddress)
 			if err != nil {
@@ -73,9 +78,9 @@ func CreateUpgradeHandler(mm *module.Manager, configurator module.Configurator, 
 			}
 
 			_, _ = keepers.DistributionKeeper.WithdrawDelegationRewards(ctx, accAddr, valAddr)
-			fmt.Printf("withdrew rewards")
+			sdkCtx.Logger().Info("withdrew rewards")
 			_, _ = keepers.DistributionKeeper.WithdrawValidatorCommission(ctx, valAddr)
-			fmt.Printf("withdrew validator commission")
+			sdkCtx.Logger().Info("withdrew validator commission")
 
 			validator, err := keepers.StakingKeeper.GetValidator(ctx, valAddr)
 			if err != nil {
